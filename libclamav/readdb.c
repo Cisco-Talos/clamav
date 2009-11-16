@@ -1238,11 +1238,6 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
-static int scomp(const void *a, const void *b)
-{
-    return *(const uint32_t *)a - *(const uint32_t *)b;
-}
-
 #define MD5_HDB	    0
 #define MD5_MDB	    1
 #define MD5_FP	    2
@@ -2211,7 +2206,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
 #endif
 		cli_hashset_destroy(&root->md5_sizes_hs);
-		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), NULL);
 	}
 }
 

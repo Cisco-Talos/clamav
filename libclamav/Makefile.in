@@ -210,6 +210,7 @@ am_libclamav_internal_utils_la_OBJECTS =  \
 	libclamav_internal_utils_la-str.lo \
 	libclamav_internal_utils_la-md5.lo \
 	libclamav_internal_utils_la-others_common.lo \
+	libclamav_internal_utils_la-qsort.lo \
 	libclamav_internal_utils_la-strlcpy.lo \
 	libclamav_internal_utils_la-regcomp.lo \
 	libclamav_internal_utils_la-regerror.lo \
@@ -226,6 +227,7 @@ am_libclamav_internal_utils_nothreads_la_OBJECTS =  \
 	libclamav_internal_utils_nothreads_la-str.lo \
 	libclamav_internal_utils_nothreads_la-md5.lo \
 	libclamav_internal_utils_nothreads_la-others_common.lo \
+	libclamav_internal_utils_nothreads_la-qsort.lo \
 	libclamav_internal_utils_nothreads_la-strlcpy.lo \
 	libclamav_internal_utils_nothreads_la-regcomp.lo \
 	libclamav_internal_utils_nothreads_la-regerror.lo \
@@ -510,6 +512,7 @@ libclamav_internal_utils_la_SOURCES = str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -529,6 +532,7 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -688,6 +692,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-others_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-qsort.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regexec.Plo@am__quote@
@@ -696,6 +701,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-others_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-qsort.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-regcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-regerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-regexec.Plo@am__quote@
@@ -1615,6 +1621,14 @@ libclamav_internal_utils_la-others_common.lo: others_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-others_common.lo `test -f 'others_common.c' || echo '$(srcdir)/'`others_common.c
 
+libclamav_internal_utils_la-qsort.lo: qsort.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-qsort.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-qsort.Tpo -c -o libclamav_internal_utils_la-qsort.lo `test -f 'qsort.c' || echo '$(srcdir)/'`qsort.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_la-qsort.Tpo $(DEPDIR)/libclamav_internal_utils_la-qsort.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qsort.c' object='libclamav_internal_utils_la-qsort.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-qsort.lo `test -f 'qsort.c' || echo '$(srcdir)/'`qsort.c
+
 libclamav_internal_utils_la-strlcpy.lo: regex/strlcpy.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-strlcpy.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-strlcpy.Tpo -c -o libclamav_internal_utils_la-strlcpy.lo `test -f 'regex/strlcpy.c' || echo '$(srcdir)/'`regex/strlcpy.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_la-strlcpy.Tpo $(DEPDIR)/libclamav_internal_utils_la-strlcpy.Plo
@@ -1678,6 +1692,14 @@ libclamav_internal_utils_nothreads_la-others_common.lo: others_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='others_common.c' object='libclamav_internal_utils_nothreads_la-others_common.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_nothreads_la-others_common.lo `test -f 'others_common.c' || echo '$(srcdir)/'`others_common.c
+
+libclamav_internal_utils_nothreads_la-qsort.lo: qsort.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_nothreads_la-qsort.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_nothreads_la-qsort.Tpo -c -o libclamav_internal_utils_nothreads_la-qsort.lo `test -f 'qsort.c' || echo '$(srcdir)/'`qsort.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_nothreads_la-qsort.Tpo $(DEPDIR)/libclamav_internal_utils_nothreads_la-qsort.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qsort.c' object='libclamav_internal_utils_nothreads_la-qsort.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_nothreads_la-qsort.lo `test -f 'qsort.c' || echo '$(srcdir)/'`qsort.c
 
 libclamav_internal_utils_nothreads_la-strlcpy.lo: regex/strlcpy.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_nothreads_la-strlcpy.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_nothreads_la-strlcpy.Tpo -c -o libclamav_internal_utils_nothreads_la-strlcpy.lo `test -f 'regex/strlcpy.c' || echo '$(srcdir)/'`regex/strlcpy.c

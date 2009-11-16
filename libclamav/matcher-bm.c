@@ -140,11 +140,6 @@ int cli_bm_init(struct cli_matcher *root)
     return CL_SUCCESS;
 }
 
-static int qcompare(const void *a, const void *b)
-{
-    return *(const uint32_t *)a - *(const uint32_t *)b;
-}
-
 int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap_t *map)
 {
 	int ret;
@@ -195,7 +190,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
 
-    cli_qsort(data->offtab, data->cnt, sizeof(uint32_t), qcompare);
+    cli_qsort(data->offtab, data->cnt, sizeof(uint32_t), NULL);
     return CL_SUCCESS;
 }
 

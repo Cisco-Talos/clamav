@@ -78,6 +78,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -98,6 +99,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \

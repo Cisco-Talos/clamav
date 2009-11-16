@@ -1,3 +1,8 @@
+Mon Nov 16 19:26:53 CET 2009 (tk)
+---------------------------------
+ * libclamav: replace qsort implementation and optimize its common
+	      usage (bb#1721)
+
 Tue Nov 10 19:29:18 CET 2009 (tk)
 ---------------------------------
  * clamd, clamscan: add support for OfficialDatabaseOnly/--official-db-only
