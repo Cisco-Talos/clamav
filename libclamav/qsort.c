@@ -76,7 +76,9 @@ swapfunc(a, b, n, swaptype)
 
 #define vecswap(a, b, n) 	if ((n) > 0) swapfunc(a, b, n, swaptype)
 
-#define CMP(a, b)   (cmp ? (cmp(a, b)) : ((int)(*(const uint32_t *)a - *(const uint32_t *)b)))
+#define CMP1(a, b) ((int)(*(const uint32_t *)a - *(const uint32_t *)b))
+#define CMP(a, b)   (cmp ? (cmp(a, b)) : CMP1(a, b))
+#define MED3(a, b, c, d)   (d ? (med3(a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? b : (CMP1(a, c) < 0 ? c : a )) : (CMP1(b, c) > 0 ? b : (CMP1(a, c) < 0 ? a : c ))))
 
 static inline char *
 med3(a, b, c, cmp)
@@ -108,11 +110,11 @@ loop:	SWAPINIT(a, es);
 		pn = (char *) a + (n - 1) * es;
 		if (n > 40) {
 			d = (n / 8) * es;
-			pl = med3(pl, pl + d, pl + 2 * d, cmp);
-			pm = med3(pm - d, pm, pm + d, cmp);
-			pn = med3(pn - 2 * d, pn - d, pn, cmp);
+			pl = MED3(pl, pl + d, pl + 2 * d, cmp);
+			pm = MED3(pm - d, pm, pm + d, cmp);
+			pn = MED3(pn - 2 * d, pn - d, pn, cmp);
 		}
-		pm = med3(pl, pm, pn, cmp);
+		pm = MED3(pl, pm, pn, cmp);
 	}
 	swap(a, pm);
 	pa = pb = (char *) a + es;

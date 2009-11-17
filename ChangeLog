@@ -1,3 +1,7 @@
+Tue Nov 17 18:02:45 CET 2009 (tk)
+---------------------------------
+ * libclamav/qsort.c: don't call med3 when using internal cmp
+
 Mon Nov 16 23:15:37 CET 2009 (acab)
 -----------------------------------
  * libclamav: add qsort to the win32 build
