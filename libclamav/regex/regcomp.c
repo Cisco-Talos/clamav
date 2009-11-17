@@ -138,12 +138,6 @@ static char nuls[10];		/* place to point scanner in event of error */
 #define	THERETHERE()	(p->slen - 2)
 #define	DROP(n)	(p->slen -= (n))
 
-#ifdef	_POSIX2_RE_DUP_MAX
-#define	DUPMAX	_POSIX2_RE_DUP_MAX
-#else
-#define	DUPMAX	255
-#endif
-
 #ifndef NDEBUG
 static int never = 0;		/* for use in asserts; shuts lint up */
 #else
