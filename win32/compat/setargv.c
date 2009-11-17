@@ -86,11 +86,14 @@ int _setargv() {
 	}
 	if (begparm && endparm) {
 	    if(begparm < endparm) {
-		char *path = malloc(endparm - begparm + 1);
+		char *path = malloc(endparm - begparm + 1), *quotes;
 		int arglen = 0;
 
 		memcpy(path, begparm, endparm - begparm);
 		path[endparm - begparm] = '\0';
+		quotes = path;
+		while((quotes = strchr(quotes, '"')))
+		    memmove(quotes, quotes + 1, (endparm - begparm) - (quotes - path));
 		if(argc && need_glob) {
 		    arglen = glob_add(path, &argc, &argv);
 		    if(!arglen) {
