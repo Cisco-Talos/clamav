@@ -57,6 +57,7 @@
 #include "shared/tar.h"
 
 #include "libclamav/clamav.h"
+#include "libclamav/matcher.h"
 #include "libclamav/cvd.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
@@ -1625,6 +1626,189 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
 
     return ret;
+}
+
+static char *decodesubhex(const char *hex)
+{
+	uint16_t *str16;
+	char *decoded;
+	unsigned int i, p = 0, wildcard = 0, len = strlen(hex)/2;
+
+    str16 = cli_hex2ui(hex);
+    if(!str16)
+	return NULL;
+
+    for(i = 0; i < len; i++)
+	if(str16[i] & CLI_MATCH_WILDCARD)
+	    wildcard++;
+
+    decoded = calloc(len + wildcard * 32, sizeof(char));
+
+    for(i = 0; i < len; i++) {
+	if(str16[i] & CLI_MATCH_WILDCARD) {
+	    switch(str16[i] & CLI_MATCH_WILDCARD) {
+		case CLI_MATCH_IGNORE:
+		case CLI_MATCH_SPECIAL:
+		case CLI_MATCH_NIBBLE_HIGH:
+		case CLI_MATCH_NIBBLE_LOW:
+		    /* TODO */        
+		    strcat(decoded, "<WILDCARD>");
+		    p += 10;
+		default:
+		    mprintf("!decodesubhex: Unknown wildcard\n");
+		    free(decoded);
+		    return NULL;
+	    }
+	} else {
+	    decoded[p] = str16[i];
+	}
+    }
+
+    return decoded;
+}
+
+static char *decodehex(const char *hexsig)
+{
+	char *pt, *hexcpy, *start, *n;
+	int ret, asterisk = 0;
+	unsigned int i, j, hexlen, parts = 0;
+	int mindist = 0, maxdist = 0, error = 0;
+	char *decoded = NULL;
+
+
+    hexlen = strlen(hexsig);
+    if(strchr(hexsig, '{')) {
+	if(!(hexcpy = cli_strdup(hexsig)))
+	    return NULL;
+
+	for(i = 0; i < hexlen; i++)
+	    if(hexsig[i] == '{' || hexsig[i] == '*')
+		parts++;
+
+	if(parts)
+	    parts++;
+
+	start = pt = hexcpy;
+	for(i = 1; i <= parts; i++) {
+	    if(i != parts) {
+		for(j = 0; j < strlen(start); j++) {
+		    if(start[j] == '{') {
+			asterisk = 0;
+			pt = start + j;
+			break;
+		    }
+		    if(start[j] == '*') {
+			asterisk = 1;
+			pt = start + j;
+			break;
+		    }
+		}
+		*pt++ = 0;
+	    }
+
+	    /* if(mindist) MINDIST if(maxdist) MAXDIST */
+	    mprintf("%s ", decodesubhex(start));
+	    /* if(asterisk) <ANY-BYTES> */
+
+	    if(i == parts)
+		break;
+
+	    mindist = maxdist = 0;
+
+	    if(asterisk) {
+		start = pt;
+		continue;
+	    }
+
+	    if(!(start = strchr(pt, '}'))) {
+		error = 1;
+		break;
+	    }
+	    *start++ = 0;
+
+	    if(!pt) {
+		error = 1;
+		break;
+	    }
+
+	    if(!strchr(pt, '-')) {
+		if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
+		    error = 1;
+		    break;
+		}
+	    } else {
+		if((n = cli_strtok(pt, 0, "-"))) {
+		    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 1, "-"))) {
+		    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
+		    error = 1;
+		    free(n);
+		    break;
+		}
+	    }
+	}
+
+	free(hexcpy);
+	if(error)
+	    return NULL;
+
+    } else if(strchr(hexsig, '*')) {
+	for(i = 0; i < hexlen; i++)
+	    if(hexsig[i] == '*')
+		parts++;
+
+	if(parts)
+	    parts++;
+
+	for(i = 1; i <= parts; i++) {
+	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
+		mprintf("!Can't extract part %u of partial signature\n", i);
+		return NULL;
+	    }
+
+	    mprintf("%s ", decodesubhex(pt));
+	    /* if(i < parts) printf("<MATCH-ANY-STRING>") */
+	    free(pt);
+	}
+
+    } else {
+	mprintf("%s ", decodesubhex(hexsig));
+    }
+
+    return decoded;
+}
+
+static int decodesig(const char *sig)
+{
+	const char *pt;
+
+    if(strchr(sig, ';')) { /* lsig */
+	mprintf("decodesig: Not supported signature format (yet)\n");
+	return -1;
+    } else if(strchr(sig, ':')) { /* ndb */
+	mprintf("decodesig: Not supported signature format (yet)\n");
+	return -1;
+    } else if((pt = strchr(sig, '='))) {
+	mprintf("%s\n", decodehex(pt + 1));
+    } else {
+	mprintf("decodesig: Not supported signature format\n");
+	return -1;
+    }
 }
 
 static int diffdirs(const char *old, const char *new, const char *patch)
