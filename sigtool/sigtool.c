@@ -81,6 +81,7 @@ static const struct dblist_s {
     { "COPYING",    0 },
     { "daily.cfg",  0 },
     { "daily.ign",  0 },
+    { "daily.ign2",  0 },
     { "daily.ftm",  0 },
     { "main.info",  0 },    { "daily.info", 0 },    { "safebrowsing.info", 0 },
 

@@ -1,3 +1,7 @@
+Thu Nov 19 14:10:17 CET 2009 (tk)
+---------------------------------
+ * sigtool/sigtool.c: handle .ign2 files (bb#1625)
+
 Tue Nov 17 18:02:45 CET 2009 (tk)
 ---------------------------------
  * libclamav/qsort.c: don't call med3 when using internal cmp
