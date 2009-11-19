@@ -370,6 +370,7 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wmissing-format-attribute \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=missing-format-attribute \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=type-limits \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=unused-function \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=unused-value \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=unused-variable \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wcast-qual -Wno-error=cast-qual \
