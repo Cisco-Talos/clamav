@@ -1043,7 +1043,6 @@ static int listdb(const char *filename, const regex_t *regex)
 	FILE *fh;
 	char *buffer, *pt, *start, *dir;
 	unsigned int line = 0;
-	const char *tmpdir;
 
 
     if((fh = fopen(filename, "rb")) == NULL) {
@@ -1628,7 +1627,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     return ret;
 }
 
-static char *decodesubhex(const char *hex)
+static char *decodehexstr(const char *hex)
 {
 	uint16_t *str16;
 	char *decoded;
@@ -1642,44 +1641,53 @@ static char *decodesubhex(const char *hex)
 	if(str16[i] & CLI_MATCH_WILDCARD)
 	    wildcard++;
 
-    decoded = calloc(len + wildcard * 32, sizeof(char));
+    decoded = calloc(len + 1 + wildcard * 32, sizeof(char));
 
     for(i = 0; i < len; i++) {
 	if(str16[i] & CLI_MATCH_WILDCARD) {
 	    switch(str16[i] & CLI_MATCH_WILDCARD) {
 		case CLI_MATCH_IGNORE:
+		    p += sprintf(decoded + p, "{WILDCARD_IGNORE@%u}", i);
+		    break;
+
 		case CLI_MATCH_SPECIAL:
+		    p += sprintf(decoded + p, "{WILDCARD_SPECIAL@%u:<!TODO!>}", i);
+		    break;
+
 		case CLI_MATCH_NIBBLE_HIGH:
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_HIGH@%u:0x%x}", i, str16[i] & 0x00f0);
+		    break;
+
 		case CLI_MATCH_NIBBLE_LOW:
-		    /* TODO */        
-		    strcat(decoded, "<WILDCARD>");
-		    p += 10;
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_LOW@%u:0x%x}", i, str16[i] & 0x000f);
+		    break;
+
 		default:
-		    mprintf("!decodesubhex: Unknown wildcard\n");
+		    mprintf("!decodehexstr: Unknown wildcard (0x%x)\n", str16[i] & CLI_MATCH_WILDCARD);
 		    free(decoded);
 		    return NULL;
 	    }
 	} else {
 	    decoded[p] = str16[i];
+	    p++;
 	}
     }
 
     return decoded;
 }
 
-static char *decodehex(const char *hexsig)
+static int decodehex(const char *hexsig)
 {
 	char *pt, *hexcpy, *start, *n;
-	int ret, asterisk = 0;
+	int asterisk = 0;
 	unsigned int i, j, hexlen, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
-	char *decoded = NULL;
 
 
     hexlen = strlen(hexsig);
     if(strchr(hexsig, '{')) {
 	if(!(hexcpy = cli_strdup(hexsig)))
-	    return NULL;
+	    return -1;
 
 	for(i = 0; i < hexlen; i++)
 	    if(hexsig[i] == '{' || hexsig[i] == '*')
@@ -1706,12 +1714,23 @@ static char *decodehex(const char *hexsig)
 		*pt++ = 0;
 	    }
 
-	    /* if(mindist) MINDIST if(maxdist) MAXDIST */
-	    mprintf("%s ", decodesubhex(start));
-	    /* if(asterisk) <ANY-BYTES> */
+	    if(mindist && maxdist) {
+		if(mindist == maxdist)
+		    mprintf("{WILDCARD_ANY_STRING(LENGTH==%u)}", mindist);
+		else
+		    mprintf("{WILDCARD_ANY_STRING(LENGTH>=%u&&<=%u)}", mindist, maxdist);
+	    } else if(mindist)
+		mprintf("{WILDCARD_ANY_STRING(LENGTH>=%u)}", mindist);
+	    else if(maxdist)
+		mprintf("{WILDCARD_ANY_STRING(LENGTH<=%u)}", maxdist);
+
+	    mprintf("%s", decodehexstr(start));
 
 	    if(i == parts)
 		break;
+
+	    if(asterisk)
+		mprintf("{WILDCARD_ANY_STRING}");
 
 	    mindist = maxdist = 0;
 
@@ -1765,7 +1784,7 @@ static char *decodehex(const char *hexsig)
 
 	free(hexcpy);
 	if(error)
-	    return NULL;
+	    return -1;
 
     } else if(strchr(hexsig, '*')) {
 	for(i = 0; i < hexlen; i++)
@@ -1778,24 +1797,25 @@ static char *decodehex(const char *hexsig)
 	for(i = 1; i <= parts; i++) {
 	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
 		mprintf("!Can't extract part %u of partial signature\n", i);
-		return NULL;
+		return -1;
 	    }
-
-	    mprintf("%s ", decodesubhex(pt));
-	    /* if(i < parts) printf("<MATCH-ANY-STRING>") */
+	    mprintf("%s", decodehexstr(pt));
+	    if(i < parts)
+		mprintf("{WILDCARD_ANY_STRING}");
 	    free(pt);
 	}
 
     } else {
-	mprintf("%s ", decodesubhex(hexsig));
+	mprintf("%s", decodehexstr(hexsig));
     }
 
-    return decoded;
+    mprintf("\n");
+    return 0;
 }
 
-static int decodesig(const char *sig)
+static int decodesig(char *sig)
 {
-	const char *pt;
+	char *pt;
 
     if(strchr(sig, ';')) { /* lsig */
 	mprintf("decodesig: Not supported signature format (yet)\n");
@@ -1804,11 +1824,31 @@ static int decodesig(const char *sig)
 	mprintf("decodesig: Not supported signature format (yet)\n");
 	return -1;
     } else if((pt = strchr(sig, '='))) {
-	mprintf("%s\n", decodehex(pt + 1));
+	*pt++ = 0;
+	mprintf("VIRUS NAME: %s\n", sig);
+	mprintf("DECODED SIGNATURE:\n");
+	decodehex(pt);
     } else {
 	mprintf("decodesig: Not supported signature format\n");
 	return -1;
     }
+
+    return 0;
+}
+
+static int decodesigs(void)
+{
+	char buffer[32769];
+
+    fflush(stdin);
+    while(fgets(buffer, sizeof(buffer), stdin)) {
+	cli_chomp(buffer);
+	if(!strlen(buffer))
+	    break;
+	if(decodesig(buffer) == -1)
+	    return -1;
+    }
+    return 0;
 }
 
 static int diffdirs(const char *old, const char *new, const char *patch)
@@ -2016,6 +2056,7 @@ static void help(void)
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
     mprintf("    --find-sigs=REGEX      -fREGEX         Find signatures matching REGEX\n");
+    mprintf("    --decode-sigs                          Decode signatures from stdin\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
@@ -2081,6 +2122,8 @@ int main(int argc, char **argv)
 	ret = listsigs(opts, 0);
     else if(optget(opts, "find-sigs")->active)
 	ret = listsigs(opts, 1);
+    else if(optget(opts, "decode-sigs")->active)
+	ret = decodesigs();
     else if(optget(opts, "vba")->enabled || optget(opts, "vba-hex")->enabled)
 	ret = vbadump(opts);
     else if(optget(opts, "diff")->enabled)
