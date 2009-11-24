@@ -45,6 +45,9 @@
 
 #include <fcntl.h>
 #include <arpa/inet.h>
+#ifdef C_SOLARIS
+#include <stdio_ext.h>
+#endif
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
@@ -956,6 +959,18 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
+#ifdef C_SOLARIS
+#ifdef F_BADFD
+	if (enable_extended_FILE_stdio(-1, -1) == -1) {
+	    logg("^Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
+	    rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;
+	}
+#elif !defined(_LP64)
+	if (rlim.rlim_cur > 255) {
+	    logg("^Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
+	}
+#endif
+#endif
 	opt = optget(opts,"MaxRecursion");
 	maxrec = opt->numarg;
 	max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;

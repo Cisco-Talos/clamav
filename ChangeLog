@@ -1,3 +1,7 @@
+Tue Nov 24 10:24:27 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: enable more than 256 FD support on Solaris (bb #1764).
+
 Fri Oct 30 14:04:43 EET 2009 (edwin)
 ------------------------------------
  * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).
