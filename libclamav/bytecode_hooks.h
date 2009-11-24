@@ -23,9 +23,9 @@
 #define BYTECODE_HOOKS_H
 
 struct cli_bc_hooks {
+	 const uint16_t* kind;
 	 const uint32_t* match_counts;
 	 const struct cli_exe_info* exeinfo;
-	 const uint16_t* kind;
 	 const struct cli_pe_hook_data* pedata;
 };
 #endif

@@ -38,12 +38,12 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT*, uin
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
+	{"__clambc_kind", GLOBAL_KIND, 16,
+	 ((char*)&((struct cli_bc_ctx*)0)->hooks.kind - (char*)NULL)},
 	{"__clambc_match_counts", GLOBAL_MATCH_COUNTS, 82,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.match_counts - (char*)NULL)},
 	{"__clambc_exeinfo", GLOBAL_EXEINFO, 79,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.exeinfo - (char*)NULL)},
-	{"__clambc_kind", GLOBAL_KIND, 16,
-	 ((char*)&((struct cli_bc_ctx*)0)->hooks.kind - (char*)NULL)},
 	{"__clambc_pedata", GLOBAL_PEDATA, 69,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.pedata - (char*)NULL)}
 /* Bytecode globals END */
