@@ -967,6 +967,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	}
 #elif !defined(_LP64)
 	if (rlim.rlim_cur > 255) {
+	    rlim.rlim_cur = 255;
 	    logg("^Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
 	}
 #endif
