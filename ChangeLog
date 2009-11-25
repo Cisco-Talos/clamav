@@ -1,3 +1,7 @@
+Wed Nov 25 19:07:51 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs: handle .ndb sigs
+
 Tue Nov 24 10:24:27 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: enable more than 256 FD support on Solaris (bb #1764).

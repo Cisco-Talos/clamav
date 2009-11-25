@@ -1835,13 +1835,68 @@ static int decodehex(const char *hexsig)
 static int decodesig(char *sig)
 {
 	char *pt;
+	const char *tokens[7];
+	int tokens_count;
 
     if(strchr(sig, ';')) { /* lsig */
 	mprintf("decodesig: Not supported signature format (yet)\n");
 	return -1;
     } else if(strchr(sig, ':')) { /* ndb */
-	mprintf("decodesig: Not supported signature format (yet)\n");
-	return -1;
+	tokens_count = cli_strtokenize(sig, ':', 6 + 1, tokens);
+	if(tokens_count < 4 || tokens_count > 6) {
+	    mprintf("!decodesig: Invalid or not supported signature format\n");
+	    mprintf("TOKENS COUNT: %u\n", tokens_count);
+	    return -1;
+	}
+	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	if(tokens_count == 5)
+	    mprintf("FUNCTIONALITY LEVEL: >=%s\n", tokens[4]);
+	else if(tokens_count == 6)
+	    mprintf("FUNCTIONALITY LEVEL: %s..%s\n", tokens[4], tokens[5]);
+
+	if(!cli_isnumber(tokens[1])) {
+	    mprintf("!decodesig: Invalid target type\n");
+	    return -1;
+	}
+	mprintf("TARGET TYPE: ");
+	switch(atoi(tokens[1])) {
+	    case 0:
+		mprintf("ANY FILE\n");
+		break;
+	    case 1:
+		mprintf("PE\n");
+		break;
+	    case 2:
+		mprintf("OLE2\n");
+		break;
+	    case 3:
+		mprintf("HTML\n");
+		break;
+	    case 4:
+		mprintf("MAIL\n");
+		break;
+	    case 5:
+		mprintf("GRAPHICS\n");
+		break;
+	    case 6:
+		mprintf("ELF\n");
+		break;
+	    case 7:
+		mprintf("NORMALIZED ASCII TEXT\n");
+		break;
+	    case 8:
+		mprintf("DISASM DATA\n");
+		break;
+	    case 9:
+		mprintf("MACHO\n");
+		break;
+	    default:
+		mprintf("!decodesig: Invalid target type\n");
+		return -1;
+	}
+	mprintf("OFFSET: %s\n", tokens[2]);
+	mprintf("DECODED SIGNATURE:\n");
+	decodehex(tokens[3]);
     } else if((pt = strchr(sig, '='))) {
 	*pt++ = 0;
 	mprintf("VIRUS NAME: %s\n", sig);
