@@ -1627,7 +1627,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     return ret;
 }
 
-static char *decodehexstr(const char *hex)
+static char *decodehexstr(const char *hex, unsigned int *dlen)
 {
 	uint16_t *str16;
 	char *decoded;
@@ -1673,6 +1673,9 @@ static char *decodehexstr(const char *hex)
 	}
     }
 
+    if(dlen)
+	*dlen = p;
+
     return decoded;
 }
 
@@ -1680,7 +1683,7 @@ static int decodehex(const char *hexsig)
 {
 	char *pt, *hexcpy, *start, *n, *decoded;
 	int asterisk = 0;
-	unsigned int i, j, hexlen, parts = 0;
+	unsigned int i, j, hexlen, dlen, parts = 0, bw;
 	int mindist = 0, maxdist = 0, error = 0;
 
 
@@ -1724,12 +1727,12 @@ static int decodehex(const char *hexsig)
 	    else if(maxdist)
 		mprintf("{WILDCARD_ANY_STRING(LENGTH<=%u)}", maxdist);
 
-	    if(!(decoded = decodehexstr(start))) {
+	    if(!(decoded = decodehexstr(start, &dlen))) {
 		mprintf("!Decoding failed\n");
 		free(hexcpy);
 		return -1;
 	    }
-	    mprintf("%s", decoded);
+	    bw = write(1, decoded, dlen);
 	    free(decoded);
 
 	    if(i == parts)
@@ -1805,11 +1808,11 @@ static int decodehex(const char *hexsig)
 		mprintf("!Can't extract part %u of partial signature\n", i);
 		return -1;
 	    }
-	    if(!(decoded = decodehexstr(pt))) {
+	    if(!(decoded = decodehexstr(pt, &dlen))) {
 		mprintf("!Decoding failed\n");
 		return -1;
 	    }
-	    mprintf("%s", decoded);
+	    bw = write(1, decoded, dlen);
 	    free(decoded);
 	    if(i < parts)
 		mprintf("{WILDCARD_ANY_STRING}");
@@ -1817,11 +1820,11 @@ static int decodehex(const char *hexsig)
 	}
 
     } else {
-	if(!(decoded = decodehexstr(hexsig))) {
+	if(!(decoded = decodehexstr(hexsig, &dlen))) {
 	    mprintf("!Decoding failed\n");
 	    return -1;
 	}
-	mprintf("%s", decoded);
+	bw = write(1, decoded, dlen);
 	free(decoded);
     }
 
