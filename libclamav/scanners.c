@@ -442,8 +442,8 @@ static int cli_scangzip(cli_ctx *ctx)
     cli_dbgmsg("in cli_scangzip()\n");
 
     memset(&z, 0, sizeof(z));
-    if(inflateInit2(&z, MAX_WBITS + 16) != Z_OK) {
-	cli_dbgmsg("GZip: InflateInit failed\n");
+    if((ret = inflateInit2(&z, MAX_WBITS + 16)) != Z_OK) {
+	cli_dbgmsg("GZip: InflateInit failed: %d\n", ret);
 	return CL_CLEAN;
     }
 

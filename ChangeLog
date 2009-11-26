@@ -1,3 +1,7 @@
+Thu Nov 26 16:06:30 CET 2009 (acab)
+-----------------------------------
+ * libclamav/scanners.c: print inflateinit2 return code
+
 Wed Nov 25 19:07:51 CET 2009 (tk)
 ---------------------------------
  * sigtool: --decode-sigs: handle .ndb sigs
