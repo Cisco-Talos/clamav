@@ -230,7 +230,12 @@ private:
 		return V;
 	    }
 	    V = Builder.CreateLoad(V);
-	    assert(V->getType() == Ty);
+	    if (V->getType() != Ty) {
+		errs() << operand << " ";
+		V->dump();
+		Ty->dump();
+		llvm_report_error("(libclamav) Type mismatch converting operand");
+	    }
 	    return V;
 	}
 	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
@@ -372,11 +377,9 @@ public:
     }
 
     template <typename InputIterator>
-    bool createGEP(unsigned dest, Value *Base, InputIterator Start, InputIterator End) {
-	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
+    Value* createGEP(Value *Base, const Type *ETy, InputIterator Start, InputIterator End) {
 	const Type *Ty = GetElementPtrInst::getIndexedType(Base->getType(), Start, End);
-	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
-	if (!Ty || (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy)))) {
+	if (!Ty || (ETy && (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy))))) {
 	    errs() << MODULE << "Wrong indices for GEP opcode: "
 		<< " expected type: " << *ETy;
 	    if (Ty)
@@ -386,12 +389,19 @@ public:
 		errs() << **I << ", ";
 	    }
 	    errs() << "\n";
+	    return 0;
+	}
+	return Builder.CreateGEP(Base, Start, End);
+    }
+
+    template <typename InputIterator>
+    bool createGEP(unsigned dest, Value *Base, InputIterator Start, InputIterator End) {
+	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
+	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
+	Value *V = createGEP(Base, ETy, Start, End);
+	if (!V)
 	    return false;
-	}
-	Value *V = Builder.CreateGEP(Base, Start, End);
-	if (Ty != ETy) {
-	    V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
-	}
+	V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
 	Store(dest, V);
 	return true;
     }
@@ -402,8 +412,8 @@ public:
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
 	    const Type *Ty = apiMap.get(cli_globals[i].type);
-	    if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
-		Ty = PointerType::getUnqual(ATy->getElementType());
+	    /*if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
+		Ty = PointerType::getUnqual(ATy->getElementType());*/
 	    GVtypeMap[id] = Ty;
 	}
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
@@ -563,8 +573,14 @@ public:
 			ConstantInt::get(Type::getInt32Ty(Context), 0),
 			ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])
 		    };
-		    globals[i] = Builder.CreateInBoundsGEP(SpecialGV, C,
-							   C+2);
+		    globals[i] = createGEP(SpecialGV, 0, C, C+2);
+		    if (!globals[i]) {
+			errs() << i << ":" << g << ":" << bc->globals[i][0] <<"\n";
+			Ty->dump();
+			llvm_report_error("(libclamav) unable to create fake global");
+		    }
+		    else if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(globals[i]))
+			GI->setIsInBounds(true);
 		}
 	    }
 
@@ -602,6 +618,11 @@ public:
 				case 2:
 				    Op0 = convertOperand(func, inst, inst->u.binop[0]);
 				    Op1 = convertOperand(func, inst, inst->u.binop[1]);
+				    if (Op0->getType() != Op1->getType()) {
+					Op0->dump();
+					Op1->dump();
+					llvm_report_error("(libclamav) binop type mismatch");
+				    }
 				    break;
 				case 3:
 				    Op0 = convertOperand(func, inst, inst->u.three[0]);
@@ -816,9 +837,11 @@ public:
 			case OP_BC_STORE:
 			{
 			    Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
-			    const Type *ETy = cast<PointerType>(Dest->getType())->getElementType();
-			    Builder.CreateStore(convertOperand(func, ETy, inst->u.binop[0]),
-						Dest);
+			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
+			    const Type *VPTy = PointerType::getUnqual(V->getType());
+			    if (VPTy != Dest->getType())
+				Dest = Builder.CreateBitCast(Dest, VPTy);
+			    Builder.CreateStore(V, Dest);
 			    break;
 			}
 			case OP_BC_LOAD:

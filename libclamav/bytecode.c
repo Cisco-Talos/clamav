@@ -63,6 +63,7 @@ int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     free(ctx->opsizes);
     free(ctx->values);
     free(ctx->operands);
+    ctx->operands = ctx->values = ctx->opsizes = NULL;
     return CL_SUCCESS;
 }
 
