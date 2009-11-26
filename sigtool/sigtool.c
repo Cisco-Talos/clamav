@@ -1835,12 +1835,43 @@ static int decodehex(const char *hexsig)
 static int decodesig(char *sig)
 {
 	char *pt;
-	const char *tokens[7];
-	int tokens_count;
+	const char *tokens[68];
+	int tokens_count, subsigs, i;
 
     if(strchr(sig, ';')) { /* lsig */
-	mprintf("decodesig: Not supported signature format (yet)\n");
-	return -1;
+        tokens_count = cli_strtokenize(sig, ';', 67 + 1, (const char **) tokens);
+	if(tokens_count < 4) {
+	    mprintf("!decodesig: Invalid or not supported signature format\n");
+	    return -1;
+	}
+	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	mprintf("TDB: %s\n", tokens[1]);
+	mprintf("LOGICAL EXPRESSION: %s\n", tokens[2]);
+	subsigs = cli_ac_chklsig(tokens[2], tokens[2] + strlen(tokens[2]), NULL, NULL, NULL, 1);
+	if(subsigs == -1) {
+	    mprintf("!decodesig: Broken logical expression\n");
+	    return -1;
+	}
+	subsigs++;
+	if(subsigs > 64) {
+	    mprintf("!decodesig: Too many subsignatures\n");
+	    return -1;
+	}
+	if(subsigs != tokens_count - 3) {
+	    mprintf("!decodesig: The number of subsignatures (==%u) doesn't match the IDs in the logical expression (==%u)\n", tokens_count - 3, subsigs);
+	    return -1;
+	}
+	for(i = 0; i < subsigs; i++) {
+	    mprintf(" * SUBSIG ID %d\n", i);
+	    if((pt = strchr(tokens[3 + i], ':'))) {
+		*pt++ = 0;
+		mprintf(" +-> OFFSET: %s\n", pt);
+	    } else {
+		mprintf(" +-> OFFSET: ANY\n");
+	    }
+	    mprintf(" +-> DECODED SUBSIGNATURE:\n");
+	    decodehex(tokens[3 + i]);
+	}
     } else if(strchr(sig, ':')) { /* ndb */
 	tokens_count = cli_strtokenize(sig, ':', 6 + 1, tokens);
 	if(tokens_count < 4 || tokens_count > 6) {

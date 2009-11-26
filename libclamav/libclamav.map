@@ -118,6 +118,7 @@ CLAMAV_PRIVATE {
     cli_ac_scanbuff;
     cli_ac_freedata;
     cli_ac_free;
+    cli_ac_chklsig;
     cli_parse_add;
     cli_bm_init;
     cli_bm_scanbuff;
