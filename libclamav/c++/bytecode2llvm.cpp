@@ -1030,7 +1030,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    return CL_EBYTECODE;
 	}
 
-	EE->RegisterJITEventListener(createOProfileJITEventListener());
+//	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
 	// for now.
 	// EE->DisableLazyCompilation();

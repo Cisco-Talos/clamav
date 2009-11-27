@@ -300,7 +300,6 @@ am_libllvmexecutionengine_la_OBJECTS =  \
 	libllvmexecutionengine_la-JITEmitter.lo \
 	libllvmexecutionengine_la-JITMemoryManager.lo \
 	libllvmexecutionengine_la-MacOSJITEventListener.lo \
-	libllvmexecutionengine_la-OProfileJITEventListener.lo \
 	libllvmexecutionengine_la-TargetSelect.lo
 libllvmexecutionengine_la_OBJECTS =  \
 	$(am_libllvmexecutionengine_la_OBJECTS)
@@ -1434,9 +1433,9 @@ libllvmexecutionengine_la_SOURCES = \
  llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
  llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp\
- llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 
+# llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
 
 # Used only by make check
 libllvmbitreader_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -1896,7 +1895,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-JITEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-JITMemoryManager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-MacOSJITEventListener.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-OProfileJITEventListener.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvminterpreter_la-Execution.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvminterpreter_la-ExternalFunctions.Plo@am__quote@
@@ -3360,14 +3358,6 @@ libllvmexecutionengine_la-MacOSJITEventListener.lo: llvm/lib/ExecutionEngine/JIT
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp' object='libllvmexecutionengine_la-MacOSJITEventListener.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmexecutionengine_la-MacOSJITEventListener.lo `test -f 'llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp
-
-libllvmexecutionengine_la-OProfileJITEventListener.lo: llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmexecutionengine_la-OProfileJITEventListener.lo -MD -MP -MF $(DEPDIR)/libllvmexecutionengine_la-OProfileJITEventListener.Tpo -c -o libllvmexecutionengine_la-OProfileJITEventListener.lo `test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmexecutionengine_la-OProfileJITEventListener.Tpo $(DEPDIR)/libllvmexecutionengine_la-OProfileJITEventListener.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' object='libllvmexecutionengine_la-OProfileJITEventListener.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmexecutionengine_la-OProfileJITEventListener.lo `test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
 
 libllvmexecutionengine_la-TargetSelect.lo: llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmexecutionengine_la-TargetSelect.lo -MD -MP -MF $(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Tpo -c -o libllvmexecutionengine_la-TargetSelect.lo `test -f 'llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp

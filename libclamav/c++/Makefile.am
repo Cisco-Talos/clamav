@@ -615,8 +615,8 @@ libllvmexecutionengine_la_SOURCES=\
  llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
  llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp\
- llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
+# llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
 
 # Used only by make check
 
