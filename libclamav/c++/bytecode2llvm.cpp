@@ -35,12 +35,12 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/DataTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/System/DataTypes.h"
 #include "llvm/System/Signals.h"
 #include "llvm/System/Threading.h"
 #include "llvm/Target/TargetSelect.h"
@@ -367,7 +367,7 @@ public:
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs),
 	BytecodeID("bc"+Twine(bc->id)), EE(EE),
-	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM),
+	Folder(EE->getTargetData()), Builder(Context, Folder), PM(PM),
 	apiFuncs(apiFuncs), apiMap(apiMap)
     {
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {

@@ -68,7 +68,7 @@ target_triplet = @target@
 @BUILD_ARM_TRUE@    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
 
 check_PROGRAMS = count$(EXEEXT) not$(EXEEXT) lli$(EXEEXT) llc$(EXEEXT) \
-	llvm-as$(EXEEXT) llvmunittest_ADT$(EXEEXT) \
+	llvm-as$(EXEEXT) llvm-dis$(EXEEXT) llvmunittest_ADT$(EXEEXT) \
 	llvmunittest_Support$(EXEEXT) llvmunittest_VMCore$(EXEEXT) \
 	llvmunittest_ExecutionEngine$(EXEEXT) \
 	llvmunittest_JIT$(EXEEXT) FileCheck$(EXEEXT)
@@ -84,7 +84,10 @@ TESTS = llvmunittest_ADT$(EXEEXT) llvmunittest_Support$(EXEEXT) \
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp
 
 @BUILD_PPC_TRUE@am__append_11 = llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
-@BUILD_ARM_TRUE@am__append_12 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp
+@BUILD_ARM_TRUE@am__append_12 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
+@BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp\
+@BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
+
 noinst_PROGRAMS = tblgen$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -153,7 +156,9 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 	llvm/lib/Target/X86/AsmPrinter/X86MCInstLower.cpp \
 	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp \
 	llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp \
-	llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp
+	llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
+	llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp \
+	llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
 @BUILD_X86_TRUE@am__objects_1 = libllvmasmprinter_la-X86AsmPrinter.lo \
 @BUILD_X86_TRUE@	libllvmasmprinter_la-X86ATTInstPrinter.lo \
 @BUILD_X86_TRUE@	libllvmasmprinter_la-X86IntelInstPrinter.lo \
@@ -161,7 +166,9 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 @BUILD_X86_TRUE@	libllvmasmprinter_la-X86MCInstLower.lo \
 @BUILD_X86_TRUE@	libllvmasmprinter_la-X86COFFMachineModuleInfo.lo
 @BUILD_PPC_TRUE@am__objects_2 = libllvmasmprinter_la-PPCAsmPrinter.lo
-@BUILD_ARM_TRUE@am__objects_3 = libllvmasmprinter_la-ARMAsmPrinter.lo
+@BUILD_ARM_TRUE@am__objects_3 = libllvmasmprinter_la-ARMAsmPrinter.lo \
+@BUILD_ARM_TRUE@	libllvmasmprinter_la-ARMInstPrinter.lo \
+@BUILD_ARM_TRUE@	libllvmasmprinter_la-ARMMCInstLower.lo
 am_libllvmasmprinter_la_OBJECTS =  \
 	libllvmasmprinter_la-OcamlGCPrinter.lo \
 	libllvmasmprinter_la-ELFCodeEmitter.lo \
@@ -199,7 +206,10 @@ libllvmbitwriter_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(libllvmbitwriter_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 libllvmcodegen_la_LIBADD =
-am_libllvmcodegen_la_OBJECTS = libllvmcodegen_la-BranchFolding.lo \
+am_libllvmcodegen_la_OBJECTS =  \
+	libllvmcodegen_la-AggressiveAntiDepBreaker.lo \
+	libllvmcodegen_la-BranchFolding.lo \
+	libllvmcodegen_la-CriticalAntiDepBreaker.lo \
 	libllvmcodegen_la-CodePlacementOpt.lo \
 	libllvmcodegen_la-DeadMachineInstructionElim.lo \
 	libllvmcodegen_la-DwarfEHPrepare.lo \
@@ -213,7 +223,6 @@ am_libllvmcodegen_la_OBJECTS = libllvmcodegen_la-BranchFolding.lo \
 	libllvmcodegen_la-IntrinsicLowering.lo \
 	libllvmcodegen_la-LLVMTargetMachine.lo \
 	libllvmcodegen_la-LatencyPriorityQueue.lo \
-	libllvmcodegen_la-LazyLiveness.lo \
 	libllvmcodegen_la-LiveInterval.lo \
 	libllvmcodegen_la-LiveIntervalAnalysis.lo \
 	libllvmcodegen_la-LiveStackAnalysis.lo \
@@ -239,6 +248,7 @@ am_libllvmcodegen_la_OBJECTS = libllvmcodegen_la-BranchFolding.lo \
 	libllvmcodegen_la-Passes.lo \
 	libllvmcodegen_la-PostRASchedulerList.lo \
 	libllvmcodegen_la-PreAllocSplitting.lo \
+	libllvmcodegen_la-ProcessImplicitDefs.lo \
 	libllvmcodegen_la-PrologEpilogInserter.lo \
 	libllvmcodegen_la-PseudoSourceValue.lo \
 	libllvmcodegen_la-RegAllocLinearScan.lo \
@@ -254,10 +264,11 @@ am_libllvmcodegen_la_OBJECTS = libllvmcodegen_la-BranchFolding.lo \
 	libllvmcodegen_la-ShrinkWrapping.lo \
 	libllvmcodegen_la-SimpleRegisterCoalescing.lo \
 	libllvmcodegen_la-SjLjEHPrepare.lo \
-	libllvmcodegen_la-Spiller.lo \
+	libllvmcodegen_la-SlotIndexes.lo libllvmcodegen_la-Spiller.lo \
 	libllvmcodegen_la-StackProtector.lo \
 	libllvmcodegen_la-StackSlotColoring.lo \
 	libllvmcodegen_la-StrongPHIElimination.lo \
+	libllvmcodegen_la-TailDuplication.lo \
 	libllvmcodegen_la-TargetInstrInfoImpl.lo \
 	libllvmcodegen_la-TwoAddressInstructionPass.lo \
 	libllvmcodegen_la-UnreachableBlockElim.lo \
@@ -299,7 +310,6 @@ am_libllvmexecutionengine_la_OBJECTS =  \
 	libllvmexecutionengine_la-JITDwarfEmitter.lo \
 	libllvmexecutionengine_la-JITEmitter.lo \
 	libllvmexecutionengine_la-JITMemoryManager.lo \
-	libllvmexecutionengine_la-MacOSJITEventListener.lo \
 	libllvmexecutionengine_la-TargetSelect.lo
 libllvmexecutionengine_la_OBJECTS =  \
 	$(am_libllvmexecutionengine_la_OBJECTS)
@@ -322,10 +332,11 @@ am_libllvmipa_la_OBJECTS = libllvmipa_la-AliasAnalysis.lo \
 	libllvmipa_la-BasicAliasAnalysis.lo \
 	libllvmipa_la-CaptureTracking.lo \
 	libllvmipa_la-ConstantFolding.lo libllvmipa_la-DebugInfo.lo \
-	libllvmipa_la-IVUsers.lo libllvmipa_la-LiveValues.lo \
+	libllvmipa_la-IVUsers.lo libllvmipa_la-InstructionSimplify.lo \
+	libllvmipa_la-LiveValues.lo \
 	libllvmipa_la-LoopDependenceAnalysis.lo \
 	libllvmipa_la-LoopInfo.lo libllvmipa_la-LoopPass.lo \
-	libllvmipa_la-MallocHelper.lo \
+	libllvmipa_la-MemoryBuiltins.lo \
 	libllvmipa_la-MemoryDependenceAnalysis.lo \
 	libllvmipa_la-ProfileInfo.lo libllvmipa_la-ScalarEvolution.lo \
 	libllvmipa_la-ScalarEvolutionExpander.lo \
@@ -353,8 +364,8 @@ libllvmmc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 libllvmscalar_la_LIBADD =
 am_libllvmscalar_la_OBJECTS = libllvmscalar_la-CodeGenPrepare.lo \
-	libllvmscalar_la-CodeGenLICM.lo libllvmscalar_la-DCE.lo \
-	libllvmscalar_la-LoopStrengthReduce.lo \
+	libllvmscalar_la-DCE.lo libllvmscalar_la-GEPSplitter.lo \
+	libllvmscalar_la-GVN.lo libllvmscalar_la-LoopStrengthReduce.lo \
 	libllvmscalar_la-ConstantProp.lo \
 	libllvmscalar_la-SimplifyCFGPass.lo
 libllvmscalar_la_OBJECTS = $(am_libllvmscalar_la_OBJECTS)
@@ -365,7 +376,8 @@ libllvmscalar_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 libllvmsdag_la_LIBADD =
 am_libllvmsdag_la_OBJECTS = libllvmsdag_la-CallingConvLower.lo \
 	libllvmsdag_la-DAGCombiner.lo libllvmsdag_la-FastISel.lo \
-	libllvmsdag_la-LegalizeDAG.lo \
+	libllvmsdag_la-FunctionLoweringInfo.lo \
+	libllvmsdag_la-InstrEmitter.lo libllvmsdag_la-LegalizeDAG.lo \
 	libllvmsdag_la-LegalizeFloatTypes.lo \
 	libllvmsdag_la-LegalizeIntegerTypes.lo \
 	libllvmsdag_la-LegalizeTypes.lo \
@@ -376,9 +388,8 @@ am_libllvmsdag_la_OBJECTS = libllvmsdag_la-CallingConvLower.lo \
 	libllvmsdag_la-ScheduleDAGList.lo \
 	libllvmsdag_la-ScheduleDAGRRList.lo \
 	libllvmsdag_la-ScheduleDAGSDNodes.lo \
-	libllvmsdag_la-ScheduleDAGSDNodesEmit.lo \
 	libllvmsdag_la-SelectionDAG.lo \
-	libllvmsdag_la-SelectionDAGBuild.lo \
+	libllvmsdag_la-SelectionDAGBuilder.lo \
 	libllvmsdag_la-SelectionDAGISel.lo \
 	libllvmsdag_la-SelectionDAGPrinter.lo \
 	libllvmsdag_la-TargetLowering.lo libllvmsdag_la-DwarfWriter.lo \
@@ -463,6 +474,7 @@ am__libllvmtargetarm_la_SOURCES_DIST =  \
 	llvm/lib/Target/ARM/ARMCodeEmitter.cpp \
 	llvm/lib/Target/ARM/ARMConstantIslandPass.cpp \
 	llvm/lib/Target/ARM/ARMConstantPoolValue.cpp \
+	llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp \
 	llvm/lib/Target/ARM/ARMInstrInfo.cpp \
 	llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp \
 	llvm/lib/Target/ARM/ARMISelLowering.cpp \
@@ -472,6 +484,7 @@ am__libllvmtargetarm_la_SOURCES_DIST =  \
 	llvm/lib/Target/ARM/ARMRegisterInfo.cpp \
 	llvm/lib/Target/ARM/ARMSubtarget.cpp \
 	llvm/lib/Target/ARM/ARMTargetMachine.cpp \
+	llvm/lib/Target/ARM/NEONMoveFix.cpp \
 	llvm/lib/Target/ARM/NEONPreAllocPass.cpp \
 	llvm/lib/Target/ARM/Thumb1InstrInfo.cpp \
 	llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp \
@@ -486,6 +499,7 @@ am__libllvmtargetarm_la_SOURCES_DIST =  \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMCodeEmitter.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMConstantIslandPass.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMConstantPoolValue.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMExpandPseudoInsts.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMInstrInfo.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMISelDAGToDAG.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMISelLowering.lo \
@@ -495,6 +509,7 @@ am__libllvmtargetarm_la_SOURCES_DIST =  \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMRegisterInfo.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMSubtarget.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMTargetMachine.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-NEONMoveFix.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-NEONPreAllocPass.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb1InstrInfo.lo \
 @BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb1RegisterInfo.lo \
@@ -594,12 +609,12 @@ am_libllvmtransformutils_la_OBJECTS =  \
 	libllvmtransformutils_la-LCSSA.lo \
 	libllvmtransformutils_la-Local.lo \
 	libllvmtransformutils_la-LoopSimplify.lo \
-	libllvmtransformutils_la-LowerAllocations.lo \
 	libllvmtransformutils_la-LowerInvoke.lo \
 	libllvmtransformutils_la-LowerSwitch.lo \
 	libllvmtransformutils_la-Mem2Reg.lo \
 	libllvmtransformutils_la-PromoteMemoryToRegister.lo \
 	libllvmtransformutils_la-SimplifyCFG.lo \
+	libllvmtransformutils_la-SSAUpdater.lo \
 	libllvmtransformutils_la-UnifyFunctionExitNodes.lo
 libllvmtransformutils_la_OBJECTS =  \
 	$(am_libllvmtransformutils_la_OBJECTS)
@@ -624,7 +639,8 @@ llc_DEPENDENCIES = libllvmbitreader.la libllvmasmparser.la \
 llc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llc_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_lli_OBJECTS = lli-lli.$(OBJEXT)
+am_lli_OBJECTS = lli-OProfileJITEventListener.$(OBJEXT) \
+	lli-lli.$(OBJEXT)
 lli_OBJECTS = $(am_lli_OBJECTS)
 lli_DEPENDENCIES = libllvmbitreader.la libllvminterpreter.la \
 	$(libclamavcxx_la_LIBADD)
@@ -637,6 +653,13 @@ llvm_as_DEPENDENCIES = libllvmasmparser.la libllvmbitwriter.la \
 	libllvmcore.la libllvmsupport.la libllvmsystem.la
 llvm_as_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_as_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_llvm_dis_OBJECTS = llvm_dis-llvm-dis.$(OBJEXT)
+llvm_dis_OBJECTS = $(am_llvm_dis_OBJECTS)
+llvm_dis_DEPENDENCIES = libllvmasmparser.la libllvmbitreader.la \
+	libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_dis_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_dis_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_llvmunittest_ADT_OBJECTS = llvmunittest_ADT-APFloatTest.$(OBJEXT) \
 	llvmunittest_ADT-APIntTest.$(OBJEXT) \
@@ -672,7 +695,7 @@ am_llvmunittest_JIT_OBJECTS =  \
 	llvmunittest_JIT-JITMemoryManagerTest.$(OBJEXT) \
 	llvmunittest_JIT-JITTest.$(OBJEXT)
 llvmunittest_JIT_OBJECTS = $(am_llvmunittest_JIT_OBJECTS)
-llvmunittest_JIT_DEPENDENCIES = libgoogletest.la \
+llvmunittest_JIT_DEPENDENCIES = libgoogletest.la libllvmasmparser.la \
 	$(libclamavcxx_la_LIBADD)
 llvmunittest_JIT_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -719,13 +742,16 @@ am_tblgen_OBJECTS = tblgen-AsmMatcherEmitter.$(OBJEXT) \
 	tblgen-CodeEmitterGen.$(OBJEXT) \
 	tblgen-CodeGenDAGPatterns.$(OBJEXT) \
 	tblgen-CodeGenInstruction.$(OBJEXT) \
-	tblgen-CodeGenTarget.$(OBJEXT) tblgen-DAGISelEmitter.$(OBJEXT) \
+	tblgen-CodeGenTarget.$(OBJEXT) \
+	tblgen-DisassemblerEmitter.$(OBJEXT) \
+	tblgen-DAGISelEmitter.$(OBJEXT) \
 	tblgen-FastISelEmitter.$(OBJEXT) \
 	tblgen-InstrEnumEmitter.$(OBJEXT) \
 	tblgen-InstrInfoEmitter.$(OBJEXT) \
 	tblgen-IntrinsicEmitter.$(OBJEXT) \
 	tblgen-LLVMCConfigurationEmitter.$(OBJEXT) \
-	tblgen-Record.$(OBJEXT) tblgen-RegisterInfoEmitter.$(OBJEXT) \
+	tblgen-OptParserEmitter.$(OBJEXT) tblgen-Record.$(OBJEXT) \
+	tblgen-RegisterInfoEmitter.$(OBJEXT) \
 	tblgen-SubtargetEmitter.$(OBJEXT) tblgen-TGLexer.$(OBJEXT) \
 	tblgen-TGParser.$(OBJEXT) tblgen-TGValueTypes.$(OBJEXT) \
 	tblgen-TableGen.$(OBJEXT) tblgen-TableGenBackend.$(OBJEXT)
@@ -789,7 +815,8 @@ SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(libllvmtargetx86_la_SOURCES) \
 	$(libllvmtransformutils_la_SOURCES) $(FileCheck_SOURCES) \
 	$(count_SOURCES) $(llc_SOURCES) $(lli_SOURCES) \
-	$(llvm_as_SOURCES) $(llvmunittest_ADT_SOURCES) \
+	$(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
+	$(llvmunittest_ADT_SOURCES) \
 	$(llvmunittest_ExecutionEngine_SOURCES) \
 	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
 	$(llvmunittest_VMCore_SOURCES) $(not_SOURCES) \
@@ -809,7 +836,8 @@ DIST_SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(am__libllvmtargetx86_la_SOURCES_DIST) \
 	$(libllvmtransformutils_la_SOURCES) $(FileCheck_SOURCES) \
 	$(count_SOURCES) $(llc_SOURCES) $(lli_SOURCES) \
-	$(llvm_as_SOURCES) $(llvmunittest_ADT_SOURCES) \
+	$(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
+	$(llvmunittest_ADT_SOURCES) \
 	$(llvmunittest_ExecutionEngine_SOURCES) \
 	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
 	$(llvmunittest_VMCore_SOURCES) $(not_SOURCES) \
@@ -1105,12 +1133,14 @@ tblgen_SOURCES = \
   llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
   llvm/utils/TableGen/CodeGenInstruction.cpp\
   llvm/utils/TableGen/CodeGenTarget.cpp\
+  llvm/utils/TableGen/DisassemblerEmitter.cpp\
   llvm/utils/TableGen/DAGISelEmitter.cpp\
   llvm/utils/TableGen/FastISelEmitter.cpp\
   llvm/utils/TableGen/InstrEnumEmitter.cpp\
   llvm/utils/TableGen/InstrInfoEmitter.cpp\
   llvm/utils/TableGen/IntrinsicEmitter.cpp\
   llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
+  llvm/utils/TableGen/OptParserEmitter.cpp\
   llvm/utils/TableGen/Record.cpp\
   llvm/utils/TableGen/RegisterInfoEmitter.cpp\
   llvm/utils/TableGen/SubtargetEmitter.cpp\
@@ -1213,6 +1243,7 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_7) \
 @BUILD_ARM_TRUE@  llvm/lib/Target/ARM/ARMCodeEmitter.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMConstantIslandPass.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMConstantPoolValue.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMInstrInfo.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMISelLowering.cpp\
@@ -1222,6 +1253,7 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_7) \
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMRegisterInfo.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMSubtarget.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMTargetMachine.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/NEONMoveFix.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/NEONPreAllocPass.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb1InstrInfo.cpp\
 @BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp\
@@ -1279,6 +1311,8 @@ libllvmsdag_la_SOURCES = \
   llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
   llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
   llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
+  llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp\
+  llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp\
@@ -1290,9 +1324,8 @@ libllvmsdag_la_SOURCES = \
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp\
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp\
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp\
-  llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp\
-  llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp\
+  llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp\
   llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp\
@@ -1314,11 +1347,12 @@ libllvmipa_la_SOURCES = \
  llvm/lib/Analysis/ConstantFolding.cpp\
  llvm/lib/Analysis/DebugInfo.cpp\
  llvm/lib/Analysis/IVUsers.cpp\
+ llvm/lib/Analysis/InstructionSimplify.cpp\
  llvm/lib/Analysis/LiveValues.cpp\
  llvm/lib/Analysis/LoopDependenceAnalysis.cpp\
  llvm/lib/Analysis/LoopInfo.cpp\
  llvm/lib/Analysis/LoopPass.cpp\
- llvm/lib/Analysis/MallocHelper.cpp\
+ llvm/lib/Analysis/MemoryBuiltins.cpp\
  llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
  llvm/lib/Analysis/ProfileInfo.cpp\
  llvm/lib/Analysis/ScalarEvolution.cpp\
@@ -1329,7 +1363,9 @@ libllvmipa_la_SOURCES = \
 libllvmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmcodegen_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 libllvmcodegen_la_SOURCES = \
+  llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp\
   llvm/lib/CodeGen/BranchFolding.cpp\
+  llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
   llvm/lib/CodeGen/CodePlacementOpt.cpp\
   llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
   llvm/lib/CodeGen/DwarfEHPrepare.cpp\
@@ -1343,7 +1379,6 @@ libllvmcodegen_la_SOURCES = \
   llvm/lib/CodeGen/IntrinsicLowering.cpp\
   llvm/lib/CodeGen/LLVMTargetMachine.cpp\
   llvm/lib/CodeGen/LatencyPriorityQueue.cpp\
-  llvm/lib/CodeGen/LazyLiveness.cpp\
   llvm/lib/CodeGen/LiveInterval.cpp\
   llvm/lib/CodeGen/LiveIntervalAnalysis.cpp\
   llvm/lib/CodeGen/LiveStackAnalysis.cpp\
@@ -1369,6 +1404,7 @@ libllvmcodegen_la_SOURCES = \
  llvm/lib/CodeGen/Passes.cpp\
  llvm/lib/CodeGen/PostRASchedulerList.cpp\
  llvm/lib/CodeGen/PreAllocSplitting.cpp\
+ llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
  llvm/lib/CodeGen/PrologEpilogInserter.cpp\
  llvm/lib/CodeGen/PseudoSourceValue.cpp\
  llvm/lib/CodeGen/RegAllocLinearScan.cpp\
@@ -1384,10 +1420,12 @@ libllvmcodegen_la_SOURCES = \
  llvm/lib/CodeGen/ShrinkWrapping.cpp\
  llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp\
  llvm/lib/CodeGen/SjLjEHPrepare.cpp\
+ llvm/lib/CodeGen/SlotIndexes.cpp\
  llvm/lib/CodeGen/Spiller.cpp\
  llvm/lib/CodeGen/StackProtector.cpp\
  llvm/lib/CodeGen/StackSlotColoring.cpp\
  llvm/lib/CodeGen/StrongPHIElimination.cpp\
+ llvm/lib/CodeGen/TailDuplication.cpp\
  llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
  llvm/lib/CodeGen/TwoAddressInstructionPass.cpp\
  llvm/lib/CodeGen/UnreachableBlockElim.cpp\
@@ -1398,8 +1436,9 @@ libllvmscalar_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmscalar_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 libllvmscalar_la_SOURCES = \
  llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
- llvm/lib/Transforms/Scalar/CodeGenLICM.cpp\
  llvm/lib/Transforms/Scalar/DCE.cpp\
+ llvm/lib/Transforms/Scalar/GEPSplitter.cpp\
+ llvm/lib/Transforms/Scalar/GVN.cpp\
  llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
  llvm/lib/Transforms/Scalar/ConstantProp.cpp\
  llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
@@ -1414,12 +1453,12 @@ libllvmtransformutils_la_SOURCES = \
   llvm/lib/Transforms/Utils/LCSSA.cpp\
   llvm/lib/Transforms/Utils/Local.cpp\
   llvm/lib/Transforms/Utils/LoopSimplify.cpp\
-  llvm/lib/Transforms/Utils/LowerAllocations.cpp\
   llvm/lib/Transforms/Utils/LowerInvoke.cpp\
   llvm/lib/Transforms/Utils/LowerSwitch.cpp\
   llvm/lib/Transforms/Utils/Mem2Reg.cpp\
   llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp\
   llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
+  llvm/lib/Transforms/Utils/SSAUpdater.cpp\
   llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
 
 libllvmexecutionengine_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -1432,7 +1471,6 @@ libllvmexecutionengine_la_SOURCES = \
  llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
- llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 
 # llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
@@ -1523,7 +1561,7 @@ llvmunittest_VMCore_SOURCES = \
 
 llvmunittest_JIT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 llvmunittest_JIT_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
-llvmunittest_JIT_LDADD = libgoogletest.la $(libclamavcxx_la_LIBADD)
+llvmunittest_JIT_LDADD = libgoogletest.la libllvmasmparser.la $(libclamavcxx_la_LIBADD)
 llvmunittest_JIT_SOURCES = \
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
     llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
@@ -1564,6 +1602,7 @@ lli_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 lli_CXXFLAGS = $(LLVM_CXXFLAGS)
 lli_LDADD = libllvmbitreader.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
 lli_SOURCES = \
+    llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -1579,6 +1618,13 @@ llvm_as_LDADD = libllvmasmparser.la libllvmbitwriter.la libllvmcore.la libllvmsu
 llvm_as_SOURCES = \
     llvm/tools/llvm-as/llvm-as.cpp
 
+llvm_dis_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+llvm_dis_CXXFLAGS = $(LLVM_CXXFLAGS)
+llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_dis_SOURCES = \
+    llvm/tools/llvm-dis/llvm-dis.cpp
+
+CONFIG_STATUS_DEPENDENCIES = $(top_builddir)/llvm/config.status
 all: $(BUILT_SOURCES) clamavcxx-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -1728,6 +1774,9 @@ lli$(EXEEXT): $(lli_OBJECTS) $(lli_DEPENDENCIES)
 llvm-as$(EXEEXT): $(llvm_as_OBJECTS) $(llvm_as_DEPENDENCIES) 
 	@rm -f llvm-as$(EXEEXT)
 	$(AM_V_CXXLD)$(llvm_as_LINK) $(llvm_as_OBJECTS) $(llvm_as_LDADD) $(LIBS)
+llvm-dis$(EXEEXT): $(llvm_dis_OBJECTS) $(llvm_dis_DEPENDENCIES) 
+	@rm -f llvm-dis$(EXEEXT)
+	$(AM_V_CXXLD)$(llvm_dis_LINK) $(llvm_dis_OBJECTS) $(llvm_dis_LDADD) $(LIBS)
 llvmunittest_ADT$(EXEEXT): $(llvmunittest_ADT_OBJECTS) $(llvmunittest_ADT_DEPENDENCIES) 
 	@rm -f llvmunittest_ADT$(EXEEXT)
 	$(AM_V_CXXLD)$(llvmunittest_ADT_LINK) $(llvmunittest_ADT_OBJECTS) $(llvmunittest_ADT_LDADD) $(LIBS)
@@ -1770,6 +1819,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmparser_la-LLParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmparser_la-Parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ARMAsmPrinter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ARMInstPrinter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-MachOCodeEmitter.Plo@am__quote@
@@ -1793,8 +1844,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmbitwriter_la-SerializeAPFloat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmbitwriter_la-SerializeAPInt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmbitwriter_la-ValueEnumerator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-AggressiveAntiDepBreaker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-BranchFolding.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-CodePlacementOpt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-CriticalAntiDepBreaker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-DeadMachineInstructionElim.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-DwarfEHPrepare.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-ELFCodeEmitter.Plo@am__quote@
@@ -1807,7 +1860,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-IntrinsicLowering.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LLVMTargetMachine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LatencyPriorityQueue.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LazyLiveness.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LiveInterval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LiveIntervalAnalysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-LiveStackAnalysis.Plo@am__quote@
@@ -1833,6 +1885,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-Passes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-PostRASchedulerList.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-PreAllocSplitting.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-ProcessImplicitDefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-PrologEpilogInserter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-PseudoSourceValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-RegAllocLinearScan.Plo@am__quote@
@@ -1848,10 +1901,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-ShrinkWrapping.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-SimpleRegisterCoalescing.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-SjLjEHPrepare.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-SlotIndexes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-Spiller.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-StackProtector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-StackSlotColoring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-StrongPHIElimination.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-TailDuplication.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-TargetInstrInfoImpl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-TwoAddressInstructionPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmcodegen_la-UnreachableBlockElim.Plo@am__quote@
@@ -1894,7 +1949,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-JITDwarfEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-JITEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-JITMemoryManager.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-MacOSJITEventListener.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvminterpreter_la-Execution.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvminterpreter_la-ExternalFunctions.Plo@am__quote@
@@ -1907,11 +1961,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-ConstantFolding.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-DebugInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-IVUsers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-InstructionSimplify.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-LiveValues.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-LoopDependenceAnalysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-LoopInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-LoopPass.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-MallocHelper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-MemoryBuiltins.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-MemoryDependenceAnalysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-ProfileInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmipa_la-ScalarEvolution.Plo@am__quote@
@@ -1937,10 +1992,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmmc_la-MCSymbol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmmc_la-MCValue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmmc_la-TargetAsmParser.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-CodeGenLICM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-CodeGenPrepare.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-ConstantProp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-DCE.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-GEPSplitter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-GVN.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-LoopStrengthReduce.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-SimplifyCFGPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-AsmPrinter.Plo@am__quote@
@@ -1953,6 +2009,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-DwarfPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-DwarfWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-FastISel.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-FunctionLoweringInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-InstrEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-LegalizeDAG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-LegalizeFloatTypes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-LegalizeIntegerTypes.Plo@am__quote@
@@ -1964,9 +2022,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-ScheduleDAGList.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-ScheduleDAGRRList.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-ScheduleDAGSDNodes.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-ScheduleDAGSDNodesEmit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-SelectionDAG.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-SelectionDAGBuild.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-SelectionDAGBuilder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-SelectionDAGISel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-SelectionDAGPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-TargetLowering.Plo@am__quote@
@@ -2044,6 +2101,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMConstantIslandPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMConstantPoolValue.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMExpandPseudoInsts.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMISelDAGToDAG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMISelLowering.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Plo@am__quote@
@@ -2054,6 +2112,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMSubtarget.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMTargetInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMTargetMachine.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-NEONMoveFix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb1InstrInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb1RegisterInfo.Plo@am__quote@
@@ -2097,17 +2156,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-LCSSA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-Local.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-LoopSimplify.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-LowerAllocations.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-LowerInvoke.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-LowerSwitch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-Mem2Reg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-PromoteMemoryToRegister.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-SSAUpdater.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-SimplifyCFG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtransformutils_la-UnifyFunctionExitNodes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llc-MCInstPrinter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llc-llc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lli-OProfileJITEventListener.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lli-lli.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvm_as-llvm-as.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvm_dis-llvm-dis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_ADT-APFloatTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_ADT-APIntTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_ADT-DenseMapTest.Po@am__quote@
@@ -2145,11 +2206,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeGenInstruction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeGenTarget.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DAGISelEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DisassemblerEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-FastISelEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-InstrEnumEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-InstrInfoEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-IntrinsicEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-LLVMCConfigurationEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-OptParserEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Record.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-RegisterInfoEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SubtargetEmitter.Po@am__quote@
@@ -2447,6 +2510,22 @@ libllvmasmprinter_la-ARMAsmPrinter.lo: llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrin
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmasmprinter_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-ARMAsmPrinter.lo `test -f 'llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp
 
+libllvmasmprinter_la-ARMInstPrinter.lo: llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmasmprinter_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-ARMInstPrinter.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-ARMInstPrinter.Tpo -c -o libllvmasmprinter_la-ARMInstPrinter.lo `test -f 'llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmasmprinter_la-ARMInstPrinter.Tpo $(DEPDIR)/libllvmasmprinter_la-ARMInstPrinter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp' object='libllvmasmprinter_la-ARMInstPrinter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmasmprinter_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-ARMInstPrinter.lo `test -f 'llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp
+
+libllvmasmprinter_la-ARMMCInstLower.lo: llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmasmprinter_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-ARMMCInstLower.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Tpo -c -o libllvmasmprinter_la-ARMMCInstLower.lo `test -f 'llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Tpo $(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp' object='libllvmasmprinter_la-ARMMCInstLower.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmasmprinter_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-ARMMCInstLower.lo `test -f 'llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
+
 libllvmbitreader_la-BitReader.lo: llvm/lib/Bitcode/Reader/BitReader.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmbitreader_la_CPPFLAGS) $(CPPFLAGS) $(libllvmbitreader_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmbitreader_la-BitReader.lo -MD -MP -MF $(DEPDIR)/libllvmbitreader_la-BitReader.Tpo -c -o libllvmbitreader_la-BitReader.lo `test -f 'llvm/lib/Bitcode/Reader/BitReader.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/BitReader.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmbitreader_la-BitReader.Tpo $(DEPDIR)/libllvmbitreader_la-BitReader.Plo
@@ -2543,6 +2622,14 @@ libllvmbitwriter_la-ValueEnumerator.lo: llvm/lib/Bitcode/Writer/ValueEnumerator.
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmbitwriter_la_CPPFLAGS) $(CPPFLAGS) $(libllvmbitwriter_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmbitwriter_la-ValueEnumerator.lo `test -f 'llvm/lib/Bitcode/Writer/ValueEnumerator.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
 
+libllvmcodegen_la-AggressiveAntiDepBreaker.lo: llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-AggressiveAntiDepBreaker.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-AggressiveAntiDepBreaker.Tpo -c -o libllvmcodegen_la-AggressiveAntiDepBreaker.lo `test -f 'llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-AggressiveAntiDepBreaker.Tpo $(DEPDIR)/libllvmcodegen_la-AggressiveAntiDepBreaker.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp' object='libllvmcodegen_la-AggressiveAntiDepBreaker.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-AggressiveAntiDepBreaker.lo `test -f 'llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp
+
 libllvmcodegen_la-BranchFolding.lo: llvm/lib/CodeGen/BranchFolding.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-BranchFolding.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-BranchFolding.Tpo -c -o libllvmcodegen_la-BranchFolding.lo `test -f 'llvm/lib/CodeGen/BranchFolding.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/BranchFolding.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-BranchFolding.Tpo $(DEPDIR)/libllvmcodegen_la-BranchFolding.Plo
@@ -2550,6 +2637,14 @@ libllvmcodegen_la-BranchFolding.lo: llvm/lib/CodeGen/BranchFolding.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/BranchFolding.cpp' object='libllvmcodegen_la-BranchFolding.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-BranchFolding.lo `test -f 'llvm/lib/CodeGen/BranchFolding.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/BranchFolding.cpp
+
+libllvmcodegen_la-CriticalAntiDepBreaker.lo: llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-CriticalAntiDepBreaker.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-CriticalAntiDepBreaker.Tpo -c -o libllvmcodegen_la-CriticalAntiDepBreaker.lo `test -f 'llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-CriticalAntiDepBreaker.Tpo $(DEPDIR)/libllvmcodegen_la-CriticalAntiDepBreaker.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp' object='libllvmcodegen_la-CriticalAntiDepBreaker.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-CriticalAntiDepBreaker.lo `test -f 'llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp
 
 libllvmcodegen_la-CodePlacementOpt.lo: llvm/lib/CodeGen/CodePlacementOpt.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-CodePlacementOpt.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-CodePlacementOpt.Tpo -c -o libllvmcodegen_la-CodePlacementOpt.lo `test -f 'llvm/lib/CodeGen/CodePlacementOpt.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/CodePlacementOpt.cpp
@@ -2654,14 +2749,6 @@ libllvmcodegen_la-LatencyPriorityQueue.lo: llvm/lib/CodeGen/LatencyPriorityQueue
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/LatencyPriorityQueue.cpp' object='libllvmcodegen_la-LatencyPriorityQueue.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-LatencyPriorityQueue.lo `test -f 'llvm/lib/CodeGen/LatencyPriorityQueue.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/LatencyPriorityQueue.cpp
-
-libllvmcodegen_la-LazyLiveness.lo: llvm/lib/CodeGen/LazyLiveness.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-LazyLiveness.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-LazyLiveness.Tpo -c -o libllvmcodegen_la-LazyLiveness.lo `test -f 'llvm/lib/CodeGen/LazyLiveness.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/LazyLiveness.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-LazyLiveness.Tpo $(DEPDIR)/libllvmcodegen_la-LazyLiveness.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/LazyLiveness.cpp' object='libllvmcodegen_la-LazyLiveness.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-LazyLiveness.lo `test -f 'llvm/lib/CodeGen/LazyLiveness.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/LazyLiveness.cpp
 
 libllvmcodegen_la-LiveInterval.lo: llvm/lib/CodeGen/LiveInterval.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-LiveInterval.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-LiveInterval.Tpo -c -o libllvmcodegen_la-LiveInterval.lo `test -f 'llvm/lib/CodeGen/LiveInterval.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/LiveInterval.cpp
@@ -2863,6 +2950,14 @@ libllvmcodegen_la-PreAllocSplitting.lo: llvm/lib/CodeGen/PreAllocSplitting.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-PreAllocSplitting.lo `test -f 'llvm/lib/CodeGen/PreAllocSplitting.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/PreAllocSplitting.cpp
 
+libllvmcodegen_la-ProcessImplicitDefs.lo: llvm/lib/CodeGen/ProcessImplicitDefs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-ProcessImplicitDefs.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-ProcessImplicitDefs.Tpo -c -o libllvmcodegen_la-ProcessImplicitDefs.lo `test -f 'llvm/lib/CodeGen/ProcessImplicitDefs.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/ProcessImplicitDefs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-ProcessImplicitDefs.Tpo $(DEPDIR)/libllvmcodegen_la-ProcessImplicitDefs.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/ProcessImplicitDefs.cpp' object='libllvmcodegen_la-ProcessImplicitDefs.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-ProcessImplicitDefs.lo `test -f 'llvm/lib/CodeGen/ProcessImplicitDefs.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/ProcessImplicitDefs.cpp
+
 libllvmcodegen_la-PrologEpilogInserter.lo: llvm/lib/CodeGen/PrologEpilogInserter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-PrologEpilogInserter.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-PrologEpilogInserter.Tpo -c -o libllvmcodegen_la-PrologEpilogInserter.lo `test -f 'llvm/lib/CodeGen/PrologEpilogInserter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/PrologEpilogInserter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-PrologEpilogInserter.Tpo $(DEPDIR)/libllvmcodegen_la-PrologEpilogInserter.Plo
@@ -2983,6 +3078,14 @@ libllvmcodegen_la-SjLjEHPrepare.lo: llvm/lib/CodeGen/SjLjEHPrepare.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-SjLjEHPrepare.lo `test -f 'llvm/lib/CodeGen/SjLjEHPrepare.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SjLjEHPrepare.cpp
 
+libllvmcodegen_la-SlotIndexes.lo: llvm/lib/CodeGen/SlotIndexes.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-SlotIndexes.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-SlotIndexes.Tpo -c -o libllvmcodegen_la-SlotIndexes.lo `test -f 'llvm/lib/CodeGen/SlotIndexes.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SlotIndexes.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-SlotIndexes.Tpo $(DEPDIR)/libllvmcodegen_la-SlotIndexes.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SlotIndexes.cpp' object='libllvmcodegen_la-SlotIndexes.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-SlotIndexes.lo `test -f 'llvm/lib/CodeGen/SlotIndexes.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SlotIndexes.cpp
+
 libllvmcodegen_la-Spiller.lo: llvm/lib/CodeGen/Spiller.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-Spiller.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-Spiller.Tpo -c -o libllvmcodegen_la-Spiller.lo `test -f 'llvm/lib/CodeGen/Spiller.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/Spiller.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-Spiller.Tpo $(DEPDIR)/libllvmcodegen_la-Spiller.Plo
@@ -3014,6 +3117,14 @@ libllvmcodegen_la-StrongPHIElimination.lo: llvm/lib/CodeGen/StrongPHIElimination
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/StrongPHIElimination.cpp' object='libllvmcodegen_la-StrongPHIElimination.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-StrongPHIElimination.lo `test -f 'llvm/lib/CodeGen/StrongPHIElimination.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/StrongPHIElimination.cpp
+
+libllvmcodegen_la-TailDuplication.lo: llvm/lib/CodeGen/TailDuplication.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-TailDuplication.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-TailDuplication.Tpo -c -o libllvmcodegen_la-TailDuplication.lo `test -f 'llvm/lib/CodeGen/TailDuplication.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/TailDuplication.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmcodegen_la-TailDuplication.Tpo $(DEPDIR)/libllvmcodegen_la-TailDuplication.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/TailDuplication.cpp' object='libllvmcodegen_la-TailDuplication.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmcodegen_la-TailDuplication.lo `test -f 'llvm/lib/CodeGen/TailDuplication.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/TailDuplication.cpp
 
 libllvmcodegen_la-TargetInstrInfoImpl.lo: llvm/lib/CodeGen/TargetInstrInfoImpl.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmcodegen_la-TargetInstrInfoImpl.lo -MD -MP -MF $(DEPDIR)/libllvmcodegen_la-TargetInstrInfoImpl.Tpo -c -o libllvmcodegen_la-TargetInstrInfoImpl.lo `test -f 'llvm/lib/CodeGen/TargetInstrInfoImpl.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/TargetInstrInfoImpl.cpp
@@ -3351,14 +3462,6 @@ libllvmexecutionengine_la-JITMemoryManager.lo: llvm/lib/ExecutionEngine/JIT/JITM
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmexecutionengine_la-JITMemoryManager.lo `test -f 'llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp
 
-libllvmexecutionengine_la-MacOSJITEventListener.lo: llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmexecutionengine_la-MacOSJITEventListener.lo -MD -MP -MF $(DEPDIR)/libllvmexecutionengine_la-MacOSJITEventListener.Tpo -c -o libllvmexecutionengine_la-MacOSJITEventListener.lo `test -f 'llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmexecutionengine_la-MacOSJITEventListener.Tpo $(DEPDIR)/libllvmexecutionengine_la-MacOSJITEventListener.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp' object='libllvmexecutionengine_la-MacOSJITEventListener.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmexecutionengine_la-MacOSJITEventListener.lo `test -f 'llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp
-
 libllvmexecutionengine_la-TargetSelect.lo: llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmexecutionengine_la_CPPFLAGS) $(CPPFLAGS) $(libllvmexecutionengine_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmexecutionengine_la-TargetSelect.lo -MD -MP -MF $(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Tpo -c -o libllvmexecutionengine_la-TargetSelect.lo `test -f 'llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Tpo $(DEPDIR)/libllvmexecutionengine_la-TargetSelect.Plo
@@ -3447,6 +3550,14 @@ libllvmipa_la-IVUsers.lo: llvm/lib/Analysis/IVUsers.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmipa_la-IVUsers.lo `test -f 'llvm/lib/Analysis/IVUsers.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IVUsers.cpp
 
+libllvmipa_la-InstructionSimplify.lo: llvm/lib/Analysis/InstructionSimplify.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmipa_la-InstructionSimplify.lo -MD -MP -MF $(DEPDIR)/libllvmipa_la-InstructionSimplify.Tpo -c -o libllvmipa_la-InstructionSimplify.lo `test -f 'llvm/lib/Analysis/InstructionSimplify.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/InstructionSimplify.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmipa_la-InstructionSimplify.Tpo $(DEPDIR)/libllvmipa_la-InstructionSimplify.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/InstructionSimplify.cpp' object='libllvmipa_la-InstructionSimplify.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmipa_la-InstructionSimplify.lo `test -f 'llvm/lib/Analysis/InstructionSimplify.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/InstructionSimplify.cpp
+
 libllvmipa_la-LiveValues.lo: llvm/lib/Analysis/LiveValues.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmipa_la-LiveValues.lo -MD -MP -MF $(DEPDIR)/libllvmipa_la-LiveValues.Tpo -c -o libllvmipa_la-LiveValues.lo `test -f 'llvm/lib/Analysis/LiveValues.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LiveValues.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmipa_la-LiveValues.Tpo $(DEPDIR)/libllvmipa_la-LiveValues.Plo
@@ -3479,13 +3590,13 @@ libllvmipa_la-LoopPass.lo: llvm/lib/Analysis/LoopPass.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmipa_la-LoopPass.lo `test -f 'llvm/lib/Analysis/LoopPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopPass.cpp
 
-libllvmipa_la-MallocHelper.lo: llvm/lib/Analysis/MallocHelper.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmipa_la-MallocHelper.lo -MD -MP -MF $(DEPDIR)/libllvmipa_la-MallocHelper.Tpo -c -o libllvmipa_la-MallocHelper.lo `test -f 'llvm/lib/Analysis/MallocHelper.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MallocHelper.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmipa_la-MallocHelper.Tpo $(DEPDIR)/libllvmipa_la-MallocHelper.Plo
+libllvmipa_la-MemoryBuiltins.lo: llvm/lib/Analysis/MemoryBuiltins.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmipa_la-MemoryBuiltins.lo -MD -MP -MF $(DEPDIR)/libllvmipa_la-MemoryBuiltins.Tpo -c -o libllvmipa_la-MemoryBuiltins.lo `test -f 'llvm/lib/Analysis/MemoryBuiltins.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MemoryBuiltins.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmipa_la-MemoryBuiltins.Tpo $(DEPDIR)/libllvmipa_la-MemoryBuiltins.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/MallocHelper.cpp' object='libllvmipa_la-MallocHelper.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/MemoryBuiltins.cpp' object='libllvmipa_la-MemoryBuiltins.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmipa_la-MallocHelper.lo `test -f 'llvm/lib/Analysis/MallocHelper.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MallocHelper.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmipa_la-MemoryBuiltins.lo `test -f 'llvm/lib/Analysis/MemoryBuiltins.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MemoryBuiltins.cpp
 
 libllvmipa_la-MemoryDependenceAnalysis.lo: llvm/lib/Analysis/MemoryDependenceAnalysis.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmipa_la_CPPFLAGS) $(CPPFLAGS) $(libllvmipa_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmipa_la-MemoryDependenceAnalysis.lo -MD -MP -MF $(DEPDIR)/libllvmipa_la-MemoryDependenceAnalysis.Tpo -c -o libllvmipa_la-MemoryDependenceAnalysis.lo `test -f 'llvm/lib/Analysis/MemoryDependenceAnalysis.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MemoryDependenceAnalysis.cpp
@@ -3703,14 +3814,6 @@ libllvmscalar_la-CodeGenPrepare.lo: llvm/lib/Transforms/Scalar/CodeGenPrepare.cp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-CodeGenPrepare.lo `test -f 'llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp
 
-libllvmscalar_la-CodeGenLICM.lo: llvm/lib/Transforms/Scalar/CodeGenLICM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-CodeGenLICM.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-CodeGenLICM.Tpo -c -o libllvmscalar_la-CodeGenLICM.lo `test -f 'llvm/lib/Transforms/Scalar/CodeGenLICM.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/CodeGenLICM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-CodeGenLICM.Tpo $(DEPDIR)/libllvmscalar_la-CodeGenLICM.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/CodeGenLICM.cpp' object='libllvmscalar_la-CodeGenLICM.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-CodeGenLICM.lo `test -f 'llvm/lib/Transforms/Scalar/CodeGenLICM.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/CodeGenLICM.cpp
-
 libllvmscalar_la-DCE.lo: llvm/lib/Transforms/Scalar/DCE.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-DCE.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-DCE.Tpo -c -o libllvmscalar_la-DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-DCE.Tpo $(DEPDIR)/libllvmscalar_la-DCE.Plo
@@ -3718,6 +3821,22 @@ libllvmscalar_la-DCE.lo: llvm/lib/Transforms/Scalar/DCE.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/DCE.cpp' object='libllvmscalar_la-DCE.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
+
+libllvmscalar_la-GEPSplitter.lo: llvm/lib/Transforms/Scalar/GEPSplitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-GEPSplitter.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-GEPSplitter.Tpo -c -o libllvmscalar_la-GEPSplitter.lo `test -f 'llvm/lib/Transforms/Scalar/GEPSplitter.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/GEPSplitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-GEPSplitter.Tpo $(DEPDIR)/libllvmscalar_la-GEPSplitter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/GEPSplitter.cpp' object='libllvmscalar_la-GEPSplitter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-GEPSplitter.lo `test -f 'llvm/lib/Transforms/Scalar/GEPSplitter.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/GEPSplitter.cpp
+
+libllvmscalar_la-GVN.lo: llvm/lib/Transforms/Scalar/GVN.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-GVN.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-GVN.Tpo -c -o libllvmscalar_la-GVN.lo `test -f 'llvm/lib/Transforms/Scalar/GVN.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/GVN.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-GVN.Tpo $(DEPDIR)/libllvmscalar_la-GVN.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/GVN.cpp' object='libllvmscalar_la-GVN.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-GVN.lo `test -f 'llvm/lib/Transforms/Scalar/GVN.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/GVN.cpp
 
 libllvmscalar_la-LoopStrengthReduce.lo: llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-LoopStrengthReduce.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-LoopStrengthReduce.Tpo -c -o libllvmscalar_la-LoopStrengthReduce.lo `test -f 'llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp
@@ -3766,6 +3885,22 @@ libllvmsdag_la-FastISel.lo: llvm/lib/CodeGen/SelectionDAG/FastISel.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/FastISel.cpp' object='libllvmsdag_la-FastISel.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-FastISel.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/FastISel.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/FastISel.cpp
+
+libllvmsdag_la-FunctionLoweringInfo.lo: llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-FunctionLoweringInfo.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-FunctionLoweringInfo.Tpo -c -o libllvmsdag_la-FunctionLoweringInfo.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-FunctionLoweringInfo.Tpo $(DEPDIR)/libllvmsdag_la-FunctionLoweringInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp' object='libllvmsdag_la-FunctionLoweringInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-FunctionLoweringInfo.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp
+
+libllvmsdag_la-InstrEmitter.lo: llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-InstrEmitter.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-InstrEmitter.Tpo -c -o libllvmsdag_la-InstrEmitter.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-InstrEmitter.Tpo $(DEPDIR)/libllvmsdag_la-InstrEmitter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp' object='libllvmsdag_la-InstrEmitter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-InstrEmitter.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp
 
 libllvmsdag_la-LegalizeDAG.lo: llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-LegalizeDAG.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-LegalizeDAG.Tpo -c -o libllvmsdag_la-LegalizeDAG.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp
@@ -3855,14 +3990,6 @@ libllvmsdag_la-ScheduleDAGSDNodes.lo: llvm/lib/CodeGen/SelectionDAG/ScheduleDAGS
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-ScheduleDAGSDNodes.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp
 
-libllvmsdag_la-ScheduleDAGSDNodesEmit.lo: llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-ScheduleDAGSDNodesEmit.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-ScheduleDAGSDNodesEmit.Tpo -c -o libllvmsdag_la-ScheduleDAGSDNodesEmit.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-ScheduleDAGSDNodesEmit.Tpo $(DEPDIR)/libllvmsdag_la-ScheduleDAGSDNodesEmit.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp' object='libllvmsdag_la-ScheduleDAGSDNodesEmit.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-ScheduleDAGSDNodesEmit.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp
-
 libllvmsdag_la-SelectionDAG.lo: llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-SelectionDAG.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-SelectionDAG.Tpo -c -o libllvmsdag_la-SelectionDAG.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-SelectionDAG.Tpo $(DEPDIR)/libllvmsdag_la-SelectionDAG.Plo
@@ -3871,13 +3998,13 @@ libllvmsdag_la-SelectionDAG.lo: llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-SelectionDAG.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp
 
-libllvmsdag_la-SelectionDAGBuild.lo: llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-SelectionDAGBuild.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-SelectionDAGBuild.Tpo -c -o libllvmsdag_la-SelectionDAGBuild.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-SelectionDAGBuild.Tpo $(DEPDIR)/libllvmsdag_la-SelectionDAGBuild.Plo
+libllvmsdag_la-SelectionDAGBuilder.lo: llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-SelectionDAGBuilder.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-SelectionDAGBuilder.Tpo -c -o libllvmsdag_la-SelectionDAGBuilder.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmsdag_la-SelectionDAGBuilder.Tpo $(DEPDIR)/libllvmsdag_la-SelectionDAGBuilder.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp' object='libllvmsdag_la-SelectionDAGBuild.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' object='libllvmsdag_la-SelectionDAGBuilder.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-SelectionDAGBuild.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmsdag_la-SelectionDAGBuilder.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
 
 libllvmsdag_la-SelectionDAGISel.lo: llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-SelectionDAGISel.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-SelectionDAGISel.Tpo -c -o libllvmsdag_la-SelectionDAGISel.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
@@ -4511,6 +4638,14 @@ libllvmtargetarm_la-ARMConstantPoolValue.lo: llvm/lib/Target/ARM/ARMConstantPool
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMConstantPoolValue.lo `test -f 'llvm/lib/Target/ARM/ARMConstantPoolValue.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMConstantPoolValue.cpp
 
+libllvmtargetarm_la-ARMExpandPseudoInsts.lo: llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMExpandPseudoInsts.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMExpandPseudoInsts.Tpo -c -o libllvmtargetarm_la-ARMExpandPseudoInsts.lo `test -f 'llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMExpandPseudoInsts.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMExpandPseudoInsts.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp' object='libllvmtargetarm_la-ARMExpandPseudoInsts.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMExpandPseudoInsts.lo `test -f 'llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp
+
 libllvmtargetarm_la-ARMInstrInfo.lo: llvm/lib/Target/ARM/ARMInstrInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMInstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Tpo -c -o libllvmtargetarm_la-ARMInstrInfo.lo `test -f 'llvm/lib/Target/ARM/ARMInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMInstrInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Plo
@@ -4582,6 +4717,14 @@ libllvmtargetarm_la-ARMTargetMachine.lo: llvm/lib/Target/ARM/ARMTargetMachine.cp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMTargetMachine.cpp' object='libllvmtargetarm_la-ARMTargetMachine.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMTargetMachine.lo `test -f 'llvm/lib/Target/ARM/ARMTargetMachine.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMTargetMachine.cpp
+
+libllvmtargetarm_la-NEONMoveFix.lo: llvm/lib/Target/ARM/NEONMoveFix.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-NEONMoveFix.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-NEONMoveFix.Tpo -c -o libllvmtargetarm_la-NEONMoveFix.lo `test -f 'llvm/lib/Target/ARM/NEONMoveFix.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/NEONMoveFix.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-NEONMoveFix.Tpo $(DEPDIR)/libllvmtargetarm_la-NEONMoveFix.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/NEONMoveFix.cpp' object='libllvmtargetarm_la-NEONMoveFix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-NEONMoveFix.lo `test -f 'llvm/lib/Target/ARM/NEONMoveFix.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/NEONMoveFix.cpp
 
 libllvmtargetarm_la-NEONPreAllocPass.lo: llvm/lib/Target/ARM/NEONPreAllocPass.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-NEONPreAllocPass.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Tpo -c -o libllvmtargetarm_la-NEONPreAllocPass.lo `test -f 'llvm/lib/Target/ARM/NEONPreAllocPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/NEONPreAllocPass.cpp
@@ -4935,14 +5078,6 @@ libllvmtransformutils_la-LoopSimplify.lo: llvm/lib/Transforms/Utils/LoopSimplify
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtransformutils_la-LoopSimplify.lo `test -f 'llvm/lib/Transforms/Utils/LoopSimplify.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/LoopSimplify.cpp
 
-libllvmtransformutils_la-LowerAllocations.lo: llvm/lib/Transforms/Utils/LowerAllocations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtransformutils_la-LowerAllocations.lo -MD -MP -MF $(DEPDIR)/libllvmtransformutils_la-LowerAllocations.Tpo -c -o libllvmtransformutils_la-LowerAllocations.lo `test -f 'llvm/lib/Transforms/Utils/LowerAllocations.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/LowerAllocations.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtransformutils_la-LowerAllocations.Tpo $(DEPDIR)/libllvmtransformutils_la-LowerAllocations.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Utils/LowerAllocations.cpp' object='libllvmtransformutils_la-LowerAllocations.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtransformutils_la-LowerAllocations.lo `test -f 'llvm/lib/Transforms/Utils/LowerAllocations.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/LowerAllocations.cpp
-
 libllvmtransformutils_la-LowerInvoke.lo: llvm/lib/Transforms/Utils/LowerInvoke.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtransformutils_la-LowerInvoke.lo -MD -MP -MF $(DEPDIR)/libllvmtransformutils_la-LowerInvoke.Tpo -c -o libllvmtransformutils_la-LowerInvoke.lo `test -f 'llvm/lib/Transforms/Utils/LowerInvoke.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/LowerInvoke.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtransformutils_la-LowerInvoke.Tpo $(DEPDIR)/libllvmtransformutils_la-LowerInvoke.Plo
@@ -4982,6 +5117,14 @@ libllvmtransformutils_la-SimplifyCFG.lo: llvm/lib/Transforms/Utils/SimplifyCFG.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Utils/SimplifyCFG.cpp' object='libllvmtransformutils_la-SimplifyCFG.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtransformutils_la-SimplifyCFG.lo `test -f 'llvm/lib/Transforms/Utils/SimplifyCFG.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/SimplifyCFG.cpp
+
+libllvmtransformutils_la-SSAUpdater.lo: llvm/lib/Transforms/Utils/SSAUpdater.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtransformutils_la-SSAUpdater.lo -MD -MP -MF $(DEPDIR)/libllvmtransformutils_la-SSAUpdater.Tpo -c -o libllvmtransformutils_la-SSAUpdater.lo `test -f 'llvm/lib/Transforms/Utils/SSAUpdater.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/SSAUpdater.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtransformutils_la-SSAUpdater.Tpo $(DEPDIR)/libllvmtransformutils_la-SSAUpdater.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Utils/SSAUpdater.cpp' object='libllvmtransformutils_la-SSAUpdater.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtransformutils_la-SSAUpdater.lo `test -f 'llvm/lib/Transforms/Utils/SSAUpdater.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/SSAUpdater.cpp
 
 libllvmtransformutils_la-UnifyFunctionExitNodes.lo: llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtransformutils_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtransformutils_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtransformutils_la-UnifyFunctionExitNodes.lo -MD -MP -MF $(DEPDIR)/libllvmtransformutils_la-UnifyFunctionExitNodes.Tpo -c -o libllvmtransformutils_la-UnifyFunctionExitNodes.lo `test -f 'llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
@@ -5039,6 +5182,22 @@ llc-llc.obj: llvm/tools/llc/llc.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llc_CPPFLAGS) $(CPPFLAGS) $(llc_CXXFLAGS) $(CXXFLAGS) -c -o llc-llc.obj `if test -f 'llvm/tools/llc/llc.cpp'; then $(CYGPATH_W) 'llvm/tools/llc/llc.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/tools/llc/llc.cpp'; fi`
 
+lli-OProfileJITEventListener.o: llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lli_CPPFLAGS) $(CPPFLAGS) $(lli_CXXFLAGS) $(CXXFLAGS) -MT lli-OProfileJITEventListener.o -MD -MP -MF $(DEPDIR)/lli-OProfileJITEventListener.Tpo -c -o lli-OProfileJITEventListener.o `test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lli-OProfileJITEventListener.Tpo $(DEPDIR)/lli-OProfileJITEventListener.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' object='lli-OProfileJITEventListener.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lli_CPPFLAGS) $(CPPFLAGS) $(lli_CXXFLAGS) $(CXXFLAGS) -c -o lli-OProfileJITEventListener.o `test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' || echo '$(srcdir)/'`llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
+
+lli-OProfileJITEventListener.obj: llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lli_CPPFLAGS) $(CPPFLAGS) $(lli_CXXFLAGS) $(CXXFLAGS) -MT lli-OProfileJITEventListener.obj -MD -MP -MF $(DEPDIR)/lli-OProfileJITEventListener.Tpo -c -o lli-OProfileJITEventListener.obj `if test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; then $(CYGPATH_W) 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lli-OProfileJITEventListener.Tpo $(DEPDIR)/lli-OProfileJITEventListener.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp' object='lli-OProfileJITEventListener.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lli_CPPFLAGS) $(CPPFLAGS) $(lli_CXXFLAGS) $(CXXFLAGS) -c -o lli-OProfileJITEventListener.obj `if test -f 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; then $(CYGPATH_W) 'llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp'; fi`
+
 lli-lli.o: llvm/tools/lli/lli.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lli_CPPFLAGS) $(CPPFLAGS) $(lli_CXXFLAGS) $(CXXFLAGS) -MT lli-lli.o -MD -MP -MF $(DEPDIR)/lli-lli.Tpo -c -o lli-lli.o `test -f 'llvm/tools/lli/lli.cpp' || echo '$(srcdir)/'`llvm/tools/lli/lli.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lli-lli.Tpo $(DEPDIR)/lli-lli.Po
@@ -5070,6 +5229,22 @@ llvm_as-llvm-as.obj: llvm/tools/llvm-as/llvm-as.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/tools/llvm-as/llvm-as.cpp' object='llvm_as-llvm-as.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_as_CPPFLAGS) $(CPPFLAGS) $(llvm_as_CXXFLAGS) $(CXXFLAGS) -c -o llvm_as-llvm-as.obj `if test -f 'llvm/tools/llvm-as/llvm-as.cpp'; then $(CYGPATH_W) 'llvm/tools/llvm-as/llvm-as.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/tools/llvm-as/llvm-as.cpp'; fi`
+
+llvm_dis-llvm-dis.o: llvm/tools/llvm-dis/llvm-dis.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_dis_CPPFLAGS) $(CPPFLAGS) $(llvm_dis_CXXFLAGS) $(CXXFLAGS) -MT llvm_dis-llvm-dis.o -MD -MP -MF $(DEPDIR)/llvm_dis-llvm-dis.Tpo -c -o llvm_dis-llvm-dis.o `test -f 'llvm/tools/llvm-dis/llvm-dis.cpp' || echo '$(srcdir)/'`llvm/tools/llvm-dis/llvm-dis.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvm_dis-llvm-dis.Tpo $(DEPDIR)/llvm_dis-llvm-dis.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/tools/llvm-dis/llvm-dis.cpp' object='llvm_dis-llvm-dis.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_dis_CPPFLAGS) $(CPPFLAGS) $(llvm_dis_CXXFLAGS) $(CXXFLAGS) -c -o llvm_dis-llvm-dis.o `test -f 'llvm/tools/llvm-dis/llvm-dis.cpp' || echo '$(srcdir)/'`llvm/tools/llvm-dis/llvm-dis.cpp
+
+llvm_dis-llvm-dis.obj: llvm/tools/llvm-dis/llvm-dis.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_dis_CPPFLAGS) $(CPPFLAGS) $(llvm_dis_CXXFLAGS) $(CXXFLAGS) -MT llvm_dis-llvm-dis.obj -MD -MP -MF $(DEPDIR)/llvm_dis-llvm-dis.Tpo -c -o llvm_dis-llvm-dis.obj `if test -f 'llvm/tools/llvm-dis/llvm-dis.cpp'; then $(CYGPATH_W) 'llvm/tools/llvm-dis/llvm-dis.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/tools/llvm-dis/llvm-dis.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvm_dis-llvm-dis.Tpo $(DEPDIR)/llvm_dis-llvm-dis.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/tools/llvm-dis/llvm-dis.cpp' object='llvm_dis-llvm-dis.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_dis_CPPFLAGS) $(CPPFLAGS) $(llvm_dis_CXXFLAGS) $(CXXFLAGS) -c -o llvm_dis-llvm-dis.obj `if test -f 'llvm/tools/llvm-dis/llvm-dis.cpp'; then $(CYGPATH_W) 'llvm/tools/llvm-dis/llvm-dis.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/tools/llvm-dis/llvm-dis.cpp'; fi`
 
 llvmunittest_ADT-APFloatTest.o: llvm/unittests/ADT/APFloatTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APFloatTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo -c -o llvmunittest_ADT-APFloatTest.o `test -f 'llvm/unittests/ADT/APFloatTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APFloatTest.cpp
@@ -5647,6 +5822,22 @@ tblgen-CodeGenTarget.obj: llvm/utils/TableGen/CodeGenTarget.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-CodeGenTarget.obj `if test -f 'llvm/utils/TableGen/CodeGenTarget.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/CodeGenTarget.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/CodeGenTarget.cpp'; fi`
 
+tblgen-DisassemblerEmitter.o: llvm/utils/TableGen/DisassemblerEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DisassemblerEmitter.o -MD -MP -MF $(DEPDIR)/tblgen-DisassemblerEmitter.Tpo -c -o tblgen-DisassemblerEmitter.o `test -f 'llvm/utils/TableGen/DisassemblerEmitter.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/DisassemblerEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DisassemblerEmitter.Tpo $(DEPDIR)/tblgen-DisassemblerEmitter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/DisassemblerEmitter.cpp' object='tblgen-DisassemblerEmitter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DisassemblerEmitter.o `test -f 'llvm/utils/TableGen/DisassemblerEmitter.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/DisassemblerEmitter.cpp
+
+tblgen-DisassemblerEmitter.obj: llvm/utils/TableGen/DisassemblerEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DisassemblerEmitter.obj -MD -MP -MF $(DEPDIR)/tblgen-DisassemblerEmitter.Tpo -c -o tblgen-DisassemblerEmitter.obj `if test -f 'llvm/utils/TableGen/DisassemblerEmitter.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/DisassemblerEmitter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/DisassemblerEmitter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DisassemblerEmitter.Tpo $(DEPDIR)/tblgen-DisassemblerEmitter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/DisassemblerEmitter.cpp' object='tblgen-DisassemblerEmitter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DisassemblerEmitter.obj `if test -f 'llvm/utils/TableGen/DisassemblerEmitter.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/DisassemblerEmitter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/DisassemblerEmitter.cpp'; fi`
+
 tblgen-DAGISelEmitter.o: llvm/utils/TableGen/DAGISelEmitter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DAGISelEmitter.o -MD -MP -MF $(DEPDIR)/tblgen-DAGISelEmitter.Tpo -c -o tblgen-DAGISelEmitter.o `test -f 'llvm/utils/TableGen/DAGISelEmitter.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/DAGISelEmitter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DAGISelEmitter.Tpo $(DEPDIR)/tblgen-DAGISelEmitter.Po
@@ -5742,6 +5933,22 @@ tblgen-LLVMCConfigurationEmitter.obj: llvm/utils/TableGen/LLVMCConfigurationEmit
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp' object='tblgen-LLVMCConfigurationEmitter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-LLVMCConfigurationEmitter.obj `if test -f 'llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp'; fi`
+
+tblgen-OptParserEmitter.o: llvm/utils/TableGen/OptParserEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-OptParserEmitter.o -MD -MP -MF $(DEPDIR)/tblgen-OptParserEmitter.Tpo -c -o tblgen-OptParserEmitter.o `test -f 'llvm/utils/TableGen/OptParserEmitter.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/OptParserEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-OptParserEmitter.Tpo $(DEPDIR)/tblgen-OptParserEmitter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/OptParserEmitter.cpp' object='tblgen-OptParserEmitter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-OptParserEmitter.o `test -f 'llvm/utils/TableGen/OptParserEmitter.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/OptParserEmitter.cpp
+
+tblgen-OptParserEmitter.obj: llvm/utils/TableGen/OptParserEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-OptParserEmitter.obj -MD -MP -MF $(DEPDIR)/tblgen-OptParserEmitter.Tpo -c -o tblgen-OptParserEmitter.obj `if test -f 'llvm/utils/TableGen/OptParserEmitter.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/OptParserEmitter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/OptParserEmitter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-OptParserEmitter.Tpo $(DEPDIR)/tblgen-OptParserEmitter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/OptParserEmitter.cpp' object='tblgen-OptParserEmitter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-OptParserEmitter.obj `if test -f 'llvm/utils/TableGen/OptParserEmitter.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/OptParserEmitter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/OptParserEmitter.cpp'; fi`
 
 tblgen-Record.o: llvm/utils/TableGen/Record.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(tblgen_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Record.o -MD -MP -MF $(DEPDIR)/tblgen-Record.Tpo -c -o tblgen-Record.o `test -f 'llvm/utils/TableGen/Record.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/Record.cpp
@@ -6456,6 +6663,10 @@ distclean-local:
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
 	+$(GMAKE) -C llvm unittests
+# config.status needs to be run twice, once without recheck so that it has a
+# chance to create configure generated files.
+$(top_builddir)/llvm/config.status: llvm/configure
+	cd llvm; ./config.status --recheck; ./config.status
 
 # rm configure generated files
 dist-hook:

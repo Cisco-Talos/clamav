@@ -171,12 +171,14 @@ tblgen_SOURCES=\
   llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
   llvm/utils/TableGen/CodeGenInstruction.cpp\
   llvm/utils/TableGen/CodeGenTarget.cpp\
+  llvm/utils/TableGen/DisassemblerEmitter.cpp\
   llvm/utils/TableGen/DAGISelEmitter.cpp\
   llvm/utils/TableGen/FastISelEmitter.cpp\
   llvm/utils/TableGen/InstrEnumEmitter.cpp\
   llvm/utils/TableGen/InstrInfoEmitter.cpp\
   llvm/utils/TableGen/IntrinsicEmitter.cpp\
   llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
+  llvm/utils/TableGen/OptParserEmitter.cpp\
   llvm/utils/TableGen/Record.cpp\
   llvm/utils/TableGen/RegisterInfoEmitter.cpp\
   llvm/utils/TableGen/SubtargetEmitter.cpp\
@@ -393,6 +395,7 @@ libllvmtargetarm_la_SOURCES=\
   llvm/lib/Target/ARM/ARMCodeEmitter.cpp\
  llvm/lib/Target/ARM/ARMConstantIslandPass.cpp\
  llvm/lib/Target/ARM/ARMConstantPoolValue.cpp\
+ llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp\
  llvm/lib/Target/ARM/ARMInstrInfo.cpp\
  llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp\
  llvm/lib/Target/ARM/ARMISelLowering.cpp\
@@ -402,6 +405,7 @@ libllvmtargetarm_la_SOURCES=\
  llvm/lib/Target/ARM/ARMRegisterInfo.cpp\
  llvm/lib/Target/ARM/ARMSubtarget.cpp\
  llvm/lib/Target/ARM/ARMTargetMachine.cpp\
+ llvm/lib/Target/ARM/NEONMoveFix.cpp\
  llvm/lib/Target/ARM/NEONPreAllocPass.cpp\
  llvm/lib/Target/ARM/Thumb1InstrInfo.cpp\
  llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp\
@@ -460,6 +464,8 @@ libllvmsdag_la_SOURCES=\
   llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
   llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
   llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
+  llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp\
+  llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp\
   llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp\
@@ -471,9 +477,8 @@ libllvmsdag_la_SOURCES=\
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp\
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp\
   llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp\
-  llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodesEmit.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp\
-  llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuild.cpp\
+  llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp\
   llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp\
   llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp\
@@ -495,11 +500,12 @@ libllvmipa_la_SOURCES=\
  llvm/lib/Analysis/ConstantFolding.cpp\
  llvm/lib/Analysis/DebugInfo.cpp\
  llvm/lib/Analysis/IVUsers.cpp\
+ llvm/lib/Analysis/InstructionSimplify.cpp\
  llvm/lib/Analysis/LiveValues.cpp\
  llvm/lib/Analysis/LoopDependenceAnalysis.cpp\
  llvm/lib/Analysis/LoopInfo.cpp\
  llvm/lib/Analysis/LoopPass.cpp\
- llvm/lib/Analysis/MallocHelper.cpp\
+ llvm/lib/Analysis/MemoryBuiltins.cpp\
  llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
  llvm/lib/Analysis/ProfileInfo.cpp\
  llvm/lib/Analysis/ScalarEvolution.cpp\
@@ -510,7 +516,9 @@ libllvmipa_la_SOURCES=\
 libllvmcodegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmcodegen_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
 libllvmcodegen_la_SOURCES=\
+  llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp\
   llvm/lib/CodeGen/BranchFolding.cpp\
+  llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
   llvm/lib/CodeGen/CodePlacementOpt.cpp\
   llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
   llvm/lib/CodeGen/DwarfEHPrepare.cpp\
@@ -524,7 +532,6 @@ libllvmcodegen_la_SOURCES=\
   llvm/lib/CodeGen/IntrinsicLowering.cpp\
   llvm/lib/CodeGen/LLVMTargetMachine.cpp\
   llvm/lib/CodeGen/LatencyPriorityQueue.cpp\
-  llvm/lib/CodeGen/LazyLiveness.cpp\
   llvm/lib/CodeGen/LiveInterval.cpp\
   llvm/lib/CodeGen/LiveIntervalAnalysis.cpp\
   llvm/lib/CodeGen/LiveStackAnalysis.cpp\
@@ -550,6 +557,7 @@ libllvmcodegen_la_SOURCES=\
  llvm/lib/CodeGen/Passes.cpp\
  llvm/lib/CodeGen/PostRASchedulerList.cpp\
  llvm/lib/CodeGen/PreAllocSplitting.cpp\
+ llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
  llvm/lib/CodeGen/PrologEpilogInserter.cpp\
  llvm/lib/CodeGen/PseudoSourceValue.cpp\
  llvm/lib/CodeGen/RegAllocLinearScan.cpp\
@@ -565,10 +573,12 @@ libllvmcodegen_la_SOURCES=\
  llvm/lib/CodeGen/ShrinkWrapping.cpp\
  llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp\
  llvm/lib/CodeGen/SjLjEHPrepare.cpp\
+ llvm/lib/CodeGen/SlotIndexes.cpp\
  llvm/lib/CodeGen/Spiller.cpp\
  llvm/lib/CodeGen/StackProtector.cpp\
  llvm/lib/CodeGen/StackSlotColoring.cpp\
  llvm/lib/CodeGen/StrongPHIElimination.cpp\
+ llvm/lib/CodeGen/TailDuplication.cpp\
  llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
  llvm/lib/CodeGen/TwoAddressInstructionPass.cpp\
  llvm/lib/CodeGen/UnreachableBlockElim.cpp\
@@ -580,8 +590,9 @@ libllvmscalar_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmscalar_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
 libllvmscalar_la_SOURCES=\
  llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
- llvm/lib/Transforms/Scalar/CodeGenLICM.cpp\
  llvm/lib/Transforms/Scalar/DCE.cpp\
+ llvm/lib/Transforms/Scalar/GEPSplitter.cpp\
+ llvm/lib/Transforms/Scalar/GVN.cpp\
  llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
  llvm/lib/Transforms/Scalar/ConstantProp.cpp\
  llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
@@ -596,12 +607,12 @@ libllvmtransformutils_la_SOURCES=\
   llvm/lib/Transforms/Utils/LCSSA.cpp\
   llvm/lib/Transforms/Utils/Local.cpp\
   llvm/lib/Transforms/Utils/LoopSimplify.cpp\
-  llvm/lib/Transforms/Utils/LowerAllocations.cpp\
   llvm/lib/Transforms/Utils/LowerInvoke.cpp\
   llvm/lib/Transforms/Utils/LowerSwitch.cpp\
   llvm/lib/Transforms/Utils/Mem2Reg.cpp\
   llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp\
   llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
+  llvm/lib/Transforms/Utils/SSAUpdater.cpp\
   llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
 
 libllvmexecutionengine_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -614,7 +625,6 @@ libllvmexecutionengine_la_SOURCES=\
  llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
- llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 # llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp
 
@@ -705,7 +715,7 @@ llvmunittest_VMCore_SOURCES=\
 
 llvmunittest_JIT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 llvmunittest_JIT_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
-llvmunittest_JIT_LDADD=libgoogletest.la $(libclamavcxx_la_LIBADD)
+llvmunittest_JIT_LDADD=libgoogletest.la libllvmasmparser.la $(libclamavcxx_la_LIBADD)
 llvmunittest_JIT_SOURCES=\
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
     llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
@@ -731,7 +741,7 @@ FileCheck_LDADD=libllvmsupport.la libllvmsystem.la
 FileCheck_SOURCES=llvm/utils/FileCheck/FileCheck.cpp
 
 check_LTLIBRARIES=libllvmbitreader.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
-check_PROGRAMS=count not lli llc llvm-as llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
+check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
 check_SCRIPTS=llvmdejagnu.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
 TESTS=llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT
@@ -761,13 +771,16 @@ libllvmasmprinter_la_SOURCES+= llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.
 endif
 
 if BUILD_ARM
-libllvmasmprinter_la_SOURCES+= llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp
+libllvmasmprinter_la_SOURCES+= llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
+    llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp\
+    llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
 endif
 
 lli_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 lli_CXXFLAGS=$(LLVM_CXXFLAGS)
 lli_LDADD=libllvmbitreader.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
 lli_SOURCES=\
+    llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -782,6 +795,12 @@ llvm_as_CXXFLAGS=$(LLVM_CXXFLAGS)
 llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmcore.la libllvmsupport.la libllvmsystem.la
 llvm_as_SOURCES=\
     llvm/tools/llvm-as/llvm-as.cpp
+
+llvm_dis_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+llvm_dis_CXXFLAGS=$(LLVM_CXXFLAGS)
+llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_dis_SOURCES=\
+    llvm/tools/llvm-dis/llvm-dis.cpp
 
 noinst_PROGRAMS = tblgen
 #bytecode2llvm.cpp: build-llvm
@@ -814,6 +833,12 @@ distclean-local:
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
 	+$(GMAKE) -C llvm unittests
+
+CONFIG_STATUS_DEPENDENCIES = $(top_builddir)/llvm/config.status
+# config.status needs to be run twice, once without recheck so that it has a
+# chance to create configure generated files.
+$(top_builddir)/llvm/config.status: llvm/configure
+	cd llvm; ./config.status --recheck; ./config.status
 
 # rm configure generated files
 dist-hook:

@@ -19,7 +19,7 @@ for i in llvm/bindings/ llvm/examples/ llvm/projects/ llvm/runtime/\
     llvm/test/CodeGen/CellSPU llvm/test/CodeGen/CBackend\
     llvm/test/CodeGen/SystemZ llvm/test/CodeGen/Blackfin\
     llvm/tools/bugpoint llvm/tools/gold llvm/tools/llvm-ar\
-    llvm/tools/llvm-bcanalyzer llvm/tools/llvm-db llvm/tools/llvm-dis\
+    llvm/tools/llvm-bcanalyzer llvm/tools/llvm-db\
     llvm/tools/llvm-extract llvm/tools/llvm-ld llvm/tools/llvm-link llvm/tools/llvm-mc\
     llvm/tools/llvm-nm llvm/tools/llvm-prof llvm/tools/llvm-ranlib\
     llvm/tools/llvm-stub llvm/tools/lto llvm/tools/opt
