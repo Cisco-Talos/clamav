@@ -45,6 +45,7 @@
 #include "llvm/System/Threading.h"
 #include "llvm/Target/TargetSelect.h"
 #include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/TargetFolder.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Transforms/Scalar.h"
@@ -978,6 +979,9 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     void *code = bcs->engine->compiledFunctions[func];
     if (!code) {
 	errs() << MODULE << "Unable to find compiled function\n";
+	if (func->numArgs)
+	    errs() << MODULE << "Function has "
+		<< (unsigned)func->numArgs << " arguments, it must have 0 to be called as entrypoint\n";
 	return CL_EBYTECODE;
     }
     // execute;
@@ -989,12 +993,11 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 	return 0;
     }
     errs() << "\n";
-    errs().changeColor(raw_ostream::RED, true) << MODULE 
+    errs().changeColor(raw_ostream::RED, true) << MODULE
 	<< "*** JITed code intercepted runtime error!\n";
     errs().resetColor();
     return CL_EBYTECODE;
 }
-
 
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
@@ -1002,7 +1005,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
       return CL_EBYTECODE;
   jmp_buf env;
   // setup exception handler to longjmp back here
-  ExceptionReturn.set(&env);  
+  ExceptionReturn.set(&env);
   if (setjmp(env) != 0) {
       errs() << "\n";
       errs().changeColor(raw_ostream::RED, true) << MODULE 
@@ -1119,6 +1122,9 @@ int bytecode_init(void)
 #endif
     atexit(do_shutdown);
 
+#ifdef CL_DEBUG
+    llvm::JITEmitDebugInfo = true;
+#endif
     llvm_start_multithreaded();
 
     // If we have a native target, initialize it to ensure it is linked in and
