@@ -25,7 +25,6 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetOptions.h"
@@ -57,8 +56,7 @@ namespace {
   };
 
   template <class CodeEmitter>
-  class VISIBILITY_HIDDEN Emitter : public MachineFunctionPass,
-      public PPCCodeEmitter {
+  class Emitter : public MachineFunctionPass, public PPCCodeEmitter {
     TargetMachine &TM;
     CodeEmitter &MCE;
 
@@ -132,7 +130,7 @@ void Emitter<CodeEmitter>::emitBasicBlock(MachineBasicBlock &MBB) {
 
   for (MachineBasicBlock::iterator I = MBB.begin(), E = MBB.end(); I != E; ++I){
     const MachineInstr &MI = *I;
-    MCE.processDebugLoc(MI.getDebugLoc());
+    MCE.processDebugLoc(MI.getDebugLoc(), true);
     switch (MI.getOpcode()) {
     default:
       MCE.emitWordBE(getBinaryCodeForInstr(MI));
@@ -151,6 +149,7 @@ void Emitter<CodeEmitter>::emitBasicBlock(MachineBasicBlock &MBB) {
       MCE.emitWordBE(0x48000005);   // bl 1
       break;
     }
+    MCE.processDebugLoc(MI.getDebugLoc(), false);
   }
 }
 

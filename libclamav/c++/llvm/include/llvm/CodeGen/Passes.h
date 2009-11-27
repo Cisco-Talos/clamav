@@ -15,13 +15,13 @@
 #ifndef LLVM_CODEGEN_PASSES_H
 #define LLVM_CODEGEN_PASSES_H
 
+#include "llvm/Target/TargetMachine.h"
 #include <string>
 
 namespace llvm {
 
   class FunctionPass;
   class PassInfo;
-  class TargetMachine;
   class TargetLowering;
   class RegisterCoalescer;
   class raw_ostream;
@@ -119,8 +119,9 @@ namespace llvm {
   ///
   FunctionPass *createLowerSubregsPass();
 
-  /// createPostRAScheduler - under development.
-  FunctionPass *createPostRAScheduler();
+  /// createPostRAScheduler - This pass performs post register allocation
+  /// scheduling.
+  FunctionPass *createPostRAScheduler(CodeGenOpt::Level OptLevel);
 
   /// BranchFolding Pass - This pass performs machine code CFG based
   /// optimizations to delete branches to branches, eliminate branches to
@@ -128,17 +129,16 @@ namespace llvm {
   /// branches.
   FunctionPass *createBranchFoldingPass(bool DefaultEnableTailMerge);
 
+  /// TailDuplicate Pass - Duplicate blocks with unconditional branches
+  /// into tails of their predecessors.
+  FunctionPass *createTailDuplicatePass();
+
   /// IfConverter Pass - This pass performs machine code if conversion.
   FunctionPass *createIfConverterPass();
 
   /// Code Placement Pass - This pass optimize code placement and aligns loop
   /// headers to target specific alignment boundary.
   FunctionPass *createCodePlacementOptPass();
-
-  /// DebugLabelFoldingPass - This pass prunes out redundant debug labels.  This
-  /// allows a debug emitter to determine if the range of two labels is empty,
-  /// by seeing if the labels map to the same reduced label.
-  FunctionPass *createDebugLabelFoldingPass();
 
   /// getRegisterAllocator - This creates an instance of the register allocator
   /// for the Sparc.

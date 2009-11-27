@@ -316,7 +316,7 @@ bool llvm::InlineFunction(CallSite CS, CallGraph *CG, const TargetData *TD,
           !CalledFunc->onlyReadsMemory()) {
         const Type *AggTy = cast<PointerType>(I->getType())->getElementType();
         const Type *VoidPtrTy = 
-            PointerType::getUnqual(Type::getInt8Ty(Context));
+            Type::getInt8PtrTy(Context);
 
         // Create the alloca.  If we have TargetData, use nice alignment.
         unsigned Align = 1;
@@ -386,7 +386,7 @@ bool llvm::InlineFunction(CallSite CS, CallGraph *CG, const TargetData *TD,
     // (which can happen, e.g., because an argument was constant), but we'll be
     // happy with whatever the cloner can do.
     CloneAndPruneFunctionInto(Caller, CalledFunc, ValueMap, Returns, ".i",
-                              &InlinedFunctionInfo, TD);
+                              &InlinedFunctionInfo, TD, TheCall);
 
     // Remember the first block that is newly cloned over.
     FirstNewBlock = LastBlock; ++FirstNewBlock;
@@ -444,18 +444,15 @@ bool llvm::InlineFunction(CallSite CS, CallGraph *CG, const TargetData *TD,
   if (InlinedFunctionInfo.ContainsDynamicAllocas) {
     Module *M = Caller->getParent();
     // Get the two intrinsics we care about.
-    Constant *StackSave, *StackRestore;
-    StackSave    = Intrinsic::getDeclaration(M, Intrinsic::stacksave);
-    StackRestore = Intrinsic::getDeclaration(M, Intrinsic::stackrestore);
+    Function *StackSave = Intrinsic::getDeclaration(M, Intrinsic::stacksave);
+    Function *StackRestore=Intrinsic::getDeclaration(M,Intrinsic::stackrestore);
 
     // If we are preserving the callgraph, add edges to the stacksave/restore
     // functions for the calls we insert.
     CallGraphNode *StackSaveCGN = 0, *StackRestoreCGN = 0, *CallerNode = 0;
     if (CG) {
-      // We know that StackSave/StackRestore are Function*'s, because they are
-      // intrinsics which must have the right types.
-      StackSaveCGN    = CG->getOrInsertFunction(cast<Function>(StackSave));
-      StackRestoreCGN = CG->getOrInsertFunction(cast<Function>(StackRestore));
+      StackSaveCGN    = CG->getOrInsertFunction(StackSave);
+      StackRestoreCGN = CG->getOrInsertFunction(StackRestore);
       CallerNode = (*CG)[Caller];
     }
 
@@ -480,7 +477,8 @@ bool llvm::InlineFunction(CallSite CS, CallGraph *CG, const TargetData *TD,
       for (Function::iterator BB = FirstNewBlock, E = Caller->end();
            BB != E; ++BB)
         if (UnwindInst *UI = dyn_cast<UnwindInst>(BB->getTerminator())) {
-          CallInst::Create(StackRestore, SavedPtr, "", UI);
+          CallInst *CI = CallInst::Create(StackRestore, SavedPtr, "", UI);
+          if (CG) CallerNode->addCalledFunction(CI, StackRestoreCGN);
           ++NumStackRestores;
         }
     }
@@ -621,7 +619,16 @@ bool llvm::InlineFunction(CallSite CS, CallGraph *CG, const TargetData *TD,
                "Ret value not consistent in function!");
         PHI->addIncoming(RI->getReturnValue(), RI->getParent());
       }
+    
+      // Now that we inserted the PHI, check to see if it has a single value
+      // (e.g. all the entries are the same or undef).  If so, remove the PHI so
+      // it doesn't block other optimizations.
+      if (Value *V = PHI->hasConstantValue()) {
+        PHI->replaceAllUsesWith(V);
+        PHI->eraseFromParent();
+      }
     }
+
 
     // Add a branch to the merge points and remove return instructions.
     for (unsigned i = 0, e = Returns.size(); i != e; ++i) {

@@ -76,6 +76,10 @@ class MachineBasicBlock : public ilist_node<MachineBasicBlock> {
   /// exception handler.
   bool IsLandingPad;
 
+  /// AddressTaken - Indicate that this basic block is potentially the
+  /// target of an indirect branch.
+  bool AddressTaken;
+
   // Intrusive list support
   MachineBasicBlock() {}
 
@@ -88,9 +92,22 @@ class MachineBasicBlock : public ilist_node<MachineBasicBlock> {
 
 public:
   /// getBasicBlock - Return the LLVM basic block that this instance
-  /// corresponded to originally.
+  /// corresponded to originally. Note that this may be NULL if this instance
+  /// does not correspond directly to an LLVM basic block.
   ///
   const BasicBlock *getBasicBlock() const { return BB; }
+
+  /// getName - Return the name of the corresponding LLVM basic block, or
+  /// "(null)".
+  StringRef getName() const;
+
+  /// hasAddressTaken - Test whether this block is potentially the target
+  /// of an indirect branch.
+  bool hasAddressTaken() const { return AddressTaken; }
+
+  /// setHasAddressTaken - Set this block to reflect that it potentially
+  /// is the target of an indirect branch.
+  void setHasAddressTaken() { AddressTaken = true; }
 
   /// getParent - Return the MachineFunction containing this basic block.
   ///
@@ -213,7 +230,13 @@ public:
   /// potential fall-throughs at the end of the block.
   void moveBefore(MachineBasicBlock *NewAfter);
   void moveAfter(MachineBasicBlock *NewBefore);
-  
+
+  /// updateTerminator - Update the terminator instructions in block to account
+  /// for changes to the layout. If the block previously used a fallthrough,
+  /// it may now need a branch, and if it previously used branching it may now
+  /// be able to use a fallthrough.
+  void updateTerminator();
+
   // Machine-CFG mutators
   
   /// addSuccessor - Add succ as a successor of this MachineBasicBlock.
@@ -234,7 +257,7 @@ public:
   
   /// transferSuccessors - Transfers all the successors from MBB to this
   /// machine basic block (i.e., copies all the successors fromMBB and
-  /// remove all the successors fromBB).
+  /// remove all the successors from fromMBB).
   void transferSuccessors(MachineBasicBlock *fromMBB);
   
   /// isSuccessor - Return true if the specified MBB is a successor of this
@@ -247,6 +270,12 @@ public:
   /// that MBB need not be a successor at all, for example if this block
   /// ends with an unconditional branch to some other block.
   bool isLayoutSuccessor(const MachineBasicBlock *MBB) const;
+
+  /// canFallThrough - Return true if the block can implicitly transfer
+  /// control to the block after it by falling off the end of it.  This should
+  /// return false if it can reach the block after it, but it uses an explicit
+  /// branch to do so (e.g., a table jump).  True is a conservative answer.
+  bool canFallThrough();
 
   /// getFirstTerminator - returns an iterator to the first terminator
   /// instruction of this basic block. If a terminator does not exist,
@@ -339,6 +368,8 @@ private:   // Methods used to maintain doubly linked list of blocks...
 };
 
 raw_ostream& operator<<(raw_ostream &OS, const MachineBasicBlock &MBB);
+
+void WriteAsOperand(raw_ostream &, const MachineBasicBlock*, bool t);
 
 //===--------------------------------------------------------------------===//
 // GraphTraits specializations for machine basic block graphs (machine-CFGs)

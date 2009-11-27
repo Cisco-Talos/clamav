@@ -198,15 +198,17 @@ ExecutionEngine *ExecutionEngine::createJIT(ModuleProvider *MP,
                                             std::string *ErrorStr,
                                             JITMemoryManager *JMM,
                                             CodeGenOpt::Level OptLevel,
-                                            bool GVsWithCode) {
-    return JIT::createJIT(MP, ErrorStr, JMM, OptLevel, GVsWithCode);
+                                            bool GVsWithCode,
+					    CodeModel::Model CMM) {
+  return JIT::createJIT(MP, ErrorStr, JMM, OptLevel, GVsWithCode, CMM);
 }
 
 ExecutionEngine *JIT::createJIT(ModuleProvider *MP,
                                 std::string *ErrorStr,
                                 JITMemoryManager *JMM,
                                 CodeGenOpt::Level OptLevel,
-                                bool GVsWithCode) {
+                                bool GVsWithCode,
+				CodeModel::Model CMM) {
   // Make sure we can resolve symbols in the program as well. The zero arg
   // to the function tells DynamicLibrary to load the program, not a library.
   if (sys::DynamicLibrary::LoadLibraryPermanently(0, ErrorStr))
@@ -215,6 +217,7 @@ ExecutionEngine *JIT::createJIT(ModuleProvider *MP,
   // Pick a target either via -march or by guessing the native arch.
   TargetMachine *TM = JIT::selectTarget(MP, ErrorStr);
   if (!TM || (ErrorStr && ErrorStr->length() > 0)) return 0;
+  TM->setCodeModel(CMM);
 
   // If the target supports JIT code generation, create a the JIT.
   if (TargetJITInfo *TJ = TM->getJITInfo()) {
@@ -556,10 +559,10 @@ void JIT::NotifyFunctionEmitted(
   }
 }
 
-void JIT::NotifyFreeingMachineCode(const Function &F, void *OldPtr) {
+void JIT::NotifyFreeingMachineCode(void *OldPtr) {
   MutexGuard locked(lock);
   for (unsigned I = 0, S = EventListeners.size(); I < S; ++I) {
-    EventListeners[I]->NotifyFreeingMachineCode(F, OldPtr);
+    EventListeners[I]->NotifyFreeingMachineCode(OldPtr);
   }
 }
 
@@ -599,7 +602,7 @@ void JIT::runJITOnFunctionUnlocked(Function *F, const MutexGuard &locked) {
   isAlreadyCodeGenerating = false;
 
   // If the function referred to another function that had not yet been
-  // read from bitcode, but we are jitting non-lazily, emit it now.
+  // read from bitcode, and we are jitting non-lazily, emit it now.
   while (!jitstate->getPendingFunctions(locked).empty()) {
     Function *PF = jitstate->getPendingFunctions(locked).back();
     jitstate->getPendingFunctions(locked).pop_back();
@@ -613,11 +616,6 @@ void JIT::runJITOnFunctionUnlocked(Function *F, const MutexGuard &locked) {
     // the stub with real address of the function.
     updateFunctionStub(PF);
   }
-  
-  // If the JIT is configured to emit info so that dlsym can be used to
-  // rewrite stubs to external globals, do so now.
-  if (areDlsymStubsEnabled() && isLazyCompilationDisabled())
-    updateDlsymStubTable();
 }
 
 /// getPointerToFunction - This method is used to get the address of the
@@ -659,9 +657,8 @@ void *JIT::getPointerToFunction(Function *F) {
       return Addr;
   }
 
-  if (F->isDeclaration()) {
-    bool AbortOnFailure =
-      !areDlsymStubsEnabled() && !F->hasExternalWeakLinkage();
+  if (F->isDeclaration() || F->hasAvailableExternallyLinkage()) {
+    bool AbortOnFailure = !F->hasExternalWeakLinkage();
     void *Addr = getPointerToNamedFunction(F->getName(), AbortOnFailure);
     addGlobalMapping(F, Addr);
     return Addr;
@@ -690,7 +687,7 @@ void *JIT::getOrEmitGlobalVariable(const GlobalVariable *GV) {
       return (void*)&__dso_handle;
 #endif
     Ptr = sys::DynamicLibrary::SearchForAddressOfSymbol(GV->getName());
-    if (Ptr == 0 && !areDlsymStubsEnabled()) {
+    if (Ptr == 0) {
       llvm_report_error("Could not resolve external global address: "
                         +GV->getName());
     }

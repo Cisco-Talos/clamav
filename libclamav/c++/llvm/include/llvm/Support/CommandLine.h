@@ -67,7 +67,7 @@ void MarkOptionsChanged();
 // Flags permitted to be passed to command line arguments
 //
 
-enum NumOccurrences {          // Flags for the number of occurrences allowed
+enum NumOccurrencesFlag {      // Flags for the number of occurrences allowed
   Optional        = 0x01,      // Zero or One occurrence
   ZeroOrMore      = 0x02,      // Zero or more occurrences allowed
   Required        = 0x03,      // One occurrence required
@@ -162,8 +162,8 @@ public:
   const char *HelpStr;    // The descriptive text message for --help
   const char *ValueStr;   // String describing what the value of this option is
 
-  inline enum NumOccurrences getNumOccurrencesFlag() const {
-    return static_cast<enum NumOccurrences>(Flags & OccurrencesMask);
+  inline enum NumOccurrencesFlag getNumOccurrencesFlag() const {
+    return static_cast<enum NumOccurrencesFlag>(Flags & OccurrencesMask);
   }
   inline enum ValueExpected getValueExpectedFlag() const {
     int VE = Flags & ValueMask;
@@ -197,7 +197,7 @@ public:
     Flags |= Flag;
   }
 
-  void setNumOccurrencesFlag(enum NumOccurrences Val) {
+  void setNumOccurrencesFlag(enum NumOccurrencesFlag Val) {
     setFlag(Val, OccurrencesMask);
   }
   void setValueExpectedFlag(enum ValueExpected Val) { setFlag(Val, ValueMask); }
@@ -495,7 +495,8 @@ public:
 //--------------------------------------------------
 // basic_parser - Super class of parsers to provide boilerplate code
 //
-struct basic_parser_impl {  // non-template implementation of basic_parser<t>
+class basic_parser_impl {  // non-template implementation of basic_parser<t>
+public:
   virtual ~basic_parser_impl() {}
 
   enum ValueExpected getValueExpectedFlagDefault() const {
@@ -525,7 +526,8 @@ struct basic_parser_impl {  // non-template implementation of basic_parser<t>
 // a typedef for the provided data type.
 //
 template<class DataType>
-struct basic_parser : public basic_parser_impl {
+class basic_parser : public basic_parser_impl {
+public:
   typedef DataType parser_data_type;
 };
 
@@ -660,7 +662,7 @@ template<>
 class parser<std::string> : public basic_parser<std::string> {
 public:
   // parse - Return true on error.
-  bool parse(Option &, StringRef ArgName, StringRef Arg, std::string &Value) {
+  bool parse(Option &, StringRef, StringRef Arg, std::string &Value) {
     Value = Arg.str();
     return false;
   }
@@ -681,7 +683,7 @@ template<>
 class parser<char> : public basic_parser<char> {
 public:
   // parse - Return true on error.
-  bool parse(Option &, StringRef ArgName, StringRef Arg, char &Value) {
+  bool parse(Option &, StringRef, StringRef Arg, char &Value) {
     Value = Arg[0];
     return false;
   }
@@ -720,8 +722,10 @@ template<> struct applicator<const char*> {
   static void opt(const char *Str, Opt &O) { O.setArgStr(Str); }
 };
 
-template<> struct applicator<NumOccurrences> {
-  static void opt(NumOccurrences NO, Option &O) { O.setNumOccurrencesFlag(NO); }
+template<> struct applicator<NumOccurrencesFlag> {
+  static void opt(NumOccurrencesFlag NO, Option &O) {
+    O.setNumOccurrencesFlag(NO);
+  }
 };
 template<> struct applicator<ValueExpected> {
   static void opt(ValueExpected VE, Option &O) { O.setValueExpectedFlag(VE); }
@@ -777,6 +781,8 @@ public:
 
   DataType &getValue() { check(); return *Location; }
   const DataType &getValue() const { check(); return *Location; }
+  
+  operator DataType() const { return this->getValue(); }
 };
 
 
@@ -811,6 +817,8 @@ public:
   void setValue(const T &V) { Value = V; }
   DataType &getValue() { return Value; }
   DataType getValue() const { return Value; }
+
+  operator DataType() const { return getValue(); }
 
   // If the datatype is a pointer, support -> on it.
   DataType operator->() const { return Value; }
@@ -860,8 +868,6 @@ public:
   void setInitialValue(const DataType &V) { this->setValue(V); }
 
   ParserClass &getParser() { return Parser; }
-
-  operator DataType() const { return this->getValue(); }
 
   template<class T>
   DataType &operator=(const T &Val) {

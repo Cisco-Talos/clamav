@@ -74,31 +74,31 @@ namespace X86II {
     //===------------------------------------------------------------------===//
     // X86 Specific MachineOperand flags.
     
-    MO_NO_FLAG = 0,
+    MO_NO_FLAG,
     
     /// MO_GOT_ABSOLUTE_ADDRESS - On a symbol operand, this represents a
     /// relocation of:
     ///    SYMBOL_LABEL + [. - PICBASELABEL]
-    MO_GOT_ABSOLUTE_ADDRESS = 1,
+    MO_GOT_ABSOLUTE_ADDRESS,
     
     /// MO_PIC_BASE_OFFSET - On a symbol operand this indicates that the
     /// immediate should get the value of the symbol minus the PIC base label:
     ///    SYMBOL_LABEL - PICBASELABEL
-    MO_PIC_BASE_OFFSET = 2,
+    MO_PIC_BASE_OFFSET,
 
     /// MO_GOT - On a symbol operand this indicates that the immediate is the
     /// offset to the GOT entry for the symbol name from the base of the GOT.
     ///
     /// See the X86-64 ELF ABI supplement for more details. 
     ///    SYMBOL_LABEL @GOT
-    MO_GOT = 3,
+    MO_GOT,
     
     /// MO_GOTOFF - On a symbol operand this indicates that the immediate is
     /// the offset to the location of the symbol name from the base of the GOT. 
     ///
     /// See the X86-64 ELF ABI supplement for more details. 
     ///    SYMBOL_LABEL @GOTOFF
-    MO_GOTOFF = 4,
+    MO_GOTOFF,
     
     /// MO_GOTPCREL - On a symbol operand this indicates that the immediate is
     /// offset to the GOT entry for the symbol name from the current code
@@ -106,75 +106,75 @@ namespace X86II {
     ///
     /// See the X86-64 ELF ABI supplement for more details. 
     ///    SYMBOL_LABEL @GOTPCREL
-    MO_GOTPCREL = 5,
+    MO_GOTPCREL,
     
     /// MO_PLT - On a symbol operand this indicates that the immediate is
     /// offset to the PLT entry of symbol name from the current code location. 
     ///
     /// See the X86-64 ELF ABI supplement for more details. 
     ///    SYMBOL_LABEL @PLT
-    MO_PLT = 6,
+    MO_PLT,
     
     /// MO_TLSGD - On a symbol operand this indicates that the immediate is
     /// some TLS offset.
     ///
     /// See 'ELF Handling for Thread-Local Storage' for more details. 
     ///    SYMBOL_LABEL @TLSGD
-    MO_TLSGD = 7,
+    MO_TLSGD,
     
     /// MO_GOTTPOFF - On a symbol operand this indicates that the immediate is
     /// some TLS offset.
     ///
     /// See 'ELF Handling for Thread-Local Storage' for more details. 
     ///    SYMBOL_LABEL @GOTTPOFF
-    MO_GOTTPOFF = 8,
+    MO_GOTTPOFF,
    
     /// MO_INDNTPOFF - On a symbol operand this indicates that the immediate is
     /// some TLS offset.
     ///
     /// See 'ELF Handling for Thread-Local Storage' for more details. 
     ///    SYMBOL_LABEL @INDNTPOFF
-    MO_INDNTPOFF = 9,
+    MO_INDNTPOFF,
     
     /// MO_TPOFF - On a symbol operand this indicates that the immediate is
     /// some TLS offset.
     ///
     /// See 'ELF Handling for Thread-Local Storage' for more details. 
     ///    SYMBOL_LABEL @TPOFF
-    MO_TPOFF = 10,
+    MO_TPOFF,
     
     /// MO_NTPOFF - On a symbol operand this indicates that the immediate is
     /// some TLS offset.
     ///
     /// See 'ELF Handling for Thread-Local Storage' for more details. 
     ///    SYMBOL_LABEL @NTPOFF
-    MO_NTPOFF = 11,
+    MO_NTPOFF,
     
     /// MO_DLLIMPORT - On a symbol operand "FOO", this indicates that the
     /// reference is actually to the "__imp_FOO" symbol.  This is used for
     /// dllimport linkage on windows.
-    MO_DLLIMPORT = 12,
+    MO_DLLIMPORT,
     
     /// MO_DARWIN_STUB - On a symbol operand "FOO", this indicates that the
     /// reference is actually to the "FOO$stub" symbol.  This is used for calls
     /// and jumps to external functions on Tiger and before.
-    MO_DARWIN_STUB = 13,
+    MO_DARWIN_STUB,
     
     /// MO_DARWIN_NONLAZY - On a symbol operand "FOO", this indicates that the
     /// reference is actually to the "FOO$non_lazy_ptr" symbol, which is a
     /// non-PIC-base-relative reference to a non-hidden dyld lazy pointer stub.
-    MO_DARWIN_NONLAZY = 14,
+    MO_DARWIN_NONLAZY,
 
     /// MO_DARWIN_NONLAZY_PIC_BASE - On a symbol operand "FOO", this indicates
     /// that the reference is actually to "FOO$non_lazy_ptr - PICBASE", which is
     /// a PIC-base-relative reference to a non-hidden dyld lazy pointer stub.
-    MO_DARWIN_NONLAZY_PIC_BASE = 15,
+    MO_DARWIN_NONLAZY_PIC_BASE,
     
     /// MO_DARWIN_HIDDEN_NONLAZY_PIC_BASE - On a symbol operand "FOO", this
     /// indicates that the reference is actually to "FOO$non_lazy_ptr -PICBASE",
     /// which is a PIC-base-relative reference to a hidden dyld lazy pointer
     /// stub.
-    MO_DARWIN_HIDDEN_NONLAZY_PIC_BASE = 16
+    MO_DARWIN_HIDDEN_NONLAZY_PIC_BASE
   };
 }
 
@@ -449,14 +449,41 @@ public:
                            unsigned &SrcSubIdx, unsigned &DstSubIdx) const;
 
   unsigned isLoadFromStackSlot(const MachineInstr *MI, int &FrameIndex) const;
-  unsigned isStoreToStackSlot(const MachineInstr *MI, int &FrameIndex) const;
+  /// isLoadFromStackSlotPostFE - Check for post-frame ptr elimination
+  /// stack locations as well.  This uses a heuristic so it isn't
+  /// reliable for correctness.
+  unsigned isLoadFromStackSlotPostFE(const MachineInstr *MI,
+                                     int &FrameIndex) const;
 
-  bool isReallyTriviallyReMaterializable(const MachineInstr *MI) const;
+  /// hasLoadFromStackSlot - If the specified machine instruction has
+  /// a load from a stack slot, return true along with the FrameIndex
+  /// of the loaded stack slot.  If not, return false.  Unlike
+  /// isLoadFromStackSlot, this returns true for any instructions that
+  /// loads from the stack.  This is a hint only and may not catch all
+  /// cases.
+  bool hasLoadFromStackSlot(const MachineInstr *MI, int &FrameIndex) const;
+
+  unsigned isStoreToStackSlot(const MachineInstr *MI, int &FrameIndex) const;
+  /// isStoreToStackSlotPostFE - Check for post-frame ptr elimination
+  /// stack locations as well.  This uses a heuristic so it isn't
+  /// reliable for correctness.
+  unsigned isStoreToStackSlotPostFE(const MachineInstr *MI,
+                                    int &FrameIndex) const;
+
+  /// hasStoreToStackSlot - If the specified machine instruction has a
+  /// store to a stack slot, return true along with the FrameIndex of
+  /// the loaded stack slot.  If not, return false.  Unlike
+  /// isStoreToStackSlot, this returns true for any instructions that
+  /// loads from the stack.  This is a hint only and may not catch all
+  /// cases.
+  bool hasStoreToStackSlot(const MachineInstr *MI, int &FrameIndex) const;
+
+  bool isReallyTriviallyReMaterializable(const MachineInstr *MI,
+                                         AliasAnalysis *AA) const;
   void reMaterialize(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
                      unsigned DestReg, unsigned SubIdx,
-                     const MachineInstr *Orig) const;
-
-  bool isInvariantLoad(const MachineInstr *MI) const;
+                     const MachineInstr *Orig,
+                     const TargetRegisterInfo *TRI) const;
 
   /// convertToThreeAddress - This method must be implemented by targets that
   /// set the M_CONVERTIBLE_TO_3_ADDR flag.  When this flag is set, the target
@@ -500,6 +527,8 @@ public:
   virtual void storeRegToAddr(MachineFunction &MF, unsigned SrcReg, bool isKill,
                               SmallVectorImpl<MachineOperand> &Addr,
                               const TargetRegisterClass *RC,
+                              MachineInstr::mmo_iterator MMOBegin,
+                              MachineInstr::mmo_iterator MMOEnd,
                               SmallVectorImpl<MachineInstr*> &NewMIs) const;
 
   virtual void loadRegFromStackSlot(MachineBasicBlock &MBB,
@@ -510,6 +539,8 @@ public:
   virtual void loadRegFromAddr(MachineFunction &MF, unsigned DestReg,
                                SmallVectorImpl<MachineOperand> &Addr,
                                const TargetRegisterClass *RC,
+                               MachineInstr::mmo_iterator MMOBegin,
+                               MachineInstr::mmo_iterator MMOEnd,
                                SmallVectorImpl<MachineInstr*> &NewMIs) const;
   
   virtual bool spillCalleeSavedRegisters(MachineBasicBlock &MBB,
@@ -557,9 +588,12 @@ public:
   /// getOpcodeAfterMemoryUnfold - Returns the opcode of the would be new
   /// instruction after load / store are unfolded from an instruction of the
   /// specified opcode. It returns zero if the specified unfolding is not
-  /// possible.
+  /// possible. If LoadRegIndex is non-null, it is filled in with the operand
+  /// index of the operand which will hold the register holding the loaded
+  /// value.
   virtual unsigned getOpcodeAfterMemoryUnfold(unsigned Opc,
-                                      bool UnfoldLoad, bool UnfoldStore) const;
+                                      bool UnfoldLoad, bool UnfoldStore,
+                                      unsigned *LoadRegIndex = 0) const;
   
   virtual bool BlockHasNoFallThrough(const MachineBasicBlock &MBB) const;
   virtual
@@ -598,12 +632,19 @@ public:
   ///
   unsigned getGlobalBaseReg(MachineFunction *MF) const;
 
+  virtual bool isProfitableToDuplicateIndirectBranch() const { return true; }
+
 private:
   MachineInstr* foldMemoryOperandImpl(MachineFunction &MF,
                                      MachineInstr* MI,
                                      unsigned OpNum,
                                      const SmallVectorImpl<MachineOperand> &MOs,
                                      unsigned Size, unsigned Alignment) const;
+
+  /// isFrameOperand - Return true and the FrameIndex if the specified
+  /// operand and follow operands form a reference to the stack frame.
+  bool isFrameOperand(const MachineInstr *MI, unsigned int Op,
+                      int &FrameIndex) const;
 };
 
 } // End llvm namespace

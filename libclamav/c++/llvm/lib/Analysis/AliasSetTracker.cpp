@@ -19,7 +19,6 @@
 #include "llvm/Type.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Assembly/Writer.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/Format.h"
@@ -154,9 +153,6 @@ bool AliasSet::aliasesPointer(const Value *Ptr, unsigned Size,
 
   // Check the call sites list and invoke list...
   if (!CallSites.empty()) {
-    if (AA.hasNoModRefInfoForCalls())
-      return true;
-
     for (unsigned i = 0, e = CallSites.size(); i != e; ++i)
       if (AA.getModRefInfo(CallSites[i], const_cast<Value*>(Ptr), Size)
                    != AliasAnalysis::NoModRef)
@@ -169,9 +165,6 @@ bool AliasSet::aliasesPointer(const Value *Ptr, unsigned Size,
 bool AliasSet::aliasesCallSite(CallSite CS, AliasAnalysis &AA) const {
   if (AA.doesNotAccessMemory(CS))
     return false;
-
-  if (AA.hasNoModRefInfoForCalls())
-    return true;
 
   for (unsigned i = 0, e = CallSites.size(); i != e; ++i)
     if (AA.getModRefInfo(CallSites[i], CS) != AliasAnalysis::NoModRef ||
@@ -297,12 +290,6 @@ bool AliasSetTracker::add(StoreInst *SI) {
   return NewPtr;
 }
 
-bool AliasSetTracker::add(FreeInst *FI) {
-  bool NewPtr;
-  addPointer(FI->getOperand(0), ~0, AliasSet::Mods, NewPtr);
-  return NewPtr;
-}
-
 bool AliasSetTracker::add(VAArgInst *VAAI) {
   bool NewPtr;
   addPointer(VAAI->getOperand(0), ~0, AliasSet::ModRef, NewPtr);
@@ -338,8 +325,6 @@ bool AliasSetTracker::add(Instruction *I) {
     return add(CI);
   else if (InvokeInst *II = dyn_cast<InvokeInst>(I))
     return add(II);
-  else if (FreeInst *FI = dyn_cast<FreeInst>(I))
-    return add(FI);
   else if (VAArgInst *VAAI = dyn_cast<VAArgInst>(I))
     return add(VAAI);
   return true;
@@ -428,13 +413,6 @@ bool AliasSetTracker::remove(StoreInst *SI) {
   return true;
 }
 
-bool AliasSetTracker::remove(FreeInst *FI) {
-  AliasSet *AS = findAliasSetForPointer(FI->getOperand(0), ~0);
-  if (!AS) return false;
-  remove(*AS);
-  return true;
-}
-
 bool AliasSetTracker::remove(VAArgInst *VAAI) {
   AliasSet *AS = findAliasSetForPointer(VAAI->getOperand(0), ~0);
   if (!AS) return false;
@@ -460,8 +438,6 @@ bool AliasSetTracker::remove(Instruction *I) {
     return remove(SI);
   else if (CallInst *CI = dyn_cast<CallInst>(I))
     return remove(CI);
-  else if (FreeInst *FI = dyn_cast<FreeInst>(I))
-    return remove(FI);
   else if (VAArgInst *VAAI = dyn_cast<VAArgInst>(I))
     return remove(VAAI);
   return true;
@@ -599,7 +575,7 @@ AliasSetTracker::ASTCallbackVH::operator=(Value *V) {
 //===----------------------------------------------------------------------===//
 
 namespace {
-  class VISIBILITY_HIDDEN AliasSetPrinter : public FunctionPass {
+  class AliasSetPrinter : public FunctionPass {
     AliasSetTracker *Tracker;
   public:
     static char ID; // Pass identification, replacement for typeid

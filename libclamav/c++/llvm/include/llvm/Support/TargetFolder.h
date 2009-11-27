@@ -20,29 +20,27 @@
 #define LLVM_SUPPORT_TARGETFOLDER_H
 
 #include "llvm/Constants.h"
+#include "llvm/InstrTypes.h"
 #include "llvm/Analysis/ConstantFolding.h"
 
 namespace llvm {
 
 class TargetData;
-class LLVMContext;
 
 /// TargetFolder - Create constants with target dependent folding.
 class TargetFolder {
   const TargetData *TD;
-  LLVMContext &Context;
 
   /// Fold - Fold the constant using target specific information.
   Constant *Fold(Constant *C) const {
     if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C))
-      if (Constant *CF = ConstantFoldConstantExpression(CE, Context, TD))
+      if (Constant *CF = ConstantFoldConstantExpression(CE, TD))
         return CF;
     return C;
   }
 
 public:
-  explicit TargetFolder(const TargetData *TheTD, LLVMContext &C) :
-    TD(TheTD), Context(C) {}
+  explicit TargetFolder(const TargetData *TheTD) : TD(TheTD) {}
 
   //===--------------------------------------------------------------------===//
   // Binary Operators
@@ -178,6 +176,16 @@ public:
   }
   Constant *CreatePtrToInt(Constant *C, const Type *DestTy) const {
     return CreateCast(Instruction::PtrToInt, C, DestTy);
+  }
+  Constant *CreateZExtOrBitCast(Constant *C, const Type *DestTy) const {
+    if (C->getType() == DestTy)
+      return C; // avoid calling Fold
+    return Fold(ConstantExpr::getZExtOrBitCast(C, DestTy));
+  }
+  Constant *CreateSExtOrBitCast(Constant *C, const Type *DestTy) const {
+    if (C->getType() == DestTy)
+      return C; // avoid calling Fold
+    return Fold(ConstantExpr::getSExtOrBitCast(C, DestTy));
   }
   Constant *CreateTruncOrBitCast(Constant *C, const Type *DestTy) const {
     if (C->getType() == DestTy)

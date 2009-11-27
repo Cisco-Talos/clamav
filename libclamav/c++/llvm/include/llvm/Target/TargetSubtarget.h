@@ -14,10 +14,14 @@
 #ifndef LLVM_TARGET_TARGETSUBTARGET_H
 #define LLVM_TARGET_TARGETSUBTARGET_H
 
+#include "llvm/Target/TargetMachine.h"
+
 namespace llvm {
 
 class SDep;
 class SUnit;
+class TargetRegisterClass;
+template <typename T> class SmallVectorImpl;
 
 //===----------------------------------------------------------------------===//
 ///
@@ -31,6 +35,11 @@ class TargetSubtarget {
 protected: // Can only create subclasses...
   TargetSubtarget();
 public:
+  // AntiDepBreakMode - Type of anti-dependence breaking that should
+  // be performed before post-RA scheduling.
+  typedef enum { ANTIDEP_NONE, ANTIDEP_CRITICAL, ANTIDEP_ALL } AntiDepBreakMode;
+  typedef SmallVectorImpl<TargetRegisterClass*> RegClassVector;
+
   virtual ~TargetSubtarget();
 
   /// getSpecialAddressLatency - For targets where it is beneficial to
@@ -39,10 +48,14 @@ public:
   /// should be attempted.
   virtual unsigned getSpecialAddressLatency() const { return 0; }
 
-  // enablePostRAScheduler - Return true to enable
-  // post-register-allocation scheduling.
-  virtual bool enablePostRAScheduler() const { return false; }
-
+  // enablePostRAScheduler - If the target can benefit from post-regalloc
+  // scheduling and the specified optimization level meets the requirement
+  // return true to enable post-register-allocation scheduling. In
+  // CriticalPathRCs return any register classes that should only be broken
+  // if on the critical path. 
+  virtual bool enablePostRAScheduler(CodeGenOpt::Level OptLevel,
+                                     AntiDepBreakMode& Mode,
+                                     RegClassVector& CriticalPathRCs) const;
   // adjustSchedDependency - Perform target specific adjustments to
   // the latency of a schedule dependency.
   virtual void adjustSchedDependency(SUnit *def, SUnit *use, 

@@ -21,221 +21,19 @@
 #ifndef LLVM_CODEGEN_LIVEINTERVAL_H
 #define LLVM_CODEGEN_LIVEINTERVAL_H
 
-#include "llvm/ADT/DenseMapInfo.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/AlignOf.h"
+#include "llvm/CodeGen/SlotIndexes.h"
 #include <cassert>
 #include <climits>
 
 namespace llvm {
+  class LiveIntervals;
   class MachineInstr;
   class MachineRegisterInfo;
   class TargetRegisterInfo;
   class raw_ostream;
-  
-  /// MachineInstrIndex - An opaque wrapper around machine indexes.
-  class MachineInstrIndex {
-    friend class VNInfo;
-    friend class LiveInterval;
-    friend class LiveIntervals;
-    friend struct DenseMapInfo<MachineInstrIndex>;
-
-  public:
-
-    enum Slot { LOAD, USE, DEF, STORE, NUM };
-
-  private:
-
-    unsigned index;
-
-    static const unsigned PHI_BIT = 1 << 31;
-
-  public:
-
-    /// Construct a default MachineInstrIndex pointing to a reserved index.
-    MachineInstrIndex() : index(0) {}
-
-    /// Construct an index from the given index, pointing to the given slot.
-    MachineInstrIndex(MachineInstrIndex m, Slot s)
-      : index((m.index / NUM) * NUM + s) {} 
-    
-    /// Print this index to the given raw_ostream.
-    void print(raw_ostream &os) const;
-
-    /// Compare two MachineInstrIndex objects for equality.
-    bool operator==(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) == (other.index & ~PHI_BIT));
-    }
-    /// Compare two MachineInstrIndex objects for inequality.
-    bool operator!=(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) != (other.index & ~PHI_BIT));
-    }
-   
-    /// Compare two MachineInstrIndex objects. Return true if the first index
-    /// is strictly lower than the second.
-    bool operator<(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) < (other.index & ~PHI_BIT));
-    }
-    /// Compare two MachineInstrIndex objects. Return true if the first index
-    /// is lower than, or equal to, the second.
-    bool operator<=(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) <= (other.index & ~PHI_BIT));
-    }
-
-    /// Compare two MachineInstrIndex objects. Return true if the first index
-    /// is greater than the second.
-    bool operator>(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) > (other.index & ~PHI_BIT));
-    }
-
-    /// Compare two MachineInstrIndex objects. Return true if the first index
-    /// is greater than, or equal to, the second.
-    bool operator>=(MachineInstrIndex other) const {
-      return ((index & ~PHI_BIT) >= (other.index & ~PHI_BIT));
-    }
-
-    /// Returns true if this index represents a load.
-    bool isLoad() const {
-      return ((index % NUM) == LOAD);
-    }
-
-    /// Returns true if this index represents a use.
-    bool isUse() const {
-      return ((index % NUM) == USE);
-    }
-
-    /// Returns true if this index represents a def.
-    bool isDef() const {
-      return ((index % NUM) == DEF);
-    }
-
-    /// Returns true if this index represents a store.
-    bool isStore() const {
-      return ((index % NUM) == STORE);
-    }
-
-    /// Returns the slot for this MachineInstrIndex.
-    Slot getSlot() const {
-      return static_cast<Slot>(index % NUM);
-    }
-
-    /// Returns true if this index represents a non-PHI use/def.
-    bool isNonPHIIndex() const {
-      return ((index & PHI_BIT) == 0);
-    }
-
-    /// Returns true if this index represents a PHI use/def.
-    bool isPHIIndex() const {
-      return ((index & PHI_BIT) == PHI_BIT);
-    }
-
-  private:
-
-    /// Construct an index from the given index, with its PHI kill marker set.
-    MachineInstrIndex(bool phi, MachineInstrIndex o) : index(o.index) {
-      if (phi)
-        index |= PHI_BIT;
-      else
-        index &= ~PHI_BIT;
-    }
-
-    explicit MachineInstrIndex(unsigned idx)
-      : index(idx & ~PHI_BIT) {}
-
-    MachineInstrIndex(bool phi, unsigned idx)
-      : index(idx & ~PHI_BIT) {
-      if (phi)
-        index |= PHI_BIT;
-    }
-
-    MachineInstrIndex(bool phi, unsigned idx, Slot slot)
-      : index(((idx / NUM) * NUM + slot) & ~PHI_BIT) {
-      if (phi)
-        index |= PHI_BIT;
-    }
-    
-    MachineInstrIndex nextSlot_() const {
-      assert((index & PHI_BIT) == ((index + 1) & PHI_BIT) &&
-             "Index out of bounds.");
-      return MachineInstrIndex(index + 1);
-    }
-
-    MachineInstrIndex nextIndex_() const {
-      assert((index & PHI_BIT) == ((index + NUM) & PHI_BIT) &&
-             "Index out of bounds.");
-      return MachineInstrIndex(index + NUM);
-    }
-
-    MachineInstrIndex prevSlot_() const {
-      assert((index & PHI_BIT) == ((index - 1) & PHI_BIT) &&
-             "Index out of bounds.");
-      return MachineInstrIndex(index - 1);
-    }
-
-    MachineInstrIndex prevIndex_() const {
-      assert((index & PHI_BIT) == ((index - NUM) & PHI_BIT) &&
-             "Index out of bounds.");
-      return MachineInstrIndex(index - NUM);
-    }
-
-    int distance(MachineInstrIndex other) const {
-      return (other.index & ~PHI_BIT) - (index & ~PHI_BIT);
-    }
-
-    /// Returns an unsigned number suitable as an index into a
-    /// vector over all instructions.
-    unsigned getVecIndex() const {
-      return (index & ~PHI_BIT) / NUM;
-    }
-
-    /// Scale this index by the given factor.
-    MachineInstrIndex scale(unsigned factor) const {
-      unsigned i = (index & ~PHI_BIT) / NUM,
-               o = (index % ~PHI_BIT) % NUM;
-      assert(index <= (~0U & ~PHI_BIT) / (factor * NUM) &&
-             "Rescaled interval would overflow");
-      return MachineInstrIndex(i * NUM * factor, o);
-    }
-
-    static MachineInstrIndex emptyKey() {
-      return MachineInstrIndex(true, 0x7fffffff);
-    }
-
-    static MachineInstrIndex tombstoneKey() {
-      return MachineInstrIndex(true, 0x7ffffffe);
-    }
-
-    static unsigned getHashValue(const MachineInstrIndex &v) {
-      return v.index * 37;
-    }
-
-  };
-
-  inline raw_ostream& operator<<(raw_ostream &os, MachineInstrIndex mi) {
-    mi.print(os);
-    return os;
-  }
-
-  /// Densemap specialization for MachineInstrIndex.
-  template <>
-  struct DenseMapInfo<MachineInstrIndex> {
-    static inline MachineInstrIndex getEmptyKey() {
-      return MachineInstrIndex::emptyKey();
-    }
-    static inline MachineInstrIndex getTombstoneKey() {
-      return MachineInstrIndex::tombstoneKey();
-    }
-    static inline unsigned getHashValue(const MachineInstrIndex &v) {
-      return MachineInstrIndex::getHashValue(v);
-    }
-    static inline bool isEqual(const MachineInstrIndex &LHS,
-                               const MachineInstrIndex &RHS) {
-      return (LHS == RHS);
-    }
-    static inline bool isPod() { return true; }
-  };
-
 
   /// VNInfo - Value Number Information.
   /// This class holds information about a machine level values, including
@@ -270,23 +68,25 @@ namespace llvm {
 
   public:
 
-    typedef SmallVector<MachineInstrIndex, 4> KillSet;
+    typedef SmallVector<SlotIndex, 4> KillSet;
 
     /// The ID number of this value.
     unsigned id;
     
     /// The index of the defining instruction (if isDefAccurate() returns true).
-    MachineInstrIndex def;
+    SlotIndex def;
 
     KillSet kills;
 
-    VNInfo()
-      : flags(IS_UNUSED), id(~1U) { cr.copy = 0; }
+    /*
+    VNInfo(LiveIntervals &li_)
+      : defflags(IS_UNUSED), id(~1U) { cr.copy = 0; }
+    */
 
     /// VNInfo constructor.
     /// d is presumed to point to the actual defining instr. If it doesn't
     /// setIsDefAccurate(false) should be called after construction.
-    VNInfo(unsigned i, MachineInstrIndex d, MachineInstr *c)
+    VNInfo(unsigned i, SlotIndex d, MachineInstr *c)
       : flags(IS_DEF_ACCURATE), id(i), def(d) { cr.copy = c; }
 
     /// VNInfo construtor, copies values from orig, except for the value number.
@@ -377,7 +177,7 @@ namespace llvm {
     }
 
     /// Returns true if the given index is a kill of this value.
-    bool isKill(MachineInstrIndex k) const {
+    bool isKill(SlotIndex k) const {
       KillSet::const_iterator
         i = std::lower_bound(kills.begin(), kills.end(), k);
       return (i != kills.end() && *i == k);
@@ -385,7 +185,7 @@ namespace llvm {
 
     /// addKill - Add a kill instruction index to the specified value
     /// number.
-    void addKill(MachineInstrIndex k) {
+    void addKill(SlotIndex k) {
       if (kills.empty()) {
         kills.push_back(k);
       } else {
@@ -397,7 +197,7 @@ namespace llvm {
 
     /// Remove the specified kill index from this value's kills list.
     /// Returns true if the value was present, otherwise returns false.
-    bool removeKill(MachineInstrIndex k) {
+    bool removeKill(SlotIndex k) {
       KillSet::iterator i = std::lower_bound(kills.begin(), kills.end(), k);
       if (i != kills.end() && *i == k) {
         kills.erase(i);
@@ -407,7 +207,7 @@ namespace llvm {
     }
 
     /// Remove all kills in the range [s, e).
-    void removeKills(MachineInstrIndex s, MachineInstrIndex e) {
+    void removeKills(SlotIndex s, SlotIndex e) {
       KillSet::iterator
         si = std::lower_bound(kills.begin(), kills.end(), s),
         se = std::upper_bound(kills.begin(), kills.end(), e);
@@ -421,11 +221,11 @@ namespace llvm {
   /// program, with an inclusive start point and an exclusive end point.
   /// These ranges are rendered as [start,end).
   struct LiveRange {
-    MachineInstrIndex start;  // Start point of the interval (inclusive)
-    MachineInstrIndex end;    // End point of the interval (exclusive)
+    SlotIndex start;  // Start point of the interval (inclusive)
+    SlotIndex end;    // End point of the interval (exclusive)
     VNInfo *valno;   // identifier for the value contained in this interval.
 
-    LiveRange(MachineInstrIndex S, MachineInstrIndex E, VNInfo *V)
+    LiveRange(SlotIndex S, SlotIndex E, VNInfo *V)
       : start(S), end(E), valno(V) {
 
       assert(S < E && "Cannot create empty or backwards range");
@@ -433,13 +233,13 @@ namespace llvm {
 
     /// contains - Return true if the index is covered by this range.
     ///
-    bool contains(MachineInstrIndex I) const {
+    bool contains(SlotIndex I) const {
       return start <= I && I < end;
     }
 
     /// containsRange - Return true if the given range, [S, E), is covered by
     /// this range. 
-    bool containsRange(MachineInstrIndex S, MachineInstrIndex E) const {
+    bool containsRange(SlotIndex S, SlotIndex E) const {
       assert((S < E) && "Backwards interval?");
       return (start <= S && S < end) && (start < E && E <= end);
     }
@@ -461,11 +261,11 @@ namespace llvm {
   raw_ostream& operator<<(raw_ostream& os, const LiveRange &LR);
 
 
-  inline bool operator<(MachineInstrIndex V, const LiveRange &LR) {
+  inline bool operator<(SlotIndex V, const LiveRange &LR) {
     return V < LR.start;
   }
 
-  inline bool operator<(const LiveRange &LR, MachineInstrIndex V) {
+  inline bool operator<(const LiveRange &LR, SlotIndex V) {
     return LR.start < V;
   }
 
@@ -522,7 +322,7 @@ namespace llvm {
     /// end of the interval.  If no LiveRange contains this position, but the
     /// position is in a hole, this method returns an iterator pointing the the
     /// LiveRange immediately after the hole.
-    iterator advanceTo(iterator I, MachineInstrIndex Pos) {
+    iterator advanceTo(iterator I, SlotIndex Pos) {
       if (Pos >= endIndex())
         return end();
       while (I->end <= Pos) ++I;
@@ -569,7 +369,7 @@ namespace llvm {
 
     /// getNextValue - Create a new value number and return it.  MIIdx specifies
     /// the instruction that defines the value number.
-    VNInfo *getNextValue(MachineInstrIndex def, MachineInstr *CopyMI,
+    VNInfo *getNextValue(SlotIndex def, MachineInstr *CopyMI,
                          bool isDefAccurate, BumpPtrAllocator &VNInfoAllocator){
       VNInfo *VNI =
         static_cast<VNInfo*>(VNInfoAllocator.Allocate((unsigned)sizeof(VNInfo),
@@ -625,13 +425,15 @@ namespace llvm {
     /// current interval, but are defined in the Clobbers interval, mark them
     /// used with an unknown definition value. Caller must pass in reference to
     /// VNInfoAllocator since it will create a new val#.
-    void MergeInClobberRanges(const LiveInterval &Clobbers,
+    void MergeInClobberRanges(LiveIntervals &li_,
+                              const LiveInterval &Clobbers,
                               BumpPtrAllocator &VNInfoAllocator);
 
     /// MergeInClobberRange - Same as MergeInClobberRanges except it merge in a
     /// single LiveRange only.
-    void MergeInClobberRange(MachineInstrIndex Start,
-                             MachineInstrIndex End,
+    void MergeInClobberRange(LiveIntervals &li_,
+                             SlotIndex Start,
+                             SlotIndex End,
                              BumpPtrAllocator &VNInfoAllocator);
 
     /// MergeValueInAsValue - Merge all of the live ranges of a specific val#
@@ -657,56 +459,54 @@ namespace llvm {
     bool empty() const { return ranges.empty(); }
 
     /// beginIndex - Return the lowest numbered slot covered by interval.
-    MachineInstrIndex beginIndex() const {
-      if (empty())
-        return MachineInstrIndex();
+    SlotIndex beginIndex() const {
+      assert(!empty() && "Call to beginIndex() on empty interval.");
       return ranges.front().start;
     }
 
     /// endNumber - return the maximum point of the interval of the whole,
     /// exclusive.
-    MachineInstrIndex endIndex() const {
-      if (empty())
-        return MachineInstrIndex();
+    SlotIndex endIndex() const {
+      assert(!empty() && "Call to endIndex() on empty interval.");
       return ranges.back().end;
     }
 
-    bool expiredAt(MachineInstrIndex index) const {
+    bool expiredAt(SlotIndex index) const {
       return index >= endIndex();
     }
 
-    bool liveAt(MachineInstrIndex index) const;
+    bool liveAt(SlotIndex index) const;
 
     // liveBeforeAndAt - Check if the interval is live at the index and the
     // index just before it. If index is liveAt, check if it starts a new live
     // range.If it does, then check if the previous live range ends at index-1.
-    bool liveBeforeAndAt(MachineInstrIndex index) const;
+    bool liveBeforeAndAt(SlotIndex index) const;
 
     /// getLiveRangeContaining - Return the live range that contains the
     /// specified index, or null if there is none.
-    const LiveRange *getLiveRangeContaining(MachineInstrIndex Idx) const {
+    const LiveRange *getLiveRangeContaining(SlotIndex Idx) const {
       const_iterator I = FindLiveRangeContaining(Idx);
       return I == end() ? 0 : &*I;
     }
 
     /// getLiveRangeContaining - Return the live range that contains the
     /// specified index, or null if there is none.
-    LiveRange *getLiveRangeContaining(MachineInstrIndex Idx) {
+    LiveRange *getLiveRangeContaining(SlotIndex Idx) {
       iterator I = FindLiveRangeContaining(Idx);
       return I == end() ? 0 : &*I;
     }
 
     /// FindLiveRangeContaining - Return an iterator to the live range that
     /// contains the specified index, or end() if there is none.
-    const_iterator FindLiveRangeContaining(MachineInstrIndex Idx) const;
+    const_iterator FindLiveRangeContaining(SlotIndex Idx) const;
 
     /// FindLiveRangeContaining - Return an iterator to the live range that
     /// contains the specified index, or end() if there is none.
-    iterator FindLiveRangeContaining(MachineInstrIndex Idx);
+    iterator FindLiveRangeContaining(SlotIndex Idx);
 
     /// findDefinedVNInfo - Find the by the specified
     /// index (register interval) or defined 
-    VNInfo *findDefinedVNInfoForRegInt(MachineInstrIndex Idx) const;
+    VNInfo *findDefinedVNInfoForRegInt(SlotIndex Idx) const;
 
     /// findDefinedVNInfo - Find the VNInfo that's defined by the specified
     /// register (stack inteval only).
@@ -721,7 +521,7 @@ namespace llvm {
 
     /// overlaps - Return true if the live interval overlaps a range specified
     /// by [Start, End).
-    bool overlaps(MachineInstrIndex Start, MachineInstrIndex End) const;
+    bool overlaps(SlotIndex Start, SlotIndex End) const;
 
     /// overlapsFrom - Return true if the intersection of the two live intervals
     /// is not empty.  The specified iterator is a hint that we can begin
@@ -738,18 +538,19 @@ namespace llvm {
     /// join - Join two live intervals (this, and other) together.  This applies
     /// mappings to the value numbers in the LHS/RHS intervals as specified.  If
     /// the intervals are not joinable, this aborts.
-    void join(LiveInterval &Other, const int *ValNoAssignments,
+    void join(LiveInterval &Other,
+              const int *ValNoAssignments,
               const int *RHSValNoAssignments,
               SmallVector<VNInfo*, 16> &NewVNInfo,
               MachineRegisterInfo *MRI);
 
     /// isInOneLiveRange - Return true if the range specified is entirely in the
     /// a single LiveRange of the live interval.
-    bool isInOneLiveRange(MachineInstrIndex Start, MachineInstrIndex End);
+    bool isInOneLiveRange(SlotIndex Start, SlotIndex End);
 
     /// removeRange - Remove the specified range from this interval.  Note that
     /// the range must be a single LiveRange in its entirety.
-    void removeRange(MachineInstrIndex Start, MachineInstrIndex End,
+    void removeRange(SlotIndex Start, SlotIndex End,
                      bool RemoveDeadValNo = false);
 
     void removeRange(LiveRange LR, bool RemoveDeadValNo = false) {
@@ -773,8 +574,8 @@ namespace llvm {
     void ComputeJoinedWeight(const LiveInterval &Other);
 
     bool operator<(const LiveInterval& other) const {
-      const MachineInstrIndex &thisIndex = beginIndex();
-      const MachineInstrIndex &otherIndex = other.beginIndex();
+      const SlotIndex &thisIndex = beginIndex();
+      const SlotIndex &otherIndex = other.beginIndex();
       return (thisIndex < otherIndex ||
               (thisIndex == otherIndex && reg < other.reg));
     }
@@ -785,8 +586,9 @@ namespace llvm {
   private:
 
     Ranges::iterator addRangeFrom(LiveRange LR, Ranges::iterator From);
-    void extendIntervalEndTo(Ranges::iterator I, MachineInstrIndex NewEnd);
-    Ranges::iterator extendIntervalStartTo(Ranges::iterator I, MachineInstrIndex NewStr);
+    void extendIntervalEndTo(Ranges::iterator I, SlotIndex NewEnd);
+    Ranges::iterator extendIntervalStartTo(Ranges::iterator I, SlotIndex NewStr);
+
     LiveInterval& operator=(const LiveInterval& rhs); // DO NOT IMPLEMENT
 
   };

@@ -269,6 +269,10 @@ def externalsym : SDNode<"ISD::ExternalSymbol",       SDTPtrLeaf, [],
                          "ExternalSymbolSDNode">;
 def texternalsym: SDNode<"ISD::TargetExternalSymbol", SDTPtrLeaf, [],
                          "ExternalSymbolSDNode">;
+def blockaddress : SDNode<"ISD::BlockAddress",        SDTPtrLeaf, [],
+                         "BlockAddressSDNode">;
+def tblockaddress: SDNode<"ISD::TargetBlockAddress",  SDTPtrLeaf, [],
+                         "BlockAddressSDNode">;
 
 def add        : SDNode<"ISD::ADD"       , SDTIntBinOp   ,
                         [SDNPCommutative, SDNPAssociative]>;
@@ -325,6 +329,8 @@ def fneg       : SDNode<"ISD::FNEG"       , SDTFPUnaryOp>;
 def fsqrt      : SDNode<"ISD::FSQRT"      , SDTFPUnaryOp>;
 def fsin       : SDNode<"ISD::FSIN"       , SDTFPUnaryOp>;
 def fcos       : SDNode<"ISD::FCOS"       , SDTFPUnaryOp>;
+def fexp2      : SDNode<"ISD::FEXP2"      , SDTFPUnaryOp>;
+def flog2      : SDNode<"ISD::FLOG2"      , SDTFPUnaryOp>;
 def frint      : SDNode<"ISD::FRINT"      , SDTFPUnaryOp>;
 def ftrunc     : SDNode<"ISD::FTRUNC"     , SDTFPUnaryOp>;
 def fceil      : SDNode<"ISD::FCEIL"      , SDTFPUnaryOp>;
@@ -858,10 +864,3 @@ class ComplexPattern<ValueType ty, int numops, string fn,
   list<SDNodeProperty> Properties = props;
   list<CPAttribute> Attributes = attrs;
 }
-
-//===----------------------------------------------------------------------===//
-// Dwarf support.
-//
-def SDT_dwarf_loc : SDTypeProfile<0, 3,
-                      [SDTCisInt<0>, SDTCisInt<1>, SDTCisInt<2>]>;
-def dwarf_loc : SDNode<"ISD::DEBUG_LOC", SDT_dwarf_loc,[SDNPHasChain]>;

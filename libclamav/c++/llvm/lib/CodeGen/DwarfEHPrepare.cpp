@@ -21,7 +21,6 @@
 #include "llvm/IntrinsicInst.h"
 #include "llvm/Module.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Target/TargetLowering.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/PromoteMemToReg.h"
@@ -33,7 +32,7 @@ STATISTIC(NumExceptionValuesMoved, "Number of eh.exception calls moved");
 STATISTIC(NumStackTempsIntroduced, "Number of stack temporaries introduced");
 
 namespace {
-  class VISIBILITY_HIDDEN DwarfEHPrepare : public FunctionPass {
+  class DwarfEHPrepare : public FunctionPass {
     const TargetLowering *TLI;
     bool CompileFast;
 
@@ -236,7 +235,7 @@ bool DwarfEHPrepare::LowerUnwinds() {
   if (!RewindFunction) {
     LLVMContext &Ctx = UnwindInsts[0]->getContext();
     std::vector<const Type*>
-      Params(1, PointerType::getUnqual(Type::getInt8Ty(Ctx)));
+      Params(1, Type::getInt8PtrTy(Ctx));
     FunctionType *FTy = FunctionType::get(Type::getVoidTy(Ctx),
                                           Params, false);
     const char *RewindName = TLI->getLibcallName(RTLIB::UNWIND_RESUME);
@@ -333,7 +332,7 @@ bool DwarfEHPrepare::PromoteStackTemporaries() {
   if (ExceptionValueVar && DT && DF && isAllocaPromotable(ExceptionValueVar)) {
     // Turn the exception temporary into registers and phi nodes if possible.
     std::vector<AllocaInst*> Allocas(1, ExceptionValueVar);
-    PromoteMemToReg(Allocas, *DT, *DF, ExceptionValueVar->getContext());
+    PromoteMemToReg(Allocas, *DT, *DF);
     return true;
   }
   return false;

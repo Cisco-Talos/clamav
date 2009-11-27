@@ -28,7 +28,6 @@
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/PriorityQueue.h"
@@ -48,7 +47,7 @@ namespace {
 /// ScheduleDAGList - The actual list scheduler implementation.  This supports
 /// top-down scheduling.
 ///
-class VISIBILITY_HIDDEN ScheduleDAGList : public ScheduleDAGSDNodes {
+class ScheduleDAGList : public ScheduleDAGSDNodes {
 private:
   /// AvailableQueue - The priority queue to use for the available SUnits.
   ///
@@ -91,7 +90,7 @@ void ScheduleDAGList::Schedule() {
   DEBUG(errs() << "********** List Scheduling **********\n");
   
   // Build the scheduling graph.
-  BuildSchedGraph();
+  BuildSchedGraph(NULL);
 
   AvailableQueue->initNodes(SUnits);
   

@@ -49,23 +49,23 @@ namespace {
     /// ThisAllocated - This is true if this block is currently allocated.  If
     /// not, this can be converted to a FreeRangeHeader.
     unsigned ThisAllocated : 1;
-    
+
     /// PrevAllocated - Keep track of whether the block immediately before us is
     /// allocated.  If not, the word immediately before this header is the size
     /// of the previous block.
     unsigned PrevAllocated : 1;
-    
+
     /// BlockSize - This is the size in bytes of this memory block,
     /// including this header.
     uintptr_t BlockSize : (sizeof(intptr_t)*CHAR_BIT - 2);
-    
+
 
     /// getBlockAfter - Return the memory block immediately after this one.
     ///
     MemoryRangeHeader &getBlockAfter() const {
       return *(MemoryRangeHeader*)((char*)this+BlockSize);
     }
-    
+
     /// getFreeBlockBefore - If the block before this one is free, return it,
     /// otherwise return null.
     FreeRangeHeader *getFreeBlockBefore() const {
@@ -73,15 +73,15 @@ namespace {
       intptr_t PrevSize = ((intptr_t *)this)[-1];
       return (FreeRangeHeader*)((char*)this-PrevSize);
     }
-    
+
     /// FreeBlock - Turn an allocated block into a free block, adjusting
     /// bits in the object headers, and adding an end of region memory block.
     FreeRangeHeader *FreeBlock(FreeRangeHeader *FreeList);
-    
+
     /// TrimAllocationToSize - If this allocated block is significantly larger
     /// than NewSize, split it into two pieces (where the former is NewSize
     /// bytes, including the header), and add the new block to the free list.
-    FreeRangeHeader *TrimAllocationToSize(FreeRangeHeader *FreeList, 
+    FreeRangeHeader *TrimAllocationToSize(FreeRangeHeader *FreeList,
                                           uint64_t NewSize);
   };
 
@@ -91,13 +91,13 @@ namespace {
   struct FreeRangeHeader : public MemoryRangeHeader {
     FreeRangeHeader *Prev;
     FreeRangeHeader *Next;
-    
+
     /// getMinBlockSize - Get the minimum size for a memory block.  Blocks
     /// smaller than this size cannot be created.
     static unsigned getMinBlockSize() {
       return sizeof(FreeRangeHeader)+sizeof(intptr_t);
     }
-    
+
     /// SetEndOfBlockSizeMarker - The word at the end of every free block is
     /// known to be the size of the free block.  Set it for this block.
     void SetEndOfBlockSizeMarker() {
@@ -110,7 +110,7 @@ namespace {
       Next->Prev = Prev;
       return Prev->Next = Next;
     }
-    
+
     void AddToFreeList(FreeRangeHeader *FreeList) {
       Next = FreeList;
       Prev = FreeList->Prev;
@@ -121,7 +121,7 @@ namespace {
     /// GrowBlock - The block after this block just got deallocated.  Merge it
     /// into the current block.
     void GrowBlock(uintptr_t NewSize);
-    
+
     /// AllocateBlock - Mark this entire block allocated, updating freelists
     /// etc.  This returns a pointer to the circular free-list.
     FreeRangeHeader *AllocateBlock();
@@ -137,7 +137,7 @@ FreeRangeHeader *FreeRangeHeader::AllocateBlock() {
   // Mark this block allocated.
   ThisAllocated = 1;
   getBlockAfter().PrevAllocated = 1;
- 
+
   // Remove it from the free list.
   return RemoveFromFreeList();
 }
@@ -150,9 +150,9 @@ FreeRangeHeader *MemoryRangeHeader::FreeBlock(FreeRangeHeader *FreeList) {
   MemoryRangeHeader *FollowingBlock = &getBlockAfter();
   assert(ThisAllocated && "This block is already free!");
   assert(FollowingBlock->PrevAllocated && "Flags out of sync!");
-  
+
   FreeRangeHeader *FreeListToReturn = FreeList;
-  
+
   // If the block after this one is free, merge it into this block.
   if (!FollowingBlock->ThisAllocated) {
     FreeRangeHeader &FollowingFreeBlock = *(FreeRangeHeader *)FollowingBlock;
@@ -164,18 +164,18 @@ FreeRangeHeader *MemoryRangeHeader::FreeBlock(FreeRangeHeader *FreeList) {
       assert(&FollowingFreeBlock != FreeList && "No tombstone block?");
     }
     FollowingFreeBlock.RemoveFromFreeList();
-    
+
     // Include the following block into this one.
     BlockSize += FollowingFreeBlock.BlockSize;
     FollowingBlock = &FollowingFreeBlock.getBlockAfter();
-    
+
     // Tell the block after the block we are coalescing that this block is
     // allocated.
     FollowingBlock->PrevAllocated = 1;
   }
-  
+
   assert(FollowingBlock->ThisAllocated && "Missed coalescing?");
-  
+
   if (FreeRangeHeader *PrevFreeBlock = getFreeBlockBefore()) {
     PrevFreeBlock->GrowBlock(PrevFreeBlock->BlockSize + BlockSize);
     return FreeListToReturn ? FreeListToReturn : PrevFreeBlock;
@@ -218,24 +218,24 @@ TrimAllocationToSize(FreeRangeHeader *FreeList, uint64_t NewSize) {
   // Round up size for alignment of header.
   unsigned HeaderAlign = __alignof(FreeRangeHeader);
   NewSize = (NewSize+ (HeaderAlign-1)) & ~(HeaderAlign-1);
-  
+
   // Size is now the size of the block we will remove from the start of the
   // current block.
   assert(NewSize <= BlockSize &&
          "Allocating more space from this block than exists!");
-  
+
   // If splitting this block will cause the remainder to be too small, do not
   // split the block.
   if (BlockSize <= NewSize+FreeRangeHeader::getMinBlockSize())
     return FreeList;
-  
+
   // Otherwise, we splice the required number of bytes out of this block, form
   // a new block immediately after it, then mark this block allocated.
   MemoryRangeHeader &FormerNextBlock = getBlockAfter();
-  
+
   // Change the size of this block.
   BlockSize = NewSize;
-  
+
   // Get the new block we just sliced out and turn it into a free block.
   FreeRangeHeader &NewNextBlock = (FreeRangeHeader &)getBlockAfter();
   NewNextBlock.BlockSize = (char*)&FormerNextBlock - (char*)&NewNextBlock;
@@ -283,7 +283,7 @@ namespace {
     sys::MemoryBlock LastSlab;
 
     // Memory slabs allocated by the JIT.  We refer to them as slabs so we don't
-    // confuse them with the blocks of memory descibed above.
+    // confuse them with the blocks of memory described above.
     std::vector<sys::MemoryBlock> CodeSlabs;
     JITSlabAllocator BumpSlabAllocator;
     BumpPtrAllocator StubAllocator;
@@ -296,10 +296,6 @@ namespace {
     MemoryRangeHeader *CurBlock;
 
     uint8_t *GOTBase;     // Target Specific reserved memory
-    void *DlsymTable;     // Stub external symbol information
-
-    std::map<const Function*, MemoryRangeHeader*> FunctionBlocks;
-    std::map<const Function*, MemoryRangeHeader*> TableBlocks;
   public:
     DefaultJITMemoryManager();
     ~DefaultJITMemoryManager();
@@ -321,7 +317,6 @@ namespace {
     static const size_t DefaultSizeThreshold;
 
     void AllocateGOT();
-    void SetDlsymTable(void *);
 
     // Testing methods.
     virtual bool CheckInvariants(std::string &ErrorStr);
@@ -352,7 +347,7 @@ namespace {
       }
 
       largest = largest - sizeof(MemoryRangeHeader);
-      
+
       // If this block isn't big enough for the allocation desired, allocate
       // another block of memory and add it to the free list.
       if (largest < ActualSize ||
@@ -414,7 +409,6 @@ namespace {
              "Mismatched function start/end!");
 
       uintptr_t BlockSize = FunctionEnd - (uint8_t *)CurBlock;
-      FunctionBlocks[F] = CurBlock;
 
       // Release the memory at the end of this block that isn't needed.
       FreeMemoryList =CurBlock->TrimAllocationToSize(FreeMemoryList, BlockSize);
@@ -449,74 +443,54 @@ namespace {
       return (uint8_t*)DataAllocator.Allocate(Size, Alignment);
     }
 
-    /// startExceptionTable - Use startFunctionBody to allocate memory for the 
+    /// startExceptionTable - Use startFunctionBody to allocate memory for the
     /// function's exception table.
     uint8_t* startExceptionTable(const Function* F, uintptr_t &ActualSize) {
       return startFunctionBody(F, ActualSize);
     }
 
-    /// endExceptionTable - The exception table of F is now allocated, 
+    /// endExceptionTable - The exception table of F is now allocated,
     /// and takes the memory in the range [TableStart,TableEnd).
     void endExceptionTable(const Function *F, uint8_t *TableStart,
                            uint8_t *TableEnd, uint8_t* FrameRegister) {
       assert(TableEnd > TableStart);
       assert(TableStart == (uint8_t *)(CurBlock+1) &&
              "Mismatched table start/end!");
-      
+
       uintptr_t BlockSize = TableEnd - (uint8_t *)CurBlock;
-      TableBlocks[F] = CurBlock;
 
       // Release the memory at the end of this block that isn't needed.
       FreeMemoryList =CurBlock->TrimAllocationToSize(FreeMemoryList, BlockSize);
     }
-    
+
     uint8_t *getGOTBase() const {
       return GOTBase;
     }
-    
-    void *getDlsymTable() const {
-      return DlsymTable;
+
+    void deallocateBlock(void *Block) {
+      // Find the block that is allocated for this function.
+      MemoryRangeHeader *MemRange = static_cast<MemoryRangeHeader*>(Block) - 1;
+      assert(MemRange->ThisAllocated && "Block isn't allocated!");
+
+      // Fill the buffer with garbage!
+      if (PoisonMemory) {
+        memset(MemRange+1, 0xCD, MemRange->BlockSize-sizeof(*MemRange));
+      }
+
+      // Free the memory.
+      FreeMemoryList = MemRange->FreeBlock(FreeMemoryList);
     }
-    
-    /// deallocateMemForFunction - Deallocate all memory for the specified
+
+    /// deallocateFunctionBody - Deallocate all memory for the specified
     /// function body.
-    void deallocateMemForFunction(const Function *F) {
-      std::map<const Function*, MemoryRangeHeader*>::iterator
-        I = FunctionBlocks.find(F);
-      if (I == FunctionBlocks.end()) return;
-      
-      // Find the block that is allocated for this function.
-      MemoryRangeHeader *MemRange = I->second;
-      assert(MemRange->ThisAllocated && "Block isn't allocated!");
+    void deallocateFunctionBody(void *Body) {
+      if (Body) deallocateBlock(Body);
+    }
 
-      // Fill the buffer with garbage!
-      if (PoisonMemory) {
-        memset(MemRange+1, 0xCD, MemRange->BlockSize-sizeof(*MemRange));
-      }
-
-      // Free the memory.
-      FreeMemoryList = MemRange->FreeBlock(FreeMemoryList);
-      
-      // Finally, remove this entry from FunctionBlocks.
-      FunctionBlocks.erase(I);
-      
-      I = TableBlocks.find(F);
-      if (I == TableBlocks.end()) return;
-      
-      // Find the block that is allocated for this function.
-      MemRange = I->second;
-      assert(MemRange->ThisAllocated && "Block isn't allocated!");
-
-      // Fill the buffer with garbage!
-      if (PoisonMemory) {
-        memset(MemRange+1, 0xCD, MemRange->BlockSize-sizeof(*MemRange));
-      }
-
-      // Free the memory.
-      FreeMemoryList = MemRange->FreeBlock(FreeMemoryList);
-      
-      // Finally, remove this entry from TableBlocks.
-      TableBlocks.erase(I);
+    /// deallocateExceptionTable - Deallocate memory for the specified
+    /// exception table.
+    void deallocateExceptionTable(void *ET) {
+      if (ET) deallocateBlock(ET);
     }
 
     /// setMemoryWritable - When code generation is in progress,
@@ -581,16 +555,16 @@ DefaultJITMemoryManager::DefaultJITMemoryManager()
   //  END ]
   //
   // The last three blocks are never deallocated or touched.
-  
+
   // Add MemoryRangeHeader to the end of the memory region, indicating that
   // the space after the block of memory is allocated.  This is block #3.
   MemoryRangeHeader *Mem3 = (MemoryRangeHeader*)(MemBase+MemBlock.size())-1;
   Mem3->ThisAllocated = 1;
   Mem3->PrevAllocated = 0;
   Mem3->BlockSize     = sizeof(MemoryRangeHeader);
-  
+
   /// Add a tiny free region so that the free list always has one entry.
-  FreeRangeHeader *Mem2 = 
+  FreeRangeHeader *Mem2 =
     (FreeRangeHeader *)(((char*)Mem3)-FreeRangeHeader::getMinBlockSize());
   Mem2->ThisAllocated = 0;
   Mem2->PrevAllocated = 1;
@@ -604,7 +578,7 @@ DefaultJITMemoryManager::DefaultJITMemoryManager()
   Mem1->ThisAllocated = 1;
   Mem1->PrevAllocated = 0;
   Mem1->BlockSize     = sizeof(MemoryRangeHeader);
-  
+
   // Add a FreeRangeHeader to the start of the function body region, indicating
   // that the space is free.  Mark the previous block allocated so we never look
   // at it.
@@ -614,22 +588,17 @@ DefaultJITMemoryManager::DefaultJITMemoryManager()
   Mem0->BlockSize = (char*)Mem1-(char*)Mem0;
   Mem0->SetEndOfBlockSizeMarker();
   Mem0->AddToFreeList(Mem2);
-  
+
   // Start out with the freelist pointing to Mem0.
   FreeMemoryList = Mem0;
 
   GOTBase = NULL;
-  DlsymTable = NULL;
 }
 
 void DefaultJITMemoryManager::AllocateGOT() {
   assert(GOTBase == 0 && "Cannot allocate the got multiple times");
   GOTBase = new uint8_t[sizeof(void*) * 8192];
   HasGOT = true;
-}
-
-void DefaultJITMemoryManager::SetDlsymTable(void *ptr) {
-  DlsymTable = ptr;
 }
 
 DefaultJITMemoryManager::~DefaultJITMemoryManager() {

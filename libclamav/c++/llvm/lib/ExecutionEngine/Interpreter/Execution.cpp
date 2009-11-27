@@ -365,7 +365,7 @@ static GenericValue executeFCMP_OGT(GenericValue Src1, GenericValue Src2,
 }
 
 #define IMPLEMENT_UNORDERED(TY, X,Y)                                     \
-  if (TY == Type::getFloatTy(Ty->getContext())) {                        \
+  if (TY->isFloatTy()) {                                                 \
     if (X.FloatVal != X.FloatVal || Y.FloatVal != Y.FloatVal) {          \
       Dest.IntVal = APInt(1,true);                                       \
       return Dest;                                                       \
@@ -421,7 +421,7 @@ static GenericValue executeFCMP_UGT(GenericValue Src1, GenericValue Src2,
 static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
                                      const Type *Ty) {
   GenericValue Dest;
-  if (Ty == Type::getFloatTy(Ty->getContext()))
+  if (Ty->isFloatTy())
     Dest.IntVal = APInt(1,(Src1.FloatVal == Src1.FloatVal && 
                            Src2.FloatVal == Src2.FloatVal));
   else
@@ -433,7 +433,7 @@ static GenericValue executeFCMP_ORD(GenericValue Src1, GenericValue Src2,
 static GenericValue executeFCMP_UNO(GenericValue Src1, GenericValue Src2,
                                      const Type *Ty) {
   GenericValue Dest;
-  if (Ty == Type::getFloatTy(Ty->getContext()))
+  if (Ty->isFloatTy())
     Dest.IntVal = APInt(1,(Src1.FloatVal != Src1.FloatVal || 
                            Src2.FloatVal != Src2.FloatVal));
   else
@@ -572,9 +572,9 @@ void Interpreter::exitCalled(GenericValue GV) {
   // runAtExitHandlers() assumes there are no stack frames, but
   // if exit() was called, then it had a stack frame. Blow away
   // the stack before interpreting atexit handlers.
-  ECStack.clear ();
-  runAtExitHandlers ();
-  exit (GV.IntVal.zextOrTrunc(32).getZExtValue());
+  ECStack.clear();
+  runAtExitHandlers();
+  exit(GV.IntVal.zextOrTrunc(32).getZExtValue());
 }
 
 /// Pop the last stack frame off of ECStack and then copy the result
@@ -585,8 +585,8 @@ void Interpreter::exitCalled(GenericValue GV) {
 /// care of switching to the normal destination BB, if we are returning
 /// from an invoke.
 ///
-void Interpreter::popStackAndReturnValueToCaller (const Type *RetTy,
-                                                  GenericValue Result) {
+void Interpreter::popStackAndReturnValueToCaller(const Type *RetTy,
+                                                 GenericValue Result) {
   // Pop the current stack frame.
   ECStack.pop_back();
 
@@ -629,15 +629,15 @@ void Interpreter::visitUnwindInst(UnwindInst &I) {
   // Unwind stack
   Instruction *Inst;
   do {
-    ECStack.pop_back ();
-    if (ECStack.empty ())
+    ECStack.pop_back();
+    if (ECStack.empty())
       llvm_report_error("Empty stack during unwind!");
-    Inst = ECStack.back ().Caller.getInstruction ();
-  } while (!(Inst && isa<InvokeInst> (Inst)));
+    Inst = ECStack.back().Caller.getInstruction();
+  } while (!(Inst && isa<InvokeInst>(Inst)));
 
   // Return from invoke
-  ExecutionContext &InvokingSF = ECStack.back ();
-  InvokingSF.Caller = CallSite ();
+  ExecutionContext &InvokingSF = ECStack.back();
+  InvokingSF.Caller = CallSite();
 
   // Go to exceptional destination BB of invoke instruction
   SwitchToNewBasicBlock(cast<InvokeInst>(Inst)->getUnwindDest(), InvokingSF);
@@ -677,6 +677,13 @@ void Interpreter::visitSwitchInst(SwitchInst &I) {
   if (!Dest) Dest = I.getDefaultDest();   // No cases matched: use default
   SwitchToNewBasicBlock(Dest, SF);
 }
+
+void Interpreter::visitIndirectBrInst(IndirectBrInst &I) {
+  ExecutionContext &SF = ECStack.back();
+  void *Dest = GVTOP(getOperandValue(I.getAddress(), SF));
+  SwitchToNewBasicBlock((BasicBlock*)Dest, SF);
+}
+
 
 // SwitchToNewBasicBlock - This method is used to jump to a new basic block.
 // This function handles the actual updating of block and instruction iterators
@@ -720,7 +727,7 @@ void Interpreter::SwitchToNewBasicBlock(BasicBlock *Dest, ExecutionContext &SF){
 //                     Memory Instruction Implementations
 //===----------------------------------------------------------------------===//
 
-void Interpreter::visitAllocationInst(AllocationInst &I) {
+void Interpreter::visitAllocaInst(AllocaInst &I) {
   ExecutionContext &SF = ECStack.back();
 
   const Type *Ty = I.getType()->getElementType();  // Type to be allocated
@@ -747,14 +754,6 @@ void Interpreter::visitAllocationInst(AllocationInst &I) {
 
   if (I.getOpcode() == Instruction::Alloca)
     ECStack.back().Allocas.add(Memory);
-}
-
-void Interpreter::visitFreeInst(FreeInst &I) {
-  ExecutionContext &SF = ECStack.back();
-  assert(isa<PointerType>(I.getOperand(0)->getType()) && "Freeing nonptr?");
-  GenericValue Value = getOperandValue(I.getOperand(0), SF);
-  // TODO: Check to make sure memory is allocated
-  free(GVTOP(Value));   // Free memory
 }
 
 // getElementOffset - The workhorse for getelementptr.
@@ -835,7 +834,7 @@ void Interpreter::visitCallSite(CallSite CS) {
 
   // Check to see if this is an intrinsic function call...
   Function *F = CS.getCalledFunction();
-  if (F && F->isDeclaration ())
+  if (F && F->isDeclaration())
     switch (F->getIntrinsicID()) {
     case Intrinsic::not_intrinsic:
       break;
@@ -883,16 +882,6 @@ void Interpreter::visitCallSite(CallSite CS) {
          e = SF.Caller.arg_end(); i != e; ++i, ++pNum) {
     Value *V = *i;
     ArgVals.push_back(getOperandValue(V, SF));
-    // Promote all integral types whose size is < sizeof(i32) into i32.
-    // We do this by zero or sign extending the value as appropriate
-    // according to the parameter attributes
-    const Type *Ty = V->getType();
-    if (Ty->isInteger() && (ArgVals.back().IntVal.getBitWidth() < 32)) {
-      if (CS.paramHasAttr(pNum, Attribute::ZExt))
-        ArgVals.back().IntVal = ArgVals.back().IntVal.zext(32);
-      else if (CS.paramHasAttr(pNum, Attribute::SExt))
-        ArgVals.back().IntVal = ArgVals.back().IntVal.sext(32);
-    }
   }
 
   // To handle indirect calls, we must get the pointer value from the argument
@@ -970,8 +959,7 @@ GenericValue Interpreter::executeZExtInst(Value *SrcVal, const Type *DstTy,
 GenericValue Interpreter::executeFPTruncInst(Value *SrcVal, const Type *DstTy,
                                              ExecutionContext &SF) {
   GenericValue Dest, Src = getOperandValue(SrcVal, SF);
-  assert(SrcVal->getType() == Type::getDoubleTy(SrcVal->getContext()) &&
-         DstTy == Type::getFloatTy(SrcVal->getContext()) &&
+  assert(SrcVal->getType()->isDoubleTy() && DstTy->isFloatTy() &&
          "Invalid FPTrunc instruction");
   Dest.FloatVal = (float) Src.DoubleVal;
   return Dest;
@@ -980,8 +968,7 @@ GenericValue Interpreter::executeFPTruncInst(Value *SrcVal, const Type *DstTy,
 GenericValue Interpreter::executeFPExtInst(Value *SrcVal, const Type *DstTy,
                                            ExecutionContext &SF) {
   GenericValue Dest, Src = getOperandValue(SrcVal, SF);
-  assert(SrcVal->getType() == Type::getFloatTy(SrcVal->getContext()) &&
-         DstTy == Type::getDoubleTy(SrcVal->getContext()) &&
+  assert(SrcVal->getType()->isFloatTy() && DstTy->isDoubleTy() &&
          "Invalid FPTrunc instruction");
   Dest.DoubleVal = (double) Src.FloatVal;
   return Dest;
@@ -1072,22 +1059,22 @@ GenericValue Interpreter::executeBitCastInst(Value *SrcVal, const Type *DstTy,
     assert(isa<PointerType>(SrcTy) && "Invalid BitCast");
     Dest.PointerVal = Src.PointerVal;
   } else if (DstTy->isInteger()) {
-    if (SrcTy == Type::getFloatTy(SrcVal->getContext())) {
+    if (SrcTy->isFloatTy()) {
       Dest.IntVal.zext(sizeof(Src.FloatVal) * CHAR_BIT);
       Dest.IntVal.floatToBits(Src.FloatVal);
-    } else if (SrcTy == Type::getDoubleTy(SrcVal->getContext())) {
+    } else if (SrcTy->isDoubleTy()) {
       Dest.IntVal.zext(sizeof(Src.DoubleVal) * CHAR_BIT);
       Dest.IntVal.doubleToBits(Src.DoubleVal);
     } else if (SrcTy->isInteger()) {
       Dest.IntVal = Src.IntVal;
     } else 
       llvm_unreachable("Invalid BitCast");
-  } else if (DstTy == Type::getFloatTy(SrcVal->getContext())) {
+  } else if (DstTy->isFloatTy()) {
     if (SrcTy->isInteger())
       Dest.FloatVal = Src.IntVal.bitsToFloat();
     else
       Dest.FloatVal = Src.FloatVal;
-  } else if (DstTy == Type::getDoubleTy(SrcVal->getContext())) {
+  } else if (DstTy->isDoubleTy()) {
     if (SrcTy->isInteger())
       Dest.DoubleVal = Src.IntVal.bitsToDouble();
     else

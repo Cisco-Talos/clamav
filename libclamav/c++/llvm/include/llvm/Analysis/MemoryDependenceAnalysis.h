@@ -244,6 +244,20 @@ namespace llvm {
                                       BasicBlock *BB,
                                      SmallVectorImpl<NonLocalDepEntry> &Result);
     
+    /// PHITranslatePointer - Find an available version of the specified value
+    /// PHI translated across the specified edge.  If MemDep isn't able to
+    /// satisfy this request, it returns null.
+    Value *PHITranslatePointer(Value *V,
+                               BasicBlock *CurBB, BasicBlock *PredBB,
+                               const TargetData *TD) const;
+
+    /// InsertPHITranslatedPointer - Insert a computation of the PHI translated
+    /// version of 'V' for the edge PredBB->CurBB into the end of the PredBB
+    /// block.
+    Value *InsertPHITranslatedPointer(Value *V,
+                                      BasicBlock *CurBB, BasicBlock *PredBB,
+                                      const TargetData *TD) const;
+    
     /// removeInstruction - Remove an instruction from the dependence analysis,
     /// updating the dependence of instructions that previously depended on it.
     void removeInstruction(Instruction *InstToRemove);

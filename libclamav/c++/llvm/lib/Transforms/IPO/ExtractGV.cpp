@@ -17,13 +17,12 @@
 #include "llvm/Pass.h"
 #include "llvm/Constants.h"
 #include "llvm/Transforms/IPO.h"
-#include "llvm/Support/Compiler.h"
 #include <algorithm>
 using namespace llvm;
 
 namespace {
   /// @brief A pass to extract specific functions and their dependencies.
-  class VISIBILITY_HIDDEN GVExtractorPass : public ModulePass {
+  class GVExtractorPass : public ModulePass {
     std::vector<GlobalValue*> Named;
     bool deleteStuff;
     bool reLink;
@@ -102,7 +101,7 @@ namespace {
       {
         std::vector<Constant *> AUGs;
         const Type *SBP=
-              PointerType::getUnqual(Type::getInt8Ty(M.getContext()));
+              Type::getInt8PtrTy(M.getContext());
         for (std::vector<GlobalValue*>::iterator GI = Named.begin(), 
                GE = Named.end(); GI != GE; ++GI) {
           (*GI)->setLinkage(GlobalValue::ExternalLinkage);

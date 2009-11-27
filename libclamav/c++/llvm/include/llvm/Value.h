@@ -42,7 +42,7 @@ class raw_ostream;
 class AssemblyAnnotationWriter;
 class ValueHandleBase;
 class LLVMContext;
-class MetadataContext;
+class MetadataContextImpl;
 
 //===----------------------------------------------------------------------===//
 //                                 Value Class
@@ -83,7 +83,7 @@ private:
   friend class ValueSymbolTable; // Allow ValueSymbolTable to directly mod Name.
   friend class SymbolTable;      // Allow SymbolTable to directly poke Name.
   friend class ValueHandleBase;
-  friend class MetadataContext;
+  friend class MetadataContextImpl;
   friend class AbstractTypeUser;
   ValueName *Name;
 
@@ -210,6 +210,7 @@ public:
     GlobalAliasVal,           // This is an instance of GlobalAlias
     GlobalVariableVal,        // This is an instance of GlobalVariable
     UndefValueVal,            // This is an instance of UndefValue
+    BlockAddressVal,          // This is an instance of BlockAddress
     ConstantExprVal,          // This is an instance of ConstantExpr
     ConstantAggregateZeroVal, // This is an instance of ConstantAggregateNull
     ConstantIntVal,           // This is an instance of ConstantInt
@@ -223,8 +224,12 @@ public:
     NamedMDNodeVal,           // This is an instance of NamedMDNode
     InlineAsmVal,             // This is an instance of InlineAsm
     PseudoSourceValueVal,     // This is an instance of PseudoSourceValue
+    FixedStackPseudoSourceValueVal, // This is an instance of 
+                                    // FixedStackPseudoSourceValue
     InstructionVal,           // This is an instance of Instruction
-    
+    // Enum values starting at InstructionVal are used for Instructions;
+    // don't add new values here!
+
     // Markers:
     ConstantFirstVal = FunctionVal,
     ConstantLastVal  = ConstantPointerNullVal

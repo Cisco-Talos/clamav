@@ -259,6 +259,11 @@ def int_longjmp    : Intrinsic<[llvm_void_ty], [llvm_ptr_ty, llvm_i32_ty]>;
 def int_sigsetjmp  : Intrinsic<[llvm_i32_ty] , [llvm_ptr_ty, llvm_i32_ty]>;
 def int_siglongjmp : Intrinsic<[llvm_void_ty], [llvm_ptr_ty, llvm_i32_ty]>;
 
+// Internal interface for object size checking
+def int_objectsize : Intrinsic<[llvm_anyint_ty], [llvm_ptr_ty, llvm_i32_ty],
+                               [IntrReadArgMem]>,
+                               GCCBuiltin<"__builtin_object_size">;
+
 //===-------------------- Bit Manipulation Intrinsics ---------------------===//
 //
 
@@ -289,14 +294,11 @@ let Properties = [IntrNoMem] in {
 
 //===------------------ Exception Handling Intrinsics----------------------===//
 //
-def int_eh_exception    : Intrinsic<[llvm_ptr_ty]>;
-def int_eh_selector_i32 : Intrinsic<[llvm_i32_ty],
-                                    [llvm_ptr_ty, llvm_ptr_ty, llvm_vararg_ty]>;
-def int_eh_selector_i64 : Intrinsic<[llvm_i64_ty],
-                                    [llvm_ptr_ty, llvm_ptr_ty, llvm_vararg_ty]>;
+def int_eh_exception : Intrinsic<[llvm_ptr_ty], [], [IntrReadMem]>;
+def int_eh_selector  : Intrinsic<[llvm_i32_ty],
+                                 [llvm_ptr_ty, llvm_ptr_ty, llvm_vararg_ty]>;
 
-def int_eh_typeid_for_i32 : Intrinsic<[llvm_i32_ty], [llvm_ptr_ty]>;
-def int_eh_typeid_for_i64 : Intrinsic<[llvm_i64_ty], [llvm_ptr_ty]>;
+def int_eh_typeid_for : Intrinsic<[llvm_i32_ty], [llvm_ptr_ty]>;
 
 def int_eh_return_i32 : Intrinsic<[llvm_void_ty], [llvm_i32_ty, llvm_ptr_ty]>;
 def int_eh_return_i64 : Intrinsic<[llvm_void_ty], [llvm_i64_ty, llvm_ptr_ty]>;
@@ -421,6 +423,22 @@ def int_atomic_load_umax : Intrinsic<[llvm_anyint_ty],
                                      [IntrWriteArgMem, NoCapture<0>]>,
                            GCCBuiltin<"__sync_fetch_and_umax">;
 
+//===------------------------- Memory Use Markers -------------------------===//
+//
+def int_lifetime_start  : Intrinsic<[llvm_void_ty],
+                                    [llvm_i64_ty, llvm_ptr_ty],
+                                    [IntrWriteArgMem, NoCapture<1>]>;
+def int_lifetime_end    : Intrinsic<[llvm_void_ty],
+                                    [llvm_i64_ty, llvm_ptr_ty],
+                                    [IntrWriteArgMem, NoCapture<1>]>;
+def int_invariant_start : Intrinsic<[llvm_descriptor_ty],
+                                    [llvm_i64_ty, llvm_ptr_ty],
+                                    [IntrReadArgMem, NoCapture<1>]>;
+def int_invariant_end   : Intrinsic<[llvm_void_ty],
+                                    [llvm_descriptor_ty, llvm_i64_ty,
+                                     llvm_ptr_ty],
+                                    [IntrWriteArgMem, NoCapture<2>]>;
+
 //===-------------------------- Other Intrinsics --------------------------===//
 //
 def int_flt_rounds : Intrinsic<[llvm_i32_ty]>,
@@ -461,4 +479,3 @@ include "llvm/IntrinsicsARM.td"
 include "llvm/IntrinsicsCellSPU.td"
 include "llvm/IntrinsicsAlpha.td"
 include "llvm/IntrinsicsXCore.td"
-include "llvm/IntrinsicsBlackfin.td"

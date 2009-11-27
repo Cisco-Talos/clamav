@@ -18,7 +18,9 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
-#ifdef HAVE_MALLOC_H
+// DragonFly BSD has deprecated <malloc.h> for <stdlib.h> instead,
+//  Unix.h includes this for us already.
+#if defined(HAVE_MALLOC_H) && !defined(__DragonFly__)
 #include <malloc.h>
 #endif
 #ifdef HAVE_MALLOC_MALLOC_H
@@ -91,7 +93,7 @@ Process::GetTotalMemoryUsage()
   malloc_statistics_t Stats;
   malloc_zone_statistics(malloc_default_zone(), &Stats);
   return Stats.size_allocated;   // darwin
-#elif defined(HAVE_GETRUSAGE)
+#elif defined(HAVE_GETRUSAGE) && !defined(__HAIKU__)
   struct rusage usage;
   ::getrusage(RUSAGE_SELF, &usage);
   return usage.ru_maxrss;

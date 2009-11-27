@@ -11,7 +11,7 @@
 #define LLVM_MC_MCASMLEXER_H
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/DataTypes.h"
+#include "llvm/System/DataTypes.h"
 
 namespace llvm {
 class MCAsmLexer;
@@ -56,7 +56,7 @@ struct AsmToken {
 
 public:
   AsmToken() {}
-  AsmToken(TokenKind _Kind, const StringRef &_Str, int64_t _IntVal = 0)
+  AsmToken(TokenKind _Kind, StringRef _Str, int64_t _IntVal = 0)
     : Kind(_Kind), Str(_Str), IntVal(_IntVal) {}
 
   TokenKind getKind() const { return Kind; }

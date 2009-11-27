@@ -74,7 +74,6 @@
 #include "llvm/Assembly/Writer.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ConstantRange.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/GetElementPtrTypeIterator.h"
@@ -401,7 +400,7 @@ namespace {
   /// SCEVComplexityCompare - Return true if the complexity of the LHS is less
   /// than the complexity of the RHS.  This comparator is used to canonicalize
   /// expressions.
-  class VISIBILITY_HIDDEN SCEVComplexityCompare {
+  class SCEVComplexityCompare {
     LoopInfo *LI;
   public:
     explicit SCEVComplexityCompare(LoopInfo *li) : LI(li) {}
@@ -1191,7 +1190,8 @@ namespace {
 
 /// getAddExpr - Get a canonical add expression, or something simpler if
 /// possible.
-const SCEV *ScalarEvolution::getAddExpr(SmallVectorImpl<const SCEV *> &Ops) {
+const SCEV *ScalarEvolution::getAddExpr(SmallVectorImpl<const SCEV *> &Ops,
+                                        bool HasNUW, bool HasNSW) {
   assert(!Ops.empty() && "Cannot get empty add!");
   if (Ops.size() == 1) return Ops[0];
 #ifndef NDEBUG
@@ -1241,7 +1241,7 @@ const SCEV *ScalarEvolution::getAddExpr(SmallVectorImpl<const SCEV *> &Ops) {
         return Mul;
       Ops.erase(Ops.begin()+i, Ops.begin()+i+2);
       Ops.push_back(Mul);
-      return getAddExpr(Ops);
+      return getAddExpr(Ops, HasNUW, HasNSW);
     }
 
   // Check for truncates. If all the operands are truncated from the same
@@ -1296,7 +1296,7 @@ const SCEV *ScalarEvolution::getAddExpr(SmallVectorImpl<const SCEV *> &Ops) {
     }
     if (Ok) {
       // Evaluate the expression in the larger type.
-      const SCEV *Fold = getAddExpr(LargeOps);
+      const SCEV *Fold = getAddExpr(LargeOps, HasNUW, HasNSW);
       // If it folds to something simple, use it. Otherwise, don't.
       if (isa<SCEVConstant>(Fold) || isa<SCEVUnknown>(Fold))
         return getTruncateExpr(Fold, DstType);
@@ -1516,16 +1516,19 @@ const SCEV *ScalarEvolution::getAddExpr(SmallVectorImpl<const SCEV *> &Ops) {
     ID.AddPointer(Ops[i]);
   void *IP = 0;
   if (const SCEV *S = UniqueSCEVs.FindNodeOrInsertPos(ID, IP)) return S;
-  SCEV *S = SCEVAllocator.Allocate<SCEVAddExpr>();
+  SCEVAddExpr *S = SCEVAllocator.Allocate<SCEVAddExpr>();
   new (S) SCEVAddExpr(ID, Ops);
   UniqueSCEVs.InsertNode(S, IP);
+  if (HasNUW) S->setHasNoUnsignedWrap(true);
+  if (HasNSW) S->setHasNoSignedWrap(true);
   return S;
 }
 
 
 /// getMulExpr - Get a canonical multiply expression, or something simpler if
 /// possible.
-const SCEV *ScalarEvolution::getMulExpr(SmallVectorImpl<const SCEV *> &Ops) {
+const SCEV *ScalarEvolution::getMulExpr(SmallVectorImpl<const SCEV *> &Ops,
+                                        bool HasNUW, bool HasNSW) {
   assert(!Ops.empty() && "Cannot get empty mul!");
 #ifndef NDEBUG
   for (unsigned i = 1, e = Ops.size(); i != e; ++i)
@@ -1688,9 +1691,11 @@ const SCEV *ScalarEvolution::getMulExpr(SmallVectorImpl<const SCEV *> &Ops) {
     ID.AddPointer(Ops[i]);
   void *IP = 0;
   if (const SCEV *S = UniqueSCEVs.FindNodeOrInsertPos(ID, IP)) return S;
-  SCEV *S = SCEVAllocator.Allocate<SCEVMulExpr>();
+  SCEVMulExpr *S = SCEVAllocator.Allocate<SCEVMulExpr>();
   new (S) SCEVMulExpr(ID, Ops);
   UniqueSCEVs.InsertNode(S, IP);
+  if (HasNUW) S->setHasNoUnsignedWrap(true);
+  if (HasNSW) S->setHasNoSignedWrap(true);
   return S;
 }
 
@@ -1797,7 +1802,8 @@ const SCEV *ScalarEvolution::getUDivExpr(const SCEV *LHS,
 /// getAddRecExpr - Get an add recurrence expression for the specified loop.
 /// Simplify the expression as much as possible.
 const SCEV *ScalarEvolution::getAddRecExpr(const SCEV *Start,
-                                           const SCEV *Step, const Loop *L) {
+                                           const SCEV *Step, const Loop *L,
+                                           bool HasNUW, bool HasNSW) {
   SmallVector<const SCEV *, 4> Operands;
   Operands.push_back(Start);
   if (const SCEVAddRecExpr *StepChrec = dyn_cast<SCEVAddRecExpr>(Step))
@@ -1808,14 +1814,15 @@ const SCEV *ScalarEvolution::getAddRecExpr(const SCEV *Start,
     }
 
   Operands.push_back(Step);
-  return getAddRecExpr(Operands, L);
+  return getAddRecExpr(Operands, L, HasNUW, HasNSW);
 }
 
 /// getAddRecExpr - Get an add recurrence expression for the specified loop.
 /// Simplify the expression as much as possible.
 const SCEV *
 ScalarEvolution::getAddRecExpr(SmallVectorImpl<const SCEV *> &Operands,
-                               const Loop *L) {
+                               const Loop *L,
+                               bool HasNUW, bool HasNSW) {
   if (Operands.size() == 1) return Operands[0];
 #ifndef NDEBUG
   for (unsigned i = 1, e = Operands.size(); i != e; ++i)
@@ -1826,7 +1833,7 @@ ScalarEvolution::getAddRecExpr(SmallVectorImpl<const SCEV *> &Operands,
 
   if (Operands.back()->isZero()) {
     Operands.pop_back();
-    return getAddRecExpr(Operands, L);             // {X,+,0}  -->  X
+    return getAddRecExpr(Operands, L, HasNUW, HasNSW); // {X,+,0}  -->  X
   }
 
   // Canonicalize nested AddRecs in by nesting them in order of loop depth.
@@ -1855,7 +1862,7 @@ ScalarEvolution::getAddRecExpr(SmallVectorImpl<const SCEV *> &Operands,
           }
         if (AllInvariant)
           // Ok, both add recurrences are valid after the transformation.
-          return getAddRecExpr(NestedOperands, NestedLoop);
+          return getAddRecExpr(NestedOperands, NestedLoop, HasNUW, HasNSW);
       }
       // Reset Operands to its original state.
       Operands[0] = NestedAR;
@@ -1870,9 +1877,11 @@ ScalarEvolution::getAddRecExpr(SmallVectorImpl<const SCEV *> &Operands,
   ID.AddPointer(L);
   void *IP = 0;
   if (const SCEV *S = UniqueSCEVs.FindNodeOrInsertPos(ID, IP)) return S;
-  SCEV *S = SCEVAllocator.Allocate<SCEVAddRecExpr>();
+  SCEVAddRecExpr *S = SCEVAllocator.Allocate<SCEVAddRecExpr>();
   new (S) SCEVAddRecExpr(ID, Operands, L);
   UniqueSCEVs.InsertNode(S, IP);
+  if (HasNUW) S->setHasNoUnsignedWrap(true);
+  if (HasNSW) S->setHasNoSignedWrap(true);
   return S;
 }
 
@@ -2942,9 +2951,15 @@ const SCEV *ScalarEvolution::createSCEV(Value *V) {
   Operator *U = cast<Operator>(V);
   switch (Opcode) {
   case Instruction::Add:
+    // Don't transfer the NSW and NUW bits from the Add instruction to the
+    // Add expression, because the Instruction may be guarded by control
+    // flow and the no-overflow bits may not be valid for the expression in
+    // any context.
     return getAddExpr(getSCEV(U->getOperand(0)),
                       getSCEV(U->getOperand(1)));
   case Instruction::Mul:
+    // Don't transfer the NSW and NUW bits from the Mul instruction to the
+    // Mul expression, as with Add.
     return getMulExpr(getSCEV(U->getOperand(0)),
                       getSCEV(U->getOperand(1)));
   case Instruction::UDiv:
@@ -3250,9 +3265,8 @@ ScalarEvolution::getBackedgeTakenInfo(const Loop *L) {
     // Now that we know more about the trip count for this loop, forget any
     // existing SCEV values for PHI nodes in this loop since they are only
     // conservative estimates made without the benefit of trip count
-    // information. This is similar to the code in
-    // forgetLoopBackedgeTakenCount, except that it handles SCEVUnknown PHI
-    // nodes specially.
+    // information. This is similar to the code in forgetLoop, except that
+    // it handles SCEVUnknown PHI nodes specially.
     if (ItCount.hasAnyInfo()) {
       SmallVector<Instruction *, 16> Worklist;
       PushLoopPHIs(L, Worklist);
@@ -3286,13 +3300,14 @@ ScalarEvolution::getBackedgeTakenInfo(const Loop *L) {
   return Pair.first->second;
 }
 
-/// forgetLoopBackedgeTakenCount - This method should be called by the
-/// client when it has changed a loop in a way that may effect
-/// ScalarEvolution's ability to compute a trip count, or if the loop
-/// is deleted.
-void ScalarEvolution::forgetLoopBackedgeTakenCount(const Loop *L) {
+/// forgetLoop - This method should be called by the client when it has
+/// changed a loop in a way that may effect ScalarEvolution's ability to
+/// compute a trip count, or if the loop is deleted.
+void ScalarEvolution::forgetLoop(const Loop *L) {
+  // Drop any stored trip count value.
   BackedgeTakenCounts.erase(L);
 
+  // Drop information about expressions based on loop-header PHIs.
   SmallVector<Instruction *, 16> Worklist;
   PushLoopPHIs(L, Worklist);
 
@@ -3629,7 +3644,7 @@ EvaluateConstantChrecAtConstant(const SCEVAddRecExpr *AddRec, ConstantInt *C,
 /// the addressed element of the initializer or null if the index expression is
 /// invalid.
 static Constant *
-GetAddressedElementFromGlobal(LLVMContext &Context, GlobalVariable *GV,
+GetAddressedElementFromGlobal(GlobalVariable *GV,
                               const std::vector<ConstantInt*> &Indices) {
   Constant *Init = GV->getInitializer();
   for (unsigned i = 0, e = Indices.size(); i != e; ++i) {
@@ -3717,7 +3732,7 @@ ScalarEvolution::ComputeLoadConstantCompareBackedgeTakenCount(
     // Form the GEP offset.
     Indexes[VarIdxNum] = Val;
 
-    Constant *Result = GetAddressedElementFromGlobal(getContext(), GV, Indexes);
+    Constant *Result = GetAddressedElementFromGlobal(GV, Indexes);
     if (Result == 0) break;  // Cannot compute!
 
     // Evaluate the condition for this iteration.
@@ -3796,29 +3811,26 @@ static PHINode *getConstantEvolvingPHI(Value *V, const Loop *L) {
 /// getConstantEvolvingPHI predicate, evaluate its value assuming the PHI node
 /// in the loop has the value PHIVal.  If we can't fold this expression for some
 /// reason, return null.
-static Constant *EvaluateExpression(Value *V, Constant *PHIVal) {
+static Constant *EvaluateExpression(Value *V, Constant *PHIVal,
+                                    const TargetData *TD) {
   if (isa<PHINode>(V)) return PHIVal;
   if (Constant *C = dyn_cast<Constant>(V)) return C;
   if (GlobalValue *GV = dyn_cast<GlobalValue>(V)) return GV;
   Instruction *I = cast<Instruction>(V);
-  LLVMContext &Context = I->getParent()->getContext();
 
   std::vector<Constant*> Operands;
   Operands.resize(I->getNumOperands());
 
   for (unsigned i = 0, e = I->getNumOperands(); i != e; ++i) {
-    Operands[i] = EvaluateExpression(I->getOperand(i), PHIVal);
+    Operands[i] = EvaluateExpression(I->getOperand(i), PHIVal, TD);
     if (Operands[i] == 0) return 0;
   }
 
   if (const CmpInst *CI = dyn_cast<CmpInst>(I))
-    return ConstantFoldCompareInstOperands(CI->getPredicate(),
-                                           &Operands[0], Operands.size(),
-                                           Context);
-  else
-    return ConstantFoldInstOperands(I->getOpcode(), I->getType(),
-                                    &Operands[0], Operands.size(),
-                                    Context);
+    return ConstantFoldCompareInstOperands(CI->getPredicate(), Operands[0],
+                                           Operands[1], TD);
+  return ConstantFoldInstOperands(I->getOpcode(), I->getType(),
+                                  &Operands[0], Operands.size(), TD);
 }
 
 /// getConstantEvolutionLoopExitValue - If we know that the specified Phi is
@@ -3864,7 +3876,7 @@ ScalarEvolution::getConstantEvolutionLoopExitValue(PHINode *PN,
       return RetVal = PHIVal;  // Got exit value!
 
     // Compute the value of the PHI node for the next iteration.
-    Constant *NextPHI = EvaluateExpression(BEValue, PHIVal);
+    Constant *NextPHI = EvaluateExpression(BEValue, PHIVal, TD);
     if (NextPHI == PHIVal)
       return RetVal = NextPHI;  // Stopped evolving!
     if (NextPHI == 0)
@@ -3905,7 +3917,7 @@ ScalarEvolution::ComputeBackedgeTakenCountExhaustively(const Loop *L,
   for (Constant *PHIVal = StartCST;
        IterationNum != MaxIterations; ++IterationNum) {
     ConstantInt *CondVal =
-      dyn_cast_or_null<ConstantInt>(EvaluateExpression(Cond, PHIVal));
+      dyn_cast_or_null<ConstantInt>(EvaluateExpression(Cond, PHIVal, TD));
 
     // Couldn't symbolically evaluate.
     if (!CondVal) return getCouldNotCompute();
@@ -3916,7 +3928,7 @@ ScalarEvolution::ComputeBackedgeTakenCountExhaustively(const Loop *L,
     }
 
     // Compute the value of the PHI node for the next iteration.
-    Constant *NextPHI = EvaluateExpression(BEValue, PHIVal);
+    Constant *NextPHI = EvaluateExpression(BEValue, PHIVal, TD);
     if (NextPHI == 0 || NextPHI == PHIVal)
       return getCouldNotCompute();// Couldn't evaluate or not making progress...
     PHIVal = NextPHI;
@@ -4025,12 +4037,10 @@ const SCEV *ScalarEvolution::computeSCEVAtScope(const SCEV *V, const Loop *L) {
         Constant *C;
         if (const CmpInst *CI = dyn_cast<CmpInst>(I))
           C = ConstantFoldCompareInstOperands(CI->getPredicate(),
-                                              &Operands[0], Operands.size(),
-                                              getContext());
+                                              Operands[0], Operands[1], TD);
         else
           C = ConstantFoldInstOperands(I->getOpcode(), I->getType(),
-                                       &Operands[0], Operands.size(),
-                                       getContext());
+                                       &Operands[0], Operands.size(), TD);
         return getSCEV(C);
       }
     }

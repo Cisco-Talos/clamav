@@ -346,7 +346,7 @@ void ScheduleDAG::VerifySchedule(bool isBottomUp) {
       AnyNotSched = true;
     }
     if (SUnits[i].isScheduled &&
-        (isBottomUp ? SUnits[i].getHeight() : SUnits[i].getHeight()) >
+        (isBottomUp ? SUnits[i].getHeight() : SUnits[i].getDepth()) >
           unsigned(INT_MAX)) {
       if (!AnyNotSched)
         errs() << "*** Scheduling failed! ***\n";

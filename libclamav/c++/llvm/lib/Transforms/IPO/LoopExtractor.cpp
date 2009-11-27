@@ -22,7 +22,6 @@
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/FunctionUtils.h"
 #include "llvm/ADT/Statistic.h"
@@ -33,7 +32,7 @@ using namespace llvm;
 STATISTIC(NumExtracted, "Number of loops extracted");
 
 namespace {
-  struct VISIBILITY_HIDDEN LoopExtractor : public LoopPass {
+  struct LoopExtractor : public LoopPass {
     static char ID; // Pass identification, replacement for typeid
     unsigned NumLoops;
 
@@ -74,6 +73,10 @@ Pass *llvm::createLoopExtractorPass() { return new LoopExtractor(); }
 bool LoopExtractor::runOnLoop(Loop *L, LPPassManager &LPM) {
   // Only visit top-level loops.
   if (L->getParentLoop())
+    return false;
+
+  // If LoopSimplify form is not available, stay out of trouble.
+  if (!L->isLoopSimplifyForm())
     return false;
 
   DominatorTree &DT = getAnalysis<DominatorTree>();

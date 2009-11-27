@@ -4,6 +4,11 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
 
+if( UNIX )
+  # Used by check_symbol_exists:
+  set(CMAKE_REQUIRED_LIBRARIES m)
+endif()
+
 # Helper macros and functions
 macro(add_cxx_include result files)
   set(${result} "")
@@ -39,7 +44,9 @@ check_include_file(malloc.h HAVE_MALLOC_H)
 check_include_file(malloc/malloc.h HAVE_MALLOC_MALLOC_H)
 check_include_file(memory.h HAVE_MEMORY_H)
 check_include_file(ndir.h HAVE_NDIR_H)
-check_include_file(pthread.h HAVE_PTHREAD_H)
+if( NOT LLVM_ON_WIN32 )
+  check_include_file(pthread.h HAVE_PTHREAD_H)
+endif()
 check_include_file(setjmp.h HAVE_SETJMP_H)
 check_include_file(signal.h HAVE_SIGNAL_H)
 check_include_file(stdint.h HAVE_STDINT_H)
@@ -63,10 +70,12 @@ check_include_file(utime.h HAVE_UTIME_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
 # library checks
-check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
-check_library_exists(pthread pthread_getspecific "" HAVE_PTHREAD_GETSPECIFIC)
-check_library_exists(pthread pthread_rwlock_init "" HAVE_PTHREAD_RWLOCK_INIT)
-check_library_exists(dl dlopen "" HAVE_LIBDL)
+if( NOT LLVM_ON_WIN32 )
+  check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+  check_library_exists(pthread pthread_getspecific "" HAVE_PTHREAD_GETSPECIFIC)
+  check_library_exists(pthread pthread_rwlock_init "" HAVE_PTHREAD_RWLOCK_INIT)
+  check_library_exists(dl dlopen "" HAVE_LIBDL)
+endif()
 
 # function checks
 check_symbol_exists(getpagesize unistd.h HAVE_GETPAGESIZE)
@@ -75,17 +84,22 @@ check_symbol_exists(setrlimit sys/resource.h HAVE_SETRLIMIT)
 check_function_exists(isatty HAVE_ISATTY)
 check_symbol_exists(isinf cmath HAVE_ISINF_IN_CMATH)
 check_symbol_exists(isinf math.h HAVE_ISINF_IN_MATH_H)
+check_symbol_exists(finite ieeefp.h HAVE_FINITE_IN_IEEEFP_H)
 check_symbol_exists(isnan cmath HAVE_ISNAN_IN_CMATH)
 check_symbol_exists(isnan math.h HAVE_ISNAN_IN_MATH_H)
 check_symbol_exists(ceilf math.h HAVE_CEILF)
 check_symbol_exists(floorf math.h HAVE_FLOORF)
+check_symbol_exists(nearbyintf math.h HAVE_NEARBYINTF)
 check_symbol_exists(mallinfo malloc.h HAVE_MALLINFO)
 check_symbol_exists(malloc_zone_statistics malloc/malloc.h
                     HAVE_MALLOC_ZONE_STATISTICS)
-check_symbol_exists(mkdtemp unistd.h HAVE_MKDTEMP)
-check_symbol_exists(mkstemp unistd.h HAVE_MKSTEMP)
-check_symbol_exists(mktemp unistd.h HAVE_MKTEMP)
-check_symbol_exists(pthread_mutex_lock pthread.h HAVE_PTHREAD_MUTEX_LOCK)
+check_symbol_exists(mkdtemp "stdlib.h;unistd.h" HAVE_MKDTEMP)
+check_symbol_exists(mkstemp "stdlib.h;unistd.h" HAVE_MKSTEMP)
+check_symbol_exists(mktemp "stdlib.h;unistd.h" HAVE_MKTEMP)
+if( NOT LLVM_ON_WIN32 )
+  check_symbol_exists(pthread_mutex_lock pthread.h HAVE_PTHREAD_MUTEX_LOCK)
+endif()
+check_symbol_exists(sbrk unistd.h HAVE_SBRK)
 check_symbol_exists(strtoll stdlib.h HAVE_STRTOLL)
 check_symbol_exists(strerror string.h HAVE_STRERROR)
 check_symbol_exists(strerror_r string.h HAVE_STRERROR_R)
@@ -118,6 +132,27 @@ endif()
 check_type_exists(uint64_t "${headers}" HAVE_UINT64_T)
 check_type_exists(u_int64_t "${headers}" HAVE_U_INT64_T)
 
+# available programs checks
+function(llvm_find_program name)
+  string(TOUPPER ${name} NAME)
+  find_program(LLVM_PATH_${NAME} ${name})
+  mark_as_advanced(LLVM_PATH_${NAME})
+  if(LLVM_PATH_${NAME})
+    set(HAVE_${NAME} 1 CACHE INTERNAL "Is ${name} available ?")
+    mark_as_advanced(HAVE_${NAME})
+  else(LLVM_PATH_${NAME})
+    set(HAVE_${NAME} "" CACHE INTERNAL "Is ${name} available ?")
+  endif(LLVM_PATH_${NAME})
+endfunction()
+
+llvm_find_program(gv)
+llvm_find_program(circo)
+llvm_find_program(twopi)
+llvm_find_program(neato)
+llvm_find_program(fdp)
+llvm_find_program(dot)
+llvm_find_program(dotty)
+
 # Define LLVM_MULTITHREADED if gcc atomic builtins exists.
 include(CheckAtomic)
 
@@ -130,7 +165,9 @@ endif()
 
 include(GetTargetTriple)
 get_target_triple(LLVM_HOSTTRIPLE)
-message(STATUS "LLVM_HOSTTRIPLE: ${LLVM_HOSTTRIPLE}")
+
+# FIXME: We don't distinguish the target and the host. :(
+set(TARGET_TRIPLE "${LLVM_HOSTTRIPLE}")
 
 # Determine the native architecture.
 string(TOLOWER "${LLVM_TARGET_ARCH}" LLVM_NATIVE_ARCH)
@@ -227,7 +264,7 @@ configure_file(
   )
 
 configure_file(
-  ${LLVM_MAIN_INCLUDE_DIR}/llvm/Support/DataTypes.h.cmake
-  ${LLVM_BINARY_DIR}/include/llvm/Support/DataTypes.h
+  ${LLVM_MAIN_INCLUDE_DIR}/llvm/System/DataTypes.h.cmake
+  ${LLVM_BINARY_DIR}/include/llvm/System/DataTypes.h
   )
 

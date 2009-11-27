@@ -34,7 +34,6 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
@@ -56,8 +55,7 @@ namespace {
   };
 
   template<class CodeEmitter>
-  class VISIBILITY_HIDDEN Emitter : public MachineFunctionPass,
-                                    public ARMCodeEmitter {
+  class Emitter : public MachineFunctionPass, public ARMCodeEmitter {
     ARMJITInfo                *JTI;
     const ARMInstrInfo        *II;
     const TargetData          *TD;
@@ -170,7 +168,8 @@ namespace {
     /// Routines that handle operands which add machine relocations which are
     /// fixed up by the relocation stage.
     void emitGlobalAddress(GlobalValue *GV, unsigned Reloc,
-                           bool NeedStub,  bool Indirect, intptr_t ACPV = 0);
+                           bool MayNeedFarStub,  bool Indirect,
+                           intptr_t ACPV = 0);
     void emitExternalSymbolAddress(const char *ES, unsigned Reloc);
     void emitConstPoolAddress(unsigned CPI, unsigned Reloc);
     void emitJumpTableAddress(unsigned JTIndex, unsigned Reloc);
@@ -279,13 +278,13 @@ unsigned Emitter<CodeEmitter>::getMachineOpValue(const MachineInstr &MI,
 ///
 template<class CodeEmitter>
 void Emitter<CodeEmitter>::emitGlobalAddress(GlobalValue *GV, unsigned Reloc,
-                                             bool NeedStub, bool Indirect,
+                                             bool MayNeedFarStub, bool Indirect,
                                              intptr_t ACPV) {
   MachineRelocation MR = Indirect
     ? MachineRelocation::getIndirectSymbol(MCE.getCurrentPCOffset(), Reloc,
-                                           GV, ACPV, NeedStub)
+                                           GV, ACPV, MayNeedFarStub)
     : MachineRelocation::getGV(MCE.getCurrentPCOffset(), Reloc,
-                               GV, ACPV, NeedStub);
+                               GV, ACPV, MayNeedFarStub);
   MCE.addRelocation(MR);
 }
 
@@ -346,7 +345,7 @@ template<class CodeEmitter>
 void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI) {
   DEBUG(errs() << "JIT: " << (void*)MCE.getCurrentPCValue() << ":\t" << MI);
 
-  MCE.processDebugLoc(MI.getDebugLoc());
+  MCE.processDebugLoc(MI.getDebugLoc(), true);
 
   NumEmitted++;  // Keep track of the # of mi's emitted
   switch (MI.getDesc().TSFlags & ARMII::FormMask) {
@@ -409,6 +408,7 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI) {
     emitMiscInstruction(MI);
     break;
   }
+  MCE.processDebugLoc(MI.getDebugLoc(), false);
 }
 
 template<class CodeEmitter>
@@ -429,6 +429,7 @@ void Emitter<CodeEmitter>::emitConstPoolInstruction(const MachineInstr &MI) {
     DEBUG(errs() << "  ** ARM constant pool #" << CPI << " @ "
           << (void*)MCE.getCurrentPCValue() << " " << *ACPV << '\n');
 
+    assert(ACPV->isGlobalValue() && "unsupported constant pool value");
     GlobalValue *GV = ACPV->getGV();
     if (GV) {
       Reloc::Model RelocM = TM.getRelocationModel();
@@ -460,9 +461,9 @@ void Emitter<CodeEmitter>::emitConstPoolInstruction(const MachineInstr &MI) {
       uint32_t Val = *(uint32_t*)CI->getValue().getRawData();
       emitWordLE(Val);
     } else if (const ConstantFP *CFP = dyn_cast<ConstantFP>(CV)) {
-      if (CFP->getType() == Type::getFloatTy(CFP->getContext()))
+      if (CFP->getType()->isFloatTy())
         emitWordLE(CFP->getValueAPF().bitcastToAPInt().getZExtValue());
-      else if (CFP->getType() == Type::getDoubleTy(CFP->getContext()))
+      else if (CFP->getType()->isDoubleTy())
         emitDWordLE(CFP->getValueAPF().bitcastToAPInt().getZExtValue());
       else {
         llvm_unreachable("Unable to handle this constantpool entry!");
@@ -612,7 +613,6 @@ void Emitter<CodeEmitter>::emitPseudoInstruction(const MachineInstr &MI) {
     break;
   case TargetInstrInfo::IMPLICIT_DEF:
   case TargetInstrInfo::KILL:
-  case ARM::DWARF_LOC:
     // Do nothing.
     break;
   case ARM::CONSTPOOL_ENTRY:

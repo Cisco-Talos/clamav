@@ -10,10 +10,11 @@
 // This file implements tracking of pointer bounds.
 //
 //===----------------------------------------------------------------------===//
+
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/MallocHelper.h"
+#include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Analysis/PointerTracking.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -48,7 +49,7 @@ void PointerTracking::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool PointerTracking::doInitialization(Module &M) {
-  const Type *PTy = PointerType::getUnqual(Type::getInt8Ty(M.getContext()));
+  const Type *PTy = Type::getInt8PtrTy(M.getContext());
 
   // Find calloc(i64, i64) or calloc(i32, i32).
   callocFunc = M.getFunction("calloc");
@@ -93,7 +94,7 @@ bool PointerTracking::doInitialization(Module &M) {
 const SCEV *PointerTracking::computeAllocationCount(Value *P,
                                                     const Type *&Ty) const {
   Value *V = P->stripPointerCasts();
-  if (AllocationInst *AI = dyn_cast<AllocationInst>(V)) {
+  if (AllocaInst *AI = dyn_cast<AllocaInst>(V)) {
     Value *arraySize = AI->getArraySize();
     Ty = AI->getAllocatedType();
     // arraySize elements of type Ty.
@@ -101,9 +102,10 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
   }
 
   if (CallInst *CI = extractMallocCall(V)) {
-    Value *arraySize = getMallocArraySize(CI, P->getContext(), TD);
-    Ty = getMallocAllocatedType(CI);
-    if (!Ty || !arraySize) return SE->getCouldNotCompute();
+    Value *arraySize = getMallocArraySize(CI, TD);
+    const Type* AllocTy = getMallocAllocatedType(CI);
+    if (!AllocTy || !arraySize) return SE->getCouldNotCompute();
+    Ty = AllocTy;
     // arraySize elements of type Ty.
     return SE->getSCEV(arraySize);
   }

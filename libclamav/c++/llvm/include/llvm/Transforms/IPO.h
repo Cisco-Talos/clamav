@@ -69,13 +69,6 @@ ModulePass *createGlobalOptimizerPass();
 
 
 //===----------------------------------------------------------------------===//
-/// createRaiseAllocationsPass - Return a new pass that transforms malloc and
-/// free function calls into malloc and free instructions.
-///
-ModulePass *createRaiseAllocationsPass();
-
-
-//===----------------------------------------------------------------------===//
 /// createDeadTypeEliminationPass - Return a new pass that eliminates symbol
 /// table entries for types that are never used.
 ///
@@ -184,10 +177,6 @@ Pass *createSingleLoopExtractorPass();
 /// specified in the argument list) from the functions in the module.
 ///
 ModulePass *createBlockExtractorPass(const std::vector<BasicBlock*> &BTNE);
-
-/// createIndMemRemPass - This pass removes potential indirect calls of
-/// malloc and free
-ModulePass *createIndMemRemPass();
 
 /// createStripDeadPrototypesPass - This pass removes any function declarations
 /// (prototypes) that are not used.

@@ -19,6 +19,8 @@
 #include <map>
 #include <string>
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/ValueMap.h"
+#include "llvm/Support/ValueHandle.h"
 #include "llvm/System/Mutex.h"
 #include "llvm/Target/TargetMachine.h"
 
@@ -26,6 +28,7 @@ namespace llvm {
 
 struct GenericValue;
 class Constant;
+class ExecutionEngine;
 class Function;
 class GlobalVariable;
 class GlobalValue;
@@ -37,13 +40,26 @@ class ModuleProvider;
 class MutexGuard;
 class TargetData;
 class Type;
-template<typename> class AssertingVH;
 
 class ExecutionEngineState {
+public:
+  struct AddressMapConfig : public ValueMapConfig<const GlobalValue*> {
+    typedef ExecutionEngineState *ExtraData;
+    static sys::Mutex *getMutex(ExecutionEngineState *EES);
+    static void onDelete(ExecutionEngineState *EES, const GlobalValue *Old);
+    static void onRAUW(ExecutionEngineState *, const GlobalValue *,
+                       const GlobalValue *);
+  };
+
+  typedef ValueMap<const GlobalValue *, void *, AddressMapConfig>
+      GlobalAddressMapTy;
+
 private:
+  ExecutionEngine &EE;
+
   /// GlobalAddressMap - A mapping between LLVM global values and their
   /// actualized version...
-  std::map<AssertingVH<const GlobalValue>, void *> GlobalAddressMap;
+  GlobalAddressMapTy GlobalAddressMap;
 
   /// GlobalAddressReverseMap - This is the reverse mapping of GlobalAddressMap,
   /// used to convert raw addresses into the LLVM global value that is emitted
@@ -52,7 +68,9 @@ private:
   std::map<void *, AssertingVH<const GlobalValue> > GlobalAddressReverseMap;
 
 public:
-  std::map<AssertingVH<const GlobalValue>, void *> &
+  ExecutionEngineState(ExecutionEngine &EE);
+
+  GlobalAddressMapTy &
   getGlobalAddressMap(const MutexGuard &) {
     return GlobalAddressMap;
   }
@@ -61,16 +79,18 @@ public:
   getGlobalAddressReverseMap(const MutexGuard &) {
     return GlobalAddressReverseMap;
   }
+
+  // Returns the address ToUnmap was mapped to.
+  void *RemoveMapping(const MutexGuard &, const GlobalValue *ToUnmap);
 };
 
 
 class ExecutionEngine {
   const TargetData *TD;
-  ExecutionEngineState state;
-  bool LazyCompilationDisabled;
+  ExecutionEngineState EEState;
+  bool CompilingLazily;
   bool GVCompilationDisabled;
   bool SymbolSearchingDisabled;
-  bool DlsymStubsEnabled;
 
   friend class EngineBuilder;  // To allow access to JITCtor and InterpCtor.
 
@@ -93,7 +113,8 @@ protected:
                                      std::string *ErrorStr,
                                      JITMemoryManager *JMM,
                                      CodeGenOpt::Level OptLevel,
-                                     bool GVsWithCode);
+                                     bool GVsWithCode,
+				     CodeModel::Model CMM);
   static ExecutionEngine *(*InterpCtor)(ModuleProvider *MP,
                                         std::string *ErrorStr);
 
@@ -153,7 +174,9 @@ public:
                                     JITMemoryManager *JMM = 0,
                                     CodeGenOpt::Level OptLevel =
                                       CodeGenOpt::Default,
-                                    bool GVsWithCode = true);
+                                    bool GVsWithCode = true,
+				    CodeModel::Model CMM =
+				      CodeModel::Default);
 
   /// addModuleProvider - Add a ModuleProvider to the list of modules that we
   /// can JIT from.  Note that this takes ownership of the ModuleProvider: when
@@ -210,8 +233,8 @@ public:
   /// at the specified location.  This is used internally as functions are JIT'd
   /// and as global variables are laid out in memory.  It can and should also be
   /// used by clients of the EE that want to have an LLVM global overlay
-  /// existing data in memory.  After adding a mapping for GV, you must not
-  /// destroy it until you've removed the mapping.
+  /// existing data in memory.  Mappings are automatically removed when their
+  /// GlobalValue is destroyed.
   void addGlobalMapping(const GlobalValue *GV, void *Addr);
   
   /// clearAllGlobalMappings - Clear all global mappings and start over again
@@ -235,29 +258,28 @@ public:
   void *getPointerToGlobalIfAvailable(const GlobalValue *GV);
 
   /// getPointerToGlobal - This returns the address of the specified global
-  /// value.  This may involve code generation if it's a function.  After
-  /// getting a pointer to GV, it and all globals it transitively refers to have
-  /// been passed to addGlobalMapping.  You must clear the mapping for each
-  /// referred-to global before destroying it.  If a referred-to global RTG is a
-  /// function and this ExecutionEngine is a JIT compiler, calling
-  /// updateGlobalMapping(RTG, 0) will leak the function's machine code, so you
-  /// should call freeMachineCodeForFunction(RTG) instead.  Note that
-  /// optimizations can move and delete non-external GlobalValues without
-  /// notifying the ExecutionEngine.
+  /// value.  This may involve code generation if it's a function.
   ///
   void *getPointerToGlobal(const GlobalValue *GV);
 
   /// getPointerToFunction - The different EE's represent function bodies in
   /// different ways.  They should each implement this to say what a function
-  /// pointer should look like.  See getPointerToGlobal for the requirements on
-  /// destroying F and any GlobalValues it refers to.
+  /// pointer should look like.  When F is destroyed, the ExecutionEngine will
+  /// remove its global mapping and free any machine code.  Be sure no threads
+  /// are running inside F when that happens.
   ///
   virtual void *getPointerToFunction(Function *F) = 0;
 
+  /// getPointerToBasicBlock - The different EE's represent basic blocks in
+  /// different ways.  Return the representation for a blockaddress of the
+  /// specified block.
+  ///
+  virtual void *getPointerToBasicBlock(BasicBlock *BB) = 0;
+  
   /// getPointerToFunctionOrStub - If the specified function has been
   /// code-gen'd, return a pointer to the function.  If not, compile it, or use
-  /// a stub to implement lazy compilation if available.  See getPointerToGlobal
-  /// for the requirements on destroying F and any GlobalValues it refers to.
+  /// a stub to implement lazy compilation if available.  See
+  /// getPointerToFunction for the requirements on destroying F.
   ///
   virtual void *getPointerToFunctionOrStub(Function *F) {
     // Default implementation, just codegen the function.
@@ -293,8 +315,7 @@ public:
 
   /// getOrEmitGlobalVariable - Return the address of the specified global
   /// variable, possibly emitting it to memory if needed.  This is used by the
-  /// Emitter.  See getPointerToGlobal for the requirements on destroying GV and
-  /// any GlobalValues it refers to.
+  /// Emitter.
   virtual void *getOrEmitGlobalVariable(const GlobalVariable *GV) {
     return getPointerToGlobal((GlobalValue*)GV);
   }
@@ -306,13 +327,29 @@ public:
   virtual void RegisterJITEventListener(JITEventListener *) {}
   virtual void UnregisterJITEventListener(JITEventListener *) {}
 
-  /// DisableLazyCompilation - If called, the JIT will abort if lazy compilation
-  /// is ever attempted.
+  /// DisableLazyCompilation - When lazy compilation is off (the default), the
+  /// JIT will eagerly compile every function reachable from the argument to
+  /// getPointerToFunction.  If lazy compilation is turned on, the JIT will only
+  /// compile the one function and emit stubs to compile the rest when they're
+  /// first called.  If lazy compilation is turned off again while some lazy
+  /// stubs are still around, and one of those stubs is called, the program will
+  /// abort.
+  ///
+  /// In order to safely compile lazily in a threaded program, the user must
+  /// ensure that 1) only one thread at a time can call any particular lazy
+  /// stub, and 2) any thread modifying LLVM IR must hold the JIT's lock
+  /// (ExecutionEngine::lock) or otherwise ensure that no other thread calls a
+  /// lazy stub.  See http://llvm.org/PR5184 for details.
   void DisableLazyCompilation(bool Disabled = true) {
-    LazyCompilationDisabled = Disabled;
+    CompilingLazily = !Disabled;
   }
+  bool isCompilingLazily() const {
+    return CompilingLazily;
+  }
+  // Deprecated in favor of isCompilingLazily (to reduce double-negatives).
+  // Remove this in LLVM 2.8.
   bool isLazyCompilationDisabled() const {
-    return LazyCompilationDisabled;
+    return !CompilingLazily;
   }
 
   /// DisableGVCompilation - If called, the JIT will abort if it's asked to
@@ -334,15 +371,7 @@ public:
   bool isSymbolSearchingDisabled() const {
     return SymbolSearchingDisabled;
   }
-  
-  /// EnableDlsymStubs - 
-  void EnableDlsymStubs(bool Enabled = true) {
-    DlsymStubsEnabled = Enabled;
-  }
-  bool areDlsymStubsEnabled() const {
-    return DlsymStubsEnabled;
-  }
-  
+
   /// InstallLazyFunctionCreator - If an unknown function is needed, the
   /// specified function pointer is invoked to create it.  If it returns null,
   /// the JIT will abort.
@@ -399,6 +428,7 @@ class EngineBuilder {
   CodeGenOpt::Level OptLevel;
   JITMemoryManager *JMM;
   bool AllocateGVsWithCode;
+  CodeModel::Model CMModel;
 
   /// InitEngine - Does the common initialization of default options.
   ///
@@ -408,6 +438,7 @@ class EngineBuilder {
     OptLevel = CodeGenOpt::Default;
     JMM = NULL;
     AllocateGVsWithCode = false;
+    CMModel = CodeModel::Default;
   }
 
  public:
@@ -452,6 +483,13 @@ class EngineBuilder {
     return *this;
   }
 
+  /// setCodeModel - Set the CodeModel that the ExecutionEngine target
+  /// data is using. Defaults to target specific default "CodeModel::Default".
+  EngineBuilder &setCodeModel(CodeModel::Model M) {
+    CMModel = M;
+    return *this;
+  }
+
   /// setAllocateGVsWithCode - Sets whether global values should be allocated
   /// into the same buffer as code.  For most applications this should be set
   /// to false.  Allocating globals with code breaks freeMachineCodeForFunction
@@ -465,7 +503,6 @@ class EngineBuilder {
   }
 
   ExecutionEngine *create();
-
 };
 
 } // End llvm namespace

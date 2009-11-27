@@ -27,7 +27,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetLowering.h"
@@ -38,7 +37,7 @@ STATISTIC(NumUnwinds, "Number of unwinds replaced");
 STATISTIC(NumSpilled, "Number of registers live across unwind edges");
 
 namespace {
-  class VISIBILITY_HIDDEN SjLjEHPass : public FunctionPass {
+  class SjLjEHPass : public FunctionPass {
 
     const TargetLowering *TLI;
 
@@ -50,8 +49,7 @@ namespace {
     Constant *FrameAddrFn;
     Constant *LSDAAddrFn;
     Value *PersonalityFn;
-    Constant *Selector32Fn;
-    Constant *Selector64Fn;
+    Constant *SelectorFn;
     Constant *ExceptionFn;
 
     Value *CallSite;
@@ -88,7 +86,7 @@ bool SjLjEHPass::doInitialization(Module &M) {
   // Build the function context structure.
   // builtin_setjmp uses a five word jbuf
   const Type *VoidPtrTy =
-          PointerType::getUnqual(Type::getInt8Ty(M.getContext()));
+          Type::getInt8PtrTy(M.getContext());
   const Type *Int32Ty = Type::getInt32Ty(M.getContext());
   FunctionContextTy =
     StructType::get(M.getContext(),
@@ -116,8 +114,7 @@ bool SjLjEHPass::doInitialization(Module &M) {
   FrameAddrFn = Intrinsic::getDeclaration(&M, Intrinsic::frameaddress);
   BuiltinSetjmpFn = Intrinsic::getDeclaration(&M, Intrinsic::eh_sjlj_setjmp);
   LSDAAddrFn = Intrinsic::getDeclaration(&M, Intrinsic::eh_sjlj_lsda);
-  Selector32Fn = Intrinsic::getDeclaration(&M, Intrinsic::eh_selector_i32);
-  Selector64Fn = Intrinsic::getDeclaration(&M, Intrinsic::eh_selector_i64);
+  SelectorFn = Intrinsic::getDeclaration(&M, Intrinsic::eh_selector);
   ExceptionFn = Intrinsic::getDeclaration(&M, Intrinsic::eh_exception);
   PersonalityFn = 0;
 
@@ -298,8 +295,7 @@ bool SjLjEHPass::insertSjLjEHSupport(Function &F) {
   for (Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB) {
     for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ++I) {
       if (CallInst *CI = dyn_cast<CallInst>(I)) {
-        if (CI->getCalledFunction() == Selector32Fn ||
-            CI->getCalledFunction() == Selector64Fn) {
+        if (CI->getCalledFunction() == SelectorFn) {
           if (!PersonalityFn) PersonalityFn = CI->getOperand(2);
           EH_Selectors.push_back(CI);
         } else if (CI->getCalledFunction() == ExceptionFn) {
@@ -378,7 +374,7 @@ bool SjLjEHPass::insertSjLjEHSupport(Function &F) {
       // the instruction hasn't already been removed.
       if (!I->getParent()) continue;
       Value *Val = new LoadInst(ExceptionAddr, "exception", true, I);
-      Type *Ty = PointerType::getUnqual(Type::getInt8Ty(F.getContext()));
+      const Type *Ty = Type::getInt8PtrTy(F.getContext());
       Val = CastInst::Create(Instruction::IntToPtr, Val, Ty, "", I);
 
       I->replaceAllUsesWith(Val);
@@ -455,8 +451,8 @@ bool SjLjEHPass::insertSjLjEHSupport(Function &F) {
     // Call the setjmp instrinsic. It fills in the rest of the jmpbuf
     Value *SetjmpArg =
       CastInst::Create(Instruction::BitCast, FieldPtr,
-                        Type::getInt8Ty(F.getContext())->getPointerTo(), "",
-                        EntryBB->getTerminator());
+                       Type::getInt8PtrTy(F.getContext()), "",
+                       EntryBB->getTerminator());
     Value *DispatchVal = CallInst::Create(BuiltinSetjmpFn, SetjmpArg,
                                           "dispatch",
                                           EntryBB->getTerminator());

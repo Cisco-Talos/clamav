@@ -18,6 +18,7 @@
 #define LLVM_SUPPORT_CONSTANTFOLDER_H
 
 #include "llvm/Constants.h"
+#include "llvm/InstrTypes.h"
 
 namespace llvm {
 

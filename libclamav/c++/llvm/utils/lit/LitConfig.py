@@ -17,7 +17,8 @@ class LitConfig:
     def __init__(self, progname, path, quiet,
                  useValgrind, valgrindArgs,
                  useTclAsSh,
-                 noExecute, debug, isWindows):
+                 noExecute, debug, isWindows,
+                 params):
         # The name of the test runner.
         self.progname = progname
         # The items to add to the PATH environment variable.
@@ -29,6 +30,8 @@ class LitConfig:
         self.noExecute = noExecute
         self.debug = debug
         self.isWindows = bool(isWindows)
+        self.params = dict(params)
+        self.bashPath = None
 
         self.numErrors = 0
         self.numWarnings = 0
@@ -40,6 +43,27 @@ class LitConfig:
         return TestingConfig.frompath(path, config.parent, self,
                                       mustExist = True,
                                       config = config)
+
+    def getBashPath(self):
+        """getBashPath - Get the path to 'bash'"""
+        import os, Util
+
+        if self.bashPath is not None:
+            return self.bashPath
+
+        self.bashPath = Util.which('bash', os.pathsep.join(self.path))
+        if self.bashPath is None:
+            # Check some known paths.
+            for path in ('/bin/bash', '/usr/bin/bash'):
+                if os.path.exists(path):
+                    self.bashPath = path
+                    break
+
+        if self.bashPath is None:
+            self.warning("Unable to find 'bash', running Tcl tests internally.")
+            self.bashPath = ''
+
+        return self.bashPath
 
     def _write_message(self, kind, message):
         import inspect, os, sys

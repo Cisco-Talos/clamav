@@ -21,7 +21,8 @@
 #include <string>
 #include <vector>
 #include <cstring>
-#include "llvm/Support/DataTypes.h"
+#include "llvm/ADT/Triple.h"
+#include "llvm/System/DataTypes.h"
 
 namespace llvm {
   class raw_ostream;
@@ -106,6 +107,10 @@ public:
   
   // Dump feature info.
   void dump() const;
+
+  /// Retrieve a formatted string of the default features for
+  /// the specified target triple.
+  static std::string getDefaultSubtargetFeatures(const Triple &Triple);
 };
 
 } // End namespace llvm

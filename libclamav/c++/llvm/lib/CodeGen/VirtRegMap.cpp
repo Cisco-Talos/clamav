@@ -56,7 +56,7 @@ bool VirtRegMap::runOnMachineFunction(MachineFunction &mf) {
   TII = mf.getTarget().getInstrInfo();
   TRI = mf.getTarget().getRegisterInfo();
   MF = &mf;
-  
+
   ReMatId = MAX_STACK_SLOT+1;
   LowSpillSlot = HighSpillSlot = NO_STACK_SLOT;
   
@@ -117,8 +117,8 @@ int VirtRegMap::assignVirt2StackSlot(unsigned virtReg) {
   assert(Virt2StackSlotMap[virtReg] == NO_STACK_SLOT &&
          "attempt to assign stack slot to already spilled register");
   const TargetRegisterClass* RC = MF->getRegInfo().getRegClass(virtReg);
-  int SS = MF->getFrameInfo()->CreateStackObject(RC->getSize(),
-                                                RC->getAlignment());
+  int SS = MF->getFrameInfo()->CreateSpillStackObject(RC->getSize(),
+                                                 RC->getAlignment());
   if (LowSpillSlot == NO_STACK_SLOT)
     LowSpillSlot = SS;
   if (HighSpillSlot == NO_STACK_SLOT || SS > HighSpillSlot)
@@ -161,8 +161,8 @@ int VirtRegMap::getEmergencySpillSlot(const TargetRegisterClass *RC) {
     EmergencySpillSlots.find(RC);
   if (I != EmergencySpillSlots.end())
     return I->second;
-  int SS = MF->getFrameInfo()->CreateStackObject(RC->getSize(),
-                                                RC->getAlignment());
+  int SS = MF->getFrameInfo()->CreateSpillStackObject(RC->getSize(),
+                                                 RC->getAlignment());
   if (LowSpillSlot == NO_STACK_SLOT)
     LowSpillSlot = SS;
   if (HighSpillSlot == NO_STACK_SLOT || SS > HighSpillSlot)

@@ -17,73 +17,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Function.h"
-#include "llvm/Instructions.h"
-#include "llvm/Pass.h"
 #include "llvm/Analysis/CFGPrinter.h"
-#include "llvm/Assembly/Writer.h"
-#include "llvm/Support/CFG.h"
-#include "llvm/Support/Compiler.h"
-#include "llvm/Support/GraphWriter.h"
+
+#include "llvm/Pass.h"
 using namespace llvm;
 
-namespace llvm {
-template<>
-struct DOTGraphTraits<const Function*> : public DefaultDOTGraphTraits {
-  static std::string getGraphName(const Function *F) {
-    return "CFG for '" + F->getNameStr() + "' function";
-  }
-
-  static std::string getNodeLabel(const BasicBlock *Node,
-                                  const Function *Graph,
-                                  bool ShortNames) {
-    if (ShortNames && !Node->getName().empty())
-      return Node->getNameStr() + ":";
-
-    std::string Str;
-    raw_string_ostream OS(Str);
-
-    if (ShortNames) {
-      WriteAsOperand(OS, Node, false);
-      return OS.str();
-    }
-
-    if (Node->getName().empty()) {
-      WriteAsOperand(OS, Node, false);
-      OS << ":";
-    }
-    
-    OS << *Node;
-    std::string OutStr = OS.str();
-    if (OutStr[0] == '\n') OutStr.erase(OutStr.begin());
-
-    // Process string output to make it nicer...
-    for (unsigned i = 0; i != OutStr.length(); ++i)
-      if (OutStr[i] == '\n') {                            // Left justify
-        OutStr[i] = '\\';
-        OutStr.insert(OutStr.begin()+i+1, 'l');
-      } else if (OutStr[i] == ';') {                      // Delete comments!
-        unsigned Idx = OutStr.find('\n', i+1);            // Find end of line
-        OutStr.erase(OutStr.begin()+i, OutStr.begin()+Idx);
-        --i;
-      }
-
-    return OutStr;
-  }
-
-  static std::string getEdgeSourceLabel(const BasicBlock *Node,
-                                        succ_const_iterator I) {
-    // Label source of conditional branches with "T" or "F"
-    if (const BranchInst *BI = dyn_cast<BranchInst>(Node->getTerminator()))
-      if (BI->isConditional())
-        return (I == succ_begin(Node)) ? "T" : "F";
-    return "";
-  }
-};
-}
-
 namespace {
-  struct VISIBILITY_HIDDEN CFGViewer : public FunctionPass {
+  struct CFGViewer : public FunctionPass {
     static char ID; // Pass identifcation, replacement for typeid
     CFGViewer() : FunctionPass(&ID) {}
 
@@ -105,7 +45,7 @@ static RegisterPass<CFGViewer>
 V0("view-cfg", "View CFG of function", false, true);
 
 namespace {
-  struct VISIBILITY_HIDDEN CFGOnlyViewer : public FunctionPass {
+  struct CFGOnlyViewer : public FunctionPass {
     static char ID; // Pass identifcation, replacement for typeid
     CFGOnlyViewer() : FunctionPass(&ID) {}
 
@@ -128,7 +68,7 @@ V1("view-cfg-only",
    "View CFG of function (with no function bodies)", false, true);
 
 namespace {
-  struct VISIBILITY_HIDDEN CFGPrinter : public FunctionPass {
+  struct CFGPrinter : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
     CFGPrinter() : FunctionPass(&ID) {}
     explicit CFGPrinter(void *pid) : FunctionPass(pid) {}
@@ -161,7 +101,7 @@ static RegisterPass<CFGPrinter>
 P1("dot-cfg", "Print CFG of function to 'dot' file", false, true);
 
 namespace {
-  struct VISIBILITY_HIDDEN CFGOnlyPrinter : public FunctionPass {
+  struct CFGOnlyPrinter : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
     CFGOnlyPrinter() : FunctionPass(&ID) {}
     explicit CFGOnlyPrinter(void *pid) : FunctionPass(pid) {}

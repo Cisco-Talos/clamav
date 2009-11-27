@@ -22,6 +22,7 @@
 #include "llvm/ADT/DenseMap.h"
 
 namespace llvm {
+  class BlockAddress;
   class GCStrategy;
   class Constant;
   class ConstantArray;
@@ -85,6 +86,14 @@ namespace llvm {
     DwarfWriter *DW;
 
   public:
+    /// Flags to specify different kinds of comments to output in
+    /// assembly code.  These flags carry semantic information not
+    /// otherwise easily derivable from the IR text.
+    ///
+    enum CommentFlag {
+      ReloadReuse = 0x1
+    };
+
     /// Output stream on which we're printing assembly code.
     ///
     formatted_raw_ostream &O;
@@ -141,7 +150,7 @@ namespace llvm {
     mutable const Function *LastFn;
     mutable unsigned Counter;
     
-    // Private state for processDebugLock()
+    // Private state for processDebugLoc()
     mutable DebugLocTuple PrevDLT;
 
   protected:
@@ -171,11 +180,11 @@ namespace llvm {
 
     /// EmitStartOfAsmFile - This virtual method can be overridden by targets
     /// that want to emit something at the start of their file.
-    virtual void EmitStartOfAsmFile(Module &M) {}
+    virtual void EmitStartOfAsmFile(Module &) {}
     
     /// EmitEndOfAsmFile - This virtual method can be overridden by targets that
     /// want to emit something at the end of their file.
-    virtual void EmitEndOfAsmFile(Module &M) {}
+    virtual void EmitEndOfAsmFile(Module &) {}
     
     /// doFinalization - Shut down the asmprinter.  If you override this in your
     /// pass, you must make sure to call it explicitly.
@@ -288,7 +297,7 @@ namespace llvm {
     /// EmitString - Emit a string with quotes and a null terminator.
     /// Special characters are emitted properly.
     /// @verbatim (Eg. '\t') @endverbatim
-    void EmitString(const std::string &String) const;
+    void EmitString(const StringRef String) const;
     void EmitString(const char *String, unsigned Size) const;
 
     /// EmitFile - Emit a .file directive.
@@ -334,6 +343,14 @@ namespace llvm {
     /// block label.
     MCSymbol *GetMBBSymbol(unsigned MBBID) const;
     
+    /// GetBlockAddressSymbol - Return the MCSymbol used to satisfy BlockAddress
+    /// uses of the specified basic block.
+    MCSymbol *GetBlockAddressSymbol(const BlockAddress *BA,
+                                    const char *Suffix = "") const;
+    MCSymbol *GetBlockAddressSymbol(const Function *F,
+                                    const BasicBlock *BB,
+                                    const char *Suffix = "") const;
+
     /// EmitBasicBlockStart - This method prints the label for the specified
     /// MachineBasicBlock, an alignment (if present) and a comment describing
     /// it if appropriate.
@@ -357,8 +374,8 @@ namespace llvm {
     virtual void EmitMachineConstantPoolValue(MachineConstantPoolValue *MCPV);
 
     /// processDebugLoc - Processes the debug information of each machine
-    /// instruction's DebugLoc.
-    void processDebugLoc(const MachineInstr *MI);
+    /// instruction's DebugLoc. 
+    void processDebugLoc(const MachineInstr *MI, bool BeforePrintingInsn);
     
     /// printInlineAsm - This method formats and prints the specified machine
     /// instruction that is an inline asm.
@@ -366,9 +383,11 @@ namespace llvm {
 
     /// printImplicitDef - This method prints the specified machine instruction
     /// that is an implicit def.
-    virtual void printImplicitDef(const MachineInstr *MI) const;
-    
-    
+    void printImplicitDef(const MachineInstr *MI) const;
+
+    /// printKill - This method prints the specified kill machine instruction.
+    void printKill(const MachineInstr *MI) const;
+
     /// printPICJumpTableSetLabel - This method prints a set label for the
     /// specified MachineBasicBlock for a jumptable entry.
     virtual void printPICJumpTableSetLabel(unsigned uid,

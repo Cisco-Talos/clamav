@@ -23,6 +23,7 @@
 #include "llvm/InlineAsm.h"
 #include "llvm/Instruction.h"
 #include "llvm/Instructions.h"
+#include "llvm/LLVMContext.h"
 #include "llvm/Operator.h"
 #include "llvm/Metadata.h"
 #include "llvm/Module.h"
@@ -680,6 +681,8 @@ void SlotTracker::processFunction() {
   ST_DEBUG("Inserting Instructions:\n");
 
   MetadataContext &TheMetadata = TheFunction->getContext().getMetadata();
+  typedef SmallVector<std::pair<unsigned, TrackingVH<MDNode> >, 2> MDMapTy;
+  MDMapTy MDs;
 
   // Add all of the basic blocks and instructions with no names.
   for (Function::const_iterator BB = TheFunction->begin(),
@@ -696,12 +699,11 @@ void SlotTracker::processFunction() {
           CreateMetadataSlot(N);
 
       // Process metadata attached with this instruction.
-      const MetadataContext::MDMapTy *MDs = TheMetadata.getMDs(I);
-      if (MDs)
-        for (MetadataContext::MDMapTy::const_iterator MI = MDs->begin(),
-               ME = MDs->end(); MI != ME; ++MI)
-          if (MDNode *MDN = dyn_cast_or_null<MDNode>(MI->second))
-            CreateMetadataSlot(MDN);
+      MDs.clear();
+      TheMetadata.getMDs(I, MDs);
+      for (MDMapTy::const_iterator MI = MDs.begin(), ME = MDs.end(); MI != ME; 
+           ++MI)
+        CreateMetadataSlot(MI->second);
     }
   }
 
@@ -818,9 +820,8 @@ void SlotTracker::CreateMetadataSlot(const MDNode *N) {
   unsigned DestSlot = mdnNext++;
   mdnMap[N] = DestSlot;
 
-  for (MDNode::const_elem_iterator MDI = N->elem_begin(),
-         MDE = N->elem_end(); MDI != MDE; ++MDI) {
-    const Value *TV = *MDI;
+  for (unsigned i = 0, e = N->getNumElements(); i != e; ++i) {
+    const Value *TV = N->getElement(i);
     if (TV)
       if (const MDNode *N2 = dyn_cast<MDNode>(TV))
         CreateMetadataSlot(N2);
@@ -906,9 +907,8 @@ static void WriteMDNodes(formatted_raw_ostream &Out, TypePrinting &TypePrinter,
     Out << '!' << i << " = metadata ";
     const MDNode *Node = Nodes[i];
     Out << "!{";
-    for (MDNode::const_elem_iterator NI = Node->elem_begin(),
-           NE = Node->elem_end(); NI != NE;) {
-      const Value *V = *NI;
+    for (unsigned mi = 0, me = Node->getNumElements(); mi != me; ++mi) {
+      const Value *V = Node->getElement(mi);
       if (!V)
         Out << "null";
       else if (const MDNode *N = dyn_cast<MDNode>(V)) {
@@ -916,11 +916,12 @@ static void WriteMDNodes(formatted_raw_ostream &Out, TypePrinting &TypePrinter,
         Out << '!' << Machine.getMetadataSlot(N);
       }
       else {
-        TypePrinter.print((*NI)->getType(), Out);
+        TypePrinter.print(V->getType(), Out);
         Out << ' ';
-        WriteAsOperandInternal(Out, *NI, &TypePrinter, &Machine);
+        WriteAsOperandInternal(Out, Node->getElement(mi), 
+                               &TypePrinter, &Machine);
       }
-      if (++NI != NE)
+      if (mi + 1 != me)
         Out << ", ";
     }
 
@@ -1057,6 +1058,15 @@ static void WriteConstantInt(raw_ostream &Out, const Constant *CV,
 
   if (isa<ConstantAggregateZero>(CV)) {
     Out << "zeroinitializer";
+    return;
+  }
+  
+  if (const BlockAddress *BA = dyn_cast<BlockAddress>(CV)) {
+    Out << "blockaddress(";
+    WriteAsOperandInternal(Out, BA->getFunction(), &TypePrinter, Machine);
+    Out << ", ";
+    WriteAsOperandInternal(Out, BA->getBasicBlock(), &TypePrinter, Machine);
+    Out << ")";
     return;
   }
 
@@ -1206,6 +1216,8 @@ static void WriteAsOperandInternal(raw_ostream &Out, const Value *V,
     Out << "asm ";
     if (IA->hasSideEffects())
       Out << "sideeffect ";
+    if (IA->isAlignStack())
+      Out << "alignstack ";
     Out << '"';
     PrintEscapedString(IA->getAsmString(), Out);
     Out << "\", \"";
@@ -1226,7 +1238,8 @@ static void WriteAsOperandInternal(raw_ostream &Out, const Value *V,
     return;
   }
 
-  if (V->getValueID() == Value::PseudoSourceValueVal) {
+  if (V->getValueID() == Value::PseudoSourceValueVal ||
+      V->getValueID() == Value::FixedStackPseudoSourceValueVal) {
     V->print(Out);
     return;
   }
@@ -1294,7 +1307,7 @@ class AssemblyWriter {
   TypePrinting TypePrinter;
   AssemblyAnnotationWriter *AnnotationWriter;
   std::vector<const Type*> NumberedTypes;
-  DenseMap<unsigned, const char *> MDNames;
+  DenseMap<unsigned, StringRef> MDNames;
 
 public:
   inline AssemblyWriter(formatted_raw_ostream &o, SlotTracker &Mac,
@@ -1303,12 +1316,15 @@ public:
     : Out(o), Machine(Mac), TheModule(M), AnnotationWriter(AAW) {
     AddModuleTypesToPrinter(TypePrinter, NumberedTypes, M);
     // FIXME: Provide MDPrinter
-    MetadataContext &TheMetadata = M->getContext().getMetadata();
-    const StringMap<unsigned> *Names = TheMetadata.getHandlerNames();
-    for (StringMapConstIterator<unsigned> I = Names->begin(),
-           E = Names->end(); I != E; ++I) {
-      const StringMapEntry<unsigned> &Entry = *I;
-      MDNames[I->second] = Entry.getKeyData();
+    if (M) {
+      MetadataContext &TheMetadata = M->getContext().getMetadata();
+      SmallVector<std::pair<unsigned, StringRef>, 4> Names;
+      TheMetadata.getHandlerNames(Names);
+      for (SmallVector<std::pair<unsigned, StringRef>, 4>::iterator 
+             I = Names.begin(),
+             E = Names.end(); I != E; ++I) {
+      MDNames[I->first] = I->second;
+      }
     }
   }
 
@@ -1482,8 +1498,8 @@ static void PrintLinkage(GlobalValue::LinkageTypes LT,
   case GlobalValue::AvailableExternallyLinkage:
     Out << "available_externally ";
     break;
-  case GlobalValue::GhostLinkage:
-    llvm_unreachable("GhostLinkage not allowed in AsmWriter!");
+    // This is invalid syntax and just a debugging aid.
+  case GlobalValue::GhostLinkage:	  Out << "ghost ";	    break;
   }
 }
 
@@ -1826,7 +1842,7 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
     writeOperand(BI.getSuccessor(1), true);
 
   } else if (isa<SwitchInst>(I)) {
-    // Special case switch statement to get formatting nice and correct...
+    // Special case switch instruction to get formatting nice and correct.
     Out << ' ';
     writeOperand(Operand        , true);
     Out << ", ";
@@ -1840,6 +1856,18 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
       writeOperand(I.getOperand(op+1), true);
     }
     Out << "\n  ]";
+  } else if (isa<IndirectBrInst>(I)) {
+    // Special case indirectbr instruction to get formatting nice and correct.
+    Out << ' ';
+    writeOperand(Operand, true);
+    Out << ", [";
+    
+    for (unsigned i = 1, e = I.getNumOperands(); i != e; ++i) {
+      if (i != 1)
+        Out << ", ";
+      writeOperand(I.getOperand(i), true);
+    }
+    Out << ']';
   } else if (isa<PHINode>(I)) {
     Out << ' ';
     TypePrinter.print(I.getType(), Out);
@@ -1961,7 +1989,7 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
     Out << " unwind ";
     writeOperand(II->getUnwindDest(), true);
 
-  } else if (const AllocationInst *AI = dyn_cast<AllocationInst>(&I)) {
+  } else if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
     Out << ' ';
     TypePrinter.print(AI->getType()->getElementType(), Out);
     if (!AI->getArraySize() || AI->isArrayAllocation()) {
@@ -2029,15 +2057,16 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
   }
 
   // Print Metadata info
-  MetadataContext &TheMetadata = I.getContext().getMetadata();
-  const MetadataContext::MDMapTy *MDMap = TheMetadata.getMDs(&I);
-  if (MDMap)
-    for (MetadataContext::MDMapTy::const_iterator MI = MDMap->begin(),
-           ME = MDMap->end(); MI != ME; ++MI)
-      if (const MDNode *MD = dyn_cast_or_null<MDNode>(MI->second))
-        Out << ", !" << MDNames[MI->first]
-            << " !" << Machine.getMetadataSlot(MD);
-
+  if (!MDNames.empty()) {
+    MetadataContext &TheMetadata = I.getContext().getMetadata();
+    typedef SmallVector<std::pair<unsigned, TrackingVH<MDNode> >, 2> MDMapTy;
+    MDMapTy MDs;
+    TheMetadata.getMDs(&I, MDs);
+    for (MDMapTy::const_iterator MI = MDs.begin(), ME = MDs.end(); MI != ME; 
+         ++MI)
+      Out << ", !" << MDNames[MI->first]
+          << " !" << Machine.getMetadataSlot(MI->second);
+  }
   printInfoComment(I);
 }
 

@@ -17,7 +17,7 @@
 #ifndef LLVM_CODEGEN_MACHINECODEEMITTER_H
 #define LLVM_CODEGEN_MACHINECODEEMITTER_H
 
-#include "llvm/Support/DataTypes.h"
+#include "llvm/System/DataTypes.h"
 #include "llvm/Support/DebugLoc.h"
 
 namespace llvm {
@@ -48,17 +48,41 @@ class Function;
 /// occurred, more memory is allocated, and we reemit the code into it.
 /// 
 class MachineCodeEmitter {
+public:
+  class BufferState {
+    friend class MachineCodeEmitter;
+    /// BufferBegin/BufferEnd - Pointers to the start and end of the memory
+    /// allocated for this code buffer.
+    uint8_t *BufferBegin, *BufferEnd;
+
+    /// CurBufferPtr - Pointer to the next byte of memory to fill when emitting
+    /// code.  This is guranteed to be in the range [BufferBegin,BufferEnd].  If
+    /// this pointer is at BufferEnd, it will never move due to code emission,
+    /// and all code emission requests will be ignored (this is the buffer
+    /// overflow condition).
+    uint8_t *CurBufferPtr;
+  public:
+    BufferState() : BufferBegin(NULL), BufferEnd(NULL), CurBufferPtr(NULL) {}
+  };
+
 protected:
-  /// BufferBegin/BufferEnd - Pointers to the start and end of the memory
-  /// allocated for this code buffer.
-  uint8_t *BufferBegin, *BufferEnd;
-  
-  /// CurBufferPtr - Pointer to the next byte of memory to fill when emitting 
-  /// code.  This is guranteed to be in the range [BufferBegin,BufferEnd].  If
-  /// this pointer is at BufferEnd, it will never move due to code emission, and
-  /// all code emission requests will be ignored (this is the buffer overflow
-  /// condition).
-  uint8_t *CurBufferPtr;
+  /// These have the same meanings as the fields in BufferState
+  uint8_t *BufferBegin, *BufferEnd, *CurBufferPtr;
+
+  /// Save or restore the current buffer state.  The BufferState objects must be
+  /// used as a stack.
+  void SaveStateTo(BufferState &BS) {
+    assert(BS.BufferBegin == NULL &&
+           "Can't save state into the same BufferState twice.");
+    BS.BufferBegin = BufferBegin;
+    BS.BufferEnd = BufferEnd;
+    BS.CurBufferPtr = CurBufferPtr;
+  }
+  void RestoreStateFrom(BufferState &BS) {
+    BufferBegin = BS.BufferBegin;
+    BufferEnd = BS.BufferEnd;
+    CurBufferPtr = BS.CurBufferPtr;
+  }
 
 public:
   virtual ~MachineCodeEmitter() {}
@@ -237,7 +261,7 @@ public:
   /// MachineInstruction.  This is called before emitting any bytes associated
   /// with the instruction.  Even if successive instructions have the same debug
   /// location, this method will be called for each one.
-  virtual void processDebugLoc(DebugLoc DL) {}
+  virtual void processDebugLoc(DebugLoc DL, bool BeforePrintintInsn) {}
 
   /// emitLabel - Emits a label
   virtual void emitLabel(uint64_t LabelID) = 0;

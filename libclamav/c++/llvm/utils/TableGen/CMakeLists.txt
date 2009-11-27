@@ -8,11 +8,13 @@ add_executable(tblgen
   CodeGenInstruction.cpp
   CodeGenTarget.cpp
   DAGISelEmitter.cpp
+  DisassemblerEmitter.cpp
   FastISelEmitter.cpp
   InstrEnumEmitter.cpp
   InstrInfoEmitter.cpp
   IntrinsicEmitter.cpp
   LLVMCConfigurationEmitter.cpp
+  OptParserEmitter.cpp
   Record.cpp
   RegisterInfoEmitter.cpp
   SubtargetEmitter.cpp

@@ -48,6 +48,7 @@ namespace llvm {
     unsigned int arithmeticOK;
   };
 
+  const fltSemantics APFloat::IEEEhalf = { 15, -14, 11, true };
   const fltSemantics APFloat::IEEEsingle = { 127, -126, 24, true };
   const fltSemantics APFloat::IEEEdouble = { 1023, -1022, 53, true };
   const fltSemantics APFloat::IEEEquad = { 16383, -16382, 113, true };
@@ -420,7 +421,7 @@ ulpsFromBoundary(const integerPart *parts, unsigned int bits, bool isNearest)
   unsigned int count, partBits;
   integerPart part, boundary;
 
-  assert (bits != 0);
+  assert(bits != 0);
 
   bits--;
   count = bits / integerPartWidth;
@@ -536,7 +537,7 @@ partAsHex (char *dst, integerPart part, unsigned int count,
 {
   unsigned int result = count;
 
-  assert (count != 0 && count <= integerPartWidth / 4);
+  assert(count != 0 && count <= integerPartWidth / 4);
 
   part >>= (integerPartWidth - 4 * count);
   while (count--) {
@@ -759,7 +760,7 @@ APFloat::significandParts()
 {
   assert(category == fcNormal || category == fcNaN);
 
-  if(partCount() > 1)
+  if (partCount() > 1)
     return significand.parts;
   else
     return &significand.part;
@@ -2288,8 +2289,8 @@ APFloat::roundSignificandWithExponent(const integerPart *decSigParts,
 
     /* Both multiplySignificand and divideSignificand return the
        result with the integer bit set.  */
-    assert (APInt::tcExtractBit
-            (decSig.significandParts(), calcSemantics.precision - 1) == 1);
+    assert(APInt::tcExtractBit
+           (decSig.significandParts(), calcSemantics.precision - 1) == 1);
 
     HUerr = HUerrBound(calcLostFraction != lfExactlyZero, sigStatus != opOK,
                        powHUerr);
@@ -2592,7 +2593,7 @@ APFloat::convertNormalToHexString(char *dst, unsigned int hexDigits,
       q--;
       *q = hexDigitChars[hexDigitValue (*q) + 1];
     } while (*q == '0');
-    assert (q >= p);
+    assert(q >= p);
   } else {
     /* Add trailing zeroes.  */
     memset (dst, '0', outputDigits);
@@ -2644,7 +2645,7 @@ APInt
 APFloat::convertF80LongDoubleAPFloatToAPInt() const
 {
   assert(semantics == (const llvm::fltSemantics*)&x87DoubleExtended);
-  assert (partCount()==2);
+  assert(partCount()==2);
 
   uint64_t myexponent, mysignificand;
 
@@ -2676,7 +2677,7 @@ APInt
 APFloat::convertPPCDoubleDoubleAPFloatToAPInt() const
 {
   assert(semantics == (const llvm::fltSemantics*)&PPCDoubleDouble);
-  assert (partCount()==2);
+  assert(partCount()==2);
 
   uint64_t myexponent, mysignificand, myexponent2, mysignificand2;
 
@@ -2721,7 +2722,7 @@ APInt
 APFloat::convertQuadrupleAPFloatToAPInt() const
 {
   assert(semantics == (const llvm::fltSemantics*)&IEEEquad);
-  assert (partCount()==2);
+  assert(partCount()==2);
 
   uint64_t myexponent, mysignificand, mysignificand2;
 
@@ -2757,7 +2758,7 @@ APInt
 APFloat::convertDoubleAPFloatToAPInt() const
 {
   assert(semantics == (const llvm::fltSemantics*)&IEEEdouble);
-  assert (partCount()==1);
+  assert(partCount()==1);
 
   uint64_t myexponent, mysignificand;
 
@@ -2787,7 +2788,7 @@ APInt
 APFloat::convertFloatAPFloatToAPInt() const
 {
   assert(semantics == (const llvm::fltSemantics*)&IEEEsingle);
-  assert (partCount()==1);
+  assert(partCount()==1);
 
   uint32_t myexponent, mysignificand;
 
@@ -2812,6 +2813,35 @@ APFloat::convertFloatAPFloatToAPInt() const
                     (mysignificand & 0x7fffff)));
 }
 
+APInt
+APFloat::convertHalfAPFloatToAPInt() const
+{
+  assert(semantics == (const llvm::fltSemantics*)&IEEEhalf);
+  assert(partCount()==1);
+
+  uint32_t myexponent, mysignificand;
+
+  if (category==fcNormal) {
+    myexponent = exponent+15; //bias
+    mysignificand = (uint32_t)*significandParts();
+    if (myexponent == 1 && !(mysignificand & 0x400))
+      myexponent = 0;   // denormal
+  } else if (category==fcZero) {
+    myexponent = 0;
+    mysignificand = 0;
+  } else if (category==fcInfinity) {
+    myexponent = 0x1f;
+    mysignificand = 0;
+  } else {
+    assert(category == fcNaN && "Unknown category!");
+    myexponent = 0x1f;
+    mysignificand = (uint32_t)*significandParts();
+  }
+
+  return APInt(16, (((sign&1) << 15) | ((myexponent&0x1f) << 10) |
+                    (mysignificand & 0x3ff)));
+}
+
 // This function creates an APInt that is just a bit map of the floating
 // point constant as it would appear in memory.  It is not a conversion,
 // and treating the result as a normal integer is unlikely to be useful.
@@ -2819,6 +2849,9 @@ APFloat::convertFloatAPFloatToAPInt() const
 APInt
 APFloat::bitcastToAPInt() const
 {
+  if (semantics == (const llvm::fltSemantics*)&IEEEhalf)
+    return convertHalfAPFloatToAPInt();
+
   if (semantics == (const llvm::fltSemantics*)&IEEEsingle)
     return convertFloatAPFloatToAPInt();
 
@@ -3051,6 +3084,39 @@ APFloat::initFromFloatAPInt(const APInt & api)
   }
 }
 
+void
+APFloat::initFromHalfAPInt(const APInt & api)
+{
+  assert(api.getBitWidth()==16);
+  uint32_t i = (uint32_t)*api.getRawData();
+  uint32_t myexponent = (i >> 10) & 0x1f;
+  uint32_t mysignificand = i & 0x3ff;
+
+  initialize(&APFloat::IEEEhalf);
+  assert(partCount()==1);
+
+  sign = i >> 15;
+  if (myexponent==0 && mysignificand==0) {
+    // exponent, significand meaningless
+    category = fcZero;
+  } else if (myexponent==0x1f && mysignificand==0) {
+    // exponent, significand meaningless
+    category = fcInfinity;
+  } else if (myexponent==0x1f && mysignificand!=0) {
+    // sign, exponent, significand meaningless
+    category = fcNaN;
+    *significandParts() = mysignificand;
+  } else {
+    category = fcNormal;
+    exponent = myexponent - 15;  //bias
+    *significandParts() = mysignificand;
+    if (myexponent==0)    // denormal
+      exponent = -14;
+    else
+      *significandParts() |= 0x400; // integer bit
+  }
+}
+
 /// Treat api as containing the bits of a floating point number.  Currently
 /// we infer the floating point type from the size of the APInt.  The
 /// isIEEE argument distinguishes between PPC128 and IEEE128 (not meaningful
@@ -3058,7 +3124,9 @@ APFloat::initFromFloatAPInt(const APInt & api)
 void
 APFloat::initFromAPInt(const APInt& api, bool isIEEE)
 {
-  if (api.getBitWidth() == 32)
+  if (api.getBitWidth() == 16)
+    return initFromHalfAPInt(api);
+  else if (api.getBitWidth() == 32)
     return initFromFloatAPInt(api);
   else if (api.getBitWidth()==64)
     return initFromDoubleAPInt(api);

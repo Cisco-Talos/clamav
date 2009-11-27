@@ -31,14 +31,12 @@
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Statistic.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
-#include <set>
 using namespace llvm;
 
 STATISTIC(NodesCombined   , "Number of dag nodes combined");
@@ -57,7 +55,7 @@ namespace {
 
 //------------------------------ DAGCombiner ---------------------------------//
 
-  class VISIBILITY_HIDDEN DAGCombiner {
+  class DAGCombiner {
     SelectionDAG &DAG;
     const TargetLowering &TLI;
     CombineLevel Level;
@@ -280,8 +278,7 @@ public:
 namespace {
 /// WorkListRemover - This class is a DAGUpdateListener that removes any deleted
 /// nodes from the worklist.
-class VISIBILITY_HIDDEN WorkListRemover :
-  public SelectionDAG::DAGUpdateListener {
+class WorkListRemover : public SelectionDAG::DAGUpdateListener {
   DAGCombiner &DC;
 public:
   explicit WorkListRemover(DAGCombiner &dc) : DC(dc) {}
@@ -4381,15 +4378,17 @@ SDValue DAGCombiner::visitFP_EXTEND(SDNode *N) {
 
 SDValue DAGCombiner::visitFNEG(SDNode *N) {
   SDValue N0 = N->getOperand(0);
+  EVT VT = N->getValueType(0);
 
   if (isNegatibleForFree(N0, LegalOperations))
     return GetNegatedExpression(N0, DAG, LegalOperations);
 
   // Transform fneg(bitconvert(x)) -> bitconvert(x^sign) to avoid loading
   // constant pool values.
-  if (N0.getOpcode() == ISD::BIT_CONVERT && N0.getNode()->hasOneUse() &&
-      N0.getOperand(0).getValueType().isInteger() &&
-      !N0.getOperand(0).getValueType().isVector()) {
+  if (N0.getOpcode() == ISD::BIT_CONVERT && 
+      !VT.isVector() &&
+      N0.getNode()->hasOneUse() &&
+      N0.getOperand(0).getValueType().isInteger()) {
     SDValue Int = N0.getOperand(0);
     EVT IntVT = Int.getValueType();
     if (IntVT.isInteger() && !IntVT.isVector()) {
@@ -4397,7 +4396,7 @@ SDValue DAGCombiner::visitFNEG(SDNode *N) {
               DAG.getConstant(APInt::getSignBit(IntVT.getSizeInBits()), IntVT));
       AddToWorkList(Int.getNode());
       return DAG.getNode(ISD::BIT_CONVERT, N->getDebugLoc(),
-                         N->getValueType(0), Int);
+                         VT, Int);
     }
   }
 
@@ -4443,14 +4442,13 @@ SDValue DAGCombiner::visitBRCOND(SDNode *N) {
   SDValue Chain = N->getOperand(0);
   SDValue N1 = N->getOperand(1);
   SDValue N2 = N->getOperand(2);
-  ConstantSDNode *N1C = dyn_cast<ConstantSDNode>(N1);
 
-  // never taken branch, fold to chain
-  if (N1C && N1C->isNullValue())
-    return Chain;
-  // unconditional branch
-  if (N1C && N1C->getAPIntValue() == 1)
-    return DAG.getNode(ISD::BR, N->getDebugLoc(), MVT::Other, Chain, N2);
+  // If N is a constant we could fold this into a fallthrough or unconditional
+  // branch. However that doesn't happen very often in normal code, because
+  // Instcombine/SimplifyCFG should have handled the available opportunities.
+  // If we did this folding here, it would be necessary to update the
+  // MachineBasicBlock CFG, which is awkward.
+
   // fold a brcond with a setcc condition into a BR_CC node if BR_CC is legal
   // on the target.
   if (N1.getOpcode() == ISD::SETCC &&
@@ -4517,21 +4515,17 @@ SDValue DAGCombiner::visitBR_CC(SDNode *N) {
   CondCodeSDNode *CC = cast<CondCodeSDNode>(N->getOperand(1));
   SDValue CondLHS = N->getOperand(2), CondRHS = N->getOperand(3);
 
+  // If N is a constant we could fold this into a fallthrough or unconditional
+  // branch. However that doesn't happen very often in normal code, because
+  // Instcombine/SimplifyCFG should have handled the available opportunities.
+  // If we did this folding here, it would be necessary to update the
+  // MachineBasicBlock CFG, which is awkward.
+
   // Use SimplifySetCC to simplify SETCC's.
   SDValue Simp = SimplifySetCC(TLI.getSetCCResultType(CondLHS.getValueType()),
                                CondLHS, CondRHS, CC->get(), N->getDebugLoc(),
                                false);
   if (Simp.getNode()) AddToWorkList(Simp.getNode());
-
-  ConstantSDNode *SCCC = dyn_cast_or_null<ConstantSDNode>(Simp.getNode());
-
-  // fold br_cc true, dest -> br dest (unconditional branch)
-  if (SCCC && !SCCC->isNullValue())
-    return DAG.getNode(ISD::BR, N->getDebugLoc(), MVT::Other,
-                       N->getOperand(0), N->getOperand(4));
-  // fold br_cc false, dest -> unconditional fall through
-  if (SCCC && SCCC->isNullValue())
-    return N->getOperand(0);
 
   // fold to a simpler setcc
   if (Simp.getNode() && Simp.getOpcode() == ISD::SETCC)
@@ -5730,15 +5724,17 @@ bool DAGCombiner::SimplifySelectOps(SDNode *TheSelect, SDValue LHS,
 
       // If this is an EXTLOAD, the VT's must match.
       if (LLD->getMemoryVT() == RLD->getMemoryVT()) {
-        // FIXME: this conflates two src values, discarding one.  This is not
-        // the right thing to do, but nothing uses srcvalues now.  When they do,
-        // turn SrcValue into a list of locations.
+        // FIXME: this discards src value information.  This is
+        // over-conservative. It would be beneficial to be able to remember
+        // both potential memory locations.
         SDValue Addr;
         if (TheSelect->getOpcode() == ISD::SELECT) {
           // Check that the condition doesn't reach either load.  If so, folding
           // this will induce a cycle into the DAG.
-          if (!LLD->isPredecessorOf(TheSelect->getOperand(0).getNode()) &&
-              !RLD->isPredecessorOf(TheSelect->getOperand(0).getNode())) {
+          if ((!LLD->hasAnyUseOfValue(1) ||
+               !LLD->isPredecessorOf(TheSelect->getOperand(0).getNode())) &&
+              (!RLD->hasAnyUseOfValue(1) ||
+               !RLD->isPredecessorOf(TheSelect->getOperand(0).getNode()))) {
             Addr = DAG.getNode(ISD::SELECT, TheSelect->getDebugLoc(),
                                LLD->getBasePtr().getValueType(),
                                TheSelect->getOperand(0), LLD->getBasePtr(),
@@ -5747,10 +5743,12 @@ bool DAGCombiner::SimplifySelectOps(SDNode *TheSelect, SDValue LHS,
         } else {
           // Check that the condition doesn't reach either load.  If so, folding
           // this will induce a cycle into the DAG.
-          if (!LLD->isPredecessorOf(TheSelect->getOperand(0).getNode()) &&
-              !RLD->isPredecessorOf(TheSelect->getOperand(0).getNode()) &&
-              !LLD->isPredecessorOf(TheSelect->getOperand(1).getNode()) &&
-              !RLD->isPredecessorOf(TheSelect->getOperand(1).getNode())) {
+          if ((!LLD->hasAnyUseOfValue(1) ||
+               (!LLD->isPredecessorOf(TheSelect->getOperand(0).getNode()) &&
+                !LLD->isPredecessorOf(TheSelect->getOperand(1).getNode()))) &&
+              (!RLD->hasAnyUseOfValue(1) ||
+               (!RLD->isPredecessorOf(TheSelect->getOperand(0).getNode()) &&
+                !RLD->isPredecessorOf(TheSelect->getOperand(1).getNode())))) {
             Addr = DAG.getNode(ISD::SELECT_CC, TheSelect->getDebugLoc(),
                                LLD->getBasePtr().getValueType(),
                                TheSelect->getOperand(0),
@@ -5766,16 +5764,14 @@ bool DAGCombiner::SimplifySelectOps(SDNode *TheSelect, SDValue LHS,
             Load = DAG.getLoad(TheSelect->getValueType(0),
                                TheSelect->getDebugLoc(),
                                LLD->getChain(),
-                               Addr,LLD->getSrcValue(),
-                               LLD->getSrcValueOffset(),
+                               Addr, 0, 0,
                                LLD->isVolatile(),
                                LLD->getAlignment());
           } else {
             Load = DAG.getExtLoad(LLD->getExtensionType(),
                                   TheSelect->getDebugLoc(),
                                   TheSelect->getValueType(0),
-                                  LLD->getChain(), Addr, LLD->getSrcValue(),
-                                  LLD->getSrcValueOffset(),
+                                  LLD->getChain(), Addr, 0, 0,
                                   LLD->getMemoryVT(),
                                   LLD->isVolatile(),
                                   LLD->getAlignment());
@@ -6230,13 +6226,28 @@ void DAGCombiner::GatherAllAliases(SDNode *N, SDValue OriginalChain,
 
   // Starting off.
   Chains.push_back(OriginalChain);
-
+  unsigned Depth = 0;
+  
   // Look at each chain and determine if it is an alias.  If so, add it to the
   // aliases list.  If not, then continue up the chain looking for the next
   // candidate.
   while (!Chains.empty()) {
     SDValue Chain = Chains.back();
     Chains.pop_back();
+    
+    // For TokenFactor nodes, look at each operand and only continue up the 
+    // chain until we find two aliases.  If we've seen two aliases, assume we'll 
+    // find more and revert to original chain since the xform is unlikely to be
+    // profitable.
+    // 
+    // FIXME: The depth check could be made to return the last non-aliasing 
+    // chain we found before we hit a tokenfactor rather than the original
+    // chain.
+    if (Depth > 6 || Aliases.size() == 2) {
+      Aliases.clear();
+      Aliases.push_back(OriginalChain);
+      break;
+    }
 
     // Don't bother if we've been before.
     if (!Visited.insert(Chain.getNode()))
@@ -6268,8 +6279,7 @@ void DAGCombiner::GatherAllAliases(SDNode *N, SDValue OriginalChain,
       } else {
         // Look further up the chain.
         Chains.push_back(Chain.getOperand(0));
-        // Clean up old chain.
-        AddToWorkList(Chain.getNode());
+        ++Depth;
       }
       break;
     }
@@ -6285,8 +6295,7 @@ void DAGCombiner::GatherAllAliases(SDNode *N, SDValue OriginalChain,
       }
       for (unsigned n = Chain.getNumOperands(); n;)
         Chains.push_back(Chain.getOperand(--n));
-      // Eliminate the token factor if we can.
-      AddToWorkList(Chain.getNode());
+      ++Depth;
       break;
 
     default:
@@ -6312,7 +6321,7 @@ SDValue DAGCombiner::FindBetterChain(SDNode *N, SDValue OldChain) {
     // If a single operand then chain to it.  We don't need to revisit it.
     return Aliases[0];
   }
-
+  
   // Construct a custom tailored token factor.
   return DAG.getNode(ISD::TokenFactor, N->getDebugLoc(), MVT::Other, 
                      &Aliases[0], Aliases.size());

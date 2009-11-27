@@ -59,12 +59,11 @@
 #include "llvm/Instructions.h"
 #include "llvm/Module.h"
 #include "llvm/Pass.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/InstVisitor.h"
 #include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/MallocHelper.h"
+#include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/System/Atomic.h"
@@ -126,8 +125,8 @@ namespace {
     static bool isPod() { return true; }
   };
 
-  class VISIBILITY_HIDDEN Andersens : public ModulePass, public AliasAnalysis,
-                                      private InstVisitor<Andersens> {
+  class Andersens : public ModulePass, public AliasAnalysis,
+                    private InstVisitor<Andersens> {
     struct Node;
 
     /// Constraint - Objects of this structure are used to represent the various
@@ -485,7 +484,6 @@ namespace {
                       const Value *V2, unsigned V2Size);
     virtual ModRefResult getModRefInfo(CallSite CS, Value *P, unsigned Size);
     virtual ModRefResult getModRefInfo(CallSite CS1, CallSite CS2);
-    void getMustAliases(Value *P, std::vector<Value*> &RetVals);
     bool pointsToConstantMemory(const Value *P);
 
     virtual void deleteValue(Value *V) {
@@ -519,7 +517,7 @@ namespace {
     /// getObject - Return the node corresponding to the memory object for the
     /// specified global or allocation instruction.
     unsigned getObject(Value *V) const {
-      DenseMap<Value*, unsigned>::iterator I = ObjectNodes.find(V);
+      DenseMap<Value*, unsigned>::const_iterator I = ObjectNodes.find(V);
       assert(I != ObjectNodes.end() &&
              "Value does not have an object in the points-to graph!");
       return I->second;
@@ -528,7 +526,7 @@ namespace {
     /// getReturnNode - Return the node representing the return value for the
     /// specified function.
     unsigned getReturnNode(Function *F) const {
-      DenseMap<Function*, unsigned>::iterator I = ReturnNodes.find(F);
+      DenseMap<Function*, unsigned>::const_iterator I = ReturnNodes.find(F);
       assert(I != ReturnNodes.end() && "Function does not return a value!");
       return I->second;
     }
@@ -536,7 +534,7 @@ namespace {
     /// getVarargNode - Return the node representing the variable arguments
     /// formal for the specified function.
     unsigned getVarargNode(Function *F) const {
-      DenseMap<Function*, unsigned>::iterator I = VarargNodes.find(F);
+      DenseMap<Function*, unsigned>::const_iterator I = VarargNodes.find(F);
       assert(I != VarargNodes.end() && "Function does not take var args!");
       return I->second;
     }
@@ -594,11 +592,12 @@ namespace {
     void visitReturnInst(ReturnInst &RI);
     void visitInvokeInst(InvokeInst &II) { visitCallSite(CallSite(&II)); }
     void visitCallInst(CallInst &CI) { 
-      if (isMalloc(&CI)) visitAllocationInst(CI);
+      if (isMalloc(&CI)) visitAlloc(CI);
       else visitCallSite(CallSite(&CI)); 
     }
     void visitCallSite(CallSite CS);
-    void visitAllocationInst(Instruction &I);
+    void visitAllocaInst(AllocaInst &I);
+    void visitAlloc(Instruction &I);
     void visitLoadInst(LoadInst &LI);
     void visitStoreInst(StoreInst &SI);
     void visitGetElementPtrInst(GetElementPtrInst &GEP);
@@ -678,32 +677,6 @@ Andersens::getModRefInfo(CallSite CS, Value *P, unsigned Size) {
 AliasAnalysis::ModRefResult
 Andersens::getModRefInfo(CallSite CS1, CallSite CS2) {
   return AliasAnalysis::getModRefInfo(CS1,CS2);
-}
-
-/// getMustAlias - We can provide must alias information if we know that a
-/// pointer can only point to a specific function or the null pointer.
-/// Unfortunately we cannot determine must-alias information for global
-/// variables or any other memory memory objects because we do not track whether
-/// a pointer points to the beginning of an object or a field of it.
-void Andersens::getMustAliases(Value *P, std::vector<Value*> &RetVals) {
-  Node *N = &GraphNodes[FindNode(getNode(P))];
-  if (N->PointsTo->count() == 1) {
-    Node *Pointee = &GraphNodes[N->PointsTo->find_first()];
-    // If a function is the only object in the points-to set, then it must be
-    // the destination.  Note that we can't handle global variables here,
-    // because we don't know if the pointer is actually pointing to a field of
-    // the global or to the beginning of it.
-    if (Value *V = Pointee->getValue()) {
-      if (Function *F = dyn_cast<Function>(V))
-        RetVals.push_back(F);
-    } else {
-      // If the object in the points-to set is the null object, then the null
-      // pointer is a must alias.
-      if (Pointee == &GraphNodes[NullObject])
-        RetVals.push_back(Constant::getNullValue(P->getType()));
-    }
-  }
-  AliasAnalysis::getMustAliases(P, RetVals);
 }
 
 /// pointsToConstantMemory - If we can determine that this pointer only points
@@ -792,7 +765,7 @@ void Andersens::IdentifyObjects(Module &M) {
       // object.
       if (isa<PointerType>(II->getType())) {
         ValueNodes[&*II] = NumObjects++;
-        if (AllocationInst *AI = dyn_cast<AllocationInst>(&*II))
+        if (AllocaInst *AI = dyn_cast<AllocaInst>(&*II))
           ObjectNodes[AI] = NumObjects++;
         else if (isMalloc(&*II))
           ObjectNodes[&*II] = NumObjects++;
@@ -1016,6 +989,8 @@ bool Andersens::AnalyzeUsesOfFunction(Value *V) {
       }
     } else if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(*UI)) {
       if (AnalyzeUsesOfFunction(GEP)) return true;
+    } else if (isFreeCall(*UI)) {
+      return false;
     } else if (CallInst *CI = dyn_cast<CallInst>(*UI)) {
       // Make sure that this is just the function being called, not that it is
       // passing into the function.
@@ -1037,8 +1012,6 @@ bool Andersens::AnalyzeUsesOfFunction(Value *V) {
     } else if (ICmpInst *ICI = dyn_cast<ICmpInst>(*UI)) {
       if (!isa<ConstantPointerNull>(ICI->getOperand(1)))
         return true;  // Allow comparison against null.
-    } else if (isa<FreeInst>(*UI)) {
-      return false;
     } else {
       return true;
     }
@@ -1156,7 +1129,6 @@ void Andersens::visitInstruction(Instruction &I) {
   case Instruction::Switch:
   case Instruction::Unwind:
   case Instruction::Unreachable:
-  case Instruction::Free:
   case Instruction::ICmp:
   case Instruction::FCmp:
     return;
@@ -1167,7 +1139,11 @@ void Andersens::visitInstruction(Instruction &I) {
   }
 }
 
-void Andersens::visitAllocationInst(Instruction &I) {
+void Andersens::visitAllocaInst(AllocaInst &I) {
+  visitAlloc(I);
+}
+
+void Andersens::visitAlloc(Instruction &I) {
   unsigned ObjectIndex = getObject(&I);
   GraphNodes[ObjectIndex].setValue(&I);
   Constraints.push_back(Constraint(Constraint::AddressOf, getNodeValue(I),
@@ -2819,7 +2795,7 @@ void Andersens::PrintNode(const Node *N) const {
   else
     errs() << "(unnamed)";
 
-  if (isa<GlobalValue>(V) || isa<AllocationInst>(V) || isMalloc(V))
+  if (isa<GlobalValue>(V) || isa<AllocaInst>(V) || isMalloc(V))
     if (N == &GraphNodes[getObject(V)])
       errs() << "<mem>";
 }

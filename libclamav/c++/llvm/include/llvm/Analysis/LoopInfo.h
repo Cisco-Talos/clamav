@@ -114,10 +114,10 @@ public:
   block_iterator block_begin() const { return Blocks.begin(); }
   block_iterator block_end() const { return Blocks.end(); }
 
-  /// isLoopExit - True if terminator in the block can branch to another block
-  /// that is outside of the current loop.
+  /// isLoopExiting - True if terminator in the block can branch to another
+  /// block that is outside of the current loop.
   ///
-  bool isLoopExit(const BlockT *BB) const {
+  bool isLoopExiting(const BlockT *BB) const {
     typedef GraphTraits<BlockT*> BlockTraits;
     for (typename BlockTraits::ChildIteratorType SI =
          BlockTraits::child_begin(const_cast<BlockT*>(BB)),
@@ -269,8 +269,6 @@ public:
 
   /// getLoopLatch - If there is a single latch block for this loop, return it.
   /// A latch block is a block that contains a branch back to the header.
-  /// A loop header in normal form has two edges into it: one from a preheader
-  /// and one from a latch block.
   BlockT *getLoopLatch() const {
     BlockT *Header = getHeader();
     typedef GraphTraits<Inverse<BlockT*> > InvBlockTraits;
@@ -278,20 +276,12 @@ public:
                                             InvBlockTraits::child_begin(Header);
     typename InvBlockTraits::ChildIteratorType PE =
                                               InvBlockTraits::child_end(Header);
-    if (PI == PE) return 0;  // no preds?
-
     BlockT *Latch = 0;
-    if (contains(*PI))
-      Latch = *PI;
-    ++PI;
-    if (PI == PE) return 0;  // only one pred?
-
-    if (contains(*PI)) {
-      if (Latch) return 0;  // multiple backedges
-      Latch = *PI;
-    }
-    ++PI;
-    if (PI != PE) return 0;  // more than two preds
+    for (; PI != PE; ++PI)
+      if (contains(*PI)) {
+        if (Latch) return 0;
+        Latch = *PI;
+      }
 
     return Latch;
   }
@@ -465,7 +455,7 @@ public:
       WriteAsOperand(OS, BB, false);
       if (BB == getHeader())    OS << "<header>";
       if (BB == getLoopLatch()) OS << "<latch>";
-      if (isLoopExit(BB))       OS << "<exit>";
+      if (isLoopExiting(BB))    OS << "<exiting>";
     }
     OS << "\n";
 
@@ -571,6 +561,10 @@ public:
   /// the LoopSimplify form transforms loops to, which is sometimes called
   /// normal form.
   bool isLoopSimplifyForm() const;
+
+  /// hasDedicatedExits - Return true if no exit block for the loop
+  /// has a predecessor that is outside the loop.
+  bool hasDedicatedExits() const;
 
   /// getUniqueExitBlocks - Return all unique successor blocks of this loop. 
   /// These are the blocks _outside of the current loop_ which are branched to.

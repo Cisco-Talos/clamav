@@ -19,6 +19,7 @@
 #include "X86TargetMachine.h"
 #include "X86Relocations.h"
 #include "X86.h"
+#include "llvm/LLVMContext.h"
 #include "llvm/PassManager.h"
 #include "llvm/CodeGen/MachineCodeEmitter.h"
 #include "llvm/CodeGen/JITCodeEmitter.h"
@@ -32,7 +33,6 @@
 #include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
@@ -43,7 +43,7 @@ STATISTIC(NumEmitted, "Number of machine instructions emitted");
 
 namespace {
   template<class CodeEmitter>
-  class VISIBILITY_HIDDEN Emitter : public MachineFunctionPass {
+  class Emitter : public MachineFunctionPass {
     const X86InstrInfo  *II;
     const TargetData    *TD;
     X86TargetMachine    &TM;
@@ -82,7 +82,7 @@ namespace {
     void emitPCRelativeBlockAddress(MachineBasicBlock *MBB);
     void emitGlobalAddress(GlobalValue *GV, unsigned Reloc,
                            intptr_t Disp = 0, intptr_t PCAdj = 0,
-                           bool NeedStub = false, bool Indirect = false);
+                           bool Indirect = false);
     void emitExternalSymbolAddress(const char *ES, unsigned Reloc);
     void emitConstPoolAddress(unsigned CPI, unsigned Reloc, intptr_t Disp = 0,
                               intptr_t PCAdj = 0);
@@ -176,7 +176,6 @@ template<class CodeEmitter>
 void Emitter<CodeEmitter>::emitGlobalAddress(GlobalValue *GV, unsigned Reloc,
                                 intptr_t Disp /* = 0 */,
                                 intptr_t PCAdj /* = 0 */,
-                                bool NeedStub /* = false */,
                                 bool Indirect /* = false */) {
   intptr_t RelocCST = Disp;
   if (Reloc == X86::reloc_picrel_word)
@@ -185,9 +184,9 @@ void Emitter<CodeEmitter>::emitGlobalAddress(GlobalValue *GV, unsigned Reloc,
     RelocCST = PCAdj;
   MachineRelocation MR = Indirect
     ? MachineRelocation::getIndirectSymbol(MCE.getCurrentPCOffset(), Reloc,
-                                           GV, RelocCST, NeedStub)
+                                           GV, RelocCST, false)
     : MachineRelocation::getGV(MCE.getCurrentPCOffset(), Reloc,
-                               GV, RelocCST, NeedStub);
+                               GV, RelocCST, false);
   MCE.addRelocation(MR);
   // The relocated value will be added to the displacement
   if (Reloc == X86::reloc_absolute_dword)
@@ -333,10 +332,9 @@ void Emitter<CodeEmitter>::emitDisplacementField(const MachineOperand *RelocOp,
     // do it, otherwise fallback to absolute (this is determined by IsPCRel). 
     //  89 05 00 00 00 00     mov    %eax,0(%rip)  # PC-relative
     //  89 04 25 00 00 00 00  mov    %eax,0x0      # Absolute
-    bool NeedStub = isa<Function>(RelocOp->getGlobal());
     bool Indirect = gvNeedsNonLazyPtr(*RelocOp, TM);
     emitGlobalAddress(RelocOp->getGlobal(), RelocType, RelocOp->getOffset(),
-                      Adj, NeedStub, Indirect);
+                      Adj, Indirect);
   } else if (RelocOp->isSymbol()) {
     emitExternalSymbolAddress(RelocOp->getSymbolName(), RelocType);
   } else if (RelocOp->isCPI()) {
@@ -481,7 +479,7 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
                                            const TargetInstrDesc *Desc) {
   DEBUG(errs() << MI);
 
-  MCE.processDebugLoc(MI.getDebugLoc());
+  MCE.processDebugLoc(MI.getDebugLoc(), true);
 
   unsigned Opcode = Desc->Opcode;
 
@@ -587,8 +585,8 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
     case TargetInstrInfo::INLINEASM:
       // We allow inline assembler nodes with empty bodies - they can
       // implicitly define registers, which is ok for JIT.
-      assert(MI.getOperand(0).getSymbolName()[0] == 0 && 
-             "JIT does not support inline asm!");
+      if (MI.getOperand(0).getSymbolName()[0])
+        llvm_report_error("JIT does not support inline asm!");
       break;
     case TargetInstrInfo::DBG_LABEL:
     case TargetInstrInfo::EH_LABEL:
@@ -597,7 +595,6 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
       break;
     case TargetInstrInfo::IMPLICIT_DEF:
     case TargetInstrInfo::KILL:
-    case X86::DWARF_LOC:
     case X86::FP_REG_KILL:
       break;
     case X86::MOVPC32r: {
@@ -633,14 +630,8 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
     }
     
     if (MO.isGlobal()) {
-      // Assume undefined functions may be outside the Small codespace.
-      bool NeedStub = 
-        (Is64BitMode && 
-            (TM.getCodeModel() == CodeModel::Large ||
-             TM.getSubtarget<X86Subtarget>().isTargetDarwin())) ||
-        Opcode == X86::TAILJMPd;
       emitGlobalAddress(MO.getGlobal(), X86::reloc_pcrel_word,
-                        MO.getOffset(), 0, NeedStub);
+                        MO.getOffset(), 0);
       break;
     }
     
@@ -681,10 +672,9 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
     if (Opcode == X86::MOV64ri)
       rt = X86::reloc_absolute_dword;  // FIXME: add X86II flag?
     if (MO1.isGlobal()) {
-      bool NeedStub = isa<Function>(MO1.getGlobal());
       bool Indirect = gvNeedsNonLazyPtr(MO1, TM);
       emitGlobalAddress(MO1.getGlobal(), rt, MO1.getOffset(), 0,
-                        NeedStub, Indirect);
+                        Indirect);
     } else if (MO1.isSymbol())
       emitExternalSymbolAddress(MO1.getSymbolName(), rt);
     else if (MO1.isCPI())
@@ -790,10 +780,9 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
     if (Opcode == X86::MOV64ri32)
       rt = X86::reloc_absolute_word_sext;  // FIXME: add X86II flag?
     if (MO1.isGlobal()) {
-      bool NeedStub = isa<Function>(MO1.getGlobal());
       bool Indirect = gvNeedsNonLazyPtr(MO1, TM);
       emitGlobalAddress(MO1.getGlobal(), rt, MO1.getOffset(), 0,
-                        NeedStub, Indirect);
+                        Indirect);
     } else if (MO1.isSymbol())
       emitExternalSymbolAddress(MO1.getSymbolName(), rt);
     else if (MO1.isCPI())
@@ -831,10 +820,9 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
     if (Opcode == X86::MOV64mi32)
       rt = X86::reloc_absolute_word_sext;  // FIXME: add X86II flag?
     if (MO.isGlobal()) {
-      bool NeedStub = isa<Function>(MO.getGlobal());
       bool Indirect = gvNeedsNonLazyPtr(MO, TM);
       emitGlobalAddress(MO.getGlobal(), rt, MO.getOffset(), 0,
-                        NeedStub, Indirect);
+                        Indirect);
     } else if (MO.isSymbol())
       emitExternalSymbolAddress(MO.getSymbolName(), rt);
     else if (MO.isCPI())
@@ -859,6 +847,8 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
 #endif
     llvm_unreachable(0);
   }
+
+  MCE.processDebugLoc(MI.getDebugLoc(), false);
 }
 
 // Adapt the Emitter / CodeEmitter interfaces to MCCodeEmitter.

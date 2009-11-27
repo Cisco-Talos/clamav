@@ -12,6 +12,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Force NDEBUG on in any optimized build on Darwin.
+//
+// FIXME: This is a huge hack, to work around ridiculously awful compile times
+// on this file with gcc-4.2 on Darwin, in Release mode.
+#if (!defined(__llvm__) && defined(__APPLE__) && \
+     defined(__OPTIMIZE__) && !defined(NDEBUG))
+#define NDEBUG
+#endif
+
 #define DEBUG_TYPE "x86-isel"
 #include "X86.h"
 #include "X86InstrBuilder.h"
@@ -33,7 +42,6 @@
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
@@ -72,6 +80,7 @@ namespace {
     SDValue Segment;
     GlobalValue *GV;
     Constant *CP;
+    BlockAddress *BlockAddr;
     const char *ES;
     int JT;
     unsigned Align;    // CP alignment.
@@ -79,12 +88,12 @@ namespace {
 
     X86ISelAddressMode()
       : BaseType(RegBase), Scale(1), IndexReg(), Disp(0),
-        Segment(), GV(0), CP(0), ES(0), JT(-1), Align(0),
+        Segment(), GV(0), CP(0), BlockAddr(0), ES(0), JT(-1), Align(0),
         SymbolFlags(X86II::MO_NO_FLAG) {
     }
 
     bool hasSymbolicDisplacement() const {
-      return GV != 0 || CP != 0 || ES != 0 || JT != -1;
+      return GV != 0 || CP != 0 || ES != 0 || JT != -1 || BlockAddr != 0;
     }
     
     bool hasBaseOrIndexReg() const {
@@ -147,7 +156,7 @@ namespace {
   /// ISel - X86 specific code to select X86 machine instructions for
   /// SelectionDAG operations.
   ///
-  class VISIBILITY_HIDDEN X86DAGToDAGISel : public SelectionDAGISel {
+  class X86DAGToDAGISel : public SelectionDAGISel {
     /// X86Lowering - This object fully describes how to lower LLVM code to an
     /// X86-specific SelectionDAG.
     X86TargetLowering &X86Lowering;
@@ -242,6 +251,9 @@ namespace {
         Disp = CurDAG->getTargetExternalSymbol(AM.ES, MVT::i32, AM.SymbolFlags);
       else if (AM.JT != -1)
         Disp = CurDAG->getTargetJumpTable(AM.JT, MVT::i32, AM.SymbolFlags);
+      else if (AM.BlockAddr)
+        Disp = CurDAG->getBlockAddress(AM.BlockAddr, MVT::i32,
+                                       true, AM.SymbolFlags);
       else
         Disp = CurDAG->getTargetConstant(AM.Disp, MVT::i32);
 
@@ -658,7 +670,6 @@ void X86DAGToDAGISel::InstructionSelect() {
   const Function *F = MF->getFunction();
   OptForSize = F->hasFnAttr(Attribute::OptimizeForSize);
 
-  DEBUG(BB->dump());
   if (OptLevel != CodeGenOpt::None)
     PreprocessForRMW();
 
@@ -761,10 +772,12 @@ bool X86DAGToDAGISel::MatchWrapper(SDValue N, X86ISelAddressMode &AM) {
     } else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(N0)) {
       AM.ES = S->getSymbol();
       AM.SymbolFlags = S->getTargetFlags();
-    } else {
-      JumpTableSDNode *J = cast<JumpTableSDNode>(N0);
+    } else if (JumpTableSDNode *J = dyn_cast<JumpTableSDNode>(N0)) {
       AM.JT = J->getIndex();
       AM.SymbolFlags = J->getTargetFlags();
+    } else {
+      AM.BlockAddr = cast<BlockAddressSDNode>(N0)->getBlockAddress();
+      AM.SymbolFlags = cast<BlockAddressSDNode>(N0)->getTargetFlags();
     }
 
     if (N.getOpcode() == X86ISD::WrapperRIP)
@@ -790,10 +803,12 @@ bool X86DAGToDAGISel::MatchWrapper(SDValue N, X86ISelAddressMode &AM) {
     } else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(N0)) {
       AM.ES = S->getSymbol();
       AM.SymbolFlags = S->getTargetFlags();
-    } else {
-      JumpTableSDNode *J = cast<JumpTableSDNode>(N0);
+    } else if (JumpTableSDNode *J = dyn_cast<JumpTableSDNode>(N0)) {
       AM.JT = J->getIndex();
       AM.SymbolFlags = J->getTargetFlags();
+    } else {
+      AM.BlockAddr = cast<BlockAddressSDNode>(N0)->getBlockAddress();
+      AM.SymbolFlags = cast<BlockAddressSDNode>(N0)->getTargetFlags();
     }
     return false;
   }
@@ -1625,6 +1640,68 @@ SDNode *X86DAGToDAGISel::SelectAtomicLoadAdd(SDNode *Node, EVT NVT) {
   }
 }
 
+/// HasNoSignedComparisonUses - Test whether the given X86ISD::CMP node has
+/// any uses which require the SF or OF bits to be accurate.
+static bool HasNoSignedComparisonUses(SDNode *N) {
+  // Examine each user of the node.
+  for (SDNode::use_iterator UI = N->use_begin(),
+         UE = N->use_end(); UI != UE; ++UI) {
+    // Only examine CopyToReg uses.
+    if (UI->getOpcode() != ISD::CopyToReg)
+      return false;
+    // Only examine CopyToReg uses that copy to EFLAGS.
+    if (cast<RegisterSDNode>(UI->getOperand(1))->getReg() !=
+          X86::EFLAGS)
+      return false;
+    // Examine each user of the CopyToReg use.
+    for (SDNode::use_iterator FlagUI = UI->use_begin(),
+           FlagUE = UI->use_end(); FlagUI != FlagUE; ++FlagUI) {
+      // Only examine the Flag result.
+      if (FlagUI.getUse().getResNo() != 1) continue;
+      // Anything unusual: assume conservatively.
+      if (!FlagUI->isMachineOpcode()) return false;
+      // Examine the opcode of the user.
+      switch (FlagUI->getMachineOpcode()) {
+      // These comparisons don't treat the most significant bit specially.
+      case X86::SETAr: case X86::SETAEr: case X86::SETBr: case X86::SETBEr:
+      case X86::SETEr: case X86::SETNEr: case X86::SETPr: case X86::SETNPr:
+      case X86::SETAm: case X86::SETAEm: case X86::SETBm: case X86::SETBEm:
+      case X86::SETEm: case X86::SETNEm: case X86::SETPm: case X86::SETNPm:
+      case X86::JA: case X86::JAE: case X86::JB: case X86::JBE:
+      case X86::JE: case X86::JNE: case X86::JP: case X86::JNP:
+      case X86::CMOVA16rr: case X86::CMOVA16rm:
+      case X86::CMOVA32rr: case X86::CMOVA32rm:
+      case X86::CMOVA64rr: case X86::CMOVA64rm:
+      case X86::CMOVAE16rr: case X86::CMOVAE16rm:
+      case X86::CMOVAE32rr: case X86::CMOVAE32rm:
+      case X86::CMOVAE64rr: case X86::CMOVAE64rm:
+      case X86::CMOVB16rr: case X86::CMOVB16rm:
+      case X86::CMOVB32rr: case X86::CMOVB32rm:
+      case X86::CMOVB64rr: case X86::CMOVB64rm:
+      case X86::CMOVBE16rr: case X86::CMOVBE16rm:
+      case X86::CMOVBE32rr: case X86::CMOVBE32rm:
+      case X86::CMOVBE64rr: case X86::CMOVBE64rm:
+      case X86::CMOVE16rr: case X86::CMOVE16rm:
+      case X86::CMOVE32rr: case X86::CMOVE32rm:
+      case X86::CMOVE64rr: case X86::CMOVE64rm:
+      case X86::CMOVNE16rr: case X86::CMOVNE16rm:
+      case X86::CMOVNE32rr: case X86::CMOVNE32rm:
+      case X86::CMOVNE64rr: case X86::CMOVNE64rm:
+      case X86::CMOVNP16rr: case X86::CMOVNP16rm:
+      case X86::CMOVNP32rr: case X86::CMOVNP32rm:
+      case X86::CMOVNP64rr: case X86::CMOVNP64rm:
+      case X86::CMOVP16rr: case X86::CMOVP16rm:
+      case X86::CMOVP32rr: case X86::CMOVP32rm:
+      case X86::CMOVP64rr: case X86::CMOVP64rm:
+        continue;
+      // Anything else: assume conservatively.
+      default: return false;
+      }
+    }
+  }
+  return true;
+}
+
 SDNode *X86DAGToDAGISel::Select(SDValue N) {
   SDNode *Node = N.getNode();
   EVT NVT = Node->getValueType(0);
@@ -1881,14 +1958,12 @@ SDNode *X86DAGToDAGISel::Select(SDValue N) {
                             0);
           // We just did a 32-bit clear, insert it into a 64-bit register to
           // clear the whole 64-bit reg.
-          SDValue Undef =
-            SDValue(CurDAG->getMachineNode(TargetInstrInfo::IMPLICIT_DEF,
-                                           dl, MVT::i64), 0);
+          SDValue Zero = CurDAG->getTargetConstant(0, MVT::i64);
           SDValue SubRegNo =
             CurDAG->getTargetConstant(X86::SUBREG_32BIT, MVT::i32);
           ClrNode =
-            SDValue(CurDAG->getMachineNode(TargetInstrInfo::INSERT_SUBREG, dl,
-                                           MVT::i64, Undef, ClrNode, SubRegNo),
+            SDValue(CurDAG->getMachineNode(TargetInstrInfo::SUBREG_TO_REG, dl,
+                                           MVT::i64, Zero, ClrNode, SubRegNo),
                     0);
         } else {
           ClrNode = SDValue(CurDAG->getMachineNode(ClrOpcode, dl, NVT), 0);
@@ -1978,7 +2053,9 @@ SDNode *X86DAGToDAGISel::Select(SDValue N) {
       if (!C) break;
 
       // For example, convert "testl %eax, $8" to "testb %al, $8"
-      if ((C->getZExtValue() & ~UINT64_C(0xff)) == 0) {
+      if ((C->getZExtValue() & ~UINT64_C(0xff)) == 0 &&
+          (!(C->getZExtValue() & 0x80) ||
+           HasNoSignedComparisonUses(Node))) {
         SDValue Imm = CurDAG->getTargetConstant(C->getZExtValue(), MVT::i8);
         SDValue Reg = N0.getNode()->getOperand(0);
 
@@ -2004,7 +2081,9 @@ SDNode *X86DAGToDAGISel::Select(SDValue N) {
       }
 
       // For example, "testl %eax, $2048" to "testb %ah, $8".
-      if ((C->getZExtValue() & ~UINT64_C(0xff00)) == 0) {
+      if ((C->getZExtValue() & ~UINT64_C(0xff00)) == 0 &&
+          (!(C->getZExtValue() & 0x8000) ||
+           HasNoSignedComparisonUses(Node))) {
         // Shift the immediate right by 8 bits.
         SDValue ShiftedImm = CurDAG->getTargetConstant(C->getZExtValue() >> 8,
                                                        MVT::i8);
@@ -2034,7 +2113,9 @@ SDNode *X86DAGToDAGISel::Select(SDValue N) {
 
       // For example, "testl %eax, $32776" to "testw %ax, $32776".
       if ((C->getZExtValue() & ~UINT64_C(0xffff)) == 0 &&
-          N0.getValueType() != MVT::i16) {
+          N0.getValueType() != MVT::i16 &&
+          (!(C->getZExtValue() & 0x8000) ||
+           HasNoSignedComparisonUses(Node))) {
         SDValue Imm = CurDAG->getTargetConstant(C->getZExtValue(), MVT::i16);
         SDValue Reg = N0.getNode()->getOperand(0);
 
@@ -2048,7 +2129,9 @@ SDNode *X86DAGToDAGISel::Select(SDValue N) {
 
       // For example, "testq %rax, $268468232" to "testl %eax, $268468232".
       if ((C->getZExtValue() & ~UINT64_C(0xffffffff)) == 0 &&
-          N0.getValueType() == MVT::i64) {
+          N0.getValueType() == MVT::i64 &&
+          (!(C->getZExtValue() & 0x80000000) ||
+           HasNoSignedComparisonUses(Node))) {
         SDValue Imm = CurDAG->getTargetConstant(C->getZExtValue(), MVT::i32);
         SDValue Reg = N0.getNode()->getOperand(0);
 

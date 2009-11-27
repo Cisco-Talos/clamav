@@ -46,17 +46,17 @@ namespace llvm {
 ///  /// Declare the class.  Note that we derive from InstVisitor instantiated
 ///  /// with _our new subclasses_ type.
 ///  ///
-///  struct CountMallocVisitor : public InstVisitor<CountMallocVisitor> {
+///  struct CountAllocaVisitor : public InstVisitor<CountAllocaVisitor> {
 ///    unsigned Count;
-///    CountMallocVisitor() : Count(0) {}
+///    CountAllocaVisitor() : Count(0) {}
 ///
-///    void visitMallocInst(MallocInst &MI) { ++Count; }
+///    void visitAllocaInst(AllocaInst &AI) { ++Count; }
 ///  };
 ///
 ///  And this class would be used like this:
-///    CountMallocVistor CMV;
-///    CMV.visit(function);
-///    NumMallocs = CMV.Count;
+///    CountAllocaVisitor CAV;
+///    CAV.visit(function);
+///    NumAllocas = CAV.Count;
 ///
 /// The defined has 'visit' methods for Instruction, and also for BasicBlock,
 /// Function, and Module, which recursively process all contained instructions.
@@ -160,14 +160,13 @@ public:
   RetTy visitReturnInst(ReturnInst &I)              { DELEGATE(TerminatorInst);}
   RetTy visitBranchInst(BranchInst &I)              { DELEGATE(TerminatorInst);}
   RetTy visitSwitchInst(SwitchInst &I)              { DELEGATE(TerminatorInst);}
+  RetTy visitIndirectBrInst(IndirectBrInst &I)      { DELEGATE(TerminatorInst);}
   RetTy visitInvokeInst(InvokeInst &I)              { DELEGATE(TerminatorInst);}
   RetTy visitUnwindInst(UnwindInst &I)              { DELEGATE(TerminatorInst);}
   RetTy visitUnreachableInst(UnreachableInst &I)    { DELEGATE(TerminatorInst);}
   RetTy visitICmpInst(ICmpInst &I)                  { DELEGATE(CmpInst);}
   RetTy visitFCmpInst(FCmpInst &I)                  { DELEGATE(CmpInst);}
-  RetTy visitMallocInst(MallocInst &I)              { DELEGATE(AllocationInst);}
-  RetTy visitAllocaInst(AllocaInst &I)              { DELEGATE(AllocationInst);}
-  RetTy visitFreeInst(FreeInst     &I)              { DELEGATE(Instruction); }
+  RetTy visitAllocaInst(AllocaInst &I)              { DELEGATE(Instruction); }
   RetTy visitLoadInst(LoadInst     &I)              { DELEGATE(Instruction); }
   RetTy visitStoreInst(StoreInst   &I)              { DELEGATE(Instruction); }
   RetTy visitGetElementPtrInst(GetElementPtrInst &I){ DELEGATE(Instruction); }
@@ -199,7 +198,6 @@ public:
   //
   RetTy visitTerminatorInst(TerminatorInst &I) { DELEGATE(Instruction); }
   RetTy visitBinaryOperator(BinaryOperator &I) { DELEGATE(Instruction); }
-  RetTy visitAllocationInst(AllocationInst &I) { DELEGATE(Instruction); }
   RetTy visitCmpInst(CmpInst &I)               { DELEGATE(Instruction); }
   RetTy visitCastInst(CastInst &I)             { DELEGATE(Instruction); }
 

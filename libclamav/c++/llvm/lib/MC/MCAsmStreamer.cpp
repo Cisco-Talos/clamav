@@ -58,7 +58,7 @@ public:
   virtual void EmitZerofill(const MCSection *Section, MCSymbol *Symbol = 0,
                             unsigned Size = 0, unsigned ByteAlignment = 0);
 
-  virtual void EmitBytes(const StringRef &Data);
+  virtual void EmitBytes(StringRef Data);
 
   virtual void EmitValue(const MCExpr *Value, unsigned Size);
 
@@ -123,23 +123,27 @@ void MCAsmStreamer::EmitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   OS << " = ";
   Value->print(OS, &MAI);
   OS << '\n';
+
+  // FIXME: Lift context changes into super class.
+  // FIXME: Set associated section.
+  Symbol->setValue(Value);
 }
 
-void MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol, 
+void MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
                                         SymbolAttr Attribute) {
   switch (Attribute) {
-  case Global: OS << ".globl"; break;
-  case Hidden: OS << ".hidden"; break;
+  case Global:         OS << ".globl";           break;
+  case Hidden:         OS << ".hidden";          break;
   case IndirectSymbol: OS << ".indirect_symbol"; break;
-  case Internal: OS << ".internal"; break;
-  case LazyReference: OS << ".lazy_reference"; break;
-  case NoDeadStrip: OS << ".no_dead_strip"; break;
-  case PrivateExtern: OS << ".private_extern"; break;
-  case Protected: OS << ".protected"; break;
-  case Reference: OS << ".reference"; break;
-  case Weak: OS << ".weak"; break;
+  case Internal:       OS << ".internal";        break;
+  case LazyReference:  OS << ".lazy_reference";  break;
+  case NoDeadStrip:    OS << ".no_dead_strip";   break;
+  case PrivateExtern:  OS << ".private_extern";  break;
+  case Protected:      OS << ".protected";       break;
+  case Reference:      OS << ".reference";       break;
+  case Weak:           OS << ".weak";            break;
   case WeakDefinition: OS << ".weak_definition"; break;
-  case WeakReference: OS << ".weak_reference"; break;
+  case WeakReference:  OS << ".weak_reference";  break;
   }
 
   OS << ' ';
@@ -182,7 +186,7 @@ void MCAsmStreamer::EmitZerofill(const MCSection *Section, MCSymbol *Symbol,
   OS << '\n';
 }
 
-void MCAsmStreamer::EmitBytes(const StringRef &Data) {
+void MCAsmStreamer::EmitBytes(StringRef Data) {
   assert(CurSection && "Cannot emit contents before setting section!");
   for (unsigned i = 0, e = Data.size(); i != e; ++i)
     OS << ".byte " << (unsigned) (unsigned char) Data[i] << '\n';

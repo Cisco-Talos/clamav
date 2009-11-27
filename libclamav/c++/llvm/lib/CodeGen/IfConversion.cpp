@@ -59,7 +59,7 @@ STATISTIC(NumIfConvBBs,    "Number of if-converted blocks");
 STATISTIC(NumDupBBs,       "Number of duplicated blocks");
 
 namespace {
-  class VISIBILITY_HIDDEN IfConverter : public MachineFunctionPass {
+  class IfConverter : public MachineFunctionPass {
     enum IfcvtKind {
       ICNotClassfied,  // BB data valid, but not classified.
       ICSimpleFalse,   // Same as ICSimple, but on the false path.
@@ -608,7 +608,7 @@ void IfConverter::ScanInstructions(BBInfo &BBI) {
     if (TII->DefinesPredicate(I, PredDefs))
       BBI.ClobbersPred = true;
 
-    if (!TID.isPredicable()) {
+    if (!TII->isPredicable(I)) {
       BBI.IsUnpredicable = true;
       return;
     }

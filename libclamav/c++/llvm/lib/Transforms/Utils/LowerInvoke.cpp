@@ -47,7 +47,6 @@
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Target/TargetLowering.h"
 #include <csetjmp>
 #include <set>
@@ -61,7 +60,7 @@ static cl::opt<bool> ExpensiveEHSupport("enable-correct-eh-support",
  cl::desc("Make the -lowerinvoke pass insert expensive, but correct, EH code"));
 
 namespace {
-  class VISIBILITY_HIDDEN LowerInvoke : public FunctionPass {
+  class LowerInvoke : public FunctionPass {
     // Used for both models.
     Constant *WriteFn;
     Constant *AbortFn;
@@ -87,7 +86,6 @@ namespace {
       // This is a cluster of orthogonal Transforms
       AU.addPreservedID(PromoteMemoryToRegisterID);
       AU.addPreservedID(LowerSwitchID);
-      AU.addPreservedID(LowerAllocationsID);
     }
 
   private:
@@ -116,7 +114,7 @@ FunctionPass *llvm::createLowerInvokePass(const TargetLowering *TLI) {
 // current module.
 bool LowerInvoke::doInitialization(Module &M) {
   const Type *VoidPtrTy =
-          PointerType::getUnqual(Type::getInt8Ty(M.getContext()));
+          Type::getInt8PtrTy(M.getContext());
   AbortMessage = 0;
   if (ExpensiveEHSupport) {
     // Insert a type for the linked list of jump buffers.
@@ -530,7 +528,7 @@ bool LowerInvoke::insertExpensiveEHSupport(Function &F) {
                                                  "TheJmpBuf",
                                                  EntryBB->getTerminator());
     JmpBufPtr = new BitCastInst(JmpBufPtr,
-                        PointerType::getUnqual(Type::getInt8Ty(F.getContext())),
+                        Type::getInt8PtrTy(F.getContext()),
                                 "tmp", EntryBB->getTerminator());
     Value *SJRet = CallInst::Create(SetJmpFn, JmpBufPtr, "sjret",
                                     EntryBB->getTerminator());
@@ -585,7 +583,7 @@ bool LowerInvoke::insertExpensiveEHSupport(Function &F) {
   Idx[0] = GetElementPtrInst::Create(BufPtr, Idx.begin(), Idx.end(), "JmpBuf",
                                      UnwindBlock);
   Idx[0] = new BitCastInst(Idx[0],
-             PointerType::getUnqual(Type::getInt8Ty(F.getContext())),
+             Type::getInt8PtrTy(F.getContext()),
                            "tmp", UnwindBlock);
   Idx[1] = ConstantInt::get(Type::getInt32Ty(F.getContext()), 1);
   CallInst::Create(LongJmpFn, Idx.begin(), Idx.end(), "", UnwindBlock);

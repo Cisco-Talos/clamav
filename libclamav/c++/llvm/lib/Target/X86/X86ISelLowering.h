@@ -286,7 +286,7 @@ namespace llvm {
     /// isMOVHPMask - Return true if the specified VECTOR_SHUFFLE operand
     /// specifies a shuffle of elements that is suitable for MOVHP{S|D}.
     /// as well as MOVLHPS.
-    bool isMOVHPMask(ShuffleVectorSDNode *N);
+    bool isMOVLHPSMask(ShuffleVectorSDNode *N);
 
     /// isUNPCKLMask - Return true if the specified VECTOR_SHUFFLE operand
     /// specifies a shuffle of elements that is suitable for input to UNPCKL.
@@ -323,20 +323,26 @@ namespace llvm {
     /// specifies a shuffle of elements that is suitable for input to MOVDDUP.
     bool isMOVDDUPMask(ShuffleVectorSDNode *N);
 
+    /// isPALIGNRMask - Return true if the specified VECTOR_SHUFFLE operand
+    /// specifies a shuffle of elements that is suitable for input to PALIGNR.
+    bool isPALIGNRMask(ShuffleVectorSDNode *N);
+
     /// getShuffleSHUFImmediate - Return the appropriate immediate to shuffle
     /// the specified isShuffleMask VECTOR_SHUFFLE mask with PSHUF* and SHUFP*
     /// instructions.
     unsigned getShuffleSHUFImmediate(SDNode *N);
 
     /// getShufflePSHUFHWImmediate - Return the appropriate immediate to shuffle
-    /// the specified isShuffleMask VECTOR_SHUFFLE mask with PSHUFHW
-    /// instructions.
+    /// the specified VECTOR_SHUFFLE mask with PSHUFHW instruction.
     unsigned getShufflePSHUFHWImmediate(SDNode *N);
 
-    /// getShufflePSHUFKWImmediate - Return the appropriate immediate to shuffle
-    /// the specified isShuffleMask VECTOR_SHUFFLE mask with PSHUFLW
-    /// instructions.
+    /// getShufflePSHUFLWImmediate - Return the appropriate immediate to shuffle
+    /// the specified VECTOR_SHUFFLE mask with PSHUFLW instruction.
     unsigned getShufflePSHUFLWImmediate(SDNode *N);
+
+    /// getShufflePALIGNRImmediate - Return the appropriate immediate to shuffle
+    /// the specified VECTOR_SHUFFLE mask with the PALIGNR instruction.
+    unsigned getShufflePALIGNRImmediate(SDNode *N);
 
     /// isZeroNode - Returns true if Elt is a constant zero or a floating point
     /// constant +0.0.
@@ -493,6 +499,11 @@ namespace llvm {
     /// from i32 to i8 but not from i32 to i16.
     virtual bool isNarrowingProfitable(EVT VT1, EVT VT2) const;
 
+    /// isFPImmLegal - Returns true if the target can instruction select the
+    /// specified FP immediate natively. If false, the legalizer will
+    /// materialize the FP immediate as a load from a constant pool.
+    virtual bool isFPImmLegal(const APFloat &Imm, EVT VT) const;
+
     /// isShuffleMaskLegal - Targets can use this to indicate that they only
     /// support *some* VECTOR_SHUFFLE operations, those with specific masks.
     /// By default, if a target supports the VECTOR_SHUFFLE node, all mask
@@ -578,6 +589,15 @@ namespace llvm {
     bool X86ScalarSSEf32;
     bool X86ScalarSSEf64;
 
+    /// LegalFPImmediates - A list of legal fp immediates.
+    std::vector<APFloat> LegalFPImmediates;
+
+    /// addLegalFPImmediate - Indicate that this x86 target can instruction
+    /// select the specified FP immediate natively.
+    void addLegalFPImmediate(const APFloat& Imm) {
+      LegalFPImmediates.push_back(Imm);
+    }
+
     SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
                             CallingConv::ID CallConv, bool isVarArg,
                             const SmallVectorImpl<ISD::InputArg> &Ins,
@@ -615,6 +635,7 @@ namespace llvm {
     SDValue LowerINSERT_VECTOR_ELT_SSE4(SDValue Op, SelectionDAG &DAG);
     SDValue LowerSCALAR_TO_VECTOR(SDValue Op, SelectionDAG &DAG);
     SDValue LowerConstantPool(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerBlockAddress(SDValue Op, SelectionDAG &DAG);
     SDValue LowerGlobalAddress(const GlobalValue *GV, DebugLoc dl,
                                int64_t Offset, SelectionDAG &DAG) const;
     SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG);
@@ -677,6 +698,12 @@ namespace llvm {
                   CallingConv::ID CallConv, bool isVarArg,
                   const SmallVectorImpl<ISD::OutputArg> &Outs,
                   DebugLoc dl, SelectionDAG &DAG);
+
+    virtual bool
+      CanLowerReturn(CallingConv::ID CallConv, bool isVarArg,
+                     const SmallVectorImpl<EVT> &OutTys,
+                     const SmallVectorImpl<ISD::ArgFlagsTy> &ArgsFlags,
+                     SelectionDAG &DAG);
 
     void ReplaceATOMIC_BINARY_64(SDNode *N, SmallVectorImpl<SDValue> &Results,
                                  SelectionDAG &DAG, unsigned NewOp);

@@ -43,7 +43,7 @@ public:
   virtual void NotifyFunctionEmitted(const Function &F,
                                      void *FnStart, size_t FnSize,
                                      const EmittedFunctionDetails &Details);
-  virtual void NotifyFreeingMachineCode(const Function &F, void *OldPtr);
+  virtual void NotifyFreeingMachineCode(void *OldPtr);
 };
 
 OProfileJITEventListener::OProfileJITEventListener()
@@ -69,16 +69,16 @@ OProfileJITEventListener::~OProfileJITEventListener() {
 }
 
 class FilenameCache {
-  // Holds the filename of each CompileUnit, so that we can pass the
+  // Holds the filename of each Scope, so that we can pass the
   // pointer into oprofile.  These char*s are freed in the destructor.
   DenseMap<MDNode*, char*> Filenames;
 
  public:
-  const char *getFilename(MDNode *CompileUnit) {
-    char *&Filename = Filenames[CompileUnit];
+  const char *getFilename(MDNode *Scope) {
+    char *&Filename = Filenames[Scope];
     if (Filename == NULL) {
-      DICompileUnit CU(CompileUnit);
-      Filename = strdup(CU.getFilename());
+      DIScope S(Scope);
+      Filename = strdup(S.getFilename());
     }
     return Filename;
   }
@@ -97,7 +97,7 @@ static debug_line_info LineStartToOProfileFormat(
   Result.vma = Address;
   const DebugLocTuple &tuple = MF.getDebugLocTuple(Loc);
   Result.lineno = tuple.Line;
-  Result.filename = Filenames.getFilename(tuple.CompileUnit);
+  Result.filename = Filenames.getFilename(tuple.Scope);
   DEBUG(errs() << "Mapping " << reinterpret_cast<void*>(Result.vma) << " to "
                << Result.filename << ":" << Result.lineno << "\n");
   return Result;
@@ -147,13 +147,13 @@ void OProfileJITEventListener::NotifyFunctionEmitted(
   }
 }
 
-// Removes the to-be-deleted function from the symbol table.
-void OProfileJITEventListener::NotifyFreeingMachineCode(
-    const Function &F, void *FnStart) {
+// Removes the being-deleted function from the symbol table.
+void OProfileJITEventListener::NotifyFreeingMachineCode(void *FnStart) {
   assert(FnStart && "Invalid function pointer");
   if (op_unload_native_code(Agent, reinterpret_cast<uint64_t>(FnStart)) == -1) {
-    DEBUG(errs() << "Failed to tell OProfile about unload of native function "
-                 << F.getName() << " at " << FnStart << "\n");
+    DEBUG(errs()
+          << "Failed to tell OProfile about unload of native function at "
+          << FnStart << "\n");
   }
 }
 

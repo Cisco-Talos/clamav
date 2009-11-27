@@ -322,10 +322,10 @@ public:
                                   unsigned char TargetFlags = 0);
   SDValue getValueType(EVT);
   SDValue getRegister(unsigned Reg, EVT VT);
-  SDValue getDbgStopPoint(DebugLoc DL, SDValue Root, 
-                          unsigned Line, unsigned Col, MDNode *CU);
   SDValue getLabel(unsigned Opcode, DebugLoc dl, SDValue Root,
                    unsigned LabelID);
+  SDValue getBlockAddress(BlockAddress *BA, EVT VT,
+                          bool isTarget = false, unsigned char TargetFlags = 0);
 
   SDValue getCopyToReg(SDValue Chain, DebugLoc dl, unsigned Reg, SDValue N) {
     return getNode(ISD::CopyToReg, dl, MVT::Other, Chain,
@@ -380,6 +380,14 @@ public:
   /// undefined.
   SDValue getVectorShuffle(EVT VT, DebugLoc dl, SDValue N1, SDValue N2, 
                            const int *MaskElts);
+
+  /// getSExtOrTrunc - Convert Op, which must be of integer type, to the
+  /// integer type VT, by either sign-extending or truncating it.
+  SDValue getSExtOrTrunc(SDValue Op, DebugLoc DL, EVT VT);
+
+  /// getZExtOrTrunc - Convert Op, which must be of integer type, to the
+  /// integer type VT, by either zero-extending or truncating it.
+  SDValue getZExtOrTrunc(SDValue Op, DebugLoc DL, EVT VT);
 
   /// getZeroExtendInReg - Return the expression required to zero extend the Op
   /// value assuming it was the smaller SrcTy value.
@@ -672,41 +680,47 @@ public:
   /// Note that getMachineNode returns the resultant node.  If there is already
   /// a node of the specified opcode and operands, it returns that node instead
   /// of the current one.
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT, SDValue Op1);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT, SDValue Op1,
-                         SDValue Op2);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT);
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
+                                SDValue Op1);
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
+                                SDValue Op1, SDValue Op2);
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
                          SDValue Op1, SDValue Op2, SDValue Op3);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT,
                          const SDValue *Ops, unsigned NumOps);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2);
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          SDValue Op1);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1,
                          EVT VT2, SDValue Op1, SDValue Op2);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1,
                          EVT VT2, SDValue Op1, SDValue Op2, SDValue Op3);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          const SDValue *Ops, unsigned NumOps);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          EVT VT3, SDValue Op1, SDValue Op2);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          EVT VT3, SDValue Op1, SDValue Op2, SDValue Op3);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          EVT VT3, const SDValue *Ops, unsigned NumOps);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, EVT VT1, EVT VT2,
                          EVT VT3, EVT VT4, const SDValue *Ops, unsigned NumOps);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl,
                          const std::vector<EVT> &ResultTys, const SDValue *Ops,
                          unsigned NumOps);
-  SDNode *getMachineNode(unsigned Opcode, DebugLoc dl, SDVTList VTs,
+  MachineSDNode *getMachineNode(unsigned Opcode, DebugLoc dl, SDVTList VTs,
                          const SDValue *Ops, unsigned NumOps);
 
   /// getTargetExtractSubreg - A convenience function for creating
   /// TargetInstrInfo::EXTRACT_SUBREG nodes.
   SDValue getTargetExtractSubreg(int SRIdx, DebugLoc DL, EVT VT,
                                  SDValue Operand);
+
+  /// getTargetInsertSubreg - A convenience function for creating
+  /// TargetInstrInfo::INSERT_SUBREG nodes.
+  SDValue getTargetInsertSubreg(int SRIdx, DebugLoc DL, EVT VT,
+                                SDValue Operand, SDValue Subreg);
 
   /// getNodeIfExists - Get the specified node if it's already available, or
   /// else return NULL.

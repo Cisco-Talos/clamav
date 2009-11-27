@@ -325,12 +325,11 @@ public:
   /// scalarizing vs using the wider vector type.
   virtual EVT getWidenVectorType(EVT VT) const;
 
-  typedef std::vector<APFloat>::const_iterator legal_fpimm_iterator;
-  legal_fpimm_iterator legal_fpimm_begin() const {
-    return LegalFPImmediates.begin();
-  }
-  legal_fpimm_iterator legal_fpimm_end() const {
-    return LegalFPImmediates.end();
+  /// isFPImmLegal - Returns true if the target can instruction select the
+  /// specified FP immediate natively. If false, the legalizer will materialize
+  /// the FP immediate as a load from a constant pool.
+  virtual bool isFPImmLegal(const APFloat &Imm, EVT VT) const {
+    return false;
   }
   
   /// isShuffleMaskLegal - Targets can use this to indicate that they only
@@ -979,7 +978,7 @@ protected:
   /// not work with the with specified type and indicate what to do about it.
   void setLoadExtAction(unsigned ExtType, MVT VT,
                       LegalizeAction Action) {
-    assert((unsigned)VT.SimpleTy < sizeof(LoadExtActions[0])*4 &&
+    assert((unsigned)VT.SimpleTy < MVT::LAST_VALUETYPE &&
            ExtType < array_lengthof(LoadExtActions) &&
            "Table isn't big enough!");
     LoadExtActions[ExtType] &= ~(uint64_t(3UL) << VT.SimpleTy*2);
@@ -991,7 +990,7 @@ protected:
   void setTruncStoreAction(MVT ValVT, MVT MemVT,
                            LegalizeAction Action) {
     assert((unsigned)ValVT.SimpleTy < array_lengthof(TruncStoreActions) &&
-           (unsigned)MemVT.SimpleTy < sizeof(TruncStoreActions[0])*4 &&
+           (unsigned)MemVT.SimpleTy < MVT::LAST_VALUETYPE &&
            "Table isn't big enough!");
     TruncStoreActions[ValVT.SimpleTy] &= ~(uint64_t(3UL)  << MemVT.SimpleTy*2);
     TruncStoreActions[ValVT.SimpleTy] |= (uint64_t)Action << MemVT.SimpleTy*2;
@@ -1026,7 +1025,7 @@ protected:
   void setConvertAction(MVT FromVT, MVT ToVT,
                         LegalizeAction Action) {
     assert((unsigned)FromVT.SimpleTy < array_lengthof(ConvertActions) &&
-           (unsigned)ToVT.SimpleTy < sizeof(ConvertActions[0])*4 &&
+           (unsigned)ToVT.SimpleTy < MVT::LAST_VALUETYPE &&
            "Table isn't big enough!");
     ConvertActions[FromVT.SimpleTy] &= ~(uint64_t(3UL)  << ToVT.SimpleTy*2);
     ConvertActions[FromVT.SimpleTy] |= (uint64_t)Action << ToVT.SimpleTy*2;
@@ -1036,7 +1035,7 @@ protected:
   /// supported on the target and indicate what to do about it.
   void setCondCodeAction(ISD::CondCode CC, MVT VT,
                          LegalizeAction Action) {
-    assert((unsigned)VT.SimpleTy < sizeof(CondCodeActions[0])*4 &&
+    assert((unsigned)VT.SimpleTy < MVT::LAST_VALUETYPE &&
            (unsigned)CC < array_lengthof(CondCodeActions) &&
            "Table isn't big enough!");
     CondCodeActions[(unsigned)CC] &= ~(uint64_t(3UL)  << VT.SimpleTy*2);
@@ -1049,12 +1048,6 @@ protected:
   /// by the target to override the default.
   void AddPromotedToType(unsigned Opc, MVT OrigVT, MVT DestVT) {
     PromoteToType[std::make_pair(Opc, OrigVT.SimpleTy)] = DestVT.SimpleTy;
-  }
-
-  /// addLegalFPImmediate - Indicate that this target can instruction select
-  /// the specified FP immediate natively.
-  void addLegalFPImmediate(const APFloat& Imm) {
-    LegalFPImmediates.push_back(Imm);
   }
 
   /// setTargetDAGCombine - Targets should invoke this method for each target
@@ -1174,6 +1167,18 @@ public:
     return SDValue();    // this is here to silence compiler errors
   }
 
+  /// CanLowerReturn - This hook should be implemented to check whether the
+  /// return values described by the Outs array can fit into the return
+  /// registers.  If false is returned, an sret-demotion is performed.
+  ///
+  virtual bool CanLowerReturn(CallingConv::ID CallConv, bool isVarArg,
+               const SmallVectorImpl<EVT> &OutTys,
+               const SmallVectorImpl<ISD::ArgFlagsTy> &ArgsFlags,
+               SelectionDAG &DAG)
+  {
+    // Return true by default to get preexisting behavior.
+    return true;
+  }
   /// LowerReturn - This hook must be implemented to lower outgoing
   /// return values, described by the Outs array, into the specified
   /// DAG. The implementation should return the resulting token chain
@@ -1432,14 +1437,15 @@ public:
                                             SelectionDAG &DAG) const;
   
   //===--------------------------------------------------------------------===//
-  // Scheduler hooks
+  // Instruction Emitting Hooks
   //
   
   // EmitInstrWithCustomInserter - This method should be implemented by targets
-  // that mark instructions with the 'usesCustomDAGSchedInserter' flag.  These
+  // that mark instructions with the 'usesCustomInserter' flag.  These
   // instructions are special in various ways, which require special support to
   // insert.  The specified MachineInstr is created but not inserted into any
-  // basic blocks, and the scheduler passes ownership of it to this method.
+  // basic blocks, and this method is called to expand it into a sequence of
+  // instructions, potentially also creating new basic blocks and control flow.
   // When new basic blocks are inserted and the edges from MBB to its successors
   // are modified, the method should insert pairs of <OldSucc, NewSucc> into the
   // DenseMap.
@@ -1506,6 +1512,14 @@ public:
   /// from i32 to i8 but not from i32 to i16.
   virtual bool isNarrowingProfitable(EVT VT1, EVT VT2) const {
     return false;
+  }
+
+  /// isLegalICmpImmediate - Return true if the specified immediate is legal
+  /// icmp immediate, that is the target has icmp instructions which can compare
+  /// a register against the immediate without having to materialize the
+  /// immediate into a register.
+  virtual bool isLegalICmpImmediate(int64_t Imm) const {
+    return true;
   }
 
   //===--------------------------------------------------------------------===//
@@ -1695,8 +1709,6 @@ private:
   uint64_t CondCodeActions[ISD::SETCC_INVALID];
 
   ValueTypeActionImpl ValueTypeActions;
-
-  std::vector<APFloat> LegalFPImmediates;
 
   std::vector<std::pair<EVT, TargetRegisterClass*> > AvailableRegClasses;
 

@@ -51,7 +51,7 @@ namespace llvm {
     typedef unsigned (*TripleMatchQualityFnTy)(const std::string &TT);
 
     typedef const MCAsmInfo *(*AsmInfoCtorFnTy)(const Target &T,
-                                                const StringRef &TT);
+                                                StringRef TT);
     typedef TargetMachine *(*TargetMachineCtorTy)(const Target &T,
                                                   const std::string &TT,
                                                   const std::string &Features);
@@ -163,7 +163,7 @@ namespace llvm {
     /// feature set; it should always be provided. Generally this should be
     /// either the target triple from the module, or the target triple of the
     /// host if that does not exist.
-    const MCAsmInfo *createAsmInfo(const StringRef &Triple) const {
+    const MCAsmInfo *createAsmInfo(StringRef Triple) const {
       if (!AsmInfoCtorFn)
         return 0;
       return AsmInfoCtorFn(*this, Triple);
@@ -387,6 +387,15 @@ namespace llvm {
         T.MCDisassemblerCtorFn = Fn;
     }
 
+    /// RegisterMCInstPrinter - Register a MCInstPrinter implementation for the
+    /// given target.
+    /// 
+    /// Clients are responsible for ensuring that registration doesn't occur
+    /// while another thread is attempting to access the registry. Typically
+    /// this is done by initializing all targets at program startup.
+    ///
+    /// @param T - The target being registered.
+    /// @param Fn - A function to construct an MCInstPrinter for the target.
     static void RegisterMCInstPrinter(Target &T,
                                       Target::MCInstPrinterCtorTy Fn) {
       if (!T.MCInstPrinterCtorFn)
@@ -395,7 +404,7 @@ namespace llvm {
     
     /// RegisterCodeEmitter - Register a MCCodeEmitter implementation for the
     /// given target.
-    /// 
+    ///
     /// Clients are responsible for ensuring that registration doesn't occur
     /// while another thread is attempting to access the registry. Typically
     /// this is done by initializing all targets at program startup.
@@ -452,7 +461,7 @@ namespace llvm {
       TargetRegistry::RegisterAsmInfo(T, &Allocator);
     }
   private:
-    static const MCAsmInfo *Allocator(const Target &T, const StringRef &TT) {
+    static const MCAsmInfo *Allocator(const Target &T, StringRef TT) {
       return new MCAsmInfoImpl(T, TT);
     }
     

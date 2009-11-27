@@ -49,6 +49,17 @@ struct is_class
     enum { value = sizeof(char) == sizeof(dont_use::is_class_helper<T>(0)) };
 };
 
+/// \brief Metafunction that determines whether the two given types are 
+/// equivalent.
+template<typename T, typename U>
+struct is_same {
+  static const bool value = false;
+};
+
+template<typename T>
+struct is_same<T, T> {
+  static const bool value = true;
+};
   
 // enable_if_c - Enable/disable a template based on a metafunction
 template<bool Cond, typename T = void>
@@ -75,6 +86,21 @@ struct is_base_of {
     = is_class<Base>::value && is_class<Derived>::value &&
       sizeof(char) == sizeof(dont_use::base_of_helper<Base>((Derived*)0));
 };
+
+// remove_pointer - Metafunction to turn Foo* into Foo.  Defined in
+// C++0x [meta.trans.ptr].
+template <typename T> struct remove_pointer { typedef T type; };
+template <typename T> struct remove_pointer<T*> { typedef T type; };
+template <typename T> struct remove_pointer<T*const> { typedef T type; };
+template <typename T> struct remove_pointer<T*volatile> { typedef T type; };
+template <typename T> struct remove_pointer<T*const volatile> {
+    typedef T type; };
+
+template <bool, typename T, typename F>
+struct conditional { typedef T type; };
+
+template <typename T, typename F>
+struct conditional<false, T, F> { typedef F type; };
 
 }
 

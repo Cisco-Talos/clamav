@@ -12,7 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define DEBUG_TYPE "exact-hazards"
+#define DEBUG_TYPE "post-RA-sched"
 #include "ExactHazardRecognizer.h"
 #include "llvm/CodeGen/ScheduleHazardRecognizer.h"
 #include "llvm/Support/Debug.h"
@@ -22,7 +22,8 @@
 
 using namespace llvm;
 
-ExactHazardRecognizer::ExactHazardRecognizer(const InstrItineraryData &LItinData) :
+ExactHazardRecognizer::
+ExactHazardRecognizer(const InstrItineraryData &LItinData) :
   ScheduleHazardRecognizer(), ItinData(LItinData) 
 {
   // Determine the maximum depth of any itinerary. This determines the

@@ -29,7 +29,7 @@
 #ifndef LLVM_PASS_H
 #define LLVM_PASS_H
 
-#include "llvm/Support/DataTypes.h"
+#include "llvm/System/DataTypes.h"
 #include <cassert>
 #include <utility>
 #include <vector>
@@ -46,6 +46,7 @@ class PMStack;
 class AnalysisResolver;
 class PMDataManager;
 class raw_ostream;
+class StringRef;
 
 // AnalysisID - Use the PassInfo to identify a pass...
 typedef const PassInfo* AnalysisID;
@@ -164,6 +165,10 @@ public:
   // or null if it is not known.
   static const PassInfo *lookupPassInfo(intptr_t TI);
 
+  // lookupPassInfo - Return the pass info object for the pass with the given
+  // argument string, or null if it is not known.
+  static const PassInfo *lookupPassInfo(StringRef Arg);
+
   /// getAnalysisIfAvailable<AnalysisType>() - Subclasses use this function to
   /// get analysis information that might be around, for example to update it.
   /// This is different than getAnalysis in that it can fail (if the analysis
@@ -271,7 +276,7 @@ public:
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary per-module initialization.
   ///
-  virtual bool doInitialization(Module &M) { return false; }
+  virtual bool doInitialization(Module &) { return false; }
   
   /// runOnFunction - Virtual method overriden by subclasses to do the
   /// per-function processing of the pass.
@@ -323,7 +328,7 @@ public:
   /// doInitialization - Virtual method overridden by subclasses to do
   /// any necessary per-module initialization.
   ///
-  virtual bool doInitialization(Module &M) { return false; }
+  virtual bool doInitialization(Module &) { return false; }
 
   /// doInitialization - Virtual method overridden by BasicBlockPass subclasses
   /// to do any necessary per-function initialization.

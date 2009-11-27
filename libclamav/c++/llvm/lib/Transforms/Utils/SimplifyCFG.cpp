@@ -24,6 +24,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Statistic.h"
@@ -77,166 +78,6 @@ static void AddPredecessorToBlock(BasicBlock *Succ, BasicBlock *NewPred,
     PN->addIncoming(PN->getIncomingValueForBlock(ExistPred), NewPred);
 }
 
-/// CanPropagatePredecessorsForPHIs - Return true if we can fold BB, an
-/// almost-empty BB ending in an unconditional branch to Succ, into succ.
-///
-/// Assumption: Succ is the single successor for BB.
-///
-static bool CanPropagatePredecessorsForPHIs(BasicBlock *BB, BasicBlock *Succ) {
-  assert(*succ_begin(BB) == Succ && "Succ is not successor of BB!");
-
-  DEBUG(errs() << "Looking to fold " << BB->getName() << " into " 
-        << Succ->getName() << "\n");
-  // Shortcut, if there is only a single predecessor it must be BB and merging
-  // is always safe
-  if (Succ->getSinglePredecessor()) return true;
-
-  // Make a list of the predecessors of BB
-  typedef SmallPtrSet<BasicBlock*, 16> BlockSet;
-  BlockSet BBPreds(pred_begin(BB), pred_end(BB));
-
-  // Use that list to make another list of common predecessors of BB and Succ
-  BlockSet CommonPreds;
-  for (pred_iterator PI = pred_begin(Succ), PE = pred_end(Succ);
-        PI != PE; ++PI)
-    if (BBPreds.count(*PI))
-      CommonPreds.insert(*PI);
-
-  // Shortcut, if there are no common predecessors, merging is always safe
-  if (CommonPreds.empty())
-    return true;
-  
-  // Look at all the phi nodes in Succ, to see if they present a conflict when
-  // merging these blocks
-  for (BasicBlock::iterator I = Succ->begin(); isa<PHINode>(I); ++I) {
-    PHINode *PN = cast<PHINode>(I);
-
-    // If the incoming value from BB is again a PHINode in
-    // BB which has the same incoming value for *PI as PN does, we can
-    // merge the phi nodes and then the blocks can still be merged
-    PHINode *BBPN = dyn_cast<PHINode>(PN->getIncomingValueForBlock(BB));
-    if (BBPN && BBPN->getParent() == BB) {
-      for (BlockSet::iterator PI = CommonPreds.begin(), PE = CommonPreds.end();
-            PI != PE; PI++) {
-        if (BBPN->getIncomingValueForBlock(*PI) 
-              != PN->getIncomingValueForBlock(*PI)) {
-          DEBUG(errs() << "Can't fold, phi node " << PN->getName() << " in " 
-                << Succ->getName() << " is conflicting with " 
-                << BBPN->getName() << " with regard to common predecessor "
-                << (*PI)->getName() << "\n");
-          return false;
-        }
-      }
-    } else {
-      Value* Val = PN->getIncomingValueForBlock(BB);
-      for (BlockSet::iterator PI = CommonPreds.begin(), PE = CommonPreds.end();
-            PI != PE; PI++) {
-        // See if the incoming value for the common predecessor is equal to the
-        // one for BB, in which case this phi node will not prevent the merging
-        // of the block.
-        if (Val != PN->getIncomingValueForBlock(*PI)) {
-          DEBUG(errs() << "Can't fold, phi node " << PN->getName() << " in " 
-                << Succ->getName() << " is conflicting with regard to common "
-                << "predecessor " << (*PI)->getName() << "\n");
-          return false;
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
-/// TryToSimplifyUncondBranchFromEmptyBlock - BB contains an unconditional
-/// branch to Succ, and contains no instructions other than PHI nodes and the
-/// branch.  If possible, eliminate BB.
-static bool TryToSimplifyUncondBranchFromEmptyBlock(BasicBlock *BB,
-                                                    BasicBlock *Succ) {
-  // Check to see if merging these blocks would cause conflicts for any of the
-  // phi nodes in BB or Succ. If not, we can safely merge.
-  if (!CanPropagatePredecessorsForPHIs(BB, Succ)) return false;
-
-  // Check for cases where Succ has multiple predecessors and a PHI node in BB
-  // has uses which will not disappear when the PHI nodes are merged.  It is
-  // possible to handle such cases, but difficult: it requires checking whether
-  // BB dominates Succ, which is non-trivial to calculate in the case where
-  // Succ has multiple predecessors.  Also, it requires checking whether
-  // constructing the necessary self-referential PHI node doesn't intoduce any
-  // conflicts; this isn't too difficult, but the previous code for doing this
-  // was incorrect.
-  //
-  // Note that if this check finds a live use, BB dominates Succ, so BB is
-  // something like a loop pre-header (or rarely, a part of an irreducible CFG);
-  // folding the branch isn't profitable in that case anyway.
-  if (!Succ->getSinglePredecessor()) {
-    BasicBlock::iterator BBI = BB->begin();
-    while (isa<PHINode>(*BBI)) {
-      for (Value::use_iterator UI = BBI->use_begin(), E = BBI->use_end();
-           UI != E; ++UI) {
-        if (PHINode* PN = dyn_cast<PHINode>(*UI)) {
-          if (PN->getIncomingBlock(UI) != BB)
-            return false;
-        } else {
-          return false;
-        }
-      }
-      ++BBI;
-    }
-  }
-
-  DEBUG(errs() << "Killing Trivial BB: \n" << *BB);
-  
-  if (isa<PHINode>(Succ->begin())) {
-    // If there is more than one pred of succ, and there are PHI nodes in
-    // the successor, then we need to add incoming edges for the PHI nodes
-    //
-    const SmallVector<BasicBlock*, 16> BBPreds(pred_begin(BB), pred_end(BB));
-    
-    // Loop over all of the PHI nodes in the successor of BB.
-    for (BasicBlock::iterator I = Succ->begin(); isa<PHINode>(I); ++I) {
-      PHINode *PN = cast<PHINode>(I);
-      Value *OldVal = PN->removeIncomingValue(BB, false);
-      assert(OldVal && "No entry in PHI for Pred BB!");
-      
-      // If this incoming value is one of the PHI nodes in BB, the new entries
-      // in the PHI node are the entries from the old PHI.
-      if (isa<PHINode>(OldVal) && cast<PHINode>(OldVal)->getParent() == BB) {
-        PHINode *OldValPN = cast<PHINode>(OldVal);
-        for (unsigned i = 0, e = OldValPN->getNumIncomingValues(); i != e; ++i)
-          // Note that, since we are merging phi nodes and BB and Succ might
-          // have common predecessors, we could end up with a phi node with
-          // identical incoming branches. This will be cleaned up later (and
-          // will trigger asserts if we try to clean it up now, without also
-          // simplifying the corresponding conditional branch).
-          PN->addIncoming(OldValPN->getIncomingValue(i),
-                          OldValPN->getIncomingBlock(i));
-      } else {
-        // Add an incoming value for each of the new incoming values.
-        for (unsigned i = 0, e = BBPreds.size(); i != e; ++i)
-          PN->addIncoming(OldVal, BBPreds[i]);
-      }
-    }
-  }
-  
-  while (PHINode *PN = dyn_cast<PHINode>(&BB->front())) {
-    if (Succ->getSinglePredecessor()) {
-      // BB is the only predecessor of Succ, so Succ will end up with exactly
-      // the same predecessors BB had.
-      Succ->getInstList().splice(Succ->begin(),
-                                 BB->getInstList(), BB->begin());
-    } else {
-      // We explicitly check for such uses in CanPropagatePredecessorsForPHIs.
-      assert(PN->use_empty() && "There shouldn't be any uses here!");
-      PN->eraseFromParent();
-    }
-  }
-    
-  // Everything that jumped to BB now goes to Succ.
-  BB->replaceAllUsesWith(Succ);
-  if (!Succ->hasName()) Succ->takeName(BB);
-  BB->eraseFromParent();              // Delete the old basic block.
-  return true;
-}
 
 /// GetIfCondition - Given a basic block (BB) with two predecessors (and
 /// presumably PHI nodes in it), check to see if the merge at this block is due
@@ -1216,7 +1057,7 @@ static bool FoldCondBranchOnPHI(BranchInst *BI) {
           }
           
           // Check for trivial simplification.
-          if (Constant *C = ConstantFoldInstruction(N, BB->getContext())) {
+          if (Constant *C = ConstantFoldInstruction(N)) {
             TranslateMap[BBI] = C;
             delete N;   // Constant folded away, don't need actual inst
           } else {
@@ -1748,6 +1589,68 @@ static bool SimplifyCondBranchToCondBranch(BranchInst *PBI, BranchInst *BI) {
   return true;
 }
 
+/// EliminateDuplicatePHINodes - Check for and eliminate duplicate PHI
+/// nodes in this block. This doesn't try to be clever about PHI nodes
+/// which differ only in the order of the incoming values, but instcombine
+/// orders them so it usually won't matter.
+///
+bool llvm::EliminateDuplicatePHINodes(BasicBlock *BB) {
+  bool Changed = false;
+  
+  // This implementation doesn't currently consider undef operands
+  // specially. Theroetically, two phis which are identical except for
+  // one having an undef where the other doesn't could be collapsed.
+
+  // Map from PHI hash values to PHI nodes. If multiple PHIs have
+  // the same hash value, the element is the first PHI in the
+  // linked list in CollisionMap.
+  DenseMap<uintptr_t, PHINode *> HashMap;
+
+  // Maintain linked lists of PHI nodes with common hash values.
+  DenseMap<PHINode *, PHINode *> CollisionMap;
+
+  // Examine each PHI.
+  for (BasicBlock::iterator I = BB->begin();
+       PHINode *PN = dyn_cast<PHINode>(I++); ) {
+    // Compute a hash value on the operands. Instcombine will likely have sorted
+    // them, which helps expose duplicates, but we have to check all the
+    // operands to be safe in case instcombine hasn't run.
+    uintptr_t Hash = 0;
+    for (User::op_iterator I = PN->op_begin(), E = PN->op_end(); I != E; ++I) {
+      // This hash algorithm is quite weak as hash functions go, but it seems
+      // to do a good enough job for this particular purpose, and is very quick.
+      Hash ^= reinterpret_cast<uintptr_t>(static_cast<Value *>(*I));
+      Hash = (Hash << 7) | (Hash >> (sizeof(uintptr_t) * CHAR_BIT - 7));
+    }
+    // If we've never seen this hash value before, it's a unique PHI.
+    std::pair<DenseMap<uintptr_t, PHINode *>::iterator, bool> Pair =
+      HashMap.insert(std::make_pair(Hash, PN));
+    if (Pair.second) continue;
+    // Otherwise it's either a duplicate or a hash collision.
+    for (PHINode *OtherPN = Pair.first->second; ; ) {
+      if (OtherPN->isIdenticalTo(PN)) {
+        // A duplicate. Replace this PHI with its duplicate.
+        PN->replaceAllUsesWith(OtherPN);
+        PN->eraseFromParent();
+        Changed = true;
+        break;
+      }
+      // A non-duplicate hash collision.
+      DenseMap<PHINode *, PHINode *>::iterator I = CollisionMap.find(OtherPN);
+      if (I == CollisionMap.end()) {
+        // Set this PHI to be the head of the linked list of colliding PHIs.
+        PHINode *Old = Pair.first->second;
+        Pair.first->second = PN;
+        CollisionMap[PN] = Old;
+        break;
+      }
+      // Procede to the next PHI in the list.
+      OtherPN = I->second;
+    }
+  }
+
+  return Changed;
+}
 
 /// SimplifyCFG - This function is used to do simplification of a CFG.  For
 /// example, it adjusts branches to branches to eliminate the extra hop, it
@@ -1776,6 +1679,9 @@ bool llvm::SimplifyCFG(BasicBlock *BB) {
   // Check to see if we can constant propagate this terminator instruction
   // away...
   Changed |= ConstantFoldTerminator(BB);
+
+  // Check for and eliminate duplicate PHI nodes in this block.
+  Changed |= EliminateDuplicatePHINodes(BB);
 
   // If there is a trivial two-entry PHI node in this basic block, and we can
   // eliminate it, do so now.
@@ -1860,33 +1766,26 @@ bool llvm::SimplifyCFG(BasicBlock *BB) {
   } else if (isa<UnwindInst>(BB->begin())) {
     // Check to see if the first instruction in this block is just an unwind.
     // If so, replace any invoke instructions which use this as an exception
-    // destination with call instructions, and any unconditional branch
-    // predecessor with an unwind.
+    // destination with call instructions.
     //
     SmallVector<BasicBlock*, 8> Preds(pred_begin(BB), pred_end(BB));
     while (!Preds.empty()) {
       BasicBlock *Pred = Preds.back();
-      if (BranchInst *BI = dyn_cast<BranchInst>(Pred->getTerminator())) {
-        if (BI->isUnconditional()) {
-          Pred->getInstList().pop_back();  // nuke uncond branch
-          new UnwindInst(Pred->getContext(), Pred);            // Use unwind.
-          Changed = true;
-        }
-      } else if (InvokeInst *II = dyn_cast<InvokeInst>(Pred->getTerminator()))
+      if (InvokeInst *II = dyn_cast<InvokeInst>(Pred->getTerminator()))
         if (II->getUnwindDest() == BB) {
           // Insert a new branch instruction before the invoke, because this
-          // is now a fall through...
+          // is now a fall through.
           BranchInst *BI = BranchInst::Create(II->getNormalDest(), II);
           Pred->getInstList().remove(II);   // Take out of symbol table
 
-          // Insert the call now...
+          // Insert the call now.
           SmallVector<Value*,8> Args(II->op_begin()+3, II->op_end());
           CallInst *CI = CallInst::Create(II->getCalledValue(),
                                           Args.begin(), Args.end(),
                                           II->getName(), BI);
           CI->setCallingConv(II->getCallingConv());
           CI->setAttributes(II->getAttributes());
-          // If the invoke produced a value, the Call now does instead
+          // If the invoke produced a value, the Call now does instead.
           II->replaceAllUsesWith(CI);
           delete II;
           Changed = true;
@@ -1924,13 +1823,11 @@ bool llvm::SimplifyCFG(BasicBlock *BB) {
     if (BI->isUnconditional()) {
       BasicBlock::iterator BBI = BB->getFirstNonPHI();
 
-      BasicBlock *Succ = BI->getSuccessor(0);
       // Ignore dbg intrinsics.
       while (isa<DbgInfoIntrinsic>(BBI))
         ++BBI;
-      if (BBI->isTerminator() &&  // Terminator is the only non-phi instruction!
-          Succ != BB)             // Don't hurt infinite loops!
-        if (TryToSimplifyUncondBranchFromEmptyBlock(BB, Succ))
+      if (BBI->isTerminator()) // Terminator is the only non-phi instruction!
+        if (TryToSimplifyUncondBranchFromEmptyBlock(BB))
           return true;
       
     } else {  // Conditional branch

@@ -24,12 +24,13 @@ X("Machine Function Analysis", "machine-function-analysis",
 
 char MachineFunctionAnalysis::ID = 0;
 
-MachineFunctionAnalysis::MachineFunctionAnalysis(TargetMachine &tm,
+MachineFunctionAnalysis::MachineFunctionAnalysis(const TargetMachine &tm,
                                                  CodeGenOpt::Level OL) :
   FunctionPass(&ID), TM(tm), OptLevel(OL), MF(0) {
 }
 
 MachineFunctionAnalysis::~MachineFunctionAnalysis() {
+  releaseMemory();
   assert(!MF && "MachineFunctionAnalysis left initialized!");
 }
 

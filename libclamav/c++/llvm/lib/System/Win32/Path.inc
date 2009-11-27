@@ -357,6 +357,13 @@ Path::canExecute() const {
   return attr != INVALID_FILE_ATTRIBUTES;
 }
 
+bool
+Path::isRegularFile() const {
+  if (isDirectory())
+    return false;
+  return true;
+}
+
 std::string
 Path::getLast() const {
   // Find the last slash
@@ -608,7 +615,8 @@ Path::createDirectoryOnDisk(bool create_parents, std::string* ErrMsg) {
     while (*next) {
       next = strchr(next, '/');
       *next = 0;
-      if (!CreateDirectory(pathname, NULL))
+      if (!CreateDirectory(pathname, NULL) &&
+          GetLastError() != ERROR_ALREADY_EXISTS)
           return MakeErrMsg(ErrMsg, 
             std::string(pathname) + ": Can't create directory: ");
       *next++ = '/';
@@ -616,7 +624,8 @@ Path::createDirectoryOnDisk(bool create_parents, std::string* ErrMsg) {
   } else {
     // Drop trailing slash.
     pathname[len-1] = 0;
-    if (!CreateDirectory(pathname, NULL)) {
+    if (!CreateDirectory(pathname, NULL) &&
+        GetLastError() != ERROR_ALREADY_EXISTS) {
       return MakeErrMsg(ErrMsg, std::string(pathname) + ": Can't create directory: ");
     }
   }

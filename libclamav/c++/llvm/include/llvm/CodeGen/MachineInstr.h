@@ -19,6 +19,7 @@
 #include "llvm/ADT/ilist.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/Target/TargetInstrDesc.h"
 #include "llvm/Support/DebugLoc.h"
@@ -26,6 +27,7 @@
 
 namespace llvm {
 
+class AliasAnalysis;
 class TargetInstrDesc;
 class TargetInstrInfo;
 class TargetRegisterInfo;
@@ -43,6 +45,13 @@ private:
   const TargetInstrDesc *TID;           // Instruction descriptor.
   unsigned short NumImplicitOps;        // Number of implicit operands (which
                                         // are determined at construction time).
+
+  unsigned short AsmPrinterFlags;       // Various bits of information used by
+                                        // the AsmPrinter to emit helpful
+                                        // comments.  This is *not* semantic
+                                        // information.  Do not use this for
+                                        // anything other than to convey comment
+                                        // information to AsmPrinter.
 
   std::vector<MachineOperand> Operands; // the operands
   mmo_iterator MemRefs;                 // information on memory references
@@ -105,6 +114,22 @@ private:
 public:
   const MachineBasicBlock* getParent() const { return Parent; }
   MachineBasicBlock* getParent() { return Parent; }
+
+  /// getAsmPrinterFlags - Return the asm printer flags bitvector.
+  ///
+  unsigned short getAsmPrinterFlags() const { return AsmPrinterFlags; }
+
+  /// getAsmPrinterFlag - Return whether an AsmPrinter flag is set.
+  ///
+  bool getAsmPrinterFlag(AsmPrinter::CommentFlag Flag) const {
+    return AsmPrinterFlags & Flag;
+  }
+
+  /// setAsmPrinterFlag - Set a flag for the AsmPrinter.
+  ///
+  void setAsmPrinterFlag(unsigned short Flag) {
+    AsmPrinterFlags |= Flag;
+  }
 
   /// getDebugLoc - Returns the debug location id of this MachineInstr.
   ///
@@ -274,17 +299,26 @@ public:
   /// isSafeToMove - Return true if it is safe to move this instruction. If
   /// SawStore is set to true, it means that there is a store (or call) between
   /// the instruction's location and its intended destination.
-  bool isSafeToMove(const TargetInstrInfo *TII, bool &SawStore) const;
+  bool isSafeToMove(const TargetInstrInfo *TII, bool &SawStore,
+                    AliasAnalysis *AA) const;
 
   /// isSafeToReMat - Return true if it's safe to rematerialize the specified
   /// instruction which defined the specified register instead of copying it.
-  bool isSafeToReMat(const TargetInstrInfo *TII, unsigned DstReg) const;
+  bool isSafeToReMat(const TargetInstrInfo *TII, unsigned DstReg,
+                     AliasAnalysis *AA) const;
 
   /// hasVolatileMemoryRef - Return true if this instruction may have a
   /// volatile memory reference, or if the information describing the
   /// memory reference is not available. Return false if it is known to
   /// have no volatile memory references.
   bool hasVolatileMemoryRef() const;
+
+  /// isInvariantLoad - Return true if this instruction is loading from a
+  /// location whose value is invariant across the function.  For example,
+  /// loading a value from the constant pool or from from the argument area of
+  /// a function if it does not change.  This should only return true of *all*
+  /// loads the instruction does are invariant (if it does multiple loads).
+  bool isInvariantLoad(AliasAnalysis *AA) const;
 
   //
   // Debugging support

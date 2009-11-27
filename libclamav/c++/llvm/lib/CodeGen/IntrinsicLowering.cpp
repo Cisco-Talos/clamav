@@ -103,22 +103,22 @@ void IntrinsicLowering::AddPrototypes(Module &M) {
         break;
       case Intrinsic::memcpy:
         M.getOrInsertFunction("memcpy",
-          PointerType::getUnqual(Type::getInt8Ty(Context)),
-                              PointerType::getUnqual(Type::getInt8Ty(Context)), 
-                              PointerType::getUnqual(Type::getInt8Ty(Context)), 
+          Type::getInt8PtrTy(Context),
+                              Type::getInt8PtrTy(Context), 
+                              Type::getInt8PtrTy(Context), 
                               TD.getIntPtrType(Context), (Type *)0);
         break;
       case Intrinsic::memmove:
         M.getOrInsertFunction("memmove",
-          PointerType::getUnqual(Type::getInt8Ty(Context)),
-                              PointerType::getUnqual(Type::getInt8Ty(Context)), 
-                              PointerType::getUnqual(Type::getInt8Ty(Context)), 
+          Type::getInt8PtrTy(Context),
+                              Type::getInt8PtrTy(Context), 
+                              Type::getInt8PtrTy(Context), 
                               TD.getIntPtrType(Context), (Type *)0);
         break;
       case Intrinsic::memset:
         M.getOrInsertFunction("memset",
-          PointerType::getUnqual(Type::getInt8Ty(Context)),
-                              PointerType::getUnqual(Type::getInt8Ty(Context)), 
+          Type::getInt8PtrTy(Context),
+                              Type::getInt8PtrTy(Context), 
                               Type::getInt32Ty(M.getContext()), 
                               TD.getIntPtrType(Context), (Type *)0);
         break;
@@ -435,13 +435,11 @@ void IntrinsicLowering::LowerIntrinsicCall(CallInst *CI) {
     break;    // Simply strip out debugging intrinsics
 
   case Intrinsic::eh_exception:
-  case Intrinsic::eh_selector_i32:
-  case Intrinsic::eh_selector_i64:
+  case Intrinsic::eh_selector:
     CI->replaceAllUsesWith(Constant::getNullValue(CI->getType()));
     break;
 
-  case Intrinsic::eh_typeid_for_i32:
-  case Intrinsic::eh_typeid_for_i64:
+  case Intrinsic::eh_typeid_for:
     // Return something different to eh_selector.
     CI->replaceAllUsesWith(ConstantInt::get(CI->getType(), 1));
     break;
@@ -517,6 +515,15 @@ void IntrinsicLowering::LowerIntrinsicCall(CallInst *CI) {
      if (CI->getType() != Type::getVoidTy(Context))
        CI->replaceAllUsesWith(ConstantInt::get(CI->getType(), 1));
      break;
+  case Intrinsic::invariant_start:
+  case Intrinsic::lifetime_start:
+    // Discard region information.
+    CI->replaceAllUsesWith(UndefValue::get(CI->getType()));
+    break;
+  case Intrinsic::invariant_end:
+  case Intrinsic::lifetime_end:
+    // Discard region information.
+    break;
   }
 
   assert(CI->use_empty() &&

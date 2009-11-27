@@ -165,6 +165,11 @@ AC_CACHE_CHECK([type of operating system we're going to host on],
     llvm_cv_no_link_all_option="-Wl,-z,defaultextract"
     llvm_cv_os_type="SunOS"
     llvm_cv_platform_type="Unix" ;;
+  *-*-auroraux*)
+    llvm_cv_link_all_option="-Wl,-z,allextract"
+    llvm_cv_link_all_option="-Wl,-z,defaultextract"
+    llvm_cv_os_type="AuroraUX"
+    llvm_cv_platform_type="Unix" ;;
   *-*-win32*)
     llvm_cv_link_all_option="-Wl,--whole-archive"
     llvm_cv_no_link_all_option="-Wl,--no-whole-archive"
@@ -175,6 +180,11 @@ AC_CACHE_CHECK([type of operating system we're going to host on],
     llvm_cv_no_link_all_option="-Wl,--no-whole-archive"
     llvm_cv_os_type="MingW"
     llvm_cv_platform_type="Win32" ;;
+  *-*-haiku*)
+    llvm_cv_link_all_option="-Wl,--whole-archive"
+    llvm_cv_no_link_all_option="-Wl,--no-whole-archive"
+    llvm_cv_os_type="Haiku"
+    llvm_cv_platform_type="Unix" ;;  
   *-unknown-eabi*)
     llvm_cv_link_all_option="-Wl,--whole-archive"
     llvm_cv_no_link_all_option="-Wl,--no-whole-archive"
@@ -219,10 +229,14 @@ AC_CACHE_CHECK([type of operating system we're going to target],
     llvm_cv_target_os_type="Linux" ;;
   *-*-solaris*)
     llvm_cv_target_os_type="SunOS" ;;
+  *-*-auroraux*)
+    llvm_cv_target_os_type="AuroraUX" ;;
   *-*-win32*)
     llvm_cv_target_os_type="Win32" ;;
   *-*-mingw*)
     llvm_cv_target_os_type="MingW" ;;
+  *-*-haiku*)
+    llvm_cv_target_os_type="Haiku" ;;  
   *-unknown-eabi*)
     llvm_cv_target_os_type="Freestanding" ;;
   *)
@@ -519,11 +533,12 @@ for a_target in $TARGETS_TO_BUILD; do
   fi
 done
 
-# Build the LLVM_TARGET and LLVM_ASM_PRINTER macro uses for
-# Targets.def, AsmPrinters.def, and AsmParsers.def.
+# Build the LLVM_TARGET and LLVM_... macros for Targets.def and the individual
+# target feature def files.
 LLVM_ENUM_TARGETS=""
 LLVM_ENUM_ASM_PRINTERS=""
 LLVM_ENUM_ASM_PARSERS=""
+LLVM_ENUM_DISASSEMBLERS=""
 for target_to_build in $TARGETS_TO_BUILD; do
   LLVM_ENUM_TARGETS="LLVM_TARGET($target_to_build) $LLVM_ENUM_TARGETS"
   if test -f ${srcdir}/lib/Target/${target_to_build}/AsmPrinter/Makefile ; then
@@ -532,10 +547,14 @@ for target_to_build in $TARGETS_TO_BUILD; do
   if test -f ${srcdir}/lib/Target/${target_to_build}/AsmParser/Makefile ; then
     LLVM_ENUM_ASM_PARSERS="LLVM_ASM_PARSER($target_to_build) $LLVM_ENUM_ASM_PARSERS";
   fi
+  if test -f ${srcdir}/lib/Target/${target_to_build}/Disassembler/Makefile ; then
+    LLVM_ENUM_DISASSEMBLERS="LLVM_DISASSEMBLER($target_to_build) $LLVM_ENUM_DISASSEMBLERS";
+  fi
 done
 AC_SUBST(LLVM_ENUM_TARGETS)
 AC_SUBST(LLVM_ENUM_ASM_PRINTERS)
 AC_SUBST(LLVM_ENUM_ASM_PARSERS)
+AC_SUBST(LLVM_ENUM_DISASSEMBLERS)
 
 dnl Prevent the CBackend from using printf("%a") for floating point so older
 dnl C compilers that cannot deal with the 0x0p+0 hex floating point format
@@ -593,6 +612,23 @@ if test -n "$LLVMGXX" && test -z "$LLVMGCC"; then
    AC_MSG_ERROR([Invalid llvm-gcc. Use --with-llvmgcc when --with-llvmgxx is used]);
 fi
 
+dnl Override the option to use for optimized builds.
+AC_ARG_WITH(optimize-option,
+  AS_HELP_STRING([--with-optimize-option],
+                 [Select the compiler options to use for optimized builds]),,
+                 withval=default)
+AC_MSG_CHECKING([optimization flags])
+case "$withval" in
+  default)
+    case "$llvm_cv_os_type" in
+    MingW) optimize_option=-O3 ;;
+    *)     optimize_option=-O2 ;;
+    esac ;;
+  *) optimize_option="$withval" ;;
+esac
+AC_SUBST(OPTIMIZE_OPTION,$optimize_option)
+AC_MSG_RESULT([$optimize_option])
+
 dnl Specify extra build options
 AC_ARG_WITH(extra-options,
   AS_HELP_STRING([--with-extra-options],
@@ -635,6 +671,41 @@ case "$withval" in
   /* | [[A-Za-z]]:[[\\/]]*) with_ocaml_libdir="$withval" ;;
   *) AC_MSG_ERROR([Invalid path for --with-ocaml-libdir. Provide full path]) ;;
 esac
+
+AC_ARG_WITH(c-include-dir,
+  AS_HELP_STRING([--with-c-include-dirs],
+    [Colon separated list of directories clang will search for headers]),,
+    withval="")
+AC_DEFINE_UNQUOTED(C_INCLUDE_DIRS,"$withval",
+                   [Directories clang will search for headers])
+
+AC_ARG_WITH(cxx-include-root,
+  AS_HELP_STRING([--with-cxx-include-root],
+    [Directory with the libstdc++ headers.]),,
+    withval="")
+AC_DEFINE_UNQUOTED(CXX_INCLUDE_ROOT,"$withval",
+                   [Directory with the libstdc++ headers.])
+
+AC_ARG_WITH(cxx-include-arch,
+  AS_HELP_STRING([--with-cxx-include-arch],
+    [Architecture of the libstdc++ headers.]),,
+    withval="")
+AC_DEFINE_UNQUOTED(CXX_INCLUDE_ARCH,"$withval",
+                   [Arch the libstdc++ headers.])
+
+AC_ARG_WITH(cxx-include-32bit-dir,
+  AS_HELP_STRING([--with-cxx-include-32bit-dir],
+    [32 bit multilib dir.]),,
+    withval="")
+AC_DEFINE_UNQUOTED(CXX_INCLUDE_32BIT_DIR,"$withval",
+                   [32 bit multilib directory.])
+
+AC_ARG_WITH(cxx-include-64bit-dir,
+  AS_HELP_STRING([--with-cxx-include-64bit-dir],
+    [64 bit multilib directory.]),,
+    withval="")
+AC_DEFINE_UNQUOTED(CXX_INCLUDE_64BIT_DIR,"$withval",
+                   [64 bit multilib directory.])
 
 dnl Allow linking of LLVM with GPLv3 binutils code.
 AC_ARG_WITH(binutils-include,
@@ -929,6 +1000,12 @@ fi
 dnl Tool compatibility is okay if we make it here.
 AC_MSG_RESULT([ok])
 
+dnl Check optional compiler flags. 
+AC_MSG_CHECKING([optional compiler flags])
+CXX_FLAG_CHECK(NO_VARIADIC_MACROS, [-Wno-variadic-macros])
+CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
+AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
+
 dnl===-----------------------------------------------------------------------===
 dnl===
 dnl=== SECTION 5: Check for libraries
@@ -960,7 +1037,7 @@ AC_SEARCH_LIBS(mallinfo,malloc,AC_DEFINE([HAVE_MALLINFO],[1],
 dnl pthread locking functions are optional - but llvm will not be thread-safe
 dnl without locks.
 if test "$ENABLE_THREADS" -eq 1 ; then
-  AC_CHECK_LIB(pthread,pthread_mutex_init)
+  AC_CHECK_LIB(pthread, pthread_mutex_init)
   AC_SEARCH_LIBS(pthread_mutex_lock,pthread,
                  AC_DEFINE([HAVE_PTHREAD_MUTEX_LOCK],[1],
                            [Have pthread_mutex_lock]))
@@ -999,31 +1076,30 @@ AC_ARG_WITH(oprofile,
       AC_SUBST(USE_OPROFILE, [1])
       case "$withval" in
         /usr|yes) llvm_cv_oppath=/usr/lib/oprofile ;;
+        no) llvm_cv_oppath=
+            AC_SUBST(USE_OPROFILE, [0]) ;;
         *) llvm_cv_oppath="${withval}/lib/oprofile"
            CPPFLAGS="-I${withval}/include";;
       esac
-      LIBS="$LIBS -L${llvm_cv_oppath} -Wl,-rpath,${llvm_cv_oppath}"
-      AC_SEARCH_LIBS(op_open_agent, opagent, [], [
-        echo "Error! You need to have libopagent around."
-        exit -1
-      ])
-      AC_CHECK_HEADER([opagent.h], [], [
-        echo "Error! You need to have opagent.h around."
-        exit -1
-      ])
+      if test -n "$llvm_cv_oppath" ; then
+        LIBS="$LIBS -L${llvm_cv_oppath} -Wl,-rpath,${llvm_cv_oppath}"
+        dnl Work around http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=537744:
+        dnl libbfd is not included properly in libopagent in some Debian
+        dnl versions.  If libbfd isn't found at all, we assume opagent works
+        dnl anyway.
+        AC_SEARCH_LIBS(bfd_init, bfd, [], [])
+        AC_SEARCH_LIBS(op_open_agent, opagent, [], [
+          echo "Error! You need to have libopagent around."
+          exit -1
+        ])
+        AC_CHECK_HEADER([opagent.h], [], [
+          echo "Error! You need to have opagent.h around."
+          exit -1
+          ])
+      fi
     ],
     [
-      llvm_cv_old_LIBS="$LIBS"
-      LIBS="$LIBS -L/usr/lib/oprofile -Wl,-rpath,/usr/lib/oprofile"
-      dnl If either the library or header aren't present, omit oprofile support.
-      AC_SEARCH_LIBS(op_open_agent, opagent,
-                     [AC_SUBST(USE_OPROFILE, [1])],
-                     [LIBS="$llvm_cv_old_LIBS"
-                      AC_SUBST(USE_OPROFILE, [0])])
-      AC_CHECK_HEADER([opagent.h], [], [
-        LIBS="$llvm_cv_old_LIBS"
-        AC_SUBST(USE_OPROFILE, [0])
-      ])
+      AC_SUBST(USE_OPROFILE, [0])
     ])
 AC_DEFINE_UNQUOTED([USE_OPROFILE],$USE_OPROFILE,
                    [Define if we have the oprofile JIT-support library])
@@ -1336,7 +1412,8 @@ AC_CONFIG_HEADERS([include/llvm/Config/config.h])
 AC_CONFIG_FILES([include/llvm/Config/Targets.def])
 AC_CONFIG_FILES([include/llvm/Config/AsmPrinters.def])
 AC_CONFIG_FILES([include/llvm/Config/AsmParsers.def])
-AC_CONFIG_HEADERS([include/llvm/Support/DataTypes.h])
+AC_CONFIG_FILES([include/llvm/Config/Disassemblers.def])
+AC_CONFIG_HEADERS([include/llvm/System/DataTypes.h])
 
 dnl Configure the makefile's configuration data
 AC_CONFIG_FILES([Makefile.config])

@@ -21,6 +21,7 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/Mangler.h"
 #include "llvm/ADT/SmallString.h"
@@ -38,12 +39,9 @@ MachineModuleInfoMachO &X86MCInstLower::getMachOMMI() const {
 
 
 MCSymbol *X86MCInstLower::GetPICBaseSymbol() const {
-  SmallString<60> Name;
-  raw_svector_ostream(Name) << AsmPrinter.MAI->getPrivateGlobalPrefix()
-    << AsmPrinter.getFunctionNumber() << "$pb";
-  return Ctx.GetOrCreateSymbol(Name.str());
+  return Ctx.GetOrCreateSymbol(Twine(AsmPrinter.MAI->getPrivateGlobalPrefix())+
+                               Twine(AsmPrinter.getFunctionNumber())+"$pb");
 }
-
 
 /// LowerGlobalAddressOperand - Lower an MO_GlobalAddress operand to an
 /// MCOperand.
@@ -232,6 +230,19 @@ GetConstantPoolIndexSymbol(const MachineOperand &MO) const {
   return Ctx.GetOrCreateSymbol(Name.str());
 }
 
+MCSymbol *X86MCInstLower::
+GetBlockAddressSymbol(const MachineOperand &MO) const {
+  const char *Suffix = "";
+  switch (MO.getTargetFlags()) {
+  default: llvm_unreachable("Unknown target flag on BA operand");
+  case X86II::MO_NO_FLAG:         break; // No flag.
+  case X86II::MO_PIC_BASE_OFFSET: break; // Doesn't modify symbol name.
+  case X86II::MO_GOTOFF: Suffix = "@GOTOFF"; break;
+  }
+
+  return AsmPrinter.GetBlockAddressSymbol(MO.getBlockAddress(), Suffix);
+}
+
 MCOperand X86MCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                              MCSymbol *Sym) const {
   // FIXME: We would like an efficient form for this, so we don't have to do a
@@ -308,6 +319,8 @@ void X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
       MI->dump();
       llvm_unreachable("unknown operand type");
     case MachineOperand::MO_Register:
+      // Ignore all implicit register operands.
+      if (MO.isImplicit()) continue;
       MCOp = MCOperand::CreateReg(MO.getReg());
       break;
     case MachineOperand::MO_Immediate:
@@ -328,6 +341,9 @@ void X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
       break;
     case MachineOperand::MO_ConstantPoolIndex:
       MCOp = LowerSymbolOperand(MO, GetConstantPoolIndexSymbol(MO));
+      break;
+    case MachineOperand::MO_BlockAddress:
+      MCOp = LowerSymbolOperand(MO, GetBlockAddressSymbol(MO));
       break;
     }
     
@@ -401,13 +417,13 @@ void X86AsmPrinter::printInstructionThroughMCStreamer(const MachineInstr *MI) {
     printLabel(MI);
     return;
   case TargetInstrInfo::INLINEASM:
-    O << '\t';
     printInlineAsm(MI);
     return;
   case TargetInstrInfo::IMPLICIT_DEF:
     printImplicitDef(MI);
     return;
   case TargetInstrInfo::KILL:
+    printKill(MI);
     return;
   case X86::MOVPC32r: {
     MCInst TmpInst;
@@ -449,10 +465,9 @@ void X86AsmPrinter::printInstructionThroughMCStreamer(const MachineInstr *MI) {
     //   MYGLOBAL + (. - PICBASE)
     // However, we can't generate a ".", so just emit a new label here and refer
     // to it.  We know that this operand flag occurs at most once per function.
-    SmallString<64> Name;
-    raw_svector_ostream(Name) << MAI->getPrivateGlobalPrefix()
-      << "picbaseref" << getFunctionNumber();
-    MCSymbol *DotSym = OutContext.GetOrCreateSymbol(Name.str());
+    const char *Prefix = MAI->getPrivateGlobalPrefix();
+    MCSymbol *DotSym = OutContext.GetOrCreateSymbol(Twine(Prefix)+"picbaseref"+
+                                                    Twine(getFunctionNumber()));
     OutStreamer.EmitLabel(DotSym);
     
     // Now that we have emitted the label, lower the complex operand expression.

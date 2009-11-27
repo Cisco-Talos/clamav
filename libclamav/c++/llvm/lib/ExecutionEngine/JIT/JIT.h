@@ -16,6 +16,7 @@
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/PassManager.h"
+#include "llvm/Support/ValueHandle.h"
 
 namespace llvm {
 
@@ -33,7 +34,7 @@ private:
 
   /// PendingFunctions - Functions which have not been code generated yet, but
   /// were called from a function being code generated.
-  std::vector<Function*> PendingFunctions;
+  std::vector<AssertingVH<Function> > PendingFunctions;
 
 public:
   explicit JITState(ModuleProvider *MP) : PM(MP), MP(MP) {}
@@ -43,7 +44,7 @@ public:
   }
   
   ModuleProvider *getMP() const { return MP; }
-  std::vector<Function*> &getPendingFunctions(const MutexGuard &L) {
+  std::vector<AssertingVH<Function> > &getPendingFunctions(const MutexGuard &L){
     return PendingFunctions;
   }
 };
@@ -84,8 +85,10 @@ public:
                                  JITMemoryManager *JMM,
                                  CodeGenOpt::Level OptLevel =
                                    CodeGenOpt::Default,
-                                 bool GVsWithCode = true) {
-    return ExecutionEngine::createJIT(MP, Err, JMM, OptLevel, GVsWithCode);
+                                 bool GVsWithCode = true,
+				 CodeModel::Model CMM = CodeModel::Default) {
+    return ExecutionEngine::createJIT(MP, Err, JMM, OptLevel, GVsWithCode,
+				      CMM);
   }
 
   virtual void addModuleProvider(ModuleProvider *MP);
@@ -127,6 +130,11 @@ public:
   ///
   void *getPointerToFunction(Function *F);
 
+  void *getPointerToBasicBlock(BasicBlock *BB) {
+    assert(0 && "JIT does not support address-of-label yet!");
+    return 0;
+  }
+  
   /// getOrEmitGlobalVariable - Return the address of the specified global
   /// variable, possibly emitting it to memory if needed.  This is used by the
   /// Emitter.
@@ -169,7 +177,8 @@ public:
                                     std::string *ErrorStr,
                                     JITMemoryManager *JMM,
                                     CodeGenOpt::Level OptLevel,
-                                    bool GVsWithCode);
+                                    bool GVsWithCode,
+				    CodeModel::Model CMM);
 
   // Run the JIT on F and return information about the generated code
   void runJITOnFunction(Function *F, MachineCodeInfo *MCI = 0);
@@ -182,14 +191,13 @@ public:
   void NotifyFunctionEmitted(
       const Function &F, void *Code, size_t Size,
       const JITEvent_EmittedFunctionDetails &Details);
-  void NotifyFreeingMachineCode(const Function &F, void *OldPtr);
+  void NotifyFreeingMachineCode(void *OldPtr);
 
 private:
   static JITCodeEmitter *createEmitter(JIT &J, JITMemoryManager *JMM,
                                        TargetMachine &tm);
   void runJITOnFunctionUnlocked(Function *F, const MutexGuard &locked);
   void updateFunctionStub(Function *F);
-  void updateDlsymStubTable();
 
 protected:
 

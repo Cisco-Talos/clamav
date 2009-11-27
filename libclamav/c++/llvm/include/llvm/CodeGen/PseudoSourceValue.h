@@ -32,19 +32,28 @@ namespace llvm {
     virtual void printCustom(raw_ostream &O) const;
 
   public:
-    PseudoSourceValue();
+    explicit PseudoSourceValue(enum ValueTy Subclass = PseudoSourceValueVal);
 
     /// isConstant - Test whether the memory pointed to by this
     /// PseudoSourceValue has a constant value.
     ///
     virtual bool isConstant(const MachineFrameInfo *) const;
 
+    /// isAliased - Test whether the memory pointed to by this
+    /// PseudoSourceValue may also be pointed to by an LLVM IR Value.
+    virtual bool isAliased(const MachineFrameInfo *) const;
+
+    /// mayAlias - Return true if the memory pointed to by this
+    /// PseudoSourceValue can ever alias a LLVM IR Value.
+    virtual bool mayAlias(const MachineFrameInfo *) const;
+
     /// classof - Methods for support type inquiry through isa, cast, and
     /// dyn_cast:
     ///
     static inline bool classof(const PseudoSourceValue *) { return true; }
     static inline bool classof(const Value *V) {
-      return V->getValueID() == PseudoSourceValueVal;
+      return V->getValueID() == PseudoSourceValueVal ||
+             V->getValueID() == FixedStackPseudoSourceValueVal;
     }
 
     /// A pseudo source value referencing a fixed stack frame entry,
@@ -67,6 +76,36 @@ namespace llvm {
     /// A pseudo source value referencing a jump table. Since jump tables are
     /// constant, this doesn't need to identify a specific jump table.
     static const PseudoSourceValue *getJumpTable();
+  };
+
+  /// FixedStackPseudoSourceValue - A specialized PseudoSourceValue
+  /// for holding FixedStack values, which must include a frame
+  /// index.
+  class FixedStackPseudoSourceValue : public PseudoSourceValue {
+    const int FI;
+  public:
+    explicit FixedStackPseudoSourceValue(int fi) :
+        PseudoSourceValue(FixedStackPseudoSourceValueVal), FI(fi) {}
+
+    /// classof - Methods for support type inquiry through isa, cast, and
+    /// dyn_cast:
+    ///
+    static inline bool classof(const FixedStackPseudoSourceValue *) {
+      return true;
+    }
+    static inline bool classof(const Value *V) {
+      return V->getValueID() == FixedStackPseudoSourceValueVal;
+    }
+
+    virtual bool isConstant(const MachineFrameInfo *MFI) const;
+
+    virtual bool isAliased(const MachineFrameInfo *MFI) const;
+
+    virtual bool mayAlias(const MachineFrameInfo *) const;
+
+    virtual void printCustom(raw_ostream &OS) const;
+
+    int getFrameIndex() const { return FI; }
   };
 } // End llvm namespace
 

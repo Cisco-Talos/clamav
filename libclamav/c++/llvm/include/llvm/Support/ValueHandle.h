@@ -54,6 +54,8 @@ private:
   PointerIntPair<ValueHandleBase**, 2, HandleBaseKind> PrevPair;
   ValueHandleBase *Next;
   Value *VP;
+  
+  explicit ValueHandleBase(const ValueHandleBase&); // DO NOT IMPLEMENT.
 public:
   explicit ValueHandleBase(HandleBaseKind Kind)
     : PrevPair(0, Kind), Next(0), VP(0) {}
@@ -109,9 +111,14 @@ private:
   HandleBaseKind getKind() const { return PrevPair.getInt(); }
   void setPrevPtr(ValueHandleBase **Ptr) { PrevPair.setPointer(Ptr); }
 
-  /// AddToExistingUseList - Add this ValueHandle to the use list for VP,
-  /// where List is known to point into the existing use list.
+  /// AddToExistingUseList - Add this ValueHandle to the use list for VP, where
+  /// List is the address of either the head of the list or a Next node within
+  /// the existing use list.
   void AddToExistingUseList(ValueHandleBase **List);
+
+  /// AddToExistingUseListAfter - Add this ValueHandle to the use list after
+  /// Node.
+  void AddToExistingUseListAfter(ValueHandleBase *Node);
 
   /// AddToUseList - Add this ValueHandle to the use list for VP.
   void AddToUseList();
@@ -130,6 +137,13 @@ public:
   WeakVH(Value *P) : ValueHandleBase(Weak, P) {}
   WeakVH(const WeakVH &RHS)
     : ValueHandleBase(Weak, RHS) {}
+
+  Value *operator=(Value *RHS) {
+    return ValueHandleBase::operator=(RHS);
+  }
+  Value *operator=(const ValueHandleBase &RHS) {
+    return ValueHandleBase::operator=(RHS);
+  }
 
   operator Value*() const {
     return getValPtr();
@@ -223,6 +237,31 @@ template<> struct simplify_type<const AssertingVH<Value> > {
 };
 template<> struct simplify_type<AssertingVH<Value> >
   : public simplify_type<const AssertingVH<Value> > {};
+
+// Specialize DenseMapInfo to allow AssertingVH to participate in DenseMap.
+template<typename T>
+struct DenseMapInfo<AssertingVH<T> > {
+  typedef DenseMapInfo<T*> PointerInfo;
+  static inline AssertingVH<T> getEmptyKey() {
+    return AssertingVH<T>(PointerInfo::getEmptyKey());
+  }
+  static inline T* getTombstoneKey() {
+    return AssertingVH<T>(PointerInfo::getTombstoneKey());
+  }
+  static unsigned getHashValue(const AssertingVH<T> &Val) {
+    return PointerInfo::getHashValue(Val);
+  }
+  static bool isEqual(const AssertingVH<T> &LHS, const AssertingVH<T> &RHS) {
+    return LHS == RHS;
+  }
+  static bool isPod() {
+#ifdef NDEBUG
+    return true;
+#else
+    return false;
+#endif
+  }
+};
 
 /// TrackingVH - This is a value handle that tracks a Value (or Value subclass),
 /// even across RAUW operations.
@@ -347,7 +386,7 @@ public:
   /// _before_ any of the uses have actually been replaced.  If WeakVH were
   /// implemented as a CallbackVH, it would use this method to call
   /// setValPtr(new_value).  AssertingVH would do nothing in this method.
-  virtual void allUsesReplacedWith(Value *new_value) {}
+  virtual void allUsesReplacedWith(Value *) {}
 };
 
 // Specialize simplify_type to allow CallbackVH to participate in

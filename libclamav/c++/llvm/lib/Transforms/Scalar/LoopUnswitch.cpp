@@ -32,8 +32,8 @@
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
 #include "llvm/Instructions.h"
-#include "llvm/LLVMContext.h"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/Dominators.h"
@@ -56,9 +56,11 @@ STATISTIC(NumSelects , "Number of selects unswitched");
 STATISTIC(NumTrivial , "Number of unswitches that are trivial");
 STATISTIC(NumSimplify, "Number of simplifications of unswitched code");
 
+// The specific value of 50 here was chosen based only on intuition and a
+// few specific examples.
 static cl::opt<unsigned>
 Threshold("loop-unswitch-threshold", cl::desc("Max loop size to unswitch"),
-          cl::init(10), cl::Hidden);
+          cl::init(50), cl::Hidden);
   
 namespace {
   class LoopUnswitch : public LoopPass {
@@ -135,7 +137,6 @@ namespace {
     void SplitExitEdges(Loop *L, const SmallVector<BasicBlock *, 8> &ExitBlocks);
 
     bool UnswitchIfProfitable(Value *LoopCond, Constant *Val);
-    unsigned getLoopUnswitchCost(Value *LIC);
     void UnswitchTrivialCondition(Loop *L, Value *Cond, Constant *Val,
                                   BasicBlock *ExitBlock);
     void UnswitchNontrivialCondition(Value *LIC, Constant *OnVal, Loop *L);
@@ -397,40 +398,6 @@ bool LoopUnswitch::IsTrivialUnswitchCondition(Value *Cond, Constant **Val,
   return true;
 }
 
-/// getLoopUnswitchCost - Return the cost (code size growth) that will happen if
-/// we choose to unswitch current loop on the specified value.
-///
-unsigned LoopUnswitch::getLoopUnswitchCost(Value *LIC) {
-  // If the condition is trivial, always unswitch.  There is no code growth for
-  // this case.
-  if (IsTrivialUnswitchCondition(LIC))
-    return 0;
-  
-  // FIXME: This is really overly conservative.  However, more liberal 
-  // estimations have thus far resulted in excessive unswitching, which is bad
-  // both in compile time and in code size.  This should be replaced once
-  // someone figures out how a good estimation.
-  return currentLoop->getBlocks().size();
-  
-  unsigned Cost = 0;
-  // FIXME: this is brain dead.  It should take into consideration code
-  // shrinkage.
-  for (Loop::block_iterator I = currentLoop->block_begin(), 
-         E = currentLoop->block_end();
-       I != E; ++I) {
-    BasicBlock *BB = *I;
-    // Do not include empty blocks in the cost calculation.  This happen due to
-    // loop canonicalization and will be removed.
-    if (BB->begin() == BasicBlock::iterator(BB->getTerminator()))
-      continue;
-    
-    // Count basic blocks.
-    ++Cost;
-  }
-
-  return Cost;
-}
-
 /// UnswitchIfProfitable - We have found that we can unswitch currentLoop when
 /// LoopCond == Val to simplify the loop.  If we decide that this is profitable,
 /// unswitch the loop, reprocess the pieces, then return true.
@@ -439,24 +406,40 @@ bool LoopUnswitch::UnswitchIfProfitable(Value *LoopCond, Constant *Val){
   initLoopData();
   Function *F = loopHeader->getParent();
 
-
-  // Check to see if it would be profitable to unswitch current loop.
-  unsigned Cost = getLoopUnswitchCost(LoopCond);
-
-  // Do not do non-trivial unswitch while optimizing for size.
-  if (Cost && OptimizeForSize)
-    return false;
-  if (Cost && !F->isDeclaration() && F->hasFnAttr(Attribute::OptimizeForSize))
+  // If LoopSimplify was unable to form a preheader, don't do any unswitching.
+  if (!loopPreheader)
     return false;
 
-  if (Cost > Threshold) {
-    // FIXME: this should estimate growth by the amount of code shared by the
-    // resultant unswitched loops.
-    //
-    DEBUG(errs() << "NOT unswitching loop %"
-          << currentLoop->getHeader()->getName() << ", cost too high: "
-          << currentLoop->getBlocks().size() << "\n");
-    return false;
+  // If the condition is trivial, always unswitch.  There is no code growth for
+  // this case.
+  if (!IsTrivialUnswitchCondition(LoopCond)) {
+    // Check to see if it would be profitable to unswitch current loop.
+
+    // Do not do non-trivial unswitch while optimizing for size.
+    if (OptimizeForSize || F->hasFnAttr(Attribute::OptimizeForSize))
+      return false;
+
+    // FIXME: This is overly conservative because it does not take into
+    // consideration code simplification opportunities and code that can
+    // be shared by the resultant unswitched loops.
+    CodeMetrics Metrics;
+    for (Loop::block_iterator I = currentLoop->block_begin(), 
+           E = currentLoop->block_end();
+         I != E; ++I)
+      Metrics.analyzeBasicBlock(*I);
+
+    // Limit the number of instructions to avoid causing significant code
+    // expansion, and the number of basic blocks, to avoid loops with
+    // large numbers of branches which cause loop unswitching to go crazy.
+    // This is a very ad-hoc heuristic.
+    if (Metrics.NumInsts > Threshold ||
+        Metrics.NumBlocks * 5 > Threshold ||
+        Metrics.NeverInline) {
+      DEBUG(errs() << "NOT unswitching loop %"
+            << currentLoop->getHeader()->getName() << ", cost too high: "
+            << currentLoop->getBlocks().size() << "\n");
+      return false;
+    }
   }
 
   Constant *CondVal;
@@ -793,7 +776,9 @@ void LoopUnswitch::RemoveBlockIfDead(BasicBlock *BB,
     
     // Anything that uses the instructions in this basic block should have their
     // uses replaced with undefs.
-    if (!I->use_empty())
+    // If I is not void type then replaceAllUsesWith undef.
+    // This allows ValueHandlers and custom metadata to adjust itself.
+    if (!I->getType()->isVoidTy())
       I->replaceAllUsesWith(UndefValue::get(I->getType()));
   }
   
@@ -975,7 +960,7 @@ void LoopUnswitch::SimplifyCode(std::vector<Instruction*> &Worklist, Loop *L) {
     Worklist.pop_back();
     
     // Simple constant folding.
-    if (Constant *C = ConstantFoldInstruction(I, I->getContext())) {
+    if (Constant *C = ConstantFoldInstruction(I)) {
       ReplaceUsesOfWith(I, C, Worklist, L, LPM);
       continue;
     }

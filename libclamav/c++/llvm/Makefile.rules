@@ -246,6 +246,12 @@ LLVMC_BUILTIN_PLUGIN_2 = $(word 2, $(LLVMC_BUILTIN_PLUGINS))
 LLVMC_BUILTIN_PLUGIN_3 = $(word 3, $(LLVMC_BUILTIN_PLUGINS))
 LLVMC_BUILTIN_PLUGIN_4 = $(word 4, $(LLVMC_BUILTIN_PLUGINS))
 LLVMC_BUILTIN_PLUGIN_5 = $(word 5, $(LLVMC_BUILTIN_PLUGINS))
+LLVMC_BUILTIN_PLUGIN_6 = $(word 6, $(LLVMC_BUILTIN_PLUGINS))
+LLVMC_BUILTIN_PLUGIN_7 = $(word 7, $(LLVMC_BUILTIN_PLUGINS))
+LLVMC_BUILTIN_PLUGIN_8 = $(word 8, $(LLVMC_BUILTIN_PLUGINS))
+LLVMC_BUILTIN_PLUGIN_9 = $(word 9, $(LLVMC_BUILTIN_PLUGINS))
+LLVMC_BUILTIN_PLUGIN_10 = $(word 10, $(LLVMC_BUILTIN_PLUGINS))
+
 
 ifneq ($(LLVMC_BUILTIN_PLUGIN_1),)
 CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_1=$(LLVMC_BUILTIN_PLUGIN_1)
@@ -267,6 +273,27 @@ ifneq ($(LLVMC_BUILTIN_PLUGIN_5),)
 CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_5)
 endif
 
+ifneq ($(LLVMC_BUILTIN_PLUGIN_6),)
+CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_6)
+endif
+
+ifneq ($(LLVMC_BUILTIN_PLUGIN_7),)
+CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_7)
+endif
+
+ifneq ($(LLVMC_BUILTIN_PLUGIN_8),)
+CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_8)
+endif
+
+ifneq ($(LLVMC_BUILTIN_PLUGIN_9),)
+CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_9)
+endif
+
+ifneq ($(LLVMC_BUILTIN_PLUGIN_10),)
+CPP.Flags += -DLLVMC_BUILTIN_PLUGIN_5=$(LLVMC_BUILTIN_PLUGIN_10)
+endif
+
+
 endif
 
 endif # LLVMC_BASED_DRIVER
@@ -285,16 +312,6 @@ endif
 #--------------------------------------------------------------------
 
 CPP.Defines :=
-# OPTIMIZE_OPTION - The optimization level option we want to build LLVM with
-# this can be overridden on the make command line.
-ifndef OPTIMIZE_OPTION
-  ifneq ($(HOST_OS),MingW)
-    OPTIMIZE_OPTION := -O3
-  else
-    OPTIMIZE_OPTION := -O2
-  endif
-endif
-
 ifeq ($(ENABLE_OPTIMIZED),1)
   BuildMode := Release
   # Don't use -fomit-frame-pointer on Darwin or FreeBSD.
@@ -321,11 +338,19 @@ ifeq ($(ENABLE_OPTIMIZED),1)
     KEEP_SYMBOLS := 1
   endif
 else
-  BuildMode := Debug
-  CXX.Flags += -g
-  C.Flags   += -g
-  LD.Flags  += -g
-  KEEP_SYMBOLS := 1
+  ifdef NO_DEBUG_SYMBOLS
+    BuildMode := Unoptimized
+    CXX.Flags +=
+    C.Flags   +=
+    LD.Flags  +=
+    KEEP_SYMBOLS := 1
+  else
+    BuildMode := Debug
+    CXX.Flags += -g
+    C.Flags   += -g
+    LD.Flags  += -g
+    KEEP_SYMBOLS := 1
+  endif
 endif
 
 ifeq ($(ENABLE_PROFILING),1)
@@ -539,6 +564,8 @@ endif
 ifeq ($(TARGET_OS),Darwin)
   ifneq ($(ARCH),ARM)
     TargetCommonOpts += -mmacosx-version-min=$(DARWIN_VERSION)
+  else
+    TargetCommonOpts += -marm
   endif
 endif
 
@@ -644,6 +671,10 @@ ifeq ($(HOST_OS),SunOS)
 CPP.BaseFlags += -include llvm/System/Solaris.h
 endif
 
+ifeq ($(HOST_OS),AuroraUX)
+CPP.BaseFlags += -include llvm/System/Solaris.h
+endif # !HOST_OS - AuroraUX.
+
 LD.Flags      += -L$(LibDir) -L$(LLVMLibDir)
 CPP.BaseFlags += -D_GNU_SOURCE -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS
 # All -I flags should go here, so that they don't confuse llvm-config.
@@ -704,6 +735,8 @@ Ranlib        = $(RANLIB)
 else
 Ranlib        = ranlib
 endif
+
+AliasTool     = ln -s
 
 #----------------------------------------------------------
 # Get the list of source files and compute object file
@@ -1184,10 +1217,20 @@ ifdef TOOLNAME
 #---------------------------------------------------------
 # Set up variables for building a tool.
 #---------------------------------------------------------
+TOOLEXENAME := $(strip $(TOOLNAME))$(EXEEXT)
 ifdef EXAMPLE_TOOL
-ToolBuildPath   := $(ExmplDir)/$(strip $(TOOLNAME))$(EXEEXT)
+ToolBuildPath   := $(ExmplDir)/$(TOOLEXENAME)
 else
-ToolBuildPath   := $(ToolDir)/$(strip $(TOOLNAME))$(EXEEXT)
+ToolBuildPath   := $(ToolDir)/$(TOOLEXENAME)
+endif
+
+# TOOLALIAS is a name to symlink (or copy) the tool to.
+ifdef TOOLALIAS
+ifdef EXAMPLE_TOOL
+ToolAliasBuildPath   := $(ExmplDir)/$(strip $(TOOLALIAS))$(EXEEXT)
+else
+ToolAliasBuildPath   := $(ToolDir)/$(strip $(TOOLALIAS))$(EXEEXT)
+endif
 endif
 
 #---------------------------------------------------------
@@ -1207,7 +1250,7 @@ endif
 endif
 
 ifeq ($(HOST_OS), $(filter $(HOST_OS), Linux NetBSD FreeBSD))
-LD.Flags += -Wl,--version-script=$(LLVM_SRC_ROOT)/autoconf/ExportMap.map
+  LD.Flags += -Wl,--version-script=$(LLVM_SRC_ROOT)/autoconf/ExportMap.map
 endif
 endif
 
@@ -1215,11 +1258,14 @@ endif
 #---------------------------------------------------------
 # Provide targets for building the tools
 #---------------------------------------------------------
-all-local:: $(ToolBuildPath)
+all-local:: $(ToolBuildPath) $(ToolAliasBuildPath)
 
 clean-local::
 ifneq ($(strip $(ToolBuildPath)),)
 	-$(Verb) $(RM) -f $(ToolBuildPath)
+endif
+ifneq ($(strip $(ToolAliasBuildPath)),)
+	-$(Verb) $(RM) -f $(ToolAliasBuildPath)
 endif
 
 ifdef EXAMPLE_TOOL
@@ -1235,13 +1281,22 @@ $(ToolBuildPath): $(ObjectsO) $(ProjLibsPaths) $(LLVMLibsPaths)
 	$(Echo) ======= Finished Linking $(BuildMode) Executable $(TOOLNAME) \
           $(StripWarnMsg)
 
+ifneq ($(strip $(ToolAliasBuildPath)),)
+$(ToolAliasBuildPath): $(ToolBuildPath)
+	$(Echo) Creating $(BuildMode) Alias $(TOOLALIAS) $(StripWarnMsg)
+	$(Verb) $(RM) -f $(ToolAliasBuildPath)
+	$(Verb) $(AliasTool) $(TOOLEXENAME) $(ToolAliasBuildPath)
+	$(Echo) ======= Finished Creating $(BuildMode) Alias $(TOOLNAME) \
+          $(StripWarnMsg)
+endif
+
 ifdef NO_INSTALL
 install-local::
 	$(Echo) Install circumvented with NO_INSTALL
 uninstall-local::
 	$(Echo) Uninstall circumvented with NO_INSTALL
 else
-DestTool = $(PROJ_bindir)/$(TOOLNAME)$(EXEEXT)
+DestTool = $(PROJ_bindir)/$(TOOLEXENAME)
 
 install-local:: $(DestTool)
 
@@ -1252,6 +1307,23 @@ $(DestTool): $(ToolBuildPath) $(PROJ_bindir)
 uninstall-local::
 	$(Echo) Uninstalling $(BuildMode) $(DestTool)
 	-$(Verb) $(RM) -f $(DestTool)
+
+# TOOLALIAS install.
+ifdef TOOLALIAS
+DestToolAlias = $(PROJ_bindir)/$(TOOLALIAS)$(EXEEXT)
+
+install-local:: $(DestToolAlias)
+
+$(DestToolAlias): $(DestTool) $(PROJ_bindir)
+	$(Echo) Installing $(BuildMode) $(DestToolAlias)
+	$(Verb) $(RM) -f $(DestToolAlias)
+	$(Verb) $(AliasTool) $(TOOLEXENAME) $(DestToolAlias)
+
+uninstall-local::
+	$(Echo) Uninstalling $(BuildMode) $(DestToolAlias)
+	-$(Verb) $(RM) -f $(DestToolAlias)
+endif
+
 endif
 endif
 
@@ -1280,7 +1352,7 @@ DEPEND_MOVEFILE = then $(MV) -f "$(ObjDir)/$*.d.tmp" "$(ObjDir)/$*.d"; \
                   else $(RM) "$(ObjDir)/$*.d.tmp"; exit 1; fi
 
 $(ObjDir)/%.o: %.cpp $(ObjDir)/.dir $(BUILT_SOURCES)
-	$(Echo) "Compiling $*.cpp for $(BuildMode) build " $(PIC_FLAG)
+	$(Echo) "Compiling $*.cpp for $(BuildMode) build" $(PIC_FLAG)
 	$(Verb) if $(Compile.CXX) $(DEPEND_OPTIONS) $< -o $(ObjDir)/$*.o ; \
 	        $(DEPEND_MOVEFILE)
 
@@ -1493,6 +1565,11 @@ $(ObjDir)/%GenDAGISel.inc.tmp : %.td $(ObjDir)/.dir
 	$(Echo) "Building $(<F) DAG instruction selector implementation with tblgen"
 	$(Verb) $(TableGen) -gen-dag-isel -o $(call SYSPATH, $@) $<
 
+$(TARGET:%=$(ObjDir)/%GenDisassemblerTables.inc.tmp): \
+$(ObjDir)/%GenDisassemblerTables.inc.tmp : %.td $(ObjDir)/.dir
+	$(Echo) "Building $(<F) disassembly tables with tblgen"
+	$(Verb) $(TableGen) -gen-disassembler -o $(call SYSPATH, $@) $<
+
 $(TARGET:%=$(ObjDir)/%GenFastISel.inc.tmp): \
 $(ObjDir)/%GenFastISel.inc.tmp : %.td $(ObjDir)/.dir
 	$(Echo) "Building $(<F) \"fast\" instruction selector implementation with tblgen"
@@ -1509,8 +1586,8 @@ $(ObjDir)/%GenCallingConv.inc.tmp : %.td $(ObjDir)/.dir
 	$(Verb) $(TableGen) -gen-callingconv -o $(call SYSPATH, $@) $<
 
 $(TARGET:%=$(ObjDir)/%GenIntrinsics.inc.tmp): \
-$(ObjDir)/%GenIntrinsics.inc.tmp : Intrinsics%.td $(ObjDir)/.dir
-	$(Echo) "Building $(<F) calling convention information with tblgen"
+$(ObjDir)/%GenIntrinsics.inc.tmp : %.td $(ObjDir)/.dir
+	$(Echo) "Building $(<F) intrinsics information with tblgen"
 	$(Verb) $(TableGen) -gen-tgt-intrinsic -o $(call SYSPATH, $@) $<
 
 clean-local::

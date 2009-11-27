@@ -16,14 +16,12 @@
 #include "ARM.h"
 #include "llvm/PassManager.h"
 #include "llvm/CodeGen/Passes.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Target/TargetRegistry.h"
 using namespace llvm;
 
-static const MCAsmInfo *createMCAsmInfo(const Target &T,
-                                        const StringRef &TT) {
+static const MCAsmInfo *createMCAsmInfo(const Target &T, StringRef TT) {
   Triple TheTriple(TT);
   switch (TheTriple.getOS()) {
   case Triple::Darwin:
@@ -62,8 +60,8 @@ ARMTargetMachine::ARMTargetMachine(const Target &T, const std::string &TT,
                                    const std::string &FS)
   : ARMBaseTargetMachine(T, TT, FS, false), InstrInfo(Subtarget),
     DataLayout(Subtarget.isAPCS_ABI() ?
-               std::string("e-p:32:32-f64:32:32-i64:32:32") :
-               std::string("e-p:32:32-f64:64:64-i64:64:64")),
+               std::string("e-p:32:32-f64:32:32-i64:32:32-n32") :
+               std::string("e-p:32:32-f64:64:64-i64:64:64-n32")),
     TLInfo(*this) {
 }
 
@@ -75,9 +73,9 @@ ThumbTargetMachine::ThumbTargetMachine(const Target &T, const std::string &TT,
               : ((ARMBaseInstrInfo*)new Thumb1InstrInfo(Subtarget))),
     DataLayout(Subtarget.isAPCS_ABI() ?
                std::string("e-p:32:32-f64:32:32-i64:32:32-"
-                           "i16:16:32-i8:8:32-i1:8:32-a:0:32") :
+                           "i16:16:32-i8:8:32-i1:8:32-a:0:32-n32") :
                std::string("e-p:32:32-f64:64:64-i64:64:64-"
-                           "i16:16:32-i8:8:32-i1:8:32-a:0:32")),
+                           "i16:16:32-i8:8:32-i1:8:32-a:0:32-n32")),
     TLInfo(*this) {
 }
 
@@ -95,6 +93,10 @@ bool ARMBaseTargetMachine::addPreRegAlloc(PassManagerBase &PM,
   if (Subtarget.hasNEON())
     PM.add(createNEONPreAllocPass());
 
+  // Calculate and set max stack object alignment early, so we can decide
+  // whether we will need stack realignment (and thus FP).
+  PM.add(createARMMaxStackAlignmentCalculatorPass());
+
   // FIXME: temporarily disabling load / store optimization pass for Thumb1.
   if (OptLevel != CodeGenOpt::None && !Subtarget.isThumb1Only())
     PM.add(createARMLoadStoreOptimizationPass(true));
@@ -107,14 +109,22 @@ bool ARMBaseTargetMachine::addPreSched2(PassManagerBase &PM,
   if (OptLevel != CodeGenOpt::None && !Subtarget.isThumb1Only())
     PM.add(createARMLoadStoreOptimizationPass());
 
+  // Expand some pseudo instructions into multiple instructions to allow
+  // proper scheduling.
+  PM.add(createARMExpandPseudoPass());
+
   return true;
 }
 
 bool ARMBaseTargetMachine::addPreEmitPass(PassManagerBase &PM,
                                           CodeGenOpt::Level OptLevel) {
   // FIXME: temporarily disabling load / store optimization pass for Thumb1.
-  if (OptLevel != CodeGenOpt::None && !Subtarget.isThumb1Only())
-    PM.add(createIfConverterPass());
+  if (OptLevel != CodeGenOpt::None) {
+    if (!Subtarget.isThumb1Only())
+      PM.add(createIfConverterPass());
+    if (Subtarget.hasNEON())
+      PM.add(createNEONMoveFixPass());
+  }
 
   if (Subtarget.isThumb2()) {
     PM.add(createThumb2ITBlockPass());

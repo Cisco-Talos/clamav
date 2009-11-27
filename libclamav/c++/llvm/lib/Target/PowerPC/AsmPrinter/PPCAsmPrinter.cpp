@@ -45,7 +45,6 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringExtras.h"
@@ -55,7 +54,7 @@ using namespace llvm;
 STATISTIC(EmittedInsts, "Number of machine instrs printed");
 
 namespace {
-  class VISIBILITY_HIDDEN PPCAsmPrinter : public AsmPrinter {
+  class PPCAsmPrinter : public AsmPrinter {
   protected:
     struct FnStubInfo {
       std::string Stub, LazyPtr, AnonSymbol;
@@ -344,7 +343,7 @@ namespace {
   };
 
   /// PPCLinuxAsmPrinter - PowerPC assembly printer, customized for Linux
-  class VISIBILITY_HIDDEN PPCLinuxAsmPrinter : public PPCAsmPrinter {
+  class PPCLinuxAsmPrinter : public PPCAsmPrinter {
   public:
     explicit PPCLinuxAsmPrinter(formatted_raw_ostream &O, TargetMachine &TM,
                                 const MCAsmInfo *T, bool V)
@@ -369,7 +368,7 @@ namespace {
 
   /// PPCDarwinAsmPrinter - PowerPC assembly printer, customized for Darwin/Mac
   /// OS X
-  class VISIBILITY_HIDDEN PPCDarwinAsmPrinter : public PPCAsmPrinter {
+  class PPCDarwinAsmPrinter : public PPCAsmPrinter {
     formatted_raw_ostream &OS;
   public:
     explicit PPCDarwinAsmPrinter(formatted_raw_ostream &O, TargetMachine &TM,
@@ -414,6 +413,9 @@ void PPCAsmPrinter::printOp(const MachineOperand &MO) {
   case MachineOperand::MO_ConstantPoolIndex:
     O << MAI->getPrivateGlobalPrefix() << "CPI" << getFunctionNumber()
       << '_' << MO.getIndex();
+    return;
+  case MachineOperand::MO_BlockAddress:
+    GetBlockAddressSymbol(MO.getBlockAddress())->print(O, MAI);
     return;
   case MachineOperand::MO_ExternalSymbol: {
     // Computing the address of an external symbol, not calling it.
@@ -545,7 +547,7 @@ void PPCAsmPrinter::printPredicateOperand(const MachineInstr *MI, unsigned OpNo,
 void PPCAsmPrinter::printMachineInstruction(const MachineInstr *MI) {
   ++EmittedInsts;
   
-  processDebugLoc(MI);
+  processDebugLoc(MI, true);
 
   // Check for slwi/srwi mnemonics.
   if (MI->getOpcode() == PPC::RLWINM) {
@@ -592,9 +594,11 @@ void PPCAsmPrinter::printMachineInstruction(const MachineInstr *MI) {
 
   printInstruction(MI);
   
-  if (VerboseAsm && !MI->getDebugLoc().isUnknown())
+  if (VerboseAsm)
     EmitComments(*MI);
   O << '\n';
+
+  processDebugLoc(MI, false);
 }
 
 /// runOnMachineFunction - This uses the printMachineInstruction()
@@ -658,7 +662,6 @@ bool PPCLinuxAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
     // Print a label for the basic block.
     if (I != MF.begin()) {
       EmitBasicBlockStart(I);
-      O << '\n';
     }
     for (MachineBasicBlock::const_iterator II = I->begin(), E = I->end();
          II != E; ++II) {
@@ -669,13 +672,13 @@ bool PPCLinuxAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 
   O << "\t.size\t" << CurrentFnName << ",.-" << CurrentFnName << '\n';
 
-  // Print out jump tables referenced by the function.
-  EmitJumpTableInfo(MF.getJumpTableInfo(), MF);
-
   OutStreamer.SwitchSection(getObjFileLowering().SectionForGlobal(F, Mang, TM));
 
   // Emit post-function debug information.
   DW->EndFunction(&MF);
+
+  // Print out jump tables referenced by the function.
+  EmitJumpTableInfo(MF.getJumpTableInfo(), MF);
 
   // We didn't modify anything.
   return false;
@@ -842,7 +845,6 @@ bool PPCDarwinAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
     // Print a label for the basic block.
     if (I != MF.begin()) {
       EmitBasicBlockStart(I);
-      O << '\n';
     }
     for (MachineBasicBlock::const_iterator II = I->begin(), IE = I->end();
          II != IE; ++II) {
@@ -851,11 +853,11 @@ bool PPCDarwinAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
     }
   }
 
-  // Print out jump tables referenced by the function.
-  EmitJumpTableInfo(MF.getJumpTableInfo(), MF);
-
   // Emit post-function debug information.
   DW->EndFunction(&MF);
+
+  // Print out jump tables referenced by the function.
+  EmitJumpTableInfo(MF.getJumpTableInfo(), MF);
 
   // We didn't modify anything.
   return false;
@@ -1129,7 +1131,7 @@ bool PPCDarwinAsmPrinter::doFinalization(Module &M) {
   // implementation of multiple entry points).  If this doesn't occur, the
   // linker can safely perform dead code stripping.  Since LLVM never generates
   // code that does this, it is always safe to set.
-  O << "\t.subsections_via_symbols\n";
+  OutStreamer.EmitAssemblerFlag(MCStreamer::SubsectionsViaSymbols);
 
   return AsmPrinter::doFinalization(M);
 }

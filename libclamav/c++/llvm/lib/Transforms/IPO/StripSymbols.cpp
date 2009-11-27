@@ -112,11 +112,11 @@ static bool OnlyUsedBy(Value *V, Value *Usr) {
 
 static void RemoveDeadConstant(Constant *C) {
   assert(C->use_empty() && "Constant is not dead!");
-  SmallPtrSet<Constant *, 4> Operands;
+  SmallPtrSet<Constant*, 4> Operands;
   for (unsigned i = 0, e = C->getNumOperands(); i != e; ++i)
     if (isa<DerivedType>(C->getOperand(i)->getType()) &&
         OnlyUsedBy(C->getOperand(i), C)) 
-      Operands.insert(C->getOperand(i));
+      Operands.insert(cast<Constant>(C->getOperand(i)));
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
     if (!GV->hasLocalLinkage()) return;   // Don't delete non static globals.
     GV->eraseFromParent();
@@ -126,7 +126,7 @@ static void RemoveDeadConstant(Constant *C) {
       C->destroyConstant();
 
   // If the constant referenced anything, see if we can delete it as well.
-  for (SmallPtrSet<Constant *, 4>::iterator OI = Operands.begin(),
+  for (SmallPtrSet<Constant*, 4>::iterator OI = Operands.begin(),
          OE = Operands.end(); OI != OE; ++OI)
     RemoveDeadConstant(*OI);
 }
@@ -202,56 +202,36 @@ static bool StripSymbolNames(Module &M, bool PreserveDbgInfo) {
 // llvm.dbg.region.end calls, and any globals they point to if now dead.
 static bool StripDebugInfo(Module &M) {
 
+  bool Changed = false;
+
   // Remove all of the calls to the debugger intrinsics, and remove them from
   // the module.
-  Function *FuncStart = M.getFunction("llvm.dbg.func.start");
-  Function *StopPoint = M.getFunction("llvm.dbg.stoppoint");
-  Function *RegionStart = M.getFunction("llvm.dbg.region.start");
-  Function *RegionEnd = M.getFunction("llvm.dbg.region.end");
-  Function *Declare = M.getFunction("llvm.dbg.declare");
-
-  if (FuncStart) {
-    while (!FuncStart->use_empty()) {
-      CallInst *CI = cast<CallInst>(FuncStart->use_back());
-      CI->eraseFromParent();
-    }
-    FuncStart->eraseFromParent();
-  }
-  if (StopPoint) {
-    while (!StopPoint->use_empty()) {
-      CallInst *CI = cast<CallInst>(StopPoint->use_back());
-      CI->eraseFromParent();
-    }
-    StopPoint->eraseFromParent();
-  }
-  if (RegionStart) {
-    while (!RegionStart->use_empty()) {
-      CallInst *CI = cast<CallInst>(RegionStart->use_back());
-      CI->eraseFromParent();
-    }
-    RegionStart->eraseFromParent();
-  }
-  if (RegionEnd) {
-    while (!RegionEnd->use_empty()) {
-      CallInst *CI = cast<CallInst>(RegionEnd->use_back());
-      CI->eraseFromParent();
-    }
-    RegionEnd->eraseFromParent();
-  }
-  if (Declare) {
+  if (Function *Declare = M.getFunction("llvm.dbg.declare")) {
     while (!Declare->use_empty()) {
       CallInst *CI = cast<CallInst>(Declare->use_back());
       CI->eraseFromParent();
     }
     Declare->eraseFromParent();
+    Changed = true;
   }
 
   NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.gv");
-  if (NMD)
+  if (NMD) {
+    Changed = true;
     NMD->eraseFromParent();
+  }
+  MetadataContext &TheMetadata = M.getContext().getMetadata();
+  unsigned MDDbgKind = TheMetadata.getMDKind("dbg");
+  if (!MDDbgKind)
+    return Changed;
 
-  // Remove dead metadata.
-  M.getContext().RemoveDeadMetadata();
+  for (Module::iterator MI = M.begin(), ME = M.end(); MI != ME; ++MI) 
+    for (Function::iterator FI = MI->begin(), FE = MI->end(); FI != FE;
+         ++FI)
+      for (BasicBlock::iterator BI = FI->begin(), BE = FI->end(); BI != BE;
+           ++BI) 
+        TheMetadata.removeMD(MDDbgKind, BI);
+
   return true;
 }
 
@@ -292,23 +272,13 @@ bool StripDebugDeclare::runOnModule(Module &M) {
     Declare->eraseFromParent();
   }
 
-  // Delete all llvm.dbg.global_variables.
-  for (Module::global_iterator I = M.global_begin(), E = M.global_end(); 
-       I != E; ++I) {
-    GlobalVariable *GV = dyn_cast<GlobalVariable>(I);
-    if (!GV) continue;
-    if (GV->use_empty() && GV->getName().startswith("llvm.dbg.global_variable"))
-      DeadConstants.push_back(GV);
-  }
-
   while (!DeadConstants.empty()) {
     Constant *C = DeadConstants.back();
     DeadConstants.pop_back();
     if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
       if (GV->hasLocalLinkage())
         RemoveDeadConstant(GV);
-    }
-    else
+    } else
       RemoveDeadConstant(C);
   }
 

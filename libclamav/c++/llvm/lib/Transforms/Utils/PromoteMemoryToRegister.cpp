@@ -23,7 +23,6 @@
 #include "llvm/Function.h"
 #include "llvm/Instructions.h"
 #include "llvm/IntrinsicInst.h"
-#include "llvm/LLVMContext.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/AliasSetTracker.h"
 #include "llvm/ADT/DenseMap.h"
@@ -32,7 +31,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/CFG.h"
-#include "llvm/Support/Compiler.h"
 #include <algorithm>
 using namespace llvm;
 
@@ -100,7 +98,7 @@ namespace {
   struct AllocaInfo;
 
   // Data package used by RenamePass()
-  class VISIBILITY_HIDDEN RenamePassData {
+  class RenamePassData {
   public:
     typedef std::vector<Value *> ValVector;
     
@@ -123,7 +121,7 @@ namespace {
   ///
   /// This functionality is important because it avoids scanning large basic
   /// blocks multiple times when promoting many allocas in the same block.
-  class VISIBILITY_HIDDEN LargeBlockInfo {
+  class LargeBlockInfo {
     /// InstNumbers - For each instruction that we track, keep the index of the
     /// instruction.  The index starts out as the number of the instruction from
     /// the start of the block.
@@ -170,7 +168,7 @@ namespace {
     }
   };
 
-  struct VISIBILITY_HIDDEN PromoteMem2Reg {
+  struct PromoteMem2Reg {
     /// Allocas - The alloca instructions being promoted.
     ///
     std::vector<AllocaInst*> Allocas;
@@ -181,8 +179,6 @@ namespace {
     ///
     AliasSetTracker *AST;
     
-    LLVMContext &Context;
-
     /// AllocaLookup - Reverse mapping of Allocas.
     ///
     std::map<AllocaInst*, unsigned>  AllocaLookup;
@@ -213,9 +209,8 @@ namespace {
     DenseMap<const BasicBlock*, unsigned> BBNumPreds;
   public:
     PromoteMem2Reg(const std::vector<AllocaInst*> &A, DominatorTree &dt,
-                   DominanceFrontier &df, AliasSetTracker *ast,
-                   LLVMContext &C)
-      : Allocas(A), DT(dt), DF(df), AST(ast), Context(C) {}
+                   DominanceFrontier &df, AliasSetTracker *ast)
+      : Allocas(A), DT(dt), DF(df), AST(ast) {}
 
     void run();
 
@@ -750,7 +745,12 @@ void PromoteMem2Reg::RewriteSingleStoreAlloca(AllocaInst *AI,
     }
     
     // Otherwise, we *can* safely rewrite this load.
-    LI->replaceAllUsesWith(OnlyStore->getOperand(0));
+    Value *ReplVal = OnlyStore->getOperand(0);
+    // If the replacement value is the load, this must occur in unreachable
+    // code.
+    if (ReplVal == LI)
+      ReplVal = UndefValue::get(LI->getType());
+    LI->replaceAllUsesWith(ReplVal);
     if (AST && isa<PointerType>(LI->getType()))
       AST->deleteValue(LI);
     LI->eraseFromParent();
@@ -999,9 +999,9 @@ NextIteration:
 ///
 void llvm::PromoteMemToReg(const std::vector<AllocaInst*> &Allocas,
                            DominatorTree &DT, DominanceFrontier &DF,
-                           LLVMContext &Context, AliasSetTracker *AST) {
+                           AliasSetTracker *AST) {
   // If there is nothing to do, bail out...
   if (Allocas.empty()) return;
 
-  PromoteMem2Reg(Allocas, DT, DF, AST, Context).run();
+  PromoteMem2Reg(Allocas, DT, DF, AST).run();
 }

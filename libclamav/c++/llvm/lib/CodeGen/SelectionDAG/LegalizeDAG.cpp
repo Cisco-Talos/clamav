@@ -32,7 +32,6 @@
 #include "llvm/GlobalVariable.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
@@ -55,7 +54,7 @@ using namespace llvm;
 /// will attempt merge setcc and brc instructions into brcc's.
 ///
 namespace {
-class VISIBILITY_HIDDEN SelectionDAGLegalize {
+class SelectionDAGLegalize {
   TargetLowering &TLI;
   SelectionDAG &DAG;
   CodeGenOpt::Level OptLevel;
@@ -149,14 +148,16 @@ private:
   SDValue ExpandFPLibCall(SDNode *Node, RTLIB::Libcall Call_F32,
                           RTLIB::Libcall Call_F64, RTLIB::Libcall Call_F80,
                           RTLIB::Libcall Call_PPCF128);
-  SDValue ExpandIntLibCall(SDNode *Node, bool isSigned, RTLIB::Libcall Call_I16,
-                           RTLIB::Libcall Call_I32, RTLIB::Libcall Call_I64,
+  SDValue ExpandIntLibCall(SDNode *Node, bool isSigned,
+                           RTLIB::Libcall Call_I8,
+                           RTLIB::Libcall Call_I16,
+                           RTLIB::Libcall Call_I32,
+                           RTLIB::Libcall Call_I64,
                            RTLIB::Libcall Call_I128);
 
   SDValue EmitStackConvert(SDValue SrcOp, EVT SlotVT, EVT DestVT, DebugLoc dl);
   SDValue ExpandBUILD_VECTOR(SDNode *Node);
   SDValue ExpandSCALAR_TO_VECTOR(SDNode *Node);
-  SDValue ExpandDBG_STOPPOINT(SDNode *Node);
   void ExpandDYNAMIC_STACKALLOC(SDNode *Node,
                                 SmallVectorImpl<SDValue> &Results);
   SDValue ExpandFCOPYSIGN(SDNode *Node);
@@ -1515,6 +1516,7 @@ SDValue SelectionDAGLegalize::ExpandVectorBuildThroughStack(SDNode* Node) {
   // Create the stack frame object.
   EVT VT = Node->getValueType(0);
   EVT OpVT = Node->getOperand(0).getValueType();
+  EVT EltVT = VT.getVectorElementType();
   DebugLoc dl = Node->getDebugLoc();
   SDValue FIPtr = DAG.CreateStackTemporary(VT);
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
@@ -1522,7 +1524,7 @@ SDValue SelectionDAGLegalize::ExpandVectorBuildThroughStack(SDNode* Node) {
 
   // Emit a store of each element to the stack slot.
   SmallVector<SDValue, 8> Stores;
-  unsigned TypeByteSize = OpVT.getSizeInBits() / 8;
+  unsigned TypeByteSize = EltVT.getSizeInBits() / 8;
   // Store (in the right endianness) the elements to memory.
   for (unsigned i = 0, e = Node->getNumOperands(); i != e; ++i) {
     // Ignore undef elements.
@@ -1533,8 +1535,13 @@ SDValue SelectionDAGLegalize::ExpandVectorBuildThroughStack(SDNode* Node) {
     SDValue Idx = DAG.getConstant(Offset, FIPtr.getValueType());
     Idx = DAG.getNode(ISD::ADD, dl, FIPtr.getValueType(), FIPtr, Idx);
 
-    Stores.push_back(DAG.getStore(DAG.getEntryNode(), dl, Node->getOperand(i),
-                                  Idx, SV, Offset));
+    // If EltVT smaller than OpVT, only store the bits necessary.
+    if (EltVT.bitsLT(OpVT))
+      Stores.push_back(DAG.getTruncStore(DAG.getEntryNode(), dl,
+                          Node->getOperand(i), Idx, SV, Offset, EltVT));
+    else
+      Stores.push_back(DAG.getStore(DAG.getEntryNode(), dl, 
+                                    Node->getOperand(i), Idx, SV, Offset));
   }
 
   SDValue StoreChain;
@@ -1588,37 +1595,6 @@ SDValue SelectionDAGLegalize::ExpandFCOPYSIGN(SDNode* Node) {
                      AbsVal);
 }
 
-SDValue SelectionDAGLegalize::ExpandDBG_STOPPOINT(SDNode* Node) {
-  DebugLoc dl = Node->getDebugLoc();
-  DwarfWriter *DW = DAG.getDwarfWriter();
-  bool useDEBUG_LOC = TLI.isOperationLegalOrCustom(ISD::DEBUG_LOC,
-                                                    MVT::Other);
-  bool useLABEL = TLI.isOperationLegalOrCustom(ISD::DBG_LABEL, MVT::Other);
-
-  const DbgStopPointSDNode *DSP = cast<DbgStopPointSDNode>(Node);
-  MDNode *CU_Node = DSP->getCompileUnit();
-  if (DW && (useDEBUG_LOC || useLABEL)) {
-
-    unsigned Line = DSP->getLine();
-    unsigned Col = DSP->getColumn();
-
-    if (OptLevel == CodeGenOpt::None) {
-      // A bit self-referential to have DebugLoc on Debug_Loc nodes, but it
-      // won't hurt anything.
-      if (useDEBUG_LOC) {
-        return DAG.getNode(ISD::DEBUG_LOC, dl, MVT::Other, Node->getOperand(0),
-                           DAG.getConstant(Line, MVT::i32),
-                           DAG.getConstant(Col, MVT::i32),
-                           DAG.getSrcValue(CU_Node));
-      } else {
-        unsigned ID = DW->RecordSourceLine(Line, Col, CU_Node);
-        return DAG.getLabel(ISD::DBG_LABEL, dl, Node->getOperand(0), ID);
-      }
-    }
-  }
-  return Node->getOperand(0);
-}
-
 void SelectionDAGLegalize::ExpandDYNAMIC_STACKALLOC(SDNode* Node,
                                            SmallVectorImpl<SDValue> &Results) {
   unsigned SPReg = TLI.getStackPointerRegisterToSaveRestore();
@@ -1655,8 +1631,7 @@ void SelectionDAGLegalize::ExpandDYNAMIC_STACKALLOC(SDNode* Node,
 }
 
 /// LegalizeSetCCCondCode - Legalize a SETCC with given LHS and RHS and
-/// condition code CC on the current target. This routine assumes LHS and rHS
-/// have already been legalized by LegalizeSetCCOperands. It expands SETCC with
+/// condition code CC on the current target. This routine expands SETCC with
 /// illegal condition code into AND / OR of multiple SETCC values.
 void SelectionDAGLegalize::LegalizeSetCCCondCode(EVT VT,
                                                  SDValue &LHS, SDValue &RHS,
@@ -1812,10 +1787,19 @@ SDValue SelectionDAGLegalize::ExpandBUILD_VECTOR(SDNode *Node) {
         CV.push_back(const_cast<ConstantFP *>(V->getConstantFPValue()));
       } else if (ConstantSDNode *V =
                  dyn_cast<ConstantSDNode>(Node->getOperand(i))) {
-        CV.push_back(const_cast<ConstantInt *>(V->getConstantIntValue()));
+        if (OpVT==EltVT)
+          CV.push_back(const_cast<ConstantInt *>(V->getConstantIntValue()));
+        else {
+          // If OpVT and EltVT don't match, EltVT is not legal and the
+          // element values have been promoted/truncated earlier.  Undo this;
+          // we don't want a v16i8 to become a v16i32 for example.
+          const ConstantInt *CI = V->getConstantIntValue();
+          CV.push_back(ConstantInt::get(EltVT.getTypeForEVT(*DAG.getContext()),
+                                        CI->getZExtValue()));
+        }
       } else {
         assert(Node->getOperand(i).getOpcode() == ISD::UNDEF);
-        const Type *OpNTy = OpVT.getTypeForEVT(*DAG.getContext());
+        const Type *OpNTy = EltVT.getTypeForEVT(*DAG.getContext());
         CV.push_back(UndefValue::get(OpNTy));
       }
     }
@@ -1911,6 +1895,7 @@ SDValue SelectionDAGLegalize::ExpandFPLibCall(SDNode* Node,
 }
 
 SDValue SelectionDAGLegalize::ExpandIntLibCall(SDNode* Node, bool isSigned,
+                                               RTLIB::Libcall Call_I8,
                                                RTLIB::Libcall Call_I16,
                                                RTLIB::Libcall Call_I32,
                                                RTLIB::Libcall Call_I64,
@@ -1918,9 +1903,10 @@ SDValue SelectionDAGLegalize::ExpandIntLibCall(SDNode* Node, bool isSigned,
   RTLIB::Libcall LC;
   switch (Node->getValueType(0).getSimpleVT().SimpleTy) {
   default: llvm_unreachable("Unexpected request for libcall!");
-  case MVT::i16: LC = Call_I16; break;
-  case MVT::i32: LC = Call_I32; break;
-  case MVT::i64: LC = Call_I64; break;
+  case MVT::i8:   LC = Call_I8; break;
+  case MVT::i16:  LC = Call_I16; break;
+  case MVT::i32:  LC = Call_I32; break;
+  case MVT::i64:  LC = Call_I64; break;
   case MVT::i128: LC = Call_I128; break;
   }
   return ExpandLibCall(LC, Node, isSigned);
@@ -2257,15 +2243,11 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
     Results.push_back(DAG.getConstant(1, Node->getValueType(0)));
     break;
   case ISD::EH_RETURN:
-  case ISD::DBG_LABEL:
   case ISD::EH_LABEL:
   case ISD::PREFETCH:
   case ISD::MEMBARRIER:
   case ISD::VAEND:
     Results.push_back(Node->getOperand(0));
-    break;
-  case ISD::DBG_STOPPOINT:
-    Results.push_back(ExpandDBG_STOPPOINT(Node));
     break;
   case ISD::DYNAMIC_STACKALLOC:
     ExpandDYNAMIC_STACKALLOC(Node, Results);
@@ -2575,16 +2557,8 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
   case ISD::ConstantFP: {
     ConstantFPSDNode *CFP = cast<ConstantFPSDNode>(Node);
     // Check to see if this FP immediate is already legal.
-    bool isLegal = false;
-    for (TargetLowering::legal_fpimm_iterator I = TLI.legal_fpimm_begin(),
-            E = TLI.legal_fpimm_end(); I != E; ++I) {
-      if (CFP->isExactlyValue(*I)) {
-        isLegal = true;
-        break;
-      }
-    }
     // If this is a legal constant, turn it into a TargetConstantFP node.
-    if (isLegal)
+    if (TLI.isFPImmLegal(CFP->getValueAPF(), Node->getValueType(0)))
       Results.push_back(SDValue(Node, 0));
     else
       Results.push_back(ExpandConstantFP(CFP, true, DAG, TLI));
@@ -2634,10 +2608,14 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
       Tmp1 = DAG.getNode(ISD::MUL, dl, VT, Tmp1, Tmp3);
       Tmp1 = DAG.getNode(ISD::SUB, dl, VT, Tmp2, Tmp1);
     } else if (isSigned) {
-      Tmp1 = ExpandIntLibCall(Node, true, RTLIB::SREM_I16, RTLIB::SREM_I32,
+      Tmp1 = ExpandIntLibCall(Node, true,
+                              RTLIB::SREM_I8,
+                              RTLIB::SREM_I16, RTLIB::SREM_I32,
                               RTLIB::SREM_I64, RTLIB::SREM_I128);
     } else {
-      Tmp1 = ExpandIntLibCall(Node, false, RTLIB::UREM_I16, RTLIB::UREM_I32,
+      Tmp1 = ExpandIntLibCall(Node, false,
+                              RTLIB::UREM_I8,
+                              RTLIB::UREM_I16, RTLIB::UREM_I32,
                               RTLIB::UREM_I64, RTLIB::UREM_I128);
     }
     Results.push_back(Tmp1);
@@ -2653,10 +2631,14 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
       Tmp1 = DAG.getNode(DivRemOpc, dl, VTs, Node->getOperand(0),
                          Node->getOperand(1));
     else if (isSigned)
-      Tmp1 = ExpandIntLibCall(Node, true, RTLIB::SDIV_I16, RTLIB::SDIV_I32,
+      Tmp1 = ExpandIntLibCall(Node, true,
+                              RTLIB::SDIV_I8,
+                              RTLIB::SDIV_I16, RTLIB::SDIV_I32,
                               RTLIB::SDIV_I64, RTLIB::SDIV_I128);
     else
-      Tmp1 = ExpandIntLibCall(Node, false, RTLIB::UDIV_I16, RTLIB::UDIV_I32,
+      Tmp1 = ExpandIntLibCall(Node, false,
+                              RTLIB::UDIV_I8,
+                              RTLIB::UDIV_I16, RTLIB::UDIV_I32,
                               RTLIB::UDIV_I64, RTLIB::UDIV_I128);
     Results.push_back(Tmp1);
     break;
@@ -2701,7 +2683,9 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
                                     Node->getOperand(1)));
       break;
     }
-    Tmp1 = ExpandIntLibCall(Node, false, RTLIB::MUL_I16, RTLIB::MUL_I32,
+    Tmp1 = ExpandIntLibCall(Node, false,
+                            RTLIB::MUL_I8,
+                            RTLIB::MUL_I16, RTLIB::MUL_I32,
                             RTLIB::MUL_I64, RTLIB::MUL_I128);
     Results.push_back(Tmp1);
     break;

@@ -78,16 +78,16 @@ DIDescriptor::DIDescriptor(MDNode *N, unsigned RequiredTag) {
   }
 }
 
-const char *
+StringRef 
 DIDescriptor::getStringField(unsigned Elt) const {
   if (DbgNode == 0)
-    return NULL;
+    return StringRef();
 
   if (Elt < DbgNode->getNumElements())
     if (MDString *MDS = dyn_cast_or_null<MDString>(DbgNode->getElement(Elt)))
-      return MDS->getString().data();
+      return MDS->getString();
 
-  return NULL;
+  return StringRef();
 }
 
 uint64_t DIDescriptor::getUInt64Field(unsigned Elt) const {
@@ -116,7 +116,7 @@ GlobalVariable *DIDescriptor::getGlobalVariableField(unsigned Elt) const {
     return 0;
 
   if (Elt < DbgNode->getNumElements())
-      return dyn_cast<GlobalVariable>(DbgNode->getElement(Elt));
+      return dyn_cast_or_null<GlobalVariable>(DbgNode->getElement(Elt));
   return 0;
 }
 
@@ -307,8 +307,8 @@ void DIDerivedType::replaceAllUsesWith(DIDescriptor &D) {
 bool DICompileUnit::Verify() const {
   if (isNull())
     return false;
-  const char *N = getFilename();
-  if (!N)
+  StringRef N = getFilename();
+  if (N.empty())
     return false;
   // It is possible that directory and produce string is empty.
   return true;
@@ -363,6 +363,9 @@ bool DIGlobalVariable::Verify() const {
   if (isNull())
     return false;
 
+  if (getDisplayName().empty())
+    return false;
+
   if (getContext().isNull())
     return false;
 
@@ -398,27 +401,37 @@ bool DIVariable::Verify() const {
 /// getOriginalTypeSize - If this type is derived from a base type then
 /// return base type size.
 uint64_t DIDerivedType::getOriginalTypeSize() const {
-  if (getTag() != dwarf::DW_TAG_member)
-    return getSizeInBits();
-  DIType BT = getTypeDerivedFrom();
-  if (BT.getTag() != dwarf::DW_TAG_base_type)
-    return getSizeInBits();
-  return BT.getSizeInBits();
+  unsigned Tag = getTag();
+  if (Tag == dwarf::DW_TAG_member || Tag == dwarf::DW_TAG_typedef ||
+      Tag == dwarf::DW_TAG_const_type || Tag == dwarf::DW_TAG_volatile_type ||
+      Tag == dwarf::DW_TAG_restrict_type) {
+    DIType BaseType = getTypeDerivedFrom();
+    // If this type is not derived from any type then take conservative 
+    // approach.
+    if (BaseType.isNull())
+      return getSizeInBits();
+    if (BaseType.isDerivedType())
+      return DIDerivedType(BaseType.getNode()).getOriginalTypeSize();
+    else
+      return BaseType.getSizeInBits();
+  }
+    
+  return getSizeInBits();
 }
 
 /// describes - Return true if this subprogram provides debugging
 /// information for the function F.
 bool DISubprogram::describes(const Function *F) {
   assert (F && "Invalid function");
-  const char *Name = getLinkageName();
-  if (!Name)
+  StringRef Name = getLinkageName();
+  if (Name.empty())
     Name = getName();
-  if (strcmp(F->getName().data(), Name) == 0)
+  if (F->getName() == Name)
     return true;
   return false;
 }
 
-const char *DIScope::getFilename() const {
+StringRef DIScope::getFilename() const {
   if (isLexicalBlock()) 
     return DILexicalBlock(DbgNode).getFilename();
   else if (isSubprogram())
@@ -427,10 +440,10 @@ const char *DIScope::getFilename() const {
     return DICompileUnit(DbgNode).getFilename();
   else 
     assert (0 && "Invalid DIScope!");
-  return NULL;
+  return StringRef();
 }
 
-const char *DIScope::getDirectory() const {
+StringRef DIScope::getDirectory() const {
   if (isLexicalBlock()) 
     return DILexicalBlock(DbgNode).getDirectory();
   else if (isSubprogram())
@@ -439,7 +452,7 @@ const char *DIScope::getDirectory() const {
     return DICompileUnit(DbgNode).getDirectory();
   else 
     assert (0 && "Invalid DIScope!");
-  return NULL;
+  return StringRef();
 }
 
 //===----------------------------------------------------------------------===//
@@ -465,7 +478,8 @@ void DICompileUnit::dump() const {
 void DIType::dump() const {
   if (isNull()) return;
 
-  if (const char *Res = getName())
+  StringRef Res = getName();
+  if (!Res.empty())
     errs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
@@ -522,7 +536,8 @@ void DICompositeType::dump() const {
 
 /// dump - Print global.
 void DIGlobal::dump() const {
-  if (const char *Res = getName())
+  StringRef Res = getName();
+  if (!Res.empty())
     errs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
@@ -546,7 +561,8 @@ void DIGlobal::dump() const {
 
 /// dump - Print subprogram.
 void DISubprogram::dump() const {
-  if (const char *Res = getName())
+  StringRef Res = getName();
+  if (!Res.empty())
     errs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
@@ -574,7 +590,8 @@ void DIGlobalVariable::dump() const {
 
 /// dump - Print variable.
 void DIVariable::dump() const {
-  if (const char *Res = getName())
+  StringRef Res = getName();
+  if (!Res.empty())
     errs() << " [" << Res << "] ";
 
   getCompileUnit().dump();
@@ -590,9 +607,7 @@ void DIVariable::dump() const {
 //===----------------------------------------------------------------------===//
 
 DIFactory::DIFactory(Module &m)
-  : M(m), VMContext(M.getContext()), StopPointFn(0), FuncStartFn(0),
-    RegionStartFn(0), RegionEndFn(0),
-    DeclareFn(0) {
+  : M(m), VMContext(M.getContext()), DeclareFn(0) {
   EmptyStructPtr = PointerType::getUnqual(StructType::get(VMContext));
 }
 
@@ -642,7 +657,7 @@ DICompileUnit DIFactory::CreateCompileUnit(unsigned LangID,
                                            StringRef Producer,
                                            bool isMain,
                                            bool isOptimized,
-                                           const char *Flags,
+                                           StringRef Flags,
                                            unsigned RunTimeVer) {
   Value *Elts[] = {
     GetTagConstant(dwarf::DW_TAG_compile_unit),
@@ -695,6 +710,32 @@ DIBasicType DIFactory::CreateBasicType(DIDescriptor Context,
   return DIBasicType(MDNode::get(VMContext, &Elts[0], 10));
 }
 
+
+/// CreateBasicType - Create a basic type like int, float, etc.
+DIBasicType DIFactory::CreateBasicTypeEx(DIDescriptor Context,
+                                         StringRef Name,
+                                         DICompileUnit CompileUnit,
+                                         unsigned LineNumber,
+                                         Constant *SizeInBits,
+                                         Constant *AlignInBits,
+                                         Constant *OffsetInBits, unsigned Flags,
+                                         unsigned Encoding) {
+  Value *Elts[] = {
+    GetTagConstant(dwarf::DW_TAG_base_type),
+    Context.getNode(),
+    MDString::get(VMContext, Name),
+    CompileUnit.getNode(),
+    ConstantInt::get(Type::getInt32Ty(VMContext), LineNumber),
+    SizeInBits,
+    AlignInBits,
+    OffsetInBits,
+    ConstantInt::get(Type::getInt32Ty(VMContext), Flags),
+    ConstantInt::get(Type::getInt32Ty(VMContext), Encoding)
+  };
+  return DIBasicType(MDNode::get(VMContext, &Elts[0], 10));
+}
+
+
 /// CreateDerivedType - Create a derived type like const qualified type,
 /// pointer, typedef, etc.
 DIDerivedType DIFactory::CreateDerivedType(unsigned Tag,
@@ -722,6 +763,35 @@ DIDerivedType DIFactory::CreateDerivedType(unsigned Tag,
   return DIDerivedType(MDNode::get(VMContext, &Elts[0], 10));
 }
 
+
+/// CreateDerivedType - Create a derived type like const qualified type,
+/// pointer, typedef, etc.
+DIDerivedType DIFactory::CreateDerivedTypeEx(unsigned Tag,
+                                             DIDescriptor Context,
+                                             StringRef Name,
+                                             DICompileUnit CompileUnit,
+                                             unsigned LineNumber,
+                                             Constant *SizeInBits,
+                                             Constant *AlignInBits,
+                                             Constant *OffsetInBits,
+                                             unsigned Flags,
+                                             DIType DerivedFrom) {
+  Value *Elts[] = {
+    GetTagConstant(Tag),
+    Context.getNode(),
+    MDString::get(VMContext, Name),
+    CompileUnit.getNode(),
+    ConstantInt::get(Type::getInt32Ty(VMContext), LineNumber),
+    SizeInBits,
+    AlignInBits,
+    OffsetInBits,
+    ConstantInt::get(Type::getInt32Ty(VMContext), Flags),
+    DerivedFrom.getNode(),
+  };
+  return DIDerivedType(MDNode::get(VMContext, &Elts[0], 10));
+}
+
+
 /// CreateCompositeType - Create a composite type like array, struct, etc.
 DICompositeType DIFactory::CreateCompositeType(unsigned Tag,
                                                DIDescriptor Context,
@@ -745,6 +815,38 @@ DICompositeType DIFactory::CreateCompositeType(unsigned Tag,
     ConstantInt::get(Type::getInt64Ty(VMContext), SizeInBits),
     ConstantInt::get(Type::getInt64Ty(VMContext), AlignInBits),
     ConstantInt::get(Type::getInt64Ty(VMContext), OffsetInBits),
+    ConstantInt::get(Type::getInt32Ty(VMContext), Flags),
+    DerivedFrom.getNode(),
+    Elements.getNode(),
+    ConstantInt::get(Type::getInt32Ty(VMContext), RuntimeLang)
+  };
+  return DICompositeType(MDNode::get(VMContext, &Elts[0], 12));
+}
+
+
+/// CreateCompositeType - Create a composite type like array, struct, etc.
+DICompositeType DIFactory::CreateCompositeTypeEx(unsigned Tag,
+                                                 DIDescriptor Context,
+                                                 StringRef Name,
+                                                 DICompileUnit CompileUnit,
+                                                 unsigned LineNumber,
+                                                 Constant *SizeInBits,
+                                                 Constant *AlignInBits,
+                                                 Constant *OffsetInBits,
+                                                 unsigned Flags,
+                                                 DIType DerivedFrom,
+                                                 DIArray Elements,
+                                                 unsigned RuntimeLang) {
+
+  Value *Elts[] = {
+    GetTagConstant(Tag),
+    Context.getNode(),
+    MDString::get(VMContext, Name),
+    CompileUnit.getNode(),
+    ConstantInt::get(Type::getInt32Ty(VMContext), LineNumber),
+    SizeInBits,
+    AlignInBits,
+    OffsetInBits,
     ConstantInt::get(Type::getInt32Ty(VMContext), Flags),
     DerivedFrom.getNode(),
     Elements.getNode(),
@@ -875,65 +977,24 @@ DILocation DIFactory::CreateLocation(unsigned LineNo, unsigned ColumnNo,
   return DILocation(MDNode::get(VMContext, &Elts[0], 4));
 }
 
+/// CreateLocation - Creates a debug info location.
+DILocation DIFactory::CreateLocation(unsigned LineNo, unsigned ColumnNo,
+                                     DIScope S, MDNode *OrigLoc) {
+ Value *Elts[] = {
+    ConstantInt::get(Type::getInt32Ty(VMContext), LineNo),
+    ConstantInt::get(Type::getInt32Ty(VMContext), ColumnNo),
+    S.getNode(),
+    OrigLoc
+  };
+  return DILocation(MDNode::get(VMContext, &Elts[0], 4));
+}
 
 //===----------------------------------------------------------------------===//
 // DIFactory: Routines for inserting code into a function
 //===----------------------------------------------------------------------===//
 
-/// InsertStopPoint - Create a new llvm.dbg.stoppoint intrinsic invocation,
-/// inserting it at the end of the specified basic block.
-void DIFactory::InsertStopPoint(DICompileUnit CU, unsigned LineNo,
-                                unsigned ColNo, BasicBlock *BB) {
-
-  // Lazily construct llvm.dbg.stoppoint function.
-  if (!StopPointFn)
-    StopPointFn = llvm::Intrinsic::getDeclaration(&M,
-                                              llvm::Intrinsic::dbg_stoppoint);
-
-  // Invoke llvm.dbg.stoppoint
-  Value *Args[] = {
-    ConstantInt::get(llvm::Type::getInt32Ty(VMContext), LineNo),
-    ConstantInt::get(llvm::Type::getInt32Ty(VMContext), ColNo),
-    CU.getNode()
-  };
-  CallInst::Create(StopPointFn, Args, Args+3, "", BB);
-}
-
-/// InsertSubprogramStart - Create a new llvm.dbg.func.start intrinsic to
-/// mark the start of the specified subprogram.
-void DIFactory::InsertSubprogramStart(DISubprogram SP, BasicBlock *BB) {
-  // Lazily construct llvm.dbg.func.start.
-  if (!FuncStartFn)
-    FuncStartFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_func_start);
-
-  // Call llvm.dbg.func.start which also implicitly sets a stoppoint.
-  CallInst::Create(FuncStartFn, SP.getNode(), "", BB);
-}
-
-/// InsertRegionStart - Insert a new llvm.dbg.region.start intrinsic call to
-/// mark the start of a region for the specified scoping descriptor.
-void DIFactory::InsertRegionStart(DIDescriptor D, BasicBlock *BB) {
-  // Lazily construct llvm.dbg.region.start function.
-  if (!RegionStartFn)
-    RegionStartFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_region_start);
-
-  // Call llvm.dbg.func.start.
-  CallInst::Create(RegionStartFn, D.getNode(), "", BB);
-}
-
-/// InsertRegionEnd - Insert a new llvm.dbg.region.end intrinsic call to
-/// mark the end of a region for the specified scoping descriptor.
-void DIFactory::InsertRegionEnd(DIDescriptor D, BasicBlock *BB) {
-  // Lazily construct llvm.dbg.region.end function.
-  if (!RegionEndFn)
-    RegionEndFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_region_end);
-
-  // Call llvm.dbg.region.end.
-  CallInst::Create(RegionEndFn, D.getNode(), "", BB);
-}
-
 /// InsertDeclare - Insert a new llvm.dbg.declare intrinsic call.
-void DIFactory::InsertDeclare(Value *Storage, DIVariable D,
+Instruction *DIFactory::InsertDeclare(Value *Storage, DIVariable D,
                               Instruction *InsertBefore) {
   // Cast the storage to a {}* for the call to llvm.dbg.declare.
   Storage = new BitCastInst(Storage, EmptyStructPtr, "", InsertBefore);
@@ -942,11 +1003,11 @@ void DIFactory::InsertDeclare(Value *Storage, DIVariable D,
     DeclareFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_declare);
 
   Value *Args[] = { Storage, D.getNode() };
-  CallInst::Create(DeclareFn, Args, Args+2, "", InsertBefore);
+  return CallInst::Create(DeclareFn, Args, Args+2, "", InsertBefore);
 }
 
 /// InsertDeclare - Insert a new llvm.dbg.declare intrinsic call.
-void DIFactory::InsertDeclare(Value *Storage, DIVariable D,
+Instruction *DIFactory::InsertDeclare(Value *Storage, DIVariable D,
                               BasicBlock *InsertAtEnd) {
   // Cast the storage to a {}* for the call to llvm.dbg.declare.
   Storage = new BitCastInst(Storage, EmptyStructPtr, "", InsertAtEnd);
@@ -955,7 +1016,7 @@ void DIFactory::InsertDeclare(Value *Storage, DIVariable D,
     DeclareFn = Intrinsic::getDeclaration(&M, Intrinsic::dbg_declare);
 
   Value *Args[] = { Storage, D.getNode() };
-  CallInst::Create(DeclareFn, Args, Args+2, "", InsertAtEnd);
+  return CallInst::Create(DeclareFn, Args, Args+2, "", InsertAtEnd);
 }
 
 
@@ -966,20 +1027,18 @@ void DIFactory::InsertDeclare(Value *Storage, DIVariable D,
 /// processModule - Process entire module and collect debug info.
 void DebugInfoFinder::processModule(Module &M) {
 
+  MetadataContext &TheMetadata = M.getContext().getMetadata();
+  unsigned MDDbgKind = TheMetadata.getMDKind("dbg");
+
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     for (Function::iterator FI = (*I).begin(), FE = (*I).end(); FI != FE; ++FI)
       for (BasicBlock::iterator BI = (*FI).begin(), BE = (*FI).end(); BI != BE;
            ++BI) {
-        if (DbgStopPointInst *SPI = dyn_cast<DbgStopPointInst>(BI))
-          processStopPoint(SPI);
-        else if (DbgFuncStartInst *FSI = dyn_cast<DbgFuncStartInst>(BI))
-          processFuncStart(FSI);
-        else if (DbgRegionStartInst *DRS = dyn_cast<DbgRegionStartInst>(BI))
-          processRegionStart(DRS);
-        else if (DbgRegionEndInst *DRE = dyn_cast<DbgRegionEndInst>(BI))
-          processRegionEnd(DRE);
-        else if (DbgDeclareInst *DDI = dyn_cast<DbgDeclareInst>(BI))
+        if (DbgDeclareInst *DDI = dyn_cast<DbgDeclareInst>(BI))
           processDeclare(DDI);
+        else if (MDDbgKind) 
+          if (MDNode *L = TheMetadata.getMD(MDDbgKind, BI)) 
+            processLocation(DILocation(L));
       }
 
   NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.gv");
@@ -993,6 +1052,20 @@ void DebugInfoFinder::processModule(Module &M) {
       processType(DIG.getType());
     }
   }
+}
+
+/// processLocation - Process DILocation.
+void DebugInfoFinder::processLocation(DILocation Loc) {
+  if (Loc.isNull()) return;
+  DIScope S(Loc.getScope().getNode());
+  if (S.isNull()) return;
+  if (S.isCompileUnit())
+    addCompileUnit(DICompileUnit(S.getNode()));
+  else if (S.isSubprogram())
+    processSubprogram(DISubprogram(S.getNode()));
+  else if (S.isLexicalBlock())
+    processLexicalBlock(DILexicalBlock(S.getNode()));
+  processLocation(Loc.getOrigLocation());
 }
 
 /// processType - Process DIType.
@@ -1021,6 +1094,17 @@ void DebugInfoFinder::processType(DIType DT) {
   }
 }
 
+/// processLexicalBlock
+void DebugInfoFinder::processLexicalBlock(DILexicalBlock LB) {
+  if (LB.isNull())
+    return;
+  DIScope Context = LB.getContext();
+  if (Context.isLexicalBlock())
+    return processLexicalBlock(DILexicalBlock(Context.getNode()));
+  else
+    return processSubprogram(DISubprogram(Context.getNode()));
+}
+
 /// processSubprogram - Process DISubprogram.
 void DebugInfoFinder::processSubprogram(DISubprogram SP) {
   if (SP.isNull())
@@ -1029,30 +1113,6 @@ void DebugInfoFinder::processSubprogram(DISubprogram SP) {
     return;
   addCompileUnit(SP.getCompileUnit());
   processType(SP.getType());
-}
-
-/// processStopPoint - Process DbgStopPointInst.
-void DebugInfoFinder::processStopPoint(DbgStopPointInst *SPI) {
-  MDNode *Context = dyn_cast<MDNode>(SPI->getContext());
-  addCompileUnit(DICompileUnit(Context));
-}
-
-/// processFuncStart - Process DbgFuncStartInst.
-void DebugInfoFinder::processFuncStart(DbgFuncStartInst *FSI) {
-  MDNode *SP = dyn_cast<MDNode>(FSI->getSubprogram());
-  processSubprogram(DISubprogram(SP));
-}
-
-/// processRegionStart - Process DbgRegionStart.
-void DebugInfoFinder::processRegionStart(DbgRegionStartInst *DRS) {
-  MDNode *SP = dyn_cast<MDNode>(DRS->getContext());
-  processSubprogram(DISubprogram(SP));
-}
-
-/// processRegionEnd - Process DbgRegionEnd.
-void DebugInfoFinder::processRegionEnd(DbgRegionEndInst *DRE) {
-  MDNode *SP = dyn_cast<MDNode>(DRE->getContext());
-  processSubprogram(DISubprogram(SP));
 }
 
 /// processDeclare - Process DbgDeclareInst.
@@ -1188,9 +1248,10 @@ namespace llvm {
       // Look for the bitcast.
       for (Value::use_const_iterator I = V->use_begin(), E =V->use_end();
             I != E; ++I)
-        if (isa<BitCastInst>(I))
-          return findDbgDeclare(*I, false);
-
+        if (isa<BitCastInst>(I)) {
+          const DbgDeclareInst *DDI = findDbgDeclare(*I, false);
+          if (DDI) return DDI;
+        }
       return 0;
     }
 
@@ -1214,7 +1275,8 @@ bool getLocationInfo(const Value *V, std::string &DisplayName,
       if (!DIGV) return false;
       DIGlobalVariable Var(cast<MDNode>(DIGV));
 
-      if (const char *D = Var.getDisplayName())
+      StringRef D = Var.getDisplayName();
+      if (!D.empty())
         DisplayName = D;
       LineNo = Var.getLineNumber();
       Unit = Var.getCompileUnit();
@@ -1224,18 +1286,22 @@ bool getLocationInfo(const Value *V, std::string &DisplayName,
       if (!DDI) return false;
       DIVariable Var(cast<MDNode>(DDI->getVariable()));
 
-      if (const char *D = Var.getName())
+      StringRef D = Var.getName();
+      if (!D.empty())
         DisplayName = D;
       LineNo = Var.getLineNumber();
       Unit = Var.getCompileUnit();
       TypeD = Var.getType();
     }
 
-    if (const char *T = TypeD.getName())
+    StringRef T = TypeD.getName();
+    if (!T.empty())
       Type = T;
-    if (const char *F = Unit.getFilename())
+    StringRef F = Unit.getFilename();
+    if (!F.empty())
       File = F;
-    if (const char *D = Unit.getDirectory())
+    StringRef D = Unit.getDirectory();
+    if (!D.empty())
       Dir = D;
     return true;
   }
@@ -1350,21 +1416,35 @@ bool getLocationInfo(const Value *V, std::string &DisplayName,
     return DebugLoc::get(Id);
   }
 
-  /// isInlinedFnStart - Return true if FSI is starting an inlined function.
-  bool isInlinedFnStart(DbgFuncStartInst &FSI, const Function *CurrentFn) {
-    DISubprogram Subprogram(cast<MDNode>(FSI.getSubprogram()));
-    if (Subprogram.describes(CurrentFn))
-      return false;
-
-    return true;
+  /// getDISubprogram - Find subprogram that is enclosing this scope.
+  DISubprogram getDISubprogram(MDNode *Scope) {
+    DIDescriptor D(Scope);
+    if (D.isNull())
+      return DISubprogram();
+    
+    if (D.isCompileUnit())
+      return DISubprogram();
+    
+    if (D.isSubprogram())
+      return DISubprogram(Scope);
+    
+    if (D.isLexicalBlock())
+      return getDISubprogram(DILexicalBlock(Scope).getContext().getNode());
+    
+    return DISubprogram();
   }
 
-  /// isInlinedFnEnd - Return true if REI is ending an inlined function.
-  bool isInlinedFnEnd(DbgRegionEndInst &REI, const Function *CurrentFn) {
-    DISubprogram Subprogram(cast<MDNode>(REI.getContext()));
-    if (Subprogram.isNull() || Subprogram.describes(CurrentFn))
-      return false;
-
-    return true;
+  /// getDICompositeType - Find underlying composite type.
+  DICompositeType getDICompositeType(DIType T) {
+    if (T.isNull())
+      return DICompositeType();
+    
+    if (T.isCompositeType())
+      return DICompositeType(T.getNode());
+    
+    if (T.isDerivedType())
+      return getDICompositeType(DIDerivedType(T.getNode()).getTypeDerivedFrom());
+    
+    return DICompositeType();
   }
 }

@@ -127,7 +127,7 @@ def : Pat<(PPCnop),
           (NOP)>;
 
 // Atomic operations
-let usesCustomDAGSchedInserter = 1 in {
+let usesCustomInserter = 1 in {
   let Uses = [CR0] in {
     def ATOMIC_LOAD_ADD_I64 : Pseudo<
       (outs G8RC:$dst), (ins memrr:$ptr, G8RC:$incr),
@@ -731,9 +731,13 @@ def : Pat<(PPChi tconstpool:$in , 0), (LIS8 tconstpool:$in)>;
 def : Pat<(PPClo tconstpool:$in , 0), (LI8  tconstpool:$in)>;
 def : Pat<(PPChi tjumptable:$in , 0), (LIS8 tjumptable:$in)>;
 def : Pat<(PPClo tjumptable:$in , 0), (LI8  tjumptable:$in)>;
+def : Pat<(PPChi tblockaddress:$in, 0), (LIS8 tblockaddress:$in)>;
+def : Pat<(PPClo tblockaddress:$in, 0), (LI8  tblockaddress:$in)>;
 def : Pat<(add G8RC:$in, (PPChi tglobaladdr:$g, 0)),
           (ADDIS8 G8RC:$in, tglobaladdr:$g)>;
 def : Pat<(add G8RC:$in, (PPChi tconstpool:$g, 0)),
           (ADDIS8 G8RC:$in, tconstpool:$g)>;
 def : Pat<(add G8RC:$in, (PPChi tjumptable:$g, 0)),
           (ADDIS8 G8RC:$in, tjumptable:$g)>;
+def : Pat<(add G8RC:$in, (PPChi tblockaddress:$g, 0)),
+          (ADDIS8 G8RC:$in, tblockaddress:$g)>;

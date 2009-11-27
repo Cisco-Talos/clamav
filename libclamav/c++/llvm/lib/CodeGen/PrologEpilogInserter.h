@@ -27,6 +27,7 @@
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/ADT/SparseBitVector.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/Target/TargetRegisterInfo.h"
 
 namespace llvm {
   class RegScavenger;
@@ -92,6 +93,17 @@ namespace llvm {
     // may choose to skip shrink wrapping for certain
     // functions.
     bool ShrinkWrapThisFunction;
+
+    // Flag to control whether to use the register scavenger to resolve
+    // frame index materialization registers. Set according to
+    // TRI->requiresFrameIndexScavenging() for the curren function.
+    bool FrameIndexVirtualScavenging;
+
+    // When using the scavenger post-pass to resolve frame reference
+    // materialization registers, maintain a map of the registers to
+    // the constant value and SP adjustment associated with it.
+    typedef std::pair<int, int> FrameConstantEntry;
+    DenseMap<unsigned, FrameConstantEntry> FrameConstantRegMap;
 
 #ifndef NDEBUG
     // Machine function handle.

@@ -179,6 +179,151 @@ static Constant *FoldBitCast(LLVMContext &Context,
 }
 
 
+/// ExtractConstantBytes - V is an integer constant which only has a subset of
+/// its bytes used.  The bytes used are indicated by ByteStart (which is the
+/// first byte used, counting from the least significant byte) and ByteSize,
+/// which is the number of bytes used.
+///
+/// This function analyzes the specified constant to see if the specified byte
+/// range can be returned as a simplified constant.  If so, the constant is
+/// returned, otherwise null is returned.
+/// 
+static Constant *ExtractConstantBytes(Constant *C, unsigned ByteStart,
+                                      unsigned ByteSize) {
+  assert(isa<IntegerType>(C->getType()) &&
+         (cast<IntegerType>(C->getType())->getBitWidth() & 7) == 0 &&
+         "Non-byte sized integer input");
+  unsigned CSize = cast<IntegerType>(C->getType())->getBitWidth()/8;
+  assert(ByteSize && "Must be accessing some piece");
+  assert(ByteStart+ByteSize <= CSize && "Extracting invalid piece from input");
+  assert(ByteSize != CSize && "Should not extract everything");
+  
+  // Constant Integers are simple.
+  if (ConstantInt *CI = dyn_cast<ConstantInt>(C)) {
+    APInt V = CI->getValue();
+    if (ByteStart)
+      V = V.lshr(ByteStart*8);
+    V.trunc(ByteSize*8);
+    return ConstantInt::get(CI->getContext(), V);
+  }
+  
+  // In the input is a constant expr, we might be able to recursively simplify.
+  // If not, we definitely can't do anything.
+  ConstantExpr *CE = dyn_cast<ConstantExpr>(C);
+  if (CE == 0) return 0;
+  
+  switch (CE->getOpcode()) {
+  default: return 0;
+  case Instruction::Or: {
+    Constant *RHS = ExtractConstantBytes(CE->getOperand(1), ByteStart,ByteSize);
+    if (RHS == 0)
+      return 0;
+    
+    // X | -1 -> -1.
+    if (ConstantInt *RHSC = dyn_cast<ConstantInt>(RHS))
+      if (RHSC->isAllOnesValue())
+        return RHSC;
+    
+    Constant *LHS = ExtractConstantBytes(CE->getOperand(0), ByteStart,ByteSize);
+    if (LHS == 0)
+      return 0;
+    return ConstantExpr::getOr(LHS, RHS);
+  }
+  case Instruction::And: {
+    Constant *RHS = ExtractConstantBytes(CE->getOperand(1), ByteStart,ByteSize);
+    if (RHS == 0)
+      return 0;
+    
+    // X & 0 -> 0.
+    if (RHS->isNullValue())
+      return RHS;
+    
+    Constant *LHS = ExtractConstantBytes(CE->getOperand(0), ByteStart,ByteSize);
+    if (LHS == 0)
+      return 0;
+    return ConstantExpr::getAnd(LHS, RHS);
+  }
+  case Instruction::LShr: {
+    ConstantInt *Amt = dyn_cast<ConstantInt>(CE->getOperand(1));
+    if (Amt == 0)
+      return 0;
+    unsigned ShAmt = Amt->getZExtValue();
+    // Cannot analyze non-byte shifts.
+    if ((ShAmt & 7) != 0)
+      return 0;
+    ShAmt >>= 3;
+    
+    // If the extract is known to be all zeros, return zero.
+    if (ByteStart >= CSize-ShAmt)
+      return Constant::getNullValue(IntegerType::get(CE->getContext(),
+                                                     ByteSize*8));
+    // If the extract is known to be fully in the input, extract it.
+    if (ByteStart+ByteSize+ShAmt <= CSize)
+      return ExtractConstantBytes(CE->getOperand(0), ByteStart+ShAmt, ByteSize);
+    
+    // TODO: Handle the 'partially zero' case.
+    return 0;
+  }
+    
+  case Instruction::Shl: {
+    ConstantInt *Amt = dyn_cast<ConstantInt>(CE->getOperand(1));
+    if (Amt == 0)
+      return 0;
+    unsigned ShAmt = Amt->getZExtValue();
+    // Cannot analyze non-byte shifts.
+    if ((ShAmt & 7) != 0)
+      return 0;
+    ShAmt >>= 3;
+    
+    // If the extract is known to be all zeros, return zero.
+    if (ByteStart+ByteSize <= ShAmt)
+      return Constant::getNullValue(IntegerType::get(CE->getContext(),
+                                                     ByteSize*8));
+    // If the extract is known to be fully in the input, extract it.
+    if (ByteStart >= ShAmt)
+      return ExtractConstantBytes(CE->getOperand(0), ByteStart-ShAmt, ByteSize);
+    
+    // TODO: Handle the 'partially zero' case.
+    return 0;
+  }
+      
+  case Instruction::ZExt: {
+    unsigned SrcBitSize =
+      cast<IntegerType>(CE->getOperand(0)->getType())->getBitWidth();
+    
+    // If extracting something that is completely zero, return 0.
+    if (ByteStart*8 >= SrcBitSize)
+      return Constant::getNullValue(IntegerType::get(CE->getContext(),
+                                                     ByteSize*8));
+
+    // If exactly extracting the input, return it.
+    if (ByteStart == 0 && ByteSize*8 == SrcBitSize)
+      return CE->getOperand(0);
+    
+    // If extracting something completely in the input, if if the input is a
+    // multiple of 8 bits, recurse.
+    if ((SrcBitSize&7) == 0 && (ByteStart+ByteSize)*8 <= SrcBitSize)
+      return ExtractConstantBytes(CE->getOperand(0), ByteStart, ByteSize);
+      
+    // Otherwise, if extracting a subset of the input, which is not multiple of
+    // 8 bits, do a shift and trunc to get the bits.
+    if ((ByteStart+ByteSize)*8 < SrcBitSize) {
+      assert((SrcBitSize&7) && "Shouldn't get byte sized case here");
+      Constant *Res = CE->getOperand(0);
+      if (ByteStart)
+        Res = ConstantExpr::getLShr(Res, 
+                                 ConstantInt::get(Res->getType(), ByteStart*8));
+      return ConstantExpr::getTrunc(Res, IntegerType::get(C->getContext(),
+                                                          ByteSize*8));
+    }
+    
+    // TODO: Handle the 'partially zero' case.
+    return 0;
+  }
+  }
+}
+
+
 Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context, 
                                             unsigned opc, Constant *V,
                                             const Type *DestTy) {
@@ -192,7 +337,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     return UndefValue::get(DestTy);
   }
   // No compile-time operations on this type yet.
-  if (V->getType() == Type::getPPC_FP128Ty(Context) || DestTy == Type::getPPC_FP128Ty(Context))
+  if (V->getType()->isPPC_FP128Ty() || DestTy->isPPC_FP128Ty())
     return 0;
 
   // If the cast operand is a constant expression, there's a few things we can
@@ -236,15 +381,17 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
   // We actually have to do a cast now. Perform the cast according to the
   // opcode specified.
   switch (opc) {
+  default:
+    llvm_unreachable("Failed to cast constant expression");
   case Instruction::FPTrunc:
   case Instruction::FPExt:
     if (ConstantFP *FPC = dyn_cast<ConstantFP>(V)) {
       bool ignored;
       APFloat Val = FPC->getValueAPF();
-      Val.convert(DestTy == Type::getFloatTy(Context) ? APFloat::IEEEsingle :
-                  DestTy == Type::getDoubleTy(Context) ? APFloat::IEEEdouble :
-                  DestTy == Type::getX86_FP80Ty(Context) ? APFloat::x87DoubleExtended :
-                  DestTy == Type::getFP128Ty(Context) ? APFloat::IEEEquad :
+      Val.convert(DestTy->isFloatTy() ? APFloat::IEEEsingle :
+                  DestTy->isDoubleTy() ? APFloat::IEEEdouble :
+                  DestTy->isX86_FP80Ty() ? APFloat::x87DoubleExtended :
+                  DestTy->isFP128Ty() ? APFloat::IEEEquad :
                   APFloat::Bogus,
                   APFloat::rmNearestTiesToEven, &ignored);
       return ConstantFP::get(Context, Val);
@@ -300,23 +447,27 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
       return ConstantInt::get(Context, Result);
     }
     return 0;
-  case Instruction::Trunc:
+  case Instruction::Trunc: {
+    uint32_t DestBitWidth = cast<IntegerType>(DestTy)->getBitWidth();
     if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
-      uint32_t BitWidth = cast<IntegerType>(DestTy)->getBitWidth();
       APInt Result(CI->getValue());
-      Result.trunc(BitWidth);
+      Result.trunc(DestBitWidth);
       return ConstantInt::get(Context, Result);
     }
+    
+    // The input must be a constantexpr.  See if we can simplify this based on
+    // the bytes we are demanding.  Only do this if the source and dest are an
+    // even multiple of a byte.
+    if ((DestBitWidth & 7) == 0 &&
+        (cast<IntegerType>(V->getType())->getBitWidth() & 7) == 0)
+      if (Constant *Res = ExtractConstantBytes(V, 0, DestBitWidth / 8))
+        return Res;
+      
     return 0;
+  }
   case Instruction::BitCast:
     return FoldBitCast(Context, V, DestTy);
-  default:
-    assert(!"Invalid CE CastInst opcode");
-    break;
   }
-
-  llvm_unreachable("Failed to cast constant expression");
-  return 0;
 }
 
 Constant *llvm::ConstantFoldSelectInstruction(LLVMContext&,
@@ -483,7 +634,15 @@ Constant *llvm::ConstantFoldExtractValueInstruction(LLVMContext &Context,
                                                               Idxs + NumIdx));
 
   // Otherwise recurse.
-  return ConstantFoldExtractValueInstruction(Context, Agg->getOperand(*Idxs),
+  if (ConstantStruct *CS = dyn_cast<ConstantStruct>(Agg))
+    return ConstantFoldExtractValueInstruction(Context, CS->getOperand(*Idxs),
+                                               Idxs+1, NumIdx-1);
+
+  if (ConstantArray *CA = dyn_cast<ConstantArray>(Agg))
+    return ConstantFoldExtractValueInstruction(Context, CA->getOperand(*Idxs),
+                                               Idxs+1, NumIdx-1);
+  ConstantVector *CV = cast<ConstantVector>(Agg);
+  return ConstantFoldExtractValueInstruction(Context, CV->getOperand(*Idxs),
                                              Idxs+1, NumIdx-1);
 }
 
@@ -563,11 +722,10 @@ Constant *llvm::ConstantFoldInsertValueInstruction(LLVMContext &Context,
     // Insertion of constant into aggregate constant.
     std::vector<Constant*> Ops(Agg->getNumOperands());
     for (unsigned i = 0; i < Agg->getNumOperands(); ++i) {
-      Constant *Op =
-        (*Idxs == i) ?
-        ConstantFoldInsertValueInstruction(Context, Agg->getOperand(i),
-                                           Val, Idxs+1, NumIdx-1) :
-        Agg->getOperand(i);
+      Constant *Op = cast<Constant>(Agg->getOperand(i));
+      if (*Idxs == i)
+        Op = ConstantFoldInsertValueInstruction(Context, Op,
+                                                Val, Idxs+1, NumIdx-1);
       Ops[i] = Op;
     }
     
@@ -584,7 +742,7 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
                                               unsigned Opcode,
                                               Constant *C1, Constant *C2) {
   // No compile-time operations on this type yet.
-  if (C1->getType() == Type::getPPC_FP128Ty(Context))
+  if (C1->getType()->isPPC_FP128Ty())
     return 0;
 
   // Handle UndefValue up front.
@@ -1110,7 +1268,7 @@ static FCmpInst::Predicate evaluateFCmpRelation(LLVMContext &Context,
          "Cannot compare values of different types!");
 
   // No compile-time operations on this type yet.
-  if (V1->getType() == Type::getPPC_FP128Ty(Context))
+  if (V1->getType()->isPPC_FP128Ty())
     return FCmpInst::BAD_FCMP_PREDICATE;
 
   // Handle degenerate case quickly
@@ -1403,7 +1561,7 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
     return UndefValue::get(ResultTy);
 
   // No compile-time operations on this type yet.
-  if (C1->getType() == Type::getPPC_FP128Ty(Context))
+  if (C1->getType()->isPPC_FP128Ty())
     return 0;
 
   // icmp eq/ne(null,GV) -> false/true
@@ -1837,7 +1995,8 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
     // This happens with pointers to member functions in C++.
     if (CE->getOpcode() == Instruction::IntToPtr && NumIdx == 1 &&
         isa<ConstantInt>(CE->getOperand(0)) && isa<ConstantInt>(Idxs[0]) &&
-        cast<PointerType>(CE->getType())->getElementType() == Type::getInt8Ty(Context)) {
+        cast<PointerType>(CE->getType())->getElementType() ==
+            Type::getInt8Ty(Context)) {
       Constant *Base = CE->getOperand(0);
       Constant *Offset = Idxs[0];
 

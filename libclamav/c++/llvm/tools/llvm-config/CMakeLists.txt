@@ -36,9 +36,6 @@ foreach(l ${LLVM_SYSTEM_LIBS_LIST})
   set(LLVM_SYSTEM_LIBS ${LLVM_SYSTEM_LIBS} "-l${l}")
 endforeach()
 
-include(GetTargetTriple)
-get_target_triple(target)
-
 foreach(c ${LLVM_TARGETS_TO_BUILD})
   set(TARGETS_BUILT "${TARGETS_BUILT} ${c}")
 endforeach(c)
@@ -136,7 +133,7 @@ set(LLVMLibDeps ${LLVM_MAIN_SRC_DIR}/cmake/modules/LLVMLibDeps.cmake)
 set(LLVMLibDeps_TMP ${CMAKE_CURRENT_BINARY_DIR}/LLVMLibDeps.cmake.tmp)
 
 add_custom_command(OUTPUT ${LLVMLibDeps_TMP}
-  COMMAND sed -e s'@\\.a@@g' -e 's@libLLVM@LLVM@g' -e 's@: @ @' -e 's@\\\(.*\\\)@set\(MSVC_LIB_DEPS_\\1\)@' ${FINAL_LIBDEPS} > ${LLVMLibDeps_TMP}
+  COMMAND sed -e s'@\\.a@@g' -e s'@\\.so@@g' -e 's@libLLVM@LLVM@g' -e 's@: @ @' -e 's@\\\(.*\\\)@set\(MSVC_LIB_DEPS_\\1\)@' ${FINAL_LIBDEPS} > ${LLVMLibDeps_TMP}
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LLVMLibDeps_TMP} ${LLVMLibDeps}
   DEPENDS ${FINAL_LIBDEPS}
   COMMENT "Updating cmake library dependencies file ${LLVMLibDeps}"

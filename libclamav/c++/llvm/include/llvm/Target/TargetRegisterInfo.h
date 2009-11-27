@@ -275,6 +275,7 @@ private:
   regclass_iterator RegClassBegin, RegClassEnd;   // List of regclasses
 
   int CallFrameSetupOpcode, CallFrameDestroyOpcode;
+
 protected:
   TargetRegisterInfo(const TargetRegisterDesc *D, unsigned NR,
                      regclass_iterator RegClassBegin,
@@ -325,7 +326,7 @@ public:
   /// getAllocatableSet - Returns a bitset indexed by register number
   /// indicating if a register is allocatable or not. If a register class is
   /// specified, returns the subset for the class.
-  BitVector getAllocatableSet(MachineFunction &MF,
+  BitVector getAllocatableSet(const MachineFunction &MF,
                               const TargetRegisterClass *RC = NULL) const;
 
   const TargetRegisterDesc &operator[](unsigned RegNo) const {
@@ -463,6 +464,11 @@ public:
   /// exist.
   virtual unsigned getSubReg(unsigned RegNo, unsigned Index) const = 0;
 
+  /// getSubRegIndex - For a given register pair, return the sub-register index
+  /// if the are second register is a sub-register of the first. Return zero
+  /// otherwise.
+  virtual unsigned getSubRegIndex(unsigned RegNo, unsigned SubRegNo) const = 0;
+
   /// getMatchingSuperReg - Return a super-register of the specified register
   /// Reg so its sub-register of index SubIdx is Reg.
   unsigned getMatchingSuperReg(unsigned Reg, unsigned SubIdx,
@@ -561,6 +567,12 @@ public:
     return false;
   }
 
+  /// requiresFrameIndexScavenging - returns true if the target requires post
+  /// PEI scavenging of registers for materializing frame index constants.
+  virtual bool requiresFrameIndexScavenging(const MachineFunction &MF) const {
+    return false;
+  }
+
   /// hasFP - Return true if the specified function should have a dedicated
   /// frame pointer register. For most targets this is true only if the function
   /// has variable sized allocas or if frame pointer elimination is disabled.
@@ -635,6 +647,19 @@ public:
   virtual void processFunctionBeforeFrameFinalized(MachineFunction &MF) const {
   }
 
+  /// saveScavengerRegister - Spill the register so it can be used by the
+  /// register scavenger. Return true if the register was spilled, false
+  /// otherwise. If this function does not spill the register, the scavenger
+  /// will instead spill it to the emergency spill slot.
+  ///
+  virtual bool saveScavengerRegister(MachineBasicBlock &MBB,
+                                     MachineBasicBlock::iterator I,
+                                     MachineBasicBlock::iterator &UseMI,
+                                     const TargetRegisterClass *RC,
+                                     unsigned Reg) const {
+    return false;
+  }
+
   /// eliminateFrameIndex - This method must be overriden to eliminate abstract
   /// frame indices from instructions which may use them.  The instruction
   /// referenced by the iterator contains an MO_FrameIndex operand which must be
@@ -642,8 +667,13 @@ public:
   /// specified instruction, as long as it keeps the iterator pointing the the
   /// finished product. SPAdj is the SP adjustment due to call frame setup
   /// instruction.
-  virtual void eliminateFrameIndex(MachineBasicBlock::iterator MI,
-                                   int SPAdj, RegScavenger *RS=NULL) const = 0;
+  ///
+  /// When -enable-frame-index-scavenging is enabled, the virtual register
+  /// allocated for this frame index is returned and its value is stored in
+  /// *Value.
+  virtual unsigned eliminateFrameIndex(MachineBasicBlock::iterator MI,
+                                       int SPAdj, int *Value = NULL,
+                                       RegScavenger *RS=NULL) const = 0;
 
   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
   /// the function.
@@ -662,11 +692,23 @@ public:
 
   /// getFrameRegister - This method should return the register used as a base
   /// for values allocated in the current stack frame.
-  virtual unsigned getFrameRegister(MachineFunction &MF) const = 0;
+  virtual unsigned getFrameRegister(const MachineFunction &MF) const = 0;
 
   /// getFrameIndexOffset - Returns the displacement from the frame register to
   /// the stack frame of the specified index.
   virtual int getFrameIndexOffset(MachineFunction &MF, int FI) const;
+
+  /// getFrameIndexReference - This method should return the base register
+  /// and offset used to reference a frame index location. The offset is
+  /// returned directly, and the base register is returned via FrameReg.
+  virtual int getFrameIndexReference(MachineFunction &MF, int FI,
+                                     unsigned &FrameReg) const {
+    // By default, assume all frame indices are referenced via whatever
+    // getFrameRegister() says. The target can override this if it's doing
+    // something different.
+    FrameReg = getFrameRegister(MF);
+    return getFrameIndexOffset(MF, FI);
+  }
 
   /// getRARegister - This method should return the register where the return
   /// address can be found.

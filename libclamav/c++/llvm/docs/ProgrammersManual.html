@@ -83,6 +83,7 @@ option</a></li>
       <li><a href="#dss_stringmap">"llvm/ADT/StringMap.h"</a></li>
       <li><a href="#dss_indexedmap">"llvm/ADT/IndexedMap.h"</a></li>
       <li><a href="#dss_densemap">"llvm/ADT/DenseMap.h"</a></li>
+      <li><a href="#dss_valuemap">"llvm/ADT/ValueMap.h"</a></li>
       <li><a href="#dss_map">&lt;map&gt;</a></li>
       <li><a href="#dss_othermap">Other Map-Like Container Options</a></li>
     </ul></li>
@@ -650,7 +651,7 @@ even if the source lives in multiple files.</p>
 <p>The <tt>DEBUG_WITH_TYPE</tt> macro is also available for situations where you
 would like to set <tt>DEBUG_TYPE</tt>, but only for one specific <tt>DEBUG</tt>
 statement. It takes an additional first parameter, which is the type to use. For
-example, the preceeding example could be written as:</p>
+example, the preceding example could be written as:</p>
 
 
 <div class="doc_code">
@@ -1487,6 +1488,23 @@ or values are large.  Finally, you must implement a partial specialization of
 DenseMapInfo for the key that you want, if it isn't already supported.  This
 is required to tell DenseMap about two special marker values (which can never be
 inserted into the map) that it needs internally.</p>
+
+</div>
+
+<!-- _______________________________________________________________________ -->
+<div class="doc_subsubsection">
+  <a name="dss_valuemap">"llvm/ADT/ValueMap.h"</a>
+</div>
+
+<div class="doc_text">
+
+<p>
+ValueMap is a wrapper around a <a href="#dss_densemap">DenseMap</a> mapping
+Value*s (or subclasses) to another type.  When a Value is deleted or RAUW'ed,
+ValueMap will update itself so the new version of the key is mapped to the same
+value, just as if the key were a WeakVH.  You can configure exactly how this
+happens, and what else happens on these two events, by passing
+a <code>Config</code> parameter to the ValueMap template.</p>
 
 </div>
 
@@ -2983,7 +3001,7 @@ the <tt>lib/VMCore</tt> directory.</p>
   <dt><tt>VectorType</tt></dt>
   <dd>Subclass of SequentialType for vector types. A 
   vector type is similar to an ArrayType but is distinguished because it is 
-  a first class type wherease ArrayType is not. Vector types are used for 
+  a first class type whereas ArrayType is not. Vector types are used for 
   vector operations and are usually small vectors of of an integer or floating 
   point type.</dd>
   <dt><tt>StructType</tt></dt>
@@ -3543,7 +3561,7 @@ Superclasses: <a href="#GlobalValue"><tt>GlobalValue</tt></a>,
 <a href="#Value"><tt>Value</tt></a></p>
 
 <p>The <tt>Function</tt> class represents a single procedure in LLVM.  It is
-actually one of the more complex classes in the LLVM heirarchy because it must
+actually one of the more complex classes in the LLVM hierarchy because it must
 keep track of a large amount of data.  The <tt>Function</tt> class keeps track
 of a list of <a href="#BasicBlock"><tt>BasicBlock</tt></a>s, a list of formal 
 <a href="#Argument"><tt>Argument</tt></a>s, and a 
@@ -3552,7 +3570,7 @@ of a list of <a href="#BasicBlock"><tt>BasicBlock</tt></a>s, a list of formal
 <p>The list of <a href="#BasicBlock"><tt>BasicBlock</tt></a>s is the most
 commonly used part of <tt>Function</tt> objects.  The list imposes an implicit
 ordering of the blocks in the function, which indicate how the code will be
-layed out by the backend.  Additionally, the first <a
+laid out by the backend.  Additionally, the first <a
 href="#BasicBlock"><tt>BasicBlock</tt></a> is the implicit entry node for the
 <tt>Function</tt>.  It is not legal in LLVM to explicitly branch to this initial
 block.  There are no implicit exit nodes, and in fact there may be multiple exit
@@ -3682,7 +3700,7 @@ Superclasses: <a href="#GlobalValue"><tt>GlobalValue</tt></a>,
 <a href="#User"><tt>User</tt></a>,
 <a href="#Value"><tt>Value</tt></a></p>
 
-<p>Global variables are represented with the (suprise suprise)
+<p>Global variables are represented with the (surprise surprise)
 <tt>GlobalVariable</tt> class. Like functions, <tt>GlobalVariable</tt>s are also
 subclasses of <a href="#GlobalValue"><tt>GlobalValue</tt></a>, and as such are
 always referenced by their address (global values must live in memory, so their
@@ -3732,7 +3750,7 @@ never change at runtime).</p>
 
   <li><tt><a href="#Constant">Constant</a> *getInitializer()</tt>
 
-    <p>Returns the intial value for a <tt>GlobalVariable</tt>.  It is not legal
+    <p>Returns the initial value for a <tt>GlobalVariable</tt>.  It is not legal
     to call this method if there is no initializer.</p></li>
 </ul>
 

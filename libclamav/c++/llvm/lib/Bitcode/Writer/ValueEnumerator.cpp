@@ -14,6 +14,7 @@
 #include "ValueEnumerator.h"
 #include "llvm/Constants.h"
 #include "llvm/DerivedTypes.h"
+#include "llvm/LLVMContext.h"
 #include "llvm/Metadata.h"
 #include "llvm/Module.h"
 #include "llvm/TypeSymbolTable.h"
@@ -87,6 +88,8 @@ ValueEnumerator::ValueEnumerator(const Module *M) {
       EnumerateType(I->getType());
 
     MetadataContext &TheMetadata = F->getContext().getMetadata();
+    typedef SmallVector<std::pair<unsigned, TrackingVH<MDNode> >, 2> MDMapTy;
+    MDMapTy MDs;
     for (Function::const_iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
       for (BasicBlock::const_iterator I = BB->begin(), E = BB->end(); I!=E;++I){
         for (User::const_op_iterator OI = I->op_begin(), E = I->op_end();
@@ -99,12 +102,11 @@ ValueEnumerator::ValueEnumerator(const Module *M) {
           EnumerateAttributes(II->getAttributes());
 
         // Enumerate metadata attached with this instruction.
-        const MetadataContext::MDMapTy *MDs = TheMetadata.getMDs(I);
-        if (MDs)
-          for (MetadataContext::MDMapTy::const_iterator MI = MDs->begin(),
-                 ME = MDs->end(); MI != ME; ++MI)
-            if (MDNode *MDN = dyn_cast_or_null<MDNode>(MI->second))
-              EnumerateMetadata(MDN);
+        MDs.clear();
+        TheMetadata.getMDs(I, MDs);
+        for (MDMapTy::const_iterator MI = MDs.begin(), ME = MDs.end(); MI != ME;
+             ++MI)
+          EnumerateMetadata(MI->second);
       }
   }
 
@@ -214,15 +216,16 @@ void ValueEnumerator::EnumerateMetadata(const MetadataBase *MD) {
     MDValues.push_back(std::make_pair(MD, 1U));
     MDValueMap[MD] = MDValues.size();
     MDValueID = MDValues.size();
-    for (MDNode::const_elem_iterator I = N->elem_begin(), E = N->elem_end();
-         I != E; ++I) {
-      if (*I)
-        EnumerateValue(*I);
+    for (unsigned i = 0, e = N->getNumElements(); i != e; ++i) {    
+      if (Value *V = N->getElement(i))
+        EnumerateValue(V);
       else
         EnumerateType(Type::getVoidTy(MD->getContext()));
     }
     return;
-  } else if (const NamedMDNode *N = dyn_cast<NamedMDNode>(MD)) {
+  }
+  
+  if (const NamedMDNode *N = dyn_cast<NamedMDNode>(MD)) {
     for(NamedMDNode::const_elem_iterator I = N->elem_begin(),
           E = N->elem_end(); I != E; ++I) {
       MetadataBase *M = *I;
@@ -273,7 +276,8 @@ void ValueEnumerator::EnumerateValue(const Value *V) {
       // graph that don't go through a global variable.
       for (User::const_op_iterator I = C->op_begin(), E = C->op_end();
            I != E; ++I)
-        EnumerateValue(*I);
+        if (!isa<BasicBlock>(*I)) // Don't enumerate BB operand to BlockAddress.
+          EnumerateValue(*I);
 
       // Finally, add the value.  Doing this could make the ValueID reference be
       // dangling, don't reuse it.
@@ -319,15 +323,20 @@ void ValueEnumerator::EnumerateOperandType(const Value *V) {
 
     // This constant may have operands, make sure to enumerate the types in
     // them.
-    for (unsigned i = 0, e = C->getNumOperands(); i != e; ++i)
-      EnumerateOperandType(C->getOperand(i));
+    for (unsigned i = 0, e = C->getNumOperands(); i != e; ++i) {
+      const User *Op = C->getOperand(i);
+      
+      // Don't enumerate basic blocks here, this happens as operands to
+      // blockaddress.
+      if (isa<BasicBlock>(Op)) continue;
+      
+      EnumerateOperandType(cast<Constant>(Op));
+    }
 
     if (const MDNode *N = dyn_cast<MDNode>(V)) {
-      for (unsigned i = 0, e = N->getNumElements(); i != e; ++i) {
-        Value *Elem = N->getElement(i);
-        if (Elem)
+      for (unsigned i = 0, e = N->getNumElements(); i != e; ++i)
+        if (Value *Elem = N->getElement(i))
           EnumerateOperandType(Elem);
-      }
     }
   } else if (isa<MDString>(V) || isa<MDNode>(V))
     EnumerateValue(V);
@@ -396,3 +405,23 @@ void ValueEnumerator::purgeFunction() {
   Values.resize(NumModuleValues);
   BasicBlocks.clear();
 }
+
+static void IncorporateFunctionInfoGlobalBBIDs(const Function *F,
+                                 DenseMap<const BasicBlock*, unsigned> &IDMap) {
+  unsigned Counter = 0;
+  for (Function::const_iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
+    IDMap[BB] = ++Counter;
+}
+
+/// getGlobalBasicBlockID - This returns the function-specific ID for the
+/// specified basic block.  This is relatively expensive information, so it
+/// should only be used by rare constructs such as address-of-label.
+unsigned ValueEnumerator::getGlobalBasicBlockID(const BasicBlock *BB) const {
+  unsigned &Idx = GlobalBasicBlockIDs[BB];
+  if (Idx != 0)
+    return Idx-1;
+
+  IncorporateFunctionInfoGlobalBBIDs(BB->getParent(), GlobalBasicBlockIDs);
+  return getGlobalBasicBlockID(BB);
+}
+

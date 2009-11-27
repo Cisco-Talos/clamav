@@ -16,7 +16,7 @@
 using namespace llvm;
 
 namespace {
-  class VISIBILITY_HIDDEN NEONPreAllocPass : public MachineFunctionPass {
+  class NEONPreAllocPass : public MachineFunctionPass {
     const TargetInstrInfo *TII;
 
   public:
@@ -36,8 +36,12 @@ namespace {
   char NEONPreAllocPass::ID = 0;
 }
 
-static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
-                             unsigned &NumRegs) {
+static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd, unsigned &NumRegs,
+                             unsigned &Offset, unsigned &Stride) {
+  // Default to unit stride with no offset.
+  Stride = 1;
+  Offset = 0;
+
   switch (Opcode) {
   default:
     break;
@@ -45,6 +49,7 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VLD2d8:
   case ARM::VLD2d16:
   case ARM::VLD2d32:
+  case ARM::VLD2d64:
   case ARM::VLD2LNd8:
   case ARM::VLD2LNd16:
   case ARM::VLD2LNd32:
@@ -52,9 +57,33 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
     NumRegs = 2;
     return true;
 
+  case ARM::VLD2q8:
+  case ARM::VLD2q16:
+  case ARM::VLD2q32:
+    FirstOpnd = 0;
+    NumRegs = 4;
+    return true;
+
+  case ARM::VLD2LNq16a:
+  case ARM::VLD2LNq32a:
+    FirstOpnd = 0;
+    NumRegs = 2;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD2LNq16b:
+  case ARM::VLD2LNq32b:
+    FirstOpnd = 0;
+    NumRegs = 2;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
   case ARM::VLD3d8:
   case ARM::VLD3d16:
   case ARM::VLD3d32:
+  case ARM::VLD3d64:
   case ARM::VLD3LNd8:
   case ARM::VLD3LNd16:
   case ARM::VLD3LNd32:
@@ -62,9 +91,44 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
     NumRegs = 3;
     return true;
 
+  case ARM::VLD3q8a:
+  case ARM::VLD3q16a:
+  case ARM::VLD3q32a:
+    FirstOpnd = 0;
+    NumRegs = 3;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD3q8b:
+  case ARM::VLD3q16b:
+  case ARM::VLD3q32b:
+    FirstOpnd = 0;
+    NumRegs = 3;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD3LNq16a:
+  case ARM::VLD3LNq32a:
+    FirstOpnd = 0;
+    NumRegs = 3;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD3LNq16b:
+  case ARM::VLD3LNq32b:
+    FirstOpnd = 0;
+    NumRegs = 3;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
   case ARM::VLD4d8:
   case ARM::VLD4d16:
   case ARM::VLD4d32:
+  case ARM::VLD4d64:
   case ARM::VLD4LNd8:
   case ARM::VLD4LNd16:
   case ARM::VLD4LNd32:
@@ -72,34 +136,162 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
     NumRegs = 4;
     return true;
 
+  case ARM::VLD4q8a:
+  case ARM::VLD4q16a:
+  case ARM::VLD4q32a:
+    FirstOpnd = 0;
+    NumRegs = 4;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD4q8b:
+  case ARM::VLD4q16b:
+  case ARM::VLD4q32b:
+    FirstOpnd = 0;
+    NumRegs = 4;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD4LNq16a:
+  case ARM::VLD4LNq32a:
+    FirstOpnd = 0;
+    NumRegs = 4;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VLD4LNq16b:
+  case ARM::VLD4LNq32b:
+    FirstOpnd = 0;
+    NumRegs = 4;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
   case ARM::VST2d8:
   case ARM::VST2d16:
   case ARM::VST2d32:
+  case ARM::VST2d64:
   case ARM::VST2LNd8:
   case ARM::VST2LNd16:
   case ARM::VST2LNd32:
-    FirstOpnd = 3;
+    FirstOpnd = 4;
     NumRegs = 2;
+    return true;
+
+  case ARM::VST2q8:
+  case ARM::VST2q16:
+  case ARM::VST2q32:
+    FirstOpnd = 4;
+    NumRegs = 4;
+    return true;
+
+  case ARM::VST2LNq16a:
+  case ARM::VST2LNq32a:
+    FirstOpnd = 4;
+    NumRegs = 2;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VST2LNq16b:
+  case ARM::VST2LNq32b:
+    FirstOpnd = 4;
+    NumRegs = 2;
+    Offset = 1;
+    Stride = 2;
     return true;
 
   case ARM::VST3d8:
   case ARM::VST3d16:
   case ARM::VST3d32:
+  case ARM::VST3d64:
   case ARM::VST3LNd8:
   case ARM::VST3LNd16:
   case ARM::VST3LNd32:
-    FirstOpnd = 3;
+    FirstOpnd = 4;
     NumRegs = 3;
+    return true;
+
+  case ARM::VST3q8a:
+  case ARM::VST3q16a:
+  case ARM::VST3q32a:
+    FirstOpnd = 5;
+    NumRegs = 3;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VST3q8b:
+  case ARM::VST3q16b:
+  case ARM::VST3q32b:
+    FirstOpnd = 5;
+    NumRegs = 3;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
+  case ARM::VST3LNq16a:
+  case ARM::VST3LNq32a:
+    FirstOpnd = 4;
+    NumRegs = 3;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VST3LNq16b:
+  case ARM::VST3LNq32b:
+    FirstOpnd = 4;
+    NumRegs = 3;
+    Offset = 1;
+    Stride = 2;
     return true;
 
   case ARM::VST4d8:
   case ARM::VST4d16:
   case ARM::VST4d32:
+  case ARM::VST4d64:
   case ARM::VST4LNd8:
   case ARM::VST4LNd16:
   case ARM::VST4LNd32:
-    FirstOpnd = 3;
+    FirstOpnd = 4;
     NumRegs = 4;
+    return true;
+
+  case ARM::VST4q8a:
+  case ARM::VST4q16a:
+  case ARM::VST4q32a:
+    FirstOpnd = 5;
+    NumRegs = 4;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VST4q8b:
+  case ARM::VST4q16b:
+  case ARM::VST4q32b:
+    FirstOpnd = 5;
+    NumRegs = 4;
+    Offset = 1;
+    Stride = 2;
+    return true;
+
+  case ARM::VST4LNq16a:
+  case ARM::VST4LNq32a:
+    FirstOpnd = 4;
+    NumRegs = 4;
+    Offset = 0;
+    Stride = 2;
+    return true;
+
+  case ARM::VST4LNq16b:
+  case ARM::VST4LNq32b:
+    FirstOpnd = 4;
+    NumRegs = 4;
+    Offset = 1;
+    Stride = 2;
     return true;
 
   case ARM::VTBL2:
@@ -142,8 +334,8 @@ bool NEONPreAllocPass::PreAllocNEONRegisters(MachineBasicBlock &MBB) {
   MachineBasicBlock::iterator MBBI = MBB.begin(), E = MBB.end();
   for (; MBBI != E; ++MBBI) {
     MachineInstr *MI = &*MBBI;
-    unsigned FirstOpnd, NumRegs;
-    if (!isNEONMultiRegOp(MI->getOpcode(), FirstOpnd, NumRegs))
+    unsigned FirstOpnd, NumRegs, Offset, Stride;
+    if (!isNEONMultiRegOp(MI->getOpcode(), FirstOpnd, NumRegs, Offset, Stride))
       continue;
 
     MachineBasicBlock::iterator NextI = next(MBBI);
@@ -157,15 +349,15 @@ bool NEONPreAllocPass::PreAllocNEONRegisters(MachineBasicBlock &MBB) {
       // For now, just assign a fixed set of adjacent registers.
       // This leaves plenty of room for future improvements.
       static const unsigned NEONDRegs[] = {
-        ARM::D0, ARM::D1, ARM::D2, ARM::D3
+        ARM::D0, ARM::D1, ARM::D2, ARM::D3,
+        ARM::D4, ARM::D5, ARM::D6, ARM::D7
       };
-      MO.setReg(NEONDRegs[R]);
+      MO.setReg(NEONDRegs[Offset + R * Stride]);
 
       if (MO.isUse()) {
         // Insert a copy from VirtReg.
-        AddDefaultPred(BuildMI(MBB, MBBI, MI->getDebugLoc(),
-                               TII->get(ARM::FCPYD), MO.getReg())
-                       .addReg(VirtReg));
+        TII->copyRegToReg(MBB, MBBI, MO.getReg(), VirtReg,
+                          ARM::DPRRegisterClass, ARM::DPRRegisterClass);
         if (MO.isKill()) {
           MachineInstr *CopyMI = prior(MBBI);
           CopyMI->findRegisterUseOperand(VirtReg)->setIsKill();
@@ -173,9 +365,8 @@ bool NEONPreAllocPass::PreAllocNEONRegisters(MachineBasicBlock &MBB) {
         MO.setIsKill();
       } else if (MO.isDef() && !MO.isDead()) {
         // Add a copy to VirtReg.
-        AddDefaultPred(BuildMI(MBB, NextI, MI->getDebugLoc(),
-                               TII->get(ARM::FCPYD), VirtReg)
-                       .addReg(MO.getReg()));
+        TII->copyRegToReg(MBB, NextI, VirtReg, MO.getReg(),
+                          ARM::DPRRegisterClass, ARM::DPRRegisterClass);
       }
     }
   }

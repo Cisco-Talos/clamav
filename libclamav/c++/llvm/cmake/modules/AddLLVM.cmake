@@ -22,9 +22,36 @@ macro(add_llvm_library name)
 endmacro(add_llvm_library name)
 
 
+macro(add_llvm_loadable_module name)
+  if( NOT LLVM_ON_UNIX )
+    message(STATUS "Loadable modules not supported on this platform.
+${name} ignored.")
+  else()
+    llvm_process_sources( ALL_FILES ${ARGN} )
+    add_library( ${name} MODULE ${ALL_FILES} )
+    set_target_properties( ${name} PROPERTIES PREFIX "" )
+
+    if (APPLE)
+      # Darwin-specific linker flags for loadable modules.
+      set_target_properties(${name} PROPERTIES
+        LINK_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
+    endif()
+
+    install(TARGETS ${name}
+      LIBRARY DESTINATION lib${LLVM_LIBDIR_SUFFIX}
+      ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX})
+  endif()
+endmacro(add_llvm_loadable_module name)
+
+
 macro(add_llvm_executable name)
   llvm_process_sources( ALL_FILES ${ARGN} )
-  add_executable(${name} ${ALL_FILES})
+  if( EXCLUDE_FROM_ALL )
+    add_executable(${name} EXCLUDE_FROM_ALL ${ALL_FILES})
+  else()
+    add_executable(${name} ${ALL_FILES})
+  endif()
+  set(EXCLUDE_FROM_ALL OFF)
   if( LLVM_USED_LIBS )
     foreach(lib ${LLVM_USED_LIBS})
       target_link_libraries( ${name} ${lib} )
@@ -45,17 +72,25 @@ endmacro(add_llvm_executable name)
 
 macro(add_llvm_tool name)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LLVM_TOOLS_BINARY_DIR})
+  if( NOT LLVM_BUILD_TOOLS )
+    set(EXCLUDE_FROM_ALL ON)
+  endif()
   add_llvm_executable(${name} ${ARGN})
-  install(TARGETS ${name}
-    RUNTIME DESTINATION bin)
+  if( LLVM_BUILD_TOOLS )
+    install(TARGETS ${name} RUNTIME DESTINATION bin)
+  endif()
 endmacro(add_llvm_tool name)
 
 
 macro(add_llvm_example name)
 #  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${LLVM_EXAMPLES_BINARY_DIR})
+  if( NOT LLVM_BUILD_EXAMPLES )
+    set(EXCLUDE_FROM_ALL ON)
+  endif()
   add_llvm_executable(${name} ${ARGN})
-  install(TARGETS ${name}
-    RUNTIME DESTINATION examples)
+  if( LLVM_BUILD_EXAMPLES )
+    install(TARGETS ${name} RUNTIME DESTINATION examples)
+  endif()
 endmacro(add_llvm_example name)
 
 

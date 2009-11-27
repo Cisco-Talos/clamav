@@ -29,7 +29,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEAbbrevData - Dwarf abbreviation data, describes the one attribute of a
   /// Dwarf abbreviation.
-  class VISIBILITY_HIDDEN DIEAbbrevData {
+  class DIEAbbrevData {
     /// Attribute - Dwarf attribute code.
     ///
     unsigned Attribute;
@@ -52,7 +52,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEAbbrev - Dwarf abbreviation, describes the organization of a debug
   /// information object.
-  class VISIBILITY_HIDDEN DIEAbbrev : public FoldingSetNode {
+  class DIEAbbrev : public FoldingSetNode {
     /// Tag - Dwarf tag code.
     ///
     unsigned Tag;
@@ -113,7 +113,7 @@ namespace llvm {
   class CompileUnit;
   class DIEValue;
 
-  class VISIBILITY_HIDDEN DIE : public FoldingSetNode {
+  class DIE {
   protected:
     /// Abbrev - Buffer for constructing abbreviation.
     ///
@@ -161,37 +161,27 @@ namespace llvm {
     void setSize(unsigned S) { Size = S; }
     void setAbstractCompileUnit(CompileUnit *CU) { AbstractCU = CU; }
 
-    /// AddValue - Add a value and attributes to a DIE.
+    /// addValue - Add a value and attributes to a DIE.
     ///
-    void AddValue(unsigned Attribute, unsigned Form, DIEValue *Value) {
+    void addValue(unsigned Attribute, unsigned Form, DIEValue *Value) {
       Abbrev.AddAttribute(Attribute, Form);
       Values.push_back(Value);
     }
 
     /// SiblingOffset - Return the offset of the debug information entry's
     /// sibling.
-    unsigned SiblingOffset() const { return Offset + Size; }
+    unsigned getSiblingOffset() const { return Offset + Size; }
 
-    /// AddSiblingOffset - Add a sibling offset field to the front of the DIE.
+    /// addSiblingOffset - Add a sibling offset field to the front of the DIE.
     ///
-    void AddSiblingOffset();
+    void addSiblingOffset();
 
-    /// AddChild - Add a child to the DIE.
+    /// addChild - Add a child to the DIE.
     ///
-    void AddChild(DIE *Child) {
+    void addChild(DIE *Child) {
       Abbrev.setChildrenFlag(dwarf::DW_CHILDREN_yes);
       Children.push_back(Child);
     }
-
-    /// Detach - Detaches objects connected to it after copying.
-    ///
-    void Detach() {
-      Children.clear();
-    }
-
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    void Profile(FoldingSetNodeID &ID) ;
 
 #ifndef NDEBUG
     void print(raw_ostream &O, unsigned IncIndent = 0);
@@ -202,7 +192,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEValue - A debug information entry value.
   ///
-  class VISIBILITY_HIDDEN DIEValue : public FoldingSetNode {
+  class DIEValue {
   public:
     enum {
       isInteger,
@@ -233,10 +223,6 @@ namespace llvm {
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const = 0;
 
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    virtual void Profile(FoldingSetNodeID &ID) = 0;
-
     // Implement isa/cast/dyncast.
     static bool classof(const DIEValue *) { return true; }
 
@@ -249,7 +235,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEInteger - An integer value DIE.
   ///
-  class VISIBILITY_HIDDEN DIEInteger : public DIEValue {
+  class DIEInteger : public DIEValue {
     uint64_t Integer;
   public:
     explicit DIEInteger(uint64_t I) : DIEValue(isInteger), Integer(I) {}
@@ -277,10 +263,6 @@ namespace llvm {
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
 
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, unsigned Int);
-    virtual void Profile(FoldingSetNodeID &ID);
 
     // Implement isa/cast/dyncast.
     static bool classof(const DIEInteger *) { return true; }
@@ -294,10 +276,10 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEString - A string value DIE.
   ///
-  class VISIBILITY_HIDDEN DIEString : public DIEValue {
-    const std::string Str;
+  class DIEString : public DIEValue {
+    const StringRef Str;
   public:
-    explicit DIEString(const std::string &S) : DIEValue(isString), Str(S) {}
+    explicit DIEString(const StringRef S) : DIEValue(isString), Str(S) {}
 
     /// EmitValue - Emit string value.
     ///
@@ -308,11 +290,6 @@ namespace llvm {
     virtual unsigned SizeOf(const TargetData *, unsigned /*Form*/) const {
       return Str.size() + sizeof(char); // sizeof('\0');
     }
-
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, const std::string &Str);
-    virtual void Profile(FoldingSetNodeID &ID);
 
     // Implement isa/cast/dyncast.
     static bool classof(const DIEString *) { return true; }
@@ -326,7 +303,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEDwarfLabel - A Dwarf internal label expression DIE.
   //
-  class VISIBILITY_HIDDEN DIEDwarfLabel : public DIEValue {
+  class DIEDwarfLabel : public DIEValue {
     const DWLabel Label;
   public:
     explicit DIEDwarfLabel(const DWLabel &L) : DIEValue(isLabel), Label(L) {}
@@ -338,11 +315,6 @@ namespace llvm {
     /// SizeOf - Determine size of label value in bytes.
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
-
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, const DWLabel &Label);
-    virtual void Profile(FoldingSetNodeID &ID);
 
     // Implement isa/cast/dyncast.
     static bool classof(const DIEDwarfLabel *)  { return true; }
@@ -356,7 +328,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEObjectLabel - A label to an object in code or data.
   //
-  class VISIBILITY_HIDDEN DIEObjectLabel : public DIEValue {
+  class DIEObjectLabel : public DIEValue {
     const std::string Label;
   public:
     explicit DIEObjectLabel(const std::string &L)
@@ -369,11 +341,6 @@ namespace llvm {
     /// SizeOf - Determine size of label value in bytes.
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
-
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, const std::string &Label);
-    virtual void Profile(FoldingSetNodeID &ID);
 
     // Implement isa/cast/dyncast.
     static bool classof(const DIEObjectLabel *) { return true; }
@@ -389,7 +356,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIESectionOffset - A section offset DIE.
   ///
-  class VISIBILITY_HIDDEN DIESectionOffset : public DIEValue {
+  class DIESectionOffset : public DIEValue {
     const DWLabel Label;
     const DWLabel Section;
     bool IsEH : 1;
@@ -408,12 +375,6 @@ namespace llvm {
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
 
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, const DWLabel &Label,
-                        const DWLabel &Section);
-    virtual void Profile(FoldingSetNodeID &ID);
-
     // Implement isa/cast/dyncast.
     static bool classof(const DIESectionOffset *)  { return true; }
     static bool classof(const DIEValue *D) {
@@ -428,7 +389,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEDelta - A simple label difference DIE.
   ///
-  class VISIBILITY_HIDDEN DIEDelta : public DIEValue {
+  class DIEDelta : public DIEValue {
     const DWLabel LabelHi;
     const DWLabel LabelLo;
   public:
@@ -443,12 +404,6 @@ namespace llvm {
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
 
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, const DWLabel &LabelHi,
-                        const DWLabel &LabelLo);
-    virtual void Profile(FoldingSetNodeID &ID);
-
     // Implement isa/cast/dyncast.
     static bool classof(const DIEDelta *)  { return true; }
     static bool classof(const DIEValue *D) { return D->getType() == isDelta; }
@@ -462,7 +417,7 @@ namespace llvm {
   /// DIEntry - A pointer to another debug information entry.  An instance of
   /// this class can also be used as a proxy for a debug information entry not
   /// yet defined (ie. types.)
-  class VISIBILITY_HIDDEN DIEEntry : public DIEValue {
+  class DIEEntry : public DIEValue {
     DIE *Entry;
   public:
     explicit DIEEntry(DIE *E) : DIEValue(isEntry), Entry(E) {}
@@ -480,11 +435,6 @@ namespace llvm {
       return sizeof(int32_t);
     }
 
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    static void Profile(FoldingSetNodeID &ID, DIE *Entry);
-    virtual void Profile(FoldingSetNodeID &ID);
-
     // Implement isa/cast/dyncast.
     static bool classof(const DIEEntry *)  { return true; }
     static bool classof(const DIEValue *E) { return E->getType() == isEntry; }
@@ -497,7 +447,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   /// DIEBlock - A block of values.  Primarily used for location expressions.
   //
-  class VISIBILITY_HIDDEN DIEBlock : public DIEValue, public DIE {
+  class DIEBlock : public DIEValue, public DIE {
     unsigned Size;                // Size in bytes excluding size header.
   public:
     DIEBlock()
@@ -524,10 +474,6 @@ namespace llvm {
     /// SizeOf - Determine size of block data in bytes.
     ///
     virtual unsigned SizeOf(const TargetData *TD, unsigned Form) const;
-
-    /// Profile - Used to gather unique data for the value folding set.
-    ///
-    virtual void Profile(FoldingSetNodeID &ID);
 
     // Implement isa/cast/dyncast.
     static bool classof(const DIEBlock *)  { return true; }

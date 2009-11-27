@@ -17,15 +17,17 @@ add_llvm_target(ARMCodeGen
   ARMCodeEmitter.cpp
   ARMConstantIslandPass.cpp
   ARMConstantPoolValue.cpp
-  ARMInstrInfo.cpp
+  ARMExpandPseudoInsts.cpp
   ARMISelDAGToDAG.cpp
   ARMISelLowering.cpp
+  ARMInstrInfo.cpp
   ARMJITInfo.cpp
   ARMLoadStoreOptimizer.cpp
   ARMMCAsmInfo.cpp
   ARMRegisterInfo.cpp
   ARMSubtarget.cpp
   ARMTargetMachine.cpp
+  NEONMoveFix.cpp
   NEONPreAllocPass.cpp
   Thumb1InstrInfo.cpp
   Thumb1RegisterInfo.cpp

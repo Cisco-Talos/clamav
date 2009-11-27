@@ -62,8 +62,8 @@ namespace llvm {
       SRA_FLAG,     // V,Flag = sra_flag X -> sra X, 1 + save carry out.
       RRX,          // V = RRX X, Flag     -> srl X, 1 + shift in carry flag.
 
-      FMRRD,        // double to two gprs.
-      FMDRR,        // Two gprs to double.
+      VMOVRRD,      // double to two gprs.
+      VMOVDRR,      // Two gprs to double.
 
       EH_SJLJ_SETJMP,    // SjLj exception handling setjmp.
       EH_SJLJ_LONGJMP,   // SjLj exception handling longjmp.
@@ -137,6 +137,13 @@ namespace llvm {
     /// return the constant being splatted.  The ByteSize field indicates the
     /// number of bytes of each element [1248].
     SDValue getVMOVImm(SDNode *N, unsigned ByteSize, SelectionDAG &DAG);
+
+    /// getVFPf32Imm / getVFPf64Imm - If the given fp immediate can be
+    /// materialized with a VMOV.f32 / VMOV.f64 (i.e. fconsts / fconstd)
+    /// instruction, returns its 8-bit integer representation. Otherwise,
+    /// returns -1.
+    int getVFPf32Imm(const APFloat &FPImm);
+    int getVFPf64Imm(const APFloat &FPImm);
   }
 
   //===--------------------------------------------------------------------===//
@@ -172,6 +179,12 @@ namespace llvm {
     /// by AM is legal for this target, for a load/store of the specified type.
     virtual bool isLegalAddressingMode(const AddrMode &AM, const Type *Ty)const;
     bool isLegalT2ScaledAddressingMode(const AddrMode &AM, EVT VT) const;
+
+    /// isLegalICmpImmediate - Return true if the specified immediate is legal
+    /// icmp immediate, that is the target has icmp instructions which can compare
+    /// a register against the immediate without having to materialize the
+    /// immediate into a register.
+    virtual bool isLegalICmpImmediate(int64_t Imm) const;
 
     /// getPreIndexedAddressParts - returns true by value, base pointer and
     /// offset pointer and addressing mode by reference if the node's address
@@ -224,6 +237,12 @@ namespace llvm {
 
     bool isShuffleMaskLegal(const SmallVectorImpl<int> &M, EVT VT) const;
     bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const;
+
+    /// isFPImmLegal - Returns true if the target can instruction select the
+    /// specified FP immediate natively. If false, the legalizer will
+    /// materialize the FP immediate as a load from a constant pool.
+    virtual bool isFPImmLegal(const APFloat &Imm, EVT VT) const;
+
   private:
     /// Subtarget - Keep a pointer to the ARMSubtarget around so that we can
     /// make the right decision when generating code for different targets.
@@ -255,6 +274,7 @@ namespace llvm {
                              ISD::ArgFlagsTy Flags);
     SDValue LowerINTRINSIC_W_CHAIN(SDValue Op, SelectionDAG &DAG);
     SDValue LowerINTRINSIC_WO_CHAIN(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerBlockAddress(SDValue Op, SelectionDAG &DAG);
     SDValue LowerGlobalAddressDarwin(SDValue Op, SelectionDAG &DAG);
     SDValue LowerGlobalAddressELF(SDValue Op, SelectionDAG &DAG);
     SDValue LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG);
@@ -264,8 +284,12 @@ namespace llvm {
                                    SelectionDAG &DAG);
     SDValue LowerGLOBAL_OFFSET_TABLE(SDValue Op, SelectionDAG &DAG);
     SDValue LowerBR_JT(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerSELECT_CC(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG);
     SDValue LowerFRAMEADDR(SDValue Op, SelectionDAG &DAG);
     SDValue LowerDYNAMIC_STACKALLOC(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerShiftRightParts(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerShiftLeftParts(SDValue Op, SelectionDAG &DAG);
 
     SDValue EmitTargetCodeForMemcpy(SelectionDAG &DAG, DebugLoc dl,
                                       SDValue Chain,
@@ -301,6 +325,9 @@ namespace llvm {
                   CallingConv::ID CallConv, bool isVarArg,
                   const SmallVectorImpl<ISD::OutputArg> &Outs,
                   DebugLoc dl, SelectionDAG &DAG);
+
+    SDValue getARMCmp(SDValue LHS, SDValue RHS, ISD::CondCode CC,
+                      SDValue &ARMCC, SelectionDAG &DAG, DebugLoc dl);
   };
 }
 

@@ -65,9 +65,6 @@ void llvm::DeleteDeadBlock(BasicBlock *BB) {
 /// when all entries to the PHI nodes in a block are guaranteed equal, such as
 /// when the block has exactly one predecessor.
 void llvm::FoldSingleEntryPHINodes(BasicBlock *BB) {
-  if (!isa<PHINode>(BB->begin()))
-    return;
-  
   while (PHINode *PN = dyn_cast<PHINode>(BB->begin())) {
     if (PN->getIncomingValue(0) != PN)
       PN->replaceAllUsesWith(PN->getIncomingValue(0));
@@ -97,10 +94,14 @@ void llvm::DeleteDeadPHIs(BasicBlock *BB) {
 
 /// MergeBlockIntoPredecessor - Attempts to merge a block into its predecessor,
 /// if possible.  The return value indicates success or failure.
-bool llvm::MergeBlockIntoPredecessor(BasicBlock* BB, Pass* P) {
+bool llvm::MergeBlockIntoPredecessor(BasicBlock *BB, Pass *P) {
   pred_iterator PI(pred_begin(BB)), PE(pred_end(BB));
-  // Can't merge the entry block.
-  if (pred_begin(BB) == pred_end(BB)) return false;
+  // Can't merge the entry block.  Don't merge away blocks who have their
+  // address taken: this is a bug if the predecessor block is the entry node
+  // (because we'd end up taking the address of the entry) and undesirable in
+  // any case.
+  if (pred_begin(BB) == pred_end(BB) ||
+      BB->hasAddressTaken()) return false;
   
   BasicBlock *PredBB = *PI++;
   for (; PI != PE; ++PI)  // Search all predecessors, see if they are all same
@@ -383,6 +384,12 @@ BasicBlock *llvm::SplitBlockPredecessors(BasicBlock *BB,
   bool IsLoopEntry = !!L;
   bool SplitMakesNewLoopHeader = false;
   for (unsigned i = 0; i != NumPreds; ++i) {
+    // This is slightly more strict than necessary; the minimum requirement
+    // is that there be no more than one indirectbr branching to BB. And
+    // all BlockAddress uses would need to be updated.
+    assert(!isa<IndirectBrInst>(Preds[i]->getTerminator()) &&
+           "Cannot split an edge from an IndirectBrInst");
+
     Preds[i]->getTerminator()->replaceUsesOfWith(BB, NewBB);
 
     if (LI) {
@@ -425,14 +432,26 @@ BasicBlock *llvm::SplitBlockPredecessors(BasicBlock *BB,
 
   if (L) {
     if (IsLoopEntry) {
-      if (Loop *PredLoop = LI->getLoopFor(Preds[0])) {
-        // Add the new block to the nearest enclosing loop (and not an
-        // adjacent loop).
-        while (PredLoop && !PredLoop->contains(BB))
-          PredLoop = PredLoop->getParentLoop();
-        if (PredLoop)
-          PredLoop->addBasicBlockToLoop(NewBB, LI->getBase());
-      }
+      // Add the new block to the nearest enclosing loop (and not an
+      // adjacent loop). To find this, examine each of the predecessors and
+      // determine which loops enclose them, and select the most-nested loop
+      // which contains the loop containing the block being split.
+      Loop *InnermostPredLoop = 0;
+      for (unsigned i = 0; i != NumPreds; ++i)
+        if (Loop *PredLoop = LI->getLoopFor(Preds[i])) {
+          // Seek a loop which actually contains the block being split (to
+          // avoid adjacent loops).
+          while (PredLoop && !PredLoop->contains(BB))
+            PredLoop = PredLoop->getParentLoop();
+          // Select the most-nested of these loops which contains the block.
+          if (PredLoop &&
+              PredLoop->contains(BB) &&
+              (!InnermostPredLoop ||
+               InnermostPredLoop->getLoopDepth() < PredLoop->getLoopDepth()))
+            InnermostPredLoop = PredLoop;
+        }
+      if (InnermostPredLoop)
+        InnermostPredLoop->addBasicBlockToLoop(NewBB, LI->getBase());
     } else {
       L->addBasicBlockToLoop(NewBB, LI->getBase());
       if (SplitMakesNewLoopHeader)
@@ -663,7 +682,7 @@ void llvm::CopyPrecedingStopPoint(Instruction *I,
   if (I != I->getParent()->begin()) {
     BasicBlock::iterator BBI = I;  --BBI;
     if (DbgStopPointInst *DSPI = dyn_cast<DbgStopPointInst>(BBI)) {
-      CallInst *newDSPI = DSPI->clone();
+      CallInst *newDSPI = cast<CallInst>(DSPI->clone());
       newDSPI->insertBefore(InsertPos);
     }
   }

@@ -309,7 +309,7 @@ def MOV64ri32 : RIi32<0xC7, MRM0r, (outs GR64:$dst), (ins i64i32imm:$src),
                       [(set GR64:$dst, i64immSExt32:$src)]>;
 }
 
-let canFoldAsLoad = 1 in
+let canFoldAsLoad = 1, isReMaterializable = 1, mayHaveSideEffects = 1 in
 def MOV64rm : RI<0x8B, MRMSrcMem, (outs GR64:$dst), (ins i64mem:$src),
                  "mov{q}\t{$src, $dst|$dst, $src}",
                  [(set GR64:$dst, (load addr:$src))]>;
@@ -368,19 +368,15 @@ def MOVSX64rm32: RI<0x63, MRMSrcMem, (outs GR64:$dst), (ins i32mem:$src),
 // Use movzbl instead of movzbq when the destination is a register; it's
 // equivalent due to implicit zero-extending, and it has a smaller encoding.
 def MOVZX64rr8 : I<0xB6, MRMSrcReg, (outs GR64:$dst), (ins GR8 :$src),
-                   "movz{bl|x}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                   [(set GR64:$dst, (zext GR8:$src))]>, TB;
+                   "", [(set GR64:$dst, (zext GR8:$src))]>, TB;
 def MOVZX64rm8 : I<0xB6, MRMSrcMem, (outs GR64:$dst), (ins i8mem :$src),
-                   "movz{bl|x}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                   [(set GR64:$dst, (zextloadi64i8 addr:$src))]>, TB;
+                   "", [(set GR64:$dst, (zextloadi64i8 addr:$src))]>, TB;
 // Use movzwl instead of movzwq when the destination is a register; it's
 // equivalent due to implicit zero-extending, and it has a smaller encoding.
 def MOVZX64rr16: I<0xB7, MRMSrcReg, (outs GR64:$dst), (ins GR16:$src),
-                   "movz{wl|x}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                   [(set GR64:$dst, (zext GR16:$src))]>, TB;
+                   "", [(set GR64:$dst, (zext GR16:$src))]>, TB;
 def MOVZX64rm16: I<0xB7, MRMSrcMem, (outs GR64:$dst), (ins i16mem:$src),
-                   "movz{wl|x}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                   [(set GR64:$dst, (zextloadi64i16 addr:$src))]>, TB;
+                   "", [(set GR64:$dst, (zextloadi64i16 addr:$src))]>, TB;
 
 // There's no movzlq instruction, but movl can be used for this purpose, using
 // implicit zero-extension. The preferred way to do 32-bit-to-64-bit zero
@@ -390,11 +386,9 @@ def MOVZX64rm16: I<0xB7, MRMSrcMem, (outs GR64:$dst), (ins i16mem:$src),
 // necessarily all zero. In such cases, we fall back to these explicit zext
 // instructions.
 def MOVZX64rr32 : I<0x89, MRMDestReg, (outs GR64:$dst), (ins GR32:$src),
-                    "mov{l}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                    [(set GR64:$dst, (zext GR32:$src))]>;
+                    "", [(set GR64:$dst, (zext GR32:$src))]>;
 def MOVZX64rm32 : I<0x8B, MRMSrcMem, (outs GR64:$dst), (ins i32mem:$src),
-                    "mov{l}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                    [(set GR64:$dst, (zextloadi64i32 addr:$src))]>;
+                    "", [(set GR64:$dst, (zextloadi64i32 addr:$src))]>;
 
 // Any instruction that defines a 32-bit result leaves the high half of the
 // register. Truncate can be lowered to EXTRACT_SUBREG. CopyFromReg may
@@ -1455,8 +1449,7 @@ def : Pat<(i64 0),
 // Materialize i64 constant where top 32-bits are zero.
 let AddedComplexity = 1, isReMaterializable = 1, isAsCheapAsAMove = 1 in
 def MOV64ri64i32 : Ii32<0xB8, AddRegFrm, (outs GR64:$dst), (ins i64i32imm:$src),
-                        "mov{l}\t{$src, ${dst:subreg32}|${dst:subreg32}, $src}",
-                        [(set GR64:$dst, i64immZExt32:$src)]>;
+                        "", [(set GR64:$dst, i64immZExt32:$src)]>;
 
 //===----------------------------------------------------------------------===//
 // Thread Local Storage Instructions
@@ -1515,6 +1508,7 @@ def XCHG64rm : RI<0x87, MRMSrcMem, (outs GR64:$dst), (ins i64mem:$ptr,GR64:$val)
 }
 
 // Optimized codegen when the non-memory output is not used.
+let Defs = [EFLAGS] in {
 // FIXME: Use normal add / sub instructions and add lock prefix dynamically.
 def LOCK_ADD64mr : RI<0x03, MRMDestMem, (outs), (ins i64mem:$dst, GR64:$src2),
                       "lock\n\t"
@@ -1544,10 +1538,10 @@ def LOCK_INC64m : RI<0xFF, MRM0m, (outs), (ins i64mem:$dst),
 def LOCK_DEC64m : RI<0xFF, MRM1m, (outs), (ins i64mem:$dst),
                       "lock\n\t"
                       "dec{q}\t$dst", []>, LOCK;
-
+}
 // Atomic exchange, and, or, xor
 let Constraints = "$val = $dst", Defs = [EFLAGS],
-                  usesCustomDAGSchedInserter = 1 in {
+                  usesCustomInserter = 1 in {
 def ATOMAND64 : I<0, Pseudo, (outs GR64:$dst),(ins i64mem:$ptr, GR64:$val),
                "#ATOMAND64 PSEUDO!", 
                [(set GR64:$dst, (atomic_load_and_64 addr:$ptr, GR64:$val))]>;
@@ -1601,6 +1595,8 @@ def : Pat<(i64 (X86Wrapper tglobaladdr :$dst)),
           (MOV64ri tglobaladdr :$dst)>, Requires<[FarData]>;
 def : Pat<(i64 (X86Wrapper texternalsym:$dst)),
           (MOV64ri texternalsym:$dst)>, Requires<[FarData]>;
+def : Pat<(i64 (X86Wrapper tblockaddress:$dst)),
+          (MOV64ri tblockaddress:$dst)>, Requires<[FarData]>;
 
 // In static codegen with small code model, we can get the address of a label
 // into a register with 'movl'.  FIXME: This is a hack, the 'imm' predicate of
@@ -1613,6 +1609,8 @@ def : Pat<(i64 (X86Wrapper tglobaladdr :$dst)),
           (MOV64ri64i32 tglobaladdr :$dst)>, Requires<[SmallCode]>;
 def : Pat<(i64 (X86Wrapper texternalsym:$dst)),
           (MOV64ri64i32 texternalsym:$dst)>, Requires<[SmallCode]>;
+def : Pat<(i64 (X86Wrapper tblockaddress:$dst)),
+          (MOV64ri64i32 tblockaddress:$dst)>, Requires<[SmallCode]>;
 
 // In kernel code model, we can get the address of a label
 // into a register with 'movq'.  FIXME: This is a hack, the 'imm' predicate of
@@ -1625,6 +1623,8 @@ def : Pat<(i64 (X86Wrapper tglobaladdr :$dst)),
           (MOV64ri32 tglobaladdr :$dst)>, Requires<[KernelCode]>;
 def : Pat<(i64 (X86Wrapper texternalsym:$dst)),
           (MOV64ri32 texternalsym:$dst)>, Requires<[KernelCode]>;
+def : Pat<(i64 (X86Wrapper tblockaddress:$dst)),
+          (MOV64ri32 tblockaddress:$dst)>, Requires<[KernelCode]>;
 
 // If we have small model and -static mode, it is safe to store global addresses
 // directly as immediates.  FIXME: This is really a hack, the 'imm' predicate
@@ -1640,6 +1640,9 @@ def : Pat<(store (i64 (X86Wrapper tglobaladdr:$src)), addr:$dst),
           Requires<[NearData, IsStatic]>;
 def : Pat<(store (i64 (X86Wrapper texternalsym:$src)), addr:$dst),
           (MOV64mi32 addr:$dst, texternalsym:$src)>,
+          Requires<[NearData, IsStatic]>;
+def : Pat<(store (i64 (X86Wrapper tblockaddress:$src)), addr:$dst),
+          (MOV64mi32 addr:$dst, tblockaddress:$src)>,
           Requires<[NearData, IsStatic]>;
 
 // Calls
@@ -1805,43 +1808,43 @@ def : Pat<(and (srl_su GR64:$src, (i8 8)), (i64 255)),
           (SUBREG_TO_REG
             (i64 0),
             (MOVZX32_NOREXrr8
-              (EXTRACT_SUBREG (COPY_TO_REGCLASS GR64:$src, GR64_ABCD),
+              (EXTRACT_SUBREG (i64 (COPY_TO_REGCLASS GR64:$src, GR64_ABCD)),
                               x86_subreg_8bit_hi)),
             x86_subreg_32bit)>;
 def : Pat<(and (srl_su GR32:$src, (i8 8)), (i32 255)),
           (MOVZX32_NOREXrr8
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR32:$src, GR32_ABCD),
+            (EXTRACT_SUBREG (i32 (COPY_TO_REGCLASS GR32:$src, GR32_ABCD)),
                             x86_subreg_8bit_hi))>,
       Requires<[In64BitMode]>;
 def : Pat<(srl_su GR16:$src, (i8 8)),
           (EXTRACT_SUBREG
             (MOVZX32_NOREXrr8
-              (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+              (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                               x86_subreg_8bit_hi)),
             x86_subreg_16bit)>,
       Requires<[In64BitMode]>;
 def : Pat<(i32 (zext (srl_su GR16:$src, (i8 8)))),
           (MOVZX32_NOREXrr8
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+            (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                             x86_subreg_8bit_hi))>,
       Requires<[In64BitMode]>;
 def : Pat<(i32 (anyext (srl_su GR16:$src, (i8 8)))),
           (MOVZX32_NOREXrr8
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+            (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                             x86_subreg_8bit_hi))>,
       Requires<[In64BitMode]>;
 def : Pat<(i64 (zext (srl_su GR16:$src, (i8 8)))),
           (SUBREG_TO_REG
             (i64 0),
             (MOVZX32_NOREXrr8
-              (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+              (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                               x86_subreg_8bit_hi)),
             x86_subreg_32bit)>;
 def : Pat<(i64 (anyext (srl_su GR16:$src, (i8 8)))),
           (SUBREG_TO_REG
             (i64 0),
             (MOVZX32_NOREXrr8
-              (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+              (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                               x86_subreg_8bit_hi)),
             x86_subreg_32bit)>;
 
@@ -1849,18 +1852,18 @@ def : Pat<(i64 (anyext (srl_su GR16:$src, (i8 8)))),
 def : Pat<(store (i8 (trunc_su (srl_su GR64:$src, (i8 8)))), addr:$dst),
           (MOV8mr_NOREX
             addr:$dst,
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR64:$src, GR64_ABCD),
+            (EXTRACT_SUBREG (i64 (COPY_TO_REGCLASS GR64:$src, GR64_ABCD)),
                             x86_subreg_8bit_hi))>;
 def : Pat<(store (i8 (trunc_su (srl_su GR32:$src, (i8 8)))), addr:$dst),
           (MOV8mr_NOREX
             addr:$dst,
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR32:$src, GR32_ABCD),
+            (EXTRACT_SUBREG (i32 (COPY_TO_REGCLASS GR32:$src, GR32_ABCD)),
                             x86_subreg_8bit_hi))>,
       Requires<[In64BitMode]>;
 def : Pat<(store (i8 (trunc_su (srl_su GR16:$src, (i8 8)))), addr:$dst),
           (MOV8mr_NOREX
             addr:$dst,
-            (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+            (EXTRACT_SUBREG (i16 (COPY_TO_REGCLASS GR16:$src, GR16_ABCD)),
                             x86_subreg_8bit_hi))>,
       Requires<[In64BitMode]>;
 

@@ -103,7 +103,17 @@ public:
       Kills.erase(I);
       return true;
     }
-    
+
+    /// findKill - Find a kill instruction in MBB. Return NULL if none is found.
+    MachineInstr *findKill(const MachineBasicBlock *MBB) const;
+
+    /// isLiveIn - Is Reg live in to MBB? This means that Reg is live through
+    /// MBB, or it is killed in MBB. If Reg is only used by PHI instructions in
+    /// MBB, it is not considered live in.
+    bool isLiveIn(const MachineBasicBlock &MBB,
+                  unsigned Reg,
+                  MachineRegisterInfo &MRI);
+
     void dump() const;
   };
 
@@ -263,6 +273,18 @@ public:
   void HandleVirtRegDef(unsigned reg, MachineInstr *MI);
   void HandleVirtRegUse(unsigned reg, MachineBasicBlock *MBB,
                         MachineInstr *MI);
+
+  bool isLiveIn(unsigned Reg, const MachineBasicBlock &MBB) {
+    return getVarInfo(Reg).isLiveIn(MBB, Reg, *MRI);
+  }
+
+  /// addNewBlock - Add a new basic block BB between DomBB and SuccBB. All
+  /// variables that are live out of DomBB and live into SuccBB will be marked
+  /// as passing live through BB. This method assumes that the machine code is
+  /// still in SSA form.
+  void addNewBlock(MachineBasicBlock *BB,
+                   MachineBasicBlock *DomBB,
+                   MachineBasicBlock *SuccBB);
 };
 
 } // End llvm namespace

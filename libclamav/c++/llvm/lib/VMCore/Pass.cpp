@@ -18,6 +18,7 @@
 #include "llvm/Module.h"
 #include "llvm/ModuleProvider.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/System/Atomic.h"
@@ -129,6 +130,9 @@ class PassRegistrar {
   /// pass.
   typedef std::map<intptr_t, const PassInfo*> MapType;
   MapType PassInfoMap;
+
+  typedef StringMap<const PassInfo*> StringMapType;
+  StringMapType PassInfoStringMap;
   
   /// AnalysisGroupInfo - Keep track of information for each analysis group.
   struct AnalysisGroupInfo {
@@ -145,10 +149,16 @@ public:
     return I != PassInfoMap.end() ? I->second : 0;
   }
   
+  const PassInfo *GetPassInfo(StringRef Arg) const {
+    StringMapType::const_iterator I = PassInfoStringMap.find(Arg);
+    return I != PassInfoStringMap.end() ? I->second : 0;
+  }
+  
   void RegisterPass(const PassInfo &PI) {
     bool Inserted =
       PassInfoMap.insert(std::make_pair(PI.getTypeInfo(),&PI)).second;
     assert(Inserted && "Pass registered multiple times!"); Inserted=Inserted;
+    PassInfoStringMap[PI.getPassArgument()] = &PI;
   }
   
   void UnregisterPass(const PassInfo &PI) {
@@ -157,6 +167,7 @@ public:
     
     // Remove pass from the map.
     PassInfoMap.erase(I);
+    PassInfoStringMap.erase(PI.getPassArgument());
   }
   
   void EnumerateWith(PassRegistrationListener *L) {
@@ -225,6 +236,10 @@ const PassInfo *Pass::getPassInfo() const {
 
 const PassInfo *Pass::lookupPassInfo(intptr_t TI) {
   return getPassRegistrar()->GetPassInfo(TI);
+}
+
+const PassInfo *Pass::lookupPassInfo(StringRef Arg) {
+  return getPassRegistrar()->GetPassInfo(Arg);
 }
 
 void PassInfo::registerPass() {

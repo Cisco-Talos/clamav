@@ -14,7 +14,7 @@
 #ifndef LLVM_EXECUTION_ENGINE_JIT_MEMMANAGER_H
 #define LLVM_EXECUTION_ENGINE_JIT_MEMMANAGER_H
 
-#include "llvm/Support/DataTypes.h"
+#include "llvm/System/DataTypes.h"
 #include <string>
 
 namespace llvm {
@@ -71,17 +71,6 @@ public:
   /// return a pointer to its base.
   virtual uint8_t *getGOTBase() const = 0;
   
-  /// SetDlsymTable - If the JIT must be able to relocate stubs after they have
-  /// been emitted, potentially because they are being copied to a process
-  /// where external symbols live at different addresses than in the JITing
-  ///  process, allocate a table with sufficient information to do so.
-  virtual void SetDlsymTable(void *ptr) = 0;
-  
-  /// getDlsymTable - If this is managing a table of entries so that stubs to
-  /// external symbols can be later relocated, this method should return a
-  /// pointer to it.
-  virtual void *getDlsymTable() const = 0;
-  
   /// NeedsExactSize - If the memory manager requires to know the size of the
   /// objects to be emitted
   bool NeedsExactSize() const {
@@ -132,9 +121,11 @@ public:
   ///
   virtual uint8_t *allocateGlobal(uintptr_t Size, unsigned Alignment) = 0;
 
-  /// deallocateMemForFunction - Free JIT memory for the specified function.
-  /// This is never called when the JIT is currently emitting a function.
-  virtual void deallocateMemForFunction(const Function *F) = 0;
+  /// deallocateFunctionBody - Free the specified function body.  The argument
+  /// must be the return value from a call to startFunctionBody() that hasn't
+  /// been deallocated yet.  This is never called when the JIT is currently
+  /// emitting a function.
+  virtual void deallocateFunctionBody(void *Body) = 0;
   
   /// startExceptionTable - When we finished JITing the function, if exception
   /// handling is set, we emit the exception table.
@@ -146,10 +137,16 @@ public:
   virtual void endExceptionTable(const Function *F, uint8_t *TableStart,
                                  uint8_t *TableEnd, uint8_t* FrameRegister) = 0;
 
+  /// deallocateExceptionTable - Free the specified exception table's memory.
+  /// The argument must be the return value from a call to startExceptionTable()
+  /// that hasn't been deallocated yet.  This is never called when the JIT is
+  /// currently emitting an exception table.
+  virtual void deallocateExceptionTable(void *ET) = 0;
+
   /// CheckInvariants - For testing only.  Return true if all internal
   /// invariants are preserved, or return false and set ErrorStr to a helpful
   /// error message.
-  virtual bool CheckInvariants(std::string &ErrorStr) {
+  virtual bool CheckInvariants(std::string &) {
     return true;
   }
 

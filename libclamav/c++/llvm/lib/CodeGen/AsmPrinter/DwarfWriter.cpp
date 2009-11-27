@@ -43,14 +43,14 @@ void DwarfWriter::BeginModule(Module *M,
   DE = new DwarfException(OS, A, T);
   DD = new DwarfDebug(OS, A, T);
   DE->BeginModule(M, MMI);
-  DD->BeginModule(M, MMI);
+  DD->beginModule(M, MMI);
 }
 
 /// EndModule - Emit all Dwarf sections that should come after the content.
 ///
 void DwarfWriter::EndModule() {
   DE->EndModule();
-  DD->EndModule();
+  DD->endModule();
   delete DD; DD = 0;
   delete DE; DE = 0;
 }
@@ -59,13 +59,13 @@ void DwarfWriter::EndModule() {
 /// emitted immediately after the function entry point.
 void DwarfWriter::BeginFunction(MachineFunction *MF) {
   DE->BeginFunction(MF);
-  DD->BeginFunction(MF);
+  DD->beginFunction(MF);
 }
 
 /// EndFunction - Gather and emit post-function debug information.
 ///
 void DwarfWriter::EndFunction(MachineFunction *MF) {
-  DD->EndFunction(MF);
+  DD->endFunction(MF);
   DE->EndFunction();
 
   if (MachineModuleInfo *MMI = DD->getMMI() ? DD->getMMI() : DE->getMMI())
@@ -78,28 +78,12 @@ void DwarfWriter::EndFunction(MachineFunction *MF) {
 /// correspondence to the source line list.
 unsigned DwarfWriter::RecordSourceLine(unsigned Line, unsigned Col, 
                                        MDNode *Scope) {
-  return DD->RecordSourceLine(Line, Col, Scope);
-}
-
-/// RecordRegionStart - Indicate the start of a region.
-unsigned DwarfWriter::RecordRegionStart(MDNode *N) {
-  return DD->RecordRegionStart(N);
-}
-
-/// RecordRegionEnd - Indicate the end of a region.
-unsigned DwarfWriter::RecordRegionEnd(MDNode *N) {
-  return DD->RecordRegionEnd(N);
+  return DD->recordSourceLine(Line, Col, Scope);
 }
 
 /// getRecordSourceLineCount - Count source lines.
 unsigned DwarfWriter::getRecordSourceLineCount() {
-  return DD->getRecordSourceLineCount();
-}
-
-/// RecordVariable - Indicate the declaration of  a local variable.
-///
-void DwarfWriter::RecordVariable(MDNode *N, unsigned FrameIndex) {
-  DD->RecordVariable(N, FrameIndex);
+  return DD->getSourceLineCount();
 }
 
 /// ShouldEmitDwarfDebug - Returns true if Dwarf debugging declarations should
@@ -108,14 +92,9 @@ bool DwarfWriter::ShouldEmitDwarfDebug() const {
   return DD && DD->ShouldEmitDwarfDebug();
 }
 
-//// RecordInlinedFnStart
-unsigned DwarfWriter::RecordInlinedFnStart(DISubprogram SP, DICompileUnit CU,
-                                           unsigned Line, unsigned Col) {
-  return DD->RecordInlinedFnStart(SP, CU, Line, Col);
+void DwarfWriter::BeginScope(const MachineInstr *MI, unsigned L) {
+  DD->beginScope(MI, L);
 }
-
-/// RecordInlinedFnEnd - Indicate the end of inlined subroutine.
-unsigned DwarfWriter::RecordInlinedFnEnd(DISubprogram SP) {
-  return DD->RecordInlinedFnEnd(SP);
+void DwarfWriter::EndScope(const MachineInstr *MI) {
+  DD->endScope(MI);
 }
-

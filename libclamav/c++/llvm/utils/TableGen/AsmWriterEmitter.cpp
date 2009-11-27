@@ -538,6 +538,29 @@ FindUniqueOperandCommands(std::vector<std::string> &UniqueOperandCommands,
 }
 
 
+static void UnescapeString(std::string &Str) {
+  for (unsigned i = 0; i != Str.size(); ++i) {
+    if (Str[i] == '\\' && i != Str.size()-1) {
+      switch (Str[i+1]) {
+      default: continue;  // Don't execute the code after the switch.
+      case 'a': Str[i] = '\a'; break;
+      case 'b': Str[i] = '\b'; break;
+      case 'e': Str[i] = 27; break;
+      case 'f': Str[i] = '\f'; break;
+      case 'n': Str[i] = '\n'; break;
+      case 'r': Str[i] = '\r'; break;
+      case 't': Str[i] = '\t'; break;
+      case 'v': Str[i] = '\v'; break;
+      case '"': Str[i] = '\"'; break;
+      case '\'': Str[i] = '\''; break;
+      case '\\': Str[i] = '\\'; break;
+      }
+      // Nuke the second character.
+      Str.erase(Str.begin()+i+1);
+    }
+  }
+}
+
 /// EmitPrintInstruction - Generate the code for the "printInstruction" method
 /// implementation.
 void AsmWriterEmitter::EmitPrintInstruction(raw_ostream &O) {
@@ -672,7 +695,6 @@ void AsmWriterEmitter::EmitPrintInstruction(raw_ostream &O) {
   O << "\n#ifndef NO_ASM_WRITER_BOILERPLATE\n";
   
   O << "  if (MI->getOpcode() == TargetInstrInfo::INLINEASM) {\n"
-    << "    O << \"\\t\";\n"
     << "    printInlineAsm(MI);\n"
     << "    return;\n"
     << "  } else if (MI->isLabel()) {\n"
@@ -682,6 +704,7 @@ void AsmWriterEmitter::EmitPrintInstruction(raw_ostream &O) {
     << "    printImplicitDef(MI);\n"
     << "    return;\n"
     << "  } else if (MI->getOpcode() == TargetInstrInfo::KILL) {\n"
+    << "    printKill(MI);\n"
     << "    return;\n"
     << "  }\n\n";
 
@@ -763,7 +786,6 @@ void AsmWriterEmitter::EmitPrintInstruction(raw_ostream &O) {
     O << "  return;\n";
   }
 
-  O << "  return;\n";
   O << "}\n";
 }
 

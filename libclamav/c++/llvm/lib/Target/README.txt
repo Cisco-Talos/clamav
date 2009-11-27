@@ -220,7 +220,7 @@ so cool to turn it into something like:
 ... which would only do one 32-bit XOR per loop iteration instead of two.
 
 It would also be nice to recognize the reg->size doesn't alias reg->node[i], but
-alas.
+this requires TBAA.
 
 //===---------------------------------------------------------------------===//
 
@@ -279,6 +279,9 @@ unsigned int popcount(unsigned int input) {
     count += (input >> i) & i;
   return count;
 }
+
+This is a form of idiom recognition for loops, the same thing that could be
+useful for recognizing memset/memcpy.
 
 //===---------------------------------------------------------------------===//
 
@@ -339,9 +342,11 @@ we don't have whole-function selection dags.  On x86, this means we use one
 extra register for the function when effective_addr2 is declared as U64 than
 when it is declared U32.
 
+PHI Slicing could be extended to do this.
+
 //===---------------------------------------------------------------------===//
 
-LSR should know what GPR types a target has.  This code:
+LSR should know what GPR types a target has from TargetData.  This code:
 
 volatile short X, Y; // globals
 
@@ -366,7 +371,6 @@ LBB1_2:
 	bne LBB1_2
 
 LSR should reuse the "+" IV for the exit test.
-
 
 //===---------------------------------------------------------------------===//
 
@@ -406,22 +410,6 @@ return:		; preds = %then.1, %else.0, %then.0
 
 //===---------------------------------------------------------------------===//
 
-Tail recursion elimination is not transforming this function, because it is
-returning n, which fails the isDynamicConstant check in the accumulator 
-recursion checks.
-
-long long fib(const long long n) {
-  switch(n) {
-    case 0:
-    case 1:
-      return n;
-    default:
-      return fib(n-1) + fib(n-2);
-  }
-}
-
-//===---------------------------------------------------------------------===//
-
 Tail recursion elimination should handle:
 
 int pow2m1(int n) {
@@ -452,25 +440,6 @@ entry:
 	%tmp3 = call i32 @foo( i32* %x )		; <i32> [#uses=1]
 	ret i32 %tmp3
 }
-
-//===---------------------------------------------------------------------===//
-
-"basicaa" should know how to look through "or" instructions that act like add
-instructions.  For example in this code, the x*4+1 is turned into x*4 | 1, and
-basicaa can't analyze the array subscript, leading to duplicated loads in the
-generated code:
-
-void test(int X, int Y, int a[]) {
-int i;
-  for (i=2; i<1000; i+=4) {
-  a[i+0] = a[i-1+0]*a[i-2+0];
-  a[i+1] = a[i-1+1]*a[i-2+1];
-  a[i+2] = a[i-1+2]*a[i-2+2];
-  a[i+3] = a[i-1+3]*a[i-2+3];
-  }
-}
-
-BasicAA also doesn't do this for add.  It needs to know that &A[i+1] != &A[i].
 
 //===---------------------------------------------------------------------===//
 
@@ -1227,6 +1196,7 @@ bb3:		; preds = %bb1, %bb2, %bb
 
 GCC PR33344 is a similar case.
 
+
 //===---------------------------------------------------------------------===//
 
 There are many load PRE testcases in testsuite/gcc.dg/tree-ssa/loadpre* in the
@@ -1280,8 +1250,6 @@ http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35287 [LPRE crit edge splitting]
 
 http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34677 (licm does this, LPRE crit edge)
   llvm-gcc t2.c -S -o - -O0 -emit-llvm | llvm-as | opt -mem2reg -simplifycfg -gvn | llvm-dis
-
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16799 [BITCAST PHI TRANS]
 
 //===---------------------------------------------------------------------===//
 
@@ -1594,53 +1562,123 @@ int int_char(char m) {if(m>7) return 0; return m;}
 
 //===---------------------------------------------------------------------===//
 
-Instcombine should replace the load with a constant in:
+int func(int a, int b) { if (a & 0x80) b |= 0x80; else b &= ~0x80; return b; }
 
-  static const char x[4] = {'a', 'b', 'c', 'd'};
-  
-  unsigned int y(void) {
-    return *(unsigned int *)x;
-  }
+Generates this:
 
-It currently only does this transformation when the size of the constant 
-is the same as the size of the integer (so, try x[5]) and the last byte 
-is a null (making it a C string). There's no need for these restrictions.
+define i32 @func(i32 %a, i32 %b) nounwind readnone ssp {
+entry:
+  %0 = and i32 %a, 128                            ; <i32> [#uses=1]
+  %1 = icmp eq i32 %0, 0                          ; <i1> [#uses=1]
+  %2 = or i32 %b, 128                             ; <i32> [#uses=1]
+  %3 = and i32 %b, -129                           ; <i32> [#uses=1]
+  %b_addr.0 = select i1 %1, i32 %3, i32 %2        ; <i32> [#uses=1]
+  ret i32 %b_addr.0
+}
+
+However, it's functionally equivalent to:
+
+         b = (b & ~0x80) | (a & 0x80);
+
+Which generates this:
+
+define i32 @func(i32 %a, i32 %b) nounwind readnone ssp {
+entry:
+  %0 = and i32 %b, -129                           ; <i32> [#uses=1]
+  %1 = and i32 %a, 128                            ; <i32> [#uses=1]
+  %2 = or i32 %0, %1                              ; <i32> [#uses=1]
+  ret i32 %2
+}
+
+This can be generalized for other forms:
+
+     b = (b & ~0x80) | (a & 0x40) << 1;
 
 //===---------------------------------------------------------------------===//
 
-InstCombine's "turn load from constant into constant" optimization should be
-more aggressive in the presence of bitcasts.  For example, because of unions,
-this code:
+These two functions produce different code. They shouldn't:
 
-union vec2d {
-    double e[2];
-    double v __attribute__((vector_size(16)));
-};
-typedef union vec2d vec2d;
-
-static vec2d a={{1,2}}, b={{3,4}};
-    
-vec2d foo () {
-    return (vec2d){ .v = a.v + b.v * (vec2d){{5,5}}.v };
+#include <stdint.h>
+ 
+uint8_t p1(uint8_t b, uint8_t a) {
+  b = (b & ~0xc0) | (a & 0xc0);
+  return (b);
+}
+ 
+uint8_t p2(uint8_t b, uint8_t a) {
+  b = (b & ~0x40) | (a & 0x40);
+  b = (b & ~0x80) | (a & 0x80);
+  return (b);
 }
 
-Compiles into:
-
-@a = internal constant %0 { [2 x double] 
-           [double 1.000000e+00, double 2.000000e+00] }, align 16
-@b = internal constant %0 { [2 x double]
-           [double 3.000000e+00, double 4.000000e+00] }, align 16
-...
-define void @foo(%struct.vec2d* noalias nocapture sret %agg.result) nounwind {
+define zeroext i8 @p1(i8 zeroext %b, i8 zeroext %a) nounwind readnone ssp {
 entry:
-	%0 = load <2 x double>* getelementptr (%struct.vec2d* 
-           bitcast (%0* @a to %struct.vec2d*), i32 0, i32 0), align 16
-	%1 = load <2 x double>* getelementptr (%struct.vec2d* 
-           bitcast (%0* @b to %struct.vec2d*), i32 0, i32 0), align 16
+  %0 = and i8 %b, 63                              ; <i8> [#uses=1]
+  %1 = and i8 %a, -64                             ; <i8> [#uses=1]
+  %2 = or i8 %1, %0                               ; <i8> [#uses=1]
+  ret i8 %2
+}
 
+define zeroext i8 @p2(i8 zeroext %b, i8 zeroext %a) nounwind readnone ssp {
+entry:
+  %0 = and i8 %b, 63                              ; <i8> [#uses=1]
+  %.masked = and i8 %a, 64                        ; <i8> [#uses=1]
+  %1 = and i8 %a, -128                            ; <i8> [#uses=1]
+  %2 = or i8 %1, %0                               ; <i8> [#uses=1]
+  %3 = or i8 %2, %.masked                         ; <i8> [#uses=1]
+  ret i8 %3
+}
 
-Instcombine should be able to optimize away the loads (and thus the globals).
+//===---------------------------------------------------------------------===//
 
-See also PR4973
+IPSCCP does not currently propagate argument dependent constants through
+functions where it does not not all of the callers.  This includes functions
+with normal external linkage as well as templates, C99 inline functions etc.
+Specifically, it does nothing to:
+
+define i32 @test(i32 %x, i32 %y, i32 %z) nounwind {
+entry:
+  %0 = add nsw i32 %y, %z                         
+  %1 = mul i32 %0, %x                             
+  %2 = mul i32 %y, %z                             
+  %3 = add nsw i32 %1, %2                         
+  ret i32 %3
+}
+
+define i32 @test2() nounwind {
+entry:
+  %0 = call i32 @test(i32 1, i32 2, i32 4) nounwind
+  ret i32 %0
+}
+
+It would be interesting extend IPSCCP to be able to handle simple cases like
+this, where all of the arguments to a call are constant.  Because IPSCCP runs
+before inlining, trivial templates and inline functions are not yet inlined.
+The results for a function + set of constant arguments should be memoized in a
+map.
+
+//===---------------------------------------------------------------------===//
+
+The libcall constant folding stuff should be moved out of SimplifyLibcalls into
+libanalysis' constantfolding logic.  This would allow IPSCCP to be able to
+handle simple things like this:
+
+static int foo(const char *X) { return strlen(X); }
+int bar() { return foo("abcd"); }
+
+//===---------------------------------------------------------------------===//
+
+InstCombine should use SimplifyDemandedBits to remove the or instruction:
+
+define i1 @test(i8 %x, i8 %y) {
+  %A = or i8 %x, 1
+  %B = icmp ugt i8 %A, 3
+  ret i1 %B
+}
+
+Currently instcombine calls SimplifyDemandedBits with either all bits or just
+the sign bit, if the comparison is obviously a sign test. In this case, we only
+need all but the bottom two bits from %A, and if we gave that mask to SDB it
+would delete the or instruction for us.
 
 //===---------------------------------------------------------------------===//

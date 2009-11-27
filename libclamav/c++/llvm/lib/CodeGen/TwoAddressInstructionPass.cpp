@@ -34,11 +34,11 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
@@ -56,12 +56,12 @@ STATISTIC(NumReMats,           "Number of instructions re-materialized");
 STATISTIC(NumDeletes,          "Number of dead instructions deleted");
 
 namespace {
-  class VISIBILITY_HIDDEN TwoAddressInstructionPass
-    : public MachineFunctionPass {
+  class TwoAddressInstructionPass : public MachineFunctionPass {
     const TargetInstrInfo *TII;
     const TargetRegisterInfo *TRI;
     MachineRegisterInfo *MRI;
     LiveVariables *LV;
+    AliasAnalysis *AA;
 
     // DistanceMap - Keep track the distance of a MI from the start of the
     // current basic block.
@@ -112,8 +112,7 @@ namespace {
                                MachineBasicBlock *MBB, unsigned Dist);
     bool DeleteUnusedInstr(MachineBasicBlock::iterator &mi,
                            MachineBasicBlock::iterator &nmi,
-                           MachineFunction::iterator &mbbi,
-                           unsigned regB, unsigned regBIdx, unsigned Dist);
+                           MachineFunction::iterator &mbbi, unsigned Dist);
 
     bool TryInstructionTransform(MachineBasicBlock::iterator &mi,
                                  MachineBasicBlock::iterator &nmi,
@@ -130,6 +129,7 @@ namespace {
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesCFG();
+      AU.addRequired<AliasAnalysis>();
       AU.addPreserved<LiveVariables>();
       AU.addPreservedID(MachineLoopInfoID);
       AU.addPreservedID(MachineDominatorsID);
@@ -160,7 +160,7 @@ bool TwoAddressInstructionPass::Sink3AddrInstruction(MachineBasicBlock *MBB,
                                            MachineBasicBlock::iterator OldPos) {
   // Check if it's safe to move this instruction.
   bool SeenStore = true; // Be conservative.
-  if (!MI->isSafeToMove(TII, SeenStore))
+  if (!MI->isSafeToMove(TII, SeenStore, AA))
     return false;
 
   unsigned DefReg = 0;
@@ -729,7 +729,7 @@ void TwoAddressInstructionPass::ProcessCopy(MachineInstr *MI,
 
 /// isSafeToDelete - If the specified instruction does not produce any side
 /// effects and all of its defs are dead, then it's safe to delete.
-static bool isSafeToDelete(MachineInstr *MI, unsigned Reg,
+static bool isSafeToDelete(MachineInstr *MI,
                            const TargetInstrInfo *TII,
                            SmallVector<unsigned, 4> &Kills) {
   const TargetInstrDesc &TID = MI->getDesc();
@@ -744,10 +744,9 @@ static bool isSafeToDelete(MachineInstr *MI, unsigned Reg,
       continue;
     if (MO.isDef() && !MO.isDead())
       return false;
-    if (MO.isUse() && MO.getReg() != Reg && MO.isKill())
+    if (MO.isUse() && MO.isKill())
       Kills.push_back(MO.getReg());
   }
-
   return true;
 }
 
@@ -782,11 +781,10 @@ bool
 TwoAddressInstructionPass::DeleteUnusedInstr(MachineBasicBlock::iterator &mi,
                                              MachineBasicBlock::iterator &nmi,
                                              MachineFunction::iterator &mbbi,
-                                             unsigned regB, unsigned regBIdx,
                                              unsigned Dist) {
   // Check if the instruction has no side effects and if all its defs are dead.
   SmallVector<unsigned, 4> Kills;
-  if (!isSafeToDelete(mi, regB, TII, Kills))
+  if (!isSafeToDelete(mi, TII, Kills))
     return false;
 
   // If this instruction kills some virtual registers, we need to
@@ -809,10 +807,6 @@ TwoAddressInstructionPass::DeleteUnusedInstr(MachineBasicBlock::iterator &mi,
           LV->addVirtualRegisterKilled(Kill, NewKill);
       }
     }
-
-    // If regB was marked as a kill, update its Kills list.
-    if (mi->getOperand(regBIdx).isKill())
-      LV->removeVirtualRegisterKilled(regB, mi);
   }
 
   mbbi->erase(mi); // Nuke the old inst.
@@ -841,7 +835,7 @@ TryInstructionTransform(MachineBasicBlock::iterator &mi,
   // it so it doesn't clobber regB.
   bool regBKilled = isKilled(*mi, regB, MRI, TII);
   if (!regBKilled && mi->getOperand(DstIdx).isDead() &&
-      DeleteUnusedInstr(mi, nmi, mbbi, regB, SrcIdx, Dist)) {
+      DeleteUnusedInstr(mi, nmi, mbbi, Dist)) {
     ++NumDeletes;
     return true; // Done with this instruction.
   }
@@ -903,6 +897,7 @@ bool TwoAddressInstructionPass::runOnMachineFunction(MachineFunction &MF) {
   TII = TM.getInstrInfo();
   TRI = TM.getRegisterInfo();
   LV = getAnalysisIfAvailable<LiveVariables>();
+  AA = &getAnalysis<AliasAnalysis>();
 
   bool MadeChange = false;
 
@@ -1027,11 +1022,11 @@ bool TwoAddressInstructionPass::runOnMachineFunction(MachineFunction &MF) {
           // copying it.
           if (DefMI &&
               DefMI->getDesc().isAsCheapAsAMove() &&
-              DefMI->isSafeToReMat(TII, regB) &&
+              DefMI->isSafeToReMat(TII, regB, AA) &&
               isProfitableToReMat(regB, rc, mi, DefMI, mbbi, Dist)){
             DEBUG(errs() << "2addr: REMATTING : " << *DefMI << "\n");
             unsigned regASubIdx = mi->getOperand(DstIdx).getSubReg();
-            TII->reMaterialize(*mbbi, mi, regA, regASubIdx, DefMI);
+            TII->reMaterialize(*mbbi, mi, regA, regASubIdx, DefMI, TRI);
             ReMatRegs.set(regB);
             ++NumReMats;
           } else {

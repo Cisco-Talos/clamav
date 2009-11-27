@@ -45,6 +45,7 @@ namespace llvm {
     const TargetInstrInfo* tii_;
     LiveIntervals *li_;
     const MachineLoopInfo* loopInfo;
+    AliasAnalysis *AA;
     
     BitVector allocatableRegs_;
     DenseMap<const TargetRegisterClass*, BitVector> allocatableRCRegs_;
@@ -145,7 +146,7 @@ namespace llvm {
     /// TrimLiveIntervalToLastUse - If there is a last use in the same basic
     /// block as the copy instruction, trim the ive interval to the last use
     /// and return true.
-    bool TrimLiveIntervalToLastUse(MachineInstrIndex CopyIdx,
+    bool TrimLiveIntervalToLastUse(SlotIndex CopyIdx,
                                    MachineBasicBlock *CopyMBB,
                                    LiveInterval &li, const LiveRange *LR);
 
@@ -200,6 +201,12 @@ namespace llvm {
     bool CanJoinInsertSubRegToPhysReg(unsigned DstReg, unsigned SrcReg,
                                       unsigned SubIdx, unsigned &RealDstReg);
 
+    /// ValueLiveAt - Return true if the LiveRange pointed to by the given
+    /// iterator, or any subsequent range with the same value number,
+    /// is live at the given point.
+    bool ValueLiveAt(LiveInterval::iterator LRItr, LiveInterval::iterator LREnd, 
+                     SlotIndex defPoint) const;                                  
+
     /// RangeIsDefinedByCopyFromReg - Return true if the specified live range of
     /// the specified live interval is defined by a copy from the specified
     /// register.
@@ -234,9 +241,8 @@ namespace llvm {
 
     /// lastRegisterUse - Returns the last use of the specific register between
     /// cycles Start and End or NULL if there are no uses.
-    MachineOperand *lastRegisterUse(MachineInstrIndex Start,
-                                    MachineInstrIndex End, unsigned Reg,
-                                    MachineInstrIndex &LastUseIdx) const;
+    MachineOperand *lastRegisterUse(SlotIndex Start, SlotIndex End,
+                                    unsigned Reg, SlotIndex &LastUseIdx) const;
 
     /// CalculateSpillWeights - Compute spill weights for all virtual register
     /// live intervals.

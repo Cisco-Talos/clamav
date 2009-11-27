@@ -16,6 +16,7 @@
 #include "llvm/GlobalValue.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/ADT/SmallVector.h"
 using namespace llvm;
 
 static cl::opt<bool>
@@ -26,15 +27,20 @@ UseNEONFP("arm-use-neon-fp",
           cl::desc("Use NEON for single-precision FP"),
           cl::init(false), cl::Hidden);
 
+static cl::opt<bool>
+UseMOVT("arm-use-movt",
+        cl::init(true), cl::Hidden);
+
 ARMSubtarget::ARMSubtarget(const std::string &TT, const std::string &FS,
-                           bool isThumb)
+                           bool isT)
   : ARMArchVersion(V4T)
   , ARMFPUType(None)
   , UseNEONForSinglePrecisionFP(UseNEONFP)
-  , IsThumb(isThumb)
+  , IsThumb(isT)
   , ThumbMode(Thumb1)
   , PostRAScheduler(false)
   , IsR9Reserved(ReserveR9)
+  , UseMovt(UseMOVT)
   , stackAlignment(4)
   , CPUString("generic")
   , TargetType(isELF) // Default to ELF unless otherwise specified.
@@ -98,12 +104,18 @@ ARMSubtarget::ARMSubtarget(const std::string &TT, const std::string &FS,
   if (isTargetDarwin())
     IsR9Reserved = ReserveR9 | (ARMArchVersion < V6);
 
+  if (!isThumb() || hasThumb2())
+    PostRAScheduler = true;
+
   // Set CPU specific features.
   if (CPUString == "cortex-a8") {
-    PostRAScheduler = true;
+    // On Cortex-a8, it's faster to perform some single-precision FP
+    // operations with NEON instructions.
     if (UseNEONFP.getPosition() == 0)
       UseNEONForSinglePrecisionFP = true;
   }
+  HasBranchTargetBuffer = (CPUString == "cortex-a8" ||
+                           CPUString == "cortex-a9");
 }
 
 /// GVIsIndirectSymbol - true if the GV will be accessed via an indirect symbol.
@@ -154,4 +166,14 @@ ARMSubtarget::GVIsIndirectSymbol(GlobalValue *GV, Reloc::Model RelocM) const {
   }
 
   return false;
+}
+
+bool ARMSubtarget::enablePostRAScheduler(
+           CodeGenOpt::Level OptLevel,
+           TargetSubtarget::AntiDepBreakMode& Mode,
+           RegClassVector& CriticalPathRCs) const {
+  Mode = TargetSubtarget::ANTIDEP_CRITICAL;
+  CriticalPathRCs.clear();
+  CriticalPathRCs.push_back(&ARM::GPRRegClass);
+  return PostRAScheduler && OptLevel >= CodeGenOpt::Default;
 }

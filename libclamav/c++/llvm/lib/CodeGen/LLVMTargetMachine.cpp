@@ -31,6 +31,24 @@ namespace llvm {
   bool EnableFastISel;
 }
 
+static cl::opt<bool> DisablePostRA("disable-post-ra", cl::Hidden,
+    cl::desc("Disable Post Regalloc"));
+static cl::opt<bool> DisableBranchFold("disable-branch-fold", cl::Hidden,
+    cl::desc("Disable branch folding"));
+static cl::opt<bool> DisableTailDuplicate("disable-tail-duplicate", cl::Hidden,
+    cl::desc("Disable tail duplication"));
+static cl::opt<bool> DisableCodePlace("disable-code-place", cl::Hidden,
+    cl::desc("Disable code placement"));
+static cl::opt<bool> DisableSSC("disable-ssc", cl::Hidden,
+    cl::desc("Disable Stack Slot Coloring"));
+static cl::opt<bool> DisableMachineLICM("disable-machine-licm", cl::Hidden,
+    cl::desc("Disable Machine LICM"));
+static cl::opt<bool> DisableMachineSink("disable-machine-sink", cl::Hidden,
+    cl::desc("Disable Machine Sinking"));
+static cl::opt<bool> DisableLSR("disable-lsr", cl::Hidden,
+    cl::desc("Disable Loop Strength Reduction Pass"));
+static cl::opt<bool> DisableCGP("disable-cgp", cl::Hidden,
+    cl::desc("Disable Codegen Prepare"));
 static cl::opt<bool> PrintLSR("print-lsr-output", cl::Hidden,
     cl::desc("Print LLVM IR produced by the loop-reduce pass"));
 static cl::opt<bool> PrintISelInput("print-isel-input", cl::Hidden,
@@ -39,8 +57,6 @@ static cl::opt<bool> PrintEmittedAsm("print-emitted-asm", cl::Hidden,
     cl::desc("Dump emitter generated instructions as assembly"));
 static cl::opt<bool> PrintGCInfo("print-gc", cl::Hidden,
     cl::desc("Dump garbage collector data"));
-static cl::opt<bool> HoistConstants("hoist-constants", cl::Hidden,
-    cl::desc("Hoist constants out of loops"));
 static cl::opt<bool> VerifyMachineCode("verify-machineinstrs", cl::Hidden,
     cl::desc("Verify generated machine code"),
     cl::init(getenv("LLVM_VERIFY_MACHINEINSTRS")!=NULL));
@@ -52,6 +68,11 @@ static cl::opt<cl::boolOrDefault>
 EnableFastISelOption("fast-isel", cl::Hidden,
   cl::desc("Enable the \"fast\" instruction selector"));
 
+// Enable or disable an experimental optimization to split GEPs
+// and run a special GVN pass which does not examine loads, in
+// an effort to factor out redundancy implicit in complex GEPs.
+static cl::opt<bool> EnableSplitGEPGVN("split-gep-gvn", cl::Hidden,
+    cl::desc("Split GEPs and run no-load GVN"));
 
 LLVMTargetMachine::LLVMTargetMachine(const Target &T,
                                      const std::string &TargetTriple)
@@ -69,18 +90,6 @@ LLVMTargetMachine::addPassesToEmitFile(PassManagerBase &PM,
   // Add common CodeGen passes.
   if (addCommonCodeGenPasses(PM, OptLevel))
     return FileModel::Error;
-
-  // Fold redundant debug labels.
-  PM.add(createDebugLabelFoldingPass());
-
-  if (PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs()));
-
-  if (addPreEmitPass(PM, OptLevel) && PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs()));
-
-  if (OptLevel != CodeGenOpt::None)
-    PM.add(createCodePlacementOptPass());
 
   switch (FileType) {
   default:
@@ -173,9 +182,6 @@ bool LLVMTargetMachine::addPassesToEmitMachineCode(PassManagerBase &PM,
   if (addCommonCodeGenPasses(PM, OptLevel))
     return true;
 
-  if (addPreEmitPass(PM, OptLevel) && PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs()));
-
   addCodeEmitter(PM, OptLevel, MCE);
   if (PrintEmittedAsm)
     addAssemblyEmitter(PM, OptLevel, true, ferrs());
@@ -198,9 +204,6 @@ bool LLVMTargetMachine::addPassesToEmitMachineCode(PassManagerBase &PM,
   if (addCommonCodeGenPasses(PM, OptLevel))
     return true;
 
-  if (addPreEmitPass(PM, OptLevel) && PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs()));
-
   addCodeEmitter(PM, OptLevel, JCE);
   if (PrintEmittedAsm)
     addAssemblyEmitter(PM, OptLevel, true, ferrs());
@@ -211,9 +214,10 @@ bool LLVMTargetMachine::addPassesToEmitMachineCode(PassManagerBase &PM,
 }
 
 static void printAndVerify(PassManagerBase &PM,
+                           const char *Banner,
                            bool allowDoubleDefs = false) {
   if (PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs()));
+    PM.add(createMachineFunctionPrinterPass(errs(), Banner));
 
   if (VerifyMachineCode)
     PM.add(createMachineVerifierPass(allowDoubleDefs));
@@ -226,8 +230,14 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
                                                CodeGenOpt::Level OptLevel) {
   // Standard LLVM-Level Passes.
 
+  // Optionally, tun split-GEPs and no-load GVN.
+  if (EnableSplitGEPGVN) {
+    PM.add(createGEPSplitterPass());
+    PM.add(createGVNPass(/*NoPRE=*/false, /*NoLoads=*/true));
+  }
+
   // Run loop strength reduction before anything else.
-  if (OptLevel != CodeGenOpt::None) {
+  if (OptLevel != CodeGenOpt::None && !DisableLSR) {
     PM.add(createLoopStrengthReducePass(getTargetLowering()));
     if (PrintLSR)
       PM.add(createPrintFunctionPass("\n\n*** Code after LSR ***\n", &errs()));
@@ -255,11 +265,8 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   // Make sure that no unreachable blocks are instruction selected.
   PM.add(createUnreachableBlockEliminationPass());
 
-  if (OptLevel != CodeGenOpt::None) {
-    if (HoistConstants)
-      PM.add(createCodeGenLICMPass());
+  if (OptLevel != CodeGenOpt::None && !DisableCGP)
     PM.add(createCodeGenPreparePass(getTargetLowering()));
-  }
 
   PM.add(createStackProtectorPass(getTargetLowering()));
 
@@ -283,61 +290,80 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
     return true;
 
   // Print the instruction selected machine code...
-  printAndVerify(PM, /* allowDoubleDefs= */ true);
+  printAndVerify(PM, "After Instruction Selection",
+                 /* allowDoubleDefs= */ true);
 
   if (OptLevel != CodeGenOpt::None) {
-    PM.add(createMachineLICMPass());
-    PM.add(createMachineSinkingPass());
-    printAndVerify(PM, /* allowDoubleDefs= */ true);
+    if (!DisableMachineLICM)
+      PM.add(createMachineLICMPass());
+    if (!DisableMachineSink)
+      PM.add(createMachineSinkingPass());
+    printAndVerify(PM, "After MachineLICM and MachineSinking",
+                   /* allowDoubleDefs= */ true);
   }
 
   // Run pre-ra passes.
   if (addPreRegAlloc(PM, OptLevel))
-    printAndVerify(PM, /* allowDoubleDefs= */ true);
+    printAndVerify(PM, "After PreRegAlloc passes",
+                   /* allowDoubleDefs= */ true);
 
   // Perform register allocation.
   PM.add(createRegisterAllocator());
+  printAndVerify(PM, "After Register Allocation");
 
   // Perform stack slot coloring.
-  if (OptLevel != CodeGenOpt::None)
+  if (OptLevel != CodeGenOpt::None && !DisableSSC) {
     // FIXME: Re-enable coloring with register when it's capable of adding
     // kill markers.
     PM.add(createStackSlotColoringPass(false));
-
-  printAndVerify(PM);           // Print the register-allocated code
+    printAndVerify(PM, "After StackSlotColoring");
+  }
 
   // Run post-ra passes.
   if (addPostRegAlloc(PM, OptLevel))
-    printAndVerify(PM);
+    printAndVerify(PM, "After PostRegAlloc passes");
 
   PM.add(createLowerSubregsPass());
-  printAndVerify(PM);
+  printAndVerify(PM, "After LowerSubregs");
 
   // Insert prolog/epilog code.  Eliminate abstract frame index references...
   PM.add(createPrologEpilogCodeInserter());
-  printAndVerify(PM);
+  printAndVerify(PM, "After PrologEpilogCodeInserter");
 
   // Run pre-sched2 passes.
   if (addPreSched2(PM, OptLevel))
-    printAndVerify(PM);
+    printAndVerify(PM, "After PreSched2 passes");
 
   // Second pass scheduler.
-  if (OptLevel != CodeGenOpt::None) {
-    PM.add(createPostRAScheduler());
-    printAndVerify(PM);
+  if (OptLevel != CodeGenOpt::None && !DisablePostRA) {
+    PM.add(createPostRAScheduler(OptLevel));
+    printAndVerify(PM, "After PostRAScheduler");
   }
 
   // Branch folding must be run after regalloc and prolog/epilog insertion.
-  if (OptLevel != CodeGenOpt::None) {
+  if (OptLevel != CodeGenOpt::None && !DisableBranchFold) {
     PM.add(createBranchFoldingPass(getEnableTailMergeDefault()));
-    printAndVerify(PM);
+    printAndVerify(PM, "After BranchFolding");
+  }
+
+  // Tail duplication.
+  if (OptLevel != CodeGenOpt::None && !DisableTailDuplicate) {
+    PM.add(createTailDuplicatePass());
+    printAndVerify(PM, "After TailDuplicate");
   }
 
   PM.add(createGCMachineCodeAnalysisPass());
-  printAndVerify(PM);
 
   if (PrintGCInfo)
     PM.add(createGCInfoPrinter(errs()));
+
+  if (OptLevel != CodeGenOpt::None && !DisableCodePlace) {
+    PM.add(createCodePlacementOptPass());
+    printAndVerify(PM, "After CodePlacementOpt");
+  }
+
+  if (addPreEmitPass(PM, OptLevel))
+    printAndVerify(PM, "After PreEmit passes");
 
   return false;
 }

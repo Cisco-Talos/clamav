@@ -82,9 +82,6 @@ protected:
   /// version of the platform, e.g. 8 = 10.4 (Tiger), 9 = 10.5 (Leopard), etc.
   unsigned char DarwinVers; // Is any darwin-x86 platform.
 
-  /// isLinux - true if this is a "linux" platform.
-  bool IsLinux;
-
   /// stackAlignment - The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
   unsigned stackAlignment;
@@ -169,11 +166,11 @@ public:
   std::string getDataLayout() const {
     const char *p;
     if (is64Bit())
-      p = "e-p:64:64-s:64-f64:64:64-i64:64:64-f80:128:128";
+      p = "e-p:64:64-s:64-f64:64:64-i64:64:64-f80:128:128-n8:16:32:64";
     else if (isTargetDarwin())
-      p = "e-p:32:32-f64:32:64-i64:32:64-f80:128:128";
+      p = "e-p:32:32-f64:32:64-i64:32:64-f80:128:128-n8:16:32";
     else
-      p = "e-p:32:32-f64:32:64-i64:32:64-f80:32:32";
+      p = "e-p:32:32-f64:32:64-i64:32:64-f80:32:32-n8:16:32";
     return std::string(p);
   }
 
@@ -195,16 +192,17 @@ public:
   /// getDarwinVers - Return the darwin version number, 8 = Tiger, 9 = Leopard,
   /// 10 = Snow Leopard, etc.
   unsigned getDarwinVers() const { return DarwinVers; }
-  
-  /// isLinux - Return true if the target is "Linux".
-  bool isLinux() const { return IsLinux; }
-
-  
+    
   /// ClassifyGlobalReference - Classify a global variable reference for the
   /// current subtarget according to how we should reference it in a non-pcrel
   /// context.
   unsigned char ClassifyGlobalReference(const GlobalValue *GV,
                                         const TargetMachine &TM)const;
+
+  /// ClassifyBlockAddressReference - Classify a blockaddress reference for the
+  /// current subtarget according to how we should reference it in a non-pcrel
+  /// context.
+  unsigned char ClassifyBlockAddressReference() const;
 
   /// IsLegalToCallImmediateAddr - Return true if the subtarget allows calls
   /// to immediate address.
@@ -222,6 +220,12 @@ public:
   /// indicating the number of scheduling cycles of backscheduling that
   /// should be attempted.
   unsigned getSpecialAddressLatency() const;
+
+  /// enablePostRAScheduler - X86 target is enabling post-alloc scheduling
+  /// at 'More' optimization level.
+  bool enablePostRAScheduler(CodeGenOpt::Level OptLevel,
+                             TargetSubtarget::AntiDepBreakMode& Mode,
+                             RegClassVector& CriticalPathRCs) const;
 };
 
 } // End llvm namespace

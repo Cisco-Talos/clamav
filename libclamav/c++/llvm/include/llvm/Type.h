@@ -12,9 +12,8 @@
 #define LLVM_TYPE_H
 
 #include "llvm/AbstractTypeUser.h"
-#include "llvm/LLVMContext.h"
 #include "llvm/Support/Casting.h"
-#include "llvm/Support/DataTypes.h"
+#include "llvm/System/DataTypes.h"
 #include "llvm/System/Atomic.h"
 #include "llvm/ADT/GraphTraits.h"
 #include <string>
@@ -28,6 +27,7 @@ class IntegerType;
 class TypeMapBase;
 class raw_ostream;
 class Module;
+class LLVMContext;
 
 /// This file contains the declaration of the Type class.  For more "Type" type
 /// stuff, look in DerivedTypes.h.
@@ -187,6 +187,30 @@ public:
   /// of the TypeID enum elements defined above.
   ///
   inline TypeID getTypeID() const { return ID; }
+
+  /// isVoidTy - Return true if this is 'void'.
+  bool isVoidTy() const { return ID == VoidTyID; }
+
+  /// isFloatTy - Return true if this is 'float', a 32-bit IEEE fp type.
+  bool isFloatTy() const { return ID == FloatTyID; }
+  
+  /// isDoubleTy - Return true if this is 'double', a 64-bit IEEE fp type.
+  bool isDoubleTy() const { return ID == DoubleTyID; }
+
+  /// isX86_FP80Ty - Return true if this is x86 long double.
+  bool isX86_FP80Ty() const { return ID == X86_FP80TyID; }
+
+  /// isFP128Ty - Return true if this is 'fp128'.
+  bool isFP128Ty() const { return ID == FP128TyID; }
+
+  /// isPPC_FP128Ty - Return true if this is powerpc long double.
+  bool isPPC_FP128Ty() const { return ID == PPC_FP128TyID; }
+
+  /// isLabelTy - Return true if this is 'label'.
+  bool isLabelTy() const { return ID == LabelTyID; }
+
+  /// isMetadataTy - Return true if this is 'metadata'.
+  bool isMetadataTy() const { return ID == MetadataTyID; }
 
   /// getDescription - Return the string representation of the type.
   std::string getDescription() const;
@@ -357,6 +381,21 @@ public:
   static const IntegerType *getInt32Ty(LLVMContext &C);
   static const IntegerType *getInt64Ty(LLVMContext &C);
 
+  //===--------------------------------------------------------------------===//
+  // Convenience methods for getting pointer types with one of the above builtin
+  // types as pointee.
+  //
+  static const PointerType *getFloatPtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getDoublePtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getX86_FP80PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getFP128PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getPPC_FP128PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getInt1PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getInt8PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getInt16PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getInt32PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getInt64PtrTy(LLVMContext &C, unsigned AS = 0);
+
   /// Methods for support type inquiry through isa, cast, and dyn_cast:
   static inline bool classof(const Type *) { return true; }
 
@@ -391,7 +430,7 @@ public:
 
   /// getPointerTo - Return a pointer to the current type.  This is equivalent
   /// to PointerType::get(Foo, AddrSpace).
-  PointerType *getPointerTo(unsigned AddrSpace = 0) const;
+  const PointerType *getPointerTo(unsigned AddrSpace = 0) const;
 
 private:
   /// isSizedDerivedType - Derived types like structures and arrays are sized

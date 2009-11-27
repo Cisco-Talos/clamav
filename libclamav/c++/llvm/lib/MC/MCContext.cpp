@@ -8,10 +8,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/MC/MCContext.h"
-
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCValue.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/Twine.h"
 using namespace llvm;
 
 MCContext::MCContext() {
@@ -22,7 +23,7 @@ MCContext::~MCContext() {
   // we don't need to free them here.
 }
 
-MCSymbol *MCContext::CreateSymbol(const StringRef &Name) {
+MCSymbol *MCContext::CreateSymbol(StringRef Name) {
   assert(Name[0] != '\0' && "Normal symbols cannot be unnamed!");
 
   // Create and bind the symbol, and ensure that names are unique.
@@ -31,14 +32,21 @@ MCSymbol *MCContext::CreateSymbol(const StringRef &Name) {
   return Entry = new (*this) MCSymbol(Name, false);
 }
 
-MCSymbol *MCContext::GetOrCreateSymbol(const StringRef &Name) {
+MCSymbol *MCContext::GetOrCreateSymbol(StringRef Name) {
   MCSymbol *&Entry = Symbols[Name];
   if (Entry) return Entry;
 
   return Entry = new (*this) MCSymbol(Name, false);
 }
 
-MCSymbol *MCContext::CreateTemporarySymbol(const StringRef &Name) {
+MCSymbol *MCContext::GetOrCreateSymbol(const Twine &Name) {
+  SmallString<128> NameSV;
+  Name.toVector(NameSV);
+  return GetOrCreateSymbol(NameSV.str());
+}
+
+
+MCSymbol *MCContext::CreateTemporarySymbol(StringRef Name) {
   // If unnamed, just create a symbol.
   if (Name.empty())
     new (*this) MCSymbol("", true);
@@ -49,23 +57,6 @@ MCSymbol *MCContext::CreateTemporarySymbol(const StringRef &Name) {
   return Entry = new (*this) MCSymbol(Name, true);
 }
 
-MCSymbol *MCContext::LookupSymbol(const StringRef &Name) const {
+MCSymbol *MCContext::LookupSymbol(StringRef Name) const {
   return Symbols.lookup(Name);
-}
-
-void MCContext::ClearSymbolValue(const MCSymbol *Sym) {
-  SymbolValues.erase(Sym);
-}
-
-void MCContext::SetSymbolValue(const MCSymbol *Sym, const MCValue &Value) {
-  SymbolValues[Sym] = Value;
-}
-
-const MCValue *MCContext::GetSymbolValue(const MCSymbol *Sym) const {
-  DenseMap<const MCSymbol*, MCValue>::iterator it = SymbolValues.find(Sym);
-
-  if (it == SymbolValues.end())
-    return 0;
-
-  return &it->second;
 }

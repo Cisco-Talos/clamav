@@ -39,12 +39,14 @@ namespace llvm {
     /// predecessor for.  This is used as a tie-breaker heuristic for better
     /// mobility.
     std::vector<unsigned> NumNodesSolelyBlocking;
-
-    PriorityQueue<SUnit*, std::vector<SUnit*>, latency_sort> Queue;
-public:
-    LatencyPriorityQueue() : Queue(latency_sort(this)) {
-    }
     
+    /// Queue - The queue.
+    PriorityQueue<SUnit*, std::vector<SUnit*>, latency_sort> Queue;
+
+public:
+  LatencyPriorityQueue() : Queue(latency_sort(this)) {
+    }
+
     void initNodes(std::vector<SUnit> &sunits) {
       SUnits = &sunits;
       NumNodesSolelyBlocking.resize(SUnits->size(), 0);

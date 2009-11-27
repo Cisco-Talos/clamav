@@ -103,30 +103,62 @@ public:
   /// isTriviallyReMaterializable - Return true if the instruction is trivially
   /// rematerializable, meaning it has no side effects and requires no operands
   /// that aren't always available.
-  bool isTriviallyReMaterializable(const MachineInstr *MI) const {
-    return MI->getDesc().isRematerializable() &&
-           isReallyTriviallyReMaterializable(MI);
+  bool isTriviallyReMaterializable(const MachineInstr *MI,
+                                   AliasAnalysis *AA = 0) const {
+    return MI->getOpcode() == IMPLICIT_DEF ||
+           (MI->getDesc().isRematerializable() &&
+            (isReallyTriviallyReMaterializable(MI, AA) ||
+             isReallyTriviallyReMaterializableGeneric(MI, AA)));
   }
 
 protected:
   /// isReallyTriviallyReMaterializable - For instructions with opcodes for
-  /// which the M_REMATERIALIZABLE flag is set, this function tests whether the
-  /// instruction itself is actually trivially rematerializable, considering
-  /// its operands.  This is used for targets that have instructions that are
-  /// only trivially rematerializable for specific uses.  This predicate must
-  /// return false if the instruction has any side effects other than
-  /// producing a value, or if it requres any address registers that are not
-  /// always available.
-  virtual bool isReallyTriviallyReMaterializable(const MachineInstr *MI) const {
-    return true;
+  /// which the M_REMATERIALIZABLE flag is set, this hook lets the target
+  /// specify whether the instruction is actually trivially rematerializable,
+  /// taking into consideration its operands. This predicate must return false
+  /// if the instruction has any side effects other than producing a value, or
+  /// if it requres any address registers that are not always available.
+  virtual bool isReallyTriviallyReMaterializable(const MachineInstr *MI,
+                                                 AliasAnalysis *AA) const {
+    return false;
   }
 
+private:
+  /// isReallyTriviallyReMaterializableGeneric - For instructions with opcodes
+  /// for which the M_REMATERIALIZABLE flag is set and the target hook
+  /// isReallyTriviallyReMaterializable returns false, this function does
+  /// target-independent tests to determine if the instruction is really
+  /// trivially rematerializable.
+  bool isReallyTriviallyReMaterializableGeneric(const MachineInstr *MI,
+                                                AliasAnalysis *AA) const;
+
 public:
-  /// Return true if the instruction is a register to register move and return
-  /// the source and dest operands and their sub-register indices by reference.
+  /// isMoveInstr - Return true if the instruction is a register to register
+  /// move and return the source and dest operands and their sub-register
+  /// indices by reference.
   virtual bool isMoveInstr(const MachineInstr& MI,
                            unsigned& SrcReg, unsigned& DstReg,
                            unsigned& SrcSubIdx, unsigned& DstSubIdx) const {
+    return false;
+  }
+
+  /// isIdentityCopy - Return true if the instruction is a copy (or
+  /// extract_subreg, insert_subreg, subreg_to_reg) where the source and
+  /// destination registers are the same.
+  bool isIdentityCopy(const MachineInstr &MI) const {
+    unsigned SrcReg, DstReg, SrcSubIdx, DstSubIdx;
+    if (isMoveInstr(MI, SrcReg, DstReg, SrcSubIdx, DstSubIdx) &&
+        SrcReg == DstReg)
+      return true;
+
+    if (MI.getOpcode() == TargetInstrInfo::EXTRACT_SUBREG &&
+        MI.getOperand(0).getReg() == MI.getOperand(1).getReg())
+    return true;
+
+    if ((MI.getOpcode() == TargetInstrInfo::INSERT_SUBREG ||
+         MI.getOpcode() == TargetInstrInfo::SUBREG_TO_REG) &&
+        MI.getOperand(0).getReg() == MI.getOperand(2).getReg())
+      return true;
     return false;
   }
   
@@ -137,6 +169,25 @@ public:
   /// any side effects other than loading from the stack slot.
   virtual unsigned isLoadFromStackSlot(const MachineInstr *MI,
                                        int &FrameIndex) const {
+    return 0;
+  }
+
+  /// isLoadFromStackSlotPostFE - Check for post-frame ptr elimination
+  /// stack locations as well.  This uses a heuristic so it isn't
+  /// reliable for correctness.
+  virtual unsigned isLoadFromStackSlotPostFE(const MachineInstr *MI,
+                                             int &FrameIndex) const {
+    return 0;
+  }
+
+  /// hasLoadFromStackSlot - If the specified machine instruction has
+  /// a load from a stack slot, return true along with the FrameIndex
+  /// of the loaded stack slot.  If not, return false.  Unlike
+  /// isLoadFromStackSlot, this returns true for any instructions that
+  /// loads from the stack.  This is just a hint, as some cases may be
+  /// missed.
+  virtual bool hasLoadFromStackSlot(const MachineInstr *MI,
+                                    int &FrameIndex) const {
     return 0;
   }
   
@@ -150,23 +201,33 @@ public:
     return 0;
   }
 
+  /// isStoreToStackSlotPostFE - Check for post-frame ptr elimination
+  /// stack locations as well.  This uses a heuristic so it isn't
+  /// reliable for correctness.
+  virtual unsigned isStoreToStackSlotPostFE(const MachineInstr *MI,
+                                      int &FrameIndex) const {
+    return 0;
+  }
+
+  /// hasStoreToStackSlot - If the specified machine instruction has a
+  /// store to a stack slot, return true along with the FrameIndex of
+  /// the loaded stack slot.  If not, return false.  Unlike
+  /// isStoreToStackSlot, this returns true for any instructions that
+  /// loads from the stack.  This is just a hint, as some cases may be
+  /// missed.
+  virtual bool hasStoreToStackSlot(const MachineInstr *MI,
+                                   int &FrameIndex) const {
+    return 0;
+  }
+
   /// reMaterialize - Re-issue the specified 'original' instruction at the
   /// specific location targeting a new destination register.
   virtual void reMaterialize(MachineBasicBlock &MBB,
                              MachineBasicBlock::iterator MI,
                              unsigned DestReg, unsigned SubIdx,
-                             const MachineInstr *Orig) const = 0;
+                             const MachineInstr *Orig,
+                             const TargetRegisterInfo *TRI) const = 0;
 
-  /// isInvariantLoad - Return true if the specified instruction (which is
-  /// marked mayLoad) is loading from a location whose value is invariant across
-  /// the function.  For example, loading a value from the constant pool or from
-  /// from the argument area of a function if it does not change.  This should
-  /// only return true of *all* loads the instruction does are invariant (if it
-  /// does multiple loads).
-  virtual bool isInvariantLoad(const MachineInstr *MI) const {
-    return false;
-  }
-  
   /// convertToThreeAddress - This method must be implemented by targets that
   /// set the M_CONVERTIBLE_TO_3_ADDR flag.  When this flag is set, the target
   /// may be able to convert a two-address instruction into one or more true
@@ -203,6 +264,14 @@ public:
   /// is not in a form which this routine understands.
   virtual bool findCommutedOpIndices(MachineInstr *MI, unsigned &SrcOpIdx1,
                                      unsigned &SrcOpIdx2) const = 0;
+
+  /// isIdentical - Return true if two instructions are identical. This differs
+  /// from MachineInstr::isIdenticalTo() in that it does not require the
+  /// virtual destination registers to be the same. This is used by MachineLICM
+  /// and other MI passes to perform CSE.
+  virtual bool isIdentical(const MachineInstr *MI,
+                           const MachineInstr *Other,
+                           const MachineRegisterInfo *MRI) const = 0;
 
   /// AnalyzeBranch - Analyze the branching code at the end of MBB, returning
   /// true if it cannot be understood (e.g. it's a switch dispatch or isn't
@@ -383,9 +452,12 @@ public:
   /// getOpcodeAfterMemoryUnfold - Returns the opcode of the would be new
   /// instruction after load / store are unfolded from an instruction of the
   /// specified opcode. It returns zero if the specified unfolding is not
-  /// possible.
+  /// possible. If LoadRegIndex is non-null, it is filled in with the operand
+  /// index of the operand which will hold the register holding the loaded
+  /// value.
   virtual unsigned getOpcodeAfterMemoryUnfold(unsigned Opc,
-                                      bool UnfoldLoad, bool UnfoldStore) const {
+                                      bool UnfoldLoad, bool UnfoldStore,
+                                      unsigned *LoadRegIndex = 0) const {
     return 0;
   }
   
@@ -442,15 +514,18 @@ public:
     return false;
   }
 
+  /// isPredicable - Return true if the specified instruction can be predicated.
+  /// By default, this returns true for every instruction with a
+  /// PredicateOperand.
+  virtual bool isPredicable(MachineInstr *MI) const {
+    return MI->getDesc().isPredicable();
+  }
+
   /// isSafeToMoveRegClassDefs - Return true if it's safe to move a machine
   /// instruction that defines the specified register class.
   virtual bool isSafeToMoveRegClassDefs(const TargetRegisterClass *RC) const {
     return true;
   }
-
-  /// isDeadInstruction - Return true if the instruction is considered dead.
-  /// This allows some late codegen passes to delete them.
-  virtual bool isDeadInstruction(const MachineInstr *MI) const = 0;
 
   /// GetInstSize - Returns the size of the specified Instruction.
   /// 
@@ -468,6 +543,10 @@ public:
   /// length.
   virtual unsigned getInlineAsmLength(const char *Str,
                                       const MCAsmInfo &MAI) const;
+
+  /// isProfitableToDuplicateIndirectBranch - Returns true if tail duplication
+  /// is especially profitable for indirect branches.
+  virtual bool isProfitableToDuplicateIndirectBranch() const { return false; }
 };
 
 /// TargetInstrInfoImpl - This is the default implementation of
@@ -488,8 +567,11 @@ public:
   virtual void reMaterialize(MachineBasicBlock &MBB,
                              MachineBasicBlock::iterator MI,
                              unsigned DestReg, unsigned SubReg,
-                             const MachineInstr *Orig) const;
-  virtual bool isDeadInstruction(const MachineInstr *MI) const;
+                             const MachineInstr *Orig,
+                             const TargetRegisterInfo *TRI) const;
+  virtual bool isIdentical(const MachineInstr *MI,
+                           const MachineInstr *Other,
+                           const MachineRegisterInfo *MRI) const;
 
   virtual unsigned GetFunctionSizeInBytes(const MachineFunction &MF) const;
 };

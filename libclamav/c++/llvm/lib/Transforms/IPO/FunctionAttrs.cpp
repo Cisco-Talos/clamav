@@ -26,11 +26,10 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/CaptureTracking.h"
-#include "llvm/Analysis/MallocHelper.h"
+#include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/UniqueVector.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/InstIterator.h"
 using namespace llvm;
 
@@ -40,7 +39,7 @@ STATISTIC(NumNoCapture, "Number of arguments marked nocapture");
 STATISTIC(NumNoAlias, "Number of function returns marked noalias");
 
 namespace {
-  struct VISIBILITY_HIDDEN FunctionAttrs : public CallGraphSCCPass {
+  struct FunctionAttrs : public CallGraphSCCPass {
     static char ID; // Pass identification, replacement for typeid
     FunctionAttrs() : CallGraphSCCPass(&ID) {}
 
@@ -153,7 +152,7 @@ bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
         // Writes memory.  Just give up.
         return false;
 
-      if (isa<MallocInst>(I))
+      if (isMalloc(I))
         // malloc claims not to write memory!  PR3754.
         return false;
 
@@ -213,7 +212,7 @@ bool FunctionAttrs::AddNoCaptureAttrs(const std::vector<CallGraphNode *> &SCC) {
 
     for (Function::arg_iterator A = F->arg_begin(), E = F->arg_end(); A!=E; ++A)
       if (isa<PointerType>(A->getType()) && !A->hasNoCaptureAttr() &&
-          !PointerMayBeCaptured(A, true)) {
+          !PointerMayBeCaptured(A, true, /*StoreCaptures=*/false)) {
         A->addAttr(Attribute::NoCapture);
         ++NumNoCapture;
         Changed = true;
@@ -267,11 +266,8 @@ bool FunctionAttrs::IsFunctionMallocLike(Function *F,
 
         // Check whether the pointer came from an allocation.
         case Instruction::Alloca:
-        case Instruction::Malloc:
           break;
         case Instruction::Call:
-          if (isMalloc(RVI))
-            break;
         case Instruction::Invoke: {
           CallSite CS(RVI);
           if (CS.paramHasAttr(0, Attribute::NoAlias))
@@ -284,7 +280,7 @@ bool FunctionAttrs::IsFunctionMallocLike(Function *F,
           return false;  // Did not come from an allocation.
       }
 
-    if (PointerMayBeCaptured(RetVal, false))
+    if (PointerMayBeCaptured(RetVal, false, /*StoreCaptures=*/false))
       return false;
   }
 

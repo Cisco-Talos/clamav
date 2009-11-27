@@ -165,13 +165,7 @@ bool X86AsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   for (MachineFunction::const_iterator I = MF.begin(), E = MF.end();
        I != E; ++I) {
     // Print a label for the basic block.
-    if (!VerboseAsm && (I->pred_empty() || I->isOnlyReachableByFallthrough())) {
-      // This is an entry block or a block that's only reachable via a
-      // fallthrough edge. In non-VerboseAsm mode, don't print the label.
-    } else {
-      EmitBasicBlockStart(I);
-      O << '\n';
-    }
+    EmitBasicBlockStart(I);
     for (MachineBasicBlock::const_iterator II = I->begin(), IE = I->end();
          II != IE; ++II) {
       // Print the assembly for the instruction.
@@ -231,7 +225,7 @@ void X86AsmPrinter::printSymbolOperand(const MachineOperand &MO) {
     
     std::string Name = Mang->getMangledName(GV, Suffix, Suffix[0] != '\0');
     if (Subtarget->isTargetCygMing()) {
-      X86COFFMachineModuleInfo &COFFMMI = 
+      X86COFFMachineModuleInfo &COFFMMI =
         MMI->getObjFileInfo<X86COFFMachineModuleInfo>();
       COFFMMI.DecorateCygMingName(Name, GV, *TM.getTargetData());
     }
@@ -294,12 +288,12 @@ void X86AsmPrinter::printSymbolOperand(const MachineOperand &MO) {
     std::string Name = Mang->makeNameProper(MO.getSymbolName());
     if (MO.getTargetFlags() == X86II::MO_DARWIN_STUB) {
       Name += "$stub";
-      MCSymbol *Sym = OutContext.GetOrCreateSymbol(Name);
+      MCSymbol *Sym = OutContext.GetOrCreateSymbol(StringRef(Name));
       const MCSymbol *&StubSym =
         MMI->getObjFileInfo<MachineModuleInfoMachO>().getFnStubEntry(Sym);
       if (StubSym == 0) {
         Name.erase(Name.end()-5, Name.end());
-        StubSym = OutContext.GetOrCreateSymbol(Name);
+        StubSym = OutContext.GetOrCreateSymbol(StringRef(Name));
       }
     }
     
@@ -653,13 +647,15 @@ bool X86AsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
 void X86AsmPrinter::printMachineInstruction(const MachineInstr *MI) {
   ++EmittedInsts;
 
-  processDebugLoc(MI);
+  processDebugLoc(MI, true);
   
   printInstructionThroughMCStreamer(MI);
   
-  if (VerboseAsm && !MI->getDebugLoc().isUnknown())
+  if (VerboseAsm)
     EmitComments(*MI);
   O << '\n';
+
+  processDebugLoc(MI, false);
 }
 
 void X86AsmPrinter::PrintGlobalVariable(const GlobalVariable* GVar) {
@@ -874,49 +870,55 @@ void X86AsmPrinter::EmitEndOfAsmFile(Module &M) {
     // implementation of multiple entry points).  If this doesn't occur, the
     // linker can safely perform dead code stripping.  Since LLVM never
     // generates code that does this, it is always safe to set.
-    O << "\t.subsections_via_symbols\n";
-  }  
-  
+    OutStreamer.EmitAssemblerFlag(MCStreamer::SubsectionsViaSymbols);
+  }
+
   if (Subtarget->isTargetCOFF()) {
-    // Necessary for dllexport support
-    std::vector<std::string> DLLExportedFns, DLLExportedGlobals;
-
-    X86COFFMachineModuleInfo &COFFMMI = 
+    X86COFFMachineModuleInfo &COFFMMI =
       MMI->getObjFileInfo<X86COFFMachineModuleInfo>();
-    TargetLoweringObjectFileCOFF &TLOFCOFF = 
-      static_cast<TargetLoweringObjectFileCOFF&>(getObjFileLowering());
 
-    for (Module::const_iterator I = M.begin(), E = M.end(); I != E; ++I)
-      if (I->hasDLLExportLinkage())
-        DLLExportedFns.push_back(Mang->getMangledName(I));
-    
-    for (Module::const_global_iterator I = M.global_begin(), E = M.global_end();
-         I != E; ++I)
-      if (I->hasDLLExportLinkage())
-        DLLExportedGlobals.push_back(Mang->getMangledName(I));
-    
-    if (Subtarget->isTargetCygMing()) {
-      // Emit type information for external functions
-      for (X86COFFMachineModuleInfo::stub_iterator I = COFFMMI.stub_begin(),
+    // Emit type information for external functions
+    for (X86COFFMachineModuleInfo::stub_iterator I = COFFMMI.stub_begin(),
            E = COFFMMI.stub_end(); I != E; ++I) {
-        O << "\t.def\t " << I->getKeyData()
+      O << "\t.def\t " << I->getKeyData()
         << ";\t.scl\t" << COFF::C_EXT
         << ";\t.type\t" << (COFF::DT_FCN << COFF::N_BTSHFT)
         << ";\t.endef\n";
-      }
     }
-  
-    // Output linker support code for dllexported globals on windows.
-    if (!DLLExportedGlobals.empty() || !DLLExportedFns.empty()) {
-      OutStreamer.SwitchSection(TLOFCOFF.getCOFFSection(".section .drectve",
-                                                        true,
+
+    if (Subtarget->isTargetCygMing()) {
+      // Necessary for dllexport support
+      std::vector<std::string> DLLExportedFns, DLLExportedGlobals;
+
+      TargetLoweringObjectFileCOFF &TLOFCOFF =
+        static_cast<TargetLoweringObjectFileCOFF&>(getObjFileLowering());
+
+      for (Module::const_iterator I = M.begin(), E = M.end(); I != E; ++I)
+        if (I->hasDLLExportLinkage()) {
+          std::string Name = Mang->getMangledName(I);
+          COFFMMI.DecorateCygMingName(Name, I, *TM.getTargetData());
+          DLLExportedFns.push_back(Name);
+        }
+
+      for (Module::const_global_iterator I = M.global_begin(),
+             E = M.global_end(); I != E; ++I)
+        if (I->hasDLLExportLinkage()) {
+          std::string Name = Mang->getMangledName(I);
+          COFFMMI.DecorateCygMingName(Name, I, *TM.getTargetData());
+          DLLExportedGlobals.push_back(Mang->getMangledName(I));
+        }
+
+      // Output linker support code for dllexported globals on windows.
+      if (!DLLExportedGlobals.empty() || !DLLExportedFns.empty()) {
+        OutStreamer.SwitchSection(TLOFCOFF.getCOFFSection(".section .drectve",
+                                                          true,
                                                    SectionKind::getMetadata()));
-    
-      for (unsigned i = 0, e = DLLExportedGlobals.size(); i != e; ++i)
-        O << "\t.ascii \" -export:" << DLLExportedGlobals[i] << ",data\"\n";
-    
-      for (unsigned i = 0, e = DLLExportedFns.size(); i != e; ++i)
-        O << "\t.ascii \" -export:" << DLLExportedFns[i] << "\"\n";
+        for (unsigned i = 0, e = DLLExportedGlobals.size(); i != e; ++i)
+          O << "\t.ascii \" -export:" << DLLExportedGlobals[i] << ",data\"\n";
+
+        for (unsigned i = 0, e = DLLExportedFns.size(); i != e; ++i)
+          O << "\t.ascii \" -export:" << DLLExportedFns[i] << "\"\n";
+      }
     }
   }
 }

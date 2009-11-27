@@ -363,9 +363,9 @@ def DYNALLOC : Pseudo<(outs GPRC:$result), (ins GPRC:$negsize, memri:$fpsi),
                        [(set GPRC:$result,
                              (PPCdynalloc GPRC:$negsize, iaddr:$fpsi))]>;
                          
-// SELECT_CC_* - Used to implement the SELECT_CC DAG operation.  Expanded by the
-// scheduler into a branch sequence.
-let usesCustomDAGSchedInserter = 1,    // Expanded by the scheduler.
+// SELECT_CC_* - Used to implement the SELECT_CC DAG operation.  Expanded after
+// instruction selection into a branch sequence.
+let usesCustomInserter = 1,    // Expanded after instruction selection.
     PPC970_Single = 1 in {
   def SELECT_CC_I4 : Pseudo<(outs GPRC:$dst), (ins CRRC:$cond, GPRC:$T, GPRC:$F,
                               i32imm:$BROPC), "${:comment} SELECT_CC PSEUDO!",
@@ -539,7 +539,7 @@ def DCBZL  : DCB_Form<1014, 1, (outs), (ins memrr:$dst),
                       PPC970_DGroup_Single;
 
 // Atomic operations
-let usesCustomDAGSchedInserter = 1 in {
+let usesCustomInserter = 1 in {
   let Uses = [CR0] in {
     def ATOMIC_LOAD_ADD_I8 : Pseudo<
       (outs GPRC:$dst), (ins memrr:$ptr, GPRC:$incr),
@@ -1358,15 +1358,6 @@ def RLWNM  : MForm_2<23,
 
 
 //===----------------------------------------------------------------------===//
-// DWARF Pseudo Instructions
-//
-
-def DWARF_LOC        : Pseudo<(outs), (ins i32imm:$line, i32imm:$col, i32imm:$file),
-                              "${:comment} .loc $file, $line, $col",
-                      [(dwarf_loc (i32 imm:$line), (i32 imm:$col),
-                                  (i32 imm:$file))]>;
-
-//===----------------------------------------------------------------------===//
 // PowerPC Instruction Patterns
 //
 
@@ -1436,12 +1427,16 @@ def : Pat<(PPChi tconstpool:$in, 0), (LIS tconstpool:$in)>;
 def : Pat<(PPClo tconstpool:$in, 0), (LI tconstpool:$in)>;
 def : Pat<(PPChi tjumptable:$in, 0), (LIS tjumptable:$in)>;
 def : Pat<(PPClo tjumptable:$in, 0), (LI tjumptable:$in)>;
+def : Pat<(PPChi tblockaddress:$in, 0), (LIS tblockaddress:$in)>;
+def : Pat<(PPClo tblockaddress:$in, 0), (LI tblockaddress:$in)>;
 def : Pat<(add GPRC:$in, (PPChi tglobaladdr:$g, 0)),
           (ADDIS GPRC:$in, tglobaladdr:$g)>;
 def : Pat<(add GPRC:$in, (PPChi tconstpool:$g, 0)),
           (ADDIS GPRC:$in, tconstpool:$g)>;
 def : Pat<(add GPRC:$in, (PPChi tjumptable:$g, 0)),
           (ADDIS GPRC:$in, tjumptable:$g)>;
+def : Pat<(add GPRC:$in, (PPChi tblockaddress:$g, 0)),
+          (ADDIS GPRC:$in, tblockaddress:$g)>;
 
 // Fused negative multiply subtract, alternate pattern
 def : Pat<(fsub F8RC:$B, (fmul F8RC:$A, F8RC:$C)),
