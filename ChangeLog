@@ -1,3 +1,7 @@
+Mon Nov 30 21:16:35 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs: handle alternatives
+
 Thu Nov 26 19:43:06 CET 2009 (tk)
 ---------------------------------
  * sigtool: --decode-sigs: handle .ldb sigs

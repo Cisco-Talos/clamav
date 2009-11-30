@@ -1647,23 +1647,19 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 	if(str16[i] & CLI_MATCH_WILDCARD) {
 	    switch(str16[i] & CLI_MATCH_WILDCARD) {
 		case CLI_MATCH_IGNORE:
-		    p += sprintf(decoded + p, "{WILDCARD_IGNORE@%u}", i);
-		    break;
-
-		case CLI_MATCH_SPECIAL:
-		    p += sprintf(decoded + p, "{WILDCARD_SPECIAL@%u:<!TODO!>}", i);
+		    p += sprintf(decoded + p, "{WILDCARD_IGNORE}");
 		    break;
 
 		case CLI_MATCH_NIBBLE_HIGH:
-		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_HIGH@%u:0x%x}", i, str16[i] & 0x00f0);
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_HIGH:0x%x}", str16[i] & 0x00f0);
 		    break;
 
 		case CLI_MATCH_NIBBLE_LOW:
-		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_LOW@%u:0x%x}", i, str16[i] & 0x000f);
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_LOW:0x%x}", str16[i] & 0x000f);
 		    break;
 
 		default:
-		    mprintf("!decodehexstr: Unknown wildcard (0x%x)\n", str16[i] & CLI_MATCH_WILDCARD);
+		    mprintf("!decodehexstr: Unknown wildcard (0x%x@%u)\n", str16[i] & CLI_MATCH_WILDCARD, i);
 		    free(decoded);
 		    return NULL;
 	    }
@@ -1679,6 +1675,160 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
     return decoded;
 }
 
+static char *decodehexspecial(const char *hex, unsigned int *dlen)
+{
+	char *pt, *start, *hexcpy, *decoded, *h, *c;
+	unsigned int i, len = 0, hlen, negative, altnum, alttype;
+	char *buff;
+
+
+    hexcpy = strdup(hex);
+    if(!hexcpy) {
+	mprintf("!decodehexspecial: strdup(hex) failed\n");
+	return NULL;
+    }
+    pt = strchr(hexcpy, '(');
+    if(!pt) {
+	free(hexcpy);
+	return decodehexstr(hex, dlen);
+    } else {
+	buff = calloc(strlen(hex) + 512, sizeof(char));
+	if(!buff) {
+	    mprintf("!decodehexspecial: Can't allocate memory for buff\n");
+	    return NULL;
+	}
+	start = hexcpy;
+	do {
+	    negative = 0;
+	    *pt++ = 0;
+	    if(!start) {
+		mprintf("!decodehexspecial: Unexpected EOL\n");
+		return NULL;
+	    }
+	    if(pt >= hexcpy + 2) {
+		if(pt[-2] == '!') {
+		    negative = 1;
+		    pt[-2] = 0;
+		}
+	    }
+	    if(!(decoded = decodehexstr(start, &hlen))) {
+		mprintf("!Decoding failed (1): %s\n", pt);
+		free(hexcpy);
+		return NULL;
+	    }
+	    memcpy(&buff[len], decoded, hlen);
+	    len += hlen;
+	    free(decoded);
+
+	    if(!(start = strchr(pt, ')'))) {
+		mprintf("!decodehexspecial: Missing closing parethesis\n");
+		free(hexcpy);
+		return NULL;
+	    }
+
+	    *start++ = 0;
+	    if(!strlen(pt)) {
+		cli_errmsg("cli_ac_addsig: Empty block\n");
+		free(hexcpy);
+		return NULL;
+	    }
+
+	    if(!strcmp(pt, "B")) {
+		if(!*start) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_BOUNDARY_RIGHT}");
+		    else
+			len += sprintf(buff + len, "{BOUNDARY_RIGHT}");
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_BOUNDARY_LEFT}");
+		    else
+			len += sprintf(buff + len, "{BOUNDARY_LEFT}");
+		    continue;
+		}
+	    } else if(!strcmp(pt, "L")) {
+		if(!*start) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_LINE_MARKER_RIGHT}");
+		    else
+			len += sprintf(buff + len, "{LINE_MARKER_RIGHT}");
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_LINE_MARKER_LEFT}");
+		    else
+			len += sprintf(buff + len, "{LINE_MARKER_LEFT}");
+		    continue;
+		}
+	    } else {
+		altnum = 0;
+		for(i = 0; i < strlen(pt); i++)
+		    if(pt[i] == '|')
+			altnum++;
+
+		if(!altnum) {
+		    cli_errmsg("cli_ac_addsig: Empty block\n");
+		    free(hexcpy);
+		    return NULL;
+		}
+		altnum++;
+
+		if(3 * altnum - 1 == (uint16_t) strlen(pt)) {
+		    alttype = 1; /* char */
+		    if(negative)
+			len += sprintf(buff + len, "{EXCLUDING_CHAR_ALTERNATIVE:");
+		    else
+			len += sprintf(buff + len, "{CHAR_ALTERNATIVE:");
+		} else {
+		    alttype = 2; /* str */
+		    if(negative)
+			len += sprintf(buff + len, "{EXCLUDING_STRING_ALTERNATIVE:");
+		    else
+			len += sprintf(buff + len, "{STRING_ALTERNATIVE:");
+		}
+
+		for(i = 0; i < altnum; i++) {
+		    if(!(h = cli_strtok(pt, i, "|"))) {
+			free(hexcpy);
+			return NULL;
+		    }
+
+		    if(!(c = cli_hex2str(h))) {
+			free(h);
+			free(hexcpy);
+			return NULL;
+		    }
+
+		    if(alttype == 1) {
+			buff[len++] = *c;
+		    } else {
+			memcpy(&buff[len], c, strlen(h) / 2);
+			len += strlen(h) / 2;
+		    }
+		    if(i + 1 != altnum)
+			buff[len++] = '|';
+		}
+		buff[len++] = '}';
+	    }
+	} while((pt = strchr(start, '(')));
+
+	if(start) {
+	    if(!(decoded = decodehexstr(start, &hlen))) {
+		mprintf("!Decoding failed (2)\n");
+		free(hexcpy);
+		return NULL;
+	    }
+	    memcpy(&buff[len], decoded, hlen);
+	    len += hlen;
+	}
+    }
+    free(hexcpy);
+    if(dlen)
+	*dlen = len;
+    return buff;
+}
+
 static int decodehex(const char *hexsig)
 {
 	char *pt, *hexcpy, *start, *n, *decoded;
@@ -1689,7 +1839,7 @@ static int decodehex(const char *hexsig)
 
     hexlen = strlen(hexsig);
     if(strchr(hexsig, '{')) {
-	if(!(hexcpy = cli_strdup(hexsig)))
+	if(!(hexcpy = strdup(hexsig)))
 	    return -1;
 
 	for(i = 0; i < hexlen; i++)
@@ -1727,7 +1877,7 @@ static int decodehex(const char *hexsig)
 	    else if(maxdist)
 		mprintf("{WILDCARD_ANY_STRING(LENGTH<=%u)}", maxdist);
 
-	    if(!(decoded = decodehexstr(start, &dlen))) {
+	    if(!(decoded = decodehexspecial(start, &dlen))) {
 		mprintf("!Decoding failed\n");
 		free(hexcpy);
 		return -1;
@@ -1808,7 +1958,7 @@ static int decodehex(const char *hexsig)
 		mprintf("!Can't extract part %u of partial signature\n", i);
 		return -1;
 	    }
-	    if(!(decoded = decodehexstr(pt, &dlen))) {
+	    if(!(decoded = decodehexspecial(pt, &dlen))) {
 		mprintf("!Decoding failed\n");
 		return -1;
 	    }
@@ -1820,7 +1970,7 @@ static int decodehex(const char *hexsig)
 	}
 
     } else {
-	if(!(decoded = decodehexstr(hexsig, &dlen))) {
+	if(!(decoded = decodehexspecial(hexsig, &dlen))) {
 	    mprintf("!Decoding failed\n");
 	    return -1;
 	}
