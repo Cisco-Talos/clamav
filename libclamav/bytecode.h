@@ -32,6 +32,7 @@ struct cli_bc_value;
 struct cli_bc_inst;
 struct cli_bc_type;
 struct cli_bc_engine;
+struct cli_bc_dbgnode;
 struct bitset_tag;
 struct cl_engine;
 
@@ -62,6 +63,8 @@ struct cli_bc {
   char *vnameprefix;
   char **vnames;
   unsigned vnames_cnt;
+  struct cli_bc_dbgnode *dbgnodes;
+  unsigned dbgnode_cnt;
 };
 
 struct cli_all_bc {

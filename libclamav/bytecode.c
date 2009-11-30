@@ -63,7 +63,9 @@ int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     free(ctx->opsizes);
     free(ctx->values);
     free(ctx->operands);
-    ctx->operands = ctx->values = ctx->opsizes = NULL;
+    ctx->operands = NULL;
+    ctx->values = NULL;
+    ctx->opsizes = NULL;
     return CL_SUCCESS;
 }
 
@@ -320,7 +322,7 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
     }
     (*off)++;
     l = readNumber(p, off, len, ok);
-    if (!l) {
+    if (!l || !ok) {
 	*datalen = l;
 	return NULL;
     }
@@ -400,6 +402,8 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     bc->state = bc_loaded;
     bc->uses_apis = NULL;
+    bc->dbgnodes = NULL;
+    bc->dbgnode_cnt = 0;
     if (!ok) {
 	cli_errmsg("Invalid bytecode header at %u\n", offset);
 	return CL_EMALFDB;
@@ -787,6 +791,58 @@ static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
     return CL_SUCCESS;
 }
 
+static int parseMD(struct cli_bc *bc, unsigned char *buffer)
+{
+    unsigned offset = 1, len = strlen(buffer);
+    unsigned numMD, i, b;
+    char ok = 1;
+    if (buffer[0] != 'D')
+	return CL_EMALFDB;
+    numMD = readNumber(buffer, &offset, len, &ok);
+    if (!ok) {
+	cli_errmsg("Unable to parse number of MD nodes\n");
+	return CL_EMALFDB;
+    }
+    b = bc->dbgnode_cnt;
+    bc->dbgnode_cnt += numMD;
+    bc->dbgnodes = cli_realloc(bc->dbgnodes, bc->dbgnode_cnt * sizeof(*bc->dbgnodes));
+    if (!bc->dbgnodes)
+	return CL_EMEM;
+    for (i=0;i<numMD;i++) {
+	unsigned j;
+	struct cli_bc_dbgnode_element* elts;
+	unsigned el = readNumber(buffer, &offset, len, &ok);
+	if (!ok) {
+	    cli_errmsg("Unable to parse number of elements\n");
+	    return CL_EMALFDB;
+	}
+	bc->dbgnodes[b+i].numelements = el;
+	bc->dbgnodes[b+i].elements = elts = cli_calloc(el, sizeof(*elts));
+	if (!elts)
+	    return CL_EMEM;
+	for (j=0;j<el;j++) {
+	    if (buffer[offset] == '|') {
+		elts[j].string = readData(buffer, &offset, len, &ok, &elts[j].len);
+		if (!ok)
+		    return CL_EMALFDB;
+	    } else {
+		elts[j].len = readNumber(buffer, &offset, len, &ok);
+		if (!ok)
+		    return CL_EMALFDB;
+		if (elts[j].len) {
+		    elts[j].constant = readNumber(buffer, &offset, len, &ok);
+		}
+		else
+		    elts[j].nodeid = readNumber(buffer, &offset, len, &ok);
+		if (!ok)
+		    return CL_EMALFDB;
+	    }
+	}
+    }
+    cli_dbgmsg("bytecode: Parsed %u nodes total\n", bc->dbgnode_cnt);
+    return CL_SUCCESS;
+}
+
 static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *buffer)
 {
     char ok=1;
@@ -1046,6 +1102,27 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	offset++;
     }
+    if (buffer[offset] == 'D') {
+	unsigned num;
+	offset += 3;
+	if (offset >= len)
+	    return CL_EMALFDB;
+	num = readNumber(buffer, &offset, len, &ok);
+	if (!ok)
+	    return CL_EMALFDB;
+	if (num != bcfunc->numInsts) {
+	    cli_errmsg("invalid number of dbg nodes, expected: %u, got: %u\n", bcfunc->numInsts, num);
+	    return CL_EMALFDB;
+	}
+	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
+	if (!bcfunc->dbgnodes)
+	    return CL_EMEM;
+	for (i=0;i<num;i++) {
+	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
+	    if (!ok)
+		return CL_EMALFDB;
+	}
+    }
     if (offset != len) {
 	cli_errmsg("Trailing garbage in basicblock: %d extra bytes\n",
 		   len-offset);
@@ -1062,6 +1139,7 @@ enum parse_state {
     PARSE_BC_APIS,
     PARSE_BC_GLOBALS,
     PARSE_BC_LSIG,
+    PARSE_MD_OPT_HEADER,
     PARSE_FUNC_HEADER,
     PARSE_BB
 };
@@ -1135,8 +1213,18 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;
 		}
-		state = PARSE_FUNC_HEADER;
+		state = PARSE_MD_OPT_HEADER;
 		break;
+	    case PARSE_MD_OPT_HEADER:
+		if (buffer[0] == 'D') {
+		    rc = parseMD(bc, (unsigned char*)buffer);
+		    if (rc != CL_SUCCESS) {
+			cli_errmsg("Error at bytecode line %u\n", row);
+			return rc;
+		    }
+		    break;
+		}
+		// fall-through
 	    case PARSE_FUNC_HEADER:
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
@@ -1247,6 +1335,14 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     for (i=0;i<bc->num_globals;i++) {
 	free(bc->globals[i]);
     }
+    for (i=0;i<bc->dbgnode_cnt;i++) {
+	for (j=0;j<bc->dbgnodes[i].numelements;j++) {
+	    struct cli_bc_dbgnode_element *el =  &bc->dbgnodes[i].elements[j];
+	    if (el && el->string)
+		free(el->string);
+	}
+    }
+    free(bc->dbgnodes);
     free(bc->globals);
     free(bc->globaltys);
     if (bc->uses_apis)

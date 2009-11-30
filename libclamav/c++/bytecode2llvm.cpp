@@ -210,6 +210,7 @@ private:
     unsigned numArgs;
     DenseMap<unsigned, unsigned> GVoffsetMap;
     DenseMap<unsigned, const Type*> GVtypeMap;
+    std::vector<MDNode*> mdnodes;
 
     Value *getOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
     {
@@ -407,8 +408,44 @@ public:
 	return true;
     }
 
+    MDNode *convertMDNode(unsigned i) {
+	if (i < mdnodes.size()) {
+	    if (mdnodes[i])
+		return mdnodes[i];
+	} else 
+	    mdnodes.resize(i+1);
+	assert(i < mdnodes.size());
+	const struct cli_bc_dbgnode *node = &bc->dbgnodes[i];
+	Value **Vals = new Value*[node->numelements];
+	for (unsigned j=0;j<node->numelements;j++) {
+	    const struct cli_bc_dbgnode_element* el = &node->elements[j];
+	    Value *V;
+	    if (!el->len) {
+		if (el->nodeid == ~0u)
+		    V = 0;
+		else if (el->nodeid)
+		    V = convertMDNode(el->nodeid);
+		else
+		    V = MDString::get(Context, "");
+	    } else if (el->string) {
+		V = MDString::get(Context, StringRef(el->string, el->len));
+	    } else {
+		V = ConstantInt::get(IntegerType::get(Context, el->len),
+				     el->constant);
+	    }
+	    Vals[j] = V;
+	}
+	MDNode *N = MDNode::get(Context, Vals, node->numelements);
+	delete[] Vals;
+	mdnodes[i] = N;
+	return N;
+    }
+
     bool generate() {
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
+	for (unsigned i=0;i<bc->dbgnode_cnt;i++) {
+	    mdnodes.push_back(convertMDNode(i));
+	}
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
@@ -590,11 +627,21 @@ public:
 		bool unreachable = false;
 		const struct cli_bc_bb *bb = &func->BB[i];
 		Builder.SetInsertPoint(BB[i]);
+		unsigned c = 0;
 		for (unsigned j=0;j<bb->numInsts;j++) {
 		    const struct cli_bc_inst *inst = &bb->insts[j];
 		    Value *Op0, *Op1, *Op2;
 		    // libclamav has already validated this.
 		    assert(inst->opcode < OP_BC_INVALID && "Invalid opcode");
+		    if (func->dbgnodes) {
+			if (func->dbgnodes[c] != ~0u) {
+			unsigned j = func->dbgnodes[c];
+			assert(j < mdnodes.size());
+			Builder.SetCurrentDebugLocation(mdnodes[j]);
+			} else
+			    Builder.SetCurrentDebugLocation(0);
+		    }
+		    c++;
 		    switch (inst->opcode) {
 			case OP_BC_JMP:
 			case OP_BC_BRANCH:
@@ -1036,7 +1083,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 //	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
 	// for now.
-	// EE->DisableLazyCompilation();
+	EE->DisableLazyCompilation();
 	EE->DisableSymbolSearching();
 
 	FunctionPassManager OurFPM(MP);

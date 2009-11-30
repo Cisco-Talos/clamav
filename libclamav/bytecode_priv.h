@@ -85,7 +85,21 @@ struct cli_bc_func {
     struct cli_bc_bb *BB;
     struct cli_bc_inst *allinsts;
     uint64_t *constants;
+    unsigned *dbgnodes;
 };
+
+struct cli_bc_dbgnode_element {
+    unsigned nodeid;
+    char *string;
+    unsigned len;
+    uint64_t constant;
+};
+
+struct cli_bc_dbgnode {
+    unsigned numelements;
+    struct cli_bc_dbgnode_element* elements;
+};
+
 #define MAX_OP ~0u
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
