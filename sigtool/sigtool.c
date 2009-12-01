@@ -1838,12 +1838,12 @@ static int decodehex(const char *hexsig)
 
 
     hexlen = strlen(hexsig);
-    if(strchr(hexsig, '{')) {
+    if(strchr(hexsig, '{') || strchr(hexsig, '[')) {
 	if(!(hexcpy = strdup(hexsig)))
 	    return -1;
 
 	for(i = 0; i < hexlen; i++)
-	    if(hexsig[i] == '{' || hexsig[i] == '*')
+	    if(hexsig[i] == '{' || hexsig[i] == '[' || hexsig[i] == '*')
 		parts++;
 
 	if(parts)
@@ -1853,7 +1853,7 @@ static int decodehex(const char *hexsig)
 	for(i = 1; i <= parts; i++) {
 	    if(i != parts) {
 		for(j = 0; j < strlen(start); j++) {
-		    if(start[j] == '{') {
+		    if(start[j] == '{' || start[j] == '[') {
 			asterisk = 0;
 			pt = start + j;
 			break;
@@ -1898,7 +1898,7 @@ static int decodehex(const char *hexsig)
 		continue;
 	    }
 
-	    if(!(start = strchr(pt, '}'))) {
+	    if(!(start = strchr(pt, '}')) && !(start = strchr(pt, ']'))) {
 		error = 1;
 		break;
 	    }
