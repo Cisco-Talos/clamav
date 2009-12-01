@@ -234,7 +234,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?(") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ',')))) {
+    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ',')))) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
