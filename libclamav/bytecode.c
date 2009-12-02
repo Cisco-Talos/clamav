@@ -45,9 +45,13 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->opsizes = NULL;
     ctx->fd = -1;
     ctx->off = 0;
+    ctx->ctx = NULL;
     ctx->hooks.match_counts = nomatch;
     /* TODO: init all hooks with safe values */
     ctx->virname = NULL;
+    ctx->outfd = -1;
+    ctx->tempfile = NULL;
+    ctx->written = 0;
     return ctx;
 }
 
@@ -55,6 +59,16 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
 {
    cli_bytecode_context_clear(ctx);
    free(ctx);
+}
+
+int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
+{
+    int fd;
+    *tempfilename = ctx->tempfile;
+    fd  = ctx->outfd;
+    ctx->tempfile = NULL;
+    ctx->outfd = -1;
+    return fd;
 }
 
 /* resets bytecode state, so you can run another bytecode with same ctx */
@@ -66,6 +80,17 @@ int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->operands = NULL;
     ctx->values = NULL;
     ctx->opsizes = NULL;
+    ctx->written = 0;
+    if (ctx->outfd != -1) {
+	cli_dbgmsg("Bytecode: nobody cared about FD %d, %s\n", ctx->outfd,
+		   ctx->tempfile);
+	ftruncate(ctx->outfd, 0);
+	close(ctx->outfd);
+	cli_unlink(ctx->tempfile);
+	free(ctx->tempfile);
+	ctx->tempfile = NULL;
+	ctx->outfd = -1;
+    }
     return CL_SUCCESS;
 }
 
@@ -1581,6 +1606,37 @@ int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
 	ret = cli_bytecode_context_getresult_int(ctx);
 	/* TODO: use prefix here */
 	cli_dbgmsg("Bytecode %u returned %u\n", bc->id, ret);
+	if (!ret) {
+	    char *tempfile;
+	    cli_ctx *cctx = ctx->ctx;
+	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
+	    if (fd != -1) {
+		if (cctx && cctx->engine->keeptmp)
+		    cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
+			       bc->id, tempfile);
+		else
+		    cli_dbgmsg("Bytecode %u unpacked file\n", bc->id);
+		lseek(fd, 0, SEEK_SET);
+		cli_dbgmsg("***** Scanning unpacked file ******\n");
+		ret = cli_magic_scandesc(fd, cctx);
+		if (!cctx || !cctx->engine->keeptmp)
+		    ftruncate(fd, 0);
+		close(fd);
+		if (!cctx || !cctx->engine->keeptmp) {
+		    if (cli_unlink(tempfile))
+			ret = CL_EUNLINK;
+		}
+		free(tempfile);
+		if (ret != CL_CLEAN) {
+		    if (ret == CL_VIRUS)
+			cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
+		    cli_bytecode_context_clear(ctx);
+		    return ret;
+		}
+		cli_bytecode_context_reset(ctx);
+		continue;
+	    }
+	}
 	cli_bytecode_context_reset(ctx);
     }
     return CL_CLEAN;
@@ -1591,4 +1647,9 @@ int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_
     ctx->hooks.exeinfo = &data->exe_info;
     ctx->hooks.pedata = data;
     return 0;
+}
+
+void cli_bytecode_context_setctx(struct cli_bc_ctx *ctx, void *cctx)
+{
+    ctx->ctx = cctx;
 }

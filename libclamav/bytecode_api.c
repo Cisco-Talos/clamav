@@ -23,6 +23,8 @@
 #define _XOPEN_SOURCE 600
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "cltypes.h"
 #include "clambc.h"
 #include "bytecode_priv.h"
@@ -98,8 +100,32 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
 
 int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 {
-    //TODO: write to tempfile (checking maxsize), and later scan it via
-    //magicscandesc
+    int32_t res;
+    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    if (len < 0) {
+	cli_warnmsg("Bytecode API: called with negative length!\n");
+	return -1;
+    }
+    if (ctx->outfd == -1) {
+	ctx->tempfile = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
+	if (!ctx->tempfile) {
+	    cli_dbgmsg("Bytecode API: Unable to allocate memory for tempfile\n");
+	    return -1;
+	}
+	ctx->outfd = open(ctx->tempfile, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+	if (ctx->outfd == -1) {
+	    cli_warnmsg("Bytecode API: Can't create file %s\n", ctx->tempfile);
+	    free(ctx->tempfile);
+	    return -1;
+	}
+    }
+    if (cli_checklimits("bytecode api", cctx, ctx->written + len, 0, 0))
+	return -1;
+    res = cli_writen(ctx->outfd, data, len);
+    if (res > 0) ctx->written += res;
+    if (res == -1)
+	    cli_dbgmsg("Bytecode API: write failed: %s\n", errno);
+    return res;
 }
 
 

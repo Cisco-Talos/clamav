@@ -2271,9 +2271,21 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     pedata.overlays = overlays;
     pedata.overlays_sz = fsize - overlays;
     cli_bytecode_context_setpe(bc_ctx, &pedata);
-    if (cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, desc, ctx->virname) == CL_VIRUS)
-	return CL_VIRUS;
-    cli_bytecode_context_destroy(bc_ctx);
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+    ret = cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, desc, ctx->virname);
+    switch (ret) {
+	case CL_VIRUS:
+	    return CL_VIRUS;
+	case CL_SUCCESS:
+	    ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+	    cli_bytecode_context_destroy(bc_ctx);
+	    if (ndesc != -1) {
+		CLI_UNPRESULTS("bytecode PE hook", 1, 1, (0));
+	    }
+	    break;
+	default:
+	    cli_bytecode_context_destroy(bc_ctx);
+    }
 
     free(exe_sections);
     return CL_CLEAN;

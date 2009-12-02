@@ -75,12 +75,17 @@ struct cli_all_bc {
 
 struct cli_pe_hook_data;
 struct cli_bc_ctx *cli_bytecode_context_alloc(void);
+/* FIXME: we can't include others.h because others.h includes us...*/
+void cli_bytecode_context_setctx(struct cli_bc_ctx *ctx, void *cctx);
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid);
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c);
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen);
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd);
 int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data);
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx);
+/* returns file descriptor, sets tempfile. Caller takes ownership, and is
+ * responsible for freeing/unlinking */
+int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename);
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx);
 void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 

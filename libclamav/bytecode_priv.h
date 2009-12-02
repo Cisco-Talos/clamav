@@ -116,6 +116,10 @@ struct cli_bc_ctx {
     int fd;
     const char *virname;
     struct cli_bc_hooks hooks;
+    int outfd;
+    char *tempfile;
+    void *ctx;
+    unsigned written;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
