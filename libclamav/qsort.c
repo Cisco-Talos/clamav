@@ -76,9 +76,9 @@ swapfunc(a, b, n, swaptype)
 
 #define vecswap(a, b, n) 	if ((n) > 0) swapfunc(a, b, n, swaptype)
 
-#define CMP1(a, b) ((int)(*(const uint32_t *)a - *(const uint32_t *)b))
+#define CMP1(a, b) ((int)(*((uint32_t *)a) - *((uint32_t *)b)))
 #define CMP(a, b)   (cmp ? (cmp(a, b)) : CMP1(a, b))
-#define MED3(a, b, c, d)   (d ? (med3(a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? b : (CMP1(a, c) < 0 ? c : a )) : (CMP1(b, c) > 0 ? b : (CMP1(a, c) < 0 ? a : c ))))
+#define MED3(a, b, c, d)   (d ? (med3(a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? (b) : (CMP1(a, c) < 0 ? (c) : (a))) : (CMP1(b, c) > 0 ? (b) : (CMP1(a, c) < 0 ? (a) : (c)))))
 
 static inline char *
 med3(a, b, c, cmp)
