@@ -38,6 +38,7 @@
 #include "clamav.h"
 #include "dconf.h"
 #include "filetypes.h"
+#include "fmap.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 #include "bytecode.h"
@@ -111,6 +112,7 @@ typedef struct {
     unsigned int found_possibly_unwanted;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     struct cli_dconf *dconf;
+    fmap_t **fmap;
 } cli_ctx;
 
 struct cl_engine {
@@ -373,6 +375,13 @@ void cli_dbgmsg_internal(const char *str, ...);
 #undef HAVE_CLI_GETPAGESIZE
 #endif
 
+#ifdef _WIN32
+static inline int cli_getpagesize(void) {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwPageSize;
+}
+#else /* ! _WIN32 */
 #if HAVE_SYSCONF_SC_PAGESIZE
 static inline int cli_getpagesize(void) { return sysconf(_SC_PAGESIZE); }
 #define HAVE_CLI_GETPAGESIZE 1
@@ -380,8 +389,9 @@ static inline int cli_getpagesize(void) { return sysconf(_SC_PAGESIZE); }
 #if HAVE_GETPAGESIZE
 static inline int cli_getpagesize(void) { return getpagesize(); }
 #define HAVE_CLI_GETPAGESIZE 1
-#endif
-#endif
+#endif /* HAVE_GETPAGESIZE */
+#endif /* HAVE_SYSCONF_SC_PAGESIZE */
+#endif /* _WIN32 */
 
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
@@ -410,7 +420,7 @@ int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsig
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
-void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *));
+void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

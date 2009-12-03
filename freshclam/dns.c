@@ -28,10 +28,11 @@
 
 #include <string.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#endif
 #include <resolv.h>
-#include <sys/types.h>
 
 #include "shared/output.h"
 
@@ -136,41 +137,6 @@ char *txtquery(const char *domain, unsigned int *ttl)
     memcpy(txt, pt+1, txtlen);
     txt[txtlen] = 0;
     *ttl = cttl;
-
-    return txt;
-}
-
-#elif defined(C_WINDOWS)
-
-/*
- * Note: Needs to link with dnsapi.lib.  
- * The dll behind this library is available from Windows 2000 onward.
- * Written by Mark Pizzolato
- */
-#include <winsock.h>
-#include <string.h>
-#include <windows.h>
-#include <windns.h>
-#include "shared/output.h"
-
-char *txtquery(const char *domain, unsigned int *ttl)
-{
-	PDNS_RECORD pDnsRecord;
-	char *txt = NULL;
-
-    *ttl = 0;
-    mprintf("*Querying %s\n", domain);
-
-   if(DnsQuery_UTF8(domain, DNS_TYPE_TEXT, DNS_QUERY_TREAT_AS_FQDN, NULL, &pDnsRecord, NULL) != 0)
-	return NULL;
-
-    if((pDnsRecord->Data.TXT.dwStringCount > 0) && pDnsRecord->Data.TXT.pStringArray[0]) {
-	txt = malloc(strlen(pDnsRecord->Data.TXT.pStringArray[0]) + 1);
-	if(txt)
-	    strcpy(txt, pDnsRecord->Data.TXT.pStringArray[0]);
-	*ttl = pDnsRecord->dwTtl;
-    }
-    DnsRecordListFree(pDnsRecord, DnsFreeRecordList);
 
     return txt;
 }

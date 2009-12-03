@@ -34,10 +34,11 @@ typedef struct m_area_tag {
 	unsigned char *buffer;
 	off_t length;
 	off_t offset;
+	fmap_t *map;
 } m_area_t;
 
 int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf);
-int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf* dconf);
+int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf* dconf);
 void html_tag_arg_free(tag_arguments_t *tags);
 int html_screnc_decode(int fd, const char *dirname);
 void html_tag_arg_add(tag_arguments_t *tags, const char *tag, char *value);

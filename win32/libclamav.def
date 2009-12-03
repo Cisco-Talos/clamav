@@ -1,0 +1,90 @@
+LIBRARY libclamav
+; cl_stuff - should be exported as is
+EXPORTS cl_debug
+EXPORTS cl_load
+EXPORTS cl_engine_compile
+EXPORTS cl_engine_set_num
+EXPORTS cl_engine_set_str
+EXPORTS cl_engine_free
+EXPORTS cl_engine_new
+EXPORTS cl_strerror
+EXPORTS cl_init
+EXPORTS cl_retdbdir
+EXPORTS cl_scandesc
+EXPORTS cl_scanfile
+EXPORTS cl_cvdfree
+EXPORTS cl_cvdhead
+EXPORTS cl_retflevel
+EXPORTS cl_cvdparse
+EXPORTS cl_cvdverify
+EXPORTS cl_retver
+
+; cli_stuff - should be mangled or exported by ordinal only
+EXPORTS cli_gentemp
+EXPORTS cli_gettmpdir
+EXPORTS cli_regcomp
+EXPORTS cli_regexec
+EXPORTS cli_regfree
+EXPORTS cli_ctime
+EXPORTS cli_rmdirs
+EXPORTS cli_isnumber
+EXPORTS cli_strtok
+EXPORTS cli_cvdunpack
+EXPORTS cli_decodesig
+EXPORTS cli_chomp
+EXPORTS cli_strtokenize
+EXPORTS have_rar
+
+; shared stuff - to be either double compiled into the tools or treated like cli_xxx
+EXPORTS opendir
+EXPORTS readdir
+EXPORTS closedir
+EXPORTS safe_open
+EXPORTS snprintf
+EXPORTS mp_init
+EXPORTS mp_read_radix
+EXPORTS mp_clear
+EXPORTS sha256_init
+EXPORTS sha256_update
+EXPORTS sha256_final
+EXPORTS gzopen
+EXPORTS gzgets
+EXPORTS gzdopen
+EXPORTS gzclose
+EXPORTS gzwrite
+
+EXPORTS optget
+EXPORTS optparse
+EXPORTS optfree
+EXPORTS clam_options DATA
+
+EXPORTS DATADIR DATA
+EXPORTS CONFDIR DATA
+EXPORTS CONFDIR_CLAMD DATA
+EXPORTS CONFDIR_FRESHCLAM DATA
+EXPORTS CONFDIR_MILTER DATA
+
+; winsock - bridging for now
+EXPORTS htonl
+EXPORTS htons
+EXPORTS ntohs
+EXPORTS gettimeofday
+EXPORTS pthread_mutex_lock
+EXPORTS pthread_mutex_unlock
+
+EXPORTS w32_socket
+EXPORTS w32_getsockopt
+EXPORTS w32_setsockopt
+EXPORTS w32_bind
+EXPORTS w32_connect
+EXPORTS w32_send
+EXPORTS w32_recv
+EXPORTS w32_closesocket
+EXPORTS w32_getservbyname
+EXPORTS w32_getaddrinfo
+EXPORTS w32_freeaddrinfo
+EXPORTS w32_inet_ntop
+EXPORTS w32_gethostbyname
+EXPORTS w32_select
+
+EXPORTS w32_stat

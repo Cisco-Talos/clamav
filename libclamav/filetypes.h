@@ -25,6 +25,7 @@
 
 #include "clamav.h"
 #include "cltypes.h"
+#include "fmap.h"
 
 #define MAGIC_BUFFER_SIZE 1024
 #define CL_TYPENO 500
@@ -105,7 +106,7 @@ struct cli_matched_type {
 cli_file_t cli_ftcode(const char *name);
 void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-cli_file_t cli_filetype2(int desc, const struct cl_engine *engine);
+cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

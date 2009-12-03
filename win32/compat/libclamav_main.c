@@ -1,0 +1,114 @@
+/* just a draft for now */
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <string.h>
+#include "pthread.h"
+#include "libgen.h"
+#include "shared/optparser.h"
+
+void fix_paths(void);
+
+BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv) {
+    WSADATA wsa;
+    switch (why) {
+    case DLL_PROCESS_ATTACH:
+	if(WSAStartup(MAKEWORD(2,2), &wsa))
+	    return FALSE;
+	fix_paths();
+	return pthread_win32_process_attach_np();
+	break;
+
+    case DLL_THREAD_ATTACH:
+	return pthread_win32_thread_attach_np ();
+	break;
+
+    case DLL_THREAD_DETACH:
+	return pthread_win32_thread_detach_np ();
+	break;
+
+    case DLL_PROCESS_DETACH:
+	WSACleanup();
+	pthread_win32_thread_detach_np ();
+	return pthread_win32_process_detach_np ();
+	break;
+    }
+}
+
+/*
+    The trick is:
+    1 - Reinclude clamav-config.h which is not guarded against multiple inclusions.
+	In platform.h we do undef them and re-export as extern pointers, however, since
+	platform.h is guarded, the undef won't trigger.
+	This gives back to us the original CONFDIR and DATADIR macroes.
+    2 - We define _static_ buffers to contain those strings.
+    3 - We undef the macroes, which re-turns them back into extern pointers and we set them
+	to point to the above defined buffer.
+    4 - We now give the original macros the names of the above buffers and include optparser.c
+	This result in clam_options struct in optparser be defined with proper pointers.
+*/
+
+#include "clamav-config.h"
+char _DATADIR[MAX_PATH] = DATADIR;
+char _CONFDIR[MAX_PATH] = CONFDIR;
+char _CONFDIR_CLAMD[MAX_PATH] = CONFDIR"\\clamd.conf";
+char _CONFDIR_FRESHCLAM[MAX_PATH] = CONFDIR"\\freshclam.conf";
+char _CONFDIR_MILTER[MAX_PATH] = CONFDIR"\\clamav-milter.conf";
+
+#undef DATADIR
+#undef CONFDIR
+const char *DATADIR = _DATADIR;
+const char *CONFDIR = _CONFDIR;
+const char *CONFDIR_CLAMD = _CONFDIR_CLAMD;
+const char *CONFDIR_FRESHCLAM = _CONFDIR_FRESHCLAM;
+const char *CONFDIR_MILTER = _CONFDIR_MILTER;
+
+#define DATADIR _DATADIR
+#define CONFDIR _CONFDIR
+#define CONFDIR_CLAMD _CONFDIR_CLAMD
+#define CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
+#define CONFDIR_MILTER _CONFDIR_MILTER
+
+#include "shared/optparser.c"
+
+#define CLAMKEY "Software\\ClamAV"
+void fix_paths(void) {
+    int have_ddir = 0, have_cdir = 0;
+    char path[MAX_PATH] = "";
+    DWORD sizof;
+    HKEY key;
+
+    if(RegOpenKeyEx(HKEY_LOCAL_MACHINE, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
+	sizof = sizeof(path);
+	if(RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+	    have_ddir = 1;
+	    memcpy(_DATADIR, path, sizof);
+	}
+	sizof = sizeof(path);
+	if(RegQueryValueEx(key, "ConfDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+	    have_cdir = 1;
+	    memcpy(_CONFDIR, path, sizof);
+	}
+	RegCloseKey(key);
+    }
+    if(!(have_ddir | have_cdir) && GetModuleFileName(NULL, path, sizeof(path))) {
+	char *dir;
+	path[sizeof(path)-1] = '\0';
+	dir = dirname(path);
+	if(!have_ddir)
+	    snprintf(_DATADIR, sizeof(_DATADIR), "%s\\database", dir);
+	if(!have_cdir) {
+	    strncpy(_CONFDIR, dir, sizeof(_CONFDIR));
+	    have_cdir = 1;
+	}
+    }
+    _DATADIR[sizeof(_DATADIR) - 1] = '\0';
+    _CONFDIR[sizeof(_CONFDIR) - 1] = '\0';
+    if(have_cdir) {
+	snprintf(_CONFDIR_CLAMD, sizeof(_CONFDIR_CLAMD), "%s\\%s", _CONFDIR, "clamd.conf");
+	snprintf(_CONFDIR_FRESHCLAM, sizeof(_CONFDIR_FRESHCLAM), "%s\\%s", _CONFDIR, "freshclam.conf");
+	snprintf(_CONFDIR_MILTER, sizeof(_CONFDIR_MILTER), "%s\\%s", _CONFDIR, "clamav-milter.conf");
+    }
+}

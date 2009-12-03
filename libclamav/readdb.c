@@ -236,7 +236,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?(") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ',')))) {
+    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ',')))) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
@@ -409,7 +409,7 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, ignored, 0, -1, NULL) == CL_VIRUS) {
+    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
 	if(md5_expected) {
 	    cli_md5_init(&md5ctx);
             cli_md5_update(&md5ctx, entry, strlen(entry));
@@ -869,7 +869,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     uint32_t lsigid[2];
     int ret;
 
-    tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
+	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
     if(tokens_count < 4) {
 	return CL_EMALFDB;
     }
@@ -901,6 +901,12 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	}
 	subsigs = tokens_count-3;
     }
+
+	if(subsigs != tokens_count - 3) {
+	    cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
@@ -1312,11 +1318,6 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
-static int scomp(const void *a, const void *b)
-{
-    return *(const uint32_t *)a - *(const uint32_t *)b;
-}
-
 #define MD5_HDB	    0
 #define MD5_MDB	    1
 #define MD5_FP	    2
@@ -1364,7 +1365,6 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
-	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
 
@@ -1418,7 +1418,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 	new->length = 16;
 
-	size = atoi(tokens[size_field]);
+	new->filesize = atoi(tokens[size_field]);
 
 	new->virname = cli_mpool_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
@@ -1450,7 +1450,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    if(!db->md5_sizes_hs.capacity) {
 		    cli_hashset_init(&db->md5_sizes_hs, 65536, 80);
 	    }
-	    cli_hashset_addkey(&db->md5_sizes_hs, size);
+	    cli_hashset_addkey(&db->md5_sizes_hs, new->filesize);
 	}
 
 	sigs++;
@@ -1771,7 +1771,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	} result;
 #endif
 	char *dbfile;
-	int ret = CL_EOPEN;
+	int ret = CL_EOPEN, have_cld;
+	struct cl_cvd *daily_cld, *daily_cvd;
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
@@ -1819,8 +1820,38 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
-    if(access(dbfile, R_OK))
-	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
+    have_cld = !access(dbfile, R_OK);
+    if(have_cld) {
+	daily_cld = cl_cvdhead(dbfile);
+	if(!daily_cld) {
+	    cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+	    free(dbfile);
+	    closedir(dd);
+	    return CL_EMALFDB;
+	}
+    }
+    sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname); 
+    if(!access(dbfile, R_OK)) {
+	if(have_cld) {
+	    daily_cvd = cl_cvdhead(dbfile);
+	    if(!daily_cvd) {
+		cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+		free(dbfile);
+		if(have_cld)
+		    cl_cvdfree(daily_cld);
+		closedir(dd);
+		return CL_EMALFDB;
+	    }
+	    if(daily_cld->version > daily_cvd->version)
+		sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	    cl_cvdfree(daily_cvd);
+	}
+    } else {
+	sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+    }
+    if(have_cld)
+	cl_cvdfree(daily_cld);
+
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	closedir(dd);
@@ -1856,6 +1887,11 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	if(dent->d_ino)
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.cfg") && CLI_DBEXT(dent->d_name)) {
+		if((options & CL_DB_OFFICIAL_ONLY) && !strstr(dirname, "clamav-") && !cli_strbcasestr(dent->d_name, ".cld") && !cli_strbcasestr(dent->d_name, ".cvd")) {
+		    cli_dbgmsg("Skipping unofficial database %s\n", dent->d_name);
+		    continue;
+		}
+
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
 		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
@@ -2272,7 +2308,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
 #endif
 		cli_hashset_destroy(&root->md5_sizes_hs);
-		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), NULL);
 	}
 }
 

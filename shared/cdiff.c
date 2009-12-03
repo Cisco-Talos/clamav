@@ -623,8 +623,8 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	    } while((lines < end_line) && fgets(lbuf, lbuflen, src) && lines++);
 
 	    fclose(dst);
+	    dst = NULL;
 	    free(dstdb);
-	    dstdb = NULL;
 	    free(start_str);
 
 	    if(strncmp(lbuf, end_str, strlen(end_str))) {
@@ -643,6 +643,12 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	}
 
 	if(fputs(lbuf, tmp) == EOF) {
+	    if(dst) {
+		fclose(dst);
+		free(dstdb);
+		free(start_str);
+		free(end_str);
+	    }
 	    free(srcdb);
 	    fclose(src);
 	    fclose(tmp);
@@ -656,7 +662,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
     fclose(src);
     fclose(tmp);
 
-    if(dstdb) {
+    if(dst) {
 	fclose(dst);
 	free(start_str);
 	free(end_str);

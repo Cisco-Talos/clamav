@@ -33,6 +33,9 @@ Write all messages (except for libclamav output) to the standard output (stdout)
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
 .TP 
+\fB\-\-official\-db\-only=[yes/no(*)]\fR
+Only load the official signatures published by the ClamAV project.
+.TP 
 \fB\-l FILE, \-\-log=FILE\fR
 Save scan report to FILE.
 .TP 

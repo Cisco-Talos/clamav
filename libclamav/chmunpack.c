@@ -31,11 +31,9 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 #include <string.h>
 
+#include "fmap.h"
 #include "others.h"
 #include "mspack.h"
 #include "cltypes.h"
@@ -104,26 +102,12 @@ typedef struct lzx_content_tag {
 #define chm_endian_convert_64(x) le64_to_host(x)
 
 /* Read in a block of data from either the mmap area or the given fd */
-static int chm_read_data(int fd, char *dest, off_t offset, off_t len,
-			char *m_area, off_t m_length)
+static int chm_read_data(fmap_t *map, char *dest, off_t offset, off_t len)
 {
-	if ((offset < 0) || (len < 0) || ((offset+len) < 0)) {
-		return FALSE;
-	}
-	if (m_area != NULL) {
-		if ((offset+len) > m_length) {
-			return FALSE;
-		}
-		memcpy(dest, m_area+offset, len);
-	} else {
-		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return FALSE;
-		}
-		if (cli_readn(fd, dest, len) != len) {
-			return FALSE;
-		}
-	}
-	return TRUE;
+    void *src = fmap_need_off_once(map, offset, len);
+    if(!src) return FALSE;
+    memcpy(dest, src, len);
+    return TRUE;
 }
 
 static uint64_t chm_copy_file_data(int ifd, int ofd, uint64_t len)
@@ -169,56 +153,11 @@ static void itsf_print_header(chm_itsf_header_t *itsf_hdr)
 	}
 }
 
-static int itsf_read_header(int fd, chm_itsf_header_t *itsf_hdr, char *m_area, off_t m_length)
+static int itsf_read_header(chm_metadata_t *metadata)
 {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (char *) itsf_hdr, 0, CHM_ITSF_MIN_LEN,
-				m_area,	m_length)) {
+	chm_itsf_header_t *itsf_hdr = &metadata->itsf_hdr;
+	if (!chm_read_data(metadata->map, (char *)itsf_hdr, 0, CHM_ITSF_MIN_LEN))
 		return FALSE;
-	}
-#else
-	if (cli_readn(fd, &itsf_hdr->signature, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->version, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->header_len, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->unknown, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->last_modified, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->lang_id, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->dir_clsid, 16) != 16) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->stream_clsid, 16) != 16) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->sec0_offset, 8) != 8) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->sec0_len, 8) != 8) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->dir_offset, 8) != 8) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsf_hdr->dir_len, 8) != 8) {
-		return FALSE;
-	}
-	if (itsf_hdr->version > 2) {
-		if (cli_readn(fd, &itsf_hdr->data_offset, 8) != 8) {
-			return FALSE;
-		}
-	}
-#endif
 	if (memcmp(itsf_hdr->signature, "ITSF", 4) != 0) {
 		cli_dbgmsg("ITSF signature mismatch\n");
 		return FALSE;
@@ -257,64 +196,11 @@ static void itsp_print_header(chm_itsp_header_t *itsp_hdr)
 	cli_dbgmsg("Lang ID:\t%u\n\n", itsp_hdr->lang_id);
 }
 
-static int itsp_read_header(int fd, chm_itsp_header_t *itsp_hdr, off_t offset,
-				char *m_area, off_t m_length)
+static int itsp_read_header(chm_metadata_t *metadata, off_t offset)
 {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (char *) itsp_hdr, offset, CHM_ITSP_LEN,
-				m_area,	m_length)) {
+	chm_itsp_header_t *itsp_hdr = &metadata->itsp_hdr;
+	if (!chm_read_data(metadata->map, (char *)itsp_hdr, offset, CHM_ITSP_LEN))
 		return FALSE;
-	}
-#else
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->signature, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->version, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->header_len, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->unknown1, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->block_len, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->blockidx_intvl, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->index_depth, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->index_root, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->index_head, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->index_tail, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->unknown2, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->num_blocks, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->lang_id, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->system_clsid, 16) != 16) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &itsp_hdr->unknown4, 16) != 16) {
-		return FALSE;
-	}
-#endif
 	if (memcmp(itsp_hdr->signature, "ITSP", 4) != 0) {
 		cli_dbgmsg("ITSP signature mismatch\n");
 		return FALSE;
@@ -404,7 +290,7 @@ static int read_control_entries(chm_metadata_t *metadata)
 	return TRUE;
 }
 
-static int prepare_file(int fd, chm_metadata_t *metadata)
+static int prepare_file(chm_metadata_t *metadata)
 {
 	uint64_t name_len, section;
 
@@ -432,7 +318,7 @@ static int prepare_file(int fd, chm_metadata_t *metadata)
 	return CL_BREAK;
 }
 
-static int read_chunk(chm_metadata_t *metadata, int fd)
+static int read_chunk(chm_metadata_t *metadata)
 {
 	cli_dbgmsg("in read_chunk\n");
 
@@ -440,29 +326,15 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
 		return CL_EFORMAT;
 	}
 
-	if (metadata->m_area != NULL) {
-		if (metadata->chunk_offset > metadata->m_length) {
-			return CL_EFORMAT;
-		}
-		if ((metadata->chunk_offset + metadata->itsp_hdr.block_len) > metadata->m_length) {
-			return CL_EFORMAT;
-		}
-		metadata->chunk_data = metadata->m_area + metadata->chunk_offset;
-
-	} else {
-		if (!metadata->chunk_data) {
-			metadata->chunk_data = (char *) cli_malloc(metadata->itsp_hdr.block_len);
-			if (!metadata->chunk_data) {
-				return CL_EMEM;
-			}
-		}
-        	if (lseek(fd, metadata->chunk_offset, SEEK_SET) != metadata->chunk_offset) {
-                	goto abort;
-        	}
-        	if ((uint32_t) cli_readn(fd, metadata->chunk_data, metadata->itsp_hdr.block_len) != metadata->itsp_hdr.block_len) {
-               		goto abort;
-        	}
+	if (metadata->chunk_offset > metadata->m_length) {
+		return CL_EFORMAT;
 	}
+	if ((metadata->chunk_offset + metadata->itsp_hdr.block_len) > metadata->m_length) {
+		return CL_EFORMAT;
+	}
+	metadata->chunk_data = fmap_need_off_once(metadata->map, metadata->chunk_offset, metadata->itsp_hdr.block_len);
+	if(!metadata->chunk_data) return CL_EFORMAT;
+
 	metadata->chunk_current = metadata->chunk_data + CHM_CHUNK_HDR_LEN;
 	metadata->chunk_end = metadata->chunk_data + metadata->itsp_hdr.block_len;
 
@@ -470,19 +342,10 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
 		metadata->chunk_entries = (uint16_t)((((uint8_t const *)(metadata->chunk_data))[metadata->itsp_hdr.block_len-2] << 0)
 					| (((uint8_t const *)(metadata->chunk_data))[metadata->itsp_hdr.block_len-1] << 8));
 	} else if (memcmp(metadata->chunk_data, "PMGI", 4) != 0) {
-		if (!metadata->m_area && metadata->chunk_data) {
-			free(metadata->chunk_data);
-		}
 		return CL_BREAK;
 	}
 
 	return CL_SUCCESS;
-abort:
-	if (!metadata->m_area && metadata->chunk_data) {
-		free(metadata->chunk_data);
-		metadata->chunk_data = NULL;
-	}
-	return CL_EFORMAT;
 }
 
 static void print_sys_control(lzx_control_t *lzx_control)
@@ -501,7 +364,7 @@ static void print_sys_control(lzx_control_t *lzx_control)
 	cli_dbgmsg("Cache Size:\t%d\n\n", lzx_control->cache_size);
 }
 
-static int read_sys_control(int fd, chm_metadata_t *metadata, lzx_control_t *lzx_control)
+static int read_sys_control(chm_metadata_t *metadata, lzx_control_t *lzx_control)
 {
 	off_t offset;
 	
@@ -513,34 +376,10 @@ static int read_sys_control(int fd, chm_metadata_t *metadata, lzx_control_t *lzx
 		return FALSE;
 	}
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (char *) lzx_control, offset, CHM_CONTROL_LEN,
-				metadata->m_area, metadata->m_length)) {
+	if (!chm_read_data(metadata->map, (char *) lzx_control, offset, CHM_CONTROL_LEN)) {
 		return FALSE;
 	}
-#else
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->length, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->signature, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->version, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->reset_interval, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->window_size, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_control->cache_size, 4) != 4) {
-		return FALSE;
-	}
-#endif
+
 	lzx_control->length = chm_endian_convert_32(lzx_control->length);
 	lzx_control->version = chm_endian_convert_32(lzx_control->version);
 	lzx_control->reset_interval = chm_endian_convert_32(lzx_control->reset_interval);
@@ -578,7 +417,7 @@ static void print_sys_content(lzx_content_t *lzx_content)
 	cli_dbgmsg("Length:\t%lu\n\n", (unsigned long int) lzx_content->length);
 }
 
-static int read_sys_content(int fd, chm_metadata_t *metadata, lzx_content_t *lzx_content)
+static int read_sys_content(chm_metadata_t *metadata, lzx_content_t *lzx_content)
 {
 	lzx_content->offset = metadata->itsf_hdr.data_offset + metadata->sys_content.offset;
 	lzx_content->length = metadata->sys_content.length;
@@ -602,7 +441,7 @@ static void print_sys_reset_table(lzx_reset_table_t *lzx_reset_table)
 	cli_dbgmsg("Frame Len:\t%lu\n\n", (unsigned long int) lzx_reset_table->frame_len);
 }
 
-static int read_sys_reset_table(int fd, chm_metadata_t *metadata, lzx_reset_table_t *lzx_reset_table)
+static int read_sys_reset_table(chm_metadata_t *metadata, lzx_reset_table_t *lzx_reset_table)
 {
 	off_t offset;
 
@@ -619,34 +458,10 @@ static int read_sys_reset_table(int fd, chm_metadata_t *metadata, lzx_reset_tabl
 	/* Save the entry offset for later use */
 	lzx_reset_table->rt_offset = offset-4;
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (char *) lzx_reset_table, offset, CHM_RESET_TABLE_LEN,
-				metadata->m_area, metadata->m_length)) {
+	if (!chm_read_data(metadata->map, (char *) lzx_reset_table, offset, CHM_RESET_TABLE_LEN)) {
 		return FALSE;
 	}
-#else	
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->num_entries, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->entry_size, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->table_offset, 4) != 4) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->uncom_len, 8) != 8) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->com_len, 8) != 8) {
-		return FALSE;
-	}
-	if (cli_readn(fd, &lzx_reset_table->frame_len, 8) != 8) {
-		return FALSE;
-	}
-#endif
+
 	lzx_reset_table->num_entries = chm_endian_convert_32(lzx_reset_table->num_entries);
 	lzx_reset_table->entry_size = chm_endian_convert_32(lzx_reset_table->entry_size);
 	lzx_reset_table->table_offset = chm_endian_convert_32(lzx_reset_table->table_offset);
@@ -692,13 +507,13 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 		goto abort;
 	}
 
-	if (!read_sys_control(fd, metadata, &lzx_control)) {
+	if (!read_sys_control(metadata, &lzx_control)) {
 		goto abort;
 	}
-	if (!read_sys_content(fd, metadata, &lzx_content)) {
+	if (!read_sys_content(metadata, &lzx_content)) {
 		goto abort;
 	}
-	if (!read_sys_reset_table(fd, metadata, &lzx_reset_table)) {
+	if (!read_sys_reset_table(metadata, &lzx_reset_table)) {
 		goto abort;
 	}
 	
@@ -780,7 +595,7 @@ static int chm_init_metadata(chm_metadata_t *metadata)
 	}
 	
 	metadata->sys_control.length = metadata->sys_content.length = metadata->sys_reset.length = 0;
-	metadata->m_area = NULL;
+	metadata->map = NULL;
 	metadata->ufd = -1;
 	metadata->num_chunks = metadata->chunk_entries = 0;
 	metadata->chunk_data = NULL;
@@ -792,17 +607,10 @@ void cli_chm_close(chm_metadata_t *metadata)
 	if (metadata->ufd >= 0) {
 		close(metadata->ufd);
 	}
-	if (!metadata->m_area && metadata->chunk_data) {
-		free(metadata->chunk_data);
-	}
-#ifdef HAVE_MMAP
-	if (metadata->m_area) {
-		munmap(metadata->m_area, metadata->m_length);
-	}
-#endif
+	funmap(metadata->map);
 }
 
-int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
+int cli_chm_extract_file(char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
 	char filename[1024];
 	uint64_t len;
@@ -828,7 +636,7 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ct
 	return CL_SUCCESS;
 }	
 
-int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata)
+int cli_chm_prepare_file(chm_metadata_t *metadata)
 {
 	int retval;
 	
@@ -839,13 +647,13 @@ int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata)
 			if (metadata->num_chunks == 0) {
 				return CL_BREAK;
 			}
-			if ((retval = read_chunk(metadata, fd)) != CL_SUCCESS) {
+			if ((retval = read_chunk(metadata)) != CL_SUCCESS) {
 				return retval;
 			}
 			metadata->num_chunks--;
 			metadata->chunk_offset += metadata->itsp_hdr.block_len;
 		}
-		retval = prepare_file(fd, metadata);
+		retval = prepare_file(metadata);
 	} while (retval == CL_BREAK); /* Ran out of chunk entries before finding a file */
 	return retval;
 }
@@ -861,25 +669,23 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 		return retval;
 	}
 
-#ifdef HAVE_MMAP
 	if (fstat(fd, &statbuf) == 0) {
 		if (statbuf.st_size < CHM_ITSF_MIN_LEN) {
-			goto abort;
+			return CL_ESTAT;
 		}
 		metadata->m_length = statbuf.st_size;
-		metadata->m_area = (char *) mmap(NULL, metadata->m_length, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (metadata->m_area == MAP_FAILED) {
-			metadata->m_area = NULL;
+		metadata->map = fmap(fd, 0, metadata->m_length);
+		if (!metadata->map) {
+			return CL_EMAP;
 		}
 	}
-#endif
 
-	if (!itsf_read_header(fd, &metadata->itsf_hdr, metadata->m_area, metadata->m_length)) {
+	if (!itsf_read_header(metadata)) {
 		goto abort;
 	}
 	itsf_print_header(&metadata->itsf_hdr);
 
-	if (!itsp_read_header(fd, &metadata->itsp_hdr, metadata->itsf_hdr.dir_offset, metadata->m_area, metadata->m_length)) {
+	if (!itsp_read_header(metadata, metadata->itsf_hdr.dir_offset)) {
 		goto abort;
 	}
 	itsp_print_header(&metadata->itsp_hdr);
@@ -903,7 +709,7 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 	}
 	
 	while (metadata->num_chunks) {
-		if (read_chunk(metadata, fd) != CL_SUCCESS) {
+		if (read_chunk(metadata) != CL_SUCCESS) {
 			cli_dbgmsg("read_chunk failed\n");
 			goto abort;
 		}
@@ -932,10 +738,6 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 	return CL_SUCCESS;
 
 abort:
-#ifdef HAVE_MMAP
-	if (metadata->m_area) {
-		munmap(metadata->m_area, metadata->m_length);
-	}
-#endif
+	funmap(metadata->map);
 	return CL_EFORMAT;
 }

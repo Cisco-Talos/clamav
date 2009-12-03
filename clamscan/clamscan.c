@@ -60,7 +60,6 @@ int main(int argc, char **argv)
 	int ds, dms, ret;
 	double mb, rmb;
 	struct timeval t1, t2;
-	struct timezone tz;
 #ifndef _WIN32
 	sigset_t sigset;
 #endif
@@ -143,12 +142,12 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
-    gettimeofday(&t1, &tz);
+    gettimeofday(&t1, NULL);
 
     ret = scanmanager(opts);
 
     if(!optget(opts, "no-summary")->enabled) {
-	gettimeofday(&t2, &tz);
+	gettimeofday(&t2, NULL);
 
     ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -202,6 +201,7 @@ void help(void)
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
     mprintf("                                         all supported db files from DIR\n");
+    mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf("    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems\n");

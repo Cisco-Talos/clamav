@@ -75,6 +75,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -95,6 +96,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -317,6 +319,8 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
+	fmap.c \
+	fmap.h \
 	default.h\
 	sha256.c\
 	sha256.h\

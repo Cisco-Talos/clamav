@@ -1,0 +1,6 @@
+LIBRARY libclamunrar
+EXPORTS ppm_constructor
+EXPORTS ppm_destructor
+EXPORTS rar_init_filters
+EXPORTS rar_unpack
+EXPORTS rarvm_free

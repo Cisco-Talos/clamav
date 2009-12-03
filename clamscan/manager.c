@@ -127,7 +127,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 
     logg("*Scanning %s\n", filename);
 
-    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
+    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1) {
 	logg("^Can't open file %s: %s\n", filename, strerror(errno));
 	return 54;
     }
@@ -325,6 +325,9 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "phishing-sigs")->enabled)
 	dboptions |= CL_DB_PHISHING;
+
+    if(optget(opts, "official-db-only")->enabled)
+	dboptions |= CL_DB_OFFICIAL_ONLY;
 
     if(optget(opts,"phishing-scan-urls")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;

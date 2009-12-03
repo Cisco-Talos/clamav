@@ -29,6 +29,7 @@
 
 #include "cltypes.h"
 #include "others.h"
+#include "fmap.h"
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -101,7 +102,6 @@ typedef struct chm_metadata_tag {
 	chm_sys_entry_t sys_content;
 	chm_sys_entry_t sys_reset;
 	off_t m_length;
-	char *m_area;
 	chm_itsf_header_t itsf_hdr;
 	chm_itsp_header_t itsp_hdr;
 	int ufd;
@@ -111,11 +111,12 @@ typedef struct chm_metadata_tag {
 	char *chunk_data;
 	char *chunk_current;
 	char *chunk_end;
+	fmap_t *map;
 	uint16_t chunk_entries;
 } chm_metadata_t;
 
 int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
-int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata);
-int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
+int cli_chm_prepare_file(chm_metadata_t *metadata);
+int cli_chm_extract_file(char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
 void cli_chm_close(chm_metadata_t *metadata);
 #endif

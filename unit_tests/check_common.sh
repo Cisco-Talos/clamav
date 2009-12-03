@@ -1,5 +1,9 @@
 #!/bin/sh
-set -e
+
+# Solaris's /bin/sh is not a POSIX shell, and
+# it quits when cd fails, even if it is followed by a ||
+# So enable -e only on POSIX shells
+(cd /nonexistentdir 2>/dev/null || true) && set -e
 
 WRAPPER=${WRAPPER-}
 TOP=`pwd`/..
@@ -118,10 +122,11 @@ scan_failed() {
 # ----------- valgrind wrapper 
 init_valgrind() {
     test "x$VG" = "x1" || { echo "*** valgrind tests skipped by default, use 'make check VG=1' to activate"; exit 77; }
-    export VALGRIND=`which ${VALGRIND-valgrind}`
-    export VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp --log-file=valgrind.log --error-exitcode=123 $GENSUPP"
-    export VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
-    export VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
+    VALGRIND=`which ${VALGRIND-valgrind}` || true
+    VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp --log-file=valgrind.log --error-exitcode=123 $GENSUPP"
+    VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
+    VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
+    export VALGRIND VALGRIND_COMMON_FLAGS VALGRIND_FLAGS VALGRIND_FLAGS_RACE
     test -n "$VALGRIND" || { echo "*** valgrind not found, skipping test"; exit 77; }
     test -x "$VALGRIND" || { echo "*** valgrind not executable, skipping test"; exit 77; }
 }
@@ -142,7 +147,7 @@ end_valgrind() {
 # ----------- clamscan tests --------------------------------------------------------
 test_clamscan() {
     test_start $1
-    if test_run 1 $CLAMSCAN --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
+    if test_run 1 $CLAMSCAN --debug --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
 	scan_failed clamscan.log "clamscan didn't detect all testfiles correctly"
     fi
     NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d: | sed -e 's/ //g'`
@@ -309,6 +314,7 @@ test_clamd3() {
 	echo "*** No file descriptor passing support, skipping test"
     fi
 
+    rm test-clamd.log
     # Test VirusEvent feature
     run_clamdscan_fileonly $TOP/test/clam.exe
     test -f test-clamd.log || sleep 1

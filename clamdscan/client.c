@@ -265,7 +265,7 @@ int client(const struct optstruct *opts, int *infected)
 	struct stat sb;
 	fstat(0, &sb);
 	if((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret)) >= 0)
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, NULL)) >= 0)
 	    *infected = ret;
 	else
 	    errors = 1;

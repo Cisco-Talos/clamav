@@ -27,6 +27,6 @@
 
 #include "others.h"
 
-void disasmbuf(uint8_t *, unsigned int, int);
+int disasmbuf(uint8_t *, unsigned int, int);
 
 #endif

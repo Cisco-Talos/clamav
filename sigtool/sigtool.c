@@ -57,12 +57,14 @@
 #include "shared/tar.h"
 
 #include "libclamav/clamav.h"
+#include "libclamav/matcher.h"
 #include "libclamav/cvd.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
 #include "libclamav/default.h"
+#include "libclamav/fmap.h"
 
 #define MAX_DEL_LOOKAHEAD   200
 
@@ -80,6 +82,7 @@ static const struct dblist_s {
     { "COPYING",    0 },
     { "daily.cfg",  0 },
     { "daily.ign",  0 },
+    { "daily.ign2",  0 },
     { "daily.ftm",  0 },
     { "main.info",  0 },    { "daily.info", 0 },    { "safebrowsing.info", 0 },
 
@@ -184,14 +187,19 @@ static int md5sig(const struct optstruct *opts, unsigned int mdb)
 static int htmlnorm(const struct optstruct *opts)
 {
 	int fd;
-
+	fmap_t *map;
 
     if((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
 	mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
 	return -1;
     }
 
-    html_normalise_fd(fd, ".", NULL, NULL);
+    if((map = fmap(fd, 0, 0))) {
+	html_normalise_map(map, ".", NULL, NULL);
+	funmap(map);
+    } else
+	mprintf("!fmap failed\n");
+	
     close(fd);
 
     return 0;
@@ -213,6 +221,7 @@ static int utf16decode(const struct optstruct *opts)
     newname = malloc(strlen(fname) + 7);
     if(!newname) {
 	mprintf("!utf16decode: Can't allocate memory\n");
+	close(fd1);
 	return -1;
     }
     sprintf(newname, "%s.ascii", fname);
@@ -974,14 +983,13 @@ static int cvdinfo(const struct optstruct *opts)
     return 0;
 }
 
-static int listdb(const char *filename);
+static int listdb(const char *filename, const regex_t *regex);
 
-static int listdir(const char *dirname)
+static int listdir(const char *dirname, const regex_t *regex)
 {
 	DIR *dd;
 	struct dirent *dent;
 	char *dbfile;
-
 
     if((dd = opendir(dirname)) == NULL) {
         mprintf("!listdir: Can't open directory %s\n", dirname);
@@ -1015,7 +1023,7 @@ static int listdir(const char *dirname)
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 
-		if(listdb(dbfile) == -1) {
+		if(listdb(dbfile, regex) == -1) {
 		    mprintf("!listdb: Error listing database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
@@ -1030,12 +1038,11 @@ static int listdir(const char *dirname)
     return 0;
 }
 
-static int listdb(const char *filename)
+static int listdb(const char *filename, const regex_t *regex)
 {
 	FILE *fh;
 	char *buffer, *pt, *start, *dir;
 	unsigned int line = 0;
-	const char *tmpdir;
 
 
     if((fh = fopen(filename, "rb")) == NULL) {
@@ -1052,6 +1059,7 @@ static int listdb(const char *filename)
     /* check for CVD file */
     if(!fgets(buffer, 12, fh)) {
 	mprintf("!listdb: fgets failed\n");
+	free(buffer);
 	fclose(fh);
 	return -1;
     }
@@ -1080,7 +1088,7 @@ static int listdb(const char *filename)
 	}
 
 	/* list extracted directory */
-	if(listdir(dir) == -1) {
+	if(listdir(dir, regex) == -1) {
 	    mprintf("!listdb: Can't list directory %s\n", filename);
 	    cli_rmdirs(dir);
 	    free(dir);
@@ -1096,6 +1104,11 @@ static int listdb(const char *filename)
     if(cli_strbcasestr(filename, ".db")) { /* old style database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    pt = strchr(buffer, '=');
 	    if(!pt) {
@@ -1117,6 +1130,11 @@ static int listdb(const char *filename)
     } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    cli_chomp(buffer);
 	    start = cli_strtok(buffer, 2, ":");
@@ -1138,6 +1156,11 @@ static int listdb(const char *filename)
     } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    cli_chomp(buffer);
 
@@ -1165,31 +1188,45 @@ static int listdb(const char *filename)
     return 0;
 }
 
-static int listsigs(const struct optstruct *opts)
+static int listsigs(const struct optstruct *opts, int mode)
 {
 	int ret;
 	const char *name;
 	char *dbdir;
 	struct stat sb;
+	regex_t reg;
 
 
-    name = optget(opts, "list-sigs")->strarg;
-    if(stat(name, &sb) == -1) {
-	mprintf("--list-sigs: Can't get status of %s\n", name);
-	return -1;
-    }
-
-    mprintf_stdout = 1;
-    if(S_ISDIR(sb.st_mode)) {
-	if(!strcmp(name, DATADIR)) {
-	    dbdir = freshdbdir();
-	    ret = listdir(dbdir);
-	    free(dbdir);
-	} else {
-	    ret = listdir(name);
+    if(mode == 0) {
+	name = optget(opts, "list-sigs")->strarg;
+	if(stat(name, &sb) == -1) {
+	    mprintf("--list-sigs: Can't get status of %s\n", name);
+	    return -1;
 	}
+
+	mprintf_stdout = 1;
+	if(S_ISDIR(sb.st_mode)) {
+	    if(!strcmp(name, DATADIR)) {
+		dbdir = freshdbdir();
+		ret = listdir(dbdir, NULL);
+		free(dbdir);
+	    } else {
+		ret = listdir(name, NULL);
+	    }
+	} else {
+	    ret = listdb(name, NULL);
+	}
+
     } else {
-	ret = listdb(name);
+	if(cli_regcomp(&reg, optget(opts, "find-sigs")->strarg, REG_EXTENDED | REG_NOSUB) != 0) {
+	    mprintf("--find-sigs: Can't compile regex\n");
+	    return -1;
+	}
+	mprintf_stdout = 1;
+	dbdir = freshdbdir();
+	ret = listdir(dbdir, &reg);
+	free(dbdir);
+	cli_regfree(&reg);
     }
 
     return ret;
@@ -1201,6 +1238,7 @@ static int vbadump(const struct optstruct *opts)
 	char *dir;
 	const char *pt;
 	struct uniq *vba = NULL;
+	cli_ctx ctx;
 
 
     if(optget(opts, "vba-hex")->enabled) {
@@ -1230,7 +1268,18 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
 
-    if(cli_ole2_extract(fd, dir, NULL, &vba)) {
+    ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
+    if(!ctx.fmap) {
+	printf("malloc failed\n");
+	return 1;
+    }
+    *ctx.fmap = fmap(fd, 0, 0);
+    if(*ctx.fmap) {
+	printf("fmap failed\n");
+	return 1;
+    }
+    
+    if(cli_ole2_extract(dir, NULL, &vba)) {
 	cli_rmdirs(dir);
         free(dir);
 	close(fd);
@@ -1330,11 +1379,6 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	long opos;
 
 
-    if(!(new = fopen(newpath, "r"))) {
-	mprintf("!compare: Can't open file %s for reading\n", newpath);
-	return -1;
-    }
-
     if((omd5 = cli_md5file(oldpath))) {
 	if(!(nmd5 = cli_md5file(newpath))) {
 	    mprintf("!compare: Can't get MD5 checksum of %s\n", newpath);
@@ -1352,6 +1396,10 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
     fprintf(diff, "OPEN %s\n", newpath);
 
+    if(!(new = fopen(newpath, "r"))) {
+	mprintf("!compare: Can't open file %s for reading\n", newpath);
+	return -1;
+    }
     old = fopen(oldpath, "r");
 
     while(fgets(nbuff, sizeof(nbuff), new)) {
@@ -1360,6 +1408,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	    mprintf("!compare: New %s file contains lines terminated with CRLF or CR\n", newpath);
 	    if(old)
 		fclose(old);
+	    fclose(new);
 	    return -1;
 	}
 	cli_chomp(nbuff);
@@ -1420,10 +1469,12 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
            mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
            if(old)
                fclose(old);
+	   fclose(new);
            return -1;
        }
 #endif
     }
+    fclose(new);
 
     if(old) {
 	while(fgets(obuff, sizeof(obuff), old)) {
@@ -1526,15 +1577,15 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 	}
     }
 
-    if((fd = open(diff, O_RDONLY)) == -1) {
-	mprintf("!verifydiff: Can't open diff file %s\n", diff);
+    if(!getcwd(cwd, sizeof(cwd))) {
+	mprintf("!verifydiff: getcwd() failed\n");
 	cli_rmdirs(tempdir);
 	free(tempdir);
 	return -1;
     }
 
-    if(!getcwd(cwd, sizeof(cwd))) {
-	mprintf("!verifydiff: getcwd() failed\n");
+    if((fd = open(diff, O_RDONLY)) == -1) {
+	mprintf("!verifydiff: Can't open diff file %s\n", diff);
 	cli_rmdirs(tempdir);
 	free(tempdir);
 	return -1;
@@ -1574,6 +1625,485 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
 
     return ret;
+}
+
+static char *decodehexstr(const char *hex, unsigned int *dlen)
+{
+	uint16_t *str16;
+	char *decoded;
+	unsigned int i, p = 0, wildcard = 0, len = strlen(hex)/2;
+
+    str16 = cli_hex2ui(hex);
+    if(!str16)
+	return NULL;
+
+    for(i = 0; i < len; i++)
+	if(str16[i] & CLI_MATCH_WILDCARD)
+	    wildcard++;
+
+    decoded = calloc(len + 1 + wildcard * 32, sizeof(char));
+
+    for(i = 0; i < len; i++) {
+	if(str16[i] & CLI_MATCH_WILDCARD) {
+	    switch(str16[i] & CLI_MATCH_WILDCARD) {
+		case CLI_MATCH_IGNORE:
+		    p += sprintf(decoded + p, "{WILDCARD_IGNORE}");
+		    break;
+
+		case CLI_MATCH_NIBBLE_HIGH:
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_HIGH:0x%x}", str16[i] & 0x00f0);
+		    break;
+
+		case CLI_MATCH_NIBBLE_LOW:
+		    p += sprintf(decoded + p, "{WILDCARD_NIBBLE_LOW:0x%x}", str16[i] & 0x000f);
+		    break;
+
+		default:
+		    mprintf("!decodehexstr: Unknown wildcard (0x%x@%u)\n", str16[i] & CLI_MATCH_WILDCARD, i);
+		    free(decoded);
+		    return NULL;
+	    }
+	} else {
+	    decoded[p] = str16[i];
+	    p++;
+	}
+    }
+
+    if(dlen)
+	*dlen = p;
+
+    return decoded;
+}
+
+static char *decodehexspecial(const char *hex, unsigned int *dlen)
+{
+	char *pt, *start, *hexcpy, *decoded, *h, *c;
+	unsigned int i, len = 0, hlen, negative, altnum, alttype;
+	char *buff;
+
+
+    hexcpy = strdup(hex);
+    if(!hexcpy) {
+	mprintf("!decodehexspecial: strdup(hex) failed\n");
+	return NULL;
+    }
+    pt = strchr(hexcpy, '(');
+    if(!pt) {
+	free(hexcpy);
+	return decodehexstr(hex, dlen);
+    } else {
+	buff = calloc(strlen(hex) + 512, sizeof(char));
+	if(!buff) {
+	    mprintf("!decodehexspecial: Can't allocate memory for buff\n");
+	    return NULL;
+	}
+	start = hexcpy;
+	do {
+	    negative = 0;
+	    *pt++ = 0;
+	    if(!start) {
+		mprintf("!decodehexspecial: Unexpected EOL\n");
+		return NULL;
+	    }
+	    if(pt >= hexcpy + 2) {
+		if(pt[-2] == '!') {
+		    negative = 1;
+		    pt[-2] = 0;
+		}
+	    }
+	    if(!(decoded = decodehexstr(start, &hlen))) {
+		mprintf("!Decoding failed (1): %s\n", pt);
+		free(hexcpy);
+		return NULL;
+	    }
+	    memcpy(&buff[len], decoded, hlen);
+	    len += hlen;
+	    free(decoded);
+
+	    if(!(start = strchr(pt, ')'))) {
+		mprintf("!decodehexspecial: Missing closing parethesis\n");
+		free(hexcpy);
+		return NULL;
+	    }
+
+	    *start++ = 0;
+	    if(!strlen(pt)) {
+		cli_errmsg("cli_ac_addsig: Empty block\n");
+		free(hexcpy);
+		return NULL;
+	    }
+
+	    if(!strcmp(pt, "B")) {
+		if(!*start) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_BOUNDARY_RIGHT}");
+		    else
+			len += sprintf(buff + len, "{BOUNDARY_RIGHT}");
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_BOUNDARY_LEFT}");
+		    else
+			len += sprintf(buff + len, "{BOUNDARY_LEFT}");
+		    continue;
+		}
+	    } else if(!strcmp(pt, "L")) {
+		if(!*start) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_LINE_MARKER_RIGHT}");
+		    else
+			len += sprintf(buff + len, "{LINE_MARKER_RIGHT}");
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_LINE_MARKER_LEFT}");
+		    else
+			len += sprintf(buff + len, "{LINE_MARKER_LEFT}");
+		    continue;
+		}
+	    } else {
+		altnum = 0;
+		for(i = 0; i < strlen(pt); i++)
+		    if(pt[i] == '|')
+			altnum++;
+
+		if(!altnum) {
+		    cli_errmsg("cli_ac_addsig: Empty block\n");
+		    free(hexcpy);
+		    return NULL;
+		}
+		altnum++;
+
+		if(3 * altnum - 1 == (uint16_t) strlen(pt)) {
+		    alttype = 1; /* char */
+		    if(negative)
+			len += sprintf(buff + len, "{EXCLUDING_CHAR_ALTERNATIVE:");
+		    else
+			len += sprintf(buff + len, "{CHAR_ALTERNATIVE:");
+		} else {
+		    alttype = 2; /* str */
+		    if(negative)
+			len += sprintf(buff + len, "{EXCLUDING_STRING_ALTERNATIVE:");
+		    else
+			len += sprintf(buff + len, "{STRING_ALTERNATIVE:");
+		}
+
+		for(i = 0; i < altnum; i++) {
+		    if(!(h = cli_strtok(pt, i, "|"))) {
+			free(hexcpy);
+			return NULL;
+		    }
+
+		    if(!(c = cli_hex2str(h))) {
+			free(h);
+			free(hexcpy);
+			return NULL;
+		    }
+
+		    if(alttype == 1) {
+			buff[len++] = *c;
+		    } else {
+			memcpy(&buff[len], c, strlen(h) / 2);
+			len += strlen(h) / 2;
+		    }
+		    if(i + 1 != altnum)
+			buff[len++] = '|';
+		}
+		buff[len++] = '}';
+	    }
+	} while((pt = strchr(start, '(')));
+
+	if(start) {
+	    if(!(decoded = decodehexstr(start, &hlen))) {
+		mprintf("!Decoding failed (2)\n");
+		free(hexcpy);
+		return NULL;
+	    }
+	    memcpy(&buff[len], decoded, hlen);
+	    len += hlen;
+	}
+    }
+    free(hexcpy);
+    if(dlen)
+	*dlen = len;
+    return buff;
+}
+
+static int decodehex(const char *hexsig)
+{
+	char *pt, *hexcpy, *start, *n, *decoded;
+	int asterisk = 0;
+	unsigned int i, j, hexlen, dlen, parts = 0, bw;
+	int mindist = 0, maxdist = 0, error = 0;
+
+
+    hexlen = strlen(hexsig);
+    if(strchr(hexsig, '{') || strchr(hexsig, '[')) {
+	if(!(hexcpy = strdup(hexsig)))
+	    return -1;
+
+	for(i = 0; i < hexlen; i++)
+	    if(hexsig[i] == '{' || hexsig[i] == '[' || hexsig[i] == '*')
+		parts++;
+
+	if(parts)
+	    parts++;
+
+	start = pt = hexcpy;
+	for(i = 1; i <= parts; i++) {
+	    if(i != parts) {
+		for(j = 0; j < strlen(start); j++) {
+		    if(start[j] == '{' || start[j] == '[') {
+			asterisk = 0;
+			pt = start + j;
+			break;
+		    }
+		    if(start[j] == '*') {
+			asterisk = 1;
+			pt = start + j;
+			break;
+		    }
+		}
+		*pt++ = 0;
+	    }
+
+	    if(mindist && maxdist) {
+		if(mindist == maxdist)
+		    mprintf("{WILDCARD_ANY_STRING(LENGTH==%u)}", mindist);
+		else
+		    mprintf("{WILDCARD_ANY_STRING(LENGTH>=%u&&<=%u)}", mindist, maxdist);
+	    } else if(mindist)
+		mprintf("{WILDCARD_ANY_STRING(LENGTH>=%u)}", mindist);
+	    else if(maxdist)
+		mprintf("{WILDCARD_ANY_STRING(LENGTH<=%u)}", maxdist);
+
+	    if(!(decoded = decodehexspecial(start, &dlen))) {
+		mprintf("!Decoding failed\n");
+		free(hexcpy);
+		return -1;
+	    }
+	    bw = write(1, decoded, dlen);
+	    free(decoded);
+
+	    if(i == parts)
+		break;
+
+	    if(asterisk)
+		mprintf("{WILDCARD_ANY_STRING}");
+
+	    mindist = maxdist = 0;
+
+	    if(asterisk) {
+		start = pt;
+		continue;
+	    }
+
+	    if(!(start = strchr(pt, '}')) && !(start = strchr(pt, ']'))) {
+		error = 1;
+		break;
+	    }
+	    *start++ = 0;
+
+	    if(!pt) {
+		error = 1;
+		break;
+	    }
+
+	    if(!strchr(pt, '-')) {
+		if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
+		    error = 1;
+		    break;
+		}
+	    } else {
+		if((n = cli_strtok(pt, 0, "-"))) {
+		    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 1, "-"))) {
+		    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
+			error = 1;
+			free(n);
+			break;
+		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
+		    error = 1;
+		    free(n);
+		    break;
+		}
+	    }
+	}
+
+	free(hexcpy);
+	if(error)
+	    return -1;
+
+    } else if(strchr(hexsig, '*')) {
+	for(i = 0; i < hexlen; i++)
+	    if(hexsig[i] == '*')
+		parts++;
+
+	if(parts)
+	    parts++;
+
+	for(i = 1; i <= parts; i++) {
+	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
+		mprintf("!Can't extract part %u of partial signature\n", i);
+		return -1;
+	    }
+	    if(!(decoded = decodehexspecial(pt, &dlen))) {
+		mprintf("!Decoding failed\n");
+		return -1;
+	    }
+	    bw = write(1, decoded, dlen);
+	    free(decoded);
+	    if(i < parts)
+		mprintf("{WILDCARD_ANY_STRING}");
+	    free(pt);
+	}
+
+    } else {
+	if(!(decoded = decodehexspecial(hexsig, &dlen))) {
+	    mprintf("!Decoding failed\n");
+	    return -1;
+	}
+	bw = write(1, decoded, dlen);
+	free(decoded);
+    }
+
+    mprintf("\n");
+    return 0;
+}
+
+static int decodesig(char *sig)
+{
+	char *pt;
+	const char *tokens[68];
+	int tokens_count, subsigs, i;
+
+    if(strchr(sig, ';')) { /* lsig */
+        tokens_count = cli_strtokenize(sig, ';', 67 + 1, (const char **) tokens);
+	if(tokens_count < 4) {
+	    mprintf("!decodesig: Invalid or not supported signature format\n");
+	    return -1;
+	}
+	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	mprintf("TDB: %s\n", tokens[1]);
+	mprintf("LOGICAL EXPRESSION: %s\n", tokens[2]);
+	subsigs = cli_ac_chklsig(tokens[2], tokens[2] + strlen(tokens[2]), NULL, NULL, NULL, 1);
+	if(subsigs == -1) {
+	    mprintf("!decodesig: Broken logical expression\n");
+	    return -1;
+	}
+	subsigs++;
+	if(subsigs > 64) {
+	    mprintf("!decodesig: Too many subsignatures\n");
+	    return -1;
+	}
+	if(subsigs != tokens_count - 3) {
+	    mprintf("!decodesig: The number of subsignatures (==%u) doesn't match the IDs in the logical expression (==%u)\n", tokens_count - 3, subsigs);
+	    return -1;
+	}
+	for(i = 0; i < subsigs; i++) {
+	    mprintf(" * SUBSIG ID %d\n", i);
+	    if((pt = strchr(tokens[3 + i], ':'))) {
+		*pt++ = 0;
+		mprintf(" +-> OFFSET: %s\n", pt);
+	    } else {
+		mprintf(" +-> OFFSET: ANY\n");
+	    }
+	    mprintf(" +-> DECODED SUBSIGNATURE:\n");
+	    decodehex(tokens[3 + i]);
+	}
+    } else if(strchr(sig, ':')) { /* ndb */
+	tokens_count = cli_strtokenize(sig, ':', 6 + 1, tokens);
+	if(tokens_count < 4 || tokens_count > 6) {
+	    mprintf("!decodesig: Invalid or not supported signature format\n");
+	    mprintf("TOKENS COUNT: %u\n", tokens_count);
+	    return -1;
+	}
+	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	if(tokens_count == 5)
+	    mprintf("FUNCTIONALITY LEVEL: >=%s\n", tokens[4]);
+	else if(tokens_count == 6)
+	    mprintf("FUNCTIONALITY LEVEL: %s..%s\n", tokens[4], tokens[5]);
+
+	if(!cli_isnumber(tokens[1])) {
+	    mprintf("!decodesig: Invalid target type\n");
+	    return -1;
+	}
+	mprintf("TARGET TYPE: ");
+	switch(atoi(tokens[1])) {
+	    case 0:
+		mprintf("ANY FILE\n");
+		break;
+	    case 1:
+		mprintf("PE\n");
+		break;
+	    case 2:
+		mprintf("OLE2\n");
+		break;
+	    case 3:
+		mprintf("HTML\n");
+		break;
+	    case 4:
+		mprintf("MAIL\n");
+		break;
+	    case 5:
+		mprintf("GRAPHICS\n");
+		break;
+	    case 6:
+		mprintf("ELF\n");
+		break;
+	    case 7:
+		mprintf("NORMALIZED ASCII TEXT\n");
+		break;
+	    case 8:
+		mprintf("DISASM DATA\n");
+		break;
+	    case 9:
+		mprintf("MACHO\n");
+		break;
+	    default:
+		mprintf("!decodesig: Invalid target type\n");
+		return -1;
+	}
+	mprintf("OFFSET: %s\n", tokens[2]);
+	mprintf("DECODED SIGNATURE:\n");
+	decodehex(tokens[3]);
+    } else if((pt = strchr(sig, '='))) {
+	*pt++ = 0;
+	mprintf("VIRUS NAME: %s\n", sig);
+	mprintf("DECODED SIGNATURE:\n");
+	decodehex(pt);
+    } else {
+	mprintf("decodesig: Not supported signature format\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+static int decodesigs(void)
+{
+	char buffer[32769];
+
+    fflush(stdin);
+    while(fgets(buffer, sizeof(buffer), stdin)) {
+	cli_chomp(buffer);
+	if(!strlen(buffer))
+	    break;
+	if(decodesig(buffer) == -1)
+	    return -1;
+    }
+    return 0;
 }
 
 static int diffdirs(const char *old, const char *new, const char *patch)
@@ -1780,6 +2310,8 @@ static void help(void)
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+    mprintf("    --find-sigs=REGEX      -fREGEX         Find signatures matching REGEX\n");
+    mprintf("    --decode-sigs                          Decode signatures from stdin\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
@@ -1842,7 +2374,11 @@ int main(int argc, char **argv)
     else if(optget(opts, "info")->enabled)
 	ret = cvdinfo(opts);
     else if(optget(opts, "list-sigs")->active)
-	ret = listsigs(opts);
+	ret = listsigs(opts, 0);
+    else if(optget(opts, "find-sigs")->active)
+	ret = listsigs(opts, 1);
+    else if(optget(opts, "decode-sigs")->active)
+	ret = decodesigs();
     else if(optget(opts, "vba")->enabled || optget(opts, "vba-hex")->enabled)
 	ret = vbadump(opts);
     else if(optget(opts, "diff")->enabled)

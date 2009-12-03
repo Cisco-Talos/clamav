@@ -922,28 +922,23 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
     return CL_SUCCESS;
 }
 
-int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int fd)
+int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, fmap_t *map)
 {
 	int ret;
 	unsigned int i;
 	struct cli_ac_patt *patt;
 	struct cli_target_info info;
-	struct stat sb;
 
-    if(fd != -1) {
+    if(map) {
 	memset(&info, 0, sizeof(info));
-	if(fstat(fd, &sb) == -1) {
-	    cli_errmsg("cli_ac_caloff: fstat(%d) failed\n", fd);
-	    return CL_ESTAT;
-	}
-	info.fsize = sb.st_size;
+	info.fsize = map->len;
     }
 
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
-	if(fd == -1) {
+	if(!map) {
 	    data->offset[patt->offset_min] = CLI_OFF_NONE;
-	} else if((ret = cli_caloff(NULL, &info, fd, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
+	} else if((ret = cli_caloff(NULL, &info, map, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
 	    cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
 	    if(info.exeinfo.section)
 		free(info.exeinfo.section);
@@ -952,7 +947,7 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int 
 	    data->offset[patt->offset_min] = CLI_OFF_NONE;
 	}
     }
-    if(fd != -1 && info.exeinfo.section)
+    if(map && info.exeinfo.section)
 	free(info.exeinfo.section);
 
     return CL_SUCCESS;
@@ -1638,7 +1633,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(new->lsigid[0])
 	root->ac_lsigtable[new->lsigid[1]]->virname = new->virname;
 
-    ret = cli_caloff(offset, NULL, -1, root->type, new->offdata, &new->offset_min, &new->offset_max);
+    ret = cli_caloff(offset, NULL, NULL, root->type, new->offdata, &new->offset_min, &new->offset_max);
     if(ret != CL_SUCCESS) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	mpool_ac_free_special(root->mempool, new);

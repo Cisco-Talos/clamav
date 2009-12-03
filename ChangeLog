@@ -1,3 +1,242 @@
+Wed Dec  2 23:17:27 CET 2009 (tk)
+---------------------------------
+ * libclamav/qsort.c: fix CMP1 macro (bb#1769)
+
+Tue Dec  1 23:17:53 CET 2009 (tk)
+---------------------------------
+ * libclamav/readdb.c: make sure static sigs with floating chars go into AC
+
+Mon Nov 30 21:16:35 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs: handle alternatives
+
+Thu Nov 26 19:43:06 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs: handle .ldb sigs
+
+Thu Nov 26 16:06:30 CET 2009 (acab)
+-----------------------------------
+ * libclamav/scanners.c: print inflateinit2 return code
+
+Wed Nov 25 19:07:51 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs: handle .ndb sigs
+
+Tue Nov 24 10:24:27 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: enable more than 256 FD support on Solaris (bb #1764).
+
+Mon Nov 23 23:15:38 CET 2009 (tk)
+---------------------------------
+ * sigtool: --decode-sigs; decode .db entries (bb#1246)
+
+Thu Nov 19 14:10:17 CET 2009 (tk)
+---------------------------------
+ * sigtool/sigtool.c: handle .ign2 files (bb#1625)
+
+Tue Nov 17 18:02:45 CET 2009 (tk)
+---------------------------------
+ * libclamav/qsort.c: don't call med3 when using internal cmp
+
+Mon Nov 16 23:15:37 CET 2009 (acab)
+-----------------------------------
+ * libclamav: add qsort to the win32 build
+
+Mon Nov 16 19:26:53 CET 2009 (tk)
+---------------------------------
+ * libclamav: replace qsort implementation and optimize its common
+	      usage (bb#1721)
+
+Tue Nov 10 19:29:18 CET 2009 (tk)
+---------------------------------
+ * clamd, clamscan: add support for OfficialDatabaseOnly/--official-db-only
+		    (bb#1743)
+
+Tue Nov 10 16:50:56 CET 2009 (tk)
+---------------------------------
+ * freshclam/notify.c: fix clamd notification in TCP mode (bb#1756)
+
+Tue Nov 10 12:52:43 CET 2009 (acab)
+-----------------------------------
+ * doc/man/clamav-milter.8.in: fix typo
+   reported by Thomas Harold <thomas * betasearch.com>
+
+Fri Nov  6 16:14:09 CET 2009 (acab)
+-----------------------------------
+ * libclamav/tnef.c: don't use fgetc (bb#1695)
+
+Fri Nov  6 12:22:33 CET 2009 (tk)
+---------------------------------
+ * freshclam: add support for DetectionStatsHostID (bb#1503)
+
+Tue Nov  3 22:50:30 CET 2009 (tk)
+---------------------------------
+ * libclamav, freshclam: fix handling of dbs when both daily.cvd and daily.cld
+			 are present in the db directory and ScriptedUpdates
+			 are turned off (bb#1739)
+
+Tue Nov  3 15:18:14 CET 2009 )tk)
+---------------------------------
+ * libclamav/readdb.c: return error if lsig contains redundant subsigs
+
+Sun Nov  1 21:26:10 CET 2009 (acab)
+-----------------------------------
+ * win32: improve build system
+
+Sat Oct 31 19:13:18 CET 2009 (acab)
+-----------------------------------
+ * win32: add resources
+
+Sat Oct 31 19:12:22 CET 2009 (acab)
+-----------------------------------
+ * win32: fix warnings
+
+Fri Oct 30 14:04:43 EET 2009 (edwin)
+------------------------------------
+ * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).
+
+Thu Oct 29 23:42:57 CET 2009 (acab)
+-----------------------------------
+ * win32/3rdparty/pthreads: upgrade to CVS HEAD
+
+Thu Oct 29 17:27:40 CET 2009 (acab)
+-----------------------------------
+ * win32: don't use . or .. in UNC names
+
+Wed Oct 28 15:15:05 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: use a double instead of integer to avoid negative time (bb #1731).
+
+Wed Oct 28 12:42:45 CET 2009 (tk)
+---------------------------------
+ * libclamav/filetypes_int.h: sync with daily.ftm
+
+Tue Oct 27 23:29:09 CET 2009 (tk)
+---------------------------------
+ * clamdscan: improve error handling (bb#1729)
+
+Tue Oct 27 20:31:36 CET 2009 (tk)
+---------------------------------
+ * clamdscan, libclamav, clamdtop, freshclam, sigtool: fix some error path
+   leaks (bb#1730)
+
+Tue Oct 27 11:59:32 CET 2009 (tk)
+---------------------------------
+ * libclamav/scanners.c: drop hardcoded offset limits for embedded objs (bb#1664)
+
+Mon Oct 26 16:09:29 CET 2009 (tk)
+---------------------------------
+ * libclamav/others.c: call srand() already in cli_init() (bb#1728)
+
+Mon Oct 26 13:08:41 CET 2009 (tk)
+---------------------------------
+ * clamdscan/proto.c: handle recv() == 0 (bb#1717)
+
+Sat Oct 24 15:06:50 CEST 2009 (acab)
+------------------------------------
+ * libclamav/mpool.c: increase max pool to 8M to allow loading huge custom dbs
+
+Sat Oct 24 14:27:10 EEST 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, libclamav/others_common.c: fix error path leak (bb #1711)
+
+Fri Oct 23 20:48:12 CEST 2009 (acab)
+------------------------------------
+ * libclamav/unarj: fix error path leaks and valgrind warnings
+
+Wed Oct 21 17:50:05 CEST 2009 (acab)
+------------------------------------
+ * win32: introduce safe_open() (sic!)
+
+Tue Oct 20 17:48:59 CEST 2009 (acab)
+------------------------------------
+ * shared, win32: make hardcoded paths relocable in win32 builds
+
+Mon Oct 19 14:13:27 CEST 2009 (acab)
+------------------------------------
+ * win32: add clamconf
+
+Sun Oct 18 16:52:41 CEST 2009 (acab)
+------------------------------------
+ * win32: glob() complete
+
+Sun Oct 18 02:30:14 CEST 2009 (acab)
+------------------------------------
+ * win32: glob() before main (WIP)
+
+Fri Oct 16 20:08:51 CEST 2009 (acab)
+------------------------------------
+ * win32: stat added, dirent updated
+
+Fri Oct 16 14:56:10 CEST 2009 (tk)
+----------------------------------
+ * clamdscan: fix some output msgs (bb#1716)
+
+Fri Oct 16 10:11:56 CEST 2009 (tk)
+----------------------------------
+ * sigtool: add support for --find-sigs (part of bb#1246)
+
+Fri Oct 16 01:46:28 CEST 2009 (acab)
+------------------------------------
+ * win32: res_query compatible interface
+
+Thu Oct 15 13:06:33 CEST 2009 (acab)
+------------------------------------
+ * win32: add freshclam
+
+Wed Oct 14 19:03:47 CEST 2009 (acab)
+------------------------------------
+ * win32: remove stale netcode
+
+Wed Oct 14 18:59:13 CEST 2009 (acab)
+------------------------------------
+ * win32: preliminary winsock support files
+
+Wed Oct 14 01:26:47 CEST 2009 (acab)
+------------------------------------
+ * win32: unrar support
+
+Tue Oct 13 20:13:53 CEST 2009 (acab)
+------------------------------------
+ * win32: clamscan builds (and will scan soon...)
+
+Tue Oct 13 00:54:05 CEST 2009 (acab)
+------------------------------------
+ * win32/compat: add POSIX compatible snprintf
+
+Mon Oct 12 23:39:30 CEST 2009 (acab)
+------------------------------------
+ * win32: libclamav compiles
+
+Mon Oct 12 23:33:32 CEST 2009 (acab)
+------------------------------------
+ * /win32: VC project file and 3rd party stuff
+
+Sat Oct 10 20:22:10 CEST 2009 (acab)
+------------------------------------
+ * libclamav: completed merge of fmap4all
+
+Thu Oct  8 19:03:57 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: don't use mpool (bb#1710, #1715)
+
+Tue Oct  6 22:51:00 CEST 2009 (tk)
+----------------------------------
+ * shared/misc.h: #include <sys/types.h>
+
+Fri Oct  2 21:01:51 CEST 2009 (tk)
+----------------------------------
+ * libclamav: check file sizes for MD5 sigs in all cases
+	      Reported by Edwin
+
+Fri Oct  2 14:35:42 CEST 2009 (tk)
+----------------------------------
+ * libclamav: unify fp checking; output fp signatures in debug mode
+
+Fri Oct  2 14:33:09 CEST 2009 (tk)
+----------------------------------
+ * libclamav/scanners.c: fix whitelisting of scripts (bb#1706)
+
 Fri Oct 30 14:04:43 EET 2009 (edwin)
 ------------------------------------
  * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).

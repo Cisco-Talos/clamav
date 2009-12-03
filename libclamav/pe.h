@@ -25,6 +25,7 @@
 #include "execs.h"
 #include "others.h"
 #include "cltypes.h"
+#include "fmap.h"
 /** @file */
 /** Header for this PE file */
 struct pe_image_file_hdr {
@@ -144,8 +145,8 @@ struct cli_pe_hook_data {
     int32_t overlays_sz;/**< size of overlays */
 };
 
-int cli_scanpe(int desc, cli_ctx *ctx);
+int cli_scanpe(cli_ctx *ctx);
 
-int cli_peheader(int desc, struct cli_exe_info *peinfo);
+int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 
 #endif

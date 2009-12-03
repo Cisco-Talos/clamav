@@ -17,5 +17,5 @@ platform.h
 stamp-h1
 *.swp
 TAGS
-target.h
+/target.h
 libclamav/c++/autom4te.cache/*

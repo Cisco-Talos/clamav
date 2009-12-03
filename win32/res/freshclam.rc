@@ -1,0 +1,6 @@
+#define RES_FNAME "freshclam.exe"
+#define RES_NAME "freshclam"
+#define RES_FDESC "ClamAV - freshclam"
+#include "common.rc"
+
+1337 ICON "clam.ico"

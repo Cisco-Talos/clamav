@@ -1,0 +1,4 @@
+#define RES_FNAME "libclamunrar_iface.dll"
+#define RES_NAME "libclamunrar_iface"
+#define RES_FDESC "ClamAV - libclamunrar_iface"
+#include "common.rc"

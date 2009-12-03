@@ -46,47 +46,34 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $
 #define	RFC2821LENGTH	1000
 
 int
-cli_uuencode(const char *dir, int desc)
+cli_uuencode(const char *dir, fmap_t *map)
 {
-	FILE *fin;
-	int i;
 	message *m;
 	char buffer[RFC2821LENGTH + 1];
+	size_t at = 0;
 
-	i = dup(desc);
-	if((fin = fdopen(i, "rb")) == NULL) {
-		cli_errmsg("Can't open descriptor %d\n", desc);
-		close(i);
-		return CL_EOPEN;
-	}
-	if(fgets(buffer, sizeof(buffer) - 1, fin) == NULL) {
+	if(!fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
 		/* empty message */
-		fclose(fin);
 		return CL_CLEAN;
 	}
 	if(!isuuencodebegin(buffer)) {
-		fclose(fin);
 		cli_dbgmsg("Message is not in uuencoded format\n");
 		return CL_EFORMAT;
 	}
 
 	m = messageCreate();
 	if(m == NULL) {
-		fclose(fin);
 		return CL_EMEM;
 	}
 
 	cli_dbgmsg("found uuencode file\n");
 
-	if(uudecodeFile(m, buffer, dir, fin) < 0) {
+	if(uudecodeFile(m, buffer, dir, map, &at) < 0) {
 		messageDestroy(m);
-		fclose(fin);
 		cli_dbgmsg("Message is not in uuencoded format\n");
 		return CL_EFORMAT;
 	}
 	messageDestroy(m);
-
-	fclose(fin);
 
 	return CL_CLEAN;	/* a lie - but it gets things going */
 }
@@ -97,7 +84,7 @@ cli_uuencode(const char *dir, int desc)
  * Return < 0 for failure
  */
 int
-uudecodeFile(message *m, const char *firstline, const char *dir, FILE *fin)
+uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at)
 {
 	fileblob *fb;
 	char buffer[RFC2821LENGTH + 1];
@@ -116,7 +103,7 @@ uudecodeFile(message *m, const char *firstline, const char *dir, FILE *fin)
 	cli_dbgmsg("uudecode %s\n", filename);
 	free(filename);
 
-	while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
+	while(fmap_gets(map, buffer, at, sizeof(buffer) - 1)) {
 		unsigned char data[1024];
 		const unsigned char *uptr;
 		size_t len;

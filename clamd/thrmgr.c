@@ -237,11 +237,11 @@ int thrmgr_printstats(int f)
 		print_queue(f, pool->single_queue, &tv_now);
 		mdprintf(f, "\n");
 		for(task = pool->tasks; task; task = task->nxt) {
-			long delta;
+			double delta;
 			size_t used, total;
 
 			delta = tv_now.tv_usec - task->tv.tv_usec;
-			delta += (tv_now.tv_sec - task->tv.tv_sec)*1000000;
+			delta += (tv_now.tv_sec - task->tv.tv_sec)*1000000.0;
 			mdprintf(f,"\t%s %f %s\n",
 					task->command ? task->command : "N/A",
 					delta/1e6,

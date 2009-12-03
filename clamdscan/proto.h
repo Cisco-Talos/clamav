@@ -36,5 +36,5 @@ void recvlninit(struct RCVLN *s, int sockd);
 int recvln(struct RCVLN *s, char **rbol, char **reol);
 int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags);
 int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags);
-int dsresult(int sockd, int scantype, const char *filename, int *spam);
+int dsresult(int sockd, int scantype, const char *filename, int *printok, int *files, int *errors);
 #endif

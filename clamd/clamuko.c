@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "libclamav/clamav.h"
 
@@ -90,6 +91,7 @@ static void *clamukolegacyth(void *arg)
     sigdelset(&sigset, SIGBUS);
 #endif
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+    memset(&act, 0, sizeof(struct sigaction));
     act.sa_handler = clamuko_exit;
     sigfillset(&(act.sa_mask));
     sigaction(SIGUSR1, &act, NULL);

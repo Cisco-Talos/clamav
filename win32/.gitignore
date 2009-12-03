@@ -1,0 +1,7 @@
+!platform.h
+build
+*.ncb
+*.suo
+*.user
+Debug/*
+Release/*
