@@ -23,6 +23,8 @@
 #include "clamav-config.h"
 #endif
 #include "cltypes.h"
+#include <sys/time.h>
+#include <stdlib.h>
 #include "bytecode.h"
 #include "clamav.h"
 #include "shared/optparser.h"
@@ -158,18 +160,24 @@ int main(int argc, char *argv[])
     }
 
     if ((opt = optget(opts,"input"))->enabled) {
+	fmap_t *map;
 	fd = open(opt->strarg, O_RDONLY);
 	if (fd == -1) {
 	    fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
 	    optfree(opts);
 	    exit(5);
 	}
-	rc = cli_bytecode_context_setfile(ctx, fd);
+	map = fmap(fd, 0, 0);
+	if (!map) {
+	    fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
+	}
+	rc = cli_bytecode_context_setfile(ctx, map);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
 	    optfree(opts);
 	    exit(5);
 	}
+	funmap(map);
     }
 
 

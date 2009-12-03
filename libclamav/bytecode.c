@@ -43,7 +43,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->values = NULL;
     ctx->operands = NULL;
     ctx->opsizes = NULL;
-    ctx->fd = -1;
+    ctx->fmap = NULL;
     ctx->off = 0;
     ctx->ctx = NULL;
     ctx->hooks.match_counts = nomatch;
@@ -1541,24 +1541,22 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
     return cli_bytecode_done_jit(allbc);
 }
 
-int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd)
+int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
 {
     struct stat buf;
-    ctx->fd = fd;
-    if (fstat(fd, &buf) == -1)
-	return CL_ESTAT;
-    ctx->file_size = buf.st_size;
+    ctx->fmap = map;
+    ctx->file_size = map->len + map->offset;
     return 0;
 }
 
-int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, int fd)
+int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, fmap_t *map)
 {
     int ret;
     struct cli_bc_ctx ctx;
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
-    cli_bytecode_context_setfile(&ctx, fd);
+    cli_bytecode_context_setfile(&ctx, map);
 
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);
@@ -1580,13 +1578,13 @@ int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, 
 }
 
 int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
-			 unsigned id, int fd, const char **virname)
+			 unsigned id, fmap_t *map, const char **virname)
 {
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
     int ret;
 
-    cli_bytecode_context_setfile(ctx, fd);
+    cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
     for (i=0;i < hooks_cnt;i++) {
 	const struct cli_bc *bc = &engine->bcs.all_bcs[hooks[i]];

@@ -424,7 +424,6 @@ int cli_scanpe(cli_ctx *ctx)
 	cli_errmsg("cli_scanpe: ctx == NULL\n");
 	return CL_ENULLARG;
     }
-    offset = lseek(desc, 0, SEEK_CUR);
     map = *ctx->fmap;
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
@@ -2130,7 +2129,7 @@ int cli_scanpe(cli_ctx *ctx)
     pedata.overlays_sz = fsize - overlays;
     cli_bytecode_context_setpe(bc_ctx, &pedata);
     cli_bytecode_context_setctx(bc_ctx, ctx);
-    ret = cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, desc, ctx->virname);
+    ret = cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
     switch (ret) {
 	case CL_VIRUS:
 	    return CL_VIRUS;

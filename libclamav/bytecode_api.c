@@ -45,15 +45,15 @@ uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 
 int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 {
-    if (ctx->fd == -1)
+    if (!ctx->fmap)
 	return -1;
-    return pread(ctx->fd, data, size, ctx->off);
+    return fmap_readn(ctx->fmap, data, ctx->off, size);
 }
 
 int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 {
     off_t off;
-    if (ctx->fd == -1)
+    if (!ctx->fmap)
 	return -1;
     switch (whence) {
 	case 0:

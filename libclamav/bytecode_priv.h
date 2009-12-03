@@ -26,6 +26,7 @@
 #include "type_desc.h"
 #include "execs.h"
 #include "bytecode_hooks.h"
+#include "fmap.h"
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -114,7 +115,7 @@ struct cli_bc_ctx {
     unsigned numParams;
     size_t file_size;
     off_t off;
-    int fd;
+    fmap_t *fmap;
     const char *virname;
     struct cli_bc_hooks hooks;
     int outfd;

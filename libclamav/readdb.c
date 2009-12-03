@@ -900,13 +900,10 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	    return CL_EMALFDB;
 	}
 	subsigs = tokens_count-3;
+    } else if(subsigs != tokens_count - 3) {
+	cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
+	return CL_EMALFDB;
     }
-
-	if(subsigs != tokens_count - 3) {
-	    cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
-	    ret = CL_EMALFDB;
-	    break;
-	}
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
@@ -962,10 +959,6 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     root->ac_lsigtable = newtable;
 
     for(i = 0; i < subsigs; i++) {
-	if(i + 3 >= tokens_count) {
-	    cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
-	    return CL_EMALFDB;
-	}
 	lsigid[1] = i;
 	sig = tokens[3 + i];
 

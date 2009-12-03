@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "clambc.h"
 #include <stdio.h>
+#include "fmap.h"
 
 struct cli_dbio;
 struct cli_bc_ctx;
@@ -80,7 +81,7 @@ void cli_bytecode_context_setctx(struct cli_bc_ctx *ctx, void *cctx);
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid);
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c);
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen);
-int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd);
+int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map);
 int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data);
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx);
 /* returns file descriptor, sets tempfile. Caller takes ownership, and is
@@ -99,8 +100,8 @@ int cli_bytecode_done(struct cli_all_bc *allbc);
 
 /* Hooks */
 struct cli_exe_info;
-int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, int fd);
-int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, int fd, const char **virname);
+int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, fmap_t *fmap);
+int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, fmap_t *map, const char **virname);
 
 #ifdef __cplusplus
 extern "C" {
