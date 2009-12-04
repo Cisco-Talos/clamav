@@ -26,6 +26,7 @@
 #include "others.h"
 #include "cltypes.h"
 #include "fmap.h"
+#include "bcfeatures.h"
 /** @file */
 /** Header for this PE file */
 struct pe_image_file_hdr {
@@ -141,8 +142,12 @@ struct cli_pe_hook_data {
     struct pe_image_optional_hdr32 *opt32;
     struct pe_image_optional_hdr64 *opt64;
     struct pe_image_data_dir *dirs;
+    uint32_t e_lfanew;/**< address of new exe header */
     uint32_t overlays;/**< number of overlays */
     int32_t overlays_sz;/**< size of overlays */
+    /* FIXME: these should not be necessary (they are for now) */
+    uint8_t dummyn;
+    uint8_t *dummy EBOUNDS(dummyn);
 };
 
 int cli_scanpe(cli_ctx *ctx);

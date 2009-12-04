@@ -2125,6 +2125,7 @@ int cli_scanpe(cli_ctx *ctx)
     pedata.opt32 = &pe_opt.opt32;
     pedata.opt64 = &pe_opt.opt64;
     pedata.dirs = dirs;
+    pedata.e_lfanew = e_lfanew;
     pedata.overlays = overlays;
     pedata.overlays_sz = fsize - overlays;
     cli_bytecode_context_setpe(bc_ctx, &pedata);

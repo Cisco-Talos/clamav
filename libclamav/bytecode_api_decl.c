@@ -56,7 +56,7 @@ const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals END */
 };
 const unsigned cli_apicall_maxglobal = _LAST_GLOBAL-1;
-static uint16_t cli_tmp0[]={79, 77, 75, 72, 70, 32, 32};
+static uint16_t cli_tmp0[]={79, 77, 75, 72, 70, 32, 32, 32, 8, 65};
 static uint16_t cli_tmp1[]={71};
 static uint16_t cli_tmp2[]={32, 32};
 static uint16_t cli_tmp3[]={73};
@@ -83,7 +83,7 @@ static uint16_t cli_tmp23[]={93};
 static uint16_t cli_tmp24[]={92};
 
 const struct cli_bc_type cli_apicall_types[]={
-	{DStructType, cli_tmp0, 7, 0, 0},
+	{DStructType, cli_tmp0, 10, 0, 0},
 	{DPointerType, cli_tmp1, 1, 0, 0},
 	{DStructType, cli_tmp2, 2, 0, 0},
 	{DPointerType, cli_tmp3, 1, 0, 0},
