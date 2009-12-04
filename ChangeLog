@@ -1,3 +1,7 @@
+Fri Dec  4 14:19:23 CET 2009 (tk)
+---------------------------------
+ * clamscan: properly describe --include/exclude (bb#1765)
+
 Wed Dec  2 23:17:27 CET 2009 (tk)
 ---------------------------------
  * libclamav/qsort.c: fix CMP1 macro (bb#1769)

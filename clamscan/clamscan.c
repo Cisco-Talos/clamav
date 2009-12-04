@@ -209,17 +209,10 @@ void help(void)
     mprintf("    --remove[=yes/no(*)]                 Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                     Copy infected files into DIRECTORY\n");
-#ifdef HAVE_REGEX_H
     mprintf("    --exclude=REGEX                      Don't scan file names matching REGEX\n");
     mprintf("    --exclude-dir=REGEX                  Don't scan directories matching REGEX\n");
     mprintf("    --include=REGEX                      Only scan file names matching REGEX\n");
     mprintf("    --include-dir=REGEX                  Only scan directories matching REGEX\n");
-#else
-    mprintf("    --exclude=PATT                       Don't scan file names containing PATT\n");
-    mprintf("    --exclude-dir=PATT                   Don't scan directories containing PATT\n");
-    mprintf("    --include=PATT                       Only scan file names containing PATT\n");
-    mprintf("    --include-dir=PATT                   Only scan directories containing PATT\n");
-#endif
     mprintf("\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
