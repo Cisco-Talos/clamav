@@ -1,3 +1,7 @@
+Fri Dec  4 15:55:51 CET 2009 (tk)
+---------------------------------
+ * freshclam/manager.c: improve handling of problematic mirrors (bb#1758)
+
 Fri Dec  4 14:19:23 CET 2009 (tk)
 ---------------------------------
  * clamscan: properly describe --include/exclude (bb#1765)
