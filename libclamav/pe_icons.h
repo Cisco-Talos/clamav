@@ -22,7 +22,31 @@
 #define __PE_ICONS_H
 #include "pe.h"
 
-int scanicon(uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+struct icomtr {
+    unsigned int color_avg[3];
+    unsigned int color_x[3];
+    unsigned int color_y[3];
+    unsigned int gray_avg[3];
+    unsigned int gray_x[3];
+    unsigned int gray_y[3];
+    unsigned int bright_avg[3];
+    unsigned int bright_x[3];
+    unsigned int bright_y[3];
+    unsigned int dark_avg[3];
+    unsigned int dark_x[3];
+    unsigned int dark_y[3];
+    unsigned int edge_avg[3];
+    unsigned int edge_x[3];
+    unsigned int edge_y[3];
+    unsigned int noedge_avg[3];
+    unsigned int noedge_x[3];
+    unsigned int noedge_y[3];
+    unsigned int rsum;
+    unsigned int gsum;
+    unsigned int bsum;
+    unsigned int ccount;
+};
 
+int scanicon(uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
 
 #endif
