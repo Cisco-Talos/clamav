@@ -37,6 +37,29 @@
 #define LABDIFF(x) labdiff2(x)
 #endif
 
+static const struct icomtr reference = {
+    { 2923, 2746, 945 }, /* col avg */
+    { 13, 0, 17 }, /* col x */
+    { 3, 3, 15 }, /* col y */
+    { 0, 0, 0 }, /* gray avg */
+    { 22, 22, 0 }, /* gray x */
+    { 0, 8, 12 }, /* gray y */
+    { 255, 255, 251 }, /* bright avg */
+    { 0, 0, 10 }, /* bright x */
+    { 13, 21, 16 }, /* bright y */
+    { 158, 184, 205 }, /* dark avg */
+    { 17, 16, 0 }, /* dark x */
+    { 23, 4, 5 }, /* dark y */
+    { 105, 94, 73 }, /* edge avg */
+    { 15, 5, 15 }, /* edge x */
+    { 2, 2, 21 }, /* edge y */
+    { 2, 2, 13 }, /* noedge avg */
+    { 0, 0, 21 }, /* noedge x */
+    { 23, 15, 12 }, /* noedge y */
+    99, 0, 0, 20,
+    "mario"
+};
+
 struct GICONS {
     unsigned int cnt;
     uint32_t lastg;
@@ -717,11 +740,12 @@ static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *
 	*s = 255 * (*delta) / max;
 }
 
-static void getmetrics(unsigned int width, unsigned int height, unsigned int *imagedata, struct icomtr *res) {
+static int getmetrics(unsigned int width, unsigned int height, unsigned int *imagedata, struct icomtr *res) {
     unsigned int x, y, xk, yk, i, j, *tmp;
     unsigned int ksize = width / 4;
 
-    tmp = malloc(width*height*4*2);
+    if(!(tmp = cli_malloc(width*height*4*2)))
+	return CL_EMEM;
 
     memset(res, 0, sizeof(*res));
     for(i=0; i<3; i++) {
@@ -731,8 +755,8 @@ static void getmetrics(unsigned int width, unsigned int height, unsigned int *im
 
 
     /* compute colored, gray, bright and dark areas, color presence */
-    for(y=0; y<height - ksize; y++) {
-	for(x=0; x<width - ksize; x++) {
+    for(y=0; y<=height - ksize; y++) {
+	for(x=0; x<=width - ksize; x++) {
 	    unsigned int colsum = 0, lightsum = 0;
 	    unsigned int r, g, b, s, v, delta;
 
@@ -870,7 +894,8 @@ static void getmetrics(unsigned int width, unsigned int height, unsigned int *im
 	res->rsum /= res->ccount;
 	res->gsum /= res->ccount;
 	res->bsum /= res->ccount;
-	res->ccount /= width * height / 100;
+	cli_errmsg("res count = %u, width * height = %u\n", res->ccount, width * height);
+	res->ccount = res->ccount * 100 / width / height;
     }
 
     cli_dbgmsg("color areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
@@ -884,7 +909,11 @@ static void getmetrics(unsigned int width, unsigned int height, unsigned int *im
     /* Sobel 1 - gradients */
     i = 0;
 #ifdef USE_FLOATS
-    double *sobel = malloc(width * height * sizeof(double));
+    double *sobel = cli_malloc(width * height * sizeof(double));
+    if(!sobel) {
+	free(tmp);
+	return CL_EMEM;
+    }
 #else
     unsigned int *sobel = imagedata;
 #endif
@@ -984,8 +1013,8 @@ static void getmetrics(unsigned int width, unsigned int height, unsigned int *im
 	res->noedge_avg[i] = 0xffffffff;
 
     /* calculate edges */
-    for(y=0; y<height - ksize; y++) {
-	for(x=0; x<width-1 - ksize; x++) {
+    for(y=0; y<=height - ksize; y++) {
+	for(x=0; x<=width-1 - ksize; x++) {
 	    unsigned int sum = 0;
 
 	    if(x==0 && y==0) { /* 1st windows */
@@ -1052,6 +1081,8 @@ static void getmetrics(unsigned int width, unsigned int height, unsigned int *im
 
     cli_dbgmsg("edge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->edge_avg[0], res->edge_x[0], res->edge_y[0], res->edge_avg[1], res->edge_x[1], res->edge_y[1], res->edge_avg[2], res->edge_x[2], res->edge_y[2]);
     cli_dbgmsg("noedge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->noedge_avg[0], res->noedge_x[0], res->noedge_y[0], res->noedge_avg[1], res->noedge_x[1], res->noedge_y[1], res->noedge_avg[2], res->noedge_x[2], res->noedge_y[2]);
+
+    return CL_CLEAN;
 }
 
 
@@ -1101,6 +1132,8 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	    
     width = EC32(bmphdr.w);
     height = EC32(bmphdr.h) / 2;
+    if(width > 256 || height > 256)
+	return CL_SUCCESS;
     depth = EC32(bmphdr.depth);
 
     cli_dbgmsg("Bitmap  - %ux%ux%u\n", width, height, depth);
@@ -1275,25 +1308,25 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 
     getmetrics(width, height, imagedata, &metrics);
     {
-#define ref metrics
-	unsigned int color = matchpoint(width, height, metrics.color_x, metrics.color_y, metrics.color_avg, ref.color_x, ref.color_y, ref.color_avg, 4072);
-	unsigned int gray = matchpoint(width, height, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ref.gray_x, ref.gray_y, ref.gray_avg, 4072);
-	unsigned int bright = matchpoint(width, height, metrics.bright_x, metrics.bright_y, metrics.bright_avg, ref.bright_x, ref.bright_y, ref.bright_avg, 255);
-	unsigned int dark = matchpoint(width, height, metrics.dark_x, metrics.dark_y, metrics.dark_avg, ref.dark_x, ref.dark_y, ref.dark_avg, 255);
-	unsigned int edge = matchpoint(width, height, metrics.edge_x, metrics.edge_y, metrics.edge_avg, ref.edge_x, ref.edge_y, ref.edge_avg, 255);
-	unsigned int noedge = matchpoint(width, height, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, ref.noedge_x, ref.noedge_y, ref.noedge_avg, 255);
-	unsigned int reds = abs((int)metrics.rsum - (int)ref.rsum) * 10;
+	unsigned int color = matchpoint(width, height, metrics.color_x, metrics.color_y, metrics.color_avg, reference.color_x, reference.color_y, reference.color_avg, 4072);
+	unsigned int gray = matchpoint(width, height, metrics.gray_x, metrics.gray_y, metrics.gray_avg, reference.gray_x, reference.gray_y, reference.gray_avg, 4072);
+	unsigned int bright = matchpoint(width, height, metrics.bright_x, metrics.bright_y, metrics.bright_avg, reference.bright_x, reference.bright_y, reference.bright_avg, 255);
+	unsigned int dark = matchpoint(width, height, metrics.dark_x, metrics.dark_y, metrics.dark_avg, reference.dark_x, reference.dark_y, reference.dark_avg, 255);
+	unsigned int edge = matchpoint(width, height, metrics.edge_x, metrics.edge_y, metrics.edge_avg, reference.edge_x, reference.edge_y, reference.edge_avg, 255);
+	unsigned int noedge = matchpoint(width, height, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, reference.noedge_x, reference.noedge_y, reference.noedge_avg, 255);
+	unsigned int reds = abs((int)metrics.rsum - (int)reference.rsum) * 10;
 	reds = (reds < 100) * (100 - reds);
-	unsigned int greens = abs((int)metrics.gsum - (int)ref.gsum) * 10;
+	unsigned int greens = abs((int)metrics.gsum - (int)reference.gsum) * 10;
 	greens = (greens < 100) * (100 - greens);
-	unsigned int blues = abs((int)metrics.bsum - (int)ref.bsum) * 10;
+	unsigned int blues = abs((int)metrics.bsum - (int)reference.bsum) * 10;
 	blues = (blues < 100) * (100 - blues);
-	unsigned int ccount = abs((int)metrics.ccount - (int)ref.ccount) * 10;
+	unsigned int ccount = abs((int)metrics.ccount - (int)reference.ccount) * 10;
 	ccount = (ccount < 100) * (100 - ccount);
 	unsigned int colors = (reds + greens + blues + ccount) / 4;
 	unsigned int used = 6;
+	unsigned int confidence;
 
-	if(!metrics.ccount && !ref.ccount) {
+	if(!metrics.ccount && !reference.ccount) {
 	    colors = 0;
 	    used--;
 	}
@@ -1306,7 +1339,14 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	cli_warnmsg("noedge confidence: %u%%\n", noedge);
 	cli_warnmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
 
-	cli_warnmsg("confidence: %u\n", (color + gray*2/3 + bright*2/3 + dark + edge + noedge*2/3 + colors) / used);
+	confidence = (color + gray*2/3 + bright*2/3 + dark + edge + noedge*2/3 + colors) / used;
+	cli_warnmsg("confidence: %u\n", confidence);
+	if(confidence > 60) {
+	    if(ctx->virname) 
+		*ctx->virname = "PDF.ICON";
+	    return CL_VIRUS;
+	}
+
 	/* CURRENTLY >=60% IS A MATCH */
     }
     

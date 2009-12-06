@@ -521,6 +521,53 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     return CL_SUCCESS;
 }
 
+#define ICO_TOKENS 9
+/* static int cli_loadico(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname) */
+/* { */
+/* 	const char *tokens[ICO_TOKENS + 1]; */
+/* 	char buffer[FILEBUFF], *buffer_cpy; */
+/* 	const char *pt; */
+/* 	int ret = CL_SUCCESS; */
+/* 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count; */
+
+
+/*     if(engine->ignored) */
+/* 	if(!(buffer_cpy = cli_malloc(FILEBUFF))) */
+/* 	    return CL_EMEM; */
+
+/*     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) { */
+/* 	line++; */
+/* 	cli_chomp(buffer); */
+/* 	if(engine->ignored) */
+/* 	    strcpy(buffer_cpy, buffer); */
+
+/* 	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens); */
+/* 	if(tokens_count != ICO_TOKENS) { */
+/* 	    ret = CL_EMALFDB; */
+/* 	    break; */
+/* 	} */
+
+/* 	sigs++; */
+/*     } */
+/*     if(engine->ignored) */
+/* 	free(buffer_cpy); */
+
+/*     if(!line) { */
+/* 	cli_errmsg("cli_loadmd5: Empty database file\n"); */
+/* 	return CL_EMALFDB; */
+/*     } */
+
+/*     if(ret) { */
+/* 	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line); */
+/* 	return ret; */
+/*     } */
+
+/*     if(signo) */
+/* 	*signo += sigs; */
+
+/*     return CL_SUCCESS; */
+/* } */
+
 static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
 	int ret = 0;
@@ -1655,6 +1702,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2")) {
 	ret = cli_loadign(fs, engine, options, dbio);
+
+    /* } else if(cli_strbcasestr(dbname, ".idb")) { */
+    /* 	ret = cli_loadico(fs, engine, options, dbio); */
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");

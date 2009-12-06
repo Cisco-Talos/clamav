@@ -113,6 +113,32 @@ typedef struct {
     fmap_t **fmap;
 } cli_ctx;
 
+struct icomtr {
+    unsigned int color_avg[3];
+    unsigned int color_x[3];
+    unsigned int color_y[3];
+    unsigned int gray_avg[3];
+    unsigned int gray_x[3];
+    unsigned int gray_y[3];
+    unsigned int bright_avg[3];
+    unsigned int bright_x[3];
+    unsigned int bright_y[3];
+    unsigned int dark_avg[3];
+    unsigned int dark_x[3];
+    unsigned int dark_y[3];
+    unsigned int edge_avg[3];
+    unsigned int edge_x[3];
+    unsigned int edge_y[3];
+    unsigned int noedge_avg[3];
+    unsigned int noedge_x[3];
+    unsigned int noedge_y[3];
+    unsigned int rsum;
+    unsigned int gsum;
+    unsigned int bsum;
+    unsigned int ccount;
+    char *name;
+};
+
 struct cl_engine {
     uint32_t refcount; /* reference counter */
     uint32_t sdb;
@@ -176,6 +202,9 @@ struct cl_engine {
 
     /* PUA categories (to be included or excluded) */
     char *pua_cats;
+
+    /* Icon reference storage */
+    struct icomtr *icons;
 
     /* Used for memory pools */
     mpool_t *mempool;
