@@ -114,7 +114,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static
 libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ -lm
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
