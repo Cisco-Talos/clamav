@@ -986,6 +986,9 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	    if(sob > i) i = sob;
 	}
     }
+#ifdef USE_FLOATS
+    free(sobel);
+#endif
 
     /* Sobel 2 - norm to max */
     if(i) {
