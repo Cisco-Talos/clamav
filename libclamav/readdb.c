@@ -522,13 +522,13 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 }
 
 #define ICO_TOKENS 2
-static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
         const char *tokens[ICO_TOKENS + 1];
 	char buffer[FILEBUFF], *buffer_cpy;
-	uint8_t *pt, *hash;
+	uint8_t *hash;
 	int ret = CL_SUCCESS;
-	unsigned int line = 0, sigs = 0, tokens_count, i, size;
+	unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
 	struct icomtr *metric;
 
     if(engine->ignored)
@@ -555,8 +555,8 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
 	    continue;
 
-	hash = tokens[1];
-	if(cli_hexnibbles(hash, 122)) {
+	hash = (uint8_t *)tokens[1];
+	if(cli_hexnibbles((char *)hash, 122)) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -567,18 +567,18 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    ret = CL_EMALFDB;
 	    break;
 	}
-	size = (size >> 3) - 2;
+	enginesize = (size >> 3) - 2;
 	hash+=2;
 
-	metric = (struct icomtr *) mpool_realloc(engine->mempool, engine->icons[size], sizeof(struct icomtr) * (engine->icon_counts[size] + 1));
+	metric = (struct icomtr *) mpool_realloc(engine->mempool, engine->icons[enginesize], sizeof(struct icomtr) * (engine->icon_counts[enginesize] + 1));
 	if(!metric) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	engine->icons[size] = metric;
-	metric += engine->icon_counts[size];
-	engine->icon_counts[size]++;
+	engine->icons[enginesize] = metric;
+	metric += engine->icon_counts[enginesize];
+	engine->icon_counts[enginesize]++;
 
 	for(i=0; i<3; i++) {
 	    if((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
@@ -614,7 +614,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    metric->bright_avg[i] = (hash[0] << 4) | hash[1];
 	    if((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
 		break;
-	    if((metric->bright_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+	    if((metric->bright_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
 		break;
 	    hash += 6;
 	}
@@ -628,7 +628,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    metric->dark_avg[i] = (hash[0] << 4) | hash[1];
 	    if((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
 		break;
-	    if((metric->dark_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+	    if((metric->dark_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
 		break;
 	    hash += 6;
 	}
@@ -642,7 +642,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    metric->edge_avg[i] = (hash[0] << 4) | hash[1];
 	    if((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
 		break;
-	    if((metric->edge_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+	    if((metric->edge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
 		break;
 	    hash += 6;
 	}
@@ -656,7 +656,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    metric->noedge_avg[i] = (hash[0] << 4) | hash[1];
 	    if((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
 		break;
-	    if((metric->noedge_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+	    if((metric->noedge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
 		break;
 	    hash += 6;
 	}
@@ -687,12 +687,12 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	free(buffer_cpy);
 
     if(!line) {
-	cli_errmsg("cli_loadmd5: Empty database file\n");
+	cli_errmsg("cli_loadidb: Empty database file\n");
 	return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
+	cli_errmsg("cli_loadidb: Problem parsing database at line %u\n", line);
 	return ret;
     }
 
@@ -1837,8 +1837,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2")) {
 	ret = cli_loadign(fs, engine, options, dbio);
 
-    /* } else if(cli_strbcasestr(dbname, ".idb")) { */
-    /* 	ret = cli_loadico(fs, engine, options, dbio); */
+    } else if(cli_strbcasestr(dbname, ".idb")) {
+    	ret = cli_loadidb(fs, engine, signo, options, dbio);
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
