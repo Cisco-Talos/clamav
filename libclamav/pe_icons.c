@@ -1376,6 +1376,7 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	    cli_warnmsg("confidence: %u\n", confidence);
 	    if(ctx->virname) 
 		*ctx->virname = ctx->engine->icons[enginesize][x].name;
+	    free(imagedata);
 	    return CL_VIRUS;
 	}
 

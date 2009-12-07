@@ -2355,6 +2355,9 @@ int cl_engine_free(struct cl_engine *engine)
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
 
+    for(i=0; i<3; i++)
+	mpool_free(engine->mempool, engine->icons[i]);
+
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
 
