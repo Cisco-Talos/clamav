@@ -547,7 +547,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	if(strlen(tokens[1]) != 122) {
+	if(strlen(tokens[1]) != 124) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -556,7 +556,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    continue;
 
 	hash = (uint8_t *)tokens[1];
-	if(cli_hexnibbles((char *)hash, 122)) {
+	if(cli_hexnibbles((char *)hash, 124)) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
