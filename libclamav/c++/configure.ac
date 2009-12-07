@@ -85,7 +85,7 @@ if test "$enable_llvm" = "auto"; then
         AC_MSG_ERROR([C++ compiler is buggy])
         ;;
      *)
-        AC_MSG_RESULT([ok ("{$gxx_version}")])
+        AC_MSG_RESULT([ok (${gxx_version})])
     esac
 
     AC_MSG_CHECKING([for supported OS])
@@ -93,10 +93,10 @@ if test "$enable_llvm" = "auto"; then
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
 		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
-		    AC_MSG_CHECKING([ok ("$target_cpu-$target-os")])
+		    AC_MSG_RESULT([ok ($target_cpu-$target_os)])
 		    ;;
 		*)
-                    AC_MSG_ERROR([OS is not supported, not building LLVM])
+                    AC_MSG_ERROR([OS $target_os is not supported, not building LLVM])
                     ;;
 	    esac
 	    ;;
