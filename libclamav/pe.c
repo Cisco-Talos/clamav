@@ -1043,7 +1043,10 @@ int cli_scanpe(cli_ctx *ctx)
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
     if(!dll && dirs[2].Size) { /* RES */
-	scanicon(EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size);
+       if(scanicon(EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size) == CL_VIRUS) {
+	   free(exe_sections);
+	   return CL_VIRUS;
+       }
     }
 
     if(pe_plus) { /* Do not continue for PE32+ files */

@@ -37,27 +37,80 @@
 #define LABDIFF(x) labdiff2(x)
 #endif
 
-static const struct icomtr reference = {
-    { 2923, 2746, 945 }, /* col avg */
-    { 13, 0, 17 }, /* col x */
-    { 3, 3, 15 }, /* col y */
-    { 0, 0, 0 }, /* gray avg */
-    { 22, 22, 0 }, /* gray x */
-    { 0, 8, 12 }, /* gray y */
-    { 255, 255, 251 }, /* bright avg */
-    { 0, 0, 10 }, /* bright x */
-    { 13, 21, 16 }, /* bright y */
-    { 158, 184, 205 }, /* dark avg */
-    { 17, 16, 0 }, /* dark x */
-    { 23, 4, 5 }, /* dark y */
-    { 105, 94, 73 }, /* edge avg */
-    { 15, 5, 15 }, /* edge x */
-    { 2, 2, 21 }, /* edge y */
-    { 2, 2, 13 }, /* noedge avg */
-    { 0, 0, 21 }, /* noedge x */
-    { 23, 15, 12 }, /* noedge y */
-    99, 0, 0, 20,
-    "mario"
+static const struct icomtr reference[3] = {
+    {
+	/* 32x32x32 */
+	32,
+	{ 2923, 2746, 945 }, /* col avg */
+	{ 13, 0, 17 }, /* col x */
+	{ 3, 3, 15 }, /* col y */
+	{ 0, 0, 0 }, /* gray avg */
+	{ 22, 22, 0 }, /* gray x */
+	{ 0, 8, 12 }, /* gray y */
+	{ 255, 255, 251 }, /* bright avg */
+	{ 0, 0, 10 }, /* bright x */
+	{ 13, 21, 16 }, /* bright y */
+	{ 158, 184, 205 }, /* dark avg */
+	{ 17, 16, 0 }, /* dark x */
+	{ 23, 4, 5 }, /* dark y */
+	{ 105, 94, 73 }, /* edge avg */
+	{ 15, 5, 15 }, /* edge x */
+	{ 2, 2, 21 }, /* edge y */
+	{ 2, 2, 13 }, /* noedge avg */
+	{ 0, 0, 21 }, /* noedge x */
+	{ 23, 15, 12 }, /* noedge y */
+	99, 0, 0, 20,
+	"PDF.ICON.32x32"
+    },
+    {
+	/* 24x24x32 */
+	24,
+	{ 2940, 2722, 904 }, /* col avg */
+	{ 10, 1, 11 }, /* col x */
+	{ 2, 2, 11 }, /* col y */
+	{ 0, 0, 0 }, /* gray avg */
+	{ 0, 6, 16 }, /* gray x */
+	{ 9, 9, 9 }, /* gray y */
+	{ 252, 251, 251 }, /* bright avg */
+	{ 6, 0, 10 }, /* bright x */
+	{ 17, 10, 16 }, /* bright y */
+	{ 183, 184, 210 }, /* dark avg */
+	{ 13, 11, 1 }, /* dark x */
+	{ 16, 3, 4 }, /* dark y */
+	{ 137, 127, 76 }, /* edge avg */
+	{ 11, 1, 13 }, /* edge x */
+	{ 2, 3, 16 }, /* edge y */
+	{ 6, 14, 14 }, /* noedge avg */
+	{ 0, 6, 16 }, /* noedge x */
+	{ 15, 11, 9 }, /* noedge y */
+	99, 0, 0, 22,
+	"PDF.ICON.24x24"
+    },
+    {
+	/* 16x16x32 */
+	16,
+	{ 3403, 3347, 1567 }, /* col avg */
+	{ 0, 4, 8 }, /* col x */
+	{ 2, 2, 2 }, /* col y */
+	{ 0, 0, 0 }, /* gray avg */
+	{ 10, 10, 0 }, /* gray x */
+	{ 0, 4, 6 }, /* gray y */
+	{ 253, 253, 249 }, /* bright avg */
+	{ 4, 10, 6 }, /* bright x */
+	{ 11, 11, 7 }, /* bright y */
+	{ 163, 190, 235 }, /* dark avg */
+	{ 7, 3, 3 }, /* dark x */
+	{ 2, 2, 6 }, /* dark y */
+	{ 124, 111, 69 }, /* edge avg */
+	{ 7, 3, 2 }, /* edge x */
+	{ 1, 1, 5 }, /* edge y */
+	{ 17, 20, 26 }, /* noedge avg */
+	{ 9, 0, 4 }, /* noedge x */
+	{ 11, 9, 8 }, /* noedge y */
+	100, 0, 0, 20,
+	"PDF.ICON.16x16"
+    }
+
 };
 
 struct GICONS {
@@ -144,9 +197,10 @@ int scanicon(uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sect
 	}
     }
 
-    for(curicon=0; curicon<icons.cnt; curicon++)
-	parseicon(icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size);
-
+    for(curicon=0; curicon<icons.cnt; curicon++) {
+	if(parseicon(icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
+	    return CL_VIRUS;
+    }
     return 0;
 }
 
@@ -548,25 +602,6 @@ static const uint32_t btable[256][3] = {
  {0x11e2194b,0x07273d51,0x5e2f5196}, {0x120b3333,0x0737ae14,0x5f07c8f3},
 };
 
-static const unsigned int scale[] = {
-    0, 1, 5, 11, 21, 34, 52, 72, 97, 126, 158, 195, 237, 282, 332, 387,
-    446, 509, 578, 651, 728, 811, 898, 990, 1088, 1190, 1297, 1409, 1527, 1649, 1777, 1910,
-    2048, 2191, 2340, 2494, 2654, 2819, 2989, 3165, 3346, 3533, 3725, 3923, 4127, 4336, 4551, 4771,
-    4997, 5229, 5467, 5710, 5959, 6215, 6475, 6742, 7015, 7293, 7578, 7868, 8165, 8467, 8775, 9090,
-    9410, 9737, 10069, 10408, 10753, 11104, 11461, 11824, 12194, 12569, 12951, 13339, 13734, 14134, 14541, 14955,
-    15374, 15800, 16233, 16671, 17116, 17568, 18026, 18490, 18961, 19438, 19922, 20412, 20909, 21412, 21922, 22438,
-    22961, 23491, 24027, 24570, 25119, 25675, 26237, 26807, 27383, 27965, 28554, 29150, 29753, 30363, 30979, 31602,
-    32231, 32868, 33511, 34161, 34818, 35482, 36153, 36830, 37514, 38206, 38904, 39609, 40321, 41040, 41765, 42498,
-    43238, 43984, 44738, 45498, 46266, 47041, 47822, 48611, 49407, 50209, 51019, 51836, 52660, 53491, 54329, 55175,
-    56027, 56887, 57753, 58627, 59508, 60396, 61292, 62194, 63104, 64021, 64945, 65876, 66815, 67761, 68714, 69674,
-    70642, 71617, 72599, 73589, 74586, 75590, 76602, 77620, 78647, 79680, 80721, 81770, 82825, 83888, 84959, 86037,
-    87122, 88215, 89315, 90423, 91538, 92660, 93790, 94928, 96073, 97225, 98385, 99552, 100727, 101910, 103100, 104297,
-    105503, 106715, 107935, 109163, 110399, 111642, 112892, 114150, 115416, 116689, 117970, 119259, 120555, 121859, 123171, 124490,
-    125817, 127152, 128494, 129844, 131202, 132567, 133940, 135321, 136709, 138106, 139510, 140921, 142341, 143768, 145203, 146646,
-    148097, 149555, 151021, 152495, 153977, 155467, 156964, 158470, 159983, 161504, 163033, 164570, 166114, 167667, 169227, 170795,
-    172371, 173955, 175547, 177147, 178755, 180370, 181994, 183626, 185265, 186913, 188568, 190231, 191903, 193582, 195269, 196965
-};
-
 static void lab(double r, double g, double b, double *L, double *A, double *B) {
     double x, y, z;
     r /= 255.0f;
@@ -671,7 +706,7 @@ static uint32_t labdiff2(unsigned int b) {
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
 
-#define DUMPBMP
+//#define DUMPBMP
 #ifdef DUMPBMP
 int nimage = 0;
 static void makebmp(char *step, int w, int h, void *data) {
@@ -1143,7 +1178,7 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 
     /* scaling logic */
     if(width == height) {
-	if(width == 16 && width == 24 && width == 32)
+	if(width == 16 || width == 24 || width == 32)
 	    scalemode = 0;
 	else if(!(width % 32) || !(width % 24))
 	    scalemode = 1;
@@ -1332,47 +1367,49 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 
 
     getmetrics(width, imagedata, &metrics);
-    {
-	unsigned int color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, reference.color_x, reference.color_y, reference.color_avg, 4072);
-	unsigned int gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, reference.gray_x, reference.gray_y, reference.gray_avg, 4072);
-	unsigned int bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, reference.bright_x, reference.bright_y, reference.bright_avg, 255);
-	unsigned int dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, reference.dark_x, reference.dark_y, reference.dark_avg, 255);
-	unsigned int edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, reference.edge_x, reference.edge_y, reference.edge_avg, 255);
-	unsigned int noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, reference.noedge_x, reference.noedge_y, reference.noedge_avg, 255);
-	unsigned int reds = abs((int)metrics.rsum - (int)reference.rsum) * 10;
-	reds = (reds < 100) * (100 - reds);
-	unsigned int greens = abs((int)metrics.gsum - (int)reference.gsum) * 10;
-	greens = (greens < 100) * (100 - greens);
-	unsigned int blues = abs((int)metrics.bsum - (int)reference.bsum) * 10;
-	blues = (blues < 100) * (100 - blues);
-	unsigned int ccount = abs((int)metrics.ccount - (int)reference.ccount) * 10;
-	ccount = (ccount < 100) * (100 - ccount);
-	unsigned int colors = (reds + greens + blues + ccount) / 4;
-	unsigned int used = 6;
-	unsigned int confidence;
+    for(x=0; x<sizeof(reference) / sizeof(reference[0]); x++) {
+	if(reference[x].size == width) {
+	    unsigned int color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, reference[x].color_x, reference[x].color_y, reference[x].color_avg, 4072);
+	    unsigned int gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, reference[x].gray_x, reference[x].gray_y, reference[x].gray_avg, 4072);
+	    unsigned int bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, reference[x].bright_x, reference[x].bright_y, reference[x].bright_avg, 255);
+	    unsigned int dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, reference[x].dark_x, reference[x].dark_y, reference[x].dark_avg, 255);
+	    unsigned int edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, reference[x].edge_x, reference[x].edge_y, reference[x].edge_avg, 255);
+	    unsigned int noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, reference[x].noedge_x, reference[x].noedge_y, reference[x].noedge_avg, 255);
+	    unsigned int reds = abs((int)metrics.rsum - (int)reference[x].rsum) * 10;
+	    unsigned int greens = abs((int)metrics.gsum - (int)reference[x].gsum) * 10;
+	    unsigned int blues = abs((int)metrics.bsum - (int)reference[x].bsum) * 10;
+	    unsigned int ccount = abs((int)metrics.ccount - (int)reference[x].ccount) * 10;
+	    unsigned int colors, used = 6, confidence;
 
-	if(!metrics.ccount && !reference.ccount) {
-	    colors = 0;
-	    used--;
+	    reds = (reds < 100) * (100 - reds);
+	    greens = (greens < 100) * (100 - greens);
+	    blues = (blues < 100) * (100 - blues);
+	    ccount = (ccount < 100) * (100 - ccount);
+	    colors = (reds + greens + blues + ccount) / 4;
+
+	    if(!metrics.ccount && !reference[x].ccount) {
+		colors = 0;
+		used--;
+	    }
+
+	    cli_dbgmsg("color confidence: %u%%\n", color);
+	    cli_dbgmsg("gray confidence: %u%%\n", gray);
+	    cli_dbgmsg("bright confidence: %u%%\n", bright);
+	    cli_dbgmsg("dark confidence: %u%%\n", dark);
+	    cli_dbgmsg("edge confidence: %u%%\n", edge);
+	    cli_dbgmsg("noedge confidence: %u%%\n", noedge);
+	    cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
+
+	    confidence = (color + gray*2/3 + bright*2/3 + dark + edge + noedge*2/3 + colors) / used;
+	    if(confidence > 65) {
+		cli_warnmsg("confidence: %u\n", confidence);
+		if(ctx->virname) 
+		    *ctx->virname = reference[x].name;
+		return CL_VIRUS;
+	    }
+
+	    /* CURRENTLY >=60% IS A MATCH */
 	}
-
-	cli_dbgmsg("color confidence: %u%%\n", color);
-	cli_dbgmsg("gray confidence: %u%%\n", gray);
-	cli_dbgmsg("bright confidence: %u%%\n", bright);
-	cli_dbgmsg("dark confidence: %u%%\n", dark);
-	cli_dbgmsg("edge confidence: %u%%\n", edge);
-	cli_dbgmsg("noedge confidence: %u%%\n", noedge);
-	cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
-
-	confidence = (color + gray*2/3 + bright*2/3 + dark + edge + noedge*2/3 + colors) / used;
-	cli_warnmsg("confidence: %u\n", confidence);
-	if(confidence > 60) {
-	    if(ctx->virname) 
-		*ctx->virname = "PDF.ICON";
-	    return CL_VIRUS;
-	}
-
-	/* CURRENTLY >=60% IS A MATCH */
     }
     
     free(imagedata);

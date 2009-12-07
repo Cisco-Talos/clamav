@@ -114,6 +114,7 @@ typedef struct {
 } cli_ctx;
 
 struct icomtr {
+    unsigned int size;
     unsigned int color_avg[3];
     unsigned int color_x[3];
     unsigned int color_y[3];
