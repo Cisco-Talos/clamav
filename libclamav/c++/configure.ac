@@ -74,21 +74,26 @@ if test "$enable_llvm" = "auto"; then
     dnl Do some sanity checks, and don't automatically build on platforms
     dnl that are not supported or have broken compilers.
     dnl The user can override this by specifying --enable-llvm=yes.
+    AC_MSG_CHECKING([for supported C++ compiler version])
     gxx_version=`${CXX} -dumpversion` ||
     AC_MSG_ERROR([Unable to get GNU C++ compiler version])
     case "${gxx_version}" in
-     [012].*|3.[0123].*)
+     [[012]].*|3.[[0123]].*)
 	AC_MSG_ERROR([C++ compiler too old (${gxx_version})])
         ;;
-     3.4.[012]*|4.0.1*|4.1.[12]*)
+     3.4.[[012]]*|4.0.1*|4.1.[[12]]*)
         AC_MSG_ERROR([C++ compiler is buggy])
         ;;
+     *)
+        AC_MSG_RESULT([ok ("{$gxx_version}")])
     esac
 
+    AC_MSG_CHECKING([for supported OS])
     case "$target_cpu" in
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
 		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		    AC_MSG_CHECKING([ok ("$target_cpu-$target-os")])
 		    ;;
 		*)
                     AC_MSG_ERROR([OS is not supported, not building LLVM])

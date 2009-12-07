@@ -14482,21 +14482,30 @@ ac_configure_args=`echo $new_args | sed -e 's/-Werror //g'`
 echo "$ac_configure_args"
 
 if test "$enable_llvm" = "auto"; then
-                gxx_version=`${CXX} -dumpversion` ||
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for supported C++ compiler version" >&5
+$as_echo_n "checking for supported C++ compiler version... " >&6; }
+    gxx_version=`${CXX} -dumpversion` ||
     as_fn_error "Unable to get GNU C++ compiler version" "$LINENO" 5
     case "${gxx_version}" in
-     012.*|3.0123.*)
+     [012].*|3.[0123].*)
 	as_fn_error "C++ compiler too old (${gxx_version})" "$LINENO" 5
         ;;
-     3.4.012*|4.0.1*|4.1.12*)
+     3.4.[012]*|4.0.1*|4.1.[12]*)
         as_fn_error "C++ compiler is buggy" "$LINENO" 5
         ;;
+     *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok (\"{$gxx_version}\")" >&5
+$as_echo "ok (\"{$gxx_version}\")" >&6; }
     esac
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for supported OS" >&5
+$as_echo_n "checking for supported OS... " >&6; }
     case "$target_cpu" in
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
 		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking ok (\"$target_cpu-$target-os\")" >&5
+$as_echo_n "checking ok (\"$target_cpu-$target-os\")... " >&6; }
 		    ;;
 		*)
                     as_fn_error "OS is not supported, not building LLVM" "$LINENO" 5
