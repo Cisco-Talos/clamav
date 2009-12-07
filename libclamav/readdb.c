@@ -521,52 +521,186 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     return CL_SUCCESS;
 }
 
-#define ICO_TOKENS 9
-/* static int cli_loadico(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname) */
-/* { */
-/* 	const char *tokens[ICO_TOKENS + 1]; */
-/* 	char buffer[FILEBUFF], *buffer_cpy; */
-/* 	const char *pt; */
-/* 	int ret = CL_SUCCESS; */
-/* 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count; */
+#define ICO_TOKENS 2
+static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+        const char *tokens[ICO_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy;
+	uint8_t *pt, *hash;
+	int ret = CL_SUCCESS;
+	unsigned int line = 0, sigs = 0, tokens_count, i, size;
+	struct icomtr *metric;
 
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
 
-/*     if(engine->ignored) */
-/* 	if(!(buffer_cpy = cli_malloc(FILEBUFF))) */
-/* 	    return CL_EMEM; */
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
 
-/*     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) { */
-/* 	line++; */
-/* 	cli_chomp(buffer); */
-/* 	if(engine->ignored) */
-/* 	    strcpy(buffer_cpy, buffer); */
+	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
+	if(tokens_count != ICO_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
-/* 	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens); */
-/* 	if(tokens_count != ICO_TOKENS) { */
-/* 	    ret = CL_EMALFDB; */
-/* 	    break; */
-/* 	} */
+	if(strlen(tokens[1]) != 122) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
-/* 	sigs++; */
-/*     } */
-/*     if(engine->ignored) */
-/* 	free(buffer_cpy); */
+	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
+	    continue;
 
-/*     if(!line) { */
-/* 	cli_errmsg("cli_loadmd5: Empty database file\n"); */
-/* 	return CL_EMALFDB; */
-/*     } */
+	hash = tokens[1];
+	if(cli_hexnibbles(hash, 122)) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	size = (hash[0] << 4) + hash[1];
+	if(size != 32 && size != 24 && size != 16) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad size)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	size = (size >> 3) - 2;
+	hash+=2;
 
-/*     if(ret) { */
-/* 	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line); */
-/* 	return ret; */
-/*     } */
+	metric = (struct icomtr *) mpool_realloc(engine->mempool, engine->icons[size], sizeof(struct icomtr) * (engine->icon_counts[size] + 1));
+	if(!metric) {
+	    ret = CL_EMEM;
+	    break;
+	}
 
-/*     if(signo) */
-/* 	*signo += sigs; */
+	engine->icons[size] = metric;
+	metric += engine->icon_counts[size];
+	engine->icon_counts[size]++;
 
-/*     return CL_SUCCESS; */
-/* } */
+	for(i=0; i<3; i++) {
+	    if((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->color_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->color_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad color data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    if((metric->gray_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->gray_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->gray_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad gray data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->bright_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->bright_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad bright data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->dark_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->dark_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad dark data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->edge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->edge_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad edge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->noedge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->noedge_y[i] = (hash[6] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad noedge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	metric->rsum = (hash[0] << 4) | hash[1];
+	metric->gsum = (hash[2] << 4) | hash[3];
+	metric->bsum = (hash[4] << 4) | hash[5];
+	metric->ccount = (hash[6] << 4) | hash[7];
+	if(metric->rsum + metric->gsum + metric->bsum > 100 || metric->ccount > 100) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(metric->name = cli_mpool_strdup(engine->mempool, tokens[0]))) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("cli_loadmd5: Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    return CL_SUCCESS;
+}
 
 static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {

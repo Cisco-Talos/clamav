@@ -582,3 +582,13 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, si
 	return 0;
 }
 
+int cli_hexnibbles(char *str, int len)
+{
+    int i;
+    for(i=0; i<len; i++) {
+	int c = cli_hex2int(str[i]);
+	if(c<0) return 1;
+	str[i] = c;
+    }
+    return 0;
+}
