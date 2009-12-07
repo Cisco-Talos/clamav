@@ -1126,10 +1126,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	    return 57; /* FIXME */
 	}
 
-        if(totalsize > 0) {
-	    totaldownloaded += bread;
+	totaldownloaded += bread;
+        if(totalsize > 0)
             percentage = (int) (100 * (float) totaldownloaded / totalsize);
-	}
 
         if(!mprintf_quiet) {
             if(totalsize > 0) {
@@ -1145,9 +1144,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     closesocket(sd);
     close(fd);
 
-    if(bread == -1) {
+    if(bread == -1 || !totaldownloaded) {
 	logg("%cgetfile: Download interrupted: %s (IP: %s)\n", logerr ? '!' : '^', strerror(errno), ipaddr);
-	mirman_update(mdat->currip, mdat->af, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return 52;
     }
 

@@ -60,11 +60,11 @@ Sound bell on virus detection.
 \fB\-\-no\-summary\fR
 Do not display summary at the end of scanning.
 .TP 
-\fB\-\-exclude=PATT, \-\-exclude\-dir=PATT\fR
-Don't scan file/directory names containing PATT. It may be used multiple times.
+\fB\-\-exclude=REGEX, \-\-exclude\-dir=REGEX\fR
+Don't scan file/directory names matching regular expression. These options can be used multiple times.
 .TP 
-\fB\-\-include=PATT, \-\-include\-dir=PATT\fR
-Only scan file/directory names containing PATT. It may be used multiple times.
+\fB\-\-include=REGEX, \-\-include\-dir=REGEX\fR
+Only scan file/directory matching regular expression. These options can be used multiple times.
 .TP 
 \fB\-i, \-\-infected\fR
 Only print infected files.
