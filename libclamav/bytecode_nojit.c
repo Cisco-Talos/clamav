@@ -66,4 +66,7 @@ int bytecode_init(void)
     return 0;
 }
 
+void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
+    // Empty
+}
 int have_clamjit=0;

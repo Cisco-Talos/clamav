@@ -108,6 +108,7 @@ extern "C" {
 #endif
 
 void cli_bytecode_debug(int argc, char **argv);
+void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx);
 int bytecode_init(void);
 
 #ifdef __cplusplus

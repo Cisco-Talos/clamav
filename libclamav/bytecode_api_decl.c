@@ -42,6 +42,11 @@ uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx, const const uint8_t*, ui
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT*, uint32_t);
+uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -70,14 +75,14 @@ static uint16_t cli_tmp10[]={80, 32, 32, 16};
 static uint16_t cli_tmp11[]={81};
 static uint16_t cli_tmp12[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
 static uint16_t cli_tmp13[]={32};
-static uint16_t cli_tmp14[]={32, 84, 32};
-static uint16_t cli_tmp15[]={85};
-static uint16_t cli_tmp16[]={16, 8, 8, 8, 87, 86};
-static uint16_t cli_tmp17[]={8};
-static uint16_t cli_tmp18[]={88};
-static uint16_t cli_tmp19[]={8};
-static uint16_t cli_tmp20[]={32, 32, 32};
-static uint16_t cli_tmp21[]={32, 65, 32};
+static uint16_t cli_tmp14[]={32, 65, 32};
+static uint16_t cli_tmp15[]={32, 85, 32};
+static uint16_t cli_tmp16[]={86};
+static uint16_t cli_tmp17[]={16, 8, 8, 8, 88, 87};
+static uint16_t cli_tmp18[]={8};
+static uint16_t cli_tmp19[]={89};
+static uint16_t cli_tmp20[]={8};
+static uint16_t cli_tmp21[]={32, 32, 32};
 static uint16_t cli_tmp22[]={32, 92, 32};
 static uint16_t cli_tmp23[]={93};
 static uint16_t cli_tmp24[]={92};
@@ -98,12 +103,12 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp12, 9, 0, 0},
 	{DArrayType, cli_tmp13, 64, 0, 0},
 	{DFunctionType, cli_tmp14, 3, 0, 0},
-	{DPointerType, cli_tmp15, 1, 0, 0},
-	{DStructType, cli_tmp16, 6, 0, 0},
-	{DArrayType, cli_tmp17, 29, 0, 0},
-	{DArrayType, cli_tmp18, 10, 0, 0},
-	{DArrayType, cli_tmp19, 3, 0, 0},
-	{DFunctionType, cli_tmp20, 3, 0, 0},
+	{DFunctionType, cli_tmp15, 3, 0, 0},
+	{DPointerType, cli_tmp16, 1, 0, 0},
+	{DStructType, cli_tmp17, 6, 0, 0},
+	{DArrayType, cli_tmp18, 29, 0, 0},
+	{DArrayType, cli_tmp19, 10, 0, 0},
+	{DArrayType, cli_tmp20, 3, 0, 0},
 	{DFunctionType, cli_tmp21, 3, 0, 0},
 	{DFunctionType, cli_tmp22, 3, 0, 0},
 	{DPointerType, cli_tmp23, 1, 0, 0},
@@ -114,14 +119,19 @@ const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
 	{"test0", 22, 0, 1},
-	{"test1", 20, 0, 0},
-	{"read", 21, 1, 1},
-	{"write", 21, 2, 1},
-	{"seek", 20, 1, 0},
-	{"setvirusname", 21, 3, 1},
-	{"debug_print_str", 21, 4, 1},
-	{"debug_print_uint", 20, 2, 0},
-	{"disasm_x86", 14, 5, 1}
+	{"test1", 21, 0, 0},
+	{"read", 14, 1, 1},
+	{"write", 14, 2, 1},
+	{"seek", 21, 1, 0},
+	{"setvirusname", 14, 3, 1},
+	{"debug_print_str", 14, 4, 1},
+	{"debug_print_uint", 21, 2, 0},
+	{"disasm_x86", 15, 5, 1},
+	{"trace_directory", 14, 6, 1},
+	{"trace_scope", 14, 7, 1},
+	{"trace_source", 14, 8, 1},
+	{"trace_op", 14, 9, 1},
+	{"trace_value", 14, 10, 1}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -135,6 +145,11 @@ const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_write,
 	(cli_apicall_pointer)cli_bcapi_setvirusname,
 	(cli_apicall_pointer)cli_bcapi_debug_print_str,
-	(cli_apicall_pointer)cli_bcapi_disasm_x86
+	(cli_apicall_pointer)cli_bcapi_disasm_x86,
+	(cli_apicall_pointer)cli_bcapi_trace_directory,
+	(cli_apicall_pointer)cli_bcapi_trace_scope,
+	(cli_apicall_pointer)cli_bcapi_trace_source,
+	(cli_apicall_pointer)cli_bcapi_trace_op,
+	(cli_apicall_pointer)cli_bcapi_trace_value
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

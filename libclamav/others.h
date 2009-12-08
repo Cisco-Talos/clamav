@@ -353,8 +353,10 @@ void cli_errmsg(const char *str, ...);
  * such as debug paths, and error paths */
 #if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 #define UNLIKELY(cond) __builtin_expect(!!(cond), 0)
+#define LIKELY(cond) __builtin_expect(!!(cond), 1)
 #else
 #define UNLIKELY(cond) (cond)
+#define LIKELY(cond) (cond)
 #endif
 
 #ifdef __GNUC__

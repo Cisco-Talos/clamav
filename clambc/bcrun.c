@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include "bytecode.h"
+#include "bytecode_priv.h"
 #include "clamav.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr,"Out of memory\n");
 	exit(3);
     }
+    ctx->trace_mask = BC_TRACE_ALL;
 
     if (opts->filename[1]) {
 	funcid = atoi(opts->filename[1]);

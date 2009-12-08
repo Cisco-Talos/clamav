@@ -52,6 +52,13 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->outfd = -1;
     ctx->tempfile = NULL;
     ctx->written = 0;
+    ctx->trace_mask = 0;
+    ctx->scope = NULL;
+    ctx->scopeid = 0;
+    ctx->file = NULL;
+    ctx->directory = NULL;
+    ctx->lastline = 0;
+    ctx->lastcol = 0;
     return ctx;
 }
 

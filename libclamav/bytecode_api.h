@@ -155,5 +155,15 @@ uint32_t debug_print_uint(uint32_t a, uint32_t b);
  *  \sa DisassembleAt
  * */
 uint32_t disasm_x86(struct DISASM_RESULT* result, uint32_t len);
+
+/* tracing API */
+
+/* a scope: lexical block, function, or compile unit */
+uint32_t trace_directory(const uint8_t* directory, uint32_t dummy);
+uint32_t trace_scope(const uint8_t* newscope, uint32_t scopeid);
+uint32_t trace_source(const uint8_t* srcfile, uint32_t line);
+uint32_t trace_op(const uint8_t* opname, uint32_t column);
+uint32_t trace_value(const uint8_t* name, uint32_t v);
+
 #endif
 #endif

@@ -98,6 +98,10 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     //TODO: call disasm_x86_wrap, which outputs a MARIO struct
 }
 
+/* TODO: field in ctx, id of last bytecode that called magicscandesc, reset
+ * after hooks/other bytecodes are run. TODO: need a more generic solution
+ * to avoid uselessly recursing on bytecode-unpacked files, but also a way to
+ * override the limit if we need it in a special situation */
 int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 {
     int32_t res;
@@ -128,4 +132,101 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     return res;
 }
 
+uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t *scope, uint32_t scopeid)
+{
+    if (LIKELY(!ctx->trace_mask))
+	return 0;
+    if ((ctx->trace_mask&BC_TRACE_FUNC) && (scope != ctx->scope)) {
+	ctx->scope = scope;
+	ctx->trace_mask |= BC_TRACE_TMP_FUNC;
+    }
+    if ((ctx->trace_mask&BC_TRACE_SCOPE) && (scopeid != ctx->scopeid)) {
+	ctx->scopeid = scopeid;
+	ctx->trace_mask |= BC_TRACE_TMP_SCOPE;
+    }
+}
 
+uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *file, uint32_t line)
+{
+    if (LIKELY(!ctx->trace_mask))
+	return 0;
+    if (ctx->trace_mask&BC_TRACE_TMP_FUNC) {
+	cli_dbgmsg("[trace] %s:%u:%u -> %s:%u\t Entering function %s\n",
+		   ctx->file ? ctx->file : "??", ctx->lastline,
+		   ctx->lastcol, file ? file : "??", line,
+		   ctx->scope);
+	ctx->file = file;
+	ctx->lastline = line;
+	cli_bytecode_debug_printsrc(ctx);
+    } else if (ctx->trace_mask&BC_TRACE_TMP_SCOPE) {
+	cli_dbgmsg("[trace] %s:%u:%u -> %s:%u\t entering scope\n",
+		   ctx->file ? ctx->file : "??", ctx->lastline,
+		   ctx->lastcol, file ? file : "??", line,
+		   ctx->scope);
+	ctx->file = file;
+	ctx->lastline = line;
+	cli_bytecode_debug_printsrc(ctx);
+    } else {
+	if (ctx->file != file || ctx->lastline != line) {
+	    ctx->file = file;
+	    ctx->lastline = line;
+	    if (ctx->trace_mask&BC_TRACE_LINE)
+		ctx->trace_mask |= BC_TRACE_TMP_SRC;
+	}
+    }
+    ctx->trace_mask &= ~(BC_TRACE_TMP_FUNC|BC_TRACE_TMP_SCOPE);
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uint32_t col)
+{
+    if (LIKELY(!ctx->trace_mask))
+	return 0;
+    if (ctx->lastcol != col) {
+	ctx->lastcol = col;
+	if (ctx->trace_mask&BC_TRACE_COL)
+	    ctx->trace_mask |= BC_TRACE_TMP_SRC;
+    }
+    if ((ctx->trace_mask&BC_TRACE_OP) && op) {
+	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
+	    cli_dbgmsg("[trace] %s:%u:%u\t %s\n",
+		       ctx->file ? ctx->file : "??", ctx->lastline, col,
+		       op);
+	    cli_bytecode_debug_printsrc(ctx);
+	    ctx->trace_mask &= ~BC_TRACE_TMP_SRC;
+	} else
+	    cli_dbgmsg("[trace] %s\n", op);
+    }
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name, uint32_t value)
+{
+    if (LIKELY(!ctx->trace_mask))
+	return 0;
+    if ((ctx->trace_mask&BC_TRACE_VAL) && name) {
+	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
+	    cli_dbgmsg("[trace] %s:%u:%u\t %s = %u\n",
+		       ctx->file ? ctx->file : "??",
+		       ctx->lastline, ctx->lastcol,
+		       name, value);
+	    cli_bytecode_debug_printsrc(ctx);
+	} else {
+	    cli_dbgmsg("[trace]\t %s = %u\n", name, value);
+	}
+    } else if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
+	cli_dbgmsg("[trace] %s:%u:%u\n",
+		   ctx->file ? ctx->file : "??",
+		   ctx->lastline, ctx->lastcol);
+	cli_bytecode_debug_printsrc(ctx);
+    }
+    ctx->trace_mask &= ~BC_TRACE_TMP_SRC;
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t* dir, uint32_t dummy)
+{
+    if (LIKELY(!ctx->trace_mask))
+	return 0;
+    ctx->directory = dir;
+}

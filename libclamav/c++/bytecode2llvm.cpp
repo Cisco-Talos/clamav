@@ -22,6 +22,7 @@
 #define DEBUG_TYPE "clamavjit"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -37,10 +38,13 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/System/DataTypes.h"
+#include "llvm/System/Mutex.h"
 #include "llvm/System/Signals.h"
 #include "llvm/System/Threading.h"
 #include "llvm/Target/TargetSelect.h"
@@ -264,6 +268,8 @@ private:
 	    operand &= 0x7fffffff;
 	    assert(operand < globals.size() && "Global index out of range");
 	    // Global
+	    if (!operand)
+		return ConstantPointerNull::get(PointerType::getUnqual(Type::getInt8Ty(Context)));
 	    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(globals[operand])) {
 		if (ConstantExpr *CE = dyn_cast<ConstantExpr>(GV->getInitializer())) {
 		    return CE;
@@ -328,14 +334,22 @@ private:
 
     Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
     {
-        if (isa<PointerType>(Ty)) {
-          Constant *idxs[2] = {
+        if (const PointerType *PTy = dyn_cast<PointerType>(Ty)) {
+          Value *idxs[2] = {
 	      ConstantInt::get(Type::getInt32Ty(Context), 0),
 	      ConstantInt::get(Type::getInt32Ty(Context), components[c++])
 	  };
 	  unsigned idx = components[c++];
+	  if (!idx)
+	      return ConstantPointerNull::get(PTy);
 	  assert(idx < globals.size());
 	  GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
+	  const Type *GTy = GetElementPtrInst::getIndexedType(GV->getType(), idxs, 2);
+	  if (!GTy || GTy != PTy->getElementType()) {
+	      errs() << "Type mismatch for GEP: " << *PTy->getElementType() << " != " << *GTy
+		  << "; base is " << *GV << "\n";
+	      llvm_report_error("(libclamav) Type mismatch converting constant");
+	  }
 	  return ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2);
         }
 	if (isa<IntegerType>(Ty)) {
@@ -517,8 +531,8 @@ public:
 
 	globals.reserve(bc->num_globals);
 	BitVector FakeGVs;
-	FakeGVs.resize(bc->num_globals);
-
+	FakeGVs.resize(bc->num_globals+1);
+	globals.push_back(0);
 	for (unsigned i=0;i<bc->num_globals;i++) {
 	    const Type *Ty = mapType(bc->globaltys[i]);
 
@@ -528,7 +542,7 @@ public:
 	    if (isa<PointerType>(Ty)) {
 		unsigned g = bc->globals[i][1];
 		if (GVoffsetMap.count(g)) {
-		    FakeGVs.set(i);
+		    FakeGVs.set(i+1);
 		    globals.push_back(0);
 		    continue;
 		}
@@ -596,7 +610,7 @@ public:
 		Argument *Ctx = F->arg_begin();
 		struct cli_bc_ctx *N = 0;
 		for (unsigned i=0;i<bc->num_globals;i++) {
-		    if (!FakeGVs[i])
+		    if (!FakeGVs[i+1])
 			continue;
 		    unsigned g = bc->globals[i][1];
 		    unsigned offset = GVoffsetMap[g];
@@ -1205,6 +1219,69 @@ int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 void cli_bytecode_debug(int argc, char **argv)
 {
   cl::ParseCommandLineOptions(argc, argv);
+}
+
+struct lines {
+    MemoryBuffer *buffer;
+    std::vector<const char*> lines;
+};
+
+static struct lineprinter {
+    StringMap<struct lines*> files;
+} LinePrinter;
+
+void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
+{
+    if (!ctx->file || !ctx->directory || !ctx->lastline) {
+	errs() << (ctx->directory ? "d":"null") << ":" << (ctx->file ? "f" : "null")<< ":" << ctx->lastline << "\n";
+	return;
+    }
+    // acquire a mutex here
+    sys::Mutex mtx(false);
+    sys::SmartScopedLock<false> lock(mtx);
+
+    std::string path = std::string(ctx->directory) + "/" + std::string(ctx->file);
+    StringMap<struct lines*>::iterator I = LinePrinter.files.find(path);
+    struct lines *lines;
+    if (I == LinePrinter.files.end()) {
+	lines = new struct lines;
+	std::string ErrorMessage;
+	lines->buffer = MemoryBuffer::getFile(path, &ErrorMessage);
+	if (!lines->buffer) {
+	    errs() << "Unable to open file '" << path << "'\n";
+	    return ;
+	}
+	LinePrinter.files[path] = lines;
+    } else {
+	lines = I->getValue();
+    }
+    const char *linestart;
+    while (lines->lines.size() <= ctx->lastline+1) {
+	const char *p;
+	if (lines->lines.empty()) {
+	    p = lines->buffer->getBufferStart();
+	    lines->lines.push_back(p);
+	} else {
+	    p = lines->lines.back();
+	    if (p == lines->buffer->getBufferEnd())
+		break;
+	    p = strchr(p, '\n');
+	    if (!p) {
+		p = lines->buffer->getBufferEnd();
+		lines->lines.push_back(p);
+	    } else
+		lines->lines.push_back(p+1);
+	}
+    }
+    if (ctx->lastline >= lines->lines.size()) {
+	errs() << "Line number " << ctx->lastline << "out of file\n";
+	return;
+    }
+    assert(ctx->lastline < lines->lines.size());
+    SMDiagnostic diag(ctx->file, ctx->lastline ? ctx->lastline : -1,
+		 ctx->lastcol ? ctx->lastcol-1 : -1,
+		 "", std::string(lines->lines[ctx->lastline-1], lines->lines[ctx->lastline]-1));
+    diag.Print("[trace]", errs());
 }
 
 int have_clamjit=1;
