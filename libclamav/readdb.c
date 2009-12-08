@@ -670,7 +670,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	metric->gsum = (hash[2] << 4) | hash[3];
 	metric->bsum = (hash[4] << 4) | hash[5];
 	metric->ccount = (hash[6] << 4) | hash[7];
-	if(metric->rsum + metric->gsum + metric->bsum > 100 || metric->ccount > 100) {
+	if(metric->rsum + metric->gsum + metric->bsum > 103 || metric->ccount > 100) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
