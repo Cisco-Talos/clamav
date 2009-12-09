@@ -532,9 +532,9 @@ public:
 
 	globals.reserve(bc->num_globals);
 	BitVector FakeGVs;
-	FakeGVs.resize(bc->num_globals+1);
+	FakeGVs.resize(bc->num_globals);
 	globals.push_back(0);
-	for (unsigned i=0;i<bc->num_globals;i++) {
+	for (unsigned i=1;i<bc->num_globals;i++) {
 	    const Type *Ty = mapType(bc->globaltys[i]);
 
 	    // TODO: validate number of components against type_components
@@ -543,7 +543,7 @@ public:
 	    if (isa<PointerType>(Ty)) {
 		unsigned g = bc->globals[i][1];
 		if (GVoffsetMap.count(g)) {
-		    FakeGVs.set(i+1);
+		    FakeGVs.set(i);
 		    globals.push_back(0);
 		    continue;
 		}
@@ -611,7 +611,7 @@ public:
 		Argument *Ctx = F->arg_begin();
 		struct cli_bc_ctx *N = 0;
 		for (unsigned i=0;i<bc->num_globals;i++) {
-		    if (!FakeGVs[i+1])
+		    if (!FakeGVs[i])
 			continue;
 		    unsigned g = bc->globals[i][1];
 		    unsigned offset = GVoffsetMap[g];
