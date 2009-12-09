@@ -52,6 +52,63 @@ static void help(void)
     return;
 }
 
+static struct dbg_state {
+    const char *directory;
+    const char *file;
+    const char *scope;
+    uint32_t scopeid;
+    unsigned line;
+    unsigned col;
+    unsigned showline;
+} dbg_state;
+
+static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
+{
+    dbg_state.directory = ctx->directory;
+    if (*ctx->file == '?')
+	return;
+    switch (event) {
+	case trace_func:
+	    printf("[trace] %s:%u:%u -> %s:%u:%u Entered function %s\n",
+		   dbg_state.file, dbg_state.line, dbg_state.col,
+		   ctx->file, ctx->line, ctx->col, ctx->scope);
+	    dbg_state.scope = ctx->scope;
+	    break;
+	case trace_param:
+	    printf("[trace] function parameter:\n");
+	    return;
+	case trace_scope:
+	    printf("[trace] %s:%u:%u -> %s:%u:%u\n",
+		   dbg_state.file, dbg_state.line, dbg_state.col,
+		   ctx->file, ctx->line, ctx->col);
+	    dbg_state.scope = ctx->scope;
+	    break;
+	case trace_line:
+	case trace_col:
+	    if (dbg_state.showline)
+		cli_bytecode_debug_printsrc(ctx);
+	    else
+		printf("[trace] %s:%u:%u\n",
+		       dbg_state.file, dbg_state.line, dbg_state.col);
+	    break;
+	default:
+	    break;
+    }
+    dbg_state.file = ctx->file;
+    dbg_state.line = ctx->line;
+    dbg_state.col = ctx->col;
+}
+
+static void tracehook_op(struct cli_bc_ctx *ctx, const char *op)
+{
+    printf("[trace] %s\n", op);
+}
+
+static void tracehook_val(struct cli_bc_ctx *ctx, const char *name, uint32_t value)
+{
+    printf("[trace] %s = %u\n", name, value);
+}
+
 int main(int argc, char *argv[])
 {
     FILE *f;
@@ -142,7 +199,15 @@ int main(int argc, char *argv[])
 	fprintf(stderr,"Out of memory\n");
 	exit(3);
     }
-    ctx->trace_mask = BC_TRACE_ALL;
+    memset(&dbg_state, 0, sizeof(dbg_state));
+    dbg_state.file = "<libclamav>";
+    dbg_state.line = 0;
+    dbg_state.col = 0;
+    dbg_state.showline = 1;
+    cli_bytecode_context_set_trace(ctx, trace_val,
+				   tracehook,
+				   tracehook_op,
+				   tracehook_val);
 
     if (opts->filename[1]) {
 	funcid = atoi(opts->filename[1]);

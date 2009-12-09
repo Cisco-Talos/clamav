@@ -27,6 +27,7 @@
 #include <errno.h>
 #include "cltypes.h"
 #include "clambc.h"
+#include "bytecode.h"
 #include "bytecode_priv.h"
 #include "type_desc.h"
 #include "bytecode_api.h"
@@ -132,108 +133,87 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     return res;
 }
 
+void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, enum trace_level level,
+				    bc_dbg_callback_trace trace,
+				    bc_dbg_callback_trace_op trace_op,
+				    bc_dbg_callback_trace_val trace_val)
+{
+    ctx->trace = trace;
+    ctx->trace_op = trace_op;
+    ctx->trace_val = trace_val;
+    ctx->trace_level = level;
+}
+
 uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t *scope, uint32_t scopeid)
 {
-    if (LIKELY(!ctx->trace_mask))
+    if (LIKELY(!ctx->trace_level))
 	return 0;
-    if ((ctx->trace_mask&BC_TRACE_FUNC) && (scope != ctx->scope)) {
-	ctx->scope = scope;
-	ctx->trace_mask |= BC_TRACE_TMP_FUNC;
-    }
-    if ((ctx->trace_mask&BC_TRACE_SCOPE) && (scopeid != ctx->scopeid)) {
+    if (ctx->scope != (const char*)scope) {
+	ctx->scope = (const char*)scope ? (const char*)scope : "?";
 	ctx->scopeid = scopeid;
-	ctx->trace_mask |= BC_TRACE_TMP_SCOPE;
+	ctx->trace_level |= 0x80;/* temporarely increase level to print params */
+    } else if ((ctx->trace_level >= trace_scope) && ctx->scopeid != scopeid) {
+	ctx->scopeid = scopeid;
+	ctx->trace_level |= 0x40;/* temporarely increase level to print location */
     }
-}
-
-uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *file, uint32_t line)
-{
-    if (LIKELY(!ctx->trace_mask))
-	return 0;
-    if (ctx->trace_mask&BC_TRACE_TMP_FUNC) {
-	cli_dbgmsg("[trace] Entering function %s (%s:%u:%u -> %s:%u)\n",
-		   ctx->scope,
-		   ctx->file ? ctx->file : "??", ctx->lastline,
-		   ctx->lastcol, file ? file : "??", line);
-	ctx->file = file;
-	ctx->lastline = line;
-	cli_bytecode_debug_printsrc(ctx);
-    } else if (ctx->trace_mask&BC_TRACE_TMP_SCOPE) {
-	cli_dbgmsg("[trace] Entering scope (%s:%u:%u -> %s:%u)\n",
-		   ctx->file ? ctx->file : "??", ctx->lastline,
-		   ctx->lastcol, file ? file : "??", line,
-		   ctx->scope);
-	ctx->file = file;
-	ctx->lastline = line;
-	cli_bytecode_debug_printsrc(ctx);
-    } else {
-	if (ctx->file != file || ctx->lastline != line) {
-	    ctx->file = file;
-	    ctx->lastline = line;
-	    if (ctx->trace_mask&BC_TRACE_LINE)
-		ctx->trace_mask |= BC_TRACE_TMP_SRC;
-	}
-    }
-    ctx->trace_mask &= ~(BC_TRACE_TMP_FUNC|BC_TRACE_TMP_SCOPE);
-    return 0;
-}
-
-uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uint32_t col)
-{
-    if (LIKELY(!ctx->trace_mask))
-	return 0;
-    if (ctx->lastcol != col) {
-	ctx->lastcol = col;
-	if (ctx->trace_mask&BC_TRACE_COL)
-	    ctx->trace_mask |= BC_TRACE_TMP_SRC;
-    }
-    if ((ctx->trace_mask&BC_TRACE_OP) && op) {
-	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
-	    cli_dbgmsg("[trace] %s (@%s:%u:%u)\n",
-		       op,
-		       ctx->file ? ctx->file : "??", ctx->lastline, col);
-	    cli_bytecode_debug_printsrc(ctx);
-	    ctx->trace_mask &= ~BC_TRACE_TMP_SRC;
-	} else
-	    cli_dbgmsg("[trace] %s\n", op);
-    }
-    ctx->trace_mask |= BC_TRACE_TMP_OP;
-    return 0;
-}
-
-uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name, uint32_t value)
-{
-    if (LIKELY(!ctx->trace_mask))
-	return 0;
-    if ((ctx->trace_mask&BC_TRACE_PARAM) && !(ctx->trace_mask&BC_TRACE_TMP_OP)) {
-	if (name)
-	    cli_dbgmsg("[trace] param %s = %u\n", name, value);
-	ctx->trace_mask &= ~BC_TRACE_TMP_OP;
-	return 0;
-    }
-    if ((ctx->trace_mask&BC_TRACE_VAL) && name) {
-	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
-	    cli_dbgmsg("[trace] %s = %u (@%s:%u:%u)\n",
-		       name, value,
-		       ctx->file ? ctx->file : "??",
-		       ctx->lastline, ctx->lastcol);
-	    cli_bytecode_debug_printsrc(ctx);
-	} else {
-	    cli_dbgmsg("[trace] %s = %u\n", name, value);
-	}
-    } else if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
-	cli_dbgmsg("[trace] %s:%u:%u\n",
-		   ctx->file ? ctx->file : "??",
-		   ctx->lastline, ctx->lastcol);
-	cli_bytecode_debug_printsrc(ctx);
-    }
-    ctx->trace_mask &= ~(BC_TRACE_TMP_SRC|BC_TRACE_TMP_OP);
     return 0;
 }
 
 uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t* dir, uint32_t dummy)
 {
-    if (LIKELY(!ctx->trace_mask))
+    if (LIKELY(!ctx->trace_level))
 	return 0;
-    ctx->directory = dir;
+    ctx->directory = (const char*)dir ? (const char*)dir : "";
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *file, uint32_t line)
+{
+    if (LIKELY(ctx->trace_level < trace_line))
+	return 0;
+    if (ctx->file != (const char*)file || ctx->line != line) {
+	ctx->col = 0;
+	ctx->file =(const char*)file ? (const char*)file : "??";
+	ctx->line = line;
+    }
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uint32_t col)
+{
+    if (LIKELY(ctx->trace_level < trace_col))
+	return 0;
+    if (ctx->trace_level&0xc0) {
+	ctx->col = col;
+	/* func/scope changed and they needed param/location event */
+	ctx->trace(ctx, (ctx->trace_level&0x80) ? trace_func : trace_scope);
+	ctx->trace_level &= ~0xc0;
+    }
+    if (LIKELY(ctx->trace_level < trace_col))
+	return 0;
+    if (ctx->col != col) {
+	ctx->col = col;
+	ctx->trace(ctx, trace_col);
+    } else {
+	ctx->trace(ctx, trace_line);
+    }
+    if (LIKELY(ctx->trace_level < trace_op))
+	return 0;
+    if (ctx->trace_op && op)
+	ctx->trace_op(ctx, (const char*)op);
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name, uint32_t value)
+{
+    if (LIKELY(ctx->trace_level < trace_val))
+	return 0;
+    if (ctx->trace_level&0x80) {
+	if ((ctx->trace_level&0x7f) < trace_param)
+	    return 0;
+	ctx->trace(ctx, trace_param);
+    }
+    if (ctx->trace_val && name)
+	ctx->trace_val(ctx, name, value);
+    return 0;
 }

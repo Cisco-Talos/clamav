@@ -23,6 +23,7 @@
 #ifndef BYTECODE_PRIV_H
 #define BYTECODE_PRIV_H
 
+#include "bytecode.h"
 #include "type_desc.h"
 #include "execs.h"
 #include "bytecode_hooks.h"
@@ -103,20 +104,16 @@ struct cli_bc_dbgnode {
 };
 
 #define MAX_OP ~0u
-#define BC_TRACE_FUNC  0x1
-#define BC_TRACE_PARAM 0x2
-#define BC_TRACE_SCOPE 0x4
-#define BC_TRACE_LINE  0x8
-#define BC_TRACE_COL   0x10
-#define BC_TRACE_OP    0x20
-#define BC_TRACE_VAL   0x40
-#define BC_TRACE_SHOW_SOURCE 0x80
-#define BC_TRACE_TMP_FUNC  0x100
-#define BC_TRACE_TMP_SCOPE 0x200
-#define BC_TRACE_TMP_SRC   0x400
-#define BC_TRACE_TMP_OP    0x800
-#define BC_TRACE_ALL (BC_TRACE_FUNC | BC_TRACE_PARAM | BC_TRACE_SCOPE | BC_TRACE_LINE | BC_TRACE_COL | BC_TRACE_OP | BC_TRACE_VAL | BC_TRACE_SHOW_SOURCE)
-
+enum trace_level {
+    trace_none=0,
+    trace_func,
+    trace_param,
+    trace_scope,
+    trace_line,
+    trace_col,
+    trace_op,
+    trace_val
+};
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
@@ -136,13 +133,16 @@ struct cli_bc_ctx {
     char *tempfile;
     void *ctx;
     unsigned written;
-    unsigned trace_mask;
+    bc_dbg_callback_trace trace;
+    bc_dbg_callback_trace_op trace_op;
+    bc_dbg_callback_trace_val trace_val;
+    unsigned trace_level;
+    const char *directory;
+    const char *file;
     const char *scope;
     uint32_t scopeid;
-    const char *file;
-    const char *directory;
-    unsigned lastline;
-    unsigned lastcol;
+    unsigned line;
+    unsigned col;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

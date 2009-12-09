@@ -73,8 +73,8 @@
 #endif
 #include "clamav.h"
 #include "clambc.h"
-#include "bytecode_priv.h"
 #include "bytecode.h"
+#include "bytecode_priv.h"
 #include "type_desc.h"
 
 #define MODULE "libclamav JIT: "
@@ -1233,8 +1233,8 @@ static struct lineprinter {
 
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 {
-    if (!ctx->file || !ctx->directory || !ctx->lastline) {
-	errs() << (ctx->directory ? "d":"null") << ":" << (ctx->file ? "f" : "null")<< ":" << ctx->lastline << "\n";
+    if (!ctx->file || !ctx->directory || !ctx->line) {
+	errs() << (ctx->directory ? "d":"null") << ":" << (ctx->file ? "f" : "null")<< ":" << ctx->line << "\n";
 	return;
     }
     // acquire a mutex here
@@ -1257,7 +1257,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 	lines = I->getValue();
     }
     const char *linestart;
-    while (lines->lines.size() <= ctx->lastline+1) {
+    while (lines->lines.size() <= ctx->line+1) {
 	const char *p;
 	if (lines->lines.empty()) {
 	    p = lines->buffer->getBufferStart();
@@ -1274,14 +1274,14 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 		lines->lines.push_back(p+1);
 	}
     }
-    if (ctx->lastline >= lines->lines.size()) {
-	errs() << "Line number " << ctx->lastline << "out of file\n";
+    if (ctx->line >= lines->lines.size()) {
+	errs() << "Line number " << ctx->line << "out of file\n";
 	return;
     }
-    assert(ctx->lastline < lines->lines.size());
-    SMDiagnostic diag(ctx->file, ctx->lastline ? ctx->lastline : -1,
-		 ctx->lastcol ? ctx->lastcol-1 : -1,
-		 "", std::string(lines->lines[ctx->lastline-1], lines->lines[ctx->lastline]-1));
+    assert(ctx->line < lines->lines.size());
+    SMDiagnostic diag(ctx->file, ctx->line ? ctx->line : -1,
+		 ctx->col ? ctx->col-1 : -1,
+		 "", std::string(lines->lines[ctx->line-1], lines->lines[ctx->line]-1));
     diag.Print("[trace]", errs());
 }
 
