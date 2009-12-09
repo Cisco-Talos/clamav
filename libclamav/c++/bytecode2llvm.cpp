@@ -270,6 +270,7 @@ private:
 	    // Global
 	    if (!operand)
 		return ConstantPointerNull::get(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	    assert(globals[operand]);
 	    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(globals[operand])) {
 		if (ConstantExpr *CE = dyn_cast<ConstantExpr>(GV->getInitializer())) {
 		    return CE;

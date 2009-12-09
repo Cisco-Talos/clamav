@@ -151,15 +151,15 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *fil
     if (LIKELY(!ctx->trace_mask))
 	return 0;
     if (ctx->trace_mask&BC_TRACE_TMP_FUNC) {
-	cli_dbgmsg("[trace] %s:%u:%u -> %s:%u\t Entering function %s\n",
+	cli_dbgmsg("[trace] Entering function %s (%s:%u:%u -> %s:%u)\n",
+		   ctx->scope,
 		   ctx->file ? ctx->file : "??", ctx->lastline,
-		   ctx->lastcol, file ? file : "??", line,
-		   ctx->scope);
+		   ctx->lastcol, file ? file : "??", line);
 	ctx->file = file;
 	ctx->lastline = line;
 	cli_bytecode_debug_printsrc(ctx);
     } else if (ctx->trace_mask&BC_TRACE_TMP_SCOPE) {
-	cli_dbgmsg("[trace] %s:%u:%u -> %s:%u\t entering scope\n",
+	cli_dbgmsg("[trace] Entering scope (%s:%u:%u -> %s:%u)\n",
 		   ctx->file ? ctx->file : "??", ctx->lastline,
 		   ctx->lastcol, file ? file : "??", line,
 		   ctx->scope);
@@ -189,14 +189,15 @@ uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uin
     }
     if ((ctx->trace_mask&BC_TRACE_OP) && op) {
 	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
-	    cli_dbgmsg("[trace] %s:%u:%u\t %s\n",
-		       ctx->file ? ctx->file : "??", ctx->lastline, col,
-		       op);
+	    cli_dbgmsg("[trace] %s (@%s:%u:%u)\n",
+		       op,
+		       ctx->file ? ctx->file : "??", ctx->lastline, col);
 	    cli_bytecode_debug_printsrc(ctx);
 	    ctx->trace_mask &= ~BC_TRACE_TMP_SRC;
 	} else
 	    cli_dbgmsg("[trace] %s\n", op);
     }
+    ctx->trace_mask |= BC_TRACE_TMP_OP;
     return 0;
 }
 
@@ -204,15 +205,21 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name
 {
     if (LIKELY(!ctx->trace_mask))
 	return 0;
+    if ((ctx->trace_mask&BC_TRACE_PARAM) && !(ctx->trace_mask&BC_TRACE_TMP_OP)) {
+	if (name)
+	    cli_dbgmsg("[trace] param %s = %u\n", name, value);
+	ctx->trace_mask &= ~BC_TRACE_TMP_OP;
+	return 0;
+    }
     if ((ctx->trace_mask&BC_TRACE_VAL) && name) {
 	if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
-	    cli_dbgmsg("[trace] %s:%u:%u\t %s = %u\n",
+	    cli_dbgmsg("[trace] %s = %u (@%s:%u:%u)\n",
+		       name, value,
 		       ctx->file ? ctx->file : "??",
-		       ctx->lastline, ctx->lastcol,
-		       name, value);
+		       ctx->lastline, ctx->lastcol);
 	    cli_bytecode_debug_printsrc(ctx);
 	} else {
-	    cli_dbgmsg("[trace]\t %s = %u\n", name, value);
+	    cli_dbgmsg("[trace] %s = %u\n", name, value);
 	}
     } else if (ctx->trace_mask&BC_TRACE_TMP_SRC) {
 	cli_dbgmsg("[trace] %s:%u:%u\n",
@@ -220,7 +227,7 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name
 		   ctx->lastline, ctx->lastcol);
 	cli_bytecode_debug_printsrc(ctx);
     }
-    ctx->trace_mask &= ~BC_TRACE_TMP_SRC;
+    ctx->trace_mask &= ~(BC_TRACE_TMP_SRC|BC_TRACE_TMP_OP);
     return 0;
 }
 

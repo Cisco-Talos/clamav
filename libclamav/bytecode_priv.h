@@ -104,16 +104,18 @@ struct cli_bc_dbgnode {
 
 #define MAX_OP ~0u
 #define BC_TRACE_FUNC  0x1
-#define BC_TRACE_SCOPE 0x2
-#define BC_TRACE_LINE  0x4
-#define BC_TRACE_COL   0x8
-#define BC_TRACE_OP    0x10
-#define BC_TRACE_VAL   0x20
-#define BC_TRACE_TMP_FUNC  0x40
-#define BC_TRACE_TMP_SCOPE 0x80
-#define BC_TRACE_TMP_SRC  0x100
-#define BC_TRACE_SHOW_SOURCE 0x200
-#define BC_TRACE_ALL (BC_TRACE_FUNC | BC_TRACE_SCOPE | BC_TRACE_LINE | BC_TRACE_COL | BC_TRACE_OP | BC_TRACE_VAL | BC_TRACE_SHOW_SOURCE)
+#define BC_TRACE_PARAM 0x2
+#define BC_TRACE_SCOPE 0x4
+#define BC_TRACE_LINE  0x8
+#define BC_TRACE_COL   0x10
+#define BC_TRACE_OP    0x20
+#define BC_TRACE_VAL   0x40
+#define BC_TRACE_SHOW_SOURCE 0x80
+#define BC_TRACE_TMP_FUNC  0x100
+#define BC_TRACE_TMP_SCOPE 0x200
+#define BC_TRACE_TMP_SRC   0x400
+#define BC_TRACE_TMP_OP    0x800
+#define BC_TRACE_ALL (BC_TRACE_FUNC | BC_TRACE_PARAM | BC_TRACE_SCOPE | BC_TRACE_LINE | BC_TRACE_COL | BC_TRACE_OP | BC_TRACE_VAL | BC_TRACE_SHOW_SOURCE)
 
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
