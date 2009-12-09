@@ -1,3 +1,7 @@
+Wed Dec  9 23:31:54 CET 2009 (tk)
+---------------------------------
+ * sigtool: add --test-sigs (basic functionality) (bb#1246)
+
 Fri Dec  4 15:55:51 CET 2009 (tk)
 ---------------------------------
  * freshclam/manager.c: improve handling of problematic mirrors (bb#1758)

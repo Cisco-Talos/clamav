@@ -273,7 +273,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return CL_SUCCESS;
 }
 
-static int cli_initroots(struct cl_engine *engine, unsigned int options)
+int cli_initroots(struct cl_engine *engine, unsigned int options)
 {
 	int i, ret;
 	struct cli_matcher *root;

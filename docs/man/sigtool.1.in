@@ -74,6 +74,12 @@ List all signature names from the local database directory (default) or from FIL
 .TP 
 \fB\-fREGEX, \-\-find\-sigs=REGEX\fR
 Find and display signatures from the local database directory which match the given REGEX. The whole signature body (name, hex string, etc.) is checked.
+.TP 
+\fB\-fREGEX, \-\-decode\-sigs=REGEX\fR
+Decode signatures read from the standard input (eg. piped from \-\-find\-sigs)
+.TP 
+\fB\-fREGEX, \-\-test\-sigs=DATABASE TARGET_FILE\fR
+Test all signatures from DATABASE against TARGET_FILE.
 .SH "EXAMPLES"
 .LP 
 .TP 
