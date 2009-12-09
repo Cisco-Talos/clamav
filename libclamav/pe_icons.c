@@ -630,7 +630,12 @@ static uint32_t labdiff2(unsigned int b) {
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
 
-//#define DUMPBMP
+#define DUMPMATCHING
+#ifdef DUMPMATCHING
+#define DUMPBMP
+#endif
+
+/* #define DUMPBMP */
 #ifdef DUMPBMP
 int nimage = 0;
 static void makebmp(char *step, int w, int h, void *data) {
@@ -1107,7 +1112,7 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
     } bmphdr;
     struct icomtr metrics;
     unsigned char *rawimage;
-    uint32_t *palette = NULL, *imagedata;
+    uint32_t *palette = NULL, *imagedata, *imagedata2;
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
     unsigned int err, scalemode = 2, enginesize;
@@ -1335,9 +1340,13 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	}
     }
     makebmp("2-alpha-blend", width, height, imagedata);
-
+#ifdef DUMPMATCHING
+    imagedata2 = malloc(width*height*4);
+    memcpy(imagedata2, imagedata, width*height*4);
+#endif
 
     getmetrics(width, imagedata, &metrics);
+    free(imagedata);
 
     enginesize = (width >> 3) - 2;
     for(x=0; x<ctx->engine->icon_counts[enginesize]; x++) {
@@ -1351,7 +1360,7 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	unsigned int greens = abs((int)metrics.gsum - (int)ctx->engine->icons[enginesize][x].gsum) * 10;
 	unsigned int blues = abs((int)metrics.bsum - (int)ctx->engine->icons[enginesize][x].bsum) * 10;
 	unsigned int ccount = abs((int)metrics.ccount - (int)ctx->engine->icons[enginesize][x].ccount) * 10;
-	unsigned int colors, used = 6, confidence;
+	unsigned int colors, confidence;
 
 	reds = (reds < 100) * (100 - reds);
 	greens = (greens < 100) * (100 - greens);
@@ -1359,10 +1368,11 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	ccount = (ccount < 100) * (100 - ccount);
 	colors = (reds + greens + blues + ccount) / 4;
 
-	if(!metrics.ccount && !ctx->engine->icons[enginesize][x].ccount) {
-	    colors = 0;
-	    used--;
-	}
+	if(metrics.ccount < 5 && ctx->engine->icons[enginesize][x].ccount < 5)
+	    confidence = ((bright + edge) * 3 / 2 +  dark + noedge) / 5;
+	else
+	    confidence = (color + (gray + bright + noedge)*2/3 + dark + edge + colors) / 6;
+
 
 	cli_dbgmsg("color confidence: %u%%\n", color);
 	cli_dbgmsg("gray confidence: %u%%\n", gray);
@@ -1372,18 +1382,26 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	cli_dbgmsg("noedge confidence: %u%%\n", noedge);
 	cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
 
-	confidence = (color + gray*2/3 + bright*2/3 + dark + edge + noedge*2/3 + colors) / used;
+
 	if(confidence > 65) {
+	    char name[128];
 	    cli_warnmsg("confidence: %u\n", confidence);
+
 	    if(ctx->virname) 
 		*ctx->virname = ctx->engine->icons[enginesize][x].name;
-	    free(imagedata);
+#ifdef DUMPMATCHING
+	    snprintf(name, sizeof(name), "match-%s-%u%%", *ctx->virname, confidence);
+	    makebmp(name, width, height, imagedata2);
+	    free(imagedata2);
+#endif
 	    return CL_VIRUS;
 	}
 
 	/* CURRENTLY >=60% IS A MATCH */
     }
-    
-    free(imagedata);
+
+#ifdef DUMPMATCHING    
+    free(imagedata2);
+#endif
     return CL_SUCCESS;
 }
