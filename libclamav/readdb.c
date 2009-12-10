@@ -521,7 +521,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     return CL_SUCCESS;
 }
 
-#define ICO_TOKENS 2
+#define ICO_TOKENS 4
 static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
         const char *tokens[ICO_TOKENS + 1];
@@ -530,7 +530,12 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	int ret = CL_SUCCESS;
 	unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
 	struct icomtr *metric;
+	struct icon_matcher *matcher;
 
+
+    if(!(matcher = (struct icon_matcher *)mpool_calloc(engine->mempool, sizeof(*matcher),1))) 
+	return CL_EMEM;
+    
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
 	    return CL_EMEM;
@@ -550,7 +555,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	if(strlen(tokens[1]) != 124) {
+	if(strlen(tokens[3]) != 124) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -558,7 +563,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
 	    continue;
 
-	hash = (uint8_t *)tokens[1];
+	hash = (uint8_t *)tokens[3];
 	if(cli_hexnibbles((char *)hash, 124)) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
 	    ret = CL_EMALFDB;
@@ -573,15 +578,15 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	enginesize = (size >> 3) - 2;
 	hash+=2;
 
-	metric = (struct icomtr *) mpool_realloc(engine->mempool, engine->icons[enginesize], sizeof(struct icomtr) * (engine->icon_counts[enginesize] + 1));
+	metric = (struct icomtr *)mpool_realloc(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
 	if(!metric) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	engine->icons[enginesize] = metric;
-	metric += engine->icon_counts[enginesize];
-	engine->icon_counts[enginesize]++;
+	matcher->icons[enginesize] = metric;
+	metric += matcher->icon_counts[enginesize];
+	matcher->icon_counts[enginesize]++;
 
 	for(i=0; i<3; i++) {
 	    if((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
@@ -684,6 +689,34 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
+	for(i=0; i<matcher->group_counts[0]; i++) {
+	    if(!strcmp(tokens[1], matcher->group_names[0][i]))
+		break;
+	}
+	if(i==matcher->group_counts[0]) {
+	    if(!(matcher->group_names[0] = mpool_realloc(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[0][i] = cli_mpool_strdup(engine->mempool, tokens[1]))) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    matcher->group_counts[0]++;
+	}
+	metric->group[0] = i;
+
+	for(i=0; i<matcher->group_counts[1]; i++) {
+	    if(!strcmp(tokens[2], matcher->group_names[1][i]))
+		break;
+	}
+	if(i==matcher->group_counts[1]) {
+	    if(!(matcher->group_names[1] = mpool_realloc(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[1][i] = cli_mpool_strdup(engine->mempool, tokens[2]))) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    matcher->group_counts[1]++;
+	}
+	metric->group[1] = i;
+
 	sigs++;
     }
     if(engine->ignored)
@@ -702,6 +735,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(signo)
 	*signo += sigs;
 
+    engine->iconcheck = matcher;
     return CL_SUCCESS;
 }
 
@@ -2358,12 +2392,26 @@ int cl_engine_free(struct cl_engine *engine)
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
 
-    for(i=0; i<3; i++) {
-	if(engine->icons[i]) {
-	    mpool_free(engine->mempool, engine->icons[i]->name);
-	    mpool_free(engine->mempool, engine->icons[i]);
+    if(engine->iconcheck) {
+	struct icon_matcher *iconcheck = engine->iconcheck;
+	for(i=0; i<3; i++) {
+	    if(iconcheck->icons[i]) {
+		mpool_free(engine->mempool, iconcheck->icons[i]->name);
+		mpool_free(engine->mempool, iconcheck->icons[i]);
+	    }
 	}
-    }
+	if(iconcheck->group_names[0]) {
+	    for(i=0; i<iconcheck->group_counts[0]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[0][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[0]);
+	}
+	if(iconcheck->group_names[1]) {
+	    for(i=0; i<iconcheck->group_counts[1]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[1][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[1]);
+	}
+	mpool_free(engine->mempool, iconcheck);
+    }	
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);

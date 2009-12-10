@@ -74,9 +74,9 @@ static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint3
 }
 
 
-static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
 
-int scanicon(uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
+int scanicon(unsigned int *grp1, unsigned int *grp2, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct GICONS gicons;
     struct ICONS icons;
     unsigned int curicon, err;
@@ -122,7 +122,7 @@ int scanicon(uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sect
     }
 
     for(curicon=0; curicon<icons.cnt; curicon++) {
-	if(parseicon(icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
+	if(parseicon(grp1, grp2, icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
 	    return CL_VIRUS;
     }
     return 0;
@@ -747,6 +747,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     unsigned int x, y, xk, yk, i, j, *tmp;
     unsigned int ksize = side / 4, bwonly = 0;
     unsigned int edge_avg[6], edge_x[6], edge_y[6], noedge_avg[6], noedge_x[6], noedge_y[6];
+    double *sobel;
 
     if(!(tmp = cli_malloc(side*side*4*2)))
 	return CL_EMEM;
@@ -909,13 +910,13 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     /* Sobel 1 - gradients */
     i = 0;
 #ifdef USE_FLOATS
-    double *sobel = cli_malloc(side * side * sizeof(double));
+    sobel = cli_malloc(side * side * sizeof(double));
     if(!sobel) {
 	free(tmp);
 	return CL_EMEM;
     }
 #else
-    unsigned int *sobel = imagedata;
+#define sobel imagedata
 #endif
     for(y=0; y<side; y++) {
 	for(x=0; x<side; x++) {
@@ -1098,7 +1099,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     cli_dbgmsg("edge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->edge_avg[0], res->edge_x[0], res->edge_y[0], res->edge_avg[1], res->edge_x[1], res->edge_y[1], res->edge_avg[2], res->edge_x[2], res->edge_y[2]);
     cli_dbgmsg("noedge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->noedge_avg[0], res->noedge_x[0], res->noedge_y[0], res->noedge_avg[1], res->noedge_x[1], res->noedge_y[1], res->noedge_avg[2], res->noedge_x[2], res->noedge_y[2]);
     cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly?"edge(2nd)":"color", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
-    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly?"noedge":"gray", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
+    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly?"noedge(2nd)":"gray", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
     cli_dbgmsg("bright areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->bright_avg[0], res->bright_x[0], res->bright_y[0], res->bright_avg[1], res->bright_x[1], res->bright_y[1], res->bright_avg[2], res->bright_x[2], res->bright_y[2]);
     cli_dbgmsg("dark areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->dark_avg[0], res->dark_x[0], res->dark_y[0], res->dark_avg[1], res->dark_x[1], res->dark_y[1], res->dark_avg[2], res->dark_x[2], res->dark_y[2]);
     if(!bwonly)
@@ -1152,7 +1153,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 }
 
 
-static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
+static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct {
 	unsigned int sz;
 	unsigned int w;
@@ -1174,6 +1175,10 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
     unsigned int err, scalemode = 2, enginesize;
     fmap_t *map = *ctx->fmap;
     uint32_t icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    struct icon_matcher *matcher;
+
+    if(!ctx || !ctx->engine || !(matcher=ctx->engine->iconcheck))
+	return CL_SUCCESS;
 
     /* read the bitmap header */
     if(err || !(imagedata = fmap_need_off_once(map, icoff, 4))) {
@@ -1405,35 +1410,49 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
     free(imagedata);
 
     enginesize = (width >> 3) - 2;
-    for(x=0; x<ctx->engine->icon_counts[enginesize]; x++) {
+    for(x=0; x<matcher->icon_counts[enginesize]; x++) {
 	unsigned int color = 0, gray = 0, bright, dark, edge, noedge, reds, greens, blues, ccount;
 	unsigned int colors, confidence, bwmatch = 0, positivematch = 64 + 4*(2-enginesize);
+	unsigned int i, j;
 
-	if(!metrics.ccount && !ctx->engine->icons[enginesize][x].ccount) {
+	if(grp1) {
+	    unsigned int *g1 = grp1;
+	    while(*g1 && *g1 != matcher->icons[enginesize][x].group[0]+1)
+		g1++;
+	    if(!*g1) continue;
+	}
+	if(grp2) {
+	    unsigned int *g2 = grp2;
+	    while(*g2 && *g2 != matcher->icons[enginesize][x].group[1]+1)
+		g2++;
+	    if(!*g2) continue;
+	}
+
+	if(!metrics.ccount && !matcher->icons[enginesize][x].ccount) {
 	    /* BW matching */
-	    edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, ctx->engine->icons[enginesize][x].edge_x, ctx->engine->icons[enginesize][x].edge_y, ctx->engine->icons[enginesize][x].edge_avg, ctx->engine->icons[enginesize][x].color_x, ctx->engine->icons[enginesize][x].color_y, ctx->engine->icons[enginesize][x].color_avg);
-	    noedge = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ctx->engine->icons[enginesize][x].noedge_x, ctx->engine->icons[enginesize][x].noedge_y, ctx->engine->icons[enginesize][x].noedge_avg, ctx->engine->icons[enginesize][x].gray_x, ctx->engine->icons[enginesize][x].gray_y, ctx->engine->icons[enginesize][x].gray_avg);
+	    edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
+	    noedge = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg);
 	    bwmatch = 1;
 	} else {
-	    edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, ctx->engine->icons[enginesize][x].edge_x, ctx->engine->icons[enginesize][x].edge_y, ctx->engine->icons[enginesize][x].edge_avg, 255);
-	    noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, ctx->engine->icons[enginesize][x].noedge_x, ctx->engine->icons[enginesize][x].noedge_y, ctx->engine->icons[enginesize][x].noedge_avg, 255);
-	    if(metrics.ccount && ctx->engine->icons[enginesize][x].ccount) {
+	    edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, 255);
+	    noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, 255);
+	    if(metrics.ccount && matcher->icons[enginesize][x].ccount) {
 		/* color matching */
-		color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, ctx->engine->icons[enginesize][x].color_x, ctx->engine->icons[enginesize][x].color_y, ctx->engine->icons[enginesize][x].color_avg, 4072);
-		gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ctx->engine->icons[enginesize][x].gray_x, ctx->engine->icons[enginesize][x].gray_y, ctx->engine->icons[enginesize][x].gray_avg, 4072);
+		color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg, 4072);
+		gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg, 4072);
 	    }
 	}
 
-	bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, ctx->engine->icons[enginesize][x].bright_x, ctx->engine->icons[enginesize][x].bright_y, ctx->engine->icons[enginesize][x].bright_avg, 255);
-	dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, ctx->engine->icons[enginesize][x].dark_x, ctx->engine->icons[enginesize][x].dark_y, ctx->engine->icons[enginesize][x].dark_avg, 255);
+	bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, matcher->icons[enginesize][x].bright_x, matcher->icons[enginesize][x].bright_y, matcher->icons[enginesize][x].bright_avg, 255);
+	dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, matcher->icons[enginesize][x].dark_x, matcher->icons[enginesize][x].dark_y, matcher->icons[enginesize][x].dark_avg, 255);
 
-	reds = abs((int)metrics.rsum - (int)ctx->engine->icons[enginesize][x].rsum) * 10;
+	reds = abs((int)metrics.rsum - (int)matcher->icons[enginesize][x].rsum) * 10;
 	reds = (reds < 100) * (100 - reds);
-	greens = abs((int)metrics.gsum - (int)ctx->engine->icons[enginesize][x].gsum) * 10;
+	greens = abs((int)metrics.gsum - (int)matcher->icons[enginesize][x].gsum) * 10;
 	greens = (greens < 100) * (100 - greens);
-	blues = abs((int)metrics.bsum - (int)ctx->engine->icons[enginesize][x].bsum) * 10;
+	blues = abs((int)metrics.bsum - (int)matcher->icons[enginesize][x].bsum) * 10;
 	blues = (blues < 100) * (100 - blues);
-	ccount = abs((int)metrics.ccount - (int)ctx->engine->icons[enginesize][x].ccount) * 10;
+	ccount = abs((int)metrics.ccount - (int)matcher->icons[enginesize][x].ccount) * 10;
 	ccount = (ccount < 100) * (100 - ccount);
 	colors = (reds + greens + blues + ccount) / 4;
 
@@ -1459,7 +1478,7 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 	    cli_warnmsg("confidence: %u\n", confidence);
 
 	    if(ctx->virname) 
-		*ctx->virname = ctx->engine->icons[enginesize][x].name;
+		*ctx->virname = matcher->icons[enginesize][x].name;
 #ifdef DUMPMATCHING
 	    snprintf(name, sizeof(name), "match-%s-%u%%", *ctx->virname, confidence);
 	    makebmp(name, width, height, imagedata2);
@@ -1473,4 +1492,26 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
     free(imagedata2);
 #endif
     return CL_SUCCESS;
+}
+
+
+int cli_match_icon(cli_ctx *ctx, unsigned int *icongrp1, unsigned int *icongrp2) {
+    if(!ctx || !ctx->engine || !ctx->engine->iconcheck || !ctx->engine->iconcheck->group_counts[0] || !ctx->engine->iconcheck->group_counts[1])
+	return CL_CLEAN;
+    return cli_scanpe(ctx, icongrp1, icongrp2);
+}
+
+int cli_icon_getgroup(const char *group, unsigned int type, cli_ctx *ctx) {
+    struct icon_matcher *matcher;
+    unsigned int i;
+
+    if(type>1 || !ctx || !ctx->engine || !ctx->engine->iconcheck || !ctx->engine->iconcheck->group_counts[type])
+	return 0;
+
+    matcher = ctx->engine->iconcheck;
+    for(i=0; i<matcher->group_counts[type]; i++) {
+	if(!strcmp(group, matcher->group_names[type][i]))
+	    return i+1;
+    }
+    return 0;
 }

@@ -471,7 +471,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     fmap_unneed_ptr(map, oentry, entries*8);
 }
 
-int cli_scanpe(cli_ctx *ctx)
+int cli_scanpe(cli_ctx *ctx, unsigned int *icongrps1, unsigned int *icongrps2)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -1042,11 +1042,13 @@ int cli_scanpe(cli_ctx *ctx)
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
-    if(!dll && dirs[2].Size) { /* RES */
-       if(scanicon(EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size) == CL_VIRUS) {
-	   free(exe_sections);
-	   return CL_VIRUS;
-       }
+    if(icongrps1 || icongrps2){
+	if(!dll && dirs[2].Size && scanicon(icongrps1, icongrps2, EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size) == CL_VIRUS) {
+	    free(exe_sections);
+	    return CL_VIRUS;
+	}
+	free(exe_sections);
+	return CL_CLEAN;
     }
 
     if(pe_plus) { /* Do not continue for PE32+ files */

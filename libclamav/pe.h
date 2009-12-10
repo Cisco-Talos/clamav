@@ -129,7 +129,7 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-int cli_scanpe(cli_ctx *ctx);
+int cli_scanpe(cli_ctx *ctx, unsigned int *icongrp1, unsigned int *icongrp2);
 
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 

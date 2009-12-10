@@ -114,6 +114,7 @@ typedef struct {
 } cli_ctx;
 
 struct icomtr {
+    uint32_t group[2];
     unsigned int color_avg[3];
     unsigned int color_x[3];
     unsigned int color_y[3];
@@ -137,6 +138,13 @@ struct icomtr {
     unsigned int bsum;
     unsigned int ccount;
     char *name;
+};
+
+struct icon_matcher {
+    char **group_names[2];
+    unsigned int group_counts[2];
+    struct icomtr *icons[3];
+    unsigned int icon_counts[3];
 };
 
 struct cl_engine {
@@ -204,8 +212,7 @@ struct cl_engine {
     char *pua_cats;
 
     /* Icon reference storage */
-    struct icomtr *icons[3];
-    unsigned int icon_counts[3];
+    struct icon_matcher *iconcheck;
 
     /* Used for memory pools */
     mpool_t *mempool;
