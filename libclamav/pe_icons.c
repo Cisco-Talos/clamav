@@ -630,7 +630,7 @@ static uint32_t labdiff2(unsigned int b) {
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
 
-#define DUMPMATCHING
+/* #define DUMPMATCHING */
 #ifdef DUMPMATCHING
 #define DUMPBMP
 #endif
@@ -689,6 +689,45 @@ static unsigned int matchpoint(unsigned int side, unsigned int *x1, unsigned int
     return match / 3;
 }
 
+static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned int *y1a, unsigned int *avg1a, unsigned int *x1b, unsigned int *y1b, unsigned int *avg1b, const unsigned int *x2a, const unsigned int *y2a, const unsigned int *avg2a, const unsigned int *x2b, const unsigned int *y2b, const unsigned int *avg2b) {
+    unsigned int i, j, best, match = 0, ksize = side / 4;
+    unsigned int x1[6], y1[6], avg1[6], x2[6], y2[6], avg2[6];
+
+    for(i=0; i<3; i++) {
+	x1[i] = x1a[i];
+	y1[i] = y1a[i];
+	avg1[i] = avg1a[i];
+	x2[i] = x2a[i];
+	y2[i] = y2a[i];
+	avg2[i] = avg2a[i];
+
+	x1[i+3] = x1b[i];
+	y1[i+3] = y1b[i];
+	avg1[i+3] = avg1b[i];
+	x2[i+3] = x2b[i];
+	y2[i+3] = y2b[i];
+	avg2[i+3] = avg2b[i];
+    }
+
+    for(i=0; i<6; i++) {
+	best = 0;
+	for(j=0; j<6; j++) {
+	    /* approximately measure the distance from the best matching reference - avoid N*N total war */
+	    int diffx = (int)x1[i] - (int)x2[j];
+	    int diffy = ((int)y1[i] - (int)y2[j]);
+	    unsigned int diff = sqrt(diffx*diffx + diffy*diffy);
+	    if(diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i]-(int)avg2[j]) > 255 / 5)
+		continue;
+
+	    diff = 100 - diff * 60 / (ksize * 3 / 4);
+	    if(diff > best)
+		best = diff;
+	}
+	match += best;
+    }
+    return match / 6;
+}
+
 static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *s, unsigned int *v, unsigned int *delta) {
     unsigned int min, max;
     *r=(c>>16)&0xff;
@@ -706,17 +745,13 @@ static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *
 
 static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res) {
     unsigned int x, y, xk, yk, i, j, *tmp;
-    unsigned int ksize = side / 4;
+    unsigned int ksize = side / 4, bwonly = 0;
+    unsigned int edge_avg[6], edge_x[6], edge_y[6], noedge_avg[6], noedge_x[6], noedge_y[6];
 
     if(!(tmp = cli_malloc(side*side*4*2)))
 	return CL_EMEM;
 
     memset(res, 0, sizeof(*res));
-    for(i=0; i<3; i++) {
-	res->gray_avg[i] = 0xffffffff;
-	res->dark_avg[i] = 0xffffffff;
-    }
-
 
     /* compute colored, gray, bright and dark areas, color presence */
     for(y=0; y<=side - ksize; y++) {
@@ -794,6 +829,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
     /* extract top 3 non overlapping areas for: colored, gray, bright and dark areas, color presence */
     for(i=0; i<3; i++) {
+	res->gray_avg[i] = 0xffffffff;
+	res->dark_avg[i] = 0xffffffff;
 	for(y=0; y<side - ksize; y++) {
 	    for(x=0; x<side-1 - ksize; x++) {
 		unsigned int colsum = tmp[y*side+x], lightsum = tmp[side*side + y*side+x];
@@ -854,18 +891,18 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	res->dark_avg[i] /= ksize*ksize;
     }
 
-    if(res->ccount) {
+    if(res->ccount * 100 / side / side > 5) {
 	res->rsum /= res->ccount;
 	res->gsum /= res->ccount;
 	res->bsum /= res->ccount;
 	res->ccount = res->ccount * 100 / side / side;
+    } else {
+	res->ccount = 0;
+	res->rsum = 0;
+	res->gsum = 0;
+	res->bsum = 0;
+	bwonly = 1;
     }
-
-    cli_dbgmsg("color areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
-    cli_dbgmsg("gray areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
-    cli_dbgmsg("bright areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->bright_avg[0], res->bright_x[0], res->bright_y[0], res->bright_avg[1], res->bright_x[1], res->bright_y[1], res->bright_avg[2], res->bright_x[2], res->bright_y[2]);
-    cli_dbgmsg("dark areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->dark_avg[0], res->dark_x[0], res->dark_y[0], res->dark_avg[1], res->dark_x[1], res->dark_y[1], res->dark_avg[2], res->dark_x[2], res->dark_y[2]);
-    cli_dbgmsg("color spread: %u,%u,%u %u%%\n", res->rsum, res->gsum, res->bsum, res->ccount);
 
     /* Edge detection - Sobel */
 
@@ -975,9 +1012,6 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     makebmp("4-gauss", side, side, imagedata);
 
 
-    for(i=0; i<3; i++)
-	res->noedge_avg[i] = 0xffffffff;
-
     /* calculate edges */
     for(y=0; y<=side - ksize; y++) {
 	for(x=0; x<=side-1 - ksize; x++) {
@@ -1005,32 +1039,34 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	}
     }
 
-    /* calculate best and worst 3 edged areas */
-    for(i=0; i<3; i++) {
+    /* calculate best and worst 3 (or 6) edged areas */
+    for(i=0; i<3 * (bwonly + 1); i++) {
+	edge_avg[i] = 0;
+	noedge_avg[i] = 0xffffffff;
 	for(y=0; y<side - ksize; y++) {
 	    for(x=0; x<side-1 - ksize; x++) {
 		unsigned int sum = tmp[y*side + x];
 
-		if(sum > res->edge_avg[i]) {
+		if(sum > edge_avg[i]) {
 		    for(j=0; j<i; j++) {
-			if(x + ksize > res->edge_x[j] && x < res->edge_x[j] + ksize &&
-			   y + ksize > res->edge_y[j] && y < res->edge_y[j] + ksize) break;
+			if(x + ksize > edge_x[j] && x < edge_x[j] + ksize &&
+			   y + ksize > edge_y[j] && y < edge_y[j] + ksize) break;
 		    }
 		    if(j==i) {
-			res->edge_avg[i] = sum;
-			res->edge_x[i] = x;
-			res->edge_y[i] = y;
+			edge_avg[i] = sum;
+			edge_x[i] = x;
+			edge_y[i] = y;
 		    }
 		}
-		if(sum < res->noedge_avg[i]) {
+		if(sum < noedge_avg[i]) {
 		    for(j=0; j<i; j++) {
-			if(x + ksize > res->noedge_x[j] && x < res->noedge_x[j] + ksize &&
-			   y + ksize > res->noedge_y[j] && y < res->noedge_y[j] + ksize) break;
+			if(x + ksize > noedge_x[j] && x < noedge_x[j] + ksize &&
+			   y + ksize > noedge_y[j] && y < noedge_y[j] + ksize) break;
 		    }
 		    if(j==i) {
-			res->noedge_avg[i] = sum;
-			res->noedge_x[i] = x;
-			res->noedge_y[i] = y;
+			noedge_avg[i] = sum;
+			noedge_x[i] = x;
+			noedge_y[i] = y;
 		    }
 		}
 	    }
@@ -1041,12 +1077,32 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
     /* abs->avg */
     for(i=0; i<3; i++) {
-	res->edge_avg[i] /= ksize*ksize;
-	res->noedge_avg[i] /= ksize*ksize;
+	res->edge_avg[i] = edge_avg[i] / ksize / ksize;
+	res->edge_x[i] = edge_x[i];
+	res->edge_y[i] = edge_y[i];
+	res->noedge_avg[i] = noedge_avg[i] / ksize / ksize;
+	res->noedge_x[i] = noedge_x[i];
+	res->noedge_y[i] = noedge_y[i];
+    }
+    if(bwonly) {
+	for(i=0; i<3; i++) {
+	    res->color_avg[i] = edge_avg[i+3] / ksize / ksize;
+	    res->color_x[i] = edge_x[i+3];
+	    res->color_y[i] = edge_y[i+3];
+	    res->gray_avg[i] = noedge_avg[i+3] / ksize / ksize;
+	    res->gray_x[i] = edge_x[i+3];
+	    res->gray_y[i] = edge_y[i+3];
+	}
     }
 
     cli_dbgmsg("edge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->edge_avg[0], res->edge_x[0], res->edge_y[0], res->edge_avg[1], res->edge_x[1], res->edge_y[1], res->edge_avg[2], res->edge_x[2], res->edge_y[2]);
     cli_dbgmsg("noedge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->noedge_avg[0], res->noedge_x[0], res->noedge_y[0], res->noedge_avg[1], res->noedge_x[1], res->noedge_y[1], res->noedge_avg[2], res->noedge_x[2], res->noedge_y[2]);
+    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly?"edge(2nd)":"color", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
+    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly?"noedge":"gray", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
+    cli_dbgmsg("bright areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->bright_avg[0], res->bright_x[0], res->bright_y[0], res->bright_avg[1], res->bright_x[1], res->bright_y[1], res->bright_avg[2], res->bright_x[2], res->bright_y[2]);
+    cli_dbgmsg("dark areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->dark_avg[0], res->dark_x[0], res->dark_y[0], res->dark_avg[1], res->dark_x[1], res->dark_y[1], res->dark_avg[2], res->dark_x[2], res->dark_y[2]);
+    if(!bwonly)
+	cli_dbgmsg("color spread: %u,%u,%u %u%%\n", res->rsum, res->gsum, res->bsum, res->ccount);
 
 
     if(cli_debug_flag) {
@@ -1350,40 +1406,55 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 
     enginesize = (width >> 3) - 2;
     for(x=0; x<ctx->engine->icon_counts[enginesize]; x++) {
-	unsigned int color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, ctx->engine->icons[enginesize][x].color_x, ctx->engine->icons[enginesize][x].color_y, ctx->engine->icons[enginesize][x].color_avg, 4072);
-	unsigned int gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ctx->engine->icons[enginesize][x].gray_x, ctx->engine->icons[enginesize][x].gray_y, ctx->engine->icons[enginesize][x].gray_avg, 4072);
-	unsigned int bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, ctx->engine->icons[enginesize][x].bright_x, ctx->engine->icons[enginesize][x].bright_y, ctx->engine->icons[enginesize][x].bright_avg, 255);
-	unsigned int dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, ctx->engine->icons[enginesize][x].dark_x, ctx->engine->icons[enginesize][x].dark_y, ctx->engine->icons[enginesize][x].dark_avg, 255);
-	unsigned int edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, ctx->engine->icons[enginesize][x].edge_x, ctx->engine->icons[enginesize][x].edge_y, ctx->engine->icons[enginesize][x].edge_avg, 255);
-	unsigned int noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, ctx->engine->icons[enginesize][x].noedge_x, ctx->engine->icons[enginesize][x].noedge_y, ctx->engine->icons[enginesize][x].noedge_avg, 255);
-	unsigned int reds = abs((int)metrics.rsum - (int)ctx->engine->icons[enginesize][x].rsum) * 10;
-	unsigned int greens = abs((int)metrics.gsum - (int)ctx->engine->icons[enginesize][x].gsum) * 10;
-	unsigned int blues = abs((int)metrics.bsum - (int)ctx->engine->icons[enginesize][x].bsum) * 10;
-	unsigned int ccount = abs((int)metrics.ccount - (int)ctx->engine->icons[enginesize][x].ccount) * 10;
-	unsigned int colors, confidence;
+	unsigned int color = 0, gray = 0, bright, dark, edge, noedge, reds, greens, blues, ccount;
+	unsigned int colors, confidence, bwmatch = 0, positivematch = 64 + 4*(2-enginesize);
 
+	if(!metrics.ccount && !ctx->engine->icons[enginesize][x].ccount) {
+	    /* BW matching */
+	    edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, ctx->engine->icons[enginesize][x].edge_x, ctx->engine->icons[enginesize][x].edge_y, ctx->engine->icons[enginesize][x].edge_avg, ctx->engine->icons[enginesize][x].color_x, ctx->engine->icons[enginesize][x].color_y, ctx->engine->icons[enginesize][x].color_avg);
+	    noedge = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ctx->engine->icons[enginesize][x].noedge_x, ctx->engine->icons[enginesize][x].noedge_y, ctx->engine->icons[enginesize][x].noedge_avg, ctx->engine->icons[enginesize][x].gray_x, ctx->engine->icons[enginesize][x].gray_y, ctx->engine->icons[enginesize][x].gray_avg);
+	    bwmatch = 1;
+	} else {
+	    edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, ctx->engine->icons[enginesize][x].edge_x, ctx->engine->icons[enginesize][x].edge_y, ctx->engine->icons[enginesize][x].edge_avg, 255);
+	    noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, ctx->engine->icons[enginesize][x].noedge_x, ctx->engine->icons[enginesize][x].noedge_y, ctx->engine->icons[enginesize][x].noedge_avg, 255);
+	    if(metrics.ccount && ctx->engine->icons[enginesize][x].ccount) {
+		/* color matching */
+		color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, ctx->engine->icons[enginesize][x].color_x, ctx->engine->icons[enginesize][x].color_y, ctx->engine->icons[enginesize][x].color_avg, 4072);
+		gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, ctx->engine->icons[enginesize][x].gray_x, ctx->engine->icons[enginesize][x].gray_y, ctx->engine->icons[enginesize][x].gray_avg, 4072);
+	    }
+	}
+
+	bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, ctx->engine->icons[enginesize][x].bright_x, ctx->engine->icons[enginesize][x].bright_y, ctx->engine->icons[enginesize][x].bright_avg, 255);
+	dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, ctx->engine->icons[enginesize][x].dark_x, ctx->engine->icons[enginesize][x].dark_y, ctx->engine->icons[enginesize][x].dark_avg, 255);
+
+	reds = abs((int)metrics.rsum - (int)ctx->engine->icons[enginesize][x].rsum) * 10;
 	reds = (reds < 100) * (100 - reds);
+	greens = abs((int)metrics.gsum - (int)ctx->engine->icons[enginesize][x].gsum) * 10;
 	greens = (greens < 100) * (100 - greens);
+	blues = abs((int)metrics.bsum - (int)ctx->engine->icons[enginesize][x].bsum) * 10;
 	blues = (blues < 100) * (100 - blues);
+	ccount = abs((int)metrics.ccount - (int)ctx->engine->icons[enginesize][x].ccount) * 10;
 	ccount = (ccount < 100) * (100 - ccount);
 	colors = (reds + greens + blues + ccount) / 4;
 
-	if(metrics.ccount < 5 && ctx->engine->icons[enginesize][x].ccount < 5)
-	    confidence = ((bright + edge) * 3 / 2 +  dark + noedge) / 5;
-	else
+	if(bwmatch) {
+	    confidence = (bright + dark + edge * 2 + noedge) / 6;
+	    positivematch = 70;
+	} else
 	    confidence = (color + (gray + bright + noedge)*2/3 + dark + edge + colors) / 6;
 
-
-	cli_dbgmsg("color confidence: %u%%\n", color);
-	cli_dbgmsg("gray confidence: %u%%\n", gray);
-	cli_dbgmsg("bright confidence: %u%%\n", bright);
-	cli_dbgmsg("dark confidence: %u%%\n", dark);
 	cli_dbgmsg("edge confidence: %u%%\n", edge);
 	cli_dbgmsg("noedge confidence: %u%%\n", noedge);
-	cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
+	if(!bwmatch) {
+	    cli_dbgmsg("color confidence: %u%%\n", color);
+	    cli_dbgmsg("gray confidence: %u%%\n", gray);
+	}
+	cli_dbgmsg("bright confidence: %u%%\n", bright);
+	cli_dbgmsg("dark confidence: %u%%\n", dark);
+	if(!bwmatch)
+	    cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
 
-
-	if(confidence > 65) {
+	if(confidence >= positivematch) {
 	    char name[128];
 	    cli_warnmsg("confidence: %u\n", confidence);
 
@@ -1396,8 +1467,6 @@ static int parseicon(uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sec
 #endif
 	    return CL_VIRUS;
 	}
-
-	/* CURRENTLY >=60% IS A MATCH */
     }
 
 #ifdef DUMPMATCHING    

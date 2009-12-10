@@ -537,6 +537,9 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
+
 	cli_chomp(buffer);
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
