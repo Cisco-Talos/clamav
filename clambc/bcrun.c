@@ -47,6 +47,8 @@ static void help(void)
     printf("clambc <file> [function] [param1 ...]\n\n");
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
+    printf("    --trace <level>                   Set bytecode trace level 0..7 (default 7)\n");
+    printf("    --no-trace-showsource             Don't show source line during tracing\n");
     printf("    file                              file to test\n");
     printf("\n");
     return;
@@ -120,6 +122,7 @@ int main(int argc, char *argv[])
     unsigned funcid=0, i;
     struct cli_all_bc bcs;
     unsigned int fd = -1;
+    unsigned tracelevel;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
@@ -203,8 +206,9 @@ int main(int argc, char *argv[])
     dbg_state.file = "<libclamav>";
     dbg_state.line = 0;
     dbg_state.col = 0;
-    dbg_state.showline = 1;
-    cli_bytecode_context_set_trace(ctx, trace_val,
+    dbg_state.showline = !optget(opts, "no-trace-showsource")->enabled;
+    tracelevel = optget(opts, "trace")->numarg;
+    cli_bytecode_context_set_trace(ctx, tracelevel,
 				   tracehook,
 				   tracehook_op,
 				   tracehook_val);
