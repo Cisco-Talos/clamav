@@ -2148,7 +2148,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	 */
 	case CL_TYPE_MSEXE:
 	    if(SCAN_PE && ctx->dconf->pe)
-		ret = cli_scanpe(ctx);
+		ret = cli_scanpe(ctx, NULL, NULL);
 	    break;
 
 	default:

@@ -50,7 +50,8 @@
 	cli_strbcasestr(ext, ".ftm")   ||	\
 	cli_strbcasestr(ext, ".cfg")   ||	\
 	cli_strbcasestr(ext, ".cvd")   ||	\
-	cli_strbcasestr(ext, ".cld")		\
+	cli_strbcasestr(ext, ".cld")   ||	\
+	cli_strbcasestr(ext, ".idb")		\
     )
 
 char *cli_virname(char *virname, unsigned int official);

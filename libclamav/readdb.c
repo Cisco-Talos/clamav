@@ -521,6 +521,224 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     return CL_SUCCESS;
 }
 
+#define ICO_TOKENS 4
+static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+{
+        const char *tokens[ICO_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy;
+	uint8_t *hash;
+	int ret = CL_SUCCESS;
+	unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
+	struct icomtr *metric;
+	struct icon_matcher *matcher;
+
+
+    if(!(matcher = (struct icon_matcher *)mpool_calloc(engine->mempool, sizeof(*matcher),1))) 
+	return CL_EMEM;
+    
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(buffer[0] == '#')
+	    continue;
+
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
+	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
+	if(tokens_count != ICO_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(strlen(tokens[3]) != 124) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
+	    continue;
+
+	hash = (uint8_t *)tokens[3];
+	if(cli_hexnibbles((char *)hash, 124)) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	size = (hash[0] << 4) + hash[1];
+	if(size != 32 && size != 24 && size != 16) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad size)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	enginesize = (size >> 3) - 2;
+	hash+=2;
+
+	metric = (struct icomtr *)mpool_realloc(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
+	if(!metric) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	matcher->icons[enginesize] = metric;
+	metric += matcher->icon_counts[enginesize];
+	matcher->icon_counts[enginesize]++;
+
+	for(i=0; i<3; i++) {
+	    if((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->color_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->color_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad color data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    if((metric->gray_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->gray_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->gray_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad gray data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->bright_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->bright_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad bright data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->dark_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->dark_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad dark data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->edge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->edge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad edge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->noedge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->noedge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad noedge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	metric->rsum = (hash[0] << 4) | hash[1];
+	metric->gsum = (hash[2] << 4) | hash[3];
+	metric->bsum = (hash[4] << 4) | hash[5];
+	metric->ccount = (hash[6] << 4) | hash[7];
+	if(metric->rsum + metric->gsum + metric->bsum > 103 || metric->ccount > 100) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(metric->name = cli_mpool_strdup(engine->mempool, tokens[0]))) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	for(i=0; i<matcher->group_counts[0]; i++) {
+	    if(!strcmp(tokens[1], matcher->group_names[0][i]))
+		break;
+	}
+	if(i==matcher->group_counts[0]) {
+	    if(!(matcher->group_names[0] = mpool_realloc(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[0][i] = cli_mpool_strdup(engine->mempool, tokens[1]))) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    matcher->group_counts[0]++;
+	}
+	metric->group[0] = i;
+
+	for(i=0; i<matcher->group_counts[1]; i++) {
+	    if(!strcmp(tokens[2], matcher->group_names[1][i]))
+		break;
+	}
+	if(i==matcher->group_counts[1]) {
+	    if(!(matcher->group_names[1] = mpool_realloc(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[1][i] = cli_mpool_strdup(engine->mempool, tokens[2]))) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    matcher->group_counts[1]++;
+	}
+	metric->group[1] = i;
+
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("cli_loadidb: Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadidb: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    engine->iconcheck = matcher;
+    return CL_SUCCESS;
+}
+
 static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
 	int ret = 0;
@@ -1656,6 +1874,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2")) {
 	ret = cli_loadign(fs, engine, options, dbio);
 
+    } else if(cli_strbcasestr(dbname, ".idb")) {
+    	ret = cli_loadidb(fs, engine, signo, options, dbio);
+
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
@@ -2170,6 +2391,27 @@ int cl_engine_free(struct cl_engine *engine)
 
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
+
+    if(engine->iconcheck) {
+	struct icon_matcher *iconcheck = engine->iconcheck;
+	for(i=0; i<3; i++) {
+	    if(iconcheck->icons[i]) {
+		mpool_free(engine->mempool, iconcheck->icons[i]->name);
+		mpool_free(engine->mempool, iconcheck->icons[i]);
+	    }
+	}
+	if(iconcheck->group_names[0]) {
+	    for(i=0; i<iconcheck->group_counts[0]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[0][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[0]);
+	}
+	if(iconcheck->group_names[1]) {
+	    for(i=0; i<iconcheck->group_counts[1]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[1][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[1]);
+	}
+	mpool_free(engine->mempool, iconcheck);
+    }	
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
