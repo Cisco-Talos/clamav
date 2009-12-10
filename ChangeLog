@@ -1,3 +1,7 @@
+Fri Dec 11 00:54:52 CET 2009 (acab)
+---------------------------------
+ * libclamav: merge icon extraction and matching branch(exeicons)
+
 Wed Dec  9 23:31:54 CET 2009 (tk)
 ---------------------------------
  * sigtool: add --test-sigs (basic functionality) (bb#1246)
