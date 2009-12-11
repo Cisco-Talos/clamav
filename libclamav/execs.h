@@ -22,24 +22,32 @@
 #define __EXECS_H
 
 #include "cltypes.h"
+#include "bcfeatures.h"
 #include <sys/types.h>
-
+/** @file */
+/** Section of executable file */
 struct cli_exe_section {
-    uint32_t rva;
-    uint32_t vsz;
-    uint32_t raw;
-    uint32_t rsz;
-    uint32_t chr;
-    uint32_t urva; /* PE - unaligned VirtualAddress */
-    uint32_t uvsz; /* PE - unaligned VirtualSize */
-    uint32_t uraw; /* PE - unaligned PointerToRawData */
-    uint32_t ursz; /* PE - unaligned SizeOfRawData */
+    uint32_t rva;/**< Relative VirtualAddress */
+    uint32_t vsz;/**< VirtualSize */
+    uint32_t raw;/**< Raw offset (in file) */
+    uint32_t rsz;/**< Raw size (in file) */
+    uint32_t chr;/**< Section characteristics */
+    uint32_t urva; /**< PE - unaligned VirtualAddress */
+    uint32_t uvsz; /**< PE - unaligned VirtualSize */
+    uint32_t uraw; /**< PE - unaligned PointerToRawData */
+    uint32_t ursz; /**< PE - unaligned SizeOfRawData */
 };
 
+/** Executable file information */
 struct cli_exe_info {
-    struct cli_exe_section *section;
-    off_t offset;
+    /** Information about all the sections of this file. 
+     * This array has \p nsection elements */
+    struct cli_exe_section *section EBOUNDS(nsections);
+    /** Offset where this executable start in file (nonzero if embedded) */
+    uint32_t offset;
+    /** Entrypoint of executable */
     uint32_t ep;
+    /** Number of sections*/
     uint16_t nsections;
 };
 

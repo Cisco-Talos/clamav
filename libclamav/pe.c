@@ -494,19 +494,20 @@ int cli_scanpe(cli_ctx *ctx, unsigned int *icongrps1, unsigned int *icongrps2)
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
-	uint32_t valign, falign, hdr_size, j;
+	uint32_t valign, falign, hdr_size, j, offset;
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
+	struct cli_bc_ctx *bc_ctx;
 	fmap_t *map;
+	struct cli_pe_hook_data pedata;
 
 
     if(!ctx) {
 	cli_errmsg("cli_scanpe: ctx == NULL\n");
 	return CL_ENULLARG;
     }
-
     map = *ctx->fmap;
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
@@ -2041,6 +2042,7 @@ int cli_scanpe(cli_ctx *ctx, unsigned int *icongrps1, unsigned int *icongrps2)
 	    return CL_EREAD;
 	}
 
+	cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
 	CLI_UNPTEMP("yC",(spinned,exe_sections,0));
 	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
 	}
@@ -2202,6 +2204,40 @@ int cli_scanpe(cli_ctx *ctx, unsigned int *icongrps1, unsigned int *icongrps2)
     }
 
     /* to be continued ... */
+
+    /* Bytecode */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+	cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+	return CL_EMEM;
+    }
+    pedata.exe_info.section = exe_sections;
+    pedata.exe_info.nsections = nsections;
+    pedata.exe_info.ep = ep;
+    pedata.exe_info.offset = offset;
+    pedata.file_hdr = &file_hdr;
+    pedata.opt32 = &pe_opt.opt32;
+    pedata.opt64 = &pe_opt.opt64;
+    pedata.dirs = dirs;
+    pedata.e_lfanew = e_lfanew;
+    pedata.overlays = overlays;
+    pedata.overlays_sz = fsize - overlays;
+    cli_bytecode_context_setpe(bc_ctx, &pedata);
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+    ret = cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
+    switch (ret) {
+	case CL_VIRUS:
+	    return CL_VIRUS;
+	case CL_SUCCESS:
+	    ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+	    cli_bytecode_context_destroy(bc_ctx);
+	    if (ndesc != -1) {
+		CLI_UNPRESULTS("bytecode PE hook", 1, 1, (0));
+	    }
+	    break;
+	default:
+	    cli_bytecode_context_destroy(bc_ctx);
+    }
 
     free(exe_sections);
     return CL_CLEAN;

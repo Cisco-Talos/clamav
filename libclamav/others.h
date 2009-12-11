@@ -41,6 +41,8 @@
 #include "fmap.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
+#include "bytecode.h"
+#include "bytecode_api.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -216,6 +218,11 @@ struct cl_engine {
 
     /* Used for memory pools */
     mpool_t *mempool;
+
+    /* Used for bytecode */
+    struct cli_all_bc bcs;
+    unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];
+    unsigned hooks_cnt[_BC_LAST_HOOK - _BC_START_HOOKS];
 };
 
 struct cl_settings {
@@ -270,6 +277,20 @@ extern int have_rar;
 		     (((v) & 0xff00000000000000ULL) >> 56))
 
 
+union unaligned_64 {
+	uint64_t una_u64;
+	int64_t una_s64;
+} __attribute__((packed));
+
+union unaligned_32 {
+	uint32_t una_u32;
+	int32_t una_s32;
+} __attribute__((packed));
+
+union unaligned_16 {
+	uint16_t una_u16;
+	int16_t una_s16;
+} __attribute__((packed));
 #if WORDS_BIGENDIAN == 0
 
 #ifndef HAVE_ATTRIB_PACKED 
@@ -282,14 +303,6 @@ extern int have_rar;
 #pragma pack 1
 #endif
 
-union unaligned_32 {
-	uint32_t una_u32;
-	int32_t una_s32;
-} __attribute__((packed));
-
-union unaligned_16 {
-	int16_t una_s16;
-} __attribute__((packed));
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
@@ -377,8 +390,10 @@ void cli_errmsg(const char *str, ...);
  * such as debug paths, and error paths */
 #if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 #define UNLIKELY(cond) __builtin_expect(!!(cond), 0)
+#define LIKELY(cond) __builtin_expect(!!(cond), 1)
 #else
 #define UNLIKELY(cond) (cond)
+#define LIKELY(cond) (cond)
 #endif
 
 #ifdef __GNUC__

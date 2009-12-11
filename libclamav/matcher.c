@@ -454,10 +454,16 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    evalcnt = 0;
 	    evalids = 0;
 	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if(ctx->virname)
-		    *ctx->virname = troot->ac_lsigtable[i]->virname;
-		ret = CL_VIRUS;
-		break;
+		if (!troot->ac_lsigtable[i]->bc) {
+		    if(ctx->virname)
+			*ctx->virname = troot->ac_lsigtable[i]->virname;
+		    ret = CL_VIRUS;
+		    break;
+		}
+		if (cli_bytecode_runlsig(&ctx->engine->bcs, troot->ac_lsigtable[i]->bc, ctx->virname, tdata.lsigcnt[i], map) == CL_VIRUS) {
+		    ret = CL_VIRUS;
+		    break;
+		}
 	    }
 	}
 	cli_ac_freedata(&tdata);
@@ -470,10 +476,16 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    evalcnt = 0;
 	    evalids = 0;
 	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if(ctx->virname)
-		    *ctx->virname = groot->ac_lsigtable[i]->virname;
-		ret = CL_VIRUS;
-		break;
+		if (!groot->ac_lsigtable[i]->bc) {
+		    if(ctx->virname)
+			*ctx->virname = groot->ac_lsigtable[i]->virname;
+		    ret = CL_VIRUS;
+		    break;
+		}
+		if (cli_bytecode_runlsig(&ctx->engine->bcs, groot->ac_lsigtable[i]->bc, ctx->virname, gdata.lsigcnt[i], map) == CL_VIRUS) {
+		    ret = CL_VIRUS;
+		    break;
+		}
 	    }
 	}
 	cli_ac_freedata(&gdata);

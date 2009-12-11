@@ -332,6 +332,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts,"phishing-scan-urls")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
 
+    if(optget(opts,"bytecode")->enabled)
+	dboptions |= CL_DB_BYTECODE;
+
     if((ret = cl_init(CL_INIT_DEFAULT))) {
 	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
 	return 50;

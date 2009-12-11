@@ -28,52 +28,59 @@ struct bytecode_metadata {
   char *targetExclude;
 };
 
-#define BC_FUNC_LEVEL 1
+#define BC_FUNC_LEVEL 2
 #define BC_HEADER "ClamBC"
 
 enum bc_opcode {
-  OP_ADD=1,
-  OP_SUB,
-  OP_MUL,
-  OP_UDIV,
-  OP_SDIV,
-  OP_UREM,
-  OP_SREM,
-  OP_SHL,
-  OP_LSHR,
-  OP_ASHR,
-  OP_AND,
-  OP_OR,
-  OP_XOR,
+  OP_BC_ADD=1,
+  OP_BC_SUB,
+  OP_BC_MUL,
+  OP_BC_UDIV,
+  OP_BC_SDIV,
+  OP_BC_UREM,
+  OP_BC_SREM,
+  OP_BC_SHL,
+  OP_BC_LSHR,
+  OP_BC_ASHR,
+  OP_BC_AND,
+  OP_BC_OR,
+  OP_BC_XOR,
 
-  OP_TRUNC,
-  OP_SEXT,
-  OP_ZEXT,
+  OP_BC_TRUNC,
+  OP_BC_SEXT,
+  OP_BC_ZEXT,
 
-  OP_BRANCH,
-  OP_JMP,
-  OP_RET,
+  OP_BC_BRANCH,
+  OP_BC_JMP,
+  OP_BC_RET,
+  OP_BC_RET_VOID,
 
-  OP_ICMP_EQ,
-  OP_ICMP_NE,
-  OP_ICMP_UGT,
-  OP_ICMP_UGE,
-  OP_ICMP_ULT,
-  OP_ICMP_ULE,
-  OP_ICMP_SGT,
-  OP_ICMP_SGE,
-  OP_ICMP_SLE,
-  OP_ICMP_SLT,
-  OP_SELECT,
-  OP_CALL_DIRECT,
-  OP_CALL_API,
-  OP_COPY,
-  OP_GEP1,
-  OP_GEP2,
-  OP_GEPN,
-  OP_STORE,
-  OP_LOAD,
-  OP_INVALID /* last */
+  OP_BC_ICMP_EQ,
+  OP_BC_ICMP_NE,
+  OP_BC_ICMP_UGT,
+  OP_BC_ICMP_UGE,
+  OP_BC_ICMP_ULT,
+  OP_BC_ICMP_ULE,
+  OP_BC_ICMP_SGT,
+  OP_BC_ICMP_SGE,
+  OP_BC_ICMP_SLE,
+  OP_BC_ICMP_SLT,
+  OP_BC_SELECT,
+  OP_BC_CALL_DIRECT,
+  OP_BC_CALL_API,
+  OP_BC_COPY,
+  OP_BC_GEP1,
+  OP_BC_GEP2,
+  OP_BC_GEPN,
+  OP_BC_STORE,
+  OP_BC_LOAD,
+  OP_BC_MEMSET,
+  OP_BC_MEMCPY,
+  OP_BC_MEMMOVE,
+  OP_BC_MEMCMP,
+  OP_BC_ISBIGENDIAN,
+  OP_BC_ABORT,
+  OP_BC_INVALID /* last */
 };
 
 static const unsigned char operand_counts[] = {
@@ -83,19 +90,34 @@ static const unsigned char operand_counts[] = {
   /* TRUNC -> ZEXT */
   1, 1, 1,
   /* BRANCH, JMP, RET */
-  3, 1, 1,
+  3, 1, 1, 0,
   /* ICMP */
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* SELECT */
   3,
   /* CALLs have variable number of operands */
   0, 0,
-  /* OP_COPY */
+  /* OP_BC_COPY */
   2,
-  /* OP_GEP1, OP_GEP2, OP_GEPN, OP_STORE, OP_LOAD*/
-  2, 3, 0, 2, 1
+  /* OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN, OP_BC_STORE, OP_BC_LOAD*/
+  2, 3, 0, 2, 1,
+  /* OP_MEM* */
+  3, 3, 3, 3,
+  /* OP_BC_ISBIGENDIAN */
+  0,
+  /* OP_BC_ABORT */
+  0
+};
+
+enum bc_global {
+  _FIRST_GLOBAL = 0x8000,
+  GLOBAL_MATCH_COUNTS = 0x8000,
+  GLOBAL_KIND,
+  GLOBAL_VIRUSNAMES,
+  GLOBAL_EXEINFO,
+  GLOBAL_PEDATA,
+  _LAST_GLOBAL
 };
 
 #define BC_START_TID 69
-
 #endif

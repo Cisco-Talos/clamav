@@ -18,3 +18,4 @@ stamp-h1
 *.swp
 TAGS
 /target.h
+libclamav/c++/autom4te.cache/*

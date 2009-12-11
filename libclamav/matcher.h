@@ -61,11 +61,13 @@ struct cli_lsig_tdb {
 #endif
 };
 
+struct cli_bc;
 struct cli_ac_lsig {
     uint32_t id;
     char *logic;
     const char *virname;
     struct cli_lsig_tdb tdb;
+    const struct cli_bc *bc;
 };
 
 struct cli_matcher {

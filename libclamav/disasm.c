@@ -18,6 +18,16 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+#include "others.h"
+
 #include "disasmpriv.h"
 #include "disasm.h"
 
@@ -1669,23 +1679,12 @@ static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *
   }
 }
 
-
 int disasmbuf(uint8_t *buff, unsigned int len, int fd) {
   uint8_t *next = buff;
   unsigned int counter=0;
   int gotsome=0;
   struct DISASMED s;
-  struct MARIO {
-    uint16_t real_op;
-    uint8_t opsize;
-    uint8_t adsize;
-    uint8_t segment;
-
-    uint8_t arg[3][10];
-
-    uint8_t extra[29];
-  } w;
-
+  struct DISASM_RESULT w;
   memset(&w.extra[0], 0, sizeof(w.extra));
 
   while(len && counter++<200) {

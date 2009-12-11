@@ -407,6 +407,9 @@ int main(int argc, char **argv)
     else
 	logg("#Not loading phishing signatures.\n");
 
+    if(optget(opts,"Bytecode")->enabled)
+	dboptions |= CL_DB_BYTECODE;
+
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
     else

@@ -58,7 +58,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LT_CONFIG_LTDL_DIR([libltdl])
-LT_INIT([dlopen])
+LT_INIT([dlopen disable-static])
 LTDL_INIT([recursive])
 AC_CONFIG_FILES([libltdl/Makefile])
 
@@ -1530,8 +1530,16 @@ if test "x$enable_distcheckwerror" = "xyes"; then
     fi
 fi
 
+AC_ARG_ENABLE([llvm],AC_HELP_STRING([--enable-llvm],
+				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
+				    [enable_llvm=$enableval], [enable_llvm="auto"])
+
+if test "$enable_llvm" != "no"; then
+    dnl Try to configure subdir, optionally
+    AC_CONFIG_SUBDIRS_OPTIONAL([libclamav/c++])
+fi
+
 AC_OUTPUT([
-libclamav/Makefile
 clamscan/Makefile
 database/Makefile
 docs/Makefile
@@ -1561,6 +1569,14 @@ docs/man/freshclam.conf.5
 docs/man/sigtool.1
 docs/man/clamdtop.1
 ])
+
+if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
+    AC_MSG_ERROR([Failed to configure LLVM, and LLVM was explicitly requested])
+fi
+AM_CONDITIONAL([ENABLE_LLVM],
+	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
+no_recursion="yes";
+AC_OUTPUT([libclamav/Makefile])
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

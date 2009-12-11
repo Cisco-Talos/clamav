@@ -66,6 +66,7 @@
 #include "matcher-ac.h"
 #include "default.h"
 #include "scanners.h"
+#include "bytecode.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
@@ -255,6 +256,7 @@ const char *cl_strerror(int clerror)
 
 int cl_init(unsigned int initoptions)
 {
+        int rc;
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
@@ -264,6 +266,9 @@ int cl_init(unsigned int initoptions)
     }
     gettimeofday(&tv, (struct timezone *) 0);
     srand(pid + tv.tv_usec*(pid+1) + clock());
+    rc = bytecode_init();
+    if (rc)
+	return rc;
     return CL_SUCCESS;
 }
 

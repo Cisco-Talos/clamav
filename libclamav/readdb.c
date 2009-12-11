@@ -69,7 +69,9 @@
 #endif
 
 #include "mpool.h"
-
+#include "bytecode.h"
+#include "bytecode_api.h"
+#include "bytecode_priv.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -258,8 +260,9 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 
-	if(bm_new->length > root->maxpatlen)
+	if(bm_new->length > root->maxpatlen) {
 	    root->maxpatlen = bm_new->length;
+	}
 
 	if((ret = cli_bm_addpatt(root, bm_new, offset))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
@@ -1072,18 +1075,145 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
   } while(0);
 
 #define LDB_TOKENS 67
+static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned line, unsigned *sigs, struct cli_bc *bc, const char *buffer_cpy)
+{
+    const char *sig, *virname, *offset, *logic;
+    struct cli_ac_lsig **newtable, *lsig;
+    char *tokens[LDB_TOKENS], *pt;
+    int i, subsigs, tokens_count;
+    unsigned short target = 0;
+    struct cli_matcher *root;
+    struct cli_lsig_tdb tdb;
+    uint32_t lsigid[2];
+    int ret;
+
+	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
+    if(tokens_count < 4) {
+	return CL_EMALFDB;
+    }
+    virname = tokens[0];
+    logic = tokens[2];
+
+    if (chkpua && cli_chkpua(virname, engine->pua_cats, options))
+	    return CL_SUCCESS;
+
+    if (chkign && cli_chkign(engine->ignored, virname, buffer_cpy))
+	return CL_SUCCESS;
+
+    subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
+    if(subsigs == -1) {
+	return CL_EMALFDB;
+    }
+    subsigs++;
+    if(subsigs > 64) {
+	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	return CL_EMALFDB;
+    }
+    if (!line) {
+	/* This is a logical signature from the bytecode, we need all
+	 * subsignatures, even if not referenced from the logical expression */
+	if (subsigs > tokens_count-3) {
+	    cli_errmsg("load_oneldb: Too many subsignatures: %u (max %u)\n",
+		       subsigs, tokens_count-3);
+	    return CL_EMALFDB;
+	}
+	subsigs = tokens_count-3;
+    } else if(subsigs != tokens_count - 3) {
+	cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
+	return CL_EMALFDB;
+    }
+
+    /* TDB */
+    memset(&tdb, 0, sizeof(tdb));
+#ifdef USE_MPOOL
+    tdb.mempool = engine->mempool;
+#endif
+    if(lsigattribs(tokens[1], &tdb) == -1) {
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    }
+    if(!tdb.target) {
+	cli_errmsg("cli_loadldb: No target specified in TDB\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    } else if(tdb.target[0] >= CLI_MTARGETS) {
+	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s\n", virname);
+	FREE_TDB(tdb);
+	*sigs--;
+	return CL_SUCCESS;
+    }
+
+    root = engine->root[tdb.target[0]];
+
+    lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+    if(!lsig) {
+	cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
+	FREE_TDB(tdb);
+	return CL_EMEM;
+    }
+
+    lsig->logic = cli_mpool_strdup(engine->mempool, logic);
+    if(!lsig->logic) {
+	cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
+	FREE_TDB(tdb);
+	mpool_free(engine->mempool, lsig);
+	return CL_EMEM;
+    }
+
+    lsigid[0] = lsig->id = root->ac_lsigs;
+    memcpy(&lsig->tdb, &tdb, sizeof(tdb));
+
+    root->ac_lsigs++;
+    newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+    if(!newtable) {
+	root->ac_lsigs--;
+	cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
+	FREE_TDB(tdb);
+	mpool_free(engine->mempool, lsig);
+	return CL_EMEM;
+    }
+    lsig->bc = bc;
+    newtable[root->ac_lsigs - 1] = lsig;
+    root->ac_lsigtable = newtable;
+
+    for(i = 0; i < subsigs; i++) {
+	lsigid[1] = i;
+	sig = tokens[3 + i];
+
+	if((pt = strchr(tokens[3 + i], ':'))) {
+	    *pt = 0;
+	    sig = ++pt;
+	    offset = tokens[3 + i];
+	} else {
+	    offset = "*";
+	    sig = tokens[3 + i];
+	}
+
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
+	    return CL_EMALFDB;
+	}
+
+	if(tdb.engine) {
+	    if(tdb.engine[0] > cl_retflevel()) {
+		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
+		FREE_TDB(tdb);
+		*sigs--;
+		return CL_SUCCESS;
+	    } else if(tdb.engine[1] < cl_retflevel()) {
+		FREE_TDB(tdb);
+		*sigs--;
+		return CL_SUCCESS;
+	    }
+	}
+    }
+    return CL_SUCCESS;
+}
+
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char *tokens[LDB_TOKENS + 1];
-	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy, *pt;
-	const char *sig, *virname, *offset, *logic;
-	struct cli_matcher *root;
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy;
 	unsigned int line = 0, sigs = 0;
-	unsigned short target = 0;
-	struct cli_ac_lsig **newtable, *lsig;
-	uint32_t lsigid[2];
-	int ret = CL_SUCCESS, i, subsigs, tokens_count;
-	struct cli_lsig_tdb tdb;
+	int ret;
 
 
     if((ret = cli_initroots(engine, options)))
@@ -1092,140 +1222,18 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(sizeof(buffer))))
 	    return CL_EMEM;
-
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
 	sigs++;
 	cli_chomp(buffer);
+
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
-
-	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
-	if(tokens_count < 4) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	virname = tokens[0];
-	logic = tokens[2];
-
-	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
-	    if(cli_chkpua(virname, engine->pua_cats, options))
-		continue;
-
-	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
-	    continue;
-
-	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
-	if(subsigs == -1) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
-	subsigs++;
-
-	if(subsigs > 64) {
-	    cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	if(subsigs != tokens_count - 3) {
-	    cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	/* TDB */
-	memset(&tdb, 0, sizeof(tdb));
-#ifdef USE_MPOOL
-	tdb.mempool = engine->mempool;
-#endif
-
-	if(lsigattribs(tokens[1], &tdb) == -1) {
-	    FREE_TDB(tdb);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	if(tdb.engine) {
-	    if(tdb.engine[0] > cl_retflevel()) {
-		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
-		FREE_TDB(tdb);
-		sigs--;
-		continue;
-	    } else if(tdb.engine[1] < cl_retflevel()) {
-		FREE_TDB(tdb);
-		sigs--;
-		continue;
-	    }
-	}
-
-	if(!tdb.target) {
-	    cli_errmsg("cli_loadldb: No target specified in TDB\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMALFDB;
-	    break;
-	} else if(tdb.target[0] >= CLI_MTARGETS) {
-	    cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s\n", virname);
-	    FREE_TDB(tdb);
-	    sigs--;
-	    continue;
-	}
-
-	root = engine->root[tdb.target[0]];
-
-	lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
-	if(!lsig) {
-	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMEM;
-	    break;
-	}
-
-	lsig->logic = cli_mpool_strdup(engine->mempool, logic);
-	if(!lsig->logic) {
-	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMEM;
-	    mpool_free(engine->mempool, lsig);
-	    break;
-	}
-
-	lsigid[0] = lsig->id = root->ac_lsigs;
-	memcpy(&lsig->tdb, &tdb, sizeof(tdb));
-
-	root->ac_lsigs++;
-	newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
-	if(!newtable) {
-	    root->ac_lsigs--;
-	    cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
-	    FREE_TDB(tdb);
-	    mpool_free(engine->mempool, lsig);
-	    ret = CL_EMEM;
-	    break;
-	}
-	newtable[root->ac_lsigs - 1] = lsig;
-	root->ac_lsigtable = newtable;
-
-	for(i = 0; i < subsigs; i++) {
-	    lsigid[1] = i;
-	    sig = tokens[3 + i];
-
-	    if((pt = strchr(tokens[3 + i], ':'))) {
-		*pt = 0;
-		sig = ++pt;
-		offset = tokens[3 + i];
-	    } else {
-		offset = "*";
-		sig = tokens[3 + i];
-	    }
-
-	    if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
-		ret = CL_EMALFDB;
-		break;
-	    }
-	}
-	if(ret)
+	ret = load_oneldb(buffer,
+			  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+			  !!engine->ignored,
+			  engine, options, dbname, line, &sigs, NULL, buffer_cpy);
+	if (ret)
 	    break;
     }
     if(engine->ignored)
@@ -1244,6 +1252,71 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(signo)
 	*signo += sigs;
 
+    return CL_SUCCESS;
+}
+
+static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+    int rc;
+    struct cli_all_bc *bcs = &engine->bcs;
+    struct cli_bc *bc;
+    unsigned sigs = 0;
+
+    /* TODO: virusname have a common prefix, and whitelist by that */
+    if((rc = cli_initroots(engine, options)))
+	return rc;
+
+    if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	return CL_SUCCESS;
+    }
+    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
+    if (!bcs->all_bcs) {
+	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
+	return CL_EMEM;
+    }
+    bcs->count++;
+    bc = &bcs->all_bcs[bcs->count-1];
+    rc = cli_bytecode_load(bc, fs, dbio);
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
+	return rc;
+    }
+    sigs += 2;/* the bytecode itself and the logical sig */
+    if (bc->kind == BC_LOGICAL) {
+	if (!bc->lsig) {
+	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
+	    return CL_EMALFDB;
+	}
+	cli_dbgmsg("Bytecode %s has logical signature: %s\n", dbname, bc->lsig);
+	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bc, NULL);
+	if (rc != CL_SUCCESS) {
+	    cli_errmsg("Problem parsing logical signature %s for bytecode %s: %s\n",
+		       bc->lsig, dbname, cl_strerror(rc));
+	    return rc;
+	}
+    } else {
+	if (bc->lsig) {
+	    cli_errmsg("Bytecode %s has logical signature but is not logical kind!\n", dbname);
+	    return CL_EMALFDB;
+	}
+	if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
+	    unsigned hook = bc->kind - _BC_START_HOOKS;
+	    unsigned cnt = ++engine->hooks_cnt[hook];
+	    engine->hooks[hook] = cli_realloc2(engine->hooks[hook],
+					       sizeof(*engine->hooks[0])*cnt);
+	    if (!engine->hooks[hook]) {
+		cli_errmsg("Out of memory allocating memory for hook %u", hook);
+		return CL_EMEM;
+	    }
+	    engine->hooks[hook][cnt-1] = bcs->count-1;
+	} else switch (bc->kind) {
+	    default:
+		cli_errmsg("Bytecode: unhandled bytecode kind %u\n", bc->kind);
+		return CL_EMALFDB;
+	}
+    }
+    if (signo)
+	*signo += sigs;
     return CL_SUCCESS;
 }
 
@@ -1845,7 +1918,11 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	    ret = cli_loadldb(fs, engine, signo, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
-
+    } else if(cli_strbcasestr(filename, ".cbc")) {
+	if(options & CL_DB_BYTECODE)
+	    ret = cli_loadcbc(fs, engine, signo, options, dbio, dbname);
+	else
+	    skipped = 1;
     } else if(cli_strbcasestr(dbname, ".sdb")) {
 	ret = cli_loadndb(fs, engine, signo, 1, options, dbio, dbname);
 
@@ -2078,10 +2155,17 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	if((ret = phishing_init(engine)))
 	    return ret;
 
+    if((dboptions & CL_DB_BYTECODE) && !engine->bcs.engine && (engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	if((ret = cli_bytecode_init(&engine->bcs)))
+	    return ret;
+    } else {
+	cli_dbgmsg("Bytecode engine disabled\n");
+    }
+
     engine->dboptions |= dboptions;
 
     switch(sb.st_mode & S_IFMT) {
-	case S_IFREG: 
+	case S_IFREG:
 	    ret = cli_load(path, engine, signo, dboptions, NULL);
 	    break;
 
@@ -2384,6 +2468,17 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, metah);
     }
 
+    if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+	unsigned i;
+	if (engine->bcs.all_bcs)
+	    for(i=0;i<engine->bcs.count;i++)
+		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+	cli_bytecode_done(&engine->bcs);
+	free(engine->bcs.all_bcs);
+	for (i=0;i<_BC_LAST_HOOK - _BC_START_HOOKS;i++) {
+	    free (engine->hooks[i]);
+	}
+    }
     if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
     if(engine->dconf)
@@ -2470,7 +2565,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
-	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
 
@@ -2488,6 +2583,12 @@ int cl_engine_compile(struct cl_engine *engine)
     }
     cli_dconf_print(engine->dconf);
     mpool_flush(engine->mempool);
+
+    /* Compile bytecode */
+    if((ret = cli_bytecode_prepare(&engine->bcs))) {
+	cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
+	return ret;
+    }
 
     engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;

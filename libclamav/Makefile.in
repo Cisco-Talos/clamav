@@ -74,9 +74,9 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/argz.m4 $(top_srcdir)/m4/fdpassing.m4 \
 	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
 	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/llvm.m4 $(top_srcdir)/m4/ltdl.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -109,6 +109,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_TRUE@am__DEPENDENCIES_1 = libclamunrar_iface.la
+@ENABLE_LLVM_FALSE@am__DEPENDENCIES_2 = libclamav_nocxx.la
+@ENABLE_LLVM_TRUE@am__DEPENDENCIES_2 = c++/libclamavcxx.la
 am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	matcher-bm.c matcher-bm.h matcher.c matcher.h others.c \
 	others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
@@ -148,8 +150,9 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	uniq.h version.c version.h mpool.c mpool.h fmap.c fmap.h \
 	default.h sha256.c sha256.h bignum.h bytecode.c bytecode.h \
 	bytecode_vm.c bytecode_priv.h clambc.h cpio.c cpio.h macho.c \
-	macho.h ishield.c ishield.h type_desc.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h bignum.c bignum_class.h
+	macho.h ishield.c ishield.h type_desc.h bcfeatures.h \
+	bytecode_api.c bytecode_api_decl.c bytecode_api.h \
+	bytecode_api_impl.h bytecode_hooks.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -241,6 +244,9 @@ libclamav_internal_utils_nothreads_la_LINK = $(LIBTOOL) $(AM_V_lt) \
 	$(CCLD) $(libclamav_internal_utils_nothreads_la_CFLAGS) \
 	$(CFLAGS) $(libclamav_internal_utils_nothreads_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+libclamav_nocxx_la_LIBADD =
+am_libclamav_nocxx_la_OBJECTS = bytecode_nojit.lo
+libclamav_nocxx_la_OBJECTS = $(am_libclamav_nocxx_la_OBJECTS)
 libclamunrar_la_LIBADD =
 am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/unrar15.c \
 	../libclamunrar/unrar20.h ../libclamunrar/unrar.h \
@@ -301,16 +307,56 @@ am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(libclamav_la_SOURCES) \
 	$(libclamav_internal_utils_la_SOURCES) \
 	$(libclamav_internal_utils_nothreads_la_SOURCES) \
-	$(libclamunrar_la_SOURCES) $(libclamunrar_iface_la_SOURCES)
+	$(libclamav_nocxx_la_SOURCES) $(libclamunrar_la_SOURCES) \
+	$(libclamunrar_iface_la_SOURCES)
 DIST_SOURCES = $(am__libclamav_la_SOURCES_DIST) \
 	$(libclamav_internal_utils_la_SOURCES) \
 	$(libclamav_internal_utils_nothreads_la_SOURCES) \
+	$(libclamav_nocxx_la_SOURCES) \
 	$(am__libclamunrar_la_SOURCES_DIST) \
 	$(am__libclamunrar_iface_la_SOURCES_DIST)
+RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
+	html-recursive info-recursive install-data-recursive \
+	install-dvi-recursive install-exec-recursive \
+	install-html-recursive install-info-recursive \
+	install-pdf-recursive install-ps-recursive install-recursive \
+	installcheck-recursive installdirs-recursive pdf-recursive \
+	ps-recursive uninstall-recursive
 HEADERS = $(include_HEADERS)
+RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+  distclean-recursive maintainer-clean-recursive
+AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
+	$(RECURSIVE_CLEAN_TARGETS:-recursive=) tags TAGS ctags CTAGS \
+	distdir
 ETAGS = etags
 CTAGS = ctags
+DIST_SUBDIRS = c++
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+am__relativize = \
+  dir0=`pwd`; \
+  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
+  sed_rest='s,^[^/]*/*,,'; \
+  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
+  sed_butlast='s,/*[^/]*$$,,'; \
+  while test -n "$$dir1"; do \
+    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
+    if test "$$first" != "."; then \
+      if test "$$first" = ".."; then \
+        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
+        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
+      else \
+        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
+        if test "$$first2" = "$$first"; then \
+          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
+        else \
+          dir2="../$$dir2"; \
+        fi; \
+        dir0="$$dir0"/"$$first"; \
+      fi; \
+    fi; \
+    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
+  done; \
+  reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -459,6 +505,7 @@ psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
+subdirs = @subdirs@
 sys_symbol_underscore = @sys_symbol_underscore@
 sysconfdir = @sysconfdir@
 target = @target@
@@ -548,8 +595,14 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 
 libclamav_internal_utils_nothreads_la_LDFLAGS = -static
 libclamav_internal_utils_nothreads_la_CFLAGS = -DCL_NOTHREADS
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
-libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
+@ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
+@ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
+@ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
+@ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
+@ENABLE_LLVM_TRUE@SUBDIRS = c++
+libclamav_nocxx_la_SOURCES = bytecode_nojit.c
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
+libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
@@ -593,16 +646,17 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	uniq.h version.c version.h mpool.c mpool.h fmap.c fmap.h \
 	default.h sha256.c sha256.h bignum.h bytecode.c bytecode.h \
 	bytecode_vm.c bytecode_priv.h clambc.h cpio.c cpio.h macho.c \
-	macho.h ishield.c ishield.h type_desc.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h $(am__append_7)
-noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
+	macho.h ishield.c ishield.h type_desc.h bcfeatures.h \
+	bytecode_api.c bytecode_api_decl.c bytecode_api.h \
+	bytecode_api_impl.h bytecode_hooks.h $(am__append_7)
+noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 @MAINTAINER_MODE_TRUE@GPERF_FLAGS = -E -t -L ANSI-C -C -F ', TOK_ERROR' -c
 @MAINTAINER_MODE_FALSE@CLEANFILES = $(COMMON_CLEANFILES)
 @MAINTAINER_MODE_TRUE@CLEANFILES = $(COMMON_CLEANFILES) @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
 all: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
@@ -682,6 +736,8 @@ libclamav_internal_utils.la: $(libclamav_internal_utils_la_OBJECTS) $(libclamav_
 	$(AM_V_CCLD)$(libclamav_internal_utils_la_LINK)  $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_LIBADD) $(LIBS)
 libclamav_internal_utils_nothreads.la: $(libclamav_internal_utils_nothreads_la_OBJECTS) $(libclamav_internal_utils_nothreads_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libclamav_internal_utils_nothreads_la_LINK)  $(libclamav_internal_utils_nothreads_la_OBJECTS) $(libclamav_internal_utils_nothreads_la_LIBADD) $(LIBS)
+libclamav_nocxx.la: $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_LIBADD) $(LIBS)
 libclamunrar.la: $(libclamunrar_la_OBJECTS) $(libclamunrar_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
 libclamunrar_iface.la: $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_DEPENDENCIES) 
@@ -693,6 +749,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bytecode_nojit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-others_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-qsort.Plo@am__quote@
@@ -1851,6 +1908,76 @@ uninstall-includeHEADERS:
 	echo " ( cd '$(DESTDIR)$(includedir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(includedir)" && rm -f $$files
 
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run `make' without going through this Makefile.
+# To change the values of `make' variables: instead of editing Makefiles,
+# (1) if the variable is set in `config.status', edit `config.status'
+#     (which will cause the Makefiles to be regenerated when you run `make');
+# (2) otherwise, pass the desired values on the `make' command line.
+$(RECURSIVE_TARGETS):
+	@failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+
+$(RECURSIVE_CLEAN_TARGETS):
+	@failcom='exit 1'; \
+	for f in x $$MAKEFLAGS; do \
+	  case $$f in \
+	    *=* | --[!k]*);; \
+	    *k*) failcom='fail=yes';; \
+	  esac; \
+	done; \
+	dot_seen=no; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	rev=''; for subdir in $$list; do \
+	  if test "$$subdir" = "."; then :; else \
+	    rev="$$subdir $$rev"; \
+	  fi; \
+	done; \
+	rev="$$rev ."; \
+	target=`echo $@ | sed s/-recursive//`; \
+	for subdir in $$rev; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done && test -z "$$fail"
+tags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) tags); \
+	done
+ctags-recursive:
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test "$$subdir" = . || ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) ctags); \
+	done
+
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
@@ -1861,10 +1988,23 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS: tags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	set x; \
 	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
+	fi; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
@@ -1883,7 +2023,7 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	  fi; \
 	fi
 ctags: CTAGS
-CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS: ctags-recursive $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
@@ -1933,24 +2073,53 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test -d "$(distdir)/$$subdir" \
+	    || $(MKDIR_P) "$(distdir)/$$subdir" \
+	    || exit 1; \
+	  fi; \
+	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
+	    $(am__relativize); \
+	    new_distdir=$$reldir; \
+	    dir1=$$subdir; dir2="$(top_distdir)"; \
+	    $(am__relativize); \
+	    new_top_distdir=$$reldir; \
+	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
+	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
+	    ($(am__cd) $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$new_top_distdir" \
+	        distdir="$$new_distdir" \
+		am__remove_distdir=: \
+		am__skip_length_check=: \
+		am__skip_mode_fix=: \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
+	done
 check-am: all-am
 check: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) check-am
+	$(MAKE) $(AM_MAKEFLAGS) check-recursive
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
-installdirs:
+installdirs: installdirs-recursive
+installdirs-am:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+	$(MAKE) $(AM_MAKEFLAGS) install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
 	  install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
@@ -1969,94 +2138,97 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-clean: clean-am
+clean: clean-recursive
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 	clean-noinstLTLIBRARIES mostlyclean-am
 
-distclean: distclean-am
+distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
 html-am:
 
-info: info-am
+info: info-recursive
 
 info-am:
 
 install-data-am: install-includeHEADERS
 
-install-dvi: install-dvi-am
+install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
 install-exec-am: install-libLTLIBRARIES
 
-install-html: install-html-am
+install-html: install-html-recursive
 
 install-html-am:
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-am
+install-pdf: install-pdf-recursive
 
 install-pdf-am:
 
-install-ps: install-ps-am
+install-ps: install-ps-recursive
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
+maintainer-clean: maintainer-clean-recursive
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
 mostlyclean-am: mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
 uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
-.MAKE: all check install install-am install-strip
+.MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all check \
+	ctags-recursive install install-am install-strip \
+	tags-recursive
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+.PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
+	all all-am check check-am clean clean-generic \
 	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
-	ctags distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am \
+	ctags ctags-recursive distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
 	install-includeHEADERS install-info install-info-am \
 	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 
 .PHONY: version.h.tmp

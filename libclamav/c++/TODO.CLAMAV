@@ -1,0 +1,15 @@
+Convert to clamav's build system -> impl. cross-compilation support (tblgen)
+
+Right now static linking of libclamav doesn't work with llvm parts for a number
+of reasons:
+1. llvm is not built with libtool, and it builds .a files (or .so files)
+2. if I link with .a files, that works for a .so (LLVM's .a files are PIC), but
+ the created libclamav.a will miss the .a files, so I'd need to install the llvm
+ .a files together with clamav's
+3. libtool solves this by putting individual .o files into the target libtool .a
+archive, but since I link against non-libtool archives it doesn't know how to do
+that
+4. if I link against a .so then obviously it is not static linking
+
+If llvm would be converted to clamav's buildsystem then static linking of
+libclamav would work.

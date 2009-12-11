@@ -23,7 +23,12 @@
 #ifndef BYTECODE_PRIV_H
 #define BYTECODE_PRIV_H
 
+#include "bytecode.h"
 #include "type_desc.h"
+#include "execs.h"
+#include "bytecode_hooks.h"
+#include "fmap.h"
+
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
 typedef uint16_t funcid_t;
@@ -77,13 +82,38 @@ struct cli_bc_func {
     uint32_t numConstants;
     uint32_t numBytes;/* stack size */
     uint16_t numBB;
+    uint16_t returnType;
     uint16_t *types;
     uint32_t insn_idx;
     struct cli_bc_bb *BB;
     struct cli_bc_inst *allinsts;
     uint64_t *constants;
+    unsigned *dbgnodes;
 };
+
+struct cli_bc_dbgnode_element {
+    unsigned nodeid;
+    char *string;
+    unsigned len;
+    uint64_t constant;
+};
+
+struct cli_bc_dbgnode {
+    unsigned numelements;
+    struct cli_bc_dbgnode_element* elements;
+};
+
 #define MAX_OP ~0u
+enum trace_level {
+    trace_none=0,
+    trace_func,
+    trace_param,
+    trace_scope,
+    trace_line,
+    trace_col,
+    trace_op,
+    trace_val
+};
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
@@ -94,7 +124,39 @@ struct cli_bc_ctx {
     operand_t *operands;
     uint16_t funcid;
     unsigned numParams;
+    size_t file_size;
+    off_t off;
+    fmap_t *fmap;
+    const char *virname;
+    struct cli_bc_hooks hooks;
+    int outfd;
+    char *tempfile;
+    void *ctx;
+    unsigned written;
+    bc_dbg_callback_trace trace;
+    bc_dbg_callback_trace_op trace_op;
+    bc_dbg_callback_trace_val trace_val;
+    unsigned trace_level;
+    const char *directory;
+    const char *file;
+    const char *scope;
+    uint32_t scopeid;
+    unsigned line;
+    unsigned col;
 };
-
+struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, const struct cli_bc_func *func);
+int cli_bytecode_prepare_jit(struct cli_all_bc *bc);
+int cli_bytecode_init_jit(struct cli_all_bc *bc);
+int cli_bytecode_done_jit(struct cli_all_bc *bc);
+
+#ifdef __cplusplus
+}
+#endif
 #endif
