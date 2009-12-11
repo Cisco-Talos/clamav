@@ -364,7 +364,7 @@ EXTRA_DIST = lt__dirent.c lt__strl.c COPYING.LIB README argz_.h argz.c
 CLEANFILES = libltdl.la libltdlc.la libdlloader.la $(ltdl_LIBOBJS) \
 	$(ltdl_LTLIBOBJS)
 MOSTLYCLEANFILES = argz.h argz.h-t
-LTDL_VERSION_INFO = -version-info 9:0:2
+LTDL_VERSION_INFO = -version-info 9:1:2
 @INSTALL_LTDL_TRUE@ltdlincludedir = $(includedir)/libltdl
 @INSTALL_LTDL_TRUE@ltdlinclude_HEADERS = libltdl/lt_system.h \
 @INSTALL_LTDL_TRUE@			  libltdl/lt_error.h \
