@@ -20,8 +20,14 @@
  *  MA 02110-1301, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #define _XOPEN_SOURCE 600
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>

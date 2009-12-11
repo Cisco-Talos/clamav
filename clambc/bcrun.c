@@ -23,7 +23,9 @@
 #include "clamav-config.h"
 #endif
 #include "cltypes.h"
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include <stdlib.h>
 #include "bytecode.h"
 #include "bytecode_priv.h"
@@ -35,7 +37,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 static void help(void)
 {

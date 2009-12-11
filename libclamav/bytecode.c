@@ -819,7 +819,7 @@ static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
 	comp = type_components(bc, bc->globaltys[i], &ok);
 	if (!ok)
 	    return CL_EMALFDB;
-	bc->globals[i] = cli_malloc(sizeof(bc->globals[0])*comp);
+	bc->globals[i] = cli_malloc(sizeof(*bc->globals[0])*comp);
 	if (!bc->globals[i])
 	    return CL_EMEM;
 	readConstant(bc, i, comp, buffer, &offset, len, &ok);

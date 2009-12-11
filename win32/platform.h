@@ -41,7 +41,7 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define inet_ntop w32_inet_ntop
 #define gethostbyname w32_gethostbyname
 #define select w32_select
-
+#define ftruncate _chsize
 #define getpid GetCurrentProcessId
 
 #define PATH_MAX 32767

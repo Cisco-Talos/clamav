@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="libclamav"
 	ProjectGUID="{3AD5B16C-340A-40AC-96AD-6017B941A316}"
 	RootNamespace="libclamav"
@@ -218,6 +218,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\bytecode_api_decl.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\bytecode_nojit.c"
 				>
 			</File>
 			<File

@@ -34,6 +34,25 @@ EXPORTS cli_decodesig
 EXPORTS cli_chomp
 EXPORTS cli_strtokenize
 EXPORTS have_rar
+EXPORTS have_clamjit
+
+EXPORTS cli_bytecode_done
+EXPORTS cli_bytecode_destroy
+EXPORTS cli_bytecode_context_destroy
+EXPORTS cli_bytecode_context_getresult_int
+EXPORTS cli_bytecode_run
+EXPORTS funmap
+EXPORTS cli_bytecode_context_setfile
+EXPORTS fmap
+EXPORTS cli_bytecode_context_setparam_int
+EXPORTS cli_bytecode_context_setfuncid
+EXPORTS cli_bytecode_context_set_trace
+EXPORTS cli_bytecode_context_alloc
+EXPORTS cli_bytecode_prepare
+EXPORTS cli_bytecode_load
+EXPORTS cli_bytecode_init
+EXPORTS cli_bytecode_debug
+EXPORTS cli_bytecode_debug_printsrc
 
 ; shared stuff - to be either double compiled into the tools or treated like cli_xxx
 EXPORTS opendir
