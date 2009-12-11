@@ -71,16 +71,16 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 	return;
     switch (event) {
 	case trace_func:
-	    printf("[trace] %s:%u:%u -> %s:%u:%u Entered function %s\n",
+	    fprintf(stderr, "[trace] %s:%u:%u -> %s:%u:%u Entered function %s\n",
 		   dbg_state.file, dbg_state.line, dbg_state.col,
 		   ctx->file, ctx->line, ctx->col, ctx->scope);
 	    dbg_state.scope = ctx->scope;
 	    break;
 	case trace_param:
-	    printf("[trace] function parameter:\n");
+	    fprintf(stderr, "[trace] function parameter:\n");
 	    return;
 	case trace_scope:
-	    printf("[trace] %s:%u:%u -> %s:%u:%u\n",
+	    fprintf(stderr, "[trace] %s:%u:%u -> %s:%u:%u\n",
 		   dbg_state.file, dbg_state.line, dbg_state.col,
 		   ctx->file, ctx->line, ctx->col);
 	    dbg_state.scope = ctx->scope;
@@ -90,7 +90,7 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 	    if (dbg_state.showline)
 		cli_bytecode_debug_printsrc(ctx);
 	    else
-		printf("[trace] %s:%u:%u\n",
+		fprintf(stderr, "[trace] %s:%u:%u\n",
 		       dbg_state.file, dbg_state.line, dbg_state.col);
 	    break;
 	default:
@@ -103,12 +103,12 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 
 static void tracehook_op(struct cli_bc_ctx *ctx, const char *op)
 {
-    printf("[trace] %s\n", op);
+    fprintf(stderr, "[trace] %s\n", op);
 }
 
 static void tracehook_val(struct cli_bc_ctx *ctx, const char *name, uint32_t value)
 {
-    printf("[trace] %s = %u\n", name, value);
+    fprintf(stderr, "[trace] %s = %u\n", name, value);
 }
 
 int main(int argc, char *argv[])
