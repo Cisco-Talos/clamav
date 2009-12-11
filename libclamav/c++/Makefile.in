@@ -1585,7 +1585,11 @@ FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
 FileCheck_LDADD = libllvmsupport.la libllvmsystem.la 
 FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
 check_LTLIBRARIES = libllvmbitreader.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
-check_SCRIPTS = llvmdejagnu.sh
+# Disable LLVM make check for now, there are some things to fix first:
+#   - check python version (2.4 doesn't work, needs 2.5+)
+#   - run llvm's make check after clamav's was run
+#   - have a way to run only clamav's make check and not llvm's
+#check_SCRIPTS=llvmdejagnu.sh
 TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
 libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
 			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM
@@ -6405,8 +6409,7 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_LTLIBRARIES) $(check_PROGRAMS) \
-	  $(check_SCRIPTS)
+	$(MAKE) $(AM_MAKEFLAGS) $(check_LTLIBRARIES) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
