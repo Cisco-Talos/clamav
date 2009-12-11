@@ -2214,7 +2214,7 @@ int cli_scanpe(cli_ctx *ctx, unsigned int *icongrps1, unsigned int *icongrps2)
     pedata.exe_info.section = exe_sections;
     pedata.exe_info.nsections = nsections;
     pedata.exe_info.ep = ep;
-    pedata.exe_info.offset = offset;
+    pedata.exe_info.offset = 0;
     pedata.file_hdr = &file_hdr;
     pedata.opt32 = &pe_opt.opt32;
     pedata.opt64 = &pe_opt.opt64;

@@ -97,6 +97,7 @@ uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uin
 uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res, uint32_t len)
 {
     //TODO: call disasm_x86_wrap, which outputs a MARIO struct
+    return -1;
 }
 
 /* TODO: field in ctx, id of last bytecode that called magicscandesc, reset
@@ -129,7 +130,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     res = cli_writen(ctx->outfd, data, len);
     if (res > 0) ctx->written += res;
     if (res == -1)
-	    cli_dbgmsg("Bytecode API: write failed: %s\n", errno);
+	    cli_dbgmsg("Bytecode API: write failed: %d\n", errno);
     return res;
 }
 

@@ -30,6 +30,7 @@
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "readdb.h"
+#include "scanners.h"
 #include <string.h>
 
 /* TODO: we should make sure lsigcnt is never NULL, and has at least as many
@@ -82,7 +83,7 @@ int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilen
 }
 
 /* resets bytecode state, so you can run another bytecode with same ctx */
-int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
+static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     free(ctx->opsizes);
     free(ctx->values);
@@ -94,7 +95,8 @@ int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     if (ctx->outfd != -1) {
 	cli_dbgmsg("Bytecode: nobody cared about FD %d, %s\n", ctx->outfd,
 		   ctx->tempfile);
-	ftruncate(ctx->outfd, 0);
+	if (ftruncate(ctx->outfd, 0) == -1)
+	    cli_dbgmsg("ftruncate failed\n");
 	close(ctx->outfd);
 	cli_unlink(ctx->tempfile);
 	free(ctx->tempfile);
@@ -1579,7 +1581,6 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
 
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
 {
-    struct stat buf;
     ctx->fmap = map;
     ctx->file_size = map->len + map->offset;
     return 0;
@@ -1654,7 +1655,8 @@ int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
 		cli_dbgmsg("***** Scanning unpacked file ******\n");
 		ret = cli_magic_scandesc(fd, cctx);
 		if (!cctx || !cctx->engine->keeptmp)
-		    ftruncate(fd, 0);
+		    if (ftruncate(fd, 0) == -1)
+			cli_dbgmsg("ftruncate failed\n");
 		close(fd);
 		if (!cctx || !cctx->engine->keeptmp) {
 		    if (cli_unlink(tempfile))

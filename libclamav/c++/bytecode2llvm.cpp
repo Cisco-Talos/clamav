@@ -1290,3 +1290,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 }
 
 int have_clamjit=1;
+void cli_bytecode_printversion()
+{
+  cl::PrintVersionMessage();
+}

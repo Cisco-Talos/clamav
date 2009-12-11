@@ -181,6 +181,7 @@ libclamav_la_SOURCES = \
 	pe_icons.h \
 	disasm.c \
 	disasm.h \
+	disasm-common.h \
 	disasmpriv.h \
 	upx.c \
 	upx.h \

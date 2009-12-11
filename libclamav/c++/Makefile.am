@@ -830,7 +830,8 @@ distclean-local:
 	rm -f llvm/mklib llvm/tools/Makefile llvm/tools/llvmc/llvm-config.in llvm/utils/Makefile
 	rm -f llvm/Makefile.common llvm/Makefile.config llvm/config.log llvm/unittests/Makefile
 	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
-	rm -f llvm/include/llvm/Support/DataTypes.h llvm/include/llvm/Config/Targets.def
+	rm -f llvm/include/llvm/Config/Disassemblers.def
+	rm -f llvm/include/llvm/System/DataTypes.h llvm/include/llvm/Config/Targets.def
 	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
 	rm -f llvm/include/llvm/Config/AsmParsers.def
 

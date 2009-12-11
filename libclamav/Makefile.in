@@ -119,28 +119,29 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
 	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
-	pe_icons.h disasm.c disasm.h disasmpriv.h upx.c upx.h \
-	htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h rebuildpe.c \
-	rebuildpe.h petite.c petite.h wwunpack.c wwunpack.h unsp.c \
-	unsp.h aspack.c aspack.h packlibs.c packlibs.h fsg.c fsg.h \
-	mew.c mew.h upack.c upack.h line.c line.h untar.c untar.h \
-	unzip.c unzip.h inflate64.c inflate64.h inffixed64.h \
-	inflate64_priv.h special.c special.h binhex.c binhex.h \
-	is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h unarj.c \
-	unarj.h nsis/bzlib.c nsis/bzlib_private.h nsis/nsis_bzlib.h \
-	nsis/nulsft.c nsis/nulsft.h nsis/infblock.c nsis/nsis_zconf.h \
-	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h spin.c spin.h \
-	yc.c yc.h elf.c elf.h execs.h sis.c sis.h uuencode.c \
-	uuencode.h phishcheck.c phishcheck.h phish_domaincheck_db.c \
-	phish_domaincheck_db.h phish_whitelist.c phish_whitelist.h \
-	iana_cctld.h iana_tld.h regex_list.c regex_list.h \
-	regex_suffix.c regex_suffix.h mspack.c mspack.h cab.c cab.h \
-	entconv.c entconv.h entitylist.h encoding_aliases.h hashtab.c \
-	hashtab.h dconf.c dconf.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h \
-	lzma_iface.c lzma_iface.h 7z.c 7z.h 7z/7zFile.c 7z/7zFile.h \
-	7z/7zStream.c 7z/CpuArch.h 7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c \
-	7z/7zBuf.h 7z/Bcj2.c 7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c \
-	7z/BraIA64.c 7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
+	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
+	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
+	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
+	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
+	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
+	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
+	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
+	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
+	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
+	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
+	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
+	uuencode.c uuencode.h phishcheck.c phishcheck.h \
+	phish_domaincheck_db.c phish_domaincheck_db.h \
+	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
+	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
+	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
+	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
+	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
+	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
+	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
+	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/BraIA64.c \
+	7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
 	7z/Archive/7z/7zDecode.c 7z/Archive/7z/7zDecode.h \
 	7z/Archive/7z/7zItem.c 7z/Archive/7z/7zItem.h \
 	7z/Archive/7z/7zHeader.c 7z/Archive/7z/7zHeader.h \
@@ -614,15 +615,15 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	rtf.c rtf.h blob.c blob.h mbox.c mbox.h message.c message.h \
 	table.c table.h text.c text.h ole2_extract.c ole2_extract.h \
 	vba_extract.c vba_extract.h cltypes.h msexpand.c msexpand.h \
-	pe.c pe.h pe_icons.c pe_icons.h disasm.c disasm.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
-	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
-	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
-	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	pe.c pe.h pe_icons.c pe_icons.h disasm.c disasm.h \
+	disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h \
+	chmunpack.c chmunpack.h rebuildpe.c rebuildpe.h petite.c \
+	petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
+	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
+	line.c line.h untar.c untar.h unzip.c unzip.h inflate64.c \
+	inflate64.h inffixed64.h inflate64_priv.h special.c special.h \
+	binhex.c binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c \
+	autoit.h unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
 	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
 	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
 	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \

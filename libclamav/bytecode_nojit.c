@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
 #include "bytecode.h"
@@ -68,5 +69,8 @@ int bytecode_init(void)
 
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
     // Empty
+}
+void cli_bytecode_printversion() {
+  printf("LLVM not compiled in\n");
 }
 int have_clamjit=0;
