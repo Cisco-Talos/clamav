@@ -45,21 +45,7 @@ Please clean the source directory.")
 endif()
 
 set(LLVM_ALL_TARGETS
-  Alpha
-  ARM
-  Blackfin
-  CBackend
-  CellSPU
-  CppBackend
-  Mips
-  MSIL
-  MSP430
-  PIC16
-  PowerPC
-  Sparc
-  SystemZ
   X86
-  XCore
   )
 
 if( MSVC )
@@ -268,7 +254,6 @@ add_subdirectory(lib/Transforms/Instrumentation)
 add_subdirectory(lib/Transforms/Scalar)
 add_subdirectory(lib/Transforms/IPO)
 add_subdirectory(lib/Transforms/Hello)
-add_subdirectory(lib/Linker)
 add_subdirectory(lib/Analysis)
 add_subdirectory(lib/Analysis/IPA)
 add_subdirectory(lib/MC)
@@ -326,15 +311,12 @@ add_subdirectory(lib/ExecutionEngine/Interpreter)
 add_subdirectory(lib/ExecutionEngine/JIT)
 add_subdirectory(lib/Target)
 add_subdirectory(lib/AsmParser)
-add_subdirectory(lib/Archive)
 
-add_subdirectory(projects)
 
 option(LLVM_BUILD_TOOLS "Build LLVM tool programs." ON)
 add_subdirectory(tools)
 
 option(LLVM_BUILD_EXAMPLES "Build LLVM example programs." OFF)
-add_subdirectory(examples)
 
 install(DIRECTORY include/
   DESTINATION include
