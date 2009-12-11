@@ -130,7 +130,10 @@ int main(int argc, char *argv[])
 	exit(1);
     }
     if(optget(opts, "version")->enabled) {
+	char* argvx[] = {argv[0], "--version",NULL};
 	printf("Clam AntiVirus Bytecode Testing Tool %s\n", get_version());
+	cl_init(CL_INIT_DEFAULT);
+	cli_bytecode_debug(2, argvx);
 	optfree(opts);
 	exit(0);
     }
