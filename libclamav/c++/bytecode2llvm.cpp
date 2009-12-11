@@ -346,12 +346,14 @@ private:
 	  assert(idx < globals.size());
 	  GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
 	  const Type *GTy = GetElementPtrInst::getIndexedType(GV->getType(), idxs, 2);
-	  if (!GTy || GTy != PTy->getElementType()) {
-	      errs() << "Type mismatch for GEP: " << *PTy->getElementType() << " != " << *GTy
-		  << "; base is " << *GV << "\n";
+	  if (!GTy) {
+	      errs() << "Type mismatch for GEP: " << *PTy->getElementType() <<
+		  "; base is " << *GV << "\n";
 	      llvm_report_error("(libclamav) Type mismatch converting constant");
 	  }
-	  return ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2);
+	  return ConstantExpr::getPointerCast(
+	      ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2),
+	      PTy);
         }
 	if (isa<IntegerType>(Ty)) {
 	    return ConstantInt::get(Ty, components[c++]);
@@ -953,8 +955,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
-			    CallInst *c = Builder.CreateCall4(FRealMemcmp, Dst, Src, Len,
-								ConstantInt::get(Type::getInt32Ty(Context), 1));
+			    CallInst *c = Builder.CreateCall3(FRealMemcmp, Dst, Src, Len);
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    Store(inst->dest, c);
