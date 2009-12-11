@@ -377,6 +377,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\pe_icons.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\petite.c"
 				>
 			</File>

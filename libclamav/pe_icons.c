@@ -1390,9 +1390,9 @@ static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_c
 	    memset(newdata, 0xaaccaabb, newsize * newsize * sizeof(*newdata));
 	    cli_dbgmsg("Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
 	    for(y = 0; y<newsize; y++) {
-		unsigned int oldy = round(y * scaley) * width;
+		unsigned int oldy = (unsigned int)((y * scaley) * width + 0.5f);
 		for(x = 0; x<newsize; x++)
-		    newdata[y*newsize + x] = imagedata[oldy + (unsigned int)round(x * scalex)];
+		    newdata[y*newsize + x] = imagedata[oldy + (unsigned int)(x * scalex + 0.5f)];
 	    }
 	    free(imagedata);
 	    height = newsize;
