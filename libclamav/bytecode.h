@@ -21,7 +21,7 @@
  */
 #ifndef BYTECODE_H
 #define BYTECODE_H
-#include <stdint.h>
+#include "cltypes.h"
 #include "clambc.h"
 #include <stdio.h>
 #include "fmap.h"
