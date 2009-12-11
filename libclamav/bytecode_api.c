@@ -24,7 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#define _XOPEN_SOURCE 600
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
