@@ -554,11 +554,13 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
 	if(tokens_count != ICO_TOKENS) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong token count)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
 	if(strlen(tokens[3]) != 124) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong length)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -713,12 +715,18 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(i==matcher->group_counts[1]) {
 	    if(!(matcher->group_names[1] = mpool_realloc(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
 	       !(matcher->group_names[1][i] = cli_mpool_strdup(engine->mempool, tokens[2]))) {
-		ret = CL_EMALFDB;
+		ret = CL_EMEM;
 		break;
 	    }
 	    matcher->group_counts[1]++;
 	}
 	metric->group[1] = i;
+
+	if(matcher->group_counts[0] > 256 || matcher->group_counts[1] > 256) {
+	    cli_errmsg("cli_loadidb: too many icon groups!\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
 	sigs++;
     }

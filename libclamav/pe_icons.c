@@ -74,9 +74,9 @@ static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint3
 }
 
 
-static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
 
-int scanicon(unsigned int *grp1, unsigned int *grp2, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
+int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct GICONS gicons;
     struct ICONS icons;
     unsigned int curicon, err;
@@ -122,7 +122,7 @@ int scanicon(unsigned int *grp1, unsigned int *grp2, uint32_t resdir_rva, cli_ct
     }
 
     for(curicon=0; curicon<icons.cnt; curicon++) {
-	if(parseicon(grp1, grp2, icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
+	if(parseicon(set, icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
 	    return CL_VIRUS;
     }
     return 0;
@@ -1153,7 +1153,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 }
 
 
-static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
+static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct {
 	unsigned int sz;
 	unsigned int w;
@@ -1415,19 +1415,15 @@ static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_c
 	unsigned int colors, confidence, bwmatch = 0, positivematch = 64 + 4*(2-enginesize);
 	unsigned int i, j;
 
-	if(grp1) {
-	    unsigned int *g1 = grp1;
-	    while(*g1 && *g1 != matcher->icons[enginesize][x].group[0]+1)
-		g1++;
-	    if(!*g1) continue;
-	}
-	if(grp2) {
-	    unsigned int *g2 = grp2;
-	    while(*g2 && *g2 != matcher->icons[enginesize][x].group[1]+1)
-		g2++;
-	    if(!*g2) continue;
-	}
-
+	i = matcher->icons[enginesize][x].group[0];
+	j = i % 64;
+	i /= 64;
+	if(!(set->v[0][i] & (1<<j))) continue;
+	i = matcher->icons[enginesize][x].group[1];
+	j = i % 64;
+	i /= 64;
+	if(!(set->v[1][i] & (1<<j))) continue;
+	
 	if(!metrics.ccount && !matcher->icons[enginesize][x].ccount) {
 	    /* BW matching */
 	    edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
@@ -1495,23 +1491,34 @@ static int parseicon(unsigned int *grp1, unsigned int *grp2, uint32_t rva, cli_c
 }
 
 
-int cli_match_icon(cli_ctx *ctx, unsigned int *icongrp1, unsigned int *icongrp2) {
+int cli_match_icon(icon_groupset *set, cli_ctx *ctx) {
     if(!ctx || !ctx->engine || !ctx->engine->iconcheck || !ctx->engine->iconcheck->group_counts[0] || !ctx->engine->iconcheck->group_counts[1])
 	return CL_CLEAN;
-    return cli_scanpe(ctx, icongrp1, icongrp2);
+    return cli_scanpe(ctx, set);
 }
 
-int cli_icon_getgroup(const char *group, unsigned int type, cli_ctx *ctx) {
+void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx) {
     struct icon_matcher *matcher;
-    unsigned int i;
+    unsigned int i, j;
 
-    if(type>1 || !ctx || !ctx->engine || !ctx->engine->iconcheck || !ctx->engine->iconcheck->group_counts[type])
-	return 0;
+    if(type>1 || !ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck) || !matcher->group_counts[type])
+	return;
 
-    matcher = ctx->engine->iconcheck;
-    for(i=0; i<matcher->group_counts[type]; i++) {
-	if(!strcmp(group, matcher->group_names[type][i]))
-	    return i+1;
+    j = matcher->group_counts[type];
+    if(groupname[0] == '*' && !groupname[1]) {
+	set->v[type][0] = set->v[type][1] = set->v[type][2] = set->v[type][3] = ~0;
+	return;
     }
-    return 0;
+    for(i=0; i<j; i++) {
+	if(!strcmp(groupname, matcher->group_names[type][i]))
+	    break;
+    }
+    if(i == j)
+	cli_dbgmsg("cli_icon_addgroup: failed to locate icon group%u %s\n", type, groupname);
+    else {
+	j = i % 64;
+	i /= 64;
+	set->v[type][i] |= 1<<j;
+    }
 }
+

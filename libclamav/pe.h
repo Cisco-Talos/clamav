@@ -150,7 +150,7 @@ struct cli_pe_hook_data {
     uint8_t *dummy EBOUNDS(dummyn);
 };
 
-int cli_scanpe(cli_ctx *ctx, unsigned int *icongrp1, unsigned int *icongrp2);
+int cli_scanpe(cli_ctx *ctx, icon_groupset *set);
 
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 

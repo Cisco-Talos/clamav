@@ -115,8 +115,11 @@ typedef struct {
     fmap_t **fmap;
 } cli_ctx;
 
+
+typedef struct {uint64_t v[2][4];} icon_groupset;
+
 struct icomtr {
-    uint32_t group[2];
+    unsigned int group[2];
     unsigned int color_avg[3];
     unsigned int color_x[3];
     unsigned int color_y[3];

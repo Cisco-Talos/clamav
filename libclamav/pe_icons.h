@@ -22,7 +22,20 @@
 #define __PE_ICONS_H
 #include "pe.h"
 
-int scanicon(unsigned int *icongrp1, unsigned int *icongrp2, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
-int cli_match_icon(cli_ctx *ctx, unsigned int *icongrp1, unsigned int *icongrp2);
-int cli_icon_getgroup(const char *group, unsigned int type, cli_ctx *ctx);
+int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+int cli_match_icon(icon_groupset *set, cli_ctx *ctx);
+
+void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx);
+static inline void cli_icongroupset_init(icon_groupset *set) {
+    set->v[0][0] = 0;
+    set->v[0][1] = 0;
+    set->v[0][2] = 0;
+    set->v[0][3] = 0;
+    set->v[1][0] = 0;
+    set->v[1][1] = 0;
+    set->v[1][2] = 0;
+    set->v[1][3] = 0;
+}
+
+
 #endif
