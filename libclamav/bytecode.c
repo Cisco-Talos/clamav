@@ -403,12 +403,13 @@ static inline char *readString(const unsigned char *p, unsigned *off, unsigned l
     return str;
 }
 
-static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
+static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linelength)
 {
     uint64_t magic1;
     unsigned magic2;
     char ok = 1;
     unsigned offset, len, flevel;
+    char *pos;
     if (strncmp((const char*)buffer, BC_HEADER, sizeof(BC_HEADER)-1)) {
 	cli_errmsg("Missing file magic in bytecode");
 	return CL_EMALFDB;
@@ -420,7 +421,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 	cli_errmsg("Unable to parse functionality level in bytecode header\n");
 	return CL_EMALFDB;
     }
-    if (flevel > BC_FUNC_LEVEL) {
+    if (flevel != BC_FUNC_LEVEL) {
 	cli_dbgmsg("Skipping bytecode with functionality level: %u\n", flevel);
 	return CL_BREAK;
     }
@@ -451,9 +452,14 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
       cli_errmsg("Magic numbers don't match: %lx%lx, %u\n", m0, m1, magic2);
       return CL_EMALFDB;
     }
-    if (offset != len) {
-	cli_errmsg("Trailing garbage in bytecode header: %d extra bytes\n",
-		   len-offset);
+    if (buffer[offset] != ':') {
+	cli_errmsg("Expected : but found: %c\n", buffer[offset]);
+	return CL_EMALFDB;
+    }
+    offset++;
+    *linelength = strtol(buffer+offset, &pos, 10);
+    if (*pos != '\n') {
+	cli_errmsg("Invalid number: %s\n", buffer+offset);
 	return CL_EMALFDB;
     }
 
@@ -1169,8 +1175,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 }
 
 enum parse_state {
-    PARSE_BC_HEADER=0,
-    PARSE_BC_TYPES,
+    PARSE_BC_TYPES=0,
     PARSE_BC_APIS,
     PARSE_BC_GLOBALS,
     PARSE_BC_LSIG,
@@ -1182,38 +1187,49 @@ enum parse_state {
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 {
     unsigned row = 0, current_func = 0, bb=0;
-    char buffer[FILEBUFF];
-    enum parse_state state = PARSE_BC_HEADER;
+    char *buffer;
+    unsigned linelength=0;
+    char firstbuf[FILEBUFF];
+    enum parse_state state;
+    int rc;
 
     if (!f && !dbio) {
 	cli_errmsg("Unable to load bytecode (null file)\n");
 	return CL_ENULLARG;
     }
-    while (cli_dbgets(buffer, FILEBUFF, f, dbio)) {
-	int rc;
+    if (!cli_dbgets(firstbuf, FILEBUFF, f, dbio)) {
+	cli_errmsg("Unable to load bytecode (empty file)\n");
+	return CL_EMALFDB;
+    }
+    rc = parseHeader(bc, (unsigned char*)firstbuf, &linelength);
+    if (rc == CL_BREAK) {
+	bc->state = bc_skip;
+	return CL_SUCCESS;
+    }
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("Error at bytecode line %u\n", row);
+	return rc;
+    }
+    buffer = cli_malloc(linelength);
+    if (!buffer) {
+	cli_errmsg("Out of memory allocating line of length %u\n", linelength);
+	return CL_EMEM;
+    }
+    state = PARSE_BC_LSIG;
+    while (cli_dbgets(buffer, linelength, f, dbio)) {
 	cli_chomp(buffer);
 	row++;
 	switch (state) {
-	    case PARSE_BC_HEADER:
-		rc = parseHeader(bc, (unsigned char*)buffer);
-		if (rc == CL_BREAK) /* skip */ {
-		    bc->state = bc_skip;
-		    return CL_SUCCESS;
-		}
-		if (rc != CL_SUCCESS) {
-		    cli_errmsg("Error at bytecode line %u\n", row);
-		    return rc;
-		}
-		state = PARSE_BC_LSIG;
-		break;
 	    case PARSE_BC_LSIG:
 		rc = parseLSig(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
+		    free(buffer);
 		    return CL_SUCCESS;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_BC_TYPES;
@@ -1222,6 +1238,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseTypes(bc, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_BC_APIS;
@@ -1230,10 +1247,12 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseApis(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
+		    free(buffer);
 		    return CL_SUCCESS;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_BC_GLOBALS;
@@ -1242,10 +1261,12 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseGlobals(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
+		    free(buffer);
 		    return CL_SUCCESS;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_MD_OPT_HEADER;
@@ -1255,6 +1276,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		    rc = parseMD(bc, (unsigned char*)buffer);
 		    if (rc != CL_SUCCESS) {
 			cli_errmsg("Error at bytecode line %u\n", row);
+			free(buffer);
 			return rc;
 		    }
 		    break;
@@ -1264,6 +1286,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		bb = 0;
@@ -1273,12 +1296,14 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseBB(bc, current_func, bb++, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		if (bb >= bc->funcs[current_func].numBB) {
 		    if (bc->funcs[current_func].insn_idx != bc->funcs[current_func].numInsts) {
 			cli_errmsg("Parsed different number of instructions than declared: %u != %u\n",
 				   bc->funcs[current_func].insn_idx, bc->funcs[current_func].numInsts);
+			free(buffer);
 			return CL_EMALFDB;
 		    }
 		    cli_dbgmsg("Parsed %u BBs, %u instructions\n",
@@ -1289,6 +1314,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		break;
 	}
     }
+    free(buffer);
     cli_dbgmsg("Parsed %d functions\n", current_func);
     if (current_func != bc->num_func) {
 	cli_errmsg("Loaded less functions than declared: %u vs. %u\n",

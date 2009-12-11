@@ -1187,7 +1187,10 @@ int bytecode_init(void)
 
 #ifdef CL_DEBUG
     llvm::JITEmitDebugInfo = true;
+#else
+    llvm::JITEmitDebugInfo = false;
 #endif
+    llvm::DwarfExceptionHandling = false;
     llvm_start_multithreaded();
 
     // If we have a native target, initialize it to ensure it is linked in and
