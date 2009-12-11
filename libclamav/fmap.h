@@ -21,6 +21,7 @@
 #ifndef __FMAP_H
 #define __FMAP_H
 
+#include <time.h>
 #include "cltypes.h"
 
 typedef struct {
