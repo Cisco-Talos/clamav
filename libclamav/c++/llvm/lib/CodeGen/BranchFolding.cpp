@@ -427,7 +427,7 @@ static unsigned EstimateRuntime(MachineBasicBlock::iterator I,
 static void FixTail(MachineBasicBlock *CurMBB, MachineBasicBlock *SuccBB,
                     const TargetInstrInfo *TII) {
   MachineFunction *MF = CurMBB->getParent();
-  MachineFunction::iterator I = next(MachineFunction::iterator(CurMBB));
+  MachineFunction::iterator I = llvm::next(MachineFunction::iterator(CurMBB));
   MachineBasicBlock *TBB = 0, *FBB = 0;
   SmallVector<MachineOperand, 4> Cond;
   if (I != MF->end() &&
@@ -805,7 +805,7 @@ bool BranchFolder::TailMergeBlocks(MachineFunction &MF) {
   // a compile-time infinite loop repeatedly doing and undoing the same
   // transformations.)
 
-  for (MachineFunction::iterator I = next(MF.begin()), E = MF.end();
+  for (MachineFunction::iterator I = llvm::next(MF.begin()), E = MF.end();
        I != E; ++I) {
     if (I->pred_size() >= 2 && I->pred_size() < TailMergeThreshold) {
       SmallPtrSet<MachineBasicBlock *, 8> UniquePreds;
@@ -833,7 +833,7 @@ bool BranchFolder::TailMergeBlocks(MachineFunction &MF) {
               continue;
             // This is the QBB case described above
             if (!FBB)
-              FBB = next(MachineFunction::iterator(PBB));
+              FBB = llvm::next(MachineFunction::iterator(PBB));
           }
           // Failing case:  the only way IBB can be reached from PBB is via
           // exception handling.  Happens for landing pads.  Would be nice
@@ -1140,7 +1140,7 @@ ReoptimizeBlock:
       // falls through into MBB and we can't understand the prior block's branch
       // condition.
       if (MBB->empty()) {
-        bool PredHasNoFallThrough = TII->BlockHasNoFallThrough(PrevBB);
+        bool PredHasNoFallThrough = !PrevBB.canFallThrough();
         if (PredHasNoFallThrough || !PriorUnAnalyzable ||
             !PrevBB.isSuccessor(MBB)) {
           // If the prior block falls through into us, turn it into an
@@ -1205,11 +1205,11 @@ ReoptimizeBlock:
     }
   }
 
-  // If the prior block doesn't fall through into this block, and if this
-  // block doesn't fall through into some other block, see if we can find a
-  // place to move this block where a fall-through will happen.
-  if (!PrevBB.canFallThrough()) {
-
+  // If the prior block doesn't fall through into this block and if this block
+  // doesn't fall through into some other block and it's not branching only to a
+  // landing pad, then see if we can find a place to move this block where a
+  // fall-through will happen.
+  if (!PrevBB.canFallThrough() && !MBB->BranchesToLandingPad(MBB)) {
     // Now we know that there was no fall-through into this block, check to
     // see if it has a fall-through into its successor.
     bool CurFallsThru = MBB->canFallThrough();
@@ -1221,28 +1221,32 @@ ReoptimizeBlock:
            E = MBB->pred_end(); PI != E; ++PI) {
         // Analyze the branch at the end of the pred.
         MachineBasicBlock *PredBB = *PI;
-        MachineFunction::iterator PredFallthrough = PredBB; ++PredFallthrough;
+        MachineFunction::iterator PredNextBB = PredBB; ++PredNextBB;
         MachineBasicBlock *PredTBB, *PredFBB;
         SmallVector<MachineOperand, 4> PredCond;
-        if (PredBB != MBB && !PredBB->canFallThrough() &&
-            !TII->AnalyzeBranch(*PredBB, PredTBB, PredFBB, PredCond, true)
+        if (PredBB != MBB && !PredBB->canFallThrough()
+            && !TII->AnalyzeBranch(*PredBB, PredTBB, PredFBB, PredCond, true)
             && (!CurFallsThru || !CurTBB || !CurFBB)
             && (!CurFallsThru || MBB->getNumber() >= PredBB->getNumber())) {
-          // If the current block doesn't fall through, just move it.
-          // If the current block can fall through and does not end with a
-          // conditional branch, we need to append an unconditional jump to
-          // the (current) next block.  To avoid a possible compile-time
-          // infinite loop, move blocks only backward in this case.
-          // Also, if there are already 2 branches here, we cannot add a third;
-          // this means we have the case
-          // Bcc next
-          // B elsewhere
-          // next:
+          // If the current block doesn't fall through, just move it.  If the
+          // current block can fall through and does not end with a conditional
+          // branch, we need to append an unconditional jump to the (current)
+          // next block.  To avoid a possible compile-time infinite loop, move
+          // blocks only backward in this case.
+          // 
+          // Also, if there are already 2 branches here, we cannot add a third.
+          // I.e. we have the case:
+          // 
+          //     Bcc next
+          //     B elsewhere
+          //   next:
           if (CurFallsThru) {
-            MachineBasicBlock *NextBB = next(MachineFunction::iterator(MBB));
+            MachineBasicBlock *NextBB =
+              llvm::next(MachineFunction::iterator(MBB));
             CurCond.clear();
             TII->InsertBranch(*MBB, NextBB, 0, CurCond);
           }
+
           MBB->moveAfter(PredBB);
           MadeChange = true;
           goto ReoptimizeBlock;

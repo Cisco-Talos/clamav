@@ -27,6 +27,7 @@
 #include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetFrameInfo.h"
 #include "llvm/Target/TargetLowering.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Target/TargetInstrInfo.h"
@@ -831,8 +832,12 @@ SDValue SelectionDAG::getZExtOrTrunc(SDValue Op, DebugLoc DL, EVT VT) {
 }
 
 SDValue SelectionDAG::getZeroExtendInReg(SDValue Op, DebugLoc DL, EVT VT) {
+  assert(!VT.isVector() &&
+         "getZeroExtendInReg should use the vector element type instead of "
+         "the vector type!");
   if (Op.getValueType() == VT) return Op;
-  APInt Imm = APInt::getLowBitsSet(Op.getValueSizeInBits(),
+  unsigned BitWidth = Op.getValueType().getScalarType().getSizeInBits();
+  APInt Imm = APInt::getLowBitsSet(BitWidth,
                                    VT.getSizeInBits());
   return getNode(ISD::AND, DL, Op.getValueType(), Op,
                  getConstant(Imm, Op.getValueType()));
@@ -1480,7 +1485,7 @@ bool SelectionDAG::SignBitIsZero(SDValue Op, unsigned Depth) const {
   if (Op.getValueType().isVector())
     return false;
 
-  unsigned BitWidth = Op.getValueSizeInBits();
+  unsigned BitWidth = Op.getValueType().getScalarType().getSizeInBits();
   return MaskedValueIsZero(Op, APInt::getSignBit(BitWidth), Depth);
 }
 
@@ -1503,7 +1508,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
                                      APInt &KnownZero, APInt &KnownOne,
                                      unsigned Depth) const {
   unsigned BitWidth = Mask.getBitWidth();
-  assert(BitWidth == Op.getValueType().getSizeInBits() &&
+  assert(BitWidth == Op.getValueType().getScalarType().getSizeInBits() &&
          "Mask size mismatches value type size!");
 
   KnownZero = KnownOne = APInt(BitWidth, 0);   // Don't know anything.
@@ -1760,7 +1765,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
   }
   case ISD::ZERO_EXTEND: {
     EVT InVT = Op.getOperand(0).getValueType();
-    unsigned InBits = InVT.getSizeInBits();
+    unsigned InBits = InVT.getScalarType().getSizeInBits();
     APInt NewBits   = APInt::getHighBitsSet(BitWidth, BitWidth - InBits) & Mask;
     APInt InMask    = Mask;
     InMask.trunc(InBits);
@@ -1774,7 +1779,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
   }
   case ISD::SIGN_EXTEND: {
     EVT InVT = Op.getOperand(0).getValueType();
-    unsigned InBits = InVT.getSizeInBits();
+    unsigned InBits = InVT.getScalarType().getSizeInBits();
     APInt InSignBit = APInt::getSignBit(InBits);
     APInt NewBits   = APInt::getHighBitsSet(BitWidth, BitWidth - InBits) & Mask;
     APInt InMask = Mask;
@@ -1815,7 +1820,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
   }
   case ISD::ANY_EXTEND: {
     EVT InVT = Op.getOperand(0).getValueType();
-    unsigned InBits = InVT.getSizeInBits();
+    unsigned InBits = InVT.getScalarType().getSizeInBits();
     APInt InMask = Mask;
     InMask.trunc(InBits);
     KnownZero.trunc(InBits);
@@ -1827,7 +1832,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
   }
   case ISD::TRUNCATE: {
     EVT InVT = Op.getOperand(0).getValueType();
-    unsigned InBits = InVT.getSizeInBits();
+    unsigned InBits = InVT.getScalarType().getSizeInBits();
     APInt InMask = Mask;
     InMask.zext(InBits);
     KnownZero.zext(InBits);
@@ -1960,7 +1965,7 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
 unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, unsigned Depth) const{
   EVT VT = Op.getValueType();
   assert(VT.isInteger() && "Invalid VT!");
-  unsigned VTBits = VT.getSizeInBits();
+  unsigned VTBits = VT.getScalarType().getSizeInBits();
   unsigned Tmp, Tmp2;
   unsigned FirstAnswer = 1;
 
@@ -1987,7 +1992,7 @@ unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, unsigned Depth) const{
   }
 
   case ISD::SIGN_EXTEND:
-    Tmp = VTBits-Op.getOperand(0).getValueType().getSizeInBits();
+    Tmp = VTBits-Op.getOperand(0).getValueType().getScalarType().getSizeInBits();
     return ComputeNumSignBits(Op.getOperand(0), Depth+1) + Tmp;
 
   case ISD::SIGN_EXTEND_INREG:
@@ -2623,6 +2628,9 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
     assert(VT == N1.getValueType() && "Not an inreg extend!");
     assert(VT.isInteger() && EVT.isInteger() &&
            "Cannot *_EXTEND_INREG FP types");
+    assert(!EVT.isVector() &&
+           "AssertSExt/AssertZExt type should be the vector element type "
+           "rather than the vector type!");
     assert(EVT.bitsLE(VT) && "Not extending!");
     if (VT == EVT) return N1; // noop assertion.
     break;
@@ -2632,12 +2640,15 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
     assert(VT == N1.getValueType() && "Not an inreg extend!");
     assert(VT.isInteger() && EVT.isInteger() &&
            "Cannot *_EXTEND_INREG FP types");
-    assert(EVT.bitsLE(VT) && "Not extending!");
+    assert(!EVT.isVector() &&
+           "SIGN_EXTEND_INREG type should be the vector element type rather "
+           "than the vector type!");
+    assert(EVT.bitsLE(VT.getScalarType()) && "Not extending!");
     if (EVT == VT) return N1;  // Not actually extending
 
     if (N1C) {
       APInt Val = N1C->getAPIntValue();
-      unsigned FromBits = cast<VTSDNode>(N2)->getVT().getSizeInBits();
+      unsigned FromBits = EVT.getSizeInBits();
       Val <<= Val.getBitWidth()-FromBits;
       Val = Val.ashr(Val.getBitWidth()-FromBits);
       return getConstant(Val, VT);
@@ -5807,6 +5818,159 @@ static void DumpNodes(const SDNode *N, unsigned indent, const SelectionDAG *G) {
   N->dump(G);
 }
 
+SDValue SelectionDAG::UnrollVectorOp(SDNode *N, unsigned ResNE) {
+  assert(N->getNumValues() == 1 &&
+         "Can't unroll a vector with multiple results!");
+
+  EVT VT = N->getValueType(0);
+  unsigned NE = VT.getVectorNumElements();
+  EVT EltVT = VT.getVectorElementType();
+  DebugLoc dl = N->getDebugLoc();
+
+  SmallVector<SDValue, 8> Scalars;
+  SmallVector<SDValue, 4> Operands(N->getNumOperands());
+
+  // If ResNE is 0, fully unroll the vector op.
+  if (ResNE == 0)
+    ResNE = NE;
+  else if (NE > ResNE)
+    NE = ResNE;
+
+  unsigned i;
+  for (i= 0; i != NE; ++i) {
+    for (unsigned j = 0; j != N->getNumOperands(); ++j) {
+      SDValue Operand = N->getOperand(j);
+      EVT OperandVT = Operand.getValueType();
+      if (OperandVT.isVector()) {
+        // A vector operand; extract a single element.
+        EVT OperandEltVT = OperandVT.getVectorElementType();
+        Operands[j] = getNode(ISD::EXTRACT_VECTOR_ELT, dl,
+                              OperandEltVT,
+                              Operand,
+                              getConstant(i, MVT::i32));
+      } else {
+        // A scalar operand; just use it as is.
+        Operands[j] = Operand;
+      }
+    }
+
+    switch (N->getOpcode()) {
+    default:
+      Scalars.push_back(getNode(N->getOpcode(), dl, EltVT,
+                                &Operands[0], Operands.size()));
+      break;
+    case ISD::SHL:
+    case ISD::SRA:
+    case ISD::SRL:
+    case ISD::ROTL:
+    case ISD::ROTR:
+      Scalars.push_back(getNode(N->getOpcode(), dl, EltVT, Operands[0],
+                                getShiftAmountOperand(Operands[1])));
+      break;
+    }
+  }
+
+  for (; i < ResNE; ++i)
+    Scalars.push_back(getUNDEF(EltVT));
+
+  return getNode(ISD::BUILD_VECTOR, dl,
+                 EVT::getVectorVT(*getContext(), EltVT, ResNE),
+                 &Scalars[0], Scalars.size());
+}
+
+
+/// isConsecutiveLoad - Return true if LD is loading 'Bytes' bytes from a 
+/// location that is 'Dist' units away from the location that the 'Base' load 
+/// is loading from.
+bool SelectionDAG::isConsecutiveLoad(LoadSDNode *LD, LoadSDNode *Base, 
+                                     unsigned Bytes, int Dist) const {
+  if (LD->getChain() != Base->getChain())
+    return false;
+  EVT VT = LD->getValueType(0);
+  if (VT.getSizeInBits() / 8 != Bytes)
+    return false;
+
+  SDValue Loc = LD->getOperand(1);
+  SDValue BaseLoc = Base->getOperand(1);
+  if (Loc.getOpcode() == ISD::FrameIndex) {
+    if (BaseLoc.getOpcode() != ISD::FrameIndex)
+      return false;
+    const MachineFrameInfo *MFI = getMachineFunction().getFrameInfo();
+    int FI  = cast<FrameIndexSDNode>(Loc)->getIndex();
+    int BFI = cast<FrameIndexSDNode>(BaseLoc)->getIndex();
+    int FS  = MFI->getObjectSize(FI);
+    int BFS = MFI->getObjectSize(BFI);
+    if (FS != BFS || FS != (int)Bytes) return false;
+    return MFI->getObjectOffset(FI) == (MFI->getObjectOffset(BFI) + Dist*Bytes);
+  }
+  if (Loc.getOpcode() == ISD::ADD && Loc.getOperand(0) == BaseLoc) {
+    ConstantSDNode *V = dyn_cast<ConstantSDNode>(Loc.getOperand(1));
+    if (V && (V->getSExtValue() == Dist*Bytes))
+      return true;
+  }
+
+  GlobalValue *GV1 = NULL;
+  GlobalValue *GV2 = NULL;
+  int64_t Offset1 = 0;
+  int64_t Offset2 = 0;
+  bool isGA1 = TLI.isGAPlusOffset(Loc.getNode(), GV1, Offset1);
+  bool isGA2 = TLI.isGAPlusOffset(BaseLoc.getNode(), GV2, Offset2);
+  if (isGA1 && isGA2 && GV1 == GV2)
+    return Offset1 == (Offset2 + Dist*Bytes);
+  return false;
+}
+
+
+/// InferPtrAlignment - Infer alignment of a load / store address. Return 0 if
+/// it cannot be inferred.
+unsigned SelectionDAG::InferPtrAlignment(SDValue Ptr) const {
+  // If this is a GlobalAddress + cst, return the alignment.
+  GlobalValue *GV;
+  int64_t GVOffset = 0;
+  if (TLI.isGAPlusOffset(Ptr.getNode(), GV, GVOffset))
+    return MinAlign(GV->getAlignment(), GVOffset);
+
+  // If this is a direct reference to a stack slot, use information about the
+  // stack slot's alignment.
+  int FrameIdx = 1 << 31;
+  int64_t FrameOffset = 0;
+  if (FrameIndexSDNode *FI = dyn_cast<FrameIndexSDNode>(Ptr)) {
+    FrameIdx = FI->getIndex();
+  } else if (Ptr.getOpcode() == ISD::ADD &&
+             isa<ConstantSDNode>(Ptr.getOperand(1)) &&
+             isa<FrameIndexSDNode>(Ptr.getOperand(0))) {
+    FrameIdx = cast<FrameIndexSDNode>(Ptr.getOperand(0))->getIndex();
+    FrameOffset = Ptr.getConstantOperandVal(1);
+  }
+
+  if (FrameIdx != (1 << 31)) {
+    // FIXME: Handle FI+CST.
+    const MachineFrameInfo &MFI = *getMachineFunction().getFrameInfo();
+    unsigned FIInfoAlign = MinAlign(MFI.getObjectAlignment(FrameIdx),
+                                    FrameOffset);
+    if (MFI.isFixedObjectIndex(FrameIdx)) {
+      int64_t ObjectOffset = MFI.getObjectOffset(FrameIdx) + FrameOffset;
+
+      // The alignment of the frame index can be determined from its offset from
+      // the incoming frame position.  If the frame object is at offset 32 and
+      // the stack is guaranteed to be 16-byte aligned, then we know that the
+      // object is 16-byte aligned.
+      unsigned StackAlign = getTarget().getFrameInfo()->getStackAlignment();
+      unsigned Align = MinAlign(ObjectOffset, StackAlign);
+
+      // Finally, the frame object itself may have a known alignment.  Factor
+      // the alignment + offset into a new alignment.  For example, if we know
+      // the FI is 8 byte aligned, but the pointer is 4 off, we really have a
+      // 4-byte alignment of the resultant pointer.  Likewise align 4 + 4-byte
+      // offset = 4-byte alignment, align 4 + 1-byte offset = align 1, etc.
+      return std::max(Align, FIInfoAlign);
+    }
+    return FIInfoAlign;
+  }
+
+  return 0;
+}
+
 void SelectionDAG::dump() const {
   errs() << "SelectionDAG has " << AllNodes.size() << " nodes:";
 
@@ -5962,3 +6126,4 @@ bool ShuffleVectorSDNode::isSplatMask(const int *Mask, EVT VT) {
       return false;
   return true;
 }
+

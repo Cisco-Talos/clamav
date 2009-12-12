@@ -158,12 +158,18 @@ bool JumpThreading::runOnFunction(Function &F) {
           if (BBI->isTerminator()) {
             // Since TryToSimplifyUncondBranchFromEmptyBlock may delete the
             // block, we have to make sure it isn't in the LoopHeaders set.  We
-            // reinsert afterward in the rare case when the block isn't deleted.
+            // reinsert afterward if needed.
             bool ErasedFromLoopHeaders = LoopHeaders.erase(BB);
+            BasicBlock *Succ = BI->getSuccessor(0);
             
-            if (TryToSimplifyUncondBranchFromEmptyBlock(BB))
+            if (TryToSimplifyUncondBranchFromEmptyBlock(BB)) {
               Changed = true;
-            else if (ErasedFromLoopHeaders)
+              // If we deleted BB and BB was the header of a loop, then the
+              // successor is now the header of the loop.
+              BB = Succ;
+            }
+            
+            if (ErasedFromLoopHeaders)
               LoopHeaders.insert(BB);
           }
         }
@@ -711,6 +717,11 @@ bool JumpThreading::ProcessSwitchOnDuplicateCond(BasicBlock *PredBB,
       // case on this condition.
       if (PredSI->getSuccessor(PredCase) != DestBB &&
           DestSI->getSuccessor(i) != DestBB)
+        continue;
+      
+      // Do not forward this if it already goes to this destination, this would
+      // be an infinite loop.
+      if (PredSI->getSuccessor(PredCase) == DestSucc)
         continue;
 
       // Otherwise, we're safe to make the change.  Make sure that the edge from

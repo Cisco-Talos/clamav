@@ -143,7 +143,6 @@ public:
   virtual bool canFoldMemoryOperand(const MachineInstr *MI,
                                     const SmallVectorImpl<unsigned> &Ops) const;
   
-  virtual bool BlockHasNoFallThrough(const MachineBasicBlock &MBB) const;
   virtual
   bool ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const;
   
@@ -151,8 +150,6 @@ public:
   /// instruction may be.  This returns the maximum number of bytes.
   ///
   virtual unsigned GetInstSizeInBytes(const MachineInstr *MI) const;
-
-  virtual bool isProfitableToDuplicateIndirectBranch() const { return true; }
 };
 
 }

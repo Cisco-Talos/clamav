@@ -92,6 +92,8 @@ namespace ARMII {
     StMiscFrm     = 9  << FormShift,
     LdStMulFrm    = 10 << FormShift,
 
+    LdStExFrm     = 28 << FormShift,
+
     // Miscellaneous arithmetic instructions
     ArithMiscFrm  = 11 << FormShift,
 
@@ -190,9 +192,6 @@ public:
   // if there is not such an opcode.
   virtual unsigned getUnindexedOpcode(unsigned Opc) const =0;
 
-  // Return true if the block does not fall through.
-  virtual bool BlockHasNoFallThrough(const MachineBasicBlock &MBB) const =0;
-
   virtual MachineInstr *convertToThreeAddress(MachineFunction::iterator &MFI,
                                               MachineBasicBlock::iterator &MBBI,
                                               LiveVariables *LV) const;
@@ -290,8 +289,6 @@ public:
 
   virtual bool isIdentical(const MachineInstr *MI, const MachineInstr *Other,
                            const MachineRegisterInfo *MRI) const;
-
-  virtual bool isProfitableToDuplicateIndirectBranch() const;
 };
 
 static inline

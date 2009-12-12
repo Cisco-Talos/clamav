@@ -98,9 +98,12 @@ const std::string GetOperatorName(const DagInit& D) {
 
 // checkNumberOfArguments - Ensure that the number of args in d is
 // greater than or equal to min_arguments, otherwise throw an exception.
-void checkNumberOfArguments (const DagInit* d, unsigned min_arguments) {
-  if (!d || d->getNumArgs() < min_arguments)
+void checkNumberOfArguments (const DagInit* d, unsigned minArgs) {
+  if (!d || d->getNumArgs() < minArgs)
     throw GetOperatorName(d) + ": too few arguments!";
+}
+void checkNumberOfArguments (const DagInit& d, unsigned minArgs) {
+  checkNumberOfArguments(&d, minArgs);
 }
 
 // isDagEmpty - is this DAG marked with an empty marker?
@@ -208,7 +211,8 @@ OptionType::OptionType stringToOptionType(const std::string& T) {
 namespace OptionDescriptionFlags {
   enum OptionDescriptionFlags { Required = 0x1, Hidden = 0x2,
                                 ReallyHidden = 0x4, Extern = 0x8,
-                                OneOrMore = 0x10, ZeroOrOne = 0x20 };
+                                OneOrMore = 0x10, ZeroOrOne = 0x20,
+                                CommaSeparated = 0x40 };
 }
 
 /// OptionDescription - Represents data contained in a single
@@ -243,6 +247,9 @@ struct OptionDescription {
   bool isAlias() const;
 
   bool isMultiVal() const;
+
+  bool isCommaSeparated() const;
+  void setCommaSeparated();
 
   bool isExtern() const;
   void setExtern();
@@ -294,6 +301,13 @@ bool OptionDescription::isAlias() const {
 
 bool OptionDescription::isMultiVal() const {
   return MultiVal > 1;
+}
+
+bool OptionDescription::isCommaSeparated() const {
+  return Flags & OptionDescriptionFlags::CommaSeparated;
+}
+void OptionDescription::setCommaSeparated() {
+  Flags |= OptionDescriptionFlags::CommaSeparated;
 }
 
 bool OptionDescription::isExtern() const {
@@ -456,54 +470,64 @@ void OptionDescriptions::InsertDescription (const OptionDescription& o) {
 
 /// HandlerTable - A base class for function objects implemented as
 /// 'tables of handlers'.
-template <class T>
+template <typename Handler>
 class HandlerTable {
 protected:
   // Implementation details.
 
-  /// Handler -
-  typedef void (T::* Handler) (const DagInit*);
   /// HandlerMap - A map from property names to property handlers
   typedef StringMap<Handler> HandlerMap;
 
   static HandlerMap Handlers_;
   static bool staticMembersInitialized_;
 
-  T* childPtr;
 public:
 
-  HandlerTable(T* cp) : childPtr(cp)
-  {}
-
-  /// operator() - Just forwards to the corresponding property
-  /// handler.
-  void operator() (Init* i) {
-    const DagInit& property = InitPtrToDag(i);
-    const std::string& property_name = GetOperatorName(property);
-    typename HandlerMap::iterator method = Handlers_.find(property_name);
+  Handler GetHandler (const std::string& HandlerName) const {
+    typename HandlerMap::iterator method = Handlers_.find(HandlerName);
 
     if (method != Handlers_.end()) {
       Handler h = method->second;
-      (childPtr->*h)(&property);
+      return h;
     }
     else {
-      throw "No handler found for property " + property_name + "!";
+      throw "No handler found for property " + HandlerName + "!";
     }
   }
 
-  void AddHandler(const char* Property, Handler Handl) {
-    Handlers_[Property] = Handl;
+  void AddHandler(const char* Property, Handler H) {
+    Handlers_[Property] = H;
   }
+
 };
 
-template <class T> typename HandlerTable<T>::HandlerMap
-HandlerTable<T>::Handlers_;
-template <class T> bool HandlerTable<T>::staticMembersInitialized_ = false;
+template <class FunctionObject>
+void InvokeDagInitHandler(FunctionObject* Obj, Init* i) {
+  typedef void (FunctionObject::*Handler) (const DagInit*);
+
+  const DagInit& property = InitPtrToDag(i);
+  const std::string& property_name = GetOperatorName(property);
+  Handler h = Obj->GetHandler(property_name);
+
+  ((Obj)->*(h))(&property);
+}
+
+template <typename H>
+typename HandlerTable<H>::HandlerMap HandlerTable<H>::Handlers_;
+
+template <typename H>
+bool HandlerTable<H>::staticMembersInitialized_ = false;
 
 
 /// CollectOptionProperties - Function object for iterating over an
 /// option property list.
-class CollectOptionProperties : public HandlerTable<CollectOptionProperties> {
+class CollectOptionProperties;
+typedef void (CollectOptionProperties::* CollectOptionPropertiesHandler)
+(const DagInit*);
+
+class CollectOptionProperties
+: public HandlerTable<CollectOptionPropertiesHandler>
+{
 private:
 
   /// optDescs_ - OptionDescriptions table. This is where the
@@ -513,7 +537,7 @@ private:
 public:
 
   explicit CollectOptionProperties(OptionDescription& OD)
-    : HandlerTable<CollectOptionProperties>(this), optDesc_(OD)
+    : optDesc_(OD)
   {
     if (!staticMembersInitialized_) {
       AddHandler("extern", &CollectOptionProperties::onExtern);
@@ -525,9 +549,16 @@ public:
       AddHandler("really_hidden", &CollectOptionProperties::onReallyHidden);
       AddHandler("required", &CollectOptionProperties::onRequired);
       AddHandler("zero_or_one", &CollectOptionProperties::onZeroOrOne);
+      AddHandler("comma_separated", &CollectOptionProperties::onCommaSeparated);
 
       staticMembersInitialized_ = true;
     }
+  }
+
+  /// operator() - Just forwards to the corresponding property
+  /// handler.
+  void operator() (Init* i) {
+    InvokeDagInitHandler(this, i);
   }
 
 private:
@@ -555,11 +586,18 @@ private:
     optDesc_.setReallyHidden();
   }
 
+  void onCommaSeparated (const DagInit* d) {
+    checkNumberOfArguments(d, 0);
+    if (!optDesc_.isList())
+      throw "'comma_separated' is valid only on list options!";
+    optDesc_.setCommaSeparated();
+  }
+
   void onRequired (const DagInit* d) {
     checkNumberOfArguments(d, 0);
-    if (optDesc_.isOneOrMore())
-      throw std::string("An option can't have both (required) "
-                        "and (one_or_more) properties!");
+    if (optDesc_.isOneOrMore() || optDesc_.isZeroOrOne())
+      throw "Only one of (required), (zero_or_one) or "
+        "(one_or_more) properties is allowed!";
     optDesc_.setRequired();
   }
 
@@ -572,7 +610,7 @@ private:
     correct |= (optDesc_.isSwitch() && (str == "true" || str == "false"));
 
     if (!correct)
-      throw std::string("Incorrect usage of the 'init' option property!");
+      throw "Incorrect usage of the 'init' option property!";
 
     optDesc_.InitVal = i;
   }
@@ -580,8 +618,8 @@ private:
   void onOneOrMore (const DagInit* d) {
     checkNumberOfArguments(d, 0);
     if (optDesc_.isRequired() || optDesc_.isZeroOrOne())
-      throw std::string("Only one of (required), (zero_or_one) or "
-                        "(one_or_more) properties is allowed!");
+      throw "Only one of (required), (zero_or_one) or "
+        "(one_or_more) properties is allowed!";
     if (!OptionType::IsList(optDesc_.Type))
       llvm::errs() << "Warning: specifying the 'one_or_more' property "
         "on a non-list option will have no effect.\n";
@@ -591,8 +629,8 @@ private:
   void onZeroOrOne (const DagInit* d) {
     checkNumberOfArguments(d, 0);
     if (optDesc_.isRequired() || optDesc_.isOneOrMore())
-      throw std::string("Only one of (required), (zero_or_one) or "
-                        "(one_or_more) properties is allowed!");
+      throw "Only one of (required), (zero_or_one) or "
+        "(one_or_more) properties is allowed!";
     if (!OptionType::IsList(optDesc_.Type))
       llvm::errs() << "Warning: specifying the 'zero_or_one' property"
         "on a non-list option will have no effect.\n";
@@ -603,11 +641,10 @@ private:
     checkNumberOfArguments(d, 1);
     int val = InitPtrToInt(d->getArg(0));
     if (val < 2)
-      throw std::string("Error in the 'multi_val' property: "
-                        "the value must be greater than 1!");
+      throw "Error in the 'multi_val' property: "
+        "the value must be greater than 1!";
     if (!OptionType::IsList(optDesc_.Type))
-      throw std::string("The multi_val property is valid only "
-                        "on list options!");
+      throw "The multi_val property is valid only on list options!";
     optDesc_.MultiVal = val;
   }
 
@@ -712,7 +749,13 @@ typedef std::vector<IntrusiveRefCntPtr<ToolDescription> > ToolDescriptions;
 
 /// CollectToolProperties - Function object for iterating over a list of
 /// tool property records.
-class CollectToolProperties : public HandlerTable<CollectToolProperties> {
+
+class CollectToolProperties;
+typedef void (CollectToolProperties::* CollectToolPropertiesHandler)
+(const DagInit*);
+
+class CollectToolProperties : public HandlerTable<CollectToolPropertiesHandler>
+{
 private:
 
   /// toolDesc_ - Properties of the current Tool. This is where the
@@ -722,7 +765,7 @@ private:
 public:
 
   explicit CollectToolProperties (ToolDescription& d)
-    : HandlerTable<CollectToolProperties>(this) , toolDesc_(d)
+    : toolDesc_(d)
   {
     if (!staticMembersInitialized_) {
 
@@ -738,6 +781,10 @@ public:
     }
   }
 
+  void operator() (Init* i) {
+    InvokeDagInitHandler(this, i);
+  }
+
 private:
 
   /// Property handlers --
@@ -749,8 +796,7 @@ private:
     Init* Case = d->getArg(0);
     if (typeid(*Case) != typeid(DagInit) ||
         GetOperatorName(static_cast<DagInit*>(Case)) != "case")
-      throw
-        std::string("The argument to (actions) should be a 'case' construct!");
+      throw "The argument to (actions) should be a 'case' construct!";
     toolDesc_.Actions = Case;
   }
 
@@ -851,8 +897,8 @@ int CalculatePriority(RecordVector::const_iterator B,
     priority  = static_cast<int>((*B)->getValueAsInt("priority"));
 
     if (++B != E)
-      throw std::string("More than one 'PluginPriority' instance found: "
-                        "most probably an error!");
+      throw "More than one 'PluginPriority' instance found: "
+        "most probably an error!";
   }
 
   return priority;
@@ -943,7 +989,7 @@ void TypecheckGraph (const RecordVector& EdgeVector,
     }
 
     if (NodeB == "root")
-      throw std::string("Edges back to the root are not allowed!");
+      throw "Edges back to the root are not allowed!";
   }
 }
 
@@ -963,7 +1009,7 @@ void WalkCase(const Init* Case, F1 TestCallback, F2 StatementCallback,
 
   // Error checks.
   if (GetOperatorName(d) != "case")
-    throw std::string("WalkCase should be invoked only on 'case' expressions!");
+    throw "WalkCase should be invoked only on 'case' expressions!";
 
   if (d.getNumArgs() < 2)
     throw "There should be at least one clause in the 'case' expression:\n"
@@ -983,8 +1029,8 @@ void WalkCase(const Init* Case, F1 TestCallback, F2 StatementCallback,
       const DagInit& Test = InitPtrToDag(arg);
 
       if (GetOperatorName(Test) == "default" && (i+1 != numArgs))
-        throw std::string("The 'default' clause should be the last in the"
-                          "'case' construct!");
+        throw "The 'default' clause should be the last in the "
+          "'case' construct!";
       if (i == numArgs)
         throw "Case construct handler: no corresponding action "
           "found for the test " + Test.getAsString() + '!';
@@ -1017,9 +1063,11 @@ class ExtractOptionNames {
     const DagInit& Stmt = InitPtrToDag(Statement);
     const std::string& ActionName = GetOperatorName(Stmt);
     if (ActionName == "forward" || ActionName == "forward_as" ||
-        ActionName == "unpack_values" || ActionName == "switch_on" ||
-        ActionName == "parameter_equals" || ActionName == "element_in_list" ||
-        ActionName == "not_empty" || ActionName == "empty") {
+        ActionName == "forward_value" ||
+        ActionName == "forward_transformed_value" ||
+        ActionName == "switch_on" || ActionName == "parameter_equals" ||
+        ActionName == "element_in_list" || ActionName == "not_empty" ||
+        ActionName == "empty") {
       checkNumberOfArguments(&Stmt, 1);
       const std::string& Name = InitPtrToString(Stmt.getArg(0));
       OptionNames_.insert(Name);
@@ -1154,6 +1202,9 @@ public:
     const char* Neg = (EmitNegate_ ? "!" : "");
     if (OptName == "o") {
       O << Neg << "OutputFilename.empty()";
+    }
+    else if (OptName == "save-temps") {
+      O << Neg << "(SaveTemps == SaveTempsEnum::Unset)";
     }
     else {
       const OptionDescription& OptDesc = OptDescs_.FindListOrParameter(OptName);
@@ -1499,7 +1550,7 @@ StrVector::const_iterator SubstituteSpecialCommands
     const std::string& CmdName = *Pos;
 
     if (CmdName == ")")
-      throw std::string("$CALL invocation: empty argument list!");
+      throw "$CALL invocation: empty argument list!";
 
     O << "hooks::";
     O << CmdName << "(";
@@ -1694,7 +1745,7 @@ void EmitForwardOptionPropertyHandlingCode (const OptionDescription& D,
     break;
   case OptionType::Alias:
   default:
-    throw std::string("Aliases are not allowed in tool option descriptions!");
+    throw "Aliases are not allowed in tool option descriptions!";
   }
 }
 
@@ -1724,90 +1775,134 @@ struct ActionHandlingCallbackBase {
 
 /// EmitActionHandlersCallback - Emit code that handles actions. Used by
 /// EmitGenerateActionMethod() as an argument to EmitCaseConstructHandler().
-class EmitActionHandlersCallback : ActionHandlingCallbackBase {
+class EmitActionHandlersCallback;
+typedef void (EmitActionHandlersCallback::* EmitActionHandlersCallbackHandler)
+(const DagInit&, unsigned, raw_ostream&) const;
+
+class EmitActionHandlersCallback
+: public ActionHandlingCallbackBase,
+  public HandlerTable<EmitActionHandlersCallbackHandler>
+{
   const OptionDescriptions& OptDescs;
+  typedef EmitActionHandlersCallbackHandler Handler;
 
-  void processActionDag(const Init* Statement, unsigned IndentLevel,
-                        raw_ostream& O) const
+  void onAppendCmd (const DagInit& Dag,
+                    unsigned IndentLevel, raw_ostream& O) const
   {
-    const DagInit& Dag = InitPtrToDag(Statement);
-    const std::string& ActionName = GetOperatorName(Dag);
+    checkNumberOfArguments(&Dag, 1);
+    const std::string& Cmd = InitPtrToString(Dag.getArg(0));
+    StrVector Out;
+    llvm::SplitString(Cmd, Out);
 
-    if (ActionName == "append_cmd") {
-      checkNumberOfArguments(&Dag, 1);
-      const std::string& Cmd = InitPtrToString(Dag.getArg(0));
-      StrVector Out;
-      llvm::SplitString(Cmd, Out);
+    for (StrVector::const_iterator B = Out.begin(), E = Out.end();
+         B != E; ++B)
+      O.indent(IndentLevel) << "vec.push_back(\"" << *B << "\");\n";
+  }
 
-      for (StrVector::const_iterator B = Out.begin(), E = Out.end();
-           B != E; ++B)
-        O.indent(IndentLevel) << "vec.push_back(\"" << *B << "\");\n";
-    }
-    else if (ActionName == "error") {
-      this->onErrorDag(Dag, IndentLevel, O);
-    }
-    else if (ActionName == "warning") {
-      this->onWarningDag(Dag, IndentLevel, O);
-    }
-    else if (ActionName == "forward") {
-      checkNumberOfArguments(&Dag, 1);
-      const std::string& Name = InitPtrToString(Dag.getArg(0));
-      EmitForwardOptionPropertyHandlingCode(OptDescs.FindOption(Name),
-                                            IndentLevel, "", O);
-    }
-    else if (ActionName == "forward_as") {
-      checkNumberOfArguments(&Dag, 2);
-      const std::string& Name = InitPtrToString(Dag.getArg(0));
-      const std::string& NewName = InitPtrToString(Dag.getArg(1));
-      EmitForwardOptionPropertyHandlingCode(OptDescs.FindOption(Name),
-                                            IndentLevel, NewName, O);
-    }
-    else if (ActionName == "output_suffix") {
-      checkNumberOfArguments(&Dag, 1);
-      const std::string& OutSuf = InitPtrToString(Dag.getArg(0));
-      O.indent(IndentLevel) << "output_suffix = \"" << OutSuf << "\";\n";
-    }
-    else if (ActionName == "stop_compilation") {
-      O.indent(IndentLevel) << "stop_compilation = true;\n";
-    }
-    else if (ActionName == "unpack_values") {
-      checkNumberOfArguments(&Dag, 1);
-      const std::string& Name = InitPtrToString(Dag.getArg(0));
-      const OptionDescription& D = OptDescs.FindOption(Name);
+  void onForward (const DagInit& Dag,
+                  unsigned IndentLevel, raw_ostream& O) const
+  {
+    checkNumberOfArguments(&Dag, 1);
+    const std::string& Name = InitPtrToString(Dag.getArg(0));
+    EmitForwardOptionPropertyHandlingCode(OptDescs.FindOption(Name),
+                                          IndentLevel, "", O);
+  }
 
-      if (D.isMultiVal())
-        throw std::string("Can't use unpack_values with multi-valued options!");
+  void onForwardAs (const DagInit& Dag,
+                    unsigned IndentLevel, raw_ostream& O) const
+  {
+    checkNumberOfArguments(&Dag, 2);
+    const std::string& Name = InitPtrToString(Dag.getArg(0));
+    const std::string& NewName = InitPtrToString(Dag.getArg(1));
+    EmitForwardOptionPropertyHandlingCode(OptDescs.FindOption(Name),
+                                          IndentLevel, NewName, O);
+  }
 
-      if (D.isList()) {
-        O.indent(IndentLevel)
-          << "for (" << D.GenTypeDeclaration()
-          << "::iterator B = " << D.GenVariableName() << ".begin(),\n";
-        O.indent(IndentLevel)
-          << "E = " << D.GenVariableName() << ".end(); B != E; ++B)\n";
-        O.indent(IndentLevel + Indent1)
-          << "llvm::SplitString(*B, vec, \",\");\n";
-      }
-      else if (D.isParameter()){
-        O.indent(IndentLevel) << "llvm::SplitString("
-                              << D.GenVariableName() << ", vec, \",\");\n";
-      }
-      else {
-        throw "Option '" + D.Name +
-          "': switches can't have the 'unpack_values' property!";
-      }
+  void onForwardValue (const DagInit& Dag,
+                       unsigned IndentLevel, raw_ostream& O) const
+  {
+    checkNumberOfArguments(&Dag, 1);
+    const std::string& Name = InitPtrToString(Dag.getArg(0));
+    const OptionDescription& D = OptDescs.FindListOrParameter(Name);
+
+    if (D.isParameter()) {
+      O.indent(IndentLevel) << "vec.push_back("
+                            << D.GenVariableName() << ");\n";
     }
     else {
-      throw "Unknown action name: " + ActionName + "!";
+      O.indent(IndentLevel) << "std::copy(" << D.GenVariableName()
+                            << ".begin(), " << D.GenVariableName()
+                            << ".end(), std::back_inserter(vec));\n";
     }
   }
+
+  void onForwardTransformedValue (const DagInit& Dag,
+                                  unsigned IndentLevel, raw_ostream& O) const
+  {
+    checkNumberOfArguments(&Dag, 2);
+    const std::string& Name = InitPtrToString(Dag.getArg(0));
+    const std::string& Hook = InitPtrToString(Dag.getArg(1));
+    const OptionDescription& D = OptDescs.FindListOrParameter(Name);
+
+    O.indent(IndentLevel) << "vec.push_back(" << "hooks::"
+                          << Hook << "(" << D.GenVariableName() << "));\n";
+  }
+
+
+  void onOutputSuffix (const DagInit& Dag,
+                       unsigned IndentLevel, raw_ostream& O) const
+  {
+    checkNumberOfArguments(&Dag, 1);
+    const std::string& OutSuf = InitPtrToString(Dag.getArg(0));
+    O.indent(IndentLevel) << "output_suffix = \"" << OutSuf << "\";\n";
+  }
+
+  void onStopCompilation (const DagInit& Dag,
+                          unsigned IndentLevel, raw_ostream& O) const
+  {
+    O.indent(IndentLevel) << "stop_compilation = true;\n";
+  }
+
+
+  void onUnpackValues (const DagInit& Dag,
+                       unsigned IndentLevel, raw_ostream& O) const
+  {
+    throw "'unpack_values' is deprecated. "
+      "Use 'comma_separated' + 'forward_value' instead!";
+  }
+
  public:
-  EmitActionHandlersCallback(const OptionDescriptions& OD)
-    : OptDescs(OD) {}
+
+  explicit EmitActionHandlersCallback(const OptionDescriptions& OD)
+    : OptDescs(OD)
+  {
+    if (!staticMembersInitialized_) {
+      AddHandler("error", &EmitActionHandlersCallback::onErrorDag);
+      AddHandler("warning", &EmitActionHandlersCallback::onWarningDag);
+      AddHandler("append_cmd", &EmitActionHandlersCallback::onAppendCmd);
+      AddHandler("forward", &EmitActionHandlersCallback::onForward);
+      AddHandler("forward_as", &EmitActionHandlersCallback::onForwardAs);
+      AddHandler("forward_value", &EmitActionHandlersCallback::onForwardValue);
+      AddHandler("forward_transformed_value",
+                 &EmitActionHandlersCallback::onForwardTransformedValue);
+      AddHandler("output_suffix", &EmitActionHandlersCallback::onOutputSuffix);
+      AddHandler("stop_compilation",
+                 &EmitActionHandlersCallback::onStopCompilation);
+      AddHandler("unpack_values",
+                 &EmitActionHandlersCallback::onUnpackValues);
+
+      staticMembersInitialized_ = true;
+    }
+  }
 
   void operator()(const Init* Statement,
                   unsigned IndentLevel, raw_ostream& O) const
   {
-    this->processActionDag(Statement, IndentLevel, O);
+    const DagInit& Dag = InitPtrToDag(Statement);
+    const std::string& ActionName = GetOperatorName(Dag);
+    Handler h = GetHandler(ActionName);
+
+    ((this)->*(h))(Dag, IndentLevel, O);
   }
 };
 
@@ -1863,11 +1958,9 @@ bool IsOutFileIndexCheckRequired (Init* CmdLine) {
     return IsOutFileIndexCheckRequiredCase(CmdLine);
 }
 
-// EmitGenerateActionMethod - Emit either a normal or a "join" version of the
-// Tool::GenerateAction() method.
-void EmitGenerateActionMethod (const ToolDescription& D,
-                               const OptionDescriptions& OptDescs,
-                               bool IsJoin, raw_ostream& O) {
+void EmitGenerateActionMethodHeader(const ToolDescription& D,
+                                    bool IsJoin, raw_ostream& O)
+{
   if (IsJoin)
     O.indent(Indent1) << "Action GenerateAction(const PathVector& inFiles,\n";
   else
@@ -1883,6 +1976,15 @@ void EmitGenerateActionMethod (const ToolDescription& D,
   O.indent(Indent2) << "bool stop_compilation = !HasChildren;\n";
   O.indent(Indent2) << "const char* output_suffix = \""
                     << D.OutputSuffix << "\";\n";
+}
+
+// EmitGenerateActionMethod - Emit either a normal or a "join" version of the
+// Tool::GenerateAction() method.
+void EmitGenerateActionMethod (const ToolDescription& D,
+                               const OptionDescriptions& OptDescs,
+                               bool IsJoin, raw_ostream& O) {
+
+  EmitGenerateActionMethodHeader(D, IsJoin, O);
 
   if (!D.CmdLine)
     throw "Tool " + D.Name + " has no cmd_line property!";
@@ -2076,12 +2178,13 @@ void EmitOptionDefinitions (const OptionDescriptions& descs,
         O << ", cl::ZeroOrOne";
     }
 
-    if (val.isReallyHidden()) {
+    if (val.isReallyHidden())
       O << ", cl::ReallyHidden";
-    }
-    else if (val.isHidden()) {
+    else if (val.isHidden())
       O << ", cl::Hidden";
-    }
+
+    if (val.isCommaSeparated())
+      O << ", cl::CommaSeparated";
 
     if (val.MultiVal > 1)
       O << ", cl::multi_val(" << val.MultiVal << ')';
@@ -2140,7 +2243,7 @@ class EmitPreprocessOptionsCallback : ActionHandlingCallbackBase {
       O.indent(IndentLevel) << OptDesc.GenVariableName() << ".clear();\n";
     }
     else {
-      throw "Can't apply 'unset_option' to alias option '" + OptName + "'";
+      throw "Can't apply 'unset_option' to alias option '" + OptName + "'!";
     }
   }
 
@@ -2218,7 +2321,7 @@ void EmitPopulateLanguageMap (const RecordKeeper& Records, raw_ostream& O)
 
     ListInit* LangsToSuffixesList = LangMapRecord->getValueAsListInit("map");
     if (!LangsToSuffixesList)
-      throw std::string("Error in the language map definition!");
+      throw "Error in the language map definition!";
 
     for (unsigned i = 0; i < LangsToSuffixesList->size(); ++i) {
       const Record* LangToSuffixes = LangsToSuffixesList->getElementAsRecord(i);
@@ -2346,23 +2449,72 @@ void EmitPopulateCompilationGraph (const RecordVector& EdgeVector,
   O << "}\n\n";
 }
 
+/// HookInfo - Information about the hook type and number of arguments.
+struct HookInfo {
+
+  // A hook can either have a single parameter of type std::vector<std::string>,
+  // or NumArgs parameters of type const char*.
+  enum HookType { ListHook, ArgHook };
+
+  HookType Type;
+  unsigned NumArgs;
+
+  HookInfo() : Type(ArgHook), NumArgs(1)
+  {}
+
+  HookInfo(HookType T) : Type(T), NumArgs(1)
+  {}
+
+  HookInfo(unsigned N) : Type(ArgHook), NumArgs(N)
+  {}
+};
+
+typedef llvm::StringMap<HookInfo> HookInfoMap;
+
 /// ExtractHookNames - Extract the hook names from all instances of
-/// $CALL(HookName) in the provided command line string. Helper
+/// $CALL(HookName) in the provided command line string/action. Helper
 /// function used by FillInHookNames().
 class ExtractHookNames {
-  llvm::StringMap<unsigned>& HookNames_;
+  HookInfoMap& HookNames_;
+  const OptionDescriptions& OptDescs_;
 public:
-  ExtractHookNames(llvm::StringMap<unsigned>& HookNames)
-  : HookNames_(HookNames) {}
+  ExtractHookNames(HookInfoMap& HookNames, const OptionDescriptions& OptDescs)
+    : HookNames_(HookNames), OptDescs_(OptDescs)
+  {}
 
-  void operator()(const Init* CmdLine) {
-    StrVector cmds;
+  void onAction (const DagInit& Dag) {
+    if (GetOperatorName(Dag) == "forward_transformed_value") {
+      checkNumberOfArguments(Dag, 2);
+      const std::string& OptName = InitPtrToString(Dag.getArg(0));
+      const std::string& HookName = InitPtrToString(Dag.getArg(1));
+      const OptionDescription& D = OptDescs_.FindOption(OptName);
 
-    // Ignore nested 'case' DAG.
-    if (typeid(*CmdLine) == typeid(DagInit))
+      HookNames_[HookName] = HookInfo(D.isList() ? HookInfo::ListHook
+                                      : HookInfo::ArgHook);
+    }
+  }
+
+  void operator()(const Init* Arg) {
+
+    // We're invoked on an action (either a dag or a dag list).
+    if (typeid(*Arg) == typeid(DagInit)) {
+      const DagInit& Dag = InitPtrToDag(Arg);
+      this->onAction(Dag);
       return;
+    }
+    else if (typeid(*Arg) == typeid(ListInit)) {
+      const ListInit& List = InitPtrToList(Arg);
+      for (ListInit::const_iterator B = List.begin(), E = List.end(); B != E;
+           ++B) {
+        const DagInit& Dag = InitPtrToDag(*B);
+        this->onAction(Dag);
+      }
+      return;
+    }
 
-    TokenizeCmdline(InitPtrToString(CmdLine), cmds);
+    // We're invoked on a command line.
+    StrVector cmds;
+    TokenizeCmdline(InitPtrToString(Arg), cmds);
     for (StrVector::const_iterator B = cmds.begin(), E = cmds.end();
          B != E; ++B) {
       const std::string& cmd = *B;
@@ -2380,13 +2532,14 @@ public:
           ++NumArgs;
         }
 
-        StringMap<unsigned>::const_iterator H = HookNames_.find(HookName);
+        HookInfoMap::const_iterator H = HookNames_.find(HookName);
 
-        if (H != HookNames_.end() && H->second != NumArgs)
+        if (H != HookNames_.end() && H->second.NumArgs != NumArgs &&
+            H->second.Type != HookInfo::ArgHook)
           throw "Overloading of hooks is not allowed. Overloaded hook: "
             + HookName;
         else
-          HookNames_[HookName] = NumArgs;
+          HookNames_[HookName] = HookInfo(NumArgs);
 
       }
     }
@@ -2403,40 +2556,56 @@ public:
 /// FillInHookNames - Actually extract the hook names from all command
 /// line strings. Helper function used by EmitHookDeclarations().
 void FillInHookNames(const ToolDescriptions& ToolDescs,
-                     llvm::StringMap<unsigned>& HookNames)
+                     const OptionDescriptions& OptDescs,
+                     HookInfoMap& HookNames)
 {
-  // For all command lines:
+  // For all tool descriptions:
   for (ToolDescriptions::const_iterator B = ToolDescs.begin(),
          E = ToolDescs.end(); B != E; ++B) {
     const ToolDescription& D = *(*B);
+
+    // Look for 'forward_transformed_value' in 'actions'.
+    if (D.Actions)
+      WalkCase(D.Actions, Id(), ExtractHookNames(HookNames, OptDescs));
+
+    // Look for hook invocations in 'cmd_line'.
     if (!D.CmdLine)
       continue;
     if (dynamic_cast<StringInit*>(D.CmdLine))
       // This is a string.
-      ExtractHookNames(HookNames).operator()(D.CmdLine);
+      ExtractHookNames(HookNames, OptDescs).operator()(D.CmdLine);
     else
       // This is a 'case' construct.
-      WalkCase(D.CmdLine, Id(), ExtractHookNames(HookNames));
+      WalkCase(D.CmdLine, Id(), ExtractHookNames(HookNames, OptDescs));
   }
 }
 
 /// EmitHookDeclarations - Parse CmdLine fields of all the tool
 /// property records and emit hook function declaration for each
 /// instance of $CALL(HookName).
-void EmitHookDeclarations(const ToolDescriptions& ToolDescs, raw_ostream& O) {
-  llvm::StringMap<unsigned> HookNames;
+void EmitHookDeclarations(const ToolDescriptions& ToolDescs,
+                          const OptionDescriptions& OptDescs, raw_ostream& O) {
+  HookInfoMap HookNames;
 
-  FillInHookNames(ToolDescs, HookNames);
+  FillInHookNames(ToolDescs, OptDescs, HookNames);
   if (HookNames.empty())
     return;
 
   O << "namespace hooks {\n";
-  for (StringMap<unsigned>::const_iterator B = HookNames.begin(),
+  for (HookInfoMap::const_iterator B = HookNames.begin(),
          E = HookNames.end(); B != E; ++B) {
-    O.indent(Indent1) << "std::string " << B->first() << "(";
+    const char* HookName = B->first();
+    const HookInfo& Info = B->second;
 
-    for (unsigned i = 0, j = B->second; i < j; ++i) {
-      O << "const char* Arg" << i << (i+1 == j ? "" : ", ");
+    O.indent(Indent1) << "std::string " << HookName << "(";
+
+    if (Info.Type == HookInfo::ArgHook) {
+      for (unsigned i = 0, j = Info.NumArgs; i < j; ++i) {
+        O << "const char* Arg" << i << (i+1 == j ? "" : ", ");
+      }
+    }
+    else {
+      O << "const std::vector<std::string>& Arg";
     }
 
     O <<");\n";
@@ -2469,11 +2638,12 @@ void EmitIncludes(raw_ostream& O) {
     << "#include \"llvm/CompilerDriver/Plugin.h\"\n"
     << "#include \"llvm/CompilerDriver/Tool.h\"\n\n"
 
-    << "#include \"llvm/ADT/StringExtras.h\"\n"
     << "#include \"llvm/Support/CommandLine.h\"\n"
     << "#include \"llvm/Support/raw_ostream.h\"\n\n"
 
+    << "#include <algorithm>\n"
     << "#include <cstdlib>\n"
+    << "#include <iterator>\n"
     << "#include <stdexcept>\n\n"
 
     << "using namespace llvm;\n"
@@ -2567,7 +2737,7 @@ void EmitPluginCode(const PluginData& Data, raw_ostream& O) {
   EmitOptionDefinitions(Data.OptDescs, Data.HasSink, Data.HasExterns, O);
 
   // Emit hook declarations.
-  EmitHookDeclarations(Data.ToolDescs, O);
+  EmitHookDeclarations(Data.ToolDescs, Data.OptDescs, O);
 
   O << "namespace {\n\n";
 

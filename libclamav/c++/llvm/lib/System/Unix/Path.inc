@@ -77,7 +77,7 @@ inline bool lastIsSlash(const std::string& path) {
 namespace llvm {
 using namespace sys;
 
-extern const char sys::PathSeparator = ':';
+const char sys::PathSeparator = ':';
 
 Path::Path(const std::string& p)
   : path(p) {}
@@ -348,7 +348,8 @@ Path Path::GetMainExecutable(const char *argv0, void *MainAddr) {
   uint32_t size = sizeof(exe_path);
   if (_NSGetExecutablePath(exe_path, &size) == 0) {
     char link_path[MAXPATHLEN];
-    return Path(std::string(realpath(exe_path, link_path)));
+    if (realpath(exe_path, link_path))
+      return Path(std::string(link_path));
   }
 #elif defined(__FreeBSD__)
   char exe_path[PATH_MAX];
@@ -370,7 +371,8 @@ Path Path::GetMainExecutable(const char *argv0, void *MainAddr) {
   // If the filename is a symlink, we need to resolve and return the location of
   // the actual executable.
   char link_path[MAXPATHLEN];
-  return Path(std::string(realpath(DLInfo.dli_fname, link_path)));
+  if (realpath(DLInfo.dli_fname, link_path))
+    return Path(std::string(link_path));
 #endif
   return Path();
 }

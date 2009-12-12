@@ -279,6 +279,43 @@ void LiveVariables::HandlePhysRegUse(unsigned Reg, MachineInstr *MI) {
     PhysRegUse[SubReg] =  MI;
 }
 
+/// FindLastRefOrPartRef - Return the last reference or partial reference of
+/// the specified register.
+MachineInstr *LiveVariables::FindLastRefOrPartRef(unsigned Reg) {
+  MachineInstr *LastDef = PhysRegDef[Reg];
+  MachineInstr *LastUse = PhysRegUse[Reg];
+  if (!LastDef && !LastUse)
+    return false;
+
+  MachineInstr *LastRefOrPartRef = LastUse ? LastUse : LastDef;
+  unsigned LastRefOrPartRefDist = DistanceMap[LastRefOrPartRef];
+  MachineInstr *LastPartDef = 0;
+  unsigned LastPartDefDist = 0;
+  for (const unsigned *SubRegs = TRI->getSubRegisters(Reg);
+       unsigned SubReg = *SubRegs; ++SubRegs) {
+    MachineInstr *Def = PhysRegDef[SubReg];
+    if (Def && Def != LastDef) {
+      // There was a def of this sub-register in between. This is a partial
+      // def, keep track of the last one.
+      unsigned Dist = DistanceMap[Def];
+      if (Dist > LastPartDefDist) {
+        LastPartDefDist = Dist;
+        LastPartDef = Def;
+      }
+      continue;
+    }
+    if (MachineInstr *Use = PhysRegUse[SubReg]) {
+      unsigned Dist = DistanceMap[Use];
+      if (Dist > LastRefOrPartRefDist) {
+        LastRefOrPartRefDist = Dist;
+        LastRefOrPartRef = Use;
+      }
+    }
+  }
+
+  return LastRefOrPartRef;
+}
+
 bool LiveVariables::HandlePhysRegKill(unsigned Reg, MachineInstr *MI) {
   MachineInstr *LastDef = PhysRegDef[Reg];
   MachineInstr *LastUse = PhysRegUse[Reg];
@@ -373,7 +410,16 @@ bool LiveVariables::HandlePhysRegKill(unsigned Reg, MachineInstr *MI) {
       if (NeedDef)
         PhysRegDef[Reg]->addOperand(MachineOperand::CreateReg(SubReg,
                                                  true/*IsDef*/, true/*IsImp*/));
-      LastRefOrPartRef->addRegisterKilled(SubReg, TRI, true);
+      MachineInstr *LastSubRef = FindLastRefOrPartRef(SubReg);
+      if (LastSubRef)
+        LastSubRef->addRegisterKilled(SubReg, TRI, true);
+      else {
+        LastRefOrPartRef->addRegisterKilled(SubReg, TRI, true);
+        PhysRegUse[SubReg] = LastRefOrPartRef;
+        for (const unsigned *SSRegs = TRI->getSubRegisters(SubReg);
+             unsigned SSReg = *SSRegs; ++SSRegs)
+          PhysRegUse[SSReg] = LastRefOrPartRef;
+      }
       for (const unsigned *SS = TRI->getSubRegisters(SubReg); *SS; ++SS)
         PartUses.erase(*SS);
     }
@@ -672,6 +718,51 @@ bool LiveVariables::VarInfo::isLiveIn(const MachineBasicBlock &MBB,
 
  // Reg was not defined in MBB, was it killed here?
   return findKill(&MBB);
+}
+
+bool LiveVariables::isLiveOut(unsigned Reg, const MachineBasicBlock &MBB) {
+  LiveVariables::VarInfo &VI = getVarInfo(Reg);
+
+  // Loop over all of the successors of the basic block, checking to see if
+  // the value is either live in the block, or if it is killed in the block.
+  std::vector<MachineBasicBlock*> OpSuccBlocks;
+  for (MachineBasicBlock::const_succ_iterator SI = MBB.succ_begin(),
+         E = MBB.succ_end(); SI != E; ++SI) {
+    MachineBasicBlock *SuccMBB = *SI;
+
+    // Is it alive in this successor?
+    unsigned SuccIdx = SuccMBB->getNumber();
+    if (VI.AliveBlocks.test(SuccIdx))
+      return true;
+    OpSuccBlocks.push_back(SuccMBB);
+  }
+
+  // Check to see if this value is live because there is a use in a successor
+  // that kills it.
+  switch (OpSuccBlocks.size()) {
+  case 1: {
+    MachineBasicBlock *SuccMBB = OpSuccBlocks[0];
+    for (unsigned i = 0, e = VI.Kills.size(); i != e; ++i)
+      if (VI.Kills[i]->getParent() == SuccMBB)
+        return true;
+    break;
+  }
+  case 2: {
+    MachineBasicBlock *SuccMBB1 = OpSuccBlocks[0], *SuccMBB2 = OpSuccBlocks[1];
+    for (unsigned i = 0, e = VI.Kills.size(); i != e; ++i)
+      if (VI.Kills[i]->getParent() == SuccMBB1 ||
+          VI.Kills[i]->getParent() == SuccMBB2)
+        return true;
+    break;
+  }
+  default:
+    std::sort(OpSuccBlocks.begin(), OpSuccBlocks.end());
+    for (unsigned i = 0, e = VI.Kills.size(); i != e; ++i)
+      if (std::binary_search(OpSuccBlocks.begin(), OpSuccBlocks.end(),
+                             VI.Kills[i]->getParent()))
+        return true;
+  }
+  return false;
 }
 
 /// addNewBlock - Add a new basic block BB as an empty succcessor to DomBB. All

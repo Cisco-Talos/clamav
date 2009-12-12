@@ -2163,8 +2163,8 @@ bool InstCombiner::WillNotOverflowSignedAdd(Value *LHS, Value *RHS) {
   
   // Add has the property that adding any two 2's complement numbers can only 
   // have one carry bit which can change a sign.  As such, if LHS and RHS each
-  // have at least two sign bits, we know that the addition of the two values will
-  // sign extend fine.
+  // have at least two sign bits, we know that the addition of the two values
+  // will sign extend fine.
   if (ComputeNumSignBits(LHS) > 1 && ComputeNumSignBits(RHS) > 1)
     return true;
   
@@ -2184,15 +2184,12 @@ Instruction *InstCombiner::visitAdd(BinaryOperator &I) {
   bool Changed = SimplifyCommutative(I);
   Value *LHS = I.getOperand(0), *RHS = I.getOperand(1);
 
+  if (Value *V = SimplifyAddInst(LHS, RHS, I.hasNoSignedWrap(),
+                                 I.hasNoUnsignedWrap(), TD))
+    return ReplaceInstUsesWith(I, V);
+
+  
   if (Constant *RHSC = dyn_cast<Constant>(RHS)) {
-    // X + undef -> undef
-    if (isa<UndefValue>(RHS))
-      return ReplaceInstUsesWith(I, RHS);
-
-    // X + 0 --> X
-    if (RHSC->isNullValue())
-      return ReplaceInstUsesWith(I, LHS);
-
     if (ConstantInt *CI = dyn_cast<ConstantInt>(RHSC)) {
       // X + (signbit) --> X ^ signbit
       const APInt& Val = CI->getValue();
@@ -4070,6 +4067,21 @@ Value *InstCombiner::FoldLogicalPlusAnd(Value *LHS, Value *RHS,
 /// FoldAndOfICmps - Fold (icmp)&(icmp) if possible.
 Instruction *InstCombiner::FoldAndOfICmps(Instruction &I,
                                           ICmpInst *LHS, ICmpInst *RHS) {
+  // (icmp eq A, null) & (icmp eq B, null) -->
+  //     (icmp eq (ptrtoint(A)|ptrtoint(B)), 0)
+  if (TD &&
+      LHS->getPredicate() == ICmpInst::ICMP_EQ &&
+      RHS->getPredicate() == ICmpInst::ICMP_EQ &&
+      isa<ConstantPointerNull>(LHS->getOperand(1)) &&
+      isa<ConstantPointerNull>(RHS->getOperand(1))) {
+    const Type *IntPtrTy = TD->getIntPtrType(I.getContext());
+    Value *A = Builder->CreatePtrToInt(LHS->getOperand(0), IntPtrTy);
+    Value *B = Builder->CreatePtrToInt(RHS->getOperand(0), IntPtrTy);
+    Value *NewOr = Builder->CreateOr(A, B);
+    return new ICmpInst(ICmpInst::ICMP_EQ, NewOr,
+                        Constant::getNullValue(IntPtrTy));
+  }
+  
   Value *Val, *Val2;
   ConstantInt *LHSCst, *RHSCst;
   ICmpInst::Predicate LHSCC, RHSCC;
@@ -4081,12 +4093,20 @@ Instruction *InstCombiner::FoldAndOfICmps(Instruction &I,
                          m_ConstantInt(RHSCst))))
     return 0;
   
-  // (icmp ult A, C) & (icmp ult B, C) --> (icmp ult (A|B), C)
-  // where C is a power of 2
-  if (LHSCst == RHSCst && LHSCC == RHSCC && LHSCC == ICmpInst::ICMP_ULT &&
-      LHSCst->getValue().isPowerOf2()) {
-    Value *NewOr = Builder->CreateOr(Val, Val2);
-    return new ICmpInst(LHSCC, NewOr, LHSCst);
+  if (LHSCst == RHSCst && LHSCC == RHSCC) {
+    // (icmp ult A, C) & (icmp ult B, C) --> (icmp ult (A|B), C)
+    // where C is a power of 2
+    if (LHSCC == ICmpInst::ICMP_ULT &&
+        LHSCst->getValue().isPowerOf2()) {
+      Value *NewOr = Builder->CreateOr(Val, Val2);
+      return new ICmpInst(LHSCC, NewOr, LHSCst);
+    }
+    
+    // (icmp eq A, 0) & (icmp eq B, 0) --> (icmp eq (A|B), 0)
+    if (LHSCC == ICmpInst::ICMP_EQ && LHSCst->isZero()) {
+      Value *NewOr = Builder->CreateOr(Val, Val2);
+      return new ICmpInst(LHSCC, NewOr, LHSCst);
+    }
   }
   
   // From here on, we only handle:
@@ -4322,7 +4342,6 @@ Instruction *InstCombiner::visitAnd(BinaryOperator &I) {
 
   if (Value *V = SimplifyAndInst(Op0, Op1, TD))
     return ReplaceInstUsesWith(I, V);
-    
 
   // See if we can simplify any instructions used by the instruction whose sole 
   // purpose is to compute bits we don't care about.
@@ -4743,16 +4762,37 @@ static Instruction *MatchSelectFromAndOr(Value *A, Value *B,
 /// FoldOrOfICmps - Fold (icmp)|(icmp) if possible.
 Instruction *InstCombiner::FoldOrOfICmps(Instruction &I,
                                          ICmpInst *LHS, ICmpInst *RHS) {
+  // (icmp ne A, null) | (icmp ne B, null) -->
+  //     (icmp ne (ptrtoint(A)|ptrtoint(B)), 0)
+  if (TD &&
+      LHS->getPredicate() == ICmpInst::ICMP_NE &&
+      RHS->getPredicate() == ICmpInst::ICMP_NE &&
+      isa<ConstantPointerNull>(LHS->getOperand(1)) &&
+      isa<ConstantPointerNull>(RHS->getOperand(1))) {
+    const Type *IntPtrTy = TD->getIntPtrType(I.getContext());
+    Value *A = Builder->CreatePtrToInt(LHS->getOperand(0), IntPtrTy);
+    Value *B = Builder->CreatePtrToInt(RHS->getOperand(0), IntPtrTy);
+    Value *NewOr = Builder->CreateOr(A, B);
+    return new ICmpInst(ICmpInst::ICMP_NE, NewOr,
+                        Constant::getNullValue(IntPtrTy));
+  }
+  
   Value *Val, *Val2;
   ConstantInt *LHSCst, *RHSCst;
   ICmpInst::Predicate LHSCC, RHSCC;
   
   // This only handles icmp of constants: (icmp1 A, C1) | (icmp2 B, C2).
-  if (!match(LHS, m_ICmp(LHSCC, m_Value(Val),
-             m_ConstantInt(LHSCst))) ||
-      !match(RHS, m_ICmp(RHSCC, m_Value(Val2),
-             m_ConstantInt(RHSCst))))
+  if (!match(LHS, m_ICmp(LHSCC, m_Value(Val), m_ConstantInt(LHSCst))) ||
+      !match(RHS, m_ICmp(RHSCC, m_Value(Val2), m_ConstantInt(RHSCst))))
     return 0;
+
+  
+  // (icmp ne A, 0) | (icmp ne B, 0) --> (icmp ne (A|B), 0)
+  if (LHSCst == RHSCst && LHSCC == RHSCC &&
+      LHSCC == ICmpInst::ICMP_NE && LHSCst->isZero()) {
+    Value *NewOr = Builder->CreateOr(Val, Val2);
+    return new ICmpInst(LHSCC, NewOr, LHSCst);
+  }
   
   // From here on, we only handle:
   //    (icmp1 A, C1) | (icmp2 A, C2) --> something simpler.
@@ -8545,25 +8585,36 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, Instruction &CI,
   if (ICI->isEquality() && CI.getType() == ICI->getOperand(0)->getType()) {
     if (const IntegerType *ITy = dyn_cast<IntegerType>(CI.getType())) {
       uint32_t BitWidth = ITy->getBitWidth();
-      if (BitWidth > 1) {
-        Value *LHS = ICI->getOperand(0);
-        Value *RHS = ICI->getOperand(1);
+      Value *LHS = ICI->getOperand(0);
+      Value *RHS = ICI->getOperand(1);
 
-        APInt KnownZeroLHS(BitWidth, 0), KnownOneLHS(BitWidth, 0);
-        APInt KnownZeroRHS(BitWidth, 0), KnownOneRHS(BitWidth, 0);
-        APInt TypeMask(APInt::getHighBitsSet(BitWidth, BitWidth-1));
-        ComputeMaskedBits(LHS, TypeMask, KnownZeroLHS, KnownOneLHS);
-        ComputeMaskedBits(RHS, TypeMask, KnownZeroRHS, KnownOneRHS);
+      APInt KnownZeroLHS(BitWidth, 0), KnownOneLHS(BitWidth, 0);
+      APInt KnownZeroRHS(BitWidth, 0), KnownOneRHS(BitWidth, 0);
+      APInt TypeMask(APInt::getAllOnesValue(BitWidth));
+      ComputeMaskedBits(LHS, TypeMask, KnownZeroLHS, KnownOneLHS);
+      ComputeMaskedBits(RHS, TypeMask, KnownZeroRHS, KnownOneRHS);
 
-        if (KnownZeroLHS.countLeadingOnes() == BitWidth-1 &&
-            KnownZeroRHS.countLeadingOnes() == BitWidth-1) {
+      if (KnownZeroLHS == KnownZeroRHS && KnownOneLHS == KnownOneRHS) {
+        APInt KnownBits = KnownZeroLHS | KnownOneLHS;
+        APInt UnknownBit = ~KnownBits;
+        if (UnknownBit.countPopulation() == 1) {
           if (!DoXform) return ICI;
 
-          Value *Xor = Builder->CreateXor(LHS, RHS);
+          Value *Result = Builder->CreateXor(LHS, RHS);
+
+          // Mask off any bits that are set and won't be shifted away.
+          if (KnownOneLHS.uge(UnknownBit))
+            Result = Builder->CreateAnd(Result,
+                                        ConstantInt::get(ITy, UnknownBit));
+
+          // Shift the bit we're testing down to the lsb.
+          Result = Builder->CreateLShr(
+               Result, ConstantInt::get(ITy, UnknownBit.countTrailingZeros()));
+
           if (ICI->getPredicate() == ICmpInst::ICMP_EQ)
-            Xor = Builder->CreateXor(Xor, ConstantInt::get(ITy, 1));
-          Xor->takeName(ICI);
-          return ReplaceInstUsesWith(CI, Xor);
+            Result = Builder->CreateXor(Result, ConstantInt::get(ITy, 1));
+          Result->takeName(ICI);
+          return ReplaceInstUsesWith(CI, Result);
         }
       }
     }
@@ -9894,9 +9945,9 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
         // Create a simple add instruction, and insert it into the struct.
         Instruction *Add = BinaryOperator::CreateAdd(LHS, RHS, "", &CI);
         Worklist.Add(Add);
-        Constant *V[2];
-        V[0] = UndefValue::get(LHS->getType());
-        V[1] = ConstantInt::getTrue(*Context);
+        Constant *V[] = {
+          UndefValue::get(LHS->getType()), ConstantInt::getTrue(*Context)
+        };
         Constant *Struct = ConstantStruct::get(*Context, V, 2, false);
         return InsertValueInst::Create(Struct, Add, 0);
       }
@@ -9906,9 +9957,9 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
         // Create a simple add instruction, and insert it into the struct.
         Instruction *Add = BinaryOperator::CreateNUWAdd(LHS, RHS, "", &CI);
         Worklist.Add(Add);
-        Constant *V[2];
-        V[0] = UndefValue::get(LHS->getType());
-        V[1] = ConstantInt::getFalse(*Context);
+        Constant *V[] = {
+          UndefValue::get(LHS->getType()), ConstantInt::getFalse(*Context)
+        };
         Constant *Struct = ConstantStruct::get(*Context, V, 2, false);
         return InsertValueInst::Create(Struct, Add, 0);
       }
@@ -9933,7 +9984,8 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
       // X + 0 -> {X, false}
       if (RHS->isZero()) {
         Constant *V[] = {
-          UndefValue::get(II->getType()), ConstantInt::getFalse(*Context)
+          UndefValue::get(II->getOperand(0)->getType()),
+          ConstantInt::getFalse(*Context)
         };
         Constant *Struct = ConstantStruct::get(*Context, V, 2, false);
         return InsertValueInst::Create(Struct, II->getOperand(1), 0);
@@ -9952,7 +10004,8 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
       // X - 0 -> {X, false}
       if (RHS->isZero()) {
         Constant *V[] = {
-          UndefValue::get(II->getType()), ConstantInt::getFalse(*Context)
+          UndefValue::get(II->getOperand(1)->getType()),
+          ConstantInt::getFalse(*Context)
         };
         Constant *Struct = ConstantStruct::get(*Context, V, 2, false);
         return InsertValueInst::Create(Struct, II->getOperand(1), 0);
@@ -9981,11 +10034,12 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
       
       // X * 1 -> {X, false}
       if (RHSI->equalsInt(1)) {
-        Constant *V[2];
-        V[0] = UndefValue::get(II->getType());
-        V[1] = ConstantInt::getFalse(*Context);
+        Constant *V[] = {
+          UndefValue::get(II->getOperand(1)->getType()),
+          ConstantInt::getFalse(*Context)
+        };
         Constant *Struct = ConstantStruct::get(*Context, V, 2, false);
-        return InsertValueInst::Create(Struct, II->getOperand(1), 1);
+        return InsertValueInst::Create(Struct, II->getOperand(1), 0);
       }
     }
     break;

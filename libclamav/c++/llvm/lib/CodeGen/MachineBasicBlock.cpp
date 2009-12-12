@@ -13,15 +13,16 @@
 
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/BasicBlock.h"
+#include "llvm/ADT/SmallSet.h"
+#include "llvm/Assembly/Writer.h"
 #include "llvm/CodeGen/MachineFunction.h"
-#include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetInstrDesc.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Support/LeakDetector.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Assembly/Writer.h"
 #include <algorithm>
 using namespace llvm;
 
@@ -290,7 +291,7 @@ void MachineBasicBlock::updateTerminator() {
     } else {
       // The block has a fallthrough conditional branch.
       MachineBasicBlock *MBBA = *succ_begin();
-      MachineBasicBlock *MBBB = *next(succ_begin());
+      MachineBasicBlock *MBBB = *llvm::next(succ_begin());
       if (MBBA == TBB) std::swap(MBBB, MBBA);
       if (isLayoutSuccessor(TBB)) {
         if (TII->ReverseBranchCondition(Cond)) {
@@ -359,15 +360,10 @@ bool MachineBasicBlock::isSuccessor(const MachineBasicBlock *MBB) const {
 
 bool MachineBasicBlock::isLayoutSuccessor(const MachineBasicBlock *MBB) const {
   MachineFunction::const_iterator I(this);
-  return next(I) == MachineFunction::const_iterator(MBB);
+  return llvm::next(I) == MachineFunction::const_iterator(MBB);
 }
 
 bool MachineBasicBlock::canFallThrough() {
-  MachineBasicBlock *TBB = 0, *FBB = 0;
-  SmallVector<MachineOperand, 4> Cond;
-  const TargetInstrInfo *TII = getParent()->getTarget().getInstrInfo();
-  bool BranchUnAnalyzable = TII->AnalyzeBranch(*this, TBB, FBB, Cond, true);
-
   MachineFunction::iterator Fallthrough = this;
   ++Fallthrough;
   // If FallthroughBlock is off the end of the function, it can't fall through.
@@ -378,16 +374,21 @@ bool MachineBasicBlock::canFallThrough() {
   if (!isSuccessor(Fallthrough))
     return false;
 
-  // If we couldn't analyze the branch, examine the last instruction.
-  // If the block doesn't end in a known control barrier, assume fallthrough
-  // is possible. The isPredicable check is needed because this code can be
-  // called during IfConversion, where an instruction which is normally a
-  // Barrier is predicated and thus no longer an actual control barrier. This
-  // is over-conservative though, because if an instruction isn't actually
-  // predicated we could still treat it like a barrier.
-  if (BranchUnAnalyzable)
+  // Analyze the branches, if any, at the end of the block.
+  MachineBasicBlock *TBB = 0, *FBB = 0;
+  SmallVector<MachineOperand, 4> Cond;
+  const TargetInstrInfo *TII = getParent()->getTarget().getInstrInfo();
+  if (TII->AnalyzeBranch(*this, TBB, FBB, Cond, true)) {
+    // If we couldn't analyze the branch, examine the last instruction.
+    // If the block doesn't end in a known control barrier, assume fallthrough
+    // is possible. The isPredicable check is needed because this code can be
+    // called during IfConversion, where an instruction which is normally a
+    // Barrier is predicated and thus no longer an actual control barrier. This
+    // is over-conservative though, because if an instruction isn't actually
+    // predicated we could still treat it like a barrier.
     return empty() || !back().getDesc().isBarrier() ||
            back().getDesc().isPredicable();
+  }
 
   // If there is no branch, control always falls through.
   if (TBB == 0) return true;
@@ -448,10 +449,28 @@ void MachineBasicBlock::ReplaceUsesOfBlockWith(MachineBasicBlock *Old,
   addSuccessor(New);
 }
 
+/// BranchesToLandingPad - The basic block is a landing pad or branches only to
+/// a landing pad. No other instructions are present other than the
+/// unconditional branch.
+bool
+MachineBasicBlock::BranchesToLandingPad(const MachineBasicBlock *MBB) const {
+  SmallSet<const MachineBasicBlock*, 32> Visited;
+  const MachineBasicBlock *CurMBB = MBB;
+
+  while (!CurMBB->isLandingPad()) {
+    if (CurMBB->succ_size() != 1) break;
+    if (!Visited.insert(CurMBB)) break;
+    CurMBB = *CurMBB->succ_begin();
+  }
+
+  return CurMBB->isLandingPad();
+}
+
 /// CorrectExtraCFGEdges - Various pieces of code can cause excess edges in the
 /// CFG to be inserted.  If we have proven that MBB can only branch to DestA and
 /// DestB, remove any other MBB successors from the CFG.  DestA and DestB can
 /// be null.
+/// 
 /// Besides DestA and DestB, retain other edges leading to LandingPads
 /// (currently there can be only one; we don't check or require that here).
 /// Note it is possible that DestA and/or DestB are LandingPads.
@@ -461,7 +480,8 @@ bool MachineBasicBlock::CorrectExtraCFGEdges(MachineBasicBlock *DestA,
   bool MadeChange = false;
   bool AddedFallThrough = false;
 
-  MachineFunction::iterator FallThru = next(MachineFunction::iterator(this));
+  MachineFunction::iterator FallThru =
+    llvm::next(MachineFunction::iterator(this));
   
   // If this block ends with a conditional branch that falls through to its
   // successor, set DestB as the successor.
@@ -480,16 +500,17 @@ bool MachineBasicBlock::CorrectExtraCFGEdges(MachineBasicBlock *DestA,
   }
   
   MachineBasicBlock::succ_iterator SI = succ_begin();
-  MachineBasicBlock *OrigDestA = DestA, *OrigDestB = DestB;
+  const MachineBasicBlock *OrigDestA = DestA, *OrigDestB = DestB;
   while (SI != succ_end()) {
-    if (*SI == DestA) {
+    const MachineBasicBlock *MBB = *SI;
+    if (MBB == DestA) {
       DestA = 0;
       ++SI;
-    } else if (*SI == DestB) {
+    } else if (MBB == DestB) {
       DestB = 0;
       ++SI;
-    } else if ((*SI)->isLandingPad() && 
-               *SI!=OrigDestA && *SI!=OrigDestB) {
+    } else if (MBB != OrigDestA && MBB != OrigDestB &&
+               BranchesToLandingPad(MBB)) {
       ++SI;
     } else {
       // Otherwise, this is a superfluous edge, remove it.
@@ -497,12 +518,14 @@ bool MachineBasicBlock::CorrectExtraCFGEdges(MachineBasicBlock *DestA,
       MadeChange = true;
     }
   }
+
   if (!AddedFallThrough) {
     assert(DestA == 0 && DestB == 0 &&
            "MachineCFG is missing edges!");
   } else if (isCond) {
     assert(DestA == 0 && "MachineCFG is missing edges!");
   }
+
   return MadeChange;
 }
 

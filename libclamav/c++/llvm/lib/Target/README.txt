@@ -2,6 +2,29 @@ Target Independent Opportunities:
 
 //===---------------------------------------------------------------------===//
 
+Dead argument elimination should be enhanced to handle cases when an argument is
+dead to an externally visible function.  Though the argument can't be removed
+from the externally visible function, the caller doesn't need to pass it in.
+For example in this testcase:
+
+  void foo(int X) __attribute__((noinline));
+  void foo(int X) { sideeffect(); }
+  void bar(int A) { foo(A+1); }
+
+We compile bar to:
+
+define void @bar(i32 %A) nounwind ssp {
+  %0 = add nsw i32 %A, 1                          ; <i32> [#uses=1]
+  tail call void @foo(i32 %0) nounwind noinline ssp
+  ret void
+}
+
+The add is dead, we could pass in 'i32 undef' instead.  This occurs for C++
+templates etc, which usually have linkonce_odr/weak_odr linkage, not internal
+linkage.
+
+//===---------------------------------------------------------------------===//
+
 With the recent changes to make the implicit def/use set explicit in
 machineinstrs, we should change the target descriptions for 'call' instructions
 so that the .td files don't list all the call-clobbered registers as implicit
@@ -1093,6 +1116,8 @@ later.
 
 //===---------------------------------------------------------------------===//
 
+[STORE SINKING]
+
 Store sinking: This code:
 
 void f (int n, int *cond, int *res) {
@@ -1148,6 +1173,8 @@ This is GCC PR38204.
 
 //===---------------------------------------------------------------------===//
 
+[STORE SINKING]
+
 GCC PR37810 is an interesting case where we should sink load/store reload
 into the if block and outside the loop, so we don't reload/store it on the
 non-call path.
@@ -1175,7 +1202,7 @@ we don't sink the store.  We need partially dead store sinking.
 
 //===---------------------------------------------------------------------===//
 
-[PHI TRANSLATE GEPs]
+[LOAD PRE CRIT EDGE SPLITTING]
 
 GCC PR37166: Sinking of loads prevents SROA'ing the "g" struct on the stack
 leading to excess stack traffic. This could be handled by GVN with some crazy
@@ -1192,64 +1219,59 @@ bb3:		; preds = %bb1, %bb2, %bb
 	%10 = getelementptr %struct.f* %c_addr.0, i32 0, i32 0
 	%11 = load i32* %10, align 4
 
-%11 is fully redundant, an in BB2 it should have the value %8.
+%11 is partially redundant, an in BB2 it should have the value %8.
 
-GCC PR33344 is a similar case.
+GCC PR33344 and PR35287 are similar cases.
 
 
 //===---------------------------------------------------------------------===//
 
+[LOAD PRE]
+
 There are many load PRE testcases in testsuite/gcc.dg/tree-ssa/loadpre* in the
-GCC testsuite.  There are many pre testcases as ssa-pre-*.c
+GCC testsuite, ones we don't get yet are (checked through loadpre25):
+
+[CRIT EDGE BREAKING]
+loadpre3.c predcom-4.c
+
+[PRE OF READONLY CALL]
+loadpre5.c
+
+[TURN SELECT INTO BRANCH]
+loadpre14.c loadpre15.c 
+
+actually a conditional increment: loadpre18.c loadpre19.c
+
+
+//===---------------------------------------------------------------------===//
+
+[SCALAR PRE]
+There are many PRE testcases in testsuite/gcc.dg/tree-ssa/ssa-pre-*.c in the
+GCC testsuite.
 
 //===---------------------------------------------------------------------===//
 
 There are some interesting cases in testsuite/gcc.dg/tree-ssa/pred-comm* in the
-GCC testsuite.  For example, predcom-1.c is:
+GCC testsuite.  For example, we get the first example in predcom-1.c, but 
+miss the second one:
 
- for (i = 2; i < 1000; i++)
-    fib[i] = (fib[i-1] + fib[i - 2]) & 0xffff;
+unsigned fib[1000];
+unsigned avg[1000];
 
-which compiles into:
+__attribute__ ((noinline))
+void count_averages(int n) {
+  int i;
+  for (i = 1; i < n; i++)
+    avg[i] = (((unsigned long) fib[i - 1] + fib[i] + fib[i + 1]) / 3) & 0xffff;
+}
 
-bb1:		; preds = %bb1, %bb1.thread
-	%indvar = phi i32 [ 0, %bb1.thread ], [ %0, %bb1 ]	
-	%i.0.reg2mem.0 = add i32 %indvar, 2		
-	%0 = add i32 %indvar, 1		; <i32> [#uses=3]
-	%1 = getelementptr [1000 x i32]* @fib, i32 0, i32 %0		
-	%2 = load i32* %1, align 4		; <i32> [#uses=1]
-	%3 = getelementptr [1000 x i32]* @fib, i32 0, i32 %indvar	
-	%4 = load i32* %3, align 4		; <i32> [#uses=1]
-	%5 = add i32 %4, %2		; <i32> [#uses=1]
-	%6 = and i32 %5, 65535		; <i32> [#uses=1]
-	%7 = getelementptr [1000 x i32]* @fib, i32 0, i32 %i.0.reg2mem.0
-	store i32 %6, i32* %7, align 4
-	%exitcond = icmp eq i32 %0, 998		; <i1> [#uses=1]
-	br i1 %exitcond, label %return, label %bb1
+which compiles into two loads instead of one in the loop.
 
-This is basically:
-  LOAD fib[i+1]
-  LOAD fib[i]
-  STORE fib[i+2]
+predcom-2.c is the same as predcom-1.c
 
-instead of handling this as a loop or other xform, all we'd need to do is teach
-load PRE to phi translate the %0 add (i+1) into the predecessor as (i'+1+1) =
-(i'+2) (where i' is the previous iteration of i).  This would find the store
-which feeds it.
-
-predcom-2.c is apparently the same as predcom-1.c
 predcom-3.c is very similar but needs loads feeding each other instead of
 store->load.
-predcom-4.c seems the same as the rest.
 
-
-//===---------------------------------------------------------------------===//
-
-Other simple load PRE cases:
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35287 [LPRE crit edge splitting]
-
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34677 (licm does this, LPRE crit edge)
-  llvm-gcc t2.c -S -o - -O0 -emit-llvm | llvm-as | opt -mem2reg -simplifycfg -gvn | llvm-dis
 
 //===---------------------------------------------------------------------===//
 
@@ -1282,7 +1304,7 @@ Interesting missed case because of control flow flattening (should be 2 loads):
 http://gcc.gnu.org/bugzilla/show_bug.cgi?id=26629
 With: llvm-gcc t2.c -S -o - -O0 -emit-llvm | llvm-as | 
              opt -mem2reg -gvn -instcombine | llvm-dis
-we miss it because we need 1) GEP PHI TRAN, 2) CRIT EDGE 3) MULTIPLE DIFFERENT
+we miss it because we need 1) CRIT EDGE 2) MULTIPLE DIFFERENT
 VALS PRODUCED BY ONE BLOCK OVER DIFFERENT PATHS
 
 //===---------------------------------------------------------------------===//
@@ -1682,3 +1704,50 @@ need all but the bottom two bits from %A, and if we gave that mask to SDB it
 would delete the or instruction for us.
 
 //===---------------------------------------------------------------------===//
+
+FunctionAttrs is not marking this function as readnone (just readonly):
+$ clang t.c -emit-llvm -S -o - -O0 | opt -mem2reg -S -functionattrs
+
+int t(int a, int b, int c) {
+ int *p;
+ if (a)
+   p = &a;
+ else
+   p = &c;
+ return *p;
+}
+
+This is because we codegen this to:
+
+define i32 @t(i32 %a, i32 %b, i32 %c) nounwind readonly ssp {
+entry:
+  %a.addr = alloca i32                            ; <i32*> [#uses=3]
+  %c.addr = alloca i32                            ; <i32*> [#uses=2]
+...
+
+if.end:
+  %p.0 = phi i32* [ %a.addr, %if.then ], [ %c.addr, %if.else ]
+  %tmp2 = load i32* %p.0                          ; <i32> [#uses=1]
+  ret i32 %tmp2
+}
+
+And functionattrs doesn't realize that the p.0 load points to function local
+memory.
+
+Also, functionattrs doesn't know about memcpy/memset.  This function should be
+marked readnone, since it only twiddles local memory, but functionattrs doesn't
+handle memset/memcpy/memmove aggressively:
+
+struct X { int *p; int *q; };
+int foo() {
+ int i = 0, j = 1;
+ struct X x, y;
+ int **p;
+ y.p = &i;
+ x.q = &j;
+ p = __builtin_memcpy (&x, &y, sizeof (int *));
+ return **p;
+}
+
+//===---------------------------------------------------------------------===//
+
