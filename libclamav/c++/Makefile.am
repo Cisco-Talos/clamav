@@ -507,6 +507,7 @@ libllvmipa_la_SOURCES=\
  llvm/lib/Analysis/LoopPass.cpp\
  llvm/lib/Analysis/MemoryBuiltins.cpp\
  llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
+ llvm/lib/Analysis/PHITransAddr.cpp\
  llvm/lib/Analysis/ProfileInfo.cpp\
  llvm/lib/Analysis/ScalarEvolution.cpp\
  llvm/lib/Analysis/ScalarEvolutionExpander.cpp\
@@ -550,7 +551,9 @@ libllvmcodegen_la_SOURCES=\
  llvm/lib/CodeGen/MachinePassRegistry.cpp\
  llvm/lib/CodeGen/MachineRegisterInfo.cpp\
  llvm/lib/CodeGen/MachineSink.cpp\
+ llvm/lib/CodeGen/MachineSSAUpdater.cpp\
  llvm/lib/CodeGen/MachineVerifier.cpp\
+ llvm/lib/CodeGen/MaxStackAlignment.cpp\
  llvm/lib/CodeGen/ObjectCodeEmitter.cpp\
  llvm/lib/CodeGen/OcamlGC.cpp\
  llvm/lib/CodeGen/PHIElimination.cpp\
