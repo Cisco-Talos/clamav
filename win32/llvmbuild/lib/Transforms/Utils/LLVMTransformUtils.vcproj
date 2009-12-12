@@ -54,7 +54,7 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,7 @@
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug/LLVMTransformUtils.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Debug/LLVMTransformUtils.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -74,14 +74,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\LLVMTransformUtils.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Debug\LLVMTransformUtils.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -138,14 +138,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release/LLVMTransformUtils.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Release/LLVMTransformUtils.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -156,14 +156,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\LLVMTransformUtils.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Release\LLVMTransformUtils.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -220,14 +220,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="1"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel/LLVMTransformUtils.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/MinSizeRel/LLVMTransformUtils.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -238,14 +238,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\LLVMTransformUtils.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\LLVMTransformUtils.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -302,14 +302,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo/LLVMTransformUtils.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo/LLVMTransformUtils.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -321,14 +321,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\LLVMTransformUtils.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\LLVMTransformUtils.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -354,99 +354,99 @@
 			Name="Source Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\AddrModeMatcher.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\AddrModeMatcher.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\BasicBlockUtils.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\BasicBlockUtils.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\BasicInliner.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\BasicInliner.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\BreakCriticalEdges.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\BreakCriticalEdges.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\CloneFunction.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\CloneFunction.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\CloneLoop.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\CloneLoop.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\CloneModule.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\CloneModule.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\CodeExtractor.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\CodeExtractor.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\DemoteRegToStack.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\DemoteRegToStack.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\InlineFunction.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\InlineFunction.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\InstructionNamer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\InstructionNamer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\LCSSA.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\LCSSA.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\Local.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\Local.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\LoopSimplify.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\LoopSimplify.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\LoopUnroll.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\LoopUnroll.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\LowerInvoke.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\LowerInvoke.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\LowerSwitch.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\LowerSwitch.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\Mem2Reg.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\Mem2Reg.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\PromoteMemoryToRegister.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\PromoteMemoryToRegister.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\SimplifyCFG.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\SimplifyCFG.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\SSAUpdater.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\SSAUpdater.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\SSI.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\SSI.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\UnifyFunctionExitNodes.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\UnifyFunctionExitNodes.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Utils\ValueMapper.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Utils\ValueMapper.cpp"
 				>
 			</File>
 		</Filter>

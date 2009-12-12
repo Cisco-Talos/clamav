@@ -54,7 +54,7 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,7 @@
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug/LLVMScalarOpts.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Debug/LLVMScalarOpts.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -74,14 +74,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\LLVMScalarOpts.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Debug\LLVMScalarOpts.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -138,14 +138,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release/LLVMScalarOpts.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Release/LLVMScalarOpts.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -156,14 +156,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\LLVMScalarOpts.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Release\LLVMScalarOpts.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -220,14 +220,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="1"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel/LLVMScalarOpts.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/MinSizeRel/LLVMScalarOpts.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -238,14 +238,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\LLVMScalarOpts.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\LLVMScalarOpts.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -302,14 +302,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo/LLVMScalarOpts.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo/LLVMScalarOpts.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -321,14 +321,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\LLVMScalarOpts.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\LLVMScalarOpts.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -354,127 +354,127 @@
 			Name="Source Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\ABCD.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\ABCD.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\ADCE.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\ADCE.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\BasicBlockPlacement.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\BasicBlockPlacement.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\CodeGenPrepare.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\CodeGenPrepare.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\ConstantProp.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\ConstantProp.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\DCE.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\DCE.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\DeadStoreElimination.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\DeadStoreElimination.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\GEPSplitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\GEPSplitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\GVN.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\GVN.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\IndVarSimplify.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\IndVarSimplify.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\InstructionCombining.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\InstructionCombining.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\JumpThreading.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\JumpThreading.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LICM.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LICM.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopDeletion.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopDeletion.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopIndexSplit.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopIndexSplit.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopRotation.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopRotation.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopStrengthReduce.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopStrengthReduce.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopUnrollPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopUnrollPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\LoopUnswitch.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopUnswitch.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\MemCpyOptimizer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\MemCpyOptimizer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\Reassociate.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\Reassociate.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\Reg2Mem.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\Reg2Mem.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\Scalar.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\Scalar.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\ScalarReplAggregates.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\ScalarReplAggregates.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\SCCP.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\SCCP.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\SCCVN.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\SCCVN.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyCFGPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyCFGPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyHalfPowrLibCalls.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyHalfPowrLibCalls.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyLibCalls.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyLibCalls.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\TailDuplication.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\TailDuplication.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Transforms\Scalar\TailRecursionElimination.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Transforms\Scalar\TailRecursionElimination.cpp"
 				>
 			</File>
 		</Filter>

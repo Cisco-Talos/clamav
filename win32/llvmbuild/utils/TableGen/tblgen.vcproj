@@ -54,7 +54,7 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,7 @@
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/Debug/tblgen.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/bin/Debug/tblgen.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -74,25 +74,25 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug"
+				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/Debug"
 			/>
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386 /debug"
 				AdditionalDependencies="$(NOINHERIT) kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  ..\..\lib\Debug\LLVMSupport.lib ..\..\lib\Debug\LLVMSystem.lib "
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\Debug\tblgen.exe"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe"
 				Version="0.0"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/Debug/tblgen.pdb"
+				ProgramDatabaseFile="$(SolutionDir)../win32/llvmbuild/bin/Debug/tblgen.pdb"
 				SubSystem="1"
-				ImportLibrary="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\tblgen.lib"
+				ImportLibrary="$(SolutionDir)..\win32\llvmbuild\lib\Debug\tblgen.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -155,14 +155,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/Release/tblgen.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/bin/Release/tblgen.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -173,24 +173,24 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release"
+				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/Release"
 			/>
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386"
 				AdditionalDependencies="$(NOINHERIT) kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  ..\..\lib\Release\LLVMSupport.lib ..\..\lib\Release\LLVMSystem.lib "
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\Release\tblgen.exe"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe"
 				Version="0.0"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				ProgramDatabaseFile="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/Release/tblgen.pdb"
+				ProgramDatabaseFile="$(SolutionDir)../win32/llvmbuild/bin/Release/tblgen.pdb"
 				SubSystem="1"
-				ImportLibrary="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\tblgen.lib"
+				ImportLibrary="$(SolutionDir)..\win32\llvmbuild\lib\Release\tblgen.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -253,14 +253,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="1"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/MinSizeRel/tblgen.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/bin/MinSizeRel/tblgen.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -271,24 +271,24 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel"
+				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/MinSizeRel"
 			/>
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386"
 				AdditionalDependencies="$(NOINHERIT) kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  ..\..\lib\MinSizeRel\LLVMSupport.lib ..\..\lib\MinSizeRel\LLVMSystem.lib "
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\MinSizeRel\tblgen.exe"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe"
 				Version="0.0"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				ProgramDatabaseFile="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/MinSizeRel/tblgen.pdb"
+				ProgramDatabaseFile="$(SolutionDir)../win32/llvmbuild/bin/MinSizeRel/tblgen.pdb"
 				SubSystem="1"
-				ImportLibrary="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\tblgen.lib"
+				ImportLibrary="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\tblgen.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -351,14 +351,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/RelWithDebInfo/tblgen.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/bin/RelWithDebInfo/tblgen.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -370,25 +370,25 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo"
+				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo"
 			/>
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386 /debug"
 				AdditionalDependencies="$(NOINHERIT) kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  ..\..\lib\RelWithDebInfo\LLVMSupport.lib ..\..\lib\RelWithDebInfo\LLVMSystem.lib "
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe"
 				Version="0.0"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/bin/RelWithDebInfo/tblgen.pdb"
+				ProgramDatabaseFile="$(SolutionDir)../win32/llvmbuild/bin/RelWithDebInfo/tblgen.pdb"
 				SubSystem="1"
-				ImportLibrary="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\tblgen.lib"
+				ImportLibrary="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\tblgen.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -420,99 +420,99 @@
 			Name="Source Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\AsmMatcherEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\AsmMatcherEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\AsmWriterEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\AsmWriterEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\CallingConvEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\CallingConvEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\ClangDiagnosticsEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\ClangDiagnosticsEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\CodeEmitterGen.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\CodeEmitterGen.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\CodeGenDAGPatterns.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\CodeGenDAGPatterns.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\CodeGenInstruction.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\CodeGenInstruction.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\CodeGenTarget.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\CodeGenTarget.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\DAGISelEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\DAGISelEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\DisassemblerEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\DisassemblerEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\FastISelEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\FastISelEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\InstrEnumEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\InstrEnumEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\InstrInfoEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\InstrInfoEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\IntrinsicEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\IntrinsicEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\LLVMCConfigurationEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\LLVMCConfigurationEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\OptParserEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\OptParserEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\Record.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\Record.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\RegisterInfoEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\RegisterInfoEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\SubtargetEmitter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\SubtargetEmitter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\TableGen.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\TableGen.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\TableGenBackend.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\TableGenBackend.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\TGLexer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\TGLexer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\TGParser.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\TGParser.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\utils\TableGen\TGValueTypes.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\utils\TableGen\TGValueTypes.cpp"
 				>
 			</File>
 		</Filter>

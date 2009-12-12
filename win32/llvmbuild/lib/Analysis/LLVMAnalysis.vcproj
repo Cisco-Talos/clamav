@@ -54,7 +54,7 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,7 @@
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug/LLVMAnalysis.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Debug/LLVMAnalysis.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -74,14 +74,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\LLVMAnalysis.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Debug\LLVMAnalysis.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -138,14 +138,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release/LLVMAnalysis.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Release/LLVMAnalysis.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -156,14 +156,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\LLVMAnalysis.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Release\LLVMAnalysis.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -220,14 +220,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="1"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel/LLVMAnalysis.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/MinSizeRel/LLVMAnalysis.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -238,14 +238,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\LLVMAnalysis.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\LLVMAnalysis.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -302,14 +302,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo/LLVMAnalysis.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo/LLVMAnalysis.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -321,14 +321,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\LLVMAnalysis.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\LLVMAnalysis.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -354,171 +354,171 @@
 			Name="Source Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\AliasAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\AliasAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\AliasAnalysisCounter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\AliasAnalysisCounter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\AliasAnalysisEvaluator.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\AliasAnalysisEvaluator.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\AliasDebugger.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\AliasDebugger.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\AliasSetTracker.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\AliasSetTracker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\Analysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\Analysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\BasicAliasAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\BasicAliasAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\CaptureTracking.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\CaptureTracking.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\CFGPrinter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\CFGPrinter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ConstantFolding.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ConstantFolding.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\DbgInfoPrinter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\DbgInfoPrinter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\DebugInfo.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\DebugInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\DomPrinter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\DomPrinter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\InlineCost.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\InlineCost.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\InstCount.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\InstCount.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\InstructionSimplify.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\InstructionSimplify.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\Interval.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\Interval.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IntervalPartition.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IntervalPartition.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IVUsers.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IVUsers.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LazyValueInfo.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LazyValueInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LibCallAliasAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LibCallAliasAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LibCallSemantics.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LibCallSemantics.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LiveValues.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LiveValues.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LoopDependenceAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LoopDependenceAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LoopInfo.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LoopInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\LoopPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\LoopPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\MemoryBuiltins.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\MemoryBuiltins.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\MemoryDependenceAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\MemoryDependenceAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\PHITransAddr.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\PHITransAddr.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\PointerTracking.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\PointerTracking.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\PostDominators.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\PostDominators.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ProfileEstimatorPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ProfileEstimatorPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ProfileInfo.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ProfileInfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ProfileInfoLoader.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ProfileInfoLoader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ProfileInfoLoaderPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ProfileInfoLoaderPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ProfileVerifierPass.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ProfileVerifierPass.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ScalarEvolution.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ScalarEvolution.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ScalarEvolutionAliasAnalysis.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ScalarEvolutionAliasAnalysis.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ScalarEvolutionExpander.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ScalarEvolutionExpander.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\SparsePropagation.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\SparsePropagation.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\Trace.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\Trace.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\ValueTracking.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\ValueTracking.cpp"
 				>
 			</File>
 		</Filter>

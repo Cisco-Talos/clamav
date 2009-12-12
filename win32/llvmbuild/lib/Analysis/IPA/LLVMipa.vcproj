@@ -21,7 +21,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=" /Zm1000"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				BasicRuntimeChecks="3"
 				CompileAs="2"
 				DebugInformationFormat="3"
@@ -35,13 +35,13 @@
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug/LLVMipa.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Debug/LLVMipa.pdb"
 />
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -63,7 +63,7 @@
 				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\LLVMipa.lib"/>
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Debug\LLVMipa.lib"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -76,7 +76,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=" /Zm1000"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				ExceptionHandling="1"
@@ -88,13 +88,13 @@
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release/LLVMipa.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Release/LLVMipa.pdb"
 />
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -116,7 +116,7 @@
 				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\LLVMipa.lib"/>
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Release\LLVMipa.lib"/>
 		</Configuration>
 		<Configuration
 			Name="MinSizeRel|Win32"
@@ -129,7 +129,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=" /Zm1000"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				ExceptionHandling="1"
@@ -141,13 +141,13 @@
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel/LLVMipa.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/MinSizeRel/LLVMipa.pdb"
 />
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -169,7 +169,7 @@
 				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\LLVMipa.lib"/>
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\LLVMipa.lib"/>
 		</Configuration>
 		<Configuration
 			Name="RelWithDebInfo|Win32"
@@ -182,7 +182,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions=" /Zm1000"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				CompileAs="2"
 				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -195,13 +195,13 @@
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo/LLVMipa.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo/LLVMipa.pdb"
 />
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -223,7 +223,7 @@
 				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\LLVMipa.lib"/>
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\LLVMipa.lib"/>
 		</Configuration>
 	</Configurations>
 	<Files>
@@ -231,19 +231,19 @@
 			Name="Source Files"
 			Filter="">
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IPA\Andersens.cpp">
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IPA\Andersens.cpp">
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IPA\CallGraph.cpp">
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IPA\CallGraph.cpp">
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IPA\CallGraphSCCPass.cpp">
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IPA\CallGraphSCCPass.cpp">
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IPA\FindUsedTypes.cpp">
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IPA\FindUsedTypes.cpp">
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Analysis\IPA\GlobalsModRef.cpp">
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Analysis\IPA\GlobalsModRef.cpp">
 			</File>
 		</Filter>
 	</Files>

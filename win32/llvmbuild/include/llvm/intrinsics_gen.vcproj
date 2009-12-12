@@ -151,7 +151,7 @@
 			Name="CMake Rules"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen.rule"
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen.rule"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -159,9 +159,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Building Intrinsics.gen..."
-						CommandLine="..\..\bin\Debug\tblgen.exe -gen-intrinsic -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/lib/Target -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm/Intrinsics.td -o C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\Debug\tblgen.exe;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\Target.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen"
+						CommandLine="..\..\bin\Debug\tblgen.exe -gen-intrinsic -I $(SolutionDir)../libclamav/c++/llvm/include/llvm -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/include/llvm/Intrinsics.td -o $(SolutionDir)../win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -170,9 +170,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Building Intrinsics.gen..."
-						CommandLine="..\..\bin\Release\tblgen.exe -gen-intrinsic -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/lib/Target -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm/Intrinsics.td -o C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\Release\tblgen.exe;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\Target.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen"
+						CommandLine="..\..\bin\Release\tblgen.exe -gen-intrinsic -I $(SolutionDir)../libclamav/c++/llvm/include/llvm -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/include/llvm/Intrinsics.td -o $(SolutionDir)../win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -181,9 +181,9 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Building Intrinsics.gen..."
-						CommandLine="..\..\bin\MinSizeRel\tblgen.exe -gen-intrinsic -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/lib/Target -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm/Intrinsics.td -o C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\Target.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen"
+						CommandLine="..\..\bin\MinSizeRel\tblgen.exe -gen-intrinsic -I $(SolutionDir)../libclamav/c++/llvm/include/llvm -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/include/llvm/Intrinsics.td -o $(SolutionDir)../win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -192,14 +192,14 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Building Intrinsics.gen..."
-						CommandLine="..\..\bin\RelWithDebInfo\tblgen.exe -gen-intrinsic -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/lib/Target -I C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include C:/Users/edwin/Documents/clam/clamav-devel/libclamav/c++/llvm/include/llvm/Intrinsics.td -o C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Intrinsics.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\Target.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen"
+						CommandLine="..\..\bin\RelWithDebInfo\tblgen.exe -gen-intrinsic -I $(SolutionDir)../libclamav/c++/llvm/include/llvm -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/include/llvm/Intrinsics.td -o $(SolutionDir)../win32/llvmbuild/include/llvm/Intrinsics.gen&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen.rule"
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen.rule"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -208,8 +208,8 @@
 						Name="VCCustomBuildTool"
 						Description=""
 						CommandLine=""
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -219,8 +219,8 @@
 						Name="VCCustomBuildTool"
 						Description=""
 						CommandLine=""
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -230,8 +230,8 @@
 						Name="VCCustomBuildTool"
 						Description=""
 						CommandLine=""
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -241,14 +241,14 @@
 						Name="VCCustomBuildTool"
 						Description=""
 						CommandLine=""
-						AdditionalDependencies="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\Intrinsics.gen;"
-						Outputs="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\include\llvm\Intrinsics.gen;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
 					/>
 				</FileConfiguration>
 			</File>
 		</Filter>
 		<File
-			RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
+			RelativePath="$(SolutionDir)..\win32\llvmbuild\include\llvm\CMakeFiles\intrinsics_gen"
 			>
 		</File>
 	</Files>

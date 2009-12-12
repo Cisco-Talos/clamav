@@ -54,7 +54,7 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="0"
 				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,7 @@
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Debug"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Debug/LLVMSupport.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Debug/LLVMSupport.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -74,14 +74,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,_DEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Debug\LLVMSupport.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Debug\LLVMSupport.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -138,14 +138,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="Release"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/Release/LLVMSupport.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/Release/LLVMSupport.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -156,14 +156,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\Release\LLVMSupport.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\Release\LLVMSupport.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -220,14 +220,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="1"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="MinSizeRel"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/MinSizeRel/LLVMSupport.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/MinSizeRel/LLVMSupport.pdb"
 				WarningLevel="3"
 				CompileAs="2"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
@@ -238,14 +238,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\MinSizeRel\LLVMSupport.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\MinSizeRel\LLVMSupport.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -302,14 +302,14 @@
 				AdditionalOptions=" /Zm1000"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				RuntimeTypeInfo="true"
 				AssemblerListingLocation="RelWithDebInfo"
 				ObjectFile="$(IntDir)\"
-				ProgramDataBaseFileName="C:/Users/edwin/Documents/clam/clamav-devel/win32/llvmbuild/lib/RelWithDebInfo/LLVMSupport.pdb"
+				ProgramDataBaseFileName="$(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo/LLVMSupport.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -321,14 +321,14 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
-				AdditionalIncludeDirectories="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\include;C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\include;"
+				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="C:\Users\edwin\Documents\clam\clamav-devel\win32\llvmbuild\lib\RelWithDebInfo\LLVMSupport.lib"
+				OutputFile="$(SolutionDir)..\win32\llvmbuild\lib\RelWithDebInfo\LLVMSupport.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -354,135 +354,99 @@
 			Name="Source Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Allocator.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Allocator.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\APFloat.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\APFloat.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\APInt.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\APInt.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\APSInt.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\APSInt.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Debug.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Debug.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\DeltaAlgorithm.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\DeltaAlgorithm.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Dwarf.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Dwarf.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\ErrorHandling.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\ErrorHandling.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\FileUtilities.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\FileUtilities.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\FoldingSet.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\FoldingSet.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\FormattedStream.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\FormattedStream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\IsInf.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\IsInf.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\IsNAN.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\IsNAN.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\ManagedStatic.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\ManagedStatic.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\MemoryBuffer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\MemoryBuffer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\MemoryObject.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\MemoryObject.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\PluginLoader.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\PluginLoader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\raw_os_ostream.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\raw_os_ostream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\raw_ostream.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\raw_ostream.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regcomp.c"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="MinSizeRel|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="RelWithDebInfo|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regerror.c"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regcomp.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -518,11 +482,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Regex.cpp"
-				>
-			</File>
-			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regexec.c"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regerror.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -558,7 +518,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regfree.c"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Regex.cpp"
+				>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regexec.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -594,7 +558,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regstrlcpy.c"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regfree.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -630,55 +594,91 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\SlowOperationInformer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regstrlcpy.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\SlowOperationInformer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\SourceMgr.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\SourceMgr.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Statistic.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Statistic.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\StringExtras.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\StringExtras.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\StringMap.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\StringMap.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\StringPool.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\StringPool.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\StringRef.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\StringRef.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\SystemUtils.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\SystemUtils.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\TargetRegistry.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\TargetRegistry.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Timer.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Timer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Triple.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Triple.cpp"
 				>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\Twine.cpp"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\Twine.cpp"
 				>
 			</File>
 		</Filter>
@@ -686,7 +686,7 @@
 			Name="Header Files"
 			>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regcclass.h"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regcclass.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -722,7 +722,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regcname.h"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regcname.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -758,7 +758,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regex2.h"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regex2.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -794,7 +794,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regex_impl.h"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regex_impl.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -830,7 +830,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="C:\Users\edwin\Documents\clam\clamav-devel\libclamav\c++\llvm\lib\Support\regutils.h"
+				RelativePath="$(SolutionDir)..\libclamav\c++\llvm\lib\Support\regutils.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
