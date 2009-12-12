@@ -158,6 +158,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMAsmPrinter", "llvmbuild
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMipa", "llvmbuild\lib\Analysis\IPA\LLVMipa.vcproj", "{B637BA24-6D53-4111-9B9D-8118DB235CF1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{02E2E574-CFD1-4E4E-9C38-D3763B3DA482} = {02E2E574-CFD1-4E4E-9C38-D3763B3DA482}
+		{E7A00CB9-9B1F-4C7E-927D-052EE5B3DE6A} = {E7A00CB9-9B1F-4C7E-927D-052EE5B3DE6A}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
