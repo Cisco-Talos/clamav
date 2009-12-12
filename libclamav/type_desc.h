@@ -58,6 +58,9 @@ struct cli_apiglobal {
     unsigned offset;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern const struct cli_bc_type cli_apicall_types[];
 extern const unsigned cli_apicall_maxtypes;
 
@@ -68,4 +71,8 @@ extern const cli_apicall_int2 cli_apicalls0[];
 extern const cli_apicall_pointer cli_apicalls1[];
 extern const unsigned cli_apicall_maxapi;
 extern const unsigned cli_apicall_maxglobal;
+
+#ifdef __cplusplus
+}
+#endif
 #endif

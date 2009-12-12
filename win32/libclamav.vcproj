@@ -221,10 +221,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\bytecode_nojit.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\bytecode_vm.c"
 				>
 			</File>

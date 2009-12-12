@@ -16,7 +16,9 @@
 #include "w32_errno.h"
 #include "w32_stat.h"
 
+#ifndef __cplusplus
 typedef unsigned short mode_t;
+#endif
 
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp

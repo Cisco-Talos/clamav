@@ -90,7 +90,13 @@ int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilen
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx);
 void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern int have_clamjit;
+#ifdef __cplusplus
+}
+#endif
 int cli_bytecode_init(struct cli_all_bc *allbc);
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio);
 int cli_bytecode_prepare(struct cli_all_bc *allbc);

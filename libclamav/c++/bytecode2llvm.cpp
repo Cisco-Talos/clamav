@@ -1022,12 +1022,13 @@ public:
 		CI->setCallingConv(CallingConv::Fast);
 		ReturnInst::Create(Context, CI, BB);
 
-		if (verifyFunction(*F, PrintMessageAction));
-		// Codegen current function as executable machine code.
-		void *code = EE->getPointerToFunction(F);
+		if (verifyFunction(*F, PrintMessageAction) == 0) {
+			// Codegen current function as executable machine code.
+			void *code = EE->getPointerToFunction(F);
 
-		compiledFunctions[func] = code;
-	    }
+			compiledFunctions[func] = code;
+		}
+	  }
 	}
 	delete [] Functions;
 	return true;
@@ -1228,7 +1229,7 @@ void cli_bytecode_debug(int argc, char **argv)
 
 struct lines {
     MemoryBuffer *buffer;
-    std::vector<const char*> lines;
+    std::vector<const char*> linev;
 };
 
 static struct lineprinter {
@@ -1260,32 +1261,31 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
     } else {
 	lines = I->getValue();
     }
-    const char *linestart;
-    while (lines->lines.size() <= ctx->line+1) {
+    while (lines->linev.size() <= ctx->line+1) {
 	const char *p;
-	if (lines->lines.empty()) {
+	if (lines->linev.empty()) {
 	    p = lines->buffer->getBufferStart();
-	    lines->lines.push_back(p);
+	    lines->linev.push_back(p);
 	} else {
-	    p = lines->lines.back();
+	    p = lines->linev.back();
 	    if (p == lines->buffer->getBufferEnd())
 		break;
 	    p = strchr(p, '\n');
 	    if (!p) {
 		p = lines->buffer->getBufferEnd();
-		lines->lines.push_back(p);
+		lines->linev.push_back(p);
 	    } else
-		lines->lines.push_back(p+1);
+		lines->linev.push_back(p+1);
 	}
     }
-    if (ctx->line >= lines->lines.size()) {
+    if (ctx->line >= lines->linev.size()) {
 	errs() << "Line number " << ctx->line << "out of file\n";
 	return;
     }
-    assert(ctx->line < lines->lines.size());
+    assert(ctx->line < lines->linev.size());
     SMDiagnostic diag(ctx->file, ctx->line ? ctx->line : -1,
 		 ctx->col ? ctx->col-1 : -1,
-		 "", std::string(lines->lines[ctx->line-1], lines->lines[ctx->line]-1));
+		 "", std::string(lines->linev[ctx->line-1], lines->linev[ctx->line]-1));
     diag.Print("[trace]", errs());
 }
 
