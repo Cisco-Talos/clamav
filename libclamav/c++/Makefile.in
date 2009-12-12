@@ -1510,14 +1510,16 @@ libllvmasmparser_la_SOURCES = \
  llvm/lib/AsmParser/Parser.cpp
 
 libllvminterpreter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-libllvminterpreter_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-missing-field-initializers -Wno-variadic-macros
+libllvminterpreter_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#TODO: configure check -Wno-missing-field-initializers -Wno-variadic-macros
 libllvminterpreter_la_SOURCES = \
     llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
     llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
     llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
 
 libgoogletest_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-libgoogletest_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-missing-field-initializers -Wno-variadic-macros
+libgoogletest_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+# -Wno-missing-field-initializers -Wno-variadic-macros
 libgoogletest_la_SOURCES = \
     llvm/utils/unittest/googletest/gtest-death-test.cc\
     llvm/utils/unittest/googletest/gtest-filepath.cc\
@@ -1528,7 +1530,8 @@ libgoogletest_la_SOURCES = \
     llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
 llvmunittest_ADT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ADT_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_ADT_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#-Wno-variadic-macros
 llvmunittest_ADT_LDADD = libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
 llvmunittest_ADT_SOURCES = \
     llvm/unittests/ADT/APFloatTest.cpp\
@@ -1545,7 +1548,8 @@ llvmunittest_ADT_SOURCES = \
     llvm/unittests/ADT/TwineTest.cpp
 
 llvmunittest_Support_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_Support_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_Support_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#-Wno-variadic-macros
 llvmunittest_Support_LDADD = libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
 llvmunittest_Support_SOURCES = \
     llvm/unittests/Support/AllocatorTest.cpp\
@@ -1557,7 +1561,8 @@ llvmunittest_Support_SOURCES = \
     llvm/unittests/Support/raw_ostream_test.cpp
 
 llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_VMCore_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_VMCore_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#-Wno-variadic-macros
 llvmunittest_VMCore_LDADD = libgoogletest.la libllvmtarget.la libllvmipa.la libllvmcore.la libllvmsupport.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES = \
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
@@ -1566,7 +1571,8 @@ llvmunittest_VMCore_SOURCES = \
     llvm/unittests/VMCore/PassManagerTest.cpp
 
 llvmunittest_JIT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_JIT_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_JIT_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#-Wno-variadic-macros
 llvmunittest_JIT_LDADD = libgoogletest.la libllvmasmparser.la $(libclamavcxx_la_LIBADD)
 llvmunittest_JIT_SOURCES = \
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
@@ -1574,7 +1580,8 @@ llvmunittest_JIT_SOURCES = \
     llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 
 llvmunittest_ExecutionEngine_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ExecutionEngine_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_ExecutionEngine_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+#-Wno-variadic-macros
 llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
 llvmunittest_ExecutionEngine_SOURCES = \
     llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
