@@ -122,7 +122,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx);
 typedef void (*bc_dbg_callback_trace)(struct cli_bc_ctx*, unsigned event);
 typedef void (*bc_dbg_callback_trace_op)(struct cli_bc_ctx*, const char *op);
 typedef void (*bc_dbg_callback_trace_val)(struct cli_bc_ctx*, const char *name, uint32_t value);
-void cli_bytecode_context_set_trace(struct cli_bc_ctx*, unsigned mask,
+void cli_bytecode_context_set_trace(struct cli_bc_ctx*, unsigned level,
 				    bc_dbg_callback_trace,
 				    bc_dbg_callback_trace_op,
 				    bc_dbg_callback_trace_val);

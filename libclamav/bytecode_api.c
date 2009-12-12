@@ -139,7 +139,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     return res;
 }
 
-void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, enum trace_level level,
+void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, unsigned level,
 				    bc_dbg_callback_trace trace,
 				    bc_dbg_callback_trace_op trace_op,
 				    bc_dbg_callback_trace_val trace_val)
