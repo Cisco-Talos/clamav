@@ -77,10 +77,6 @@
 				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
-				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/Debug"
-			/>
-			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386 /debug"
@@ -174,10 +170,6 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
 				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/Release"
 			/>
 			<Tool
 				Name="VCLinkerTool"
@@ -274,10 +266,6 @@
 				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
 			/>
 			<Tool
-				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/MinSizeRel"
-			/>
-			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /STACK:10000000 /machine:I386"
@@ -371,10 +359,6 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="WIN32,_WINDOWS,NDEBUG,__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
 				AdditionalIncludeDirectories="$(SolutionDir)..\win32\llvmbuild\include;$(SolutionDir)..\libclamav\c++\llvm\include;"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-				CommandLine="&quot;C:\Program Files\CMake 2.8\bin\cmake.exe&quot; -E make_directory $(SolutionDir)../win32/llvmbuild/lib/RelWithDebInfo"
 			/>
 			<Tool
 				Name="VCLinkerTool"
