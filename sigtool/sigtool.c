@@ -1764,7 +1764,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 
 	    *start++ = 0;
 	    if(!strlen(pt)) {
-		cli_errmsg("cli_ac_addsig: Empty block\n");
+		mprintf("!decodehexspecial: Empty block\n");
 		free(hexcpy);
 		return NULL;
 	    }
@@ -1804,7 +1804,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 			altnum++;
 
 		if(!altnum) {
-		    cli_errmsg("cli_ac_addsig: Empty block\n");
+		    mprintf("!decodehexspecial: Empty block\n");
 		    free(hexcpy);
 		    return NULL;
 		}
