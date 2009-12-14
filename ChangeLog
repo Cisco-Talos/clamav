@@ -1,3 +1,7 @@
+Mon Dec 14 17:16:07 CET 2009 (tk)
+---------------------------------
+ * libclamav: integrate ldb sigs with icon matcher
+
 Mon Dec 14 15:04:45 CET 2009 (tk)
 ---------------------------------
  * sigtool: fix some messages (bb#1777)

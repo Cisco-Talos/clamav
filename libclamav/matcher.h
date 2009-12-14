@@ -54,8 +54,11 @@ struct cli_lsig_tdb {
 
     const uint32_t *target;
     const uint32_t *engine, *nos, *ep;
+    /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;
+    */
+    const char *icongrp1, *icongrp2;
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #endif

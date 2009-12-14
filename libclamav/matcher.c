@@ -46,6 +46,7 @@
 #include "default.h"
 #include "macho.h"
 #include "fmap.h"
+#include "pe_icons.h"
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
@@ -322,6 +323,16 @@ int cli_checkfp(int fd, cli_ctx *ctx)
     return 0;
 }
 
+static int matchicon(cli_ctx *ctx, const char *grp1, const char *grp2)
+{
+	icon_groupset iconset;
+
+    cli_icongroupset_init(&iconset);
+    cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);
+    cli_icongroupset_add(grp2 ? grp2 : "*", &iconset, 1, ctx);
+    return cli_match_icon(&iconset, ctx);
+}
+
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
 {
     int ret = CL_EMEM;
@@ -454,6 +465,14 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    evalcnt = 0;
 	    evalids = 0;
 	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+		if(troot->ac_lsigtable[i]->tdb.icongrp1 || troot->ac_lsigtable[i]->tdb.icongrp2) {
+		    if(matchicon(ctx, troot->ac_lsigtable[i]->tdb.icongrp1, troot->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
+			ret = CL_VIRUS;
+			break;
+		    } else {
+			continue;
+		    }
+		}
 		if (!troot->ac_lsigtable[i]->bc) {
 		    if(ctx->virname)
 			*ctx->virname = troot->ac_lsigtable[i]->virname;

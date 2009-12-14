@@ -923,9 +923,13 @@ struct lsig_attrib {
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
 	struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS	2
+#define ATTRIB_TOKENS	4
 	    { "Target",	    CLI_TDB_UINT,	(void **) &tdb->target	    },
 	    { "Engine",	    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+
+	    { "IconGroup1", CLI_TDB_STR,	(void **) &tdb->icongrp1    },
+	    { "IconGroup2", CLI_TDB_STR,	(void **) &tdb->icongrp2    },
+
 /*
 	    { "NoS",	    CLI_TDB_RANGE,	(void **) &tdb->nos	    },
 	    { "EP",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
@@ -1149,6 +1153,12 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	FREE_TDB(tdb);
 	*sigs--;
 	return CL_SUCCESS;
+    }
+
+    if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
+	cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
     }
 
     root = engine->root[tdb.target[0]];
