@@ -14488,10 +14488,10 @@ $as_echo_n "checking for supported C++ compiler version... " >&6; }
     gxx_version=`${CXX} -dumpversion` ||
     as_fn_error "Unable to get GNU C++ compiler version" "$LINENO" 5
     case "${gxx_version}" in
-     [012].*|3.[0123].*)
+     [0123].*)
 	as_fn_error "C++ compiler too old (${gxx_version})" "$LINENO" 5
         ;;
-     3.4.[012]*|4.0.1*|4.1.[12]*)
+     4.0.1*|4.1.[12]*)
         as_fn_error "C++ compiler is buggy" "$LINENO" 5
         ;;
      *)

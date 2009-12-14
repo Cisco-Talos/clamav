@@ -78,10 +78,10 @@ if test "$enable_llvm" = "auto"; then
     gxx_version=`${CXX} -dumpversion` ||
     AC_MSG_ERROR([Unable to get GNU C++ compiler version])
     case "${gxx_version}" in
-     [[012]].*|3.[[0123]].*)
+     [[0123]].*)
 	AC_MSG_ERROR([C++ compiler too old (${gxx_version})])
         ;;
-     3.4.[[012]]*|4.0.1*|4.1.[[12]]*)
+     4.0.1*|4.1.[[12]]*)
         AC_MSG_ERROR([C++ compiler is buggy])
         ;;
      *)

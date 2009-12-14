@@ -59,7 +59,7 @@
 #include <new>
 
 #include "llvm/Config/config.h"
-#ifndef LLVM_MULTITHREADED
+#if !defined(LLVM_MULTITHREADED) || !LLVM_MULTITHREADED
 #error "Multithreading support must be available to LLVM!"
 #endif
 
