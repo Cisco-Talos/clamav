@@ -1,3 +1,7 @@
+Mon Dec 14 14:25:29 CET 2009 (tk)
+---------------------------------
+ * man/clamd.8: add info about signals
+
 Fri Dec 11 00:54:52 CET 2009 (acab)
 ---------------------------------
  * libclamav: merge icon extraction and matching branch(exeicons)
