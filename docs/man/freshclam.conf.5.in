@@ -153,6 +153,11 @@ Default: disabled
 Country of origin of malware/detection statistics (for statistical purposes only). The statistics collector at ClamAV.net will look up your IP address to determine the geographical origin of the malware reported by your installation. If this installation is mainly used to scan data which comes from a different location, please enable this option and enter a two-letter code (see http://www.iana.org/domains/root/db/) of the country of origin.
 .br
 Default: disabled
+.TP
+\fBSafeBrowsing BOOL\fR
+This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See http://code.google.com/support/bin/answer.py?answer=70015 and http://safebrowsing.clamav.net for more information.
+.br
+Default: disabled
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf
