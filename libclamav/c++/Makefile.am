@@ -222,6 +222,7 @@ libllvmx86codegen_la_SOURCES=\
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
 	llvm/lib/MC/MCAsmInfoCOFF.cpp\
 	llvm/lib/MC/MCCodeEmitter.cpp\
+	llvm/lib/Target/TargetELFWriterInfo.cpp\
 	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
 	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
 	llvm/lib/Target/X86/X86CodeEmitter.cpp\

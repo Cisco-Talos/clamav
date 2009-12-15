@@ -379,6 +379,7 @@ am__libllvmx86codegen_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp \
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp \
 	llvm/lib/MC/MCAsmInfoCOFF.cpp llvm/lib/MC/MCCodeEmitter.cpp \
+	llvm/lib/Target/TargetELFWriterInfo.cpp \
 	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp \
 	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp \
 	llvm/lib/Target/X86/X86CodeEmitter.cpp \
@@ -399,6 +400,7 @@ am__libllvmx86codegen_la_SOURCES_DIST =  \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-MachineModuleInfoImpls.lo \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-MCAsmInfoCOFF.lo \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-MCCodeEmitter.lo \
+@BUILD_X86_TRUE@	libllvmx86codegen_la-TargetELFWriterInfo.lo \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetInfo.lo \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-X86COFFMachineModuleInfo.lo \
 @BUILD_X86_TRUE@	libllvmx86codegen_la-X86CodeEmitter.lo \
@@ -911,6 +913,7 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
 @BUILD_X86_TRUE@	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
 @BUILD_X86_TRUE@	llvm/lib/MC/MCAsmInfoCOFF.cpp\
 @BUILD_X86_TRUE@	llvm/lib/MC/MCCodeEmitter.cpp\
+@BUILD_X86_TRUE@	llvm/lib/Target/TargetELFWriterInfo.cpp\
 @BUILD_X86_TRUE@	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
 @BUILD_X86_TRUE@	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
 @BUILD_X86_TRUE@	llvm/lib/Target/X86/X86CodeEmitter.cpp\
@@ -1864,6 +1867,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCAsmInfoCOFF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MachineModuleInfoImpls.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-TargetELFWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-X86COFFMachineModuleInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-X86CodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-X86ELFWriterInfo.Plo@am__quote@
@@ -4732,6 +4736,14 @@ libllvmx86codegen_la-MCCodeEmitter.lo: llvm/lib/MC/MCCodeEmitter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/MC/MCCodeEmitter.cpp' object='libllvmx86codegen_la-MCCodeEmitter.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmx86codegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmx86codegen_la-MCCodeEmitter.lo `test -f 'llvm/lib/MC/MCCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCCodeEmitter.cpp
+
+libllvmx86codegen_la-TargetELFWriterInfo.lo: llvm/lib/Target/TargetELFWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmx86codegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmx86codegen_la-TargetELFWriterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmx86codegen_la-TargetELFWriterInfo.Tpo -c -o libllvmx86codegen_la-TargetELFWriterInfo.lo `test -f 'llvm/lib/Target/TargetELFWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetELFWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmx86codegen_la-TargetELFWriterInfo.Tpo $(DEPDIR)/libllvmx86codegen_la-TargetELFWriterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/TargetELFWriterInfo.cpp' object='libllvmx86codegen_la-TargetELFWriterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmx86codegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmx86codegen_la-TargetELFWriterInfo.lo `test -f 'llvm/lib/Target/TargetELFWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetELFWriterInfo.cpp
 
 libllvmx86codegen_la-X86TargetInfo.lo: llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmx86codegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmx86codegen_la-X86TargetInfo.lo -MD -MP -MF $(DEPDIR)/libllvmx86codegen_la-X86TargetInfo.Tpo -c -o libllvmx86codegen_la-X86TargetInfo.lo `test -f 'llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp
