@@ -15,8 +15,6 @@
 #include "Record.h"
 
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringSet.h"
 #include <algorithm>
@@ -211,7 +209,7 @@ OptionType::OptionType stringToOptionType(const std::string& T) {
 namespace OptionDescriptionFlags {
   enum OptionDescriptionFlags { Required = 0x1, Hidden = 0x2,
                                 ReallyHidden = 0x4, Extern = 0x8,
-                                OneOrMore = 0x10, ZeroOrOne = 0x20,
+                                OneOrMore = 0x10, Optional = 0x20,
                                 CommaSeparated = 0x40 };
 }
 
@@ -260,8 +258,8 @@ struct OptionDescription {
   bool isOneOrMore() const;
   void setOneOrMore();
 
-  bool isZeroOrOne() const;
-  void setZeroOrOne();
+  bool isOptional() const;
+  void setOptional();
 
   bool isHidden() const;
   void setHidden();
@@ -331,11 +329,11 @@ void OptionDescription::setOneOrMore() {
   Flags |= OptionDescriptionFlags::OneOrMore;
 }
 
-bool OptionDescription::isZeroOrOne() const {
-  return Flags & OptionDescriptionFlags::ZeroOrOne;
+bool OptionDescription::isOptional() const {
+  return Flags & OptionDescriptionFlags::Optional;
 }
-void OptionDescription::setZeroOrOne() {
-  Flags |= OptionDescriptionFlags::ZeroOrOne;
+void OptionDescription::setOptional() {
+  Flags |= OptionDescriptionFlags::Optional;
 }
 
 bool OptionDescription::isHidden() const {
@@ -548,7 +546,7 @@ public:
       AddHandler("one_or_more", &CollectOptionProperties::onOneOrMore);
       AddHandler("really_hidden", &CollectOptionProperties::onReallyHidden);
       AddHandler("required", &CollectOptionProperties::onRequired);
-      AddHandler("zero_or_one", &CollectOptionProperties::onZeroOrOne);
+      AddHandler("optional", &CollectOptionProperties::onOptional);
       AddHandler("comma_separated", &CollectOptionProperties::onCommaSeparated);
 
       staticMembersInitialized_ = true;
@@ -595,8 +593,8 @@ private:
 
   void onRequired (const DagInit* d) {
     checkNumberOfArguments(d, 0);
-    if (optDesc_.isOneOrMore() || optDesc_.isZeroOrOne())
-      throw "Only one of (required), (zero_or_one) or "
+    if (optDesc_.isOneOrMore() || optDesc_.isOptional())
+      throw "Only one of (required), (optional) or "
         "(one_or_more) properties is allowed!";
     optDesc_.setRequired();
   }
@@ -617,8 +615,8 @@ private:
 
   void onOneOrMore (const DagInit* d) {
     checkNumberOfArguments(d, 0);
-    if (optDesc_.isRequired() || optDesc_.isZeroOrOne())
-      throw "Only one of (required), (zero_or_one) or "
+    if (optDesc_.isRequired() || optDesc_.isOptional())
+      throw "Only one of (required), (optional) or "
         "(one_or_more) properties is allowed!";
     if (!OptionType::IsList(optDesc_.Type))
       llvm::errs() << "Warning: specifying the 'one_or_more' property "
@@ -626,15 +624,15 @@ private:
     optDesc_.setOneOrMore();
   }
 
-  void onZeroOrOne (const DagInit* d) {
+  void onOptional (const DagInit* d) {
     checkNumberOfArguments(d, 0);
     if (optDesc_.isRequired() || optDesc_.isOneOrMore())
-      throw "Only one of (required), (zero_or_one) or "
+      throw "Only one of (required), (optional) or "
         "(one_or_more) properties is allowed!";
     if (!OptionType::IsList(optDesc_.Type))
-      llvm::errs() << "Warning: specifying the 'zero_or_one' property"
+      llvm::errs() << "Warning: specifying the 'optional' property"
         "on a non-list option will have no effect.\n";
-    optDesc_.setZeroOrOne();
+    optDesc_.setOptional();
   }
 
   void onMultiVal (const DagInit* d) {
@@ -1454,9 +1452,9 @@ void EmitCaseConstructHandler(const Init* Case, unsigned IndentLevel,
            EmitCaseStatementCallback<F>(Callback, O), IndentLevel);
 }
 
-/// TokenizeCmdline - converts from "$CALL(HookName, 'Arg1', 'Arg2')/path" to
-/// ["$CALL(", "HookName", "Arg1", "Arg2", ")/path"] .
-/// Helper function used by EmitCmdLineVecFill and.
+/// TokenizeCmdline - converts from
+/// "$CALL(HookName, 'Arg1', 'Arg2')/path -arg1 -arg2" to
+/// ["$CALL(", "HookName", "Arg1", "Arg2", ")/path", "-arg1", "-arg2"].
 void TokenizeCmdline(const std::string& CmdLine, StrVector& Out) {
   const char* Delimiters = " \t\n\v\f\r";
   enum TokenizerState
@@ -1537,62 +1535,99 @@ void TokenizeCmdline(const std::string& CmdLine, StrVector& Out) {
   }
 }
 
-/// SubstituteSpecialCommands - Perform string substitution for $CALL
-/// and $ENV. Helper function used by EmitCmdLineVecFill().
-StrVector::const_iterator SubstituteSpecialCommands
-(StrVector::const_iterator Pos, StrVector::const_iterator End, raw_ostream& O)
+/// SubstituteCall - Given "$CALL(HookName, [Arg1 [, Arg2 [...]]])", output
+/// "hooks::HookName([Arg1 [, Arg2 [, ...]]])". Helper function used by
+/// SubstituteSpecialCommands().
+StrVector::const_iterator
+SubstituteCall (StrVector::const_iterator Pos,
+                StrVector::const_iterator End,
+                bool IsJoin, raw_ostream& O)
+{
+  const char* errorMessage = "Syntax error in $CALL invocation!";
+  checkedIncrement(Pos, End, errorMessage);
+  const std::string& CmdName = *Pos;
+
+  if (CmdName == ")")
+    throw "$CALL invocation: empty argument list!";
+
+  O << "hooks::";
+  O << CmdName << "(";
+
+
+  bool firstIteration = true;
+  while (true) {
+    checkedIncrement(Pos, End, errorMessage);
+    const std::string& Arg = *Pos;
+    assert(Arg.size() != 0);
+
+    if (Arg[0] == ')')
+      break;
+
+    if (firstIteration)
+      firstIteration = false;
+    else
+      O << ", ";
+
+    if (Arg == "$INFILE") {
+      if (IsJoin)
+        throw "$CALL(Hook, $INFILE) can't be used with a Join tool!";
+      else
+        O << "inFile.c_str()";
+    }
+    else {
+      O << '"' << Arg << '"';
+    }
+  }
+
+  O << ')';
+
+  return Pos;
+}
+
+/// SubstituteEnv - Given '$ENV(VAR_NAME)', output 'getenv("VAR_NAME")'. Helper
+/// function used by SubstituteSpecialCommands().
+StrVector::const_iterator
+SubstituteEnv (StrVector::const_iterator Pos,
+               StrVector::const_iterator End, raw_ostream& O)
+{
+  const char* errorMessage = "Syntax error in $ENV invocation!";
+  checkedIncrement(Pos, End, errorMessage);
+  const std::string& EnvName = *Pos;
+
+  if (EnvName == ")")
+    throw "$ENV invocation: empty argument list!";
+
+  O << "checkCString(std::getenv(\"";
+  O << EnvName;
+  O << "\"))";
+
+  checkedIncrement(Pos, End, errorMessage);
+
+  return Pos;
+}
+
+/// SubstituteSpecialCommands - Given an invocation of $CALL or $ENV, output
+/// handler code. Helper function used by EmitCmdLineVecFill().
+StrVector::const_iterator
+SubstituteSpecialCommands (StrVector::const_iterator Pos,
+                           StrVector::const_iterator End,
+                           bool IsJoin, raw_ostream& O)
 {
 
   const std::string& cmd = *Pos;
 
+  // Perform substitution.
   if (cmd == "$CALL") {
-    checkedIncrement(Pos, End, "Syntax error in $CALL invocation!");
-    const std::string& CmdName = *Pos;
-
-    if (CmdName == ")")
-      throw "$CALL invocation: empty argument list!";
-
-    O << "hooks::";
-    O << CmdName << "(";
-
-
-    bool firstIteration = true;
-    while (true) {
-      checkedIncrement(Pos, End, "Syntax error in $CALL invocation!");
-      const std::string& Arg = *Pos;
-      assert(Arg.size() != 0);
-
-      if (Arg[0] == ')')
-        break;
-
-      if (firstIteration)
-        firstIteration = false;
-      else
-        O << ", ";
-
-      O << '"' << Arg << '"';
-    }
-
-    O << ')';
-
+    Pos = SubstituteCall(Pos, End, IsJoin, O);
   }
   else if (cmd == "$ENV") {
-    checkedIncrement(Pos, End, "Syntax error in $ENV invocation!");
-    const std::string& EnvName = *Pos;
-
-    if (EnvName == ")")
-      throw "$ENV invocation: empty argument list!";
-
-    O << "checkCString(std::getenv(\"";
-    O << EnvName;
-    O << "\"))";
-
-    checkedIncrement(Pos, End, "Syntax error in $ENV invocation!");
+    Pos = SubstituteEnv(Pos, End, O);
   }
   else {
     throw "Unknown special command: " + cmd;
   }
 
+  // Handle '$CMD(ARG)/additional/text'.
   const std::string& Leftover = *Pos;
   assert(Leftover.at(0) == ')');
   if (Leftover.size() != 1)
@@ -1652,7 +1687,7 @@ void EmitCmdLineVecFill(const Init* CmdLine, const std::string& ToolName,
       }
       else {
         O << "vec.push_back(";
-        I = SubstituteSpecialCommands(I, E, O);
+        I = SubstituteSpecialCommands(I, E, IsJoin, O);
         O << ");\n";
       }
     }
@@ -1665,7 +1700,7 @@ void EmitCmdLineVecFill(const Init* CmdLine, const std::string& ToolName,
 
   O.indent(IndentLevel) << "cmd = ";
   if (StrVec[0][0] == '$')
-    SubstituteSpecialCommands(StrVec.begin(), StrVec.end(), O);
+    SubstituteSpecialCommands(StrVec.begin(), StrVec.end(), IsJoin, O);
   else
     O << '"' << StrVec[0] << '"';
   O << ";\n";
@@ -1786,17 +1821,36 @@ class EmitActionHandlersCallback
   const OptionDescriptions& OptDescs;
   typedef EmitActionHandlersCallbackHandler Handler;
 
+  /// EmitHookInvocation - Common code for hook invocation from actions. Used by
+  /// onAppendCmd and onOutputSuffix.
+  void EmitHookInvocation(const std::string& Str,
+                          const char* BlockOpen, const char* BlockClose,
+                          unsigned IndentLevel, raw_ostream& O) const
+  {
+    StrVector Out;
+    TokenizeCmdline(Str, Out);
+
+    for (StrVector::const_iterator B = Out.begin(), E = Out.end();
+         B != E; ++B) {
+      const std::string& cmd = *B;
+
+      O.indent(IndentLevel) << BlockOpen;
+
+      if (cmd.at(0) == '$')
+        B = SubstituteSpecialCommands(B, E,  /* IsJoin = */ true, O);
+      else
+        O << '"' << cmd << '"';
+
+      O << BlockClose;
+    }
+  }
+
   void onAppendCmd (const DagInit& Dag,
                     unsigned IndentLevel, raw_ostream& O) const
   {
     checkNumberOfArguments(&Dag, 1);
-    const std::string& Cmd = InitPtrToString(Dag.getArg(0));
-    StrVector Out;
-    llvm::SplitString(Cmd, Out);
-
-    for (StrVector::const_iterator B = Out.begin(), E = Out.end();
-         B != E; ++B)
-      O.indent(IndentLevel) << "vec.push_back(\"" << *B << "\");\n";
+    this->EmitHookInvocation(InitPtrToString(Dag.getArg(0)),
+                             "vec.push_back(", ");\n", IndentLevel, O);
   }
 
   void onForward (const DagInit& Dag,
@@ -1845,16 +1899,16 @@ class EmitActionHandlersCallback
     const OptionDescription& D = OptDescs.FindListOrParameter(Name);
 
     O.indent(IndentLevel) << "vec.push_back(" << "hooks::"
-                          << Hook << "(" << D.GenVariableName() << "));\n";
+                          << Hook << "(" << D.GenVariableName()
+                          << (D.isParameter() ? ".c_str()" : "") << "));\n";
   }
-
 
   void onOutputSuffix (const DagInit& Dag,
                        unsigned IndentLevel, raw_ostream& O) const
   {
     checkNumberOfArguments(&Dag, 1);
-    const std::string& OutSuf = InitPtrToString(Dag.getArg(0));
-    O.indent(IndentLevel) << "output_suffix = \"" << OutSuf << "\";\n";
+    this->EmitHookInvocation(InitPtrToString(Dag.getArg(0)),
+                             "output_suffix = ", ";\n", IndentLevel, O);
   }
 
   void onStopCompilation (const DagInit& Dag,
@@ -2115,7 +2169,7 @@ void EmitToolClassDefinition (const ToolDescription& D,
   else
     O << "Tool";
 
-  O << "{\nprivate:\n";
+  O << " {\nprivate:\n";
   O.indent(Indent1) << "static const char* InputLanguages_[];\n\n";
 
   O << "public:\n";
@@ -2174,8 +2228,8 @@ void EmitOptionDefinitions (const OptionDescriptions& descs,
     else if (val.isOneOrMore() && val.isList()) {
         O << ", cl::OneOrMore";
     }
-    else if (val.isZeroOrOne() && val.isList()) {
-        O << ", cl::ZeroOrOne";
+    else if (val.isOptional() && val.isList()) {
+        O << ", cl::Optional";
     }
 
     if (val.isReallyHidden())
@@ -2483,7 +2537,9 @@ public:
   {}
 
   void onAction (const DagInit& Dag) {
-    if (GetOperatorName(Dag) == "forward_transformed_value") {
+    const std::string& Name = GetOperatorName(Dag);
+
+    if (Name == "forward_transformed_value") {
       checkNumberOfArguments(Dag, 2);
       const std::string& OptName = InitPtrToString(Dag.getArg(0));
       const std::string& HookName = InitPtrToString(Dag.getArg(1));
@@ -2491,6 +2547,42 @@ public:
 
       HookNames_[HookName] = HookInfo(D.isList() ? HookInfo::ListHook
                                       : HookInfo::ArgHook);
+    }
+    else if (Name == "append_cmd" || Name == "output_suffix") {
+      checkNumberOfArguments(Dag, 1);
+      this->onCmdLine(InitPtrToString(Dag.getArg(0)));
+    }
+  }
+
+  void onCmdLine(const std::string& Cmd) {
+    StrVector cmds;
+    TokenizeCmdline(Cmd, cmds);
+
+    for (StrVector::const_iterator B = cmds.begin(), E = cmds.end();
+         B != E; ++B) {
+      const std::string& cmd = *B;
+
+      if (cmd == "$CALL") {
+        unsigned NumArgs = 0;
+        checkedIncrement(B, E, "Syntax error in $CALL invocation!");
+        const std::string& HookName = *B;
+
+        if (HookName.at(0) == ')')
+          throw "$CALL invoked with no arguments!";
+
+        while (++B != E && B->at(0) != ')') {
+          ++NumArgs;
+        }
+
+        HookInfoMap::const_iterator H = HookNames_.find(HookName);
+
+        if (H != HookNames_.end() && H->second.NumArgs != NumArgs &&
+            H->second.Type != HookInfo::ArgHook)
+          throw "Overloading of hooks is not allowed. Overloaded hook: "
+            + HookName;
+        else
+          HookNames_[HookName] = HookInfo(NumArgs);
+      }
     }
   }
 
@@ -2513,36 +2605,7 @@ public:
     }
 
     // We're invoked on a command line.
-    StrVector cmds;
-    TokenizeCmdline(InitPtrToString(Arg), cmds);
-    for (StrVector::const_iterator B = cmds.begin(), E = cmds.end();
-         B != E; ++B) {
-      const std::string& cmd = *B;
-
-      if (cmd == "$CALL") {
-        unsigned NumArgs = 0;
-        checkedIncrement(B, E, "Syntax error in $CALL invocation!");
-        const std::string& HookName = *B;
-
-
-        if (HookName.at(0) == ')')
-          throw "$CALL invoked with no arguments!";
-
-        while (++B != E && B->at(0) != ')') {
-          ++NumArgs;
-        }
-
-        HookInfoMap::const_iterator H = HookNames_.find(HookName);
-
-        if (H != HookNames_.end() && H->second.NumArgs != NumArgs &&
-            H->second.Type != HookInfo::ArgHook)
-          throw "Overloading of hooks is not allowed. Overloaded hook: "
-            + HookName;
-        else
-          HookNames_[HookName] = HookInfo(NumArgs);
-
-      }
-    }
+    this->onCmdLine(InitPtrToString(Arg));
   }
 
   void operator()(const DagInit* Test, unsigned, bool) {

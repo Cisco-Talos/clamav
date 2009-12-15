@@ -3202,6 +3202,19 @@ SDValue DAGCombiner::visitZERO_EXTEND(SDNode *N) {
                        X, DAG.getConstant(Mask, VT));
   }
 
+  // Fold (zext (and x, cst)) -> (and (zext x), cst)
+  if (N0.getOpcode() == ISD::AND &&
+      N0.getOperand(1).getOpcode() == ISD::Constant &&
+      N0.getOperand(0).getOpcode() != ISD::TRUNCATE &&
+      N0.getOperand(0).hasOneUse()) {
+    APInt Mask = cast<ConstantSDNode>(N0.getOperand(1))->getAPIntValue();
+    Mask.zext(VT.getSizeInBits());
+    return DAG.getNode(ISD::AND, N->getDebugLoc(), VT,
+                       DAG.getNode(ISD::ZERO_EXTEND, N->getDebugLoc(), VT,
+                                   N0.getOperand(0)),
+                       DAG.getConstant(Mask, VT));
+  }
+
   // fold (zext (load x)) -> (zext (truncate (zextload x)))
   if (ISD::isNON_EXTLoad(N0.getNode()) &&
       ((!LegalOperations && !cast<LoadSDNode>(N0)->isVolatile()) ||
@@ -3276,6 +3289,26 @@ SDValue DAGCombiner::visitZERO_EXTEND(SDNode *N) {
                        DAG.getConstant(1, VT), DAG.getConstant(0, VT),
                        cast<CondCodeSDNode>(N0.getOperand(2))->get(), true);
     if (SCC.getNode()) return SCC;
+  }
+
+  // (zext (shl (zext x), cst)) -> (shl (zext x), cst)
+  if ((N0.getOpcode() == ISD::SHL || N0.getOpcode() == ISD::SRL) &&
+      isa<ConstantSDNode>(N0.getOperand(1)) &&
+      N0.getOperand(0).getOpcode() == ISD::ZERO_EXTEND &&
+      N0.hasOneUse()) {
+    if (N0.getOpcode() == ISD::SHL) {
+      // If the original shl may be shifting out bits, do not perform this
+      // transformation.
+      unsigned ShAmt = cast<ConstantSDNode>(N0.getOperand(1))->getZExtValue();
+      unsigned KnownZeroBits = N0.getOperand(0).getValueType().getSizeInBits() -
+        N0.getOperand(0).getOperand(0).getValueType().getSizeInBits();
+      if (ShAmt > KnownZeroBits)
+        return SDValue();
+    }
+    DebugLoc dl = N->getDebugLoc();
+    return DAG.getNode(N0.getOpcode(), dl, VT,
+                       DAG.getNode(ISD::ZERO_EXTEND, dl, VT, N0.getOperand(0)),
+                       DAG.getNode(ISD::ZERO_EXTEND, dl, VT, N0.getOperand(1)));
   }
 
   return SDValue();
@@ -5196,7 +5229,7 @@ SDValue DAGCombiner::visitSTORE(SDNode *N) {
     // SimplifyDemandedBits, which only works if the value has a single use.
     if (SimplifyDemandedBits(Value,
                              APInt::getLowBitsSet(
-                               Value.getValueSizeInBits(),
+                               Value.getValueType().getScalarType().getSizeInBits(),
                                ST->getMemoryVT().getSizeInBits())))
       return SDValue(N, 0);
   }

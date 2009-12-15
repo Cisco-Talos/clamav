@@ -46,8 +46,10 @@ def SDT_ARMPICAdd  : SDTypeProfile<1, 2, [SDTCisSameAs<0, 1>,
 def SDT_ARMThreadPointer : SDTypeProfile<1, 0, [SDTCisPtrTy<0>]>;
 def SDT_ARMEH_SJLJ_Setjmp : SDTypeProfile<1, 1, [SDTCisInt<0>, SDTCisPtrTy<1>]>;
 
-def SDT_ARMMEMBARRIER  : SDTypeProfile<0, 0, []>;
-def SDT_ARMSYNCBARRIER : SDTypeProfile<0, 0, []>;
+def SDT_ARMMEMBARRIERV7  : SDTypeProfile<0, 0, []>;
+def SDT_ARMSYNCBARRIERV7 : SDTypeProfile<0, 0, []>;
+def SDT_ARMMEMBARRIERV6  : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
+def SDT_ARMSYNCBARRIERV6 : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 
 // Node definitions.
 def ARMWrapper       : SDNode<"ARMISD::Wrapper",     SDTIntUnaryOp>;
@@ -96,9 +98,13 @@ def ARMrrx           : SDNode<"ARMISD::RRX"     , SDTIntUnaryOp, [SDNPInFlag ]>;
 def ARMthread_pointer: SDNode<"ARMISD::THREAD_POINTER", SDT_ARMThreadPointer>;
 def ARMeh_sjlj_setjmp: SDNode<"ARMISD::EH_SJLJ_SETJMP", SDT_ARMEH_SJLJ_Setjmp>;
 
-def ARMMemBarrier    : SDNode<"ARMISD::MEMBARRIER", SDT_ARMMEMBARRIER,
+def ARMMemBarrierV7  : SDNode<"ARMISD::MEMBARRIER", SDT_ARMMEMBARRIERV7,
                               [SDNPHasChain]>;
-def ARMSyncBarrier   : SDNode<"ARMISD::SYNCBARRIER", SDT_ARMMEMBARRIER,
+def ARMSyncBarrierV7 : SDNode<"ARMISD::SYNCBARRIER", SDT_ARMMEMBARRIERV7,
+                              [SDNPHasChain]>;
+def ARMMemBarrierV6  : SDNode<"ARMISD::MEMBARRIER", SDT_ARMMEMBARRIERV6,
+                              [SDNPHasChain]>;
+def ARMSyncBarrierV6 : SDNode<"ARMISD::SYNCBARRIER", SDT_ARMMEMBARRIERV6,
                               [SDNPHasChain]>;
 
 //===----------------------------------------------------------------------===//
@@ -780,6 +786,7 @@ let isBranch = 1, isTerminator = 1 in {
   def BR_JTr : JTI<(outs), (ins GPR:$target, jtblock_operand:$jt, i32imm:$id),
                     IIC_Br, "mov\tpc, $target \n$jt",
                     [(ARMbrjt GPR:$target, tjumptable:$jt, imm:$id)]> {
+    let Inst{11-4}  = 0b00000000;
     let Inst{15-12} = 0b1111;
     let Inst{20}    = 0; // S Bit
     let Inst{24-21} = 0b1101;
@@ -1574,25 +1581,43 @@ def MOVCCi : AI1<0b1101, (outs GPR:$dst),
 //
 
 // memory barriers protect the atomic sequences
-let isPredicable = 0, hasSideEffects = 1 in {
-def Int_MemBarrierV7 : AI<(outs), (ins),
+let hasSideEffects = 1 in {
+def Int_MemBarrierV7 : AInoP<(outs), (ins),
                         Pseudo, NoItinerary,
                         "dmb", "",
-                        [(ARMMemBarrier)]>,
-                        Requires<[HasV7]> {
+                        [(ARMMemBarrierV7)]>,
+                        Requires<[IsARM, HasV7]> {
   let Inst{31-4} = 0xf57ff05;
   // FIXME: add support for options other than a full system DMB
   let Inst{3-0} = 0b1111;
 }
 
-def Int_SyncBarrierV7 : AI<(outs), (ins),
+def Int_SyncBarrierV7 : AInoP<(outs), (ins),
                         Pseudo, NoItinerary,
                         "dsb", "",
-                        [(ARMSyncBarrier)]>,
-                        Requires<[HasV7]> {
+                        [(ARMSyncBarrierV7)]>,
+                        Requires<[IsARM, HasV7]> {
   let Inst{31-4} = 0xf57ff04;
   // FIXME: add support for options other than a full system DSB
   let Inst{3-0} = 0b1111;
+}
+
+def Int_MemBarrierV6 : AInoP<(outs), (ins GPR:$zero),
+                       Pseudo, NoItinerary,
+                       "mcr", "\tp15, 0, $zero, c7, c10, 5",
+                       [(ARMMemBarrierV6 GPR:$zero)]>,
+                       Requires<[IsARM, HasV6]> {
+  // FIXME: add support for options other than a full system DMB
+  // FIXME: add encoding
+}
+
+def Int_SyncBarrierV6 : AInoP<(outs), (ins GPR:$zero),
+                        Pseudo, NoItinerary,
+                        "mcr", "\tp15, 0, $zero, c7, c10, 4",
+                        [(ARMSyncBarrierV6 GPR:$zero)]>,
+                        Requires<[IsARM, HasV6]> {
+  // FIXME: add support for options other than a full system DSB
+  // FIXME: add encoding
 }
 }
 
@@ -1684,7 +1709,6 @@ let usesCustomInserter = 1 in {
       "${:comment} ATOMIC_SWAP_I32 PSEUDO!",
       [(set GPR:$dst, (atomic_swap_32 GPR:$ptr, GPR:$new))]>;
 
-
     def ATOMIC_CMP_SWAP_I8 : PseudoInst<
       (outs GPR:$dst), (ins GPR:$ptr, GPR:$old, GPR:$new), NoItinerary,
       "${:comment} ATOMIC_CMP_SWAP_I8 PSEUDO!",
@@ -1710,11 +1734,15 @@ def LDREXH : AIldrex<0b11, (outs GPR:$dest), (ins GPR:$ptr), NoItinerary,
 def LDREX  : AIldrex<0b00, (outs GPR:$dest), (ins GPR:$ptr), NoItinerary,
                     "ldrex", "\t$dest, [$ptr]",
                     []>;
+def LDREXD : AIldrex<0b01, (outs GPR:$dest, GPR:$dest2), (ins GPR:$ptr),
+                    NoItinerary,
+                    "ldrexd", "\t$dest, $dest2, [$ptr]",
+                    []>;
 }
 
 let mayStore = 1 in {
 def STREXB : AIstrex<0b10, (outs GPR:$success), (ins GPR:$src, GPR:$ptr),
-                     NoItinerary,
+                    NoItinerary,
                     "strexb", "\t$success, $src, [$ptr]",
                     []>;
 def STREXH : AIstrex<0b11, (outs GPR:$success), (ins GPR:$src, GPR:$ptr),
@@ -1722,8 +1750,13 @@ def STREXH : AIstrex<0b11, (outs GPR:$success), (ins GPR:$src, GPR:$ptr),
                     "strexh", "\t$success, $src, [$ptr]",
                     []>;
 def STREX  : AIstrex<0b00, (outs GPR:$success), (ins GPR:$src, GPR:$ptr),
-                     NoItinerary,
+                    NoItinerary,
                     "strex", "\t$success, $src, [$ptr]",
+                    []>;
+def STREXD : AIstrex<0b01, (outs GPR:$success),
+                    (ins GPR:$src, GPR:$src2, GPR:$ptr),
+                    NoItinerary,
+                    "strexd", "\t$success, $src, $src2, [$ptr]",
                     []>;
 }
 

@@ -596,6 +596,17 @@ X86TargetLowering::X86TargetLowering(X86TargetMachine &TM)
     setOperationAction(ISD::UINT_TO_FP, (MVT::SimpleValueType)VT, Expand);
     setOperationAction(ISD::SINT_TO_FP, (MVT::SimpleValueType)VT, Expand);
     setOperationAction(ISD::SIGN_EXTEND_INREG, (MVT::SimpleValueType)VT,Expand);
+    setOperationAction(ISD::TRUNCATE,  (MVT::SimpleValueType)VT, Expand);
+    setOperationAction(ISD::SIGN_EXTEND,  (MVT::SimpleValueType)VT, Expand);
+    setOperationAction(ISD::ZERO_EXTEND,  (MVT::SimpleValueType)VT, Expand);
+    setOperationAction(ISD::ANY_EXTEND,  (MVT::SimpleValueType)VT, Expand);
+    for (unsigned InnerVT = (unsigned)MVT::FIRST_VECTOR_VALUETYPE;
+         InnerVT <= (unsigned)MVT::LAST_VECTOR_VALUETYPE; ++InnerVT)
+      setTruncStoreAction((MVT::SimpleValueType)VT,
+                          (MVT::SimpleValueType)InnerVT, Expand);
+    setLoadExtAction(ISD::SEXTLOAD, (MVT::SimpleValueType)VT, Expand);
+    setLoadExtAction(ISD::ZEXTLOAD, (MVT::SimpleValueType)VT, Expand);
+    setLoadExtAction(ISD::EXTLOAD, (MVT::SimpleValueType)VT, Expand);
   }
 
   // FIXME: In order to prevent SSE instructions being expanded to MMX ones
@@ -672,8 +683,6 @@ X86TargetLowering::X86TargetLowering(X86TargetMachine &TM)
 
     setOperationAction(ISD::INSERT_VECTOR_ELT,  MVT::v4i16, Custom);
 
-    setTruncStoreAction(MVT::v8i16,             MVT::v8i8, Expand);
-    setOperationAction(ISD::TRUNCATE,           MVT::v8i8, Expand);
     setOperationAction(ISD::SELECT,             MVT::v8i8, Promote);
     setOperationAction(ISD::SELECT,             MVT::v4i16, Promote);
     setOperationAction(ISD::SELECT,             MVT::v2i32, Promote);
@@ -5741,6 +5750,17 @@ SDValue X86TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) {
     return SDValue();
 
   SDValue Cond = EmitCmp(Op0, Op1, X86CC, DAG);
+
+  // Use sbb x, x to materialize carry bit into a GPR.
+  // FIXME: Temporarily disabled since it breaks self-hosting. It's apparently
+  // miscompiling ARMISelDAGToDAG.cpp.
+  if (0 && !isFP && X86CC == X86::COND_B) {
+    return DAG.getNode(ISD::AND, dl, MVT::i8,
+                       DAG.getNode(X86ISD::SETCC_CARRY, dl, MVT::i8,
+                                   DAG.getConstant(X86CC, MVT::i8), Cond),
+                       DAG.getConstant(1, MVT::i8));
+  }
+
   return DAG.getNode(X86ISD::SETCC, dl, MVT::i8,
                      DAG.getConstant(X86CC, MVT::i8), Cond);
 }
@@ -5893,9 +5913,18 @@ SDValue X86TargetLowering::LowerSELECT(SDValue Op, SelectionDAG &DAG) {
       Cond = NewCond;
   }
 
+  // Look pass (and (setcc_carry (cmp ...)), 1).
+  if (Cond.getOpcode() == ISD::AND &&
+      Cond.getOperand(0).getOpcode() == X86ISD::SETCC_CARRY) {
+    ConstantSDNode *C = dyn_cast<ConstantSDNode>(Cond.getOperand(1));
+    if (C && C->getAPIntValue() == 1) 
+      Cond = Cond.getOperand(0);
+  }
+
   // If condition flag is set by a X86ISD::CMP, then use it as the condition
   // setting operand in place of the X86ISD::SETCC.
-  if (Cond.getOpcode() == X86ISD::SETCC) {
+  if (Cond.getOpcode() == X86ISD::SETCC ||
+      Cond.getOpcode() == X86ISD::SETCC_CARRY) {
     CC = Cond.getOperand(0);
 
     SDValue Cmp = Cond.getOperand(1);
@@ -5978,9 +6007,18 @@ SDValue X86TargetLowering::LowerBRCOND(SDValue Op, SelectionDAG &DAG) {
     Cond = LowerXALUO(Cond, DAG);
 #endif
 
+  // Look pass (and (setcc_carry (cmp ...)), 1).
+  if (Cond.getOpcode() == ISD::AND &&
+      Cond.getOperand(0).getOpcode() == X86ISD::SETCC_CARRY) {
+    ConstantSDNode *C = dyn_cast<ConstantSDNode>(Cond.getOperand(1));
+    if (C && C->getAPIntValue() == 1) 
+      Cond = Cond.getOperand(0);
+  }
+
   // If condition flag is set by a X86ISD::CMP, then use it as the condition
   // setting operand in place of the X86ISD::SETCC.
-  if (Cond.getOpcode() == X86ISD::SETCC) {
+  if (Cond.getOpcode() == X86ISD::SETCC ||
+      Cond.getOpcode() == X86ISD::SETCC_CARRY) {
     CC = Cond.getOperand(0);
 
     SDValue Cmp = Cond.getOperand(1);
@@ -7367,6 +7405,7 @@ const char *X86TargetLowering::getTargetNodeName(unsigned Opcode) const {
   case X86ISD::COMI:               return "X86ISD::COMI";
   case X86ISD::UCOMI:              return "X86ISD::UCOMI";
   case X86ISD::SETCC:              return "X86ISD::SETCC";
+  case X86ISD::SETCC_CARRY:        return "X86ISD::SETCC_CARRY";
   case X86ISD::CMOV:               return "X86ISD::CMOV";
   case X86ISD::BRCOND:             return "X86ISD::BRCOND";
   case X86ISD::RET_FLAG:           return "X86ISD::RET_FLAG";
@@ -8941,11 +8980,42 @@ static SDValue PerformMulCombine(SDNode *N, SelectionDAG &DAG,
   return SDValue();
 }
 
+static SDValue PerformSHLCombine(SDNode *N, SelectionDAG &DAG) {
+  SDValue N0 = N->getOperand(0);
+  SDValue N1 = N->getOperand(1);
+  ConstantSDNode *N1C = dyn_cast<ConstantSDNode>(N1);
+  EVT VT = N0.getValueType();
+
+  // fold (shl (and (setcc_c), c1), c2) -> (and setcc_c, (c1 << c2))
+  // since the result of setcc_c is all zero's or all ones.
+  if (N1C && N0.getOpcode() == ISD::AND &&
+      N0.getOperand(1).getOpcode() == ISD::Constant) {
+    SDValue N00 = N0.getOperand(0);
+    if (N00.getOpcode() == X86ISD::SETCC_CARRY ||
+        ((N00.getOpcode() == ISD::ANY_EXTEND ||
+          N00.getOpcode() == ISD::ZERO_EXTEND) &&
+         N00.getOperand(0).getOpcode() == X86ISD::SETCC_CARRY)) {
+      APInt Mask = cast<ConstantSDNode>(N0.getOperand(1))->getAPIntValue();
+      APInt ShAmt = N1C->getAPIntValue();
+      Mask = Mask.shl(ShAmt);
+      if (Mask != 0)
+        return DAG.getNode(ISD::AND, N->getDebugLoc(), VT,
+                           N00, DAG.getConstant(Mask, VT));
+    }
+  }
+
+  return SDValue();
+}
 
 /// PerformShiftCombine - Transforms vector shift nodes to use vector shifts
 ///                       when possible.
 static SDValue PerformShiftCombine(SDNode* N, SelectionDAG &DAG,
                                    const X86Subtarget *Subtarget) {
+  EVT VT = N->getValueType(0);
+  if (!VT.isVector() && VT.isInteger() &&
+      N->getOpcode() == ISD::SHL)
+    return PerformSHLCombine(N, DAG);
+
   // On X86 with SSE2 support, we can transform this to a vector shift if
   // all elements are shifted by the same amount.  We can't do this in legalize
   // because the a constant vector is typically transformed to a constant pool
@@ -8953,7 +9023,6 @@ static SDValue PerformShiftCombine(SDNode* N, SelectionDAG &DAG,
   if (!Subtarget->hasSSE2())
     return SDValue();
 
-  EVT VT = N->getValueType(0);
   if (VT != MVT::v2i64 && VT != MVT::v4i32 && VT != MVT::v8i16)
     return SDValue();
 
