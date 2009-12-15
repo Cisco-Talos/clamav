@@ -39,8 +39,8 @@ endif
 
 noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la libllvmsystem.la\
 		     libllvmcodegen.la libllvmjit.la
-
-libclamavcxx_la_LIBADD=libllvmjit.la libllvmcodegen.la libllvmsystem.la
+lli_LDADD=libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la
+libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
@@ -48,21 +48,25 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmx86codegen.la
+lli_LDADD+=libllvmx86codegen.la
 noinst_LTLIBRARIES+=libllvmx86codegen.la
 endif
 if BUILD_PPC
 libclamavcxx_la_LIBADD+=libllvmpowerpccodegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmpowerpccodegen.la
+lli_LDADD+=libllvmpowerpccodegen.la
 noinst_LTLIBRARIES+=libllvmpowerpccodegen.la
 endif
 if BUILD_ARM
 libclamavcxx_la_LIBADD+=libllvmarmcodegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmarmcodegen.la
+lli_LDADD+=libllvmarmcodegen.la
 noinst_LTLIBRARIES+=libllvmarmcodegen.la
 endif
 
+libclamavcxx_la_LIBADD+=libllvmcodegen.la libllvmsystem.la
 
-LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 
 EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh
 
@@ -215,16 +219,9 @@ BUILT_SOURCES+=X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterIn
 
 libllvmx86codegen_la_SOURCES=\
 	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
-	llvm/lib/CodeGen/MachineDominators.cpp\
-	llvm/lib/CodeGen/MachineLoopInfo.cpp\
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
-	llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
 	llvm/lib/MC/MCAsmInfoCOFF.cpp\
 	llvm/lib/MC/MCCodeEmitter.cpp\
-	llvm/lib/MC/MCContext.cpp\
-	llvm/lib/MC/MCExpr.cpp\
-	llvm/lib/MC/MCInst.cpp\
-	llvm/lib/Target/TargetELFWriterInfo.cpp\
 	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
 	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
 	llvm/lib/Target/X86/X86CodeEmitter.cpp\
@@ -284,7 +281,6 @@ BUILT_SOURCES += PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.in
     PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc
 
 libllvmpowerpccodegen_la_SOURCES=\
-	llvm/lib/CodeGen/ScheduleDAG.cpp\
 	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
 	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
 	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
@@ -298,8 +294,7 @@ libllvmpowerpccodegen_la_SOURCES=\
 	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
-	llvm/lib/Target/TargetMachOWriterInfo.cpp
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
 
 endif
 
@@ -371,10 +366,24 @@ endif
 # End of Targets
 
 libllvmjit_la_SOURCES=\
+	llvm/lib/Analysis/AliasAnalysis.cpp\
+	llvm/lib/Analysis/BasicAliasAnalysis.cpp\
+	llvm/lib/Analysis/CaptureTracking.cpp\
+	llvm/lib/Analysis/DebugInfo.cpp\
+	llvm/lib/Analysis/MemoryBuiltins.cpp\
+	llvm/lib/Analysis/ValueTracking.cpp\
+	llvm/lib/CodeGen/ELFCodeEmitter.cpp\
 	llvm/lib/CodeGen/ELFWriter.cpp\
+	llvm/lib/CodeGen/MachineBasicBlock.cpp\
 	llvm/lib/CodeGen/MachineFunction.cpp\
+	llvm/lib/CodeGen/MachineFunctionAnalysis.cpp\
+	llvm/lib/CodeGen/MachineFunctionPass.cpp\
 	llvm/lib/CodeGen/MachineInstr.cpp\
 	llvm/lib/CodeGen/MachineModuleInfo.cpp\
+	llvm/lib/CodeGen/MachineRegisterInfo.cpp\
+	llvm/lib/CodeGen/ObjectCodeEmitter.cpp\
+	llvm/lib/CodeGen/PseudoSourceValue.cpp\
+	llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
 	llvm/lib/ExecutionEngine/ExecutionEngine.cpp\
 	llvm/lib/ExecutionEngine/JIT/Intercept.cpp\
 	llvm/lib/ExecutionEngine/JIT/JIT.cpp\
@@ -385,6 +394,12 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
 	llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp\
 	llvm/lib/MC/MCAsmInfo.cpp\
+	llvm/lib/MC/MCContext.cpp\
+	llvm/lib/MC/MCExpr.cpp\
+	llvm/lib/MC/MCSection.cpp\
+	llvm/lib/MC/MCSectionELF.cpp\
+	llvm/lib/MC/MCSectionMachO.cpp\
+	llvm/lib/MC/MCSymbol.cpp\
 	llvm/lib/Support/APFloat.cpp\
 	llvm/lib/Support/APInt.cpp\
 	llvm/lib/Support/Allocator.cpp\
@@ -395,14 +410,17 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Support/ErrorHandling.cpp\
 	llvm/lib/Support/FoldingSet.cpp\
 	llvm/lib/Support/FormattedStream.cpp\
+	llvm/lib/Support/GraphWriter.cpp\
 	llvm/lib/Support/ManagedStatic.cpp\
 	llvm/lib/Support/MemoryBuffer.cpp\
 	llvm/lib/Support/PrettyStackTrace.cpp\
 	llvm/lib/Support/SmallPtrSet.cpp\
+	llvm/lib/Support/SourceMgr.cpp\
 	llvm/lib/Support/Statistic.cpp\
 	llvm/lib/Support/StringExtras.cpp\
 	llvm/lib/Support/StringMap.cpp\
 	llvm/lib/Support/StringPool.cpp\
+	llvm/lib/Support/StringRef.cpp\
 	llvm/lib/Support/TargetRegistry.cpp\
 	llvm/lib/Support/Timer.cpp\
 	llvm/lib/Support/Triple.cpp\
@@ -410,7 +428,10 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Support/raw_ostream.cpp\
 	llvm/lib/Target/SubtargetFeature.cpp\
 	llvm/lib/Target/TargetData.cpp\
+	llvm/lib/Target/TargetInstrInfo.cpp\
+	llvm/lib/Target/TargetLoweringObjectFile.cpp\
 	llvm/lib/Target/TargetMachine.cpp\
+	llvm/lib/Target/TargetRegisterInfo.cpp\
 	llvm/lib/VMCore/AsmWriter.cpp\
 	llvm/lib/VMCore/Attributes.cpp\
 	llvm/lib/VMCore/AutoUpgrade.cpp\
@@ -443,31 +464,119 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/Verifier.cpp
 
 libllvmcodegen_la_SOURCES=\
+	llvm/lib/Analysis/AliasSetTracker.cpp\
+	llvm/lib/Analysis/ConstantFolding.cpp\
+	llvm/lib/Analysis/IVUsers.cpp\
+	llvm/lib/Analysis/InstructionSimplify.cpp\
+	llvm/lib/Analysis/LoopInfo.cpp\
+	llvm/lib/Analysis/LoopPass.cpp\
+	llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
+	llvm/lib/Analysis/PHITransAddr.cpp\
+	llvm/lib/Analysis/ProfileInfo.cpp\
+	llvm/lib/Analysis/ScalarEvolution.cpp\
+	llvm/lib/Analysis/ScalarEvolutionExpander.cpp\
+	llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp\
+	llvm/lib/CodeGen/AsmPrinter/AsmPrinter.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DIE.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DwarfException.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DwarfLabel.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DwarfPrinter.cpp\
+	llvm/lib/CodeGen/AsmPrinter/DwarfWriter.cpp\
+	llvm/lib/CodeGen/BranchFolding.cpp\
+	llvm/lib/CodeGen/CalcSpillWeights.cpp\
+	llvm/lib/CodeGen/CodePlacementOpt.cpp\
+	llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
+	llvm/lib/CodeGen/DwarfEHPrepare.cpp\
+	llvm/lib/CodeGen/ExactHazardRecognizer.cpp\
+	llvm/lib/CodeGen/GCMetadata.cpp\
+	llvm/lib/CodeGen/GCStrategy.cpp\
 	llvm/lib/CodeGen/LLVMTargetMachine.cpp\
+	llvm/lib/CodeGen/LatencyPriorityQueue.cpp\
+	llvm/lib/CodeGen/LiveInterval.cpp\
+	llvm/lib/CodeGen/LiveIntervalAnalysis.cpp\
+	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
 	llvm/lib/CodeGen/LiveVariables.cpp\
-	llvm/lib/CodeGen/MachineBasicBlock.cpp\
-	llvm/lib/CodeGen/MachineFunctionPass.cpp\
-	llvm/lib/CodeGen/MachineRegisterInfo.cpp\
+	llvm/lib/CodeGen/LowerSubregs.cpp\
+	llvm/lib/CodeGen/MachineDominators.cpp\
+	llvm/lib/CodeGen/MachineLICM.cpp\
+	llvm/lib/CodeGen/MachineLoopInfo.cpp\
+	llvm/lib/CodeGen/MachinePassRegistry.cpp\
+	llvm/lib/CodeGen/MachineSSAUpdater.cpp\
+	llvm/lib/CodeGen/MachineSink.cpp\
+	llvm/lib/CodeGen/MachineVerifier.cpp\
 	llvm/lib/CodeGen/MaxStackAlignment.cpp\
-	llvm/lib/CodeGen/ObjectCodeEmitter.cpp\
-	llvm/lib/CodeGen/PseudoSourceValue.cpp\
+	llvm/lib/CodeGen/PHIElimination.cpp\
+	llvm/lib/CodeGen/Passes.cpp\
+	llvm/lib/CodeGen/PostRASchedulerList.cpp\
+	llvm/lib/CodeGen/PreAllocSplitting.cpp\
+	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
+	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
+	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
+	llvm/lib/CodeGen/RegisterCoalescer.cpp\
 	llvm/lib/CodeGen/RegisterScavenging.cpp\
+	llvm/lib/CodeGen/ScheduleDAG.cpp\
+	llvm/lib/CodeGen/ScheduleDAGEmit.cpp\
+	llvm/lib/CodeGen/ScheduleDAGInstrs.cpp\
+	llvm/lib/CodeGen/ScheduleDAGPrinter.cpp\
 	llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
 	llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
+	llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
+	llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp\
+	llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeTypes.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeTypesGeneric.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorOps.cpp\
+	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorTypes.cpp\
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGFast.cpp\
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp\
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp\
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp\
 	llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp\
 	llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp\
 	llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp\
+	llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp\
 	llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp\
-	llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
+	llvm/lib/CodeGen/ShrinkWrapping.cpp\
+	llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp\
+	llvm/lib/CodeGen/SjLjEHPrepare.cpp\
+	llvm/lib/CodeGen/SlotIndexes.cpp\
+	llvm/lib/CodeGen/Spiller.cpp\
+	llvm/lib/CodeGen/StackProtector.cpp\
+	llvm/lib/CodeGen/StackSlotColoring.cpp\
+	llvm/lib/CodeGen/StrongPHIElimination.cpp\
+	llvm/lib/CodeGen/TailDuplication.cpp\
+	llvm/lib/CodeGen/TwoAddressInstructionPass.cpp\
+	llvm/lib/CodeGen/UnreachableBlockElim.cpp\
+	llvm/lib/CodeGen/VirtRegMap.cpp\
+	llvm/lib/CodeGen/VirtRegRewriter.cpp\
 	llvm/lib/MC/MCAsmInfoDarwin.cpp\
-	llvm/lib/Support/StringRef.cpp\
+	llvm/lib/MC/MCAsmStreamer.cpp\
+	llvm/lib/MC/MCInst.cpp\
+	llvm/lib/MC/MCStreamer.cpp\
 	llvm/lib/Target/TargetFrameInfo.cpp\
-	llvm/lib/Target/TargetInstrInfo.cpp\
-	llvm/lib/Target/TargetLoweringObjectFile.cpp\
-	llvm/lib/Target/TargetRegisterInfo.cpp\
-	llvm/lib/Target/TargetSubtarget.cpp
-
-
+	llvm/lib/Target/TargetSubtarget.cpp\
+	llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
+	llvm/lib/Transforms/Scalar/GEPSplitter.cpp\
+	llvm/lib/Transforms/Scalar/GVN.cpp\
+	llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
+	llvm/lib/Transforms/Utils/AddrModeMatcher.cpp\
+	llvm/lib/Transforms/Utils/BasicBlockUtils.cpp\
+	llvm/lib/Transforms/Utils/BreakCriticalEdges.cpp\
+	llvm/lib/Transforms/Utils/DemoteRegToStack.cpp\
+	llvm/lib/Transforms/Utils/LCSSA.cpp\
+	llvm/lib/Transforms/Utils/Local.cpp\
+	llvm/lib/Transforms/Utils/LoopSimplify.cpp\
+	llvm/lib/Transforms/Utils/LowerInvoke.cpp\
+	llvm/lib/Transforms/Utils/LowerSwitch.cpp\
+	llvm/lib/Transforms/Utils/Mem2Reg.cpp\
+	llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp\
+	llvm/lib/Transforms/Utils/SSAUpdater.cpp\
+	llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
+	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
 
 # Used only by make check
 
@@ -492,13 +601,12 @@ libllvmasmparser_la_SOURCES=\
  llvm/lib/AsmParser/LLParser.cpp\
  llvm/lib/AsmParser/Parser.cpp
 
-#TODO: configure check -Wno-missing-field-initializers -Wno-variadic-macros
 libllvminterpreter_la_SOURCES=\
     llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
     llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
     llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
 
-# -Wno-missing-field-initializers -Wno-variadic-macros
+libgoogletest_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 libgoogletest_la_SOURCES=\
     llvm/utils/unittest/googletest/gtest-death-test.cc\
     llvm/utils/unittest/googletest/gtest-filepath.cc\
@@ -509,7 +617,8 @@ libgoogletest_la_SOURCES=\
     llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
 #-Wno-variadic-macros
-llvmunittest_ADT_LDADD=libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_ADT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_ADT_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 llvmunittest_ADT_SOURCES=\
     llvm/unittests/ADT/APFloatTest.cpp\
     llvm/unittests/ADT/APIntTest.cpp\
@@ -526,7 +635,7 @@ llvmunittest_ADT_SOURCES=\
 
 llvmunittest_Support_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_Support_LDADD=libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_Support_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 llvmunittest_Support_SOURCES=\
     llvm/unittests/Support/AllocatorTest.cpp\
     llvm/unittests/Support/ConstantRangeTest.cpp\
@@ -538,16 +647,19 @@ llvmunittest_Support_SOURCES=\
 
 llvmunittest_VMCore_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_VMCore_LDADD=libgoogletest.la libllvmtarget.la libllvmipa.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_VMCore_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES=\
+    llvm/lib/Analysis/IPA/CallGraph.cpp\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
+    llvm/lib/Analysis/LoopInfo.cpp\
+    llvm/lib/Analysis/LoopPass.cpp\
     llvm/unittests/VMCore/ConstantsTest.cpp\
     llvm/unittests/VMCore/MetadataTest.cpp\
     llvm/unittests/VMCore/PassManagerTest.cpp
 
 llvmunittest_JIT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_JIT_LDADD=libgoogletest.la libllvmasmparser.la $(libclamavcxx_la_LIBADD)
+llvmunittest_JIT_LDADD=libgoogletest.la libllvmasmparser.la $(lli_LDADD)
 llvmunittest_JIT_SOURCES=\
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
     llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
@@ -555,8 +667,9 @@ llvmunittest_JIT_SOURCES=\
 
 llvmunittest_ExecutionEngine_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
+llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD) libllvmsupport.la libllvmsystem.la
 llvmunittest_ExecutionEngine_SOURCES=\
+    llvm/lib/CodeGen/IntrinsicLowering.cpp\
     llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
 
 count_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
@@ -572,7 +685,7 @@ FileCheck_CXXFLAGS=$(LLVM_CXXFLAGS)
 FileCheck_LDADD=libllvmsupport.la libllvmsystem.la 
 FileCheck_SOURCES=llvm/utils/FileCheck/FileCheck.cpp
 
-check_LTLIBRARIES=libllvmbitreader.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_LTLIBRARIES=libllvmbitreader.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
 check_SCRIPTS=llvmdejagnu.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
@@ -611,29 +724,46 @@ libllvmasmprinter_la_SOURCES+= llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp 
     llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
 endif
 
-lli_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
-lli_CXXFLAGS=$(LLVM_CXXFLAGS)
-lli_LDADD=libllvmbitreader.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
+libllvmfullcodegen_la_SOURCES=\
+	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
+	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
+	llvm/lib/CodeGen/IfConversion.cpp\
+	llvm/lib/CodeGen/IntrinsicLowering.cpp\
+	llvm/lib/CodeGen/MachOCodeEmitter.cpp\
+	llvm/lib/CodeGen/MachOWriter.cpp\
+	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
+	llvm/lib/CodeGen/OcamlGC.cpp\
+	llvm/lib/CodeGen/RegAllocLocal.cpp\
+	llvm/lib/CodeGen/RegAllocPBQP.cpp\
+	llvm/lib/CodeGen/ShadowStackGC.cpp\
+	llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
+	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
+	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp\
+	llvm/lib/Target/Target.cpp\
+	llvm/lib/Target/TargetELFWriterInfo.cpp\
+	llvm/lib/Target/TargetIntrinsicInfo.cpp\
+	llvm/lib/Target/TargetMachOWriterInfo.cpp
+
+lli_LDADD+=libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 lli_SOURCES=\
-    llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 llc_CXXFLAGS=$(LLVM_CXXFLAGS)
-llc_LDADD=libllvmbitreader.la libllvmasmparser.la libllvmasmprinter.la $(libclamavcxx_la_LIBADD)
+llc_LDADD=libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
 llc_SOURCES=\
     llvm/lib/MC/MCInstPrinter.cpp\
     llvm/tools/llc/llc.cpp
 
 llvm_as_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_as_CXXFLAGS=$(LLVM_CXXFLAGS)
-llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 llvm_as_SOURCES=\
     llvm/tools/llvm-as/llvm-as.cpp
 
 llvm_dis_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_dis_CXXFLAGS=$(LLVM_CXXFLAGS)
-llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 llvm_dis_SOURCES=\
     llvm/tools/llvm-dis/llvm-dis.cpp
 

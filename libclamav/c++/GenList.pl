@@ -3,20 +3,22 @@ use strict;
 use warnings;
 
 my $path = $ARGV[0];
-`(cd $path/tools/llvm-config; make ENABLE_OPTIMIZED=0 llvm-config-perobjincl)`;
+#`(cd $path/tools/llvm-config; make ENABLE_OPTIMIZED=0 llvm-config-perobjincl)`;
 
 my %compdeps;
 my @codegencomponents = ('x86codegen','powerpccodegen','armcodegen');
-my @allnonsys = ('support','jit',@codegencomponents);
+my @allnonsys = ('support','jit','fullcodegen',@codegencomponents);
 my @allcomponents= ('system',@allnonsys);
-my $allJIT="jit core target lib/Support/FoldingSet.o lib/Support/PrettyStackTrace.o";
+my $allJIT="jit core lib/Support/SourceMgr.o";
 for my $component (@allcomponents) {
     $/ = " ";
-    if ($component =~ "jit") {
+    $component =~ s/^fullcodegen/codegen interpreter jit target/;
+    if ($component =~ "^jit") {
 	open DEPS, "$path/tools/llvm-config/llvm-config-perobjincl --libnames $allJIT|";
     } else {
 	open DEPS, "$path/tools/llvm-config/llvm-config-perobjincl --libnames $component|";
     }
+    $component =~ s/^codegen.+/fullcodegen/;
     while (<DEPS>) {
 	chomp;
 	s/[\n\r]//;
@@ -73,6 +75,12 @@ foreach my $codegen (@codegencomponents) {
 
 @allcomponents=(@allcomponents,'codegen');
 $compdeps{'codegen'}=\%intersection;
+foreach my $comp (keys %{$compdeps{'codegen'}}) {
+    delete $compdeps{'fullcodegen'}{$comp};
+}
+foreach my $comp (keys %{$compdeps{'jit'}}) {
+    delete $compdeps{'fullcodegen'}{$comp};
+}
 
 foreach my $comp (@allcomponents) {
     print "libllvm$comp"."_la_SOURCES=";
@@ -81,3 +89,4 @@ foreach my $comp (@allcomponents) {
     }
     print "\n\n";
 }
+

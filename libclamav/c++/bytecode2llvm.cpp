@@ -1109,12 +1109,6 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(new TargetData(*EE->getTargetData()));
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
-	// Delete dead instructions
-	OurFPM.add(createDeadCodeEliminationPass());
-	// Fold constants
-	OurFPM.add(createConstantPropagationPass());
-	// SimplifyCFG
-	OurFPM.add(createCFGSimplificationPass());
 	OurFPM.doInitialization();
 
 	//TODO: create a wrapper that calls pthread_getspecific

@@ -542,6 +542,8 @@ extern "C" int32_t JITTest_AvailableExternallyGlobal;
 int32_t JITTest_AvailableExternallyGlobal = 42;
 namespace {
 
+#if 0
+// CLAMAV LOCAL: disable because this needs rdynamic flag
 TEST_F(JITTest, AvailableExternallyGlobalIsntEmitted) {
   TheJIT->DisableLazyCompilation(true);
   LoadAssembly("@JITTest_AvailableExternallyGlobal = "
@@ -558,7 +560,7 @@ TEST_F(JITTest, AvailableExternallyGlobalIsntEmitted) {
   EXPECT_EQ(42, loader()) << "func should return 42 from the external global,"
                           << " not 7 from the IR version.";
 }
-
+#endif
 // This code is copied from JITEventListenerTest, but it only runs once for all
 // the tests in this directory.  Everything seems fine, but that's strange
 // behavior.
