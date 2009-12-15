@@ -106,8 +106,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    scandata->errors++;
 	    return CL_EMEM;
 	case error_stat:
-	    if (msg == scandata->toplevel_path)
-		conn_reply_errno(scandata->conn, msg, "lstat() failed:");
+	    conn_reply_errno(scandata->conn, msg, "lstat() failed:");
 	    logg("^lstat() failed on: %s\n", msg);
 	    scandata->errors++;
 	    return CL_SUCCESS;

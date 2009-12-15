@@ -569,10 +569,11 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 
     if((dd = opendir(dirname)) != NULL) {
 	struct dirent *dent;
+	int err;
 	errno = 0;
 	ret = CL_SUCCESS;
 #ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result.d, &dent) && dent) {
+	while(!(err = readdir_r(dd, &result.d, &dent)) && dent) {
 #elif defined(HAVE_READDIR_R_2)
 	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
 #else
@@ -680,7 +681,19 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    }
 	    errno = 0;
 	}
+#ifndef HAVE_READDIR_R_3
+	err = errno;
+#endif
 	closedir(dd);
+	if (err) {
+	    char errs[128];
+	    cli_errmsg("Unable to readdir() directory %s: %s\n", dirname,
+		       cli_strerror(errno, errs, sizeof(errs)));
+	    /* report error to callback using error_stat */
+	    ret = callback(NULL, NULL, dirname, error_stat, data);
+	    if (ret != CL_SUCCESS)
+		return ret;
+	}
 
 	if (entries) {
 	    cli_qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
