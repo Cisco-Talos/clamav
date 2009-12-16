@@ -807,7 +807,7 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh
 libllvmsystem_la_LDFLAGS = -pthread
-libllvmsystem_la_LIBADD = -ldl
+libllvmsystem_la_LIBADD = 
 libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
 	llvm/lib/System/Atomic.cpp llvm/lib/System/Disassembler.cpp \
 	llvm/lib/System/DynamicLibrary.cpp llvm/lib/System/Errno.cpp \

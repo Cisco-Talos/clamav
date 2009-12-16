@@ -71,7 +71,7 @@ LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused
 EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh
 
 libllvmsystem_la_LDFLAGS=-pthread
-libllvmsystem_la_LIBADD=-ldl
+libllvmsystem_la_LIBADD=
 libllvmsystem_la_SOURCES=\
 	llvm/lib/System/Alarm.cpp\
 	llvm/lib/System/Atomic.cpp\
