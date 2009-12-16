@@ -211,8 +211,9 @@ ExecutionEngine *JIT::createJIT(ModuleProvider *MP,
                                 CodeModel::Model CMM) {
   // Make sure we can resolve symbols in the program as well. The zero arg
   // to the function tells DynamicLibrary to load the program, not a library.
-  if (sys::DynamicLibrary::LoadLibraryPermanently(0, ErrorStr))
-    return 0;
+/* CLAMAV LOCAL: no dlopen */
+//  if (sys::DynamicLibrary::LoadLibraryPermanently(0, ErrorStr))
+//   return 0;
 
   // Pick a target either via -march or by guessing the native arch.
   TargetMachine *TM = JIT::selectTarget(MP, ErrorStr);

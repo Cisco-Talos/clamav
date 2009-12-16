@@ -44,6 +44,17 @@ void llvm::sys::DynamicLibrary::AddSymbol(const char* symbolName,
 
 #else
 
+#if 1
+/* CLAMAV LOCAL: no plugins */
+bool llvm::sys::DynamicLibrary::LoadLibraryPermanently(const char *Filename,
+                                            std::string *ErrMsg) {
+    if (ErrMsg) *ErrMsg = "dlopen disabled";
+    return true;
+}
+void* llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(const char* symbolName) {
+    return 0;
+}
+#else
 #include <dlfcn.h>
 using namespace llvm;
 using namespace llvm::sys;
@@ -54,7 +65,6 @@ using namespace llvm::sys;
 //===----------------------------------------------------------------------===//
 
 static std::vector<void *> *OpenedHandles = 0;
-
 
 bool DynamicLibrary::LoadLibraryPermanently(const char *Filename,
                                             std::string *ErrMsg) {
@@ -161,5 +171,5 @@ void* DynamicLibrary::SearchForAddressOfSymbol(const char* symbolName) {
 
   return 0;
 }
-
 #endif // LLVM_ON_WIN32
+#endif
