@@ -42,6 +42,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMsystem", "LLVMsystem.vcproj", "{B174EBB8-99AE-4371-9A54-79DC309730DA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMsupport", "LLVMsupport.vcproj", "{4DDFCA45-7793-428D-A4D8-07C60722F487}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B174EBB8-99AE-4371-9A54-79DC309730DA} = {B174EBB8-99AE-4371-9A54-79DC309730DA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMtblgen", "LLVMtblgen.vcproj", "{39487174-E012-444A-8592-3CDAFA2A1869}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -111,9 +114,7 @@ Global
 		{4DDFCA45-7793-428D-A4D8-07C60722F487}.Release|Win32.ActiveCfg = Release|Win32
 		{4DDFCA45-7793-428D-A4D8-07C60722F487}.Release|Win32.Build.0 = Release|Win32
 		{39487174-E012-444A-8592-3CDAFA2A1869}.Debug|Win32.ActiveCfg = Debug|Win32
-		{39487174-E012-444A-8592-3CDAFA2A1869}.Debug|Win32.Build.0 = Debug|Win32
 		{39487174-E012-444A-8592-3CDAFA2A1869}.Release|Win32.ActiveCfg = Release|Win32
-		{39487174-E012-444A-8592-3CDAFA2A1869}.Release|Win32.Build.0 = Release|Win32
 		{28710655-9C06-4803-8752-55A99115773F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{28710655-9C06-4803-8752-55A99115773F}.Debug|Win32.Build.0 = Debug|Win32
 		{28710655-9C06-4803-8752-55A99115773F}.Release|Win32.ActiveCfg = Release|Win32
