@@ -297,7 +297,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int detect_encrypted) {
   uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
@@ -362,7 +362,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     return 0;
   }
 
-  if((LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
+  if(detect_encrypted && (LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
     *ctx->virname = "Encrypted.Zip";
     *ret = CL_VIRUS;
@@ -469,7 +469,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd);
+      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd, 1);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   fmap_unneed_ptr(map, ch, SIZEOF_CH);
   return last?0:coff;
@@ -525,7 +525,7 @@ int cli_unzip(cli_ctx *ctx) {
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     fc = 0;
-    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
+    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, 1))) {
       fc++;
       lhoff+=coff;
       if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
@@ -558,7 +558,7 @@ int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
-  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL);
+  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL, 0);
 
   return ret;
 }
