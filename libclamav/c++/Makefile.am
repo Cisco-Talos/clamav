@@ -295,7 +295,8 @@ libllvmpowerpccodegen_la_SOURCES=\
 	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
+	llvm/lib/Target/TargetMachOWriterInfo.cpp
 
 endif
 

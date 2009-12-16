@@ -332,7 +332,8 @@ am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp \
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp \
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp \
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp \
+	llvm/lib/Target/TargetMachOWriterInfo.cpp
 @BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_OBJECTS =  \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCBranchSelector.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCCodeEmitter.lo \
@@ -347,7 +348,8 @@ am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCRegisterInfo.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCSubtarget.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCTargetMachine.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo
+@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo \
+@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo
 libllvmpowerpccodegen_la_OBJECTS =  \
 	$(am_libllvmpowerpccodegen_la_OBJECTS)
 @BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_rpath =
@@ -949,7 +951,8 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
+@BUILD_PPC_TRUE@	llvm/lib/Target/TargetMachOWriterInfo.cpp
 
 
 # ARM Target
@@ -1863,6 +1866,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCSubtarget.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCTargetMachine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PowerPCTargetInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-DeadMachineInstructionElim.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCAsmInfoCOFF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCCodeEmitter.Plo@am__quote@
@@ -4480,6 +4484,14 @@ libllvmpowerpccodegen_la-PowerPCTargetInfo.lo: llvm/lib/Target/PowerPC/TargetInf
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' object='libllvmpowerpccodegen_la-PowerPCTargetInfo.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-PowerPCTargetInfo.lo `test -f 'llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+
+libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo: llvm/lib/Target/TargetMachOWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Tpo -c -o libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo `test -f 'llvm/lib/Target/TargetMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetMachOWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Tpo $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/TargetMachOWriterInfo.cpp' object='libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo `test -f 'llvm/lib/Target/TargetMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetMachOWriterInfo.cpp
 
 APSInt.lo: llvm/lib/Support/APSInt.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT APSInt.lo -MD -MP -MF $(DEPDIR)/APSInt.Tpo -c -o APSInt.lo `test -f 'llvm/lib/Support/APSInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APSInt.cpp
