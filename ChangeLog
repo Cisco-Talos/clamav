@@ -1,3 +1,7 @@
+Wed Dec 16 03:15:30 CET 2009 (acab)
+-----------------------------------
+ * libclamav/c++, win32: win32 compile system for llvm refactored
+
 Mon Dec 14 17:16:07 CET 2009 (tk)
 ---------------------------------
  * libclamav: integrate ldb sigs with icon matcher
