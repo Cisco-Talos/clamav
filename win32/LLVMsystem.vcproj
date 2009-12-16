@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="LLVMsystem"
 	ProjectGUID="{B174EBB8-99AE-4371-9A54-79DC309730DA}"
 	RootNamespace="LLVMsystem"
@@ -42,14 +42,15 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
-				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="true"
+				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
-				DisableSpecificWarnings="4715;4996;4146;4244;4800;4503;4624;4355"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -106,14 +107,16 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
-				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				ExceptionHandling="1"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
-				DisableSpecificWarnings="4715;4996;4146;4244;4800;4503;4624;4355"
+				DebugInformationFormat="0"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
