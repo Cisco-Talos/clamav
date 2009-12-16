@@ -21,7 +21,6 @@ TAGS
 libclamav/c++/autom4te.cache/*
 libclamav/c++/FileCheck
 libclamav/c++/count
-libclamav/c++/*.inc
 libclamav/c++/clamavcxx-config.h
 libclamav/c++/llc
 libclamav/c++/lli
@@ -33,7 +32,6 @@ libclamav/c++/llvm/Release
 libclamav/c++/llvm/docs/doxygen.cfg
 libclamav/c++/llvm/include/llvm/Config/*.def
 libclamav/c++/llvm/include/llvm/Config/config.h
-libclamav/c++/llvm/include/llvm/Intrinsics.gen
 libclamav/c++/llvm/include/llvm/System/DataTypes.h
 libclamav/c++/llvm/llvm.spec
 libclamav/c++/llvm/mklib

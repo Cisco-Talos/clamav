@@ -63,16 +63,8 @@ target_triplet = @target@
 @BUILD_ARM_TRUE@am__append_10 = libllvmarmcodegen.la
 @BUILD_ARM_TRUE@am__append_11 = libllvmarmcodegen.la
 @BUILD_ARM_TRUE@am__append_12 = libllvmarmcodegen.la
-@BUILD_X86_TRUE@am__append_13 = X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
-@BUILD_X86_TRUE@	      X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
-@BUILD_X86_TRUE@	      X86GenSubtarget.inc
-
-@BUILD_PPC_TRUE@am__append_14 = PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
-@BUILD_PPC_TRUE@    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc
-
-@BUILD_ARM_TRUE@am__append_15 = ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
-@BUILD_ARM_TRUE@    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
-
+@MAINTAINER_MODE_TRUE@am__append_13 = $(TBLGENFILES)
+@MAINTAINER_MODE_TRUE@noinst_PROGRAMS = tblgen$(EXEEXT)
 check_PROGRAMS = count$(EXEEXT) not$(EXEEXT) lli$(EXEEXT) llc$(EXEEXT) \
 	llvm-as$(EXEEXT) llvm-dis$(EXEEXT) llvmunittest_ADT$(EXEEXT) \
 	llvmunittest_Support$(EXEEXT) llvmunittest_VMCore$(EXEEXT) \
@@ -82,19 +74,18 @@ TESTS = llvmunittest_ADT$(EXEEXT) llvmunittest_Support$(EXEEXT) \
 	llvmunittest_VMCore$(EXEEXT) \
 	llvmunittest_ExecutionEngine$(EXEEXT) \
 	llvmunittest_JIT$(EXEEXT)
-@BUILD_X86_TRUE@am__append_16 = llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
+@BUILD_X86_TRUE@am__append_14 = llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp\
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86IntelInstPrinter.cpp\
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86MCInstLower.cpp\
 @BUILD_X86_TRUE@    llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp
 
-@BUILD_PPC_TRUE@am__append_17 = llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
-@BUILD_ARM_TRUE@am__append_18 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
+@BUILD_PPC_TRUE@am__append_15 = llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
+@BUILD_ARM_TRUE@am__append_16 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
 @BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp\
 @BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
 
-noinst_PROGRAMS = tblgen$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamavcxx-config.h.in \
@@ -516,28 +507,58 @@ not_DEPENDENCIES = libllvmsystem.la
 not_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(not_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_tblgen_OBJECTS = tblgen-AsmMatcherEmitter.$(OBJEXT) \
-	tblgen-AsmWriterEmitter.$(OBJEXT) \
-	tblgen-CallingConvEmitter.$(OBJEXT) \
-	tblgen-ClangDiagnosticsEmitter.$(OBJEXT) \
-	tblgen-CodeEmitterGen.$(OBJEXT) \
-	tblgen-CodeGenDAGPatterns.$(OBJEXT) \
-	tblgen-CodeGenInstruction.$(OBJEXT) \
-	tblgen-CodeGenTarget.$(OBJEXT) \
-	tblgen-DisassemblerEmitter.$(OBJEXT) \
-	tblgen-DAGISelEmitter.$(OBJEXT) \
-	tblgen-FastISelEmitter.$(OBJEXT) \
-	tblgen-InstrEnumEmitter.$(OBJEXT) \
-	tblgen-InstrInfoEmitter.$(OBJEXT) \
-	tblgen-IntrinsicEmitter.$(OBJEXT) \
-	tblgen-LLVMCConfigurationEmitter.$(OBJEXT) \
-	tblgen-OptParserEmitter.$(OBJEXT) tblgen-Record.$(OBJEXT) \
-	tblgen-RegisterInfoEmitter.$(OBJEXT) \
-	tblgen-SubtargetEmitter.$(OBJEXT) tblgen-TGLexer.$(OBJEXT) \
-	tblgen-TGParser.$(OBJEXT) tblgen-TGValueTypes.$(OBJEXT) \
-	tblgen-TableGen.$(OBJEXT) tblgen-TableGenBackend.$(OBJEXT)
+am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
+	llvm/utils/TableGen/AsmWriterEmitter.cpp \
+	llvm/utils/TableGen/CallingConvEmitter.cpp \
+	llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp \
+	llvm/utils/TableGen/CodeEmitterGen.cpp \
+	llvm/utils/TableGen/CodeGenDAGPatterns.cpp \
+	llvm/utils/TableGen/CodeGenInstruction.cpp \
+	llvm/utils/TableGen/CodeGenTarget.cpp \
+	llvm/utils/TableGen/DisassemblerEmitter.cpp \
+	llvm/utils/TableGen/DAGISelEmitter.cpp \
+	llvm/utils/TableGen/FastISelEmitter.cpp \
+	llvm/utils/TableGen/InstrEnumEmitter.cpp \
+	llvm/utils/TableGen/InstrInfoEmitter.cpp \
+	llvm/utils/TableGen/IntrinsicEmitter.cpp \
+	llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp \
+	llvm/utils/TableGen/OptParserEmitter.cpp \
+	llvm/utils/TableGen/Record.cpp \
+	llvm/utils/TableGen/RegisterInfoEmitter.cpp \
+	llvm/utils/TableGen/SubtargetEmitter.cpp \
+	llvm/utils/TableGen/TGLexer.cpp \
+	llvm/utils/TableGen/TGParser.cpp \
+	llvm/utils/TableGen/TGValueTypes.cpp \
+	llvm/utils/TableGen/TableGen.cpp \
+	llvm/utils/TableGen/TableGenBackend.cpp
+@MAINTAINER_MODE_TRUE@am_tblgen_OBJECTS =  \
+@MAINTAINER_MODE_TRUE@	tblgen-AsmMatcherEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-AsmWriterEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CallingConvEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-ClangDiagnosticsEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CodeEmitterGen.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CodeGenDAGPatterns.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CodeGenInstruction.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CodeGenTarget.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-DisassemblerEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-DAGISelEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-FastISelEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-InstrEnumEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-InstrInfoEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-IntrinsicEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-LLVMCConfigurationEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-OptParserEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Record.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-RegisterInfoEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SubtargetEmitter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TGLexer.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TGParser.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TGValueTypes.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TableGen.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT)
 tblgen_OBJECTS = $(am_tblgen_OBJECTS)
-tblgen_DEPENDENCIES = libllvmsupport.la libllvmsystem.la
+@MAINTAINER_MODE_TRUE@tblgen_DEPENDENCIES = libllvmsupport.la \
+@MAINTAINER_MODE_TRUE@	libllvmsystem.la
 tblgen_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(tblgen_CXXFLAGS) \
 	$(CXXFLAGS) $(tblgen_LDFLAGS) $(LDFLAGS) -o $@
@@ -615,7 +636,7 @@ DIST_SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(llvmunittest_ExecutionEngine_SOURCES) \
 	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
 	$(llvmunittest_VMCore_SOURCES) $(not_SOURCES) \
-	$(tblgen_SOURCES)
+	$(am__tblgen_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 # If stdout is a non-dumb tty, use colors.  If test -t is not supported,
@@ -789,9 +810,9 @@ ACLOCAL_AMFLAGS = -I m4
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
 #libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
 #libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la \
-	libllvmsystem.la libllvmcodegen.la libllvmjit.la \
-	$(am__append_4) $(am__append_8) $(am__append_12)
+noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la \
+	libllvmcodegen.la libllvmjit.la $(am__append_4) \
+	$(am__append_8) $(am__append_12)
 lli_LDADD = libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la \
 	$(am__append_3) $(am__append_7) $(am__append_11) \
 	libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la \
@@ -805,7 +826,17 @@ libclamavcxx_la_LDFLAGS = -no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
-EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh
+TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
+    X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
+    X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
+    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
+    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
+
+
+# Rule to rerun LLVM's configure if it changed, before building anything else
+# LLVM
+BUILT_SOURCES = $(am__append_13) llvm/config.status
+EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
 libllvmsystem_la_LDFLAGS = -pthread
 libllvmsystem_la_LIBADD = 
 libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
@@ -862,47 +893,48 @@ libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/regfree.c\
 	llvm/lib/Support/regstrlcpy.c
 
-tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
-tblgen_LDADD = libllvmsupport.la libllvmsystem.la
+@MAINTAINER_MODE_TRUE@tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
+@MAINTAINER_MODE_TRUE@tblgen_LDADD = libllvmsupport.la libllvmsystem.la
 #TODO: if VERSIONSCRIPT
-tblgen_LDFLAGS = -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
-tblgen_SOURCES = \
-  llvm/utils/TableGen/AsmMatcherEmitter.cpp\
-  llvm/utils/TableGen/AsmWriterEmitter.cpp\
-  llvm/utils/TableGen/CallingConvEmitter.cpp\
-  llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp\
-  llvm/utils/TableGen/CodeEmitterGen.cpp\
-  llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
-  llvm/utils/TableGen/CodeGenInstruction.cpp\
-  llvm/utils/TableGen/CodeGenTarget.cpp\
-  llvm/utils/TableGen/DisassemblerEmitter.cpp\
-  llvm/utils/TableGen/DAGISelEmitter.cpp\
-  llvm/utils/TableGen/FastISelEmitter.cpp\
-  llvm/utils/TableGen/InstrEnumEmitter.cpp\
-  llvm/utils/TableGen/InstrInfoEmitter.cpp\
-  llvm/utils/TableGen/IntrinsicEmitter.cpp\
-  llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
-  llvm/utils/TableGen/OptParserEmitter.cpp\
-  llvm/utils/TableGen/Record.cpp\
-  llvm/utils/TableGen/RegisterInfoEmitter.cpp\
-  llvm/utils/TableGen/SubtargetEmitter.cpp\
-  llvm/utils/TableGen/TGLexer.cpp\
-  llvm/utils/TableGen/TGParser.cpp\
-  llvm/utils/TableGen/TGValueTypes.cpp\
-  llvm/utils/TableGen/TableGen.cpp\
-  llvm/utils/TableGen/TableGenBackend.cpp
+@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+@MAINTAINER_MODE_TRUE@tblgen_SOURCES = \
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmMatcherEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CallingConvEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeEmitterGen.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenInstruction.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenTarget.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DisassemblerEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/FastISelEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrEnumEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrInfoEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/IntrinsicEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/OptParserEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/Record.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/RegisterInfoEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/SubtargetEmitter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGLexer.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGParser.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGValueTypes.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGen.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp
 
-TBLGEN = $(top_builddir)/tblgen
-TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
-TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
-
-# Rule to rerun LLVM's configure if it changed, before building anything else
-# LLVM
-BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
-	$(am__append_14) $(am__append_15) llvm/config.status
+@MAINTAINER_MODE_TRUE@TBLGEN = $(top_builddir)/tblgen
+@MAINTAINER_MODE_TRUE@TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
+@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
 
 # X86 Target
-@BUILD_X86_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
+@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
+
+# PPC Target
+@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_PPC = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+
+# ARM Target
+@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_ARM = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
 @BUILD_X86_TRUE@libllvmx86codegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
 @BUILD_X86_TRUE@libllvmx86codegen_la_SOURCES = \
 @BUILD_X86_TRUE@	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
@@ -927,9 +959,6 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
 @BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetMachine.cpp\
 @BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetObjectFile.cpp
 
-
-# PPC Target
-@BUILD_PPC_TRUE@TBLGEN_FLAGS_PPC = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
 @BUILD_PPC_TRUE@libllvmpowerpccodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
 @BUILD_PPC_TRUE@libllvmpowerpccodegen_la_SOURCES = \
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
@@ -948,9 +977,6 @@ BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/TargetMachOWriterInfo.cpp
 
-
-# ARM Target
-@BUILD_ARM_TRUE@TBLGEN_FLAGS_ARM = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
 @BUILD_ARM_TRUE@libllvmarmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
 @BUILD_ARM_TRUE@libllvmarmcodegen_la_SOURCES = \
 @BUILD_ARM_TRUE@	llvm/lib/CodeGen/IfConversion.cpp\
@@ -1300,7 +1326,7 @@ FileCheck_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
 FileCheck_LDADD = libllvmsupport.la libllvmsystem.la 
 FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
-check_LTLIBRARIES = libllvmbitreader.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_LTLIBRARIES = libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_SCRIPTS = llvmdejagnu.sh
 TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
 # Disable LLVM make check for now, there are some things to fix first:
@@ -1316,8 +1342,8 @@ libllvmasmprinter_la_SOURCES =  \
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
 	llvm/lib/CodeGen/ELFWriter.cpp \
 	llvm/lib/CodeGen/MachOCodeEmitter.cpp \
-	llvm/lib/CodeGen/MachOWriter.cpp $(am__append_16) \
-	$(am__append_17) $(am__append_18)
+	llvm/lib/CodeGen/MachOWriter.cpp $(am__append_14) \
+	$(am__append_15) $(am__append_16)
 libllvmfullcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
 	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
@@ -6326,104 +6352,106 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am
 
-llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
-	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
-@BUILD_X86_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
 
-@BUILD_X86_TRUE@X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
 
-@BUILD_X86_TRUE@X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-enums -o $@ $<
 
-@BUILD_X86_TRUE@X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc -o $@ $<
 
-@BUILD_X86_TRUE@X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-enums -o $@ $<
 
-@BUILD_X86_TRUE@X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-desc -o $@ $<
 
-@BUILD_X86_TRUE@X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -asmwriternum=1 -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -o $@ $<
 
-@BUILD_X86_TRUE@X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-matcher -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -asmwriternum=1 -o $@ $<
 
-@BUILD_X86_TRUE@X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-dag-isel -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-matcher -o $@ $<
 
-@BUILD_X86_TRUE@X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-fast-isel -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-dag-isel -o $@ $<
 
-@BUILD_X86_TRUE@X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-callingconv -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-fast-isel -o $@ $<
 
-@BUILD_X86_TRUE@X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
-@BUILD_PPC_TRUE@PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-callingconv -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenRegisterNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-enums -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenAsmWriter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-asm-writer -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenRegisterNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-enums -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenCodeEmitter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-emitter -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenAsmWriter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-asm-writer -o $@ $<
 
-@BUILD_PPC_TRUE@PPCRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenCodeEmitter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-emitter -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenRegisterInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenInstrInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenDAGISel.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-dag-isel -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenInstrInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-desc -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-callingconv -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenDAGISel.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-dag-isel -o $@ $<
 
-@BUILD_PPC_TRUE@PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
-@BUILD_ARM_TRUE@ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc-header -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-callingconv -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenRegisterNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc-header -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenRegisterInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenRegisterNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-enums -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenInstrNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-enums -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenInstrInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-desc -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenInstrNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-enums -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenCodeEmitter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-emitter -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenInstrInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-desc -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenAsmWriter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-asm-writer -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenCodeEmitter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-emitter -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenDAGISel.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-dag-isel -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenAsmWriter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-asm-writer -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-callingconv -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenDAGISel.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-dag-isel -o $@ $<
 
-@BUILD_ARM_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
+@MAINTAINER_MODE_TRUE@ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-callingconv -o $@ $<
+
+@MAINTAINER_MODE_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
+
 #bytecode2llvm.cpp: build-llvm
 
 build-llvm:
@@ -6437,8 +6465,8 @@ build-llvm-for-check:
 clean-local:
 	rm -rf `find llvm/test -name Output -type d -print`
 	rm -rf llvm/Release llvm/Debug
-	rm -f *.inc
-	rm -f llvm/include/llvm/Intrinsics.gen
+@MAINTAINER_MODE_TRUE@	rm -f *.inc
+@MAINTAINER_MODE_TRUE@	rm -f llvm/include/llvm/Intrinsics.gen
 	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
 
 distclean-local:
@@ -6463,7 +6491,6 @@ dist-hook:
 	make -C llvm dist-hook
 	rm -f $(distdir)/llvm/include/llvm/Config/*.h $(distdir)/llvm/include/llvm/Config/*.def $(distdir)/llvm/Makefile.config $(distdir)/llvm/llvm.spec
 	rm -f $(distdir)/llvm/docs/doxygen.cfg $(distdir)/llvm/tools/llvmc/plugins/Base/Base.td $(distdir)/llvm/tools/llvm-config/llvm-config.in
-	rm -f $(distdir)/llvm/include/llvm/Intrinsics.gen
 	rm -f $(distdir)/llvm/include/llvm/Support/DataTypes.h $(distdir)/llvm/config.log $(distdir)/llvm/config.status
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

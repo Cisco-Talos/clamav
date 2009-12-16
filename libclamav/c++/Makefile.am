@@ -37,7 +37,7 @@ endif
 #libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
 #libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
 
-noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la libllvmsystem.la\
+noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 		     libllvmcodegen.la libllvmjit.la
 lli_LDADD=libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la
 libclamavcxx_la_LIBADD=libllvmjit.la
@@ -68,7 +68,14 @@ libclamavcxx_la_LIBADD+=libllvmcodegen.la libllvmsystem.la
 
 LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 
-EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh
+TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
+    X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
+    X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
+    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
+    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
+
+BUILT_SOURCES=
+EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
 
 libllvmsystem_la_LDFLAGS=-pthread
 libllvmsystem_la_LIBADD=
@@ -135,6 +142,9 @@ libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/regfree.c\
 	llvm/lib/Support/regstrlcpy.c
 
+if MAINTAINER_MODE
+BUILT_SOURCES+=$(TBLGENFILES)
+noinst_PROGRAMS = tblgen
 tblgen_CXXFLAGS=$(LLVM_CXXFLAGS)
 tblgen_LDADD=libllvmsupport.la libllvmsystem.la
 #TODO: if VERSIONSCRIPT
@@ -169,12 +179,10 @@ TBLGEN=$(top_builddir)/tblgen
 TBLGEN_V=$(AM_V_GEN)$(TBLGEN)
 TBLGEN_FLAGS=-I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
 
-BUILT_SOURCES=llvm/include/llvm/Intrinsics.gen
 llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
 	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
 
 # X86 Target
-if BUILD_X86
 TBLGEN_FLAGS_X86= $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
 X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
 	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
@@ -212,36 +220,6 @@ X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
 X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
 	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
 
-libllvmx86codegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
-BUILT_SOURCES+=X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
-	      X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
-	      X86GenSubtarget.inc
-
-libllvmx86codegen_la_SOURCES=\
-	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
-	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
-	llvm/lib/MC/MCAsmInfoCOFF.cpp\
-	llvm/lib/MC/MCCodeEmitter.cpp\
-	llvm/lib/Target/TargetELFWriterInfo.cpp\
-	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
-	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
-	llvm/lib/Target/X86/X86CodeEmitter.cpp\
-	llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
-	llvm/lib/Target/X86/X86FastISel.cpp\
-	llvm/lib/Target/X86/X86FloatingPoint.cpp\
-	llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
-	llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
-	llvm/lib/Target/X86/X86ISelLowering.cpp\
-	llvm/lib/Target/X86/X86InstrInfo.cpp\
-	llvm/lib/Target/X86/X86JITInfo.cpp\
-	llvm/lib/Target/X86/X86MCAsmInfo.cpp\
-	llvm/lib/Target/X86/X86RegisterInfo.cpp\
-	llvm/lib/Target/X86/X86Subtarget.cpp\
-	llvm/lib/Target/X86/X86TargetMachine.cpp\
-	llvm/lib/Target/X86/X86TargetObjectFile.cpp
-endif
-
-if BUILD_PPC
 # PPC Target
 TBLGEN_FLAGS_PPC= $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
 PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
@@ -277,30 +255,6 @@ PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
 PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
 	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
 
-libllvmpowerpccodegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
-BUILT_SOURCES += PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
-    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc
-
-libllvmpowerpccodegen_la_SOURCES=\
-	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
-	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
-	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
-	llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp\
-	llvm/lib/Target/PowerPC/PPCISelLowering.cpp\
-	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
-	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
-	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
-	llvm/lib/Target/TargetMachOWriterInfo.cpp
-
-endif
-
-if BUILD_ARM
 # ARM Target
 TBLGEN_FLAGS_ARM= $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
 ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
@@ -332,11 +286,57 @@ ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
 
 ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
 	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
+endif
+
+if BUILD_X86
+libllvmx86codegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
+libllvmx86codegen_la_SOURCES=\
+	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
+	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
+	llvm/lib/MC/MCAsmInfoCOFF.cpp\
+	llvm/lib/MC/MCCodeEmitter.cpp\
+	llvm/lib/Target/TargetELFWriterInfo.cpp\
+	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
+	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
+	llvm/lib/Target/X86/X86CodeEmitter.cpp\
+	llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
+	llvm/lib/Target/X86/X86FastISel.cpp\
+	llvm/lib/Target/X86/X86FloatingPoint.cpp\
+	llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
+	llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
+	llvm/lib/Target/X86/X86ISelLowering.cpp\
+	llvm/lib/Target/X86/X86InstrInfo.cpp\
+	llvm/lib/Target/X86/X86JITInfo.cpp\
+	llvm/lib/Target/X86/X86MCAsmInfo.cpp\
+	llvm/lib/Target/X86/X86RegisterInfo.cpp\
+	llvm/lib/Target/X86/X86Subtarget.cpp\
+	llvm/lib/Target/X86/X86TargetMachine.cpp\
+	llvm/lib/Target/X86/X86TargetObjectFile.cpp
+endif
+
+if BUILD_PPC
+libllvmpowerpccodegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+libllvmpowerpccodegen_la_SOURCES=\
+	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
+	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
+	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
+	llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp\
+	llvm/lib/Target/PowerPC/PPCISelLowering.cpp\
+	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
+	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
+	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
+	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp\
+	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
+	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
+	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
+	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
+	llvm/lib/Target/TargetMachOWriterInfo.cpp
+endif
+
+if BUILD_ARM
 
 libllvmarmcodegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
-BUILT_SOURCES += ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
-    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
-
 libllvmarmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/IfConversion.cpp\
 	llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp\
@@ -687,7 +687,7 @@ FileCheck_CXXFLAGS=$(LLVM_CXXFLAGS)
 FileCheck_LDADD=libllvmsupport.la libllvmsystem.la 
 FileCheck_SOURCES=llvm/utils/FileCheck/FileCheck.cpp
 
-check_LTLIBRARIES=libllvmbitreader.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_LTLIBRARIES=libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
 check_SCRIPTS=llvmdejagnu.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
@@ -769,7 +769,6 @@ llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmjit.la libllvmsupp
 llvm_dis_SOURCES=\
     llvm/tools/llvm-dis/llvm-dis.cpp
 
-noinst_PROGRAMS = tblgen
 #bytecode2llvm.cpp: build-llvm
 
 build-llvm:
@@ -783,8 +782,10 @@ build-llvm-for-check:
 clean-local:
 	rm -rf `find llvm/test -name Output -type d -print`
 	rm -rf llvm/Release llvm/Debug
+if MAINTAINER_MODE
 	rm -f *.inc
 	rm -f llvm/include/llvm/Intrinsics.gen
+endif
 	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
 
 distclean-local:
@@ -814,6 +815,5 @@ dist-hook:
 	make -C llvm dist-hook
 	rm -f $(distdir)/llvm/include/llvm/Config/*.h $(distdir)/llvm/include/llvm/Config/*.def $(distdir)/llvm/Makefile.config $(distdir)/llvm/llvm.spec
 	rm -f $(distdir)/llvm/docs/doxygen.cfg $(distdir)/llvm/tools/llvmc/plugins/Base/Base.td $(distdir)/llvm/tools/llvm-config/llvm-config.in
-	rm -f $(distdir)/llvm/include/llvm/Intrinsics.gen
 	rm -f $(distdir)/llvm/include/llvm/Support/DataTypes.h $(distdir)/llvm/config.log $(distdir)/llvm/config.status
 
