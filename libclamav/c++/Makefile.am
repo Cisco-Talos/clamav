@@ -802,11 +802,12 @@ check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
 	+$(GMAKE) -C llvm unittests
 
-CONFIG_STATUS_DEPENDENCIES = $(top_builddir)/llvm/config.status
-# config.status needs to be run twice, once without recheck so that it has a
-# chance to create configure generated files.
+# Rule to rerun LLVM's configure if it changed, before building anything else
+# LLVM
+BUILT_SOURCES += llvm/config.status
+libllvmsystem_la_SOURCES += llvm/config.status
 $(top_builddir)/llvm/config.status: llvm/configure
-	cd llvm; ./config.status --recheck; ./config.status
+	(cd llvm; ./config.status --recheck; ./config.status)
 
 # rm configure generated files
 dist-hook:

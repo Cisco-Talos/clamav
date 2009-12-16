@@ -808,25 +808,16 @@ LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unus
 EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh
 libllvmsystem_la_LDFLAGS = -pthread
 libllvmsystem_la_LIBADD = -ldl
-libllvmsystem_la_SOURCES = \
-	llvm/lib/System/Alarm.cpp\
-	llvm/lib/System/Atomic.cpp\
-	llvm/lib/System/Disassembler.cpp\
-	llvm/lib/System/DynamicLibrary.cpp\
-	llvm/lib/System/Errno.cpp\
-	llvm/lib/System/Host.cpp\
-	llvm/lib/System/IncludeFile.cpp\
-	llvm/lib/System/Memory.cpp\
-	llvm/lib/System/Mutex.cpp\
-	llvm/lib/System/Path.cpp\
-	llvm/lib/System/Process.cpp\
-	llvm/lib/System/Program.cpp\
-	llvm/lib/System/RWMutex.cpp\
-	llvm/lib/System/Signals.cpp\
-	llvm/lib/System/ThreadLocal.cpp\
-	llvm/lib/System/Threading.cpp\
-	llvm/lib/System/TimeValue.cpp
-
+libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
+	llvm/lib/System/Atomic.cpp llvm/lib/System/Disassembler.cpp \
+	llvm/lib/System/DynamicLibrary.cpp llvm/lib/System/Errno.cpp \
+	llvm/lib/System/Host.cpp llvm/lib/System/IncludeFile.cpp \
+	llvm/lib/System/Memory.cpp llvm/lib/System/Mutex.cpp \
+	llvm/lib/System/Path.cpp llvm/lib/System/Process.cpp \
+	llvm/lib/System/Program.cpp llvm/lib/System/RWMutex.cpp \
+	llvm/lib/System/Signals.cpp llvm/lib/System/ThreadLocal.cpp \
+	llvm/lib/System/Threading.cpp llvm/lib/System/TimeValue.cpp \
+	llvm/config.status
 libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/APFloat.cpp\
 	llvm/lib/Support/APInt.cpp\
@@ -904,8 +895,11 @@ tblgen_SOURCES = \
 TBLGEN = $(top_builddir)/tblgen
 TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
 TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
+
+# Rule to rerun LLVM's configure if it changed, before building anything else
+# LLVM
 BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_13) \
-	$(am__append_14) $(am__append_15)
+	$(am__append_14) $(am__append_15) llvm/config.status
 
 # X86 Target
 @BUILD_X86_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
@@ -1366,7 +1360,6 @@ llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmjit.la libllvmsu
 llvm_dis_SOURCES = \
     llvm/tools/llvm-dis/llvm-dis.cpp
 
-CONFIG_STATUS_DEPENDENCIES = $(top_builddir)/llvm/config.status
 all: $(BUILT_SOURCES) clamavcxx-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -6462,10 +6455,8 @@ distclean-local:
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
 	+$(GMAKE) -C llvm unittests
-# config.status needs to be run twice, once without recheck so that it has a
-# chance to create configure generated files.
 $(top_builddir)/llvm/config.status: llvm/configure
-	cd llvm; ./config.status --recheck; ./config.status
+	(cd llvm; ./config.status --recheck; ./config.status)
 
 # rm configure generated files
 dist-hook:
