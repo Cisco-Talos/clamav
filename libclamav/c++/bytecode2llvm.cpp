@@ -241,6 +241,10 @@ private:
 		return V;
 	    }
 	    V = Builder.CreateLoad(V);
+	    if (V->getType() != Ty &&
+		isa<PointerType>(V->getType()) &&
+		isa<PointerType>(Ty))
+		V = Builder.CreateBitCast(V, Ty);
 	    if (V->getType() != Ty) {
 		errs() << operand << " ";
 		V->dump();
@@ -425,8 +429,10 @@ public:
 	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
 	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
 	Value *V = createGEP(Base, ETy, Start, End);
-	if (!V)
+	if (!V) {
+	    errs() << "@ " << dest << "\n";
 	    return false;
+	}
 	V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
 	Store(dest, V);
 	return true;
@@ -630,6 +636,7 @@ public:
 		    Ty = PointerType::getUnqual(PointerType::getUnqual(Ty));
 		    Value *Cast = Builder.CreateBitCast(GEP, Ty);
 		    Value *SpecialGV = Builder.CreateLoad(Cast);
+		    SpecialGV->setName("g"+Twine(g-_FIRST_GLOBAL)+"_");
 		    Value *C[] = {
 			ConstantInt::get(Type::getInt32Ty(Context), 0),
 			ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])
@@ -640,8 +647,10 @@ public:
 			Ty->dump();
 			llvm_report_error("(libclamav) unable to create fake global");
 		    }
-		    else if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(globals[i]))
+		    else if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(globals[i])) {
 			GI->setIsInBounds(true);
+			GI->setName("geped"+Twine(i)+"_");
+		    }
 		}
 	    }
 
@@ -674,7 +683,6 @@ public:
 			case OP_BC_SEXT:
 			case OP_BC_TRUNC:
 			case OP_BC_GEP1:
-			case OP_BC_GEP2:
 			case OP_BC_GEPN:
 			case OP_BC_STORE:
 			case OP_BC_COPY:
@@ -877,28 +885,20 @@ public:
 			}
 			case OP_BC_GEP1:
 			{
-			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
-			    Value *Op = convertOperand(func, I32Ty, inst->u.binop[1]);
+			    const Type *SrcTy = mapType(inst->u.three[0]);
+			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
+			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    if (!createGEP(inst->dest, V, &Op, &Op+1))
-				return false;
-			    break;
-			}
-			case OP_BC_GEP2:
-			{
-			    std::vector<Value*> Idxs;
-			    Value *V = convertOperand(func, inst, inst->u.three[0]);
-			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[1]));
-			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[2]));
-			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
 				return false;
 			    break;
 			}
 			case OP_BC_GEPN:
 			{
 			    std::vector<Value*> Idxs;
-			    assert(inst->u.ops.numOps > 1);
-			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
-			    for (unsigned a=1;a<inst->u.ops.numOps;a++)
+			    assert(inst->u.ops.numOps > 2);
+			    const Type *SrcTy = mapType(inst->u.ops.ops[0]);
+			    Value *V = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
+			    for (unsigned a=2;a<inst->u.ops.numOps;a++)
 				Idxs.push_back(convertOperand(func, I32Ty, inst->u.ops.ops[a]));
 			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
 				return false;

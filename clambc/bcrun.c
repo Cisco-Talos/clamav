@@ -115,6 +115,11 @@ static void tracehook_val(struct cli_bc_ctx *ctx, const char *name, uint32_t val
     fprintf(stderr, "[trace] %s = %u\n", name, value);
 }
 
+static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
+{
+    fprintf(stderr, "[trace] %p\n", ptr);
+}
+
 int main(int argc, char *argv[])
 {
     FILE *f;
@@ -219,7 +224,8 @@ int main(int argc, char *argv[])
     cli_bytecode_context_set_trace(ctx, tracelevel,
 				   tracehook,
 				   tracehook_op,
-				   tracehook_val);
+				   tracehook_val,
+				   tracehook_ptr);
 
     if (opts->filename[1]) {
 	funcid = atoi(opts->filename[1]);

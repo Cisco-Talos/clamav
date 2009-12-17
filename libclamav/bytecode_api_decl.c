@@ -47,6 +47,7 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t*, uin
 uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -131,7 +132,8 @@ const struct cli_apicall cli_apicalls[]={
 	{"trace_scope", 14, 7, 1},
 	{"trace_source", 14, 8, 1},
 	{"trace_op", 14, 9, 1},
-	{"trace_value", 14, 10, 1}
+	{"trace_value", 14, 10, 1},
+	{"trace_ptr", 14, 11, 1}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -150,6 +152,7 @@ const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_trace_scope,
 	(cli_apicall_pointer)cli_bcapi_trace_source,
 	(cli_apicall_pointer)cli_bcapi_trace_op,
-	(cli_apicall_pointer)cli_bcapi_trace_value
+	(cli_apicall_pointer)cli_bcapi_trace_value,
+	(cli_apicall_pointer)cli_bcapi_trace_ptr
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

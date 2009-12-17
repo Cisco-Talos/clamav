@@ -164,6 +164,7 @@ uint32_t trace_scope(const uint8_t* newscope, uint32_t scopeid);
 uint32_t trace_source(const uint8_t* srcfile, uint32_t line);
 uint32_t trace_op(const uint8_t* opname, uint32_t column);
 uint32_t trace_value(const uint8_t* name, uint32_t v);
+uint32_t trace_ptr(const uint8_t* ptr, uint32_t dummy);
 
 #endif
 #endif

@@ -142,11 +142,13 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, unsigned level,
 				    bc_dbg_callback_trace trace,
 				    bc_dbg_callback_trace_op trace_op,
-				    bc_dbg_callback_trace_val trace_val)
+				    bc_dbg_callback_trace_val trace_val,
+				    bc_dbg_callback_trace_ptr trace_ptr)
 {
     ctx->trace = trace;
     ctx->trace_op = trace_op;
     ctx->trace_val = trace_val;
+    ctx->trace_ptr = trace_ptr;
     ctx->trace_level = level;
 }
 
@@ -221,5 +223,19 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name
     }
     if (ctx->trace_val && name)
 	ctx->trace_val(ctx, name, value);
+    return 0;
+}
+
+uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t* ptr, uint32_t dummy)
+{
+    if (LIKELY(ctx->trace_level < trace_val))
+	return 0;
+    if (ctx->trace_level&0x80) {
+	if ((ctx->trace_level&0x7f) < trace_param)
+	    return 0;
+	ctx->trace(ctx, trace_param);
+    }
+    if (ctx->trace_ptr)
+	ctx->trace_ptr(ctx, ptr);
     return 0;
 }

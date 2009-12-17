@@ -57,6 +57,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->trace = NULL;
     ctx->trace_op = NULL;
     ctx->trace_val = NULL;
+    ctx->trace_ptr = NULL;
     ctx->scope = NULL;
     ctx->scopeid = 0;
     ctx->file = "??";
@@ -1048,7 +1049,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
 		    if (!inst.u.ops.ops) {
 			cli_errmsg("Out of memory allocating operands\n");
-			return CL_EMALFDB;
+			return CL_EMEM;
 		    }
 		    if (inst.opcode == OP_BC_CALL_DIRECT)
 			inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
@@ -1079,6 +1080,21 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    inst.u.cast.mask = inst.u.cast.mask != 64 ?
 			(1ull<<inst.u.cast.mask)-1 :
 			~0ull;
+		break;
+	    case OP_BC_GEPN:
+		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
+		if (ok) {
+		    inst.u.ops.numOps = numOp+1;
+		    inst.u.ops.opsizes = NULL;
+		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+		    if (!inst.u.ops.ops) {
+			cli_errmsg("Out of memory allocating operands\n");
+			return CL_EMEM;
+		    }
+		    inst.u.ops.ops[0] = readNumber(buffer, &offset, len, &ok);
+		    for (i=1;i<numOp+1;i++)
+			inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		}
 		break;
 	    case OP_BC_ICMP_EQ:
 	    case OP_BC_ICMP_NE:
@@ -1532,13 +1548,12 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.unaryop);
 		    break;
 		case OP_BC_GEP1:
-		    MAP(inst->u.binop[0]);
-		    MAP(inst->u.binop[1]);
-		    break;
-		case OP_BC_GEP2:
-		    MAP(inst->u.three[0]);
+		    //three[0] is the type
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
+		    break;
+		case OP_BC_GEPN:
+		    /*TODO */
 		    break;
 		default:
 		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);
