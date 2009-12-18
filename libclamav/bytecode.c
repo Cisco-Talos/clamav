@@ -1081,10 +1081,16 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			(1ull<<inst.u.cast.mask)-1 :
 			~0ull;
 		break;
+	    case OP_BC_GEP1:
+	    case OP_BC_GEPZ:
+		inst.u.three[0] = readNumber(buffer, &offset, len, &ok);
+		inst.u.three[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		inst.u.three[2] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		break;
 	    case OP_BC_GEPN:
 		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
-		    inst.u.ops.numOps = numOp+1;
+		    inst.u.ops.numOps = numOp+2;
 		    inst.u.ops.opsizes = NULL;
 		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
 		    if (!inst.u.ops.ops) {
@@ -1092,7 +1098,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			return CL_EMEM;
 		    }
 		    inst.u.ops.ops[0] = readNumber(buffer, &offset, len, &ok);
-		    for (i=1;i<numOp+1;i++)
+		    for (i=1;i<numOp+2;i++)
 			inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
 		}
 		break;
@@ -1548,6 +1554,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.unaryop);
 		    break;
 		case OP_BC_GEP1:
+		case OP_BC_GEPZ:
 		    //three[0] is the type
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);

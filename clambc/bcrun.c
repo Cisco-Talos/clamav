@@ -139,8 +139,6 @@ int main(int argc, char *argv[])
 	exit(1);
     }
     if(optget(opts, "version")->enabled) {
-	char versions[] = "--version";
-	char* argvx[] = {argv[0], versions,NULL};
 	printf("Clam AntiVirus Bytecode Testing Tool %s\n", get_version());
 	cl_init(CL_INIT_DEFAULT);
 	cli_bytecode_printversion();
@@ -264,7 +262,6 @@ int main(int argc, char *argv[])
 	}
 	funmap(map);
     }
-
 
     rc = cli_bytecode_run(&bcs, bc, ctx);
     if (rc != CL_SUCCESS) {

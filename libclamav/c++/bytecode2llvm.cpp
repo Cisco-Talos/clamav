@@ -76,15 +76,23 @@
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "type_desc.h"
+extern "C" {
+#include "md5.h"
+}
 
 #define MODULE "libclamav JIT: "
 
+extern "C" unsigned int cli_rndnum(unsigned int max);
 using namespace llvm;
 typedef DenseMap<const struct cli_bc_func*, void*> FunctionMapTy;
 struct cli_bcengine {
     ExecutionEngine *EE;
     LLVMContext Context;
     FunctionMapTy compiledFunctions;
+    union {
+	unsigned char b[16];
+	void* align;/* just to align field to ptr */
+    } guard;
 };
 
 namespace {
@@ -99,6 +107,12 @@ void do_shutdown() {
 static void NORETURN jit_exception_handler(void)
 {
     longjmp(*const_cast<jmp_buf*>(ExceptionReturn.get()), 1);
+}
+
+static void NORETURN jit_ssp_handler(void)
+{
+    errs() << "Bytecode JIT: *** stack smashing detected, bytecode aborted\n";
+    jit_exception_handler();
 }
 
 void llvm_error_handler(void *user_data, const std::string &reason)
@@ -471,6 +485,18 @@ public:
 	return N;
     }
 
+    void AddStackProtect(Function *F)
+    {
+	BasicBlock &BB = F->getEntryBlock();
+	if (isa<AllocaInst>(BB.begin())) {
+	    // Have an alloca -> some instruction uses its address otherwise
+	    // mem2reg would have converted it to an SSA register.
+	    // Enable stack protector for this function.
+	    F->addFnAttr(Attribute::StackProtect);
+	    F->addFnAttr(Attribute::StackProtectReq);
+	}
+    }
+
     bool generate() {
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 	for (unsigned i=0;i<bc->dbgnode_cnt;i++) {
@@ -492,6 +518,7 @@ public:
 	FHandler->setDoesNotThrow();
 	FHandler->addFnAttr(Attribute::NoInline);
 	EE->addGlobalMapping(FHandler, (void*)(intptr_t)jit_exception_handler);
+
 
 	std::vector<const Type*> args;
 	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
@@ -683,6 +710,7 @@ public:
 			case OP_BC_SEXT:
 			case OP_BC_TRUNC:
 			case OP_BC_GEP1:
+			case OP_BC_GEPZ:
 			case OP_BC_GEPN:
 			case OP_BC_STORE:
 			case OP_BC_COPY:
@@ -892,6 +920,17 @@ public:
 				return false;
 			    break;
 			}
+			case OP_BC_GEPZ:
+			{
+			    Value *Ops[2];
+			    Ops[0] = ConstantInt::get(Type::getInt32Ty(Context), 0);
+			    const Type *SrcTy = mapType(inst->u.three[0]);
+			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
+			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
+			    if (!createGEP(inst->dest, V, Ops, Ops+2))
+				return false;
+			    break;
+			}
 			case OP_BC_GEPN:
 			{
 			    std::vector<Value*> Idxs;
@@ -995,6 +1034,7 @@ public:
 		return false;
 	    }
 	    PM.run(*F);
+	    AddStackProtect(F);
 	    delete [] Values;
 	    delete [] BB;
 	}
@@ -1068,6 +1108,20 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     return CL_EBYTECODE;
 }
 
+static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
+static void setGuard(unsigned char* guardbuf)
+{
+    cli_md5_ctx ctx;
+    char salt[48];
+    memcpy(salt, name_salt, 16);
+    for(unsigned i = 16; i < 48; i++)
+	salt[i] = cli_rndnum(255);
+
+    cli_md5_init(&ctx);
+    cli_md5_update(&ctx, salt, 48);
+    cli_md5_final(guardbuf, &ctx);
+}
+
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
   if (!bcs->engine)
@@ -1092,7 +1146,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	EngineBuilder builder(MP);
 	builder.setErrorStr(&ErrorMsg);
 	builder.setEngineKind(EngineKind::JIT);
-	builder.setOptLevel(CodeGenOpt::Aggressive);
+	builder.setOptLevel(CodeGenOpt::Default);
 	ExecutionEngine *EE = bcs->engine->EE = builder.create();
 	if (!EE) {
 	    if (!ErrorMsg.empty())
@@ -1140,6 +1194,23 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    EE->addGlobalMapping(F, dest);
 	    apiFuncs[i] = F;
 	}
+
+	// stack protector
+	FunctionType *FTy = FunctionType::get(Type::getVoidTy(M->getContext()),
+						    false);
+	GlobalVariable *Guard = new GlobalVariable(*M, PointerType::getUnqual(Type::getInt8Ty(M->getContext())),
+						    true, GlobalValue::InternalLinkage, 0, "__stack_chk_guard"); 
+	unsigned plus = 0;
+	if (2*sizeof(void*) <= 16 && cli_rndnum(2)==2) {
+	    plus = sizeof(void*);
+	}
+	EE->addGlobalMapping(Guard, (void*)(&bcs->engine->guard.b[plus]));
+	setGuard(bcs->engine->guard.b);
+	bcs->engine->guard.b[plus+sizeof(void*)-1] = 0x00;
+//	printf("%p\n", *(void**)(&bcs->engine->guard.b[plus]));
+	Function *SFail = Function::Create(FTy, Function::ExternalLinkage,
+					      "__stack_chk_fail", M);
+	EE->addGlobalMapping(SFail, (void*)(intptr_t)jit_ssp_handler);
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];

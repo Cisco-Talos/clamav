@@ -28,7 +28,7 @@ struct bytecode_metadata {
   char *targetExclude;
 };
 
-#define BC_FUNC_LEVEL 3
+#define BC_FUNC_LEVEL 4
 #define BC_HEADER "ClamBC"
 
 enum bc_opcode {
@@ -70,6 +70,7 @@ enum bc_opcode {
   OP_BC_CALL_API,
   OP_BC_COPY,
   OP_BC_GEP1,
+  OP_BC_GEPZ,
   OP_BC_GEPN,
   OP_BC_STORE,
   OP_BC_LOAD,
@@ -98,8 +99,8 @@ static const unsigned char operand_counts[] = {
   0, 0,
   /* OP_BC_COPY */
   2,
-  /* OP_BC_GEP1, OP_BC_GEPN, OP_BC_STORE, OP_BC_LOAD*/
-  3, 0, 2, 1,
+  /* OP_BC_GEP1, OP_BC_GEPZ, OP_BC_GEPN, OP_BC_STORE, OP_BC_LOAD*/
+  3, 3, 0, 2, 1,
   /* OP_MEM* */
   3, 3, 3, 3,
   /* OP_BC_ISBIGENDIAN */
