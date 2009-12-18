@@ -241,7 +241,7 @@ am_libllvmcodegen_la_OBJECTS = AliasSetTracker.lo ConstantFolding.lo \
 	MachineSink.lo MachineVerifier.lo MaxStackAlignment.lo \
 	PHIElimination.lo Passes.lo PostRASchedulerList.lo \
 	PreAllocSplitting.lo ProcessImplicitDefs.lo \
-	PrologEpilogInserter.lo RegAllocLinearScan.lo \
+	PrologEpilogInserter.lo RegAllocLinearScan.lo RegAllocLocal.lo \
 	RegisterCoalescer.lo RegisterScavenging.lo ScheduleDAG.lo \
 	ScheduleDAGEmit.lo ScheduleDAGInstrs.lo ScheduleDAGPrinter.lo \
 	CallingConvLower.lo DAGCombiner.lo FastISel.lo \
@@ -1155,6 +1155,7 @@ libllvmcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
 	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
 	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
+	llvm/lib/CodeGen/RegAllocLocal.cpp\
 	llvm/lib/CodeGen/RegisterCoalescer.cpp\
 	llvm/lib/CodeGen/RegisterScavenging.cpp\
 	llvm/lib/CodeGen/ScheduleDAG.cpp\
@@ -2968,6 +2969,14 @@ RegAllocLinearScan.lo: llvm/lib/CodeGen/RegAllocLinearScan.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLinearScan.lo `test -f 'llvm/lib/CodeGen/RegAllocLinearScan.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLinearScan.cpp
 
+RegAllocLocal.lo: llvm/lib/CodeGen/RegAllocLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocLocal.lo -MD -MP -MF $(DEPDIR)/RegAllocLocal.Tpo -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/RegAllocLocal.Tpo $(DEPDIR)/RegAllocLocal.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/RegAllocLocal.cpp' object='RegAllocLocal.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
+
 RegisterCoalescer.lo: llvm/lib/CodeGen/RegisterCoalescer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegisterCoalescer.lo -MD -MP -MF $(DEPDIR)/RegisterCoalescer.Tpo -c -o RegisterCoalescer.lo `test -f 'llvm/lib/CodeGen/RegisterCoalescer.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegisterCoalescer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/RegisterCoalescer.Tpo $(DEPDIR)/RegisterCoalescer.Plo
@@ -3543,14 +3552,6 @@ OcamlGC.lo: llvm/lib/CodeGen/OcamlGC.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/OcamlGC.cpp' object='OcamlGC.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o OcamlGC.lo `test -f 'llvm/lib/CodeGen/OcamlGC.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/OcamlGC.cpp
-
-RegAllocLocal.lo: llvm/lib/CodeGen/RegAllocLocal.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocLocal.lo -MD -MP -MF $(DEPDIR)/RegAllocLocal.Tpo -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/RegAllocLocal.Tpo $(DEPDIR)/RegAllocLocal.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/RegAllocLocal.cpp' object='RegAllocLocal.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
 
 RegAllocPBQP.lo: llvm/lib/CodeGen/RegAllocPBQP.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocPBQP.lo -MD -MP -MF $(DEPDIR)/RegAllocPBQP.Tpo -c -o RegAllocPBQP.lo `test -f 'llvm/lib/CodeGen/RegAllocPBQP.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocPBQP.cpp

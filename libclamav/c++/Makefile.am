@@ -515,6 +515,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
 	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
 	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
+	llvm/lib/CodeGen/RegAllocLocal.cpp\
 	llvm/lib/CodeGen/RegisterCoalescer.cpp\
 	llvm/lib/CodeGen/RegisterScavenging.cpp\
 	llvm/lib/CodeGen/ScheduleDAG.cpp\

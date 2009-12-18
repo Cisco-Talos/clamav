@@ -512,7 +512,7 @@ public:
 	}
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);
-	Function *FHandler = Function::Create(FTy, Function::InternalLinkage,
+	Function *FHandler = Function::Create(FTy, Function::ExternalLinkage,
 					      "clamjit.fail", M);
 	FHandler->setDoesNotReturn();
 	FHandler->setDoesNotThrow();
@@ -596,7 +596,6 @@ public:
 				    C, "glob"+Twine(i));
 	    globals.push_back(GV);
 	}
-
 	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
@@ -1068,8 +1067,10 @@ public:
 		ReturnInst::Create(Context, CI, BB);
 
 		if (verifyFunction(*F, PrintMessageAction) == 0) {
+			DEBUG(errs() << "Generating code\n");
 			// Codegen current function as executable machine code.
 			void *code = EE->getPointerToFunction(F);
+			DEBUG(errs() << "Code generation finished\n");
 
 			compiledFunctions[func] = code;
 		}
@@ -1199,7 +1200,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(M->getContext()),
 						    false);
 	GlobalVariable *Guard = new GlobalVariable(*M, PointerType::getUnqual(Type::getInt8Ty(M->getContext())),
-						    true, GlobalValue::InternalLinkage, 0, "__stack_chk_guard"); 
+						    true, GlobalValue::ExternalLinkage, 0, "__stack_chk_guard"); 
 	unsigned plus = 0;
 	if (2*sizeof(void*) <= 16 && cli_rndnum(2)==2) {
 	    plus = sizeof(void*);
