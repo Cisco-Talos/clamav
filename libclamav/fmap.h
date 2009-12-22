@@ -21,6 +21,10 @@
 #ifndef __FMAP_H
 #define __FMAP_H
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include <time.h>
 #include "cltypes.h"
 

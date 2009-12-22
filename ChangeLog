@@ -1,3 +1,8 @@
+Tue Dec 22 09:32:33 EET 2009 (edwin)
+------------------------------------
+ * libclamav/fmap.h: fix build on FreeBSD and Mac OS X (bb #1776). Thanks to
+    Renato Botelho.
+
 Wed Dec 16 15:33:01 CET 2009 (acab)
 -----------------------------------
  * libclamav/unzip.c: do not mark embedded zipfiles as
