@@ -2051,15 +2051,15 @@ static int decodesig(char *sig, int fd)
 	    mprintf(" * SUBSIG ID %d\n", i);
 	    if((pt = strchr(tokens[3 + i], ':'))) {
 		*pt++ = 0;
-		mprintf(" +-> OFFSET: %s\n", pt);
+		mprintf(" +-> OFFSET: %s\n", tokens[3 + i]);
 	    } else {
 		mprintf(" +-> OFFSET: ANY\n");
 	    }
 	    if(fd == -1) {
 		mprintf(" +-> DECODED SUBSIGNATURE:\n");
-		decodehex(tokens[3 + i]);
+		decodehex(pt ? pt : tokens[3 + i]);
 	    } else {
-		mprintf(" +-> MATCH: %s\n", matchsig(tokens[3 + i], fd) ? "YES" : "** NO **");
+		mprintf(" +-> MATCH: %s\n", matchsig(pt ? pt : tokens[3 + i], fd) ? "YES" : "** NO **");
 	    }
 	}
     } else if(strchr(sig, ':')) { /* ndb */
