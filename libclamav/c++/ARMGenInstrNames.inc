@@ -1463,7 +1463,7 @@ namespace ARM {
     tCBNZ	= 1450,
     tCBZ	= 1451,
     tCMN	= 1452,
-    tCMNZ	= 1453,
+    tCMNz	= 1453,
     tCMPhir	= 1454,
     tCMPi8	= 1455,
     tCMPr	= 1456,

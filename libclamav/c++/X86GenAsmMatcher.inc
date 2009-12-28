@@ -59,100 +59,126 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       case 'l':	 // 1 strings to match.
         return 16;	 // "dl"
       case 's':	 // 1 strings to match.
-        return 17;	 // "ds"
+        return 25;	 // "ds"
       case 'x':	 // 1 strings to match.
-        return 18;	 // "dx"
+        return 26;	 // "dx"
       }
       break;
     case 'e':	 // 1 strings to match.
       if (Name[1] != 's')
         break;
-      return 27;	 // "es"
+      return 43;	 // "es"
     case 'f':	 // 1 strings to match.
       if (Name[1] != 's')
         break;
-      return 37;	 // "fs"
+      return 53;	 // "fs"
     case 'g':	 // 1 strings to match.
       if (Name[1] != 's')
         break;
-      return 38;	 // "gs"
+      return 54;	 // "gs"
     case 'i':	 // 1 strings to match.
       if (Name[1] != 'p')
         break;
-      return 39;	 // "ip"
+      return 55;	 // "ip"
     case 'r':	 // 2 strings to match.
       switch (Name[1]) {
       default: break;
       case '8':	 // 1 strings to match.
-        return 72;	 // "r8"
+        return 88;	 // "r8"
       case '9':	 // 1 strings to match.
-        return 76;	 // "r9"
+        return 92;	 // "r9"
       }
       break;
     case 's':	 // 3 strings to match.
       switch (Name[1]) {
       default: break;
       case 'i':	 // 1 strings to match.
-        return 89;	 // "si"
+        return 114;	 // "si"
       case 'p':	 // 1 strings to match.
-        return 91;	 // "sp"
+        return 116;	 // "sp"
       case 's':	 // 1 strings to match.
-        return 93;	 // "ss"
+        return 118;	 // "ss"
       }
       break;
     }
     break;
-  case 3:	 // 49 strings to match.
+  case 3:	 // 57 strings to match.
     switch (Name[0]) {
     default: break;
     case 'b':	 // 1 strings to match.
       if (Name.substr(1,2) != "pl")
         break;
       return 7;	 // "bpl"
-    case 'd':	 // 1 strings to match.
-      if (Name.substr(1,2) != "il")
+    case 'd':	 // 9 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'i':	 // 1 strings to match.
+        if (Name[2] != 'l')
+          break;
+        return 15;	 // "dil"
+      case 'r':	 // 8 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case '0':	 // 1 strings to match.
+          return 17;	 // "dr0"
+        case '1':	 // 1 strings to match.
+          return 18;	 // "dr1"
+        case '2':	 // 1 strings to match.
+          return 19;	 // "dr2"
+        case '3':	 // 1 strings to match.
+          return 20;	 // "dr3"
+        case '4':	 // 1 strings to match.
+          return 21;	 // "dr4"
+        case '5':	 // 1 strings to match.
+          return 22;	 // "dr5"
+        case '6':	 // 1 strings to match.
+          return 23;	 // "dr6"
+        case '7':	 // 1 strings to match.
+          return 24;	 // "dr7"
+        }
         break;
-      return 15;	 // "dil"
+      }
+      break;
     case 'e':	 // 9 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 1 strings to match.
         if (Name[2] != 'x')
           break;
-        return 19;	 // "eax"
+        return 27;	 // "eax"
       case 'b':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'p':	 // 1 strings to match.
-          return 20;	 // "ebp"
+          return 28;	 // "ebp"
         case 'x':	 // 1 strings to match.
-          return 21;	 // "ebx"
+          return 29;	 // "ebx"
         }
         break;
       case 'c':	 // 1 strings to match.
         if (Name[2] != 'x')
           break;
-        return 22;	 // "ecx"
+        return 38;	 // "ecx"
       case 'd':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'i':	 // 1 strings to match.
-          return 23;	 // "edi"
+          return 39;	 // "edi"
         case 'x':	 // 1 strings to match.
-          return 24;	 // "edx"
+          return 40;	 // "edx"
         }
         break;
       case 'i':	 // 1 strings to match.
         if (Name[2] != 'p')
           break;
-        return 26;	 // "eip"
+        return 42;	 // "eip"
       case 's':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'i':	 // 1 strings to match.
-          return 28;	 // "esi"
+          return 44;	 // "esi"
         case 'p':	 // 1 strings to match.
-          return 29;	 // "esp"
+          return 45;	 // "esp"
         }
         break;
       }
@@ -163,19 +189,19 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[2]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 30;	 // "fp0"
+        return 46;	 // "fp0"
       case '1':	 // 1 strings to match.
-        return 31;	 // "fp1"
+        return 47;	 // "fp1"
       case '2':	 // 1 strings to match.
-        return 32;	 // "fp2"
+        return 48;	 // "fp2"
       case '3':	 // 1 strings to match.
-        return 33;	 // "fp3"
+        return 49;	 // "fp3"
       case '4':	 // 1 strings to match.
-        return 34;	 // "fp4"
+        return 50;	 // "fp4"
       case '5':	 // 1 strings to match.
-        return 35;	 // "fp5"
+        return 51;	 // "fp5"
       case '6':	 // 1 strings to match.
-        return 36;	 // "fp6"
+        return 52;	 // "fp6"
       }
       break;
     case 'm':	 // 8 strings to match.
@@ -184,21 +210,21 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[2]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 40;	 // "mm0"
+        return 56;	 // "mm0"
       case '1':	 // 1 strings to match.
-        return 41;	 // "mm1"
+        return 57;	 // "mm1"
       case '2':	 // 1 strings to match.
-        return 42;	 // "mm2"
+        return 58;	 // "mm2"
       case '3':	 // 1 strings to match.
-        return 43;	 // "mm3"
+        return 59;	 // "mm3"
       case '4':	 // 1 strings to match.
-        return 44;	 // "mm4"
+        return 60;	 // "mm4"
       case '5':	 // 1 strings to match.
-        return 45;	 // "mm5"
+        return 61;	 // "mm5"
       case '6':	 // 1 strings to match.
-        return 46;	 // "mm6"
+        return 62;	 // "mm6"
       case '7':	 // 1 strings to match.
-        return 47;	 // "mm7"
+        return 63;	 // "mm7"
       }
       break;
     case 'r':	 // 21 strings to match.
@@ -208,78 +234,78 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
         switch (Name[2]) {
         default: break;
         case '0':	 // 1 strings to match.
-          return 48;	 // "r10"
+          return 64;	 // "r10"
         case '1':	 // 1 strings to match.
-          return 52;	 // "r11"
+          return 68;	 // "r11"
         case '2':	 // 1 strings to match.
-          return 56;	 // "r12"
+          return 72;	 // "r12"
         case '3':	 // 1 strings to match.
-          return 60;	 // "r13"
+          return 76;	 // "r13"
         case '4':	 // 1 strings to match.
-          return 64;	 // "r14"
+          return 80;	 // "r14"
         case '5':	 // 1 strings to match.
-          return 68;	 // "r15"
+          return 84;	 // "r15"
         }
         break;
       case '8':	 // 3 strings to match.
         switch (Name[2]) {
         default: break;
         case 'b':	 // 1 strings to match.
-          return 73;	 // "r8b"
+          return 89;	 // "r8b"
         case 'd':	 // 1 strings to match.
-          return 74;	 // "r8d"
+          return 90;	 // "r8d"
         case 'w':	 // 1 strings to match.
-          return 75;	 // "r8w"
+          return 91;	 // "r8w"
         }
         break;
       case '9':	 // 3 strings to match.
         switch (Name[2]) {
         default: break;
         case 'b':	 // 1 strings to match.
-          return 77;	 // "r9b"
+          return 93;	 // "r9b"
         case 'd':	 // 1 strings to match.
-          return 78;	 // "r9d"
+          return 94;	 // "r9d"
         case 'w':	 // 1 strings to match.
-          return 79;	 // "r9w"
+          return 95;	 // "r9w"
         }
         break;
       case 'a':	 // 1 strings to match.
         if (Name[2] != 'x')
           break;
-        return 80;	 // "rax"
+        return 96;	 // "rax"
       case 'b':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'p':	 // 1 strings to match.
-          return 81;	 // "rbp"
+          return 97;	 // "rbp"
         case 'x':	 // 1 strings to match.
-          return 82;	 // "rbx"
+          return 98;	 // "rbx"
         }
         break;
       case 'c':	 // 1 strings to match.
         if (Name[2] != 'x')
           break;
-        return 83;	 // "rcx"
+        return 108;	 // "rcx"
       case 'd':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'i':	 // 1 strings to match.
-          return 84;	 // "rdi"
+          return 109;	 // "rdi"
         case 'x':	 // 1 strings to match.
-          return 85;	 // "rdx"
+          return 110;	 // "rdx"
         }
         break;
       case 'i':	 // 1 strings to match.
         if (Name[2] != 'p')
           break;
-        return 86;	 // "rip"
+        return 111;	 // "rip"
       case 's':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
         case 'i':	 // 1 strings to match.
-          return 87;	 // "rsi"
+          return 112;	 // "rsi"
         case 'p':	 // 1 strings to match.
-          return 88;	 // "rsp"
+          return 113;	 // "rsp"
         }
         break;
       }
@@ -290,87 +316,138 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       case 'i':	 // 1 strings to match.
         if (Name[2] != 'l')
           break;
-        return 90;	 // "sil"
+        return 115;	 // "sil"
       case 'p':	 // 1 strings to match.
         if (Name[2] != 'l')
           break;
-        return 92;	 // "spl"
+        return 117;	 // "spl"
       }
       break;
     }
     break;
-  case 4:	 // 38 strings to match.
+  case 4:	 // 55 strings to match.
     switch (Name[0]) {
     default: break;
-    case 'r':	 // 18 strings to match.
-      if (Name[1] != '1')
+    case 'e':	 // 8 strings to match.
+      if (Name.substr(1,2) != "cr")
         break;
-      switch (Name[2]) {
+      switch (Name[3]) {
       default: break;
-      case '0':	 // 3 strings to match.
-        switch (Name[3]) {
+      case '0':	 // 1 strings to match.
+        return 30;	 // "ecr0"
+      case '1':	 // 1 strings to match.
+        return 31;	 // "ecr1"
+      case '2':	 // 1 strings to match.
+        return 32;	 // "ecr2"
+      case '3':	 // 1 strings to match.
+        return 33;	 // "ecr3"
+      case '4':	 // 1 strings to match.
+        return 34;	 // "ecr4"
+      case '5':	 // 1 strings to match.
+        return 35;	 // "ecr5"
+      case '6':	 // 1 strings to match.
+        return 36;	 // "ecr6"
+      case '7':	 // 1 strings to match.
+        return 37;	 // "ecr7"
+      }
+      break;
+    case 'r':	 // 27 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case '1':	 // 18 strings to match.
+        switch (Name[2]) {
         default: break;
-        case 'b':	 // 1 strings to match.
-          return 49;	 // "r10b"
-        case 'd':	 // 1 strings to match.
-          return 50;	 // "r10d"
-        case 'w':	 // 1 strings to match.
-          return 51;	 // "r10w"
+        case '0':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 65;	 // "r10b"
+          case 'd':	 // 1 strings to match.
+            return 66;	 // "r10d"
+          case 'w':	 // 1 strings to match.
+            return 67;	 // "r10w"
+          }
+          break;
+        case '1':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 69;	 // "r11b"
+          case 'd':	 // 1 strings to match.
+            return 70;	 // "r11d"
+          case 'w':	 // 1 strings to match.
+            return 71;	 // "r11w"
+          }
+          break;
+        case '2':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 73;	 // "r12b"
+          case 'd':	 // 1 strings to match.
+            return 74;	 // "r12d"
+          case 'w':	 // 1 strings to match.
+            return 75;	 // "r12w"
+          }
+          break;
+        case '3':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 77;	 // "r13b"
+          case 'd':	 // 1 strings to match.
+            return 78;	 // "r13d"
+          case 'w':	 // 1 strings to match.
+            return 79;	 // "r13w"
+          }
+          break;
+        case '4':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 81;	 // "r14b"
+          case 'd':	 // 1 strings to match.
+            return 82;	 // "r14d"
+          case 'w':	 // 1 strings to match.
+            return 83;	 // "r14w"
+          }
+          break;
+        case '5':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return 85;	 // "r15b"
+          case 'd':	 // 1 strings to match.
+            return 86;	 // "r15d"
+          case 'w':	 // 1 strings to match.
+            return 87;	 // "r15w"
+          }
+          break;
         }
         break;
-      case '1':	 // 3 strings to match.
+      case 'c':	 // 9 strings to match.
+        if (Name[2] != 'r')
+          break;
         switch (Name[3]) {
         default: break;
-        case 'b':	 // 1 strings to match.
-          return 53;	 // "r11b"
-        case 'd':	 // 1 strings to match.
-          return 54;	 // "r11d"
-        case 'w':	 // 1 strings to match.
-          return 55;	 // "r11w"
-        }
-        break;
-      case '2':	 // 3 strings to match.
-        switch (Name[3]) {
-        default: break;
-        case 'b':	 // 1 strings to match.
-          return 57;	 // "r12b"
-        case 'd':	 // 1 strings to match.
-          return 58;	 // "r12d"
-        case 'w':	 // 1 strings to match.
-          return 59;	 // "r12w"
-        }
-        break;
-      case '3':	 // 3 strings to match.
-        switch (Name[3]) {
-        default: break;
-        case 'b':	 // 1 strings to match.
-          return 61;	 // "r13b"
-        case 'd':	 // 1 strings to match.
-          return 62;	 // "r13d"
-        case 'w':	 // 1 strings to match.
-          return 63;	 // "r13w"
-        }
-        break;
-      case '4':	 // 3 strings to match.
-        switch (Name[3]) {
-        default: break;
-        case 'b':	 // 1 strings to match.
-          return 65;	 // "r14b"
-        case 'd':	 // 1 strings to match.
-          return 66;	 // "r14d"
-        case 'w':	 // 1 strings to match.
-          return 67;	 // "r14w"
-        }
-        break;
-      case '5':	 // 3 strings to match.
-        switch (Name[3]) {
-        default: break;
-        case 'b':	 // 1 strings to match.
-          return 69;	 // "r15b"
-        case 'd':	 // 1 strings to match.
-          return 70;	 // "r15d"
-        case 'w':	 // 1 strings to match.
-          return 71;	 // "r15w"
+        case '0':	 // 1 strings to match.
+          return 99;	 // "rcr0"
+        case '1':	 // 1 strings to match.
+          return 100;	 // "rcr1"
+        case '2':	 // 1 strings to match.
+          return 101;	 // "rcr2"
+        case '3':	 // 1 strings to match.
+          return 102;	 // "rcr3"
+        case '4':	 // 1 strings to match.
+          return 103;	 // "rcr4"
+        case '5':	 // 1 strings to match.
+          return 104;	 // "rcr5"
+        case '6':	 // 1 strings to match.
+          return 105;	 // "rcr6"
+        case '7':	 // 1 strings to match.
+          return 106;	 // "rcr7"
+        case '8':	 // 1 strings to match.
+          return 107;	 // "rcr8"
         }
         break;
       }
@@ -381,25 +458,25 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[3]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 102;	 // "xmm0"
+        return 127;	 // "xmm0"
       case '1':	 // 1 strings to match.
-        return 103;	 // "xmm1"
+        return 128;	 // "xmm1"
       case '2':	 // 1 strings to match.
-        return 110;	 // "xmm2"
+        return 135;	 // "xmm2"
       case '3':	 // 1 strings to match.
-        return 111;	 // "xmm3"
+        return 136;	 // "xmm3"
       case '4':	 // 1 strings to match.
-        return 112;	 // "xmm4"
+        return 137;	 // "xmm4"
       case '5':	 // 1 strings to match.
-        return 113;	 // "xmm5"
+        return 138;	 // "xmm5"
       case '6':	 // 1 strings to match.
-        return 114;	 // "xmm6"
+        return 139;	 // "xmm6"
       case '7':	 // 1 strings to match.
-        return 115;	 // "xmm7"
+        return 140;	 // "xmm7"
       case '8':	 // 1 strings to match.
-        return 116;	 // "xmm8"
+        return 141;	 // "xmm8"
       case '9':	 // 1 strings to match.
-        return 117;	 // "xmm9"
+        return 142;	 // "xmm9"
       }
       break;
     case 'y':	 // 10 strings to match.
@@ -408,25 +485,25 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[3]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 118;	 // "ymm0"
+        return 143;	 // "ymm0"
       case '1':	 // 1 strings to match.
-        return 119;	 // "ymm1"
+        return 144;	 // "ymm1"
       case '2':	 // 1 strings to match.
-        return 126;	 // "ymm2"
+        return 151;	 // "ymm2"
       case '3':	 // 1 strings to match.
-        return 127;	 // "ymm3"
+        return 152;	 // "ymm3"
       case '4':	 // 1 strings to match.
-        return 128;	 // "ymm4"
+        return 153;	 // "ymm4"
       case '5':	 // 1 strings to match.
-        return 129;	 // "ymm5"
+        return 154;	 // "ymm5"
       case '6':	 // 1 strings to match.
-        return 130;	 // "ymm6"
+        return 155;	 // "ymm6"
       case '7':	 // 1 strings to match.
-        return 131;	 // "ymm7"
+        return 156;	 // "ymm7"
       case '8':	 // 1 strings to match.
-        return 132;	 // "ymm8"
+        return 157;	 // "ymm8"
       case '9':	 // 1 strings to match.
-        return 133;	 // "ymm9"
+        return 158;	 // "ymm9"
       }
       break;
     }
@@ -437,7 +514,7 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
     case 'f':	 // 1 strings to match.
       if (Name.substr(1,4) != "lags")
         break;
-      return 25;	 // "flags"
+      return 41;	 // "flags"
     case 's':	 // 8 strings to match.
       if (Name.substr(1,2) != "t(")
         break;
@@ -446,35 +523,35 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       case '0':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 94;	 // "st(0)"
+        return 119;	 // "st(0)"
       case '1':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 95;	 // "st(1)"
+        return 120;	 // "st(1)"
       case '2':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 96;	 // "st(2)"
+        return 121;	 // "st(2)"
       case '3':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 97;	 // "st(3)"
+        return 122;	 // "st(3)"
       case '4':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 98;	 // "st(4)"
+        return 123;	 // "st(4)"
       case '5':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 99;	 // "st(5)"
+        return 124;	 // "st(5)"
       case '6':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 100;	 // "st(6)"
+        return 125;	 // "st(6)"
       case '7':	 // 1 strings to match.
         if (Name[4] != ')')
           break;
-        return 101;	 // "st(7)"
+        return 126;	 // "st(7)"
       }
       break;
     case 'x':	 // 6 strings to match.
@@ -483,17 +560,17 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[4]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 104;	 // "xmm10"
+        return 129;	 // "xmm10"
       case '1':	 // 1 strings to match.
-        return 105;	 // "xmm11"
+        return 130;	 // "xmm11"
       case '2':	 // 1 strings to match.
-        return 106;	 // "xmm12"
+        return 131;	 // "xmm12"
       case '3':	 // 1 strings to match.
-        return 107;	 // "xmm13"
+        return 132;	 // "xmm13"
       case '4':	 // 1 strings to match.
-        return 108;	 // "xmm14"
+        return 133;	 // "xmm14"
       case '5':	 // 1 strings to match.
-        return 109;	 // "xmm15"
+        return 134;	 // "xmm15"
       }
       break;
     case 'y':	 // 6 strings to match.
@@ -502,17 +579,17 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
       switch (Name[4]) {
       default: break;
       case '0':	 // 1 strings to match.
-        return 120;	 // "ymm10"
+        return 145;	 // "ymm10"
       case '1':	 // 1 strings to match.
-        return 121;	 // "ymm11"
+        return 146;	 // "ymm11"
       case '2':	 // 1 strings to match.
-        return 122;	 // "ymm12"
+        return 147;	 // "ymm12"
       case '3':	 // 1 strings to match.
-        return 123;	 // "ymm13"
+        return 148;	 // "ymm13"
       case '4':	 // 1 strings to match.
-        return 124;	 // "ymm14"
+        return 149;	 // "ymm14"
       case '5':	 // 1 strings to match.
-        return 125;	 // "ymm15"
+        return 150;	 // "ymm15"
       }
       break;
     }
@@ -553,7 +630,8 @@ enum ConversionKind {
   Convert_Reg1_2Imp,
   Convert_Mem5_2ImpImpImpImpImp,
   Convert_Mem5_2_ImpImpImpImpImpImm1_1,
-  Convert_ImpMem5_2_Reg1_1,
+  Convert_ImpReg1_1_Reg1_2,
+  Convert_ImpReg1_1_Mem5_2,
   Convert_Reg1_3_ImpReg1_2_ImmSExt81_1,
   Convert_Reg1_3_ImpMem5_2_ImmSExt81_1,
   Convert_Reg1_3_ImpReg1_2,
@@ -697,10 +775,15 @@ static bool ConvertToMCInst(ConversionKind Kind, MCInst &Inst, unsigned Opcode,
     Inst.addOperand(MCOperand::CreateReg(0));
     Operands[1].addImmOperands(Inst, 1);
     break;
-  case Convert_ImpMem5_2_Reg1_1:
+  case Convert_ImpReg1_1_Reg1_2:
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addMemOperands(Inst, 5);
     Operands[1].addRegOperands(Inst, 1);
+    Operands[2].addRegOperands(Inst, 1);
+    break;
+  case Convert_ImpReg1_1_Mem5_2:
+    Inst.addOperand(MCOperand::CreateReg(0));
+    Operands[1].addRegOperands(Inst, 1);
+    Operands[2].addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_3_ImpReg1_2_ImmSExt81_1:
     Operands[3].addRegOperands(Inst, 1);
@@ -829,30 +912,77 @@ enum MatchClassKind {
   MCK_bsrw, // 'bsrw'
   MCK_bswapl, // 'bswapl'
   MCK_bswapq, // 'bswapq'
+  MCK_btcl, // 'btcl'
+  MCK_btcq, // 'btcq'
+  MCK_btcw, // 'btcw'
   MCK_btl, // 'btl'
   MCK_btq, // 'btq'
+  MCK_btrl, // 'btrl'
+  MCK_btrq, // 'btrq'
+  MCK_btrw, // 'btrw'
+  MCK_btsl, // 'btsl'
+  MCK_btsq, // 'btsq'
+  MCK_btsw, // 'btsw'
   MCK_btw, // 'btw'
   MCK_call, // 'call'
+  MCK_callq, // 'callq'
   MCK_cbtw, // 'cbtw'
+  MCK_clc, // 'clc'
+  MCK_cld, // 'cld'
   MCK_clflush, // 'clflush'
+  MCK_cli, // 'cli'
   MCK_cltd, // 'cltd'
   MCK_cltq, // 'cltq'
-  MCK_cmova, // 'cmova'
-  MCK_cmovae, // 'cmovae'
-  MCK_cmovb, // 'cmovb'
-  MCK_cmovbe, // 'cmovbe'
-  MCK_cmove, // 'cmove'
-  MCK_cmovg, // 'cmovg'
-  MCK_cmovge, // 'cmovge'
-  MCK_cmovl, // 'cmovl'
-  MCK_cmovle, // 'cmovle'
-  MCK_cmovne, // 'cmovne'
-  MCK_cmovno, // 'cmovno'
-  MCK_cmovnp, // 'cmovnp'
-  MCK_cmovns, // 'cmovns'
-  MCK_cmovo, // 'cmovo'
-  MCK_cmovp, // 'cmovp'
-  MCK_cmovs, // 'cmovs'
+  MCK_clts, // 'clts'
+  MCK_cmc, // 'cmc'
+  MCK_cmovael, // 'cmovael'
+  MCK_cmovaeq, // 'cmovaeq'
+  MCK_cmovaew, // 'cmovaew'
+  MCK_cmoval, // 'cmoval'
+  MCK_cmovaq, // 'cmovaq'
+  MCK_cmovaw, // 'cmovaw'
+  MCK_cmovbel, // 'cmovbel'
+  MCK_cmovbeq, // 'cmovbeq'
+  MCK_cmovbew, // 'cmovbew'
+  MCK_cmovbl, // 'cmovbl'
+  MCK_cmovbq, // 'cmovbq'
+  MCK_cmovbw, // 'cmovbw'
+  MCK_cmovel, // 'cmovel'
+  MCK_cmoveq, // 'cmoveq'
+  MCK_cmovew, // 'cmovew'
+  MCK_cmovgel, // 'cmovgel'
+  MCK_cmovgeq, // 'cmovgeq'
+  MCK_cmovgew, // 'cmovgew'
+  MCK_cmovgl, // 'cmovgl'
+  MCK_cmovgq, // 'cmovgq'
+  MCK_cmovgw, // 'cmovgw'
+  MCK_cmovlel, // 'cmovlel'
+  MCK_cmovleq, // 'cmovleq'
+  MCK_cmovlew, // 'cmovlew'
+  MCK_cmovll, // 'cmovll'
+  MCK_cmovlq, // 'cmovlq'
+  MCK_cmovlw, // 'cmovlw'
+  MCK_cmovnel, // 'cmovnel'
+  MCK_cmovneq, // 'cmovneq'
+  MCK_cmovnew, // 'cmovnew'
+  MCK_cmovnol, // 'cmovnol'
+  MCK_cmovnoq, // 'cmovnoq'
+  MCK_cmovnow, // 'cmovnow'
+  MCK_cmovnpl, // 'cmovnpl'
+  MCK_cmovnpq, // 'cmovnpq'
+  MCK_cmovnpw, // 'cmovnpw'
+  MCK_cmovnsl, // 'cmovnsl'
+  MCK_cmovnsq, // 'cmovnsq'
+  MCK_cmovnsw, // 'cmovnsw'
+  MCK_cmovol, // 'cmovol'
+  MCK_cmovoq, // 'cmovoq'
+  MCK_cmovow, // 'cmovow'
+  MCK_cmovpl, // 'cmovpl'
+  MCK_cmovpq, // 'cmovpq'
+  MCK_cmovpw, // 'cmovpw'
+  MCK_cmovsl, // 'cmovsl'
+  MCK_cmovsq, // 'cmovsq'
+  MCK_cmovsw, // 'cmovsw'
   MCK_cmp, // 'cmp'
   MCK_cmpb, // 'cmpb'
   MCK_cmpl, // 'cmpl'
@@ -862,24 +992,38 @@ enum MatchClassKind {
   MCK_cmpsq, // 'cmpsq'
   MCK_cmpsw, // 'cmpsw'
   MCK_cmpw, // 'cmpw'
+  MCK_cmpxchg16b, // 'cmpxchg16b'
+  MCK_cmpxchg8b, // 'cmpxchg8b'
+  MCK_cmpxchgb, // 'cmpxchgb'
+  MCK_cmpxchgl, // 'cmpxchgl'
+  MCK_cmpxchgq, // 'cmpxchgq'
+  MCK_cmpxchgw, // 'cmpxchgw'
   MCK_comisd, // 'comisd'
+  MCK_comiss, // 'comiss'
+  MCK_cpuid, // 'cpuid'
   MCK_cqto, // 'cqto'
   MCK_crc32, // 'crc32'
   MCK_cvtdq2pd, // 'cvtdq2pd'
   MCK_cvtdq2ps, // 'cvtdq2ps'
   MCK_cvtpd2dq, // 'cvtpd2dq'
   MCK_cvtpd2pi, // 'cvtpd2pi'
+  MCK_cvtpd2ps, // 'cvtpd2ps'
   MCK_cvtpi2pd, // 'cvtpi2pd'
   MCK_cvtpi2ps, // 'cvtpi2ps'
   MCK_cvtps2dq, // 'cvtps2dq'
+  MCK_cvtps2pd, // 'cvtps2pd'
   MCK_cvtps2pi, // 'cvtps2pi'
+  MCK_cvtsd2siq, // 'cvtsd2siq'
   MCK_cvtsd2ss, // 'cvtsd2ss'
   MCK_cvtsi2sd, // 'cvtsi2sd'
   MCK_cvtsi2sdq, // 'cvtsi2sdq'
   MCK_cvtsi2ss, // 'cvtsi2ss'
   MCK_cvtsi2ssq, // 'cvtsi2ssq'
   MCK_cvtss2sd, // 'cvtss2sd'
+  MCK_cvtss2sil, // 'cvtss2sil'
+  MCK_cvtss2siq, // 'cvtss2siq'
   MCK_cvttpd2pi, // 'cvttpd2pi'
+  MCK_cvttps2dq, // 'cvttps2dq'
   MCK_cvttps2pi, // 'cvttps2pi'
   MCK_cvttsd2si, // 'cvttsd2si'
   MCK_cvttsd2siq, // 'cvttsd2siq'
@@ -904,6 +1048,7 @@ enum MatchClassKind {
   MCK_emms, // 'emms'
   MCK_enter, // 'enter'
   MCK_extractps, // 'extractps'
+  MCK_f2xm1, // 'f2xm1'
   MCK_fabs, // 'fabs'
   MCK_fadd, // 'fadd'
   MCK_faddl, // 'faddl'
@@ -921,8 +1066,16 @@ enum MatchClassKind {
   MCK_fcmovnu, // 'fcmovnu'
   MCK_fcmovu, // 'fcmovu'
   MCK_fcom, // 'fcom'
+  MCK_fcomi, // 'fcomi'
+  MCK_fcomip, // 'fcomip'
+  MCK_fcoml, // 'fcoml'
+  MCK_fcomll, // 'fcomll'
   MCK_fcomp, // 'fcomp'
+  MCK_fcompl, // 'fcompl'
+  MCK_fcompll, // 'fcompll'
+  MCK_fcompp, // 'fcompp'
   MCK_fcos, // 'fcos'
+  MCK_fdecstp, // 'fdecstp'
   MCK_fdiv, // 'fdiv'
   MCK_fdivl, // 'fdivl'
   MCK_fdivp, // 'fdivp'
@@ -932,6 +1085,7 @@ enum MatchClassKind {
   MCK_fdivrs, // 'fdivrs'
   MCK_fdivs, // 'fdivs'
   MCK_femms, // 'femms'
+  MCK_ffree, // 'ffree'
   MCK_fiaddl, // 'fiaddl'
   MCK_fiadds, // 'fiadds'
   MCK_ficoml, // 'ficoml'
@@ -947,6 +1101,7 @@ enum MatchClassKind {
   MCK_filds, // 'filds'
   MCK_fimull, // 'fimull'
   MCK_fimuls, // 'fimuls'
+  MCK_fincstp, // 'fincstp'
   MCK_fistl, // 'fistl'
   MCK_fistpl, // 'fistpl'
   MCK_fistpll, // 'fistpll'
@@ -964,6 +1119,11 @@ enum MatchClassKind {
   MCK_fldcw, // 'fldcw'
   MCK_fldenv, // 'fldenv'
   MCK_fldl, // 'fldl'
+  MCK_fldl2e, // 'fldl2e'
+  MCK_fldl2t, // 'fldl2t'
+  MCK_fldlg2, // 'fldlg2'
+  MCK_fldln2, // 'fldln2'
+  MCK_fldpi, // 'fldpi'
   MCK_flds, // 'flds'
   MCK_fldt, // 'fldt'
   MCK_fldz, // 'fldz'
@@ -971,21 +1131,30 @@ enum MatchClassKind {
   MCK_fmull, // 'fmull'
   MCK_fmulp, // 'fmulp'
   MCK_fmuls, // 'fmuls'
+  MCK_fnclex, // 'fnclex'
+  MCK_fninit, // 'fninit'
+  MCK_fnop, // 'fnop'
+  MCK_fnsave, // 'fnsave'
   MCK_fnstcw, // 'fnstcw'
+  MCK_fnstenv, // 'fnstenv'
   MCK_fnstsw, // 'fnstsw'
+  MCK_fpatan, // 'fpatan'
+  MCK_fprem, // 'fprem'
+  MCK_fprem1, // 'fprem1'
+  MCK_fptan, // 'fptan'
+  MCK_frndint, // 'frndint'
   MCK_frstor, // 'frstor'
-  MCK_fsave, // 'fsave'
+  MCK_fscale, // 'fscale'
   MCK_fsin, // 'fsin'
+  MCK_fsincos, // 'fsincos'
   MCK_fsqrt, // 'fsqrt'
   MCK_fst, // 'fst'
-  MCK_fstenv, // 'fstenv'
   MCK_fstl, // 'fstl'
   MCK_fstp, // 'fstp'
   MCK_fstpl, // 'fstpl'
   MCK_fstps, // 'fstps'
   MCK_fstpt, // 'fstpt'
   MCK_fsts, // 'fsts'
-  MCK_fstsw, // 'fstsw'
   MCK_fsub, // 'fsub'
   MCK_fsubl, // 'fsubl'
   MCK_fsubp, // 'fsubp'
@@ -1000,9 +1169,16 @@ enum MatchClassKind {
   MCK_fucomip, // 'fucomip'
   MCK_fucomp, // 'fucomp'
   MCK_fucompp, // 'fucompp'
+  MCK_fxam, // 'fxam'
   MCK_fxch, // 'fxch'
+  MCK_fxrstor, // 'fxrstor'
+  MCK_fxsave, // 'fxsave'
+  MCK_fxtract, // 'fxtract'
+  MCK_fyl2x, // 'fyl2x'
+  MCK_fyl2xp1, // 'fyl2xp1'
   MCK_haddpd, // 'haddpd'
   MCK_haddps, // 'haddps'
+  MCK_hlt, // 'hlt'
   MCK_hsubpd, // 'hsubpd'
   MCK_hsubps, // 'hsubps'
   MCK_idivb, // 'idivb'
@@ -1019,9 +1195,19 @@ enum MatchClassKind {
   MCK_incq, // 'incq'
   MCK_incw, // 'incw'
   MCK_inl, // 'inl'
+  MCK_insb, // 'insb'
   MCK_insertps, // 'insertps'
+  MCK_insl, // 'insl'
+  MCK_insw, // 'insw'
   MCK_int, // 'int'
+  MCK_invd, // 'invd'
+  MCK_invept, // 'invept'
+  MCK_invlpg, // 'invlpg'
+  MCK_invvpid, // 'invvpid'
   MCK_inw, // 'inw'
+  MCK_iretl, // 'iretl'
+  MCK_iretq, // 'iretq'
+  MCK_iretw, // 'iretw'
   MCK_ja, // 'ja'
   MCK_jae, // 'jae'
   MCK_jb, // 'jb'
@@ -1051,22 +1237,43 @@ enum MatchClassKind {
   MCK_lcallw, // 'lcallw'
   MCK_lddqu, // 'lddqu'
   MCK_ldmxcsr, // 'ldmxcsr'
+  MCK_ldsl, // 'ldsl'
+  MCK_ldsw, // 'ldsw'
   MCK_leal, // 'leal'
   MCK_leaq, // 'leaq'
   MCK_leave, // 'leave'
   MCK_leaw, // 'leaw'
+  MCK_lesl, // 'lesl'
+  MCK_lesw, // 'lesw'
   MCK_lfence, // 'lfence'
+  MCK_lfsl, // 'lfsl'
+  MCK_lfsq, // 'lfsq'
+  MCK_lfsw, // 'lfsw'
+  MCK_lgdt, // 'lgdt'
+  MCK_lgsl, // 'lgsl'
+  MCK_lgsq, // 'lgsq'
+  MCK_lgsw, // 'lgsw'
+  MCK_lidt, // 'lidt'
   MCK_ljmpl, // 'ljmpl'
   MCK_ljmpq, // 'ljmpq'
   MCK_ljmpw, // 'ljmpw'
+  MCK_lldtw, // 'lldtw'
+  MCK_lmsww, // 'lmsww'
   MCK_lodsb, // 'lodsb'
-  MCK_lodsd, // 'lodsd'
+  MCK_lodsl, // 'lodsl'
   MCK_lodsq, // 'lodsq'
   MCK_lodsw, // 'lodsw'
   MCK_loop, // 'loop'
   MCK_loope, // 'loope'
   MCK_loopne, // 'loopne'
   MCK_lret, // 'lret'
+  MCK_lsll, // 'lsll'
+  MCK_lslq, // 'lslq'
+  MCK_lslw, // 'lslw'
+  MCK_lssl, // 'lssl'
+  MCK_lssq, // 'lssq'
+  MCK_lssw, // 'lssw'
+  MCK_ltrw, // 'ltrw'
   MCK_maskmovdqu, // 'maskmovdqu'
   MCK_maskmovq, // 'maskmovq'
   MCK_maxpd, // 'maxpd'
@@ -1107,6 +1314,7 @@ enum MatchClassKind {
   MCK_movq2dq, // 'movq2dq'
   MCK_movsbl, // 'movsbl'
   MCK_movsbq, // 'movsbq'
+  MCK_movsbw, // 'movsbw'
   MCK_movsd, // 'movsd'
   MCK_movshdup, // 'movshdup'
   MCK_movsldup, // 'movsldup'
@@ -1118,7 +1326,10 @@ enum MatchClassKind {
   MCK_movups, // 'movups'
   MCK_movw, // 'movw'
   MCK_movzbl, // 'movzbl'
+  MCK_movzbq, // 'movzbq'
+  MCK_movzbw, // 'movzbw'
   MCK_movzwl, // 'movzwl'
+  MCK_movzwq, // 'movzwq'
   MCK_mpsadbw, // 'mpsadbw'
   MCK_mulb, // 'mulb'
   MCK_mull, // 'mull'
@@ -1135,6 +1346,7 @@ enum MatchClassKind {
   MCK_negw, // 'negw'
   MCK_nop, // 'nop'
   MCK_nopl, // 'nopl'
+  MCK_nopw, // 'nopw'
   MCK_notb, // 'notb'
   MCK_notl, // 'notl'
   MCK_notq, // 'notq'
@@ -1147,6 +1359,9 @@ enum MatchClassKind {
   MCK_orw, // 'orw'
   MCK_outb, // 'outb'
   MCK_outl, // 'outl'
+  MCK_outsb, // 'outsb'
+  MCK_outsl, // 'outsl'
+  MCK_outsw, // 'outsw'
   MCK_outw, // 'outw'
   MCK_pabsb, // 'pabsb'
   MCK_pabsd, // 'pabsd'
@@ -1232,7 +1447,12 @@ enum MatchClassKind {
   MCK_pmulld, // 'pmulld'
   MCK_pmullw, // 'pmullw'
   MCK_pmuludq, // 'pmuludq'
-  MCK_popf, // 'popf'
+  MCK_popcntl, // 'popcntl'
+  MCK_popcntq, // 'popcntq'
+  MCK_popcntw, // 'popcntw'
+  MCK_popfl, // 'popfl'
+  MCK_popfq, // 'popfq'
+  MCK_popfw, // 'popfw'
   MCK_popl, // 'popl'
   MCK_popq, // 'popq'
   MCK_popw, // 'popw'
@@ -1278,7 +1498,9 @@ enum MatchClassKind {
   MCK_punpckldq, // 'punpckldq'
   MCK_punpcklqdq, // 'punpcklqdq'
   MCK_punpcklwd, // 'punpcklwd'
-  MCK_pushf, // 'pushf'
+  MCK_pushfl, // 'pushfl'
+  MCK_pushfq, // 'pushfq'
+  MCK_pushfw, // 'pushfw'
   MCK_pushl, // 'pushl'
   MCK_pushq, // 'pushq'
   MCK_pushw, // 'pushw'
@@ -1293,6 +1515,8 @@ enum MatchClassKind {
   MCK_rcrl, // 'rcrl'
   MCK_rcrq, // 'rcrq'
   MCK_rcrw, // 'rcrw'
+  MCK_rdmsr, // 'rdmsr'
+  MCK_rdpmc, // 'rdpmc'
   MCK_rdtsc, // 'rdtsc'
   MCK_rep_59_movsb, // 'rep;movsb'
   MCK_rep_59_movsl, // 'rep;movsl'
@@ -1311,6 +1535,7 @@ enum MatchClassKind {
   MCK_rorl, // 'rorl'
   MCK_rorq, // 'rorq'
   MCK_rorw, // 'rorw'
+  MCK_rsm, // 'rsm'
   MCK_rsqrtps, // 'rsqrtps'
   MCK_rsqrtss, // 'rsqrtss'
   MCK_sahf, // 'sahf'
@@ -1344,6 +1569,7 @@ enum MatchClassKind {
   MCK_setp, // 'setp'
   MCK_sets, // 'sets'
   MCK_sfence, // 'sfence'
+  MCK_sgdt, // 'sgdt'
   MCK_shlb, // 'shlb'
   MCK_shldl, // 'shldl'
   MCK_shldq, // 'shldq'
@@ -1360,12 +1586,22 @@ enum MatchClassKind {
   MCK_shrw, // 'shrw'
   MCK_shufpd, // 'shufpd'
   MCK_shufps, // 'shufps'
+  MCK_sidt, // 'sidt'
+  MCK_sldtq, // 'sldtq'
+  MCK_sldtw, // 'sldtw'
+  MCK_smswl, // 'smswl'
+  MCK_smswq, // 'smswq'
+  MCK_smsww, // 'smsww'
   MCK_sqrtpd, // 'sqrtpd'
   MCK_sqrtps, // 'sqrtps'
   MCK_sqrtsd, // 'sqrtsd'
   MCK_sqrtss, // 'sqrtss'
   MCK_ss, // 'ss'
+  MCK_stc, // 'stc'
+  MCK_std, // 'std'
+  MCK_sti, // 'sti'
   MCK_stmxcsr, // 'stmxcsr'
+  MCK_strw, // 'strw'
   MCK_subb, // 'subb'
   MCK_subl, // 'subl'
   MCK_subpd, // 'subpd'
@@ -1374,6 +1610,7 @@ enum MatchClassKind {
   MCK_subsd, // 'subsd'
   MCK_subss, // 'subss'
   MCK_subw, // 'subw'
+  MCK_swpgs, // 'swpgs'
   MCK_syscall, // 'syscall'
   MCK_sysenter, // 'sysenter'
   MCK_sysexit, // 'sysexit'
@@ -1389,11 +1626,32 @@ enum MatchClassKind {
   MCK_unpckhps, // 'unpckhps'
   MCK_unpcklpd, // 'unpcklpd'
   MCK_unpcklps, // 'unpcklps'
+  MCK_verr, // 'verr'
+  MCK_verw, // 'verw'
+  MCK_vmcall, // 'vmcall'
+  MCK_vmclear, // 'vmclear'
+  MCK_vmlaunch, // 'vmlaunch'
+  MCK_vmptrld, // 'vmptrld'
+  MCK_vmptrst, // 'vmptrst'
+  MCK_vmreadl, // 'vmreadl'
+  MCK_vmreadq, // 'vmreadq'
+  MCK_vmresume, // 'vmresume'
+  MCK_vmwritel, // 'vmwritel'
+  MCK_vmwriteq, // 'vmwriteq'
+  MCK_vmxoff, // 'vmxoff'
+  MCK_vmxon, // 'vmxon'
   MCK_wait, // 'wait'
-  MCK_xchg, // 'xchg'
+  MCK_wbinvd, // 'wbinvd'
+  MCK_wrmsr, // 'wrmsr'
+  MCK_xaddb, // 'xaddb'
+  MCK_xaddl, // 'xaddl'
+  MCK_xaddq, // 'xaddq'
+  MCK_xaddw, // 'xaddw'
   MCK_xchgb, // 'xchgb'
   MCK_xchgl, // 'xchgl'
+  MCK_xchgq, // 'xchgq'
   MCK_xchgw, // 'xchgw'
+  MCK_xlatb, // 'xlatb'
   MCK_xorb, // 'xorb'
   MCK_xorl, // 'xorl'
   MCK_xorpd, // 'xorpd'
@@ -1421,8 +1679,8 @@ enum MatchClassKind {
   MCK_RAX, // register class 'RAX'
   MCK_GR64_ABCD, // register class 'GR64_ABCD'
   MCK_GR64_NOREX_NOSP, // register class 'GR64_NOREX_NOSP'
-  MCK_GR64_NOREX, // register class 'GR64_NOREX'
   MCK_GR64_NOSP, // register class 'GR64_NOSP'
+  MCK_GR64_NOREX, // register class 'GR64_NOREX'
   MCK_GR64, // register class 'GR64'
   MCK_VR64, // register class 'VR64'
   MCK_RFP32, // register class 'RFP32,RFP64,RFP80'
@@ -1432,7 +1690,12 @@ enum MatchClassKind {
   MCK_ST0, // register class 'ST0'
   MCK_RST, // register class 'RST'
   MCK_CCR, // register class 'CCR'
+  MCK_FS, // register class 'FS'
+  MCK_GS, // register class 'GS'
   MCK_SEGMENT_REG, // register class 'SEGMENT_REG'
+  MCK_DEBUG_REG, // register class 'DEBUG_REG'
+  MCK_CONTROL_REG_32, // register class 'CONTROL_REG_32'
+  MCK_CONTROL_REG_64, // register class 'CONTROL_REG_64'
   MCK_ImmSExt8, // user defined class 'ImmSExt8AsmOperand'
   MCK_Imm, // user defined class 'ImmAsmOperand'
   MCK_Mem, // user defined class 'X86MemAsmOperand'
@@ -1499,7 +1762,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       break;
     }
     break;
-  case 3:	 // 27 strings to match.
+  case 3:	 // 36 strings to match.
     switch (Name[0]) {
     default: break;
     case 'b':	 // 3 strings to match.
@@ -1515,10 +1778,31 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_btw;	 // "btw"
       }
       break;
-    case 'c':	 // 1 strings to match.
-      if (Name.substr(1,2) != "mp")
+    case 'c':	 // 5 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'l':	 // 3 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'c':	 // 1 strings to match.
+          return MCK_clc;	 // "clc"
+        case 'd':	 // 1 strings to match.
+          return MCK_cld;	 // "cld"
+        case 'i':	 // 1 strings to match.
+          return MCK_cli;	 // "cli"
+        }
         break;
-      return MCK_cmp;	 // "cmp"
+      case 'm':	 // 2 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'c':	 // 1 strings to match.
+          return MCK_cmc;	 // "cmc"
+        case 'p':	 // 1 strings to match.
+          return MCK_cmp;	 // "cmp"
+        }
+        break;
+      }
+      break;
     case 'f':	 // 2 strings to match.
       switch (Name[1]) {
       default: break;
@@ -1532,6 +1816,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_fst;	 // "fst"
       }
       break;
+    case 'h':	 // 1 strings to match.
+      if (Name.substr(1,2) != "lt")
+        break;
+      return MCK_hlt;	 // "hlt"
     case 'i':	 // 4 strings to match.
       if (Name[1] != 'n')
         break;
@@ -1608,17 +1896,39 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       if (Name.substr(1,2) != "or")
         break;
       return MCK_por;	 // "por"
-    case 'r':	 // 1 strings to match.
-      if (Name.substr(1,2) != "et")
+    case 'r':	 // 2 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'e':	 // 1 strings to match.
+        if (Name[2] != 't')
+          break;
+        return MCK_ret;	 // "ret"
+      case 's':	 // 1 strings to match.
+        if (Name[2] != 'm')
+          break;
+        return MCK_rsm;	 // "rsm"
+      }
+      break;
+    case 's':	 // 3 strings to match.
+      if (Name[1] != 't')
         break;
-      return MCK_ret;	 // "ret"
+      switch (Name[2]) {
+      default: break;
+      case 'c':	 // 1 strings to match.
+        return MCK_stc;	 // "stc"
+      case 'd':	 // 1 strings to match.
+        return MCK_std;	 // "std"
+      case 'i':	 // 1 strings to match.
+        return MCK_sti;	 // "sti"
+      }
+      break;
     case 'u':	 // 1 strings to match.
       if (Name.substr(1,2) != "d2")
         break;
       return MCK_ud2;	 // "ud2"
     }
     break;
-  case 4:	 // 156 strings to match.
+  case 4:	 // 195 strings to match.
     switch (Name[0]) {
     default: break;
     case 'a':	 // 12 strings to match.
@@ -1672,36 +1982,77 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'b':	 // 6 strings to match.
-      if (Name[1] != 's')
-        break;
-      switch (Name[2]) {
+    case 'b':	 // 15 strings to match.
+      switch (Name[1]) {
       default: break;
-      case 'f':	 // 3 strings to match.
-        switch (Name[3]) {
+      case 's':	 // 6 strings to match.
+        switch (Name[2]) {
         default: break;
-        case 'l':	 // 1 strings to match.
-          return MCK_bsfl;	 // "bsfl"
-        case 'q':	 // 1 strings to match.
-          return MCK_bsfq;	 // "bsfq"
-        case 'w':	 // 1 strings to match.
-          return MCK_bsfw;	 // "bsfw"
+        case 'f':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_bsfl;	 // "bsfl"
+          case 'q':	 // 1 strings to match.
+            return MCK_bsfq;	 // "bsfq"
+          case 'w':	 // 1 strings to match.
+            return MCK_bsfw;	 // "bsfw"
+          }
+          break;
+        case 'r':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_bsrl;	 // "bsrl"
+          case 'q':	 // 1 strings to match.
+            return MCK_bsrq;	 // "bsrq"
+          case 'w':	 // 1 strings to match.
+            return MCK_bsrw;	 // "bsrw"
+          }
+          break;
         }
         break;
-      case 'r':	 // 3 strings to match.
-        switch (Name[3]) {
+      case 't':	 // 9 strings to match.
+        switch (Name[2]) {
         default: break;
-        case 'l':	 // 1 strings to match.
-          return MCK_bsrl;	 // "bsrl"
-        case 'q':	 // 1 strings to match.
-          return MCK_bsrq;	 // "bsrq"
-        case 'w':	 // 1 strings to match.
-          return MCK_bsrw;	 // "bsrw"
+        case 'c':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_btcl;	 // "btcl"
+          case 'q':	 // 1 strings to match.
+            return MCK_btcq;	 // "btcq"
+          case 'w':	 // 1 strings to match.
+            return MCK_btcw;	 // "btcw"
+          }
+          break;
+        case 'r':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_btrl;	 // "btrl"
+          case 'q':	 // 1 strings to match.
+            return MCK_btrq;	 // "btrq"
+          case 'w':	 // 1 strings to match.
+            return MCK_btrw;	 // "btrw"
+          }
+          break;
+        case 's':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_btsl;	 // "btsl"
+          case 'q':	 // 1 strings to match.
+            return MCK_btsq;	 // "btsq"
+          case 'w':	 // 1 strings to match.
+            return MCK_btsw;	 // "btsw"
+          }
+          break;
         }
         break;
       }
       break;
-    case 'c':	 // 11 strings to match.
+    case 'c':	 // 12 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 1 strings to match.
@@ -1712,7 +2063,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,2) != "tw")
           break;
         return MCK_cbtw;	 // "cbtw"
-      case 'l':	 // 2 strings to match.
+      case 'l':	 // 3 strings to match.
         if (Name[2] != 't')
           break;
         switch (Name[3]) {
@@ -1721,6 +2072,8 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_cltd;	 // "cltd"
         case 'q':	 // 1 strings to match.
           return MCK_cltq;	 // "cltq"
+        case 's':	 // 1 strings to match.
+          return MCK_clts;	 // "clts"
         }
         break;
       case 'm':	 // 4 strings to match.
@@ -1805,7 +2158,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       if (Name.substr(1,3) != "mms")
         break;
       return MCK_emms;	 // "emms"
-    case 'f':	 // 20 strings to match.
+    case 'f':	 // 22 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 2 strings to match.
@@ -1868,6 +2221,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,2) != "ul")
           break;
         return MCK_fmul;	 // "fmul"
+      case 'n':	 // 1 strings to match.
+        if (Name.substr(2,2) != "op")
+          break;
+        return MCK_fnop;	 // "fnop"
       case 's':	 // 5 strings to match.
         switch (Name[2]) {
         default: break;
@@ -1896,25 +2253,54 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,2) != "st")
           break;
         return MCK_ftst;	 // "ftst"
-      case 'x':	 // 1 strings to match.
-        if (Name.substr(2,2) != "ch")
-          break;
-        return MCK_fxch;	 // "fxch"
+      case 'x':	 // 2 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'a':	 // 1 strings to match.
+          if (Name[3] != 'm')
+            break;
+          return MCK_fxam;	 // "fxam"
+        case 'c':	 // 1 strings to match.
+          if (Name[3] != 'h')
+            break;
+          return MCK_fxch;	 // "fxch"
+        }
+        break;
       }
       break;
-    case 'i':	 // 4 strings to match.
-      if (Name.substr(1,2) != "nc")
+    case 'i':	 // 8 strings to match.
+      if (Name[1] != 'n')
         break;
-      switch (Name[3]) {
+      switch (Name[2]) {
       default: break;
-      case 'b':	 // 1 strings to match.
-        return MCK_incb;	 // "incb"
-      case 'l':	 // 1 strings to match.
-        return MCK_incl;	 // "incl"
-      case 'q':	 // 1 strings to match.
-        return MCK_incq;	 // "incq"
-      case 'w':	 // 1 strings to match.
-        return MCK_incw;	 // "incw"
+      case 'c':	 // 4 strings to match.
+        switch (Name[3]) {
+        default: break;
+        case 'b':	 // 1 strings to match.
+          return MCK_incb;	 // "incb"
+        case 'l':	 // 1 strings to match.
+          return MCK_incl;	 // "incl"
+        case 'q':	 // 1 strings to match.
+          return MCK_incq;	 // "incq"
+        case 'w':	 // 1 strings to match.
+          return MCK_incw;	 // "incw"
+        }
+        break;
+      case 's':	 // 3 strings to match.
+        switch (Name[3]) {
+        default: break;
+        case 'b':	 // 1 strings to match.
+          return MCK_insb;	 // "insb"
+        case 'l':	 // 1 strings to match.
+          return MCK_insl;	 // "insl"
+        case 'w':	 // 1 strings to match.
+          return MCK_insw;	 // "insw"
+        }
+        break;
+      case 'v':	 // 1 strings to match.
+        if (Name[3] != 'd')
+          break;
+        return MCK_invd;	 // "invd"
       }
       break;
     case 'j':	 // 3 strings to match.
@@ -1937,7 +2323,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'l':	 // 9 strings to match.
+    case 'l':	 // 28 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 4 strings to match.
@@ -1960,19 +2346,79 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
-      case 'e':	 // 3 strings to match.
-        if (Name[2] != 'a')
+      case 'd':	 // 2 strings to match.
+        if (Name[2] != 's')
           break;
         switch (Name[3]) {
         default: break;
         case 'l':	 // 1 strings to match.
-          return MCK_leal;	 // "leal"
-        case 'q':	 // 1 strings to match.
-          return MCK_leaq;	 // "leaq"
+          return MCK_ldsl;	 // "ldsl"
         case 'w':	 // 1 strings to match.
-          return MCK_leaw;	 // "leaw"
+          return MCK_ldsw;	 // "ldsw"
         }
         break;
+      case 'e':	 // 5 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'a':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_leal;	 // "leal"
+          case 'q':	 // 1 strings to match.
+            return MCK_leaq;	 // "leaq"
+          case 'w':	 // 1 strings to match.
+            return MCK_leaw;	 // "leaw"
+          }
+          break;
+        case 's':	 // 2 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_lesl;	 // "lesl"
+          case 'w':	 // 1 strings to match.
+            return MCK_lesw;	 // "lesw"
+          }
+          break;
+        }
+        break;
+      case 'f':	 // 3 strings to match.
+        if (Name[2] != 's')
+          break;
+        switch (Name[3]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_lfsl;	 // "lfsl"
+        case 'q':	 // 1 strings to match.
+          return MCK_lfsq;	 // "lfsq"
+        case 'w':	 // 1 strings to match.
+          return MCK_lfsw;	 // "lfsw"
+        }
+        break;
+      case 'g':	 // 4 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'd':	 // 1 strings to match.
+          if (Name[3] != 't')
+            break;
+          return MCK_lgdt;	 // "lgdt"
+        case 's':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_lgsl;	 // "lgsl"
+          case 'q':	 // 1 strings to match.
+            return MCK_lgsq;	 // "lgsq"
+          case 'w':	 // 1 strings to match.
+            return MCK_lgsw;	 // "lgsw"
+          }
+          break;
+        }
+        break;
+      case 'i':	 // 1 strings to match.
+        if (Name.substr(2,2) != "dt")
+          break;
+        return MCK_lidt;	 // "lidt"
       case 'o':	 // 1 strings to match.
         if (Name.substr(2,2) != "op")
           break;
@@ -1981,6 +2427,37 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,2) != "et")
           break;
         return MCK_lret;	 // "lret"
+      case 's':	 // 6 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'l':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_lsll;	 // "lsll"
+          case 'q':	 // 1 strings to match.
+            return MCK_lslq;	 // "lslq"
+          case 'w':	 // 1 strings to match.
+            return MCK_lslw;	 // "lslw"
+          }
+          break;
+        case 's':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_lssl;	 // "lssl"
+          case 'q':	 // 1 strings to match.
+            return MCK_lssq;	 // "lssq"
+          case 'w':	 // 1 strings to match.
+            return MCK_lssw;	 // "lssw"
+          }
+          break;
+        }
+        break;
+      case 't':	 // 1 strings to match.
+        if (Name.substr(2,2) != "rw")
+          break;
+        return MCK_ltrw;	 // "ltrw"
       }
       break;
     case 'm':	 // 9 strings to match.
@@ -2020,7 +2497,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'n':	 // 9 strings to match.
+    case 'n':	 // 10 strings to match.
       switch (Name[1]) {
       default: break;
       case 'e':	 // 4 strings to match.
@@ -2038,13 +2515,18 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_negw;	 // "negw"
         }
         break;
-      case 'o':	 // 5 strings to match.
+      case 'o':	 // 6 strings to match.
         switch (Name[2]) {
         default: break;
-        case 'p':	 // 1 strings to match.
-          if (Name[3] != 'l')
-            break;
-          return MCK_nopl;	 // "nopl"
+        case 'p':	 // 2 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_nopl;	 // "nopl"
+          case 'w':	 // 1 strings to match.
+            return MCK_nopw;	 // "nopw"
+          }
+          break;
         case 't':	 // 4 strings to match.
           switch (Name[3]) {
           default: break;
@@ -2091,20 +2573,18 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'p':	 // 6 strings to match.
+    case 'p':	 // 5 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 1 strings to match.
         if (Name.substr(2,2) != "nd")
           break;
         return MCK_pand;	 // "pand"
-      case 'o':	 // 4 strings to match.
+      case 'o':	 // 3 strings to match.
         if (Name[2] != 'p')
           break;
         switch (Name[3]) {
         default: break;
-        case 'f':	 // 1 strings to match.
-          return MCK_popf;	 // "popf"
         case 'l':	 // 1 strings to match.
           return MCK_popl;	 // "popl"
         case 'q':	 // 1 strings to match.
@@ -2186,7 +2666,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 's':	 // 29 strings to match.
+    case 's':	 // 32 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 5 strings to match.
@@ -2249,6 +2729,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_sets;	 // "sets"
         }
         break;
+      case 'g':	 // 1 strings to match.
+        if (Name.substr(2,2) != "dt")
+          break;
+        return MCK_sgdt;	 // "sgdt"
       case 'h':	 // 8 strings to match.
         switch (Name[2]) {
         default: break;
@@ -2280,6 +2764,14 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'i':	 // 1 strings to match.
+        if (Name.substr(2,2) != "dt")
+          break;
+        return MCK_sidt;	 // "sidt"
+      case 't':	 // 1 strings to match.
+        if (Name.substr(2,2) != "rw")
+          break;
+        return MCK_strw;	 // "strw"
       case 'u':	 // 4 strings to match.
         if (Name[2] != 'b')
           break;
@@ -2297,37 +2789,39 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
+    case 'v':	 // 2 strings to match.
+      if (Name.substr(1,2) != "er")
+        break;
+      switch (Name[3]) {
+      default: break;
+      case 'r':	 // 1 strings to match.
+        return MCK_verr;	 // "verr"
+      case 'w':	 // 1 strings to match.
+        return MCK_verw;	 // "verw"
+      }
+      break;
     case 'w':	 // 1 strings to match.
       if (Name.substr(1,3) != "ait")
         break;
       return MCK_wait;	 // "wait"
-    case 'x':	 // 5 strings to match.
-      switch (Name[1]) {
-      default: break;
-      case 'c':	 // 1 strings to match.
-        if (Name.substr(2,2) != "hg")
-          break;
-        return MCK_xchg;	 // "xchg"
-      case 'o':	 // 4 strings to match.
-        if (Name[2] != 'r')
-          break;
-        switch (Name[3]) {
-        default: break;
-        case 'b':	 // 1 strings to match.
-          return MCK_xorb;	 // "xorb"
-        case 'l':	 // 1 strings to match.
-          return MCK_xorl;	 // "xorl"
-        case 'q':	 // 1 strings to match.
-          return MCK_xorq;	 // "xorq"
-        case 'w':	 // 1 strings to match.
-          return MCK_xorw;	 // "xorw"
-        }
+    case 'x':	 // 4 strings to match.
+      if (Name.substr(1,2) != "or")
         break;
+      switch (Name[3]) {
+      default: break;
+      case 'b':	 // 1 strings to match.
+        return MCK_xorb;	 // "xorb"
+      case 'l':	 // 1 strings to match.
+        return MCK_xorl;	 // "xorl"
+      case 'q':	 // 1 strings to match.
+        return MCK_xorq;	 // "xorq"
+      case 'w':	 // 1 strings to match.
+        return MCK_xorw;	 // "xorw"
       }
       break;
     }
     break;
-  case 5:	 // 147 strings to match.
+  case 5:	 // 173 strings to match.
     switch (Name[0]) {
     default: break;
     case 'a':	 // 6 strings to match.
@@ -2371,52 +2865,32 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'c':	 // 13 strings to match.
+    case 'c':	 // 7 strings to match.
       switch (Name[1]) {
       default: break;
-      case 'm':	 // 12 strings to match.
-        switch (Name[2]) {
+      case 'a':	 // 1 strings to match.
+        if (Name.substr(2,3) != "llq")
+          break;
+        return MCK_callq;	 // "callq"
+      case 'm':	 // 4 strings to match.
+        if (Name.substr(2,2) != "ps")
+          break;
+        switch (Name[4]) {
         default: break;
-        case 'o':	 // 8 strings to match.
-          if (Name[3] != 'v')
-            break;
-          switch (Name[4]) {
-          default: break;
-          case 'a':	 // 1 strings to match.
-            return MCK_cmova;	 // "cmova"
-          case 'b':	 // 1 strings to match.
-            return MCK_cmovb;	 // "cmovb"
-          case 'e':	 // 1 strings to match.
-            return MCK_cmove;	 // "cmove"
-          case 'g':	 // 1 strings to match.
-            return MCK_cmovg;	 // "cmovg"
-          case 'l':	 // 1 strings to match.
-            return MCK_cmovl;	 // "cmovl"
-          case 'o':	 // 1 strings to match.
-            return MCK_cmovo;	 // "cmovo"
-          case 'p':	 // 1 strings to match.
-            return MCK_cmovp;	 // "cmovp"
-          case 's':	 // 1 strings to match.
-            return MCK_cmovs;	 // "cmovs"
-          }
-          break;
-        case 'p':	 // 4 strings to match.
-          if (Name[3] != 's')
-            break;
-          switch (Name[4]) {
-          default: break;
-          case 'b':	 // 1 strings to match.
-            return MCK_cmpsb;	 // "cmpsb"
-          case 'l':	 // 1 strings to match.
-            return MCK_cmpsl;	 // "cmpsl"
-          case 'q':	 // 1 strings to match.
-            return MCK_cmpsq;	 // "cmpsq"
-          case 'w':	 // 1 strings to match.
-            return MCK_cmpsw;	 // "cmpsw"
-          }
-          break;
+        case 'b':	 // 1 strings to match.
+          return MCK_cmpsb;	 // "cmpsb"
+        case 'l':	 // 1 strings to match.
+          return MCK_cmpsl;	 // "cmpsl"
+        case 'q':	 // 1 strings to match.
+          return MCK_cmpsq;	 // "cmpsq"
+        case 'w':	 // 1 strings to match.
+          return MCK_cmpsw;	 // "cmpsw"
         }
         break;
+      case 'p':	 // 1 strings to match.
+        if (Name.substr(2,3) != "uid")
+          break;
+        return MCK_cpuid;	 // "cpuid"
       case 'r':	 // 1 strings to match.
         if (Name.substr(2,3) != "c32")
           break;
@@ -2452,9 +2926,13 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       if (Name.substr(1,4) != "nter")
         break;
       return MCK_enter;	 // "enter"
-    case 'f':	 // 29 strings to match.
+    case 'f':	 // 35 strings to match.
       switch (Name[1]) {
       default: break;
+      case '2':	 // 1 strings to match.
+        if (Name.substr(2,3) != "xm1")
+          break;
+        return MCK_f2xm1;	 // "f2xm1"
       case 'a':	 // 3 strings to match.
         if (Name.substr(2,2) != "dd")
           break;
@@ -2472,10 +2950,19 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,3) != "stp")
           break;
         return MCK_fbstp;	 // "fbstp"
-      case 'c':	 // 1 strings to match.
-        if (Name.substr(2,3) != "omp")
+      case 'c':	 // 3 strings to match.
+        if (Name.substr(2,2) != "om")
           break;
-        return MCK_fcomp;	 // "fcomp"
+        switch (Name[4]) {
+        default: break;
+        case 'i':	 // 1 strings to match.
+          return MCK_fcomi;	 // "fcomi"
+        case 'l':	 // 1 strings to match.
+          return MCK_fcoml;	 // "fcoml"
+        case 'p':	 // 1 strings to match.
+          return MCK_fcomp;	 // "fcomp"
+        }
+        break;
       case 'd':	 // 4 strings to match.
         if (Name.substr(2,2) != "iv")
           break;
@@ -2495,6 +2982,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,3) != "mms")
           break;
         return MCK_femms;	 // "femms"
+      case 'f':	 // 1 strings to match.
+        if (Name.substr(2,3) != "ree")
+          break;
+        return MCK_ffree;	 // "ffree"
       case 'i':	 // 4 strings to match.
         switch (Name[2]) {
         default: break;
@@ -2522,10 +3013,21 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
-      case 'l':	 // 1 strings to match.
-        if (Name.substr(2,3) != "dcw")
+      case 'l':	 // 2 strings to match.
+        if (Name[2] != 'd')
           break;
-        return MCK_fldcw;	 // "fldcw"
+        switch (Name[3]) {
+        default: break;
+        case 'c':	 // 1 strings to match.
+          if (Name[4] != 'w')
+            break;
+          return MCK_fldcw;	 // "fldcw"
+        case 'p':	 // 1 strings to match.
+          if (Name[4] != 'i')
+            break;
+          return MCK_fldpi;	 // "fldpi"
+        }
+        break;
       case 'm':	 // 3 strings to match.
         if (Name.substr(2,2) != "ul")
           break;
@@ -2539,35 +3041,37 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_fmuls;	 // "fmuls"
         }
         break;
-      case 's':	 // 10 strings to match.
+      case 'p':	 // 2 strings to match.
         switch (Name[2]) {
         default: break;
-        case 'a':	 // 1 strings to match.
-          if (Name.substr(3,2) != "ve")
+        case 'r':	 // 1 strings to match.
+          if (Name.substr(3,2) != "em")
             break;
-          return MCK_fsave;	 // "fsave"
+          return MCK_fprem;	 // "fprem"
+        case 't':	 // 1 strings to match.
+          if (Name.substr(3,2) != "an")
+            break;
+          return MCK_fptan;	 // "fptan"
+        }
+        break;
+      case 's':	 // 8 strings to match.
+        switch (Name[2]) {
+        default: break;
         case 'q':	 // 1 strings to match.
           if (Name.substr(3,2) != "rt")
             break;
           return MCK_fsqrt;	 // "fsqrt"
-        case 't':	 // 4 strings to match.
-          switch (Name[3]) {
-          default: break;
-          case 'p':	 // 3 strings to match.
-            switch (Name[4]) {
-            default: break;
-            case 'l':	 // 1 strings to match.
-              return MCK_fstpl;	 // "fstpl"
-            case 's':	 // 1 strings to match.
-              return MCK_fstps;	 // "fstps"
-            case 't':	 // 1 strings to match.
-              return MCK_fstpt;	 // "fstpt"
-            }
+        case 't':	 // 3 strings to match.
+          if (Name[3] != 'p')
             break;
+          switch (Name[4]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_fstpl;	 // "fstpl"
           case 's':	 // 1 strings to match.
-            if (Name[4] != 'w')
-              break;
-            return MCK_fstsw;	 // "fstsw"
+            return MCK_fstps;	 // "fstps"
+          case 't':	 // 1 strings to match.
+            return MCK_fstpt;	 // "fstpt"
           }
           break;
         case 'u':	 // 4 strings to match.
@@ -2591,9 +3095,13 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,3) != "com")
           break;
         return MCK_fucom;	 // "fucom"
+      case 'y':	 // 1 strings to match.
+        if (Name.substr(2,3) != "l2x")
+          break;
+        return MCK_fyl2x;	 // "fyl2x"
       }
       break;
-    case 'i':	 // 8 strings to match.
+    case 'i':	 // 11 strings to match.
       switch (Name[1]) {
       default: break;
       case 'd':	 // 4 strings to match.
@@ -2626,9 +3134,22 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_imulw;	 // "imulw"
         }
         break;
+      case 'r':	 // 3 strings to match.
+        if (Name.substr(2,2) != "et")
+          break;
+        switch (Name[4]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_iretl;	 // "iretl"
+        case 'q':	 // 1 strings to match.
+          return MCK_iretq;	 // "iretq"
+        case 'w':	 // 1 strings to match.
+          return MCK_iretw;	 // "iretw"
+        }
+        break;
       }
       break;
-    case 'l':	 // 10 strings to match.
+    case 'l':	 // 12 strings to match.
       switch (Name[1]) {
       default: break;
       case 'd':	 // 1 strings to match.
@@ -2652,6 +3173,14 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_ljmpw;	 // "ljmpw"
         }
         break;
+      case 'l':	 // 1 strings to match.
+        if (Name.substr(2,3) != "dtw")
+          break;
+        return MCK_lldtw;	 // "lldtw"
+      case 'm':	 // 1 strings to match.
+        if (Name.substr(2,3) != "sww")
+          break;
+        return MCK_lmsww;	 // "lmsww"
       case 'o':	 // 5 strings to match.
         switch (Name[2]) {
         default: break;
@@ -2662,8 +3191,8 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           default: break;
           case 'b':	 // 1 strings to match.
             return MCK_lodsb;	 // "lodsb"
-          case 'd':	 // 1 strings to match.
-            return MCK_lodsd;	 // "lodsd"
+          case 'l':	 // 1 strings to match.
+            return MCK_lodsl;	 // "lodsl"
           case 'q':	 // 1 strings to match.
             return MCK_lodsq;	 // "lodsq"
           case 'w':	 // 1 strings to match.
@@ -2773,7 +3302,20 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_mwait;	 // "mwait"
       }
       break;
-    case 'p':	 // 27 strings to match.
+    case 'o':	 // 3 strings to match.
+      if (Name.substr(1,3) != "uts")
+        break;
+      switch (Name[4]) {
+      default: break;
+      case 'b':	 // 1 strings to match.
+        return MCK_outsb;	 // "outsb"
+      case 'l':	 // 1 strings to match.
+        return MCK_outsl;	 // "outsl"
+      case 'w':	 // 1 strings to match.
+        return MCK_outsw;	 // "outsw"
+      }
+      break;
+    case 'p':	 // 29 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 10 strings to match.
@@ -2822,6 +3364,19 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
             return MCK_pavgw;	 // "pavgw"
           }
           break;
+        }
+        break;
+      case 'o':	 // 3 strings to match.
+        if (Name.substr(2,2) != "pf")
+          break;
+        switch (Name[4]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_popfl;	 // "popfl"
+        case 'q':	 // 1 strings to match.
+          return MCK_popfq;	 // "popfq"
+        case 'w':	 // 1 strings to match.
+          return MCK_popfw;	 // "popfw"
         }
         break;
       case 's':	 // 12 strings to match.
@@ -2886,13 +3441,11 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         if (Name.substr(2,3) != "est")
           break;
         return MCK_ptest;	 // "ptest"
-      case 'u':	 // 4 strings to match.
+      case 'u':	 // 3 strings to match.
         if (Name.substr(2,2) != "sh")
           break;
         switch (Name[4]) {
         default: break;
-        case 'f':	 // 1 strings to match.
-          return MCK_pushf;	 // "pushf"
         case 'l':	 // 1 strings to match.
           return MCK_pushl;	 // "pushl"
         case 'q':	 // 1 strings to match.
@@ -2903,7 +3456,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    case 'r':	 // 3 strings to match.
+    case 'r':	 // 5 strings to match.
       switch (Name[1]) {
       default: break;
       case 'c':	 // 2 strings to match.
@@ -2921,13 +3474,26 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_rcpss;	 // "rcpss"
         }
         break;
-      case 'd':	 // 1 strings to match.
-        if (Name.substr(2,3) != "tsc")
-          break;
-        return MCK_rdtsc;	 // "rdtsc"
+      case 'd':	 // 3 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'm':	 // 1 strings to match.
+          if (Name.substr(3,2) != "sr")
+            break;
+          return MCK_rdmsr;	 // "rdmsr"
+        case 'p':	 // 1 strings to match.
+          if (Name.substr(3,2) != "mc")
+            break;
+          return MCK_rdpmc;	 // "rdpmc"
+        case 't':	 // 1 strings to match.
+          if (Name.substr(3,2) != "sc")
+            break;
+          return MCK_rdtsc;	 // "rdtsc"
+        }
+        break;
       }
       break;
-    case 's':	 // 22 strings to match.
+    case 's':	 // 28 strings to match.
       switch (Name[1]) {
       default: break;
       case 'c':	 // 4 strings to match.
@@ -3012,6 +3578,30 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'l':	 // 2 strings to match.
+        if (Name.substr(2,2) != "dt")
+          break;
+        switch (Name[4]) {
+        default: break;
+        case 'q':	 // 1 strings to match.
+          return MCK_sldtq;	 // "sldtq"
+        case 'w':	 // 1 strings to match.
+          return MCK_sldtw;	 // "sldtw"
+        }
+        break;
+      case 'm':	 // 3 strings to match.
+        if (Name.substr(2,2) != "sw")
+          break;
+        switch (Name[4]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_smswl;	 // "smswl"
+        case 'q':	 // 1 strings to match.
+          return MCK_smswq;	 // "smswq"
+        case 'w':	 // 1 strings to match.
+          return MCK_smsww;	 // "smsww"
+        }
+        break;
       case 'u':	 // 4 strings to match.
         if (Name[2] != 'b')
           break;
@@ -3037,6 +3627,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'w':	 // 1 strings to match.
+        if (Name.substr(2,3) != "pgs")
+          break;
+        return MCK_swpgs;	 // "swpgs"
       }
       break;
     case 't':	 // 4 strings to match.
@@ -3054,10 +3648,33 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_testw;	 // "testw"
       }
       break;
-    case 'x':	 // 5 strings to match.
+    case 'v':	 // 1 strings to match.
+      if (Name.substr(1,4) != "mxon")
+        break;
+      return MCK_vmxon;	 // "vmxon"
+    case 'w':	 // 1 strings to match.
+      if (Name.substr(1,4) != "rmsr")
+        break;
+      return MCK_wrmsr;	 // "wrmsr"
+    case 'x':	 // 11 strings to match.
       switch (Name[1]) {
       default: break;
-      case 'c':	 // 3 strings to match.
+      case 'a':	 // 4 strings to match.
+        if (Name.substr(2,2) != "dd")
+          break;
+        switch (Name[4]) {
+        default: break;
+        case 'b':	 // 1 strings to match.
+          return MCK_xaddb;	 // "xaddb"
+        case 'l':	 // 1 strings to match.
+          return MCK_xaddl;	 // "xaddl"
+        case 'q':	 // 1 strings to match.
+          return MCK_xaddq;	 // "xaddq"
+        case 'w':	 // 1 strings to match.
+          return MCK_xaddw;	 // "xaddw"
+        }
+        break;
+      case 'c':	 // 4 strings to match.
         if (Name.substr(2,2) != "hg")
           break;
         switch (Name[4]) {
@@ -3066,10 +3683,16 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_xchgb;	 // "xchgb"
         case 'l':	 // 1 strings to match.
           return MCK_xchgl;	 // "xchgl"
+        case 'q':	 // 1 strings to match.
+          return MCK_xchgq;	 // "xchgq"
         case 'w':	 // 1 strings to match.
           return MCK_xchgw;	 // "xchgw"
         }
         break;
+      case 'l':	 // 1 strings to match.
+        if (Name.substr(2,3) != "atb")
+          break;
+        return MCK_xlatb;	 // "xlatb"
       case 'o':	 // 2 strings to match.
         if (Name.substr(2,2) != "rp")
           break;
@@ -3085,7 +3708,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       break;
     }
     break;
-  case 6:	 // 120 strings to match.
+  case 6:	 // 163 strings to match.
     switch (Name[0]) {
     default: break;
     case 'a':	 // 2 strings to match.
@@ -3110,65 +3733,160 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_bswapq;	 // "bswapq"
       }
       break;
-    case 'c':	 // 9 strings to match.
+    case 'c':	 // 26 strings to match.
       switch (Name[1]) {
       default: break;
-      case 'm':	 // 8 strings to match.
+      case 'm':	 // 24 strings to match.
         if (Name.substr(2,2) != "ov")
           break;
         switch (Name[4]) {
         default: break;
-        case 'a':	 // 1 strings to match.
-          if (Name[5] != 'e')
-            break;
-          return MCK_cmovae;	 // "cmovae"
-        case 'b':	 // 1 strings to match.
-          if (Name[5] != 'e')
-            break;
-          return MCK_cmovbe;	 // "cmovbe"
-        case 'g':	 // 1 strings to match.
-          if (Name[5] != 'e')
-            break;
-          return MCK_cmovge;	 // "cmovge"
-        case 'l':	 // 1 strings to match.
-          if (Name[5] != 'e')
-            break;
-          return MCK_cmovle;	 // "cmovle"
-        case 'n':	 // 4 strings to match.
+        case 'a':	 // 3 strings to match.
           switch (Name[5]) {
           default: break;
-          case 'e':	 // 1 strings to match.
-            return MCK_cmovne;	 // "cmovne"
-          case 'o':	 // 1 strings to match.
-            return MCK_cmovno;	 // "cmovno"
-          case 'p':	 // 1 strings to match.
-            return MCK_cmovnp;	 // "cmovnp"
-          case 's':	 // 1 strings to match.
-            return MCK_cmovns;	 // "cmovns"
+          case 'l':	 // 1 strings to match.
+            return MCK_cmoval;	 // "cmoval"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovaq;	 // "cmovaq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovaw;	 // "cmovaw"
+          }
+          break;
+        case 'b':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovbl;	 // "cmovbl"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovbq;	 // "cmovbq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovbw;	 // "cmovbw"
+          }
+          break;
+        case 'e':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovel;	 // "cmovel"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmoveq;	 // "cmoveq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovew;	 // "cmovew"
+          }
+          break;
+        case 'g':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovgl;	 // "cmovgl"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovgq;	 // "cmovgq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovgw;	 // "cmovgw"
+          }
+          break;
+        case 'l':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovll;	 // "cmovll"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovlq;	 // "cmovlq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovlw;	 // "cmovlw"
+          }
+          break;
+        case 'o':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovol;	 // "cmovol"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovoq;	 // "cmovoq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovow;	 // "cmovow"
+          }
+          break;
+        case 'p':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovpl;	 // "cmovpl"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovpq;	 // "cmovpq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovpw;	 // "cmovpw"
+          }
+          break;
+        case 's':	 // 3 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovsl;	 // "cmovsl"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovsq;	 // "cmovsq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovsw;	 // "cmovsw"
           }
           break;
         }
         break;
-      case 'o':	 // 1 strings to match.
-        if (Name.substr(2,4) != "misd")
-          break;
-        return MCK_comisd;	 // "comisd"
-      }
-      break;
-    case 'f':	 // 29 strings to match.
-      switch (Name[1]) {
-      default: break;
-      case 'c':	 // 3 strings to match.
-        if (Name.substr(2,3) != "mov")
+      case 'o':	 // 2 strings to match.
+        if (Name.substr(2,3) != "mis")
           break;
         switch (Name[5]) {
         default: break;
-        case 'b':	 // 1 strings to match.
-          return MCK_fcmovb;	 // "fcmovb"
-        case 'e':	 // 1 strings to match.
-          return MCK_fcmove;	 // "fcmove"
-        case 'u':	 // 1 strings to match.
-          return MCK_fcmovu;	 // "fcmovu"
+        case 'd':	 // 1 strings to match.
+          return MCK_comisd;	 // "comisd"
+        case 's':	 // 1 strings to match.
+          return MCK_comiss;	 // "comiss"
+        }
+        break;
+      }
+      break;
+    case 'f':	 // 43 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'c':	 // 7 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'm':	 // 3 strings to match.
+          if (Name.substr(3,2) != "ov")
+            break;
+          switch (Name[5]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            return MCK_fcmovb;	 // "fcmovb"
+          case 'e':	 // 1 strings to match.
+            return MCK_fcmove;	 // "fcmove"
+          case 'u':	 // 1 strings to match.
+            return MCK_fcmovu;	 // "fcmovu"
+          }
+          break;
+        case 'o':	 // 4 strings to match.
+          if (Name[3] != 'm')
+            break;
+          switch (Name[4]) {
+          default: break;
+          case 'i':	 // 1 strings to match.
+            if (Name[5] != 'p')
+              break;
+            return MCK_fcomip;	 // "fcomip"
+          case 'l':	 // 1 strings to match.
+            if (Name[5] != 'l')
+              break;
+            return MCK_fcomll;	 // "fcomll"
+          case 'p':	 // 2 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_fcompl;	 // "fcompl"
+            case 'p':	 // 1 strings to match.
+              return MCK_fcompp;	 // "fcompp"
+            }
+            break;
+          }
+          break;
         }
         break;
       case 'd':	 // 3 strings to match.
@@ -3264,23 +3982,85 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
-      case 'l':	 // 1 strings to match.
-        if (Name.substr(2,4) != "denv")
+      case 'l':	 // 5 strings to match.
+        if (Name[2] != 'd')
           break;
-        return MCK_fldenv;	 // "fldenv"
-      case 'n':	 // 2 strings to match.
-        if (Name.substr(2,2) != "st")
+        switch (Name[3]) {
+        default: break;
+        case 'e':	 // 1 strings to match.
+          if (Name.substr(4,2) != "nv")
+            break;
+          return MCK_fldenv;	 // "fldenv"
+        case 'l':	 // 4 strings to match.
+          switch (Name[4]) {
+          default: break;
+          case '2':	 // 2 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'e':	 // 1 strings to match.
+              return MCK_fldl2e;	 // "fldl2e"
+            case 't':	 // 1 strings to match.
+              return MCK_fldl2t;	 // "fldl2t"
+            }
+            break;
+          case 'g':	 // 1 strings to match.
+            if (Name[5] != '2')
+              break;
+            return MCK_fldlg2;	 // "fldlg2"
+          case 'n':	 // 1 strings to match.
+            if (Name[5] != '2')
+              break;
+            return MCK_fldln2;	 // "fldln2"
+          }
           break;
-        switch (Name[4]) {
+        }
+        break;
+      case 'n':	 // 5 strings to match.
+        switch (Name[2]) {
         default: break;
         case 'c':	 // 1 strings to match.
-          if (Name[5] != 'w')
+          if (Name.substr(3,3) != "lex")
             break;
-          return MCK_fnstcw;	 // "fnstcw"
-        case 's':	 // 1 strings to match.
-          if (Name[5] != 'w')
+          return MCK_fnclex;	 // "fnclex"
+        case 'i':	 // 1 strings to match.
+          if (Name.substr(3,3) != "nit")
             break;
-          return MCK_fnstsw;	 // "fnstsw"
+          return MCK_fninit;	 // "fninit"
+        case 's':	 // 3 strings to match.
+          switch (Name[3]) {
+          default: break;
+          case 'a':	 // 1 strings to match.
+            if (Name.substr(4,2) != "ve")
+              break;
+            return MCK_fnsave;	 // "fnsave"
+          case 't':	 // 2 strings to match.
+            switch (Name[4]) {
+            default: break;
+            case 'c':	 // 1 strings to match.
+              if (Name[5] != 'w')
+                break;
+              return MCK_fnstcw;	 // "fnstcw"
+            case 's':	 // 1 strings to match.
+              if (Name[5] != 'w')
+                break;
+              return MCK_fnstsw;	 // "fnstsw"
+            }
+            break;
+          }
+          break;
+        }
+        break;
+      case 'p':	 // 2 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'a':	 // 1 strings to match.
+          if (Name.substr(3,3) != "tan")
+            break;
+          return MCK_fpatan;	 // "fpatan"
+        case 'r':	 // 1 strings to match.
+          if (Name.substr(3,3) != "em1")
+            break;
+          return MCK_fprem1;	 // "fprem1"
         }
         break;
       case 'r':	 // 1 strings to match.
@@ -3290,10 +4070,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       case 's':	 // 4 strings to match.
         switch (Name[2]) {
         default: break;
-        case 't':	 // 1 strings to match.
-          if (Name.substr(3,3) != "env")
+        case 'c':	 // 1 strings to match.
+          if (Name.substr(3,3) != "ale")
             break;
-          return MCK_fstenv;	 // "fstenv"
+          return MCK_fscale;	 // "fscale"
         case 'u':	 // 3 strings to match.
           if (Name.substr(3,2) != "br")
             break;
@@ -3320,6 +4100,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_fucomp;	 // "fucomp"
         }
         break;
+      case 'x':	 // 1 strings to match.
+        if (Name.substr(2,4) != "save")
+          break;
+        return MCK_fxsave;	 // "fxsave"
       }
       break;
     case 'h':	 // 4 strings to match.
@@ -3349,6 +4133,21 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
+    case 'i':	 // 2 strings to match.
+      if (Name.substr(1,2) != "nv")
+        break;
+      switch (Name[3]) {
+      default: break;
+      case 'e':	 // 1 strings to match.
+        if (Name.substr(4,2) != "pt")
+          break;
+        return MCK_invept;	 // "invept"
+      case 'l':	 // 1 strings to match.
+        if (Name.substr(4,2) != "pg")
+          break;
+        return MCK_invlpg;	 // "invlpg"
+      }
+      break;
     case 'l':	 // 5 strings to match.
       switch (Name[1]) {
       default: break;
@@ -3375,14 +4174,14 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_loopne;	 // "loopne"
       }
       break;
-    case 'm':	 // 20 strings to match.
+    case 'm':	 // 24 strings to match.
       switch (Name[1]) {
       default: break;
       case 'f':	 // 1 strings to match.
         if (Name.substr(2,4) != "ence")
           break;
         return MCK_mfence;	 // "mfence"
-      case 'o':	 // 19 strings to match.
+      case 'o':	 // 23 strings to match.
         if (Name[2] != 'v')
           break;
         switch (Name[3]) {
@@ -3442,16 +4241,18 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
             return MCK_movntq;	 // "movntq"
           }
           break;
-        case 's':	 // 5 strings to match.
+        case 's':	 // 6 strings to match.
           switch (Name[4]) {
           default: break;
-          case 'b':	 // 2 strings to match.
+          case 'b':	 // 3 strings to match.
             switch (Name[5]) {
             default: break;
             case 'l':	 // 1 strings to match.
               return MCK_movsbl;	 // "movsbl"
             case 'q':	 // 1 strings to match.
               return MCK_movsbq;	 // "movsbq"
+            case 'w':	 // 1 strings to match.
+              return MCK_movsbw;	 // "movsbw"
             }
             break;
           case 'l':	 // 1 strings to match.
@@ -3480,24 +4281,36 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
             return MCK_movups;	 // "movups"
           }
           break;
-        case 'z':	 // 2 strings to match.
+        case 'z':	 // 5 strings to match.
           switch (Name[4]) {
           default: break;
-          case 'b':	 // 1 strings to match.
-            if (Name[5] != 'l')
-              break;
-            return MCK_movzbl;	 // "movzbl"
-          case 'w':	 // 1 strings to match.
-            if (Name[5] != 'l')
-              break;
-            return MCK_movzwl;	 // "movzwl"
+          case 'b':	 // 3 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_movzbl;	 // "movzbl"
+            case 'q':	 // 1 strings to match.
+              return MCK_movzbq;	 // "movzbq"
+            case 'w':	 // 1 strings to match.
+              return MCK_movzbw;	 // "movzbw"
+            }
+            break;
+          case 'w':	 // 2 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_movzwl;	 // "movzwl"
+            case 'q':	 // 1 strings to match.
+              return MCK_movzwq;	 // "movzwq"
+            }
+            break;
           }
           break;
         }
         break;
       }
       break;
-    case 'p':	 // 41 strings to match.
+    case 'p':	 // 44 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 2 strings to match.
@@ -3709,6 +4522,19 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'u':	 // 3 strings to match.
+        if (Name.substr(2,3) != "shf")
+          break;
+        switch (Name[5]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_pushfl;	 // "pushfl"
+        case 'q':	 // 1 strings to match.
+          return MCK_pushfq;	 // "pushfq"
+        case 'w':	 // 1 strings to match.
+          return MCK_pushfw;	 // "pushfw"
+        }
+        break;
       }
       break;
     case 's':	 // 8 strings to match.
@@ -3760,9 +4586,28 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_sysret;	 // "sysret"
       }
       break;
+    case 'v':	 // 2 strings to match.
+      if (Name[1] != 'm')
+        break;
+      switch (Name[2]) {
+      default: break;
+      case 'c':	 // 1 strings to match.
+        if (Name.substr(3,3) != "all")
+          break;
+        return MCK_vmcall;	 // "vmcall"
+      case 'x':	 // 1 strings to match.
+        if (Name.substr(3,3) != "off")
+          break;
+        return MCK_vmxoff;	 // "vmxoff"
+      }
+      break;
+    case 'w':	 // 1 strings to match.
+      if (Name.substr(1,5) != "binvd")
+        break;
+      return MCK_wbinvd;	 // "wbinvd"
     }
     break;
-  case 7:	 // 58 strings to match.
+  case 7:	 // 100 strings to match.
     switch (Name[0]) {
     default: break;
     case 'b':	 // 2 strings to match.
@@ -3776,36 +4621,162 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_blendps;	 // "blendps"
       }
       break;
-    case 'c':	 // 1 strings to match.
-      if (Name.substr(1,6) != "lflush")
-        break;
-      return MCK_clflush;	 // "clflush"
-    case 'f':	 // 15 strings to match.
+    case 'c':	 // 25 strings to match.
       switch (Name[1]) {
       default: break;
-      case 'c':	 // 4 strings to match.
-        if (Name.substr(2,3) != "mov")
+      case 'l':	 // 1 strings to match.
+        if (Name.substr(2,5) != "flush")
           break;
-        switch (Name[5]) {
+        return MCK_clflush;	 // "clflush"
+      case 'm':	 // 24 strings to match.
+        if (Name.substr(2,2) != "ov")
+          break;
+        switch (Name[4]) {
         default: break;
-        case 'b':	 // 1 strings to match.
-          if (Name[6] != 'e')
+        case 'a':	 // 3 strings to match.
+          if (Name[5] != 'e')
             break;
-          return MCK_fcmovbe;	 // "fcmovbe"
-        case 'n':	 // 3 strings to match.
           switch (Name[6]) {
           default: break;
-          case 'b':	 // 1 strings to match.
-            return MCK_fcmovnb;	 // "fcmovnb"
-          case 'e':	 // 1 strings to match.
-            return MCK_fcmovne;	 // "fcmovne"
-          case 'u':	 // 1 strings to match.
-            return MCK_fcmovnu;	 // "fcmovnu"
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovael;	 // "cmovael"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovaeq;	 // "cmovaeq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovaew;	 // "cmovaew"
+          }
+          break;
+        case 'b':	 // 3 strings to match.
+          if (Name[5] != 'e')
+            break;
+          switch (Name[6]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovbel;	 // "cmovbel"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovbeq;	 // "cmovbeq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovbew;	 // "cmovbew"
+          }
+          break;
+        case 'g':	 // 3 strings to match.
+          if (Name[5] != 'e')
+            break;
+          switch (Name[6]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovgel;	 // "cmovgel"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovgeq;	 // "cmovgeq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovgew;	 // "cmovgew"
+          }
+          break;
+        case 'l':	 // 3 strings to match.
+          if (Name[5] != 'e')
+            break;
+          switch (Name[6]) {
+          default: break;
+          case 'l':	 // 1 strings to match.
+            return MCK_cmovlel;	 // "cmovlel"
+          case 'q':	 // 1 strings to match.
+            return MCK_cmovleq;	 // "cmovleq"
+          case 'w':	 // 1 strings to match.
+            return MCK_cmovlew;	 // "cmovlew"
+          }
+          break;
+        case 'n':	 // 12 strings to match.
+          switch (Name[5]) {
+          default: break;
+          case 'e':	 // 3 strings to match.
+            switch (Name[6]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_cmovnel;	 // "cmovnel"
+            case 'q':	 // 1 strings to match.
+              return MCK_cmovneq;	 // "cmovneq"
+            case 'w':	 // 1 strings to match.
+              return MCK_cmovnew;	 // "cmovnew"
+            }
+            break;
+          case 'o':	 // 3 strings to match.
+            switch (Name[6]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_cmovnol;	 // "cmovnol"
+            case 'q':	 // 1 strings to match.
+              return MCK_cmovnoq;	 // "cmovnoq"
+            case 'w':	 // 1 strings to match.
+              return MCK_cmovnow;	 // "cmovnow"
+            }
+            break;
+          case 'p':	 // 3 strings to match.
+            switch (Name[6]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_cmovnpl;	 // "cmovnpl"
+            case 'q':	 // 1 strings to match.
+              return MCK_cmovnpq;	 // "cmovnpq"
+            case 'w':	 // 1 strings to match.
+              return MCK_cmovnpw;	 // "cmovnpw"
+            }
+            break;
+          case 's':	 // 3 strings to match.
+            switch (Name[6]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_cmovnsl;	 // "cmovnsl"
+            case 'q':	 // 1 strings to match.
+              return MCK_cmovnsq;	 // "cmovnsq"
+            case 'w':	 // 1 strings to match.
+              return MCK_cmovnsw;	 // "cmovnsw"
+            }
+            break;
           }
           break;
         }
         break;
-      case 'i':	 // 9 strings to match.
+      }
+      break;
+    case 'f':	 // 24 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'c':	 // 5 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'm':	 // 4 strings to match.
+          if (Name.substr(3,2) != "ov")
+            break;
+          switch (Name[5]) {
+          default: break;
+          case 'b':	 // 1 strings to match.
+            if (Name[6] != 'e')
+              break;
+            return MCK_fcmovbe;	 // "fcmovbe"
+          case 'n':	 // 3 strings to match.
+            switch (Name[6]) {
+            default: break;
+            case 'b':	 // 1 strings to match.
+              return MCK_fcmovnb;	 // "fcmovnb"
+            case 'e':	 // 1 strings to match.
+              return MCK_fcmovne;	 // "fcmovne"
+            case 'u':	 // 1 strings to match.
+              return MCK_fcmovnu;	 // "fcmovnu"
+            }
+            break;
+          }
+          break;
+        case 'o':	 // 1 strings to match.
+          if (Name.substr(3,4) != "mpll")
+            break;
+          return MCK_fcompll;	 // "fcompll"
+        }
+        break;
+      case 'd':	 // 1 strings to match.
+        if (Name.substr(2,5) != "ecstp")
+          break;
+        return MCK_fdecstp;	 // "fdecstp"
+      case 'i':	 // 10 strings to match.
         switch (Name[2]) {
         default: break;
         case 'c':	 // 2 strings to match.
@@ -3830,6 +4801,10 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
             return MCK_fidivrs;	 // "fidivrs"
           }
           break;
+        case 'n':	 // 1 strings to match.
+          if (Name.substr(3,4) != "cstp")
+            break;
+          return MCK_fincstp;	 // "fincstp"
         case 's':	 // 5 strings to match.
           switch (Name[3]) {
           default: break;
@@ -3868,6 +4843,18 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'n':	 // 1 strings to match.
+        if (Name.substr(2,5) != "stenv")
+          break;
+        return MCK_fnstenv;	 // "fnstenv"
+      case 'r':	 // 1 strings to match.
+        if (Name.substr(2,5) != "ndint")
+          break;
+        return MCK_frndint;	 // "frndint"
+      case 's':	 // 1 strings to match.
+        if (Name.substr(2,5) != "incos")
+          break;
+        return MCK_fsincos;	 // "fsincos"
       case 'u':	 // 2 strings to match.
         if (Name.substr(2,3) != "com")
           break;
@@ -3883,8 +4870,29 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           return MCK_fucompp;	 // "fucompp"
         }
         break;
+      case 'x':	 // 2 strings to match.
+        switch (Name[2]) {
+        default: break;
+        case 'r':	 // 1 strings to match.
+          if (Name.substr(3,4) != "stor")
+            break;
+          return MCK_fxrstor;	 // "fxrstor"
+        case 't':	 // 1 strings to match.
+          if (Name.substr(3,4) != "ract")
+            break;
+          return MCK_fxtract;	 // "fxtract"
+        }
+        break;
+      case 'y':	 // 1 strings to match.
+        if (Name.substr(2,5) != "l2xp1")
+          break;
+        return MCK_fyl2xp1;	 // "fyl2xp1"
       }
       break;
+    case 'i':	 // 1 strings to match.
+      if (Name.substr(1,6) != "nvvpid")
+        break;
+      return MCK_invvpid;	 // "invvpid"
     case 'l':	 // 1 strings to match.
       if (Name.substr(1,6) != "dmxcsr")
         break;
@@ -3961,7 +4969,7 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_mpsadbw;	 // "mpsadbw"
       }
       break;
-    case 'p':	 // 21 strings to match.
+    case 'p':	 // 24 strings to match.
       switch (Name[1]) {
       default: break;
       case 'a':	 // 3 strings to match.
@@ -4062,6 +5070,19 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
           break;
         }
         break;
+      case 'o':	 // 3 strings to match.
+        if (Name.substr(2,4) != "pcnt")
+          break;
+        switch (Name[6]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_popcntl;	 // "popcntl"
+        case 'q':	 // 1 strings to match.
+          return MCK_popcntq;	 // "popcntq"
+        case 'w':	 // 1 strings to match.
+          return MCK_popcntw;	 // "popcntw"
+        }
+        break;
       case 's':	 // 4 strings to match.
         switch (Name[2]) {
         default: break;
@@ -4145,9 +5166,46 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_ucomiss;	 // "ucomiss"
       }
       break;
+    case 'v':	 // 5 strings to match.
+      if (Name[1] != 'm')
+        break;
+      switch (Name[2]) {
+      default: break;
+      case 'c':	 // 1 strings to match.
+        if (Name.substr(3,4) != "lear")
+          break;
+        return MCK_vmclear;	 // "vmclear"
+      case 'p':	 // 2 strings to match.
+        if (Name.substr(3,2) != "tr")
+          break;
+        switch (Name[5]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          if (Name[6] != 'd')
+            break;
+          return MCK_vmptrld;	 // "vmptrld"
+        case 's':	 // 1 strings to match.
+          if (Name[6] != 't')
+            break;
+          return MCK_vmptrst;	 // "vmptrst"
+        }
+        break;
+      case 'r':	 // 2 strings to match.
+        if (Name.substr(3,3) != "ead")
+          break;
+        switch (Name[6]) {
+        default: break;
+        case 'l':	 // 1 strings to match.
+          return MCK_vmreadl;	 // "vmreadl"
+        case 'q':	 // 1 strings to match.
+          return MCK_vmreadq;	 // "vmreadq"
+        }
+        break;
+      }
+      break;
     }
     break;
-  case 8:	 // 49 strings to match.
+  case 8:	 // 59 strings to match.
     switch (Name[0]) {
     default: break;
     case 'a':	 // 2 strings to match.
@@ -4172,90 +5230,120 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         return MCK_blendvps;	 // "blendvps"
       }
       break;
-    case 'c':	 // 12 strings to match.
-      if (Name.substr(1,2) != "vt")
-        break;
-      switch (Name[3]) {
+    case 'c':	 // 18 strings to match.
+      switch (Name[1]) {
       default: break;
-      case 'd':	 // 2 strings to match.
-        if (Name.substr(4,3) != "q2p")
+      case 'm':	 // 4 strings to match.
+        if (Name.substr(2,5) != "pxchg")
           break;
         switch (Name[7]) {
         default: break;
-        case 'd':	 // 1 strings to match.
-          return MCK_cvtdq2pd;	 // "cvtdq2pd"
-        case 's':	 // 1 strings to match.
-          return MCK_cvtdq2ps;	 // "cvtdq2ps"
+        case 'b':	 // 1 strings to match.
+          return MCK_cmpxchgb;	 // "cmpxchgb"
+        case 'l':	 // 1 strings to match.
+          return MCK_cmpxchgl;	 // "cmpxchgl"
+        case 'q':	 // 1 strings to match.
+          return MCK_cmpxchgq;	 // "cmpxchgq"
+        case 'w':	 // 1 strings to match.
+          return MCK_cmpxchgw;	 // "cmpxchgw"
         }
         break;
-      case 'p':	 // 6 strings to match.
-        switch (Name[4]) {
+      case 'v':	 // 14 strings to match.
+        if (Name[2] != 't')
+          break;
+        switch (Name[3]) {
         default: break;
         case 'd':	 // 2 strings to match.
-          if (Name[5] != '2')
-            break;
-          switch (Name[6]) {
-          default: break;
-          case 'd':	 // 1 strings to match.
-            if (Name[7] != 'q')
-              break;
-            return MCK_cvtpd2dq;	 // "cvtpd2dq"
-          case 'p':	 // 1 strings to match.
-            if (Name[7] != 'i')
-              break;
-            return MCK_cvtpd2pi;	 // "cvtpd2pi"
-          }
-          break;
-        case 'i':	 // 2 strings to match.
-          if (Name.substr(5,2) != "2p")
+          if (Name.substr(4,3) != "q2p")
             break;
           switch (Name[7]) {
           default: break;
           case 'd':	 // 1 strings to match.
-            return MCK_cvtpi2pd;	 // "cvtpi2pd"
+            return MCK_cvtdq2pd;	 // "cvtdq2pd"
           case 's':	 // 1 strings to match.
-            return MCK_cvtpi2ps;	 // "cvtpi2ps"
+            return MCK_cvtdq2ps;	 // "cvtdq2ps"
           }
           break;
-        case 's':	 // 2 strings to match.
-          if (Name[5] != '2')
+        case 'p':	 // 8 strings to match.
+          switch (Name[4]) {
+          default: break;
+          case 'd':	 // 3 strings to match.
+            if (Name[5] != '2')
+              break;
+            switch (Name[6]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              if (Name[7] != 'q')
+                break;
+              return MCK_cvtpd2dq;	 // "cvtpd2dq"
+            case 'p':	 // 2 strings to match.
+              switch (Name[7]) {
+              default: break;
+              case 'i':	 // 1 strings to match.
+                return MCK_cvtpd2pi;	 // "cvtpd2pi"
+              case 's':	 // 1 strings to match.
+                return MCK_cvtpd2ps;	 // "cvtpd2ps"
+              }
+              break;
+            }
             break;
-          switch (Name[6]) {
+          case 'i':	 // 2 strings to match.
+            if (Name.substr(5,2) != "2p")
+              break;
+            switch (Name[7]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              return MCK_cvtpi2pd;	 // "cvtpi2pd"
+            case 's':	 // 1 strings to match.
+              return MCK_cvtpi2ps;	 // "cvtpi2ps"
+            }
+            break;
+          case 's':	 // 3 strings to match.
+            if (Name[5] != '2')
+              break;
+            switch (Name[6]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              if (Name[7] != 'q')
+                break;
+              return MCK_cvtps2dq;	 // "cvtps2dq"
+            case 'p':	 // 2 strings to match.
+              switch (Name[7]) {
+              default: break;
+              case 'd':	 // 1 strings to match.
+                return MCK_cvtps2pd;	 // "cvtps2pd"
+              case 'i':	 // 1 strings to match.
+                return MCK_cvtps2pi;	 // "cvtps2pi"
+              }
+              break;
+            }
+            break;
+          }
+          break;
+        case 's':	 // 4 strings to match.
+          switch (Name[4]) {
           default: break;
           case 'd':	 // 1 strings to match.
-            if (Name[7] != 'q')
+            if (Name.substr(5,3) != "2ss")
               break;
-            return MCK_cvtps2dq;	 // "cvtps2dq"
-          case 'p':	 // 1 strings to match.
-            if (Name[7] != 'i')
+            return MCK_cvtsd2ss;	 // "cvtsd2ss"
+          case 'i':	 // 2 strings to match.
+            if (Name.substr(5,2) != "2s")
               break;
-            return MCK_cvtps2pi;	 // "cvtps2pi"
-          }
-          break;
-        }
-        break;
-      case 's':	 // 4 strings to match.
-        switch (Name[4]) {
-        default: break;
-        case 'd':	 // 1 strings to match.
-          if (Name.substr(5,3) != "2ss")
+            switch (Name[7]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              return MCK_cvtsi2sd;	 // "cvtsi2sd"
+            case 's':	 // 1 strings to match.
+              return MCK_cvtsi2ss;	 // "cvtsi2ss"
+            }
             break;
-          return MCK_cvtsd2ss;	 // "cvtsd2ss"
-        case 'i':	 // 2 strings to match.
-          if (Name.substr(5,2) != "2s")
-            break;
-          switch (Name[7]) {
-          default: break;
-          case 'd':	 // 1 strings to match.
-            return MCK_cvtsi2sd;	 // "cvtsi2sd"
           case 's':	 // 1 strings to match.
-            return MCK_cvtsi2ss;	 // "cvtsi2ss"
+            if (Name.substr(5,3) != "2sd")
+              break;
+            return MCK_cvtss2sd;	 // "cvtss2sd"
           }
           break;
-        case 's':	 // 1 strings to match.
-          if (Name.substr(5,3) != "2sd")
-            break;
-          return MCK_cvtss2sd;	 // "cvtss2sd"
         }
         break;
       }
@@ -4482,58 +5570,124 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
         break;
       }
       break;
-    }
-    break;
-  case 9:	 // 26 strings to match.
-    switch (Name[0]) {
-    default: break;
-    case 'c':	 // 6 strings to match.
-      if (Name.substr(1,2) != "vt")
+    case 'v':	 // 4 strings to match.
+      if (Name[1] != 'm')
         break;
-      switch (Name[3]) {
+      switch (Name[2]) {
       default: break;
-      case 's':	 // 2 strings to match.
-        if (Name.substr(4,3) != "i2s")
+      case 'l':	 // 1 strings to match.
+        if (Name.substr(3,5) != "aunch")
+          break;
+        return MCK_vmlaunch;	 // "vmlaunch"
+      case 'r':	 // 1 strings to match.
+        if (Name.substr(3,5) != "esume")
+          break;
+        return MCK_vmresume;	 // "vmresume"
+      case 'w':	 // 2 strings to match.
+        if (Name.substr(3,4) != "rite")
           break;
         switch (Name[7]) {
         default: break;
-        case 'd':	 // 1 strings to match.
-          if (Name[8] != 'q')
-            break;
-          return MCK_cvtsi2sdq;	 // "cvtsi2sdq"
-        case 's':	 // 1 strings to match.
-          if (Name[8] != 'q')
-            break;
-          return MCK_cvtsi2ssq;	 // "cvtsi2ssq"
+        case 'l':	 // 1 strings to match.
+          return MCK_vmwritel;	 // "vmwritel"
+        case 'q':	 // 1 strings to match.
+          return MCK_vmwriteq;	 // "vmwriteq"
         }
         break;
-      case 't':	 // 4 strings to match.
-        switch (Name[4]) {
+      }
+      break;
+    }
+    break;
+  case 9:	 // 31 strings to match.
+    switch (Name[0]) {
+    default: break;
+    case 'c':	 // 11 strings to match.
+      switch (Name[1]) {
+      default: break;
+      case 'm':	 // 1 strings to match.
+        if (Name.substr(2,7) != "pxchg8b")
+          break;
+        return MCK_cmpxchg8b;	 // "cmpxchg8b"
+      case 'v':	 // 10 strings to match.
+        if (Name[2] != 't')
+          break;
+        switch (Name[3]) {
         default: break;
-        case 'p':	 // 2 strings to match.
-          switch (Name[5]) {
+        case 's':	 // 5 strings to match.
+          switch (Name[4]) {
           default: break;
           case 'd':	 // 1 strings to match.
-            if (Name.substr(6,3) != "2pi")
+            if (Name.substr(5,4) != "2siq")
               break;
-            return MCK_cvttpd2pi;	 // "cvttpd2pi"
-          case 's':	 // 1 strings to match.
-            if (Name.substr(6,3) != "2pi")
+            return MCK_cvtsd2siq;	 // "cvtsd2siq"
+          case 'i':	 // 2 strings to match.
+            if (Name.substr(5,2) != "2s")
               break;
-            return MCK_cvttps2pi;	 // "cvttps2pi"
+            switch (Name[7]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              if (Name[8] != 'q')
+                break;
+              return MCK_cvtsi2sdq;	 // "cvtsi2sdq"
+            case 's':	 // 1 strings to match.
+              if (Name[8] != 'q')
+                break;
+              return MCK_cvtsi2ssq;	 // "cvtsi2ssq"
+            }
+            break;
+          case 's':	 // 2 strings to match.
+            if (Name.substr(5,3) != "2si")
+              break;
+            switch (Name[8]) {
+            default: break;
+            case 'l':	 // 1 strings to match.
+              return MCK_cvtss2sil;	 // "cvtss2sil"
+            case 'q':	 // 1 strings to match.
+              return MCK_cvtss2siq;	 // "cvtss2siq"
+            }
+            break;
           }
           break;
-        case 's':	 // 2 strings to match.
-          switch (Name[5]) {
+        case 't':	 // 5 strings to match.
+          switch (Name[4]) {
           default: break;
-          case 'd':	 // 1 strings to match.
-            if (Name.substr(6,3) != "2si")
+          case 'p':	 // 3 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              if (Name.substr(6,3) != "2pi")
+                break;
+              return MCK_cvttpd2pi;	 // "cvttpd2pi"
+            case 's':	 // 2 strings to match.
+              if (Name[6] != '2')
+                break;
+              switch (Name[7]) {
+              default: break;
+              case 'd':	 // 1 strings to match.
+                if (Name[8] != 'q')
+                  break;
+                return MCK_cvttps2dq;	 // "cvttps2dq"
+              case 'p':	 // 1 strings to match.
+                if (Name[8] != 'i')
+                  break;
+                return MCK_cvttps2pi;	 // "cvttps2pi"
+              }
               break;
-            return MCK_cvttsd2si;	 // "cvttsd2si"
-          case 's':	 // 1 strings to match.
-            if (Name.substr(6,3) != "2si")
-              break;
-            return MCK_cvttss2si;	 // "cvttss2si"
+            }
+            break;
+          case 's':	 // 2 strings to match.
+            switch (Name[5]) {
+            default: break;
+            case 'd':	 // 1 strings to match.
+              if (Name.substr(6,3) != "2si")
+                break;
+              return MCK_cvttsd2si;	 // "cvttsd2si"
+            case 's':	 // 1 strings to match.
+              if (Name.substr(6,3) != "2si")
+                break;
+              return MCK_cvttss2si;	 // "cvttss2si"
+            }
+            break;
           }
           break;
         }
@@ -4662,22 +5816,31 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
       break;
     }
     break;
-  case 10:	 // 9 strings to match.
+  case 10:	 // 10 strings to match.
     switch (Name[0]) {
     default: break;
-    case 'c':	 // 2 strings to match.
-      if (Name.substr(1,4) != "vtts")
-        break;
-      switch (Name[5]) {
+    case 'c':	 // 3 strings to match.
+      switch (Name[1]) {
       default: break;
-      case 'd':	 // 1 strings to match.
-        if (Name.substr(6,4) != "2siq")
+      case 'm':	 // 1 strings to match.
+        if (Name.substr(2,8) != "pxchg16b")
           break;
-        return MCK_cvttsd2siq;	 // "cvttsd2siq"
-      case 's':	 // 1 strings to match.
-        if (Name.substr(6,4) != "2siq")
+        return MCK_cmpxchg16b;	 // "cmpxchg16b"
+      case 'v':	 // 2 strings to match.
+        if (Name.substr(2,3) != "tts")
           break;
-        return MCK_cvttss2siq;	 // "cvttss2siq"
+        switch (Name[5]) {
+        default: break;
+        case 'd':	 // 1 strings to match.
+          if (Name.substr(6,4) != "2siq")
+            break;
+          return MCK_cvttsd2siq;	 // "cvttsd2siq"
+        case 's':	 // 1 strings to match.
+          if (Name.substr(6,4) != "2siq")
+            break;
+          return MCK_cvttss2siq;	 // "cvttss2siq"
+        }
+        break;
       }
       break;
     case 'm':	 // 1 strings to match.
@@ -4867,8 +6030,33 @@ static MatchClassKind ClassifyOperand(X86Operand &Operand) {
     case X86::DS: return MCK_SEGMENT_REG;
     case X86::SS: return MCK_SEGMENT_REG;
     case X86::ES: return MCK_SEGMENT_REG;
-    case X86::FS: return MCK_SEGMENT_REG;
-    case X86::GS: return MCK_SEGMENT_REG;
+    case X86::FS: return MCK_FS;
+    case X86::GS: return MCK_GS;
+    case X86::DR0: return MCK_DEBUG_REG;
+    case X86::DR1: return MCK_DEBUG_REG;
+    case X86::DR2: return MCK_DEBUG_REG;
+    case X86::DR3: return MCK_DEBUG_REG;
+    case X86::DR4: return MCK_DEBUG_REG;
+    case X86::DR5: return MCK_DEBUG_REG;
+    case X86::DR6: return MCK_DEBUG_REG;
+    case X86::DR7: return MCK_DEBUG_REG;
+    case X86::ECR0: return MCK_CONTROL_REG_32;
+    case X86::ECR1: return MCK_CONTROL_REG_32;
+    case X86::ECR2: return MCK_CONTROL_REG_32;
+    case X86::ECR3: return MCK_CONTROL_REG_32;
+    case X86::ECR4: return MCK_CONTROL_REG_32;
+    case X86::ECR5: return MCK_CONTROL_REG_32;
+    case X86::ECR6: return MCK_CONTROL_REG_32;
+    case X86::ECR7: return MCK_CONTROL_REG_32;
+    case X86::RCR0: return MCK_CONTROL_REG_64;
+    case X86::RCR1: return MCK_CONTROL_REG_64;
+    case X86::RCR2: return MCK_CONTROL_REG_64;
+    case X86::RCR3: return MCK_CONTROL_REG_64;
+    case X86::RCR4: return MCK_CONTROL_REG_64;
+    case X86::RCR5: return MCK_CONTROL_REG_64;
+    case X86::RCR6: return MCK_CONTROL_REG_64;
+    case X86::RCR7: return MCK_CONTROL_REG_64;
+    case X86::RCR8: return MCK_CONTROL_REG_64;
     }
   }
 
@@ -5008,8 +6196,8 @@ static bool IsSubclass(MatchClassKind A, MatchClassKind B) {
     default: return false;
     case MCK_GR64_ABCD: return true;
     case MCK_GR64_NOREX_NOSP: return true;
-    case MCK_GR64_NOREX: return true;
     case MCK_GR64_NOSP: return true;
+    case MCK_GR64_NOREX: return true;
     case MCK_GR64: return true;
     }
 
@@ -5017,23 +6205,23 @@ static bool IsSubclass(MatchClassKind A, MatchClassKind B) {
     switch (B) {
     default: return false;
     case MCK_GR64_NOREX_NOSP: return true;
-    case MCK_GR64_NOREX: return true;
     case MCK_GR64_NOSP: return true;
+    case MCK_GR64_NOREX: return true;
     case MCK_GR64: return true;
     }
 
   case MCK_GR64_NOREX_NOSP:
     switch (B) {
     default: return false;
-    case MCK_GR64_NOREX: return true;
     case MCK_GR64_NOSP: return true;
+    case MCK_GR64_NOREX: return true;
     case MCK_GR64: return true;
     }
 
-  case MCK_GR64_NOREX:
+  case MCK_GR64_NOSP:
     return B == MCK_GR64;
 
-  case MCK_GR64_NOSP:
+  case MCK_GR64_NOREX:
     return B == MCK_GR64;
 
   case MCK_XMM0:
@@ -5041,6 +6229,12 @@ static bool IsSubclass(MatchClassKind A, MatchClassKind B) {
 
   case MCK_ST0:
     return B == MCK_RST;
+
+  case MCK_FS:
+    return B == MCK_SEGMENT_REG;
+
+  case MCK_GS:
+    return B == MCK_SEGMENT_REG;
 
   case MCK_ImmSExt8:
     return B == MCK_Imm;
@@ -5052,35 +6246,74 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     unsigned Opcode;
     ConversionKind ConvertFn;
     MatchClassKind Classes[5];
-  } MatchTable[1775] = {
+  } MatchTable[2041] = {
     { X86::CBW, Convert, { MCK_cbtw } },
+    { X86::CLC, Convert, { MCK_clc } },
+    { X86::CLD, Convert, { MCK_cld } },
+    { X86::CLI, Convert, { MCK_cli } },
     { X86::CDQ, Convert, { MCK_cltd } },
     { X86::CDQE, Convert, { MCK_cltq } },
+    { X86::CLTS, Convert, { MCK_clts } },
+    { X86::CMC, Convert, { MCK_cmc } },
     { X86::CMPS8, Convert, { MCK_cmpsb } },
     { X86::CMPS32, Convert, { MCK_cmpsl } },
     { X86::CMPS64, Convert, { MCK_cmpsq } },
     { X86::CMPS16, Convert, { MCK_cmpsw } },
+    { X86::CPUID, Convert, { MCK_cpuid } },
     { X86::CQO, Convert, { MCK_cqto } },
     { X86::CWD, Convert, { MCK_cwtd } },
     { X86::CWDE, Convert, { MCK_cwtl } },
     { X86::MMX_EMMS, Convert, { MCK_emms } },
+    { X86::F2XM1, Convert, { MCK_f2xm1 } },
     { X86::ABS_F, Convert, { MCK_fabs } },
     { X86::CHS_F, Convert, { MCK_fchs } },
+    { X86::FCOMPP, Convert, { MCK_fcompp } },
     { X86::COS_F, Convert, { MCK_fcos } },
+    { X86::FDECSTP, Convert, { MCK_fdecstp } },
     { X86::MMX_FEMMS, Convert, { MCK_femms } },
+    { X86::FINCSTP, Convert, { MCK_fincstp } },
     { X86::LD_F1, Convert, { MCK_fld1 } },
+    { X86::FLDL2E, Convert, { MCK_fldl2e } },
+    { X86::FLDL2T, Convert, { MCK_fldl2t } },
+    { X86::FLDLG2, Convert, { MCK_fldlg2 } },
+    { X86::FLDLN2, Convert, { MCK_fldln2 } },
+    { X86::FLDPI, Convert, { MCK_fldpi } },
     { X86::LD_F0, Convert, { MCK_fldz } },
-    { X86::FNSTSW8r, Convert, { MCK_fnstsw } },
+    { X86::FNCLEX, Convert, { MCK_fnclex } },
+    { X86::FNINIT, Convert, { MCK_fninit } },
+    { X86::FNOP, Convert, { MCK_fnop } },
+    { X86::FPATAN, Convert, { MCK_fpatan } },
+    { X86::FPREM, Convert, { MCK_fprem } },
+    { X86::FPREM1, Convert, { MCK_fprem1 } },
+    { X86::FPTAN, Convert, { MCK_fptan } },
+    { X86::FRNDINT, Convert, { MCK_frndint } },
+    { X86::FSCALE, Convert, { MCK_fscale } },
     { X86::SIN_F, Convert, { MCK_fsin } },
+    { X86::FSINCOS, Convert, { MCK_fsincos } },
     { X86::SQRT_F, Convert, { MCK_fsqrt } },
     { X86::TST_F, Convert, { MCK_ftst } },
     { X86::UCOM_FPPr, Convert, { MCK_fucompp } },
+    { X86::FXAM, Convert, { MCK_fxam } },
+    { X86::FXTRACT, Convert, { MCK_fxtract } },
+    { X86::FYL2X, Convert, { MCK_fyl2x } },
+    { X86::FYL2XP1, Convert, { MCK_fyl2xp1 } },
+    { X86::HLT, Convert, { MCK_hlt } },
+    { X86::IN8, Convert, { MCK_insb } },
+    { X86::IN32, Convert, { MCK_insl } },
+    { X86::IN16, Convert, { MCK_insw } },
+    { X86::INVD, Convert, { MCK_invd } },
+    { X86::INVEPT, Convert, { MCK_invept } },
+    { X86::INVLPG, Convert, { MCK_invlpg } },
+    { X86::INVVPID, Convert, { MCK_invvpid } },
+    { X86::IRET32, Convert, { MCK_iretl } },
+    { X86::IRET64, Convert, { MCK_iretq } },
+    { X86::IRET16, Convert, { MCK_iretw } },
     { X86::LAHF, Convert, { MCK_lahf } },
     { X86::LEAVE, Convert, { MCK_leave } },
     { X86::LEAVE64, Convert, { MCK_leave } },
     { X86::LFENCE, Convert, { MCK_lfence } },
     { X86::LODSB, Convert, { MCK_lodsb } },
-    { X86::LODSD, Convert, { MCK_lodsd } },
+    { X86::LODSD, Convert, { MCK_lodsl } },
     { X86::LODSQ, Convert, { MCK_lodsq } },
     { X86::LODSW, Convert, { MCK_lodsw } },
     { X86::LRET, Convert, { MCK_lret } },
@@ -5088,10 +6321,17 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MONITOR, Convert, { MCK_monitor } },
     { X86::MWAIT, Convert, { MCK_mwait } },
     { X86::NOOP, Convert, { MCK_nop } },
-    { X86::POPFD, Convert, { MCK_popf } },
-    { X86::POPFQ, Convert, { MCK_popf } },
-    { X86::PUSHFD, Convert, { MCK_pushf } },
-    { X86::PUSHFQ, Convert, { MCK_pushf } },
+    { X86::OUTSB, Convert, { MCK_outsb } },
+    { X86::OUTSD, Convert, { MCK_outsl } },
+    { X86::OUTSW, Convert, { MCK_outsw } },
+    { X86::POPFD, Convert, { MCK_popfl } },
+    { X86::POPFQ, Convert, { MCK_popfq } },
+    { X86::POPF, Convert, { MCK_popfw } },
+    { X86::PUSHFD, Convert, { MCK_pushfl } },
+    { X86::PUSHFQ64, Convert, { MCK_pushfq } },
+    { X86::PUSHF, Convert, { MCK_pushfw } },
+    { X86::RDMSR, Convert, { MCK_rdmsr } },
+    { X86::RDPMC, Convert, { MCK_rdpmc } },
     { X86::RDTSC, Convert, { MCK_rdtsc } },
     { X86::REP_MOVSB, Convert, { MCK_rep_59_movsb } },
     { X86::REP_MOVSD, Convert, { MCK_rep_59_movsl } },
@@ -5103,35 +6343,49 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::REP_STOSW, Convert, { MCK_rep_59_stosw } },
     { X86::EH_RETURN64, ConvertImp, { MCK_ret } },
     { X86::RET, Convert, { MCK_ret } },
+    { X86::RSM, Convert, { MCK_rsm } },
     { X86::SAHF, Convert, { MCK_sahf } },
     { X86::SCAS8, Convert, { MCK_scasb } },
     { X86::SCAS32, Convert, { MCK_scasl } },
     { X86::SCAS64, Convert, { MCK_scasq } },
     { X86::SCAS16, Convert, { MCK_scasw } },
     { X86::SFENCE, Convert, { MCK_sfence } },
+    { X86::STC, Convert, { MCK_stc } },
+    { X86::STD, Convert, { MCK_std } },
+    { X86::STI, Convert, { MCK_sti } },
+    { X86::SWPGS, Convert, { MCK_swpgs } },
     { X86::SYSCALL, Convert, { MCK_syscall } },
     { X86::SYSENTER, Convert, { MCK_sysenter } },
-    { X86::SYSEXIT, Convert, { MCK_sysexit } },
     { X86::SYSEXIT64, Convert, { MCK_sysexit } },
+    { X86::SYSEXIT, Convert, { MCK_sysexit } },
     { X86::SYSRET, Convert, { MCK_sysret } },
     { X86::TRAP, Convert, { MCK_ud2 } },
+    { X86::VMCALL, Convert, { MCK_vmcall } },
+    { X86::VMLAUNCH, Convert, { MCK_vmlaunch } },
+    { X86::VMRESUME, Convert, { MCK_vmresume } },
+    { X86::VMXOFF, Convert, { MCK_vmxoff } },
     { X86::WAIT, Convert, { MCK_wait } },
+    { X86::WBINVD, Convert, { MCK_wbinvd } },
+    { X86::WRMSR, Convert, { MCK_wrmsr } },
+    { X86::XLAT, Convert, { MCK_xlatb } },
     { X86::BSWAP32r, Convert_Reg1_1Imp, { MCK_bswapl, MCK_GR32 } },
     { X86::BSWAP64r, Convert_Reg1_1Imp, { MCK_bswapq, MCK_GR64 } },
-    { X86::WINCALL64pcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
-    { X86::CALL64pcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
     { X86::CALLpcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
+    { X86::WINCALL64pcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
+    { X86::CALL64pcrel32, Convert_Imm1_1, { MCK_callq, MCK_Imm } },
     { X86::CLFLUSH, Convert_Mem5_1, { MCK_clflush, MCK_Mem } },
+    { X86::CMPXCHG16B, Convert_Mem5_1, { MCK_cmpxchg16b, MCK_Mem } },
+    { X86::CMPXCHG8B, Convert_Mem5_1, { MCK_cmpxchg8b, MCK_Mem } },
     { X86::DEC8r, Convert_Reg1_1Imp, { MCK_decb, MCK_GR8 } },
     { X86::DEC8m, Convert_Mem5_1, { MCK_decb, MCK_Mem } },
     { X86::DEC32r, Convert_Reg1_1Imp, { MCK_decl, MCK_GR32 } },
     { X86::DEC64_32r, Convert_Reg1_1Imp, { MCK_decl, MCK_GR32 } },
-    { X86::DEC64_32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
     { X86::DEC32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
+    { X86::DEC64_32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
     { X86::DEC64r, Convert_Reg1_1Imp, { MCK_decq, MCK_GR64 } },
     { X86::DEC64m, Convert_Mem5_1, { MCK_decq, MCK_Mem } },
-    { X86::DEC64_16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
     { X86::DEC16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
+    { X86::DEC64_16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
     { X86::DEC64_16m, Convert_Mem5_1, { MCK_decw, MCK_Mem } },
     { X86::DEC16m, Convert_Mem5_1, { MCK_decw, MCK_Mem } },
     { X86::DIV8r, Convert_Reg1_1, { MCK_divb, MCK_GR8 } },
@@ -5148,10 +6402,12 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::ADD_F32m, Convert_Mem5_1, { MCK_fadds, MCK_Mem } },
     { X86::FBLDm, Convert_Mem5_1, { MCK_fbld, MCK_Mem } },
     { X86::FBSTPm, Convert_Mem5_1, { MCK_fbstp, MCK_Mem } },
-    { X86::FCOM32m, Convert_Mem5_1, { MCK_fcom, MCK_Mem } },
-    { X86::FCOM64m, Convert_Mem5_1, { MCK_fcom, MCK_Mem } },
-    { X86::FCOMP32m, Convert_Mem5_1, { MCK_fcomp, MCK_Mem } },
-    { X86::FCOMP64m, Convert_Mem5_1, { MCK_fcomp, MCK_Mem } },
+    { X86::COM_FST0r, Convert_Reg1_1, { MCK_fcom, MCK_RST } },
+    { X86::FCOM32m, Convert_Mem5_1, { MCK_fcoml, MCK_Mem } },
+    { X86::FCOM64m, Convert_Mem5_1, { MCK_fcomll, MCK_Mem } },
+    { X86::COMP_FST0r, Convert_Reg1_1, { MCK_fcomp, MCK_RST } },
+    { X86::FCOMP32m, Convert_Mem5_1, { MCK_fcompl, MCK_Mem } },
+    { X86::FCOMP64m, Convert_Mem5_1, { MCK_fcompll, MCK_Mem } },
     { X86::DIV_FST0r, Convert_Reg1_1, { MCK_fdiv, MCK_RST } },
     { X86::DIV_F64m, Convert_Mem5_1, { MCK_fdivl, MCK_Mem } },
     { X86::DIVR_FPrST0, Convert_Reg1_1, { MCK_fdivp, MCK_RST } },
@@ -5160,6 +6416,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::DIV_FPrST0, Convert_Reg1_1, { MCK_fdivrp, MCK_RST } },
     { X86::DIVR_F32m, Convert_Mem5_1, { MCK_fdivrs, MCK_Mem } },
     { X86::DIV_F32m, Convert_Mem5_1, { MCK_fdivs, MCK_Mem } },
+    { X86::FFREE, Convert_Reg1_1, { MCK_ffree, MCK_RST } },
     { X86::ADD_FI32m, Convert_Mem5_1, { MCK_fiaddl, MCK_Mem } },
     { X86::ADD_FI16m, Convert_Mem5_1, { MCK_fiadds, MCK_Mem } },
     { X86::FICOM32m, Convert_Mem5_1, { MCK_ficoml, MCK_Mem } },
@@ -5198,18 +6455,19 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MUL_F64m, Convert_Mem5_1, { MCK_fmull, MCK_Mem } },
     { X86::MUL_FPrST0, Convert_Reg1_1, { MCK_fmulp, MCK_RST } },
     { X86::MUL_F32m, Convert_Mem5_1, { MCK_fmuls, MCK_Mem } },
+    { X86::FSAVEm, Convert_Mem5_1, { MCK_fnsave, MCK_Mem } },
     { X86::FNSTCW16m, Convert_Mem5_1, { MCK_fnstcw, MCK_Mem } },
+    { X86::FSTENVm, Convert_Mem5_1, { MCK_fnstenv, MCK_Mem } },
+    { X86::FNSTSW8r, Convert, { MCK_fnstsw, MCK_AX } },
+    { X86::FNSTSWm, Convert_Mem5_1, { MCK_fnstsw, MCK_Mem } },
     { X86::FRSTORm, Convert_Mem5_1, { MCK_frstor, MCK_Mem } },
-    { X86::FSAVEm, Convert_Mem5_1, { MCK_fsave, MCK_Mem } },
     { X86::ST_Frr, Convert_Reg1_1, { MCK_fst, MCK_RST } },
-    { X86::FSTENVm, Convert_Mem5_1, { MCK_fstenv, MCK_Mem } },
     { X86::ST_F64m, Convert_Mem5_1, { MCK_fstl, MCK_Mem } },
     { X86::ST_FPrr, Convert_Reg1_1, { MCK_fstp, MCK_RST } },
     { X86::ST_FP64m, Convert_Mem5_1, { MCK_fstpl, MCK_Mem } },
     { X86::ST_FP32m, Convert_Mem5_1, { MCK_fstps, MCK_Mem } },
     { X86::ST_FP80m, Convert_Mem5_1, { MCK_fstpt, MCK_Mem } },
     { X86::ST_F32m, Convert_Mem5_1, { MCK_fsts, MCK_Mem } },
-    { X86::FSTSWm, Convert_Mem5_1, { MCK_fstsw, MCK_Mem } },
     { X86::SUB_FST0r, Convert_Reg1_1, { MCK_fsub, MCK_RST } },
     { X86::SUB_F64m, Convert_Mem5_1, { MCK_fsubl, MCK_Mem } },
     { X86::SUBR_FPrST0, Convert_Reg1_1, { MCK_fsubp, MCK_RST } },
@@ -5221,6 +6479,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::UCOM_Fr, Convert_Reg1_1, { MCK_fucom, MCK_RST } },
     { X86::UCOM_FPr, Convert_Reg1_1, { MCK_fucomp, MCK_RST } },
     { X86::XCH_F, Convert_Reg1_1, { MCK_fxch, MCK_RST } },
+    { X86::FXRSTOR, Convert_Mem5_1, { MCK_fxrstor, MCK_Mem } },
+    { X86::FXSAVE, Convert_Mem5_1, { MCK_fxsave, MCK_Mem } },
     { X86::IDIV8r, Convert_Reg1_1, { MCK_idivb, MCK_GR8 } },
     { X86::IDIV8m, Convert_Mem5_1, { MCK_idivb, MCK_Mem } },
     { X86::IDIV32r, Convert_Reg1_1, { MCK_idivl, MCK_GR32 } },
@@ -5241,57 +6501,66 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::INC8m, Convert_Mem5_1, { MCK_incb, MCK_Mem } },
     { X86::INC64_32r, Convert_Reg1_1Imp, { MCK_incl, MCK_GR32 } },
     { X86::INC32r, Convert_Reg1_1Imp, { MCK_incl, MCK_GR32 } },
-    { X86::INC32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
     { X86::INC64_32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
+    { X86::INC32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
     { X86::INC64r, Convert_Reg1_1Imp, { MCK_incq, MCK_GR64 } },
     { X86::INC64m, Convert_Mem5_1, { MCK_incq, MCK_Mem } },
-    { X86::INC16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
     { X86::INC64_16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
-    { X86::INC16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
+    { X86::INC16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
     { X86::INC64_16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
+    { X86::INC16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
     { X86::INT3, Convert, { MCK_int, MCK_3 } },
     { X86::INT, Convert_Imm1_1, { MCK_int, MCK_Imm } },
-    { X86::JA8, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
     { X86::JA, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
-    { X86::JAE8, Convert_Imm1_1, { MCK_jae, MCK_Imm } },
+    { X86::JA8, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
     { X86::JAE, Convert_Imm1_1, { MCK_jae, MCK_Imm } },
-    { X86::JB8, Convert_Imm1_1, { MCK_jb, MCK_Imm } },
+    { X86::JAE8, Convert_Imm1_1, { MCK_jae, MCK_Imm } },
     { X86::JB, Convert_Imm1_1, { MCK_jb, MCK_Imm } },
-    { X86::JBE, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
+    { X86::JB8, Convert_Imm1_1, { MCK_jb, MCK_Imm } },
     { X86::JBE8, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
+    { X86::JBE, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
     { X86::JCXZ8, Convert_Imm1_1, { MCK_jcxz, MCK_Imm } },
     { X86::JE, Convert_Imm1_1, { MCK_je, MCK_Imm } },
     { X86::JE8, Convert_Imm1_1, { MCK_je, MCK_Imm } },
     { X86::JG, Convert_Imm1_1, { MCK_jg, MCK_Imm } },
     { X86::JG8, Convert_Imm1_1, { MCK_jg, MCK_Imm } },
-    { X86::JGE, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
     { X86::JGE8, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
-    { X86::JL, Convert_Imm1_1, { MCK_jl, MCK_Imm } },
+    { X86::JGE, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
     { X86::JL8, Convert_Imm1_1, { MCK_jl, MCK_Imm } },
-    { X86::JLE, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
+    { X86::JL, Convert_Imm1_1, { MCK_jl, MCK_Imm } },
     { X86::JLE8, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
-    { X86::TAILJMPd, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
+    { X86::JLE, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
     { X86::JMP, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
     { X86::JMP8, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
+    { X86::TAILJMPd, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
+    { X86::JMP64pcrel32, Convert_Imm1_1, { MCK_jmpq, MCK_Imm } },
     { X86::JNE, Convert_Imm1_1, { MCK_jne, MCK_Imm } },
     { X86::JNE8, Convert_Imm1_1, { MCK_jne, MCK_Imm } },
     { X86::JNO, Convert_Imm1_1, { MCK_jno, MCK_Imm } },
     { X86::JNO8, Convert_Imm1_1, { MCK_jno, MCK_Imm } },
-    { X86::JNP, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
     { X86::JNP8, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
-    { X86::JNS, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
+    { X86::JNP, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
     { X86::JNS8, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
+    { X86::JNS, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
     { X86::JO8, Convert_Imm1_1, { MCK_jo, MCK_Imm } },
     { X86::JO, Convert_Imm1_1, { MCK_jo, MCK_Imm } },
-    { X86::JP8, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
     { X86::JP, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
-    { X86::JS, Convert_Imm1_1, { MCK_js, MCK_Imm } },
+    { X86::JP8, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
     { X86::JS8, Convert_Imm1_1, { MCK_js, MCK_Imm } },
+    { X86::JS, Convert_Imm1_1, { MCK_js, MCK_Imm } },
     { X86::LDMXCSR, Convert_Mem5_1, { MCK_ldmxcsr, MCK_Mem } },
+    { X86::LGDTm, Convert_Mem5_1, { MCK_lgdt, MCK_Mem } },
+    { X86::LIDTm, Convert_Mem5_1, { MCK_lidt, MCK_Mem } },
+    { X86::LLDT16r, Convert_Reg1_1, { MCK_lldtw, MCK_GR16 } },
+    { X86::LLDT16m, Convert_Mem5_1, { MCK_lldtw, MCK_Mem } },
+    { X86::LMSW16r, Convert_Reg1_1, { MCK_lmsww, MCK_GR16 } },
+    { X86::LMSW16m, Convert_Mem5_1, { MCK_lmsww, MCK_Mem } },
     { X86::LOOP, Convert_Imm1_1, { MCK_loop, MCK_Imm } },
     { X86::LOOPE, Convert_Imm1_1, { MCK_loope, MCK_Imm } },
     { X86::LOOPNE, Convert_Imm1_1, { MCK_loopne, MCK_Imm } },
     { X86::LRETI, Convert_Imm1_1, { MCK_lret, MCK_Imm } },
+    { X86::LTRr, Convert_Reg1_1, { MCK_ltrw, MCK_GR16 } },
+    { X86::LTRm, Convert_Mem5_1, { MCK_ltrw, MCK_Mem } },
     { X86::MUL8r, Convert_Reg1_1, { MCK_mulb, MCK_GR8 } },
     { X86::MUL8m, Convert_Mem5_1, { MCK_mulb, MCK_Mem } },
     { X86::MUL32r, Convert_Reg1_1, { MCK_mull, MCK_GR32 } },
@@ -5309,6 +6578,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::NEG16r, Convert_Reg1_1Imp, { MCK_negw, MCK_GR16 } },
     { X86::NEG16m, Convert_Mem5_1, { MCK_negw, MCK_Mem } },
     { X86::NOOPL, Convert_Mem5_1, { MCK_nopl, MCK_Mem } },
+    { X86::NOOPW, Convert_Mem5_1, { MCK_nopw, MCK_Mem } },
     { X86::NOT8r, Convert_Reg1_1Imp, { MCK_notb, MCK_GR8 } },
     { X86::NOT8m, Convert_Mem5_1, { MCK_notb, MCK_Mem } },
     { X86::NOT32r, Convert_Reg1_1Imp, { MCK_notl, MCK_GR32 } },
@@ -5317,14 +6587,20 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::NOT64m, Convert_Mem5_1, { MCK_notq, MCK_Mem } },
     { X86::NOT16r, Convert_Reg1_1Imp, { MCK_notw, MCK_GR16 } },
     { X86::NOT16m, Convert_Mem5_1, { MCK_notw, MCK_Mem } },
-    { X86::POP32rmr, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
     { X86::POP32r, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
+    { X86::POP32rmr, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
+    { X86::POPFS32, Convert, { MCK_popl, MCK_FS } },
+    { X86::POPGS32, Convert, { MCK_popl, MCK_GS } },
     { X86::POP32rmm, Convert_Mem5_1, { MCK_popl, MCK_Mem } },
-    { X86::POP64r, Convert_Reg1_1, { MCK_popq, MCK_GR64 } },
     { X86::POP64rmr, Convert_Reg1_1, { MCK_popq, MCK_GR64 } },
+    { X86::POP64r, Convert_Reg1_1, { MCK_popq, MCK_GR64 } },
+    { X86::POPFS64, Convert, { MCK_popq, MCK_FS } },
+    { X86::POPGS64, Convert, { MCK_popq, MCK_GS } },
     { X86::POP64rmm, Convert_Mem5_1, { MCK_popq, MCK_Mem } },
     { X86::POP16r, Convert_Reg1_1, { MCK_popw, MCK_GR16 } },
     { X86::POP16rmr, Convert_Reg1_1, { MCK_popw, MCK_GR16 } },
+    { X86::POPFS16, Convert, { MCK_popw, MCK_FS } },
+    { X86::POPGS16, Convert, { MCK_popw, MCK_GS } },
     { X86::POP16rmm, Convert_Mem5_1, { MCK_popw, MCK_Mem } },
     { X86::PREFETCHNTA, Convert_Mem5_1, { MCK_prefetchnta, MCK_Mem } },
     { X86::PREFETCHT0, Convert_Mem5_1, { MCK_prefetcht0, MCK_Mem } },
@@ -5332,18 +6608,24 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::PREFETCHT2, Convert_Mem5_1, { MCK_prefetcht2, MCK_Mem } },
     { X86::PUSH32r, Convert_Reg1_1, { MCK_pushl, MCK_GR32 } },
     { X86::PUSH32rmr, Convert_Reg1_1, { MCK_pushl, MCK_GR32 } },
-    { X86::PUSH32i8, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
+    { X86::PUSHFS32, Convert, { MCK_pushl, MCK_FS } },
+    { X86::PUSHGS32, Convert, { MCK_pushl, MCK_GS } },
     { X86::PUSH32i32, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
+    { X86::PUSH32i8, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
     { X86::PUSH32i16, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
     { X86::PUSH32rmm, Convert_Mem5_1, { MCK_pushl, MCK_Mem } },
-    { X86::PUSH64r, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
     { X86::PUSH64rmr, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
-    { X86::PUSH64i16, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
-    { X86::PUSH64i32, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
+    { X86::PUSH64r, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
+    { X86::PUSHFS64, Convert, { MCK_pushq, MCK_FS } },
+    { X86::PUSHGS64, Convert, { MCK_pushq, MCK_GS } },
     { X86::PUSH64i8, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
+    { X86::PUSH64i32, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
+    { X86::PUSH64i16, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
     { X86::PUSH64rmm, Convert_Mem5_1, { MCK_pushq, MCK_Mem } },
-    { X86::PUSH16rmr, Convert_Reg1_1, { MCK_pushw, MCK_GR16 } },
     { X86::PUSH16r, Convert_Reg1_1, { MCK_pushw, MCK_GR16 } },
+    { X86::PUSH16rmr, Convert_Reg1_1, { MCK_pushw, MCK_GR16 } },
+    { X86::PUSHFS16, Convert, { MCK_pushw, MCK_FS } },
+    { X86::PUSHGS16, Convert, { MCK_pushw, MCK_GS } },
     { X86::PUSH16rmm, Convert_Mem5_1, { MCK_pushw, MCK_Mem } },
     { X86::RETI, Convert_Imm1_1, { MCK_ret, MCK_Imm } },
     { X86::ROL8r1, Convert_Reg1_1Imp, { MCK_rolb, MCK_GR8 } },
@@ -5402,10 +6684,12 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SETPm, Convert_Mem5_1, { MCK_setp, MCK_Mem } },
     { X86::SETSr, Convert_Reg1_1, { MCK_sets, MCK_GR8 } },
     { X86::SETSm, Convert_Mem5_1, { MCK_sets, MCK_Mem } },
+    { X86::SGDTm, Convert_Mem5_1, { MCK_sgdt, MCK_Mem } },
     { X86::SHL8r1, Convert_Reg1_1Imp, { MCK_shlb, MCK_GR8 } },
     { X86::SHL8m1, Convert_Mem5_1, { MCK_shlb, MCK_Mem } },
     { X86::SHL32r1, Convert_Reg1_1Imp, { MCK_shll, MCK_GR32 } },
     { X86::SHL32m1, Convert_Mem5_1, { MCK_shll, MCK_Mem } },
+    { X86::SHL64r1, Convert_Reg1_1Imp, { MCK_shlq, MCK_GR64 } },
     { X86::SHL64m1, Convert_Mem5_1, { MCK_shlq, MCK_Mem } },
     { X86::SHL16r1, Convert_Reg1_1Imp, { MCK_shlw, MCK_GR16 } },
     { X86::SHL16m1, Convert_Mem5_1, { MCK_shlw, MCK_Mem } },
@@ -5414,17 +6698,37 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SHR32r1, Convert_Reg1_1Imp, { MCK_shrl, MCK_GR32 } },
     { X86::SHR32m1, Convert_Mem5_1, { MCK_shrl, MCK_Mem } },
     { X86::SHR64r1, Convert_Reg1_1Imp, { MCK_shrq, MCK_GR64 } },
-    { X86::SHL64r1, Convert_Reg1_1Imp, { MCK_shrq, MCK_GR64 } },
     { X86::SHR64m1, Convert_Mem5_1, { MCK_shrq, MCK_Mem } },
     { X86::SHR16r1, Convert_Reg1_1Imp, { MCK_shrw, MCK_GR16 } },
     { X86::SHR16m1, Convert_Mem5_1, { MCK_shrw, MCK_Mem } },
+    { X86::SIDTm, Convert_Mem5_1, { MCK_sidt, MCK_Mem } },
+    { X86::SLDT64r, Convert_Reg1_1, { MCK_sldtq, MCK_GR64 } },
+    { X86::SLDT64m, Convert_Mem5_1, { MCK_sldtq, MCK_Mem } },
+    { X86::SLDT16r, Convert_Reg1_1, { MCK_sldtw, MCK_GR16 } },
+    { X86::SLDT16m, Convert_Mem5_1, { MCK_sldtw, MCK_Mem } },
+    { X86::SMSW32r, Convert_Reg1_1, { MCK_smswl, MCK_GR32 } },
+    { X86::SMSW64r, Convert_Reg1_1, { MCK_smswq, MCK_GR64 } },
+    { X86::SMSW16r, Convert_Reg1_1, { MCK_smsww, MCK_GR16 } },
+    { X86::SMSW16m, Convert_Mem5_1, { MCK_smsww, MCK_Mem } },
     { X86::STMXCSR, Convert_Mem5_1, { MCK_stmxcsr, MCK_Mem } },
+    { X86::STRr, Convert_Reg1_1, { MCK_strw, MCK_GR16 } },
+    { X86::STRm, Convert_Mem5_1, { MCK_strw, MCK_Mem } },
+    { X86::VERRr, Convert_Reg1_1, { MCK_verr, MCK_GR16 } },
+    { X86::VERRm, Convert_Mem5_1, { MCK_verr, MCK_Mem } },
+    { X86::VERWr, Convert_Reg1_1, { MCK_verw, MCK_GR16 } },
+    { X86::VERWm, Convert_Mem5_1, { MCK_verw, MCK_Mem } },
+    { X86::VMCLEARm, Convert_Mem5_1, { MCK_vmclear, MCK_Mem } },
+    { X86::VMPTRLDm, Convert_Mem5_1, { MCK_vmptrld, MCK_Mem } },
+    { X86::VMPTRSTm, Convert_Mem5_1, { MCK_vmptrst, MCK_Mem } },
+    { X86::VMXON, Convert_Mem5_1, { MCK_vmxon, MCK_Mem } },
     { X86::ADC8rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcb, MCK_GR8, MCK_GR8 } },
+    { X86::ADC8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcb, MCK_GR8, MCK_GR8 } },
     { X86::ADC8mr, Convert_Mem5_2_Reg1_1, { MCK_adcb, MCK_GR8, MCK_Mem } },
     { X86::ADC8i8, Convert_Imm1_1, { MCK_adcb, MCK_Imm, MCK_AL } },
     { X86::ADC8ri, Convert_Reg1_2_ImpImm1_1, { MCK_adcb, MCK_Imm, MCK_GR8 } },
     { X86::ADC8mi, Convert_Mem5_2_Imm1_1, { MCK_adcb, MCK_Imm, MCK_Mem } },
     { X86::ADC8rm, Convert_Reg1_2_ImpMem5_1, { MCK_adcb, MCK_Mem, MCK_GR8 } },
+    { X86::ADC32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcl, MCK_GR32, MCK_GR32 } },
     { X86::ADC32rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcl, MCK_GR32, MCK_GR32 } },
     { X86::ADC32mr, Convert_Mem5_2_Reg1_1, { MCK_adcl, MCK_GR32, MCK_Mem } },
     { X86::ADC32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_adcl, MCK_ImmSExt8, MCK_GR32 } },
@@ -5433,6 +6737,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::ADC32ri, Convert_Reg1_2_ImpImm1_1, { MCK_adcl, MCK_Imm, MCK_GR32 } },
     { X86::ADC32mi, Convert_Mem5_2_Imm1_1, { MCK_adcl, MCK_Imm, MCK_Mem } },
     { X86::ADC32rm, Convert_Reg1_2_ImpMem5_1, { MCK_adcl, MCK_Mem, MCK_GR32 } },
+    { X86::ADC64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcq, MCK_GR64, MCK_GR32 } },
     { X86::ADC64rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcq, MCK_GR64, MCK_GR64 } },
     { X86::ADC64mr, Convert_Mem5_2_Reg1_1, { MCK_adcq, MCK_GR64, MCK_Mem } },
     { X86::ADC64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_adcq, MCK_ImmSExt8, MCK_GR64 } },
@@ -5442,6 +6747,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::ADC64mi32, Convert_Mem5_2_Imm1_1, { MCK_adcq, MCK_Imm, MCK_Mem } },
     { X86::ADC64rm, Convert_Reg1_2_ImpMem5_1, { MCK_adcq, MCK_Mem, MCK_GR64 } },
     { X86::ADC16rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcw, MCK_GR16, MCK_GR16 } },
+    { X86::ADC16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcw, MCK_GR16, MCK_GR16 } },
     { X86::ADC16mr, Convert_Mem5_2_Reg1_1, { MCK_adcw, MCK_GR16, MCK_Mem } },
     { X86::ADC16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_adcw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::ADC16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_adcw, MCK_ImmSExt8, MCK_Mem } },
@@ -5496,11 +6802,13 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::ADD16mi, Convert_Mem5_2_Imm1_1, { MCK_addw, MCK_Imm, MCK_Mem } },
     { X86::ADD16rm, Convert_Reg1_2_ImpMem5_1, { MCK_addw, MCK_Mem, MCK_GR16 } },
     { X86::AND8rr, Convert_Reg1_2_ImpReg1_1, { MCK_andb, MCK_GR8, MCK_GR8 } },
+    { X86::AND8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andb, MCK_GR8, MCK_GR8 } },
     { X86::AND8mr, Convert_Mem5_2_Reg1_1, { MCK_andb, MCK_GR8, MCK_Mem } },
     { X86::AND8i8, Convert_Imm1_1, { MCK_andb, MCK_Imm, MCK_AL } },
     { X86::AND8ri, Convert_Reg1_2_ImpImm1_1, { MCK_andb, MCK_Imm, MCK_GR8 } },
     { X86::AND8mi, Convert_Mem5_2_Imm1_1, { MCK_andb, MCK_Imm, MCK_Mem } },
     { X86::AND8rm, Convert_Reg1_2_ImpMem5_1, { MCK_andb, MCK_Mem, MCK_GR8 } },
+    { X86::AND32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andl, MCK_GR32, MCK_GR32 } },
     { X86::AND32rr, Convert_Reg1_2_ImpReg1_1, { MCK_andl, MCK_GR32, MCK_GR32 } },
     { X86::AND32mr, Convert_Mem5_2_Reg1_1, { MCK_andl, MCK_GR32, MCK_Mem } },
     { X86::AND32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_andl, MCK_ImmSExt8, MCK_GR32 } },
@@ -5509,12 +6817,12 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::AND32ri, Convert_Reg1_2_ImpImm1_1, { MCK_andl, MCK_Imm, MCK_GR32 } },
     { X86::AND32mi, Convert_Mem5_2_Imm1_1, { MCK_andl, MCK_Imm, MCK_Mem } },
     { X86::AND32rm, Convert_Reg1_2_ImpMem5_1, { MCK_andl, MCK_Mem, MCK_GR32 } },
-    { X86::ANDNPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnpd, MCK_FR32, MCK_FR32 } },
     { X86::FsANDNPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnpd, MCK_FR32, MCK_FR32 } },
+    { X86::ANDNPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnpd, MCK_FR32, MCK_FR32 } },
     { X86::FsANDNPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnpd, MCK_Mem, MCK_FR32 } },
     { X86::ANDNPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnpd, MCK_Mem, MCK_FR32 } },
-    { X86::FsANDNPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnps, MCK_FR32, MCK_FR32 } },
     { X86::ANDNPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnps, MCK_FR32, MCK_FR32 } },
+    { X86::FsANDNPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnps, MCK_FR32, MCK_FR32 } },
     { X86::FsANDNPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnps, MCK_Mem, MCK_FR32 } },
     { X86::ANDNPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnps, MCK_Mem, MCK_FR32 } },
     { X86::FsANDPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andpd, MCK_FR32, MCK_FR32 } },
@@ -5525,6 +6833,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::FsANDPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andps, MCK_FR32, MCK_FR32 } },
     { X86::ANDPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andps, MCK_Mem, MCK_FR32 } },
     { X86::FsANDPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andps, MCK_Mem, MCK_FR32 } },
+    { X86::AND64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andq, MCK_GR64, MCK_GR64 } },
     { X86::AND64rr, Convert_Reg1_2_ImpReg1_1, { MCK_andq, MCK_GR64, MCK_GR64 } },
     { X86::AND64mr, Convert_Mem5_2_Reg1_1, { MCK_andq, MCK_GR64, MCK_Mem } },
     { X86::AND64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_andq, MCK_ImmSExt8, MCK_GR64 } },
@@ -5533,6 +6842,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::AND64ri32, Convert_Reg1_2_ImpImm1_1, { MCK_andq, MCK_Imm, MCK_GR64 } },
     { X86::AND64mi32, Convert_Mem5_2_Imm1_1, { MCK_andq, MCK_Imm, MCK_Mem } },
     { X86::AND64rm, Convert_Reg1_2_ImpMem5_1, { MCK_andq, MCK_Mem, MCK_GR64 } },
+    { X86::AND16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andw, MCK_GR16, MCK_GR16 } },
     { X86::AND16rr, Convert_Reg1_2_ImpReg1_1, { MCK_andw, MCK_GR16, MCK_GR16 } },
     { X86::AND16mr, Convert_Mem5_2_Reg1_1, { MCK_andw, MCK_GR16, MCK_Mem } },
     { X86::AND16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_andw, MCK_ImmSExt8, MCK_GR16 } },
@@ -5553,119 +6863,158 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::BSR64rm, Convert_Reg1_2_Mem5_1, { MCK_bsrq, MCK_Mem, MCK_GR64 } },
     { X86::BSR16rr, Convert_Reg1_2_Reg1_1, { MCK_bsrw, MCK_GR16, MCK_GR16 } },
     { X86::BSR16rm, Convert_Reg1_2_Mem5_1, { MCK_bsrw, MCK_Mem, MCK_GR16 } },
+    { X86::BTC32rr, Convert_Reg1_2_Reg1_1, { MCK_btcl, MCK_GR32, MCK_GR32 } },
+    { X86::BTC32mr, Convert_Mem5_2_Reg1_1, { MCK_btcl, MCK_GR32, MCK_Mem } },
+    { X86::BTC32ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btcl, MCK_ImmSExt8, MCK_GR32 } },
+    { X86::BTC32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btcl, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTC64rr, Convert_Reg1_2_Reg1_1, { MCK_btcq, MCK_GR64, MCK_GR64 } },
+    { X86::BTC64mr, Convert_Mem5_2_Reg1_1, { MCK_btcq, MCK_GR64, MCK_Mem } },
+    { X86::BTC64ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btcq, MCK_ImmSExt8, MCK_GR64 } },
+    { X86::BTC64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btcq, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTC16rr, Convert_Reg1_2_Reg1_1, { MCK_btcw, MCK_GR16, MCK_GR16 } },
+    { X86::BTC16mr, Convert_Mem5_2_Reg1_1, { MCK_btcw, MCK_GR16, MCK_Mem } },
+    { X86::BTC16ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btcw, MCK_ImmSExt8, MCK_GR16 } },
+    { X86::BTC16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btcw, MCK_ImmSExt8, MCK_Mem } },
     { X86::BT32rr, Convert_Reg1_2_Reg1_1, { MCK_btl, MCK_GR32, MCK_GR32 } },
+    { X86::BT32mr, Convert_Mem5_2_Reg1_1, { MCK_btl, MCK_GR32, MCK_Mem } },
     { X86::BT32ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::BT32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btl, MCK_ImmSExt8, MCK_Mem } },
     { X86::BT64rr, Convert_Reg1_2_Reg1_1, { MCK_btq, MCK_GR64, MCK_GR64 } },
+    { X86::BT64mr, Convert_Mem5_2_Reg1_1, { MCK_btq, MCK_GR64, MCK_Mem } },
     { X86::BT64ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::BT64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btq, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTR32rr, Convert_Reg1_2_Reg1_1, { MCK_btrl, MCK_GR32, MCK_GR32 } },
+    { X86::BTR32mr, Convert_Mem5_2_Reg1_1, { MCK_btrl, MCK_GR32, MCK_Mem } },
+    { X86::BTR32ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btrl, MCK_ImmSExt8, MCK_GR32 } },
+    { X86::BTR32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btrl, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTR64rr, Convert_Reg1_2_Reg1_1, { MCK_btrq, MCK_GR64, MCK_GR64 } },
+    { X86::BTR64mr, Convert_Mem5_2_Reg1_1, { MCK_btrq, MCK_GR64, MCK_Mem } },
+    { X86::BTR64ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btrq, MCK_ImmSExt8, MCK_GR64 } },
+    { X86::BTR64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btrq, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTR16rr, Convert_Reg1_2_Reg1_1, { MCK_btrw, MCK_GR16, MCK_GR16 } },
+    { X86::BTR16mr, Convert_Mem5_2_Reg1_1, { MCK_btrw, MCK_GR16, MCK_Mem } },
+    { X86::BTR16ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btrw, MCK_ImmSExt8, MCK_GR16 } },
+    { X86::BTR16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btrw, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTS32rr, Convert_Reg1_2_Reg1_1, { MCK_btsl, MCK_GR32, MCK_GR32 } },
+    { X86::BTS32mr, Convert_Mem5_2_Reg1_1, { MCK_btsl, MCK_GR32, MCK_Mem } },
+    { X86::BTS32ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btsl, MCK_ImmSExt8, MCK_GR32 } },
+    { X86::BTS32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btsl, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTS64rr, Convert_Reg1_2_Reg1_1, { MCK_btsq, MCK_GR64, MCK_GR64 } },
+    { X86::BTS64mr, Convert_Mem5_2_Reg1_1, { MCK_btsq, MCK_GR64, MCK_Mem } },
+    { X86::BTS64ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btsq, MCK_ImmSExt8, MCK_GR64 } },
+    { X86::BTS64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btsq, MCK_ImmSExt8, MCK_Mem } },
+    { X86::BTS16rr, Convert_Reg1_2_Reg1_1, { MCK_btsw, MCK_GR16, MCK_GR16 } },
+    { X86::BTS16mr, Convert_Mem5_2_Reg1_1, { MCK_btsw, MCK_GR16, MCK_Mem } },
+    { X86::BTS16ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btsw, MCK_ImmSExt8, MCK_GR16 } },
+    { X86::BTS16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btsw, MCK_ImmSExt8, MCK_Mem } },
     { X86::BT16rr, Convert_Reg1_2_Reg1_1, { MCK_btw, MCK_GR16, MCK_GR16 } },
+    { X86::BT16mr, Convert_Mem5_2_Reg1_1, { MCK_btw, MCK_GR16, MCK_Mem } },
     { X86::BT16ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_btw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::BT16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_btw, MCK_ImmSExt8, MCK_Mem } },
     { X86::CALL32r, Convert_Reg1_2, { MCK_call, MCK__STAR_, MCK_GR32 } },
-    { X86::CALL64r, Convert_Reg1_2, { MCK_call, MCK__STAR_, MCK_GR64 } },
     { X86::WINCALL64r, Convert_Reg1_2, { MCK_call, MCK__STAR_, MCK_GR64 } },
-    { X86::CALL64m, Convert_Mem5_2, { MCK_call, MCK__STAR_, MCK_Mem } },
-    { X86::WINCALL64m, Convert_Mem5_2, { MCK_call, MCK__STAR_, MCK_Mem } },
     { X86::CALL32m, Convert_Mem5_2, { MCK_call, MCK__STAR_, MCK_Mem } },
-    { X86::CMOVA16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmova, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVA32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmova, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVA64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmova, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVA16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmova, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVA32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmova, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVA64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmova, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVAE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovae, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVAE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovae, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVAE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovae, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVAE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovae, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVAE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovae, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVAE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovae, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovb, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovb, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovb, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVB16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovb, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVB32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovb, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVB64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovb, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVBE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbe, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVBE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbe, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVBE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbe, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVBE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbe, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVBE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbe, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVBE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbe, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmove, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmove, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmove, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmove, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmove, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmove, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVG16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovg, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVG32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovg, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVG64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovg, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVG16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovg, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVG32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovg, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVG64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovg, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVGE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovge, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVGE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovge, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVGE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovge, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVGE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovge, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVGE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovge, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVGE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovge, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVL16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovl, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVL32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovl, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVL64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovl, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVL16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovl, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVL32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovl, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVL64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovl, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVLE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovle, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVLE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovle, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVLE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovle, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVLE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovle, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVLE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovle, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVLE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovle, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVNE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovne, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVNE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovne, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVNE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovne, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVNE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovne, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVNE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovne, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVNE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovne, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVNO16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovno, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVNO32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovno, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVNO64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovno, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVNO16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovno, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVNO32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovno, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVNO64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovno, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVNP16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnp, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVNP32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnp, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVNP64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnp, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVNP16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnp, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVNP32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnp, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVNP64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnp, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVNS16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovns, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVNS32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovns, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVNS64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovns, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVNS16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovns, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVNS32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovns, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVNS64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovns, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVO16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovo, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVO32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovo, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVO64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovo, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVO16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovo, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVO32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovo, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVO64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovo, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVP16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovp, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVP32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovp, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVP64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovp, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVP16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovp, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVP32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovp, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVP64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovp, MCK_Mem, MCK_GR64 } },
-    { X86::CMOVS16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovs, MCK_GR16, MCK_GR16 } },
-    { X86::CMOVS32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovs, MCK_GR32, MCK_GR32 } },
-    { X86::CMOVS64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovs, MCK_GR64, MCK_GR64 } },
-    { X86::CMOVS16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovs, MCK_Mem, MCK_GR16 } },
-    { X86::CMOVS32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovs, MCK_Mem, MCK_GR32 } },
-    { X86::CMOVS64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovs, MCK_Mem, MCK_GR64 } },
-    { X86::CMP8mrmrr, Convert_Reg1_2_Reg1_1, { MCK_cmpb, MCK_GR8, MCK_GR8 } },
+    { X86::WINCALL64m, Convert_Mem5_2, { MCK_call, MCK__STAR_, MCK_Mem } },
+    { X86::CALL64r, Convert_Reg1_2, { MCK_callq, MCK__STAR_, MCK_GR64 } },
+    { X86::CALL64m, Convert_Mem5_2, { MCK_callq, MCK__STAR_, MCK_Mem } },
+    { X86::CMOVAE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovael, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVAE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovael, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVAE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovaeq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVAE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovaeq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVAE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovaew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVAE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovaew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVA32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmoval, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVA32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmoval, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVA64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovaq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVA64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovaq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVA16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovaw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVA16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovaw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVBE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbel, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVBE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbel, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVBE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbeq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVBE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbeq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVBE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVBE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVB32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVB64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovbw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVB16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovbw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovel, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovel, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmoveq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmoveq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVGE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgel, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVGE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgel, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVGE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgeq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVGE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgeq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVGE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVGE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVG32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVG32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVG64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVG64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVG16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovgw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVG16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovgw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVLE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovlel, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVLE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovlel, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVLE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovleq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVLE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovleq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVLE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovlew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVLE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovlew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVL32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovll, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVL32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovll, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVL64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovlq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVL64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovlq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVL16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovlw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVL16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovlw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVNE32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnel, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVNE32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnel, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVNE64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovneq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVNE64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovneq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVNE16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnew, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVNE16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnew, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVNO32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnol, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVNO32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnol, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVNO64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnoq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVNO64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnoq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVNO16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnow, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVNO16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnow, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVNP32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnpl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVNP32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnpl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVNP64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnpq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVNP64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnpq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVNP16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnpw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVNP16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnpw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVNS32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnsl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVNS32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnsl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVNS64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnsq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVNS64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnsq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVNS16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovnsw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVNS16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovnsw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVO32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovol, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVO32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovol, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVO64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovoq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVO64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovoq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVO16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovow, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVO16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovow, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVP32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovpl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVP32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovpl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVP64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovpq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVP64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovpq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVP16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovpw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVP16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovpw, MCK_Mem, MCK_GR16 } },
+    { X86::CMOVS32rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovsl, MCK_GR32, MCK_GR32 } },
+    { X86::CMOVS32rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovsl, MCK_Mem, MCK_GR32 } },
+    { X86::CMOVS64rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovsq, MCK_GR64, MCK_GR64 } },
+    { X86::CMOVS64rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovsq, MCK_Mem, MCK_GR64 } },
+    { X86::CMOVS16rr, Convert_Reg1_2_ImpReg1_1, { MCK_cmovsw, MCK_GR16, MCK_GR16 } },
+    { X86::CMOVS16rm, Convert_Reg1_2_ImpMem5_1, { MCK_cmovsw, MCK_Mem, MCK_GR16 } },
     { X86::CMP8rr, Convert_Reg1_2_Reg1_1, { MCK_cmpb, MCK_GR8, MCK_GR8 } },
+    { X86::CMP8mrmrr, Convert_Reg1_2_Reg1_1, { MCK_cmpb, MCK_GR8, MCK_GR8 } },
     { X86::CMP8mr, Convert_Mem5_2_Reg1_1, { MCK_cmpb, MCK_GR8, MCK_Mem } },
     { X86::CMP8i8, Convert_Imm1_1, { MCK_cmpb, MCK_Imm, MCK_AL } },
     { X86::CMP8ri, Convert_Reg1_2_Imm1_1, { MCK_cmpb, MCK_Imm, MCK_GR8 } },
@@ -5698,15 +7047,25 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CMP16ri, Convert_Reg1_2_Imm1_1, { MCK_cmpw, MCK_Imm, MCK_GR16 } },
     { X86::CMP16mi, Convert_Mem5_2_Imm1_1, { MCK_cmpw, MCK_Imm, MCK_Mem } },
     { X86::CMP16rm, Convert_Reg1_2_Mem5_1, { MCK_cmpw, MCK_Mem, MCK_GR16 } },
+    { X86::CMPXCHG8rr, Convert_Reg1_2_Reg1_1, { MCK_cmpxchgb, MCK_GR8, MCK_GR8 } },
+    { X86::CMPXCHG8rm, Convert_Mem5_2_Reg1_1, { MCK_cmpxchgb, MCK_GR8, MCK_Mem } },
+    { X86::CMPXCHG32rr, Convert_Reg1_2_Reg1_1, { MCK_cmpxchgl, MCK_GR32, MCK_GR32 } },
+    { X86::CMPXCHG32rm, Convert_Mem5_2_Reg1_1, { MCK_cmpxchgl, MCK_GR32, MCK_Mem } },
+    { X86::CMPXCHG64rr, Convert_Reg1_2_Reg1_1, { MCK_cmpxchgq, MCK_GR64, MCK_GR64 } },
+    { X86::CMPXCHG64rm, Convert_Mem5_2_Reg1_1, { MCK_cmpxchgq, MCK_GR64, MCK_Mem } },
+    { X86::CMPXCHG16rr, Convert_Reg1_2_Reg1_1, { MCK_cmpxchgw, MCK_GR16, MCK_GR16 } },
+    { X86::CMPXCHG16rm, Convert_Mem5_2_Reg1_1, { MCK_cmpxchgw, MCK_GR16, MCK_Mem } },
     { X86::COMISDrr, Convert_Reg1_2_Reg1_1, { MCK_comisd, MCK_FR32, MCK_FR32 } },
     { X86::COMISDrm, Convert_Reg1_2_Mem5_1, { MCK_comisd, MCK_Mem, MCK_FR32 } },
+    { X86::COMISSrr, Convert_Reg1_2_Reg1_1, { MCK_comiss, MCK_FR32, MCK_FR32 } },
+    { X86::COMISSrm, Convert_Reg1_2_Mem5_1, { MCK_comiss, MCK_Mem, MCK_FR32 } },
     { X86::CRC32r8, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR8, MCK_GR32 } },
     { X86::CRC32r16, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR16, MCK_GR32 } },
     { X86::CRC32r32, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR32, MCK_GR32 } },
     { X86::CRC64r64, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR64, MCK_GR64 } },
-    { X86::CRC32m8, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
-    { X86::CRC32m32, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
     { X86::CRC32m16, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
+    { X86::CRC32m32, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
+    { X86::CRC32m8, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
     { X86::CRC64m64, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR64 } },
     { X86::CVTDQ2PDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtdq2pd, MCK_FR32, MCK_FR32 } },
     { X86::CVTDQ2PDrm, Convert_Reg1_2_Mem5_1, { MCK_cvtdq2pd, MCK_Mem, MCK_FR32 } },
@@ -5716,14 +7075,20 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CVTPD2DQrm, Convert_Reg1_2_Mem5_1, { MCK_cvtpd2dq, MCK_Mem, MCK_FR32 } },
     { X86::MMX_CVTPD2PIrr, Convert_Reg1_2_Reg1_1, { MCK_cvtpd2pi, MCK_FR32, MCK_VR64 } },
     { X86::MMX_CVTPD2PIrm, Convert_Reg1_2_Mem5_1, { MCK_cvtpd2pi, MCK_Mem, MCK_VR64 } },
+    { X86::CVTPD2PSrr, Convert_Reg1_2_Reg1_1, { MCK_cvtpd2ps, MCK_FR32, MCK_FR32 } },
+    { X86::CVTPD2PSrm, Convert_Reg1_2_Mem5_1, { MCK_cvtpd2ps, MCK_Mem, MCK_FR32 } },
     { X86::MMX_CVTPI2PDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtpi2pd, MCK_VR64, MCK_FR32 } },
     { X86::MMX_CVTPI2PDrm, Convert_Reg1_2_Mem5_1, { MCK_cvtpi2pd, MCK_Mem, MCK_FR32 } },
     { X86::MMX_CVTPI2PSrr, Convert_Reg1_2_Reg1_1, { MCK_cvtpi2ps, MCK_VR64, MCK_FR32 } },
     { X86::MMX_CVTPI2PSrm, Convert_Reg1_2_Mem5_1, { MCK_cvtpi2ps, MCK_Mem, MCK_FR32 } },
     { X86::CVTPS2DQrr, Convert_Reg1_2_Reg1_1, { MCK_cvtps2dq, MCK_FR32, MCK_FR32 } },
     { X86::CVTPS2DQrm, Convert_Reg1_2_Mem5_1, { MCK_cvtps2dq, MCK_Mem, MCK_FR32 } },
+    { X86::CVTPS2PDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtps2pd, MCK_FR32, MCK_FR32 } },
+    { X86::CVTPS2PDrm, Convert_Reg1_2_Mem5_1, { MCK_cvtps2pd, MCK_Mem, MCK_FR32 } },
     { X86::MMX_CVTPS2PIrr, Convert_Reg1_2_Reg1_1, { MCK_cvtps2pi, MCK_FR32, MCK_VR64 } },
     { X86::MMX_CVTPS2PIrm, Convert_Reg1_2_Mem5_1, { MCK_cvtps2pi, MCK_Mem, MCK_VR64 } },
+    { X86::CVTSD2SI64rr, Convert_Reg1_2_Reg1_1, { MCK_cvtsd2siq, MCK_FR32, MCK_GR64 } },
+    { X86::CVTSD2SI64rm, Convert_Reg1_2_Mem5_1, { MCK_cvtsd2siq, MCK_Mem, MCK_GR64 } },
     { X86::CVTSD2SSrr, Convert_Reg1_2_Reg1_1, { MCK_cvtsd2ss, MCK_FR32, MCK_FR32 } },
     { X86::CVTSD2SSrm, Convert_Reg1_2_Mem5_1, { MCK_cvtsd2ss, MCK_Mem, MCK_FR32 } },
     { X86::CVTSI2SDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtsi2sd, MCK_GR32, MCK_FR32 } },
@@ -5736,8 +7101,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CVTSI2SS64rm, Convert_Reg1_2_Mem5_1, { MCK_cvtsi2ssq, MCK_Mem, MCK_FR32 } },
     { X86::CVTSS2SDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtss2sd, MCK_FR32, MCK_FR32 } },
     { X86::CVTSS2SDrm, Convert_Reg1_2_Mem5_1, { MCK_cvtss2sd, MCK_Mem, MCK_FR32 } },
+    { X86::CVTSS2SIrr, Convert_Reg1_2_Reg1_1, { MCK_cvtss2sil, MCK_FR32, MCK_GR32 } },
+    { X86::CVTSS2SIrm, Convert_Reg1_2_Mem5_1, { MCK_cvtss2sil, MCK_Mem, MCK_GR32 } },
+    { X86::CVTSS2SI64rr, Convert_Reg1_2_Reg1_1, { MCK_cvtss2siq, MCK_FR32, MCK_GR64 } },
+    { X86::CVTSS2SI64rm, Convert_Reg1_2_Mem5_1, { MCK_cvtss2siq, MCK_Mem, MCK_GR64 } },
     { X86::MMX_CVTTPD2PIrr, Convert_Reg1_2_Reg1_1, { MCK_cvttpd2pi, MCK_FR32, MCK_VR64 } },
     { X86::MMX_CVTTPD2PIrm, Convert_Reg1_2_Mem5_1, { MCK_cvttpd2pi, MCK_Mem, MCK_VR64 } },
+    { X86::CVTTPS2DQrr, Convert_Reg1_2_Reg1_1, { MCK_cvttps2dq, MCK_FR32, MCK_FR32 } },
+    { X86::CVTTPS2DQrm, Convert_Reg1_2_Mem5_1, { MCK_cvttps2dq, MCK_Mem, MCK_FR32 } },
     { X86::MMX_CVTTPS2PIrr, Convert_Reg1_2_Reg1_1, { MCK_cvttps2pi, MCK_FR32, MCK_VR64 } },
     { X86::MMX_CVTTPS2PIrm, Convert_Reg1_2_Mem5_1, { MCK_cvttps2pi, MCK_Mem, MCK_VR64 } },
     { X86::CVTTSD2SIrr, Convert_Reg1_2_Reg1_1, { MCK_cvttsd2si, MCK_FR32, MCK_GR32 } },
@@ -5766,6 +7137,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CMOVNE_F, Convert_Reg1_1, { MCK_fcmovne, MCK_RST, MCK_ST0 } },
     { X86::CMOVNP_F, Convert_Reg1_1, { MCK_fcmovnu, MCK_RST, MCK_ST0 } },
     { X86::CMOVP_F, Convert_Reg1_1, { MCK_fcmovu, MCK_RST, MCK_ST0 } },
+    { X86::COM_FIr, Convert_Reg1_1, { MCK_fcomi, MCK_RST, MCK_ST0 } },
+    { X86::COM_FIPr, Convert_Reg1_1, { MCK_fcomip, MCK_RST, MCK_ST0 } },
     { X86::DIVR_FrST0, Convert_Reg1_2, { MCK_fdiv, MCK_ST0, MCK_RST } },
     { X86::DIV_FrST0, Convert_Reg1_2, { MCK_fdivr, MCK_ST0, MCK_RST } },
     { X86::MUL_FrST0, Convert_Reg1_2, { MCK_fmul, MCK_ST0, MCK_RST } },
@@ -5794,8 +7167,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::IN16rr, Convert, { MCK_inw, MCK_DX, MCK_AX } },
     { X86::IN16ri, Convert_ImmSExt81_1, { MCK_inw, MCK_ImmSExt8, MCK_AX } },
     { X86::TAILJMPm, Convert_Mem5_2, { MCK_jmp, MCK__STAR_, MCK_Mem } },
-    { X86::TAILJMPr, Convert_Reg1_2, { MCK_jmpl, MCK__STAR_, MCK_GR32 } },
     { X86::JMP32r, Convert_Reg1_2, { MCK_jmpl, MCK__STAR_, MCK_GR32 } },
+    { X86::TAILJMPr, Convert_Reg1_2, { MCK_jmpl, MCK__STAR_, MCK_GR32 } },
     { X86::JMP32m, Convert_Mem5_2, { MCK_jmpl, MCK__STAR_, MCK_Mem } },
     { X86::TAILJMPr64, Convert_Reg1_2, { MCK_jmpq, MCK__STAR_, MCK_GR64 } },
     { X86::JMP64r, Convert_Reg1_2, { MCK_jmpq, MCK__STAR_, MCK_GR64 } },
@@ -5812,19 +7185,38 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::FARCALL16m, Convert_Mem5_2, { MCK_lcallw, MCK__STAR_, MCK_Mem } },
     { X86::FARCALL16i, Convert_Imm1_1_Imm1_2, { MCK_lcallw, MCK_Imm, MCK_Imm } },
     { X86::LDDQUrm, Convert_Reg1_2_Mem5_1, { MCK_lddqu, MCK_Mem, MCK_FR32 } },
+    { X86::LDS32rm, Convert_Reg1_2_Mem5_1, { MCK_ldsl, MCK_Mem, MCK_GR32 } },
+    { X86::LDS16rm, Convert_Reg1_2_Mem5_1, { MCK_ldsw, MCK_Mem, MCK_GR16 } },
     { X86::LEA64_32r, Convert_Reg1_2_Mem4_1, { MCK_leal, MCK_Mem, MCK_GR32 } },
     { X86::LEA32r, Convert_Reg1_2_Mem4_1, { MCK_leal, MCK_Mem, MCK_GR32 } },
     { X86::LEA64r, Convert_Reg1_2_Mem4_1, { MCK_leaq, MCK_Mem, MCK_GR64 } },
     { X86::LEA16r, Convert_Reg1_2_Mem4_1, { MCK_leaw, MCK_Mem, MCK_GR16 } },
+    { X86::LES32rm, Convert_Reg1_2_Mem5_1, { MCK_lesl, MCK_Mem, MCK_GR32 } },
+    { X86::LES16rm, Convert_Reg1_2_Mem5_1, { MCK_lesw, MCK_Mem, MCK_GR16 } },
+    { X86::LFS32rm, Convert_Reg1_2_Mem5_1, { MCK_lfsl, MCK_Mem, MCK_GR32 } },
+    { X86::LFS64rm, Convert_Reg1_2_Mem5_1, { MCK_lfsq, MCK_Mem, MCK_GR64 } },
+    { X86::LFS16rm, Convert_Reg1_2_Mem5_1, { MCK_lfsw, MCK_Mem, MCK_GR16 } },
+    { X86::LGS32rm, Convert_Reg1_2_Mem5_1, { MCK_lgsl, MCK_Mem, MCK_GR32 } },
+    { X86::LGS64rm, Convert_Reg1_2_Mem5_1, { MCK_lgsq, MCK_Mem, MCK_GR64 } },
+    { X86::LGS16rm, Convert_Reg1_2_Mem5_1, { MCK_lgsw, MCK_Mem, MCK_GR16 } },
     { X86::FARJMP32m, Convert_Mem5_2, { MCK_ljmpl, MCK__STAR_, MCK_Mem } },
     { X86::FARJMP32i, Convert_Imm1_1_Imm1_2, { MCK_ljmpl, MCK_Imm, MCK_Imm } },
     { X86::FARJMP64, Convert_Mem5_2, { MCK_ljmpq, MCK__STAR_, MCK_Mem } },
     { X86::FARJMP16m, Convert_Mem5_2, { MCK_ljmpw, MCK__STAR_, MCK_Mem } },
     { X86::FARJMP16i, Convert_Imm1_1_Imm1_2, { MCK_ljmpw, MCK_Imm, MCK_Imm } },
-    { X86::MASKMOVDQU, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
+    { X86::LSL32rr, Convert_Reg1_2_Reg1_1, { MCK_lsll, MCK_GR32, MCK_GR32 } },
+    { X86::LSL32rm, Convert_Reg1_2_Mem5_1, { MCK_lsll, MCK_Mem, MCK_GR32 } },
+    { X86::LSL64rr, Convert_Reg1_2_Reg1_1, { MCK_lslq, MCK_GR64, MCK_GR64 } },
+    { X86::LSL64rm, Convert_Reg1_2_Mem5_1, { MCK_lslq, MCK_Mem, MCK_GR64 } },
+    { X86::LSL16rr, Convert_Reg1_2_Reg1_1, { MCK_lslw, MCK_GR16, MCK_GR16 } },
+    { X86::LSL16rm, Convert_Reg1_2_Mem5_1, { MCK_lslw, MCK_Mem, MCK_GR16 } },
+    { X86::LSS32rm, Convert_Reg1_2_Mem5_1, { MCK_lssl, MCK_Mem, MCK_GR32 } },
+    { X86::LSS64rm, Convert_Reg1_2_Mem5_1, { MCK_lssq, MCK_Mem, MCK_GR64 } },
+    { X86::LSS16rm, Convert_Reg1_2_Mem5_1, { MCK_lssw, MCK_Mem, MCK_GR16 } },
     { X86::MASKMOVDQU64, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
-    { X86::MMX_MASKMOVQ64, Convert_Reg1_2_Reg1_1, { MCK_maskmovq, MCK_VR64, MCK_VR64 } },
+    { X86::MASKMOVDQU, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
     { X86::MMX_MASKMOVQ, Convert_Reg1_2_Reg1_1, { MCK_maskmovq, MCK_VR64, MCK_VR64 } },
+    { X86::MMX_MASKMOVQ64, Convert_Reg1_2_Reg1_1, { MCK_maskmovq, MCK_VR64, MCK_VR64 } },
     { X86::MAXPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_maxpd, MCK_FR32, MCK_FR32 } },
     { X86::MAXPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_maxpd, MCK_Mem, MCK_FR32 } },
     { X86::MAXPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_maxps, MCK_FR32, MCK_FR32 } },
@@ -5855,6 +7247,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOV8ao8, Convert_Imm1_2, { MCK_movb, MCK_AL, MCK_Imm } },
     { X86::MOV8rr_NOREX, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8_NOREX, MCK_GR8_NOREX } },
     { X86::MOV8mr_NOREX, Convert_Mem5_2_Reg1_1, { MCK_movb, MCK_GR8_NOREX, MCK_Mem } },
+    { X86::MOV8rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_GR8 } },
     { X86::MOV8rr, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_GR8 } },
     { X86::MOV8mr, Convert_Mem5_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_Mem } },
     { X86::MOV8o8a, Convert_Imm1_1, { MCK_movb, MCK_Imm, MCK_AL } },
@@ -5865,13 +7258,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MMX_MOVZDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_VR64 } },
     { X86::MMX_MOVD64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_VR64 } },
     { X86::MOVDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
-    { X86::MOVDI2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
     { X86::MOVZDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
+    { X86::MOVDI2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
     { X86::MMX_MOVD64rrv164, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_VR64 } },
     { X86::MMX_MOVD64to64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_VR64 } },
     { X86::MOV64toSDrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
     { X86::MOV64toPQIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
     { X86::MOVZQI2PQIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
+    { X86::MMX_MOVD64grr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_GR32 } },
     { X86::MMX_MOVD64from64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_GR64 } },
     { X86::MMX_MOVD64mr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_Mem } },
     { X86::MOVSS2DIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR32 } },
@@ -5880,8 +7274,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVPQIto64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR64 } },
     { X86::MOVPDI2DImr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_Mem } },
     { X86::MOVSS2DImr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_Mem } },
-    { X86::MMX_MOVZDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
     { X86::MMX_MOVD64rm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
+    { X86::MMX_MOVZDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
     { X86::MOVZDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
     { X86::MOVDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
     { X86::MOVDI2SSrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
@@ -5900,7 +7294,10 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVHPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_movhps, MCK_Mem, MCK_FR32 } },
     { X86::MOV32ao32, Convert_Imm1_2, { MCK_movl, MCK_EAX, MCK_Imm } },
     { X86::MOV32rr, Convert_Reg1_2_Reg1_1, { MCK_movl, MCK_GR32, MCK_GR32 } },
+    { X86::MOV32rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movl, MCK_GR32, MCK_GR32 } },
+    { X86::MOV32dr, Convert_Reg1_2_Reg1_1, { MCK_movl, MCK_GR32, MCK_DEBUG_REG } },
     { X86::MOV32mr, Convert_Mem5_2_Reg1_1, { MCK_movl, MCK_GR32, MCK_Mem } },
+    { X86::MOV32rd, Convert_Reg1_2_Reg1_1, { MCK_movl, MCK_DEBUG_REG, MCK_GR32 } },
     { X86::MOV32o32a, Convert_Imm1_1, { MCK_movl, MCK_Imm, MCK_EAX } },
     { X86::MOV32ri, Convert_Reg1_2_Imm1_1, { MCK_movl, MCK_Imm, MCK_GR32 } },
     { X86::MOV32mi, Convert_Mem5_2_Imm1_1, { MCK_movl, MCK_Imm, MCK_Mem } },
@@ -5918,58 +7315,73 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVNTPDmr, Convert_Mem5_2_Reg1_1, { MCK_movntpd, MCK_FR32, MCK_Mem } },
     { X86::MOVNTPSmr, Convert_Mem5_2_Reg1_1, { MCK_movntps, MCK_FR32, MCK_Mem } },
     { X86::MMX_MOVNTQmr, Convert_Mem5_2_Reg1_1, { MCK_movntq, MCK_VR64, MCK_Mem } },
+    { X86::MOV32cr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR32, MCK_CONTROL_REG_32 } },
+    { X86::MOV64ao64, Convert_Imm1_2, { MCK_movq, MCK_RAX, MCK_Imm } },
     { X86::MOV64ao8, Convert_Imm1_2, { MCK_movq, MCK_RAX, MCK_Imm } },
-    { X86::MOV64ao32, Convert_Imm1_2, { MCK_movq, MCK_RAX, MCK_Imm } },
+    { X86::MOV64rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_GR64 } },
     { X86::MOV64rr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_GR64 } },
+    { X86::MOV64sr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_SEGMENT_REG } },
+    { X86::MOV64dr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_DEBUG_REG } },
+    { X86::MOV64cr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_CONTROL_REG_64 } },
     { X86::MOV64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_Mem } },
     { X86::MMX_MOVQ64rr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_VR64 } },
+    { X86::MMX_MOVQ64gmr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_Mem } },
     { X86::MMX_MOVQ64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_Mem } },
     { X86::MOVZPQILo2PQIrr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_FR32 } },
+    { X86::MOVQxrxr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_FR32 } },
+    { X86::MOVLQ128mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
     { X86::MOVSDto64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
     { X86::MOVPQI2QImr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
-    { X86::MOVLQ128mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
+    { X86::MOV64rs, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_SEGMENT_REG, MCK_GR64 } },
+    { X86::MOV64ms, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_SEGMENT_REG, MCK_Mem } },
+    { X86::MOV64rd, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_DEBUG_REG, MCK_GR64 } },
+    { X86::MOV32rc, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_CONTROL_REG_32, MCK_GR32 } },
+    { X86::MOV64rc, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_CONTROL_REG_64, MCK_GR64 } },
     { X86::MOV64o8a, Convert_Imm1_1, { MCK_movq, MCK_Imm, MCK_RAX } },
-    { X86::MOV64o32a, Convert_Imm1_1, { MCK_movq, MCK_Imm, MCK_RAX } },
+    { X86::MOV64o64a, Convert_Imm1_1, { MCK_movq, MCK_Imm, MCK_RAX } },
     { X86::MOV64ri32, Convert_Reg1_2_Imm1_1, { MCK_movq, MCK_Imm, MCK_GR64 } },
     { X86::MOV64mi32, Convert_Mem5_2_Imm1_1, { MCK_movq, MCK_Imm, MCK_Mem } },
     { X86::MOV64rm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_GR64 } },
     { X86::MMX_MOVQ64rm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_VR64 } },
-    { X86::MOV64toSDrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
     { X86::MOVQI2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
-    { X86::MOVZQI2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
+    { X86::MOV64toSDrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
     { X86::MOVZPQILo2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
-    { X86::MMX_MOVQ2DQrr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
+    { X86::MOVZQI2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
+    { X86::MOV64sm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_SEGMENT_REG } },
     { X86::MMX_MOVQ2FR64rr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
+    { X86::MMX_MOVQ2DQrr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
     { X86::MOVSX32rr8, Convert_Reg1_2_Reg1_1, { MCK_movsbl, MCK_GR8, MCK_GR32 } },
     { X86::MOVSX32rm8, Convert_Reg1_2_Mem5_1, { MCK_movsbl, MCK_Mem, MCK_GR32 } },
     { X86::MOVSX64rr8, Convert_Reg1_2_Reg1_1, { MCK_movsbq, MCK_GR8, MCK_GR64 } },
     { X86::MOVSX64rm8, Convert_Reg1_2_Mem5_1, { MCK_movsbq, MCK_Mem, MCK_GR64 } },
+    { X86::MOVSX16rr8W, Convert_Reg1_2_Reg1_1, { MCK_movsbw, MCK_GR8, MCK_GR16 } },
+    { X86::MOVSX16rm8W, Convert_Reg1_2_Mem5_1, { MCK_movsbw, MCK_Mem, MCK_GR16 } },
     { X86::MOVSDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPD2SDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLSD2PDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVLPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
+    { X86::MOVLSD2PDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVSD2PDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPD2SDmr, Convert_Mem5_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
+    { X86::MOVPD2SDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVSDmr, Convert_Mem5_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
-    { X86::MOVSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
-    { X86::MOVSDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
+    { X86::MOVPD2SDmr, Convert_Mem5_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
     { X86::MOVZSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
+    { X86::MOVSDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
+    { X86::MOVSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVSHDUPrr, Convert_Reg1_2_Reg1_1, { MCK_movshdup, MCK_FR32, MCK_FR32 } },
     { X86::MOVSHDUPrm, Convert_Reg1_2_Mem5_1, { MCK_movshdup, MCK_Mem, MCK_FR32 } },
     { X86::MOVSLDUPrr, Convert_Reg1_2_Reg1_1, { MCK_movsldup, MCK_FR32, MCK_FR32 } },
     { X86::MOVSLDUPrm, Convert_Reg1_2_Mem5_1, { MCK_movsldup, MCK_Mem, MCK_FR32 } },
     { X86::MOVSX64rr32, Convert_Reg1_2_Reg1_1, { MCK_movslq, MCK_GR32, MCK_GR64 } },
     { X86::MOVSX64rm32, Convert_Reg1_2_Mem5_1, { MCK_movslq, MCK_Mem, MCK_GR64 } },
-    { X86::MOVSS2PSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLSS2PSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVPS2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSSmr, Convert_Mem5_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
+    { X86::MOVSS2PSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
+    { X86::MOVLSS2PSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
+    { X86::MOVLPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
+    { X86::MOVSSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVPS2SSmr, Convert_Mem5_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
+    { X86::MOVSSmr, Convert_Mem5_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
+    { X86::MOVZSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
-    { X86::MOVZSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSX32rr16, Convert_Reg1_2_Reg1_1, { MCK_movswl, MCK_GR16, MCK_GR32 } },
     { X86::MOVSX32rm16, Convert_Reg1_2_Mem5_1, { MCK_movswl, MCK_Mem, MCK_GR32 } },
     { X86::MOVSX64rr16, Convert_Reg1_2_Reg1_1, { MCK_movswq, MCK_GR16, MCK_GR64 } },
@@ -5982,25 +7394,28 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVUPSrm, Convert_Reg1_2_Mem5_1, { MCK_movups, MCK_Mem, MCK_FR32 } },
     { X86::MOV16ao16, Convert_Imm1_2, { MCK_movw, MCK_AX, MCK_Imm } },
     { X86::MOV16rr, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_GR16, MCK_GR16 } },
+    { X86::MOV16rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_GR16, MCK_GR16 } },
     { X86::MOV16sr, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_GR16, MCK_SEGMENT_REG } },
     { X86::MOV16mr, Convert_Mem5_2_Reg1_1, { MCK_movw, MCK_GR16, MCK_Mem } },
-    { X86::MOV64sr, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_GR64, MCK_SEGMENT_REG } },
     { X86::MOV16rs, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_SEGMENT_REG, MCK_GR16 } },
-    { X86::MOV64rs, Convert_Reg1_2_Reg1_1, { MCK_movw, MCK_SEGMENT_REG, MCK_GR64 } },
     { X86::MOV16ms, Convert_Mem5_2_Reg1_1, { MCK_movw, MCK_SEGMENT_REG, MCK_Mem } },
-    { X86::MOV64ms, Convert_Mem5_2_Reg1_1, { MCK_movw, MCK_SEGMENT_REG, MCK_Mem } },
     { X86::MOV16o16a, Convert_Imm1_1, { MCK_movw, MCK_Imm, MCK_AX } },
     { X86::MOV16ri, Convert_Reg1_2_Imm1_1, { MCK_movw, MCK_Imm, MCK_GR16 } },
     { X86::MOV16mi, Convert_Mem5_2_Imm1_1, { MCK_movw, MCK_Imm, MCK_Mem } },
     { X86::MOV16rm, Convert_Reg1_2_Mem5_1, { MCK_movw, MCK_Mem, MCK_GR16 } },
     { X86::MOV16sm, Convert_Reg1_2_Mem5_1, { MCK_movw, MCK_Mem, MCK_SEGMENT_REG } },
-    { X86::MOV64sm, Convert_Reg1_2_Mem5_1, { MCK_movw, MCK_Mem, MCK_SEGMENT_REG } },
     { X86::MOVZX32_NOREXrr8, Convert_Reg1_2_Reg1_1, { MCK_movzbl, MCK_GR8, MCK_GR32_NOREX } },
     { X86::MOVZX32rr8, Convert_Reg1_2_Reg1_1, { MCK_movzbl, MCK_GR8, MCK_GR32 } },
     { X86::MOVZX32_NOREXrm8, Convert_Reg1_2_Mem5_1, { MCK_movzbl, MCK_Mem, MCK_GR32_NOREX } },
     { X86::MOVZX32rm8, Convert_Reg1_2_Mem5_1, { MCK_movzbl, MCK_Mem, MCK_GR32 } },
+    { X86::MOVZX64rr8_Q, Convert_Reg1_2_Reg1_1, { MCK_movzbq, MCK_GR8, MCK_GR64 } },
+    { X86::MOVZX64rm8_Q, Convert_Reg1_2_Mem5_1, { MCK_movzbq, MCK_Mem, MCK_GR64 } },
+    { X86::MOVZX16rr8W, Convert_Reg1_2_Reg1_1, { MCK_movzbw, MCK_GR8, MCK_GR16 } },
+    { X86::MOVZX16rm8W, Convert_Reg1_2_Mem5_1, { MCK_movzbw, MCK_Mem, MCK_GR16 } },
     { X86::MOVZX32rr16, Convert_Reg1_2_Reg1_1, { MCK_movzwl, MCK_GR16, MCK_GR32 } },
     { X86::MOVZX32rm16, Convert_Reg1_2_Mem5_1, { MCK_movzwl, MCK_Mem, MCK_GR32 } },
+    { X86::MOVZX64rr16_Q, Convert_Reg1_2_Reg1_1, { MCK_movzwq, MCK_GR16, MCK_GR64 } },
+    { X86::MOVZX64rm16_Q, Convert_Reg1_2_Mem5_1, { MCK_movzwq, MCK_Mem, MCK_GR64 } },
     { X86::MULPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_mulpd, MCK_FR32, MCK_FR32 } },
     { X86::MULPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_mulpd, MCK_Mem, MCK_FR32 } },
     { X86::MULPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_mulps, MCK_FR32, MCK_FR32 } },
@@ -6010,11 +7425,13 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MULSSrr, Convert_Reg1_2_ImpReg1_1, { MCK_mulss, MCK_FR32, MCK_FR32 } },
     { X86::MULSSrm, Convert_Reg1_2_ImpMem5_1, { MCK_mulss, MCK_Mem, MCK_FR32 } },
     { X86::OR8rr, Convert_Reg1_2_ImpReg1_1, { MCK_orb, MCK_GR8, MCK_GR8 } },
+    { X86::OR8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orb, MCK_GR8, MCK_GR8 } },
     { X86::OR8mr, Convert_Mem5_2_Reg1_1, { MCK_orb, MCK_GR8, MCK_Mem } },
     { X86::OR8i8, Convert_Imm1_1, { MCK_orb, MCK_Imm, MCK_AL } },
     { X86::OR8ri, Convert_Reg1_2_ImpImm1_1, { MCK_orb, MCK_Imm, MCK_GR8 } },
     { X86::OR8mi, Convert_Mem5_2_Imm1_1, { MCK_orb, MCK_Imm, MCK_Mem } },
     { X86::OR8rm, Convert_Reg1_2_ImpMem5_1, { MCK_orb, MCK_Mem, MCK_GR8 } },
+    { X86::OR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orl, MCK_GR32, MCK_GR32 } },
     { X86::OR32rr, Convert_Reg1_2_ImpReg1_1, { MCK_orl, MCK_GR32, MCK_GR32 } },
     { X86::OR32mr, Convert_Mem5_2_Reg1_1, { MCK_orl, MCK_GR32, MCK_Mem } },
     { X86::OR32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_orl, MCK_ImmSExt8, MCK_GR32 } },
@@ -6023,15 +7440,16 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::OR32ri, Convert_Reg1_2_ImpImm1_1, { MCK_orl, MCK_Imm, MCK_GR32 } },
     { X86::OR32mi, Convert_Mem5_2_Imm1_1, { MCK_orl, MCK_Imm, MCK_Mem } },
     { X86::OR32rm, Convert_Reg1_2_ImpMem5_1, { MCK_orl, MCK_Mem, MCK_GR32 } },
-    { X86::ORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
     { X86::FsORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
+    { X86::ORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
     { X86::FsORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_orpd, MCK_Mem, MCK_FR32 } },
     { X86::ORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_orpd, MCK_Mem, MCK_FR32 } },
-    { X86::FsORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
     { X86::ORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
-    { X86::FsORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
+    { X86::FsORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
     { X86::ORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
+    { X86::FsORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
     { X86::OR64rr, Convert_Reg1_2_ImpReg1_1, { MCK_orq, MCK_GR64, MCK_GR64 } },
+    { X86::OR64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orq, MCK_GR64, MCK_GR64 } },
     { X86::OR64mr, Convert_Mem5_2_Reg1_1, { MCK_orq, MCK_GR64, MCK_Mem } },
     { X86::OR64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_orq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::OR64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_orq, MCK_ImmSExt8, MCK_Mem } },
@@ -6040,6 +7458,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::OR64mi32, Convert_Mem5_2_Imm1_1, { MCK_orq, MCK_Imm, MCK_Mem } },
     { X86::OR64rm, Convert_Reg1_2_ImpMem5_1, { MCK_orq, MCK_Mem, MCK_GR64 } },
     { X86::OR16rr, Convert_Reg1_2_ImpReg1_1, { MCK_orw, MCK_GR16, MCK_GR16 } },
+    { X86::OR16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orw, MCK_GR16, MCK_GR16 } },
     { X86::OR16mr, Convert_Mem5_2_Reg1_1, { MCK_orw, MCK_GR16, MCK_Mem } },
     { X86::OR16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_orw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::OR16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_orw, MCK_ImmSExt8, MCK_Mem } },
@@ -6273,6 +7692,12 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::PMULUDQrr, Convert_Reg1_2_ImpReg1_1, { MCK_pmuludq, MCK_FR32, MCK_FR32 } },
     { X86::MMX_PMULUDQrm, Convert_Reg1_2_ImpMem5_1, { MCK_pmuludq, MCK_Mem, MCK_VR64 } },
     { X86::PMULUDQrm, Convert_Reg1_2_ImpMem5_1, { MCK_pmuludq, MCK_Mem, MCK_FR32 } },
+    { X86::POPCNT32rr, Convert_Reg1_2_Reg1_1, { MCK_popcntl, MCK_GR32, MCK_GR32 } },
+    { X86::POPCNT32rm, Convert_Reg1_2_Mem5_1, { MCK_popcntl, MCK_Mem, MCK_GR32 } },
+    { X86::POPCNT64rr, Convert_Reg1_2_Reg1_1, { MCK_popcntq, MCK_GR64, MCK_GR64 } },
+    { X86::POPCNT64rm, Convert_Reg1_2_Mem5_1, { MCK_popcntq, MCK_Mem, MCK_GR64 } },
+    { X86::POPCNT16rr, Convert_Reg1_2_Reg1_1, { MCK_popcntw, MCK_GR16, MCK_GR16 } },
+    { X86::POPCNT16rm, Convert_Reg1_2_Mem5_1, { MCK_popcntw, MCK_Mem, MCK_GR16 } },
     { X86::MMX_PORrr, Convert_Reg1_2_ImpReg1_1, { MCK_por, MCK_VR64, MCK_VR64 } },
     { X86::PORrr, Convert_Reg1_2_ImpReg1_1, { MCK_por, MCK_FR32, MCK_FR32 } },
     { X86::MMX_PORrm, Convert_Reg1_2_ImpMem5_1, { MCK_por, MCK_Mem, MCK_VR64 } },
@@ -6517,6 +7942,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SAR16mCL, Convert_Mem5_2, { MCK_sarw, MCK_CL, MCK_Mem } },
     { X86::SAR16ri, Convert_Reg1_2_ImpImm1_1, { MCK_sarw, MCK_Imm, MCK_GR16 } },
     { X86::SAR16mi, Convert_Mem5_2_Imm1_1, { MCK_sarw, MCK_Imm, MCK_Mem } },
+    { X86::SBB8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbb, MCK_GR8, MCK_GR8 } },
     { X86::SBB8rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbb, MCK_GR8, MCK_GR8 } },
     { X86::SBB8mr, Convert_Mem5_2_Reg1_1, { MCK_sbbb, MCK_GR8, MCK_Mem } },
     { X86::SBB8i8, Convert_Imm1_1, { MCK_sbbb, MCK_Imm, MCK_AL } },
@@ -6524,6 +7950,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SBB8mi, Convert_Mem5_2_Imm1_1, { MCK_sbbb, MCK_Imm, MCK_Mem } },
     { X86::SBB8rm, Convert_Reg1_2_ImpMem5_1, { MCK_sbbb, MCK_Mem, MCK_GR8 } },
     { X86::SBB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbl, MCK_GR32, MCK_GR32 } },
+    { X86::SBB32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbl, MCK_GR32, MCK_GR32 } },
     { X86::SBB32mr, Convert_Mem5_2_Reg1_1, { MCK_sbbl, MCK_GR32, MCK_Mem } },
     { X86::SBB32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_sbbl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::SBB32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_sbbl, MCK_ImmSExt8, MCK_Mem } },
@@ -6532,6 +7959,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SBB32mi, Convert_Mem5_2_Imm1_1, { MCK_sbbl, MCK_Imm, MCK_Mem } },
     { X86::SBB32rm, Convert_Reg1_2_ImpMem5_1, { MCK_sbbl, MCK_Mem, MCK_GR32 } },
     { X86::SBB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbq, MCK_GR64, MCK_GR64 } },
+    { X86::SBB64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbq, MCK_GR64, MCK_GR64 } },
     { X86::SBB64mr, Convert_Mem5_2_Reg1_1, { MCK_sbbq, MCK_GR64, MCK_Mem } },
     { X86::SBB64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_sbbq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::SBB64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_sbbq, MCK_ImmSExt8, MCK_Mem } },
@@ -6539,6 +7967,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SBB64ri32, Convert_Reg1_2_ImpImm1_1, { MCK_sbbq, MCK_Imm, MCK_GR64 } },
     { X86::SBB64mi32, Convert_Mem5_2_Imm1_1, { MCK_sbbq, MCK_Imm, MCK_Mem } },
     { X86::SBB64rm, Convert_Reg1_2_ImpMem5_1, { MCK_sbbq, MCK_Mem, MCK_GR64 } },
+    { X86::SBB16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbw, MCK_GR16, MCK_GR16 } },
     { X86::SBB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbw, MCK_GR16, MCK_GR16 } },
     { X86::SBB16mr, Convert_Mem5_2_Reg1_1, { MCK_sbbw, MCK_GR16, MCK_Mem } },
     { X86::SBB16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_sbbw, MCK_ImmSExt8, MCK_GR16 } },
@@ -6588,12 +8017,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SQRTSSr, Convert_Reg1_2_Reg1_1, { MCK_sqrtss, MCK_FR32, MCK_FR32 } },
     { X86::SQRTSSm, Convert_Reg1_2_Mem5_1, { MCK_sqrtss, MCK_Mem, MCK_FR32 } },
     { X86::SUB8rr, Convert_Reg1_2_ImpReg1_1, { MCK_subb, MCK_GR8, MCK_GR8 } },
+    { X86::SUB8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subb, MCK_GR8, MCK_GR8 } },
     { X86::SUB8mr, Convert_Mem5_2_Reg1_1, { MCK_subb, MCK_GR8, MCK_Mem } },
     { X86::SUB8i8, Convert_Imm1_1, { MCK_subb, MCK_Imm, MCK_AL } },
     { X86::SUB8ri, Convert_Reg1_2_ImpImm1_1, { MCK_subb, MCK_Imm, MCK_GR8 } },
     { X86::SUB8mi, Convert_Mem5_2_Imm1_1, { MCK_subb, MCK_Imm, MCK_Mem } },
     { X86::SUB8rm, Convert_Reg1_2_ImpMem5_1, { MCK_subb, MCK_Mem, MCK_GR8 } },
     { X86::SUB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_subl, MCK_GR32, MCK_GR32 } },
+    { X86::SUB32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subl, MCK_GR32, MCK_GR32 } },
     { X86::SUB32mr, Convert_Mem5_2_Reg1_1, { MCK_subl, MCK_GR32, MCK_Mem } },
     { X86::SUB32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_subl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::SUB32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_subl, MCK_ImmSExt8, MCK_Mem } },
@@ -6605,6 +8036,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SUBPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_subpd, MCK_Mem, MCK_FR32 } },
     { X86::SUBPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_subps, MCK_FR32, MCK_FR32 } },
     { X86::SUBPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_subps, MCK_Mem, MCK_FR32 } },
+    { X86::SUB64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subq, MCK_GR64, MCK_GR64 } },
     { X86::SUB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_subq, MCK_GR64, MCK_GR64 } },
     { X86::SUB64mr, Convert_Mem5_2_Reg1_1, { MCK_subq, MCK_GR64, MCK_Mem } },
     { X86::SUB64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_subq, MCK_ImmSExt8, MCK_GR64 } },
@@ -6618,6 +8050,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SUBSSrr, Convert_Reg1_2_ImpReg1_1, { MCK_subss, MCK_FR32, MCK_FR32 } },
     { X86::SUBSSrm, Convert_Reg1_2_ImpMem5_1, { MCK_subss, MCK_Mem, MCK_FR32 } },
     { X86::SUB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_subw, MCK_GR16, MCK_GR16 } },
+    { X86::SUB16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subw, MCK_GR16, MCK_GR16 } },
     { X86::SUB16mr, Convert_Mem5_2_Reg1_1, { MCK_subw, MCK_GR16, MCK_Mem } },
     { X86::SUB16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_subw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::SUB16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_subw, MCK_ImmSExt8, MCK_Mem } },
@@ -6657,16 +8090,41 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::UNPCKLPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_unpcklpd, MCK_Mem, MCK_FR32 } },
     { X86::UNPCKLPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_unpcklps, MCK_FR32, MCK_FR32 } },
     { X86::UNPCKLPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_unpcklps, MCK_Mem, MCK_FR32 } },
-    { X86::XCHG64rm, Convert_ImpMem5_2_Reg1_1, { MCK_xchg, MCK_GR64, MCK_Mem } },
-    { X86::XCHG8rm, Convert_ImpMem5_2_Reg1_1, { MCK_xchgb, MCK_GR8, MCK_Mem } },
-    { X86::XCHG32rm, Convert_ImpMem5_2_Reg1_1, { MCK_xchgl, MCK_GR32, MCK_Mem } },
-    { X86::XCHG16rm, Convert_ImpMem5_2_Reg1_1, { MCK_xchgw, MCK_GR16, MCK_Mem } },
+    { X86::VMREAD32rr, Convert_Reg1_2_Reg1_1, { MCK_vmreadl, MCK_GR32, MCK_GR32 } },
+    { X86::VMREAD32rm, Convert_Mem5_2_Reg1_1, { MCK_vmreadl, MCK_GR32, MCK_Mem } },
+    { X86::VMREAD64rr, Convert_Reg1_2_Reg1_1, { MCK_vmreadq, MCK_GR64, MCK_GR64 } },
+    { X86::VMREAD64rm, Convert_Mem5_2_Reg1_1, { MCK_vmreadq, MCK_GR64, MCK_Mem } },
+    { X86::VMWRITE32rr, Convert_Reg1_2_Reg1_1, { MCK_vmwritel, MCK_GR32, MCK_GR32 } },
+    { X86::VMWRITE32rm, Convert_Reg1_2_Mem5_1, { MCK_vmwritel, MCK_Mem, MCK_GR32 } },
+    { X86::VMWRITE64rr, Convert_Reg1_2_Reg1_1, { MCK_vmwriteq, MCK_GR64, MCK_GR64 } },
+    { X86::VMWRITE64rm, Convert_Reg1_2_Mem5_1, { MCK_vmwriteq, MCK_Mem, MCK_GR64 } },
+    { X86::XADD8rr, Convert_Reg1_2_Reg1_1, { MCK_xaddb, MCK_GR8, MCK_GR8 } },
+    { X86::XADD8rm, Convert_Mem5_2_Reg1_1, { MCK_xaddb, MCK_GR8, MCK_Mem } },
+    { X86::XADD32rr, Convert_Reg1_2_Reg1_1, { MCK_xaddl, MCK_GR32, MCK_GR32 } },
+    { X86::XADD32rm, Convert_Mem5_2_Reg1_1, { MCK_xaddl, MCK_GR32, MCK_Mem } },
+    { X86::XADD64rr, Convert_Reg1_2_Reg1_1, { MCK_xaddq, MCK_GR64, MCK_GR64 } },
+    { X86::XADD64rm, Convert_Mem5_2_Reg1_1, { MCK_xaddq, MCK_GR64, MCK_Mem } },
+    { X86::XADD16rr, Convert_Reg1_2_Reg1_1, { MCK_xaddw, MCK_GR16, MCK_GR16 } },
+    { X86::XADD16rm, Convert_Mem5_2_Reg1_1, { MCK_xaddw, MCK_GR16, MCK_Mem } },
+    { X86::XCHG8rr, Convert_ImpReg1_1_Reg1_2, { MCK_xchgb, MCK_GR8, MCK_GR8 } },
+    { X86::XCHG8rm, Convert_ImpReg1_1_Mem5_2, { MCK_xchgb, MCK_GR8, MCK_Mem } },
+    { X86::XCHG32ar, Convert_Reg1_1, { MCK_xchgl, MCK_GR32, MCK_EAX } },
+    { X86::XCHG32rr, Convert_ImpReg1_1_Reg1_2, { MCK_xchgl, MCK_GR32, MCK_GR32 } },
+    { X86::XCHG32rm, Convert_ImpReg1_1_Mem5_2, { MCK_xchgl, MCK_GR32, MCK_Mem } },
+    { X86::XCHG64ar, Convert_Reg1_1, { MCK_xchgq, MCK_GR64, MCK_RAX } },
+    { X86::XCHG64rr, Convert_ImpReg1_1_Reg1_2, { MCK_xchgq, MCK_GR64, MCK_GR64 } },
+    { X86::XCHG64rm, Convert_ImpReg1_1_Mem5_2, { MCK_xchgq, MCK_GR64, MCK_Mem } },
+    { X86::XCHG16ar, Convert_Reg1_1, { MCK_xchgw, MCK_GR16, MCK_AX } },
+    { X86::XCHG16rr, Convert_ImpReg1_1_Reg1_2, { MCK_xchgw, MCK_GR16, MCK_GR16 } },
+    { X86::XCHG16rm, Convert_ImpReg1_1_Mem5_2, { MCK_xchgw, MCK_GR16, MCK_Mem } },
     { X86::XOR8rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorb, MCK_GR8, MCK_GR8 } },
+    { X86::XOR8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorb, MCK_GR8, MCK_GR8 } },
     { X86::XOR8mr, Convert_Mem5_2_Reg1_1, { MCK_xorb, MCK_GR8, MCK_Mem } },
     { X86::XOR8i8, Convert_Imm1_1, { MCK_xorb, MCK_Imm, MCK_AL } },
     { X86::XOR8ri, Convert_Reg1_2_ImpImm1_1, { MCK_xorb, MCK_Imm, MCK_GR8 } },
     { X86::XOR8mi, Convert_Mem5_2_Imm1_1, { MCK_xorb, MCK_Imm, MCK_Mem } },
     { X86::XOR8rm, Convert_Reg1_2_ImpMem5_1, { MCK_xorb, MCK_Mem, MCK_GR8 } },
+    { X86::XOR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorl, MCK_GR32, MCK_GR32 } },
     { X86::XOR32rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorl, MCK_GR32, MCK_GR32 } },
     { X86::XOR32mr, Convert_Mem5_2_Reg1_1, { MCK_xorl, MCK_GR32, MCK_Mem } },
     { X86::XOR32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorl, MCK_ImmSExt8, MCK_GR32 } },
@@ -6684,6 +8142,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::FsXORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorps, MCK_Mem, MCK_FR32 } },
     { X86::XORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorps, MCK_Mem, MCK_FR32 } },
     { X86::XOR64rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorq, MCK_GR64, MCK_GR64 } },
+    { X86::XOR64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorq, MCK_GR64, MCK_GR64 } },
     { X86::XOR64mr, Convert_Mem5_2_Reg1_1, { MCK_xorq, MCK_GR64, MCK_Mem } },
     { X86::XOR64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::XOR64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_xorq, MCK_ImmSExt8, MCK_Mem } },
@@ -6692,6 +8151,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::XOR64mi32, Convert_Mem5_2_Imm1_1, { MCK_xorq, MCK_Imm, MCK_Mem } },
     { X86::XOR64rm, Convert_Reg1_2_ImpMem5_1, { MCK_xorq, MCK_Mem, MCK_GR64 } },
     { X86::XOR16rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorw, MCK_GR16, MCK_GR16 } },
+    { X86::XOR16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorw, MCK_GR16, MCK_GR16 } },
     { X86::XOR16mr, Convert_Mem5_2_Reg1_1, { MCK_xorw, MCK_GR16, MCK_Mem } },
     { X86::XOR16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::XOR16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_xorw, MCK_ImmSExt8, MCK_Mem } },
@@ -6737,32 +8197,32 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::PBLENDVBrm0, Convert_Reg1_3_ImpMem5_2, { MCK_pblendvb, MCK_XMM0, MCK_Mem, MCK_FR32 } },
     { X86::PBLENDWrri, Convert_Reg1_3_ImpReg1_2_ImmSExt81_1, { MCK_pblendw, MCK_ImmSExt8, MCK_FR32, MCK_FR32 } },
     { X86::PBLENDWrmi, Convert_Reg1_3_ImpMem5_2_ImmSExt81_1, { MCK_pblendw, MCK_ImmSExt8, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPESTRIArr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRIOrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRICrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRIArr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPESTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPESTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRIArm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRM128rr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestrm, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRM128rm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestrm, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPISTRIOrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPISTRICrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIArr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPISTRICrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPISTRIOrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPISTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRIArm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPISTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIArm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPISTRM128rr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistrm, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRM128rm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistrm, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PEXTRBrr, Convert_Reg1_3_Reg1_2_ImmSExt81_1, { MCK_pextrb, MCK_ImmSExt8, MCK_FR32, MCK_GR32 } },
@@ -6849,7 +8309,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     Classes[i] = InvalidMatchClass;
 
   // Search the table.
-  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 1775; it != ie; ++it) {
+  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 2041; it != ie; ++it) {
     if (!IsSubclass(Classes[0], it->Classes[0]))
       continue;
     if (!IsSubclass(Classes[1], it->Classes[1]))

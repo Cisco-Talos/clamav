@@ -34,6 +34,11 @@ namespace {     // Register classes...
     ARM::R0, ARM::R1, ARM::R2, ARM::R3, ARM::R4, ARM::R5, ARM::R6, ARM::R7, ARM::R8, ARM::R9, ARM::R10, ARM::R12, ARM::R11, ARM::LR, ARM::SP, ARM::PC, 
   };
 
+  // JustSP Register Class...
+  static const unsigned JustSP[] = {
+    ARM::SP, 
+  };
+
   // QPR Register Class...
   static const unsigned QPR[] = {
     ARM::Q0, ARM::Q1, ARM::Q2, ARM::Q3, ARM::Q4, ARM::Q5, ARM::Q6, ARM::Q7, ARM::Q8, ARM::Q9, ARM::Q10, ARM::Q11, ARM::Q12, ARM::Q13, ARM::Q14, ARM::Q15, 
@@ -94,6 +99,11 @@ namespace {     // Register classes...
     MVT::i32, MVT::Other
   };
 
+  // JustSPVTs Register Class Value Types...
+  static const EVT JustSPVTs[] = {
+    MVT::i32, MVT::Other
+  };
+
   // QPRVTs Register Class Value Types...
   static const EVT QPRVTs[] = {
     MVT::v16i8, MVT::v8i16, MVT::v4i32, MVT::v2i64, MVT::v4f32, MVT::v2f64, MVT::Other
@@ -137,6 +147,7 @@ namespace ARM {   // Register class instances
   DPR_8Class	DPR_8RegClass;
   DPR_VFP2Class	DPR_VFP2RegClass;
   GPRClass	GPRRegClass;
+  JustSPClass	JustSPRegClass;
   QPRClass	QPRRegClass;
   QPR_8Class	QPR_8RegClass;
   QPR_VFP2Class	QPR_VFP2RegClass;
@@ -167,6 +178,11 @@ namespace ARM {   // Register class instances
 
   // GPR Sub-register Classes...
   static const TargetRegisterClass* const GPRSubRegClasses[] = {
+    NULL
+  };
+
+  // JustSP Sub-register Classes...
+  static const TargetRegisterClass* const JustSPSubRegClasses[] = {
     NULL
   };
 
@@ -230,6 +246,11 @@ namespace ARM {   // Register class instances
     NULL
   };
 
+  // JustSP Super-register Classes...
+  static const TargetRegisterClass* const JustSPSuperRegClasses[] = {
+    NULL
+  };
+
   // QPR Super-register Classes...
   static const TargetRegisterClass* const QPRSuperRegClasses[] = {
     NULL
@@ -287,7 +308,12 @@ namespace ARM {   // Register class instances
 
   // GPR Register Class sub-classes...
   static const TargetRegisterClass* const GPRSubclasses[] = {
-    &ARM::tGPRRegClass, NULL
+    &ARM::JustSPRegClass, &ARM::tGPRRegClass, NULL
+  };
+
+  // JustSP Register Class sub-classes...
+  static const TargetRegisterClass* const JustSPSubclasses[] = {
+    NULL
   };
 
   // QPR Register Class sub-classes...
@@ -348,6 +374,11 @@ namespace ARM {   // Register class instances
   // GPR Register Class super-classes...
   static const TargetRegisterClass* const GPRSuperclasses[] = {
     NULL
+  };
+
+  // JustSP Register Class super-classes...
+  static const TargetRegisterClass* const JustSPSuperclasses[] = {
+    &ARM::GPRRegClass, NULL
   };
 
   // QPR Register Class super-classes...
@@ -527,6 +558,13 @@ DPR_VFP2Class::DPR_VFP2Class()  : TargetRegisterClass(DPR_VFP2RegClassID, "DPR_V
   
 GPRClass::GPRClass()  : TargetRegisterClass(GPRRegClassID, "GPR", GPRVTs, GPRSubclasses, GPRSuperclasses, GPRSubRegClasses, GPRSuperRegClasses, 4, 4, 1, GPR, GPR + 16) {}
 
+      JustSPClass::iterator
+      JustSPClass::allocation_order_end(const MachineFunction &MF) const {
+        return allocation_order_begin(MF);
+      }
+  
+JustSPClass::JustSPClass()  : TargetRegisterClass(JustSPRegClassID, "JustSP", JustSPVTs, JustSPSubclasses, JustSPSuperclasses, JustSPSubRegClasses, JustSPSuperRegClasses, 4, 4, 1, JustSP, JustSP + 1) {}
+
 QPRClass::QPRClass()  : TargetRegisterClass(QPRRegClassID, "QPR", QPRVTs, QPRSubclasses, QPRSuperclasses, QPRSubRegClasses, QPRSuperRegClasses, 16, 16, 1, QPR, QPR + 16) {}
 
 QPR_8Class::QPR_8Class()  : TargetRegisterClass(QPR_8RegClassID, "QPR_8", QPR_8VTs, QPR_8Subclasses, QPR_8Superclasses, QPR_8SubRegClasses, QPR_8SuperRegClasses, 16, 16, 1, QPR_8, QPR_8 + 4) {}
@@ -570,6 +608,7 @@ namespace {
     &ARM::DPR_8RegClass,
     &ARM::DPR_VFP2RegClass,
     &ARM::GPRRegClass,
+    &ARM::JustSPRegClass,
     &ARM::QPRRegClass,
     &ARM::QPR_8RegClass,
     &ARM::QPR_VFP2RegClass,
@@ -3485,7 +3524,7 @@ unsigned ARMGenRegisterInfo::getSubRegIndex(unsigned RegNo, unsigned SubRegNo) c
 }
 
 ARMGenRegisterInfo::ARMGenRegisterInfo(int CallFrameSetupOpcode, int CallFrameDestroyOpcode)
-  : TargetRegisterInfo(RegisterDescriptors, 100, RegisterClasses, RegisterClasses+12,
+  : TargetRegisterInfo(RegisterDescriptors, 100, RegisterClasses, RegisterClasses+13,
                   CallFrameSetupOpcode, CallFrameDestroyOpcode,
                  SubregHashTable, SubregHashTableSize,
                  SuperregHashTable, SuperregHashTableSize,

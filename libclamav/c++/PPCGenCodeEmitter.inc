@@ -187,7 +187,9 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     2080374952U,	// LDARX
     3892314113U,	// LDU
     2080374826U,	// LDX
+    3896508448U,	// LDinto_toc
     3892314112U,	// LDtoc
+    3896574112U,	// LDtoc_restore
     3355443200U,	// LFD
     3422552064U,	// LFDU
     2080375982U,	// LFDX
@@ -533,33 +535,8 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
   unsigned op = 0;
   op = op;  // suppress warning
   switch (opcode) {
-    case PPC::ADD4:
-    case PPC::ADD8:
-    case PPC::ADDC:
-    case PPC::ADDC8:
-    case PPC::ADDE:
-    case PPC::ADDE8:
-    case PPC::ADDI:
-    case PPC::ADDI8:
-    case PPC::ADDIC:
-    case PPC::ADDIC8:
-    case PPC::ADDICo:
-    case PPC::ADDIS:
-    case PPC::ADDIS8:
-    case PPC::ADDME:
-    case PPC::ADDME8:
-    case PPC::ADDZE:
-    case PPC::ADDZE8:
     case PPC::ADJCALLSTACKDOWN:
     case PPC::ADJCALLSTACKUP:
-    case PPC::AND:
-    case PPC::AND8:
-    case PPC::ANDC:
-    case PPC::ANDC8:
-    case PPC::ANDISo:
-    case PPC::ANDISo8:
-    case PPC::ANDIo:
-    case PPC::ANDIo8:
     case PPC::ATOMIC_CMP_SWAP_I16:
     case PPC::ATOMIC_CMP_SWAP_I32:
     case PPC::ATOMIC_CMP_SWAP_I64:
@@ -592,282 +569,24 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::ATOMIC_SWAP_I32:
     case PPC::ATOMIC_SWAP_I64:
     case PPC::ATOMIC_SWAP_I8:
-    case PPC::B:
-    case PPC::BCC:
     case PPC::BCTR:
     case PPC::BCTRL8_Darwin:
     case PPC::BCTRL8_ELF:
     case PPC::BCTRL_Darwin:
     case PPC::BCTRL_SVR4:
-    case PPC::BL8_Darwin:
-    case PPC::BL8_ELF:
-    case PPC::BLA8_Darwin:
-    case PPC::BLA8_ELF:
-    case PPC::BLA_Darwin:
-    case PPC::BLA_SVR4:
-    case PPC::BLR:
-    case PPC::BL_Darwin:
-    case PPC::BL_SVR4:
-    case PPC::CMPD:
-    case PPC::CMPDI:
-    case PPC::CMPLD:
-    case PPC::CMPLDI:
-    case PPC::CMPLW:
-    case PPC::CMPLWI:
-    case PPC::CMPW:
-    case PPC::CMPWI:
-    case PPC::CNTLZD:
-    case PPC::CNTLZW:
-    case PPC::CREQV:
-    case PPC::CROR:
-    case PPC::CRSET:
-    case PPC::DCBA:
-    case PPC::DCBF:
-    case PPC::DCBI:
-    case PPC::DCBST:
-    case PPC::DCBT:
-    case PPC::DCBTST:
-    case PPC::DCBZ:
-    case PPC::DCBZL:
-    case PPC::DIVD:
-    case PPC::DIVDU:
-    case PPC::DIVW:
-    case PPC::DIVWU:
-    case PPC::DSS:
-    case PPC::DSSALL:
-    case PPC::DST:
-    case PPC::DST64:
-    case PPC::DSTST:
-    case PPC::DSTST64:
-    case PPC::DSTSTT:
-    case PPC::DSTSTT64:
-    case PPC::DSTT:
-    case PPC::DSTT64:
     case PPC::DYNALLOC:
     case PPC::DYNALLOC8:
-    case PPC::EQV:
-    case PPC::EQV8:
-    case PPC::EXTSB:
-    case PPC::EXTSB8:
-    case PPC::EXTSH:
-    case PPC::EXTSH8:
-    case PPC::EXTSW:
-    case PPC::EXTSW_32:
-    case PPC::EXTSW_32_64:
-    case PPC::FABSD:
-    case PPC::FABSS:
-    case PPC::FADD:
-    case PPC::FADDS:
-    case PPC::FADDrtz:
-    case PPC::FCFID:
-    case PPC::FCMPUD:
-    case PPC::FCMPUS:
-    case PPC::FCTIDZ:
-    case PPC::FCTIWZ:
-    case PPC::FDIV:
-    case PPC::FDIVS:
-    case PPC::FMADD:
-    case PPC::FMADDS:
-    case PPC::FMRD:
-    case PPC::FMRS:
-    case PPC::FMRSD:
-    case PPC::FMSUB:
-    case PPC::FMSUBS:
-    case PPC::FMUL:
-    case PPC::FMULS:
-    case PPC::FNABSD:
-    case PPC::FNABSS:
-    case PPC::FNEGD:
-    case PPC::FNEGS:
-    case PPC::FNMADD:
-    case PPC::FNMADDS:
-    case PPC::FNMSUB:
-    case PPC::FNMSUBS:
-    case PPC::FRSP:
-    case PPC::FSELD:
-    case PPC::FSELS:
-    case PPC::FSQRT:
-    case PPC::FSQRTS:
-    case PPC::FSUB:
-    case PPC::FSUBS:
-    case PPC::LA:
-    case PPC::LBZ:
-    case PPC::LBZ8:
-    case PPC::LBZU:
-    case PPC::LBZU8:
-    case PPC::LBZX:
-    case PPC::LBZX8:
-    case PPC::LD:
-    case PPC::LDARX:
-    case PPC::LDU:
-    case PPC::LDX:
-    case PPC::LDtoc:
-    case PPC::LFD:
-    case PPC::LFDU:
-    case PPC::LFDX:
-    case PPC::LFS:
-    case PPC::LFSU:
-    case PPC::LFSX:
-    case PPC::LHA:
-    case PPC::LHA8:
-    case PPC::LHAU:
-    case PPC::LHAU8:
-    case PPC::LHAX:
-    case PPC::LHAX8:
-    case PPC::LHBRX:
-    case PPC::LHZ:
-    case PPC::LHZ8:
-    case PPC::LHZU:
-    case PPC::LHZU8:
-    case PPC::LHZX:
-    case PPC::LHZX8:
-    case PPC::LI:
-    case PPC::LI8:
-    case PPC::LIS:
-    case PPC::LIS8:
-    case PPC::LVEBX:
-    case PPC::LVEHX:
-    case PPC::LVEWX:
-    case PPC::LVSL:
-    case PPC::LVSR:
-    case PPC::LVX:
-    case PPC::LVXL:
-    case PPC::LWA:
-    case PPC::LWARX:
-    case PPC::LWAX:
-    case PPC::LWBRX:
-    case PPC::LWZ:
-    case PPC::LWZ8:
-    case PPC::LWZU:
-    case PPC::LWZU8:
-    case PPC::LWZX:
-    case PPC::LWZX8:
-    case PPC::MCRF:
-    case PPC::MFCR:
-    case PPC::MFCTR:
-    case PPC::MFCTR8:
-    case PPC::MFFS:
-    case PPC::MFLR:
-    case PPC::MFLR8:
-    case PPC::MFOCRF:
-    case PPC::MFVRSAVE:
-    case PPC::MFVSCR:
-    case PPC::MTCRF:
-    case PPC::MTCTR:
-    case PPC::MTCTR8:
-    case PPC::MTFSB0:
-    case PPC::MTFSB1:
-    case PPC::MTFSF:
-    case PPC::MTLR:
-    case PPC::MTLR8:
-    case PPC::MTVRSAVE:
-    case PPC::MTVSCR:
-    case PPC::MULHD:
-    case PPC::MULHDU:
-    case PPC::MULHW:
-    case PPC::MULHWU:
-    case PPC::MULLD:
-    case PPC::MULLI:
-    case PPC::MULLW:
+    case PPC::LDtoc_restore:
     case PPC::MovePCtoLR:
     case PPC::MovePCtoLR8:
-    case PPC::NAND:
-    case PPC::NAND8:
-    case PPC::NEG:
-    case PPC::NEG8:
     case PPC::NOP:
-    case PPC::NOR:
-    case PPC::NOR8:
-    case PPC::OR:
-    case PPC::OR4To8:
-    case PPC::OR8:
-    case PPC::OR8To4:
-    case PPC::ORC:
-    case PPC::ORC8:
-    case PPC::ORI:
-    case PPC::ORI8:
-    case PPC::ORIS:
-    case PPC::ORIS8:
-    case PPC::RLDCL:
-    case PPC::RLDICL:
-    case PPC::RLDICR:
-    case PPC::RLDIMI:
-    case PPC::RLWIMI:
-    case PPC::RLWINM:
-    case PPC::RLWINMo:
-    case PPC::RLWNM:
     case PPC::SELECT_CC_F4:
     case PPC::SELECT_CC_F8:
     case PPC::SELECT_CC_I4:
     case PPC::SELECT_CC_I8:
     case PPC::SELECT_CC_VRRC:
-    case PPC::SLD:
-    case PPC::SLW:
     case PPC::SPILL_CR:
-    case PPC::SRAD:
-    case PPC::SRADI:
-    case PPC::SRAW:
-    case PPC::SRAWI:
-    case PPC::SRD:
-    case PPC::SRW:
-    case PPC::STB:
-    case PPC::STB8:
-    case PPC::STBU:
-    case PPC::STBU8:
-    case PPC::STBX:
-    case PPC::STBX8:
-    case PPC::STD:
-    case PPC::STDCX:
-    case PPC::STDU:
-    case PPC::STDUX:
-    case PPC::STDX:
-    case PPC::STDX_32:
-    case PPC::STD_32:
-    case PPC::STFD:
-    case PPC::STFDU:
-    case PPC::STFDX:
-    case PPC::STFIWX:
-    case PPC::STFS:
-    case PPC::STFSU:
-    case PPC::STFSX:
-    case PPC::STH:
-    case PPC::STH8:
-    case PPC::STHBRX:
-    case PPC::STHU:
-    case PPC::STHU8:
-    case PPC::STHX:
-    case PPC::STHX8:
-    case PPC::STVEBX:
-    case PPC::STVEHX:
-    case PPC::STVEWX:
-    case PPC::STVX:
-    case PPC::STVXL:
-    case PPC::STW:
-    case PPC::STW8:
-    case PPC::STWBRX:
-    case PPC::STWCX:
-    case PPC::STWU:
-    case PPC::STWU8:
-    case PPC::STWUX:
-    case PPC::STWX:
-    case PPC::STWX8:
-    case PPC::SUBF:
-    case PPC::SUBF8:
-    case PPC::SUBFC:
-    case PPC::SUBFC8:
-    case PPC::SUBFE:
-    case PPC::SUBFE8:
-    case PPC::SUBFIC:
-    case PPC::SUBFIC8:
-    case PPC::SUBFME:
-    case PPC::SUBFME8:
-    case PPC::SUBFZE:
-    case PPC::SUBFZE8:
     case PPC::SYNC:
-    case PPC::TAILB:
-    case PPC::TAILB8:
-    case PPC::TAILBA:
-    case PPC::TAILBA8:
     case PPC::TAILBCTR:
     case PPC::TAILBCTR8:
     case PPC::TCRETURNai:
@@ -877,7 +596,745 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::TCRETURNri:
     case PPC::TCRETURNri8:
     case PPC::TRAP:
-    case PPC::UPDATE_VRSAVE:
+    case PPC::UPDATE_VRSAVE: {
+      break;
+    }
+    case PPC::DCBA:
+    case PPC::DCBF:
+    case PPC::DCBI:
+    case PPC::DCBST:
+    case PPC::DCBT:
+    case PPC::DCBTST:
+    case PPC::DCBZ:
+    case PPC::DCBZL: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::SRADI: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RS
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: SH
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      Value |= (op & 32U) >> 4;
+      break;
+    }
+    case PPC::CNTLZD:
+    case PPC::CNTLZW:
+    case PPC::EXTSB:
+    case PPC::EXTSB8:
+    case PPC::EXTSH:
+    case PPC::EXTSH8:
+    case PPC::EXTSW:
+    case PPC::EXTSW_32:
+    case PPC::EXTSW_32_64: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::AND:
+    case PPC::AND8:
+    case PPC::ANDC:
+    case PPC::ANDC8:
+    case PPC::EQV:
+    case PPC::EQV8:
+    case PPC::NAND:
+    case PPC::NAND8:
+    case PPC::NOR:
+    case PPC::NOR8:
+    case PPC::OR:
+    case PPC::OR4To8:
+    case PPC::OR8:
+    case PPC::OR8To4:
+    case PPC::ORC:
+    case PPC::ORC8:
+    case PPC::SLD:
+    case PPC::SLW:
+    case PPC::SRAD:
+    case PPC::SRAW:
+    case PPC::SRAWI:
+    case PPC::SRD:
+    case PPC::SRW:
+    case PPC::XOR:
+    case PPC::XOR8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::ADDI:
+    case PPC::ADDI8:
+    case PPC::ADDIC:
+    case PPC::ADDIC8:
+    case PPC::ADDICo:
+    case PPC::ADDIS:
+    case PPC::ADDIS8:
+    case PPC::LA:
+    case PPC::MULLI:
+    case PPC::SUBFIC:
+    case PPC::SUBFIC8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: C
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= op & 65535U;
+      break;
+    }
+    case PPC::LI:
+    case PPC::LI8:
+    case PPC::LIS:
+    case PPC::LIS8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= op & 65535U;
+      break;
+    }
+    case PPC::LBZ:
+    case PPC::LBZ8:
+    case PPC::LFD:
+    case PPC::LFS:
+    case PPC::LHA:
+    case PPC::LHA8:
+    case PPC::LHZ:
+    case PPC::LHZ8:
+    case PPC::LWZ:
+    case PPC::LWZ8:
+    case PPC::STB:
+    case PPC::STB8:
+    case PPC::STFD:
+    case PPC::STFS:
+    case PPC::STH:
+    case PPC::STH8:
+    case PPC::STW:
+    case PPC::STW8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: C
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= op & 65535U;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::LBZU:
+    case PPC::LBZU8:
+    case PPC::LFDU:
+    case PPC::LFSU:
+    case PPC::LHAU:
+    case PPC::LHAU8:
+    case PPC::LHZU:
+    case PPC::LHZU8:
+    case PPC::LWZU:
+    case PPC::LWZU8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: C
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= op & 65535U;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::STBU:
+    case PPC::STBU8:
+    case PPC::STFDU:
+    case PPC::STFSU:
+    case PPC::STHU:
+    case PPC::STHU8:
+    case PPC::STWU:
+    case PPC::STWU8: {
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: C
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= op & 65535U;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::ANDISo:
+    case PPC::ANDISo8:
+    case PPC::ANDIo:
+    case PPC::ANDIo8:
+    case PPC::ORI:
+    case PPC::ORI8:
+    case PPC::ORIS:
+    case PPC::ORIS8:
+    case PPC::XORI:
+    case PPC::XORI8:
+    case PPC::XORIS:
+    case PPC::XORIS8: {
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: C
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= op & 65535U;
+      break;
+    }
+    case PPC::MCRF: {
+      // op: BF
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 7U) << 23;
+      // op: BFA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 7U) << 18;
+      break;
+    }
+    case PPC::FCMPUD:
+    case PPC::FCMPUS: {
+      // op: BF
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 7U) << 23;
+      // op: FRA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: FRB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::CMPDI:
+    case PPC::CMPLDI:
+    case PPC::CMPLWI:
+    case PPC::CMPWI: {
+      // op: BF
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 7U) << 23;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: I
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= op & 65535U;
+      break;
+    }
+    case PPC::CMPD:
+    case PPC::CMPLD:
+    case PPC::CMPLW:
+    case PPC::CMPW: {
+      // op: BF
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 7U) << 23;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: RB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::BCC: {
+      // op: BIBO
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      Value |= (op & 96U) << 11;
+      // op: CR
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 7U) << 18;
+      // op: BD
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 16383U) << 2;
+      break;
+    }
+    case PPC::BLR: {
+      // op: BIBO
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 4U) << 23;
+      Value |= (op & 8U) << 21;
+      Value |= (op & 16U) << 19;
+      Value |= (op & 32U) << 17;
+      Value |= (op & 64U) << 15;
+      Value |= (op & 3U) << 16;
+      // op: CR
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 1U) << 20;
+      Value |= (op & 2U) << 18;
+      Value |= (op & 4U) << 16;
+      break;
+    }
+    case PPC::CREQV:
+    case PPC::CROR: {
+      // op: CRD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: CRA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: CRB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::CRSET: {
+      // op: CRD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      Value |= (op & 31U) << 16;
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MTFSF: {
+      // op: FM
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 255U) << 17;
+      // op: RT
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MTFSB0:
+    case PPC::MTFSB1: {
+      // op: FM
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::FADD:
+    case PPC::FADDS:
+    case PPC::FADDrtz:
+    case PPC::FDIV:
+    case PPC::FDIVS:
+    case PPC::FSUB:
+    case PPC::FSUBS: {
+      // op: FRT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: FRA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: FRB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::FMUL:
+    case PPC::FMULS: {
+      // op: FRT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: FRA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: FRC
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 6;
+      break;
+    }
+    case PPC::FMADD:
+    case PPC::FMADDS:
+    case PPC::FMSUB:
+    case PPC::FMSUBS:
+    case PPC::FNMADD:
+    case PPC::FNMADDS:
+    case PPC::FNMSUB:
+    case PPC::FNMSUBS:
+    case PPC::FSELD:
+    case PPC::FSELS: {
+      // op: FRT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: FRA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: FRC
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 6;
+      // op: FRB
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MTCRF: {
+      // op: FXM
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 255U) << 12;
+      // op: ST
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::B:
+    case PPC::BL8_Darwin:
+    case PPC::BL8_ELF:
+    case PPC::BLA8_Darwin:
+    case PPC::BLA8_ELF:
+    case PPC::BLA_Darwin:
+    case PPC::BLA_SVR4:
+    case PPC::BL_Darwin:
+    case PPC::BL_SVR4:
+    case PPC::TAILB:
+    case PPC::TAILB8:
+    case PPC::TAILBA:
+    case PPC::TAILBA8: {
+      // op: LI
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 16777215U) << 2;
+      break;
+    }
+    case PPC::LDinto_toc: {
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::RLWINM:
+    case PPC::RLWINMo:
+    case PPC::RLWNM: {
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RS
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: RB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      // op: MB
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 6;
+      // op: ME
+      op = getMachineOpValue(MI, MI.getOperand(4));
+      Value |= (op & 31U) << 1;
+      break;
+    }
+    case PPC::RLDCL:
+    case PPC::RLDICL:
+    case PPC::RLDICR: {
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RS
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: SH
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      Value |= (op & 32U) >> 4;
+      // op: MBE
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 6;
+      Value |= op & 32U;
+      break;
+    }
+    case PPC::RLWIMI: {
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RS
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 21;
+      // op: RB
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 11;
+      // op: MB
+      op = getMachineOpValue(MI, MI.getOperand(4));
+      Value |= (op & 31U) << 6;
+      // op: ME
+      op = getMachineOpValue(MI, MI.getOperand(5));
+      Value |= (op & 31U) << 1;
+      break;
+    }
+    case PPC::RLDIMI: {
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 16;
+      // op: RS
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 21;
+      // op: SH
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 11;
+      Value |= (op & 32U) >> 4;
+      // op: MBE
+      op = getMachineOpValue(MI, MI.getOperand(4));
+      Value |= (op & 31U) << 6;
+      Value |= op & 32U;
+      break;
+    }
+    case PPC::MFFS: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::LBZX:
+    case PPC::LBZX8:
+    case PPC::LDARX:
+    case PPC::LDX:
+    case PPC::LFDX:
+    case PPC::LFSX:
+    case PPC::LHAX:
+    case PPC::LHAX8:
+    case PPC::LHBRX:
+    case PPC::LHZX:
+    case PPC::LHZX8:
+    case PPC::LVEBX:
+    case PPC::LVEHX:
+    case PPC::LVEWX:
+    case PPC::LVSL:
+    case PPC::LVSR:
+    case PPC::LVX:
+    case PPC::LVXL:
+    case PPC::LWARX:
+    case PPC::LWAX:
+    case PPC::LWBRX:
+    case PPC::LWZX:
+    case PPC::LWZX8:
+    case PPC::STBX:
+    case PPC::STBX8:
+    case PPC::STDCX:
+    case PPC::STDUX:
+    case PPC::STDX:
+    case PPC::STDX_32:
+    case PPC::STFDX:
+    case PPC::STFIWX:
+    case PPC::STFSX:
+    case PPC::STHBRX:
+    case PPC::STHX:
+    case PPC::STHX8:
+    case PPC::STVEBX:
+    case PPC::STVEHX:
+    case PPC::STVEWX:
+    case PPC::STVX:
+    case PPC::STVXL:
+    case PPC::STWBRX:
+    case PPC::STWCX:
+    case PPC::STWUX:
+    case PPC::STWX:
+    case PPC::STWX8: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::FABSD:
+    case PPC::FABSS:
+    case PPC::FCFID:
+    case PPC::FCTIDZ:
+    case PPC::FCTIWZ:
+    case PPC::FMRD:
+    case PPC::FMRS:
+    case PPC::FMRSD:
+    case PPC::FNABSD:
+    case PPC::FNABSS:
+    case PPC::FNEGD:
+    case PPC::FNEGS:
+    case PPC::FRSP:
+    case PPC::FSQRT:
+    case PPC::FSQRTS: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::LD:
+    case PPC::LDtoc:
+    case PPC::LWA:
+    case PPC::STD:
+    case PPC::STD_32: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: DS
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 16383U) << 2;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::LDU: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: DS
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 16383U) << 2;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::STDU: {
+      // op: RST
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 21;
+      // op: DS
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 16383U) << 2;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::MFCR:
+    case PPC::MFCTR:
+    case PPC::MFCTR8:
+    case PPC::MFLR:
+    case PPC::MFLR8:
+    case PPC::MFVRSAVE:
+    case PPC::MTCTR:
+    case PPC::MTCTR8:
+    case PPC::MTLR:
+    case PPC::MTLR8:
+    case PPC::MTVRSAVE: {
+      // op: RT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::ADDME:
+    case PPC::ADDME8:
+    case PPC::ADDZE:
+    case PPC::ADDZE8:
+    case PPC::NEG:
+    case PPC::NEG8:
+    case PPC::SUBFME:
+    case PPC::SUBFME8:
+    case PPC::SUBFZE:
+    case PPC::SUBFZE8: {
+      // op: RT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      break;
+    }
+    case PPC::ADD4:
+    case PPC::ADD8:
+    case PPC::ADDC:
+    case PPC::ADDC8:
+    case PPC::ADDE:
+    case PPC::ADDE8:
+    case PPC::DIVD:
+    case PPC::DIVDU:
+    case PPC::DIVW:
+    case PPC::DIVWU:
+    case PPC::MULHD:
+    case PPC::MULHDU:
+    case PPC::MULHW:
+    case PPC::MULHWU:
+    case PPC::MULLD:
+    case PPC::MULLW:
+    case PPC::SUBF:
+    case PPC::SUBF8:
+    case PPC::SUBFC:
+    case PPC::SUBFC8:
+    case PPC::SUBFE:
+    case PPC::SUBFE8: {
+      // op: RT
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: RA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: RB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MFOCRF: {
+      // op: ST
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: FXM
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 255U) << 12;
+      break;
+    }
+    case PPC::DSS:
+    case PPC::DSSALL:
+    case PPC::DST:
+    case PPC::DST64:
+    case PPC::DSTST:
+    case PPC::DSTST64:
+    case PPC::DSTSTT:
+    case PPC::DSTSTT64:
+    case PPC::DSTT:
+    case PPC::DSTT64: {
+      // op: T
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 1U) << 25;
+      // op: STRM
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 3U) << 21;
+      // op: A
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 16;
+      // op: B
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MTVSCR: {
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::MFVSCR: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      break;
+    }
+    case PPC::VSPLTISB:
+    case PPC::VSPLTISH:
+    case PPC::VSPLTISW: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: IMM
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      break;
+    }
     case PPC::VADDCUW:
     case PPC::VADDFP:
     case PPC::VADDSBS:
@@ -927,9 +1384,6 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VCMPGTUWo:
     case PPC::VCTSXS:
     case PPC::VCTUXS:
-    case PPC::VEXPTEFP:
-    case PPC::VLOGEFP:
-    case PPC::VMADDFP:
     case PPC::VMAXFP:
     case PPC::VMAXSB:
     case PPC::VMAXSH:
@@ -937,8 +1391,6 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VMAXUB:
     case PPC::VMAXUH:
     case PPC::VMAXUW:
-    case PPC::VMHADDSHS:
-    case PPC::VMHRADDSHS:
     case PPC::VMINFP:
     case PPC::VMINSB:
     case PPC::VMINSH:
@@ -946,19 +1398,12 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VMINUB:
     case PPC::VMINUH:
     case PPC::VMINUW:
-    case PPC::VMLADDUHM:
     case PPC::VMRGHB:
     case PPC::VMRGHH:
     case PPC::VMRGHW:
     case PPC::VMRGLB:
     case PPC::VMRGLH:
     case PPC::VMRGLW:
-    case PPC::VMSUMMBM:
-    case PPC::VMSUMSHM:
-    case PPC::VMSUMSHS:
-    case PPC::VMSUMUBM:
-    case PPC::VMSUMUHM:
-    case PPC::VMSUMUHS:
     case PPC::VMULESB:
     case PPC::VMULESH:
     case PPC::VMULEUB:
@@ -967,10 +1412,8 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VMULOSH:
     case PPC::VMULOUB:
     case PPC::VMULOUH:
-    case PPC::VNMSUBFP:
     case PPC::VNOR:
     case PPC::VOR:
-    case PPC::VPERM:
     case PPC::VPKPX:
     case PPC::VPKSHSS:
     case PPC::VPKSHUS:
@@ -980,27 +1423,16 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VPKUHUS:
     case PPC::VPKUWUM:
     case PPC::VPKUWUS:
-    case PPC::VREFP:
-    case PPC::VRFIM:
-    case PPC::VRFIN:
-    case PPC::VRFIP:
-    case PPC::VRFIZ:
     case PPC::VRLB:
     case PPC::VRLH:
     case PPC::VRLW:
-    case PPC::VRSQRTEFP:
-    case PPC::VSEL:
     case PPC::VSL:
     case PPC::VSLB:
-    case PPC::VSLDOI:
     case PPC::VSLH:
     case PPC::VSLO:
     case PPC::VSLW:
     case PPC::VSPLTB:
     case PPC::VSPLTH:
-    case PPC::VSPLTISB:
-    case PPC::VSPLTISH:
-    case PPC::VSPLTISW:
     case PPC::VSPLTW:
     case PPC::VSR:
     case PPC::VSRAB:
@@ -1026,20 +1458,102 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::VSUM4SHS:
     case PPC::VSUM4UBS:
     case PPC::VSUMSWS:
+    case PPC::VXOR: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: VA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::VSLDOI: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: VA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      // op: SH
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 15U) << 6;
+      break;
+    }
+    case PPC::VMHADDSHS:
+    case PPC::VMHRADDSHS:
+    case PPC::VMLADDUHM:
+    case PPC::VMSUMMBM:
+    case PPC::VMSUMSHM:
+    case PPC::VMSUMSHS:
+    case PPC::VMSUMUBM:
+    case PPC::VMSUMUHM:
+    case PPC::VMSUMUHS:
+    case PPC::VPERM:
+    case PPC::VSEL: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: VA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 11;
+      // op: VC
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 6;
+      break;
+    }
+    case PPC::VMADDFP:
+    case PPC::VNMSUBFP: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: VA
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 16;
+      // op: VC
+      op = getMachineOpValue(MI, MI.getOperand(2));
+      Value |= (op & 31U) << 6;
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(3));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::VEXPTEFP:
+    case PPC::VLOGEFP:
+    case PPC::VREFP:
+    case PPC::VRFIM:
+    case PPC::VRFIN:
+    case PPC::VRFIP:
+    case PPC::VRFIZ:
+    case PPC::VRSQRTEFP:
     case PPC::VUPKHPX:
     case PPC::VUPKHSB:
     case PPC::VUPKHSH:
     case PPC::VUPKLPX:
     case PPC::VUPKLSB:
-    case PPC::VUPKLSH:
-    case PPC::VXOR:
-    case PPC::V_SET0:
-    case PPC::XOR:
-    case PPC::XOR8:
-    case PPC::XORI:
-    case PPC::XORI8:
-    case PPC::XORIS:
-    case PPC::XORIS8: {
+    case PPC::VUPKLSH: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      // op: VB
+      op = getMachineOpValue(MI, MI.getOperand(1));
+      Value |= (op & 31U) << 11;
+      break;
+    }
+    case PPC::V_SET0: {
+      // op: VD
+      op = getMachineOpValue(MI, MI.getOperand(0));
+      Value |= (op & 31U) << 21;
+      Value |= (op & 31U) << 16;
+      Value |= (op & 31U) << 11;
       break;
     }
   default:

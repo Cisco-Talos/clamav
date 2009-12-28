@@ -2651,7 +2651,7 @@ SDNode *Select_ARMISD_CMPZ(const SDValue &N) {
     SDValue N0 = N.getOperand(0);
 
     // Pattern: (ARMcmpZ:isVoid tGPR:i32:$lhs, (sub:i32 0:i32, tGPR:i32:$rhs))
-    // Emits: (tCMNZ:isVoid tGPR:i32:$lhs, tGPR:i32:$rhs)
+    // Emits: (tCMNz:isVoid tGPR:i32:$lhs, tGPR:i32:$rhs)
     // Pattern complexity = 11  cost = 1  size = 0
     {
       SDValue N1 = N.getOperand(1);
@@ -2663,7 +2663,7 @@ SDNode *Select_ARMISD_CMPZ(const SDValue &N) {
           if (CN1 == INT64_C(0)) {
             SDValue N11 = N1.getOperand(1);
             if (N0.getValueType() == MVT::i32) {
-              SDNode *Result = Emit_10(N, ARM::tCMNZ);
+              SDNode *Result = Emit_10(N, ARM::tCMNz);
               return Result;
             }
           }
@@ -2773,7 +2773,7 @@ SDNode *Select_ARMISD_CMPZ(const SDValue &N) {
   }
 
   // Pattern: (ARMcmpZ:isVoid (sub:i32 0:i32, tGPR:i32:$rhs), tGPR:i32:$lhs)
-  // Emits: (tCMNZ:isVoid tGPR:i32:$lhs, tGPR:i32:$rhs)
+  // Emits: (tCMNz:isVoid tGPR:i32:$lhs, tGPR:i32:$rhs)
   // Pattern complexity = 11  cost = 1  size = 0
   if ((Subtarget->isThumb1Only())) {
     SDValue N0 = N.getOperand(0);
@@ -2786,7 +2786,7 @@ SDNode *Select_ARMISD_CMPZ(const SDValue &N) {
           SDValue N01 = N0.getOperand(1);
           SDValue N1 = N.getOperand(1);
           if (N0.getValueType() == MVT::i32) {
-            SDNode *Result = Emit_24(N, ARM::tCMNZ);
+            SDNode *Result = Emit_24(N, ARM::tCMNz);
             return Result;
           }
         }

@@ -1463,7 +1463,7 @@ void ARMAsmPrinter::printInstruction(const MachineInstr *MI) {
     1522U,	// tCBNZ
     1528U,	// tCBZ
     1076986004U,	// tCMN
-    1076986004U,	// tCMNZ
+    1076986004U,	// tCMNz
     1076986008U,	// tCMPhir
     1076986008U,	// tCMPi8
     1076986008U,	// tCMPr
@@ -3133,7 +3133,7 @@ void ARMAsmPrinter::printInstruction(const MachineInstr *MI) {
   case ARM::tADDrr:
   case ARM::tASRri:
   case ARM::tCMN:
-  case ARM::tCMNZ:
+  case ARM::tCMNz:
   case ARM::tCMPhir:
   case ARM::tCMPi8:
   case ARM::tCMPr:
@@ -3657,7 +3657,7 @@ void ARMAsmPrinter::printInstruction(const MachineInstr *MI) {
     case ARM::t2CLZ: 
     case ARM::t2MOVi16: 
     case ARM::tCMN: 
-    case ARM::tCMNZ: 
+    case ARM::tCMNz: 
     case ARM::tCMPhir: 
     case ARM::tCMPi8: 
     case ARM::tCMPr: 

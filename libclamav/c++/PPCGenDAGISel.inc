@@ -7606,6 +7606,87 @@ SDNode *Select_PPCISD_LBRX_i32(const SDValue &N) {
   return NULL;
 }
 
+DISABLE_INLINE SDNode *Emit_100(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0, SDValue &CPTmpN1_0, SDValue &CPTmpN1_1) {
+  SDValue Chain = N.getOperand(0);
+  SDValue N1 = N.getOperand(1);
+  bool HasInFlag = (N.getOperand(N.getNumOperands()-1).getValueType() == MVT::Flag);
+  SDValue InFlag(0, 0);
+  if (HasInFlag) {
+    InFlag = N.getOperand(N.getNumOperands()-1);
+  }
+  SDValue Ops0[] = { CPTmpN1_0, CPTmpN1_1, Chain, InFlag };
+  SDNode *ResNode = CurDAG->SelectNodeTo(N.getNode(), Opc0, VT0, MVT::Other, MVT::Flag, Ops0, HasInFlag ? 4 : 3);
+  Chain = SDValue(ResNode, 1);
+  InFlag = SDValue(ResNode, 2);
+  const SDValue Froms[] = {
+    SDValue(N.getNode(), 2),
+    SDValue(N.getNode(), 1)
+  };
+  const SDValue Tos[] = {
+    InFlag,
+    SDValue(Chain.getNode(), Chain.getResNo())
+  };
+  ReplaceUses(Froms, Tos, 2);
+  return ResNode;
+}
+SDNode *Select_PPCISD_LOAD_i64(const SDValue &N) {
+  SDValue Chain = N.getOperand(0);
+  SDValue N1 = N.getOperand(1);
+  SDValue CPTmpN1_0;
+  SDValue CPTmpN1_1;
+
+  // Pattern: (PPCload:i64 ixaddr:iPTR:$src)
+  // Emits: (LD:i64 ixaddr:iPTR:$src)
+  // Pattern complexity = 12  cost = 1  size = 0
+  if (SelectAddrImmShift(N, N1, CPTmpN1_0, CPTmpN1_1) &&
+      N1.getValueType() == TLI.getPointerTy()) {
+    SDNode *Result = Emit_100(N, PPC::LD, MVT::i64, CPTmpN1_0, CPTmpN1_1);
+    return Result;
+  }
+
+  // Pattern: (PPCload:i64 xaddr:iPTR:$src)
+  // Emits: (LDX:i64 xaddr:iPTR:$src)
+  // Pattern complexity = 12  cost = 1  size = 0
+  if (SelectAddrIdx(N, N1, CPTmpN1_0, CPTmpN1_1) &&
+      N1.getValueType() == TLI.getPointerTy()) {
+    SDNode *Result = Emit_100(N, PPC::LDX, MVT::i64, CPTmpN1_0, CPTmpN1_1);
+    return Result;
+  }
+
+  CannotYetSelect(N);
+  return NULL;
+}
+
+DISABLE_INLINE SDNode *Emit_101(const SDValue &N, unsigned Opc0) {
+  SDValue Chain = N.getOperand(0);
+  SDValue N1 = N.getOperand(1);
+  SDValue InFlag = N.getOperand(2);
+  SDNode *ResNode = CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Other, MVT::Flag, N1, Chain, InFlag);
+  Chain = SDValue(ResNode, 0);
+  InFlag = SDValue(ResNode, 1);
+  const SDValue Froms[] = {
+    SDValue(N.getNode(), 1),
+    SDValue(N.getNode(), 0)
+  };
+  const SDValue Tos[] = {
+    InFlag,
+    SDValue(Chain.getNode(), Chain.getResNo())
+  };
+  ReplaceUses(Froms, Tos, 2);
+  return ResNode;
+}
+SDNode *Select_PPCISD_LOAD_TOC(const SDValue &N) {
+  SDValue Chain = N.getOperand(0);
+  SDValue N1 = N.getOperand(1);
+  if (N1.getValueType() == MVT::i64) {
+    SDNode *Result = Emit_101(N, PPC::LDinto_toc);
+    return Result;
+  }
+
+  CannotYetSelect(N);
+  return NULL;
+}
+
 SDNode *Select_PPCISD_Lo_i32(const SDValue &N) {
   SDValue N0 = N.getOperand(0);
 
@@ -7740,18 +7821,18 @@ SDNode *Select_PPCISD_Lo_i64(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_100(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
+DISABLE_INLINE SDNode *Emit_102(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
   SDNode *ResNode = CurDAG->SelectNodeTo(N.getNode(), Opc0, VT0, MVT::Flag);
   SDValue InFlag(ResNode, 1);
   ReplaceUses(SDValue(N.getNode(), 1), InFlag);
   return ResNode;
 }
 SDNode *Select_PPCISD_MFFS_f64(const SDValue &N) {
-  SDNode *Result = Emit_100(N, PPC::MFFS, MVT::f64);
+  SDNode *Result = Emit_102(N, PPC::MFFS, MVT::f64);
   return Result;
 }
 
-DISABLE_INLINE SDNode *Emit_101(const SDValue &N, unsigned Opc0) {
+DISABLE_INLINE SDNode *Emit_103(const SDValue &N, unsigned Opc0) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   bool HasInFlag = (N.getOperand(N.getNumOperands()-1).getValueType() == MVT::Flag);
@@ -7782,7 +7863,7 @@ SDNode *Select_PPCISD_MTCTR(const SDValue &N) {
   // Emits: (MTCTR:isVoid GPRC:i32:$rS)
   // Pattern complexity = 3  cost = 1  size = 0
   if (N1.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_101(N, PPC::MTCTR);
+    SDNode *Result = Emit_103(N, PPC::MTCTR);
     return Result;
   }
 
@@ -7790,7 +7871,7 @@ SDNode *Select_PPCISD_MTCTR(const SDValue &N) {
   // Emits: (MTCTR8:isVoid G8RC:i64:$rS)
   // Pattern complexity = 3  cost = 1  size = 0
   if (N1.getValueType() == MVT::i64) {
-    SDNode *Result = Emit_101(N, PPC::MTCTR8);
+    SDNode *Result = Emit_103(N, PPC::MTCTR8);
     return Result;
   }
 
@@ -7798,7 +7879,7 @@ SDNode *Select_PPCISD_MTCTR(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_102(const SDValue &N, unsigned Opc0) {
+DISABLE_INLINE SDNode *Emit_104(const SDValue &N, unsigned Opc0) {
   SDValue N0 = N.getOperand(0);
   SDValue Tmp0 = CurDAG->getTargetConstant(((unsigned) cast<ConstantSDNode>(N0)->getZExtValue()), MVT::i32);
   SDValue InFlag = N.getOperand(1);
@@ -7811,7 +7892,7 @@ SDNode *Select_PPCISD_MTFSB0(const SDValue &N) {
   SDValue N0 = N.getOperand(0);
   if (N0.getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_102(N, PPC::MTFSB0);
+    SDNode *Result = Emit_104(N, PPC::MTFSB0);
     return Result;
   }
 
@@ -7823,7 +7904,7 @@ SDNode *Select_PPCISD_MTFSB1(const SDValue &N) {
   SDValue N0 = N.getOperand(0);
   if (N0.getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_102(N, PPC::MTFSB1);
+    SDNode *Result = Emit_104(N, PPC::MTFSB1);
     return Result;
   }
 
@@ -7831,7 +7912,7 @@ SDNode *Select_PPCISD_MTFSB1(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_103(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
+DISABLE_INLINE SDNode *Emit_105(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
   SDValue N0 = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -7846,7 +7927,7 @@ SDNode *Select_PPCISD_MTFSF_f64(const SDValue &N) {
     SDValue N1 = N.getOperand(1);
     SDValue N2 = N.getOperand(2);
     if (N0.getValueType() == MVT::i32) {
-      SDNode *Result = Emit_103(N, PPC::MTFSF, MVT::f64);
+      SDNode *Result = Emit_105(N, PPC::MTFSF, MVT::f64);
       return Result;
     }
   }
@@ -7855,7 +7936,7 @@ SDNode *Select_PPCISD_MTFSF_f64(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_104(const SDValue &N, unsigned Opc0) {
+DISABLE_INLINE SDNode *Emit_106(const SDValue &N, unsigned Opc0) {
   SDValue InFlag = N.getOperand(0);
   SDNode *ResNode = CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Flag, InFlag);
   InFlag = SDValue(ResNode, 0);
@@ -7863,11 +7944,11 @@ DISABLE_INLINE SDNode *Emit_104(const SDValue &N, unsigned Opc0) {
   return ResNode;
 }
 SDNode *Select_PPCISD_NOP(const SDValue &N) {
-  SDNode *Result = Emit_104(N, PPC::NOP);
+  SDNode *Result = Emit_106(N, PPC::NOP);
   return Result;
 }
 
-DISABLE_INLINE SDNode *Emit_105(const SDValue &N, unsigned Opc0) {
+DISABLE_INLINE SDNode *Emit_107(const SDValue &N, unsigned Opc0) {
   SDValue Chain = N.getOperand(0);
   bool HasInFlag = (N.getOperand(N.getNumOperands()-1).getValueType() == MVT::Flag);
   SDValue Tmp0 = CurDAG->getTargetConstant(0x14ULL, MVT::i32);
@@ -7880,7 +7961,7 @@ DISABLE_INLINE SDNode *Emit_105(const SDValue &N, unsigned Opc0) {
   return CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Other, Ops0, HasInFlag ? 4 : 3);
 }
 SDNode *Select_PPCISD_RET_FLAG(const SDValue &N) {
-  SDNode *Result = Emit_105(N, PPC::BLR);
+  SDNode *Result = Emit_107(N, PPC::BLR);
   return Result;
 }
 
@@ -7956,7 +8037,7 @@ SDNode *Select_PPCISD_SRL_i64(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_106(const SDValue &N, unsigned Opc0, SDValue &CPTmpN2_0, SDValue &CPTmpN2_1) {
+DISABLE_INLINE SDNode *Emit_108(const SDValue &N, unsigned Opc0, SDValue &CPTmpN2_0, SDValue &CPTmpN2_1) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -7977,7 +8058,7 @@ SDNode *Select_PPCISD_STBRX(const SDValue &N) {
     // Emits: (STHBRX:isVoid GPRC:i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 12  cost = 1  size = 0
     if (cast<VTSDNode>(N3)->getVT() == MVT::i16) {
-      SDNode *Result = Emit_106(N, PPC::STHBRX, CPTmpN2_0, CPTmpN2_1);
+      SDNode *Result = Emit_108(N, PPC::STHBRX, CPTmpN2_0, CPTmpN2_1);
       return Result;
     }
 
@@ -7985,7 +8066,7 @@ SDNode *Select_PPCISD_STBRX(const SDValue &N) {
     // Emits: (STWBRX:isVoid GPRC:i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 12  cost = 1  size = 0
     if (cast<VTSDNode>(N3)->getVT() == MVT::i32) {
-      SDNode *Result = Emit_106(N, PPC::STWBRX, CPTmpN2_0, CPTmpN2_1);
+      SDNode *Result = Emit_108(N, PPC::STWBRX, CPTmpN2_0, CPTmpN2_1);
       return Result;
     }
   }
@@ -7994,7 +8075,7 @@ SDNode *Select_PPCISD_STBRX(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_107(const SDValue &N, unsigned Opc0, SDValue &CPTmpN2_0, SDValue &CPTmpN2_1) {
+DISABLE_INLINE SDNode *Emit_109(const SDValue &N, unsigned Opc0, SDValue &CPTmpN2_0, SDValue &CPTmpN2_1) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8013,7 +8094,7 @@ SDNode *Select_PPCISD_STCX(const SDValue &N) {
     // Emits: (STWCX:isVoid GPRC:i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 12  cost = 1  size = 0
     if (N1.getValueType() == MVT::i32) {
-      SDNode *Result = Emit_107(N, PPC::STWCX, CPTmpN2_0, CPTmpN2_1);
+      SDNode *Result = Emit_109(N, PPC::STWCX, CPTmpN2_0, CPTmpN2_1);
       return Result;
     }
 
@@ -8021,7 +8102,7 @@ SDNode *Select_PPCISD_STCX(const SDValue &N) {
     // Emits: (STDCX:isVoid G8RC:i64:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 12  cost = 1  size = 0
     if (N1.getValueType() == MVT::i64) {
-      SDNode *Result = Emit_107(N, PPC::STDCX, CPTmpN2_0, CPTmpN2_1);
+      SDNode *Result = Emit_109(N, PPC::STDCX, CPTmpN2_0, CPTmpN2_1);
       return Result;
     }
   }
@@ -8042,7 +8123,7 @@ SDNode *Select_PPCISD_STD_32(const SDValue &N) {
   // Pattern complexity = 12  cost = 1  size = 0
   if (SelectAddrImmShift(N, N2, CPTmpN2_0, CPTmpN2_1) &&
       N1.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_107(N, PPC::STD_32, CPTmpN2_0, CPTmpN2_1);
+    SDNode *Result = Emit_109(N, PPC::STD_32, CPTmpN2_0, CPTmpN2_1);
     return Result;
   }
 
@@ -8051,7 +8132,7 @@ SDNode *Select_PPCISD_STD_32(const SDValue &N) {
   // Pattern complexity = 12  cost = 1  size = 0
   if (SelectAddrIdx(N, N2, CPTmpN2_0, CPTmpN2_1) &&
       N1.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_107(N, PPC::STDX_32, CPTmpN2_0, CPTmpN2_1);
+    SDNode *Result = Emit_109(N, PPC::STDX_32, CPTmpN2_0, CPTmpN2_1);
     return Result;
   }
 
@@ -8066,7 +8147,7 @@ SDNode *Select_PPCISD_STFIWX(const SDValue &N) {
   SDValue CPTmpN2_0;
   SDValue CPTmpN2_1;
   if (SelectAddrIdxOnly(N, N2, CPTmpN2_0, CPTmpN2_1)) {
-    SDNode *Result = Emit_107(N, PPC::STFIWX, CPTmpN2_0, CPTmpN2_1);
+    SDNode *Result = Emit_109(N, PPC::STFIWX, CPTmpN2_0, CPTmpN2_1);
     return Result;
   }
 
@@ -8074,7 +8155,7 @@ SDNode *Select_PPCISD_STFIWX(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_108(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
+DISABLE_INLINE SDNode *Emit_110(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8096,7 +8177,7 @@ DISABLE_INLINE SDNode *Emit_108(const SDValue &N, unsigned Opc0, unsigned NumInp
     Ops0.push_back(InFlag);
   return CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Other, &Ops0[0], Ops0.size());
 }
-DISABLE_INLINE SDNode *Emit_109(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
+DISABLE_INLINE SDNode *Emit_111(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8118,7 +8199,7 @@ DISABLE_INLINE SDNode *Emit_109(const SDValue &N, unsigned Opc0, unsigned NumInp
     Ops0.push_back(InFlag);
   return CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Other, &Ops0[0], Ops0.size());
 }
-DISABLE_INLINE SDNode *Emit_110(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
+DISABLE_INLINE SDNode *Emit_112(const SDValue &N, unsigned Opc0, unsigned NumInputRootOps) {
   SDValue Chain = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8150,7 +8231,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
       // Emits: (TCRETURNai:isVoid (imm:i32):$func, (imm:i32):$offset)
       // Pattern complexity = 9  cost = 1  size = 0
       if (N1.getValueType() == MVT::i32) {
-        SDNode *Result = Emit_108(N, PPC::TCRETURNai, 2);
+        SDNode *Result = Emit_110(N, PPC::TCRETURNai, 2);
         return Result;
       }
 
@@ -8158,7 +8239,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
       // Emits: (TCRETURNai8:isVoid (imm:i64):$func, (imm:i32):$offset)
       // Pattern complexity = 9  cost = 1  size = 0
       if (N1.getValueType() == MVT::i64) {
-        SDNode *Result = Emit_109(N, PPC::TCRETURNai8, 2);
+        SDNode *Result = Emit_111(N, PPC::TCRETURNai8, 2);
         return Result;
       }
     }
@@ -8171,7 +8252,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     SDValue N2 = N.getOperand(2);
     if (N2.getOpcode() == ISD::Constant &&
         N1.getValueType() == MVT::i64) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNdi8, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNdi8, 2);
       return Result;
     }
   }
@@ -8183,7 +8264,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     SDValue N2 = N.getOperand(2);
     if (N2.getOpcode() == ISD::Constant &&
         N1.getValueType() == MVT::i64) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNdi8, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNdi8, 2);
       return Result;
     }
   }
@@ -8195,7 +8276,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     SDValue N2 = N.getOperand(2);
     if (N2.getOpcode() == ISD::Constant &&
         N1.getValueType() == MVT::i32) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNdi, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNdi, 2);
       return Result;
     }
   }
@@ -8207,7 +8288,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     SDValue N2 = N.getOperand(2);
     if (N2.getOpcode() == ISD::Constant &&
         N1.getValueType() == MVT::i32) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNdi, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNdi, 2);
       return Result;
     }
   }
@@ -8218,7 +8299,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     // Emits: (TCRETURNri8:isVoid CTRRC8:i64:$dst, (imm:i32):$imm)
     // Pattern complexity = 6  cost = 1  size = 0
     if (N1.getValueType() == MVT::i64) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNri8, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNri8, 2);
       return Result;
     }
 
@@ -8226,7 +8307,7 @@ SDNode *Select_PPCISD_TC_RETURN(const SDValue &N) {
     // Emits: (TCRETURNri:isVoid CTRRC:i32:$dst, (imm:i32):$imm)
     // Pattern complexity = 6  cost = 1  size = 0
     if (N1.getValueType() == MVT::i32) {
-      SDNode *Result = Emit_110(N, PPC::TCRETURNri, 2);
+      SDNode *Result = Emit_112(N, PPC::TCRETURNri, 2);
       return Result;
     }
   }
@@ -8246,7 +8327,29 @@ SDNode *Select_PPCISD_TOC_ENTRY_i64(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_111(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
+DISABLE_INLINE SDNode *Emit_113(const SDValue &N, unsigned Opc0) {
+  SDValue Chain = N.getOperand(0);
+  SDValue InFlag = N.getOperand(1);
+  SDNode *ResNode = CurDAG->SelectNodeTo(N.getNode(), Opc0, MVT::Other, MVT::Flag, Chain, InFlag);
+  Chain = SDValue(ResNode, 0);
+  InFlag = SDValue(ResNode, 1);
+  const SDValue Froms[] = {
+    SDValue(N.getNode(), 1),
+    SDValue(N.getNode(), 0)
+  };
+  const SDValue Tos[] = {
+    InFlag,
+    SDValue(Chain.getNode(), Chain.getResNo())
+  };
+  ReplaceUses(Froms, Tos, 2);
+  return ResNode;
+}
+SDNode *Select_PPCISD_TOC_RESTORE(const SDValue &N) {
+  SDNode *Result = Emit_113(N, PPC::LDtoc_restore);
+  return Result;
+}
+
+DISABLE_INLINE SDNode *Emit_114(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
   SDValue N0 = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8264,7 +8367,7 @@ SDNode *Select_PPCISD_VCMP_v16i8(const SDValue &N) {
     // Emits: (VCMPEQUB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(6)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPEQUB, MVT::v16i8);
+      SDNode *Result = Emit_114(N, PPC::VCMPEQUB, MVT::v16i8);
       return Result;
     }
 
@@ -8272,7 +8375,7 @@ SDNode *Select_PPCISD_VCMP_v16i8(const SDValue &N) {
     // Emits: (VCMPGTSB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(774)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTSB, MVT::v16i8);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTSB, MVT::v16i8);
       return Result;
     }
 
@@ -8280,7 +8383,7 @@ SDNode *Select_PPCISD_VCMP_v16i8(const SDValue &N) {
     // Emits: (VCMPGTUB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(518)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTUB, MVT::v16i8);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTUB, MVT::v16i8);
       return Result;
     }
   }
@@ -8301,7 +8404,7 @@ SDNode *Select_PPCISD_VCMP_v8i16(const SDValue &N) {
     // Emits: (VCMPEQUH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(70)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPEQUH, MVT::v8i16);
+      SDNode *Result = Emit_114(N, PPC::VCMPEQUH, MVT::v8i16);
       return Result;
     }
 
@@ -8309,7 +8412,7 @@ SDNode *Select_PPCISD_VCMP_v8i16(const SDValue &N) {
     // Emits: (VCMPGTSH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(838)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTSH, MVT::v8i16);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTSH, MVT::v8i16);
       return Result;
     }
 
@@ -8317,7 +8420,7 @@ SDNode *Select_PPCISD_VCMP_v8i16(const SDValue &N) {
     // Emits: (VCMPGTUH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(582)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTUH, MVT::v8i16);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTUH, MVT::v8i16);
       return Result;
     }
   }
@@ -8338,7 +8441,7 @@ SDNode *Select_PPCISD_VCMP_v4i32(const SDValue &N) {
     // Emits: (VCMPEQUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(134)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPEQUW, MVT::v4i32);
+      SDNode *Result = Emit_114(N, PPC::VCMPEQUW, MVT::v4i32);
       return Result;
     }
 
@@ -8346,7 +8449,7 @@ SDNode *Select_PPCISD_VCMP_v4i32(const SDValue &N) {
     // Emits: (VCMPGTSW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(902)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTSW, MVT::v4i32);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTSW, MVT::v4i32);
       return Result;
     }
 
@@ -8354,7 +8457,7 @@ SDNode *Select_PPCISD_VCMP_v4i32(const SDValue &N) {
     // Emits: (VCMPGTUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(646)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTUW, MVT::v4i32);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTUW, MVT::v4i32);
       return Result;
     }
   }
@@ -8375,7 +8478,7 @@ SDNode *Select_PPCISD_VCMP_v4f32(const SDValue &N) {
     // Emits: (VCMPBFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(966)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPBFP, MVT::v4f32);
+      SDNode *Result = Emit_114(N, PPC::VCMPBFP, MVT::v4f32);
       return Result;
     }
 
@@ -8383,7 +8486,7 @@ SDNode *Select_PPCISD_VCMP_v4f32(const SDValue &N) {
     // Emits: (VCMPEQFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(198)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPEQFP, MVT::v4f32);
+      SDNode *Result = Emit_114(N, PPC::VCMPEQFP, MVT::v4f32);
       return Result;
     }
 
@@ -8391,7 +8494,7 @@ SDNode *Select_PPCISD_VCMP_v4f32(const SDValue &N) {
     // Emits: (VCMPGEFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(454)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGEFP, MVT::v4f32);
+      SDNode *Result = Emit_114(N, PPC::VCMPGEFP, MVT::v4f32);
       return Result;
     }
 
@@ -8399,7 +8502,7 @@ SDNode *Select_PPCISD_VCMP_v4f32(const SDValue &N) {
     // Emits: (VCMPGTFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(710)) {
-      SDNode *Result = Emit_111(N, PPC::VCMPGTFP, MVT::v4f32);
+      SDNode *Result = Emit_114(N, PPC::VCMPGTFP, MVT::v4f32);
       return Result;
     }
   }
@@ -8408,7 +8511,7 @@ SDNode *Select_PPCISD_VCMP_v4f32(const SDValue &N) {
   return NULL;
 }
 
-DISABLE_INLINE SDNode *Emit_112(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
+DISABLE_INLINE SDNode *Emit_115(const SDValue &N, unsigned Opc0, MVT::SimpleValueType VT0) {
   SDValue N0 = N.getOperand(0);
   SDValue N1 = N.getOperand(1);
   SDValue N2 = N.getOperand(2);
@@ -8429,7 +8532,7 @@ SDNode *Select_PPCISD_VCMPo_v16i8(const SDValue &N) {
     // Emits: (VCMPEQUBo:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(6)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPEQUBo, MVT::v16i8);
+      SDNode *Result = Emit_115(N, PPC::VCMPEQUBo, MVT::v16i8);
       return Result;
     }
 
@@ -8437,7 +8540,7 @@ SDNode *Select_PPCISD_VCMPo_v16i8(const SDValue &N) {
     // Emits: (VCMPGTSBo:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(774)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTSBo, MVT::v16i8);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTSBo, MVT::v16i8);
       return Result;
     }
 
@@ -8445,7 +8548,7 @@ SDNode *Select_PPCISD_VCMPo_v16i8(const SDValue &N) {
     // Emits: (VCMPGTUBo:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(518)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTUBo, MVT::v16i8);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTUBo, MVT::v16i8);
       return Result;
     }
   }
@@ -8466,7 +8569,7 @@ SDNode *Select_PPCISD_VCMPo_v8i16(const SDValue &N) {
     // Emits: (VCMPEQUHo:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(70)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPEQUHo, MVT::v8i16);
+      SDNode *Result = Emit_115(N, PPC::VCMPEQUHo, MVT::v8i16);
       return Result;
     }
 
@@ -8474,7 +8577,7 @@ SDNode *Select_PPCISD_VCMPo_v8i16(const SDValue &N) {
     // Emits: (VCMPGTSHo:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(838)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTSHo, MVT::v8i16);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTSHo, MVT::v8i16);
       return Result;
     }
 
@@ -8482,7 +8585,7 @@ SDNode *Select_PPCISD_VCMPo_v8i16(const SDValue &N) {
     // Emits: (VCMPGTUHo:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(582)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTUHo, MVT::v8i16);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTUHo, MVT::v8i16);
       return Result;
     }
   }
@@ -8503,7 +8606,7 @@ SDNode *Select_PPCISD_VCMPo_v4i32(const SDValue &N) {
     // Emits: (VCMPEQUWo:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(134)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPEQUWo, MVT::v4i32);
+      SDNode *Result = Emit_115(N, PPC::VCMPEQUWo, MVT::v4i32);
       return Result;
     }
 
@@ -8511,7 +8614,7 @@ SDNode *Select_PPCISD_VCMPo_v4i32(const SDValue &N) {
     // Emits: (VCMPGTSWo:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(902)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTSWo, MVT::v4i32);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTSWo, MVT::v4i32);
       return Result;
     }
 
@@ -8519,7 +8622,7 @@ SDNode *Select_PPCISD_VCMPo_v4i32(const SDValue &N) {
     // Emits: (VCMPGTUWo:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(646)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTUWo, MVT::v4i32);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTUWo, MVT::v4i32);
       return Result;
     }
   }
@@ -8540,7 +8643,7 @@ SDNode *Select_PPCISD_VCMPo_v4f32(const SDValue &N) {
     // Emits: (VCMPBFPo:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(966)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPBFPo, MVT::v4f32);
+      SDNode *Result = Emit_115(N, PPC::VCMPBFPo, MVT::v4f32);
       return Result;
     }
 
@@ -8548,7 +8651,7 @@ SDNode *Select_PPCISD_VCMPo_v4f32(const SDValue &N) {
     // Emits: (VCMPEQFPo:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(198)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPEQFPo, MVT::v4f32);
+      SDNode *Result = Emit_115(N, PPC::VCMPEQFPo, MVT::v4f32);
       return Result;
     }
 
@@ -8556,7 +8659,7 @@ SDNode *Select_PPCISD_VCMPo_v4f32(const SDValue &N) {
     // Emits: (VCMPGEFPo:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(454)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGEFPo, MVT::v4f32);
+      SDNode *Result = Emit_115(N, PPC::VCMPGEFPo, MVT::v4f32);
       return Result;
     }
 
@@ -8564,7 +8667,7 @@ SDNode *Select_PPCISD_VCMPo_v4f32(const SDValue &N) {
     // Emits: (VCMPGTFPo:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
     if (CN1 == INT64_C(710)) {
-      SDNode *Result = Emit_112(N, PPC::VCMPGTFPo, MVT::v4f32);
+      SDNode *Result = Emit_115(N, PPC::VCMPGTFPo, MVT::v4f32);
       return Result;
     }
   }
@@ -9343,6 +9446,19 @@ SDNode *SelectCode(SDValue N) {
     }
     break;
   }
+  case PPCISD::LOAD: {
+    switch (NVT) {
+    case MVT::i64:
+      return Select_PPCISD_LOAD_i64(N);
+    default:
+      break;
+    }
+    break;
+  }
+  case PPCISD::LOAD_TOC: {
+    return Select_PPCISD_LOAD_TOC(N);
+    break;
+  }
   case PPCISD::Lo: {
     switch (NVT) {
     case MVT::i32:
@@ -9452,6 +9568,10 @@ SDNode *SelectCode(SDValue N) {
     default:
       break;
     }
+    break;
+  }
+  case PPCISD::TOC_RESTORE: {
+    return Select_PPCISD_TOC_RESTORE(N);
     break;
   }
   case PPCISD::VCMP: {

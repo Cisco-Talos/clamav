@@ -295,9 +295,10 @@ am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
 	ConstantRange.lo Debug.lo Dwarf.lo ErrorHandling.lo \
 	FoldingSet.lo FormattedStream.lo GraphWriter.lo \
 	ManagedStatic.lo MemoryBuffer.lo PrettyStackTrace.lo \
-	SmallPtrSet.lo SourceMgr.lo Statistic.lo StringExtras.lo \
-	StringMap.lo StringPool.lo StringRef.lo TargetRegistry.lo \
-	Timer.lo Triple.lo Twine.lo raw_ostream.lo SubtargetFeature.lo \
+	SmallPtrSet.lo SmallVector.lo SourceMgr.lo Statistic.lo \
+	StringExtras.lo StringMap.lo StringPool.lo StringRef.lo \
+	TargetRegistry.lo Timer.lo Triple.lo Twine.lo \
+	circular_raw_ostream.lo raw_ostream.lo SubtargetFeature.lo \
 	TargetData.lo TargetInstrInfo.lo TargetLoweringObjectFile.lo \
 	TargetMachine.lo TargetRegisterInfo.lo AsmWriter.lo \
 	Attributes.lo AutoUpgrade.lo BasicBlock.lo ConstantFold.lo \
@@ -351,11 +352,12 @@ am_libllvmsupport_la_OBJECTS = APFloat.lo APInt.lo APSInt.lo \
 	FoldingSet.lo FormattedStream.lo GraphWriter.lo IsInf.lo \
 	IsNAN.lo ManagedStatic.lo MemoryBuffer.lo MemoryObject.lo \
 	PluginLoader.lo PrettyStackTrace.lo Regex.lo \
-	SlowOperationInformer.lo SmallPtrSet.lo SourceMgr.lo \
-	Statistic.lo StringExtras.lo StringMap.lo StringPool.lo \
-	StringRef.lo SystemUtils.lo TargetRegistry.lo Timer.lo \
-	Triple.lo Twine.lo raw_os_ostream.lo raw_ostream.lo regcomp.lo \
-	regerror.lo regexec.lo regfree.lo regstrlcpy.lo
+	SlowOperationInformer.lo SmallPtrSet.lo SmallVector.lo \
+	SourceMgr.lo Statistic.lo StringExtras.lo StringMap.lo \
+	StringPool.lo StringRef.lo SystemUtils.lo TargetRegistry.lo \
+	Timer.lo Triple.lo Twine.lo circular_raw_ostream.lo \
+	raw_os_ostream.lo raw_ostream.lo regcomp.lo regerror.lo \
+	regexec.lo regfree.lo regstrlcpy.lo
 libllvmsupport_la_OBJECTS = $(am_libllvmsupport_la_OBJECTS)
 libllvmsystem_la_DEPENDENCIES =
 am_libllvmsystem_la_OBJECTS = Alarm.lo Atomic.lo Disassembler.lo \
@@ -530,7 +532,9 @@ am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
 	llvm/utils/TableGen/TGParser.cpp \
 	llvm/utils/TableGen/TGValueTypes.cpp \
 	llvm/utils/TableGen/TableGen.cpp \
-	llvm/utils/TableGen/TableGenBackend.cpp
+	llvm/utils/TableGen/TableGenBackend.cpp \
+	llvm/utils/TableGen/X86DisassemblerTables.cpp \
+	llvm/utils/TableGen/X86RecognizableInstr.cpp
 @MAINTAINER_MODE_TRUE@am_tblgen_OBJECTS =  \
 @MAINTAINER_MODE_TRUE@	tblgen-AsmMatcherEmitter.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-AsmWriterEmitter.$(OBJEXT) \
@@ -555,7 +559,9 @@ am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
 @MAINTAINER_MODE_TRUE@	tblgen-TGParser.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-TGValueTypes.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-TableGen.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT)
+@MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-X86DisassemblerTables.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-X86RecognizableInstr.$(OBJEXT)
 tblgen_OBJECTS = $(am_tblgen_OBJECTS)
 @MAINTAINER_MODE_TRUE@tblgen_DEPENDENCIES = libllvmsupport.la \
 @MAINTAINER_MODE_TRUE@	libllvmsystem.la
@@ -874,6 +880,7 @@ libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/Regex.cpp\
 	llvm/lib/Support/SlowOperationInformer.cpp\
 	llvm/lib/Support/SmallPtrSet.cpp\
+	llvm/lib/Support/SmallVector.cpp\
 	llvm/lib/Support/SourceMgr.cpp\
 	llvm/lib/Support/Statistic.cpp\
 	llvm/lib/Support/StringExtras.cpp\
@@ -885,6 +892,7 @@ libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/Timer.cpp\
 	llvm/lib/Support/Triple.cpp\
 	llvm/lib/Support/Twine.cpp\
+	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_os_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
 	llvm/lib/Support/regcomp.c\
@@ -921,7 +929,9 @@ libllvmsupport_la_SOURCES = \
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGParser.cpp\
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGValueTypes.cpp\
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGen.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86DisassemblerTables.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86RecognizableInstr.cpp
 
 @MAINTAINER_MODE_TRUE@TBLGEN = $(top_builddir)/tblgen
 @MAINTAINER_MODE_TRUE@TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
@@ -1057,6 +1067,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Support/MemoryBuffer.cpp\
 	llvm/lib/Support/PrettyStackTrace.cpp\
 	llvm/lib/Support/SmallPtrSet.cpp\
+	llvm/lib/Support/SmallVector.cpp\
 	llvm/lib/Support/SourceMgr.cpp\
 	llvm/lib/Support/Statistic.cpp\
 	llvm/lib/Support/StringExtras.cpp\
@@ -1067,6 +1078,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Support/Timer.cpp\
 	llvm/lib/Support/Triple.cpp\
 	llvm/lib/Support/Twine.cpp\
+	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
 	llvm/lib/Target/SubtargetFeature.cpp\
 	llvm/lib/Target/TargetData.cpp\
@@ -1776,6 +1788,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SlotIndexes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SlowOperationInformer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SmallPtrSet.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SmallVector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SourceMgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Spiller.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StackProtector.Plo@am__quote@
@@ -1824,6 +1837,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Verifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VirtRegMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VirtRegRewriter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/circular_raw_ostream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/count-count.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-bytecode2llvm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-TestMain.Plo@am__quote@
@@ -1976,6 +1990,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TGValueTypes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TableGen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TableGenBackend.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-X86DisassemblerTables.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-X86RecognizableInstr.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -4017,6 +4033,14 @@ SmallPtrSet.lo: llvm/lib/Support/SmallPtrSet.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SmallPtrSet.lo `test -f 'llvm/lib/Support/SmallPtrSet.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallPtrSet.cpp
 
+SmallVector.lo: llvm/lib/Support/SmallVector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SmallVector.lo -MD -MP -MF $(DEPDIR)/SmallVector.Tpo -c -o SmallVector.lo `test -f 'llvm/lib/Support/SmallVector.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallVector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SmallVector.Tpo $(DEPDIR)/SmallVector.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SmallVector.cpp' object='SmallVector.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SmallVector.lo `test -f 'llvm/lib/Support/SmallVector.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallVector.cpp
+
 SourceMgr.lo: llvm/lib/Support/SourceMgr.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SourceMgr.lo -MD -MP -MF $(DEPDIR)/SourceMgr.Tpo -c -o SourceMgr.lo `test -f 'llvm/lib/Support/SourceMgr.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SourceMgr.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SourceMgr.Tpo $(DEPDIR)/SourceMgr.Plo
@@ -4096,6 +4120,14 @@ Twine.lo: llvm/lib/Support/Twine.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Twine.cpp' object='Twine.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Twine.lo `test -f 'llvm/lib/Support/Twine.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Twine.cpp
+
+circular_raw_ostream.lo: llvm/lib/Support/circular_raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT circular_raw_ostream.lo -MD -MP -MF $(DEPDIR)/circular_raw_ostream.Tpo -c -o circular_raw_ostream.lo `test -f 'llvm/lib/Support/circular_raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/circular_raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/circular_raw_ostream.Tpo $(DEPDIR)/circular_raw_ostream.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/circular_raw_ostream.cpp' object='circular_raw_ostream.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o circular_raw_ostream.lo `test -f 'llvm/lib/Support/circular_raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/circular_raw_ostream.cpp
 
 raw_ostream.lo: llvm/lib/Support/raw_ostream.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT raw_ostream.lo -MD -MP -MF $(DEPDIR)/raw_ostream.Tpo -c -o raw_ostream.lo `test -f 'llvm/lib/Support/raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_ostream.cpp
@@ -5896,6 +5928,38 @@ tblgen-TableGenBackend.obj: llvm/utils/TableGen/TableGenBackend.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/TableGenBackend.cpp' object='tblgen-TableGenBackend.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-TableGenBackend.obj `if test -f 'llvm/utils/TableGen/TableGenBackend.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/TableGenBackend.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/TableGenBackend.cpp'; fi`
+
+tblgen-X86DisassemblerTables.o: llvm/utils/TableGen/X86DisassemblerTables.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-X86DisassemblerTables.o -MD -MP -MF $(DEPDIR)/tblgen-X86DisassemblerTables.Tpo -c -o tblgen-X86DisassemblerTables.o `test -f 'llvm/utils/TableGen/X86DisassemblerTables.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/X86DisassemblerTables.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-X86DisassemblerTables.Tpo $(DEPDIR)/tblgen-X86DisassemblerTables.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/X86DisassemblerTables.cpp' object='tblgen-X86DisassemblerTables.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-X86DisassemblerTables.o `test -f 'llvm/utils/TableGen/X86DisassemblerTables.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/X86DisassemblerTables.cpp
+
+tblgen-X86DisassemblerTables.obj: llvm/utils/TableGen/X86DisassemblerTables.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-X86DisassemblerTables.obj -MD -MP -MF $(DEPDIR)/tblgen-X86DisassemblerTables.Tpo -c -o tblgen-X86DisassemblerTables.obj `if test -f 'llvm/utils/TableGen/X86DisassemblerTables.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/X86DisassemblerTables.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/X86DisassemblerTables.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-X86DisassemblerTables.Tpo $(DEPDIR)/tblgen-X86DisassemblerTables.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/X86DisassemblerTables.cpp' object='tblgen-X86DisassemblerTables.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-X86DisassemblerTables.obj `if test -f 'llvm/utils/TableGen/X86DisassemblerTables.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/X86DisassemblerTables.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/X86DisassemblerTables.cpp'; fi`
+
+tblgen-X86RecognizableInstr.o: llvm/utils/TableGen/X86RecognizableInstr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-X86RecognizableInstr.o -MD -MP -MF $(DEPDIR)/tblgen-X86RecognizableInstr.Tpo -c -o tblgen-X86RecognizableInstr.o `test -f 'llvm/utils/TableGen/X86RecognizableInstr.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/X86RecognizableInstr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-X86RecognizableInstr.Tpo $(DEPDIR)/tblgen-X86RecognizableInstr.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/X86RecognizableInstr.cpp' object='tblgen-X86RecognizableInstr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-X86RecognizableInstr.o `test -f 'llvm/utils/TableGen/X86RecognizableInstr.cpp' || echo '$(srcdir)/'`llvm/utils/TableGen/X86RecognizableInstr.cpp
+
+tblgen-X86RecognizableInstr.obj: llvm/utils/TableGen/X86RecognizableInstr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-X86RecognizableInstr.obj -MD -MP -MF $(DEPDIR)/tblgen-X86RecognizableInstr.Tpo -c -o tblgen-X86RecognizableInstr.obj `if test -f 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/X86RecognizableInstr.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-X86RecognizableInstr.Tpo $(DEPDIR)/tblgen-X86RecognizableInstr.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/X86RecognizableInstr.cpp' object='tblgen-X86RecognizableInstr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-X86RecognizableInstr.obj `if test -f 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/X86RecognizableInstr.cpp'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

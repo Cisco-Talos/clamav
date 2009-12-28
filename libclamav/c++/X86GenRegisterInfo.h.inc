@@ -24,33 +24,36 @@ struct X86GenRegisterInfo : public TargetRegisterInfo {
 namespace X86 { // Register classes
   enum {
     CCRRegClassID = 1,
-    FR32RegClassID = 2,
-    FR64RegClassID = 3,
-    GR16RegClassID = 4,
-    GR16_ABCDRegClassID = 5,
-    GR16_NOREXRegClassID = 6,
-    GR32RegClassID = 7,
-    GR32_ABCDRegClassID = 8,
-    GR32_ADRegClassID = 9,
-    GR32_NOREXRegClassID = 10,
-    GR32_NOSPRegClassID = 11,
-    GR64RegClassID = 12,
-    GR64_ABCDRegClassID = 13,
-    GR64_NOREXRegClassID = 14,
-    GR64_NOREX_NOSPRegClassID = 15,
-    GR64_NOSPRegClassID = 16,
-    GR8RegClassID = 17,
-    GR8_ABCD_HRegClassID = 18,
-    GR8_ABCD_LRegClassID = 19,
-    GR8_NOREXRegClassID = 20,
-    RFP32RegClassID = 21,
-    RFP64RegClassID = 22,
-    RFP80RegClassID = 23,
-    RSTRegClassID = 24,
-    SEGMENT_REGRegClassID = 25,
-    VR128RegClassID = 26,
-    VR256RegClassID = 27,
-    VR64RegClassID = 28
+    CONTROL_REG_32RegClassID = 2,
+    CONTROL_REG_64RegClassID = 3,
+    DEBUG_REGRegClassID = 4,
+    FR32RegClassID = 5,
+    FR64RegClassID = 6,
+    GR16RegClassID = 7,
+    GR16_ABCDRegClassID = 8,
+    GR16_NOREXRegClassID = 9,
+    GR32RegClassID = 10,
+    GR32_ABCDRegClassID = 11,
+    GR32_ADRegClassID = 12,
+    GR32_NOREXRegClassID = 13,
+    GR32_NOSPRegClassID = 14,
+    GR64RegClassID = 15,
+    GR64_ABCDRegClassID = 16,
+    GR64_NOREXRegClassID = 17,
+    GR64_NOREX_NOSPRegClassID = 18,
+    GR64_NOSPRegClassID = 19,
+    GR8RegClassID = 20,
+    GR8_ABCD_HRegClassID = 21,
+    GR8_ABCD_LRegClassID = 22,
+    GR8_NOREXRegClassID = 23,
+    RFP32RegClassID = 24,
+    RFP64RegClassID = 25,
+    RFP80RegClassID = 26,
+    RSTRegClassID = 27,
+    SEGMENT_REGRegClassID = 28,
+    VR128RegClassID = 29,
+    VR256RegClassID = 30,
+    VR64RegClassID = 31
   };
 
   struct CCRClass : public TargetRegisterClass {
@@ -58,6 +61,21 @@ namespace X86 { // Register classes
   };
   extern CCRClass	CCRRegClass;
   static TargetRegisterClass * const CCRRegisterClass = &CCRRegClass;
+  struct CONTROL_REG_32Class : public TargetRegisterClass {
+    CONTROL_REG_32Class();
+  };
+  extern CONTROL_REG_32Class	CONTROL_REG_32RegClass;
+  static TargetRegisterClass * const CONTROL_REG_32RegisterClass = &CONTROL_REG_32RegClass;
+  struct CONTROL_REG_64Class : public TargetRegisterClass {
+    CONTROL_REG_64Class();
+  };
+  extern CONTROL_REG_64Class	CONTROL_REG_64RegClass;
+  static TargetRegisterClass * const CONTROL_REG_64RegisterClass = &CONTROL_REG_64RegClass;
+  struct DEBUG_REGClass : public TargetRegisterClass {
+    DEBUG_REGClass();
+  };
+  extern DEBUG_REGClass	DEBUG_REGRegClass;
+  static TargetRegisterClass * const DEBUG_REGRegisterClass = &DEBUG_REGRegClass;
   struct FR32Class : public TargetRegisterClass {
     FR32Class();
 
