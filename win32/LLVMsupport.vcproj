@@ -172,6 +172,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\circular_raw_ostream.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
 				>
 			</File>
@@ -277,6 +281,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"
 				>
 			</File>
 			<File
