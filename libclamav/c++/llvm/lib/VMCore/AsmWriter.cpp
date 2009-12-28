@@ -681,7 +681,7 @@ void SlotTracker::processFunction() {
   ST_DEBUG("Inserting Instructions:\n");
 
   MetadataContext &TheMetadata = TheFunction->getContext().getMetadata();
-  typedef SmallVector<std::pair<unsigned, TrackingVH<MDNode> >, 2> MDMapTy;
+  typedef SmallVector<std::pair<unsigned, MDNode*>, 2> MDMapTy;
   MDMapTy MDs;
 
   // Add all of the basic blocks and instructions with no names.
@@ -813,10 +813,9 @@ void SlotTracker::CreateFunctionSlot(const Value *V) {
 void SlotTracker::CreateMetadataSlot(const MDNode *N) {
   assert(N && "Can't insert a null Value into SlotTracker!");
 
-  // Don't insert if N contains an instruction.
-  for (unsigned i = 0, e = N->getNumElements(); i != e; ++i)
-    if (N->getElement(i) && isa<Instruction>(N->getElement(i)))
-      return;
+  // Don't insert if N is a function-local metadata.
+  if (N->isFunctionLocal())
+    return;
 
   ValueMap::iterator I = mdnMap.find(N);
   if (I != mdnMap.end())
@@ -1232,7 +1231,7 @@ static void WriteAsOperandInternal(raw_ostream &Out, const Value *V,
   }
 
   if (const MDNode *N = dyn_cast<MDNode>(V)) {
-    if (Machine->getMetadataSlot(N) == -1) {
+    if (N->isFunctionLocal()) {
       // Print metadata inline, not via slot reference number.
       Out << "!{";
       for (unsigned mi = 0, me = N->getNumElements(); mi != me; ++mi) {
@@ -2086,7 +2085,7 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
   // Print Metadata info
   if (!MDNames.empty()) {
     MetadataContext &TheMetadata = I.getContext().getMetadata();
-    typedef SmallVector<std::pair<unsigned, TrackingVH<MDNode> >, 2> MDMapTy;
+    typedef SmallVector<std::pair<unsigned, MDNode*>, 2> MDMapTy;
     MDMapTy MDs;
     TheMetadata.getMDs(&I, MDs);
     for (MDMapTy::const_iterator MI = MDs.begin(), ME = MDs.end(); MI != ME; 

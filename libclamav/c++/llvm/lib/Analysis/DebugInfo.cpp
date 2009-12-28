@@ -22,6 +22,7 @@
 #include "llvm/Module.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/Dwarf.h"
 #include "llvm/Support/DebugLoc.h"
 #include "llvm/Support/raw_ostream.h"
@@ -227,6 +228,7 @@ bool DIDescriptor::isScope() const {
     case dwarf::DW_TAG_compile_unit:
     case dwarf::DW_TAG_lexical_block:
     case dwarf::DW_TAG_subprogram:
+    case dwarf::DW_TAG_namespace:
       return true;
     default:
       break;
@@ -240,6 +242,14 @@ bool DIDescriptor::isCompileUnit() const {
   unsigned Tag = getTag();
 
   return Tag == dwarf::DW_TAG_compile_unit;
+}
+
+/// isNameSpace - Return true if the specified tag is DW_TAG_namespace.
+bool DIDescriptor::isNameSpace() const {
+  assert (!isNull() && "Invalid descriptor!");
+  unsigned Tag = getTag();
+
+  return Tag == dwarf::DW_TAG_namespace;
 }
 
 /// isLexicalBlock - Return true if the specified tag is DW_TAG_lexical_block.
@@ -438,6 +448,8 @@ StringRef DIScope::getFilename() const {
     return DISubprogram(DbgNode).getFilename();
   else if (isCompileUnit())
     return DICompileUnit(DbgNode).getFilename();
+  else if (isNameSpace())
+    return DINameSpace(DbgNode).getFilename();
   else 
     assert (0 && "Invalid DIScope!");
   return StringRef();
@@ -450,6 +462,8 @@ StringRef DIScope::getDirectory() const {
     return DISubprogram(DbgNode).getDirectory();
   else if (isCompileUnit())
     return DICompileUnit(DbgNode).getDirectory();
+  else if (isNameSpace())
+    return DINameSpace(DbgNode).getDirectory();
   else 
     assert (0 && "Invalid DIScope!");
   return StringRef();
@@ -462,16 +476,16 @@ StringRef DIScope::getDirectory() const {
 
 /// dump - Print descriptor.
 void DIDescriptor::dump() const {
-  errs() << "[" << dwarf::TagString(getTag()) << "] ";
-  errs().write_hex((intptr_t) &*DbgNode) << ']';
+  dbgs() << "[" << dwarf::TagString(getTag()) << "] ";
+  dbgs().write_hex((intptr_t) &*DbgNode) << ']';
 }
 
 /// dump - Print compile unit.
 void DICompileUnit::dump() const {
   if (getLanguage())
-    errs() << " [" << dwarf::LanguageString(getLanguage()) << "] ";
+    dbgs() << " [" << dwarf::LanguageString(getLanguage()) << "] ";
 
-  errs() << " [" << getDirectory() << "/" << getFilename() << " ]";
+  dbgs() << " [" << getDirectory() << "/" << getFilename() << " ]";
 }
 
 /// dump - Print type.
@@ -480,14 +494,14 @@ void DIType::dump() const {
 
   StringRef Res = getName();
   if (!Res.empty())
-    errs() << " [" << Res << "] ";
+    dbgs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
-  errs() << " [" << dwarf::TagString(Tag) << "] ";
+  dbgs() << " [" << dwarf::TagString(Tag) << "] ";
 
   // TODO : Print context
   getCompileUnit().dump();
-  errs() << " ["
+  dbgs() << " ["
          << getLineNumber() << ", "
          << getSizeInBits() << ", "
          << getAlignInBits() << ", "
@@ -495,12 +509,12 @@ void DIType::dump() const {
          << "] ";
 
   if (isPrivate())
-    errs() << " [private] ";
+    dbgs() << " [private] ";
   else if (isProtected())
-    errs() << " [protected] ";
+    dbgs() << " [protected] ";
 
   if (isForwardDecl())
-    errs() << " [fwd] ";
+    dbgs() << " [fwd] ";
 
   if (isBasicType())
     DIBasicType(DbgNode).dump();
@@ -509,21 +523,21 @@ void DIType::dump() const {
   else if (isCompositeType())
     DICompositeType(DbgNode).dump();
   else {
-    errs() << "Invalid DIType\n";
+    dbgs() << "Invalid DIType\n";
     return;
   }
 
-  errs() << "\n";
+  dbgs() << "\n";
 }
 
 /// dump - Print basic type.
 void DIBasicType::dump() const {
-  errs() << " [" << dwarf::AttributeEncodingString(getEncoding()) << "] ";
+  dbgs() << " [" << dwarf::AttributeEncodingString(getEncoding()) << "] ";
 }
 
 /// dump - Print derived type.
 void DIDerivedType::dump() const {
-  errs() << "\n\t Derived From: "; getTypeDerivedFrom().dump();
+  dbgs() << "\n\t Derived From: "; getTypeDerivedFrom().dump();
 }
 
 /// dump - Print composite type.
@@ -531,73 +545,73 @@ void DICompositeType::dump() const {
   DIArray A = getTypeArray();
   if (A.isNull())
     return;
-  errs() << " [" << A.getNumElements() << " elements]";
+  dbgs() << " [" << A.getNumElements() << " elements]";
 }
 
 /// dump - Print global.
 void DIGlobal::dump() const {
   StringRef Res = getName();
   if (!Res.empty())
-    errs() << " [" << Res << "] ";
+    dbgs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
-  errs() << " [" << dwarf::TagString(Tag) << "] ";
+  dbgs() << " [" << dwarf::TagString(Tag) << "] ";
 
   // TODO : Print context
   getCompileUnit().dump();
-  errs() << " [" << getLineNumber() << "] ";
+  dbgs() << " [" << getLineNumber() << "] ";
 
   if (isLocalToUnit())
-    errs() << " [local] ";
+    dbgs() << " [local] ";
 
   if (isDefinition())
-    errs() << " [def] ";
+    dbgs() << " [def] ";
 
   if (isGlobalVariable())
     DIGlobalVariable(DbgNode).dump();
 
-  errs() << "\n";
+  dbgs() << "\n";
 }
 
 /// dump - Print subprogram.
 void DISubprogram::dump() const {
   StringRef Res = getName();
   if (!Res.empty())
-    errs() << " [" << Res << "] ";
+    dbgs() << " [" << Res << "] ";
 
   unsigned Tag = getTag();
-  errs() << " [" << dwarf::TagString(Tag) << "] ";
+  dbgs() << " [" << dwarf::TagString(Tag) << "] ";
 
   // TODO : Print context
   getCompileUnit().dump();
-  errs() << " [" << getLineNumber() << "] ";
+  dbgs() << " [" << getLineNumber() << "] ";
 
   if (isLocalToUnit())
-    errs() << " [local] ";
+    dbgs() << " [local] ";
 
   if (isDefinition())
-    errs() << " [def] ";
+    dbgs() << " [def] ";
 
-  errs() << "\n";
+  dbgs() << "\n";
 }
 
 /// dump - Print global variable.
 void DIGlobalVariable::dump() const {
-  errs() << " [";
+  dbgs() << " [";
   getGlobal()->dump();
-  errs() << "] ";
+  dbgs() << "] ";
 }
 
 /// dump - Print variable.
 void DIVariable::dump() const {
   StringRef Res = getName();
   if (!Res.empty())
-    errs() << " [" << Res << "] ";
+    dbgs() << " [" << Res << "] ";
 
   getCompileUnit().dump();
-  errs() << " [" << getLineNumber() << "] ";
+  dbgs() << " [" << getLineNumber() << "] ";
   getType().dump();
-  errs() << "\n";
+  dbgs() << "\n";
 
   // FIXME: Dump complex addresses
 }
@@ -994,6 +1008,21 @@ DILexicalBlock DIFactory::CreateLexicalBlock(DIDescriptor Context) {
     Context.getNode()
   };
   return DILexicalBlock(MDNode::get(VMContext, &Elts[0], 2));
+}
+
+/// CreateNameSpace - This creates new descriptor for a namespace
+/// with the specified parent context.
+DINameSpace DIFactory::CreateNameSpace(DIDescriptor Context, StringRef Name,
+                                       DICompileUnit CompileUnit, 
+                                       unsigned LineNo) {
+  Value *Elts[] = {
+    GetTagConstant(dwarf::DW_TAG_namespace),
+    Context.getNode(),
+    MDString::get(VMContext, Name),
+    CompileUnit.getNode(),
+    ConstantInt::get(Type::getInt32Ty(VMContext), LineNo)
+  };
+  return DINameSpace(MDNode::get(VMContext, &Elts[0], 5));
 }
 
 /// CreateLocation - Creates a debug info location.

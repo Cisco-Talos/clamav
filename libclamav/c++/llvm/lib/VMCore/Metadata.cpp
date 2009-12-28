@@ -11,14 +11,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "LLVMContextImpl.h"
 #include "llvm/Metadata.h"
+#include "LLVMContextImpl.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/Instruction.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
 #include "SymbolTableListTraitsImpl.h"
+#include "llvm/Support/ValueHandle.h"
 using namespace llvm;
 
 //===----------------------------------------------------------------------===//
@@ -28,6 +29,10 @@ using namespace llvm;
 //===----------------------------------------------------------------------===//
 // MDString implementation.
 //
+
+MDString::MDString(LLVMContext &C, StringRef S)
+  : MetadataBase(Type::getMetadataTy(C), Value::MDStringVal), Str(S) {}
+
 MDString *MDString::get(LLVMContext &Context, StringRef Str) {
   LLVMContextImpl *pImpl = Context.pImpl;
   StringMapEntry<MDString *> &Entry = 
@@ -47,23 +52,66 @@ MDString *MDString::get(LLVMContext &Context, const char *Str) {
 }
 
 //===----------------------------------------------------------------------===//
+// MDNodeElement implementation.
+//
+
+// Use CallbackVH to hold MDNode elements.
+namespace llvm {
+class MDNodeElement : public CallbackVH {
+  MDNode *Parent;
+public:
+  MDNodeElement() {}
+  MDNodeElement(Value *V, MDNode *P) : CallbackVH(V), Parent(P) {}
+  ~MDNodeElement() {}
+  
+  void set(Value *V, MDNode *P) {
+    setValPtr(V);
+    Parent = P;
+  }
+  
+  virtual void deleted();
+  virtual void allUsesReplacedWith(Value *NV);
+};
+} // end namespace llvm.
+
+
+void MDNodeElement::deleted() {
+  Parent->replaceElement(this, 0);
+}
+
+void MDNodeElement::allUsesReplacedWith(Value *NV) {
+  Parent->replaceElement(this, NV);
+}
+
+
+
+//===----------------------------------------------------------------------===//
 // MDNode implementation.
 //
-MDNode::MDNode(LLVMContext &C, Value *const *Vals, unsigned NumVals)
+
+/// ~MDNode - Destroy MDNode.
+MDNode::~MDNode() {
+  LLVMContextImpl *pImpl = getType()->getContext().pImpl;
+  pImpl->MDNodeSet.RemoveNode(this);
+  delete [] Operands;
+  Operands = NULL;
+}
+
+MDNode::MDNode(LLVMContext &C, Value *const *Vals, unsigned NumVals,
+               bool isFunctionLocal)
   : MetadataBase(Type::getMetadataTy(C), Value::MDNodeVal) {
-  NodeSize = NumVals;
-  Node = new ElementVH[NodeSize];
-  ElementVH *Ptr = Node;
+  NumOperands = NumVals;
+  Operands = new MDNodeElement[NumOperands];
+    
   for (unsigned i = 0; i != NumVals; ++i) 
-    *Ptr++ = ElementVH(Vals[i], this);
+    Operands[i].set(Vals[i], this);
+    
+  if (isFunctionLocal)
+    SubclassData |= FunctionLocalBit;
 }
 
-void MDNode::Profile(FoldingSetNodeID &ID) const {
-  for (unsigned i = 0, e = getNumElements(); i != e; ++i)
-    ID.AddPointer(getElement(i));
-}
-
-MDNode *MDNode::get(LLVMContext &Context, Value*const* Vals, unsigned NumVals) {
+MDNode *MDNode::get(LLVMContext &Context, Value*const* Vals, unsigned NumVals,
+                    bool isFunctionLocal) {
   LLVMContextImpl *pImpl = Context.pImpl;
   FoldingSetNodeID ID;
   for (unsigned i = 0; i != NumVals; ++i)
@@ -73,50 +121,41 @@ MDNode *MDNode::get(LLVMContext &Context, Value*const* Vals, unsigned NumVals) {
   MDNode *N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint);
   if (!N) {
     // InsertPoint will have been set by the FindNodeOrInsertPos call.
-    N = new MDNode(Context, Vals, NumVals);
+    N = new MDNode(Context, Vals, NumVals, isFunctionLocal);
     pImpl->MDNodeSet.InsertNode(N, InsertPoint);
   }
   return N;
 }
 
-/// ~MDNode - Destroy MDNode.
-MDNode::~MDNode() {
-  LLVMContextImpl *pImpl = getType()->getContext().pImpl;
-  pImpl->MDNodeSet.RemoveNode(this);
-  delete [] Node;
-  Node = NULL;
+void MDNode::Profile(FoldingSetNodeID &ID) const {
+  for (unsigned i = 0, e = getNumElements(); i != e; ++i)
+    ID.AddPointer(getElement(i));
 }
 
+
+/// getElement - Return specified element.
+Value *MDNode::getElement(unsigned i) const {
+  assert(i < getNumElements() && "Invalid element number!");
+  return Operands[i];
+}
+
+
+
 // Replace value from this node's element list.
-void MDNode::replaceElement(Value *From, Value *To) {
-  if (From == To || !getType())
-    return;
-  LLVMContext &Context = getType()->getContext();
-  LLVMContextImpl *pImpl = Context.pImpl;
-
-  // Find value. This is a linear search, do something if it consumes 
-  // lot of time. It is possible that to have multiple instances of
-  // From in this MDNode's element list.
-  SmallVector<unsigned, 4> Indexes;
-  unsigned Index = 0;
-  for (unsigned i = 0, e = getNumElements(); i != e; ++i, ++Index) {
-    Value *V = getElement(i);
-    if (V && V == From) 
-      Indexes.push_back(Index);
-  }
-
-  if (Indexes.empty())
+void MDNode::replaceElement(MDNodeElement *Op, Value *To) {
+  Value *From = *Op;
+  
+  if (From == To)
     return;
 
-  // Remove "this" from the context map. 
+  LLVMContextImpl *pImpl = getType()->getContext().pImpl;
+
+  // Remove "this" from the context map.  FoldingSet doesn't have to reprofile
+  // this node to remove it, so we don't care what state the operands are in.
   pImpl->MDNodeSet.RemoveNode(this);
 
-  // Replace From element(s) in place.
-  for (SmallVector<unsigned, 4>::iterator I = Indexes.begin(), E = Indexes.end(); 
-       I != E; ++I) {
-    unsigned Index = *I;
-    Node[Index] = ElementVH(To, this);
-  }
+  // Update the operand.
+  Op->set(To, this);
 
   // Insert updated "this" into the context's folding node set.
   // If a node with same element list already exist then before inserting 
@@ -130,26 +169,30 @@ void MDNode::replaceElement(Value *From, Value *To) {
   if (N) {
     N->replaceAllUsesWith(this);
     delete N;
-    N = 0;
+    N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint);
+    assert(N == 0 && "shouldn't be in the map now!"); (void)N;
   }
 
-  N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint);
-  if (!N) {
-    // InsertPoint will have been set by the FindNodeOrInsertPos call.
-    N = this;
-    pImpl->MDNodeSet.InsertNode(N, InsertPoint);
-  }
+  // InsertPoint will have been set by the FindNodeOrInsertPos call.
+  pImpl->MDNodeSet.InsertNode(this, InsertPoint);
 }
 
 //===----------------------------------------------------------------------===//
 // NamedMDNode implementation.
 //
+static SmallVector<TrackingVH<MetadataBase>, 4> &getNMDOps(void *Operands) {
+  return *(SmallVector<TrackingVH<MetadataBase>, 4>*)Operands;
+}
+
 NamedMDNode::NamedMDNode(LLVMContext &C, const Twine &N,
                          MetadataBase *const *MDs, 
                          unsigned NumMDs, Module *ParentModule)
   : MetadataBase(Type::getMetadataTy(C), Value::NamedMDNodeVal), Parent(0) {
   setName(N);
-
+    
+  Operands = new SmallVector<TrackingVH<MetadataBase>, 4>();
+    
+  SmallVector<TrackingVH<MetadataBase>, 4> &Node = getNMDOps(Operands);
   for (unsigned i = 0; i != NumMDs; ++i)
     Node.push_back(TrackingVH<MetadataBase>(MDs[i]));
 
@@ -160,10 +203,33 @@ NamedMDNode::NamedMDNode(LLVMContext &C, const Twine &N,
 NamedMDNode *NamedMDNode::Create(const NamedMDNode *NMD, Module *M) {
   assert(NMD && "Invalid source NamedMDNode!");
   SmallVector<MetadataBase *, 4> Elems;
+  Elems.reserve(NMD->getNumElements());
+  
   for (unsigned i = 0, e = NMD->getNumElements(); i != e; ++i)
     Elems.push_back(NMD->getElement(i));
   return new NamedMDNode(NMD->getContext(), NMD->getName().data(),
                          Elems.data(), Elems.size(), M);
+}
+
+NamedMDNode::~NamedMDNode() {
+  dropAllReferences();
+  delete &getNMDOps(Operands);
+}
+
+/// getNumElements - Return number of NamedMDNode elements.
+unsigned NamedMDNode::getNumElements() const {
+  return (unsigned)getNMDOps(Operands).size();
+}
+
+/// getElement - Return specified element.
+MetadataBase *NamedMDNode::getElement(unsigned i) const {
+  assert(i < getNumElements() && "Invalid element number!");
+  return getNMDOps(Operands)[i];
+}
+
+/// addElement - Add metadata element.
+void NamedMDNode::addElement(MetadataBase *M) {
+  getNMDOps(Operands).push_back(TrackingVH<MetadataBase>(M));
 }
 
 /// eraseFromParent - Drop all references and remove the node from parent
@@ -174,12 +240,9 @@ void NamedMDNode::eraseFromParent() {
 
 /// dropAllReferences - Remove all uses and clear node vector.
 void NamedMDNode::dropAllReferences() {
-  Node.clear();
+  getNMDOps(Operands).clear();
 }
 
-NamedMDNode::~NamedMDNode() {
-  dropAllReferences();
-}
 
 //===----------------------------------------------------------------------===//
 // MetadataContextImpl implementation.
@@ -213,7 +276,8 @@ public:
   MDNode *getMD(unsigned Kind, const Instruction *Inst);
 
   /// getMDs - Get the metadata attached to an Instruction.
-  void getMDs(const Instruction *Inst, SmallVectorImpl<MDPairTy> &MDs) const;
+  void getMDs(const Instruction *Inst,
+              SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const;
 
   /// addMD - Attach the metadata of given kind to an Instruction.
   void addMD(unsigned Kind, MDNode *Node, Instruction *Inst);
@@ -338,7 +402,8 @@ MDNode *MetadataContextImpl::getMD(unsigned MDKind, const Instruction *Inst) {
 
 /// getMDs - Get the metadata attached to an Instruction.
 void MetadataContextImpl::
-getMDs(const Instruction *Inst, SmallVectorImpl<MDPairTy> &MDs) const {
+getMDs(const Instruction *Inst,
+       SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const {
   MDStoreTy::const_iterator I = MetadataStore.find(Inst);
   if (I == MetadataStore.end())
     return;
@@ -433,7 +498,7 @@ MDNode *MetadataContext::getMD(unsigned Kind, const Instruction *Inst) {
 /// getMDs - Get the metadata attached to an Instruction.
 void MetadataContext::
 getMDs(const Instruction *Inst, 
-       SmallVectorImpl<std::pair<unsigned, TrackingVH<MDNode> > > &MDs) const {
+       SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const {
   return pImpl->getMDs(Inst, MDs);
 }
 

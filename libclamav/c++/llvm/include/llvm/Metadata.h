@@ -17,17 +17,16 @@
 #define LLVM_METADATA_H
 
 #include "llvm/Value.h"
-#include "llvm/Type.h"
 #include "llvm/ADT/FoldingSet.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/ilist_node.h"
-#include "llvm/Support/ValueHandle.h"
 
 namespace llvm {
 class Constant;
 class Instruction;
 class LLVMContext;
+class Module;
 class MetadataContextImpl;
+template <typename T> class SmallVectorImpl;
 
 //===----------------------------------------------------------------------===//
 // MetadataBase  - A base class for MDNode, MDString and NamedMDNode.
@@ -55,8 +54,7 @@ class MDString : public MetadataBase {
 
   StringRef Str;
 protected:
-  explicit MDString(LLVMContext &C, StringRef S)
-    : MetadataBase(Type::getMetadataTy(C), Value::MDStringVal), Str(S) {}
+  explicit MDString(LLVMContext &C, StringRef S);
 
 public:
   static MDString *get(LLVMContext &Context, StringRef Str);
@@ -83,53 +81,51 @@ public:
   }
 };
 
+  
+class MDNodeElement;
+  
 //===----------------------------------------------------------------------===//
 /// MDNode - a tuple of other values.
 /// These contain a list of the values that represent the metadata. 
 /// MDNode is always unnamed.
 class MDNode : public MetadataBase, public FoldingSetNode {
   MDNode(const MDNode &);                // DO NOT IMPLEMENT
+  void operator=(const MDNode &);        // DO NOT IMPLEMENT
+  friend class MDNodeElement;
 
-  friend class ElementVH;
-  // Use CallbackVH to hold MDNode elements.
-  struct ElementVH : public CallbackVH {
-    MDNode *Parent;
-    ElementVH() {}
-    ElementVH(Value *V, MDNode *P) : CallbackVH(V), Parent(P) {}
-    ~ElementVH() {}
-
-    virtual void deleted() {
-      Parent->replaceElement(this->operator Value*(), 0);
-    }
-
-    virtual void allUsesReplacedWith(Value *NV) {
-      Parent->replaceElement(this->operator Value*(), NV);
-    }
+  MDNodeElement *Operands;
+  unsigned NumOperands;
+  
+  // Subclass data enums.
+  enum {
+    FunctionLocalBit = 1
   };
+  
   // Replace each instance of F from the element list of this node with T.
-  void replaceElement(Value *F, Value *T);
-
-  ElementVH *Node;
-  unsigned NodeSize;
+  void replaceElement(MDNodeElement *Op, Value *NewVal);
 
 protected:
-  explicit MDNode(LLVMContext &C, Value *const *Vals, unsigned NumVals);
+  explicit MDNode(LLVMContext &C, Value *const *Vals, unsigned NumVals,
+                  bool isFunctionLocal);
 public:
   // Constructors and destructors.
-  static MDNode *get(LLVMContext &Context, 
-                     Value *const *Vals, unsigned NumVals);
+  static MDNode *get(LLVMContext &Context, Value *const *Vals, unsigned NumVals,
+                     bool isFunctionLocal = false);
 
   /// ~MDNode - Destroy MDNode.
   ~MDNode();
   
   /// getElement - Return specified element.
-  Value *getElement(unsigned i) const {
-    assert(i < getNumElements() && "Invalid element number!");
-    return Node[i];
-  }
-
+  Value *getElement(unsigned i) const;
+  
   /// getNumElements - Return number of MDNode elements.
-  unsigned getNumElements() const { return NodeSize; }
+  unsigned getNumElements() const { return NumOperands; }
+  
+  /// isFunctionLocal - Return whether MDNode is local to a function.
+  /// Note: MDNodes are designated as function-local when created, and keep
+  ///       that designation even if their operands are modified to no longer
+  ///       refer to function-local IR.
+  bool isFunctionLocal() const { return SubclassData & FunctionLocalBit; }
 
   /// Profile - calculate a unique identifier for this MDNode to collapse
   /// duplicates
@@ -155,7 +151,7 @@ class NamedMDNode : public MetadataBase, public ilist_node<NamedMDNode> {
   NamedMDNode(const NamedMDNode &);      // DO NOT IMPLEMENT
 
   Module *Parent;
-  SmallVector<TrackingVH<MetadataBase>, 4> Node;
+  void *Operands; // SmallVector<TrackingVH<MetadataBase>, 4>
 
   void setParent(Module *M) { Parent = M; }
 protected:
@@ -185,30 +181,14 @@ public:
   inline const Module *getParent() const { return Parent; }
 
   /// getElement - Return specified element.
-  MetadataBase *getElement(unsigned i) const {
-    assert(i < getNumElements() && "Invalid element number!");
-    return Node[i];
-  }
-
+  MetadataBase *getElement(unsigned i) const;
+  
   /// getNumElements - Return number of NamedMDNode elements.
-  unsigned getNumElements() const {
-    return (unsigned)Node.size();
-  }
+  unsigned getNumElements() const;
 
   /// addElement - Add metadata element.
-  void addElement(MetadataBase *M) {
-    Node.push_back(TrackingVH<MetadataBase>(M));
-  }
-
-  typedef SmallVectorImpl<TrackingVH<MetadataBase> >::iterator elem_iterator;
-  typedef SmallVectorImpl<TrackingVH<MetadataBase> >::const_iterator 
-    const_elem_iterator;
-  bool elem_empty() const                { return Node.empty(); }
-  const_elem_iterator elem_begin() const { return Node.begin(); }
-  const_elem_iterator elem_end() const   { return Node.end();   }
-  elem_iterator elem_begin()             { return Node.begin(); }
-  elem_iterator elem_end()               { return Node.end();   }
-
+  void addElement(MetadataBase *M);
+  
   /// Methods for support type inquiry through isa, cast, and dyn_cast:
   static inline bool classof(const NamedMDNode *) { return true; }
   static bool classof(const Value *V) {
@@ -249,7 +229,7 @@ public:
 
   /// getMDs - Get the metadata attached to an Instruction.
   void getMDs(const Instruction *Inst, 
-        SmallVectorImpl<std::pair<unsigned, TrackingVH<MDNode> > > &MDs) const;
+              SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const;
 
   /// addMD - Attach the metadata of given kind to an Instruction.
   void addMD(unsigned Kind, MDNode *Node, Instruction *Inst);

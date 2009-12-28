@@ -980,6 +980,7 @@ X86TargetLowering::X86TargetLowering(X86TargetMachine &TM)
   setTargetDAGCombine(ISD::SRL);
   setTargetDAGCombine(ISD::STORE);
   setTargetDAGCombine(ISD::MEMBARRIER);
+  setTargetDAGCombine(ISD::ZERO_EXTEND);
   if (Subtarget->is64Bit())
     setTargetDAGCombine(ISD::MUL);
 
@@ -4583,7 +4584,7 @@ X86TargetLowering::LowerEXTRACT_VECTOR_ELT(SDValue Op, SelectionDAG &DAG) {
                                                  MVT::v4i32, Vec),
                                      Op.getOperand(1)));
     // Transform it so it match pextrw which produces a 32-bit result.
-    EVT EltVT = (MVT::SimpleValueType)(VT.getSimpleVT().SimpleTy+1);
+    EVT EltVT = MVT::i32;
     SDValue Extract = DAG.getNode(X86ISD::PEXTRW, dl, EltVT,
                                     Op.getOperand(0), Op.getOperand(1));
     SDValue Assert  = DAG.getNode(ISD::AssertZext, dl, EltVT, Extract,
@@ -5752,14 +5753,11 @@ SDValue X86TargetLowering::LowerSETCC(SDValue Op, SelectionDAG &DAG) {
   SDValue Cond = EmitCmp(Op0, Op1, X86CC, DAG);
 
   // Use sbb x, x to materialize carry bit into a GPR.
-  // FIXME: Temporarily disabled since it breaks self-hosting. It's apparently
-  // miscompiling ARMISelDAGToDAG.cpp.
-  if (0 && !isFP && X86CC == X86::COND_B) {
+  if (X86CC == X86::COND_B)
     return DAG.getNode(ISD::AND, dl, MVT::i8,
                        DAG.getNode(X86ISD::SETCC_CARRY, dl, MVT::i8,
                                    DAG.getConstant(X86CC, MVT::i8), Cond),
                        DAG.getConstant(1, MVT::i8));
-  }
 
   return DAG.getNode(X86ISD::SETCC, dl, MVT::i8,
                      DAG.getConstant(X86CC, MVT::i8), Cond);
@@ -6196,7 +6194,8 @@ X86TargetLowering::EmitTargetCodeForMemset(SelectionDAG &DAG, DebugLoc dl,
         LowerCallTo(Chain, Type::getVoidTy(*DAG.getContext()),
                     false, false, false, false,
                     0, CallingConv::C, false, /*isReturnValueUsed=*/false,
-                    DAG.getExternalSymbol(bzeroEntry, IntPtr), Args, DAG, dl);
+                    DAG.getExternalSymbol(bzeroEntry, IntPtr), Args, DAG, dl,
+                    DAG.GetOrdering(Chain.getNode()));
       return CallResult.second;
     }
 
@@ -9349,6 +9348,32 @@ static SDValue PerformMEMBARRIERCombine(SDNode* N, SelectionDAG &DAG) {
   }
 }
 
+static SDValue PerformZExtCombine(SDNode *N, SelectionDAG &DAG) {
+  // (i32 zext (and (i8  x86isd::setcc_carry), 1)) ->
+  //           (and (i32 x86isd::setcc_carry), 1)
+  // This eliminates the zext. This transformation is necessary because
+  // ISD::SETCC is always legalized to i8.
+  DebugLoc dl = N->getDebugLoc();
+  SDValue N0 = N->getOperand(0);
+  EVT VT = N->getValueType(0);
+  if (N0.getOpcode() == ISD::AND &&
+      N0.hasOneUse() &&
+      N0.getOperand(0).hasOneUse()) {
+    SDValue N00 = N0.getOperand(0);
+    if (N00.getOpcode() != X86ISD::SETCC_CARRY)
+      return SDValue();
+    ConstantSDNode *C = dyn_cast<ConstantSDNode>(N0.getOperand(1));
+    if (!C || C->getZExtValue() != 1)
+      return SDValue();
+    return DAG.getNode(ISD::AND, dl, VT,
+                       DAG.getNode(X86ISD::SETCC_CARRY, dl, VT,
+                                   N00.getOperand(0), N00.getOperand(1)),
+                       DAG.getConstant(1, VT));
+  }
+
+  return SDValue();
+}
+
 SDValue X86TargetLowering::PerformDAGCombine(SDNode *N,
                                              DAGCombinerInfo &DCI) const {
   SelectionDAG &DAG = DCI.DAG;
@@ -9368,6 +9393,7 @@ SDValue X86TargetLowering::PerformDAGCombine(SDNode *N,
   case X86ISD::BT:          return PerformBTCombine(N, DAG, DCI);
   case X86ISD::VZEXT_MOVL:  return PerformVZEXT_MOVLCombine(N, DAG);
   case ISD::MEMBARRIER:     return PerformMEMBARRIERCombine(N, DAG);
+  case ISD::ZERO_EXTEND:    return PerformZExtCombine(N, DAG);
   }
 
   return SDValue();
