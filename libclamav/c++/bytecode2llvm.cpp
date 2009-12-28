@@ -98,7 +98,6 @@ struct cli_bcengine {
 namespace {
 
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
-static sys::ThreadLocal<const jmp_buf> MatchCounts;
 
 void do_shutdown() {
     llvm_shutdown();
@@ -106,7 +105,7 @@ void do_shutdown() {
 
 static void NORETURN jit_exception_handler(void)
 {
-    longjmp(*const_cast<jmp_buf*>(ExceptionReturn.get()), 1);
+    longjmp(*(jmp_buf*)(ExceptionReturn.get()), 1);
 }
 
 static void NORETURN jit_ssp_handler(void)
@@ -1277,7 +1276,7 @@ int bytecode_init(void)
 int cli_bytecode_init_jit(struct cli_all_bc *bcs)
 {
     //TODO: if !llvm_is_multi...
-    bcs->engine = new(std::nothrow) struct cli_bcengine;
+    bcs->engine = new(std::nothrow) cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;
     bcs->engine->EE = 0;
