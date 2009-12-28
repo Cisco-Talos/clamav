@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 my $path = $ARGV[0];
-#`(cd $path/tools/llvm-config; make ENABLE_OPTIMIZED=0 llvm-config-perobjincl)`;
+`(cd $path/tools/llvm-config; make ENABLE_OPTIMIZED=0 llvm-config-perobjincl)`;
 
 my %compdeps;
 my @codegencomponents = ('x86codegen','powerpccodegen','armcodegen');

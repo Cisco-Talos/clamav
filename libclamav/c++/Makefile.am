@@ -123,6 +123,7 @@ libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/Regex.cpp\
 	llvm/lib/Support/SlowOperationInformer.cpp\
 	llvm/lib/Support/SmallPtrSet.cpp\
+	llvm/lib/Support/SmallVector.cpp\
 	llvm/lib/Support/SourceMgr.cpp\
 	llvm/lib/Support/Statistic.cpp\
 	llvm/lib/Support/StringExtras.cpp\
@@ -134,6 +135,7 @@ libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/Timer.cpp\
 	llvm/lib/Support/Triple.cpp\
 	llvm/lib/Support/Twine.cpp\
+	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_os_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
 	llvm/lib/Support/regcomp.c\
@@ -173,7 +175,9 @@ tblgen_SOURCES=\
   llvm/utils/TableGen/TGParser.cpp\
   llvm/utils/TableGen/TGValueTypes.cpp\
   llvm/utils/TableGen/TableGen.cpp\
-  llvm/utils/TableGen/TableGenBackend.cpp
+  llvm/utils/TableGen/TableGenBackend.cpp\
+  llvm/utils/TableGen/X86DisassemblerTables.cpp\
+  llvm/utils/TableGen/X86RecognizableInstr.cpp
 
 TBLGEN=$(top_builddir)/tblgen
 TBLGEN_V=$(AM_V_GEN)$(TBLGEN)
@@ -417,6 +421,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Support/MemoryBuffer.cpp\
 	llvm/lib/Support/PrettyStackTrace.cpp\
 	llvm/lib/Support/SmallPtrSet.cpp\
+	llvm/lib/Support/SmallVector.cpp\
 	llvm/lib/Support/SourceMgr.cpp\
 	llvm/lib/Support/Statistic.cpp\
 	llvm/lib/Support/StringExtras.cpp\
@@ -427,6 +432,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Support/Timer.cpp\
 	llvm/lib/Support/Triple.cpp\
 	llvm/lib/Support/Twine.cpp\
+	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
 	llvm/lib/Target/SubtargetFeature.cpp\
 	llvm/lib/Target/TargetData.cpp\
@@ -464,7 +470,6 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/ValueSymbolTable.cpp\
 	llvm/lib/VMCore/ValueTypes.cpp\
 	llvm/lib/VMCore/Verifier.cpp
-
 libllvmcodegen_la_SOURCES=\
 	llvm/lib/Analysis/AliasSetTracker.cpp\
 	llvm/lib/Analysis/ConstantFolding.cpp\
