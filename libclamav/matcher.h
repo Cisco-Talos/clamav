@@ -53,7 +53,7 @@ struct cli_lsig_tdb {
     uint32_t cnt[3];
 
     const uint32_t *target;
-    const uint32_t *engine, *nos, *ep;
+    const uint32_t *engine, *nos, *ep, *filesize;
     /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;

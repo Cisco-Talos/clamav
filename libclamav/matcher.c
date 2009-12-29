@@ -360,6 +360,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	unsigned char digest[16];
 	struct cli_matcher *groot = NULL, *troot = NULL;
 	fmap_t *map = *ctx->fmap;
+	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
+	struct cli_exe_info exeinfo;
 
     if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");
@@ -460,53 +462,65 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	offset += bytes - maxpatlen;
     }
 
+#define LSIGEVAL(xroot, xdata) \
+    for(i = 0; i < xroot->ac_lsigs; i++) { \
+	evalcnt = 0; \
+	evalids = 0; \
+	if(cli_ac_chklsig(xroot->ac_lsigtable[i]->logic, xroot->ac_lsigtable[i]->logic + strlen(xroot->ac_lsigtable[i]->logic), xdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) { \
+	    if(xroot->ac_lsigtable[i]->tdb.filesize && (xroot->ac_lsigtable[i]->tdb.filesize[0] > map->len || xroot->ac_lsigtable[i]->tdb.filesize[1] < map->len)) \
+		continue; \
+	    \
+	    if(xroot->ac_lsigtable[i]->tdb.ep || xroot->ac_lsigtable[i]->tdb.nos) { \
+		einfo = NULL; \
+		if(xroot->type == 1) \
+		    einfo = cli_peheader; \
+		else if(xroot->type == 6) \
+		    einfo = cli_elfheader; \
+		else if(xroot->type == 9) \
+		    einfo = cli_machoheader; \
+		if(!einfo) \
+		    continue; \
+		memset(&exeinfo, 0, sizeof(exeinfo)); \
+		if(einfo(map, &exeinfo)) \
+		    continue; \
+		if(exeinfo.section) \
+		    free(exeinfo.section); \
+		if(xroot->ac_lsigtable[i]->tdb.ep && (xroot->ac_lsigtable[i]->tdb.ep[0] > exeinfo.ep || xroot->ac_lsigtable[i]->tdb.ep[1] < exeinfo.ep)) \
+		    continue; \
+		if(xroot->ac_lsigtable[i]->tdb.nos && (xroot->ac_lsigtable[i]->tdb.nos[0] > exeinfo.nsections || xroot->ac_lsigtable[i]->tdb.nos[1] < exeinfo.nsections)) \
+		    continue; \
+	    } \
+	    if(xroot->ac_lsigtable[i]->tdb.icongrp1 || xroot->ac_lsigtable[i]->tdb.icongrp2) { \
+		if(matchicon(ctx, xroot->ac_lsigtable[i]->tdb.icongrp1, xroot->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) { \
+		    ret = CL_VIRUS; \
+		    break; \
+		} else { \
+		    continue; \
+		} \
+	    } \
+	    if(!xroot->ac_lsigtable[i]->bc) { \
+		if(ctx->virname) \
+		    *ctx->virname = xroot->ac_lsigtable[i]->virname; \
+		ret = CL_VIRUS; \
+		break; \
+	    } \
+	    if(cli_bytecode_runlsig(&ctx->engine->bcs, xroot->ac_lsigtable[i]->bc, ctx->virname, xdata.lsigcnt[i], map) == CL_VIRUS) { \
+		ret = CL_VIRUS; \
+		break; \
+	    } \
+	} \
+    }
+
     if(troot) {
-	for(i = 0; i < troot->ac_lsigs; i++) {
-	    evalcnt = 0;
-	    evalids = 0;
-	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if(troot->ac_lsigtable[i]->tdb.icongrp1 || troot->ac_lsigtable[i]->tdb.icongrp2) {
-		    if(matchicon(ctx, troot->ac_lsigtable[i]->tdb.icongrp1, troot->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
-			ret = CL_VIRUS;
-			break;
-		    } else {
-			continue;
-		    }
-		}
-		if (!troot->ac_lsigtable[i]->bc) {
-		    if(ctx->virname)
-			*ctx->virname = troot->ac_lsigtable[i]->virname;
-		    ret = CL_VIRUS;
-		    break;
-		}
-		if (cli_bytecode_runlsig(&ctx->engine->bcs, troot->ac_lsigtable[i]->bc, ctx->virname, tdata.lsigcnt[i], map) == CL_VIRUS) {
-		    ret = CL_VIRUS;
-		    break;
-		}
-	    }
-	}
+	LSIGEVAL(troot, tdata);
 	cli_ac_freedata(&tdata);
 	if(bm_offmode)
 	    cli_bm_freeoff(&toff);
     }
 
     if(groot) {
-	if(ret != CL_VIRUS) for(i = 0; i < groot->ac_lsigs; i++) {
-	    evalcnt = 0;
-	    evalids = 0;
-	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if (!groot->ac_lsigtable[i]->bc) {
-		    if(ctx->virname)
-			*ctx->virname = groot->ac_lsigtable[i]->virname;
-		    ret = CL_VIRUS;
-		    break;
-		}
-		if (cli_bytecode_runlsig(&ctx->engine->bcs, groot->ac_lsigtable[i]->bc, ctx->virname, gdata.lsigcnt[i], map) == CL_VIRUS) {
-		    ret = CL_VIRUS;
-		    break;
-		}
-	    }
-	}
+	if(ret != CL_VIRUS)
+	    LSIGEVAL(groot, gdata);
 	cli_ac_freedata(&gdata);
     }
 

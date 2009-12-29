@@ -923,16 +923,18 @@ struct lsig_attrib {
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
 	struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS	4
-	    { "Target",	    CLI_TDB_UINT,	(void **) &tdb->target	    },
-	    { "Engine",	    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+#define ATTRIB_TOKENS	7
+	    { "Target",		    CLI_TDB_UINT,	(void **) &tdb->target	    },
+	    { "Engine",		    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
 
-	    { "IconGroup1", CLI_TDB_STR,	(void **) &tdb->icongrp1    },
-	    { "IconGroup2", CLI_TDB_STR,	(void **) &tdb->icongrp2    },
+	    { "FileSize",	    CLI_TDB_RANGE,	(void **) &tdb->filesize    },
+	    { "EntryPoint",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
+	    { "NumberOfSections",   CLI_TDB_RANGE,	(void **) &tdb->nos	    },
+
+	    { "IconGroup1",	    CLI_TDB_STR,	(void **) &tdb->icongrp1    },
+	    { "IconGroup2",	    CLI_TDB_STR,	(void **) &tdb->icongrp2    },
 
 /*
-	    { "NoS",	    CLI_TDB_RANGE,	(void **) &tdb->nos	    },
-	    { "EP",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
 	    { "SectOff",    CLI_TDB_RANGE2,	(void **) &tdb->sectoff	    },
 	    { "SectRVA",    CLI_TDB_RANGE2,	(void **) &tdb->sectrva	    },
 	    { "SectVSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectvsz	    },
@@ -1157,6 +1159,12 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 
     if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
 	cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    }
+
+    if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
+	cli_errmsg("cli_loadldb: IconGroup is only supported in PE/ELF/Mach-O signatures\n");
 	FREE_TDB(tdb);
 	return CL_EMALFDB;
     }
