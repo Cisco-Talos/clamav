@@ -2022,7 +2022,7 @@ static int decodesig(char *sig, int fd)
 {
 	char *pt;
 	const char *tokens[68];
-	int tokens_count, subsigs, i;
+	int tokens_count, subsigs, i, bc = 0;
 
     if(strchr(sig, ';')) { /* lsig */
         tokens_count = cli_strtokenize(sig, ';', 67 + 1, (const char **) tokens);
@@ -2031,6 +2031,8 @@ static int decodesig(char *sig, int fd)
 	    return -1;
 	}
 	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	if(strlen(tokens[0]) && strstr(tokens[0], ".{") && tokens[0][strlen(tokens[0]) - 1] == '}')
+	    bc = 1;
 	mprintf("TDB: %s\n", tokens[1]);
 	mprintf("LOGICAL EXPRESSION: %s\n", tokens[2]);
 	subsigs = cli_ac_chklsig(tokens[2], tokens[2] + strlen(tokens[2]), NULL, NULL, NULL, 1);
@@ -2043,12 +2045,15 @@ static int decodesig(char *sig, int fd)
 	    mprintf("!decodesig: Too many subsignatures\n");
 	    return -1;
 	}
-	if(subsigs != tokens_count - 3) {
+	if(!bc && subsigs != tokens_count - 3) {
 	    mprintf("!decodesig: The number of subsignatures (==%u) doesn't match the IDs in the logical expression (==%u)\n", tokens_count - 3, subsigs);
 	    return -1;
 	}
-	for(i = 0; i < subsigs; i++) {
-	    mprintf(" * SUBSIG ID %d\n", i);
+	for(i = 0; i < tokens_count - 3; i++) {
+	    if(i >= subsigs)
+		mprintf(" * BYTECODE SUBSIG\n");
+	    else
+		mprintf(" * SUBSIG ID %d\n", i);
 	    if((pt = strchr(tokens[3 + i], ':'))) {
 		*pt++ = 0;
 		mprintf(" +-> OFFSET: %s\n", tokens[3 + i]);
