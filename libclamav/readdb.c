@@ -1164,7 +1164,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     }
 
     if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
-	cli_errmsg("cli_loadldb: IconGroup is only supported in PE/ELF/Mach-O signatures\n");
+	cli_errmsg("cli_loadldb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
 	FREE_TDB(tdb);
 	return CL_EMALFDB;
     }
