@@ -80,6 +80,9 @@ enum bc_opcode {
   OP_BC_MEMCMP,
   OP_BC_ISBIGENDIAN,
   OP_BC_ABORT,
+  OP_BC_BSWAP16,
+  OP_BC_BSWAP32,
+  OP_BC_BSWAP64,
   OP_BC_INVALID /* last */
 };
 
@@ -105,8 +108,8 @@ static const unsigned char operand_counts[] = {
   3, 3, 3, 3,
   /* OP_BC_ISBIGENDIAN */
   0,
-  /* OP_BC_ABORT */
-  0
+  /* OP_BC_ABORT, OP_BSWAP* */
+  0, 1, 1, 1
 };
 
 enum bc_global {

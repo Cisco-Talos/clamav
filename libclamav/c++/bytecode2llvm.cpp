@@ -618,6 +618,27 @@ public:
 	FMemcpy->setDoesNotThrow();
 	FMemcpy->setDoesNotCapture(1, true);
 
+	args.clear();
+	args.push_back(Type::getInt16Ty(Context));
+	FunctionType *FuncTy_5 = FunctionType::get(Type::getInt16Ty(Context), args, false);
+	Function *FBSwap16 = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage,
+					      "llvm.bswap.i16", M);
+	FBSwap16->setDoesNotThrow();
+
+	args.clear();
+	args.push_back(Type::getInt32Ty(Context));
+	FunctionType *FuncTy_6 = FunctionType::get(Type::getInt32Ty(Context), args, false);
+	Function *FBSwap32 = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
+					      "llvm.bswap.i32", M);
+	FBSwap32->setDoesNotThrow();
+
+	args.clear();
+	args.push_back(Type::getInt64Ty(Context));
+	FunctionType *FuncTy_7 = FunctionType::get(Type::getInt64Ty(Context), args, false);
+	Function *FBSwap64 = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage,
+					      "llvm.bswap.i64", M);
+	FBSwap16->setDoesNotThrow();
+
 	FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
 	Function *FRealMemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 						 "memset", M);
@@ -633,7 +654,7 @@ public:
 	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
 	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
 	args.push_back(EE->getTargetData()->getIntPtrType(Context));
-	FunctionType* FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
+	FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
 						   args, false);
 	Function* FRealMemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
 	EE->addGlobalMapping(FRealMemcmp, (void*)(intptr_t)memcmp);
@@ -1087,6 +1108,31 @@ public:
 				unreachable = true;
 			    }
 			    break;
+			case OP_BC_BSWAP16:
+			    {
+				CallInst *C = Builder.CreateCall(FBSwap16, convertOperand(func, inst, inst->u.unaryop));
+				C->setTailCall(true);
+				C->setDoesNotThrow(true);
+				Store(inst->dest, C);
+				break;
+			    }
+			case OP_BC_BSWAP32:
+			    {
+				CallInst *C = Builder.CreateCall(FBSwap32, convertOperand(func, inst, inst->u.unaryop));
+				C->setTailCall(true);
+				C->setDoesNotThrow(true);
+				Store(inst->dest, C);
+				break;
+			    }
+			case OP_BC_BSWAP64:
+			    {
+				CallInst *C = Builder.CreateCall(FBSwap64, convertOperand(func, inst, inst->u.unaryop));
+				C->setTailCall(true);
+				C->setDoesNotThrow(true);
+				Store(inst->dest, C);
+				break;
+			    }
+
 			default:
 			    errs() << MODULE << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
