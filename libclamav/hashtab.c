@@ -444,8 +444,6 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 
 void cli_hashset_destroy(struct cli_hashset* hs)
 {
-	if (!hs->keys)
-	    return;
 	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
 	free(hs->keys);
 	free(hs->bitmap);
@@ -560,7 +558,7 @@ ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array)
 
 void cli_hashset_init_noalloc(struct cli_hashset *hs)
 {
-    memset(hs, 0, sizeof(hs));
+    memset(hs, 0, sizeof(*hs));
 }
 
 int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key)
