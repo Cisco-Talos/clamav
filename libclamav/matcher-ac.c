@@ -872,10 +872,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	return CL_ENULLARG;
     }
 
-    if(cli_hashset_init(&data->vinfo, 32, 80)) {
-	cli_errmsg("cli_ac_init: Can't allocate vinfo hashtab\n");
-	return CL_EMEM;
-    }
+    cli_hashset_init_noalloc(&data->vinfo);
 
     data->reloffsigs = reloffsigs;
     if(reloffsigs) {
@@ -1081,7 +1078,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			realoff = offset + bp - pt->prefix_length;
 			if(patt->offdata[0] == CLI_OFF_VERSION) {
 			    cli_errmsg("CHECK: %x\n", realoff);
-			    if(!cli_hashset_contains(&mdata->vinfo, realoff)) {
+			    if(!cli_hashset_contains_maybe_noalloc(&mdata->vinfo, realoff)) {
 				pt = pt->next_same;
 				continue;
 			    }
