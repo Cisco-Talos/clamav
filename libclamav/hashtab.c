@@ -445,7 +445,7 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 void cli_hashset_destroy(struct cli_hashset* hs)
 {
 	if (!hs->keys)
-	    return 0;
+	    return;
 	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
 	free(hs->keys);
 	free(hs->bitmap);
