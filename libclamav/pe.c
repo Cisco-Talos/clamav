@@ -2405,7 +2405,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(cli_hashset_init(&peinfo->vinfo, 32, 80)) {
+    if(cli_hashset_init(peinfo->vinfo, 32, 80)) {
 	cli_errmsg("Unable to init vinfo hs\n");
 	free(section_hdr);
 	free(peinfo->section);
