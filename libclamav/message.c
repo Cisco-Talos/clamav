@@ -1212,6 +1212,12 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		      (t_line->t_line == NULL))
 			;
 
+		if(!t_line) {
+			cli_warnmsg("No binhex data to parse\n");
+			(*destroy)(ret);
+			return NULL;
+		}
+
 		tmp = textToBlob(t_line, NULL,
 			((m->numberOfEncTypes == 1) && (m->encodingTypes[0] == BINHEX)) ? destroy_text : 0);
 

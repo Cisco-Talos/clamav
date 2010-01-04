@@ -1,3 +1,7 @@
+Mon Jan  4 15:35:16 CET 2010 (tk)
+---------------------------------
+ * libclamav: fix error reporting for BinHex files (bb#1685)
+
 Wed Dec 30 00:19:21 CET 2009 (tk)
 ---------------------------------
  * libclamav: add support for FileSize, EntryPoint and NumberOfSections in
