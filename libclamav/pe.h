@@ -155,6 +155,6 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *set);
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 
 uint32_t cli_rawaddr(uint32_t, struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
-void findres(uint32_t, uint32_t, uint32_t, cli_ctx *, struct cli_exe_section *, uint16_t, uint32_t, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);
+void findres(uint32_t, uint32_t, uint32_t, fmap_t *map, struct cli_exe_section *, uint16_t, uint32_t, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);
 
 #endif

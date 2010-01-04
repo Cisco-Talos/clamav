@@ -872,6 +872,11 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	return CL_ENULLARG;
     }
 
+    if(cli_hashset_init(&data->vinfo, 32, 80)) {
+	cli_errmsg("cli_ac_init: Can't allocate vinfo hashtab\n");
+	return CL_EMEM;
+    }
+
     data->reloffsigs = reloffsigs;
     if(reloffsigs) {
 	data->offset = (uint32_t *) cli_malloc(reloffsigs * 2 * sizeof(uint32_t));
@@ -934,6 +939,8 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, fmap
 	info.fsize = map->len;
     }
 
+    info.exeinfo.vinfo = &data->vinfo;
+
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
 	if(!map) {
@@ -957,6 +964,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
 {
 	uint32_t i;
 
+    cli_hashset_destroy(&data->vinfo);
 
     if(data && data->partsigs) {
 	for(i = 0; i < data->partsigs; i++) {
@@ -1045,7 +1053,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    patt = current->list;
 	    while(patt) {
 		bp = i + 1 - patt->depth;
-		if(!patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
+		if(patt->offdata[0] != CLI_OFF_VERSION && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
 		    if(patt->offset_min == CLI_OFF_NONE) {
 			patt = patt->next;
 			continue;
@@ -1071,7 +1079,13 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    continue;
 			}
 			realoff = offset + bp - pt->prefix_length;
-			if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
+			if(patt->offdata[0] == CLI_OFF_VERSION) {
+			    cli_errmsg("CHECK: %x\n", realoff);
+			    if(!cli_hashset_contains(&mdata->vinfo, realoff)) {
+				pt = pt->next_same;
+				continue;
+			    }
+			} else if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
 			    if(pt->offset_min == CLI_OFF_NONE) {
 				pt = pt->next_same;
 				continue;

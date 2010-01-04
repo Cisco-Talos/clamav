@@ -302,12 +302,11 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
    int pe_res_cballback (void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva);
    the callback shall return 0 to continue the lookup or 1 to abort
 */
-void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque) {
+void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque) {
     unsigned int err = 0;
     uint32_t type, type_offs, name, name_offs, lang, lang_offs;
     uint8_t *resdir, *type_entry, *name_entry, *lang_entry ;
     uint16_t type_cnt, name_cnt, lang_cnt;
-    fmap_t *map = *ctx->fmap;
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
 	return;
@@ -1050,119 +1049,6 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
-
-    if(dirs[2].Size) {
-    	uint32_t rvas, res_sz;
-	uint8_t *vptr;
-    	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size, versioninfo, &rvas);
-	rvas = cli_rawaddr(rvas, exe_sections, nsections, &err, fsize, hdr_size); /* FIXME: this shall be an array */
-	vptr = fmap_need_off_once(map, rvas, 16); /* FIXME: check for failure */
-	rvas = cli_readint32(vptr);
-	res_sz = cli_readint32(vptr+4);
-	rvas = cli_rawaddr(rvas, exe_sections, nsections, &err, fsize, hdr_size); /* FIXME: check for failure */
-	vptr = fmap_need_off_once(map, rvas, res_sz); /* FIXME: check for failure */
-
-	while(res_sz>4) { /* look for versioninfo */
-	    uint32_t vinfo_sz, vinfo_val_sz;
-
-	    vinfo_sz = vinfo_val_sz = cli_readint32(vptr);
-	    vinfo_sz &= 0xffff;
-	    if(vinfo_sz > res_sz) {
-		/* the content is larger than the container */
-		break; /* this is a hard fail */
-	    }
-	    vinfo_val_sz >>= 16;
-	    if(vinfo_sz <= 6 + 0x22 + 0x34 ||
-	       vinfo_val_sz != 0x34 || 
-	       memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
-	       cli_readint32(vptr + 0x28) != 0xfeef04bd) {
-		/* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
-		 * - the value should be sizeof(fixedfileinfo)
-		 * - the key should match
-		 * - there should be some proper magic for fixedfileinfo */
-		vptr += vinfo_sz;
-		res_sz -= vinfo_sz;
-		continue; /* this is a soft fail - FIXME: is there anything else we can find here? */
-	    }
-
-	    /* move to the end of fixedfileinfo where the child elements are located */
-	    vptr += 6 + 0x20 + 2 + 0x34;
-	    vinfo_sz -= 6 + 0x20 + 2 + 0x34;
-
-	    while(vinfo_sz > 6) { /* look for stringfileinfo */
-		uint32_t sfi_sz = cli_readint32(vptr) & 0xffff;
-
-		if(sfi_sz > vinfo_sz) {
-		    res_sz = 0;
-		    break; /* this is a hard fail */
-		}
-		if(sfi_sz <= 6 + 0x1e || memcmp(vptr+6, "S\0t\0r\0i\0n\0g\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x1e)) {
-		    /* - there should be enough room for the header(6) and the key "StringFileInfo"(1e)
-		     * - the key should match */
-		    vptr += sfi_sz;
-		    vinfo_sz -= sfi_sz;
-		    continue; /* this is a soft fail - FIXME: we might only find VarFileInfo, and at most ONCE */
-		}
-
-		/* move to the end of stringfileinfo where the child elements are located */
-		vptr += 6 + 0x1e;
-		sfi_sz -= 6 + 0x1e;
-
-		while(sfi_sz > 6) { /* look for stringtable */
-		    uint32_t st_sz = cli_readint32(vptr) & 0xffff;
-
-		    if(st_sz > sfi_sz || st_sz <= 24) {
-			/* - the content is larger than the container
-			   - there's no room for a stringtables (headers(6) + key(16) + padding(2)) */
-			res_sz = 0;
-			vinfo_sz = 0;
-			break; /* this is a hard fail */
-		    }
-
-		    /* move to the end of stringtable where the child elements are located */
-		    vptr += 24;
-		    st_sz -= 24;
-
-		    while(st_sz > 6) {  /* look for string */
-			uint32_t s_sz, s_key_sz, s_val_sz;
-			char *k, *v;
-
-			s_sz = s_val_sz = cli_readint32(vptr);
-			s_sz &= 0xffff;
-			s_val_sz = (s_val_sz & 0xffff0000)>>15;
-			if(s_sz > st_sz || s_sz <= 6 + 2 + 2 + 2 || s_val_sz > s_sz - 6 - 2 - 2) {
-			    /* - the content is larger than the container
-			     * - there's no room for a minimal string (headers(6) + key(2) + padding(2) + value(2))
-			     * - there's no room for the value */
-			    res_sz = 0;
-			    vinfo_sz = 0;
-			    sfi_sz = 0;
-			    break; /* this is a hard fail */
-			}
-			for(s_key_sz = 0; s_key_sz < s_sz - 6 - s_val_sz; s_key_sz += 2) {
-			    if(vptr[6+s_key_sz] || vptr[6+s_key_sz+1]) continue;
-			    s_key_sz += 2;
-			    break;
-			}
-			if(s_key_sz >= s_sz - 6 - s_val_sz) {
-			    /* key overflow */
-			    vptr += s_sz;
-			    st_sz -= s_sz;
-			    continue;
-			}
-			k = cli_utf16toascii(vptr + 6, s_key_sz);
-			s_key_sz += 6 + 3;
-			s_key_sz &= ~3;
-			v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
-			cli_errmsg("%x - %s=%s\n", s_key_sz, k, v);
-			vptr += s_sz;
-			st_sz -= s_sz;
-		    }
-		    /* FIXME: resmue here */
-		}
-	    }
-	}
-    }
 
     if(iconset){
 	if(!dll && dirs[2].Size && cli_scanicon(iconset, EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size) == CL_VIRUS) {
@@ -2381,6 +2267,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	uint32_t valign, falign, hdr_size;
 	size_t fsize;
 	ssize_t at;
+	struct pe_image_data_dir *dirs;
 
     cli_dbgmsg("in cli_peheader\n");
 
@@ -2502,10 +2389,13 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	    peinfo->section[i].rsz = (fsize - peinfo->section[i].raw)*(fsize>peinfo->section[i].raw);
     }
 
-    if(pe_plus)
+    if(pe_plus) {
 	peinfo->ep = EC32(optional_hdr64.AddressOfEntryPoint);
-    else
+	dirs = optional_hdr64.DataDirectory;
+    } else {
 	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
+	dirs = optional_hdr32.DataDirectory;
+    }
 
     if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize, hdr_size)) && err) {
 	cli_dbgmsg("Broken PE file\n");
@@ -2514,6 +2404,135 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	peinfo->section = NULL;
 	return -1;
     }
+
+    
+    if(dirs[2].Size) {
+    	uint32_t rvas, res_sz;
+	uint8_t *vptr, *baseptr;
+
+    	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo, &rvas);
+	rvas = cli_rawaddr(rvas, peinfo->section, peinfo->nsections, &err, fsize, hdr_size); /* FIXME: this shall be an array */
+	vptr = fmap_need_off_once(map, rvas, 16); /* FIXME: check for failure */
+	baseptr = vptr - rvas;
+	rvas = cli_readint32(vptr);
+	res_sz = cli_readint32(vptr+4);
+	rvas = cli_rawaddr(rvas, peinfo->section, peinfo->nsections, &err, fsize, hdr_size); /* FIXME: check for failure */
+	vptr = fmap_need_off_once(map, rvas, res_sz); /* FIXME: check for failure */
+
+	while(res_sz>4) { /* look for versioninfo */
+	    uint32_t vinfo_sz, vinfo_val_sz;
+
+	    vinfo_sz = vinfo_val_sz = cli_readint32(vptr);
+	    vinfo_sz &= 0xffff;
+	    if(vinfo_sz > res_sz) {
+		/* the content is larger than the container */
+		break; /* this is a hard fail */
+	    }
+	    vinfo_val_sz >>= 16;
+	    if(vinfo_sz <= 6 + 0x22 + 0x34 ||
+	       vinfo_val_sz != 0x34 || 
+	       memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
+	       cli_readint32(vptr + 0x28) != 0xfeef04bd) {
+		/* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
+		 * - the value should be sizeof(fixedfileinfo)
+		 * - the key should match
+		 * - there should be some proper magic for fixedfileinfo */
+		vptr += vinfo_sz;
+		res_sz -= vinfo_sz;
+		continue; /* this is a soft fail - FIXME: is there anything else we can find here? */
+	    }
+
+	    /* move to the end of fixedfileinfo where the child elements are located */
+	    vptr += 6 + 0x20 + 2 + 0x34;
+	    vinfo_sz -= 6 + 0x20 + 2 + 0x34;
+
+	    while(vinfo_sz > 6) { /* look for stringfileinfo */
+		uint32_t sfi_sz = cli_readint32(vptr) & 0xffff;
+
+		if(sfi_sz > vinfo_sz) {
+		    res_sz = 0;
+		    break; /* this is a hard fail */
+		}
+		if(sfi_sz <= 6 + 0x1e || memcmp(vptr+6, "S\0t\0r\0i\0n\0g\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x1e)) {
+		    /* - there should be enough room for the header(6) and the key "StringFileInfo"(1e)
+		     * - the key should match */
+		    vptr += sfi_sz;
+		    vinfo_sz -= sfi_sz;
+		    continue; /* this is a soft fail - FIXME: we might only find VarFileInfo, and at most ONCE */
+		}
+
+		/* move to the end of stringfileinfo where the child elements are located */
+		vptr += 6 + 0x1e;
+		sfi_sz -= 6 + 0x1e;
+
+		while(sfi_sz > 6) { /* look for stringtable */
+		    uint32_t st_sz = cli_readint32(vptr) & 0xffff;
+
+		    if(st_sz > sfi_sz || st_sz <= 24) {
+			/* - the content is larger than the container
+			   - there's no room for a stringtables (headers(6) + key(16) + padding(2)) */
+			res_sz = 0;
+			vinfo_sz = 0;
+			break; /* this is a hard fail */
+		    }
+
+		    /* move to the end of stringtable where the child elements are located */
+		    vptr += 24;
+		    st_sz -= 24;
+
+		    while(st_sz > 6) {  /* look for string */
+			uint32_t s_sz, s_key_sz, s_val_sz;
+			char *k, *v;
+
+			s_sz = s_val_sz = cli_readint32(vptr);
+			s_sz &= 0xffff;
+			s_val_sz = (s_val_sz & 0xffff0000)>>15;
+			if(s_sz > st_sz || s_sz <= 6 + 2 + 2 || s_val_sz > s_sz - 6 - 2 - 2) {
+			    /* - the content is larger than the container
+			     * - there's no room for a minimal string (headers(6) + key(2) + padding(2))
+			     * - there's no room for the value */
+			    res_sz = 0;
+			    vinfo_sz = 0;
+			    sfi_sz = 0;
+			    break; /* this is a hard fail */
+			}
+
+			if(!s_val_sz) {
+			    /* value unset */
+			    vptr += s_sz;
+			    st_sz -= s_sz;
+			    continue;
+			}
+			for(s_key_sz = 0; s_key_sz < s_sz - 6 - s_val_sz; s_key_sz += 2) {
+			    if(vptr[6+s_key_sz] || vptr[6+s_key_sz+1]) continue;
+			    s_key_sz += 2;
+			    break;
+			}
+			if(s_key_sz >= s_sz - 6 - s_val_sz) {
+			    /* key overflow */
+			    vptr += s_sz;
+			    st_sz -= s_sz;
+			    continue;
+			}
+			cli_hashset_addkey(peinfo->vinfo, (uint32_t)(vptr - baseptr + 6));
+			cli_errmsg("ADD %x\n", (uint32_t)(vptr - baseptr + 6));
+			k = cli_utf16toascii(vptr + 6, s_key_sz);
+			s_key_sz += 6 + 3;
+			s_key_sz &= ~3;
+			v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
+			if(v) {
+			    cli_errmsg("%x - %s=%s\n", s_key_sz, k, v);
+			    free(v);
+			}
+			vptr += s_sz;
+			st_sz -= s_sz;
+		    }
+		    /* FIXME: resmue here */
+		}
+	    }
+	}
+    }
+
 
     free(section_hdr);
     return 0;

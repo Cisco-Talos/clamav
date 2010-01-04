@@ -84,7 +84,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
     gicons.cnt = 0;
     icons.cnt = 0;
-    findres(14, 0xffffffff, resdir_rva, ctx, exe_sections, nsections, hdr_size, groupicon_cb, &gicons);
+    findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_cb, &gicons);
 	
     for(curicon=0; curicon<gicons.cnt; curicon++) {
 	uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(gicons.rvas[curicon], exe_sections, nsections, &err, map->len, hdr_size), 16);
@@ -112,7 +112,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 		    while(icnt && gsz >= 14) {
 			dir = (struct icondir *)grp;
 			cli_dbgmsg("Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, dir->depth, dir->id, dir->planes, dir->palcnt, dir->rsvd, dir->sz);
-			findres(3, dir->id, resdir_rva, ctx, exe_sections, nsections, hdr_size, icon_cb, &icons);
+			findres(3, dir->id, resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
 			grp += 14;
 			gsz -= 14;
 		    }
