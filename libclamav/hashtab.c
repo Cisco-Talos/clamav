@@ -434,7 +434,7 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	if(!hs->keys) {
 		return CL_EMEM;
 	}
-	hs->bitmap = cli_calloc(initial_capacity / 8, sizeof(*hs->bitmap));
+	hs->bitmap = cli_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));
 	if(!hs->bitmap) {
 		free(hs->keys);
 		return CL_EMEM;
