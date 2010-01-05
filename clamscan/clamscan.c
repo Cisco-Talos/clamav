@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 
     gettimeofday(&t1, NULL);
 
-    cache_init(256);
+    cl_cache_init(256);
 
     ret = scanmanager(opts);
 

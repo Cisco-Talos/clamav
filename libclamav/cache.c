@@ -165,7 +165,7 @@ void cache_add(unsigned char *md5, cli_ctx *ctx) {
 
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map = *ctx->fmap;
-    size_t todo = map->len, at = 0;;
+    size_t todo = map->len, at = 0;
     cli_md5_ctx md5;
 
     if(!cache) return CL_VIRUS;
@@ -174,10 +174,8 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     while(todo) {
 	void *buf;
 	size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
-	if(!(buf = fmap_need_off_once(map, at, readme)) != readme) {
-	    lseek(desc, seekback, SEEK_SET);
+	if(!(buf = fmap_need_off_once(map, at, readme)))
 	    return CL_VIRUS;
-	}
 	todo -= readme;
 	at += readme;
 	cli_md5_update(&md5, buf, readme);

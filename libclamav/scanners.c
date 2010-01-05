@@ -2169,7 +2169,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->fmap--;
 
     if(ret == CL_VIRUS)
-	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 
     switch(ret) {
 	case CL_EFORMAT:
@@ -2177,10 +2177,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
+	case CL_CLEAN:
 	    cache_add(hash, ctx);
 	    return CL_CLEAN;
 	default:
-	    if(ret == CL_CLEAN) cache_add(hash, ctx);
 	    return ret;
     }
 }
