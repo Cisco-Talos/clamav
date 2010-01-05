@@ -1,3 +1,7 @@
+Tue Jan  5 02:08:38 CET 2010 (acab)
+-----------------------------------
+ * libclamav: merge PE VersionInformation matcher
+
 Mon Jan  4 15:35:16 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix error reporting for BinHex files (bb#1685)
