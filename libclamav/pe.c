@@ -193,10 +193,18 @@ static void cli_multifree(void *f, ...) {
     va_end(ap);
 }
 
-int versioninfo(void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
-    uint32_t *rvas = (uint32_t *)opaque;
-    cli_errmsg("type: %x, name: %x, lang: %x, rva: %x\n", type, name, lang, rva);
-    *rvas = rva;
+struct vinfo_list {
+    uint32_t rvas[16];
+    unsigned int count;
+};
+
+int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+    struct vinfo_list *vlist = (struct vinfo_list *)opaque;
+
+    cli_errmsg("versioninfo_cb: type: %x, name: %x, lang: %x, rva: %x\n", type, name, lang, rva);
+    vlist->rvas[vlist->count] = rva;
+    if(++vlist->count == sizeof(vlist->rvas) / sizeof(vlist->rvas[0]))
+	return 1;
     return 0;
 }
 
@@ -2405,141 +2413,170 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(cli_hashset_init(peinfo->vinfo, 32, 80)) {
-	cli_errmsg("Unable to init vinfo hs\n");
-	free(section_hdr);
-	free(peinfo->section);
-	peinfo->section = NULL;
-	return -1;
-    }
-
-    if(dirs[2].Size) {
-    	uint32_t rvas, res_sz;
+    while(dirs[2].Size) {
+	struct vinfo_list vlist;
 	uint8_t *vptr, *baseptr;
+    	uint32_t rva, res_sz;
+	unsigned int i;
 
-    	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo, &rvas);
-	rvas = cli_rawaddr(rvas, peinfo->section, peinfo->nsections, &err, fsize, hdr_size); /* FIXME: this shall be an array */
-	vptr = fmap_need_off_once(map, rvas, 16); /* FIXME: check for failure */
-	baseptr = vptr - rvas;
-	rvas = cli_readint32(vptr);
-	res_sz = cli_readint32(vptr+4);
-	rvas = cli_rawaddr(rvas, peinfo->section, peinfo->nsections, &err, fsize, hdr_size); /* FIXME: check for failure */
-	vptr = fmap_need_off_once(map, rvas, res_sz); /* FIXME: check for failure */
-
-	while(res_sz>4) { /* look for versioninfo */
-	    uint32_t vinfo_sz, vinfo_val_sz;
-
-	    vinfo_sz = vinfo_val_sz = cli_readint32(vptr);
-	    vinfo_sz &= 0xffff;
-	    if(vinfo_sz > res_sz) {
-		/* the content is larger than the container */
-		break; /* this is a hard fail */
-	    }
-	    vinfo_val_sz >>= 16;
-	    if(vinfo_sz <= 6 + 0x22 + 0x34 ||
-	       vinfo_val_sz != 0x34 || 
-	       memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
-	       cli_readint32(vptr + 0x28) != 0xfeef04bd) {
-		/* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
-		 * - the value should be sizeof(fixedfileinfo)
-		 * - the key should match
-		 * - there should be some proper magic for fixedfileinfo */
-		vptr += vinfo_sz;
-		res_sz -= vinfo_sz;
-		continue; /* this is a soft fail - FIXME: is there anything else we can find here? */
-	    }
-
-	    /* move to the end of fixedfileinfo where the child elements are located */
-	    vptr += 6 + 0x20 + 2 + 0x34;
-	    vinfo_sz -= 6 + 0x20 + 2 + 0x34;
-
-	    while(vinfo_sz > 6) { /* look for stringfileinfo */
-		uint32_t sfi_sz = cli_readint32(vptr) & 0xffff;
-
-		if(sfi_sz > vinfo_sz) {
-		    res_sz = 0;
-		    break; /* this is a hard fail */
-		}
-		if(sfi_sz <= 6 + 0x1e || memcmp(vptr+6, "S\0t\0r\0i\0n\0g\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x1e)) {
-		    /* - there should be enough room for the header(6) and the key "StringFileInfo"(1e)
-		     * - the key should match */
-		    vptr += sfi_sz;
-		    vinfo_sz -= sfi_sz;
-		    continue; /* this is a soft fail - FIXME: we might only find VarFileInfo, and at most ONCE */
-		}
-
-		/* move to the end of stringfileinfo where the child elements are located */
-		vptr += 6 + 0x1e;
-		sfi_sz -= 6 + 0x1e;
-
-		while(sfi_sz > 6) { /* look for stringtable */
-		    uint32_t st_sz = cli_readint32(vptr) & 0xffff;
-
-		    if(st_sz > sfi_sz || st_sz <= 24) {
-			/* - the content is larger than the container
-			   - there's no room for a stringtables (headers(6) + key(16) + padding(2)) */
-			res_sz = 0;
-			vinfo_sz = 0;
-			break; /* this is a hard fail */
-		    }
-
-		    /* move to the end of stringtable where the child elements are located */
-		    vptr += 24;
-		    st_sz -= 24;
-
-		    while(st_sz > 6) {  /* look for string */
-			uint32_t s_sz, s_key_sz, s_val_sz;
-			char *k, *v;
-
-			s_sz = s_val_sz = cli_readint32(vptr);
-			s_sz &= 0xffff;
-			s_val_sz = (s_val_sz & 0xffff0000)>>15;
-			if(s_sz > st_sz || s_sz <= 6 + 2 + 2 || s_val_sz > s_sz - 6 - 2 - 2) {
-			    /* - the content is larger than the container
-			     * - there's no room for a minimal string (headers(6) + key(2) + padding(2))
-			     * - there's no room for the value */
-			    res_sz = 0;
-			    vinfo_sz = 0;
-			    sfi_sz = 0;
-			    break; /* this is a hard fail */
-			}
-
-			if(!s_val_sz) {
-			    /* value unset */
-			    vptr += s_sz;
-			    st_sz -= s_sz;
-			    continue;
-			}
-			for(s_key_sz = 0; s_key_sz < s_sz - 6 - s_val_sz; s_key_sz += 2) {
-			    if(vptr[6+s_key_sz] || vptr[6+s_key_sz+1]) continue;
-			    s_key_sz += 2;
-			    break;
-			}
-			if(s_key_sz >= s_sz - 6 - s_val_sz) {
-			    /* key overflow */
-			    vptr += s_sz;
-			    st_sz -= s_sz;
-			    continue;
-			}
-			cli_hashset_addkey(peinfo->vinfo, (uint32_t)(vptr - baseptr + 6));
-			cli_errmsg("ADD %x\n", (uint32_t)(vptr - baseptr + 6));
-			k = cli_utf16toascii(vptr + 6, s_key_sz);
-			s_key_sz += 6 + 3;
-			s_key_sz &= ~3;
-			v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
-			if(v) {
-			    cli_errmsg("%x - %s=%s\n", s_key_sz, k, v);
-			    free(v);
-			}
-			vptr += s_sz;
-			st_sz -= s_sz;
-		    }
-		    /* FIXME: resmue here */
-		}
-	    }
+	memset(&vlist, 0, sizeof(vlist));
+    	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo_cb, &vlist);
+	if(!vlist.count) break; /* No version_information */
+	if(cli_hashset_init(peinfo->vinfo, 32, 80)) {
+	    cli_errmsg("cli_peheader: Unable to init vinfo hashset\n");
+	    free(section_hdr);
+	    free(peinfo->section);
+	    peinfo->section = NULL;
+	    return -1;
 	}
-    }
 
+	err = 0;
+	for(i=0; i<vlist.count; i++) { /* enum all version_information res - RESUMABLE */
+	    cli_dbgmsg("cli_peheader: parsing version info @ rva %x\n", vlist.rvas[i]);
+	    rva = cli_rawaddr(vlist.rvas[i], peinfo->section, peinfo->nsections, &err, fsize, hdr_size);
+	    if(err)
+		continue;
+
+	    if(!(vptr = fmap_need_off_once(map, rva, 16)))
+		continue;
+
+	    baseptr = vptr - rva;
+	    /* parse resource */
+	    rva = cli_readint32(vptr); /* ptr to version_info */
+	    res_sz = cli_readint32(vptr+4); /* sizeof(resource) */
+	    rva = cli_rawaddr(rva, peinfo->section, peinfo->nsections, &err, fsize, hdr_size);
+	    if(err)
+		continue;
+	    if(!(vptr = fmap_need_off_once(map, rva, res_sz)))
+		continue;
+	    
+	    while(res_sz>4) { /* look for version_info - NOT RESUMABLE (expecting exactly one versioninfo) */
+		uint32_t vinfo_sz, vinfo_val_sz;
+
+		vinfo_sz = vinfo_val_sz = cli_readint32(vptr);
+		vinfo_sz &= 0xffff;
+		if(vinfo_sz > res_sz)
+		    break; /* the content is larger than the container */
+
+		vinfo_val_sz >>= 16;
+		if(vinfo_sz <= 6 + 0x20 + 2 + 0x34 ||
+		   vinfo_val_sz != 0x34 || 
+		   memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
+		   cli_readint32(vptr + 0x28) != 0xfeef04bd) {
+		    /* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
+		     * - the value should be sizeof(fixedfileinfo)
+		     * - the key should match
+		     * - there should be some proper magic for fixedfileinfo */
+		    break; /* there's no point in looking further */
+		}
+
+		/* move to the end of fixedfileinfo where the child elements are located */
+		vptr += 6 + 0x20 + 2 + 0x34;
+		vinfo_sz -= 6 + 0x20 + 2 + 0x34;
+
+		while(vinfo_sz > 6) { /* look for stringfileinfo - NOT RESUMABLE (expecting at most one stringfileinfo) */
+		    uint32_t sfi_sz = cli_readint32(vptr) & 0xffff;
+
+		    if(sfi_sz > vinfo_sz)
+			break; /* the content is larger than the container */
+
+		    /* expecting stringfileinfo to always precede varfileinfo */
+		    if(sfi_sz <= 6 + 0x1e || memcmp(vptr+6, "S\0t\0r\0i\0n\0g\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x1e)) {
+			/* - there should be enough room for the header(6) and the key "StringFileInfo"(1e)
+			 * - the key should match */
+			break; /* this is an implicit hard fail: parent is not resumable */
+		    }
+
+		    /* move to the end of stringfileinfo where the child elements are located */
+		    vptr += 6 + 0x1e;
+		    sfi_sz -= 6 + 0x1e;
+
+		    while(sfi_sz > 6) { /* enum all stringtables - RESUMABLE */
+			uint32_t st_sz = cli_readint32(vptr) & 0xffff;
+
+			if(st_sz > sfi_sz || st_sz <= 24) {
+			    /* - the content is larger than the container
+			       - there's no room for a stringtables (headers(6) + key(16) + padding(2)) */
+			    break; /* this is an implicit hard fail: parent is not resumable */
+			}
+
+			/* move to the end of stringtable where the child elements are located */
+			vptr += 24;
+			st_sz -= 24;
+
+			while(st_sz > 6) {  /* enum all strings - RESUMABLE */
+			    uint32_t s_sz, s_key_sz, s_val_sz;
+			    char *k, *v;
+
+			    s_sz = s_val_sz = cli_readint32(vptr);
+			    s_sz &= 0xffff;
+			    s_val_sz = (s_val_sz & 0xffff0000)>>15;
+			    if(s_sz > st_sz || s_sz <= 6 + 2 + 2 || s_val_sz > s_sz - 6 - 2 - 2) {
+				/* - the content is larger than the container
+				 * - there's no room for a minimal string (headers(6) + key(2) + padding(2))
+				 * - there's no room for the value */
+				st_sz = 0;
+				sfi_sz = 0;
+				break; /* force a hard fail */
+			    }
+
+			    if(!s_val_sz) {
+				/* skip unset value */
+				vptr += s_sz;
+				st_sz -= s_sz;
+				continue;
+			    }
+
+			    /* ~wcstrlen(key) */
+			    for(s_key_sz = 0; s_key_sz < s_sz - 6 - s_val_sz; s_key_sz += 2) {
+				if(vptr[6+s_key_sz] || vptr[6+s_key_sz+1]) continue;
+				s_key_sz += 2;
+				break;
+			    }
+			    if(s_key_sz >= s_sz - 6 - s_val_sz) {
+				/* key overflow */
+				vptr += s_sz;
+				st_sz -= s_sz;
+				continue;
+			    }
+
+			    if(cli_hashset_addkey(peinfo->vinfo, (uint32_t)(vptr - baseptr + 6))) {
+				cli_errmsg("cli_peheader: Unable to add rva to vinfo hashset\n");
+				cli_hashset_destroy(peinfo->vinfo);
+				free(section_hdr);
+				free(peinfo->section);
+				peinfo->section = NULL;
+				return -1;
+			    }
+
+			    cli_errmsg("ADD %x\n", (uint32_t)(vptr - baseptr + 6));
+			    if(cli_debug_flag) {
+				/* FIXME: pretty print an usable VI-sig */
+				k = cli_utf16toascii(vptr + 6, s_key_sz);
+				if(k) {
+				    s_key_sz += 6 + 3;
+				    s_key_sz &= ~3;
+				    v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
+				    if(v) {
+					cli_errmsg("VersionInfo: '%s' = '%s'\n", k, v);
+					free(v);
+				    }
+				    free(k);
+				}
+			    }
+			    vptr += s_sz;
+			    st_sz -= s_sz;
+			} /* enum all strings - RESUMABLE */
+			vptr += st_sz;
+			sfi_sz -= st_sz;
+		    } /* enum all stringtables - RESUMABLE */
+		    break;
+		} /* look for stringfileinfo - NOT RESUMABLE */
+		break;
+	    } /* look for version_info - NOT RESUMABLE */
+	} /* enum all version_information res - RESUMABLE */
+	break;
+    } /* while(dirs[2].Size) */
 
     free(section_hdr);
     return 0;
