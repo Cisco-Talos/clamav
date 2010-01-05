@@ -26,6 +26,7 @@
 #include "filetypes.h"
 #include "cltypes.h"
 #include "fmap.h"
+#include "hashtab.h"
 
 #define AC_CH_MAXDIST 32
 
@@ -37,6 +38,8 @@ struct cli_ac_data {
     uint32_t partsigs, lsigs, reloffsigs;
     uint32_t **lsigcnt;
     uint32_t *offset;
+    /** Hashset for versioninfo matching */
+    struct cli_hashset vinfo;
 };
 
 struct cli_ac_special {

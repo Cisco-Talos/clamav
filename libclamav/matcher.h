@@ -141,6 +141,7 @@ struct cli_target_info {
 #define CLI_OFF_EP_MINUS    4
 #define CLI_OFF_SL_PLUS     5
 #define CLI_OFF_SX_PLUS     6
+#define CLI_OFF_VERSION     7
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 

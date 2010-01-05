@@ -24,6 +24,7 @@
 #define _HASHTAB_H
 #include <stdio.h>
 #include <stddef.h>
+#include <sys/types.h>
 #include "cltypes.h"
 typedef long cli_element_data;
 

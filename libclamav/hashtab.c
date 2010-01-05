@@ -558,7 +558,7 @@ ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array)
 
 void cli_hashset_init_noalloc(struct cli_hashset *hs)
 {
-    memset(hs, 0, sizeof(hs));
+    memset(hs, 0, sizeof(*hs));
 }
 
 int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key)

@@ -22,8 +22,9 @@
 #define __EXECS_H
 
 #include "cltypes.h"
+#include "hashtab.h"
 #include "bcfeatures.h"
-#include <sys/types.h>
+
 /** @file */
 /** Section of executable file */
 struct cli_exe_section {
@@ -49,6 +50,8 @@ struct cli_exe_info {
     uint32_t ep;
     /** Number of sections*/
     uint16_t nsections;
+    /** Hashset for versioninfo matching */
+    struct cli_hashset *vinfo;
 };
 
 #endif

@@ -180,6 +180,9 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 		return CL_EMALFDB;
 	    }
 	    offdata[1] = atoi(&offcpy[4]);
+	} else if(!strncmp(offcpy, "VI", 2)) {
+	    /* versioninfo */
+	    offdata[0] = CLI_OFF_VERSION;
 	} else {
 	    offdata[0] = CLI_OFF_ABSOLUTE;
 	    if(!cli_isnumber(offcpy)) {
@@ -256,7 +259,9 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 		else
 		    *offset_min = info->exeinfo.section[offdata[3]].raw + offdata[1];
 		break;
-
+	    case CLI_OFF_VERSION:
+		*offset_min = *offset_max = CLI_OFF_ANY;
+		break;
 	    default:
 		cli_errmsg("cli_caloff: Not a relative offset (type: %u)\n", offdata[0]);
 		return CL_EARG;

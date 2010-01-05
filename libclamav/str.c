@@ -120,7 +120,7 @@ uint16_t *cli_hex2ui(const char *hex)
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
+	cli_errmsg("cli_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex, len);
 	return NULL;
     }
 
