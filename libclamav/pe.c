@@ -201,7 +201,7 @@ struct vinfo_list {
 int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct vinfo_list *vlist = (struct vinfo_list *)opaque;
 
-    cli_errmsg("versioninfo_cb: type: %x, name: %x, lang: %x, rva: %x\n", type, name, lang, rva);
+    cli_dbgmsg("versioninfo_cb: type: %x, name: %x, lang: %x, rva: %x\n", type, name, lang, rva);
     vlist->rvas[vlist->count] = rva;
     if(++vlist->count == sizeof(vlist->rvas) / sizeof(vlist->rvas[0]))
 	return 1;
@@ -2432,7 +2432,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 
 	err = 0;
 	for(i=0; i<vlist.count; i++) { /* enum all version_information res - RESUMABLE */
-	    cli_dbgmsg("cli_peheader: parsing version info @ rva %x\n", vlist.rvas[i]);
+	    cli_dbgmsg("cli_peheader: parsing version info @ rva %x (%u/%u)\n", vlist.rvas[i], i+1, vlist.count);
 	    rva = cli_rawaddr(vlist.rvas[i], peinfo->section, peinfo->nsections, &err, fsize, hdr_size);
 	    if(err)
 		continue;
@@ -2506,7 +2506,6 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 
 			while(st_sz > 6) {  /* enum all strings - RESUMABLE */
 			    uint32_t s_sz, s_key_sz, s_val_sz;
-			    char *k, *v;
 
 			    s_sz = s_val_sz = cli_readint32(vptr);
 			    s_sz &= 0xffff;
@@ -2549,16 +2548,21 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 				return -1;
 			    }
 
-			    cli_errmsg("ADD %x\n", (uint32_t)(vptr - baseptr + 6));
 			    if(cli_debug_flag) {
-				/* FIXME: pretty print an usable VI-sig */
+				char *k, *v, *s;
+
+				/* FIXME: skip too long strings */
 				k = cli_utf16toascii(vptr + 6, s_key_sz);
 				if(k) {
 				    s_key_sz += 6 + 3;
 				    s_key_sz &= ~3;
 				    v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
 				    if(v) {
-					cli_errmsg("VersionInfo: '%s' = '%s'\n", k, v);
+					s = cli_str2hex(vptr + 6, s_key_sz + s_val_sz - 6);
+					if(s) {
+					    cli_dbgmsg("VersionInfo (%x): '%s'='%s' - VI:%s\n", vptr - baseptr + 6, k, v, s);
+					    free(s);
+					}
 					free(v);
 				    }
 				    free(k);

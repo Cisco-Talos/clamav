@@ -1077,11 +1077,11 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			}
 			realoff = offset + bp - pt->prefix_length;
 			if(patt->offdata[0] == CLI_OFF_VERSION) {
-			    cli_errmsg("CHECK: %x\n", realoff);
 			    if(!cli_hashset_contains_maybe_noalloc(&mdata->vinfo, realoff)) {
 				pt = pt->next_same;
 				continue;
 			    }
+			    cli_dbgmsg("cli_ac_scanbuff: VI match for offset %x\n", realoff);
 			} else if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
 			    if(pt->offset_min == CLI_OFF_NONE) {
 				pt = pt->next_same;
