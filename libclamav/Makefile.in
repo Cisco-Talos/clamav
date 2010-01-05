@@ -2231,6 +2231,8 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags tags-recursive uninstall uninstall-am \
 	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
+	cache.c \
+	cache.h
 
 .PHONY: version.h.tmp
 version.c: version.h

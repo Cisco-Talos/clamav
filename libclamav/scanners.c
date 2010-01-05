@@ -85,6 +85,7 @@
 #include "ishield.h"
 #include "7z.h"
 #include "fmap.h"
+#include "cache.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1691,7 +1692,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     if(typercg)
 	acmode |= AC_SCAN_FT;
 
-    ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode);
+    ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, NULL);
 
     if(ret >= CL_TYPENO) {
 	ctx->recursion++;
@@ -1840,6 +1841,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	struct stat sb;
 	uint8_t typercg = 1;
 	cli_file_t current_container = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
+	unsigned char hash[16];
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -1875,15 +1877,23 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return CL_EMEM;
     }
 
+    if(cache_check(hash, ctx) == CL_CLEAN)
+	return CL_CLEAN;
+    
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
+
+	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	else
+	    cache_add(hash, ctx);
+
 	funmap(*ctx->fmap);
 	ctx->fmap--; 
+
 	return ret;
     }
 
@@ -2167,8 +2177,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
+	    cache_add(hash, ctx);
 	    return CL_CLEAN;
 	default:
+	    if(ret == CL_CLEAN) cache_add(hash, ctx);
 	    return ret;
     }
 }
