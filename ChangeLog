@@ -1,3 +1,7 @@
+Tue Jan  5 12:04:47 CET 2010 (acab)
+-----------------------------------
+ * libclamav/readdb.c: force VI anchored sigs into AC
+
 Tue Jan  5 02:08:38 CET 2010 (acab)
 -----------------------------------
  * libclamav: merge PE VersionInformation matcher
