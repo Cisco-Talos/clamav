@@ -1874,11 +1874,15 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->fmap++;
     if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
 	cli_errmsg("CRITICAL: fmap() failed\n");
+	ctx->fmap--;
 	return CL_EMEM;
     }
 
-    if(cache_check(hash, ctx) == CL_CLEAN)
+    if(cache_check(hash, ctx) == CL_CLEAN) {
+	funmap(*ctx->fmap);
+	ctx->fmap--;
 	return CL_CLEAN;
+    }
     
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)

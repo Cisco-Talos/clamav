@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include "md5.h"
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"
 #include "fmap.h"
-
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
 
 #define CACHE_PERTURB 10
 /* 1/10th */
