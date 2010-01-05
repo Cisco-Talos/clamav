@@ -2413,7 +2413,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    while(dirs[2].Size) {
+    while(dirs[2].Size && peinfo->vinfo) {
 	struct vinfo_list vlist;
 	uint8_t *vptr, *baseptr;
     	uint32_t rva, res_sz;
