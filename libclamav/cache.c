@@ -32,7 +32,7 @@
 #include "cache.h"
 #include "fmap.h"
 
-#define CACHE_PERTURB 10
+#define CACHE_PERTURB 8
 /* 1/10th */
 
 static mpool_t *mempool = NULL;
@@ -47,24 +47,38 @@ static struct CACHE {
 } *cache = NULL;
 static unsigned int cache_entries = 0;
 
+
+#define TREES 256
+static inline unsigned int getkey(uint8_t *hash) { return *hash; }
+
+/* #define TREES 4096 */
+/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
+
+/* #define TREES 65536 */
+/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | (((unsigned int)hash[1])<<8) ; } */
+
+
 int cl_cache_init(unsigned int entries) {
     unsigned int i;
 
+    entries = MAX(entries / (TREES / 256), 10);
     if(!(mempool = mpool_create())) {
 	cli_errmsg("mpool init fail\n");
 	return 1;
     }
-    if(!(cache = mpool_malloc(mempool, sizeof(struct CACHE) * 256))) {
+    if(!(cache = mpool_malloc(mempool, sizeof(struct CACHE) * TREES))) {
 	cli_errmsg("mpool malloc fail\n");
 	mpool_destroy(mempool);
+	mempool = NULL;
 	return 1;
     }
 
-    for(i=0; i<256; i++) {
+    for(i=0; i<TREES; i++) {
 	struct CACHE_ENTRY *e = mpool_calloc(mempool, sizeof(struct CACHE_ENTRY), entries);
 	if(!e) {
 	    cli_errmsg("mpool calloc fail\n");
 	    mpool_destroy(mempool);
+	    mempool = NULL;
 	    return 1;
 	}
 	cache[i].items = e;
@@ -72,6 +86,8 @@ int cl_cache_init(unsigned int entries) {
 	if(pthread_mutex_init(&cache[i].mutex, NULL)) {
 	    cli_errmsg("mutex init fail\n");
 	    mpool_destroy(mempool);
+	    mempool = NULL;
+	    cache = NULL;
 	    return 1;
 	}
     }
@@ -100,7 +116,7 @@ void cache_swap(struct CACHE_ENTRY *e, unsigned int a) {
 
 static void updb(uint32_t db, unsigned int skip) {
     unsigned int i;
-    for(i=0; i<256; i++) {
+    for(i=0; i<TREES; i++) {
 	if(i==skip) continue;
 	if(pthread_mutex_lock(&cache[i].mutex)) {
 	    cli_errmsg("mutex lock fail\n");
@@ -114,12 +130,13 @@ static void updb(uint32_t db, unsigned int skip) {
 static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx) {
     unsigned int i;
     int ret = CL_VIRUS;
+    unsigned int key = getkey(md5);
     struct CACHE_ENTRY *e;
     struct CACHE *c;
 
     if(!cache) return ret;
 
-    c = &cache[*md5];
+    c = &cache[key];
     e = c->items;
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("mutex lock fail\n");
@@ -128,7 +145,7 @@ static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx) {
     if(c->lastdb <= ctx->engine->dbversion[0]) {
 	if(c->lastdb < ctx->engine->dbversion[0]) {
 	    c->lastdb = ctx->engine->dbversion[0];
-	    updb(c->lastdb, *md5);
+	    updb(c->lastdb, key);
 	} else {
 	    for(i=0; i<cache_entries; i++) {
 		if(!e[i].hits) break;
@@ -146,13 +163,14 @@ static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx) {
 }
 
 void cache_add(unsigned char *md5, cli_ctx *ctx) {
+    unsigned int key = getkey(md5);
     unsigned int i, replace;
     struct CACHE_ENTRY *e;
     struct CACHE *c;
 
     if(!cache) return;
 
-    c = &cache[*md5];
+    c = &cache[key];
     e = c->items;
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("mutex lock fail\n");
