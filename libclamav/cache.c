@@ -182,6 +182,10 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     cli_md5_final(hash, &md5);
     return cache_lookup_hash(hash, ctx);
 }
+#if 0
+#define cli_calloc calloc
+#define cli_errmsg(x)
+#endif
 
 struct cache_key {
     char digest[16];
@@ -200,6 +204,8 @@ struct cache_set {
 };
 
 #define CACHE_INVALID_VERSION ~0u
+#define CACHE_KEY_DELETED ~0u
+#define CACHE_KEY_EMPTY 0
 
 /* size must be power of 2! */
 static int cacheset_init(struct cache_set* map, size_t maxsize, uint8_t loadfactor)
@@ -250,7 +256,17 @@ static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
 	// Remove a key from the head of the list
 	old = map->lru_head;
 	map->lru_head = old->lru_next;
-	old->size = 0; /* this slot is now empty */
+	old->size = CACHE_KEY_DELETED;
+	/* This slot is now deleted, it is not empty,
+	 * because previously we could have inserted a key that has seen this
+	 * slot as occupied, to find that key we need to ensure that all keys
+	 * that were occupied when the key was inserted, are seen as occupied
+	 * when searching too.
+	 * Of course when inserting a new value, we treat deleted slots as
+	 * empty.
+	 * We only replace old values with new values, but there is no guarantee
+	 * that the newly inserted value would hash to same place as the value
+	 * we remove due to LRU! */
 	if (old == map->lru_tail)
 	    map->lru_tail = 0;
     }
@@ -282,18 +298,23 @@ static inline size_t hash(const unsigned char* k,const size_t len,const size_t S
 }
 
 int cacheset_lookup_internal(struct cache_set *map, const struct cache_key *key,
-			     uint32_t *insert_pos)
+			     uint32_t *insert_pos, int deletedok)
 {
     uint32_t idx = hash((const unsigned char*)key, sizeof(*key), map->capacity);
     uint32_t tries = 0;
     struct cache_key *k = &map->data[idx];
-    while (k->size) {
+    while (k->size != CACHE_KEY_EMPTY) {
 	if (k->size == key->size &&
 	    !memcmp(k->digest, key, 16)) {
 	    /* found key */
 	    *insert_pos = idx;
 	    return 1;
 	}
+       if (deletedok && k->size == CACHE_KEY_DELETED) {
+           /* treat deleted slot as empty */
+           *insert_pos = idx;
+           return 0;
+       }
 	idx = (idx + tries++)&(map->capacity-1);
 	k = &map->data[idx];
     }
@@ -332,7 +353,7 @@ static void cacheset_add(struct cache_set *map, const struct cache_key *key)
 	cacheset_lru_remove(map, 1);
     assert(map->elements < map->maxelements);
 
-    ret = cacheset_lookup_internal(map, key, &pos);
+    ret = cacheset_lookup_internal(map, key, &pos, 1);
     newkey = &map->data[pos];
     if (ret) {
 	/* was already added, remove from LRU list */
@@ -353,7 +374,7 @@ static int cacheset_lookup(struct cache_set *map, const struct cache_key *key)
     struct cache_key *newkey;
     int ret;
     uint32_t pos;
-    ret = cacheset_lookup_internal(map, key, &pos);
+    ret = cacheset_lookup_internal(map, key, &pos, 0);
     if (!ret)
 	return CACHE_INVALID_VERSION;
     newkey = &map->data[pos];
