@@ -1875,7 +1875,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 #define CDB_TOKENS 12
 static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
-	const char *tokens[MD_TOKENS + 1];
+	const char *tokens[CDB_TOKENS + 1];
 	char buffer[FILEBUFF], *buffer_cpy;
 	unsigned int line = 0, sigs = 0, tokens_count, n0, n1;
 	int ret = CL_SUCCESS;
