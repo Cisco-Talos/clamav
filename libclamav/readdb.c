@@ -1869,6 +1869,200 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
     return CL_SUCCESS;
 }
 
+/*    0		1	     2		3	       4	       5		 6	     7	      8     9    10     11
+ * VirusName:ContainerType:FileType:FileNameREGEX:ContainerSize:FileSizeInContainer:FileSizeReal:IsEncrypted:Res1:Res2[:MinFL[:MaxFL]]
+ */
+#define CDB_TOKENS 12
+static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+{
+	const char *tokens[MD_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy;
+	unsigned int line = 0, sigs = 0, tokens_count, n0, n1;
+	int ret = CL_SUCCESS;
+	struct cli_cdb *new;
+
+
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(buffer[0] == '#')
+	    continue;
+
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
+	tokens_count = cli_strtokenize(buffer, ':', CDB_TOKENS + 1, tokens);
+	if(tokens_count > CDB_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(tokens_count > 10) { /* min version */
+	    if(!cli_isnumber(tokens[10])) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    if((unsigned int) atoi(tokens[10]) > cl_retflevel()) {
+		cli_dbgmsg("cli_loadcdb: Container signature for %s not loaded (required f-level: %u)\n", tokens[0], atoi(tokens[10]));
+		continue;
+	    }
+	    if(tokens_count == 12) { /* max version */
+		if(!cli_isnumber(tokens[11])) {
+		    ret = CL_EMALFDB;
+		    break;
+		}
+		if((unsigned int) atoi(tokens[11]) < cl_retflevel())
+		    continue;
+	    }
+	}
+
+	new = (struct cli_cdb *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	new->virname = cli_mpool_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
+	if(!new->virname) {
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(!strcmp(tokens[1], "*")) {
+	    new->ctype = CL_TYPE_ANY;
+	} else if((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
+	    cli_dbgmsg("cli_cdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(!strcmp(tokens[2], "*")) {
+	    new->ftype = CL_TYPE_ANY;
+	} else if((new->ftype = cli_ftcode(tokens[2])) == CL_TYPE_ERROR) {
+	    cli_dbgmsg("cli_cdb: Unknown file type %s in signature for %s, skipping\n", tokens[2], tokens[0]);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(strcmp(tokens[3], "*") && cli_regcomp(&new->name, tokens[3], REG_EXTENDED | REG_NOSUB)) {
+	    cli_errmsg("cli_cdb: Can't compile regular expression %s in signature for %s\n", tokens[3], tokens[0]);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+#define CDBRANGE(token_str, dest)					    \
+	if(strcmp(token_str, "*")) {					    \
+	    if(strchr(token_str, '-')) {				    \
+		if(sscanf(token_str, "%u-%u", &n0, &n1) != 2) {		    \
+		    ret = CL_EMALFDB;					    \
+		} else {						    \
+		    dest[0] = n0;					    \
+		    dest[1] = n1;					    \
+		}							    \
+	    } else {							    \
+		if(!cli_isnumber(token_str))				    \
+		    ret = CL_EMALFDB;					    \
+		else							    \
+		    dest[0] = dest[1] = atoi(token_str);		    \
+	    }								    \
+	    if(ret != CL_SUCCESS) {					    \
+		cli_errmsg("cli_cdb: Invalid value %s in signature for %s\n",\
+		    token_str, tokens[0]);				    \
+		if(new->name.re_magic)					    \
+		    cli_regfree(&new->name);				    \
+		mpool_free(engine->mempool, new->virname);		    \
+		mpool_free(engine->mempool, new);			    \
+		ret = CL_EMEM;						    \
+		break;							    \
+	    }								    \
+	} else {							    \
+	    dest[0] = dest[1] = CLI_OFF_ANY;				    \
+	}
+
+	CDBRANGE(tokens[4], new->csize);
+	CDBRANGE(tokens[5], new->fsizec);
+	CDBRANGE(tokens[6], new->fsizer);
+
+	if(!strcmp(tokens[7], "*")) {
+	    new->encrypted = 2;
+	} else {
+	    if(strcmp(tokens[7], "0") && strcmp(tokens[7], "1")) {
+		cli_errmsg("cli_cdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMEM;
+		break;
+	    }
+	    new->encrypted = *tokens[7] - 0x30;
+	}
+
+	if(strcmp(tokens[8], "*")) {
+	    new->res1 = cli_mpool_strdup(engine->mempool, tokens[8]);
+	    if(!new->res1) {
+		cli_errmsg("cli_cdb: Can't allocate memory for res1 in signature for %s\n", tokens[0]);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMEM;
+		break;
+	    }
+	}
+
+	if(strcmp(tokens[9], "*")) {
+	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[9]);
+	    if(!new->res2) {
+		cli_errmsg("cli_cdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
+		mpool_free(engine->mempool, new->res1);
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMEM;
+		break;
+	    }
+	}
+
+	new->next = engine->cdb;
+	engine->cdb = new;
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    return CL_SUCCESS;
+}
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -1979,6 +2173,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".idb")) {
     	ret = cli_loadidb(fs, engine, signo, options, dbio);
+
+    } else if(cli_strbcasestr(dbname, ".cdb")) {
+    	ret = cli_loadcdb(fs, engine, signo, options, dbio);
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
@@ -2492,6 +2689,17 @@ int cl_engine_free(struct cl_engine *engine)
 	if(metah->filename)
 	    mpool_free(engine->mempool, metah->filename);
 	mpool_free(engine->mempool, metah);
+    }
+
+    while(engine->cdb) {
+	struct cli_cdb *pt = engine->cdb;
+	engine->cdb = pt->next;
+	if(pt->name.re_magic)
+	    cli_regfree(&pt->name);
+	mpool_free(engine->mempool, pt->res2);
+	mpool_free(engine->mempool, pt->res1);
+	mpool_free(engine->mempool, pt->virname);
+	mpool_free(engine->mempool, pt);
     }
 
     if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {

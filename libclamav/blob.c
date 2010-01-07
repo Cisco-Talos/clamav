@@ -636,10 +636,7 @@ fileblobScan(const fileblob *fb)
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
 
-	fb->ctx->container_type = CL_TYPE_MAIL;
 	rc = cli_magic_scandesc(fb->fd, fb->ctx);
-	fb->ctx->container_type = 0;
-
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;

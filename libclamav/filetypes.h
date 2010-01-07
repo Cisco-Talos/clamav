@@ -32,6 +32,7 @@
 #define MAX_EMBEDDED_OBJ 10
 
 typedef enum {
+    CL_TYPE_ANY = 0,
     CL_TYPE_TEXT_ASCII = CL_TYPENO, /* X3.4, ISO-8859, non-ISO ext. ASCII */
     CL_TYPE_TEXT_UTF8,
     CL_TYPE_TEXT_UTF16LE,

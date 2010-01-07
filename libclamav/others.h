@@ -111,6 +111,7 @@ typedef struct {
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
+    size_t container_size;
     struct cli_dconf *dconf;
     fmap_t **fmap;
 } cli_ctx;
@@ -198,6 +199,9 @@ struct cl_engine {
 
     /* RAR metadata */
     struct cli_meta_node *rar_mlist;
+
+    /* Container metadata */
+    struct cli_cdb *cdb;
 
     /* Phishing .pdb and .wdb databases*/
     struct regex_matcher *whitelist_matcher;
