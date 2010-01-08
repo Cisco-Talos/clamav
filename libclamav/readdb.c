@@ -1718,7 +1718,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	char buffer[FILEBUFF], *buffer_cpy;
 	unsigned int line = 0, sigs = 0, tokens_count;
 	int ret = CL_SUCCESS, crc;
-	struct cli_meta_node *new;
+	struct cli_cdb *new;
 
 
     if(engine->ignored)
@@ -1771,7 +1771,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 
-	new = (struct cli_meta_node *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_meta_node));
+	new = (struct cli_cdb *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
@@ -1783,6 +1783,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    ret = CL_EMEM;
 	    break;
 	}
+	new->ctype = (type == 1) ? CL_TYPE_ZIP : CL_TYPE_RAR;
+	new->ftype = CL_TYPE_ANY;
 
 	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
 	    mpool_free(engine->mempool, new->virname);
@@ -1791,63 +1793,47 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	}
 
 	new->encrypted = atoi(tokens[1]);
-	new->filename = cli_mpool_strdup(engine->mempool, tokens[2]);
-	if(!new->filename) {
+
+	if(strcmp(tokens[2], "*") && cli_regcomp(&new->name, tokens[2], REG_EXTENDED | REG_NOSUB)) {
+	    cli_errmsg("cli_loadmd: Can't compile regular expression %s in signature for %s\n", tokens[2], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
+	    ret = CL_EMEM;
 	    break;
-	} else {
-	    if(!strcmp(new->filename, "*")) {
-	        mpool_free(engine->mempool, new->filename);
-		new->filename = NULL;
-	    }
 	}
+	new->csize[0] = new->csize[1] = CLI_OFF_ANY;
 
 	if(!strcmp(tokens[3], "*"))
-	    new->size = -1;
+	    new->fsizer[0] = new->fsizer[1] = CLI_OFF_ANY;
 	else
-	    new->size = atoi(tokens[3]);
+	    new->fsizer[0] = new->fsizer[1] = atoi(tokens[3]);
 
 	if(!strcmp(tokens[4], "*"))
-	    new->csize = -1;
+	    new->fsizec[0] = new->fsizec[1] = CLI_OFF_ANY;
 	else
-	    new->csize = atoi(tokens[4]);
+	    new->fsizec[0] = new->fsizec[1] = atoi(tokens[4]);
 
-	if(!strcmp(tokens[5], "*")) {
-	    new->crc32 = 0;
-	} else {
-	    crc = cli_hex2num(tokens[5]);
-	    if(crc == -1) {
+	if(strcmp(tokens[5], "*")) {
+	    new->res1 = cli_hex2num(tokens[5]);
+	    if(new->res1 == -1) {
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
 	        ret = CL_EMALFDB;
 		break;
 	    }
-	    new->crc32 = (unsigned int) crc;
 	}
 
-	if(!strcmp(tokens[6], "*"))
-	    new->method = -1;
-	else
-	    new->method = atoi(tokens[6]);
+	/* tokens[6] - not used */
 
-	if(!strcmp(tokens[7], "*"))
-	    new->fileno = 0;
-	else
-	    new->fileno = atoi(tokens[7]);
+	if(strcmp(tokens[7], "*"))
+	    new->filepos[0] = new->filepos[1] = atoi(tokens[7]);
 
-	if(!strcmp(tokens[8], "*"))
-	    new->maxdepth = 0;
-	else
-	    new->maxdepth = atoi(tokens[8]);
+	/* tokens[8] - not used */
 
-	if(type == 1) {
-	    new->next = engine->zip_mlist;
-	    engine->zip_mlist = new;
-	} else {
-	    new->next = engine->rar_mlist;
-	    engine->rar_mlist = new;
-	}
-
+	new->next = engine->cdb;
+	engine->cdb = new;
 	sigs++;
     }
     if(engine->ignored)
@@ -1869,10 +1855,10 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
     return CL_SUCCESS;
 }
 
-/*    0		1	     2		3	       4	       5		 6	     7	      8     9    10     11
- * VirusName:ContainerType:FileType:FileNameREGEX:ContainerSize:FileSizeInContainer:FileSizeReal:IsEncrypted:Res1:Res2[:MinFL[:MaxFL]]
+/*    0		1	     2		3	       4	       5		 6	     7	      8      9    10     11     12
+ * VirusName:ContainerType:FileType:FileNameREGEX:ContainerSize:FileSizeInContainer:FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
  */
-#define CDB_TOKENS 12
+#define CDB_TOKENS 13
 static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
 	const char *tokens[CDB_TOKENS + 1];
@@ -1896,26 +1882,26 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', CDB_TOKENS + 1, tokens);
-	if(tokens_count > CDB_TOKENS) {
+	if(tokens_count > CDB_TOKENS || tokens_count < CDB_TOKENS - 2) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if(tokens_count > 10) { /* min version */
-	    if(!cli_isnumber(tokens[10])) {
+	if(tokens_count > 11) { /* min version */
+	    if(!cli_isnumber(tokens[11])) {
 		ret = CL_EMALFDB;
 		break;
 	    }
-	    if((unsigned int) atoi(tokens[10]) > cl_retflevel()) {
+	    if((unsigned int) atoi(tokens[11]) > cl_retflevel()) {
 		cli_dbgmsg("cli_loadcdb: Container signature for %s not loaded (required f-level: %u)\n", tokens[0], atoi(tokens[10]));
 		continue;
 	    }
-	    if(tokens_count == 12) { /* max version */
-		if(!cli_isnumber(tokens[11])) {
+	    if(tokens_count == 13) { /* max version */
+		if(!cli_isnumber(tokens[12])) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
-		if((unsigned int) atoi(tokens[11]) < cl_retflevel())
+		if((unsigned int) atoi(tokens[12]) < cl_retflevel())
 		    continue;
 	    }
 	}
@@ -1942,7 +1928,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(!strcmp(tokens[1], "*")) {
 	    new->ctype = CL_TYPE_ANY;
 	} else if((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
-	    cli_dbgmsg("cli_cdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
+	    cli_dbgmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    continue;
@@ -1951,14 +1937,14 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(!strcmp(tokens[2], "*")) {
 	    new->ftype = CL_TYPE_ANY;
 	} else if((new->ftype = cli_ftcode(tokens[2])) == CL_TYPE_ERROR) {
-	    cli_dbgmsg("cli_cdb: Unknown file type %s in signature for %s, skipping\n", tokens[2], tokens[0]);
+	    cli_dbgmsg("cli_loadcdb: Unknown file type %s in signature for %s, skipping\n", tokens[2], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    continue;
 	}
 
 	if(strcmp(tokens[3], "*") && cli_regcomp(&new->name, tokens[3], REG_EXTENDED | REG_NOSUB)) {
-	    cli_errmsg("cli_cdb: Can't compile regular expression %s in signature for %s\n", tokens[3], tokens[0]);
+	    cli_errmsg("cli_loadcdb: Can't compile regular expression %s in signature for %s\n", tokens[3], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
@@ -1981,7 +1967,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		    dest[0] = dest[1] = atoi(token_str);		    \
 	    }								    \
 	    if(ret != CL_SUCCESS) {					    \
-		cli_errmsg("cli_cdb: Invalid value %s in signature for %s\n",\
+		cli_errmsg("cli_loadcdb: Invalid value %s in signature for %s\n",\
 		    token_str, tokens[0]);				    \
 		if(new->name.re_magic)					    \
 		    cli_regfree(&new->name);				    \
@@ -1997,12 +1983,13 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	CDBRANGE(tokens[4], new->csize);
 	CDBRANGE(tokens[5], new->fsizec);
 	CDBRANGE(tokens[6], new->fsizer);
+	CDBRANGE(tokens[8], new->filepos);
 
 	if(!strcmp(tokens[7], "*")) {
 	    new->encrypted = 2;
 	} else {
 	    if(strcmp(tokens[7], "0") && strcmp(tokens[7], "1")) {
-		cli_errmsg("cli_cdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
+		cli_errmsg("cli_loadcdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
 		if(new->name.re_magic)
 		    cli_regfree(&new->name);
 		mpool_free(engine->mempool, new->virname);
@@ -2013,26 +2000,12 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    new->encrypted = *tokens[7] - 0x30;
 	}
 
-	if(strcmp(tokens[8], "*")) {
-	    new->res1 = cli_mpool_strdup(engine->mempool, tokens[8]);
-	    if(!new->res1) {
-		cli_errmsg("cli_cdb: Can't allocate memory for res1 in signature for %s\n", tokens[0]);
-		if(new->name.re_magic)
-		    cli_regfree(&new->name);
-		mpool_free(engine->mempool, new->virname);
-		mpool_free(engine->mempool, new);
-		ret = CL_EMEM;
-		break;
-	    }
-	}
-
-	if(strcmp(tokens[9], "*")) {
-	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[9]);
+	if(strcmp(tokens[10], "*")) {
+	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[10]);
 	    if(!new->res2) {
-		cli_errmsg("cli_cdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
+		cli_errmsg("cli_loadcdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
 		if(new->name.re_magic)
 		    cli_regfree(&new->name);
-		mpool_free(engine->mempool, new->res1);
 		mpool_free(engine->mempool, new->virname);
 		mpool_free(engine->mempool, new);
 		ret = CL_EMEM;
@@ -2606,7 +2579,6 @@ int cl_statfree(struct cl_stat *dbstat)
 int cl_engine_free(struct cl_engine *engine)
 {
 	unsigned int i, j;
-	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
 
 
@@ -2671,33 +2643,12 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, root);
     }
 
-    metapt = engine->zip_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	mpool_free(engine->mempool, metah->virname);
-	if(metah->filename)
-	    mpool_free(engine->mempool, metah->filename);
-	mpool_free(engine->mempool, metah);
-    }
-
-    metapt = engine->rar_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	mpool_free(engine->mempool, metah->virname);
-	if(metah->filename)
-	    mpool_free(engine->mempool, metah->filename);
-	mpool_free(engine->mempool, metah);
-    }
-
     while(engine->cdb) {
 	struct cli_cdb *pt = engine->cdb;
 	engine->cdb = pt->next;
 	if(pt->name.re_magic)
 	    cli_regfree(&pt->name);
 	mpool_free(engine->mempool, pt->res2);
-	mpool_free(engine->mempool, pt->res1);
 	mpool_free(engine->mempool, pt->virname);
 	mpool_free(engine->mempool, pt);
     }

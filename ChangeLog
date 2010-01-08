@@ -1,3 +1,7 @@
+Fri Jan  8 15:20:10 CET 2010 (tk)
+---------------------------------
+ * libclamav: handle zmd/rmd with cdb (bb#1579)
+
 Thu Jan  7 18:22:39 CET 2010 (tk)
 ---------------------------------
  * libclamav: base code for unified container metadata matcher (bb#1579)

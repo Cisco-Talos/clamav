@@ -194,12 +194,6 @@ struct cl_engine {
     /* B-M matcher for whitelist db */
     struct cli_matcher *md5_fp;
 
-    /* Zip metadata */
-    struct cli_meta_node *zip_mlist;
-
-    /* RAR metadata */
-    struct cli_meta_node *rar_mlist;
-
     /* Container metadata */
     struct cli_cdb *cdb;
 

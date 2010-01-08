@@ -165,8 +165,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
-	struct cli_meta_node* mdata;
-
 
     if(files == 1 && sfx_check) {
 	if(*sfx_check == metadata->crc)
@@ -180,41 +178,8 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	(unsigned int) metadata->unpack_size, metadata->method,
 	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0);
 
-    /* Scan metadata */
-    mdata = ctx->engine->rar_mlist;
-    if(mdata) do {
-	if(mdata->encrypted != metadata->encrypted)
-	    continue;
-
-	if(mdata->crc32 && (unsigned int) mdata->crc32 != metadata->crc)
-	    continue;
-
-	if(mdata->csize > 0 && (unsigned int) mdata->csize != metadata->pack_size)
-	    continue;
-
-	if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
-	    continue;
-
-	if(mdata->method >= 0 && mdata->method != metadata->method)
-	    continue;
-
-	if(mdata->fileno && mdata->fileno != files)
-	    continue;
-
-	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth)
-	    continue;
-
-	if(mdata->filename && !cli_matchregex(metadata->filename, mdata->filename))
-	    continue;
-
-	break; /* matched */
-
-    } while((mdata = mdata->next));
-
-    if(mdata) {
-	*ctx->virname = mdata->virname;
+    if(cli_matchmeta(ctx, CL_TYPE_ANY, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS)
 	return CL_VIRUS;
-    }
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");

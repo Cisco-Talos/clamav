@@ -99,13 +99,6 @@ struct cli_matcher {
 #endif
 };
 
-struct cli_meta_node {
-    char *filename, *virname;
-    struct cli_meta_node *next;
-    int csize, size, method;
-    unsigned int crc32, fileno, encrypted, maxdepth;
-};
-
 struct cli_cdb
 {
     char	*virname;   /* virus name */
@@ -118,7 +111,8 @@ struct cli_cdb
     size_t	fsizec[2];  /* file size in container */
     size_t	fsizer[2];  /* real file size */
     int		encrypted;  /* file is encrypted; 2 == ignore */
-    void	*res1;	    /* reserved / format specific */
+    int		filepos[2]; /* file position in container */
+    int		res1;	    /* reserved / format specific */
     void	*res2;	    /* reserved / format specific */
 
     struct cli_cdb *next;
@@ -170,6 +164,6 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 
 int cli_checkfp(int fd, cli_ctx *ctx);
 
-int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, void *res1, void *res2);
+int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2);
 
 #endif

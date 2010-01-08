@@ -543,7 +543,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
-int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, void *res1, void *res2)
+int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2)
 {
 	const struct cli_cdb *cdb;
 
@@ -560,26 +560,22 @@ int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsiz
 	if(cdb->encrypted != 2 && cdb->encrypted != encrypted)
 	    continue;
 
-	if(cdb->csize[0] != CLI_OFF_ANY) {
-	    if(cdb->csize[0] == cdb->csize[1] && cdb->csize[0] != ctx->container_size)
-		continue;
-	    else if(cdb->csize[0] != cdb->csize[1] && ((cdb->csize[0] && cdb->csize[0] > ctx->container_size) || (cdb->csize[1] && cdb->csize[1] < ctx->container_size)))
-		continue;
+	if(cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1)
+	    continue;
+
+#define CDBRANGE(field, val)						    \
+	if(field[0] != CLI_OFF_ANY) {					    \
+	    if(field[0] == field[1] && field[0] != val)			    \
+		continue;						    \
+	    else if(field[0] != field[1] && ((field[0] && field[0] > val) ||\
+	      (field[1] && field[1] < val)))				    \
+		continue;						    \
 	}
 
-	if(cdb->fsizec[0] != CLI_OFF_ANY) {
-	    if(cdb->fsizec[0] == cdb->fsizec[1] && cdb->fsizec[0] != fsizec)
-		continue;
-	    else if(cdb->fsizec[0] != cdb->fsizec[1] && ((cdb->fsizec[0] && cdb->fsizec[0] > fsizec) || (cdb->fsizec[1] && cdb->fsizec[1] < fsizec)))
-		continue;
-	}
-
-	if(cdb->fsizer[0] != CLI_OFF_ANY) {
-	    if(cdb->fsizer[0] == cdb->fsizer[1] && cdb->fsizer[0] != fsizer)
-		continue;
-	    else if(cdb->fsizer[0] != cdb->fsizer[1] && ((cdb->fsizer[0] && cdb->fsizer[0] > fsizer) || (cdb->fsizer[1] && cdb->fsizer[1] < fsizer)))
-		continue;
-	}
+	CDBRANGE(cdb->csize, ctx->container_size);
+	CDBRANGE(cdb->fsizec, fsizec);
+	CDBRANGE(cdb->fsizer, fsizer);
+	CDBRANGE(cdb->filepos, filepos);
 
 	if(cdb->name.re_magic && (!fname || cli_regexec(&cdb->name, fname, 0, NULL, 0) == REG_NOMATCH))
 	    continue;
