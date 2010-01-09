@@ -33,7 +33,12 @@
 #include "cache.h"
 #include "fmap.h"
 
+static mpool_t *mempool = NULL;
 
+//#define USE_LRUHASHCACHE
+#define USE_SPLAY
+
+#ifdef USE_LRUHASHCACHE
 struct cache_key {
     char digest[16];
     uint32_t size; /* 0 is used to mark an empty hash slot! */
@@ -90,40 +95,14 @@ static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
     }
 }
 
-static inline uint32_t hash32shift(uint32_t key)
+int cacheset_lookup_internal(struct cache_set *map, unsigned char *md5, size_t size, uint32_t *insert_pos, int deletedok)
 {
-  key = ~key + (key << 15);
-  key = key ^ (key >> 12);
-  key = key + (key << 2);
-  key = key ^ (key >> 4);
-  key = (key + (key << 3)) + (key << 11);
-  key = key ^ (key >> 16);
-  return key;
-}
-
-static inline size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
-{
-    size_t Hash = 1;
-    size_t i;
-    for(i=0;i<len;i++) {
-	/* a simple add is good, because we use the mixing function below */
-	Hash +=  k[i];
-	/* mixing function */
-	Hash = hash32shift(Hash);
-    }
-    /* SIZE is power of 2 */
-    return Hash & (SIZE - 1);
-}
-
-int cacheset_lookup_internal(struct cache_set *map, const struct cache_key *key,
-			     uint32_t *insert_pos, int deletedok)
-{
-    uint32_t idx = hash((const unsigned char*)key, sizeof(*key), map->capacity);
+    uint32_t idx = cli_readint32(md5+8) & (map->capacity -1);
     uint32_t tries = 0;
     struct cache_key *k = &map->data[idx];
     while (k->size != CACHE_KEY_EMPTY) {
-	if (k->size == key->size &&
-	    !memcmp(k->digest, key, 16)) {
+	if (k->size == size &&
+	    !memcmp(k->digest, md5, 16)) {
 	    /* found key */
 	    *insert_pos = idx;
 	    return 1;
@@ -162,7 +141,7 @@ static inline void lru_addtail(struct cache_set *map, struct cache_key *newkey)
     map->lru_tail = newkey;
 }
 
-static void cacheset_add(struct cache_set *map, const struct cache_key *key)
+static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size)
 {
     int ret;
     uint32_t pos;
@@ -171,28 +150,28 @@ static void cacheset_add(struct cache_set *map, const struct cache_key *key)
 	cacheset_lru_remove(map, 1);
     assert(map->elements < map->maxelements);
 
-    ret = cacheset_lookup_internal(map, key, &pos, 1);
+    ret = cacheset_lookup_internal(map, md5, size, &pos, 1);
     newkey = &map->data[pos];
     if (ret) {
 	/* was already added, remove from LRU list */
 	lru_remove(map, newkey);
     }
     /* add new key to tail of LRU list */
-    memcpy(&map->data[pos], key, sizeof(*key));
+    memcpy(&map->data[pos].digest, md5, sizeof(map->data[pos].digest));
+    map->data[pos].size = size;
     lru_addtail(map, newkey);
 
     map->elements++;
 
     assert(pos < map->maxelements);
-
 }
 
-static int cacheset_lookup(struct cache_set *map, const struct cache_key *key)
+static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t size)
 {
     struct cache_key *newkey;
     int ret;
     uint32_t pos;
-    ret = cacheset_lookup_internal(map, key, &pos, 0);
+    ret = cacheset_lookup_internal(map, md5, size, &pos, 0);
     if (!ret)
 	return CACHE_INVALID_VERSION;
     newkey = &map->data[pos];
@@ -203,13 +182,137 @@ static int cacheset_lookup(struct cache_set *map, const struct cache_key *key)
     return map->version;
 }
 
-static mpool_t *mempool = NULL;
-static struct CACHE {
-    struct cache_set cacheset;
-    pthread_mutex_t mutex;
-    uint32_t lastdb;
-} *cache = NULL;
-static unsigned int cache_entries = 0;
+
+static int cacheset_init(struct cache_set *map, unsigned int entries) {
+    map->data = mpool_calloc(mempool, 256, sizeof(*map->data));
+    if (!map->data)
+	return CL_EMEM;
+    map->capacity = entries;
+    map->maxelements = 80*entries / 100;
+    map->elements = 0;
+    map->version = CACHE_INVALID_VERSION;
+    map->lru_head = map->lru_tail = NULL;
+    map->version = 1337;
+    return 0;
+}
+
+#else
+#ifdef USE_SPLAY
+struct node {
+    uint64_t digest[2];
+    struct node *left;
+    struct node *right;
+    uint32_t size; /* 0 is used to mark an empty hash slot! */
+};
+
+struct cache_set {
+    struct node *data;
+    struct node *root;
+    unsigned int used;
+    unsigned int total;
+};
+
+static int cacheset_init(struct cache_set *map, unsigned int entries) {
+    map->data = mpool_calloc(mempool, entries, sizeof(*map->data));
+    map->root = NULL;
+
+    if(!map->data)
+	return CL_EMEM;
+    map->used = 0;
+    map->total = entries;
+    return 0;
+}
+
+void splay(uint64_t *md5, struct cache_set *cs) {
+    struct node next = {{0, 0}, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+
+    if(!root)
+	return;
+
+    while(1) {
+	if(md5[1] < root->digest[1] || md5[1] == root->digest[1] && md5[0] < root->digest[0]) {
+	    if(!root->left) break;
+	    if(md5[1] < root->left->digest[1] || md5[1] == root->left->digest[1] && md5[0] < root->left->digest[0]) {
+		temp = root->left;
+                root->left = temp->right;
+                temp->right = root;
+                root = temp;
+                if (!root->left) break;
+	    }
+            right->left = root;
+            right = root;
+            root = root->left;
+	} else if(md5[1] > root->digest[1] || md5[1] == root->digest[1] && md5[0] > root->digest[0]) {
+	    if(!root->right) break;
+	    if(md5[1] > root->right->digest[1] || md5[1] == root->right->digest[1] && md5[0] > root->right->digest[0]) {
+		temp = root->right;
+                root->right = temp->left;
+                temp->left = root;
+                root = temp;
+		if(!root->right) break;
+	    }
+	    left->right = root;
+            left = root;
+            root = root->right;
+	} else break;
+    }
+    left->right = root->left;
+    right->left = root->right;
+    root->left = next.right;
+    root->right = next.left;
+    cs->root = root;
+}
+
+
+static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size) {
+    uint64_t hash[2];
+
+    memcpy(hash, md5, 16);
+    splay(hash, cs);
+    if(!cs->root || cs->root->digest[1] != hash[1] || cs->root->digest[0] != hash[0])
+	return 0;
+    return 1337;
+}
+
+
+static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
+    uint64_t hash[2];
+    struct node *newnode;
+
+    memcpy(hash, md5, 16);
+    splay(hash, cs);
+    if(cs->root && cs->root->digest[1] == hash[1] && cs->root->digest[0] == hash[0])
+	return; /* Already there */
+
+    if(cs->used == cs->total) {
+	/* FIXME: drop something */
+	cli_errmsg("FULL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	return;
+    } else {
+	newnode = &cs->data[cs->used++];
+    }
+
+    if(!cs->root) {
+	newnode->left = NULL;
+	newnode->right = NULL;
+    } else if(hash[1] < cs->root->digest[1] || hash[1] == cs->root->digest[1] && hash[0] < cs->root->digest[0]) {
+	newnode->left = cs->root->left;
+	newnode->right = cs->root;
+	cs->root->left = NULL;
+    } else {
+	newnode->right = cs->root->right;
+	newnode->left = cs->root;
+	cs->root->right = NULL;
+    }
+    newnode->digest[0] = hash[0];
+    newnode->digest[1] = hash[1];
+    cs->root = newnode;
+}
+
+
+#endif /* USE_SPLAY */
+#endif /* USE_LRUHASHCACHE */
+
 
 #define TREES 256
 static inline unsigned int getkey(uint8_t *hash) { return *hash; }
@@ -220,11 +323,17 @@ static inline unsigned int getkey(uint8_t *hash) { return *hash; }
 /* #define TREES 65536 */
 /* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | (((unsigned int)hash[1])<<8) ; } */
 
+static struct CACHE {
+    struct cache_set cacheset;
+    pthread_mutex_t mutex;
+    uint32_t lastdb;
+} *cache = NULL;
+
 
 int cl_cache_init(unsigned int entries) {
     unsigned int i;
+    int ret;
 
-    entries = MAX(entries / (TREES / 256), 10);
     if(!(mempool = mpool_create())) {
 	cli_errmsg("mpool init fail\n");
 	return 1;
@@ -244,23 +353,19 @@ int cl_cache_init(unsigned int entries) {
 	    cache = NULL;
 	    return 1;
 	}
-
-	cache[i].cacheset.data = mpool_calloc(mempool, 256, sizeof(*cache[i].cacheset.data));
-	if (!cache[i].cacheset.data)
-	    return CL_EMEM;
-	cache_setversion(&cache[i].cacheset, 1337);
-	cache[i].cacheset.capacity = 256;
-	cache[i].cacheset.maxelements = 80*256 / 100;
-	cache[i].cacheset.elements = 0;
-	cache[i].cacheset.version = CACHE_INVALID_VERSION;
-	cache[i].cacheset.lru_head = cache[i].cacheset.lru_tail = NULL;
+	ret = cacheset_init(&cache[i].cacheset, entries);
+	if(ret) {
+	    mpool_destroy(mempool);
+	    mempool = NULL;
+	    cache = NULL;
+	    return 1;
+	}
     }
-    cache_entries = entries;
     return 0;
 }
 
+
 static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx) {
-    struct cache_key entry;
     int ret = CL_VIRUS;
     unsigned int key = getkey(md5);
     struct CACHE *c;
@@ -272,16 +377,14 @@ static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx) {
 	cli_errmsg("mutex lock fail\n");
 	return ret;
     }
-    entry.size = 1024;
-    memcpy(entry.digest, md5, 16);
-    ret = (cacheset_lookup(&c->cacheset, &entry) == 1337) ? CL_CLEAN : CL_VIRUS;
-    pthread_mutex_unlock(&c->mutex);
+
+    ret = (cacheset_lookup(&c->cacheset, md5, 1024) == 1337) ? CL_CLEAN : CL_VIRUS;
     if(ret == CL_CLEAN) cli_warnmsg("cached\n");
+    pthread_mutex_unlock(&c->mutex);
     return ret;
 }
 
 void cache_add(unsigned char *md5, cli_ctx *ctx) {
-    struct cache_key entry;
     unsigned int key = getkey(md5);
     struct CACHE *c;
 
@@ -292,9 +395,9 @@ void cache_add(unsigned char *md5, cli_ctx *ctx) {
 	cli_errmsg("mutex lock fail\n");
 	return;
     }
-    entry.size = 1024;
-    memcpy(entry.digest, md5, 16);
-    cacheset_add(&c->cacheset, &entry);
+
+    cacheset_add(&c->cacheset, md5, 1024);
+
     pthread_mutex_unlock(&c->mutex);
     return;
 }
