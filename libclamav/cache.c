@@ -195,11 +195,11 @@ static int cacheset_init(struct cache_set *map, unsigned int entries) {
     map->version = 1337;
     return 0;
 }
+#endif /* USE_LRUHASHCACHE */
 
-#else
 #ifdef USE_SPLAY
 struct node {
-    uint64_t digest[2];
+    int64_t digest[2];
     struct node *left;
     struct node *right;
     uint32_t size; /* 0 is used to mark an empty hash slot! */
@@ -223,16 +223,22 @@ static int cacheset_init(struct cache_set *map, unsigned int entries) {
     return 0;
 }
 
-void splay(uint64_t *md5, struct cache_set *cs) {
-    struct node next = {{0, 0}, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+static inline int cmp(int64_t *a, int64_t *b) {
+    int64_t ret = a[1] - b[1];
+    if(!ret) ret = a[0] - b[0];
+    return ret;
+}
 
+void splay(int64_t *md5, struct cache_set *cs) {
+    struct node next = {{0, 0}, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     if(!root)
 	return;
 
     while(1) {
-	if(md5[1] < root->digest[1] || md5[1] == root->digest[1] && md5[0] < root->digest[0]) {
+	int comp = cmp(md5, root->digest);
+	if(comp < 0) {
 	    if(!root->left) break;
-	    if(md5[1] < root->left->digest[1] || md5[1] == root->left->digest[1] && md5[0] < root->left->digest[0]) {
+	    if(cmp(md5, root->left->digest) < 0) {
 		temp = root->left;
                 root->left = temp->right;
                 temp->right = root;
@@ -242,9 +248,9 @@ void splay(uint64_t *md5, struct cache_set *cs) {
             right->left = root;
             right = root;
             root = root->left;
-	} else if(md5[1] > root->digest[1] || md5[1] == root->digest[1] && md5[0] > root->digest[0]) {
+	} else if(comp > 0) {
 	    if(!root->right) break;
-	    if(md5[1] > root->right->digest[1] || md5[1] == root->right->digest[1] && md5[0] > root->right->digest[0]) {
+	    if(cmp(md5, root->right->digest) > 0) {
 		temp = root->right;
                 root->right = temp->left;
                 temp->left = root;
@@ -256,6 +262,8 @@ void splay(uint64_t *md5, struct cache_set *cs) {
             root = root->right;
 	} else break;
     }
+
+
     left->right = root->left;
     right->left = root->right;
     root->left = next.right;
@@ -265,28 +273,31 @@ void splay(uint64_t *md5, struct cache_set *cs) {
 
 
 static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size) {
-    uint64_t hash[2];
+    int64_t hash[2];
 
     memcpy(hash, md5, 16);
     splay(hash, cs);
-    if(!cs->root || cs->root->digest[1] != hash[1] || cs->root->digest[0] != hash[0])
+    if(!cs->root || cmp(hash, cs->root->digest))
 	return 0;
     return 1337;
 }
 
-
 static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
-    uint64_t hash[2];
     struct node *newnode;
+    int64_t hash[2];
+    int comp;
 
     memcpy(hash, md5, 16);
     splay(hash, cs);
-    if(cs->root && cs->root->digest[1] == hash[1] && cs->root->digest[0] == hash[0])
-	return; /* Already there */
+    if(cs->root) {
+	comp = cmp(hash, cs->root->digest);
+	if(!comp)
+	    return; /* Already there */
+    }
 
     if(cs->used == cs->total) {
-	/* FIXME: drop something */
-	cli_errmsg("FULL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	cli_errmsg("TREE IS FULL, BYE!\n");
+	abort();
 	return;
     } else {
 	newnode = &cs->data[cs->used++];
@@ -295,7 +306,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     if(!cs->root) {
 	newnode->left = NULL;
 	newnode->right = NULL;
-    } else if(hash[1] < cs->root->digest[1] || hash[1] == cs->root->digest[1] && hash[0] < cs->root->digest[0]) {
+    } else if(comp < 0) {
 	newnode->left = cs->root->left;
 	newnode->right = cs->root;
 	cs->root->left = NULL;
@@ -308,11 +319,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     newnode->digest[1] = hash[1];
     cs->root = newnode;
 }
-
-
 #endif /* USE_SPLAY */
-#endif /* USE_LRUHASHCACHE */
-
 
 #define TREES 256
 static inline unsigned int getkey(uint8_t *hash) { return *hash; }
