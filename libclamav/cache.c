@@ -202,7 +202,7 @@ struct node {
     int64_t digest[2];
     struct node *left;
     struct node *right;
-    uint32_t size; /* 0 is used to mark an empty hash slot! */
+    uint32_t size;
 };
 
 struct cache_set {
@@ -282,6 +282,24 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
     return 1337;
 }
 
+static int get_worst(struct node *n, struct node *parent, struct node **worst, struct node **wparent) {
+    unsigned int left, right;
+    struct node *wl = n, *wr = n, *pl = parent, *pr = parent;
+
+    if(!n) return 0;
+    left = get_worst(n->left, n, &wl, &pl);
+    right = get_worst(n->right, n, &wr, &pr);
+
+    if(left < right) {
+	*worst = wr;
+	*wparent = pr;
+	return right + 1;
+    }
+    *worst = wl;
+    *wparent = pl;
+    return left +1;
+}
+
 static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
     struct node *newnode;
     int64_t hash[2];
@@ -296,9 +314,12 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     }
 
     if(cs->used == cs->total) {
-	cli_errmsg("TREE IS FULL, BYE!\n");
-	abort();
-	return;
+	struct node *parent;
+	get_worst(cs->root, NULL, &newnode, &parent);
+	if(parent->left == newnode)
+	    parent->left = NULL;
+	else
+	    parent->right = NULL;
     } else {
 	newnode = &cs->data[cs->used++];
     }
