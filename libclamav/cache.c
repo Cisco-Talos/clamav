@@ -232,12 +232,42 @@ static inline int cmp(int64_t *a, int64_t *b) {
     return ret;
 }
 
+#ifdef CHECK_TREE
+static int check_tree_rec(struct cache_set *cs, unsigned int *beenthere, struct node *node, struct node *parent) {
+    unsigned int item = node - cs->data;
+    if(!node) return 0;
+    if(beenthere[item]) return 1;
+    beenthere[item] = 1;
+    if(node->up != parent) return 1;
+    return check_tree_rec(cs, beenthere, node->left, node) | check_tree_rec(cs, beenthere, node->right, node);
+}
+
+static void check_tree(struct cache_set *cs) {
+    unsigned int i, been_there[1024];
+    memset(been_there, 0, sizeof(been_there));
+    if(check_tree_rec(cs, been_there, cs->root, NULL)) {
+	cli_errmsg("tree fukkd up\n");
+	abort();
+    }
+    for(i=0; i<cs->used; i++) {
+	if(!been_there[i]) {
+	    cli_errmsg("tree fukkd up\n");
+	    abort();
+	}
+    }
+}
+#else
+#define check_tree(a)
+#endif
+
 static int splay(int64_t *md5, struct cache_set *cs) {
-    struct node next = {{0, 0}, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+    struct node next = {{0, 0}, NULL, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int ret = 0;
 
     if(!root)
 	return 0;
+
+    check_tree(cs);
 
     while(1) {
 	int comp = cmp(md5, root->digest);
@@ -246,11 +276,14 @@ static int splay(int64_t *md5, struct cache_set *cs) {
 	    if(cmp(md5, root->left->digest) < 0) {
 		temp = root->left;
                 root->left = temp->right;
+		if(temp->right) temp->right->up = root;
                 temp->right = root;
+		root->up = temp;
                 root = temp;
                 if(!root->left) break;
 	    }
             right->left = root;
+	    root->up = right;
             right = root;
             root = root->left;
 	} else if(comp > 0) {
@@ -258,11 +291,14 @@ static int splay(int64_t *md5, struct cache_set *cs) {
 	    if(cmp(md5, root->right->digest) > 0) {
 		temp = root->right;
                 root->right = temp->left;
+		if(temp->left) temp->left->up = root;
                 temp->left = root;
+		root->up = temp;
                 root = temp;
 		if(!root->right) break;
 	    }
 	    left->right = root;
+	    root->up = left;
             left = root;
             root = root->right;
 	} else {
@@ -272,10 +308,17 @@ static int splay(int64_t *md5, struct cache_set *cs) {
     }
 
     left->right = root->left;
+    if(root->left) root->left->up = left;
     right->left = root->right;
+    if(root->right) root->right->up = right;
     root->left = next.right;
+    if(next.right) next.right->up = root;
     root->right = next.left;
+    if(next.left) next.left->up = root;
+    root->up = NULL;
     cs->root = root;
+
+    check_tree(cs);
     return ret;
 }
 
@@ -285,24 +328,6 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
 
     memcpy(hash, md5, 16);
     return splay(hash, cs) * 1337;
-}
-
-static int get_worst(struct node *n, struct node *parent, struct node **worst, struct node **wparent) {
-    unsigned int left, right;
-    struct node *wl = n, *wr = n, *pl = parent, *pr = parent;
-
-    if(!n) return 0;
-    left = get_worst(n->left, n, &wl, &pl);
-    right = get_worst(n->right, n, &wr, &pr);
-
-    if(left < right) {
-	*worst = wr;
-	*wparent = pr;
-	return right + 1;
-    }
-    *worst = wl;
-    *wparent = pl;
-    return left +1;
 }
 
 static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
@@ -315,7 +340,20 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 
     if(cs->used == cs->total) {
 	struct node *parent;
-	get_worst(cs->root, NULL, &newnode, &parent);
+	int nodeno, bestnode, parents = 0;
+	for(nodeno = 0; nodeno < cs->total; nodeno++) {
+	    parent = &cs->data[nodeno];
+	    if(!parent->left && !parent->right) {
+		int p=0;
+		do{ p++; } while(parent = parent->up);
+		if(p>=parents) {
+		    parents = p;
+		    bestnode = nodeno;
+		}
+	    }
+	}
+	newnode=&cs->data[bestnode];
+	parent = newnode->up;
 	if(parent->left == newnode)
 	    parent->left = NULL;
 	else
@@ -326,17 +364,22 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     if(!cs->root) {
 	newnode->left = NULL;
 	newnode->right = NULL;
-    } else if(cmp(hash, cs->root->digest)) {
-	newnode->left = cs->root->left;
-	newnode->right = cs->root;
-	cs->root->left = NULL;
     } else {
-	newnode->right = cs->root->right;
-	newnode->left = cs->root;
-	cs->root->right = NULL;
+	if(cmp(hash, cs->root->digest)) {
+	    newnode->left = cs->root->left;
+	    newnode->right = cs->root;
+	    cs->root->left = NULL;
+	} else {
+	    newnode->right = cs->root->right;
+	    newnode->left = cs->root;
+	    cs->root->right = NULL;
+	}
+	if(newnode->left) newnode->left->up = newnode;
+	if(newnode->right) newnode->right->up = newnode;
     }
     newnode->digest[0] = hash[0];
     newnode->digest[1] = hash[1];
+    newnode->up = NULL;
     cs->root = newnode;
 }
 #endif /* USE_SPLAY */
