@@ -35,8 +35,9 @@
 
 static mpool_t *mempool = NULL;
 
-#define USE_LRUHASHCACHE
-//#define USE_SPLAY
+//#define DONT_CACHE
+//#define USE_LRUHASHCACHE
+#define USE_SPLAY
 
 #ifdef USE_LRUHASHCACHE
 struct cache_key {
@@ -203,6 +204,7 @@ struct node {
     int64_t digest[2];
     struct node *left;
     struct node *right;
+    struct node *up;
     uint32_t size;
 };
 
@@ -230,10 +232,12 @@ static inline int cmp(int64_t *a, int64_t *b) {
     return ret;
 }
 
-void splay(int64_t *md5, struct cache_set *cs) {
+static int splay(int64_t *md5, struct cache_set *cs) {
     struct node next = {{0, 0}, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+    int ret = 0;
+
     if(!root)
-	return;
+	return 0;
 
     while(1) {
 	int comp = cmp(md5, root->digest);
@@ -244,7 +248,7 @@ void splay(int64_t *md5, struct cache_set *cs) {
                 root->left = temp->right;
                 temp->right = root;
                 root = temp;
-                if (!root->left) break;
+                if(!root->left) break;
 	    }
             right->left = root;
             right = root;
@@ -261,15 +265,18 @@ void splay(int64_t *md5, struct cache_set *cs) {
 	    left->right = root;
             left = root;
             root = root->right;
-	} else break;
+	} else {
+	    ret = 1;
+	    break;
+	}
     }
-
 
     left->right = root->left;
     right->left = root->right;
     root->left = next.right;
     root->right = next.left;
     cs->root = root;
+    return ret;
 }
 
 
@@ -277,10 +284,7 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
-    splay(hash, cs);
-    if(!cs->root || cmp(hash, cs->root->digest))
-	return 0;
-    return 1337;
+    return splay(hash, cs) * 1337;
 }
 
 static int get_worst(struct node *n, struct node *parent, struct node **worst, struct node **wparent) {
@@ -304,15 +308,10 @@ static int get_worst(struct node *n, struct node *parent, struct node **worst, s
 static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
     struct node *newnode;
     int64_t hash[2];
-    int comp;
 
     memcpy(hash, md5, 16);
-    splay(hash, cs);
-    if(cs->root) {
-	comp = cmp(hash, cs->root->digest);
-	if(!comp)
+    if(splay(hash, cs))
 	    return; /* Already there */
-    }
 
     if(cs->used == cs->total) {
 	struct node *parent;
@@ -321,14 +320,13 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 	    parent->left = NULL;
 	else
 	    parent->right = NULL;
-    } else {
+    } else
 	newnode = &cs->data[cs->used++];
-    }
 
     if(!cs->root) {
 	newnode->left = NULL;
 	newnode->right = NULL;
-    } else if(comp < 0) {
+    } else if(cmp(hash, cs->root->digest)) {
 	newnode->left = cs->root->left;
 	newnode->right = cs->root;
 	cs->root->left = NULL;
@@ -362,6 +360,11 @@ static struct CACHE {
 int cl_cache_init(unsigned int entries) {
     unsigned int i;
     int ret;
+
+#ifndef DONT_CACHE
+    if(!entries)
+#endif
+	return 0;
 
     if(!(mempool = mpool_create())) {
 	cli_errmsg("mpool init fail\n");
