@@ -35,8 +35,8 @@
 
 static mpool_t *mempool = NULL;
 
-//#define USE_LRUHASHCACHE
-#define USE_SPLAY
+#define USE_LRUHASHCACHE
+//#define USE_SPLAY
 
 #ifdef USE_LRUHASHCACHE
 struct cache_key {
@@ -92,6 +92,7 @@ static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
 	 * we remove due to LRU! */
 	if (old == map->lru_tail)
 	    map->lru_tail = 0;
+	map->elements--;
     }
 }
 
@@ -100,7 +101,7 @@ int cacheset_lookup_internal(struct cache_set *map, unsigned char *md5, size_t s
     uint32_t idx = cli_readint32(md5+8) & (map->capacity -1);
     uint32_t tries = 0;
     struct cache_key *k = &map->data[idx];
-    while (k->size != CACHE_KEY_EMPTY) {
+    while (k->size != CACHE_KEY_EMPTY && tries < map->capacity) {
 	if (k->size == size &&
 	    !memcmp(k->digest, md5, 16)) {
 	    /* found key */
