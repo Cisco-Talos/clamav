@@ -70,7 +70,7 @@ int bytecode_init(void)
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
     // Empty
 }
-void cli_bytecode_printversion() {
+void cli_bytecode_printversion(void) {
   printf("LLVM not compiled in\n");
 }
 int have_clamjit=0;

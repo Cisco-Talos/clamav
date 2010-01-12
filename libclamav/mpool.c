@@ -455,7 +455,7 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
     return NULL;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *hex) {
+unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
     unsigned char *str;
     size_t len = strlen((const char*)hex);
 

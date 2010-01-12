@@ -253,7 +253,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 	bm_new->length = hexlen / 2;
 
-	bm_new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
+	bm_new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
 	if(!bm_new->virname) {
 	    mpool_free(root->mempool, bm_new->pattern);
 	    mpool_free(root->mempool, bm_new);
@@ -409,7 +409,7 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
+    if(cli_bm_scanbuff((const unsigned char *) signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
 	if(md5_expected) {
 	    cli_md5_init(&md5ctx);
             cli_md5_update(&md5ctx, entry, strlen(entry));
@@ -462,7 +462,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 
 static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char buffer[FILEBUFF], *buffer_cpy, *pt, *start;
+	char buffer[FILEBUFF], *buffer_cpy = NULL, *pt, *start;
 	unsigned int line = 0, sigs = 0;
 	int ret = 0;
 	struct cli_matcher *root;
@@ -528,7 +528,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
         const char *tokens[ICO_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	uint8_t *hash;
 	int ret = CL_SUCCESS;
 	unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
@@ -796,7 +796,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned short sdb, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[NDB_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	const char *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0, tokens_count;
@@ -1105,7 +1105,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
   } while(0);
 
 #define LDB_TOKENS 67
-static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned line, unsigned *sigs, struct cli_bc *bc, const char *buffer_cpy)
+static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, struct cli_bc *bc, const char *buffer_cpy)
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
@@ -1162,7 +1162,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	FREE_TDB(tdb);
 	if(ret == 1) {
 	    cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
-	    *sigs--;
+	    (*sigs)--;
 	    return CL_SUCCESS;
 	}
 	return CL_EMALFDB;
@@ -1175,7 +1175,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     } else if(tdb.target[0] >= CLI_MTARGETS) {
 	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
 	FREE_TDB(tdb);
-	*sigs--;
+	(*sigs)--;
 	return CL_SUCCESS;
     }
 
@@ -1244,11 +1244,11 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	    if(tdb.engine[0] > cl_retflevel()) {
 		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
 		FREE_TDB(tdb);
-		*sigs--;
+		(*sigs)--;
 		return CL_SUCCESS;
 	    } else if(tdb.engine[1] < cl_retflevel()) {
 		FREE_TDB(tdb);
-		*sigs--;
+		(*sigs)--;
 		return CL_SUCCESS;
 	    }
 	}
@@ -1258,7 +1258,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy;
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy = NULL;
 	unsigned int line = 0, sigs = 0;
 	int ret;
 
@@ -1495,7 +1495,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 {
 	const char *tokens[IGN_MAX_TOKENS + 1], *signame, *hash = NULL;
 	char buffer[FILEBUFF];
-	unsigned int line = 0, tokens_count, i, len;
+	unsigned int line = 0, tokens_count, len;
         struct cli_bm_patt *new;
 	int ret = CL_SUCCESS;
 
@@ -1541,14 +1541,14 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    ret = CL_EMEM;
 	    break;
 	}
-	new->pattern = cli_mpool_strdup(engine->mempool, signame);
+	new->pattern = (unsigned char *) cli_mpool_strdup(engine->mempool, signame);
 	if(!new->pattern) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
 	    break;
 	}
 	if(hash) {
-	    if(strlen(hash) != 32 || !(new->virname = (unsigned char *) cli_mpool_hex2str(engine->mempool, hash))) {
+	    if(strlen(hash) != 32 || !(new->virname = (char *) cli_mpool_hex2str(engine->mempool, hash))) {
 		cli_errmsg("cli_loadign: Malformed MD5 string at line %u\n", line);
 		mpool_free(engine->mempool, new->pattern);
 		mpool_free(engine->mempool, new);
@@ -1619,7 +1619,7 @@ static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
 static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD5_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
@@ -1678,7 +1678,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	new->filesize = atoi(tokens[size_field]);
 
-	new->virname = cli_mpool_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mpool_free(engine->mempool, new->pattern);
 	    mpool_free(engine->mempool, new);
@@ -1736,9 +1736,9 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	unsigned int line = 0, sigs = 0, tokens_count;
-	int ret = CL_SUCCESS, crc;
+	int ret = CL_SUCCESS;
 	struct cli_cdb *new;
 
 
@@ -1798,7 +1798,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 
-	new->virname = cli_mpool_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
@@ -1883,7 +1883,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
 	const char *tokens[CDB_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	unsigned int line = 0, sigs = 0, tokens_count, n0, n1;
 	int ret = CL_SUCCESS;
 	struct cli_cdb *new;
@@ -1933,7 +1933,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	new->virname = cli_mpool_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
@@ -2675,7 +2675,6 @@ int cl_engine_free(struct cl_engine *engine)
     }
 
     if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-	unsigned i;
 	if (engine->bcs.all_bcs)
 	    for(i=0;i<engine->bcs.count;i++)
 		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
