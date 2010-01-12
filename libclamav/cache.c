@@ -27,6 +27,11 @@
 #include <pthread.h>
 #include <assert.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
 #include "md5.h"
 #include "mpool.h"
 #include "clamav.h"
@@ -186,7 +191,7 @@ static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t siz
 
 
 static int cacheset_init(struct cache_set *map, unsigned int entries) {
-    map->data = mpool_calloc(mempool, 256, sizeof(*map->data));
+    map->data = mpool_calloc(mempool, entries, sizeof(*map->data));
     if (!map->data)
 	return CL_EMEM;
     map->capacity = entries;
@@ -205,24 +210,34 @@ struct node {
     struct node *left;
     struct node *right;
     struct node *up;
+    struct node *next;
+    struct node *prev;
     uint32_t size;
 };
 
 struct cache_set {
     struct node *data;
     struct node *root;
-    unsigned int used;
-    unsigned int total;
+    struct node *first;
+    struct node *last;
 };
 
-static int cacheset_init(struct cache_set *map, unsigned int entries) {
-    map->data = mpool_calloc(mempool, entries, sizeof(*map->data));
-    map->root = NULL;
+static int cacheset_init(struct cache_set *cs, unsigned int entries) {
+    unsigned int i;
+    cs->data = mpool_calloc(mempool, entries,  sizeof(*cs->data));
+    cs->root = NULL;
 
-    if(!map->data)
+    if(!cs->data)
 	return CL_EMEM;
-    map->used = 0;
-    map->total = entries;
+
+    for(i=1; i<entries; i++) {
+	cs->data[i-1].next = &cs->data[i];
+	cs->data[i].prev = &cs->data[i-1];
+    }
+
+    cs->first = cs->data;
+    cs->last = &cs->data[entries-1];
+
     return 0;
 }
 
@@ -232,42 +247,12 @@ static inline int cmp(int64_t *a, int64_t *b) {
     return ret;
 }
 
-#ifdef CHECK_TREE
-static int check_tree_rec(struct cache_set *cs, unsigned int *beenthere, struct node *node, struct node *parent) {
-    unsigned int item = node - cs->data;
-    if(!node) return 0;
-    if(beenthere[item]) return 1;
-    beenthere[item] = 1;
-    if(node->up != parent) return 1;
-    return check_tree_rec(cs, beenthere, node->left, node) | check_tree_rec(cs, beenthere, node->right, node);
-}
-
-static void check_tree(struct cache_set *cs) {
-    unsigned int i, been_there[1024];
-    memset(been_there, 0, sizeof(been_there));
-    if(check_tree_rec(cs, been_there, cs->root, NULL)) {
-	cli_errmsg("tree fukkd up\n");
-	abort();
-    }
-    for(i=0; i<cs->used; i++) {
-	if(!been_there[i]) {
-	    cli_errmsg("tree fukkd up\n");
-	    abort();
-	}
-    }
-}
-#else
-#define check_tree(a)
-#endif
-
 static int splay(int64_t *md5, struct cache_set *cs) {
-    struct node next = {{0, 0}, NULL, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+    struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int ret = 0;
 
     if(!root)
 	return 0;
-
-    check_tree(cs);
 
     while(1) {
 	int comp = cmp(md5, root->digest);
@@ -318,7 +303,6 @@ static int splay(int64_t *md5, struct cache_set *cs) {
     root->up = NULL;
     cs->root = root;
 
-    check_tree(cs);
     return ret;
 }
 
@@ -336,30 +320,35 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 
     memcpy(hash, md5, 16);
     if(splay(hash, cs))
-	    return; /* Already there */
+	return; /* Already there */
 
-    if(cs->used == cs->total) {
-	struct node *parent;
-	int nodeno, bestnode, parents = 0;
-	for(nodeno = 0; nodeno < cs->total; nodeno++) {
-	    parent = &cs->data[nodeno];
-	    if(!parent->left && !parent->right) {
-		int p=0;
-		do{ p++; } while(parent = parent->up);
-		if(p>=parents) {
-		    parents = p;
-		    bestnode = nodeno;
-		}
-	    }
-	}
-	newnode=&cs->data[bestnode];
-	parent = newnode->up;
-	if(parent->left == newnode)
-	    parent->left = NULL;
+    newnode = cs->first;
+    while(newnode) {
+	if(!newnode->right && !newnode->left)
+	    break;
+	newnode = newnode->next;
+    }
+    if(!newnode) {
+	cli_errmsg("NO NEWNODE!\n");
+	abort();
+    }
+    if(newnode->up) {
+	if(newnode->up->left == newnode)
+	    newnode->up->left = NULL;
 	else
-	    parent->right = NULL;
-    } else
-	newnode = &cs->data[cs->used++];
+	    newnode->up->right = NULL;
+    }
+    if(newnode->prev)
+	newnode->prev->next = newnode->next;
+    if(newnode->next)
+	newnode->next->prev = newnode->prev;
+    if(cs->first == newnode)
+	cs->first = newnode->next;
+
+    newnode->prev = cs->last;
+    newnode->next = NULL;
+    cs->last->next = newnode;
+    cs->last = newnode;
 
     if(!cs->root) {
 	newnode->left = NULL;
@@ -384,6 +373,9 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 }
 #endif /* USE_SPLAY */
 
+/* #define TREES 1 */
+/* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
+
 #define TREES 256
 static inline unsigned int getkey(uint8_t *hash) { return *hash; }
 
@@ -399,6 +391,8 @@ static struct CACHE {
     uint32_t lastdb;
 } *cache = NULL;
 
+
+static int cache_lookup_hash(unsigned char *md5, cli_ctx *ctx);
 
 int cl_cache_init(unsigned int entries) {
     unsigned int i;
@@ -435,6 +429,27 @@ int cl_cache_init(unsigned int entries) {
 	    cache = NULL;
 	    return 1;
 	}
+    }
+
+    {
+	int f = open("/home/acab/hashes", O_RDONLY);
+	struct stat s;
+	fstat(f, &s);
+	char *pippo = mmap(NULL, s.st_size, PROT_READ, MAP_PRIVATE, f, 0);
+	while(s.st_size >= 17) {
+	    if(*pippo == 'C')
+		cache_lookup_hash(pippo+1, NULL);
+	    else if(*pippo == 'A')
+		cache_add(pippo+1, NULL);
+	    else {
+		printf("bad hash\n");
+		abort();
+	    }
+	    pippo += 17;
+	    s.st_size -= 17;
+	}
+	printf("that's all\n");
+	abort();
     }
     return 0;
 }
