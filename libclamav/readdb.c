@@ -972,7 +972,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
 	if(!apt) {
 	    cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
-	    continue;
+	    return 1;
 	}
 
 	switch(apt->type) {
@@ -1101,7 +1101,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     uint32_t lsigid[2];
     int ret;
 
-	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
+    tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
     if(tokens_count < 4) {
 	return CL_EMALFDB;
     }
@@ -1142,16 +1142,22 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 #ifdef USE_MPOOL
     tdb.mempool = engine->mempool;
 #endif
-    if(lsigattribs(tokens[1], &tdb) == -1) {
+    if((ret = lsigattribs(tokens[1], &tdb))) {
 	FREE_TDB(tdb);
+	if(ret == 1) {
+	    cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
+	    *sigs--;
+	    return CL_SUCCESS;
+	}
 	return CL_EMALFDB;
     }
+
     if(!tdb.target) {
 	cli_errmsg("cli_loadldb: No target specified in TDB\n");
 	FREE_TDB(tdb);
 	return CL_EMALFDB;
     } else if(tdb.target[0] >= CLI_MTARGETS) {
-	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s\n", virname);
+	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
 	FREE_TDB(tdb);
 	*sigs--;
 	return CL_SUCCESS;
@@ -1215,9 +1221,8 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	    sig = tokens[3 + i];
 	}
 
-	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
-	    return CL_EMALFDB;
-	}
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
+	    return ret;
 
 	if(tdb.engine) {
 	    if(tdb.engine[0] > cl_retflevel()) {
