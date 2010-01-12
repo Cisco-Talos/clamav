@@ -473,6 +473,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	evalcnt = 0; \
 	evalids = 0; \
 	if(cli_ac_chklsig(xroot->ac_lsigtable[i]->logic, xroot->ac_lsigtable[i]->logic + strlen(xroot->ac_lsigtable[i]->logic), xdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) { \
+	    if(xroot->ac_lsigtable[i]->tdb.container && xroot->ac_lsigtable[i]->tdb.container[0] != ctx->container_type) \
+		continue; \
 	    if(xroot->ac_lsigtable[i]->tdb.filesize && (xroot->ac_lsigtable[i]->tdb.filesize[0] > map->len || xroot->ac_lsigtable[i]->tdb.filesize[1] < map->len)) \
 		continue; \
 	    \
