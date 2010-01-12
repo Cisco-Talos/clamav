@@ -1109,7 +1109,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
-    char *tokens[LDB_TOKENS], *pt;
+    char *tokens[LDB_TOKENS+1], *pt;
     int i, subsigs, tokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
