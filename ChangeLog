@@ -1,3 +1,7 @@
+Thu Jan 14 19:43:43 CET 2010 (tk)
+---------------------------------
+ * libclamav/readdb.c: fix compatibility issue with .zmd sigs (bb#1793)
+
 Tue Jan 12 14:39:55 CET 2010 (tk)
 ---------------------------------
  * libclamav: allow lsigs be anchored to specific containers (bb#1293),

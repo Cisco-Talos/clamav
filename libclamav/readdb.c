@@ -1813,7 +1813,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 	}
 
-	new->encrypted = atoi(tokens[1]);
+	new->encrypted = strcmp(tokens[1], "*") ? atoi(tokens[1]) : 2;
 
 	if(strcmp(tokens[2], "*") && cli_regcomp(&new->name, tokens[2], REG_EXTENDED | REG_NOSUB)) {
 	    cli_errmsg("cli_loadmd: Can't compile regular expression %s in signature for %s\n", tokens[2], tokens[0]);
@@ -1848,8 +1848,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
 	/* tokens[6] - not used */
 
-	if(strcmp(tokens[7], "*"))
-	    new->filepos[0] = new->filepos[1] = atoi(tokens[7]);
+	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? atoi(tokens[7]) : CLI_OFF_ANY;
 
 	/* tokens[8] - not used */
 
