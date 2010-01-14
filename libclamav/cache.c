@@ -291,12 +291,6 @@ static int cacheset_init(struct cache_set *cs, unsigned int entries) {
     return 0;
 }
 
-/* static inline int64_t cmp(int64_t *a, int64_t *b) { */
-/*     int64_t ret = a[1] - b[1]; */
-/*     if(!ret) ret = a[0] - b[0]; */
-/*     return ret; */
-/* } */
-
 static inline int cmp(int64_t *a, int64_t *b) {
     if(a[1] < b[1]) return -1;
     if(a[1] > b[1]) return 1;
@@ -304,6 +298,10 @@ static inline int cmp(int64_t *a, int64_t *b) {
     if(a[0] < b[0]) return -1;
     return 1;
 }
+
+/* static inline int cmp(int64_t *a, int64_t *b) { */
+/*     return memcmp(a, b, 16); */
+/* } */
 
 
 //#define PRINT_TREE
@@ -606,11 +604,11 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 }
 #endif /* USE_SPLAY */
 
-#define TREES 1
-static inline unsigned int getkey(uint8_t *hash) { return 0; }
+/* #define TREES 1 */
+/* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
 
-/* #define TREES 256 */
-/* static inline unsigned int getkey(uint8_t *hash) { return *hash; } */
+#define TREES 256
+static inline unsigned int getkey(uint8_t *hash) { return *hash; }
 
 /* #define TREES 4096 */
 /* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
