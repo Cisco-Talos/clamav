@@ -301,7 +301,6 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
-  struct cli_meta_node *meta = ctx->engine->zip_mlist;
 
   if(!(lh = fmap_need_off(map, loff, SIZEOF_LH))) {
       cli_dbgmsg("cli_unzip: lh - out of file\n");
@@ -322,7 +321,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
-  if(meta || cli_debug_flag) {
+  if(ctx->engine->cdb || cli_debug_flag) {
       uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
       char *src;
       if(nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
@@ -337,20 +336,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n", ((LH_flags & F_ENCR)!=0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->recursion);
   /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
-  while(meta &&
-	(
-	 meta->encrypted != ((LH_flags & F_ENCR)!=0) ||
-	 (meta->size>0   && (uint32_t)meta->size   != LH_usize) ||
-	 (meta->csize>0  && (uint32_t)meta->csize  != LH_csize) ||
-	 (meta->crc32    && meta->crc32  != LH_crc32) ||
-	 (meta->method>0 && meta->method != LH_method) ||
-	 (meta->fileno   && meta->fileno != fc ) ||
-	 (meta->maxdepth && ctx->recursion > meta->maxdepth) ||
-	 (meta->filename && !cli_matchregex(name, meta->filename))
-	 )
-	) meta = meta->next;
-  if(meta) {
-    *ctx->virname = meta->virname;
+  if(cli_matchmeta(ctx, CL_TYPE_ANY, name, LH_csize, LH_usize, (LH_flags & F_ENCR)!=0, fc, LH_crc32, NULL) == CL_VIRUS) {
     *ret = CL_VIRUS;
     return 0;
   }

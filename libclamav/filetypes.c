@@ -53,7 +53,7 @@ static const struct ftmap_s {
     { "CL_TYPE_TEXT_UTF16BE",	CL_TYPE_TEXT_UTF16BE	},
     { "CL_TYPE_BINARY_DATA",	CL_TYPE_BINARY_DATA	},
     { "CL_TYPE_IGNORED",	CL_TYPE_IGNORED		},
-    { "CL_TYPE_ANY",		0			}, /* for ft-sigs */
+    { "CL_TYPE_ANY",		CL_TYPE_ANY		},
     { "CL_TYPE_MSEXE",		CL_TYPE_MSEXE		},
     { "CL_TYPE_ELF",		CL_TYPE_ELF		},
     { "CL_TYPE_MACHO",		CL_TYPE_MACHO		},

@@ -47,6 +47,7 @@
 #include "macho.h"
 #include "fmap.h"
 #include "pe_icons.h"
+#include "regex/regex.h"
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
@@ -543,4 +544,49 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     }
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
+}
+
+int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2)
+{
+	const struct cli_cdb *cdb;
+
+    if(!(cdb = ctx->engine->cdb))
+	return CL_CLEAN;
+
+    do {
+	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != ctx->container_type)
+	    continue;
+
+	if(cdb->ftype != CL_TYPE_ANY && cdb->ftype != ftype)
+	    continue;
+
+	if(cdb->encrypted != 2 && cdb->encrypted != encrypted)
+	    continue;
+
+	if(cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1)
+	    continue;
+
+#define CDBRANGE(field, val)						    \
+	if(field[0] != CLI_OFF_ANY) {					    \
+	    if(field[0] == field[1] && field[0] != val)			    \
+		continue;						    \
+	    else if(field[0] != field[1] && ((field[0] && field[0] > val) ||\
+	      (field[1] && field[1] < val)))				    \
+		continue;						    \
+	}
+
+	CDBRANGE(cdb->csize, ctx->container_size);
+	CDBRANGE(cdb->fsizec, fsizec);
+	CDBRANGE(cdb->fsizer, fsizer);
+	CDBRANGE(cdb->filepos, filepos);
+
+	if(cdb->name.re_magic && (!fname || cli_regexec(&cdb->name, fname, 0, NULL, 0) == REG_NOMATCH))
+	    continue;
+
+	*ctx->virname = cdb->virname;
+	return CL_VIRUS;
+
+    } while((cdb = cdb->next));
+
+    return CL_CLEAN;
 }

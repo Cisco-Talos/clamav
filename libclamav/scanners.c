@@ -166,8 +166,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
-	struct cli_meta_node* mdata;
-
 
     if(files == 1 && sfx_check) {
 	if(*sfx_check == metadata->crc)
@@ -181,41 +179,8 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	(unsigned int) metadata->unpack_size, metadata->method,
 	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0);
 
-    /* Scan metadata */
-    mdata = ctx->engine->rar_mlist;
-    if(mdata) do {
-	if(mdata->encrypted != metadata->encrypted)
-	    continue;
-
-	if(mdata->crc32 && (unsigned int) mdata->crc32 != metadata->crc)
-	    continue;
-
-	if(mdata->csize > 0 && (unsigned int) mdata->csize != metadata->pack_size)
-	    continue;
-
-	if(mdata->size >= 0 && (unsigned int) mdata->size != metadata->unpack_size)
-	    continue;
-
-	if(mdata->method >= 0 && mdata->method != metadata->method)
-	    continue;
-
-	if(mdata->fileno && mdata->fileno != files)
-	    continue;
-
-	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth)
-	    continue;
-
-	if(mdata->filename && !cli_matchregex(metadata->filename, mdata->filename))
-	    continue;
-
-	break; /* matched */
-
-    } while((mdata = mdata->next));
-
-    if(mdata) {
-	*ctx->virname = mdata->virname;
+    if(cli_matchmeta(ctx, CL_TYPE_ANY, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS)
 	return CL_VIRUS;
-    }
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
@@ -979,7 +944,6 @@ static int cli_scanscript(cli_ctx *ctx)
 	unsigned char *buff;
 	unsigned char* normalized;
 	struct text_norm_state state;
-	struct stat sb;
 	char *tmpname = NULL;
 	int ofd = -1, ret;
 	const struct cli_matcher *troot = ctx->engine->root[7];
@@ -1530,9 +1494,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    ctx->container_type = CL_TYPE_MAIL;
     ret = cli_scandir(dir, ctx);
-    ctx->container_type = 0;
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -1840,7 +1802,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_file_t type, dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
-	cli_file_t current_container = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
+	cli_file_t current_container_type = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
+	size_t current_container_size = ctx->container_size;
 	unsigned char hash[16];
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
@@ -1897,7 +1860,6 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	funmap(*ctx->fmap);
 	ctx->fmap--; 
-
 	return ret;
     }
 
@@ -1920,18 +1882,21 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
     }
 
-    ctx->container_type = 0;
     ctx->recursion++;
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
 
 	case CL_TYPE_RAR:
+	    ctx->container_type = CL_TYPE_RAR;
+	    ctx->container_size = sb.st_size;
 	    if(have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_ZIP:
+	    ctx->container_type = CL_TYPE_ZIP;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
 		ret = cli_unzip(ctx);
 	    break;
@@ -1945,17 +1910,24 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(desc, ctx);
 	    break;
+
 	case CL_TYPE_ARJ:
+	    ctx->container_type = CL_TYPE_ARJ;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
 		ret = cli_scanarj(desc, ctx, 0, NULL);
 	    break;
 
         case CL_TYPE_NULSFT:
-	  if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
+	    ctx->container_type = CL_TYPE_NULSFT;
+	    ctx->container_size = sb.st_size;
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
 		ret = cli_scannulsft(desc, ctx, 0);
 	    break;
 
         case CL_TYPE_AUTOIT:
+	    ctx->container_type = CL_TYPE_AUTOIT;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
 		ret = cli_scanautoit(desc, ctx, 23);
 	    break;
@@ -1966,6 +1938,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_MSCAB:
+	    ctx->container_type = CL_TYPE_MSCAB;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
 		ret = cli_scanmscab(desc, ctx, 0);
 	    break;
@@ -1986,11 +1960,15 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_RTF:
+	    ctx->container_type = CL_TYPE_RTF;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_DOC & DOC_CONF_RTF))
 		ret = cli_scanrtf(desc, ctx);
 	    break;
 
 	case CL_TYPE_MAIL:
+	    ctx->container_type = CL_TYPE_MAIL;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
 		ret = cli_scanmail(desc, ctx);
 	    break;
@@ -2006,46 +1984,64 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_MSCHM:
+	    ctx->container_type = CL_TYPE_MSCHM;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CHM))
 		ret = cli_scanmschm(desc, ctx);
 	    break;
 
 	case CL_TYPE_MSOLE2:
+	    ctx->container_type = CL_TYPE_MSOLE2;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
 		ret = cli_scanole2(ctx);
 	    break;
 
 	case CL_TYPE_7Z:
+	    ctx->container_type = CL_TYPE_7Z;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
 		ret = cli_7unz(desc, ctx);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:
+	    ctx->container_type = CL_TYPE_POSIX_TAR;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(desc, ctx, 1);
 	    break;
 
 	case CL_TYPE_OLD_TAR:
+	    ctx->container_type = CL_TYPE_OLD_TAR;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_OLD:
+	    ctx->container_type = CL_TYPE_CPIO_OLD;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_old(desc, ctx);
 	    break;
 
 	case CL_TYPE_CPIO_ODC:
+	    ctx->container_type = CL_TYPE_CPIO_ODC;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_odc(desc, ctx);
 	    break;
 
 	case CL_TYPE_CPIO_NEWC:
+	    ctx->container_type = CL_TYPE_CPIO_NEWC;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_newc(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_CRC:
+	    ctx->container_type = CL_TYPE_CPIO_CRC;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_newc(desc, ctx, 1);
 	    break;
@@ -2071,6 +2067,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
+	    ctx->container_type = CL_TYPE_PDF;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(ctx, 0);
 	    break;
@@ -2096,6 +2094,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_SIS:
+	    ctx->container_type = CL_TYPE_SIS;
+	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
 		ret = cli_scansis(desc, ctx);
 	    break;
@@ -2117,7 +2117,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
     ctx->recursion--;
-    ctx->container_type = current_container;
+    ctx->container_type = current_container_type;
+    ctx->container_size = current_container_size;
 
     if(ret == CL_VIRUS) {
 	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
@@ -2200,7 +2201,8 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.scanned = scanned;
     ctx.options = scanoptions;
     ctx.found_possibly_unwanted = 0;
-    ctx.container_type = 0;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.container_size = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 1);
     if(!ctx.fmap)
