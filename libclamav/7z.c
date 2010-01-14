@@ -32,6 +32,7 @@
 #include "others.h"
 #include "lzma_iface.h"
 #include "scanners.h"
+#include "matcher.h"
 #include "7z/7zFile.h"
 #include "7z/7zCrc.h"
 #include "7z/Archive/7z/7zIn.h"
@@ -79,6 +80,10 @@ int cli_7unz (int fd, cli_ctx *ctx) {
 	if(ctx->engine->maxfilesize && f->Size > ctx->engine->maxfilesize) {
 	    cli_dbgmsg("cli_7unz: skipping stream due to size limits (%llu vs %llu)\n", (long long)f->Size, (long long)ctx->engine->maxfilesize);
 	    continue;
+	}
+	if(cli_matchmeta(ctx, f->Name, 0, f->Size, 0, i + 1, 0, NULL) == CL_VIRUS) {
+	    ret = CL_VIRUS;
+	    break;
 	}
 	if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
 	    cli_dbgmsg("cli_7unz: Files limit reached (max: %u)\n", ctx->engine->maxfiles);

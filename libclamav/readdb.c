@@ -1805,7 +1805,6 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 	new->ctype = (type == 1) ? CL_TYPE_ZIP : CL_TYPE_RAR;
-	new->ftype = CL_TYPE_ANY;
 
 	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
 	    mpool_free(engine->mempool, new->virname);
@@ -1875,10 +1874,11 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
     return CL_SUCCESS;
 }
 
-/*    0		1	     2		3	       4	       5		 6	     7	      8      9    10     11     12
- * VirusName:ContainerType:FileType:FileNameREGEX:ContainerSize:FileSizeInContainer:FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
+/*    0		 1		2		3	         4	       5	      6	      7	      8   9    10     11
+ * VirusName:ContainerType:ContainerSize:FileNameREGEX:FileSizeInContainer:FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
  */
-#define CDB_TOKENS 13
+
+#define CDB_TOKENS 12
 static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
 	const char *tokens[CDB_TOKENS + 1];
@@ -1907,21 +1907,21 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	if(tokens_count > 11) { /* min version */
-	    if(!cli_isnumber(tokens[11])) {
+	if(tokens_count > 10) { /* min version */
+	    if(!cli_isnumber(tokens[10])) {
 		ret = CL_EMALFDB;
 		break;
 	    }
-	    if((unsigned int) atoi(tokens[11]) > cl_retflevel()) {
+	    if((unsigned int) atoi(tokens[10]) > cl_retflevel()) {
 		cli_dbgmsg("cli_loadcdb: Container signature for %s not loaded (required f-level: %u)\n", tokens[0], atoi(tokens[10]));
 		continue;
 	    }
-	    if(tokens_count == 13) { /* max version */
-		if(!cli_isnumber(tokens[12])) {
+	    if(tokens_count == CDB_TOKENS) { /* max version */
+		if(!cli_isnumber(tokens[11])) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
-		if((unsigned int) atoi(tokens[12]) < cl_retflevel())
+		if((unsigned int) atoi(tokens[11]) < cl_retflevel())
 		    continue;
 	    }
 	}
@@ -1949,15 +1949,6 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    new->ctype = CL_TYPE_ANY;
 	} else if((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
 	    cli_dbgmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
-	    mpool_free(engine->mempool, new->virname);
-	    mpool_free(engine->mempool, new);
-	    continue;
-	}
-
-	if(!strcmp(tokens[2], "*")) {
-	    new->ftype = CL_TYPE_ANY;
-	} else if((new->ftype = cli_ftcode(tokens[2])) == CL_TYPE_ERROR) {
-	    cli_dbgmsg("cli_loadcdb: Unknown file type %s in signature for %s, skipping\n", tokens[2], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    continue;
@@ -2000,15 +1991,15 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    dest[0] = dest[1] = CLI_OFF_ANY;				    \
 	}
 
-	CDBRANGE(tokens[4], new->csize);
-	CDBRANGE(tokens[5], new->fsizec);
-	CDBRANGE(tokens[6], new->fsizer);
-	CDBRANGE(tokens[8], new->filepos);
+	CDBRANGE(tokens[2], new->csize);
+	CDBRANGE(tokens[4], new->fsizec);
+	CDBRANGE(tokens[5], new->fsizer);
+	CDBRANGE(tokens[7], new->filepos);
 
-	if(!strcmp(tokens[7], "*")) {
+	if(!strcmp(tokens[6], "*")) {
 	    new->encrypted = 2;
 	} else {
-	    if(strcmp(tokens[7], "0") && strcmp(tokens[7], "1")) {
+	    if(strcmp(tokens[6], "0") && strcmp(tokens[6], "1")) {
 		cli_errmsg("cli_loadcdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
 		if(new->name.re_magic)
 		    cli_regfree(&new->name);
@@ -2017,11 +2008,11 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		ret = CL_EMEM;
 		break;
 	    }
-	    new->encrypted = *tokens[7] - 0x30;
+	    new->encrypted = *tokens[6] - 0x30;
 	}
 
-	if(strcmp(tokens[10], "*")) {
-	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[10]);
+	if(strcmp(tokens[9], "*")) {
+	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[9]);
 	    if(!new->res2) {
 		cli_errmsg("cli_loadcdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
 		if(new->name.re_magic)

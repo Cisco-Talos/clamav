@@ -36,6 +36,7 @@
 #include "others.h"
 #include "cpio.h"
 #include "scanners.h"
+#include "matcher.h"
 
 struct cpio_hdr_old {
     uint16_t magic;
@@ -143,6 +144,9 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	if(!filesize)
 	    continue;
 
+	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
+	    return CL_VIRUS;
+
 	pos = lseek(fd, 0, SEEK_CUR);
 
 	if((EC16(hdr_old.mode, conv) & 0170000) != 0100000) {
@@ -220,6 +224,9 @@ int cli_scancpio_odc(int fd, cli_ctx *ctx)
 	if(!filesize)
 	    continue;
 
+	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
+	    return CL_VIRUS;
+
 	pos = lseek(fd, 0, SEEK_CUR);
 
 	ret = cli_checklimits("cli_scancpio_odc", ctx, filesize, 0, 0);
@@ -295,6 +302,9 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
 	if(!filesize)
 	    continue;
+
+	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
+	    return CL_VIRUS;
 
 	pos = lseek(fd, 0, SEEK_CUR);
 

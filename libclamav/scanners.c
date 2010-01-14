@@ -178,7 +178,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	(unsigned int) metadata->unpack_size, metadata->method,
 	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0);
 
-    if(cli_matchmeta(ctx, CL_TYPE_ANY, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS)
+    if(cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS)
 	return CL_VIRUS;
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
@@ -318,7 +318,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
 static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
-	int ret = CL_CLEAN, rc;
+	int ret = CL_CLEAN, rc, file = 0;
 	arj_metadata_t metadata;
 	char *dir;
 
@@ -352,6 +352,10 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
+	file++;
+	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS)
+	    return CL_VIRUS;
+
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
 	    ret = CL_SUCCESS;
 	    if (metadata.filename)
@@ -643,8 +647,8 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
     for(file = cab.files; file; file = file->next) {
 	files++;
 
-	if(!(tempname = cli_gentemp(ctx->engine->tmpdir))) {
-	    ret = CL_EMEM;
+	if(cli_matchmeta(ctx, file->name, 0, file->length, 0, files, 0, NULL) == CL_VIRUS) {
+	    ret = CL_VIRUS;
 	    break;
 	}
 
@@ -652,6 +656,12 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	    ret = CL_CLEAN;
 	    break;
 	}
+
+	if(!(tempname = cli_gentemp(ctx->engine->tmpdir))) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
 	if(ctx->engine->maxscansize && ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)
 	    file->max_size = ctx->engine->maxscansize - ctx->scansize;
 	else

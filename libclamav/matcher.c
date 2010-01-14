@@ -545,7 +545,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
-int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2)
+int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2)
 {
 	const struct cli_cdb *cdb;
 
@@ -554,9 +554,6 @@ int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsiz
 
     do {
 	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != ctx->container_type)
-	    continue;
-
-	if(cdb->ftype != CL_TYPE_ANY && cdb->ftype != ftype)
 	    continue;
 
 	if(cdb->encrypted != 2 && cdb->encrypted != encrypted)

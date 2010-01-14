@@ -105,7 +105,6 @@ struct cli_cdb
 {
     char	*virname;   /* virus name */
     cli_file_t	ctype;	    /* container type */
-    cli_file_t	ftype;	    /* file type */
     regex_t	name;	    /* filename regex */
     size_t	csize[2];   /* container size (min, max); if csize[0] != csize[1]
 			     * then value of 0 makes the field ignored
@@ -166,6 +165,6 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 
 int cli_checkfp(int fd, cli_ctx *ctx);
 
-int cli_matchmeta(cli_ctx *ctx, cli_file_t ftype, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2);
+int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2);
 
 #endif
