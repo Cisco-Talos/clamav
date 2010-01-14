@@ -306,8 +306,6 @@ int main(int argc, char **argv)
 	break;
     }
 
-    cl_cache_init(256);
-
     if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	ret = 1;

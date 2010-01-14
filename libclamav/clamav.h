@@ -208,7 +208,6 @@ extern const char *cl_retver(void);
 
 /* others */
 extern const char *cl_strerror(int clerror);
-extern int cl_cache_init(unsigned int entries);
 
 #ifdef __cplusplus
 }

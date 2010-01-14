@@ -144,8 +144,6 @@ int main(int argc, char **argv)
 
     gettimeofday(&t1, NULL);
 
-    cl_cache_init(512);
-
     ret = scanmanager(opts);
 
     if(!optget(opts, "no-summary")->enabled) {
