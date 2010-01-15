@@ -229,6 +229,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\cache.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\chmunpack.c"
 				>
 			</File>
