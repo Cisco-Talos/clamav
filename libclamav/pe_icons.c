@@ -1173,12 +1173,14 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
     unsigned int err, scalemode = 2, enginesize;
-    fmap_t *map = *ctx->fmap;
-    uint32_t icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    fmap_t *map;
+    uint32_t icoff;
     struct icon_matcher *matcher;
 
     if(!ctx || !ctx->engine || !(matcher=ctx->engine->iconcheck))
 	return CL_SUCCESS;
+    map = *ctx->fmap;
+    icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
 
     /* read the bitmap header */
     if(err || !(imagedata = fmap_need_off_once(map, icoff, 4))) {

@@ -722,12 +722,15 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 /* Hashes a file onto the provided buffer and looks it up the cache.
    Returns CL_VIRUS if found, CL_CLEAN if not FIXME or an error */
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
-    fmap_t *map = *ctx->fmap;
-    size_t todo = map->len, at = 0;
+    fmap_t *map;
+    size_t todo, at = 0;
     cli_md5_ctx md5;
 
     if(!ctx || !ctx->engine || !ctx->engine->cache)
        return CL_VIRUS;
+
+    map = *ctx->fmap;
+    todo = map->len;
 
     cli_md5_init(&md5);
     while(todo) {
