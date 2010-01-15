@@ -1803,7 +1803,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	struct stat sb;
 	uint8_t typercg = 1;
 	cli_file_t current_container_type = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
-	size_t current_container_size = ctx->container_size;
+	size_t current_container_size = ctx->container_size, hashed_size;
 	unsigned char hash[16];
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
@@ -1846,7 +1846,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	ctx->fmap--;
 	return CL_CLEAN;
     }
-    
+    hashed_size = (*ctx->fmap)->len;
+
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
@@ -1856,7 +1857,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	else
-	    cache_add(hash, ctx);
+	    cache_add(hash, hashed_size, ctx);
 
 	funmap(*ctx->fmap);
 	ctx->fmap--; 
@@ -2183,7 +2184,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
 	case CL_CLEAN:
-	    cache_add(hash, ctx);
+	    cache_add(hash, hashed_size, ctx);
 	    return CL_CLEAN;
 	default:
 	    return ret;

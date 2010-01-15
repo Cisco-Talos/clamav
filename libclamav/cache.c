@@ -27,22 +27,33 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-
 #include "md5.h"
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"
 #include "fmap.h"
 
+
+/* The number of root trees and the chooser function 
+   Each tree is protected by a mutex against concurrent access */
+/* #define TREES 1 */
+/* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
+#define TREES 256
+static inline unsigned int getkey(uint8_t *hash) { return *hash; }
+/* #define TREES 4096 */
+/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
+/* #define TREES 65536 */
+/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | (((unsigned int)hash[1])<<8) ; } */
+
+/* The number of nodes in each tree */
 #define NODES 256
 
-/*#define USE_LRUHASHCACHE*/
+
+/* The replacement policy algorithm to use */
+/* #define USE_LRUHASHCACHE */
 #define USE_SPLAY
 
+/* LRUHASHCACHE --------------------------------------------------------------------- */
 #ifdef USE_LRUHASHCACHE
 struct cache_key {
     int64_t digest[2];
@@ -241,8 +252,10 @@ static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool) {
 
 #endif /* USE_LRUHASHCACHE */
 
+/* SPLAY --------------------------------------------------------------------- */
 #ifdef USE_SPLAY
-struct node {
+
+struct node { /* a node */
     int64_t digest[2];
     struct node *left;
     struct node *right;
@@ -252,13 +265,14 @@ struct node {
     uint32_t size;
 };
 
-struct cache_set {
+struct cache_set { /* a tree */
     struct node *data;
     struct node *root;
     struct node *first;
     struct node *last;
 };
 
+/* Allocates all the nodes and sets up the replacement chain */
 static int cacheset_init(struct cache_set *cs, mpool_t *mempool) {
     unsigned int i;
     cs->data = mpool_calloc(mempool, NODES,  sizeof(*cs->data));
@@ -278,52 +292,53 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool) {
     return 0;
 }
 
+/* Frees all the nodes */
 static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool) {
     mpool_free(mempool, cs->data);
     cs->data = NULL;
 }
 
-static inline int cmp(int64_t *a, int64_t *b) {
+/* The left/right cooser for the splay tree */
+static inline int cmp(int64_t *a, ssize_t sa, int64_t *b, ssize_t sb) {
     if(a[1] < b[1]) return -1;
     if(a[1] > b[1]) return 1;
-    if(a[0] == b[0]) return 0;
     if(a[0] < b[0]) return -1;
-    return 1;
+    if(a[0] > b[0]) return 1;
+    if(sa < sb) return -1;
+    if(sa > sb) return 1;
+    return 0;
 }
 
-/* static inline int cmp(int64_t *a, int64_t *b) { */
-/*     return memcmp(a, b, 16); */
-/* } */
 
-
-/*#define PRINT_TREE*/
+/* #define PRINT_TREE */
 #ifdef PRINT_TREE
 #define ptree printf
 #else
-#define ptree (void)
+#define ptree(...)
 #endif
 
-/*#define CHECK_TREE*/
+/* Debug function to print the tree and check its consistency */
+/* #define CHECK_TREE */
 #ifdef CHECK_TREE
 static int printtree(struct cache_set *cs, struct node *n, int d) {
     int i;
     int ab = 0;
     if (n == NULL) return 0;
-    if(n == cs->root) ptree("--------------------------\n");
+    if(n == cs->root) { ptree("--------------------------\n"); }
     ab |= printtree(cs, n->right, d+1);
     if(n->right) {
-	if(cmp(n->digest, n->right->digest) >= 0) {
+	if(cmp(n->digest, n->size, n->right->digest, n->right->size) >= 0) {
 	    for (i=0; i<d; i++) ptree("        ");
-	    ptree("^^^^ %lld >= %lld - %lld\n", n->digest[1], n->right->digest[1], cmp(n->digest, n->right->digest));
+	    ptree("^^^^ %lld >= %lld\n", n->digest[1], n->right->digest[1]);
 	    ab = 1;
 	}
     }
     for (i=0; i<d; i++) ptree("        ");
     ptree("%08x(%02u)\n", n->digest[1]>>48, n - cs->data);
     if(n->left) {
-	if(cmp(n->digest, n->left->digest) <= 0) {
+	if(cmp(n->digest, n->size, n->left->digest, n->left->size) <= 0) {
 	    for (i=0; i<d; i++) ptree("        ");
-	    ptree("vvvv %lld <= %lld - %lld\n", n->digest[1], n->left->digest[1], cmp(n->digest, n->left->digest));
+	    ptree("vvvv %lld <= %lld\n", n->digest[1], n->left->digest[1]);
 	    ab = 1;
 	}
     }
@@ -350,7 +365,8 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
 #define printtree(a,b,c) (0)
 #endif
 
-static int splay(int64_t *md5, struct cache_set *cs) {
+/* Looks up a node and splays it up to the root of the tree */
+static int splay(int64_t *md5, size_t len, struct cache_set *cs) {
     struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int comp, found = 0;
 
@@ -358,10 +374,10 @@ static int splay(int64_t *md5, struct cache_set *cs) {
 	return 0;
 
     while(1) {
-	comp = cmp(md5, root->digest);
+	comp = cmp(md5, len, root->digest, root->size);
 	if(comp < 0) {
 	    if(!root->left) break;
-	    if(cmp(md5, root->left->digest) < 0) {
+	    if(cmp(md5, len, root->left->digest, root->left->size) < 0) {
 		temp = root->left;
                 root->left = temp->right;
 		if(temp->right) temp->right->up = root;
@@ -376,7 +392,7 @@ static int splay(int64_t *md5, struct cache_set *cs) {
             root = root->left;
 	} else if(comp > 0) {
 	    if(!root->right) break;
-	    if(cmp(md5, root->right->digest) > 0) {
+	    if(cmp(md5, len, root->right->digest, root->right->size) > 0) {
 		temp = root->right;
                 root->right = temp->left;
 		if(temp->left) temp->left->up = root;
@@ -408,11 +424,13 @@ static int splay(int64_t *md5, struct cache_set *cs) {
     return found;
 }
 
+
+/* Looks up an hash in the tree and maintains the replacement chain */
 static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size) {
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
-    if(splay(hash, cs)) {
+    if(splay(hash, size, cs)) {
 	struct node *o = cs->root->prev, *p = cs->root, *q = cs->root->next;
 #ifdef PRINT_CHAINS
 	printf("promoting %02d\n", p - cs->data);
@@ -479,12 +497,15 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
     return 0;
 }
 
+/* If the hash is present nothing happens.
+   Otherwise a new node is created for the hash picking one from the begin of the chain.
+   Used nodes are moved to the end of the chain */
 static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
     struct node *newnode;
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
-    if(splay(hash, cs))
+    if(splay(hash, size, cs))
 	return; /* Already there */
 
     ptree("1:\n");
@@ -496,7 +517,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     /*#define TAKE_FIRST*/
 #ifdef TAKE_FIRST
     if((newnode->left || newnode->right || newnode->up)) {
-	if(!splay(newnode->digest, cs)) {
+	if(!splay(newnode->digest, newnode->size, cs)) {
 	    cli_errmsg("WTF\n");
 	    abort();
 	}
@@ -509,7 +530,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 	} else {
 	    cs->root = newnode->left;
 	    newnode->left->up = NULL;
-	    if(splay(newnode->digest, cs)) {
+	    if(splay(newnode->digest, newnode->size, cs)) {
 		cli_errmsg("WTF #2\n");
 		abort();
 	    }
@@ -520,7 +541,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 	newnode->up = NULL;
 	newnode->right = NULL;
 	newnode->left = NULL;
-	if(splay(hash, cs)) {
+	if(splay(hash, size, cs)) {
 	    cli_errmsg("WTF #3\n");
 	    abort();
 	}
@@ -570,7 +591,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 	newnode->left = NULL;
 	newnode->right = NULL;
     } else {
-	if(cmp(hash, cs->root->digest) < 0) {
+	if(cmp(hash, size, cs->root->digest, cs->root->size) < 0) {
 	    newnode->left = cs->root->left;
 	    newnode->right = cs->root;
 	    cs->root->left = NULL;
@@ -585,6 +606,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     newnode->digest[0] = hash[0];
     newnode->digest[1] = hash[1];
     newnode->up = NULL;
+    newnode->size = size;
     cs->root = newnode;
 
     ptree("3: %lld\n", hash[1]);
@@ -594,24 +616,15 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
 }
 #endif /* USE_SPLAY */
 
-/* #define TREES 1 */
-/* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
 
-#define TREES 256
-static inline unsigned int getkey(uint8_t *hash) { return *hash; }
-
-/* #define TREES 4096 */
-/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
-
-/* #define TREES 65536 */
-/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | (((unsigned int)hash[1])<<8) ; } */
+/* COMMON STUFF --------------------------------------------------------------------- */
 
 struct CACHE {
     struct cache_set cacheset;
     pthread_mutex_t mutex;
 };
 
-
+/* Allocates the trees for the engine cache */
 int cli_cache_init(struct cl_engine *engine) {
     static struct CACHE *cache;
     unsigned int i, j;
@@ -645,6 +658,7 @@ int cli_cache_init(struct cl_engine *engine) {
     return 0;
 }
 
+/* Frees the engine cache */
 void cli_cache_destroy(struct cl_engine *engine) {
     static struct CACHE *cache;
     unsigned int i;
@@ -659,7 +673,8 @@ void cli_cache_destroy(struct cl_engine *engine) {
     mpool_free(engine->mempool, cache);
 }
 
-static int cache_lookup_hash(unsigned char *md5, struct CACHE *cache) {
+/* Looks up an hash in the proper tree */
+static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache) {
     unsigned int key = getkey(md5);
     int ret = CL_VIRUS;
     struct CACHE *c;
@@ -670,13 +685,14 @@ static int cache_lookup_hash(unsigned char *md5, struct CACHE *cache) {
 	return ret;
     }
 
-    ret = (cacheset_lookup(&c->cacheset, md5, 1024)) ? CL_CLEAN : CL_VIRUS;
-    if(ret == CL_CLEAN) cli_warnmsg("cached\n");
+    ret = (cacheset_lookup(&c->cacheset, md5, len)) ? CL_CLEAN : CL_VIRUS;
     pthread_mutex_unlock(&c->mutex);
+    /* if(ret == CL_CLEAN) cli_warnmsg("cached\n"); */
     return ret;
 }
 
-void cache_add(unsigned char *md5, cli_ctx *ctx) {
+/* Adds an hash to the cache */
+void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     unsigned int key = getkey(md5);
     struct CACHE *c;
 
@@ -690,10 +706,10 @@ void cache_add(unsigned char *md5, cli_ctx *ctx) {
     }
 
 #ifdef USE_LRUHASHCACHE
-    cacheset_add(&c->cacheset, md5, 1024, ctx->engine->mempool);
+    cacheset_add(&c->cacheset, md5, size, ctx->engine->mempool);
 #else
 #ifdef USE_SPLAY
-    cacheset_add(&c->cacheset, md5, 1024);
+    cacheset_add(&c->cacheset, md5, size);
 #else
 #error #define USE_SPLAY or USE_LRUHASHCACHE
 #endif
@@ -703,6 +719,8 @@ void cache_add(unsigned char *md5, cli_ctx *ctx) {
     return;
 }
 
+/* Hashes a file onto the provided buffer and looks it up the cache.
+   Returns CL_VIRUS if found, CL_CLEAN if not FIXME or an error */
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map = *ctx->fmap;
     size_t todo = map->len, at = 0;
@@ -722,5 +740,5 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 	cli_md5_update(&md5, buf, readme);
     }
     cli_md5_final(hash, &md5);
-    return cache_lookup_hash(hash, ctx->engine->cache);
+    return cache_lookup_hash(hash, map->len, ctx->engine->cache);
 }
