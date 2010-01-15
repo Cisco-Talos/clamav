@@ -1801,7 +1801,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    return CL_CLEAN;
 	}
 
-	if(!exe_sections[i + 1].raw || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
+	if(!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
 	    cli_dbgmsg("UPX: Can't read raw data of section %d\n", i+1);
 	    free(exe_sections);
 	    return CL_EREAD;
