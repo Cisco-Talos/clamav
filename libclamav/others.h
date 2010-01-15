@@ -217,6 +217,9 @@ struct cl_engine {
     /* Icon reference storage */
     struct icon_matcher *iconcheck;
 
+    /* Negative cache storage */
+    struct CACHE *cache;
+
     /* Used for memory pools */
     mpool_t *mempool;
 

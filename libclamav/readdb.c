@@ -2369,6 +2369,9 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	cli_dbgmsg("Bytecode engine disabled\n");
     }
 
+    if(cli_cache_init(engine))
+	return CL_EMEM;
+
     engine->dboptions |= dboptions;
 
     switch(sb.st_mode & S_IFMT) {
@@ -2705,6 +2708,9 @@ int cl_engine_free(struct cl_engine *engine)
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
+
+    if(engine->cache)
+	cli_cache_destroy(engine);
 
     cli_ftfree(engine);
     if(engine->ignored) {
