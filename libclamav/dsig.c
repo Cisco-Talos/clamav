@@ -37,7 +37,7 @@
 
 #define CLI_ESTR "100001027"
 
-static unsigned char cli_ndecode(unsigned char value)
+static char cli_ndecode(unsigned char value)
 {
 	unsigned int i;
 	char ncodec[] = {
