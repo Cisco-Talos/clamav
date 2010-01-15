@@ -24,6 +24,7 @@
 #ifdef USE_MPOOL
 #include "cltypes.h"
 typedef struct MP mpool_t;
+struct cl_engine;
 
 mpool_t *mpool_create(void);
 void mpool_destroy(mpool_t *mpool);

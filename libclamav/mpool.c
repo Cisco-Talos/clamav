@@ -205,13 +205,16 @@ struct MP {
 };
 
 struct FRAG {
-  union {
-    struct FRAG *next;
-    unsigned int sbits;
-  } u;
 #ifdef CL_DEBUG
   unsigned int magic;
 #endif
+  union {
+    struct FRAG *next;
+    unsigned int sbits;
+    int64_t dummy_align;
+    /* needed to align to 64-bit on sparc, since pointers are 32-bit only,
+     * yet we need 64-bit alignment for struct containing int64 members */
+  } u;
   void *fake;
 };
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))

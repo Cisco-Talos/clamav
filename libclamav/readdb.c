@@ -72,6 +72,7 @@
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "bytecode_priv.h"
+#include "cache.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
