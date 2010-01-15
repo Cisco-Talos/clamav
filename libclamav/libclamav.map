@@ -27,7 +27,6 @@ CLAMAV_PUBLIC {
     cl_statfree;
     cl_statinidir;
     cl_strerror;
-    cl_cache_init;
   local:
     *;
 };
