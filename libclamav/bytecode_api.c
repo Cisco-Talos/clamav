@@ -38,6 +38,7 @@
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include "others.h"
+#include "pe.h"
 
 uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo* s, uint32_t u)
 {
@@ -238,4 +239,16 @@ uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t* ptr, u
     if (ctx->trace_ptr)
 	ctx->trace_ptr(ctx, ptr);
     return 0;
+}
+
+uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva, uint32_t dummy)
+{
+  uint32_t ret;
+  int err = 0;
+  const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
+  ret = cli_rawaddr(rva, pe->exe_info.section, pe->exe_info.nsections, &err,
+		    ctx->file_size, pe->hdr_size);
+  if (err)
+    return PE_INVALID_RVA;
+  return ret;
 }

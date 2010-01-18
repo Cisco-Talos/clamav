@@ -124,7 +124,7 @@ struct cli_bc_ctx {
     operand_t *operands;
     uint16_t funcid;
     unsigned numParams;
-    size_t file_size;
+    uint32_t file_size;
     off_t off;
     fmap_t *fmap;
     const char *virname;

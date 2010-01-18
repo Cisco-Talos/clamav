@@ -145,6 +145,7 @@ struct cli_pe_hook_data {
     uint32_t e_lfanew;/**< address of new exe header */
     uint32_t overlays;/**< number of overlays */
     int32_t overlays_sz;/**< size of overlays */
+    uint32_t hdr_size;/**< internally needed by rawaddr */
     /* FIXME: these should not be necessary (they are for now) */
     uint8_t dummyn;
     uint8_t *dummy EBOUNDS(dummyn);

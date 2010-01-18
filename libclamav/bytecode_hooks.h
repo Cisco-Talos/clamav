@@ -32,6 +32,7 @@
 struct cli_bc_hooks {
 	 const uint16_t* kind;
 	 const uint32_t* match_counts;
+	 const uint32_t* filesize;
 	 const struct cli_exe_info* exeinfo;
 	 const struct cli_pe_hook_data* pedata;
 };

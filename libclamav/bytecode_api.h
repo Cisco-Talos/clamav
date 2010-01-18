@@ -56,6 +56,8 @@ enum BytecodeKind {
     _BC_LAST_HOOK
 };
 
+enum { PE_INVALID_RVA = 0xFFFFFFFF };
+
 #ifdef __CLAMBC__
 
 /** @brief Logical signature match counts
@@ -68,6 +70,8 @@ extern const uint32_t __clambc_match_counts[64];
 extern const struct cli_exe_info __clambc_exeinfo;
 /** PE data, if this is a PE hook */
 extern const struct cli_pe_hook_data __clambc_pedata;
+/** File size (max 4G) */
+extern const uint32_t __clambc_filesize;
 
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
@@ -153,7 +157,7 @@ uint32_t debug_print_uint(uint32_t a, uint32_t b);
  * This is a low-level API, the result is in ClamAV type-8 signature format 
  * (64 bytes/instruction).
  *  \sa DisassembleAt
- * */
+ */
 uint32_t disasm_x86(struct DISASM_RESULT* result, uint32_t len);
 
 /* tracing API */
@@ -165,6 +169,14 @@ uint32_t trace_source(const uint8_t* srcfile, uint32_t line);
 uint32_t trace_op(const uint8_t* opname, uint32_t column);
 uint32_t trace_value(const uint8_t* name, uint32_t v);
 uint32_t trace_ptr(const uint8_t* ptr, uint32_t dummy);
+
+/** Converts a RVA (Relative Virtual Address) to
+  * an absolute PE file offset.
+  * @param rva a rva address from the PE file
+  * @return absolute file offset mapped to the \p rva,
+  * or PE_INVALID_RVA if the \p rva is invalid.
+  */
+uint32_t pe_rawaddr(uint32_t rva, uint32_t dummy);
 
 #endif
 #endif

@@ -45,5 +45,6 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t*, ui
 uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 
 #endif
