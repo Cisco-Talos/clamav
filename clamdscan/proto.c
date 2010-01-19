@@ -354,7 +354,6 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
     switch(reason) {
     case error_stat:
 	logg("!Can't access file %s\n", path);
-	c->errors++;
 	return CL_SUCCESS;
     case error_mem:
 	logg("!Memory allocation failed in ftw\n");
@@ -414,6 +413,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, in
 	return 0;
     } else if(!cdata.files) {
 	logg("~%s: No files scanned\n", file);
+	return 0;
     }
     return 1;
 }
@@ -499,7 +499,6 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     switch(reason) {
     case error_stat:
 	logg("!Can't access file %s\n", path);
-	c->errors++;
 	return CL_SUCCESS;
     case error_mem:
 	logg("!Memory allocation failed in ftw\n");
@@ -618,6 +617,8 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
 	logg("!Clamd closed the connection before scanning all files.\n");
 	return 1;
     }
+    if(!cdata.files)
+	return 0;
     if(cdata.errors == cdata.files)
 	return 1;
     if(cdata.printok)

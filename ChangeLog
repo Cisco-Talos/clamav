@@ -1,3 +1,7 @@
+Tue Jan 19 11:49:12 CET 2010 (acab)
+-----------------------------------
+  * clamdscan/proto.c: don't stop scanning if a file is not found (bb#1760)
+
 Tue Jan 19 11:26:11 CET 2010 (acab)
 -----------------------------------
   * clamscan/manager.c: use unsigned fsize (bb#1788)
