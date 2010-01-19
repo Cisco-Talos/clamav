@@ -117,7 +117,6 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	return 0;
     }
     info.rblocks += fsize / CL_COUNT_PRECISION;
-    printf("THIS: %u(%u) - SO FAR: %u\n", fsize/CL_COUNT_PRECISION, fsize, info.rblocks);
 #ifndef _WIN32
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
