@@ -656,13 +656,18 @@ static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid
 	 cli_dbgmsg("bytecode: type numElements mismatch: %u != %u\n", ty->numElements, apity->numElements);
 	 return 0;
      }
-    for (i=0;i<ty->numElements;i++) {
+     for (i=0;i<ty->numElements;i++) {
 	if (apity->containedTypes[i] < BC_START_TID) {
-	    if (ty->containedTypes[i] != apity->containedTypes[i])
+	    if (ty->containedTypes[i] != apity->containedTypes[i]) {
+		cli_dbgmsg("bytecode: contained type mismatch: %u != %u\n",
+			   ty->containedTypes[i], apity->containedTypes[i]);
 		return 0;
+	    }
 	} else if (!types_equal(bc, apity2ty, ty->containedTypes[i], apity->containedTypes[i] - BC_START_TID))
 	    return 0;
-    }
+	if (ty->kind == DArrayType)
+	    break;/* validated the contained type already */
+     }
     return 1;
 }
 
@@ -1092,7 +1097,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		if (ok) {
 		    inst.u.ops.numOps = numOp+2;
 		    inst.u.ops.opsizes = NULL;
-		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+		    inst.u.ops.ops = cli_calloc(numOp+2, sizeof(*inst.u.ops.ops));
 		    if (!inst.u.ops.ops) {
 			cli_errmsg("Out of memory allocating operands\n");
 			return CL_EMEM;

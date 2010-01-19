@@ -54,9 +54,9 @@ const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
 	{"__clambc_kind", GLOBAL_KIND, 16,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.kind - (char*)NULL)},
-	{"__clambc_match_counts", GLOBAL_MATCH_COUNTS, 83,
+	{"__clambc_match_counts", GLOBAL_MATCH_COUNTS, 84,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.match_counts - (char*)NULL)},
-	{"__clambc_filesize", GLOBAL_FILESIZE, 82,
+	{"__clambc_filesize", GLOBAL_FILESIZE, 83,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.filesize - (char*)NULL)},
 	{"__clambc_exeinfo", GLOBAL_EXEINFO, 79,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.exeinfo - (char*)NULL)},
@@ -65,7 +65,7 @@ const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals END */
 };
 const unsigned cli_apicall_maxglobal = _LAST_GLOBAL-1;
-static uint16_t cli_tmp0[]={79, 77, 75, 72, 70, 32, 32, 32, 8, 65};
+static uint16_t cli_tmp0[]={79, 77, 75, 72, 70, 32, 32, 32, 32, 8, 65};
 static uint16_t cli_tmp1[]={71};
 static uint16_t cli_tmp2[]={32, 32};
 static uint16_t cli_tmp3[]={73};
@@ -75,25 +75,26 @@ static uint16_t cli_tmp6[]={76};
 static uint16_t cli_tmp7[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 16, 16, 32, 32, 32, 32, 32, 32, 74};
 static uint16_t cli_tmp8[]={78};
 static uint16_t cli_tmp9[]={32, 16, 16, 32, 32, 32, 16, 16};
-static uint16_t cli_tmp10[]={80, 32, 32, 16};
-static uint16_t cli_tmp11[]={81};
-static uint16_t cli_tmp12[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
-static uint16_t cli_tmp13[]={32};
+static uint16_t cli_tmp10[]={81, 32, 32, 16, 80};
+static uint16_t cli_tmp11[]={8};
+static uint16_t cli_tmp12[]={82};
+static uint16_t cli_tmp13[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
 static uint16_t cli_tmp14[]={32};
-static uint16_t cli_tmp15[]={32, 32, 32};
-static uint16_t cli_tmp16[]={32, 65, 32};
-static uint16_t cli_tmp17[]={32, 87, 32};
-static uint16_t cli_tmp18[]={88};
-static uint16_t cli_tmp19[]={16, 8, 8, 8, 90, 89};
-static uint16_t cli_tmp20[]={8};
-static uint16_t cli_tmp21[]={91};
-static uint16_t cli_tmp22[]={8};
-static uint16_t cli_tmp23[]={32, 93, 32};
-static uint16_t cli_tmp24[]={94};
-static uint16_t cli_tmp25[]={93};
+static uint16_t cli_tmp15[]={32};
+static uint16_t cli_tmp16[]={32, 32, 32};
+static uint16_t cli_tmp17[]={32, 65, 32};
+static uint16_t cli_tmp18[]={32, 88, 32};
+static uint16_t cli_tmp19[]={89};
+static uint16_t cli_tmp20[]={16, 8, 8, 8, 91, 90};
+static uint16_t cli_tmp21[]={8};
+static uint16_t cli_tmp22[]={92};
+static uint16_t cli_tmp23[]={8};
+static uint16_t cli_tmp24[]={32, 94, 32};
+static uint16_t cli_tmp25[]={95};
+static uint16_t cli_tmp26[]={94};
 
 const struct cli_bc_type cli_apicall_types[]={
-	{DStructType, cli_tmp0, 10, 0, 0},
+	{DStructType, cli_tmp0, 11, 0, 0},
 	{DPointerType, cli_tmp1, 1, 0, 0},
 	{DStructType, cli_tmp2, 2, 0, 0},
 	{DPointerType, cli_tmp3, 1, 0, 0},
@@ -103,43 +104,44 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp7, 31, 0, 0},
 	{DPointerType, cli_tmp8, 1, 0, 0},
 	{DStructType, cli_tmp9, 8, 0, 0},
-	{DStructType, cli_tmp10, 4, 0, 0},
+	{DStructType, cli_tmp10, 5, 0, 0},
 	{DPointerType, cli_tmp11, 1, 0, 0},
-	{DStructType, cli_tmp12, 9, 0, 0},
-	{DArrayType, cli_tmp13, 1, 0, 0},
-	{DArrayType, cli_tmp14, 64, 0, 0},
-	{DFunctionType, cli_tmp15, 3, 0, 0},
+	{DPointerType, cli_tmp12, 1, 0, 0},
+	{DStructType, cli_tmp13, 9, 0, 0},
+	{DArrayType, cli_tmp14, 1, 0, 0},
+	{DArrayType, cli_tmp15, 64, 0, 0},
 	{DFunctionType, cli_tmp16, 3, 0, 0},
 	{DFunctionType, cli_tmp17, 3, 0, 0},
-	{DPointerType, cli_tmp18, 1, 0, 0},
-	{DStructType, cli_tmp19, 6, 0, 0},
-	{DArrayType, cli_tmp20, 29, 0, 0},
-	{DArrayType, cli_tmp21, 10, 0, 0},
+	{DFunctionType, cli_tmp18, 3, 0, 0},
+	{DPointerType, cli_tmp19, 1, 0, 0},
+	{DStructType, cli_tmp20, 6, 0, 0},
+	{DArrayType, cli_tmp21, 29, 0, 0},
 	{DArrayType, cli_tmp22, 3, 0, 0},
-	{DFunctionType, cli_tmp23, 3, 0, 0},
-	{DPointerType, cli_tmp24, 1, 0, 0},
-	{DStructType, cli_tmp25, 1, 0, 0}
+	{DArrayType, cli_tmp23, 10, 0, 0},
+	{DFunctionType, cli_tmp24, 3, 0, 0},
+	{DPointerType, cli_tmp25, 1, 0, 0},
+	{DStructType, cli_tmp26, 1, 0, 0}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"test0", 23, 0, 1},
-	{"test1", 15, 0, 0},
-	{"read", 16, 1, 1},
-	{"write", 16, 2, 1},
-	{"seek", 15, 1, 0},
-	{"setvirusname", 16, 3, 1},
-	{"debug_print_str", 16, 4, 1},
-	{"debug_print_uint", 15, 2, 0},
-	{"disasm_x86", 17, 5, 1},
-	{"trace_directory", 16, 6, 1},
-	{"trace_scope", 16, 7, 1},
-	{"trace_source", 16, 8, 1},
-	{"trace_op", 16, 9, 1},
-	{"trace_value", 16, 10, 1},
-	{"trace_ptr", 16, 11, 1},
-	{"pe_rawaddr", 15, 3, 0}
+	{"test0", 24, 0, 1},
+	{"test1", 16, 0, 0},
+	{"read", 17, 1, 1},
+	{"write", 17, 2, 1},
+	{"seek", 16, 1, 0},
+	{"setvirusname", 17, 3, 1},
+	{"debug_print_str", 17, 4, 1},
+	{"debug_print_uint", 16, 2, 0},
+	{"disasm_x86", 18, 5, 1},
+	{"trace_directory", 17, 6, 1},
+	{"trace_scope", 17, 7, 1},
+	{"trace_source", 17, 8, 1},
+	{"trace_op", 17, 9, 1},
+	{"trace_value", 17, 10, 1},
+	{"trace_ptr", 17, 11, 1},
+	{"pe_rawaddr", 16, 3, 0}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
