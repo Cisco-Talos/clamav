@@ -66,6 +66,7 @@ struct cli_bc {
   unsigned vnames_cnt;
   struct cli_bc_dbgnode *dbgnodes;
   unsigned dbgnode_cnt;
+  unsigned hook_lsig_id;
 };
 
 struct cli_all_bc {
@@ -106,8 +107,9 @@ int cli_bytecode_done(struct cli_all_bc *allbc);
 
 /* Hooks */
 struct cli_exe_info;
-int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, fmap_t *fmap);
-int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, fmap_t *map, const char **virname);
+struct cli_ctx_tag;
+int cli_bytecode_runlsig(struct cli_ctx_tag *ctx, const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, fmap_t *fmap);
+int cli_bytecode_runhook(struct cli_ctx_tag *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, fmap_t *map, const char **virname);
 
 #ifdef __cplusplus
 extern "C" {

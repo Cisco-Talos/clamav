@@ -1609,10 +1609,18 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
     return 0;
 }
 
-int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, fmap_t *map)
+int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, fmap_t *map)
 {
     int ret;
     struct cli_bc_ctx ctx;
+
+    if (bc->hook_lsig_id) {
+	/* this is a bytecode for a hook, defer running it until hook is
+	 * executed, so that it has all the info for the hook */
+	if (cctx->hook_lsig_matches)
+	    cli_bitset_set(cctx->hook_lsig_matches, bc->hook_lsig_id-1);
+	return CL_SUCCESS;
+    }
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
@@ -1637,7 +1645,7 @@ int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, 
     return CL_SUCCESS;
 }
 
-int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
+int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx,
 			 unsigned id, fmap_t *map, const char **virname)
 {
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
@@ -1648,6 +1656,12 @@ int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
     for (i=0;i < hooks_cnt;i++) {
 	const struct cli_bc *bc = &engine->bcs.all_bcs[hooks[i]];
+	if (bc->lsig) {
+	    if (!cctx->hook_lsig_matches ||
+		!cli_bitset_test(cctx->hook_lsig_matches, bc->hook_lsig_id-1))
+		continue;
+	    cli_dbgmsg("Bytecode: executing bytecode %u (lsig matched)" , bc->id);
+	}
 	cli_bytecode_context_setfuncid(ctx, bc, 0);
 	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
 	if (ret != CL_SUCCESS) {

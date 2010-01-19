@@ -2239,7 +2239,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     pedata.hdr_size = hdr_size;
     cli_bytecode_context_setpe(bc_ctx, &pedata);
     cli_bytecode_context_setctx(bc_ctx, ctx);
-    ret = cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
     switch (ret) {
 	case CL_VIRUS:
 	    return CL_VIRUS;

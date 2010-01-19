@@ -1815,6 +1815,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_file_t current_container_type = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
 	size_t current_container_size = ctx->container_size, hashed_size;
 	unsigned char hash[16];
+	bitset_t *old_hook_lsig_matches;
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -1857,6 +1858,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
     hashed_size = (*ctx->fmap)->len;
+    old_hook_lsig_matches = ctx->hook_lsig_matches;
+    ctx->hook_lsig_matches = NULL;
 
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
@@ -1883,11 +1886,17 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
     lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
+    ctx->hook_lsig_matches = cli_bitset_init();
+    if (!ctx->hook_lsig_matches)
+	return CL_EMEM;
+
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype)) == CL_VIRUS) {
 	    ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    funmap(*ctx->fmap);
-	    ctx->fmap--; 
+	    ctx->fmap--;
+	    cli_bitset_free(ctx->hook_lsig_matches);
+	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    return ret;
 	}
 	lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
@@ -2134,7 +2143,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	funmap(*ctx->fmap);
-	ctx->fmap--; 
+	ctx->fmap--;
+	cli_bitset_free(ctx->hook_lsig_matches);
+	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	return ret;
     }
 
@@ -2150,7 +2161,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	if(cli_scanraw(ctx, type, typercg, &dettype) == CL_VIRUS) {
 	    ret =  cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    funmap(*ctx->fmap);
-	    ctx->fmap--; 
+	    ctx->fmap--;
+	    cli_bitset_free(ctx->hook_lsig_matches);
+	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    return ret;
 	}
     }
@@ -2158,6 +2171,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->recursion++;
     lseek(desc, 0, SEEK_SET);
     switch(type) {
+	/* bytecode hooks triggered by a lsig must be a hook
+	 * called from one of the functions here */
 	case CL_TYPE_TEXT_ASCII:
 	case CL_TYPE_TEXT_UTF16BE:
 	case CL_TYPE_TEXT_UTF16LE:
@@ -2176,13 +2191,14 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_PE && ctx->dconf->pe)
 		ret = cli_scanpe(ctx, NULL);
 	    break;
-
 	default:
 	    break;
     }
     ctx->recursion--;
     funmap(*ctx->fmap);
     ctx->fmap--;
+    cli_bitset_free(ctx->hook_lsig_matches);
+    ctx->hook_lsig_matches = old_hook_lsig_matches;
 
     if(ret == CL_VIRUS)
 	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
@@ -2219,11 +2235,12 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     if(!ctx.fmap)
 	return CL_EMEM;
     ctx.fmap--;
+    ctx.hook_lsig_matches = NULL; cli_bitset_init();
 
     rc = cli_magic_scandesc(desc, &ctx);
 
     ctx.fmap++;
-    free(ctx.fmap);
+    cli_bitset_free(ctx.hook_lsig_matches);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
     	rc = CL_VIRUS;
     return rc;

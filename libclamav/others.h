@@ -99,8 +99,14 @@ extern uint8_t cli_debug_flag;
 #define NAME_MAX 256
 #endif
 
+typedef struct bitset_tag
+{
+        unsigned char *bitset;
+        unsigned long length;
+} bitset_t;
+
 /* internal clamav context */
-typedef struct {
+typedef struct cli_ctx_tag {
     const char **virname;
     unsigned long int *scanned;
     const struct cli_matcher *root;
@@ -114,6 +120,7 @@ typedef struct {
     size_t container_size;
     struct cli_dconf *dconf;
     fmap_t **fmap;
+    bitset_t* hook_lsig_matches;
 } cli_ctx;
 
 
@@ -227,6 +234,7 @@ struct cl_engine {
     struct cli_all_bc bcs;
     unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];
     unsigned hooks_cnt[_BC_LAST_HOOK - _BC_START_HOOKS];
+    unsigned hook_lsig_ids;
 };
 
 struct cl_settings {
@@ -371,12 +379,6 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #define CLI_SRS(n,s) ((((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s))) - (1<<(sizeof(n)*8-1-s)))
 #endif
 #define CLI_SAR(n,s) n = CLI_SRS(n,s)
-
-typedef struct bitset_tag
-{
-        unsigned char *bitset;
-        unsigned long length;
-} bitset_t;
 
 #ifdef __GNUC__
 void cli_warnmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));

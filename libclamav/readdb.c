@@ -1330,7 +1330,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return rc;
     }
     sigs += 2;/* the bytecode itself and the logical sig */
-    if (bc->kind == BC_LOGICAL) {
+    if (bc->kind == BC_LOGICAL || bc->lsig) {
 	if (!bc->lsig) {
 	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
 	    return CL_EMALFDB;
@@ -1342,10 +1342,13 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		       bc->lsig, dbname, cl_strerror(rc));
 	    return rc;
 	}
-    } else {
+    }
+    if (bc->kind != BC_LOGICAL) {
 	if (bc->lsig) {
-	    cli_errmsg("Bytecode %s has logical signature but is not logical kind!\n", dbname);
-	    return CL_EMALFDB;
+	    /* runlsig will only flip a status bit, not report a match,
+	     * when the hooks are executed we only execute the hook if its
+	     * status bit is on */
+	    bc->hook_lsig_id = ++engine->hook_lsig_ids;
 	}
 	if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
 	    unsigned hook = bc->kind - _BC_START_HOOKS;

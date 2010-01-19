@@ -71,7 +71,7 @@ extern const struct cli_exe_info __clambc_exeinfo;
 /** PE data, if this is a PE hook */
 extern const struct cli_pe_hook_data __clambc_pedata;
 /** File size (max 4G) */
-extern const uint32_t __clambc_filesize;
+extern const uint32_t __clambc_filesize[1];
 
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
