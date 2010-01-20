@@ -2086,7 +2086,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cvd"), options, 0);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cld"), options | CL_DB_CVDNOTMP, 1);
+	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cld"), options, 1);
 
     } else if(cli_strbcasestr(dbname, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);

@@ -575,35 +575,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	engine->dbversion[1] = cvd.stime;
     }
 
-    if(options & CL_DB_CVDNOTMP) {
-
-	return cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL);
-
-    } else {
-
-	if(!(dir = cli_gentemp(engine->tmpdir)))
-	    return CL_EMEM;
-
-	if(mkdir(dir, 0700)) {
-	    cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
-	    free(dir);
-	    return CL_ETMPDIR;
-	}
-
-	if(cli_untgz(cfd, dir)) {
-	    cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
-	    free(dir);
-	    return CL_ECVD;
-	}
-
-	/* load extracted directory */
-	ret = cl_load(dir, engine, signo, options | CL_DB_OFFICIAL);
-
-	cli_rmdirs(dir);
-	free(dir);
-
-	return ret;
-    }
+    return cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL);
 }
 
 int cli_cvdunpack(const char *file, const char *dir)

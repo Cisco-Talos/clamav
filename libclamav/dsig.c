@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -32,6 +32,7 @@
 #include "dsig.h"
 #include "str.h"
 #include "bignum.h"
+#include "sha256.h"
 
 #define CLI_NSTR "118640995551645342603070001658453189751527774412027743746599405743243142607464144767361060640655844749760788890022283424922762488917565551002467771109669598189410434699034532232228621591089508178591428456220796841621637175567590476666928698770143328137383952820383197532047771780196576957695822641224262693037"
 
@@ -144,4 +145,73 @@ int cli_versig(const char *md5, const char *dsig)
 
     cli_dbgmsg("cli_versig: Digital signature is correct.\n");
     return CL_SUCCESS;
+}
+
+#define HASH_LEN    32
+#define SALT_LEN    32
+#define PAD_LEN	    (2048 / 8)
+#define BLK_LEN	    (PAD_LEN - HASH_LEN - 1)
+int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
+{
+	unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
+	unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
+	unsigned int i, rounds;
+	SHA256_CTX ctx;
+	mp_int n, e;
+
+    mp_init(&e);
+    mp_read_radix(&e, e_str, 10);
+    mp_init(&n);
+    mp_read_radix(&n, n_str, 10);
+
+    decoded = cli_decodesig(dsig_str, PAD_LEN, e, n);
+    mp_clear(&n);
+    mp_clear(&e);
+    if(!decoded)
+	return CL_EVERIFY;
+
+    if(decoded[PAD_LEN - 1] != 0xbc) {
+	free(decoded);
+	return CL_EVERIFY;
+    }
+
+    memcpy(mask, decoded, BLK_LEN);
+    memcpy(digest2, &decoded[BLK_LEN], HASH_LEN);
+    free(decoded);
+
+    c[0] = c[1] = 0;
+    rounds = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
+    for(i = 0; i < rounds; i++) {
+	c[2] = (unsigned char) (i / 256);
+	c[3] = (unsigned char) i;
+	sha256_init(&ctx);
+	sha256_update(&ctx, digest2, HASH_LEN);
+	sha256_update(&ctx, c, 4);
+	sha256_final(&ctx, digest3);
+	if(i + 1 == rounds)
+            memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
+	else
+	    memcpy(&data[i * 32], digest3, HASH_LEN);
+    }
+
+    for(i = 0; i < BLK_LEN; i++)
+	data[i] ^= mask[i];
+    data[0] &= (0xff >> 1);
+
+    if(!(salt = memchr(data, 0x01, BLK_LEN)))
+	return CL_EVERIFY;
+    salt++;
+
+    if(data + BLK_LEN - salt != SALT_LEN)
+	return CL_EVERIFY;
+
+    memset(final, 0, 8);
+    memcpy(&final[8], sha256, HASH_LEN);
+    memcpy(&final[8 + HASH_LEN], salt, SALT_LEN);
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, final, sizeof(final));
+    sha256_final(&ctx, digest1);
+
+    return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 }

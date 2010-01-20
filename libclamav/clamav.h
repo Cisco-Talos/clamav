@@ -73,7 +73,7 @@ typedef enum {
 #define CL_DB_PHISHING	    0x2
 #define CL_DB_PHISHING_URLS 0x8
 #define CL_DB_PUA	    0x10
-#define CL_DB_CVDNOTMP	    0x20
+#define CL_DB_CVDNOTMP	    0x20    /* obsolete */
 #define CL_DB_OFFICIAL	    0x40    /* internal */
 #define CL_DB_PUA_MODE	    0x80
 #define CL_DB_PUA_INCLUDE   0x100
@@ -84,7 +84,7 @@ typedef enum {
 #define CL_DB_BYTECODE      0x2000
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_CVDNOTMP | CL_DB_BYTECODE)
+#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
 
 /* scan options */
 #define CL_SCAN_RAW			0x0
