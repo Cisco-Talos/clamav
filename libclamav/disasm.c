@@ -1254,7 +1254,7 @@ static void spam_x86(struct DISASMED *s, char *hr) {
 #define GETSIZE(X) (x86ops[table][s->table_op].X!=SIZE_WD?x86ops[table][s->table_op].X:((s->opsize)?SIZE_WORD:SIZE_DWORD))
 
 
-static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
+static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struct DISASMED *s) {
   unsigned int reversed=0, i;
   uint8_t b;
   unsigned int table = 0;
@@ -1679,52 +1679,63 @@ static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *
   }
 }
 
-int disasmbuf(uint8_t *buff, unsigned int len, int fd) {
-  uint8_t *next = buff;
+const uint8_t* cli_disasm_one(const uint8_t* buff, unsigned int len,
+			      struct DISASM_RESULT *w, int spam)
+{
+  struct DISASMED s;
+  int i;
+
+  memset(&w->extra[0], 0, sizeof(w->extra));
+  buff = disasm_x86(buff, len, &s);
+  if (!buff)
+      return NULL;
+  if (spam) {
+      char hr[128];
+      spam_x86(&s, hr);
+      cli_dbgmsg("%s\n", hr);
+  }
+  w->real_op = le16_to_host(s.real_op);
+  w->opsize = s.opsize;
+  w->adsize = s.adsize;
+  w->segment = s.segment;
+
+  for (i=0; i<3; i++) {
+      w->arg[i][0] = s.args[i].access;
+      w->arg[i][1] = s.args[i].size;
+      switch(s.args[i].access) {
+      case ACCESS_MEM:
+	w->arg[i][2]=s.args[i].arg.marg.r1;
+	w->arg[i][3]=s.args[i].arg.marg.r2;
+	w->arg[i][4]=s.args[i].arg.marg.scale;
+	w->arg[i][5]=0;
+	cli_writeint32(&w->arg[i][6], s.args[i].arg.marg.disp);
+	break;
+      case ACCESS_REG:
+	w->arg[i][1] = s.args[i].reg;
+      default:
+	cli_writeint32(&w->arg[i][2], s.args[i].arg.q);
+	cli_writeint32(&w->arg[i][6], s.args[i].arg.q>>32);
+      }
+  }
+  return buff;
+}
+
+int disasmbuf(const uint8_t *buff, unsigned int len, int fd) {
+  const uint8_t *next = buff;
   unsigned int counter=0;
   int gotsome=0;
-  struct DISASMED s;
   struct DISASM_RESULT w;
   memset(&w.extra[0], 0, sizeof(w.extra));
 
   while(len && counter++<200) {
-    int i;
-    if(!(next = disasm_x86(next, len, &s))) {
+    if(!(next = cli_disasm_one(next, len, &w, cli_debug_flag))) {
       /* TODO: invd opcode or buff over */
       return gotsome;
-    }
-    if(cli_debug_flag) {
-      char hr[128];
-      spam_x86(&s, hr);
-      cli_dbgmsg("%s\n", hr);
     }
     
     len -= next-buff;
     buff=next;
 
-    w.real_op = le16_to_host(s.real_op);
-    w.opsize = s.opsize;
-    w.adsize = s.adsize;
-    w.segment = s.segment;
-
-    for (i=0; i<3; i++) {
-      w.arg[i][0] = s.args[i].access;
-      w.arg[i][1] = s.args[i].size;
-      switch(s.args[i].access) {
-      case ACCESS_MEM:
-	w.arg[i][2]=s.args[i].arg.marg.r1;
-	w.arg[i][3]=s.args[i].arg.marg.r2;
-	w.arg[i][4]=s.args[i].arg.marg.scale;
-	w.arg[i][5]=0;
-	cli_writeint32(&w.arg[i][6], s.args[i].arg.marg.disp);
-	break;
-      case ACCESS_REG:
-	w.arg[i][1] = s.args[i].reg;
-      default:
-	cli_writeint32(&w.arg[i][2], s.args[i].arg.q);
-	cli_writeint32(&w.arg[i][6], s.args[i].arg.q>>32);
-      }
-    }
     cli_writen(fd, &w, sizeof(w));
     gotsome = 1;
   }

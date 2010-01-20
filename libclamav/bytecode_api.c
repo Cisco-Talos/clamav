@@ -40,6 +40,7 @@
 #include "bytecode_api_impl.h"
 #include "others.h"
 #include "pe.h"
+#include "disasm.h"
 
 uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo* s, uint32_t u)
 {
@@ -103,8 +104,18 @@ uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uin
 
 uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res, uint32_t len)
 {
-    //TODO: call disasm_x86_wrap, which outputs a MARIO struct
-    return -1;
+    int n;
+    const char *buf;
+    const char* next;
+    if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len)
+	return -1;
+    /* FIXME: 4096 is an overestimate, how long is the longest instruction? */
+    n = MIN(4096, ctx->fmap->len - ctx->off);
+    buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
+    next = cli_disasm_one(buf, n, res, 0);
+    if (!next)
+	return -1;
+    return ctx->off + next - buf;
 }
 
 /* TODO: field in ctx, id of last bytecode that called magicscandesc, reset
