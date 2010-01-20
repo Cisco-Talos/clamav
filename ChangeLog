@@ -1,3 +1,7 @@
+Wed Jan 20 23:53:36 CET 2010 (acab)
+-----------------------------------
+ * libclamav/pe.c: fix handling of 15h byte skew in upx-lzma (bb#1591)
+
 Wed Jan 20 22:10:12 CET 2010 (tk)
 ---------------------------------
  * libclamav: check .info files while loading CVD/CLD
