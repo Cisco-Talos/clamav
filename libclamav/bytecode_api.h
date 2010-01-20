@@ -141,10 +141,9 @@ uint32_t debug_print_str(const uint8_t *str, uint32_t len);
  * Prints a number as a debug message.
  *
  * @param[in] a number to print
- * @param b unused
  * @return 0
  */
-uint32_t debug_print_uint(uint32_t a, uint32_t b);
+uint32_t debug_print_uint(uint32_t a);
 
 /**
  * Disassembles starting from current file position, the specified amount of
@@ -176,7 +175,7 @@ uint32_t trace_ptr(const uint8_t* ptr, uint32_t dummy);
   * @return absolute file offset mapped to the \p rva,
   * or PE_INVALID_RVA if the \p rva is invalid.
   */
-uint32_t pe_rawaddr(uint32_t rva, uint32_t dummy);
+uint32_t pe_rawaddr(uint32_t rva);
 
 /** Looks for the specified sequence of bytes in the current file.
   * @param[in] data the sequence of bytes to look for
@@ -188,7 +187,15 @@ int32_t file_find(const uint8_t* data, uint32_t len);
   * @param offset file offset
   * @return byte at offset \p off in the current file, or -1 if offset is
   * invalid */
-int32_t file_byteat(uint32_t offset, uint32_t dummy);
+int32_t file_byteat(uint32_t offset);
+
+/** Allocates memory. Currently this memory is freed automatically on exit
+  from the bytecode, and there is no way to free it sooner.
+  @param size amount of memory to allocate in bytes
+  @return pointer to allocated memory */
+void* malloc(uint32_t size);
+
+uint32_t test2(uint32_t a);
 
 #endif
 #endif

@@ -64,6 +64,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->directory = "";
     ctx->line = 0;
     ctx->col = 0;
+    ctx->mpool = NULL;
     return ctx;
 }
 
@@ -104,6 +105,14 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	ctx->tempfile = NULL;
 	ctx->outfd = -1;
     }
+#if USE_MPOOL
+    if (ctx->mpool) {
+	mpool_destroy(ctx->mpool);
+	ctx->mpool = NULL;
+    }
+#else
+    //TODO: implement for no-mmap case too
+#endif
     return CL_SUCCESS;
 }
 
@@ -1222,6 +1231,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     enum parse_state state;
     int rc;
 
+    memset(bc, 0, sizeof(*bc));
     if (!f && !dbio) {
 	cli_errmsg("Unable to load bytecode (null file)\n");
 	return CL_ENULLARG;

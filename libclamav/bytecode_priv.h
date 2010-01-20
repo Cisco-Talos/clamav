@@ -28,6 +28,7 @@
 #include "execs.h"
 #include "bytecode_hooks.h"
 #include "fmap.h"
+#include "mpool.h"
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -144,6 +145,7 @@ struct cli_bc_ctx {
     uint32_t scopeid;
     unsigned line;
     unsigned col;
+    mpool_t *mpool;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

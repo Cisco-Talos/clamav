@@ -28,7 +28,7 @@ struct bytecode_metadata {
   char *targetExclude;
 };
 
-#define BC_FUNC_LEVEL 4
+#define BC_FUNC_LEVEL 5
 #define BC_HEADER "ClamBC"
 
 enum bc_opcode {

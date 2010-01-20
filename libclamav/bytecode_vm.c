@@ -589,6 +589,22 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			res =  cli_apicalls1[api->idx](p, u);
 			break;*/
 		    }
+		    case 2: {
+			int32_t a;
+			READ32(a, inst->u.ops.ops[0]);
+			res = cli_apicalls2[api->idx](ctx, a);
+			break;
+		    }
+		    case 3: {
+			cli_errmsg("bytecode: type 3 apicalls not yet implemented!\n");
+			stop = CL_EBYTECODE;
+		/*	void *p;
+			uint32_t u;
+			p = ...;
+			u = READ32(v, inst->u.ops.ops[1]);
+			res =  cli_apicalls1[api->idx](p, u);
+			break;*/
+			    }
 		}
 		WRITE32(inst->dest, res);
 		break;

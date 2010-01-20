@@ -40,7 +40,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
 int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t, uint32_t);
 uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
-uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t);
 uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT*, uint32_t);
 uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
@@ -48,9 +48,11 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t*, ui
 uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
-uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t);
 int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
-int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t);
+uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t);
+uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -83,17 +85,19 @@ static uint16_t cli_tmp12[]={82};
 static uint16_t cli_tmp13[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
 static uint16_t cli_tmp14[]={32};
 static uint16_t cli_tmp15[]={32};
-static uint16_t cli_tmp16[]={32, 32, 32};
-static uint16_t cli_tmp17[]={32, 65, 32};
-static uint16_t cli_tmp18[]={32, 88, 32};
-static uint16_t cli_tmp19[]={89};
-static uint16_t cli_tmp20[]={16, 8, 8, 8, 91, 90};
-static uint16_t cli_tmp21[]={8};
-static uint16_t cli_tmp22[]={92};
-static uint16_t cli_tmp23[]={8};
-static uint16_t cli_tmp24[]={32, 94, 32};
-static uint16_t cli_tmp25[]={95};
-static uint16_t cli_tmp26[]={94};
+static uint16_t cli_tmp16[]={32, 32};
+static uint16_t cli_tmp17[]={65, 32};
+static uint16_t cli_tmp18[]={32, 65, 32};
+static uint16_t cli_tmp19[]={32, 89, 32};
+static uint16_t cli_tmp20[]={90};
+static uint16_t cli_tmp21[]={16, 8, 8, 8, 92, 91};
+static uint16_t cli_tmp22[]={8};
+static uint16_t cli_tmp23[]={93};
+static uint16_t cli_tmp24[]={8};
+static uint16_t cli_tmp25[]={32, 32, 32};
+static uint16_t cli_tmp26[]={32, 96, 32};
+static uint16_t cli_tmp27[]={97};
+static uint16_t cli_tmp28[]={96};
 
 const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp0, 11, 0, 0},
@@ -112,48 +116,49 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp13, 9, 0, 0},
 	{DArrayType, cli_tmp14, 1, 0, 0},
 	{DArrayType, cli_tmp15, 64, 0, 0},
-	{DFunctionType, cli_tmp16, 3, 0, 0},
-	{DFunctionType, cli_tmp17, 3, 0, 0},
+	{DFunctionType, cli_tmp16, 2, 0, 0},
+	{DFunctionType, cli_tmp17, 2, 0, 0},
 	{DFunctionType, cli_tmp18, 3, 0, 0},
-	{DPointerType, cli_tmp19, 1, 0, 0},
-	{DStructType, cli_tmp20, 6, 0, 0},
-	{DArrayType, cli_tmp21, 29, 0, 0},
-	{DArrayType, cli_tmp22, 3, 0, 0},
-	{DArrayType, cli_tmp23, 10, 0, 0},
-	{DFunctionType, cli_tmp24, 3, 0, 0},
-	{DPointerType, cli_tmp25, 1, 0, 0},
-	{DStructType, cli_tmp26, 1, 0, 0}
+	{DFunctionType, cli_tmp19, 3, 0, 0},
+	{DPointerType, cli_tmp20, 1, 0, 0},
+	{DStructType, cli_tmp21, 6, 0, 0},
+	{DArrayType, cli_tmp22, 29, 0, 0},
+	{DArrayType, cli_tmp23, 3, 0, 0},
+	{DArrayType, cli_tmp24, 10, 0, 0},
+	{DFunctionType, cli_tmp25, 3, 0, 0},
+	{DFunctionType, cli_tmp26, 3, 0, 0},
+	{DPointerType, cli_tmp27, 1, 0, 0},
+	{DStructType, cli_tmp28, 1, 0, 0}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"test0", 24, 0, 1},
-	{"test1", 16, 0, 0},
-	{"read", 17, 1, 1},
-	{"write", 17, 2, 1},
-	{"seek", 16, 1, 0},
-	{"setvirusname", 17, 3, 1},
-	{"debug_print_str", 17, 4, 1},
-	{"debug_print_uint", 16, 2, 0},
-	{"disasm_x86", 18, 5, 1},
-	{"trace_directory", 17, 6, 1},
-	{"trace_scope", 17, 7, 1},
-	{"trace_source", 17, 8, 1},
-	{"trace_op", 17, 9, 1},
-	{"trace_value", 17, 10, 1},
-	{"trace_ptr", 17, 11, 1},
-	{"pe_rawaddr", 16, 3, 0},
-	{"file_find", 17, 12, 1},
-	{"file_byteat", 16, 4, 0}
+	{"test0", 26, 0, 1},
+	{"test1", 25, 0, 0},
+	{"read", 18, 1, 1},
+	{"write", 18, 2, 1},
+	{"seek", 25, 1, 0},
+	{"setvirusname", 18, 3, 1},
+	{"debug_print_str", 18, 4, 1},
+	{"debug_print_uint", 16, 0, 2},
+	{"disasm_x86", 19, 5, 1},
+	{"trace_directory", 18, 6, 1},
+	{"trace_scope", 18, 7, 1},
+	{"trace_source", 18, 8, 1},
+	{"trace_op", 18, 9, 1},
+	{"trace_value", 18, 10, 1},
+	{"trace_ptr", 18, 11, 1},
+	{"pe_rawaddr", 16, 1, 2},
+	{"file_find", 18, 12, 1},
+	{"file_byteat", 16, 2, 2},
+	{"malloc", 17, 0, 3},
+	{"test2", 16, 3, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_test1,
-	(cli_apicall_int2)cli_bcapi_seek,
-	(cli_apicall_int2)cli_bcapi_debug_print_uint,
-	(cli_apicall_int2)cli_bcapi_pe_rawaddr,
-	(cli_apicall_int2)cli_bcapi_file_byteat
+	(cli_apicall_int2)cli_bcapi_seek
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_test0,
@@ -169,5 +174,14 @@ const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_trace_value,
 	(cli_apicall_pointer)cli_bcapi_trace_ptr,
 	(cli_apicall_pointer)cli_bcapi_file_find
+};
+const cli_apicall_int1 cli_apicalls2[] = {
+	(cli_apicall_int1)cli_bcapi_debug_print_uint,
+	(cli_apicall_int1)cli_bcapi_pe_rawaddr,
+	(cli_apicall_int1)cli_bcapi_file_byteat,
+	(cli_apicall_int1)cli_bcapi_test2
+};
+const cli_apicall_malloclike cli_apicalls3[] = {
+	(cli_apicall_malloclike)cli_bcapi_malloc
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

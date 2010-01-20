@@ -52,6 +52,11 @@ uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
     return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
 }
 
+uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
+{
+    return a == 0xf00d ? 0xd00f : 0x5555;
+}
+
 int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 {
     if (!ctx->fmap)
@@ -87,7 +92,7 @@ uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, u
     return 0;
 }
 
-uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
+uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
 {
     cli_dbgmsg("bytecode debug: %u\n", a);
     return 0;
@@ -254,7 +259,7 @@ uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t* ptr, u
     return 0;
 }
 
-uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva, uint32_t dummy)
+uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
 {
   uint32_t ret;
   int err = 0;
@@ -313,7 +318,7 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
     return -1;
 }
 
-int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off, uint32_t dummy)
+int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off)
 {
     unsigned char c;
     if (!ctx->fmap)
@@ -322,3 +327,22 @@ int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off, uint32_t dum
 	return -1;
     return c;
 }
+
+uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
+{
+#if USE_MPOOL
+    if (!ctx->mpool) {
+	ctx->mpool = mpool_create();
+	if (!ctx->mpool) {
+	    cli_dbgmsg("bytecode: mpool_create failed!\n");
+	    return NULL;
+	}
+    }
+    return mpool_malloc(ctx->mpool, size);
+#else
+    /* TODO: implement using a list of pointers we allocated! */
+    cli_errmsg("cli_bcapi_malloc not implemented for systems without mmap yet!\n");
+    return NULL;
+#endif
+}
+
