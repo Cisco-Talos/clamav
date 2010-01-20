@@ -316,11 +316,11 @@ enum X86OPS {
 
 /** Access type */
 enum DIS_ACCESS {
-  ACCESS_NOARG, /** arg not present */
-  ACCESS_IMM,   /** immediate */
-  ACCESS_REL,   /** +/- immediate */
-  ACCESS_REG,   /** register */
-  ACCESS_MEM    /** [memory] */
+  ACCESS_NOARG, /**< arg not present */
+  ACCESS_IMM,   /**< immediate */
+  ACCESS_REL,   /**< +/- immediate */
+  ACCESS_REG,   /**< register */
+  ACCESS_MEM    /**< [memory] */
 };
 
 /** for mem access, immediate and relative */
