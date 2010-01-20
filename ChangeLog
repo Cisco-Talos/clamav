@@ -1,3 +1,7 @@
+Wed Jan 20 22:10:12 CET 2010 (tk)
+---------------------------------
+ * libclamav: check .info files while loading CVD/CLD
+
 Tue Jan 19 11:49:12 CET 2010 (acab)
 -----------------------------------
   * clamdscan/proto.c: don't stop scanning if a file is not found (bb#1760)

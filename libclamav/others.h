@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -160,6 +160,14 @@ struct icon_matcher {
     unsigned int icon_counts[3];
 };
 
+struct cli_dbinfo {
+    char *name;
+    unsigned char *hash;
+    size_t size;
+    struct cl_cvd *cvd;
+    struct cli_dbinfo *next;
+};
+
 struct cl_engine {
     uint32_t refcount; /* reference counter */
     uint32_t sdb;
@@ -226,6 +234,9 @@ struct cl_engine {
 
     /* Negative cache storage */
     struct CACHE *cache;
+
+    /* Database information from .info files */
+    struct cli_dbinfo *dbinfo;
 
     /* Used for memory pools */
     mpool_t *mempool;

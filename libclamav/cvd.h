@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -25,16 +25,18 @@
 #include <zlib.h>
 #include "clamav.h"
 
+#include "md5.h"
+
 struct cli_dbio {
     gzFile *gzs;
     FILE *fs;
-    unsigned int size;
+    unsigned int size, bread;
     char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
-
+    cli_md5_ctx md5ctx; /* TODO: replace with sha256 */
 };
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld);
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *dbname);
 int cli_cvdunpack(const char *file, const char *dir);
 
 #endif

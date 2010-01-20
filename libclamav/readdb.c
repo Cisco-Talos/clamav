@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -350,6 +350,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->readpt[bread] = 0;
 		dbio->bufpt = dbio->buf;
 		dbio->size -= bread;
+		dbio->bread += bread;
+		cli_md5_update(&dbio->md5ctx, dbio->readpt, bread);
 	    }
 	    nl = strchr(dbio->bufpt, '\n');
 	    if(nl) {
@@ -394,9 +396,14 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	else
 	    pt = fgets(buff, bs, dbio->fs);
 
-	dbio->size -= strlen(buff);
-	if(!pt)
+	if(!pt) {
 	    cli_errmsg("cli_dbgets: Preliminary end of data\n");
+	    return pt;
+	}
+	bs = strlen(buff);
+	dbio->size -= bs;
+	dbio->bread += bs;
+        cli_md5_update(&dbio->md5ctx, buff, bs);
 	return pt;
     }
 }
@@ -1494,6 +1501,85 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
+#define IGN_INFO_TOKENS 2
+static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
+{
+	const char *tokens[IGN_INFO_TOKENS + 1];
+	char buffer[FILEBUFF];
+	unsigned int line = 0, tokens_count;
+        struct cli_dbinfo *last = NULL, *new;
+	int ret = CL_SUCCESS;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(!strncmp(buffer, "DSIG:", 5))
+	    continue; /* TODO */
+	cli_chomp(buffer);
+
+	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
+	    if(engine->dbinfo) { /* shouldn't be initialized at this point */
+		cli_errmsg("cli_loadinfo: engine->dbinfo already initialized\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    last = engine->dbinfo = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
+	    if(!engine->dbinfo) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    engine->dbinfo->cvd = cl_cvdparse(buffer);
+	    if(!engine->dbinfo->cvd) {
+		cli_errmsg("cli_loadinfo: Can't parse header entry\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    continue;
+	}
+
+	if(!last) {
+	    cli_errmsg("cli_loadinfo: Incorrect file format\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	tokens_count = cli_strtokenize(buffer, ':', IGN_INFO_TOKENS + 1, tokens);
+	if(tokens_count > IGN_INFO_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+        new = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_dbinfo));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+	new->name = (unsigned char *) cli_mpool_strdup(engine->mempool, tokens[0]);
+	if(!new->name) {
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	/* TODO: hash will be replaced with sha256 */
+	if(strlen(tokens[1]) != 32 || !(new->hash = cli_mpool_hex2str(engine->mempool, tokens[1]))) {
+	    cli_errmsg("cli_loadinfo: Malformed MD5 string at line %u\n", line);
+	    mpool_free(engine->mempool, new->name);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	new->size = 0; /* TODO */
+	last->next = new;
+	last = new;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadinfo: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    return CL_SUCCESS;
+}
+
 #define IGN_MAX_TOKENS   3
 static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
@@ -2083,10 +2169,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cvd")) {
-	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cvd"), options, 0);
+	ret = cli_cvdload(fs, engine, signo, options, 0, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cld"), options, 1);
+	ret = cli_cvdload(fs, engine, signo, options, 1, dbname);
 
     } else if(cli_strbcasestr(dbname, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);
@@ -2142,6 +2228,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cfg")) {
 	ret = cli_dconf_load(fs, engine, options, dbio);
+
+    } else if(cli_strbcasestr(dbname, ".info")) {
+	ret = cli_loadinfo(fs, engine, options, dbio);
 
     } else if(cli_strbcasestr(dbname, ".wdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
@@ -2668,6 +2757,15 @@ int cl_engine_free(struct cl_engine *engine)
 	    cli_regfree(&pt->name);
 	mpool_free(engine->mempool, pt->res2);
 	mpool_free(engine->mempool, pt->virname);
+	mpool_free(engine->mempool, pt);
+    }
+
+    while(engine->dbinfo) {
+	struct cli_dbinfo *pt = engine->dbinfo;
+	engine->dbinfo = pt->next;
+	mpool_free(engine->mempool, pt->name);
+	mpool_free(engine->mempool, pt->hash);
+	free(pt->cvd);
 	mpool_free(engine->mempool, pt);
     }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -42,6 +42,7 @@
 #include "cvd.h"
 #include "readdb.h"
 #include "default.h"
+#include "md5.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -179,20 +180,21 @@ static int cli_untgz(int fd, const char *destdir)
     return 0;
 }
 
-static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options)
+static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo)
 {
 	char osize[13], name[101];
 	char block[TAR_BLOCKSIZE];
 	int nread, fdd, ret;
 	unsigned int type, size, pad, compr = 1;
 	off_t off;
-	struct cli_dbio dbio;
+	struct cli_dbinfo *db;
+	unsigned char hash[16];
 
 #define CLOSE_DBIO	    \
     if(compr)		    \
-	gzclose(dbio.gzs);  \
+	gzclose(dbio->gzs);  \
     else		    \
-	fclose(dbio.fs)
+	fclose(dbio->fs)
 
     cli_dbgmsg("in cli_tgzload()\n");
 
@@ -211,43 +213,43 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
     }
 
     if(compr) {
-	if((dbio.gzs = gzdopen(fdd, "rb")) == NULL) {
+	if((dbio->gzs = gzdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EOPEN;
 	}
-	dbio.fs = NULL;
+	dbio->fs = NULL;
     } else {
-	if((dbio.fs = fdopen(fdd, "rb")) == NULL) {
+	if((dbio->fs = fdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EOPEN;
 	}
-	dbio.gzs = NULL;
+	dbio->gzs = NULL;
     }
 
-    dbio.bufsize = CLI_DEFAULT_DBIO_BUFSIZE;
-    dbio.buf = cli_malloc(dbio.bufsize);
-    if(!dbio.buf) {
-	cli_errmsg("cli_tgzload: Can't allocate memory for dbio.buf\n");
+    dbio->bufsize = CLI_DEFAULT_DBIO_BUFSIZE;
+    dbio->buf = cli_malloc(dbio->bufsize);
+    if(!dbio->buf) {
+	cli_errmsg("cli_tgzload: Can't allocate memory for dbio->buf\n");
 	CLOSE_DBIO;
 	return CL_EMALFDB;
     }
-    dbio.bufpt = NULL;
-    dbio.usebuf = 1;
-    dbio.readpt = dbio.buf;
+    dbio->bufpt = NULL;
+    dbio->usebuf = 1;
+    dbio->readpt = dbio->buf;
 
     while(1) {
 
 	if(compr)
-	    nread = gzread(dbio.gzs, block, TAR_BLOCKSIZE);
+	    nread = gzread(dbio->gzs, block, TAR_BLOCKSIZE);
 	else
-	    nread = fread(block, 1, TAR_BLOCKSIZE, dbio.fs);
+	    nread = fread(block, 1, TAR_BLOCKSIZE, dbio->fs);
 
 	if(!nread)
 	    break;
 
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("cli_tgzload: Incomplete block read\n");
-	    free(dbio.buf);
+	    free(dbio->buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
@@ -260,7 +262,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if(strchr(name, '/')) {
 	    cli_errmsg("cli_tgzload: Slash separators are not allowed in CVD\n");
-	    free(dbio.buf);
+	    free(dbio->buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
@@ -273,12 +275,12 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		break;
 	    case '5':
 		cli_errmsg("cli_tgzload: Directories are not supported in CVD\n");
-		free(dbio.buf);
+		free(dbio->buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    default:
 		cli_errmsg("cli_tgzload: Unknown type flag '%c'\n", type);
-		free(dbio.buf);
+		free(dbio->buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	}
@@ -288,45 +290,72 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if((sscanf(osize, "%o", &size)) == 0) {
 	    cli_errmsg("cli_tgzload: Invalid size in header\n");
-	    free(dbio.buf);
+	    free(dbio->buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
-	dbio.size = size;
-	dbio.readsize = dbio.size < dbio.bufsize ? dbio.size : dbio.bufsize - 1;
-	dbio.bufpt = NULL;
-	dbio.readpt = dbio.buf;
+	dbio->size = size;
+	dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
+	dbio->bufpt = NULL;
+	dbio->readpt = dbio->buf;
+	cli_md5_init(&dbio->md5ctx);
+	dbio->bread = 0;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
 	if(compr)
-	    off = (off_t) gzseek(dbio.gzs, 0, SEEK_CUR);
+	    off = (off_t) gzseek(dbio->gzs, 0, SEEK_CUR);
 	else
-	    off = ftell(dbio.fs);
+	    off = ftell(dbio->fs);
 
-	if(CLI_DBEXT(name)) {
-	    ret = cli_load(name, engine, signo, options, &dbio);
+	if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
+	    ret = cli_load(name, engine, signo, options, dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
-		free(dbio.buf);
+		free(dbio->buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
+	    }
+	    if(!dbinfo) {
+		free(dbio->buf);
+		CLOSE_DBIO;
+		return CL_SUCCESS;
+	    } else {
+		db = dbinfo;
+		while(db && strcmp(db->name, name))
+		    db = db->next;
+		if(!db) {
+		    cli_errmsg("cli_tgzload: File %s not found in .info\n", name);
+		    free(dbio->buf);
+		    CLOSE_DBIO;
+		    return CL_EMALFDB;
+		}
+		if(dbio->bread) {
+		    /* TODO: compare sizes; replace with sha256 */
+		    cli_md5_final(hash, &dbio->md5ctx);
+		    if(memcmp(db->hash, hash, 16)) {
+			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
+			free(dbio->buf);
+			CLOSE_DBIO;
+			return CL_EMALFDB;
+		    }
+		}
 	    }
 	}
 	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
 	if(compr) {
-	    if(off == gzseek(dbio.gzs, 0, SEEK_CUR))
-		gzseek(dbio.gzs, size + pad, SEEK_CUR);
+	    if(off == gzseek(dbio->gzs, 0, SEEK_CUR))
+		gzseek(dbio->gzs, size + pad, SEEK_CUR);
 	    else if(pad)
-		gzseek(dbio.gzs, pad, SEEK_CUR);
+		gzseek(dbio->gzs, pad, SEEK_CUR);
 	} else {
-	    if(off == ftell(dbio.fs))
-		fseek(dbio.fs, size + pad, SEEK_CUR);
+	    if(off == ftell(dbio->fs))
+		fseek(dbio->fs, size + pad, SEEK_CUR);
 	    else if(pad)
-		fseek(dbio.fs, pad, SEEK_CUR);
+		fseek(dbio->fs, pad, SEEK_CUR);
 	}
     }
 
-    free(dbio.buf);
+    free(dbio->buf);
     CLOSE_DBIO;
     return CL_SUCCESS;
 }
@@ -520,22 +549,22 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld)
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *dbname)
 {
-        char *dir;
 	struct cl_cvd cvd;
 	int ret;
 	time_t s_time;
 	int cfd;
+	struct cli_dbio dbio;
+	struct cli_dbinfo *dbinfo = NULL;
 
     cli_dbgmsg("in cli_cvdload()\n");
 
     /* verify */
-
     if((ret = cli_cvdverify(fs, &cvd, cld)))
 	return ret;
 
-    if(cvd.stime && daily) {
+    if(strstr(dbname, "daily.")) {
 	time(&s_time);
 	if(cvd.stime > s_time) {
 	    if(cvd.stime - (unsigned int ) s_time > 3600) {
@@ -550,6 +579,8 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	    cli_warnmsg("***   Please update it as soon as possible.    ***\n");
 	    cli_warnmsg("**************************************************\n");
 	}
+	engine->dbversion[0] = cvd.version;
+	engine->dbversion[1] = cvd.stime;
     }
 
     if(cvd.fl > cl_retflevel()) {
@@ -570,12 +601,26 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	return CL_ESEEK;
     }
 
-    if(daily) {
-	engine->dbversion[0] = cvd.version;
-	engine->dbversion[1] = cvd.stime;
+    ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
+    if(ret != CL_SUCCESS)
+	return ret;
+    /* TODO: check CVD header */
+    dbinfo = engine->dbinfo ? engine->dbinfo->next : NULL;
+    if(!dbinfo)
+	return CL_EMALFDB;
+
+    ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, dbinfo);
+
+    while(engine->dbinfo) {
+	dbinfo = engine->dbinfo;
+	engine->dbinfo = dbinfo->next;
+	mpool_free(engine->mempool, dbinfo->name);
+	mpool_free(engine->mempool, dbinfo->hash);
+	free(dbinfo->cvd);
+	mpool_free(engine->mempool, dbinfo);
     }
 
-    return cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL);
+    return ret;
 }
 
 int cli_cvdunpack(const char *file, const char *dir)
