@@ -33,6 +33,7 @@ EXPORTS cli_cvdunpack
 EXPORTS cli_decodesig
 EXPORTS cli_chomp
 EXPORTS cli_strtokenize
+EXPORTS cli_versig2
 EXPORTS have_rar
 EXPORTS have_clamjit
 
