@@ -109,8 +109,9 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     const char* next;
     if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len)
 	return -1;
-    /* FIXME: 4096 is an overestimate, how long is the longest instruction? */
-    n = MIN(4096, ctx->fmap->len - ctx->off);
+    /* 32 should be longest instr we support decoding.
+     * When we'll support mmx/sse instructions this should be updated! */
+    n = MIN(32, ctx->fmap->len - ctx->off);
     buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
     next = cli_disasm_one(buf, n, res, 0);
     if (!next)
