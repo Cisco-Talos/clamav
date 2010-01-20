@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include "cltypes.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -251,4 +252,61 @@ uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva, uint32_t dum
   if (err)
     return PE_INVALID_RVA;
   return ret;
+}
+
+static inline const char* cli_memmem(const char *haystack, unsigned hlen,
+				     const unsigned char *needle, unsigned nlen)
+{
+    const char *p;
+    unsigned char c;
+    if (!needle || !haystack)
+	return NULL;
+    c = *needle++;
+    if (nlen == 1)
+	return memchr(haystack, c, hlen);
+
+    while (hlen >= nlen) {
+	p = haystack;
+	haystack = memchr(haystack, c, hlen - nlen + 1);
+	if (!haystack)
+	    return NULL;
+	p = haystack + 1;
+	if (!memcmp(p, needle, nlen-1))
+	    return haystack;
+	hlen -= p - haystack;
+	haystack = p;
+    }
+    return NULL;
+}
+
+int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_t len)
+{
+    char buf[4096];
+    fmap_t *map = ctx->fmap;
+    uint32_t off = ctx->off, newoff;
+    int n;
+
+    if (!map || len > sizeof(buf)/4 || len <= 0)
+	return -1;
+    for (;;) {
+	const char *p;
+	n = fmap_readn(map, buf, off, sizeof(buf));
+	if ((unsigned)n < len)
+	    return -1;
+	p = cli_memmem(buf, n, data, len);
+	if (p)
+	    return off + p - buf;
+	off += n-len;
+    }
+    return -1;
+}
+
+int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off, uint32_t dummy)
+{
+    unsigned char c;
+    if (!ctx->fmap)
+	return -1;
+    if (fmap_readn(ctx->fmap, &c, off, 1) != 1)
+	return -1;
+    return c;
 }

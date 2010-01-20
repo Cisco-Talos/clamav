@@ -178,5 +178,17 @@ uint32_t trace_ptr(const uint8_t* ptr, uint32_t dummy);
   */
 uint32_t pe_rawaddr(uint32_t rva, uint32_t dummy);
 
+/** Looks for the specified sequence of bytes in the current file.
+  * @param[in] data the sequence of bytes to look for
+  * @param len length of \p data, cannot be more than 1024
+  * @return offset in the current file if match is found, -1 otherwise */
+int32_t file_find(const uint8_t* data, uint32_t len); 
+
+/** Read a single byte from current file
+  * @param offset file offset
+  * @return byte at offset \p off in the current file, or -1 if offset is
+  * invalid */
+int32_t file_byteat(uint32_t offset, uint32_t dummy);
+
 #endif
 #endif

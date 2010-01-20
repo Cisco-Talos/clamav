@@ -49,6 +49,8 @@ uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t*, uint32
 uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
+int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -141,14 +143,17 @@ const struct cli_apicall cli_apicalls[]={
 	{"trace_op", 17, 9, 1},
 	{"trace_value", 17, 10, 1},
 	{"trace_ptr", 17, 11, 1},
-	{"pe_rawaddr", 16, 3, 0}
+	{"pe_rawaddr", 16, 3, 0},
+	{"file_find", 17, 12, 1},
+	{"file_byteat", 16, 4, 0}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_test1,
 	(cli_apicall_int2)cli_bcapi_seek,
 	(cli_apicall_int2)cli_bcapi_debug_print_uint,
-	(cli_apicall_int2)cli_bcapi_pe_rawaddr
+	(cli_apicall_int2)cli_bcapi_pe_rawaddr,
+	(cli_apicall_int2)cli_bcapi_file_byteat
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_test0,
@@ -162,6 +167,7 @@ const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_trace_source,
 	(cli_apicall_pointer)cli_bcapi_trace_op,
 	(cli_apicall_pointer)cli_bcapi_trace_value,
-	(cli_apicall_pointer)cli_bcapi_trace_ptr
+	(cli_apicall_pointer)cli_bcapi_trace_ptr,
+	(cli_apicall_pointer)cli_bcapi_file_find
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);
