@@ -304,7 +304,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    return NULL;
 	}
 #endif
-	if(scanf("%as", &pt) == EOF) {
+	if(scanf("%as", &pt) == EOF || !pt) {
 	    mprintf("!getdsig: Can't get password\n");
 #ifdef HAVE_TERMIOS_H
 	    tcsetattr(0, TCSAFLUSH, &old);
@@ -346,9 +346,11 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     memset(cmd, 0, sizeof(cmd));
 
     if(mode == 1)
+	snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
+    else if(mode == 2)
 	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
     else
-	snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
+	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS2:%s:%s:", user, pass);
 
     len = strlen(cmd);
     pt = cmd + len;
@@ -389,12 +391,43 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     return strdup(pt);
 }
 
-static int writeinfo(const char *dbname, const char *header)
+static char *sha256file(const char *file, unsigned int *size)
 {
 	FILE *fh;
-	unsigned int i;
-	char file[32], *md5;
+	unsigned int i, bytes;
+	unsigned char digest[32], buffer[FILEBUFF];
+	char *sha;
+	SHA256_CTX ctx;
 
+
+    sha256_init(&ctx);
+    if(!(fh = fopen(file, "r"))) {
+	mprintf("!sha256file: Can't open file %s\n", file);
+	return NULL;
+    }
+    if(size)
+	*size = 0;
+    while((bytes = fread(buffer, 1, sizeof(buffer), fh))) {
+	sha256_update(&ctx, buffer, bytes);
+	if(size)
+	    *size += bytes;
+    }
+    sha256_final(&ctx, digest);
+    sha = (char *) malloc(65);
+    if(!sha)
+	return NULL;
+    for(i = 0; i < 32; i++)
+	sprintf(sha + i * 2, "%02x", digest[i]);
+    return sha;
+}
+
+static int writeinfo(const char *dbname, const char *builder, const char *header, const struct optstruct *opts)
+{
+	FILE *fh;
+	unsigned int i, bytes;
+	char file[32], *pt;
+	unsigned char digest[32], buffer[FILEBUFF];
+	SHA256_CTX ctx;
 
     snprintf(file, sizeof(file), "%s.info", dbname);
     if(!access(file, R_OK)) {
@@ -404,7 +437,7 @@ static int writeinfo(const char *dbname, const char *header)
 	}
     }
 
-    if(!(fh = fopen(file, "w"))) {
+    if(!(fh = fopen(file, "w+"))) {
 	mprintf("!writeinfo: Can't create file %s\n", file);
 	return -1;
     }
@@ -417,21 +450,33 @@ static int writeinfo(const char *dbname, const char *header)
 
     for(i = 0; dblist[i].name; i++) {
 	if(!cli_strbcasestr(dblist[i].name, ".info") && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
-	    if(!(md5 = cli_md5file(dblist[i].name))) {
-		mprintf("!writeinfo: Can't generate MD5 checksum for %s\n", file);
+	    if(!(pt = sha256file(dblist[i].name, &bytes))) {
+		mprintf("!writeinfo: Can't generate SHA256 for %s\n", file);
 		fclose(fh);
 		return -1;
 	    }
-	    if(fprintf(fh, "%s:%s\n", dblist[i].name, md5) < 0) {
+	    if(fprintf(fh, "%s:%u:%s\n", dblist[i].name, bytes, pt) < 0) {
 		mprintf("!writeinfo: Can't write to info file\n");
 		fclose(fh);
-		free(md5);
+		free(pt);
 		return -1;
 	    }
-	    free(md5);
+	    free(pt);
 	}
     }
 
+    rewind(fh);
+    sha256_init(&ctx);
+    while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
+	sha256_update(&ctx, buffer, bytes);
+    sha256_final(&ctx, digest);
+    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
+	mprintf("!writeinfo: Can't get digital signature from remote server\n");
+	fclose(fh);
+	return -1;
+    }
+    fprintf(fh, "DSIG:%s", pt);
+    free(pt);
     fclose(fh);
     return 0;
 }
@@ -535,7 +580,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
     fclose(cdiffh);
     sha256_final(&ctx, digest);
 
-    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 1))) {
+    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 2))) {
 	mprintf("!script2cdiff: Can't get digital signature from remote server\n");
 	unlink(cdiff);
 	free(cdiff);
@@ -691,7 +736,7 @@ static int build(const struct optstruct *opts)
 	builder[sizeof(builder)-1]='\0';
     } else {
 	mprintf("Builder name: ");
-	if(scanf("%as", &pt) == EOF) {
+	if(scanf("%as", &pt) == EOF || !pt) {
 	    mprintf("!build: Can't get builder name\n");
 	    return -1;
 	}
@@ -706,7 +751,7 @@ static int build(const struct optstruct *opts)
     /* add current time */
     sprintf(header + strlen(header), ":%u", (unsigned int) timet);
 
-    if(writeinfo(dbname, header) == -1) {
+    if(writeinfo(dbname, builder, header, opts) == -1) {
 	mprintf("!build: Can't generate info file\n");
 	return -1;
     }
@@ -763,7 +808,7 @@ static int build(const struct optstruct *opts)
     sprintf(header + strlen(header), "%s:", pt);
     free(pt);
 
-    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 0))) {
+    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 1))) {
 	mprintf("!build: Can't get digital signature from remote server\n");
 	fclose(fh);
 	unlink(tarfile);
@@ -1294,11 +1339,12 @@ static int vbadump(const struct optstruct *opts)
     return 0;
 }
 
-static int comparemd5(const char *dbname)
+static int comparesha(const char *dbname)
 {
-	char info[32], buff[256], *md5, *pt;
+	char info[32], buff[FILEBUFF], *sha;
+	const char *tokens[3];
 	FILE *fh;
-	int ret = 0;
+	int ret = 0, tokens_count;
 
 
     snprintf(info, sizeof(info), "%s.info", getdbname(dbname));
@@ -1316,24 +1362,26 @@ static int comparemd5(const char *dbname)
 
     while(fgets(buff, sizeof(buff), fh)) {
 	cli_chomp(buff);
-	if(!(pt = strchr(buff, ':'))) {
+	tokens_count = cli_strtokenize(buff, ':', 3, tokens);
+	if(tokens_count != 3) {
+	    if(!strcmp(tokens[0], "DSIG"))
+		continue;
 	    mprintf("!verifydiff: Incorrect format of %s\n", info);
 	    ret = -1;
 	    break;
 	}
-	*pt++ = 0;
-	if(!(md5 = cli_md5file(buff))) {
+	if(!(sha = sha256file(tokens[0], NULL))) {
 	    mprintf("!verifydiff: Can't generate MD5 for %s\n", buff);
 	    ret = -1;
 	    break;
 	}
-	if(strcmp(pt, md5)) {
+	if(strcmp(sha, tokens[2])) {
 	    mprintf("!verifydiff: %s has incorrect checksum\n", buff);
 	    ret = -1;
-	    free(md5);
+	    free(sha);
 	    break;
 	}
-	free(md5);
+	free(sha);
     }
 
     fclose(fh);
@@ -1367,7 +1415,7 @@ static int rundiff(const struct optstruct *opts)
     close(fd);
 
     if(!ret)
-	ret = comparemd5(diff);
+	ret = comparesha(diff);
 
     return ret;
 }
@@ -1611,7 +1659,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
     close(fd);
 
-    ret = comparemd5(diff);
+    ret = comparesha(diff);
 
     if(chdir(cwd) == -1)
 	mprintf("^verifydiff: Can't chdir to %s\n", cwd);

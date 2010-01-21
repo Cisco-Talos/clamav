@@ -307,7 +307,8 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	else
 	    off = ftell(dbio->fs);
 
-	if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
+	/*if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {*/
+	if(CLI_DBEXT(name)) {
 	    ret = cli_load(name, engine, signo, options, dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
@@ -315,6 +316,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    }
+	    /*
 	    if(!dbinfo) {
 		free(dbio->buf);
 		CLOSE_DBIO;
@@ -330,7 +332,6 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		    return CL_EMALFDB;
 		}
 		if(dbio->bread) {
-		    /* TODO: compare sizes; replace with sha256 */
 		    cli_md5_final(hash, &dbio->md5ctx);
 		    if(memcmp(db->hash, hash, 16)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
@@ -340,6 +341,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		    }
 		}
 	    }
+	    */
 	}
 	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
 	if(compr) {
@@ -601,13 +603,16 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	return CL_ESEEK;
     }
 
+    /*
     ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
     if(ret != CL_SUCCESS)
 	return ret;
-    /* TODO: check CVD header */
+
+    * TODO: check CVD header 
     dbinfo = engine->dbinfo ? engine->dbinfo->next : NULL;
     if(!dbinfo)
 	return CL_EMALFDB;
+    */
 
     ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, dbinfo);
 
