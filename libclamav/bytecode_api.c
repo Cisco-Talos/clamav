@@ -59,9 +59,18 @@ uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
 
 int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 {
+    int n;
     if (!ctx->fmap)
 	return -1;
-    return fmap_readn(ctx->fmap, data, ctx->off, size);
+    if (size < 0) {
+	cli_errmsg("bytecode: negative read size: %d\n", size);
+	return -1;
+    }
+    n = fmap_readn(ctx->fmap, data, ctx->off, size);
+    if (n <= 0)
+	return n;
+    ctx->off += n;
+    return n;
 }
 
 int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)

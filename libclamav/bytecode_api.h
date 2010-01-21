@@ -81,7 +81,7 @@ uint32_t test1(uint32_t, uint32_t);
 
 /**
  * @brief Reads specified amount of bytes from the current file
- * into a buffer.
+ * into a buffer. Also moves current position in the file.
  *
  * @param[in] size amount of bytes to read
  * @param[out] data pointer to buffer where data is read into

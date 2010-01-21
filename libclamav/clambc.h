@@ -83,6 +83,7 @@ enum bc_opcode {
   OP_BC_BSWAP16,
   OP_BC_BSWAP32,
   OP_BC_BSWAP64,
+  OP_BC_PTRDIFF32,
   OP_BC_INVALID /* last */
 };
 
@@ -108,8 +109,8 @@ static const unsigned char operand_counts[] = {
   3, 3, 3, 3,
   /* OP_BC_ISBIGENDIAN */
   0,
-  /* OP_BC_ABORT, OP_BSWAP* */
-  0, 1, 1, 1
+  /* OP_BC_ABORT, OP_BSWAP*, OP_PTRDIFF32 */
+  0, 1, 1, 1, 2
 };
 
 enum bc_global {

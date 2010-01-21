@@ -182,6 +182,9 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("__ashrdi3", (void*)(intptr_t)rtlib_sra_i64)
 	.Case("__ashldi3", (void*)(intptr_t)rtlib_shl_i64)
 	.Case("__lshrdi3", (void*)(intptr_t)rtlib_srl_i64)
+	.Case("memmove", (void*)(intptr_t)memmove)
+	.Case("memcpy", (void*)(intptr_t)memcpy)
+	.Case("memset", (void*)(intptr_t)memset)
 	.Default(0);
     if (addr)
 	return addr;
@@ -1132,7 +1135,17 @@ public:
 				Store(inst->dest, C);
 				break;
 			    }
-
+			case OP_BC_PTRDIFF32:
+			    {
+				Value *P1 = convertOperand(func, inst, inst->u.binop[0]);
+				Value *P2 = convertOperand(func, inst, inst->u.binop[1]);
+				P1 = Builder.CreatePtrToInt(P1, Type::getInt64Ty(Context));
+				P2 = Builder.CreatePtrToInt(P2, Type::getInt64Ty(Context));
+				Value *R = Builder.CreateSub(P1, P2);
+				R = Builder.CreateTrunc(R, Type::getInt32Ty(Context));
+				Store(inst->dest, R);
+				break;
+			    }
 			default:
 			    errs() << MODULE << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
