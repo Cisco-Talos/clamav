@@ -246,6 +246,7 @@ struct cl_engine {
     unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];
     unsigned hooks_cnt[_BC_LAST_HOOK - _BC_START_HOOKS];
     unsigned hook_lsig_ids;
+    enum bytecode_security bytecode_security;
 };
 
 struct cl_settings {

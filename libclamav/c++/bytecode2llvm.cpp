@@ -1204,6 +1204,9 @@ public:
 		}
 	  }
 	}
+	if (!bc->trusted) {
+	    //TODO: call verifier to insert runtime checks
+	}
 	delete [] Functions;
 	return true;
     }

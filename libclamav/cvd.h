@@ -33,6 +33,7 @@ struct cli_dbio {
     unsigned int size, bread;
     char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
+    unsigned secure;
     cli_md5_ctx md5ctx; /* TODO: replace with sha256 */
 };
 

@@ -300,6 +300,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	dbio->readpt = dbio->buf;
 	cli_md5_init(&dbio->md5ctx);
 	dbio->bread = 0;
+	dbio->secure = 0;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
 	if(compr)

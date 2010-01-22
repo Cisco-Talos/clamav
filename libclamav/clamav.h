@@ -134,7 +134,14 @@ enum cl_engine_field {
     CL_ENGINE_AC_MINDEPTH,	    /* uint32_t */
     CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
     CL_ENGINE_TMPDIR,		    /* (char *) */
-    CL_ENGINE_KEEPTMP		    /* uint32_t */
+    CL_ENGINE_KEEPTMP,		    /* uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY     /* uint32_t */
+};
+
+enum bytecode_security {
+    CL_BYTECODE_TRUST_ALL=0, /* insecure, debug setting */
+    CL_BYTECODE_TRUST_SIGNED, /* default */
+    CL_BYTECODE_TRUST_NOTHING /* paranoid setting */
 };
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);

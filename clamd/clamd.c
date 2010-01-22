@@ -410,6 +410,23 @@ int main(int argc, char **argv)
     if(optget(opts,"Bytecode")->enabled)
 	dboptions |= CL_DB_BYTECODE;
 
+    if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
+	enum bytecode_security s;
+	if (!strcmp(opt->strarg, "TrustSigned"))
+	    s = CL_BYTECODE_TRUST_SIGNED;
+	else if (!strcmp(opt->strarg, "None"))
+	    s = CL_BYTECODE_TRUST_ALL;
+	else if (!strcmp(opt->strarg, "Paranoid"))
+	    s = CL_BYTECODE_TRUST_NOTHING;
+	else {
+	    logg("!Unable to parse bytecode security setting:%s\n",
+		 opt->strarg);
+	    ret = 1;
+	    break;
+	}
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s);
+    }
+
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
     else

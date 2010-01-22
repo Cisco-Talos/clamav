@@ -1222,7 +1222,7 @@ enum parse_state {
     PARSE_BB
 };
 
-int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
+int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int trust)
 {
     unsigned row = 0, current_func = 0, bb=0;
     char *buffer;
@@ -1232,6 +1232,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     int rc;
 
     memset(bc, 0, sizeof(*bc));
+    bc->trusted = trust;
     if (!f && !dbio) {
 	cli_errmsg("Unable to load bytecode (null file)\n");
 	return CL_ENULLARG;
