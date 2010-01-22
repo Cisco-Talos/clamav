@@ -1760,7 +1760,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     printf("Bytecode format functionality level: %u\n", BC_FUNC_LEVEL);
     printf("Bytecode metadata:\n\tcompiler version: %s\n",
 	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
-    printf("\tcompiled on: %s\n",
+    printf("\tcompiled on: %s",
 	   cli_ctime(&stamp, buf, sizeof(buf)));
     printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
     //TODO: parse and display arch name, also take it into account when
