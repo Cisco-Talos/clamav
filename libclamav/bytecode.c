@@ -438,14 +438,14 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 	return CL_BREAK;
     }
     // Optimistic parsing, check for error only at the end.
-    bc->verifier = readNumber(buffer, &offset, len, &ok);
-    bc->sigmaker = readString(buffer, &offset, len, &ok);
-    bc->id = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.timestamp = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.sigmaker = readString(buffer, &offset, len, &ok);
+    bc->metadata.targetExclude = readNumber(buffer, &offset, len, &ok);
     bc->kind = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxStack = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.targetExclude = readString(buffer, &offset, len, &ok);
+    bc->metadata.compiler = readString(buffer, &offset, len, &ok);
     bc->num_types = readNumber(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     bc->state = bc_loaded;
@@ -1405,8 +1405,8 @@ uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
 void cli_bytecode_destroy(struct cli_bc *bc)
 {
     unsigned i, j, k;
-    free(bc->sigmaker);
-    free(bc->metadata.targetExclude);
+    free(bc->metadata.compiler);
+    free(bc->metadata.sigmaker);
 
     for (i=0;i<bc->num_func;i++) {
 	struct cli_bc_func *f = &bc->funcs[i];
@@ -1741,4 +1741,89 @@ int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_
 void cli_bytecode_context_setctx(struct cli_bc_ctx *ctx, void *cctx)
 {
     ctx->ctx = cctx;
+}
+
+void cli_bytecode_describe(const struct cli_bc *bc)
+{
+    char buf[128];
+    int cols;
+    unsigned i;
+    time_t stamp;
+    int had;
+
+    if (!bc) {
+	printf("(null bytecode)\n");
+	return;
+    }
+
+    stamp = bc->metadata.timestamp;
+    printf("Bytecode format functionality level: %u\n", BC_FUNC_LEVEL);
+    printf("Bytecode metadata:\n\tcompiler version: %s\n",
+	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
+    printf("\tcompiled on: %s\n",
+	   cli_ctime(&stamp, buf, sizeof(buf)));
+    printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
+    //TODO: parse and display arch name, also take it into account when
+    //JITing!
+    printf("\ttarget exclude: %d\n", bc->metadata.targetExclude);
+    printf("\tbytecode type: ");
+    switch (bc->kind) {
+	case BC_GENERIC:
+	    puts("generic, not loadable by clamscan/clamd");
+	    break;
+	case BC_LOGICAL:
+	    puts("logical only");
+	    break;
+	case BC_PE_UNPACKER:
+	    puts("PE hook");
+	    break;
+	default:
+	    printf("Unknown (type %u)", bc->kind);
+	    break;
+    }
+    printf("\tbytecode logical signature: %s\n",
+	       bc->lsig ? bc->lsig : "<none>");
+    printf("\tvirusname prefix: %s\n",
+	   bc->vnameprefix);
+    printf("\tvirusnames: %u\n", bc->vnames_cnt);
+    printf("\tbytecode triggered on: ");
+    switch (bc->kind) {
+	case BC_GENERIC:
+	    puts("N/A (loaded in clambc only)");
+	    break;
+	case BC_LOGICAL:
+	    puts("files matching logical signature");
+	    break;
+	case BC_PE_UNPACKER:
+	    if (bc->lsig)
+		puts("PE files matching logical signature");
+	    else
+		puts("all PE files!");
+	    break;
+	default:
+	    puts("N/A (unknown type)\n");
+	    break;
+    }
+    printf("\tnumber of functions: %u\n\tnumber of types: %u\n",
+	   bc->num_func, bc->num_types);
+    printf("\tnumber of global constants: %u\n", bc->num_globals);
+    printf("\tnumber of debug nodes: %u\n", bc->dbgnode_cnt);
+    printf("\tbytecode APIs used:");
+    cols = 0; /* remaining */
+    had = 0;
+    for (i=0;i<cli_apicall_maxapi;i++) {
+	if (cli_bitset_test(bc->uses_apis, i)) {
+	    unsigned len = strlen(cli_apicalls[i].name);
+	    if (had)
+		printf(",");
+	    if (len > cols) {
+		printf("\n\t");
+		cols = 72;
+	    }
+	    printf(" %s", cli_apicalls[i].name);
+	    had = 1;
+	    cols -= len;
+	}
+    }
+    printf("\n");
 }

@@ -121,6 +121,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "generate-config", 'g', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMCONF, "", "" },
 
     { NULL, "force-interpreter", 'f', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Force using the interpreter instead of the JIT", "" },
+    { NULL, "describe", 'd', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and describe bytecode without executing", ""},
     { NULL, "input", 'i', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
     { NULL, "trace", 't', TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},

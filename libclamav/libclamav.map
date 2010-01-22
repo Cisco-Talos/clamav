@@ -170,6 +170,7 @@ CLAMAV_PRIVATE {
     cli_bytecode_context_set_trace;
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;
+    cli_bytecode_describe;
   local:
     *;
 };

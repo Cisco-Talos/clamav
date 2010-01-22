@@ -1333,6 +1333,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     }
     bcs->count++;
     bc = &bcs->all_bcs[bcs->count-1];
+    bc->id = bcs->count;
 
     switch (engine->bytecode_security) {
 	case CL_BYTECODE_TRUST_ALL:
@@ -1362,7 +1363,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
 	    return CL_EMALFDB;
 	}
-	cli_dbgmsg("Bytecode %s has logical signature: %s\n", dbname, bc->lsig);
+	cli_dbgmsg("Bytecode %s(%u) has logical signature: %s\n", dbname, bc->id, bc->lsig);
 	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bc, NULL);
 	if (rc != CL_SUCCESS) {
 	    cli_errmsg("Problem parsing logical signature %s for bytecode %s: %s\n",

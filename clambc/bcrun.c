@@ -208,71 +208,76 @@ int main(int argc, char *argv[])
     fclose(f);
 
     printf("Bytecode loaded\n");
-    ctx = cli_bytecode_context_alloc();
-    if (!ctx) {
-	fprintf(stderr,"Out of memory\n");
-	exit(3);
-    }
-    memset(&dbg_state, 0, sizeof(dbg_state));
-    dbg_state.file = "<libclamav>";
-    dbg_state.line = 0;
-    dbg_state.col = 0;
-    dbg_state.showline = !optget(opts, "no-trace-showsource")->enabled;
-    tracelevel = optget(opts, "trace")->numarg;
-    cli_bytecode_context_set_trace(ctx, tracelevel,
-				   tracehook,
-				   tracehook_op,
-				   tracehook_val,
-				   tracehook_ptr);
-
-    if (opts->filename[1]) {
-	funcid = atoi(opts->filename[1]);
-    }
-    cli_bytecode_context_setfuncid(ctx, bc, funcid);
-    printf("Running bytecode function :%u\n", funcid);
-
-    if (opts->filename[1]) {
-	i=2;
-	while (opts->filename[i]) {
-	    rc = cli_bytecode_context_setparam_int(ctx, i-2, atoi(opts->filename[i]));
-	    if (rc != CL_SUCCESS) {
-		fprintf(stderr,"Unable to set param %u: %s\n", i-2, cl_strerror(rc));
-	    }
-	    i++;
-	}
-    }
-
-    if ((opt = optget(opts,"input"))->enabled) {
-	fmap_t *map;
-	fd = open(opt->strarg, O_RDONLY);
-	if (fd == -1) {
-	    fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
-	    optfree(opts);
-	    exit(5);
-	}
-	map = fmap(fd, 0, 0);
-	if (!map) {
-	    fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
-	}
-	rc = cli_bytecode_context_setfile(ctx, map);
-	if (rc != CL_SUCCESS) {
-	    fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
-	    optfree(opts);
-	    exit(5);
-	}
-	funmap(map);
-    }
-
-    rc = cli_bytecode_run(&bcs, bc, ctx);
-    if (rc != CL_SUCCESS) {
-	fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
+    if (optget(opts, "describe")->enabled) {
+	cli_bytecode_describe(bc);
     } else {
-	uint64_t v;
-	printf("Bytecode run finished\n");
-	v = cli_bytecode_context_getresult_int(ctx);
-	printf("Bytecode returned: 0x%llx\n", (long long)v);
+
+	ctx = cli_bytecode_context_alloc();
+	if (!ctx) {
+	    fprintf(stderr,"Out of memory\n");
+	    exit(3);
+	}
+	memset(&dbg_state, 0, sizeof(dbg_state));
+	dbg_state.file = "<libclamav>";
+	dbg_state.line = 0;
+	dbg_state.col = 0;
+	dbg_state.showline = !optget(opts, "no-trace-showsource")->enabled;
+	tracelevel = optget(opts, "trace")->numarg;
+	cli_bytecode_context_set_trace(ctx, tracelevel,
+				       tracehook,
+				       tracehook_op,
+				       tracehook_val,
+				       tracehook_ptr);
+
+	if (opts->filename[1]) {
+	    funcid = atoi(opts->filename[1]);
+	}
+	cli_bytecode_context_setfuncid(ctx, bc, funcid);
+	printf("Running bytecode function :%u\n", funcid);
+
+	if (opts->filename[1]) {
+	    i=2;
+	    while (opts->filename[i]) {
+		rc = cli_bytecode_context_setparam_int(ctx, i-2, atoi(opts->filename[i]));
+		if (rc != CL_SUCCESS) {
+		    fprintf(stderr,"Unable to set param %u: %s\n", i-2, cl_strerror(rc));
+		}
+		i++;
+	    }
+	}
+
+	if ((opt = optget(opts,"input"))->enabled) {
+	    fmap_t *map;
+	    fd = open(opt->strarg, O_RDONLY);
+	    if (fd == -1) {
+		fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
+		optfree(opts);
+		exit(5);
+	    }
+	    map = fmap(fd, 0, 0);
+	    if (!map) {
+		fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
+	    }
+	    rc = cli_bytecode_context_setfile(ctx, map);
+	    if (rc != CL_SUCCESS) {
+		fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
+		optfree(opts);
+		exit(5);
+	    }
+	    funmap(map);
+	}
+
+	rc = cli_bytecode_run(&bcs, bc, ctx);
+	if (rc != CL_SUCCESS) {
+	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
+	} else {
+	    uint64_t v;
+	    printf("Bytecode run finished\n");
+	    v = cli_bytecode_context_getresult_int(ctx);
+	    printf("Bytecode returned: 0x%llx\n", (long long)v);
+	}
+	cli_bytecode_context_destroy(ctx);
     }
-    cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);
     free(bc);

@@ -23,9 +23,12 @@
 #define CLAMBC_H
 
 struct bytecode_metadata {
-  unsigned long maxStack, maxMem;
-  unsigned long maxTime;
-  char *targetExclude;
+    char *compiler;
+    char *sigmaker;
+    uint64_t timestamp;
+    unsigned long maxStack, maxMem;
+    unsigned long maxTime;
+    unsigned targetExclude;
 };
 
 #define BC_FUNC_LEVEL 5

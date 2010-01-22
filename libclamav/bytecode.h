@@ -45,11 +45,9 @@ enum bc_state {
 };
 
 struct cli_bc {
-  unsigned verifier;
-  char *sigmaker;
+  struct bytecode_metadata metadata;
   unsigned id;
   unsigned kind;
-  struct bytecode_metadata metadata;
   unsigned num_types;
   unsigned num_func;
   struct cli_bc_func *funcs;
@@ -105,6 +103,7 @@ int cli_bytecode_prepare(struct cli_all_bc *allbc);
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
+void cli_bytecode_describe(const struct cli_bc *bc);
 
 /* Hooks */
 struct cli_exe_info;
