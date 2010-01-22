@@ -382,8 +382,8 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a)-1)
-#define CLI_ROL(a,b) a = ( a << (b & __SHIFTMASK(a)) ) | ( a >> ((__SHIFTBITS(a) - b) & __SHIFTMASK(a)) )
-#define CLI_ROR(a,b) a = ( a >> (b & __SHIFTMASK(a)) ) | ( a << ((__SHIFTBITS(a) - b) & __SHIFTMASK(a)) )
+#define CLI_ROL(a,b) a = ( a << ((b) & __SHIFTMASK(a)) ) | ( a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)) )
+#define CLI_ROR(a,b) a = ( a >> ((b) & __SHIFTMASK(a)) ) | ( a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)) )
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
