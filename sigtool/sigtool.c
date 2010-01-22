@@ -475,7 +475,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	fclose(fh);
 	return -1;
     }
-    fprintf(fh, "DSIG:%s", pt);
+    fprintf(fh, "DSIG:%s\n", pt);
     free(pt);
     fclose(fh);
     return 0;
