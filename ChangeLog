@@ -1,3 +1,7 @@
+Fri Jan 22 11:49:07 CET 2010 (acab)
+-----------------------------------
+ * libclamav: fix shifts >= width (bb#1778)
+
 Thu Jan 21 23:01:34 CET 2010 (tk)
 ---------------------------------
  * sigtool: create digitally signed .info files
