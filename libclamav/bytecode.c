@@ -1696,7 +1696,6 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	cli_dbgmsg("Bytecode %u returned %u\n", bc->id, ret);
 	if (!ret) {
 	    char *tempfile;
-	    cli_ctx *cctx = ctx->ctx;
 	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
 	    if (fd != -1) {
 		if (cctx && cctx->engine->keeptmp)
@@ -1806,7 +1805,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     }
     printf("\tnumber of functions: %u\n\tnumber of types: %u\n",
 	   bc->num_func, bc->num_types);
-    printf("\tnumber of global constants: %u\n", bc->num_globals);
+    printf("\tnumber of global constants: %u\n", (unsigned)bc->num_globals);
     printf("\tnumber of debug nodes: %u\n", bc->dbgnode_cnt);
     printf("\tbytecode APIs used:");
     cols = 0; /* remaining */
