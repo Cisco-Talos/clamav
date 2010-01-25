@@ -60,7 +60,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
     bcs.all_bcs = &bc;
     bcs.count = 1;
 
-    rc = cli_bytecode_load(&bc, f, NULL);
+    rc = cli_bytecode_load(&bc, f, NULL, 1);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 

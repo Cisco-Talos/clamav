@@ -1,3 +1,7 @@
+Mon Jan 25 13:27:44 CET 2010 (tk)
+---------------------------------
+ * libclamav: handle digitally signed .info files
+
 Fri Jan 22 11:49:07 CET 2010 (acab)
 -----------------------------------
  * libclamav: fix shifts >= width (bb#1778)

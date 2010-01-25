@@ -25,7 +25,7 @@
 #include <zlib.h>
 #include "clamav.h"
 
-#include "md5.h"
+#include "sha256.h"
 
 struct cli_dbio {
     gzFile *gzs;
@@ -33,8 +33,7 @@ struct cli_dbio {
     unsigned int size, bread;
     char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
-    unsigned secure;
-    cli_md5_ctx md5ctx; /* TODO: replace with sha256 */
+    SHA256_CTX sha256ctx;
 };
 
 int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *dbname);

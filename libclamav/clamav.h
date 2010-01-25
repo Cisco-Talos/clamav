@@ -82,6 +82,7 @@ typedef enum {
 #define CL_DB_DIRECTORY	    0x800   /* internal */
 #define CL_DB_OFFICIAL_ONLY 0x1000
 #define CL_DB_BYTECODE      0x2000
+#define CL_DB_SIGNED	    0x4000
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)

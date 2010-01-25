@@ -56,6 +56,8 @@
 #include "cltypes.h"
 #include "default.h"
 #include "md5.h"
+#include "sha256.h"
+#include "dsig.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -351,7 +353,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->bufpt = dbio->buf;
 		dbio->size -= bread;
 		dbio->bread += bread;
-		cli_md5_update(&dbio->md5ctx, dbio->readpt, bread);
+		sha256_update(&dbio->sha256ctx, dbio->readpt, bread);
 	    }
 	    nl = strchr(dbio->bufpt, '\n');
 	    if(nl) {
@@ -403,7 +405,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	bs = strlen(buff);
 	dbio->size -= bs;
 	dbio->bread += bs;
-        cli_md5_update(&dbio->md5ctx, buff, bs);
+	sha256_update(&dbio->sha256ctx, buff, bs);
 	return pt;
     }
 }
@@ -1341,12 +1343,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    cli_dbgmsg("bytecode: trusting all bytecode!\n");
 	    break;
 	case CL_BYTECODE_TRUST_SIGNED:
-	    if (dbio && (!engine->dbinfo || !engine->dbinfo->cvd
-			 || !engine->dbinfo->cvd->dsig)) {
-		cli_errmsg("CVD without signed .info?\n");
-		return CL_EMALFDB;
-	    }
-	    security_trust = dbio ? 1 : 0;
+	    security_trust = !!(options & CL_DB_SIGNED);
 	    break;
 	default:
 	    security_trust = 0;
@@ -1522,21 +1519,39 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
-#define IGN_INFO_TOKENS 2
+#define INFO_NSTR "11088894983048545473659556106627194923928941791795047620591658697413581043322715912172496806525381055880964520618400224333320534660299233983755341740679502866829909679955734391392668378361221524205396631090105151641270857277080310734320951653700508941717419168723942507890702904702707587451621691050754307850383399865346487203798464178537392211402786481359824461197231102895415093770394216666324484593935762408468516826633192140826667923494822045805347809932848454845886971706424360558667862775876072059437703365380209101697738577515476935085469455279994113145977994084618328482151013142393373316337519977244732747977"
+#define INFO_ESTR "100002049"
+#define INFO_TOKENS 3
 static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
-	const char *tokens[IGN_INFO_TOKENS + 1];
+	const char *tokens[INFO_TOKENS + 1];
 	char buffer[FILEBUFF];
-	unsigned int line = 0, tokens_count;
+	unsigned int line = 0, tokens_count, len;
+	unsigned char hash[32];
         struct cli_dbinfo *last = NULL, *new;
-	int ret = CL_SUCCESS;
+	int ret = CL_SUCCESS, dsig = 0;
+	SHA256_CTX ctx;
 
+    sha256_init(&ctx);
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
-	if(!strncmp(buffer, "DSIG:", 5))
-	    continue; /* TODO */
+	if(!strncmp(buffer, "DSIG:", 5)) {
+	    dsig = 1;
+	    sha256_final(&ctx, hash);
+	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
+		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
+		ret = CL_EMALFDB;
+	    }
+	    break;
+	}
+	len = strlen(buffer);
+	if(dbio->usebuf && buffer[len - 1] != '\n' && len + 1 < FILEBUFF) {
+	    /* cli_dbgets in buffered mode strips \n */
+	    buffer[len] = '\n';
+	    buffer[len + 1] = 0;
+	}
+	sha256_update(&ctx, buffer, strlen(buffer));
 	cli_chomp(buffer);
-
 	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
 	    if(engine->dbinfo) { /* shouldn't be initialized at this point */
 		cli_errmsg("cli_loadinfo: engine->dbinfo already initialized\n");
@@ -1562,8 +1577,8 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	    ret = CL_EMALFDB;
 	    break;
 	}
-	tokens_count = cli_strtokenize(buffer, ':', IGN_INFO_TOKENS + 1, tokens);
-	if(tokens_count > IGN_INFO_TOKENS) {
+	tokens_count = cli_strtokenize(buffer, ':', INFO_TOKENS + 1, tokens);
+	if(tokens_count != INFO_TOKENS) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1579,18 +1594,29 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	    break;
 	}
 
-	/* TODO: hash will be replaced with sha256 */
-	if(strlen(tokens[1]) != 32 || !(new->hash = cli_mpool_hex2str(engine->mempool, tokens[1]))) {
-	    cli_errmsg("cli_loadinfo: Malformed MD5 string at line %u\n", line);
+	if(!cli_isnumber(tokens[1])) {
+	    cli_errmsg("cli_loadinfo: Invalid value in the size field\n");
 	    mpool_free(engine->mempool, new->name);
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
+	new->size = atoi(tokens[1]);
 
-	new->size = 0; /* TODO */
+	if(strlen(tokens[2]) != 64 || !(new->hash = cli_mpool_hex2str(engine->mempool, tokens[2]))) {
+	    cli_errmsg("cli_loadinfo: Malformed SHA256 string at line %u\n", line);
+	    mpool_free(engine->mempool, new->name);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
 	last->next = new;
 	last = new;
+    }
+
+    if(!dsig) {
+	cli_errmsg("cli_loadinfo: Digital signature not found\n");
+	return CL_EMALFDB;
     }
 
     if(ret) {
