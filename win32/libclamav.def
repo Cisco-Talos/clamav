@@ -55,6 +55,7 @@ EXPORTS cli_bytecode_init
 EXPORTS cli_bytecode_debug
 EXPORTS cli_bytecode_debug_printsrc
 EXPORTS cli_bytecode_printversion
+EXPORTS cli_bytecode_describe
 
 ; shared stuff - to be either double compiled into the tools or treated like cli_xxx
 EXPORTS opendir
