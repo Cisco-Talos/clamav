@@ -879,14 +879,15 @@ if test "$DOTTY" != "echo dotty" ; then
 fi
 
 dnl Look for a sufficiently recent version of Perl.
-LLVM_PROG_PERL([5.006])
-AC_SUBST(PERL)
-if test x"$PERL" = xnone; then
+dnl CLAMAV local: don't need Perl, we use automake buildsystem not llvm-config
+dnl LLVM_PROG_PERL([5.006])
+dnl AC_SUBST(PERL)
+dnl if test x"$PERL" = xnone; then
    AC_SUBST(HAVE_PERL,0)
-   AC_MSG_ERROR([perl is required but was not found, please install it])
-else
-   AC_SUBST(HAVE_PERL,1)
-fi
+dnl   AC_MSG_ERROR([perl is required but was not found, please install it])
+dnl else
+dnl   AC_SUBST(HAVE_PERL,1)
+dnl fi
 
 dnl Find the install program
 AC_PROG_INSTALL
