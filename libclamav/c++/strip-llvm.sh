@@ -22,7 +22,8 @@ for i in llvm/bindings/ llvm/examples/ llvm/projects/ llvm/runtime/\
     llvm/tools/llvm-bcanalyzer llvm/tools/llvm-db\
     llvm/tools/llvm-extract llvm/tools/llvm-ld llvm/tools/llvm-link llvm/tools/llvm-mc\
     llvm/tools/llvm-nm llvm/tools/llvm-prof llvm/tools/llvm-ranlib\
-    llvm/tools/llvm-stub llvm/tools/lto llvm/tools/opt
+    llvm/tools/llvm-stub llvm/tools/lto llvm/tools/opt llvm/lib/MC/MCParser\
+    llvm/tools/llvm-dis/Makefile
     do
 	git rm -rf $i;
 done

@@ -236,17 +236,18 @@ am_libllvmcodegen_la_OBJECTS = AliasSetTracker.lo ConstantFolding.lo \
 	ExactHazardRecognizer.lo GCMetadata.lo GCStrategy.lo \
 	LLVMTargetMachine.lo LatencyPriorityQueue.lo LiveInterval.lo \
 	LiveIntervalAnalysis.lo LiveStackAnalysis.lo LiveVariables.lo \
-	LowerSubregs.lo MachineDominators.lo MachineLICM.lo \
-	MachineLoopInfo.lo MachinePassRegistry.lo MachineSSAUpdater.lo \
-	MachineSink.lo MachineVerifier.lo MaxStackAlignment.lo \
-	PHIElimination.lo Passes.lo PostRASchedulerList.lo \
-	PreAllocSplitting.lo ProcessImplicitDefs.lo \
-	PrologEpilogInserter.lo RegAllocLinearScan.lo RegAllocLocal.lo \
-	RegisterCoalescer.lo RegisterScavenging.lo ScheduleDAG.lo \
-	ScheduleDAGEmit.lo ScheduleDAGInstrs.lo ScheduleDAGPrinter.lo \
-	CallingConvLower.lo DAGCombiner.lo FastISel.lo \
-	FunctionLoweringInfo.lo InstrEmitter.lo LegalizeDAG.lo \
-	LegalizeFloatTypes.lo LegalizeIntegerTypes.lo LegalizeTypes.lo \
+	LowerSubregs.lo MachOWriter.lo MachineDominators.lo \
+	MachineLICM.lo MachineLoopInfo.lo MachinePassRegistry.lo \
+	MachineSSAUpdater.lo MachineSink.lo MachineVerifier.lo \
+	OptimizeExts.lo PHIElimination.lo Passes.lo \
+	PostRASchedulerList.lo PreAllocSplitting.lo \
+	ProcessImplicitDefs.lo PrologEpilogInserter.lo \
+	RegAllocLinearScan.lo RegisterCoalescer.lo \
+	RegisterScavenging.lo ScheduleDAG.lo ScheduleDAGEmit.lo \
+	ScheduleDAGInstrs.lo ScheduleDAGPrinter.lo CallingConvLower.lo \
+	DAGCombiner.lo FastISel.lo FunctionLoweringInfo.lo \
+	InstrEmitter.lo LegalizeDAG.lo LegalizeFloatTypes.lo \
+	LegalizeIntegerTypes.lo LegalizeTypes.lo \
 	LegalizeTypesGeneric.lo LegalizeVectorOps.lo \
 	LegalizeVectorTypes.lo ScheduleDAGFast.lo ScheduleDAGList.lo \
 	ScheduleDAGRRList.lo ScheduleDAGSDNodes.lo SelectionDAG.lo \
@@ -257,22 +258,23 @@ am_libllvmcodegen_la_OBJECTS = AliasSetTracker.lo ConstantFolding.lo \
 	StrongPHIElimination.lo TailDuplication.lo \
 	TwoAddressInstructionPass.lo UnreachableBlockElim.lo \
 	VirtRegMap.lo VirtRegRewriter.lo MCAsmInfoDarwin.lo \
-	MCAsmStreamer.lo MCInst.lo MCStreamer.lo TargetFrameInfo.lo \
-	TargetSubtarget.lo CodeGenPrepare.lo GEPSplitter.lo GVN.lo \
-	LoopStrengthReduce.lo AddrModeMatcher.lo BasicBlockUtils.lo \
-	BreakCriticalEdges.lo DemoteRegToStack.lo LCSSA.lo Local.lo \
-	LoopSimplify.lo LowerInvoke.lo LowerSwitch.lo Mem2Reg.lo \
+	MCAsmStreamer.lo MCAssembler.lo MCInst.lo MCMachOStreamer.lo \
+	MCStreamer.lo TargetFrameInfo.lo TargetSubtarget.lo \
+	CodeGenPrepare.lo GEPSplitter.lo GVN.lo LoopStrengthReduce.lo \
+	AddrModeMatcher.lo BasicBlockUtils.lo BreakCriticalEdges.lo \
+	DemoteRegToStack.lo LCSSA.lo Local.lo LoopSimplify.lo \
+	LowerInvoke.lo LowerSwitch.lo Mem2Reg.lo \
 	PromoteMemoryToRegister.lo SSAUpdater.lo SimplifyCFG.lo \
 	UnifyFunctionExitNodes.lo
 libllvmcodegen_la_OBJECTS = $(am_libllvmcodegen_la_OBJECTS)
 libllvmfullcodegen_la_LIBADD =
 am_libllvmfullcodegen_la_OBJECTS = DeadMachineInstructionElim.lo \
 	GCMetadataPrinter.lo IfConversion.lo IntrinsicLowering.lo \
-	MachOCodeEmitter.lo MachOWriter.lo MachineModuleInfoImpls.lo \
-	OcamlGC.lo RegAllocLocal.lo RegAllocPBQP.lo ShadowStackGC.lo \
-	Execution.lo ExternalFunctions.lo Interpreter.lo Target.lo \
-	TargetELFWriterInfo.lo TargetIntrinsicInfo.lo \
-	TargetMachOWriterInfo.lo
+	MachineModuleInfoImpls.lo OcamlGC.lo RegAllocLocal.lo \
+	RegAllocPBQP.lo ShadowStackGC.lo Execution.lo \
+	ExternalFunctions.lo Interpreter.lo Target.lo \
+	TargetAsmLexer.lo TargetELFWriterInfo.lo \
+	TargetIntrinsicInfo.lo TargetMachOWriterInfo.lo
 libllvmfullcodegen_la_OBJECTS = $(am_libllvmfullcodegen_la_OBJECTS)
 libllvminterpreter_la_LIBADD =
 am_libllvminterpreter_la_OBJECTS = Execution.lo ExternalFunctions.lo \
@@ -298,16 +300,17 @@ am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
 	SmallPtrSet.lo SmallVector.lo SourceMgr.lo Statistic.lo \
 	StringExtras.lo StringMap.lo StringPool.lo StringRef.lo \
 	TargetRegistry.lo Timer.lo Triple.lo Twine.lo \
-	circular_raw_ostream.lo raw_ostream.lo SubtargetFeature.lo \
-	TargetData.lo TargetInstrInfo.lo TargetLoweringObjectFile.lo \
-	TargetMachine.lo TargetRegisterInfo.lo AsmWriter.lo \
-	Attributes.lo AutoUpgrade.lo BasicBlock.lo ConstantFold.lo \
-	Constants.lo Core.lo Dominators.lo Function.lo Globals.lo \
+	circular_raw_ostream.lo raw_ostream.lo Mangler.lo \
+	SubtargetFeature.lo TargetData.lo TargetInstrInfo.lo \
+	TargetLoweringObjectFile.lo TargetMachine.lo \
+	TargetRegisterInfo.lo AsmWriter.lo Attributes.lo \
+	AutoUpgrade.lo BasicBlock.lo ConstantFold.lo Constants.lo \
+	Core.lo Dominators.lo Function.lo Globals.lo IRBuilder.lo \
 	InlineAsm.lo Instruction.lo Instructions.lo IntrinsicInst.lo \
-	LLVMContext.lo LeakDetector.lo Mangler.lo Metadata.lo \
-	Module.lo ModuleProvider.lo Pass.lo PassManager.lo \
-	PrintModulePass.lo Type.lo TypeSymbolTable.lo Use.lo Value.lo \
-	ValueSymbolTable.lo ValueTypes.lo Verifier.lo
+	LLVMContext.lo LeakDetector.lo Metadata.lo Module.lo \
+	ModuleProvider.lo Pass.lo PassManager.lo PrintModulePass.lo \
+	Type.lo TypeSymbolTable.lo Use.lo Value.lo ValueSymbolTable.lo \
+	ValueTypes.lo Verifier.lo
 libllvmjit_la_OBJECTS = $(am_libllvmjit_la_OBJECTS)
 libllvmpowerpccodegen_la_LIBADD =
 am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
@@ -534,7 +537,47 @@ am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
 	llvm/utils/TableGen/TableGen.cpp \
 	llvm/utils/TableGen/TableGenBackend.cpp \
 	llvm/utils/TableGen/X86DisassemblerTables.cpp \
-	llvm/utils/TableGen/X86RecognizableInstr.cpp
+	llvm/utils/TableGen/X86RecognizableInstr.cpp \
+	llvm/lib/System/Alarm.cpp llvm/lib/System/Atomic.cpp \
+	llvm/lib/System/Disassembler.cpp \
+	llvm/lib/System/DynamicLibrary.cpp llvm/lib/System/Errno.cpp \
+	llvm/lib/System/Host.cpp llvm/lib/System/IncludeFile.cpp \
+	llvm/lib/System/Memory.cpp llvm/lib/System/Mutex.cpp \
+	llvm/lib/System/Path.cpp llvm/lib/System/Process.cpp \
+	llvm/lib/System/Program.cpp llvm/lib/System/RWMutex.cpp \
+	llvm/lib/System/Signals.cpp llvm/lib/System/ThreadLocal.cpp \
+	llvm/lib/System/Threading.cpp llvm/lib/System/TimeValue.cpp \
+	llvm/lib/Support/APFloat.cpp llvm/lib/Support/APInt.cpp \
+	llvm/lib/Support/APSInt.cpp llvm/lib/Support/Allocator.cpp \
+	llvm/lib/Support/CommandLine.cpp \
+	llvm/lib/Support/ConstantRange.cpp llvm/lib/Support/Debug.cpp \
+	llvm/lib/Support/DeltaAlgorithm.cpp llvm/lib/Support/Dwarf.cpp \
+	llvm/lib/Support/ErrorHandling.cpp \
+	llvm/lib/Support/FileUtilities.cpp \
+	llvm/lib/Support/FoldingSet.cpp \
+	llvm/lib/Support/FormattedStream.cpp \
+	llvm/lib/Support/GraphWriter.cpp llvm/lib/Support/IsInf.cpp \
+	llvm/lib/Support/IsNAN.cpp llvm/lib/Support/ManagedStatic.cpp \
+	llvm/lib/Support/MemoryBuffer.cpp \
+	llvm/lib/Support/MemoryObject.cpp \
+	llvm/lib/Support/PluginLoader.cpp \
+	llvm/lib/Support/PrettyStackTrace.cpp \
+	llvm/lib/Support/Regex.cpp \
+	llvm/lib/Support/SlowOperationInformer.cpp \
+	llvm/lib/Support/SmallPtrSet.cpp \
+	llvm/lib/Support/SmallVector.cpp \
+	llvm/lib/Support/SourceMgr.cpp llvm/lib/Support/Statistic.cpp \
+	llvm/lib/Support/StringExtras.cpp \
+	llvm/lib/Support/StringMap.cpp llvm/lib/Support/StringPool.cpp \
+	llvm/lib/Support/StringRef.cpp \
+	llvm/lib/Support/SystemUtils.cpp \
+	llvm/lib/Support/TargetRegistry.cpp llvm/lib/Support/Timer.cpp \
+	llvm/lib/Support/Triple.cpp llvm/lib/Support/Twine.cpp \
+	llvm/lib/Support/circular_raw_ostream.cpp \
+	llvm/lib/Support/raw_os_ostream.cpp \
+	llvm/lib/Support/raw_ostream.cpp llvm/lib/Support/regcomp.c \
+	llvm/lib/Support/regerror.c llvm/lib/Support/regexec.c \
+	llvm/lib/Support/regfree.c llvm/lib/Support/regstrlcpy.c
 @MAINTAINER_MODE_TRUE@am_tblgen_OBJECTS =  \
 @MAINTAINER_MODE_TRUE@	tblgen-AsmMatcherEmitter.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-AsmWriterEmitter.$(OBJEXT) \
@@ -561,10 +604,70 @@ am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
 @MAINTAINER_MODE_TRUE@	tblgen-TableGen.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT) \
 @MAINTAINER_MODE_TRUE@	tblgen-X86DisassemblerTables.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-X86RecognizableInstr.$(OBJEXT)
+@MAINTAINER_MODE_TRUE@	tblgen-X86RecognizableInstr.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Alarm.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Atomic.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Disassembler.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-DynamicLibrary.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Errno.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Host.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-IncludeFile.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Memory.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Mutex.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Path.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Process.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Program.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-RWMutex.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Signals.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-ThreadLocal.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Threading.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TimeValue.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-APFloat.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-APInt.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-APSInt.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Allocator.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-CommandLine.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-ConstantRange.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Debug.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-DeltaAlgorithm.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Dwarf.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-ErrorHandling.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-FileUtilities.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-FoldingSet.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-FormattedStream.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-GraphWriter.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-IsInf.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-IsNAN.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-ManagedStatic.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-MemoryBuffer.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-MemoryObject.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-PluginLoader.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-PrettyStackTrace.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Regex.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SlowOperationInformer.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SmallPtrSet.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SmallVector.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SourceMgr.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Statistic.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-StringExtras.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-StringMap.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-StringPool.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-StringRef.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-SystemUtils.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-TargetRegistry.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Timer.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Triple.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-Twine.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-circular_raw_ostream.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-raw_os_ostream.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-raw_ostream.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-regcomp.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-regerror.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-regexec.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-regfree.$(OBJEXT) \
+@MAINTAINER_MODE_TRUE@	tblgen-regstrlcpy.$(OBJEXT)
 tblgen_OBJECTS = $(am_tblgen_OBJECTS)
-@MAINTAINER_MODE_TRUE@tblgen_DEPENDENCIES = libllvmsupport.la \
-@MAINTAINER_MODE_TRUE@	libllvmsystem.la
+tblgen_LDADD = $(LDADD)
 tblgen_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(tblgen_CXXFLAGS) \
 	$(CXXFLAGS) $(tblgen_LDFLAGS) $(LDFLAGS) -o $@
@@ -802,7 +905,7 @@ LLVM_INCLUDES = -I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../ $(LLVM_INCLUDES) $(LLVM_DEFS)
-AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -fno-rtti
 ACLOCAL_AMFLAGS = -I m4
 @DEBUG_BUILD_FALSE@LLVM_CONFIG = llvm/Release/bin/llvm-config
 @DEBUG_BUILD_TRUE@LLVM_CONFIG = llvm/Debug/bin/llvm-config
@@ -829,7 +932,7 @@ libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
 	libllvmsystem.la $(am__append_2) $(am__append_6) \
 	$(am__append_10)
 libclamavcxx_la_LDFLAGS = -no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-rtti
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
@@ -902,9 +1005,12 @@ libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/regstrlcpy.c
 
 @MAINTAINER_MODE_TRUE@tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
-@MAINTAINER_MODE_TRUE@tblgen_LDADD = libllvmsupport.la libllvmsystem.la
+@MAINTAINER_MODE_TRUE@tblgen_CFLAGS = 
 #TODO: if VERSIONSCRIPT
-@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = -pthread -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+# tblgen needs rtti (for now), and we build everything else with -fno-rtti
+# since tblgen is only a maintainer-mode tool, build these files twice (once for
+# libllvmsupport.la -fno-rtti, and once here, with defaults (rtti)).
 @MAINTAINER_MODE_TRUE@tblgen_SOURCES = \
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmMatcherEmitter.cpp\
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterEmitter.cpp\
@@ -931,7 +1037,68 @@ libllvmsupport_la_SOURCES = \
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGen.cpp\
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp\
 @MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86DisassemblerTables.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86RecognizableInstr.cpp
+@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86RecognizableInstr.cpp \
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Alarm.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Atomic.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Disassembler.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/DynamicLibrary.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Errno.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Host.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/IncludeFile.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Memory.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Mutex.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Path.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Process.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Program.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/RWMutex.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Signals.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/ThreadLocal.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/Threading.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/System/TimeValue.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APFloat.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APInt.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APSInt.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Allocator.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/CommandLine.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ConstantRange.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Debug.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/DeltaAlgorithm.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Dwarf.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ErrorHandling.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FileUtilities.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FoldingSet.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FormattedStream.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/GraphWriter.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsInf.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsNAN.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ManagedStatic.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryBuffer.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryObject.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PluginLoader.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PrettyStackTrace.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Regex.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SlowOperationInformer.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallPtrSet.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallVector.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SourceMgr.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Statistic.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringExtras.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringMap.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringPool.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringRef.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SystemUtils.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/TargetRegistry.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Timer.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Triple.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Twine.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/circular_raw_ostream.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_os_ostream.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_ostream.cpp\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regcomp.c\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regerror.c\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regexec.c\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regfree.c\
+@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regstrlcpy.c
 
 @MAINTAINER_MODE_TRUE@TBLGEN = $(top_builddir)/tblgen
 @MAINTAINER_MODE_TRUE@TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
@@ -1080,6 +1247,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Support/Twine.cpp\
 	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
+	llvm/lib/Target/Mangler.cpp\
 	llvm/lib/Target/SubtargetFeature.cpp\
 	llvm/lib/Target/TargetData.cpp\
 	llvm/lib/Target/TargetInstrInfo.cpp\
@@ -1096,13 +1264,13 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/VMCore/Dominators.cpp\
 	llvm/lib/VMCore/Function.cpp\
 	llvm/lib/VMCore/Globals.cpp\
+	llvm/lib/VMCore/IRBuilder.cpp\
 	llvm/lib/VMCore/InlineAsm.cpp\
 	llvm/lib/VMCore/Instruction.cpp\
 	llvm/lib/VMCore/Instructions.cpp\
 	llvm/lib/VMCore/IntrinsicInst.cpp\
 	llvm/lib/VMCore/LLVMContext.cpp\
 	llvm/lib/VMCore/LeakDetector.cpp\
-	llvm/lib/VMCore/Mangler.cpp\
 	llvm/lib/VMCore/Metadata.cpp\
 	llvm/lib/VMCore/Module.cpp\
 	llvm/lib/VMCore/ModuleProvider.cpp\
@@ -1152,6 +1320,7 @@ libllvmcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
 	llvm/lib/CodeGen/LiveVariables.cpp\
 	llvm/lib/CodeGen/LowerSubregs.cpp\
+	llvm/lib/CodeGen/MachOWriter.cpp\
 	llvm/lib/CodeGen/MachineDominators.cpp\
 	llvm/lib/CodeGen/MachineLICM.cpp\
 	llvm/lib/CodeGen/MachineLoopInfo.cpp\
@@ -1159,7 +1328,7 @@ libllvmcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/MachineSSAUpdater.cpp\
 	llvm/lib/CodeGen/MachineSink.cpp\
 	llvm/lib/CodeGen/MachineVerifier.cpp\
-	llvm/lib/CodeGen/MaxStackAlignment.cpp\
+	llvm/lib/CodeGen/OptimizeExts.cpp\
 	llvm/lib/CodeGen/PHIElimination.cpp\
 	llvm/lib/CodeGen/Passes.cpp\
 	llvm/lib/CodeGen/PostRASchedulerList.cpp\
@@ -1167,7 +1336,6 @@ libllvmcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
 	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
 	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
-	llvm/lib/CodeGen/RegAllocLocal.cpp\
 	llvm/lib/CodeGen/RegisterCoalescer.cpp\
 	llvm/lib/CodeGen/RegisterScavenging.cpp\
 	llvm/lib/CodeGen/ScheduleDAG.cpp\
@@ -1210,7 +1378,9 @@ libllvmcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/VirtRegRewriter.cpp\
 	llvm/lib/MC/MCAsmInfoDarwin.cpp\
 	llvm/lib/MC/MCAsmStreamer.cpp\
+	llvm/lib/MC/MCAssembler.cpp\
 	llvm/lib/MC/MCInst.cpp\
+	llvm/lib/MC/MCMachOStreamer.cpp\
 	llvm/lib/MC/MCStreamer.cpp\
 	llvm/lib/Target/TargetFrameInfo.cpp\
 	llvm/lib/Target/TargetSubtarget.cpp\
@@ -1362,8 +1532,6 @@ libllvmfullcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
 	llvm/lib/CodeGen/IfConversion.cpp\
 	llvm/lib/CodeGen/IntrinsicLowering.cpp\
-	llvm/lib/CodeGen/MachOCodeEmitter.cpp\
-	llvm/lib/CodeGen/MachOWriter.cpp\
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
 	llvm/lib/CodeGen/OcamlGC.cpp\
 	llvm/lib/CodeGen/RegAllocLocal.cpp\
@@ -1373,6 +1541,7 @@ libllvmfullcodegen_la_SOURCES = \
 	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
 	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp\
 	llvm/lib/Target/Target.cpp\
+	llvm/lib/Target/TargetAsmLexer.cpp\
 	llvm/lib/Target/TargetELFWriterInfo.cpp\
 	llvm/lib/Target/TargetIntrinsicInfo.cpp\
 	llvm/lib/Target/TargetMachOWriterInfo.cpp
@@ -1646,6 +1815,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Globals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GraphWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Host.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/IRBuilder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/IVUsers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/IfConversion.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/IncludeFile.Plo@am__quote@
@@ -1694,15 +1864,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCAsmInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCAsmInfoDarwin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCAsmStreamer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCAssembler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCContext.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCInst.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCMachOStreamer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCSection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCSectionELF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCSectionMachO.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCStreamer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MCSymbol.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MachOCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MachOWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MachineBasicBlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MachineDominators.Plo@am__quote@
@@ -1721,7 +1892,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MachineVerifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ManagedStatic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Mangler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MaxStackAlignment.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Mem2Reg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Memory.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MemoryBuffer.Plo@am__quote@
@@ -1735,6 +1905,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OProfileJITEventListener.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ObjectCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OcamlGC.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OptimizeExts.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PHIElimination.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PHITransAddr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
@@ -1803,6 +1974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SystemUtils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TailDuplication.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Target.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TargetAsmLexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TargetData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TargetELFWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TargetFrameInfo.Plo@am__quote@
@@ -1966,32 +2138,93 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regexec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regfree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regstrlcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-APFloat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-APInt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-APSInt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Alarm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Allocator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-AsmMatcherEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-AsmWriterEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Atomic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CallingConvEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-ClangDiagnosticsEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeEmitterGen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeGenDAGPatterns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeGenInstruction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CodeGenTarget.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-CommandLine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-ConstantRange.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DAGISelEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Debug.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DeltaAlgorithm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Disassembler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DisassemblerEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Dwarf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-DynamicLibrary.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Errno.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-ErrorHandling.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-FastISelEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-FileUtilities.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-FoldingSet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-FormattedStream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-GraphWriter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Host.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-IncludeFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-InstrEnumEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-InstrInfoEmitter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-IntrinsicEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-IsInf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-IsNAN.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-LLVMCConfigurationEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-ManagedStatic.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Memory.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-MemoryBuffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-MemoryObject.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Mutex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-OptParserEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Path.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-PluginLoader.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-PrettyStackTrace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Process.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Program.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-RWMutex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Record.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Regex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-RegisterInfoEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Signals.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SlowOperationInformer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SmallPtrSet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SmallVector.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SourceMgr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Statistic.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-StringExtras.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-StringMap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-StringPool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-StringRef.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SubtargetEmitter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-SystemUtils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TGLexer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TGParser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TGValueTypes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TableGen.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TableGenBackend.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TargetRegistry.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-ThreadLocal.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Threading.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-TimeValue.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Timer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Triple.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-Twine.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-X86DisassemblerTables.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-X86RecognizableInstr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-circular_raw_ostream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-raw_os_ostream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-raw_ostream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-regcomp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-regerror.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-regexec.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-regfree.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tblgen-regstrlcpy.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -2072,6 +2305,86 @@ count-count.obj: llvm/utils/count/count.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/utils/count/count.c' object='count-count.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(count_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o count-count.obj `if test -f 'llvm/utils/count/count.c'; then $(CYGPATH_W) 'llvm/utils/count/count.c'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/count/count.c'; fi`
+
+tblgen-regcomp.o: llvm/lib/Support/regcomp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regcomp.o -MD -MP -MF $(DEPDIR)/tblgen-regcomp.Tpo -c -o tblgen-regcomp.o `test -f 'llvm/lib/Support/regcomp.c' || echo '$(srcdir)/'`llvm/lib/Support/regcomp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regcomp.Tpo $(DEPDIR)/tblgen-regcomp.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regcomp.c' object='tblgen-regcomp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regcomp.o `test -f 'llvm/lib/Support/regcomp.c' || echo '$(srcdir)/'`llvm/lib/Support/regcomp.c
+
+tblgen-regcomp.obj: llvm/lib/Support/regcomp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regcomp.obj -MD -MP -MF $(DEPDIR)/tblgen-regcomp.Tpo -c -o tblgen-regcomp.obj `if test -f 'llvm/lib/Support/regcomp.c'; then $(CYGPATH_W) 'llvm/lib/Support/regcomp.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regcomp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regcomp.Tpo $(DEPDIR)/tblgen-regcomp.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regcomp.c' object='tblgen-regcomp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regcomp.obj `if test -f 'llvm/lib/Support/regcomp.c'; then $(CYGPATH_W) 'llvm/lib/Support/regcomp.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regcomp.c'; fi`
+
+tblgen-regerror.o: llvm/lib/Support/regerror.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regerror.o -MD -MP -MF $(DEPDIR)/tblgen-regerror.Tpo -c -o tblgen-regerror.o `test -f 'llvm/lib/Support/regerror.c' || echo '$(srcdir)/'`llvm/lib/Support/regerror.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regerror.Tpo $(DEPDIR)/tblgen-regerror.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regerror.c' object='tblgen-regerror.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regerror.o `test -f 'llvm/lib/Support/regerror.c' || echo '$(srcdir)/'`llvm/lib/Support/regerror.c
+
+tblgen-regerror.obj: llvm/lib/Support/regerror.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regerror.obj -MD -MP -MF $(DEPDIR)/tblgen-regerror.Tpo -c -o tblgen-regerror.obj `if test -f 'llvm/lib/Support/regerror.c'; then $(CYGPATH_W) 'llvm/lib/Support/regerror.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regerror.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regerror.Tpo $(DEPDIR)/tblgen-regerror.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regerror.c' object='tblgen-regerror.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regerror.obj `if test -f 'llvm/lib/Support/regerror.c'; then $(CYGPATH_W) 'llvm/lib/Support/regerror.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regerror.c'; fi`
+
+tblgen-regexec.o: llvm/lib/Support/regexec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regexec.o -MD -MP -MF $(DEPDIR)/tblgen-regexec.Tpo -c -o tblgen-regexec.o `test -f 'llvm/lib/Support/regexec.c' || echo '$(srcdir)/'`llvm/lib/Support/regexec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regexec.Tpo $(DEPDIR)/tblgen-regexec.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regexec.c' object='tblgen-regexec.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regexec.o `test -f 'llvm/lib/Support/regexec.c' || echo '$(srcdir)/'`llvm/lib/Support/regexec.c
+
+tblgen-regexec.obj: llvm/lib/Support/regexec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regexec.obj -MD -MP -MF $(DEPDIR)/tblgen-regexec.Tpo -c -o tblgen-regexec.obj `if test -f 'llvm/lib/Support/regexec.c'; then $(CYGPATH_W) 'llvm/lib/Support/regexec.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regexec.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regexec.Tpo $(DEPDIR)/tblgen-regexec.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regexec.c' object='tblgen-regexec.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regexec.obj `if test -f 'llvm/lib/Support/regexec.c'; then $(CYGPATH_W) 'llvm/lib/Support/regexec.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regexec.c'; fi`
+
+tblgen-regfree.o: llvm/lib/Support/regfree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regfree.o -MD -MP -MF $(DEPDIR)/tblgen-regfree.Tpo -c -o tblgen-regfree.o `test -f 'llvm/lib/Support/regfree.c' || echo '$(srcdir)/'`llvm/lib/Support/regfree.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regfree.Tpo $(DEPDIR)/tblgen-regfree.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regfree.c' object='tblgen-regfree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regfree.o `test -f 'llvm/lib/Support/regfree.c' || echo '$(srcdir)/'`llvm/lib/Support/regfree.c
+
+tblgen-regfree.obj: llvm/lib/Support/regfree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regfree.obj -MD -MP -MF $(DEPDIR)/tblgen-regfree.Tpo -c -o tblgen-regfree.obj `if test -f 'llvm/lib/Support/regfree.c'; then $(CYGPATH_W) 'llvm/lib/Support/regfree.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regfree.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regfree.Tpo $(DEPDIR)/tblgen-regfree.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regfree.c' object='tblgen-regfree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regfree.obj `if test -f 'llvm/lib/Support/regfree.c'; then $(CYGPATH_W) 'llvm/lib/Support/regfree.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regfree.c'; fi`
+
+tblgen-regstrlcpy.o: llvm/lib/Support/regstrlcpy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regstrlcpy.o -MD -MP -MF $(DEPDIR)/tblgen-regstrlcpy.Tpo -c -o tblgen-regstrlcpy.o `test -f 'llvm/lib/Support/regstrlcpy.c' || echo '$(srcdir)/'`llvm/lib/Support/regstrlcpy.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regstrlcpy.Tpo $(DEPDIR)/tblgen-regstrlcpy.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regstrlcpy.c' object='tblgen-regstrlcpy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regstrlcpy.o `test -f 'llvm/lib/Support/regstrlcpy.c' || echo '$(srcdir)/'`llvm/lib/Support/regstrlcpy.c
+
+tblgen-regstrlcpy.obj: llvm/lib/Support/regstrlcpy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -MT tblgen-regstrlcpy.obj -MD -MP -MF $(DEPDIR)/tblgen-regstrlcpy.Tpo -c -o tblgen-regstrlcpy.obj `if test -f 'llvm/lib/Support/regstrlcpy.c'; then $(CYGPATH_W) 'llvm/lib/Support/regstrlcpy.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regstrlcpy.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-regstrlcpy.Tpo $(DEPDIR)/tblgen-regstrlcpy.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='llvm/lib/Support/regstrlcpy.c' object='tblgen-regstrlcpy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CFLAGS) $(CFLAGS) -c -o tblgen-regstrlcpy.obj `if test -f 'llvm/lib/Support/regstrlcpy.c'; then $(CYGPATH_W) 'llvm/lib/Support/regstrlcpy.c'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/regstrlcpy.c'; fi`
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -2865,6 +3178,14 @@ LowerSubregs.lo: llvm/lib/CodeGen/LowerSubregs.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o LowerSubregs.lo `test -f 'llvm/lib/CodeGen/LowerSubregs.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/LowerSubregs.cpp
 
+MachOWriter.lo: llvm/lib/CodeGen/MachOWriter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MachOWriter.lo -MD -MP -MF $(DEPDIR)/MachOWriter.Tpo -c -o MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MachOWriter.Tpo $(DEPDIR)/MachOWriter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MachOWriter.cpp' object='MachOWriter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
+
 MachineDominators.lo: llvm/lib/CodeGen/MachineDominators.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MachineDominators.lo -MD -MP -MF $(DEPDIR)/MachineDominators.Tpo -c -o MachineDominators.lo `test -f 'llvm/lib/CodeGen/MachineDominators.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachineDominators.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MachineDominators.Tpo $(DEPDIR)/MachineDominators.Plo
@@ -2921,13 +3242,13 @@ MachineVerifier.lo: llvm/lib/CodeGen/MachineVerifier.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MachineVerifier.lo `test -f 'llvm/lib/CodeGen/MachineVerifier.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachineVerifier.cpp
 
-MaxStackAlignment.lo: llvm/lib/CodeGen/MaxStackAlignment.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MaxStackAlignment.lo -MD -MP -MF $(DEPDIR)/MaxStackAlignment.Tpo -c -o MaxStackAlignment.lo `test -f 'llvm/lib/CodeGen/MaxStackAlignment.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MaxStackAlignment.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MaxStackAlignment.Tpo $(DEPDIR)/MaxStackAlignment.Plo
+OptimizeExts.lo: llvm/lib/CodeGen/OptimizeExts.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT OptimizeExts.lo -MD -MP -MF $(DEPDIR)/OptimizeExts.Tpo -c -o OptimizeExts.lo `test -f 'llvm/lib/CodeGen/OptimizeExts.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/OptimizeExts.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/OptimizeExts.Tpo $(DEPDIR)/OptimizeExts.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MaxStackAlignment.cpp' object='MaxStackAlignment.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/OptimizeExts.cpp' object='OptimizeExts.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MaxStackAlignment.lo `test -f 'llvm/lib/CodeGen/MaxStackAlignment.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MaxStackAlignment.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o OptimizeExts.lo `test -f 'llvm/lib/CodeGen/OptimizeExts.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/OptimizeExts.cpp
 
 PHIElimination.lo: llvm/lib/CodeGen/PHIElimination.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT PHIElimination.lo -MD -MP -MF $(DEPDIR)/PHIElimination.Tpo -c -o PHIElimination.lo `test -f 'llvm/lib/CodeGen/PHIElimination.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/PHIElimination.cpp
@@ -2984,14 +3305,6 @@ RegAllocLinearScan.lo: llvm/lib/CodeGen/RegAllocLinearScan.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/RegAllocLinearScan.cpp' object='RegAllocLinearScan.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLinearScan.lo `test -f 'llvm/lib/CodeGen/RegAllocLinearScan.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLinearScan.cpp
-
-RegAllocLocal.lo: llvm/lib/CodeGen/RegAllocLocal.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocLocal.lo -MD -MP -MF $(DEPDIR)/RegAllocLocal.Tpo -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/RegAllocLocal.Tpo $(DEPDIR)/RegAllocLocal.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/RegAllocLocal.cpp' object='RegAllocLocal.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
 
 RegisterCoalescer.lo: llvm/lib/CodeGen/RegisterCoalescer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegisterCoalescer.lo -MD -MP -MF $(DEPDIR)/RegisterCoalescer.Tpo -c -o RegisterCoalescer.lo `test -f 'llvm/lib/CodeGen/RegisterCoalescer.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegisterCoalescer.cpp
@@ -3329,6 +3642,14 @@ MCAsmStreamer.lo: llvm/lib/MC/MCAsmStreamer.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MCAsmStreamer.lo `test -f 'llvm/lib/MC/MCAsmStreamer.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCAsmStreamer.cpp
 
+MCAssembler.lo: llvm/lib/MC/MCAssembler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MCAssembler.lo -MD -MP -MF $(DEPDIR)/MCAssembler.Tpo -c -o MCAssembler.lo `test -f 'llvm/lib/MC/MCAssembler.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCAssembler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MCAssembler.Tpo $(DEPDIR)/MCAssembler.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/MC/MCAssembler.cpp' object='MCAssembler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MCAssembler.lo `test -f 'llvm/lib/MC/MCAssembler.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCAssembler.cpp
+
 MCInst.lo: llvm/lib/MC/MCInst.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MCInst.lo -MD -MP -MF $(DEPDIR)/MCInst.Tpo -c -o MCInst.lo `test -f 'llvm/lib/MC/MCInst.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCInst.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MCInst.Tpo $(DEPDIR)/MCInst.Plo
@@ -3336,6 +3657,14 @@ MCInst.lo: llvm/lib/MC/MCInst.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/MC/MCInst.cpp' object='MCInst.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MCInst.lo `test -f 'llvm/lib/MC/MCInst.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCInst.cpp
+
+MCMachOStreamer.lo: llvm/lib/MC/MCMachOStreamer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MCMachOStreamer.lo -MD -MP -MF $(DEPDIR)/MCMachOStreamer.Tpo -c -o MCMachOStreamer.lo `test -f 'llvm/lib/MC/MCMachOStreamer.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCMachOStreamer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MCMachOStreamer.Tpo $(DEPDIR)/MCMachOStreamer.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/MC/MCMachOStreamer.cpp' object='MCMachOStreamer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MCMachOStreamer.lo `test -f 'llvm/lib/MC/MCMachOStreamer.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCMachOStreamer.cpp
 
 MCStreamer.lo: llvm/lib/MC/MCStreamer.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MCStreamer.lo -MD -MP -MF $(DEPDIR)/MCStreamer.Tpo -c -o MCStreamer.lo `test -f 'llvm/lib/MC/MCStreamer.cpp' || echo '$(srcdir)/'`llvm/lib/MC/MCStreamer.cpp
@@ -3537,22 +3866,6 @@ IntrinsicLowering.lo: llvm/lib/CodeGen/IntrinsicLowering.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o IntrinsicLowering.lo `test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IntrinsicLowering.cpp
 
-MachOCodeEmitter.lo: llvm/lib/CodeGen/MachOCodeEmitter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MachOCodeEmitter.lo -MD -MP -MF $(DEPDIR)/MachOCodeEmitter.Tpo -c -o MachOCodeEmitter.lo `test -f 'llvm/lib/CodeGen/MachOCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOCodeEmitter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MachOCodeEmitter.Tpo $(DEPDIR)/MachOCodeEmitter.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MachOCodeEmitter.cpp' object='MachOCodeEmitter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MachOCodeEmitter.lo `test -f 'llvm/lib/CodeGen/MachOCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOCodeEmitter.cpp
-
-MachOWriter.lo: llvm/lib/CodeGen/MachOWriter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MachOWriter.lo -MD -MP -MF $(DEPDIR)/MachOWriter.Tpo -c -o MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MachOWriter.Tpo $(DEPDIR)/MachOWriter.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MachOWriter.cpp' object='MachOWriter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
-
 MachineModuleInfoImpls.lo: llvm/lib/CodeGen/MachineModuleInfoImpls.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT MachineModuleInfoImpls.lo -MD -MP -MF $(DEPDIR)/MachineModuleInfoImpls.Tpo -c -o MachineModuleInfoImpls.lo `test -f 'llvm/lib/CodeGen/MachineModuleInfoImpls.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachineModuleInfoImpls.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/MachineModuleInfoImpls.Tpo $(DEPDIR)/MachineModuleInfoImpls.Plo
@@ -3568,6 +3881,14 @@ OcamlGC.lo: llvm/lib/CodeGen/OcamlGC.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/OcamlGC.cpp' object='OcamlGC.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o OcamlGC.lo `test -f 'llvm/lib/CodeGen/OcamlGC.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/OcamlGC.cpp
+
+RegAllocLocal.lo: llvm/lib/CodeGen/RegAllocLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocLocal.lo -MD -MP -MF $(DEPDIR)/RegAllocLocal.Tpo -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/RegAllocLocal.Tpo $(DEPDIR)/RegAllocLocal.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/RegAllocLocal.cpp' object='RegAllocLocal.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o RegAllocLocal.lo `test -f 'llvm/lib/CodeGen/RegAllocLocal.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocLocal.cpp
 
 RegAllocPBQP.lo: llvm/lib/CodeGen/RegAllocPBQP.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT RegAllocPBQP.lo -MD -MP -MF $(DEPDIR)/RegAllocPBQP.Tpo -c -o RegAllocPBQP.lo `test -f 'llvm/lib/CodeGen/RegAllocPBQP.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/RegAllocPBQP.cpp
@@ -3616,6 +3937,14 @@ Target.lo: llvm/lib/Target/Target.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/Target.cpp' object='Target.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Target.lo `test -f 'llvm/lib/Target/Target.cpp' || echo '$(srcdir)/'`llvm/lib/Target/Target.cpp
+
+TargetAsmLexer.lo: llvm/lib/Target/TargetAsmLexer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT TargetAsmLexer.lo -MD -MP -MF $(DEPDIR)/TargetAsmLexer.Tpo -c -o TargetAsmLexer.lo `test -f 'llvm/lib/Target/TargetAsmLexer.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetAsmLexer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/TargetAsmLexer.Tpo $(DEPDIR)/TargetAsmLexer.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/TargetAsmLexer.cpp' object='TargetAsmLexer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o TargetAsmLexer.lo `test -f 'llvm/lib/Target/TargetAsmLexer.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetAsmLexer.cpp
 
 TargetELFWriterInfo.lo: llvm/lib/Target/TargetELFWriterInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT TargetELFWriterInfo.lo -MD -MP -MF $(DEPDIR)/TargetELFWriterInfo.Tpo -c -o TargetELFWriterInfo.lo `test -f 'llvm/lib/Target/TargetELFWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetELFWriterInfo.cpp
@@ -4137,6 +4466,14 @@ raw_ostream.lo: llvm/lib/Support/raw_ostream.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o raw_ostream.lo `test -f 'llvm/lib/Support/raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_ostream.cpp
 
+Mangler.lo: llvm/lib/Target/Mangler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Mangler.lo -MD -MP -MF $(DEPDIR)/Mangler.Tpo -c -o Mangler.lo `test -f 'llvm/lib/Target/Mangler.cpp' || echo '$(srcdir)/'`llvm/lib/Target/Mangler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/Mangler.Tpo $(DEPDIR)/Mangler.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/Mangler.cpp' object='Mangler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Mangler.lo `test -f 'llvm/lib/Target/Mangler.cpp' || echo '$(srcdir)/'`llvm/lib/Target/Mangler.cpp
+
 SubtargetFeature.lo: llvm/lib/Target/SubtargetFeature.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SubtargetFeature.lo -MD -MP -MF $(DEPDIR)/SubtargetFeature.Tpo -c -o SubtargetFeature.lo `test -f 'llvm/lib/Target/SubtargetFeature.cpp' || echo '$(srcdir)/'`llvm/lib/Target/SubtargetFeature.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SubtargetFeature.Tpo $(DEPDIR)/SubtargetFeature.Plo
@@ -4265,6 +4602,14 @@ Globals.lo: llvm/lib/VMCore/Globals.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Globals.lo `test -f 'llvm/lib/VMCore/Globals.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/Globals.cpp
 
+IRBuilder.lo: llvm/lib/VMCore/IRBuilder.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT IRBuilder.lo -MD -MP -MF $(DEPDIR)/IRBuilder.Tpo -c -o IRBuilder.lo `test -f 'llvm/lib/VMCore/IRBuilder.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/IRBuilder.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/IRBuilder.Tpo $(DEPDIR)/IRBuilder.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/VMCore/IRBuilder.cpp' object='IRBuilder.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o IRBuilder.lo `test -f 'llvm/lib/VMCore/IRBuilder.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/IRBuilder.cpp
+
 InlineAsm.lo: llvm/lib/VMCore/InlineAsm.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT InlineAsm.lo -MD -MP -MF $(DEPDIR)/InlineAsm.Tpo -c -o InlineAsm.lo `test -f 'llvm/lib/VMCore/InlineAsm.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/InlineAsm.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/InlineAsm.Tpo $(DEPDIR)/InlineAsm.Plo
@@ -4312,14 +4657,6 @@ LeakDetector.lo: llvm/lib/VMCore/LeakDetector.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/VMCore/LeakDetector.cpp' object='LeakDetector.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o LeakDetector.lo `test -f 'llvm/lib/VMCore/LeakDetector.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/LeakDetector.cpp
-
-Mangler.lo: llvm/lib/VMCore/Mangler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Mangler.lo -MD -MP -MF $(DEPDIR)/Mangler.Tpo -c -o Mangler.lo `test -f 'llvm/lib/VMCore/Mangler.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/Mangler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/Mangler.Tpo $(DEPDIR)/Mangler.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/VMCore/Mangler.cpp' object='Mangler.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Mangler.lo `test -f 'llvm/lib/VMCore/Mangler.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/Mangler.cpp
 
 Metadata.lo: llvm/lib/VMCore/Metadata.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Metadata.lo -MD -MP -MF $(DEPDIR)/Metadata.Tpo -c -o Metadata.lo `test -f 'llvm/lib/VMCore/Metadata.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/Metadata.cpp
@@ -5960,6 +6297,902 @@ tblgen-X86RecognizableInstr.obj: llvm/utils/TableGen/X86RecognizableInstr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/TableGen/X86RecognizableInstr.cpp' object='tblgen-X86RecognizableInstr.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-X86RecognizableInstr.obj `if test -f 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; then $(CYGPATH_W) 'llvm/utils/TableGen/X86RecognizableInstr.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/utils/TableGen/X86RecognizableInstr.cpp'; fi`
+
+tblgen-Alarm.o: llvm/lib/System/Alarm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Alarm.o -MD -MP -MF $(DEPDIR)/tblgen-Alarm.Tpo -c -o tblgen-Alarm.o `test -f 'llvm/lib/System/Alarm.cpp' || echo '$(srcdir)/'`llvm/lib/System/Alarm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Alarm.Tpo $(DEPDIR)/tblgen-Alarm.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Alarm.cpp' object='tblgen-Alarm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Alarm.o `test -f 'llvm/lib/System/Alarm.cpp' || echo '$(srcdir)/'`llvm/lib/System/Alarm.cpp
+
+tblgen-Alarm.obj: llvm/lib/System/Alarm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Alarm.obj -MD -MP -MF $(DEPDIR)/tblgen-Alarm.Tpo -c -o tblgen-Alarm.obj `if test -f 'llvm/lib/System/Alarm.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Alarm.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Alarm.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Alarm.Tpo $(DEPDIR)/tblgen-Alarm.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Alarm.cpp' object='tblgen-Alarm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Alarm.obj `if test -f 'llvm/lib/System/Alarm.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Alarm.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Alarm.cpp'; fi`
+
+tblgen-Atomic.o: llvm/lib/System/Atomic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Atomic.o -MD -MP -MF $(DEPDIR)/tblgen-Atomic.Tpo -c -o tblgen-Atomic.o `test -f 'llvm/lib/System/Atomic.cpp' || echo '$(srcdir)/'`llvm/lib/System/Atomic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Atomic.Tpo $(DEPDIR)/tblgen-Atomic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Atomic.cpp' object='tblgen-Atomic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Atomic.o `test -f 'llvm/lib/System/Atomic.cpp' || echo '$(srcdir)/'`llvm/lib/System/Atomic.cpp
+
+tblgen-Atomic.obj: llvm/lib/System/Atomic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Atomic.obj -MD -MP -MF $(DEPDIR)/tblgen-Atomic.Tpo -c -o tblgen-Atomic.obj `if test -f 'llvm/lib/System/Atomic.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Atomic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Atomic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Atomic.Tpo $(DEPDIR)/tblgen-Atomic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Atomic.cpp' object='tblgen-Atomic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Atomic.obj `if test -f 'llvm/lib/System/Atomic.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Atomic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Atomic.cpp'; fi`
+
+tblgen-Disassembler.o: llvm/lib/System/Disassembler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Disassembler.o -MD -MP -MF $(DEPDIR)/tblgen-Disassembler.Tpo -c -o tblgen-Disassembler.o `test -f 'llvm/lib/System/Disassembler.cpp' || echo '$(srcdir)/'`llvm/lib/System/Disassembler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Disassembler.Tpo $(DEPDIR)/tblgen-Disassembler.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Disassembler.cpp' object='tblgen-Disassembler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Disassembler.o `test -f 'llvm/lib/System/Disassembler.cpp' || echo '$(srcdir)/'`llvm/lib/System/Disassembler.cpp
+
+tblgen-Disassembler.obj: llvm/lib/System/Disassembler.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Disassembler.obj -MD -MP -MF $(DEPDIR)/tblgen-Disassembler.Tpo -c -o tblgen-Disassembler.obj `if test -f 'llvm/lib/System/Disassembler.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Disassembler.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Disassembler.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Disassembler.Tpo $(DEPDIR)/tblgen-Disassembler.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Disassembler.cpp' object='tblgen-Disassembler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Disassembler.obj `if test -f 'llvm/lib/System/Disassembler.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Disassembler.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Disassembler.cpp'; fi`
+
+tblgen-DynamicLibrary.o: llvm/lib/System/DynamicLibrary.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DynamicLibrary.o -MD -MP -MF $(DEPDIR)/tblgen-DynamicLibrary.Tpo -c -o tblgen-DynamicLibrary.o `test -f 'llvm/lib/System/DynamicLibrary.cpp' || echo '$(srcdir)/'`llvm/lib/System/DynamicLibrary.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DynamicLibrary.Tpo $(DEPDIR)/tblgen-DynamicLibrary.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/DynamicLibrary.cpp' object='tblgen-DynamicLibrary.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DynamicLibrary.o `test -f 'llvm/lib/System/DynamicLibrary.cpp' || echo '$(srcdir)/'`llvm/lib/System/DynamicLibrary.cpp
+
+tblgen-DynamicLibrary.obj: llvm/lib/System/DynamicLibrary.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DynamicLibrary.obj -MD -MP -MF $(DEPDIR)/tblgen-DynamicLibrary.Tpo -c -o tblgen-DynamicLibrary.obj `if test -f 'llvm/lib/System/DynamicLibrary.cpp'; then $(CYGPATH_W) 'llvm/lib/System/DynamicLibrary.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/DynamicLibrary.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DynamicLibrary.Tpo $(DEPDIR)/tblgen-DynamicLibrary.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/DynamicLibrary.cpp' object='tblgen-DynamicLibrary.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DynamicLibrary.obj `if test -f 'llvm/lib/System/DynamicLibrary.cpp'; then $(CYGPATH_W) 'llvm/lib/System/DynamicLibrary.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/DynamicLibrary.cpp'; fi`
+
+tblgen-Errno.o: llvm/lib/System/Errno.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Errno.o -MD -MP -MF $(DEPDIR)/tblgen-Errno.Tpo -c -o tblgen-Errno.o `test -f 'llvm/lib/System/Errno.cpp' || echo '$(srcdir)/'`llvm/lib/System/Errno.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Errno.Tpo $(DEPDIR)/tblgen-Errno.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Errno.cpp' object='tblgen-Errno.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Errno.o `test -f 'llvm/lib/System/Errno.cpp' || echo '$(srcdir)/'`llvm/lib/System/Errno.cpp
+
+tblgen-Errno.obj: llvm/lib/System/Errno.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Errno.obj -MD -MP -MF $(DEPDIR)/tblgen-Errno.Tpo -c -o tblgen-Errno.obj `if test -f 'llvm/lib/System/Errno.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Errno.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Errno.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Errno.Tpo $(DEPDIR)/tblgen-Errno.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Errno.cpp' object='tblgen-Errno.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Errno.obj `if test -f 'llvm/lib/System/Errno.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Errno.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Errno.cpp'; fi`
+
+tblgen-Host.o: llvm/lib/System/Host.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Host.o -MD -MP -MF $(DEPDIR)/tblgen-Host.Tpo -c -o tblgen-Host.o `test -f 'llvm/lib/System/Host.cpp' || echo '$(srcdir)/'`llvm/lib/System/Host.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Host.Tpo $(DEPDIR)/tblgen-Host.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Host.cpp' object='tblgen-Host.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Host.o `test -f 'llvm/lib/System/Host.cpp' || echo '$(srcdir)/'`llvm/lib/System/Host.cpp
+
+tblgen-Host.obj: llvm/lib/System/Host.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Host.obj -MD -MP -MF $(DEPDIR)/tblgen-Host.Tpo -c -o tblgen-Host.obj `if test -f 'llvm/lib/System/Host.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Host.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Host.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Host.Tpo $(DEPDIR)/tblgen-Host.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Host.cpp' object='tblgen-Host.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Host.obj `if test -f 'llvm/lib/System/Host.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Host.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Host.cpp'; fi`
+
+tblgen-IncludeFile.o: llvm/lib/System/IncludeFile.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IncludeFile.o -MD -MP -MF $(DEPDIR)/tblgen-IncludeFile.Tpo -c -o tblgen-IncludeFile.o `test -f 'llvm/lib/System/IncludeFile.cpp' || echo '$(srcdir)/'`llvm/lib/System/IncludeFile.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IncludeFile.Tpo $(DEPDIR)/tblgen-IncludeFile.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/IncludeFile.cpp' object='tblgen-IncludeFile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IncludeFile.o `test -f 'llvm/lib/System/IncludeFile.cpp' || echo '$(srcdir)/'`llvm/lib/System/IncludeFile.cpp
+
+tblgen-IncludeFile.obj: llvm/lib/System/IncludeFile.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IncludeFile.obj -MD -MP -MF $(DEPDIR)/tblgen-IncludeFile.Tpo -c -o tblgen-IncludeFile.obj `if test -f 'llvm/lib/System/IncludeFile.cpp'; then $(CYGPATH_W) 'llvm/lib/System/IncludeFile.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/IncludeFile.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IncludeFile.Tpo $(DEPDIR)/tblgen-IncludeFile.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/IncludeFile.cpp' object='tblgen-IncludeFile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IncludeFile.obj `if test -f 'llvm/lib/System/IncludeFile.cpp'; then $(CYGPATH_W) 'llvm/lib/System/IncludeFile.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/IncludeFile.cpp'; fi`
+
+tblgen-Memory.o: llvm/lib/System/Memory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Memory.o -MD -MP -MF $(DEPDIR)/tblgen-Memory.Tpo -c -o tblgen-Memory.o `test -f 'llvm/lib/System/Memory.cpp' || echo '$(srcdir)/'`llvm/lib/System/Memory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Memory.Tpo $(DEPDIR)/tblgen-Memory.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Memory.cpp' object='tblgen-Memory.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Memory.o `test -f 'llvm/lib/System/Memory.cpp' || echo '$(srcdir)/'`llvm/lib/System/Memory.cpp
+
+tblgen-Memory.obj: llvm/lib/System/Memory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Memory.obj -MD -MP -MF $(DEPDIR)/tblgen-Memory.Tpo -c -o tblgen-Memory.obj `if test -f 'llvm/lib/System/Memory.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Memory.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Memory.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Memory.Tpo $(DEPDIR)/tblgen-Memory.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Memory.cpp' object='tblgen-Memory.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Memory.obj `if test -f 'llvm/lib/System/Memory.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Memory.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Memory.cpp'; fi`
+
+tblgen-Mutex.o: llvm/lib/System/Mutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Mutex.o -MD -MP -MF $(DEPDIR)/tblgen-Mutex.Tpo -c -o tblgen-Mutex.o `test -f 'llvm/lib/System/Mutex.cpp' || echo '$(srcdir)/'`llvm/lib/System/Mutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Mutex.Tpo $(DEPDIR)/tblgen-Mutex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Mutex.cpp' object='tblgen-Mutex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Mutex.o `test -f 'llvm/lib/System/Mutex.cpp' || echo '$(srcdir)/'`llvm/lib/System/Mutex.cpp
+
+tblgen-Mutex.obj: llvm/lib/System/Mutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Mutex.obj -MD -MP -MF $(DEPDIR)/tblgen-Mutex.Tpo -c -o tblgen-Mutex.obj `if test -f 'llvm/lib/System/Mutex.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Mutex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Mutex.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Mutex.Tpo $(DEPDIR)/tblgen-Mutex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Mutex.cpp' object='tblgen-Mutex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Mutex.obj `if test -f 'llvm/lib/System/Mutex.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Mutex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Mutex.cpp'; fi`
+
+tblgen-Path.o: llvm/lib/System/Path.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Path.o -MD -MP -MF $(DEPDIR)/tblgen-Path.Tpo -c -o tblgen-Path.o `test -f 'llvm/lib/System/Path.cpp' || echo '$(srcdir)/'`llvm/lib/System/Path.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Path.Tpo $(DEPDIR)/tblgen-Path.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Path.cpp' object='tblgen-Path.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Path.o `test -f 'llvm/lib/System/Path.cpp' || echo '$(srcdir)/'`llvm/lib/System/Path.cpp
+
+tblgen-Path.obj: llvm/lib/System/Path.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Path.obj -MD -MP -MF $(DEPDIR)/tblgen-Path.Tpo -c -o tblgen-Path.obj `if test -f 'llvm/lib/System/Path.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Path.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Path.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Path.Tpo $(DEPDIR)/tblgen-Path.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Path.cpp' object='tblgen-Path.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Path.obj `if test -f 'llvm/lib/System/Path.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Path.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Path.cpp'; fi`
+
+tblgen-Process.o: llvm/lib/System/Process.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Process.o -MD -MP -MF $(DEPDIR)/tblgen-Process.Tpo -c -o tblgen-Process.o `test -f 'llvm/lib/System/Process.cpp' || echo '$(srcdir)/'`llvm/lib/System/Process.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Process.Tpo $(DEPDIR)/tblgen-Process.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Process.cpp' object='tblgen-Process.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Process.o `test -f 'llvm/lib/System/Process.cpp' || echo '$(srcdir)/'`llvm/lib/System/Process.cpp
+
+tblgen-Process.obj: llvm/lib/System/Process.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Process.obj -MD -MP -MF $(DEPDIR)/tblgen-Process.Tpo -c -o tblgen-Process.obj `if test -f 'llvm/lib/System/Process.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Process.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Process.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Process.Tpo $(DEPDIR)/tblgen-Process.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Process.cpp' object='tblgen-Process.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Process.obj `if test -f 'llvm/lib/System/Process.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Process.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Process.cpp'; fi`
+
+tblgen-Program.o: llvm/lib/System/Program.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Program.o -MD -MP -MF $(DEPDIR)/tblgen-Program.Tpo -c -o tblgen-Program.o `test -f 'llvm/lib/System/Program.cpp' || echo '$(srcdir)/'`llvm/lib/System/Program.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Program.Tpo $(DEPDIR)/tblgen-Program.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Program.cpp' object='tblgen-Program.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Program.o `test -f 'llvm/lib/System/Program.cpp' || echo '$(srcdir)/'`llvm/lib/System/Program.cpp
+
+tblgen-Program.obj: llvm/lib/System/Program.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Program.obj -MD -MP -MF $(DEPDIR)/tblgen-Program.Tpo -c -o tblgen-Program.obj `if test -f 'llvm/lib/System/Program.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Program.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Program.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Program.Tpo $(DEPDIR)/tblgen-Program.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Program.cpp' object='tblgen-Program.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Program.obj `if test -f 'llvm/lib/System/Program.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Program.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Program.cpp'; fi`
+
+tblgen-RWMutex.o: llvm/lib/System/RWMutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-RWMutex.o -MD -MP -MF $(DEPDIR)/tblgen-RWMutex.Tpo -c -o tblgen-RWMutex.o `test -f 'llvm/lib/System/RWMutex.cpp' || echo '$(srcdir)/'`llvm/lib/System/RWMutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-RWMutex.Tpo $(DEPDIR)/tblgen-RWMutex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/RWMutex.cpp' object='tblgen-RWMutex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-RWMutex.o `test -f 'llvm/lib/System/RWMutex.cpp' || echo '$(srcdir)/'`llvm/lib/System/RWMutex.cpp
+
+tblgen-RWMutex.obj: llvm/lib/System/RWMutex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-RWMutex.obj -MD -MP -MF $(DEPDIR)/tblgen-RWMutex.Tpo -c -o tblgen-RWMutex.obj `if test -f 'llvm/lib/System/RWMutex.cpp'; then $(CYGPATH_W) 'llvm/lib/System/RWMutex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/RWMutex.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-RWMutex.Tpo $(DEPDIR)/tblgen-RWMutex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/RWMutex.cpp' object='tblgen-RWMutex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-RWMutex.obj `if test -f 'llvm/lib/System/RWMutex.cpp'; then $(CYGPATH_W) 'llvm/lib/System/RWMutex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/RWMutex.cpp'; fi`
+
+tblgen-Signals.o: llvm/lib/System/Signals.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Signals.o -MD -MP -MF $(DEPDIR)/tblgen-Signals.Tpo -c -o tblgen-Signals.o `test -f 'llvm/lib/System/Signals.cpp' || echo '$(srcdir)/'`llvm/lib/System/Signals.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Signals.Tpo $(DEPDIR)/tblgen-Signals.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Signals.cpp' object='tblgen-Signals.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Signals.o `test -f 'llvm/lib/System/Signals.cpp' || echo '$(srcdir)/'`llvm/lib/System/Signals.cpp
+
+tblgen-Signals.obj: llvm/lib/System/Signals.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Signals.obj -MD -MP -MF $(DEPDIR)/tblgen-Signals.Tpo -c -o tblgen-Signals.obj `if test -f 'llvm/lib/System/Signals.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Signals.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Signals.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Signals.Tpo $(DEPDIR)/tblgen-Signals.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Signals.cpp' object='tblgen-Signals.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Signals.obj `if test -f 'llvm/lib/System/Signals.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Signals.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Signals.cpp'; fi`
+
+tblgen-ThreadLocal.o: llvm/lib/System/ThreadLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ThreadLocal.o -MD -MP -MF $(DEPDIR)/tblgen-ThreadLocal.Tpo -c -o tblgen-ThreadLocal.o `test -f 'llvm/lib/System/ThreadLocal.cpp' || echo '$(srcdir)/'`llvm/lib/System/ThreadLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ThreadLocal.Tpo $(DEPDIR)/tblgen-ThreadLocal.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/ThreadLocal.cpp' object='tblgen-ThreadLocal.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ThreadLocal.o `test -f 'llvm/lib/System/ThreadLocal.cpp' || echo '$(srcdir)/'`llvm/lib/System/ThreadLocal.cpp
+
+tblgen-ThreadLocal.obj: llvm/lib/System/ThreadLocal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ThreadLocal.obj -MD -MP -MF $(DEPDIR)/tblgen-ThreadLocal.Tpo -c -o tblgen-ThreadLocal.obj `if test -f 'llvm/lib/System/ThreadLocal.cpp'; then $(CYGPATH_W) 'llvm/lib/System/ThreadLocal.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/ThreadLocal.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ThreadLocal.Tpo $(DEPDIR)/tblgen-ThreadLocal.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/ThreadLocal.cpp' object='tblgen-ThreadLocal.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ThreadLocal.obj `if test -f 'llvm/lib/System/ThreadLocal.cpp'; then $(CYGPATH_W) 'llvm/lib/System/ThreadLocal.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/ThreadLocal.cpp'; fi`
+
+tblgen-Threading.o: llvm/lib/System/Threading.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Threading.o -MD -MP -MF $(DEPDIR)/tblgen-Threading.Tpo -c -o tblgen-Threading.o `test -f 'llvm/lib/System/Threading.cpp' || echo '$(srcdir)/'`llvm/lib/System/Threading.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Threading.Tpo $(DEPDIR)/tblgen-Threading.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Threading.cpp' object='tblgen-Threading.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Threading.o `test -f 'llvm/lib/System/Threading.cpp' || echo '$(srcdir)/'`llvm/lib/System/Threading.cpp
+
+tblgen-Threading.obj: llvm/lib/System/Threading.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Threading.obj -MD -MP -MF $(DEPDIR)/tblgen-Threading.Tpo -c -o tblgen-Threading.obj `if test -f 'llvm/lib/System/Threading.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Threading.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Threading.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Threading.Tpo $(DEPDIR)/tblgen-Threading.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/Threading.cpp' object='tblgen-Threading.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Threading.obj `if test -f 'llvm/lib/System/Threading.cpp'; then $(CYGPATH_W) 'llvm/lib/System/Threading.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/Threading.cpp'; fi`
+
+tblgen-TimeValue.o: llvm/lib/System/TimeValue.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-TimeValue.o -MD -MP -MF $(DEPDIR)/tblgen-TimeValue.Tpo -c -o tblgen-TimeValue.o `test -f 'llvm/lib/System/TimeValue.cpp' || echo '$(srcdir)/'`llvm/lib/System/TimeValue.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-TimeValue.Tpo $(DEPDIR)/tblgen-TimeValue.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/TimeValue.cpp' object='tblgen-TimeValue.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-TimeValue.o `test -f 'llvm/lib/System/TimeValue.cpp' || echo '$(srcdir)/'`llvm/lib/System/TimeValue.cpp
+
+tblgen-TimeValue.obj: llvm/lib/System/TimeValue.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-TimeValue.obj -MD -MP -MF $(DEPDIR)/tblgen-TimeValue.Tpo -c -o tblgen-TimeValue.obj `if test -f 'llvm/lib/System/TimeValue.cpp'; then $(CYGPATH_W) 'llvm/lib/System/TimeValue.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/TimeValue.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-TimeValue.Tpo $(DEPDIR)/tblgen-TimeValue.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/System/TimeValue.cpp' object='tblgen-TimeValue.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-TimeValue.obj `if test -f 'llvm/lib/System/TimeValue.cpp'; then $(CYGPATH_W) 'llvm/lib/System/TimeValue.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/System/TimeValue.cpp'; fi`
+
+tblgen-APFloat.o: llvm/lib/Support/APFloat.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APFloat.o -MD -MP -MF $(DEPDIR)/tblgen-APFloat.Tpo -c -o tblgen-APFloat.o `test -f 'llvm/lib/Support/APFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APFloat.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APFloat.Tpo $(DEPDIR)/tblgen-APFloat.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APFloat.cpp' object='tblgen-APFloat.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APFloat.o `test -f 'llvm/lib/Support/APFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APFloat.cpp
+
+tblgen-APFloat.obj: llvm/lib/Support/APFloat.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APFloat.obj -MD -MP -MF $(DEPDIR)/tblgen-APFloat.Tpo -c -o tblgen-APFloat.obj `if test -f 'llvm/lib/Support/APFloat.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APFloat.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APFloat.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APFloat.Tpo $(DEPDIR)/tblgen-APFloat.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APFloat.cpp' object='tblgen-APFloat.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APFloat.obj `if test -f 'llvm/lib/Support/APFloat.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APFloat.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APFloat.cpp'; fi`
+
+tblgen-APInt.o: llvm/lib/Support/APInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APInt.o -MD -MP -MF $(DEPDIR)/tblgen-APInt.Tpo -c -o tblgen-APInt.o `test -f 'llvm/lib/Support/APInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APInt.Tpo $(DEPDIR)/tblgen-APInt.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APInt.cpp' object='tblgen-APInt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APInt.o `test -f 'llvm/lib/Support/APInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APInt.cpp
+
+tblgen-APInt.obj: llvm/lib/Support/APInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APInt.obj -MD -MP -MF $(DEPDIR)/tblgen-APInt.Tpo -c -o tblgen-APInt.obj `if test -f 'llvm/lib/Support/APInt.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APInt.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APInt.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APInt.Tpo $(DEPDIR)/tblgen-APInt.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APInt.cpp' object='tblgen-APInt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APInt.obj `if test -f 'llvm/lib/Support/APInt.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APInt.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APInt.cpp'; fi`
+
+tblgen-APSInt.o: llvm/lib/Support/APSInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APSInt.o -MD -MP -MF $(DEPDIR)/tblgen-APSInt.Tpo -c -o tblgen-APSInt.o `test -f 'llvm/lib/Support/APSInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APSInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APSInt.Tpo $(DEPDIR)/tblgen-APSInt.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APSInt.cpp' object='tblgen-APSInt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APSInt.o `test -f 'llvm/lib/Support/APSInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APSInt.cpp
+
+tblgen-APSInt.obj: llvm/lib/Support/APSInt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-APSInt.obj -MD -MP -MF $(DEPDIR)/tblgen-APSInt.Tpo -c -o tblgen-APSInt.obj `if test -f 'llvm/lib/Support/APSInt.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APSInt.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APSInt.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-APSInt.Tpo $(DEPDIR)/tblgen-APSInt.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/APSInt.cpp' object='tblgen-APSInt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-APSInt.obj `if test -f 'llvm/lib/Support/APSInt.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/APSInt.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/APSInt.cpp'; fi`
+
+tblgen-Allocator.o: llvm/lib/Support/Allocator.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Allocator.o -MD -MP -MF $(DEPDIR)/tblgen-Allocator.Tpo -c -o tblgen-Allocator.o `test -f 'llvm/lib/Support/Allocator.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Allocator.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Allocator.Tpo $(DEPDIR)/tblgen-Allocator.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Allocator.cpp' object='tblgen-Allocator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Allocator.o `test -f 'llvm/lib/Support/Allocator.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Allocator.cpp
+
+tblgen-Allocator.obj: llvm/lib/Support/Allocator.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Allocator.obj -MD -MP -MF $(DEPDIR)/tblgen-Allocator.Tpo -c -o tblgen-Allocator.obj `if test -f 'llvm/lib/Support/Allocator.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Allocator.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Allocator.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Allocator.Tpo $(DEPDIR)/tblgen-Allocator.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Allocator.cpp' object='tblgen-Allocator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Allocator.obj `if test -f 'llvm/lib/Support/Allocator.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Allocator.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Allocator.cpp'; fi`
+
+tblgen-CommandLine.o: llvm/lib/Support/CommandLine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-CommandLine.o -MD -MP -MF $(DEPDIR)/tblgen-CommandLine.Tpo -c -o tblgen-CommandLine.o `test -f 'llvm/lib/Support/CommandLine.cpp' || echo '$(srcdir)/'`llvm/lib/Support/CommandLine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-CommandLine.Tpo $(DEPDIR)/tblgen-CommandLine.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/CommandLine.cpp' object='tblgen-CommandLine.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-CommandLine.o `test -f 'llvm/lib/Support/CommandLine.cpp' || echo '$(srcdir)/'`llvm/lib/Support/CommandLine.cpp
+
+tblgen-CommandLine.obj: llvm/lib/Support/CommandLine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-CommandLine.obj -MD -MP -MF $(DEPDIR)/tblgen-CommandLine.Tpo -c -o tblgen-CommandLine.obj `if test -f 'llvm/lib/Support/CommandLine.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/CommandLine.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/CommandLine.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-CommandLine.Tpo $(DEPDIR)/tblgen-CommandLine.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/CommandLine.cpp' object='tblgen-CommandLine.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-CommandLine.obj `if test -f 'llvm/lib/Support/CommandLine.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/CommandLine.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/CommandLine.cpp'; fi`
+
+tblgen-ConstantRange.o: llvm/lib/Support/ConstantRange.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ConstantRange.o -MD -MP -MF $(DEPDIR)/tblgen-ConstantRange.Tpo -c -o tblgen-ConstantRange.o `test -f 'llvm/lib/Support/ConstantRange.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ConstantRange.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ConstantRange.Tpo $(DEPDIR)/tblgen-ConstantRange.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ConstantRange.cpp' object='tblgen-ConstantRange.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ConstantRange.o `test -f 'llvm/lib/Support/ConstantRange.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ConstantRange.cpp
+
+tblgen-ConstantRange.obj: llvm/lib/Support/ConstantRange.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ConstantRange.obj -MD -MP -MF $(DEPDIR)/tblgen-ConstantRange.Tpo -c -o tblgen-ConstantRange.obj `if test -f 'llvm/lib/Support/ConstantRange.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ConstantRange.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ConstantRange.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ConstantRange.Tpo $(DEPDIR)/tblgen-ConstantRange.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ConstantRange.cpp' object='tblgen-ConstantRange.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ConstantRange.obj `if test -f 'llvm/lib/Support/ConstantRange.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ConstantRange.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ConstantRange.cpp'; fi`
+
+tblgen-Debug.o: llvm/lib/Support/Debug.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Debug.o -MD -MP -MF $(DEPDIR)/tblgen-Debug.Tpo -c -o tblgen-Debug.o `test -f 'llvm/lib/Support/Debug.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Debug.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Debug.Tpo $(DEPDIR)/tblgen-Debug.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Debug.cpp' object='tblgen-Debug.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Debug.o `test -f 'llvm/lib/Support/Debug.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Debug.cpp
+
+tblgen-Debug.obj: llvm/lib/Support/Debug.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Debug.obj -MD -MP -MF $(DEPDIR)/tblgen-Debug.Tpo -c -o tblgen-Debug.obj `if test -f 'llvm/lib/Support/Debug.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Debug.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Debug.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Debug.Tpo $(DEPDIR)/tblgen-Debug.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Debug.cpp' object='tblgen-Debug.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Debug.obj `if test -f 'llvm/lib/Support/Debug.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Debug.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Debug.cpp'; fi`
+
+tblgen-DeltaAlgorithm.o: llvm/lib/Support/DeltaAlgorithm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DeltaAlgorithm.o -MD -MP -MF $(DEPDIR)/tblgen-DeltaAlgorithm.Tpo -c -o tblgen-DeltaAlgorithm.o `test -f 'llvm/lib/Support/DeltaAlgorithm.cpp' || echo '$(srcdir)/'`llvm/lib/Support/DeltaAlgorithm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DeltaAlgorithm.Tpo $(DEPDIR)/tblgen-DeltaAlgorithm.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/DeltaAlgorithm.cpp' object='tblgen-DeltaAlgorithm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DeltaAlgorithm.o `test -f 'llvm/lib/Support/DeltaAlgorithm.cpp' || echo '$(srcdir)/'`llvm/lib/Support/DeltaAlgorithm.cpp
+
+tblgen-DeltaAlgorithm.obj: llvm/lib/Support/DeltaAlgorithm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-DeltaAlgorithm.obj -MD -MP -MF $(DEPDIR)/tblgen-DeltaAlgorithm.Tpo -c -o tblgen-DeltaAlgorithm.obj `if test -f 'llvm/lib/Support/DeltaAlgorithm.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/DeltaAlgorithm.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/DeltaAlgorithm.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-DeltaAlgorithm.Tpo $(DEPDIR)/tblgen-DeltaAlgorithm.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/DeltaAlgorithm.cpp' object='tblgen-DeltaAlgorithm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-DeltaAlgorithm.obj `if test -f 'llvm/lib/Support/DeltaAlgorithm.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/DeltaAlgorithm.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/DeltaAlgorithm.cpp'; fi`
+
+tblgen-Dwarf.o: llvm/lib/Support/Dwarf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Dwarf.o -MD -MP -MF $(DEPDIR)/tblgen-Dwarf.Tpo -c -o tblgen-Dwarf.o `test -f 'llvm/lib/Support/Dwarf.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Dwarf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Dwarf.Tpo $(DEPDIR)/tblgen-Dwarf.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Dwarf.cpp' object='tblgen-Dwarf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Dwarf.o `test -f 'llvm/lib/Support/Dwarf.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Dwarf.cpp
+
+tblgen-Dwarf.obj: llvm/lib/Support/Dwarf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Dwarf.obj -MD -MP -MF $(DEPDIR)/tblgen-Dwarf.Tpo -c -o tblgen-Dwarf.obj `if test -f 'llvm/lib/Support/Dwarf.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Dwarf.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Dwarf.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Dwarf.Tpo $(DEPDIR)/tblgen-Dwarf.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Dwarf.cpp' object='tblgen-Dwarf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Dwarf.obj `if test -f 'llvm/lib/Support/Dwarf.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Dwarf.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Dwarf.cpp'; fi`
+
+tblgen-ErrorHandling.o: llvm/lib/Support/ErrorHandling.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ErrorHandling.o -MD -MP -MF $(DEPDIR)/tblgen-ErrorHandling.Tpo -c -o tblgen-ErrorHandling.o `test -f 'llvm/lib/Support/ErrorHandling.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ErrorHandling.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ErrorHandling.Tpo $(DEPDIR)/tblgen-ErrorHandling.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ErrorHandling.cpp' object='tblgen-ErrorHandling.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ErrorHandling.o `test -f 'llvm/lib/Support/ErrorHandling.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ErrorHandling.cpp
+
+tblgen-ErrorHandling.obj: llvm/lib/Support/ErrorHandling.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ErrorHandling.obj -MD -MP -MF $(DEPDIR)/tblgen-ErrorHandling.Tpo -c -o tblgen-ErrorHandling.obj `if test -f 'llvm/lib/Support/ErrorHandling.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ErrorHandling.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ErrorHandling.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ErrorHandling.Tpo $(DEPDIR)/tblgen-ErrorHandling.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ErrorHandling.cpp' object='tblgen-ErrorHandling.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ErrorHandling.obj `if test -f 'llvm/lib/Support/ErrorHandling.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ErrorHandling.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ErrorHandling.cpp'; fi`
+
+tblgen-FileUtilities.o: llvm/lib/Support/FileUtilities.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FileUtilities.o -MD -MP -MF $(DEPDIR)/tblgen-FileUtilities.Tpo -c -o tblgen-FileUtilities.o `test -f 'llvm/lib/Support/FileUtilities.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FileUtilities.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FileUtilities.Tpo $(DEPDIR)/tblgen-FileUtilities.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FileUtilities.cpp' object='tblgen-FileUtilities.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FileUtilities.o `test -f 'llvm/lib/Support/FileUtilities.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FileUtilities.cpp
+
+tblgen-FileUtilities.obj: llvm/lib/Support/FileUtilities.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FileUtilities.obj -MD -MP -MF $(DEPDIR)/tblgen-FileUtilities.Tpo -c -o tblgen-FileUtilities.obj `if test -f 'llvm/lib/Support/FileUtilities.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FileUtilities.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FileUtilities.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FileUtilities.Tpo $(DEPDIR)/tblgen-FileUtilities.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FileUtilities.cpp' object='tblgen-FileUtilities.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FileUtilities.obj `if test -f 'llvm/lib/Support/FileUtilities.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FileUtilities.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FileUtilities.cpp'; fi`
+
+tblgen-FoldingSet.o: llvm/lib/Support/FoldingSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FoldingSet.o -MD -MP -MF $(DEPDIR)/tblgen-FoldingSet.Tpo -c -o tblgen-FoldingSet.o `test -f 'llvm/lib/Support/FoldingSet.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FoldingSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FoldingSet.Tpo $(DEPDIR)/tblgen-FoldingSet.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FoldingSet.cpp' object='tblgen-FoldingSet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FoldingSet.o `test -f 'llvm/lib/Support/FoldingSet.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FoldingSet.cpp
+
+tblgen-FoldingSet.obj: llvm/lib/Support/FoldingSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FoldingSet.obj -MD -MP -MF $(DEPDIR)/tblgen-FoldingSet.Tpo -c -o tblgen-FoldingSet.obj `if test -f 'llvm/lib/Support/FoldingSet.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FoldingSet.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FoldingSet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FoldingSet.Tpo $(DEPDIR)/tblgen-FoldingSet.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FoldingSet.cpp' object='tblgen-FoldingSet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FoldingSet.obj `if test -f 'llvm/lib/Support/FoldingSet.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FoldingSet.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FoldingSet.cpp'; fi`
+
+tblgen-FormattedStream.o: llvm/lib/Support/FormattedStream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FormattedStream.o -MD -MP -MF $(DEPDIR)/tblgen-FormattedStream.Tpo -c -o tblgen-FormattedStream.o `test -f 'llvm/lib/Support/FormattedStream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FormattedStream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FormattedStream.Tpo $(DEPDIR)/tblgen-FormattedStream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FormattedStream.cpp' object='tblgen-FormattedStream.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FormattedStream.o `test -f 'llvm/lib/Support/FormattedStream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/FormattedStream.cpp
+
+tblgen-FormattedStream.obj: llvm/lib/Support/FormattedStream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-FormattedStream.obj -MD -MP -MF $(DEPDIR)/tblgen-FormattedStream.Tpo -c -o tblgen-FormattedStream.obj `if test -f 'llvm/lib/Support/FormattedStream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FormattedStream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FormattedStream.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-FormattedStream.Tpo $(DEPDIR)/tblgen-FormattedStream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/FormattedStream.cpp' object='tblgen-FormattedStream.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-FormattedStream.obj `if test -f 'llvm/lib/Support/FormattedStream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/FormattedStream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/FormattedStream.cpp'; fi`
+
+tblgen-GraphWriter.o: llvm/lib/Support/GraphWriter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-GraphWriter.o -MD -MP -MF $(DEPDIR)/tblgen-GraphWriter.Tpo -c -o tblgen-GraphWriter.o `test -f 'llvm/lib/Support/GraphWriter.cpp' || echo '$(srcdir)/'`llvm/lib/Support/GraphWriter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-GraphWriter.Tpo $(DEPDIR)/tblgen-GraphWriter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/GraphWriter.cpp' object='tblgen-GraphWriter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-GraphWriter.o `test -f 'llvm/lib/Support/GraphWriter.cpp' || echo '$(srcdir)/'`llvm/lib/Support/GraphWriter.cpp
+
+tblgen-GraphWriter.obj: llvm/lib/Support/GraphWriter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-GraphWriter.obj -MD -MP -MF $(DEPDIR)/tblgen-GraphWriter.Tpo -c -o tblgen-GraphWriter.obj `if test -f 'llvm/lib/Support/GraphWriter.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/GraphWriter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/GraphWriter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-GraphWriter.Tpo $(DEPDIR)/tblgen-GraphWriter.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/GraphWriter.cpp' object='tblgen-GraphWriter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-GraphWriter.obj `if test -f 'llvm/lib/Support/GraphWriter.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/GraphWriter.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/GraphWriter.cpp'; fi`
+
+tblgen-IsInf.o: llvm/lib/Support/IsInf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IsInf.o -MD -MP -MF $(DEPDIR)/tblgen-IsInf.Tpo -c -o tblgen-IsInf.o `test -f 'llvm/lib/Support/IsInf.cpp' || echo '$(srcdir)/'`llvm/lib/Support/IsInf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IsInf.Tpo $(DEPDIR)/tblgen-IsInf.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/IsInf.cpp' object='tblgen-IsInf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IsInf.o `test -f 'llvm/lib/Support/IsInf.cpp' || echo '$(srcdir)/'`llvm/lib/Support/IsInf.cpp
+
+tblgen-IsInf.obj: llvm/lib/Support/IsInf.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IsInf.obj -MD -MP -MF $(DEPDIR)/tblgen-IsInf.Tpo -c -o tblgen-IsInf.obj `if test -f 'llvm/lib/Support/IsInf.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/IsInf.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/IsInf.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IsInf.Tpo $(DEPDIR)/tblgen-IsInf.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/IsInf.cpp' object='tblgen-IsInf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IsInf.obj `if test -f 'llvm/lib/Support/IsInf.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/IsInf.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/IsInf.cpp'; fi`
+
+tblgen-IsNAN.o: llvm/lib/Support/IsNAN.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IsNAN.o -MD -MP -MF $(DEPDIR)/tblgen-IsNAN.Tpo -c -o tblgen-IsNAN.o `test -f 'llvm/lib/Support/IsNAN.cpp' || echo '$(srcdir)/'`llvm/lib/Support/IsNAN.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IsNAN.Tpo $(DEPDIR)/tblgen-IsNAN.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/IsNAN.cpp' object='tblgen-IsNAN.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IsNAN.o `test -f 'llvm/lib/Support/IsNAN.cpp' || echo '$(srcdir)/'`llvm/lib/Support/IsNAN.cpp
+
+tblgen-IsNAN.obj: llvm/lib/Support/IsNAN.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-IsNAN.obj -MD -MP -MF $(DEPDIR)/tblgen-IsNAN.Tpo -c -o tblgen-IsNAN.obj `if test -f 'llvm/lib/Support/IsNAN.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/IsNAN.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/IsNAN.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-IsNAN.Tpo $(DEPDIR)/tblgen-IsNAN.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/IsNAN.cpp' object='tblgen-IsNAN.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-IsNAN.obj `if test -f 'llvm/lib/Support/IsNAN.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/IsNAN.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/IsNAN.cpp'; fi`
+
+tblgen-ManagedStatic.o: llvm/lib/Support/ManagedStatic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ManagedStatic.o -MD -MP -MF $(DEPDIR)/tblgen-ManagedStatic.Tpo -c -o tblgen-ManagedStatic.o `test -f 'llvm/lib/Support/ManagedStatic.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ManagedStatic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ManagedStatic.Tpo $(DEPDIR)/tblgen-ManagedStatic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ManagedStatic.cpp' object='tblgen-ManagedStatic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ManagedStatic.o `test -f 'llvm/lib/Support/ManagedStatic.cpp' || echo '$(srcdir)/'`llvm/lib/Support/ManagedStatic.cpp
+
+tblgen-ManagedStatic.obj: llvm/lib/Support/ManagedStatic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-ManagedStatic.obj -MD -MP -MF $(DEPDIR)/tblgen-ManagedStatic.Tpo -c -o tblgen-ManagedStatic.obj `if test -f 'llvm/lib/Support/ManagedStatic.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ManagedStatic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ManagedStatic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-ManagedStatic.Tpo $(DEPDIR)/tblgen-ManagedStatic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/ManagedStatic.cpp' object='tblgen-ManagedStatic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-ManagedStatic.obj `if test -f 'llvm/lib/Support/ManagedStatic.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/ManagedStatic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/ManagedStatic.cpp'; fi`
+
+tblgen-MemoryBuffer.o: llvm/lib/Support/MemoryBuffer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-MemoryBuffer.o -MD -MP -MF $(DEPDIR)/tblgen-MemoryBuffer.Tpo -c -o tblgen-MemoryBuffer.o `test -f 'llvm/lib/Support/MemoryBuffer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/MemoryBuffer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-MemoryBuffer.Tpo $(DEPDIR)/tblgen-MemoryBuffer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/MemoryBuffer.cpp' object='tblgen-MemoryBuffer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-MemoryBuffer.o `test -f 'llvm/lib/Support/MemoryBuffer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/MemoryBuffer.cpp
+
+tblgen-MemoryBuffer.obj: llvm/lib/Support/MemoryBuffer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-MemoryBuffer.obj -MD -MP -MF $(DEPDIR)/tblgen-MemoryBuffer.Tpo -c -o tblgen-MemoryBuffer.obj `if test -f 'llvm/lib/Support/MemoryBuffer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/MemoryBuffer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/MemoryBuffer.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-MemoryBuffer.Tpo $(DEPDIR)/tblgen-MemoryBuffer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/MemoryBuffer.cpp' object='tblgen-MemoryBuffer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-MemoryBuffer.obj `if test -f 'llvm/lib/Support/MemoryBuffer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/MemoryBuffer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/MemoryBuffer.cpp'; fi`
+
+tblgen-MemoryObject.o: llvm/lib/Support/MemoryObject.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-MemoryObject.o -MD -MP -MF $(DEPDIR)/tblgen-MemoryObject.Tpo -c -o tblgen-MemoryObject.o `test -f 'llvm/lib/Support/MemoryObject.cpp' || echo '$(srcdir)/'`llvm/lib/Support/MemoryObject.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-MemoryObject.Tpo $(DEPDIR)/tblgen-MemoryObject.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/MemoryObject.cpp' object='tblgen-MemoryObject.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-MemoryObject.o `test -f 'llvm/lib/Support/MemoryObject.cpp' || echo '$(srcdir)/'`llvm/lib/Support/MemoryObject.cpp
+
+tblgen-MemoryObject.obj: llvm/lib/Support/MemoryObject.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-MemoryObject.obj -MD -MP -MF $(DEPDIR)/tblgen-MemoryObject.Tpo -c -o tblgen-MemoryObject.obj `if test -f 'llvm/lib/Support/MemoryObject.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/MemoryObject.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/MemoryObject.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-MemoryObject.Tpo $(DEPDIR)/tblgen-MemoryObject.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/MemoryObject.cpp' object='tblgen-MemoryObject.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-MemoryObject.obj `if test -f 'llvm/lib/Support/MemoryObject.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/MemoryObject.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/MemoryObject.cpp'; fi`
+
+tblgen-PluginLoader.o: llvm/lib/Support/PluginLoader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-PluginLoader.o -MD -MP -MF $(DEPDIR)/tblgen-PluginLoader.Tpo -c -o tblgen-PluginLoader.o `test -f 'llvm/lib/Support/PluginLoader.cpp' || echo '$(srcdir)/'`llvm/lib/Support/PluginLoader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-PluginLoader.Tpo $(DEPDIR)/tblgen-PluginLoader.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/PluginLoader.cpp' object='tblgen-PluginLoader.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-PluginLoader.o `test -f 'llvm/lib/Support/PluginLoader.cpp' || echo '$(srcdir)/'`llvm/lib/Support/PluginLoader.cpp
+
+tblgen-PluginLoader.obj: llvm/lib/Support/PluginLoader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-PluginLoader.obj -MD -MP -MF $(DEPDIR)/tblgen-PluginLoader.Tpo -c -o tblgen-PluginLoader.obj `if test -f 'llvm/lib/Support/PluginLoader.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/PluginLoader.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/PluginLoader.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-PluginLoader.Tpo $(DEPDIR)/tblgen-PluginLoader.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/PluginLoader.cpp' object='tblgen-PluginLoader.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-PluginLoader.obj `if test -f 'llvm/lib/Support/PluginLoader.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/PluginLoader.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/PluginLoader.cpp'; fi`
+
+tblgen-PrettyStackTrace.o: llvm/lib/Support/PrettyStackTrace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-PrettyStackTrace.o -MD -MP -MF $(DEPDIR)/tblgen-PrettyStackTrace.Tpo -c -o tblgen-PrettyStackTrace.o `test -f 'llvm/lib/Support/PrettyStackTrace.cpp' || echo '$(srcdir)/'`llvm/lib/Support/PrettyStackTrace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-PrettyStackTrace.Tpo $(DEPDIR)/tblgen-PrettyStackTrace.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/PrettyStackTrace.cpp' object='tblgen-PrettyStackTrace.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-PrettyStackTrace.o `test -f 'llvm/lib/Support/PrettyStackTrace.cpp' || echo '$(srcdir)/'`llvm/lib/Support/PrettyStackTrace.cpp
+
+tblgen-PrettyStackTrace.obj: llvm/lib/Support/PrettyStackTrace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-PrettyStackTrace.obj -MD -MP -MF $(DEPDIR)/tblgen-PrettyStackTrace.Tpo -c -o tblgen-PrettyStackTrace.obj `if test -f 'llvm/lib/Support/PrettyStackTrace.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/PrettyStackTrace.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/PrettyStackTrace.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-PrettyStackTrace.Tpo $(DEPDIR)/tblgen-PrettyStackTrace.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/PrettyStackTrace.cpp' object='tblgen-PrettyStackTrace.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-PrettyStackTrace.obj `if test -f 'llvm/lib/Support/PrettyStackTrace.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/PrettyStackTrace.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/PrettyStackTrace.cpp'; fi`
+
+tblgen-Regex.o: llvm/lib/Support/Regex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Regex.o -MD -MP -MF $(DEPDIR)/tblgen-Regex.Tpo -c -o tblgen-Regex.o `test -f 'llvm/lib/Support/Regex.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Regex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Regex.Tpo $(DEPDIR)/tblgen-Regex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Regex.cpp' object='tblgen-Regex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Regex.o `test -f 'llvm/lib/Support/Regex.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Regex.cpp
+
+tblgen-Regex.obj: llvm/lib/Support/Regex.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Regex.obj -MD -MP -MF $(DEPDIR)/tblgen-Regex.Tpo -c -o tblgen-Regex.obj `if test -f 'llvm/lib/Support/Regex.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Regex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Regex.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Regex.Tpo $(DEPDIR)/tblgen-Regex.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Regex.cpp' object='tblgen-Regex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Regex.obj `if test -f 'llvm/lib/Support/Regex.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Regex.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Regex.cpp'; fi`
+
+tblgen-SlowOperationInformer.o: llvm/lib/Support/SlowOperationInformer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SlowOperationInformer.o -MD -MP -MF $(DEPDIR)/tblgen-SlowOperationInformer.Tpo -c -o tblgen-SlowOperationInformer.o `test -f 'llvm/lib/Support/SlowOperationInformer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SlowOperationInformer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SlowOperationInformer.Tpo $(DEPDIR)/tblgen-SlowOperationInformer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SlowOperationInformer.cpp' object='tblgen-SlowOperationInformer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SlowOperationInformer.o `test -f 'llvm/lib/Support/SlowOperationInformer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SlowOperationInformer.cpp
+
+tblgen-SlowOperationInformer.obj: llvm/lib/Support/SlowOperationInformer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SlowOperationInformer.obj -MD -MP -MF $(DEPDIR)/tblgen-SlowOperationInformer.Tpo -c -o tblgen-SlowOperationInformer.obj `if test -f 'llvm/lib/Support/SlowOperationInformer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SlowOperationInformer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SlowOperationInformer.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SlowOperationInformer.Tpo $(DEPDIR)/tblgen-SlowOperationInformer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SlowOperationInformer.cpp' object='tblgen-SlowOperationInformer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SlowOperationInformer.obj `if test -f 'llvm/lib/Support/SlowOperationInformer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SlowOperationInformer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SlowOperationInformer.cpp'; fi`
+
+tblgen-SmallPtrSet.o: llvm/lib/Support/SmallPtrSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SmallPtrSet.o -MD -MP -MF $(DEPDIR)/tblgen-SmallPtrSet.Tpo -c -o tblgen-SmallPtrSet.o `test -f 'llvm/lib/Support/SmallPtrSet.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallPtrSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SmallPtrSet.Tpo $(DEPDIR)/tblgen-SmallPtrSet.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SmallPtrSet.cpp' object='tblgen-SmallPtrSet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SmallPtrSet.o `test -f 'llvm/lib/Support/SmallPtrSet.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallPtrSet.cpp
+
+tblgen-SmallPtrSet.obj: llvm/lib/Support/SmallPtrSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SmallPtrSet.obj -MD -MP -MF $(DEPDIR)/tblgen-SmallPtrSet.Tpo -c -o tblgen-SmallPtrSet.obj `if test -f 'llvm/lib/Support/SmallPtrSet.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SmallPtrSet.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SmallPtrSet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SmallPtrSet.Tpo $(DEPDIR)/tblgen-SmallPtrSet.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SmallPtrSet.cpp' object='tblgen-SmallPtrSet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SmallPtrSet.obj `if test -f 'llvm/lib/Support/SmallPtrSet.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SmallPtrSet.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SmallPtrSet.cpp'; fi`
+
+tblgen-SmallVector.o: llvm/lib/Support/SmallVector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SmallVector.o -MD -MP -MF $(DEPDIR)/tblgen-SmallVector.Tpo -c -o tblgen-SmallVector.o `test -f 'llvm/lib/Support/SmallVector.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallVector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SmallVector.Tpo $(DEPDIR)/tblgen-SmallVector.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SmallVector.cpp' object='tblgen-SmallVector.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SmallVector.o `test -f 'llvm/lib/Support/SmallVector.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SmallVector.cpp
+
+tblgen-SmallVector.obj: llvm/lib/Support/SmallVector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SmallVector.obj -MD -MP -MF $(DEPDIR)/tblgen-SmallVector.Tpo -c -o tblgen-SmallVector.obj `if test -f 'llvm/lib/Support/SmallVector.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SmallVector.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SmallVector.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SmallVector.Tpo $(DEPDIR)/tblgen-SmallVector.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SmallVector.cpp' object='tblgen-SmallVector.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SmallVector.obj `if test -f 'llvm/lib/Support/SmallVector.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SmallVector.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SmallVector.cpp'; fi`
+
+tblgen-SourceMgr.o: llvm/lib/Support/SourceMgr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SourceMgr.o -MD -MP -MF $(DEPDIR)/tblgen-SourceMgr.Tpo -c -o tblgen-SourceMgr.o `test -f 'llvm/lib/Support/SourceMgr.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SourceMgr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SourceMgr.Tpo $(DEPDIR)/tblgen-SourceMgr.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SourceMgr.cpp' object='tblgen-SourceMgr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SourceMgr.o `test -f 'llvm/lib/Support/SourceMgr.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SourceMgr.cpp
+
+tblgen-SourceMgr.obj: llvm/lib/Support/SourceMgr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SourceMgr.obj -MD -MP -MF $(DEPDIR)/tblgen-SourceMgr.Tpo -c -o tblgen-SourceMgr.obj `if test -f 'llvm/lib/Support/SourceMgr.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SourceMgr.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SourceMgr.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SourceMgr.Tpo $(DEPDIR)/tblgen-SourceMgr.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SourceMgr.cpp' object='tblgen-SourceMgr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SourceMgr.obj `if test -f 'llvm/lib/Support/SourceMgr.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SourceMgr.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SourceMgr.cpp'; fi`
+
+tblgen-Statistic.o: llvm/lib/Support/Statistic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Statistic.o -MD -MP -MF $(DEPDIR)/tblgen-Statistic.Tpo -c -o tblgen-Statistic.o `test -f 'llvm/lib/Support/Statistic.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Statistic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Statistic.Tpo $(DEPDIR)/tblgen-Statistic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Statistic.cpp' object='tblgen-Statistic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Statistic.o `test -f 'llvm/lib/Support/Statistic.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Statistic.cpp
+
+tblgen-Statistic.obj: llvm/lib/Support/Statistic.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Statistic.obj -MD -MP -MF $(DEPDIR)/tblgen-Statistic.Tpo -c -o tblgen-Statistic.obj `if test -f 'llvm/lib/Support/Statistic.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Statistic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Statistic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Statistic.Tpo $(DEPDIR)/tblgen-Statistic.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Statistic.cpp' object='tblgen-Statistic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Statistic.obj `if test -f 'llvm/lib/Support/Statistic.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Statistic.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Statistic.cpp'; fi`
+
+tblgen-StringExtras.o: llvm/lib/Support/StringExtras.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringExtras.o -MD -MP -MF $(DEPDIR)/tblgen-StringExtras.Tpo -c -o tblgen-StringExtras.o `test -f 'llvm/lib/Support/StringExtras.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringExtras.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringExtras.Tpo $(DEPDIR)/tblgen-StringExtras.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringExtras.cpp' object='tblgen-StringExtras.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringExtras.o `test -f 'llvm/lib/Support/StringExtras.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringExtras.cpp
+
+tblgen-StringExtras.obj: llvm/lib/Support/StringExtras.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringExtras.obj -MD -MP -MF $(DEPDIR)/tblgen-StringExtras.Tpo -c -o tblgen-StringExtras.obj `if test -f 'llvm/lib/Support/StringExtras.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringExtras.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringExtras.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringExtras.Tpo $(DEPDIR)/tblgen-StringExtras.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringExtras.cpp' object='tblgen-StringExtras.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringExtras.obj `if test -f 'llvm/lib/Support/StringExtras.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringExtras.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringExtras.cpp'; fi`
+
+tblgen-StringMap.o: llvm/lib/Support/StringMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringMap.o -MD -MP -MF $(DEPDIR)/tblgen-StringMap.Tpo -c -o tblgen-StringMap.o `test -f 'llvm/lib/Support/StringMap.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringMap.Tpo $(DEPDIR)/tblgen-StringMap.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringMap.cpp' object='tblgen-StringMap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringMap.o `test -f 'llvm/lib/Support/StringMap.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringMap.cpp
+
+tblgen-StringMap.obj: llvm/lib/Support/StringMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringMap.obj -MD -MP -MF $(DEPDIR)/tblgen-StringMap.Tpo -c -o tblgen-StringMap.obj `if test -f 'llvm/lib/Support/StringMap.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringMap.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringMap.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringMap.Tpo $(DEPDIR)/tblgen-StringMap.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringMap.cpp' object='tblgen-StringMap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringMap.obj `if test -f 'llvm/lib/Support/StringMap.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringMap.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringMap.cpp'; fi`
+
+tblgen-StringPool.o: llvm/lib/Support/StringPool.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringPool.o -MD -MP -MF $(DEPDIR)/tblgen-StringPool.Tpo -c -o tblgen-StringPool.o `test -f 'llvm/lib/Support/StringPool.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringPool.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringPool.Tpo $(DEPDIR)/tblgen-StringPool.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringPool.cpp' object='tblgen-StringPool.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringPool.o `test -f 'llvm/lib/Support/StringPool.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringPool.cpp
+
+tblgen-StringPool.obj: llvm/lib/Support/StringPool.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringPool.obj -MD -MP -MF $(DEPDIR)/tblgen-StringPool.Tpo -c -o tblgen-StringPool.obj `if test -f 'llvm/lib/Support/StringPool.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringPool.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringPool.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringPool.Tpo $(DEPDIR)/tblgen-StringPool.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringPool.cpp' object='tblgen-StringPool.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringPool.obj `if test -f 'llvm/lib/Support/StringPool.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringPool.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringPool.cpp'; fi`
+
+tblgen-StringRef.o: llvm/lib/Support/StringRef.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringRef.o -MD -MP -MF $(DEPDIR)/tblgen-StringRef.Tpo -c -o tblgen-StringRef.o `test -f 'llvm/lib/Support/StringRef.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringRef.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringRef.Tpo $(DEPDIR)/tblgen-StringRef.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringRef.cpp' object='tblgen-StringRef.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringRef.o `test -f 'llvm/lib/Support/StringRef.cpp' || echo '$(srcdir)/'`llvm/lib/Support/StringRef.cpp
+
+tblgen-StringRef.obj: llvm/lib/Support/StringRef.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-StringRef.obj -MD -MP -MF $(DEPDIR)/tblgen-StringRef.Tpo -c -o tblgen-StringRef.obj `if test -f 'llvm/lib/Support/StringRef.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringRef.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringRef.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-StringRef.Tpo $(DEPDIR)/tblgen-StringRef.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/StringRef.cpp' object='tblgen-StringRef.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-StringRef.obj `if test -f 'llvm/lib/Support/StringRef.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/StringRef.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/StringRef.cpp'; fi`
+
+tblgen-SystemUtils.o: llvm/lib/Support/SystemUtils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SystemUtils.o -MD -MP -MF $(DEPDIR)/tblgen-SystemUtils.Tpo -c -o tblgen-SystemUtils.o `test -f 'llvm/lib/Support/SystemUtils.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SystemUtils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SystemUtils.Tpo $(DEPDIR)/tblgen-SystemUtils.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SystemUtils.cpp' object='tblgen-SystemUtils.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SystemUtils.o `test -f 'llvm/lib/Support/SystemUtils.cpp' || echo '$(srcdir)/'`llvm/lib/Support/SystemUtils.cpp
+
+tblgen-SystemUtils.obj: llvm/lib/Support/SystemUtils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-SystemUtils.obj -MD -MP -MF $(DEPDIR)/tblgen-SystemUtils.Tpo -c -o tblgen-SystemUtils.obj `if test -f 'llvm/lib/Support/SystemUtils.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SystemUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SystemUtils.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-SystemUtils.Tpo $(DEPDIR)/tblgen-SystemUtils.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/SystemUtils.cpp' object='tblgen-SystemUtils.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-SystemUtils.obj `if test -f 'llvm/lib/Support/SystemUtils.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/SystemUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/SystemUtils.cpp'; fi`
+
+tblgen-TargetRegistry.o: llvm/lib/Support/TargetRegistry.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-TargetRegistry.o -MD -MP -MF $(DEPDIR)/tblgen-TargetRegistry.Tpo -c -o tblgen-TargetRegistry.o `test -f 'llvm/lib/Support/TargetRegistry.cpp' || echo '$(srcdir)/'`llvm/lib/Support/TargetRegistry.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-TargetRegistry.Tpo $(DEPDIR)/tblgen-TargetRegistry.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/TargetRegistry.cpp' object='tblgen-TargetRegistry.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-TargetRegistry.o `test -f 'llvm/lib/Support/TargetRegistry.cpp' || echo '$(srcdir)/'`llvm/lib/Support/TargetRegistry.cpp
+
+tblgen-TargetRegistry.obj: llvm/lib/Support/TargetRegistry.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-TargetRegistry.obj -MD -MP -MF $(DEPDIR)/tblgen-TargetRegistry.Tpo -c -o tblgen-TargetRegistry.obj `if test -f 'llvm/lib/Support/TargetRegistry.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/TargetRegistry.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/TargetRegistry.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-TargetRegistry.Tpo $(DEPDIR)/tblgen-TargetRegistry.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/TargetRegistry.cpp' object='tblgen-TargetRegistry.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-TargetRegistry.obj `if test -f 'llvm/lib/Support/TargetRegistry.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/TargetRegistry.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/TargetRegistry.cpp'; fi`
+
+tblgen-Timer.o: llvm/lib/Support/Timer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Timer.o -MD -MP -MF $(DEPDIR)/tblgen-Timer.Tpo -c -o tblgen-Timer.o `test -f 'llvm/lib/Support/Timer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Timer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Timer.Tpo $(DEPDIR)/tblgen-Timer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Timer.cpp' object='tblgen-Timer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Timer.o `test -f 'llvm/lib/Support/Timer.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Timer.cpp
+
+tblgen-Timer.obj: llvm/lib/Support/Timer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Timer.obj -MD -MP -MF $(DEPDIR)/tblgen-Timer.Tpo -c -o tblgen-Timer.obj `if test -f 'llvm/lib/Support/Timer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Timer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Timer.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Timer.Tpo $(DEPDIR)/tblgen-Timer.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Timer.cpp' object='tblgen-Timer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Timer.obj `if test -f 'llvm/lib/Support/Timer.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Timer.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Timer.cpp'; fi`
+
+tblgen-Triple.o: llvm/lib/Support/Triple.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Triple.o -MD -MP -MF $(DEPDIR)/tblgen-Triple.Tpo -c -o tblgen-Triple.o `test -f 'llvm/lib/Support/Triple.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Triple.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Triple.Tpo $(DEPDIR)/tblgen-Triple.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Triple.cpp' object='tblgen-Triple.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Triple.o `test -f 'llvm/lib/Support/Triple.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Triple.cpp
+
+tblgen-Triple.obj: llvm/lib/Support/Triple.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Triple.obj -MD -MP -MF $(DEPDIR)/tblgen-Triple.Tpo -c -o tblgen-Triple.obj `if test -f 'llvm/lib/Support/Triple.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Triple.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Triple.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Triple.Tpo $(DEPDIR)/tblgen-Triple.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Triple.cpp' object='tblgen-Triple.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Triple.obj `if test -f 'llvm/lib/Support/Triple.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Triple.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Triple.cpp'; fi`
+
+tblgen-Twine.o: llvm/lib/Support/Twine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Twine.o -MD -MP -MF $(DEPDIR)/tblgen-Twine.Tpo -c -o tblgen-Twine.o `test -f 'llvm/lib/Support/Twine.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Twine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Twine.Tpo $(DEPDIR)/tblgen-Twine.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Twine.cpp' object='tblgen-Twine.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Twine.o `test -f 'llvm/lib/Support/Twine.cpp' || echo '$(srcdir)/'`llvm/lib/Support/Twine.cpp
+
+tblgen-Twine.obj: llvm/lib/Support/Twine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-Twine.obj -MD -MP -MF $(DEPDIR)/tblgen-Twine.Tpo -c -o tblgen-Twine.obj `if test -f 'llvm/lib/Support/Twine.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Twine.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Twine.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-Twine.Tpo $(DEPDIR)/tblgen-Twine.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/Twine.cpp' object='tblgen-Twine.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-Twine.obj `if test -f 'llvm/lib/Support/Twine.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/Twine.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/Twine.cpp'; fi`
+
+tblgen-circular_raw_ostream.o: llvm/lib/Support/circular_raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-circular_raw_ostream.o -MD -MP -MF $(DEPDIR)/tblgen-circular_raw_ostream.Tpo -c -o tblgen-circular_raw_ostream.o `test -f 'llvm/lib/Support/circular_raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/circular_raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-circular_raw_ostream.Tpo $(DEPDIR)/tblgen-circular_raw_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/circular_raw_ostream.cpp' object='tblgen-circular_raw_ostream.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-circular_raw_ostream.o `test -f 'llvm/lib/Support/circular_raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/circular_raw_ostream.cpp
+
+tblgen-circular_raw_ostream.obj: llvm/lib/Support/circular_raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-circular_raw_ostream.obj -MD -MP -MF $(DEPDIR)/tblgen-circular_raw_ostream.Tpo -c -o tblgen-circular_raw_ostream.obj `if test -f 'llvm/lib/Support/circular_raw_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/circular_raw_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/circular_raw_ostream.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-circular_raw_ostream.Tpo $(DEPDIR)/tblgen-circular_raw_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/circular_raw_ostream.cpp' object='tblgen-circular_raw_ostream.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-circular_raw_ostream.obj `if test -f 'llvm/lib/Support/circular_raw_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/circular_raw_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/circular_raw_ostream.cpp'; fi`
+
+tblgen-raw_os_ostream.o: llvm/lib/Support/raw_os_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-raw_os_ostream.o -MD -MP -MF $(DEPDIR)/tblgen-raw_os_ostream.Tpo -c -o tblgen-raw_os_ostream.o `test -f 'llvm/lib/Support/raw_os_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_os_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-raw_os_ostream.Tpo $(DEPDIR)/tblgen-raw_os_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/raw_os_ostream.cpp' object='tblgen-raw_os_ostream.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-raw_os_ostream.o `test -f 'llvm/lib/Support/raw_os_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_os_ostream.cpp
+
+tblgen-raw_os_ostream.obj: llvm/lib/Support/raw_os_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-raw_os_ostream.obj -MD -MP -MF $(DEPDIR)/tblgen-raw_os_ostream.Tpo -c -o tblgen-raw_os_ostream.obj `if test -f 'llvm/lib/Support/raw_os_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/raw_os_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/raw_os_ostream.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-raw_os_ostream.Tpo $(DEPDIR)/tblgen-raw_os_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/raw_os_ostream.cpp' object='tblgen-raw_os_ostream.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-raw_os_ostream.obj `if test -f 'llvm/lib/Support/raw_os_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/raw_os_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/raw_os_ostream.cpp'; fi`
+
+tblgen-raw_ostream.o: llvm/lib/Support/raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-raw_ostream.o -MD -MP -MF $(DEPDIR)/tblgen-raw_ostream.Tpo -c -o tblgen-raw_ostream.o `test -f 'llvm/lib/Support/raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-raw_ostream.Tpo $(DEPDIR)/tblgen-raw_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/raw_ostream.cpp' object='tblgen-raw_ostream.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-raw_ostream.o `test -f 'llvm/lib/Support/raw_ostream.cpp' || echo '$(srcdir)/'`llvm/lib/Support/raw_ostream.cpp
+
+tblgen-raw_ostream.obj: llvm/lib/Support/raw_ostream.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -MT tblgen-raw_ostream.obj -MD -MP -MF $(DEPDIR)/tblgen-raw_ostream.Tpo -c -o tblgen-raw_ostream.obj `if test -f 'llvm/lib/Support/raw_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/raw_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/raw_ostream.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/tblgen-raw_ostream.Tpo $(DEPDIR)/tblgen-raw_ostream.Po
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Support/raw_ostream.cpp' object='tblgen-raw_ostream.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tblgen_CXXFLAGS) $(CXXFLAGS) -c -o tblgen-raw_ostream.obj `if test -f 'llvm/lib/Support/raw_ostream.cpp'; then $(CYGPATH_W) 'llvm/lib/Support/raw_ostream.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Support/raw_ostream.cpp'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

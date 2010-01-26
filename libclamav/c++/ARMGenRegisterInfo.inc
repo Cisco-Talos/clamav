@@ -31,12 +31,7 @@ namespace {     // Register classes...
 
   // GPR Register Class...
   static const unsigned GPR[] = {
-    ARM::R0, ARM::R1, ARM::R2, ARM::R3, ARM::R4, ARM::R5, ARM::R6, ARM::R7, ARM::R8, ARM::R9, ARM::R10, ARM::R12, ARM::R11, ARM::LR, ARM::SP, ARM::PC, 
-  };
-
-  // JustSP Register Class...
-  static const unsigned JustSP[] = {
-    ARM::SP, 
+    ARM::R0, ARM::R1, ARM::R2, ARM::R3, ARM::R4, ARM::R5, ARM::R6, ARM::R7, ARM::R8, ARM::R9, ARM::R10, ARM::R11, ARM::R12, ARM::SP, ARM::LR, ARM::PC, 
   };
 
   // QPR Register Class...
@@ -99,11 +94,6 @@ namespace {     // Register classes...
     MVT::i32, MVT::Other
   };
 
-  // JustSPVTs Register Class Value Types...
-  static const EVT JustSPVTs[] = {
-    MVT::i32, MVT::Other
-  };
-
   // QPRVTs Register Class Value Types...
   static const EVT QPRVTs[] = {
     MVT::v16i8, MVT::v8i16, MVT::v4i32, MVT::v2i64, MVT::v4f32, MVT::v2f64, MVT::Other
@@ -147,7 +137,6 @@ namespace ARM {   // Register class instances
   DPR_8Class	DPR_8RegClass;
   DPR_VFP2Class	DPR_VFP2RegClass;
   GPRClass	GPRRegClass;
-  JustSPClass	JustSPRegClass;
   QPRClass	QPRRegClass;
   QPR_8Class	QPR_8RegClass;
   QPR_VFP2Class	QPR_VFP2RegClass;
@@ -178,11 +167,6 @@ namespace ARM {   // Register class instances
 
   // GPR Sub-register Classes...
   static const TargetRegisterClass* const GPRSubRegClasses[] = {
-    NULL
-  };
-
-  // JustSP Sub-register Classes...
-  static const TargetRegisterClass* const JustSPSubRegClasses[] = {
     NULL
   };
 
@@ -246,11 +230,6 @@ namespace ARM {   // Register class instances
     NULL
   };
 
-  // JustSP Super-register Classes...
-  static const TargetRegisterClass* const JustSPSuperRegClasses[] = {
-    NULL
-  };
-
   // QPR Super-register Classes...
   static const TargetRegisterClass* const QPRSuperRegClasses[] = {
     NULL
@@ -308,12 +287,7 @@ namespace ARM {   // Register class instances
 
   // GPR Register Class sub-classes...
   static const TargetRegisterClass* const GPRSubclasses[] = {
-    &ARM::JustSPRegClass, &ARM::tGPRRegClass, NULL
-  };
-
-  // JustSP Register Class sub-classes...
-  static const TargetRegisterClass* const JustSPSubclasses[] = {
-    NULL
+    &ARM::tGPRRegClass, NULL
   };
 
   // QPR Register Class sub-classes...
@@ -374,11 +348,6 @@ namespace ARM {   // Register class instances
   // GPR Register Class super-classes...
   static const TargetRegisterClass* const GPRSuperclasses[] = {
     NULL
-  };
-
-  // JustSP Register Class super-classes...
-  static const TargetRegisterClass* const JustSPSuperclasses[] = {
-    &ARM::GPRRegClass, NULL
   };
 
   // QPR Register Class super-classes...
@@ -558,13 +527,6 @@ DPR_VFP2Class::DPR_VFP2Class()  : TargetRegisterClass(DPR_VFP2RegClassID, "DPR_V
   
 GPRClass::GPRClass()  : TargetRegisterClass(GPRRegClassID, "GPR", GPRVTs, GPRSubclasses, GPRSuperclasses, GPRSubRegClasses, GPRSuperRegClasses, 4, 4, 1, GPR, GPR + 16) {}
 
-      JustSPClass::iterator
-      JustSPClass::allocation_order_end(const MachineFunction &MF) const {
-        return allocation_order_begin(MF);
-      }
-  
-JustSPClass::JustSPClass()  : TargetRegisterClass(JustSPRegClassID, "JustSP", JustSPVTs, JustSPSubclasses, JustSPSuperclasses, JustSPSubRegClasses, JustSPSuperRegClasses, 4, 4, 1, JustSP, JustSP + 1) {}
-
 QPRClass::QPRClass()  : TargetRegisterClass(QPRRegClassID, "QPR", QPRVTs, QPRSubclasses, QPRSuperclasses, QPRSubRegClasses, QPRSuperRegClasses, 16, 16, 1, QPR, QPR + 16) {}
 
 QPR_8Class::QPR_8Class()  : TargetRegisterClass(QPR_8RegClassID, "QPR_8", QPR_8VTs, QPR_8Subclasses, QPR_8Superclasses, QPR_8SubRegClasses, QPR_8SuperRegClasses, 16, 16, 1, QPR_8, QPR_8 + 4) {}
@@ -608,7 +570,6 @@ namespace {
     &ARM::DPR_8RegClass,
     &ARM::DPR_VFP2RegClass,
     &ARM::GPRRegClass,
-    &ARM::JustSPRegClass,
     &ARM::QPRRegClass,
     &ARM::QPR_8RegClass,
     &ARM::QPR_VFP2RegClass,
@@ -2687,7 +2648,7 @@ ARM::NoRegister, ARM::NoRegister };
   const unsigned D10_AliasSet[] = { ARM::S20, ARM::S21, ARM::Q5, 0 };
   const unsigned D11_AliasSet[] = { ARM::S22, ARM::S23, ARM::Q5, 0 };
   const unsigned D12_AliasSet[] = { ARM::S24, ARM::S25, ARM::Q6, 0 };
-  const unsigned D13_AliasSet[] = { ARM::S26, ARM::S27, ARM::Q6, 0 };
+  const unsigned D13_AliasSet[] = { ARM::S27, ARM::S26, ARM::Q6, 0 };
   const unsigned D14_AliasSet[] = { ARM::S28, ARM::S29, ARM::Q7, 0 };
   const unsigned D15_AliasSet[] = { ARM::S30, ARM::S31, ARM::Q7, 0 };
   const unsigned D16_AliasSet[] = { ARM::Q8, 0 };
@@ -2729,7 +2690,7 @@ ARM::NoRegister, ARM::NoRegister };
   const unsigned Q3_AliasSet[] = { ARM::S12, ARM::S13, ARM::S14, ARM::S15, ARM::D6, ARM::D7, 0 };
   const unsigned Q4_AliasSet[] = { ARM::S16, ARM::S17, ARM::S18, ARM::S19, ARM::D8, ARM::D9, 0 };
   const unsigned Q5_AliasSet[] = { ARM::S20, ARM::S21, ARM::S22, ARM::S23, ARM::D10, ARM::D11, 0 };
-  const unsigned Q6_AliasSet[] = { ARM::S24, ARM::S25, ARM::S26, ARM::S27, ARM::D12, ARM::D13, 0 };
+  const unsigned Q6_AliasSet[] = { ARM::S27, ARM::S24, ARM::S25, ARM::S26, ARM::D12, ARM::D13, 0 };
   const unsigned Q7_AliasSet[] = { ARM::S28, ARM::S29, ARM::S30, ARM::S31, ARM::D14, ARM::D15, 0 };
   const unsigned Q8_AliasSet[] = { ARM::D16, ARM::D17, 0 };
   const unsigned Q9_AliasSet[] = { ARM::D18, ARM::D19, 0 };
@@ -2790,7 +2751,7 @@ ARM::NoRegister, ARM::NoRegister };
   const unsigned D10_SubRegsSet[] = { ARM::S20, ARM::S21, 0 };
   const unsigned D11_SubRegsSet[] = { ARM::S22, ARM::S23, 0 };
   const unsigned D12_SubRegsSet[] = { ARM::S24, ARM::S25, 0 };
-  const unsigned D13_SubRegsSet[] = { ARM::S26, ARM::S27, 0 };
+  const unsigned D13_SubRegsSet[] = { ARM::S27, ARM::S26, 0 };
   const unsigned D14_SubRegsSet[] = { ARM::S28, ARM::S29, 0 };
   const unsigned D15_SubRegsSet[] = { ARM::S30, ARM::S31, 0 };
   const unsigned D16_SubRegsSet[] = { 0 };
@@ -2832,7 +2793,7 @@ ARM::NoRegister, ARM::NoRegister };
   const unsigned Q3_SubRegsSet[] = { ARM::S12, ARM::S13, ARM::D7, ARM::S14, ARM::S15, ARM::D6, 0 };
   const unsigned Q4_SubRegsSet[] = { ARM::S16, ARM::S17, ARM::D9, ARM::S18, ARM::S19, ARM::D8, 0 };
   const unsigned Q5_SubRegsSet[] = { ARM::S20, ARM::S21, ARM::D11, ARM::S22, ARM::S23, ARM::D10, 0 };
-  const unsigned Q6_SubRegsSet[] = { ARM::S24, ARM::S25, ARM::D13, ARM::S26, ARM::S27, ARM::D12, 0 };
+  const unsigned Q6_SubRegsSet[] = { ARM::D13, ARM::S27, ARM::S24, ARM::S25, ARM::S26, ARM::D12, 0 };
   const unsigned Q7_SubRegsSet[] = { ARM::S28, ARM::S29, ARM::D15, ARM::S30, ARM::S31, ARM::D14, 0 };
   const unsigned Q8_SubRegsSet[] = { ARM::D16, ARM::D17, 0 };
   const unsigned Q9_SubRegsSet[] = { ARM::D18, ARM::D19, 0 };
@@ -3524,7 +3485,7 @@ unsigned ARMGenRegisterInfo::getSubRegIndex(unsigned RegNo, unsigned SubRegNo) c
 }
 
 ARMGenRegisterInfo::ARMGenRegisterInfo(int CallFrameSetupOpcode, int CallFrameDestroyOpcode)
-  : TargetRegisterInfo(RegisterDescriptors, 100, RegisterClasses, RegisterClasses+13,
+  : TargetRegisterInfo(RegisterDescriptors, 100, RegisterClasses, RegisterClasses+12,
                   CallFrameSetupOpcode, CallFrameDestroyOpcode,
                  SubregHashTable, SubregHashTableSize,
                  SuperregHashTable, SuperregHashTableSize,

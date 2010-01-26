@@ -28,14 +28,13 @@ namespace ARM { // Register classes
     DPR_8RegClassID = 3,
     DPR_VFP2RegClassID = 4,
     GPRRegClassID = 5,
-    JustSPRegClassID = 6,
-    QPRRegClassID = 7,
-    QPR_8RegClassID = 8,
-    QPR_VFP2RegClassID = 9,
-    SPRRegClassID = 10,
-    SPR_8RegClassID = 11,
-    SPR_INVALIDRegClassID = 12,
-    tGPRRegClassID = 13
+    QPRRegClassID = 6,
+    QPR_8RegClassID = 7,
+    QPR_VFP2RegClassID = 8,
+    SPRRegClassID = 9,
+    SPR_8RegClassID = 10,
+    SPR_INVALIDRegClassID = 11,
+    tGPRRegClassID = 12
   };
 
   struct CCRClass : public TargetRegisterClass {
@@ -69,13 +68,6 @@ namespace ARM { // Register classes
     };
   extern GPRClass	GPRRegClass;
   static TargetRegisterClass * const GPRRegisterClass = &GPRRegClass;
-  struct JustSPClass : public TargetRegisterClass {
-    JustSPClass();
-
-    iterator allocation_order_end(const MachineFunction &MF) const;
-    };
-  extern JustSPClass	JustSPRegClass;
-  static TargetRegisterClass * const JustSPRegisterClass = &JustSPRegClass;
   struct QPRClass : public TargetRegisterClass {
     QPRClass();
   };

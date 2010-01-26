@@ -30,7 +30,8 @@ enum {
   FeatureSSE42 =  1 << 12,
   FeatureSSE4A =  1 << 13,
   FeatureSSSE3 =  1 << 14,
-  FeatureSlowBTMem =  1 << 15
+  FeatureSlowBTMem =  1 << 15,
+  FeatureVectorUAMem =  1 << 16
 };
 
 // Sorted (by key) array of values for CPU features.
@@ -50,7 +51,8 @@ static const llvm::SubtargetFeatureKV FeatureKV[] = {
   { "sse41", "Enable SSE 4.1 instructions", FeatureSSE41, FeatureSSSE3 },
   { "sse42", "Enable SSE 4.2 instructions", FeatureSSE42, FeatureSSE41 },
   { "sse4a", "Support SSE 4a instructions", FeatureSSE4A, 0 },
-  { "ssse3", "Enable SSSE3 instructions", FeatureSSSE3, FeatureSSE3 }
+  { "ssse3", "Enable SSSE3 instructions", FeatureSSSE3, FeatureSSE3 },
+  { "vector-unaligned-mem", "Allow unaligned memory operands on vector/SIMD instructions", FeatureVectorUAMem, 0 }
 };
 
 enum {
@@ -119,8 +121,8 @@ enum {
 // subtarget options.
 std::string llvm::X86Subtarget::ParseSubtargetFeatures(const std::string &FS,
                                   const std::string &CPU) {
-  DEBUG(errs() << "\nFeatures:" << FS);
-  DEBUG(errs() << "\nCPU:" << CPU);
+  DEBUG(dbgs() << "\nFeatures:" << FS);
+  DEBUG(dbgs() << "\nCPU:" << CPU);
   SubtargetFeatures Features(FS);
   Features.setCPUIfNone(CPU);
   uint32_t Bits =  Features.getBits(SubTypeKV, SubTypeKVSize,
@@ -141,5 +143,6 @@ std::string llvm::X86Subtarget::ParseSubtargetFeatures(const std::string &FS,
   if ((Bits & FeatureSSE4A) != 0) HasSSE4A = true;
   if ((Bits & FeatureSSSE3) != 0 && X86SSELevel < SSSE3) X86SSELevel = SSSE3;
   if ((Bits & FeatureSlowBTMem) != 0) IsBTMemSlow = true;
+  if ((Bits & FeatureVectorUAMem) != 0) HasVectorUAMem = true;
   return Features.getCPU();
 }

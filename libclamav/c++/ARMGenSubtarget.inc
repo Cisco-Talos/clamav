@@ -680,8 +680,8 @@ enum {
 // subtarget options.
 std::string llvm::ARMSubtarget::ParseSubtargetFeatures(const std::string &FS,
                                   const std::string &CPU) {
-  DEBUG(errs() << "\nFeatures:" << FS);
-  DEBUG(errs() << "\nCPU:" << CPU);
+  DEBUG(dbgs() << "\nFeatures:" << FS);
+  DEBUG(dbgs() << "\nCPU:" << CPU);
   SubtargetFeatures Features(FS);
   Features.setCPUIfNone(CPU);
   uint32_t Bits =  Features.getBits(SubTypeKV, SubTypeKVSize,

@@ -19,7 +19,7 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../ $(LLVM_INCLUDES) $(LLVM_DEFS)
-AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -fno-rtti
 ACLOCAL_AMFLAGS=-I m4
 if DEBUG_BUILD
 LLVM_CONFIG=llvm/Debug/bin/llvm-config
@@ -43,7 +43,7 @@ lli_LDADD=libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la
 libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-rtti
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
@@ -148,9 +148,12 @@ if MAINTAINER_MODE
 BUILT_SOURCES+=$(TBLGENFILES)
 noinst_PROGRAMS = tblgen
 tblgen_CXXFLAGS=$(LLVM_CXXFLAGS)
-tblgen_LDADD=libllvmsupport.la libllvmsystem.la
+tblgen_CFLAGS=
 #TODO: if VERSIONSCRIPT
-tblgen_LDFLAGS= -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+tblgen_LDFLAGS=-pthread -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+# tblgen needs rtti (for now), and we build everything else with -fno-rtti
+# since tblgen is only a maintainer-mode tool, build these files twice (once for
+# libllvmsupport.la -fno-rtti, and once here, with defaults (rtti)).
 tblgen_SOURCES=\
   llvm/utils/TableGen/AsmMatcherEmitter.cpp\
   llvm/utils/TableGen/AsmWriterEmitter.cpp\
@@ -177,7 +180,68 @@ tblgen_SOURCES=\
   llvm/utils/TableGen/TableGen.cpp\
   llvm/utils/TableGen/TableGenBackend.cpp\
   llvm/utils/TableGen/X86DisassemblerTables.cpp\
-  llvm/utils/TableGen/X86RecognizableInstr.cpp
+  llvm/utils/TableGen/X86RecognizableInstr.cpp \
+  llvm/lib/System/Alarm.cpp\
+  llvm/lib/System/Atomic.cpp\
+  llvm/lib/System/Disassembler.cpp\
+  llvm/lib/System/DynamicLibrary.cpp\
+  llvm/lib/System/Errno.cpp\
+  llvm/lib/System/Host.cpp\
+  llvm/lib/System/IncludeFile.cpp\
+  llvm/lib/System/Memory.cpp\
+  llvm/lib/System/Mutex.cpp\
+  llvm/lib/System/Path.cpp\
+  llvm/lib/System/Process.cpp\
+  llvm/lib/System/Program.cpp\
+  llvm/lib/System/RWMutex.cpp\
+  llvm/lib/System/Signals.cpp\
+  llvm/lib/System/ThreadLocal.cpp\
+  llvm/lib/System/Threading.cpp\
+  llvm/lib/System/TimeValue.cpp\
+  llvm/lib/Support/APFloat.cpp\
+  llvm/lib/Support/APInt.cpp\
+  llvm/lib/Support/APSInt.cpp\
+  llvm/lib/Support/Allocator.cpp\
+  llvm/lib/Support/CommandLine.cpp\
+  llvm/lib/Support/ConstantRange.cpp\
+  llvm/lib/Support/Debug.cpp\
+  llvm/lib/Support/DeltaAlgorithm.cpp\
+  llvm/lib/Support/Dwarf.cpp\
+  llvm/lib/Support/ErrorHandling.cpp\
+  llvm/lib/Support/FileUtilities.cpp\
+  llvm/lib/Support/FoldingSet.cpp\
+  llvm/lib/Support/FormattedStream.cpp\
+  llvm/lib/Support/GraphWriter.cpp\
+  llvm/lib/Support/IsInf.cpp\
+  llvm/lib/Support/IsNAN.cpp\
+  llvm/lib/Support/ManagedStatic.cpp\
+  llvm/lib/Support/MemoryBuffer.cpp\
+  llvm/lib/Support/MemoryObject.cpp\
+  llvm/lib/Support/PluginLoader.cpp\
+  llvm/lib/Support/PrettyStackTrace.cpp\
+  llvm/lib/Support/Regex.cpp\
+  llvm/lib/Support/SlowOperationInformer.cpp\
+  llvm/lib/Support/SmallPtrSet.cpp\
+  llvm/lib/Support/SmallVector.cpp\
+  llvm/lib/Support/SourceMgr.cpp\
+  llvm/lib/Support/Statistic.cpp\
+  llvm/lib/Support/StringExtras.cpp\
+  llvm/lib/Support/StringMap.cpp\
+  llvm/lib/Support/StringPool.cpp\
+  llvm/lib/Support/StringRef.cpp\
+  llvm/lib/Support/SystemUtils.cpp\
+  llvm/lib/Support/TargetRegistry.cpp\
+  llvm/lib/Support/Timer.cpp\
+  llvm/lib/Support/Triple.cpp\
+  llvm/lib/Support/Twine.cpp\
+  llvm/lib/Support/circular_raw_ostream.cpp\
+  llvm/lib/Support/raw_os_ostream.cpp\
+  llvm/lib/Support/raw_ostream.cpp\
+  llvm/lib/Support/regcomp.c\
+  llvm/lib/Support/regerror.c\
+  llvm/lib/Support/regexec.c\
+  llvm/lib/Support/regfree.c\
+  llvm/lib/Support/regstrlcpy.c
 
 TBLGEN=$(top_builddir)/tblgen
 TBLGEN_V=$(AM_V_GEN)$(TBLGEN)
@@ -434,6 +498,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Support/Twine.cpp\
 	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
+	llvm/lib/Target/Mangler.cpp\
 	llvm/lib/Target/SubtargetFeature.cpp\
 	llvm/lib/Target/TargetData.cpp\
 	llvm/lib/Target/TargetInstrInfo.cpp\
@@ -450,13 +515,13 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/Dominators.cpp\
 	llvm/lib/VMCore/Function.cpp\
 	llvm/lib/VMCore/Globals.cpp\
+	llvm/lib/VMCore/IRBuilder.cpp\
 	llvm/lib/VMCore/InlineAsm.cpp\
 	llvm/lib/VMCore/Instruction.cpp\
 	llvm/lib/VMCore/Instructions.cpp\
 	llvm/lib/VMCore/IntrinsicInst.cpp\
 	llvm/lib/VMCore/LLVMContext.cpp\
 	llvm/lib/VMCore/LeakDetector.cpp\
-	llvm/lib/VMCore/Mangler.cpp\
 	llvm/lib/VMCore/Metadata.cpp\
 	llvm/lib/VMCore/Module.cpp\
 	llvm/lib/VMCore/ModuleProvider.cpp\
@@ -470,6 +535,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/ValueSymbolTable.cpp\
 	llvm/lib/VMCore/ValueTypes.cpp\
 	llvm/lib/VMCore/Verifier.cpp
+
 libllvmcodegen_la_SOURCES=\
 	llvm/lib/Analysis/AliasSetTracker.cpp\
 	llvm/lib/Analysis/ConstantFolding.cpp\
@@ -505,6 +571,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
 	llvm/lib/CodeGen/LiveVariables.cpp\
 	llvm/lib/CodeGen/LowerSubregs.cpp\
+	llvm/lib/CodeGen/MachOWriter.cpp\
 	llvm/lib/CodeGen/MachineDominators.cpp\
 	llvm/lib/CodeGen/MachineLICM.cpp\
 	llvm/lib/CodeGen/MachineLoopInfo.cpp\
@@ -512,7 +579,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/MachineSSAUpdater.cpp\
 	llvm/lib/CodeGen/MachineSink.cpp\
 	llvm/lib/CodeGen/MachineVerifier.cpp\
-	llvm/lib/CodeGen/MaxStackAlignment.cpp\
+	llvm/lib/CodeGen/OptimizeExts.cpp\
 	llvm/lib/CodeGen/PHIElimination.cpp\
 	llvm/lib/CodeGen/Passes.cpp\
 	llvm/lib/CodeGen/PostRASchedulerList.cpp\
@@ -520,7 +587,6 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
 	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
 	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
-	llvm/lib/CodeGen/RegAllocLocal.cpp\
 	llvm/lib/CodeGen/RegisterCoalescer.cpp\
 	llvm/lib/CodeGen/RegisterScavenging.cpp\
 	llvm/lib/CodeGen/ScheduleDAG.cpp\
@@ -563,7 +629,9 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/VirtRegRewriter.cpp\
 	llvm/lib/MC/MCAsmInfoDarwin.cpp\
 	llvm/lib/MC/MCAsmStreamer.cpp\
+	llvm/lib/MC/MCAssembler.cpp\
 	llvm/lib/MC/MCInst.cpp\
+	llvm/lib/MC/MCMachOStreamer.cpp\
 	llvm/lib/MC/MCStreamer.cpp\
 	llvm/lib/Target/TargetFrameInfo.cpp\
 	llvm/lib/Target/TargetSubtarget.cpp\
@@ -585,6 +653,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/Transforms/Utils/SSAUpdater.cpp\
 	llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
 	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
+
 
 # Used only by make check
 
@@ -737,8 +806,6 @@ libllvmfullcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
 	llvm/lib/CodeGen/IfConversion.cpp\
 	llvm/lib/CodeGen/IntrinsicLowering.cpp\
-	llvm/lib/CodeGen/MachOCodeEmitter.cpp\
-	llvm/lib/CodeGen/MachOWriter.cpp\
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
 	llvm/lib/CodeGen/OcamlGC.cpp\
 	llvm/lib/CodeGen/RegAllocLocal.cpp\
@@ -748,6 +815,7 @@ libllvmfullcodegen_la_SOURCES=\
 	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
 	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp\
 	llvm/lib/Target/Target.cpp\
+	llvm/lib/Target/TargetAsmLexer.cpp\
 	llvm/lib/Target/TargetELFWriterInfo.cpp\
 	llvm/lib/Target/TargetIntrinsicInfo.cpp\
 	llvm/lib/Target/TargetMachOWriterInfo.cpp

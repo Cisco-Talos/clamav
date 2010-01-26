@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
+static unsigned MatchRegisterName(const StringRef &Name) {
   switch (Name.size()) {
   default: break;
   case 2:	 // 25 strings to match.
@@ -598,11 +598,12 @@ unsigned X86ATTAsmParser::MatchRegisterName(const StringRef &Name) {
   return 0;
 }
 
+#ifndef REGISTERS_ONLY
+
 // Unified function for converting operants to MCInst instances.
 
 enum ConversionKind {
   Convert,
-  ConvertImp,
   Convert_Reg1_1Imp,
   Convert_Imm1_1,
   Convert_Mem5_1,
@@ -651,115 +652,112 @@ enum ConversionKind {
 };
 
 static bool ConvertToMCInst(ConversionKind Kind, MCInst &Inst, unsigned Opcode,
-                            SmallVectorImpl<X86Operand> &Operands) {
+                      const SmallVectorImpl<MCParsedAsmOperand*> &Operands) {
   Inst.setOpcode(Opcode);
   switch (Kind) {
   default:
   case Convert:
     break;
-  case ConvertImp:
-    Inst.addOperand(MCOperand::CreateReg(0));
-    break;
   case Convert_Reg1_1Imp:
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
     break;
   case Convert_Imm1_1:
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Mem5_1:
-    Operands[1].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_1:
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     break;
   case Convert_Reg1_2_ImpReg1_1:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     break;
   case Convert_Mem5_2_Reg1_1:
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     break;
   case Convert_Reg1_2_ImpImm1_1:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Mem5_2_Imm1_1:
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_2_ImpMem5_1:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_2_ImpImmSExt81_1:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Mem5_2_ImmSExt81_1:
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_2_Reg1_1:
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     break;
   case Convert_Reg1_2_Mem5_1:
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_2_ImmSExt81_1:
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_2:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     break;
   case Convert_Mem5_2:
-    Operands[2].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_2_Imm1_1:
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_ImpReg1_2_Reg1_1:
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
     break;
   case Convert_ImpReg1_2_Mem5_1:
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addMemOperands(Inst, 5);
     break;
   case Convert_Imm1_1_Imm1_2:
-    Operands[1].addImmOperands(Inst, 1);
-    Operands[2].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addImmOperands(Inst, 1);
     break;
   case Convert_ImmSExt81_1:
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_2_Mem4_1:
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addMemOperands(Inst, 4);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addMemOperands(Inst, 4);
     break;
   case Convert_Imm1_2:
-    Operands[2].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addImmOperands(Inst, 1);
     break;
   case Convert_ImmSExt81_2:
-    Operands[2].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[2])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_2Imp:
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
     break;
   case Convert_Mem5_2ImpImpImpImpImp:
-    Operands[2].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
@@ -767,103 +765,103 @@ static bool ConvertToMCInst(ConversionKind Kind, MCInst &Inst, unsigned Opcode,
     Inst.addOperand(MCOperand::CreateReg(0));
     break;
   case Convert_Mem5_2_ImpImpImpImpImpImm1_1:
-    Operands[2].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_ImpReg1_1_Reg1_2:
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addRegOperands(Inst, 1);
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     break;
   case Convert_ImpReg1_1_Mem5_2:
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[1].addRegOperands(Inst, 1);
-    Operands[2].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_3_ImpReg1_2_ImmSExt81_1:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_3_ImpMem5_2_ImmSExt81_1:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_3_ImpReg1_2:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     break;
   case Convert_Reg1_3_ImpMem5_2:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
     break;
   case Convert_Reg1_3_Reg1_2_ImmSExt81_1:
-    Operands[3].addRegOperands(Inst, 1);
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Mem5_3_Reg1_2_ImmSExt81_1:
-    Operands[3].addMemOperands(Inst, 5);
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[3])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_3_Mem5_2_ImmSExt81_1:
-    Operands[3].addRegOperands(Inst, 1);
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmSExt8Operands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmSExt8Operands(Inst, 1);
     break;
   case Convert_Reg1_3_Reg1_2_Imm1_1:
-    Operands[3].addRegOperands(Inst, 1);
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_3_Mem5_2_Imm1_1:
-    Operands[3].addRegOperands(Inst, 1);
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_3_ImpReg1_2_Imm1_1:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_3_ImpMem5_2_Imm1_1:
-    Operands[3].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[2].addMemOperands(Inst, 5);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[2])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Mem5_3_Reg1_2:
-    Operands[3].addMemOperands(Inst, 5);
-    Operands[2].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
     break;
   case Convert_Mem5_3_Reg1_2_Imm1_1:
-    Operands[3].addMemOperands(Inst, 5);
-    Operands[2].addRegOperands(Inst, 1);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[2])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_4_ImpReg1_3_Imm1_1:
-    Operands[4].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[4])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[3].addRegOperands(Inst, 1);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   case Convert_Reg1_4_ImpMem5_3_Imm1_1:
-    Operands[4].addRegOperands(Inst, 1);
+    ((X86Operand*)Operands[4])->addRegOperands(Inst, 1);
     Inst.addOperand(MCOperand::CreateReg(0));
-    Operands[3].addMemOperands(Inst, 5);
-    Operands[1].addImmOperands(Inst, 1);
+    ((X86Operand*)Operands[3])->addMemOperands(Inst, 5);
+    ((X86Operand*)Operands[1])->addImmOperands(Inst, 1);
     break;
   }
   return false;
@@ -5894,7 +5892,8 @@ static MatchClassKind MatchTokenString(const StringRef &Name) {
   return InvalidMatchClass;
 }
 
-static MatchClassKind ClassifyOperand(X86Operand &Operand) {
+static MatchClassKind ClassifyOperand(MCParsedAsmOperand *GOp) {
+  X86Operand &Operand = *(X86Operand*)GOp;
   if (Operand.isToken())
     return MatchTokenString(Operand.getToken());
 
@@ -6241,12 +6240,14 @@ static bool IsSubclass(MatchClassKind A, MatchClassKind B) {
   }
 }
 
-bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MCInst &Inst) {
+bool X86ATTAsmParser::
+MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
+                 MCInst &Inst) {
   static const struct MatchEntry {
     unsigned Opcode;
     ConversionKind ConvertFn;
     MatchClassKind Classes[5];
-  } MatchTable[2041] = {
+  } MatchTable[2040] = {
     { X86::CBW, Convert, { MCK_cbtw } },
     { X86::CLC, Convert, { MCK_clc } },
     { X86::CLD, Convert, { MCK_cld } },
@@ -6309,8 +6310,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::IRET64, Convert, { MCK_iretq } },
     { X86::IRET16, Convert, { MCK_iretw } },
     { X86::LAHF, Convert, { MCK_lahf } },
-    { X86::LEAVE, Convert, { MCK_leave } },
     { X86::LEAVE64, Convert, { MCK_leave } },
+    { X86::LEAVE, Convert, { MCK_leave } },
     { X86::LFENCE, Convert, { MCK_lfence } },
     { X86::LODSB, Convert, { MCK_lodsb } },
     { X86::LODSD, Convert, { MCK_lodsl } },
@@ -6341,7 +6342,6 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::REP_STOSD, Convert, { MCK_rep_59_stosl } },
     { X86::REP_STOSQ, Convert, { MCK_rep_59_stosq } },
     { X86::REP_STOSW, Convert, { MCK_rep_59_stosw } },
-    { X86::EH_RETURN64, ConvertImp, { MCK_ret } },
     { X86::RET, Convert, { MCK_ret } },
     { X86::RSM, Convert, { MCK_rsm } },
     { X86::SAHF, Convert, { MCK_sahf } },
@@ -6356,8 +6356,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SWPGS, Convert, { MCK_swpgs } },
     { X86::SYSCALL, Convert, { MCK_syscall } },
     { X86::SYSENTER, Convert, { MCK_sysenter } },
-    { X86::SYSEXIT64, Convert, { MCK_sysexit } },
     { X86::SYSEXIT, Convert, { MCK_sysexit } },
+    { X86::SYSEXIT64, Convert, { MCK_sysexit } },
     { X86::SYSRET, Convert, { MCK_sysret } },
     { X86::TRAP, Convert, { MCK_ud2 } },
     { X86::VMCALL, Convert, { MCK_vmcall } },
@@ -6370,22 +6370,22 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::XLAT, Convert, { MCK_xlatb } },
     { X86::BSWAP32r, Convert_Reg1_1Imp, { MCK_bswapl, MCK_GR32 } },
     { X86::BSWAP64r, Convert_Reg1_1Imp, { MCK_bswapq, MCK_GR64 } },
-    { X86::CALLpcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
     { X86::WINCALL64pcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
+    { X86::CALLpcrel32, Convert_Imm1_1, { MCK_call, MCK_Imm } },
     { X86::CALL64pcrel32, Convert_Imm1_1, { MCK_callq, MCK_Imm } },
     { X86::CLFLUSH, Convert_Mem5_1, { MCK_clflush, MCK_Mem } },
     { X86::CMPXCHG16B, Convert_Mem5_1, { MCK_cmpxchg16b, MCK_Mem } },
     { X86::CMPXCHG8B, Convert_Mem5_1, { MCK_cmpxchg8b, MCK_Mem } },
     { X86::DEC8r, Convert_Reg1_1Imp, { MCK_decb, MCK_GR8 } },
     { X86::DEC8m, Convert_Mem5_1, { MCK_decb, MCK_Mem } },
-    { X86::DEC32r, Convert_Reg1_1Imp, { MCK_decl, MCK_GR32 } },
     { X86::DEC64_32r, Convert_Reg1_1Imp, { MCK_decl, MCK_GR32 } },
-    { X86::DEC32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
+    { X86::DEC32r, Convert_Reg1_1Imp, { MCK_decl, MCK_GR32 } },
     { X86::DEC64_32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
+    { X86::DEC32m, Convert_Mem5_1, { MCK_decl, MCK_Mem } },
     { X86::DEC64r, Convert_Reg1_1Imp, { MCK_decq, MCK_GR64 } },
     { X86::DEC64m, Convert_Mem5_1, { MCK_decq, MCK_Mem } },
-    { X86::DEC16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
     { X86::DEC64_16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
+    { X86::DEC16r, Convert_Reg1_1Imp, { MCK_decw, MCK_GR16 } },
     { X86::DEC64_16m, Convert_Mem5_1, { MCK_decw, MCK_Mem } },
     { X86::DEC16m, Convert_Mem5_1, { MCK_decw, MCK_Mem } },
     { X86::DIV8r, Convert_Reg1_1, { MCK_divb, MCK_GR8 } },
@@ -6437,8 +6437,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::IST_FP64m, Convert_Mem5_1, { MCK_fistpll, MCK_Mem } },
     { X86::IST_FP16m, Convert_Mem5_1, { MCK_fistps, MCK_Mem } },
     { X86::IST_F16m, Convert_Mem5_1, { MCK_fists, MCK_Mem } },
-    { X86::FISTTP32m, Convert_Mem5_1, { MCK_fisttpl, MCK_Mem } },
     { X86::ISTT_FP32m, Convert_Mem5_1, { MCK_fisttpl, MCK_Mem } },
+    { X86::FISTTP32m, Convert_Mem5_1, { MCK_fisttpl, MCK_Mem } },
     { X86::ISTT_FP64m, Convert_Mem5_1, { MCK_fisttpll, MCK_Mem } },
     { X86::ISTT_FP16m, Convert_Mem5_1, { MCK_fisttps, MCK_Mem } },
     { X86::SUB_FI32m, Convert_Mem5_1, { MCK_fisubl, MCK_Mem } },
@@ -6499,37 +6499,37 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::IMUL16m, Convert_Mem5_1, { MCK_imulw, MCK_Mem } },
     { X86::INC8r, Convert_Reg1_1Imp, { MCK_incb, MCK_GR8 } },
     { X86::INC8m, Convert_Mem5_1, { MCK_incb, MCK_Mem } },
-    { X86::INC64_32r, Convert_Reg1_1Imp, { MCK_incl, MCK_GR32 } },
     { X86::INC32r, Convert_Reg1_1Imp, { MCK_incl, MCK_GR32 } },
-    { X86::INC64_32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
+    { X86::INC64_32r, Convert_Reg1_1Imp, { MCK_incl, MCK_GR32 } },
     { X86::INC32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
+    { X86::INC64_32m, Convert_Mem5_1, { MCK_incl, MCK_Mem } },
     { X86::INC64r, Convert_Reg1_1Imp, { MCK_incq, MCK_GR64 } },
     { X86::INC64m, Convert_Mem5_1, { MCK_incq, MCK_Mem } },
-    { X86::INC64_16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
     { X86::INC16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
-    { X86::INC64_16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
+    { X86::INC64_16r, Convert_Reg1_1Imp, { MCK_incw, MCK_GR16 } },
     { X86::INC16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
+    { X86::INC64_16m, Convert_Mem5_1, { MCK_incw, MCK_Mem } },
     { X86::INT3, Convert, { MCK_int, MCK_3 } },
     { X86::INT, Convert_Imm1_1, { MCK_int, MCK_Imm } },
-    { X86::JA, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
     { X86::JA8, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
+    { X86::JA, Convert_Imm1_1, { MCK_ja, MCK_Imm } },
     { X86::JAE, Convert_Imm1_1, { MCK_jae, MCK_Imm } },
     { X86::JAE8, Convert_Imm1_1, { MCK_jae, MCK_Imm } },
     { X86::JB, Convert_Imm1_1, { MCK_jb, MCK_Imm } },
     { X86::JB8, Convert_Imm1_1, { MCK_jb, MCK_Imm } },
-    { X86::JBE8, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
     { X86::JBE, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
+    { X86::JBE8, Convert_Imm1_1, { MCK_jbe, MCK_Imm } },
     { X86::JCXZ8, Convert_Imm1_1, { MCK_jcxz, MCK_Imm } },
     { X86::JE, Convert_Imm1_1, { MCK_je, MCK_Imm } },
     { X86::JE8, Convert_Imm1_1, { MCK_je, MCK_Imm } },
     { X86::JG, Convert_Imm1_1, { MCK_jg, MCK_Imm } },
     { X86::JG8, Convert_Imm1_1, { MCK_jg, MCK_Imm } },
-    { X86::JGE8, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
     { X86::JGE, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
+    { X86::JGE8, Convert_Imm1_1, { MCK_jge, MCK_Imm } },
     { X86::JL8, Convert_Imm1_1, { MCK_jl, MCK_Imm } },
     { X86::JL, Convert_Imm1_1, { MCK_jl, MCK_Imm } },
-    { X86::JLE8, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
     { X86::JLE, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
+    { X86::JLE8, Convert_Imm1_1, { MCK_jle, MCK_Imm } },
     { X86::JMP, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
     { X86::JMP8, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
     { X86::TAILJMPd, Convert_Imm1_1, { MCK_jmp, MCK_Imm } },
@@ -6538,14 +6538,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::JNE8, Convert_Imm1_1, { MCK_jne, MCK_Imm } },
     { X86::JNO, Convert_Imm1_1, { MCK_jno, MCK_Imm } },
     { X86::JNO8, Convert_Imm1_1, { MCK_jno, MCK_Imm } },
-    { X86::JNP8, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
     { X86::JNP, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
-    { X86::JNS8, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
+    { X86::JNP8, Convert_Imm1_1, { MCK_jnp, MCK_Imm } },
     { X86::JNS, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
-    { X86::JO8, Convert_Imm1_1, { MCK_jo, MCK_Imm } },
+    { X86::JNS8, Convert_Imm1_1, { MCK_jns, MCK_Imm } },
     { X86::JO, Convert_Imm1_1, { MCK_jo, MCK_Imm } },
-    { X86::JP, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
+    { X86::JO8, Convert_Imm1_1, { MCK_jo, MCK_Imm } },
     { X86::JP8, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
+    { X86::JP, Convert_Imm1_1, { MCK_jp, MCK_Imm } },
     { X86::JS8, Convert_Imm1_1, { MCK_js, MCK_Imm } },
     { X86::JS, Convert_Imm1_1, { MCK_js, MCK_Imm } },
     { X86::LDMXCSR, Convert_Mem5_1, { MCK_ldmxcsr, MCK_Mem } },
@@ -6587,8 +6587,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::NOT64m, Convert_Mem5_1, { MCK_notq, MCK_Mem } },
     { X86::NOT16r, Convert_Reg1_1Imp, { MCK_notw, MCK_GR16 } },
     { X86::NOT16m, Convert_Mem5_1, { MCK_notw, MCK_Mem } },
-    { X86::POP32r, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
     { X86::POP32rmr, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
+    { X86::POP32r, Convert_Reg1_1, { MCK_popl, MCK_GR32 } },
     { X86::POPFS32, Convert, { MCK_popl, MCK_FS } },
     { X86::POPGS32, Convert, { MCK_popl, MCK_GS } },
     { X86::POP32rmm, Convert_Mem5_1, { MCK_popl, MCK_Mem } },
@@ -6611,11 +6611,11 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::PUSHFS32, Convert, { MCK_pushl, MCK_FS } },
     { X86::PUSHGS32, Convert, { MCK_pushl, MCK_GS } },
     { X86::PUSH32i32, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
-    { X86::PUSH32i8, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
     { X86::PUSH32i16, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
+    { X86::PUSH32i8, Convert_Imm1_1, { MCK_pushl, MCK_Imm } },
     { X86::PUSH32rmm, Convert_Mem5_1, { MCK_pushl, MCK_Mem } },
-    { X86::PUSH64rmr, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
     { X86::PUSH64r, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
+    { X86::PUSH64rmr, Convert_Reg1_1, { MCK_pushq, MCK_GR64 } },
     { X86::PUSHFS64, Convert, { MCK_pushq, MCK_FS } },
     { X86::PUSHGS64, Convert, { MCK_pushq, MCK_GS } },
     { X86::PUSH64i8, Convert_Imm1_1, { MCK_pushq, MCK_Imm } },
@@ -6721,15 +6721,15 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::VMPTRLDm, Convert_Mem5_1, { MCK_vmptrld, MCK_Mem } },
     { X86::VMPTRSTm, Convert_Mem5_1, { MCK_vmptrst, MCK_Mem } },
     { X86::VMXON, Convert_Mem5_1, { MCK_vmxon, MCK_Mem } },
-    { X86::ADC8rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcb, MCK_GR8, MCK_GR8 } },
     { X86::ADC8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcb, MCK_GR8, MCK_GR8 } },
+    { X86::ADC8rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcb, MCK_GR8, MCK_GR8 } },
     { X86::ADC8mr, Convert_Mem5_2_Reg1_1, { MCK_adcb, MCK_GR8, MCK_Mem } },
     { X86::ADC8i8, Convert_Imm1_1, { MCK_adcb, MCK_Imm, MCK_AL } },
     { X86::ADC8ri, Convert_Reg1_2_ImpImm1_1, { MCK_adcb, MCK_Imm, MCK_GR8 } },
     { X86::ADC8mi, Convert_Mem5_2_Imm1_1, { MCK_adcb, MCK_Imm, MCK_Mem } },
     { X86::ADC8rm, Convert_Reg1_2_ImpMem5_1, { MCK_adcb, MCK_Mem, MCK_GR8 } },
-    { X86::ADC32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcl, MCK_GR32, MCK_GR32 } },
     { X86::ADC32rr, Convert_Reg1_2_ImpReg1_1, { MCK_adcl, MCK_GR32, MCK_GR32 } },
+    { X86::ADC32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_adcl, MCK_GR32, MCK_GR32 } },
     { X86::ADC32mr, Convert_Mem5_2_Reg1_1, { MCK_adcl, MCK_GR32, MCK_Mem } },
     { X86::ADC32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_adcl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::ADC32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_adcl, MCK_ImmSExt8, MCK_Mem } },
@@ -6792,8 +6792,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::ADDSUBPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_addsubpd, MCK_Mem, MCK_FR32 } },
     { X86::ADDSUBPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_addsubps, MCK_FR32, MCK_FR32 } },
     { X86::ADDSUBPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_addsubps, MCK_Mem, MCK_FR32 } },
-    { X86::ADD16mrmrr, Convert_Reg1_2_ImpReg1_1, { MCK_addw, MCK_GR16, MCK_GR16 } },
     { X86::ADD16rr, Convert_Reg1_2_ImpReg1_1, { MCK_addw, MCK_GR16, MCK_GR16 } },
+    { X86::ADD16mrmrr, Convert_Reg1_2_ImpReg1_1, { MCK_addw, MCK_GR16, MCK_GR16 } },
     { X86::ADD16mr, Convert_Mem5_2_Reg1_1, { MCK_addw, MCK_GR16, MCK_Mem } },
     { X86::ADD16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_addw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::ADD16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_addw, MCK_ImmSExt8, MCK_Mem } },
@@ -6808,8 +6808,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::AND8ri, Convert_Reg1_2_ImpImm1_1, { MCK_andb, MCK_Imm, MCK_GR8 } },
     { X86::AND8mi, Convert_Mem5_2_Imm1_1, { MCK_andb, MCK_Imm, MCK_Mem } },
     { X86::AND8rm, Convert_Reg1_2_ImpMem5_1, { MCK_andb, MCK_Mem, MCK_GR8 } },
-    { X86::AND32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andl, MCK_GR32, MCK_GR32 } },
     { X86::AND32rr, Convert_Reg1_2_ImpReg1_1, { MCK_andl, MCK_GR32, MCK_GR32 } },
+    { X86::AND32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_andl, MCK_GR32, MCK_GR32 } },
     { X86::AND32mr, Convert_Mem5_2_Reg1_1, { MCK_andl, MCK_GR32, MCK_Mem } },
     { X86::AND32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_andl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::AND32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_andl, MCK_ImmSExt8, MCK_Mem } },
@@ -6819,16 +6819,16 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::AND32rm, Convert_Reg1_2_ImpMem5_1, { MCK_andl, MCK_Mem, MCK_GR32 } },
     { X86::FsANDNPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnpd, MCK_FR32, MCK_FR32 } },
     { X86::ANDNPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnpd, MCK_FR32, MCK_FR32 } },
-    { X86::FsANDNPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnpd, MCK_Mem, MCK_FR32 } },
     { X86::ANDNPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnpd, MCK_Mem, MCK_FR32 } },
+    { X86::FsANDNPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnpd, MCK_Mem, MCK_FR32 } },
     { X86::ANDNPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnps, MCK_FR32, MCK_FR32 } },
     { X86::FsANDNPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andnps, MCK_FR32, MCK_FR32 } },
-    { X86::FsANDNPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnps, MCK_Mem, MCK_FR32 } },
     { X86::ANDNPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnps, MCK_Mem, MCK_FR32 } },
-    { X86::FsANDPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andpd, MCK_FR32, MCK_FR32 } },
+    { X86::FsANDNPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andnps, MCK_Mem, MCK_FR32 } },
     { X86::ANDPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andpd, MCK_FR32, MCK_FR32 } },
-    { X86::FsANDPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andpd, MCK_Mem, MCK_FR32 } },
+    { X86::FsANDPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_andpd, MCK_FR32, MCK_FR32 } },
     { X86::ANDPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andpd, MCK_Mem, MCK_FR32 } },
+    { X86::FsANDPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_andpd, MCK_Mem, MCK_FR32 } },
     { X86::ANDPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andps, MCK_FR32, MCK_FR32 } },
     { X86::FsANDPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_andps, MCK_FR32, MCK_FR32 } },
     { X86::ANDPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_andps, MCK_Mem, MCK_FR32 } },
@@ -7020,8 +7020,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CMP8ri, Convert_Reg1_2_Imm1_1, { MCK_cmpb, MCK_Imm, MCK_GR8 } },
     { X86::CMP8mi, Convert_Mem5_2_Imm1_1, { MCK_cmpb, MCK_Imm, MCK_Mem } },
     { X86::CMP8rm, Convert_Reg1_2_Mem5_1, { MCK_cmpb, MCK_Mem, MCK_GR8 } },
-    { X86::CMP32rr, Convert_Reg1_2_Reg1_1, { MCK_cmpl, MCK_GR32, MCK_GR32 } },
     { X86::CMP32mrmrr, Convert_Reg1_2_Reg1_1, { MCK_cmpl, MCK_GR32, MCK_GR32 } },
+    { X86::CMP32rr, Convert_Reg1_2_Reg1_1, { MCK_cmpl, MCK_GR32, MCK_GR32 } },
     { X86::CMP32mr, Convert_Mem5_2_Reg1_1, { MCK_cmpl, MCK_GR32, MCK_Mem } },
     { X86::CMP32ri8, Convert_Reg1_2_ImmSExt81_1, { MCK_cmpl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::CMP32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_cmpl, MCK_ImmSExt8, MCK_Mem } },
@@ -7063,9 +7063,9 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::CRC32r16, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR16, MCK_GR32 } },
     { X86::CRC32r32, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR32, MCK_GR32 } },
     { X86::CRC64r64, Convert_ImpReg1_2_Reg1_1, { MCK_crc32, MCK_GR64, MCK_GR64 } },
-    { X86::CRC32m16, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
-    { X86::CRC32m32, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
     { X86::CRC32m8, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
+    { X86::CRC32m32, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
+    { X86::CRC32m16, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR32 } },
     { X86::CRC64m64, Convert_ImpReg1_2_Mem5_1, { MCK_crc32, MCK_Mem, MCK_GR64 } },
     { X86::CVTDQ2PDrr, Convert_Reg1_2_Reg1_1, { MCK_cvtdq2pd, MCK_FR32, MCK_FR32 } },
     { X86::CVTDQ2PDrm, Convert_Reg1_2_Mem5_1, { MCK_cvtdq2pd, MCK_Mem, MCK_FR32 } },
@@ -7170,8 +7170,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::JMP32r, Convert_Reg1_2, { MCK_jmpl, MCK__STAR_, MCK_GR32 } },
     { X86::TAILJMPr, Convert_Reg1_2, { MCK_jmpl, MCK__STAR_, MCK_GR32 } },
     { X86::JMP32m, Convert_Mem5_2, { MCK_jmpl, MCK__STAR_, MCK_Mem } },
-    { X86::TAILJMPr64, Convert_Reg1_2, { MCK_jmpq, MCK__STAR_, MCK_GR64 } },
     { X86::JMP64r, Convert_Reg1_2, { MCK_jmpq, MCK__STAR_, MCK_GR64 } },
+    { X86::TAILJMPr64, Convert_Reg1_2, { MCK_jmpq, MCK__STAR_, MCK_GR64 } },
     { X86::JMP64m, Convert_Mem5_2, { MCK_jmpq, MCK__STAR_, MCK_Mem } },
     { X86::LAR32rr, Convert_Reg1_2_Reg1_1, { MCK_larl, MCK_GR32, MCK_GR32 } },
     { X86::LAR32rm, Convert_Reg1_2_Mem5_1, { MCK_larl, MCK_Mem, MCK_GR32 } },
@@ -7187,8 +7187,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::LDDQUrm, Convert_Reg1_2_Mem5_1, { MCK_lddqu, MCK_Mem, MCK_FR32 } },
     { X86::LDS32rm, Convert_Reg1_2_Mem5_1, { MCK_ldsl, MCK_Mem, MCK_GR32 } },
     { X86::LDS16rm, Convert_Reg1_2_Mem5_1, { MCK_ldsw, MCK_Mem, MCK_GR16 } },
-    { X86::LEA64_32r, Convert_Reg1_2_Mem4_1, { MCK_leal, MCK_Mem, MCK_GR32 } },
     { X86::LEA32r, Convert_Reg1_2_Mem4_1, { MCK_leal, MCK_Mem, MCK_GR32 } },
+    { X86::LEA64_32r, Convert_Reg1_2_Mem4_1, { MCK_leal, MCK_Mem, MCK_GR32 } },
     { X86::LEA64r, Convert_Reg1_2_Mem4_1, { MCK_leaq, MCK_Mem, MCK_GR64 } },
     { X86::LEA16r, Convert_Reg1_2_Mem4_1, { MCK_leaw, MCK_Mem, MCK_GR16 } },
     { X86::LES32rm, Convert_Reg1_2_Mem5_1, { MCK_lesl, MCK_Mem, MCK_GR32 } },
@@ -7213,8 +7213,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::LSS32rm, Convert_Reg1_2_Mem5_1, { MCK_lssl, MCK_Mem, MCK_GR32 } },
     { X86::LSS64rm, Convert_Reg1_2_Mem5_1, { MCK_lssq, MCK_Mem, MCK_GR64 } },
     { X86::LSS16rm, Convert_Reg1_2_Mem5_1, { MCK_lssw, MCK_Mem, MCK_GR16 } },
-    { X86::MASKMOVDQU64, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
     { X86::MASKMOVDQU, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
+    { X86::MASKMOVDQU64, Convert_Reg1_2_Reg1_1, { MCK_maskmovdqu, MCK_FR32, MCK_FR32 } },
     { X86::MMX_MASKMOVQ, Convert_Reg1_2_Reg1_1, { MCK_maskmovq, MCK_VR64, MCK_VR64 } },
     { X86::MMX_MASKMOVQ64, Convert_Reg1_2_Reg1_1, { MCK_maskmovq, MCK_VR64, MCK_VR64 } },
     { X86::MAXPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_maxpd, MCK_FR32, MCK_FR32 } },
@@ -7234,21 +7234,21 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MINSSrr, Convert_Reg1_2_ImpReg1_1, { MCK_minss, MCK_FR32, MCK_FR32 } },
     { X86::MINSSrm, Convert_Reg1_2_ImpMem5_1, { MCK_minss, MCK_Mem, MCK_FR32 } },
     { X86::MOV64ri, Convert_Reg1_2_Imm1_1, { MCK_movabsq, MCK_Imm, MCK_GR64 } },
-    { X86::MOVAPDrr, Convert_Reg1_2_Reg1_1, { MCK_movapd, MCK_FR32, MCK_FR32 } },
     { X86::FsMOVAPDrr, Convert_Reg1_2_Reg1_1, { MCK_movapd, MCK_FR32, MCK_FR32 } },
+    { X86::MOVAPDrr, Convert_Reg1_2_Reg1_1, { MCK_movapd, MCK_FR32, MCK_FR32 } },
     { X86::MOVAPDmr, Convert_Mem5_2_Reg1_1, { MCK_movapd, MCK_FR32, MCK_Mem } },
     { X86::FsMOVAPDrm, Convert_Reg1_2_Mem5_1, { MCK_movapd, MCK_Mem, MCK_FR32 } },
     { X86::MOVAPDrm, Convert_Reg1_2_Mem5_1, { MCK_movapd, MCK_Mem, MCK_FR32 } },
-    { X86::FsMOVAPSrr, Convert_Reg1_2_Reg1_1, { MCK_movaps, MCK_FR32, MCK_FR32 } },
     { X86::MOVAPSrr, Convert_Reg1_2_Reg1_1, { MCK_movaps, MCK_FR32, MCK_FR32 } },
+    { X86::FsMOVAPSrr, Convert_Reg1_2_Reg1_1, { MCK_movaps, MCK_FR32, MCK_FR32 } },
     { X86::MOVAPSmr, Convert_Mem5_2_Reg1_1, { MCK_movaps, MCK_FR32, MCK_Mem } },
     { X86::MOVAPSrm, Convert_Reg1_2_Mem5_1, { MCK_movaps, MCK_Mem, MCK_FR32 } },
     { X86::FsMOVAPSrm, Convert_Reg1_2_Mem5_1, { MCK_movaps, MCK_Mem, MCK_FR32 } },
     { X86::MOV8ao8, Convert_Imm1_2, { MCK_movb, MCK_AL, MCK_Imm } },
     { X86::MOV8rr_NOREX, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8_NOREX, MCK_GR8_NOREX } },
     { X86::MOV8mr_NOREX, Convert_Mem5_2_Reg1_1, { MCK_movb, MCK_GR8_NOREX, MCK_Mem } },
-    { X86::MOV8rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_GR8 } },
     { X86::MOV8rr, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_GR8 } },
+    { X86::MOV8rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_GR8 } },
     { X86::MOV8mr, Convert_Mem5_2_Reg1_1, { MCK_movb, MCK_GR8, MCK_Mem } },
     { X86::MOV8o8a, Convert_Imm1_1, { MCK_movb, MCK_Imm, MCK_AL } },
     { X86::MOV8ri, Convert_Reg1_2_Imm1_1, { MCK_movb, MCK_Imm, MCK_GR8 } },
@@ -7257,25 +7257,25 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOV8rm, Convert_Reg1_2_Mem5_1, { MCK_movb, MCK_Mem, MCK_GR8 } },
     { X86::MMX_MOVZDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_VR64 } },
     { X86::MMX_MOVD64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_VR64 } },
+    { X86::MOVDI2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
     { X86::MOVDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
     { X86::MOVZDI2PDIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
-    { X86::MOVDI2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR32, MCK_FR32 } },
-    { X86::MMX_MOVD64rrv164, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_VR64 } },
     { X86::MMX_MOVD64to64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_VR64 } },
-    { X86::MOV64toSDrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
+    { X86::MMX_MOVD64rrv164, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_VR64 } },
     { X86::MOV64toPQIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
     { X86::MOVZQI2PQIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
+    { X86::MOV64toSDrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_GR64, MCK_FR32 } },
     { X86::MMX_MOVD64grr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_GR32 } },
     { X86::MMX_MOVD64from64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_GR64 } },
     { X86::MMX_MOVD64mr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_VR64, MCK_Mem } },
     { X86::MOVSS2DIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR32 } },
     { X86::MOVPDI2DIrr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR32 } },
-    { X86::MOVSDto64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR64 } },
     { X86::MOVPQIto64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR64 } },
-    { X86::MOVPDI2DImr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_Mem } },
+    { X86::MOVSDto64rr, Convert_Reg1_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_GR64 } },
     { X86::MOVSS2DImr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_Mem } },
-    { X86::MMX_MOVD64rm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
+    { X86::MOVPDI2DImr, Convert_Mem5_2_Reg1_1, { MCK_movd, MCK_FR32, MCK_Mem } },
     { X86::MMX_MOVZDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
+    { X86::MMX_MOVD64rm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_VR64 } },
     { X86::MOVZDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
     { X86::MOVDI2PDIrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
     { X86::MOVDI2SSrm, Convert_Reg1_2_Mem5_1, { MCK_movd, MCK_Mem, MCK_FR32 } },
@@ -7318,20 +7318,20 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOV32cr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR32, MCK_CONTROL_REG_32 } },
     { X86::MOV64ao64, Convert_Imm1_2, { MCK_movq, MCK_RAX, MCK_Imm } },
     { X86::MOV64ao8, Convert_Imm1_2, { MCK_movq, MCK_RAX, MCK_Imm } },
-    { X86::MOV64rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_GR64 } },
     { X86::MOV64rr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_GR64 } },
+    { X86::MOV64rr_REV, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_GR64 } },
     { X86::MOV64sr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_SEGMENT_REG } },
     { X86::MOV64dr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_DEBUG_REG } },
     { X86::MOV64cr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_CONTROL_REG_64 } },
     { X86::MOV64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_GR64, MCK_Mem } },
     { X86::MMX_MOVQ64rr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_VR64 } },
-    { X86::MMX_MOVQ64gmr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_Mem } },
     { X86::MMX_MOVQ64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_Mem } },
-    { X86::MOVZPQILo2PQIrr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_FR32 } },
+    { X86::MMX_MOVQ64gmr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_VR64, MCK_Mem } },
     { X86::MOVQxrxr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLQ128mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
+    { X86::MOVZPQILo2PQIrr, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_FR32 } },
     { X86::MOVSDto64mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
     { X86::MOVPQI2QImr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
+    { X86::MOVLQ128mr, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_FR32, MCK_Mem } },
     { X86::MOV64rs, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_SEGMENT_REG, MCK_GR64 } },
     { X86::MOV64ms, Convert_Mem5_2_Reg1_1, { MCK_movq, MCK_SEGMENT_REG, MCK_Mem } },
     { X86::MOV64rd, Convert_Reg1_2_Reg1_1, { MCK_movq, MCK_DEBUG_REG, MCK_GR64 } },
@@ -7344,12 +7344,12 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOV64rm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_GR64 } },
     { X86::MMX_MOVQ64rm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_VR64 } },
     { X86::MOVQI2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
-    { X86::MOV64toSDrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
     { X86::MOVZPQILo2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
     { X86::MOVZQI2PQIrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
+    { X86::MOV64toSDrm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_FR32 } },
     { X86::MOV64sm, Convert_Reg1_2_Mem5_1, { MCK_movq, MCK_Mem, MCK_SEGMENT_REG } },
-    { X86::MMX_MOVQ2FR64rr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
     { X86::MMX_MOVQ2DQrr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
+    { X86::MMX_MOVQ2FR64rr, Convert_Reg1_2_Reg1_1, { MCK_movq2dq, MCK_VR64, MCK_FR32 } },
     { X86::MOVSX32rr8, Convert_Reg1_2_Reg1_1, { MCK_movsbl, MCK_GR8, MCK_GR32 } },
     { X86::MOVSX32rm8, Convert_Reg1_2_Mem5_1, { MCK_movsbl, MCK_Mem, MCK_GR32 } },
     { X86::MOVSX64rr8, Convert_Reg1_2_Reg1_1, { MCK_movsbq, MCK_GR8, MCK_GR64 } },
@@ -7357,15 +7357,15 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVSX16rr8W, Convert_Reg1_2_Reg1_1, { MCK_movsbw, MCK_GR8, MCK_GR16 } },
     { X86::MOVSX16rm8W, Convert_Reg1_2_Mem5_1, { MCK_movsbw, MCK_Mem, MCK_GR16 } },
     { X86::MOVSDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVLSD2PDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSD2PDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVPD2SDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
+    { X86::MOVLPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
+    { X86::MOVSD2PDrr, Convert_Reg1_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVSDmr, Convert_Mem5_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
     { X86::MOVPD2SDmr, Convert_Mem5_2_Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
+    { X86::MOVSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVZSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVSDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
-    { X86::MOVSD2PDrm, Convert_Reg1_2_Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVSHDUPrr, Convert_Reg1_2_Reg1_1, { MCK_movshdup, MCK_FR32, MCK_FR32 } },
     { X86::MOVSHDUPrm, Convert_Reg1_2_Mem5_1, { MCK_movshdup, MCK_Mem, MCK_FR32 } },
     { X86::MOVSLDUPrr, Convert_Reg1_2_Reg1_1, { MCK_movsldup, MCK_FR32, MCK_FR32 } },
@@ -7374,14 +7374,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MOVSX64rm32, Convert_Reg1_2_Mem5_1, { MCK_movslq, MCK_Mem, MCK_GR64 } },
     { X86::MOVPS2SSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVSS2PSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
+    { X86::MOVSSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVLSS2PSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVLPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSSrr, Convert_Reg1_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVPS2SSmr, Convert_Mem5_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
     { X86::MOVSSmr, Convert_Mem5_2_Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
-    { X86::MOVZSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
-    { X86::MOVSSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
+    { X86::MOVSSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
+    { X86::MOVZSS2PSrm, Convert_Reg1_2_Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSX32rr16, Convert_Reg1_2_Reg1_1, { MCK_movswl, MCK_GR16, MCK_GR32 } },
     { X86::MOVSX32rm16, Convert_Reg1_2_Mem5_1, { MCK_movswl, MCK_Mem, MCK_GR32 } },
     { X86::MOVSX64rr16, Convert_Reg1_2_Reg1_1, { MCK_movswq, MCK_GR16, MCK_GR64 } },
@@ -7424,15 +7424,15 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::MULSDrm, Convert_Reg1_2_ImpMem5_1, { MCK_mulsd, MCK_Mem, MCK_FR32 } },
     { X86::MULSSrr, Convert_Reg1_2_ImpReg1_1, { MCK_mulss, MCK_FR32, MCK_FR32 } },
     { X86::MULSSrm, Convert_Reg1_2_ImpMem5_1, { MCK_mulss, MCK_Mem, MCK_FR32 } },
-    { X86::OR8rr, Convert_Reg1_2_ImpReg1_1, { MCK_orb, MCK_GR8, MCK_GR8 } },
     { X86::OR8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orb, MCK_GR8, MCK_GR8 } },
+    { X86::OR8rr, Convert_Reg1_2_ImpReg1_1, { MCK_orb, MCK_GR8, MCK_GR8 } },
     { X86::OR8mr, Convert_Mem5_2_Reg1_1, { MCK_orb, MCK_GR8, MCK_Mem } },
     { X86::OR8i8, Convert_Imm1_1, { MCK_orb, MCK_Imm, MCK_AL } },
     { X86::OR8ri, Convert_Reg1_2_ImpImm1_1, { MCK_orb, MCK_Imm, MCK_GR8 } },
     { X86::OR8mi, Convert_Mem5_2_Imm1_1, { MCK_orb, MCK_Imm, MCK_Mem } },
     { X86::OR8rm, Convert_Reg1_2_ImpMem5_1, { MCK_orb, MCK_Mem, MCK_GR8 } },
-    { X86::OR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orl, MCK_GR32, MCK_GR32 } },
     { X86::OR32rr, Convert_Reg1_2_ImpReg1_1, { MCK_orl, MCK_GR32, MCK_GR32 } },
+    { X86::OR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orl, MCK_GR32, MCK_GR32 } },
     { X86::OR32mr, Convert_Mem5_2_Reg1_1, { MCK_orl, MCK_GR32, MCK_Mem } },
     { X86::OR32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_orl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::OR32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_orl, MCK_ImmSExt8, MCK_Mem } },
@@ -7440,14 +7440,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::OR32ri, Convert_Reg1_2_ImpImm1_1, { MCK_orl, MCK_Imm, MCK_GR32 } },
     { X86::OR32mi, Convert_Mem5_2_Imm1_1, { MCK_orl, MCK_Imm, MCK_Mem } },
     { X86::OR32rm, Convert_Reg1_2_ImpMem5_1, { MCK_orl, MCK_Mem, MCK_GR32 } },
-    { X86::FsORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
     { X86::ORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
-    { X86::FsORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_orpd, MCK_Mem, MCK_FR32 } },
+    { X86::FsORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_orpd, MCK_FR32, MCK_FR32 } },
     { X86::ORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_orpd, MCK_Mem, MCK_FR32 } },
-    { X86::ORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
+    { X86::FsORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_orpd, MCK_Mem, MCK_FR32 } },
     { X86::FsORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
-    { X86::ORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
+    { X86::ORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_orps, MCK_FR32, MCK_FR32 } },
     { X86::FsORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
+    { X86::ORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_orps, MCK_Mem, MCK_FR32 } },
     { X86::OR64rr, Convert_Reg1_2_ImpReg1_1, { MCK_orq, MCK_GR64, MCK_GR64 } },
     { X86::OR64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_orq, MCK_GR64, MCK_GR64 } },
     { X86::OR64mr, Convert_Mem5_2_Reg1_1, { MCK_orq, MCK_GR64, MCK_Mem } },
@@ -7949,8 +7949,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SBB8ri, Convert_Reg1_2_ImpImm1_1, { MCK_sbbb, MCK_Imm, MCK_GR8 } },
     { X86::SBB8mi, Convert_Mem5_2_Imm1_1, { MCK_sbbb, MCK_Imm, MCK_Mem } },
     { X86::SBB8rm, Convert_Reg1_2_ImpMem5_1, { MCK_sbbb, MCK_Mem, MCK_GR8 } },
-    { X86::SBB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbl, MCK_GR32, MCK_GR32 } },
     { X86::SBB32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbl, MCK_GR32, MCK_GR32 } },
+    { X86::SBB32rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbl, MCK_GR32, MCK_GR32 } },
     { X86::SBB32mr, Convert_Mem5_2_Reg1_1, { MCK_sbbl, MCK_GR32, MCK_Mem } },
     { X86::SBB32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_sbbl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::SBB32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_sbbl, MCK_ImmSExt8, MCK_Mem } },
@@ -7958,8 +7958,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SBB32ri, Convert_Reg1_2_ImpImm1_1, { MCK_sbbl, MCK_Imm, MCK_GR32 } },
     { X86::SBB32mi, Convert_Mem5_2_Imm1_1, { MCK_sbbl, MCK_Imm, MCK_Mem } },
     { X86::SBB32rm, Convert_Reg1_2_ImpMem5_1, { MCK_sbbl, MCK_Mem, MCK_GR32 } },
-    { X86::SBB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbq, MCK_GR64, MCK_GR64 } },
     { X86::SBB64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_sbbq, MCK_GR64, MCK_GR64 } },
+    { X86::SBB64rr, Convert_Reg1_2_ImpReg1_1, { MCK_sbbq, MCK_GR64, MCK_GR64 } },
     { X86::SBB64mr, Convert_Mem5_2_Reg1_1, { MCK_sbbq, MCK_GR64, MCK_Mem } },
     { X86::SBB64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_sbbq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::SBB64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_sbbq, MCK_ImmSExt8, MCK_Mem } },
@@ -8016,8 +8016,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SQRTSDm, Convert_Reg1_2_Mem5_1, { MCK_sqrtsd, MCK_Mem, MCK_FR32 } },
     { X86::SQRTSSr, Convert_Reg1_2_Reg1_1, { MCK_sqrtss, MCK_FR32, MCK_FR32 } },
     { X86::SQRTSSm, Convert_Reg1_2_Mem5_1, { MCK_sqrtss, MCK_Mem, MCK_FR32 } },
-    { X86::SUB8rr, Convert_Reg1_2_ImpReg1_1, { MCK_subb, MCK_GR8, MCK_GR8 } },
     { X86::SUB8rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subb, MCK_GR8, MCK_GR8 } },
+    { X86::SUB8rr, Convert_Reg1_2_ImpReg1_1, { MCK_subb, MCK_GR8, MCK_GR8 } },
     { X86::SUB8mr, Convert_Mem5_2_Reg1_1, { MCK_subb, MCK_GR8, MCK_Mem } },
     { X86::SUB8i8, Convert_Imm1_1, { MCK_subb, MCK_Imm, MCK_AL } },
     { X86::SUB8ri, Convert_Reg1_2_ImpImm1_1, { MCK_subb, MCK_Imm, MCK_GR8 } },
@@ -8049,8 +8049,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::SUBSDrm, Convert_Reg1_2_ImpMem5_1, { MCK_subsd, MCK_Mem, MCK_FR32 } },
     { X86::SUBSSrr, Convert_Reg1_2_ImpReg1_1, { MCK_subss, MCK_FR32, MCK_FR32 } },
     { X86::SUBSSrm, Convert_Reg1_2_ImpMem5_1, { MCK_subss, MCK_Mem, MCK_FR32 } },
-    { X86::SUB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_subw, MCK_GR16, MCK_GR16 } },
     { X86::SUB16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_subw, MCK_GR16, MCK_GR16 } },
+    { X86::SUB16rr, Convert_Reg1_2_ImpReg1_1, { MCK_subw, MCK_GR16, MCK_GR16 } },
     { X86::SUB16mr, Convert_Mem5_2_Reg1_1, { MCK_subw, MCK_GR16, MCK_Mem } },
     { X86::SUB16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_subw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::SUB16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_subw, MCK_ImmSExt8, MCK_Mem } },
@@ -8124,8 +8124,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::XOR8ri, Convert_Reg1_2_ImpImm1_1, { MCK_xorb, MCK_Imm, MCK_GR8 } },
     { X86::XOR8mi, Convert_Mem5_2_Imm1_1, { MCK_xorb, MCK_Imm, MCK_Mem } },
     { X86::XOR8rm, Convert_Reg1_2_ImpMem5_1, { MCK_xorb, MCK_Mem, MCK_GR8 } },
-    { X86::XOR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorl, MCK_GR32, MCK_GR32 } },
     { X86::XOR32rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorl, MCK_GR32, MCK_GR32 } },
+    { X86::XOR32rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorl, MCK_GR32, MCK_GR32 } },
     { X86::XOR32mr, Convert_Mem5_2_Reg1_1, { MCK_xorl, MCK_GR32, MCK_Mem } },
     { X86::XOR32ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorl, MCK_ImmSExt8, MCK_GR32 } },
     { X86::XOR32mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_xorl, MCK_ImmSExt8, MCK_Mem } },
@@ -8135,14 +8135,14 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::XOR32rm, Convert_Reg1_2_ImpMem5_1, { MCK_xorl, MCK_Mem, MCK_GR32 } },
     { X86::XORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_xorpd, MCK_FR32, MCK_FR32 } },
     { X86::FsXORPDrr, Convert_Reg1_2_ImpReg1_1, { MCK_xorpd, MCK_FR32, MCK_FR32 } },
-    { X86::XORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorpd, MCK_Mem, MCK_FR32 } },
     { X86::FsXORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorpd, MCK_Mem, MCK_FR32 } },
-    { X86::XORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_xorps, MCK_FR32, MCK_FR32 } },
+    { X86::XORPDrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorpd, MCK_Mem, MCK_FR32 } },
     { X86::FsXORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_xorps, MCK_FR32, MCK_FR32 } },
-    { X86::FsXORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorps, MCK_Mem, MCK_FR32 } },
+    { X86::XORPSrr, Convert_Reg1_2_ImpReg1_1, { MCK_xorps, MCK_FR32, MCK_FR32 } },
     { X86::XORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorps, MCK_Mem, MCK_FR32 } },
-    { X86::XOR64rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorq, MCK_GR64, MCK_GR64 } },
+    { X86::FsXORPSrm, Convert_Reg1_2_ImpMem5_1, { MCK_xorps, MCK_Mem, MCK_FR32 } },
     { X86::XOR64rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorq, MCK_GR64, MCK_GR64 } },
+    { X86::XOR64rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorq, MCK_GR64, MCK_GR64 } },
     { X86::XOR64mr, Convert_Mem5_2_Reg1_1, { MCK_xorq, MCK_GR64, MCK_Mem } },
     { X86::XOR64ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorq, MCK_ImmSExt8, MCK_GR64 } },
     { X86::XOR64mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_xorq, MCK_ImmSExt8, MCK_Mem } },
@@ -8150,8 +8150,8 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::XOR64ri32, Convert_Reg1_2_ImpImm1_1, { MCK_xorq, MCK_Imm, MCK_GR64 } },
     { X86::XOR64mi32, Convert_Mem5_2_Imm1_1, { MCK_xorq, MCK_Imm, MCK_Mem } },
     { X86::XOR64rm, Convert_Reg1_2_ImpMem5_1, { MCK_xorq, MCK_Mem, MCK_GR64 } },
-    { X86::XOR16rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorw, MCK_GR16, MCK_GR16 } },
     { X86::XOR16rr_REV, Convert_Reg1_2_ImpReg1_1, { MCK_xorw, MCK_GR16, MCK_GR16 } },
+    { X86::XOR16rr, Convert_Reg1_2_ImpReg1_1, { MCK_xorw, MCK_GR16, MCK_GR16 } },
     { X86::XOR16mr, Convert_Mem5_2_Reg1_1, { MCK_xorw, MCK_GR16, MCK_Mem } },
     { X86::XOR16ri8, Convert_Reg1_2_ImpImmSExt81_1, { MCK_xorw, MCK_ImmSExt8, MCK_GR16 } },
     { X86::XOR16mi8, Convert_Mem5_2_ImmSExt81_1, { MCK_xorw, MCK_ImmSExt8, MCK_Mem } },
@@ -8197,32 +8197,32 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     { X86::PBLENDVBrm0, Convert_Reg1_3_ImpMem5_2, { MCK_pblendvb, MCK_XMM0, MCK_Mem, MCK_FR32 } },
     { X86::PBLENDWrri, Convert_Reg1_3_ImpReg1_2_ImmSExt81_1, { MCK_pblendw, MCK_ImmSExt8, MCK_FR32, MCK_FR32 } },
     { X86::PBLENDWrmi, Convert_Reg1_3_ImpMem5_2_ImmSExt81_1, { MCK_pblendw, MCK_ImmSExt8, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPESTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPESTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRIOrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPESTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRICrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRIArr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPESTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPESTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPESTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRIArm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPESTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPESTRM128rr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpestrm, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPESTRM128rm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpestrm, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPISTRIArr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRICrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
+    { X86::PCMPISTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIOrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRISrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRIZrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPISTRIrr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_FR32, MCK_FR32 } },
-    { X86::PCMPISTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
-    { X86::PCMPISTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPISTRIArm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRICrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIOrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRISrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
+    { X86::PCMPISTRIZrm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistri, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PCMPISTRM128rr, Convert_Reg1_3_Reg1_2_Imm1_1, { MCK_pcmpistrm, MCK_Imm, MCK_FR32, MCK_FR32 } },
     { X86::PCMPISTRM128rm, Convert_Reg1_3_Mem5_2_Imm1_1, { MCK_pcmpistrm, MCK_Imm, MCK_Mem, MCK_FR32 } },
     { X86::PEXTRBrr, Convert_Reg1_3_Reg1_2_ImmSExt81_1, { MCK_pextrb, MCK_ImmSExt8, MCK_FR32, MCK_GR32 } },
@@ -8309,7 +8309,7 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
     Classes[i] = InvalidMatchClass;
 
   // Search the table.
-  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 2041; it != ie; ++it) {
+  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 2040; it != ie; ++it) {
     if (!IsSubclass(Classes[0], it->Classes[0]))
       continue;
     if (!IsSubclass(Classes[1], it->Classes[1]))
@@ -8327,3 +8327,4 @@ bool X86ATTAsmParser::MatchInstruction(SmallVectorImpl<X86Operand> &Operands, MC
   return true;
 }
 
+#endif // REGISTERS_ONLY

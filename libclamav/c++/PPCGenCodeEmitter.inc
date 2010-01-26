@@ -19,6 +19,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     0U,
     0U,
     0U,
+    0U,
     2080375316U,	// ADD4
     2080375316U,	// ADD8
     2080374804U,	// ADDC

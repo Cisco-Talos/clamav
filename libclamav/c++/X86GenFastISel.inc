@@ -44,7 +44,7 @@ unsigned FastEmit_ISD_Constant_i(MVT VT, MVT RetVT, uint64_t imm0) {
 
 // Top-level FastEmit function.
 
-unsigned FastEmit_i(MVT VT, MVT RetVT, ISD::NodeType Opcode, uint64_t imm0) {
+unsigned FastEmit_i(MVT VT, MVT RetVT, unsigned Opcode, uint64_t imm0) {
   switch (Opcode) {
   case ISD::Constant: return FastEmit_ISD_Constant_i(VT, RetVT, imm0);
   default: return 0;
@@ -1234,6 +1234,21 @@ unsigned FastEmit_X86ISD_INC_r(MVT VT, MVT RetVT, unsigned Op0) {
   }
 }
 
+// FastEmit functions for X86ISD::MOVQ2DQ.
+
+unsigned FastEmit_X86ISD_MOVQ2DQ_MVT_v1i64_r(MVT RetVT, unsigned Op0) {
+  if (RetVT.SimpleTy != MVT::v2i64)
+    return 0;
+  return FastEmitInst_r(X86::MMX_MOVQ2DQrr, X86::VR128RegisterClass, Op0);
+}
+
+unsigned FastEmit_X86ISD_MOVQ2DQ_r(MVT VT, MVT RetVT, unsigned Op0) {
+  switch (VT.SimpleTy) {
+  case MVT::v1i64: return FastEmit_X86ISD_MOVQ2DQ_MVT_v1i64_r(RetVT, Op0);
+  default: return 0;
+  }
+}
+
 // FastEmit functions for X86ISD::VZEXT_MOVL.
 
 unsigned FastEmit_X86ISD_VZEXT_MOVL_MVT_v2i64_r(MVT RetVT, unsigned Op0) {
@@ -1264,7 +1279,7 @@ unsigned FastEmit_X86ISD_VZEXT_MOVL_r(MVT VT, MVT RetVT, unsigned Op0) {
 
 // Top-level FastEmit function.
 
-unsigned FastEmit_r(MVT VT, MVT RetVT, ISD::NodeType Opcode, unsigned Op0) {
+unsigned FastEmit_r(MVT VT, MVT RetVT, unsigned Opcode, unsigned Op0) {
   switch (Opcode) {
   case ISD::ANY_EXTEND: return FastEmit_ISD_ANY_EXTEND_r(VT, RetVT, Op0);
   case ISD::BIT_CONVERT: return FastEmit_ISD_BIT_CONVERT_r(VT, RetVT, Op0);
@@ -1291,6 +1306,7 @@ unsigned FastEmit_r(MVT VT, MVT RetVT, ISD::NodeType Opcode, unsigned Op0) {
   case X86ISD::FRCP: return FastEmit_X86ISD_FRCP_r(VT, RetVT, Op0);
   case X86ISD::FRSQRT: return FastEmit_X86ISD_FRSQRT_r(VT, RetVT, Op0);
   case X86ISD::INC: return FastEmit_X86ISD_INC_r(VT, RetVT, Op0);
+  case X86ISD::MOVQ2DQ: return FastEmit_X86ISD_MOVQ2DQ_r(VT, RetVT, Op0);
   case X86ISD::VZEXT_MOVL: return FastEmit_X86ISD_VZEXT_MOVL_r(VT, RetVT, Op0);
   default: return 0;
   }
@@ -1846,7 +1862,7 @@ unsigned FastEmit_X86ISD_XOR_ri(MVT VT, MVT RetVT, unsigned Op0, uint64_t imm1) 
 
 // Top-level FastEmit function.
 
-unsigned FastEmit_ri(MVT VT, MVT RetVT, ISD::NodeType Opcode, unsigned Op0, uint64_t imm1) {
+unsigned FastEmit_ri(MVT VT, MVT RetVT, unsigned Opcode, unsigned Op0, uint64_t imm1) {
   switch (Opcode) {
   case ISD::ADD: return FastEmit_ISD_ADD_ri(VT, RetVT, Op0, imm1);
   case ISD::ADDC: return FastEmit_ISD_ADDC_ri(VT, RetVT, Op0, imm1);
@@ -3454,7 +3470,7 @@ unsigned FastEmit_X86ISD_XOR_rr(MVT VT, MVT RetVT, unsigned Op0, unsigned Op1) {
 
 // Top-level FastEmit function.
 
-unsigned FastEmit_rr(MVT VT, MVT RetVT, ISD::NodeType Opcode, unsigned Op0, unsigned Op1) {
+unsigned FastEmit_rr(MVT VT, MVT RetVT, unsigned Opcode, unsigned Op0, unsigned Op1) {
   switch (Opcode) {
   case ISD::ADD: return FastEmit_ISD_ADD_rr(VT, RetVT, Op0, Op1);
   case ISD::ADDC: return FastEmit_ISD_ADDC_rr(VT, RetVT, Op0, Op1);
