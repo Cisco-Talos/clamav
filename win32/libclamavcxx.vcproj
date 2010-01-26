@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
-	ProjectType="Visual C++"
-	Version="9.00"
+	Keyword="Win32Proj"
 	Name="libclamavcxx"
 	ProjectGUID="{F5DF01F6-8CB6-4C27-8DA8-2379323B31E7}"
+	ProjectType="Visual C++"
 	RootNamespace="libclamavcxx"
-	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
+	Version="9.00"
 	>
 	<Platforms>
 		<Platform
@@ -17,11 +17,11 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
+			CharacterSet="1"
+			ConfigurationType="4"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -39,17 +39,17 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
+				BasicRuntimeChecks="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
-				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -80,11 +80,11 @@
 			/>
 		</Configuration>
 		<Configuration
+			CharacterSet="1"
+			ConfigurationType="4"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -103,18 +103,18 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
-				PreprocessorDefinitions="NDEBUG;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="false"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
 				DebugInformationFormat="0"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+				EnableFunctionLevelLinking="false"
+				EnableIntrinsicFunctions="true"
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				PreprocessorDefinitions="NDEBUG;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				WholeProgramOptimization="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -149,8 +149,8 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Name="Source Files"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File

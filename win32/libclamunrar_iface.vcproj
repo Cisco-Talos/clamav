@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
-	ProjectType="Visual C++"
-	Version="9,00"
+	Keyword="Win32Proj"
 	Name="libclamunrar_iface"
 	ProjectGUID="{3E9C718E-7670-4E33-9D94-C4E9ABE49F81}"
+	ProjectType="Visual C++"
 	RootNamespace="libclamunrar_iface"
-	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -17,11 +17,11 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
+			CharacterSet="2"
+			ConfigurationType="2"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="2"
-			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -39,18 +39,18 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
+				BasicRuntimeChecks="3"
+				CompileAs="1"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996"
+				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
-				CompileAs="1"
-				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -62,10 +62,10 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
+				GenerateDebugInformation="true"
 				LinkIncremental="1"
 				ModuleDefinitionFile="$(SolutionDir)libclamunrar_iface.def"
-				GenerateDebugInformation="true"
+				Name="VCLinkerTool"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -92,11 +92,11 @@
 			/>
 		</Configuration>
 		<Configuration
+			CharacterSet="2"
+			ConfigurationType="2"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="2"
-			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -115,19 +115,19 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
+				BufferSecurityCheck="false"
+				CompileAs="1"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996"
+				EnableFunctionLevelLinking="true"
+				EnableIntrinsicFunctions="true"
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				RuntimeLibrary="2"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
-				CompileAs="1"
-				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -139,13 +139,13 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
+				EnableCOMDATFolding="2"
+				GenerateDebugInformation="true"
 				LinkIncremental="1"
 				ModuleDefinitionFile="$(SolutionDir)libclamunrar_iface.def"
-				GenerateDebugInformation="true"
-				SubSystem="2"
+				Name="VCLinkerTool"
 				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
+				SubSystem="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -175,8 +175,8 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Name="Source Files"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
@@ -193,14 +193,14 @@
 			</Filter>
 		</Filter>
 		<Filter
-			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			Name="Header Files"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 		</Filter>
 		<Filter
-			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			Name="Resource Files"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File

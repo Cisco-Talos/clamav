@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
-	ProjectType="Visual C++"
-	Version="9.00"
+	Keyword="Win32Proj"
 	Name="LLVMjit"
 	ProjectGUID="{6D7B62E9-883D-406C-B6F8-1636D3962772}"
+	ProjectType="Visual C++"
 	RootNamespace="LLVMjit"
-	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
+	Version="9.00"
 	>
 	<Platforms>
 		<Platform
@@ -17,11 +17,11 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
+			CharacterSet="1"
+			ConfigurationType="4"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -39,18 +39,18 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
+				BasicRuntimeChecks="3"
+				DebugInformationFormat="4"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+				ExceptionHandling="1"
+				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				MinimalRebuild="true"
-				ExceptionHandling="1"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="4"
-				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -81,11 +81,11 @@
 			/>
 		</Configuration>
 		<Configuration
+			CharacterSet="1"
+			ConfigurationType="4"
+			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -104,19 +104,19 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				ExceptionHandling="1"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="false"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
 				DebugInformationFormat="0"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+				EnableFunctionLevelLinking="false"
+				EnableIntrinsicFunctions="true"
+				ExceptionHandling="1"
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				WholeProgramOptimization="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -151,10 +151,122 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Name="Source Files"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Triple.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SourceMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\APInt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ManagedStatic.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Statistic.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringExtras.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Allocator.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringMap.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\APFloat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\circular_raw_ostream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Debug.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\TargetRegistry.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringPool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Dwarf.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Timer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\FoldingSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\MemoryBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\FormattedStream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\raw_ostream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ErrorHandling.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Twine.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringRef.cpp"
+				>
+			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\AliasAnalysis.cpp"
 				>

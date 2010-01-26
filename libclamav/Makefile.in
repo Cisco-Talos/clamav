@@ -140,21 +140,20 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
 	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
 	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
-	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/BraIA64.c \
-	7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
-	7z/Archive/7z/7zDecode.c 7z/Archive/7z/7zDecode.h \
-	7z/Archive/7z/7zItem.c 7z/Archive/7z/7zItem.h \
-	7z/Archive/7z/7zHeader.c 7z/Archive/7z/7zHeader.h \
-	7z/Archive/7z/7zExtract.c 7z/Archive/7z/7zExtract.h explode.c \
-	explode.h textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
-	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
-	uniq.h version.c version.h mpool.c mpool.h fmap.c fmap.h \
-	default.h sha256.c sha256.h bignum.h bytecode.c bytecode.h \
-	bytecode_vm.c bytecode_priv.h clambc.h cpio.c cpio.h macho.c \
-	macho.h ishield.c ishield.h type_desc.h bcfeatures.h \
-	bytecode_api.c bytecode_api_decl.c bytecode_api.h \
-	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h bignum.c \
-	bignum_class.h
+	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/Archive/7z/7zIn.c \
+	7z/Archive/7z/7zIn.h 7z/Archive/7z/7zDecode.c \
+	7z/Archive/7z/7zDecode.h 7z/Archive/7z/7zItem.c \
+	7z/Archive/7z/7zItem.h 7z/Archive/7z/7zHeader.c \
+	7z/Archive/7z/7zHeader.h 7z/Archive/7z/7zExtract.c \
+	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
+	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
+	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
+	version.h mpool.c mpool.h fmap.c fmap.h default.h sha256.c \
+	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
+	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
+	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
+	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
+	bytecode_hooks.h cache.c cache.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -192,19 +191,18 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-7z.lo libclamav_la-7zFile.lo \
 	libclamav_la-7zStream.lo libclamav_la-7zCrc.lo \
 	libclamav_la-7zBuf.lo libclamav_la-Bcj2.lo libclamav_la-Bra.lo \
-	libclamav_la-Bra86.lo libclamav_la-BraIA64.lo \
-	libclamav_la-7zIn.lo libclamav_la-7zDecode.lo \
-	libclamav_la-7zItem.lo libclamav_la-7zHeader.lo \
-	libclamav_la-7zExtract.lo libclamav_la-explode.lo \
-	libclamav_la-textnorm.lo libclamav_la-dlp.lo \
-	libclamav_la-js-norm.lo libclamav_la-uniq.lo \
-	libclamav_la-version.lo libclamav_la-mpool.lo \
-	libclamav_la-fmap.lo libclamav_la-sha256.lo \
-	libclamav_la-bytecode.lo libclamav_la-bytecode_vm.lo \
-	libclamav_la-cpio.lo libclamav_la-macho.lo \
-	libclamav_la-ishield.lo libclamav_la-bytecode_api.lo \
-	libclamav_la-bytecode_api_decl.lo libclamav_la-cache.lo \
-	$(am__objects_1)
+	libclamav_la-Bra86.lo libclamav_la-7zIn.lo \
+	libclamav_la-7zDecode.lo libclamav_la-7zItem.lo \
+	libclamav_la-7zHeader.lo libclamav_la-7zExtract.lo \
+	libclamav_la-explode.lo libclamav_la-textnorm.lo \
+	libclamav_la-dlp.lo libclamav_la-js-norm.lo \
+	libclamav_la-uniq.lo libclamav_la-version.lo \
+	libclamav_la-mpool.lo libclamav_la-fmap.lo \
+	libclamav_la-sha256.lo libclamav_la-bytecode.lo \
+	libclamav_la-bytecode_vm.lo libclamav_la-cpio.lo \
+	libclamav_la-macho.lo libclamav_la-ishield.lo \
+	libclamav_la-bytecode_api.lo libclamav_la-bytecode_api_decl.lo \
+	libclamav_la-cache.lo $(am__objects_1)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -638,21 +636,20 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
 	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
 	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
-	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/BraIA64.c \
-	7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
-	7z/Archive/7z/7zDecode.c 7z/Archive/7z/7zDecode.h \
-	7z/Archive/7z/7zItem.c 7z/Archive/7z/7zItem.h \
-	7z/Archive/7z/7zHeader.c 7z/Archive/7z/7zHeader.h \
-	7z/Archive/7z/7zExtract.c 7z/Archive/7z/7zExtract.h explode.c \
-	explode.h textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
-	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
-	uniq.h version.c version.h mpool.c mpool.h fmap.c fmap.h \
-	default.h sha256.c sha256.h bignum.h bytecode.c bytecode.h \
-	bytecode_vm.c bytecode_priv.h clambc.h cpio.c cpio.h macho.c \
-	macho.h ishield.c ishield.h type_desc.h bcfeatures.h \
-	bytecode_api.c bytecode_api_decl.c bytecode_api.h \
-	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
-	$(am__append_7)
+	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/Archive/7z/7zIn.c \
+	7z/Archive/7z/7zIn.h 7z/Archive/7z/7zDecode.c \
+	7z/Archive/7z/7zDecode.h 7z/Archive/7z/7zItem.c \
+	7z/Archive/7z/7zItem.h 7z/Archive/7z/7zHeader.c \
+	7z/Archive/7z/7zHeader.h 7z/Archive/7z/7zExtract.c \
+	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
+	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
+	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
+	version.h mpool.c mpool.h fmap.c fmap.h default.h sha256.c \
+	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
+	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
+	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
+	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
+	bytecode_hooks.h cache.c cache.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -785,7 +782,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bcj2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bra.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bra86.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-BraIA64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-LzmaDec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-aspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-autoit.Plo@am__quote@
@@ -1486,14 +1482,6 @@ libclamav_la-Bra86.lo: 7z/Bra86.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Bra86.c' object='libclamav_la-Bra86.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Bra86.lo `test -f '7z/Bra86.c' || echo '$(srcdir)/'`7z/Bra86.c
-
-libclamav_la-BraIA64.lo: 7z/BraIA64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-BraIA64.lo -MD -MP -MF $(DEPDIR)/libclamav_la-BraIA64.Tpo -c -o libclamav_la-BraIA64.lo `test -f '7z/BraIA64.c' || echo '$(srcdir)/'`7z/BraIA64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-BraIA64.Tpo $(DEPDIR)/libclamav_la-BraIA64.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/BraIA64.c' object='libclamav_la-BraIA64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-BraIA64.lo `test -f '7z/BraIA64.c' || echo '$(srcdir)/'`7z/BraIA64.c
 
 libclamav_la-7zIn.lo: 7z/Archive/7z/7zIn.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zIn.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zIn.Tpo -c -o libclamav_la-7zIn.lo `test -f '7z/Archive/7z/7zIn.c' || echo '$(srcdir)/'`7z/Archive/7z/7zIn.c

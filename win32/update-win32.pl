@@ -203,13 +203,16 @@ my %CONF = (
 
 my @PROJECTS = (
     # LIBCLAMAV #
-    {makefile => 'libclamav', sections => ['libclamav', 'libclamav_internal_utils'], output => 'win32/libclamav.vcproj', makefile_only => 'BraIA64\\.c$', vcproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
+    {makefile => 'libclamav', sections => ['libclamav', 'libclamav_internal_utils'], output => 'win32/libclamav.vcproj', vcproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
 
     # LIBCLAMUNRAR_IFACE #
     {makefile => 'libclamav', sections => ['libclamunrar_iface'], output => 'win32/libclamunrar_iface.vcproj', vcproj_only => 'compat\\\\'},
 
     # LIBCLAMUNRAR #
     {makefile => 'libclamav', sections => ['libclamunrar'], output => 'win32/libclamunrar.vcproj'},
+
+    # LIBCLAMAVCXX #
+    {makefile => 'libclamav/c++', sections => ['libclamavcxx'], output => 'win32/libclamavcxx.vcproj'},
 
     # CLAMSCAN #
     {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => 'optparser\\.c$', vcproj_only => 'compat\\\\'},
@@ -236,7 +239,7 @@ my @PROJECTS = (
     {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcproj'},
 
     # LLVMjit #
-    {makefile => 'libclamav/c++', sections => ['libllvmjit'], output => 'win32/LLVMjit.vcproj', makefile_only => '\\\\llvm\\\\lib\\\\Support\\\\'},
+    {makefile => 'libclamav/c++', sections => ['libllvmjit'], output => 'win32/LLVMjit.vcproj'},
 
 
     );

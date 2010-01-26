@@ -295,7 +295,6 @@ libclamav_la_SOURCES = \
 	7z/Bra.c \
 	7z/Bra.h \
 	7z/Bra86.c \
-	7z/BraIA64.c \
 	7z/Archive/7z/7zIn.c \
 	7z/Archive/7z/7zIn.h \
 	7z/Archive/7z/7zDecode.c \
