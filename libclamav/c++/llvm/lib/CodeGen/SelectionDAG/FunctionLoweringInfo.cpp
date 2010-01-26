@@ -35,7 +35,6 @@
 #include "llvm/Target/TargetLowering.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/Compiler.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
@@ -113,7 +112,7 @@ void llvm::ComputeValueVTs(const TargetLowering &TLI, const Type *Ty,
     return;
   }
   // Interpret void as zero return values.
-  if (Ty == Type::getVoidTy(Ty->getContext()))
+  if (Ty->isVoidTy())
     return;
   // Base case: we can get an EVT for this LLVM IR type.
   ValueVTs.push_back(TLI.getValueType(Ty));

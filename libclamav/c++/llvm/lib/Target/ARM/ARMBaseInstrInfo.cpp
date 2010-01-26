@@ -490,6 +490,7 @@ unsigned ARMBaseInstrInfo::GetInstSizeInBytes(const MachineInstr *MI) const {
         MI->getOperand(NumOps - (TID.isPredicable() ? 3 : 2));
       unsigned JTI = JTOP.getIndex();
       const MachineJumpTableInfo *MJTI = MF->getJumpTableInfo();
+      assert(MJTI != 0);
       const std::vector<MachineJumpTableEntry> &JT = MJTI->getJumpTables();
       assert(JTI < JT.size());
       // Thumb instructions are 2 byte aligned, but JT entries are 4 byte
@@ -715,7 +716,7 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
             RC == ARM::QPR_VFP2RegisterClass) && "Unknown regclass!");
     // FIXME: Neon instructions should support predicates
     if (Align >= 16
-        && (getRegisterInfo().needsStackRealignment(MF))) {
+        && (getRegisterInfo().canRealignStack(MF))) {
       AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::VST1q64))
                      .addFrameIndex(FI).addImm(0).addImm(0).addImm(128)
                      .addMemOperand(MMO)
@@ -760,7 +761,7 @@ loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
             RC == ARM::QPR_VFP2RegisterClass ||
             RC == ARM::QPR_8RegisterClass) && "Unknown regclass!");
     if (Align >= 16
-        && (getRegisterInfo().needsStackRealignment(MF))) {
+        && (getRegisterInfo().canRealignStack(MF))) {
       AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::VLD1q64), DestReg)
                      .addFrameIndex(FI).addImm(0).addImm(0).addImm(128)
                      .addMemOperand(MMO));
@@ -938,6 +939,35 @@ ARMBaseInstrInfo::canFoldMemoryOperand(const MachineInstr *MI,
   return false;
 }
 
+/// Create a copy of a const pool value. Update CPI to the new index and return
+/// the label UID.
+static unsigned duplicateCPV(MachineFunction &MF, unsigned &CPI) {
+  MachineConstantPool *MCP = MF.getConstantPool();
+  ARMFunctionInfo *AFI = MF.getInfo<ARMFunctionInfo>();
+
+  const MachineConstantPoolEntry &MCPE = MCP->getConstants()[CPI];
+  assert(MCPE.isMachineConstantPoolEntry() &&
+         "Expecting a machine constantpool entry!");
+  ARMConstantPoolValue *ACPV =
+    static_cast<ARMConstantPoolValue*>(MCPE.Val.MachineCPVal);
+
+  unsigned PCLabelId = AFI->createConstPoolEntryUId();
+  ARMConstantPoolValue *NewCPV = 0;
+  if (ACPV->isGlobalValue())
+    NewCPV = new ARMConstantPoolValue(ACPV->getGV(), PCLabelId,
+                                      ARMCP::CPValue, 4);
+  else if (ACPV->isExtSymbol())
+    NewCPV = new ARMConstantPoolValue(MF.getFunction()->getContext(),
+                                      ACPV->getSymbol(), PCLabelId, 4);
+  else if (ACPV->isBlockAddress())
+    NewCPV = new ARMConstantPoolValue(ACPV->getBlockAddress(), PCLabelId,
+                                      ARMCP::CPBlockAddress, 4);
+  else
+    llvm_unreachable("Unexpected ARM constantpool value type!!");
+  CPI = MCP->getConstantPoolIndex(NewCPV, MCPE.getAlignment());
+  return PCLabelId;
+}
+
 void ARMBaseInstrInfo::
 reMaterialize(MachineBasicBlock &MBB,
               MachineBasicBlock::iterator I,
@@ -960,28 +990,8 @@ reMaterialize(MachineBasicBlock &MBB,
   case ARM::tLDRpci_pic:
   case ARM::t2LDRpci_pic: {
     MachineFunction &MF = *MBB.getParent();
-    ARMFunctionInfo *AFI = MF.getInfo<ARMFunctionInfo>();
-    MachineConstantPool *MCP = MF.getConstantPool();
     unsigned CPI = Orig->getOperand(1).getIndex();
-    const MachineConstantPoolEntry &MCPE = MCP->getConstants()[CPI];
-    assert(MCPE.isMachineConstantPoolEntry() &&
-           "Expecting a machine constantpool entry!");
-    ARMConstantPoolValue *ACPV =
-      static_cast<ARMConstantPoolValue*>(MCPE.Val.MachineCPVal);
-    unsigned PCLabelId = AFI->createConstPoolEntryUId();
-    ARMConstantPoolValue *NewCPV = 0;
-    if (ACPV->isGlobalValue())
-      NewCPV = new ARMConstantPoolValue(ACPV->getGV(), PCLabelId,
-                                        ARMCP::CPValue, 4);
-    else if (ACPV->isExtSymbol())
-      NewCPV = new ARMConstantPoolValue(MF.getFunction()->getContext(),
-                                        ACPV->getSymbol(), PCLabelId, 4);
-    else if (ACPV->isBlockAddress())
-      NewCPV = new ARMConstantPoolValue(ACPV->getBlockAddress(), PCLabelId,
-                                        ARMCP::CPBlockAddress, 4);
-    else
-      llvm_unreachable("Unexpected ARM constantpool value type!!");
-    CPI = MCP->getConstantPoolIndex(NewCPV, MCPE.getAlignment());
+    unsigned PCLabelId = duplicateCPV(MF, CPI);
     MachineInstrBuilder MIB = BuildMI(MBB, I, Orig->getDebugLoc(), get(Opcode),
                                       DestReg)
       .addConstantPoolIndex(CPI).addImm(PCLabelId);
@@ -992,6 +1002,22 @@ reMaterialize(MachineBasicBlock &MBB,
 
   MachineInstr *NewMI = prior(I);
   NewMI->getOperand(0).setSubReg(SubIdx);
+}
+
+MachineInstr *
+ARMBaseInstrInfo::duplicate(MachineInstr *Orig, MachineFunction &MF) const {
+  MachineInstr *MI = TargetInstrInfoImpl::duplicate(Orig, MF);
+  switch(Orig->getOpcode()) {
+  case ARM::tLDRpci_pic:
+  case ARM::t2LDRpci_pic: {
+    unsigned CPI = Orig->getOperand(1).getIndex();
+    unsigned PCLabelId = duplicateCPV(MF, CPI);
+    Orig->getOperand(1).setIndex(CPI);
+    Orig->getOperand(2).setImm(PCLabelId);
+    break;
+  }
+  }
+  return MI;
 }
 
 bool ARMBaseInstrInfo::isIdentical(const MachineInstr *MI0,

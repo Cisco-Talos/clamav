@@ -465,6 +465,10 @@ struct InstructionInfo {
     if (Operands.size() != RHS.Operands.size())
       return false;
 
+    // Otherwise, make sure the ordering of the two instructions is unambiguous
+    // by checking that either (a) a token or operand kind discriminates them,
+    // or (b) the ordering among equivalent kinds is consistent.
+
     // Tokens and operand kinds are unambiguous (assuming a correct target
     // specific parser).
     for (unsigned i = 0, e = Operands.size(); i != e; ++i)
@@ -961,8 +965,8 @@ static void EmitConvertToMCInst(CodeGenTarget &Target,
 
   CvtOS << "static bool ConvertToMCInst(ConversionKind Kind, MCInst &Inst, "
         << "unsigned Opcode,\n"
-        << "                            SmallVectorImpl<"
-        << Target.getName() << "Operand> &Operands) {\n";
+        << "                      const SmallVectorImpl<MCParsedAsmOperand*"
+        << "> &Operands) {\n";
   CvtOS << "  Inst.setOpcode(Opcode);\n";
   CvtOS << "  switch (Kind) {\n";
   CvtOS << "  default:\n";
@@ -971,6 +975,9 @@ static void EmitConvertToMCInst(CodeGenTarget &Target,
 
   OS << "// Unified function for converting operants to MCInst instances.\n\n";
   OS << "enum ConversionKind {\n";
+  
+  // TargetOperandClass - This is the target's operand class, like X86Operand.
+  std::string TargetOperandClass = Target.getName() + "Operand";
   
   for (std::vector<InstructionInfo*>::const_iterator it = Infos.begin(),
          ie = Infos.end(); it != ie; ++it) {
@@ -1050,8 +1057,9 @@ static void EmitConvertToMCInst(CodeGenTarget &Target,
       for (; CurIndex != Op.OperandInfo->MIOperandNo; ++CurIndex)
         CvtOS << "    Inst.addOperand(MCOperand::CreateReg(0));\n";
 
-      CvtOS << "    Operands[" << MIOperandList[i].second 
-         << "]." << Op.Class->RenderMethod 
+      CvtOS << "    ((" << TargetOperandClass << "*)Operands["
+         << MIOperandList[i].second 
+         << "])->" << Op.Class->RenderMethod 
          << "(Inst, " << Op.OperandInfo->MINumOperands << ");\n";
       CurIndex += Op.OperandInfo->MINumOperands;
     }
@@ -1111,8 +1119,9 @@ static void EmitMatchClassEnumeration(CodeGenTarget &Target,
 static void EmitClassifyOperand(CodeGenTarget &Target,
                                 AsmMatcherInfo &Info,
                                 raw_ostream &OS) {
-  OS << "static MatchClassKind ClassifyOperand("
-     << Target.getName() << "Operand &Operand) {\n";
+  OS << "static MatchClassKind ClassifyOperand(MCParsedAsmOperand *GOp) {\n"
+     << "  " << Target.getName() << "Operand &Operand = *("
+     << Target.getName() << "Operand*)GOp;\n";
 
   // Classify tokens.
   OS << "  if (Operand.isToken())\n";
@@ -1381,9 +1390,7 @@ static void EmitMatchRegisterName(CodeGenTarget &Target, Record *AsmParser,
                                  "return " + utostr(i + 1) + ";"));
   }
   
-  OS << "unsigned " << Target.getName() 
-     << AsmParser->getValueAsString("AsmParserClassName")
-     << "::MatchRegisterName(const StringRef &Name) {\n";
+  OS << "static unsigned MatchRegisterName(const StringRef &Name) {\n";
 
   EmitStringMatcher("Name", Matches, OS);
   
@@ -1442,6 +1449,8 @@ void AsmMatcherEmitter::run(raw_ostream &OS) {
 
   // Emit the function to match a register name to number.
   EmitMatchRegisterName(Target, AsmParser, OS);
+  
+  OS << "#ifndef REGISTERS_ONLY\n\n";
 
   // Generate the unified function to convert operands into an MCInst.
   EmitConvertToMCInst(Target, Info.Instructions, OS);
@@ -1467,9 +1476,8 @@ void AsmMatcherEmitter::run(raw_ostream &OS) {
     MaxNumOperands = std::max(MaxNumOperands, (*it)->Operands.size());
   
   OS << "bool " << Target.getName() << ClassName
-     << "::MatchInstruction(" 
-     << "SmallVectorImpl<" << Target.getName() << "Operand> &Operands, "
-     << "MCInst &Inst) {\n";
+     << "::\nMatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> "
+        "&Operands,\n                 MCInst &Inst) {\n";
 
   // Emit the static match table; unused classes get initalized to 0 which is
   // guaranteed to be InvalidMatchClass.
@@ -1542,4 +1550,6 @@ void AsmMatcherEmitter::run(raw_ostream &OS) {
 
   OS << "  return true;\n";
   OS << "}\n\n";
+  
+  OS << "#endif // REGISTERS_ONLY\n";
 }

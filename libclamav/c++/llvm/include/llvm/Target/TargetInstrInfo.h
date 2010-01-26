@@ -88,7 +88,10 @@ public:
     /// only needed in cases where the register classes implied by the
     /// instructions are insufficient. The actual MachineInstrs to perform
     /// the copy are emitted with the TargetInstrInfo::copyRegToReg hook.
-    COPY_TO_REGCLASS = 10
+    COPY_TO_REGCLASS = 10,
+
+    // DEBUG_VALUE - a mapping of the llvm.dbg.value intrinsic
+    DEBUG_VALUE = 11
   };
 
   unsigned getNumOpcodes() const { return NumOpcodes; }
@@ -140,6 +143,18 @@ public:
   virtual bool isMoveInstr(const MachineInstr& MI,
                            unsigned& SrcReg, unsigned& DstReg,
                            unsigned& SrcSubIdx, unsigned& DstSubIdx) const {
+    return false;
+  }
+
+  /// isCoalescableExtInstr - Return true if the instruction is a "coalescable"
+  /// extension instruction. That is, it's like a copy where it's legal for the
+  /// source to overlap the destination. e.g. X86::MOVSX64rr32. If this returns
+  /// true, then it's expected the pre-extension value is available as a subreg
+  /// of the result register. This also returns the sub-register index in
+  /// SubIdx.
+  virtual bool isCoalescableExtInstr(const MachineInstr &MI,
+                                     unsigned &SrcReg, unsigned &DstReg,
+                                     unsigned &SubIdx) const {
     return false;
   }
 
@@ -231,6 +246,14 @@ public:
                              unsigned DestReg, unsigned SubIdx,
                              const MachineInstr *Orig,
                              const TargetRegisterInfo *TRI) const = 0;
+
+  /// duplicate - Create a duplicate of the Orig instruction in MF. This is like
+  /// MachineFunction::CloneMachineInstr(), but the target may update operands
+  /// that are required to be unique.
+  ///
+  /// The instruction must be duplicable as indicated by isNotDuplicable().
+  virtual MachineInstr *duplicate(MachineInstr *Orig,
+                                  MachineFunction &MF) const = 0;
 
   /// convertToThreeAddress - This method must be implemented by targets that
   /// set the M_CONVERTIBLE_TO_3_ADDR flag.  When this flag is set, the target
@@ -463,6 +486,30 @@ public:
                                       unsigned *LoadRegIndex = 0) const {
     return 0;
   }
+
+  /// areLoadsFromSameBasePtr - This is used by the pre-regalloc scheduler
+  /// to determine if two loads are loading from the same base address. It
+  /// should only return true if the base pointers are the same and the
+  /// only differences between the two addresses are the offset. It also returns
+  /// the offsets by reference.
+  virtual bool areLoadsFromSameBasePtr(SDNode *Load1, SDNode *Load2,
+                                       int64_t &Offset1, int64_t &Offset2) const {
+    return false;
+  }
+
+  /// shouldScheduleLoadsNear - This is a used by the pre-regalloc scheduler to
+  /// determine (in conjuction with areLoadsFromSameBasePtr) if two loads should
+  /// be scheduled togther. On some targets if two loads are loading from
+  /// addresses in the same cache line, it's better if they are scheduled
+  /// together. This function takes two integers that represent the load offsets
+  /// from the common base address. It returns true if it decides it's desirable
+  /// to schedule the two loads together. "NumLoads" is the number of loads that
+  /// have already been scheduled after Load1.
+  virtual bool shouldScheduleLoadsNear(SDNode *Load1, SDNode *Load2,
+                                       int64_t Offset1, int64_t Offset2,
+                                       unsigned NumLoads) const {
+    return false;
+  }
   
   /// ReverseBranchCondition - Reverses the branch condition of the specified
   /// condition list, returning false on success and true if it cannot be
@@ -560,6 +607,8 @@ public:
                              unsigned DestReg, unsigned SubReg,
                              const MachineInstr *Orig,
                              const TargetRegisterInfo *TRI) const;
+  virtual MachineInstr *duplicate(MachineInstr *Orig,
+                                  MachineFunction &MF) const;
   virtual bool isIdentical(const MachineInstr *MI,
                            const MachineInstr *Other,
                            const MachineRegisterInfo *MRI) const;

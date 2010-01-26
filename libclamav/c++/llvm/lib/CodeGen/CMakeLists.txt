@@ -21,7 +21,6 @@ add_llvm_library(LLVMCodeGen
   LiveStackAnalysis.cpp
   LiveVariables.cpp
   LowerSubregs.cpp
-  MachOCodeEmitter.cpp
   MachOWriter.cpp
   MachineBasicBlock.cpp
   MachineDominators.cpp
@@ -35,12 +34,12 @@ add_llvm_library(LLVMCodeGen
   MachineModuleInfoImpls.cpp
   MachinePassRegistry.cpp
   MachineRegisterInfo.cpp
-  MachineSink.cpp
   MachineSSAUpdater.cpp
+  MachineSink.cpp
   MachineVerifier.cpp
-  MaxStackAlignment.cpp
   ObjectCodeEmitter.cpp
   OcamlGC.cpp
+  OptimizeExts.cpp
   PHIElimination.cpp
   Passes.cpp
   PostRASchedulerList.cpp

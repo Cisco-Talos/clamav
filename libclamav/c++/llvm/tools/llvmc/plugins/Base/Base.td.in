@@ -56,7 +56,7 @@ def OptList : OptionList<[
     (help "A deprecated synonym for -mtune"), (hidden)),
  (parameter_option "MF",
     (help "Specify a file to write dependencies to"), (hidden)),
- (parameter_option "MT",
+ (parameter_list_option "MT",
     (help "Change the name of the rule emitted by dependency generation"),
     (hidden)),
  (parameter_list_option "include",
@@ -97,10 +97,9 @@ def Preprocess : OptionPreprocessor<
            (unset_option ["O0", "O1", "O2"]),
       (and (switch_on "O2"), (any_switch_on ["O0", "O1"])),
            (unset_option ["O0", "O1"]),
-      (and (switch_on "O1"), (switch_on "O0")),
+      (switch_on ["O1", "O0"]),
            (unset_option "O0"))
 >;
-
 
 // Tools
 
@@ -125,9 +124,9 @@ class llvm_gcc_based <string cmd_prefix, string in_lang, string E_ext> : Tool<
          (and (multiple_input_files), (or (switch_on "S"), (switch_on "c"))),
               (error "cannot specify -o with -c or -S with multiple files"),
          (switch_on "E"), [(stop_compilation), (output_suffix E_ext)],
-         (and (switch_on "emit-llvm"), (switch_on "S")),
+         (switch_on ["emit-llvm", "S"]),
               [(output_suffix "ll"), (stop_compilation)],
-         (and (switch_on "emit-llvm"), (switch_on "c")), (stop_compilation),
+         (switch_on ["emit-llvm", "c"]), (stop_compilation),
          (switch_on "fsyntax-only"), (stop_compilation),
          (not_empty "include"), (forward "include"),
          (not_empty "save-temps"), (append_cmd "-save-temps"),
@@ -140,6 +139,7 @@ class llvm_gcc_based <string cmd_prefix, string in_lang, string E_ext> : Tool<
          (not_empty "m"), (forward "m"),
          (switch_on "m32"), (forward "m32"),
          (switch_on "m64"), (forward "m64"),
+         (switch_on "O0"), (forward "O0"),
          (switch_on "O1"), (forward "O1"),
          (switch_on "O2"), (forward "O2"),
          (switch_on "O3"), (forward "O3"),

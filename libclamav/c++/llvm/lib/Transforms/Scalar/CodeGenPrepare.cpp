@@ -237,7 +237,7 @@ void CodeGenPrepare::EliminateMostlyEmptyBlock(BasicBlock *BB) {
   BranchInst *BI = cast<BranchInst>(BB->getTerminator());
   BasicBlock *DestBB = BI->getSuccessor(0);
 
-  DEBUG(errs() << "MERGING MOSTLY EMPTY BLOCKS - BEFORE:\n" << *BB << *DestBB);
+  DEBUG(dbgs() << "MERGING MOSTLY EMPTY BLOCKS - BEFORE:\n" << *BB << *DestBB);
 
   // If the destination block has a single pred, then this is a trivial edge,
   // just collapse it.
@@ -251,7 +251,7 @@ void CodeGenPrepare::EliminateMostlyEmptyBlock(BasicBlock *BB) {
       if (isEntry && BB != &BB->getParent()->getEntryBlock())
         BB->moveBefore(&BB->getParent()->getEntryBlock());
       
-      DEBUG(errs() << "AFTER:\n" << *DestBB << "\n\n\n");
+      DEBUG(dbgs() << "AFTER:\n" << *DestBB << "\n\n\n");
       return;
     }
   }
@@ -294,7 +294,7 @@ void CodeGenPrepare::EliminateMostlyEmptyBlock(BasicBlock *BB) {
   }
   BB->eraseFromParent();
 
-  DEBUG(errs() << "AFTER:\n" << *DestBB << "\n\n\n");
+  DEBUG(dbgs() << "AFTER:\n" << *DestBB << "\n\n\n");
 }
 
 
@@ -591,7 +591,7 @@ bool CodeGenPrepare::OptimizeMemoryInst(Instruction *MemoryInst, Value *Addr,
 
   // If all the instructions matched are already in this BB, don't do anything.
   if (!AnyNonLocal) {
-    DEBUG(errs() << "CGP: Found      local addrmode: " << AddrMode << "\n");
+    DEBUG(dbgs() << "CGP: Found      local addrmode: " << AddrMode << "\n");
     return false;
   }
 
@@ -606,18 +606,34 @@ bool CodeGenPrepare::OptimizeMemoryInst(Instruction *MemoryInst, Value *Addr,
   // computation.
   Value *&SunkAddr = SunkAddrs[Addr];
   if (SunkAddr) {
-    DEBUG(errs() << "CGP: Reusing nonlocal addrmode: " << AddrMode << " for "
+    DEBUG(dbgs() << "CGP: Reusing nonlocal addrmode: " << AddrMode << " for "
                  << *MemoryInst);
     if (SunkAddr->getType() != Addr->getType())
       SunkAddr = new BitCastInst(SunkAddr, Addr->getType(), "tmp", InsertPt);
   } else {
-    DEBUG(errs() << "CGP: SINKING nonlocal addrmode: " << AddrMode << " for "
+    DEBUG(dbgs() << "CGP: SINKING nonlocal addrmode: " << AddrMode << " for "
                  << *MemoryInst);
     const Type *IntPtrTy =
           TLI->getTargetData()->getIntPtrType(AccessTy->getContext());
 
     Value *Result = 0;
-    // Start with the scale value.
+
+    // Start with the base register. Do this first so that subsequent address
+    // matching finds it last, which will prevent it from trying to match it
+    // as the scaled value in case it happens to be a mul. That would be
+    // problematic if we've sunk a different mul for the scale, because then
+    // we'd end up sinking both muls.
+    if (AddrMode.BaseReg) {
+      Value *V = AddrMode.BaseReg;
+      if (isa<PointerType>(V->getType()))
+        V = new PtrToIntInst(V, IntPtrTy, "sunkaddr", InsertPt);
+      if (V->getType() != IntPtrTy)
+        V = CastInst::CreateIntegerCast(V, IntPtrTy, /*isSigned=*/true,
+                                        "sunkaddr", InsertPt);
+      Result = V;
+    }
+
+    // Add the scale value.
     if (AddrMode.Scale) {
       Value *V = AddrMode.ScaledReg;
       if (V->getType() == IntPtrTy) {
@@ -634,17 +650,6 @@ bool CodeGenPrepare::OptimizeMemoryInst(Instruction *MemoryInst, Value *Addr,
         V = BinaryOperator::CreateMul(V, ConstantInt::get(IntPtrTy,
                                                                 AddrMode.Scale),
                                       "sunkaddr", InsertPt);
-      Result = V;
-    }
-
-    // Add in the base register.
-    if (AddrMode.BaseReg) {
-      Value *V = AddrMode.BaseReg;
-      if (isa<PointerType>(V->getType()))
-        V = new PtrToIntInst(V, IntPtrTy, "sunkaddr", InsertPt);
-      if (V->getType() != IntPtrTy)
-        V = CastInst::CreateIntegerCast(V, IntPtrTy, /*isSigned=*/true,
-                                        "sunkaddr", InsertPt);
       if (Result)
         Result = BinaryOperator::CreateAdd(Result, V, "sunkaddr", InsertPt);
       else

@@ -106,7 +106,17 @@ Shrink: (setlt (loadi32 P), 0) -> (setlt (loadi8 Phi), 0)
 
 //===---------------------------------------------------------------------===//
 
-Reassociate should turn: X*X*X*X -> t=(X*X) (t*t) to eliminate a multiply.
+Reassociate should turn things like:
+
+int factorial(int X) {
+ return X*X*X*X*X*X*X*X;
+}
+
+into llvm.powi calls, allowing the code generator to produce balanced
+multiplication trees.
+
+First, the intrinsic needs to be extended to support integers, and second the
+code generator needs to be enhanced to lower these to multiplication trees.
 
 //===---------------------------------------------------------------------===//
 
@@ -119,7 +129,71 @@ int foo(int z, int n) {
   return bar(z, n) + bar(2*z, 2*n);
 }
 
-Reassociate should handle the example in GCC PR16157.
+This is blocked on not handling X*X*X -> powi(X, 3) (see note above).  The issue
+is that we end up getting t = 2*X  s = t*t   and don't turn this into 4*X*X,
+which is the same number of multiplies and is canonical, because the 2*X has
+multiple uses.  Here's a simple example:
+
+define i32 @test15(i32 %X1) {
+  %B = mul i32 %X1, 47   ; X1*47
+  %C = mul i32 %B, %B
+  ret i32 %C
+}
+
+
+//===---------------------------------------------------------------------===//
+
+Reassociate should handle the example in GCC PR16157:
+
+extern int a0, a1, a2, a3, a4; extern int b0, b1, b2, b3, b4; 
+void f () {  /* this can be optimized to four additions... */ 
+        b4 = a4 + a3 + a2 + a1 + a0; 
+        b3 = a3 + a2 + a1 + a0; 
+        b2 = a2 + a1 + a0; 
+        b1 = a1 + a0; 
+} 
+
+This requires reassociating to forms of expressions that are already available,
+something that reassoc doesn't think about yet.
+
+
+//===---------------------------------------------------------------------===//
+
+This function: (derived from GCC PR19988)
+double foo(double x, double y) {
+  return ((x + 0.1234 * y) * (x + -0.1234 * y));
+}
+
+compiles to:
+_foo:
+	movapd	%xmm1, %xmm2
+	mulsd	LCPI1_1(%rip), %xmm1
+	mulsd	LCPI1_0(%rip), %xmm2
+	addsd	%xmm0, %xmm1
+	addsd	%xmm0, %xmm2
+	movapd	%xmm1, %xmm0
+	mulsd	%xmm2, %xmm0
+	ret
+
+Reassociate should be able to turn it into:
+
+double foo(double x, double y) {
+  return ((x + 0.1234 * y) * (x - 0.1234 * y));
+}
+
+Which allows the multiply by constant to be CSE'd, producing:
+
+_foo:
+	mulsd	LCPI1_0(%rip), %xmm1
+	movapd	%xmm1, %xmm2
+	addsd	%xmm0, %xmm2
+	subsd	%xmm1, %xmm0
+	mulsd	%xmm2, %xmm0
+	ret
+
+This doesn't need -ffast-math support at all.  This is particularly bad because
+the llvm-gcc frontend is canonicalizing the later into the former, but clang
+doesn't have this problem.
 
 //===---------------------------------------------------------------------===//
 
@@ -202,24 +276,6 @@ define void @test(i32* %P) {
 
 //===---------------------------------------------------------------------===//
 
-dag/inst combine "clz(x)>>5 -> x==0" for 32-bit x.
-
-Compile:
-
-int bar(int x)
-{
-  int t = __builtin_clz(x);
-  return -(t>>5);
-}
-
-to:
-
-_bar:   addic r3,r3,-1
-        subfe r3,r3,r3
-        blr
-
-//===---------------------------------------------------------------------===//
-
 quantum_sigma_x in 462.libquantum contains the following loop:
 
       for(i=0; i<reg->size; i++)
@@ -247,19 +303,6 @@ this requires TBAA.
 
 //===---------------------------------------------------------------------===//
 
-This should be optimized to one 'and' and one 'or', from PR4216:
-
-define i32 @test_bitfield(i32 %bf.prev.low) nounwind ssp {
-entry:
-  %bf.prev.lo.cleared10 = or i32 %bf.prev.low, 32962 ; <i32> [#uses=1]
-  %0 = and i32 %bf.prev.low, -65536               ; <i32> [#uses=1]
-  %1 = and i32 %bf.prev.lo.cleared10, 40186       ; <i32> [#uses=1]
-  %2 = or i32 %1, %0                              ; <i32> [#uses=1]
-  ret i32 %2
-}
-
-//===---------------------------------------------------------------------===//
-
 This isn't recognized as bswap by instcombine (yes, it really is bswap):
 
 unsigned long reverse(unsigned v) {
@@ -271,6 +314,8 @@ unsigned long reverse(unsigned v) {
 }
 
 //===---------------------------------------------------------------------===//
+
+[LOOP RECOGNITION]
 
 These idioms should be recognized as popcount (see PR1488):
 
@@ -334,9 +379,33 @@ this construct.
 
 //===---------------------------------------------------------------------===//
 
+[LOOP RECOGNITION]
+
 viterbi speeds up *significantly* if the various "history" related copy loops
 are turned into memcpy calls at the source level.  We need a "loops to memcpy"
 pass.
+
+//===---------------------------------------------------------------------===//
+
+[LOOP OPTIMIZATION]
+
+SingleSource/Benchmarks/Misc/dt.c shows several interesting optimization
+opportunities in its double_array_divs_variable function: it needs loop
+interchange, memory promotion (which LICM already does), vectorization and
+variable trip count loop unrolling (since it has a constant trip count). ICC
+apparently produces this very nice code with -ffast-math:
+
+..B1.70:                        # Preds ..B1.70 ..B1.69
+       mulpd     %xmm0, %xmm1                                  #108.2
+       mulpd     %xmm0, %xmm1                                  #108.2
+       mulpd     %xmm0, %xmm1                                  #108.2
+       mulpd     %xmm0, %xmm1                                  #108.2
+       addl      $8, %edx                                      #
+       cmpl      $131072, %edx                                 #108.2
+       jb        ..B1.70       # Prob 99%                      #108.2
+
+It would be better to count down to zero, but this is a lot better than what we
+do.
 
 //===---------------------------------------------------------------------===//
 
@@ -718,47 +787,6 @@ We do a number of simplifications in simplify libcalls to strength reduce
 standard library functions, but we don't currently merge them together.  For
 example, it is useful to merge memcpy(a,b,strlen(b)) -> strcpy.  This can only
 be done safely if "b" isn't modified between the strlen and memcpy of course.
-
-//===---------------------------------------------------------------------===//
-
-Reassociate should turn things like:
-
-int factorial(int X) {
- return X*X*X*X*X*X*X*X;
-}
-
-into llvm.powi calls, allowing the code generator to produce balanced
-multiplication trees.
-
-//===---------------------------------------------------------------------===//
-
-We generate a horrible  libcall for llvm.powi.  For example, we compile:
-
-#include <cmath>
-double f(double a) { return std::pow(a, 4); }
-
-into:
-
-__Z1fd:
-	subl	$12, %esp
-	movsd	16(%esp), %xmm0
-	movsd	%xmm0, (%esp)
-	movl	$4, 8(%esp)
-	call	L___powidf2$stub
-	addl	$12, %esp
-	ret
-
-GCC produces:
-
-__Z1fd:
-	subl	$12, %esp
-	movsd	16(%esp), %xmm0
-	mulsd	%xmm0, %xmm0
-	mulsd	%xmm0, %xmm0
-	movsd	%xmm0, (%esp)
-	fldl	(%esp)
-	addl	$12, %esp
-	ret
 
 //===---------------------------------------------------------------------===//
 
@@ -1237,8 +1265,15 @@ store->load.
 
 //===---------------------------------------------------------------------===//
 
+[ALIAS ANALYSIS]
+
 Type based alias analysis:
 http://gcc.gnu.org/bugzilla/show_bug.cgi?id=14705
+
+We should do better analysis of posix_memalign.  At the least it should
+no-capture its pointer argument, at best, we should know that the out-value
+result doesn't point to anything (like malloc).  One example of this is in
+SingleSource/Benchmarks/Misc/dt.c
 
 //===---------------------------------------------------------------------===//
 
@@ -1667,38 +1702,9 @@ would delete the or instruction for us.
 
 //===---------------------------------------------------------------------===//
 
-FunctionAttrs is not marking this function as readnone (just readonly):
-$ clang t.c -emit-llvm -S -o - -O0 | opt -mem2reg -S -functionattrs
-
-int t(int a, int b, int c) {
- int *p;
- if (a)
-   p = &a;
- else
-   p = &c;
- return *p;
-}
-
-This is because we codegen this to:
-
-define i32 @t(i32 %a, i32 %b, i32 %c) nounwind readonly ssp {
-entry:
-  %a.addr = alloca i32                            ; <i32*> [#uses=3]
-  %c.addr = alloca i32                            ; <i32*> [#uses=2]
-...
-
-if.end:
-  %p.0 = phi i32* [ %a.addr, %if.then ], [ %c.addr, %if.else ]
-  %tmp2 = load i32* %p.0                          ; <i32> [#uses=1]
-  ret i32 %tmp2
-}
-
-And functionattrs doesn't realize that the p.0 load points to function local
-memory.
-
-Also, functionattrs doesn't know about memcpy/memset.  This function should be
-marked readnone, since it only twiddles local memory, but functionattrs doesn't
-handle memset/memcpy/memmove aggressively:
+functionattrs doesn't know much about memcpy/memset.  This function should be
+marked readnone rather than readonly, since it only twiddles local memory, but
+functionattrs doesn't handle memset/memcpy/memmove aggressively:
 
 struct X { int *p; int *q; };
 int foo() {
@@ -1713,3 +1719,54 @@ int foo() {
 
 //===---------------------------------------------------------------------===//
 
+Missed instcombine transformation:
+define i1 @a(i32 %x) nounwind readnone {
+entry:
+  %cmp = icmp eq i32 %x, 30
+  %sub = add i32 %x, -30
+  %cmp2 = icmp ugt i32 %sub, 9
+  %or = or i1 %cmp, %cmp2
+  ret i1 %or
+}
+This should be optimized to a single compare.  Testcase derived from gcc.
+
+//===---------------------------------------------------------------------===//
+
+Missed instcombine transformation:
+void b();
+void a(int x) { if (((1<<x)&8)==0) b(); }
+
+The shift should be optimized out.  Testcase derived from gcc.
+
+//===---------------------------------------------------------------------===//
+
+Missed instcombine or reassociate transformation:
+int a(int a, int b) { return (a==12)&(b>47)&(b<58); }
+
+The sgt and slt should be combined into a single comparison. Testcase derived
+from gcc.
+
+//===---------------------------------------------------------------------===//
+
+Missed instcombine transformation:
+define i32 @a(i32 %x) nounwind readnone {
+entry:
+  %shr = lshr i32 %x, 5                           ; <i32> [#uses=1]
+  %xor = xor i32 %shr, 67108864                   ; <i32> [#uses=1]
+  %sub = add i32 %xor, -67108864                  ; <i32> [#uses=1]
+  ret i32 %sub
+}
+
+This function is equivalent to "ashr i32 %x, 5".  Testcase derived from gcc.
+
+//===---------------------------------------------------------------------===//
+
+isSafeToLoadUnconditionally should allow a GEP of a global/alloca with constant
+indicies within the bounds of the allocated object. Reduced example:
+
+const int a[] = {3,6};
+int b(int y) { int* x = y ? &a[0] : &a[1]; return *x; }
+
+All the loads should be eliminated.  Testcase derived from gcc.
+
+//===---------------------------------------------------------------------===//

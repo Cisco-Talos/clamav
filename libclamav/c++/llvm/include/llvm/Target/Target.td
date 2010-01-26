@@ -477,6 +477,13 @@ def COPY_TO_REGCLASS : Instruction {
   let neverHasSideEffects = 1;
   let isAsCheapAsAMove = 1;
 }
+def DEBUG_VALUE : Instruction {
+  let OutOperandList = (ops);
+  let InOperandList = (ops variable_ops);
+  let AsmString = "DEBUG_VALUE";
+  let Namespace = "TargetInstrInfo";
+  let isAsCheapAsAMove = 1;
+}
 }
 
 //===----------------------------------------------------------------------===//

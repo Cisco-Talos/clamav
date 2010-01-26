@@ -21,11 +21,13 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionELF.h"
+#include "llvm/MC/MCSymbol.h"
+#include "llvm/Target/Mangler.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/Mangler.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
 using namespace llvm;
@@ -139,9 +141,18 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalValue *GV,
     return SectionKind::getThreadData();
   }
 
+  // Variables with common linkage always get classified as common.
+  if (GVar->hasCommonLinkage())
+    return SectionKind::getCommon();
+
   // Variable can be easily put to BSS section.
-  if (isSuitableForBSS(GVar))
+  if (isSuitableForBSS(GVar)) {
+    if (GVar->hasLocalLinkage())
+      return SectionKind::getBSSLocal();
+    else if (GVar->hasExternalLinkage())
+      return SectionKind::getBSSExtern();
     return SectionKind::getBSS();
+  }
 
   Constant *C = GVar->getInitializer();
 
@@ -298,6 +309,7 @@ getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
   IsIndirect = false;
   IsPCRel    = false;
   
+  // FIXME: Use GetGlobalValueSymbol.
   SmallString<128> Name;
   Mang->getNameWithPrefix(Name, GV, false);
   return MCSymbolRefExpr::Create(Name.str(), getContext());
@@ -462,46 +474,45 @@ void TargetLoweringObjectFileELF::Initialize(MCContext &Ctx,
 
 
 static SectionKind
-getELFKindForNamedSection(const char *Name, SectionKind K) {
-  if (Name[0] != '.') return K;
+getELFKindForNamedSection(StringRef Name, SectionKind K) {
+  if (Name.empty() || Name[0] != '.') return K;
 
   // Some lame default implementation based on some magic section names.
-  if (strcmp(Name, ".bss") == 0 ||
-      strncmp(Name, ".bss.", 5) == 0 ||
-      strncmp(Name, ".gnu.linkonce.b.", 16) == 0 ||
-      strncmp(Name, ".llvm.linkonce.b.", 17) == 0 ||
-      strcmp(Name, ".sbss") == 0 ||
-      strncmp(Name, ".sbss.", 6) == 0 ||
-      strncmp(Name, ".gnu.linkonce.sb.", 17) == 0 ||
-      strncmp(Name, ".llvm.linkonce.sb.", 18) == 0)
+  if (Name == ".bss" ||
+      Name.startswith(".bss.") ||
+      Name.startswith(".gnu.linkonce.b.") ||
+      Name.startswith(".llvm.linkonce.b.") ||
+      Name == ".sbss" ||
+      Name.startswith(".sbss.") ||
+      Name.startswith(".gnu.linkonce.sb.") ||
+      Name.startswith(".llvm.linkonce.sb."))
     return SectionKind::getBSS();
 
-  if (strcmp(Name, ".tdata") == 0 ||
-      strncmp(Name, ".tdata.", 7) == 0 ||
-      strncmp(Name, ".gnu.linkonce.td.", 17) == 0 ||
-      strncmp(Name, ".llvm.linkonce.td.", 18) == 0)
+  if (Name == ".tdata" ||
+      Name.startswith(".tdata.") ||
+      Name.startswith(".gnu.linkonce.td.") ||
+      Name.startswith(".llvm.linkonce.td."))
     return SectionKind::getThreadData();
 
-  if (strcmp(Name, ".tbss") == 0 ||
-      strncmp(Name, ".tbss.", 6) == 0 ||
-      strncmp(Name, ".gnu.linkonce.tb.", 17) == 0 ||
-      strncmp(Name, ".llvm.linkonce.tb.", 18) == 0)
+  if (Name == ".tbss" ||
+      Name.startswith(".tbss.") ||
+      Name.startswith(".gnu.linkonce.tb.") ||
+      Name.startswith(".llvm.linkonce.tb."))
     return SectionKind::getThreadBSS();
 
   return K;
 }
 
 
-static unsigned
-getELFSectionType(const char *Name, SectionKind K) {
+static unsigned getELFSectionType(StringRef Name, SectionKind K) {
 
-  if (strcmp(Name, ".init_array") == 0)
+  if (Name == ".init_array")
     return MCSectionELF::SHT_INIT_ARRAY;
 
-  if (strcmp(Name, ".fini_array") == 0)
+  if (Name == ".fini_array")
     return MCSectionELF::SHT_FINI_ARRAY;
 
-  if (strcmp(Name, ".preinit_array") == 0)
+  if (Name == ".preinit_array")
     return MCSectionELF::SHT_PREINIT_ARRAY;
 
   if (K.isBSS() || K.isThreadBSS())
@@ -542,7 +553,7 @@ getELFSectionFlags(SectionKind K) {
 const MCSection *TargetLoweringObjectFileELF::
 getExplicitSectionGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const {
-  const char *SectionName = GV->getSection().c_str();
+  StringRef SectionName = GV->getSection();
 
   // Infer section flags from the section name if we can.
   Kind = getELFKindForNamedSection(SectionName, Kind);
@@ -559,7 +570,6 @@ static const char *getSectionPrefixForUniqueGlobal(SectionKind Kind) {
   if (Kind.isThreadData())           return ".gnu.linkonce.td.";
   if (Kind.isThreadBSS())            return ".gnu.linkonce.tb.";
 
-  if (Kind.isBSS())                  return ".gnu.linkonce.b.";
   if (Kind.isDataNoRel())            return ".gnu.linkonce.d.";
   if (Kind.isDataRelLocal())         return ".gnu.linkonce.d.rel.local.";
   if (Kind.isDataRel())              return ".gnu.linkonce.d.rel.";
@@ -575,14 +585,13 @@ SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
 
   // If this global is linkonce/weak and the target handles this by emitting it
   // into a 'uniqued' section name, create and return the section now.
-  if (GV->isWeakForLinker()) {
+  if (GV->isWeakForLinker() && !Kind.isCommon() && !Kind.isBSS()) {
     const char *Prefix = getSectionPrefixForUniqueGlobal(Kind);
-    std::string Name = Mang->makeNameProper(GV->getNameStr());
-
-    return getELFSection((Prefix+Name).c_str(),
-                         getELFSectionType((Prefix+Name).c_str(), Kind),
-                         getELFSectionFlags(Kind),
-                         Kind);
+    SmallString<128> Name;
+    Name.append(Prefix, Prefix+strlen(Prefix));
+    Mang->getNameWithPrefix(Name, GV, false);
+    return getELFSection(Name.str(), getELFSectionType(Name.str(), Kind),
+                         getELFSectionFlags(Kind), Kind);
   }
 
   if (Kind.isText()) return TextSection;
@@ -607,7 +616,7 @@ SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
 
 
     std::string Name = SizeSpec + utostr(Align);
-    return getELFSection(Name.c_str(), MCSectionELF::SHT_PROGBITS,
+    return getELFSection(Name, MCSectionELF::SHT_PROGBITS,
                          MCSectionELF::SHF_ALLOC |
                          MCSectionELF::SHF_MERGE |
                          MCSectionELF::SHF_STRINGS,
@@ -629,7 +638,10 @@ SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
   if (Kind.isThreadData())           return TLSDataSection;
   if (Kind.isThreadBSS())            return TLSBSSSection;
 
-  if (Kind.isBSS())                  return BSSSection;
+  // Note: we claim that common symbols are put in BSSSection, but they are
+  // really emitted with the magic .comm directive, which creates a symbol table
+  // entry but not a section.
+  if (Kind.isBSS() || Kind.isCommon()) return BSSSection;
 
   if (Kind.isDataNoRel())            return DataSection;
   if (Kind.isDataRelLocal())         return DataRelLocalSection;
@@ -755,7 +767,13 @@ void TargetLoweringObjectFileMachO::Initialize(MCContext &Ctx,
   DataCoalSection
     = getMachOSection("__DATA","__datacoal_nt", MCSectionMachO::S_COALESCED,
                       SectionKind::getDataRel());
-
+  DataCommonSection
+    = getMachOSection("__DATA","__common", MCSectionMachO::S_ZEROFILL,
+                      SectionKind::getBSS());
+  DataBSSSection
+    = getMachOSection("__DATA","__bss", MCSectionMachO::S_ZEROFILL,
+                    SectionKind::getBSS());
+  
 
   LazySymbolPointerSection
     = getMachOSection("__DATA", "__la_symbol_ptr",
@@ -914,6 +932,16 @@ SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
   if (Kind.isReadOnlyWithRel())
     return ConstDataSection;
 
+  // Put zero initialized globals with strong external linkage in the
+  // DATA, __common section with the .zerofill directive.
+  if (Kind.isBSSExtern())
+    return DataCommonSection;
+
+  // Put zero initialized globals with local linkage in __DATA,__bss directive
+  // with the .zerofill directive (aka .lcomm).
+  if (Kind.isBSSLocal())
+    return DataBSSSection;
+  
   // Otherwise, just drop the variable in the normal data section.
   return DataSection;
 }
@@ -922,7 +950,7 @@ const MCSection *
 TargetLoweringObjectFileMachO::getSectionForConstant(SectionKind Kind) const {
   // If this constant requires a relocation, we have to put it in the data
   // segment, not in the text segment.
-  if (Kind.isDataRel())
+  if (Kind.isDataRel() || Kind.isReadOnlyWithRel())
     return ConstDataSection;
 
   if (Kind.isMergeableConst4())
@@ -948,7 +976,8 @@ shouldEmitUsedDirectiveFor(const GlobalValue *GV, Mangler *Mang) const {
     // FIXME: ObjC metadata is currently emitted as internal symbols that have
     // \1L and \0l prefixes on them.  Fix them to be Private/LinkerPrivate and
     // this horrible hack can go away.
-    const std::string &Name = Mang->getMangledName(GV);
+    SmallString<64> Name;
+    Mang->getNameWithPrefix(Name, GV, false);
     if (Name[0] == 'L' || Name[0] == 'l')
       return false;
   }
@@ -983,7 +1012,7 @@ TargetLoweringObjectFileCOFF::~TargetLoweringObjectFileCOFF() {
 
 
 const MCSection *TargetLoweringObjectFileCOFF::
-getCOFFSection(const char *Name, bool isDirective, SectionKind Kind) const {
+getCOFFSection(StringRef Name, bool isDirective, SectionKind Kind) const {
   // Create the map if it doesn't already exist.
   if (UniquingMap == 0)
     UniquingMap = new MachOUniqueMapTy();
@@ -1057,7 +1086,7 @@ void TargetLoweringObjectFileCOFF::Initialize(MCContext &Ctx,
 const MCSection *TargetLoweringObjectFileCOFF::
 getExplicitSectionGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const {
-  return getCOFFSection(GV->getSection().c_str(), false, Kind);
+  return getCOFFSection(GV->getSection(), false, Kind);
 }
 
 static const char *getCOFFSectionPrefixForUniqueGlobal(SectionKind Kind) {
@@ -1078,8 +1107,9 @@ SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
   // into a 'uniqued' section name, create and return the section now.
   if (GV->isWeakForLinker()) {
     const char *Prefix = getCOFFSectionPrefixForUniqueGlobal(Kind);
-    std::string Name = Mang->makeNameProper(GV->getNameStr());
-    return getCOFFSection((Prefix+Name).c_str(), false, Kind);
+    SmallString<128> Name(Prefix, Prefix+strlen(Prefix));
+    Mang->getNameWithPrefix(Name, GV, false);
+    return getCOFFSection(Name.str(), false, Kind);
   }
 
   if (Kind.isText())

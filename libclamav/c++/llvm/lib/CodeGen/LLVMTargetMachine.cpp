@@ -17,6 +17,7 @@
 #include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/Passes.h"
+#include "llvm/CodeGen/FileWriters.h"
 #include "llvm/CodeGen/GCStrategy.h"
 #include "llvm/CodeGen/MachineFunctionAnalysis.h"
 #include "llvm/Target/TargetOptions.h"
@@ -24,6 +25,7 @@
 #include "llvm/Target/TargetRegistry.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/FormattedStream.h"
 using namespace llvm;
 
@@ -37,6 +39,8 @@ static cl::opt<bool> DisableBranchFold("disable-branch-fold", cl::Hidden,
     cl::desc("Disable branch folding"));
 static cl::opt<bool> DisableTailDuplicate("disable-tail-duplicate", cl::Hidden,
     cl::desc("Disable tail duplication"));
+static cl::opt<bool> DisableEarlyTailDup("disable-early-taildup", cl::Hidden,
+    cl::desc("Disable pre-register allocation tail duplication"));
 static cl::opt<bool> DisableCodePlace("disable-code-place", cl::Hidden,
     cl::desc("Disable code placement"));
 static cl::opt<bool> DisableSSC("disable-ssc", cl::Hidden,
@@ -61,6 +65,7 @@ static cl::opt<bool> VerifyMachineCode("verify-machineinstrs", cl::Hidden,
     cl::desc("Verify generated machine code"),
     cl::init(getenv("LLVM_VERIFY_MACHINEINSTRS")!=NULL));
 
+
 // Enable or disable FastISel. Both options are needed, because
 // FastISel is enabled by default with -fast, and we wish to be
 // able to enable or disable fast-isel independently from -O0.
@@ -73,9 +78,6 @@ EnableFastISelOption("fast-isel", cl::Hidden,
 // an effort to factor out redundancy implicit in complex GEPs.
 static cl::opt<bool> EnableSplitGEPGVN("split-gep-gvn", cl::Hidden,
     cl::desc("Split GEPs and run no-load GVN"));
-
-static cl::opt<bool> PreAllocTailDup("pre-regalloc-taildup", cl::Hidden,
-    cl::desc("Pre-register allocation tail duplication"));
 
 LLVMTargetMachine::LLVMTargetMachine(const Target &T,
                                      const std::string &TargetTriple)
@@ -113,12 +115,11 @@ LLVMTargetMachine::addPassesToEmitFile(PassManagerBase &PM,
       return FileModel::Error;
     return FileModel::AsmFile;
   case TargetMachine::ObjectFile:
-    if (getMachOWriterInfo())
+    if (!addObjectFileEmitter(PM, OptLevel, Out))
       return FileModel::MachOFile;
     else if (getELFWriterInfo())
-      return FileModel::ElfFile;
+      return FileModel::ElfFile; 
   }
-
   return FileModel::Error;
 }
 
@@ -132,6 +133,17 @@ bool LLVMTargetMachine::addAssemblyEmitter(PassManagerBase &PM,
     return true;
 
   PM.add(Printer);
+  return false;
+}
+
+bool LLVMTargetMachine::addObjectFileEmitter(PassManagerBase &PM,
+                                             CodeGenOpt::Level OptLevel,
+                                             formatted_raw_ostream &Out) {
+  MCCodeEmitter *Emitter = getTarget().createCodeEmitter(*this);
+  if (!Emitter)
+    return true;
+  
+  PM.add(createMachOWriter(Out, *this, getMCAsmInfo(), Emitter));
   return false;
 }
 
@@ -246,7 +258,7 @@ static void printAndVerify(PassManagerBase &PM,
                            const char *Banner,
                            bool allowDoubleDefs = false) {
   if (PrintMachineCode)
-    PM.add(createMachineFunctionPrinterPass(errs(), Banner));
+    PM.add(createMachineFunctionPrinterPass(dbgs(), Banner));
 
   if (VerifyMachineCode)
     PM.add(createMachineVerifierPass(allowDoubleDefs));
@@ -269,7 +281,7 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   if (OptLevel != CodeGenOpt::None && !DisableLSR) {
     PM.add(createLoopStrengthReducePass(getTargetLowering()));
     if (PrintLSR)
-      PM.add(createPrintFunctionPass("\n\n*** Code after LSR ***\n", &errs()));
+      PM.add(createPrintFunctionPass("\n\n*** Code after LSR ***\n", &dbgs()));
   }
 
   // Turn exception handling constructs into something the code generators can
@@ -278,8 +290,13 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   {
   case ExceptionHandling::SjLj:
     // SjLj piggy-backs on dwarf for this bit. The cleanups done apply to both
-    PM.add(createDwarfEHPass(getTargetLowering(), OptLevel==CodeGenOpt::None));
+    // Dwarf EH prepare needs to be run after SjLj prepare. Otherwise,
+    // catch info can get misplaced when a selector ends up more than one block
+    // removed from the parent invoke(s). This could happen when a landing
+    // pad is shared by multiple invokes and is also a target of a normal
+    // edge from elsewhere.
     PM.add(createSjLjEHPass(getTargetLowering()));
+    PM.add(createDwarfEHPass(getTargetLowering(), OptLevel==CodeGenOpt::None));
     break;
   case ExceptionHandling::Dwarf:
     PM.add(createDwarfEHPass(getTargetLowering(), OptLevel==CodeGenOpt::None));
@@ -302,7 +319,7 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   if (PrintISelInput)
     PM.add(createPrintFunctionPass("\n\n"
                                    "*** Final LLVM Code input to ISel ***\n",
-                                   &errs()));
+                                   &dbgs()));
 
   // Standard Lower-Level Passes.
 
@@ -323,6 +340,7 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
                  /* allowDoubleDefs= */ true);
 
   if (OptLevel != CodeGenOpt::None) {
+    PM.add(createOptimizeExtsPass());
     if (!DisableMachineLICM)
       PM.add(createMachineLICMPass());
     if (!DisableMachineSink)
@@ -332,10 +350,10 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   }
 
   // Pre-ra tail duplication.
-  if (OptLevel != CodeGenOpt::None &&
-      !DisableTailDuplicate && PreAllocTailDup) {
+  if (OptLevel != CodeGenOpt::None && !DisableEarlyTailDup) {
     PM.add(createTailDuplicatePass(true));
-    printAndVerify(PM, "After Pre-RegAlloc TailDuplicate");
+    printAndVerify(PM, "After Pre-RegAlloc TailDuplicate",
+                   /* allowDoubleDefs= */ true);
   }
 
   // Run pre-ra passes.
@@ -391,7 +409,7 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   PM.add(createGCMachineCodeAnalysisPass());
 
   if (PrintGCInfo)
-    PM.add(createGCInfoPrinter(errs()));
+    PM.add(createGCInfoPrinter(dbgs()));
 
   if (OptLevel != CodeGenOpt::None && !DisableCodePlace) {
     PM.add(createCodePlacementOptPass());

@@ -400,15 +400,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MaxStackAlignment.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfoDarwin.cpp"
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmStreamer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAssembler.cpp"
 				>
 			</File>
 			<File
@@ -425,6 +429,14 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\MemoryDependenceAnalysis.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\OptimizeExts.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachOWriter.cpp"
 				>
 			</File>
 			<File

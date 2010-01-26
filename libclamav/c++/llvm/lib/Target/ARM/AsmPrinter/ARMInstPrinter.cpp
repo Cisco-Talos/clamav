@@ -62,7 +62,7 @@ void ARMInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
   } else {
     assert((Modifier == 0 || Modifier[0] == 0) && "No modifiers supported");
     assert(Op.isExpr() && "unknown operand kind in printOperand");
-    Op.getExpr()->print(O, &MAI);
+    O << *Op.getExpr();
   }
 }
 
@@ -353,6 +353,5 @@ void ARMInstPrinter::printPCLabel(const MCInst *MI, unsigned OpNum) {
 }
 
 void ARMInstPrinter::printThumbS4ImmOperand(const MCInst *MI, unsigned OpNum) {
-  // FIXME: remove this.
-  abort();
+  O << "#" <<  MI->getOperand(OpNum).getImm() * 4;
 }

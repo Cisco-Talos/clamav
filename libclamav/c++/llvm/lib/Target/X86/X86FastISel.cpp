@@ -786,8 +786,8 @@ bool X86FastISel::X86SelectCmp(Instruction *I) {
 
 bool X86FastISel::X86SelectZExt(Instruction *I) {
   // Handle zero-extension from i1 to i8, which is common.
-  if (I->getType() == Type::getInt8Ty(I->getContext()) &&
-      I->getOperand(0)->getType() == Type::getInt1Ty(I->getContext())) {
+  if (I->getType()->isInteger(8) &&
+      I->getOperand(0)->getType()->isInteger(1)) {
     unsigned ResultReg = getRegForValue(I->getOperand(0));
     if (ResultReg == 0) return false;
     // Set the high bits to zero.
@@ -948,7 +948,7 @@ bool X86FastISel::X86SelectBranch(Instruction *I) {
 bool X86FastISel::X86SelectShift(Instruction *I) {
   unsigned CReg = 0, OpReg = 0, OpImm = 0;
   const TargetRegisterClass *RC = NULL;
-  if (I->getType() == Type::getInt8Ty(I->getContext())) {
+  if (I->getType()->isInteger(8)) {
     CReg = X86::CL;
     RC = &X86::GR8RegClass;
     switch (I->getOpcode()) {
@@ -957,7 +957,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL8rCL; OpImm = X86::SHL8ri; break;
     default: return false;
     }
-  } else if (I->getType() == Type::getInt16Ty(I->getContext())) {
+  } else if (I->getType()->isInteger(16)) {
     CReg = X86::CX;
     RC = &X86::GR16RegClass;
     switch (I->getOpcode()) {
@@ -966,7 +966,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL16rCL; OpImm = X86::SHL16ri; break;
     default: return false;
     }
-  } else if (I->getType() == Type::getInt32Ty(I->getContext())) {
+  } else if (I->getType()->isInteger(32)) {
     CReg = X86::ECX;
     RC = &X86::GR32RegClass;
     switch (I->getOpcode()) {
@@ -975,7 +975,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL32rCL; OpImm = X86::SHL32ri; break;
     default: return false;
     }
-  } else if (I->getType() == Type::getInt64Ty(I->getContext())) {
+  } else if (I->getType()->isInteger(64)) {
     CReg = X86::RCX;
     RC = &X86::GR64RegClass;
     switch (I->getOpcode()) {
@@ -1153,6 +1153,20 @@ bool X86FastISel::X86VisitIntrinsicCall(IntrinsicInst &I) {
   // FIXME: Handle more intrinsics.
   switch (I.getIntrinsicID()) {
   default: return false;
+  case Intrinsic::dbg_declare: {
+    DbgDeclareInst *DI = cast<DbgDeclareInst>(&I);
+    X86AddressMode AM;
+    if (!X86SelectAddress(DI->getAddress(), AM))
+      return false;
+    const TargetInstrDesc &II = TII.get(TargetInstrInfo::DEBUG_VALUE);
+    addFullAddress(BuildMI(MBB, DL, II), AM).addImm(0).
+                                        addMetadata(DI->getVariable());
+    return true;
+  }
+  case Intrinsic::trap: {
+    BuildMI(MBB, DL, TII.get(X86::TRAP));
+    return true;
+  }
   case Intrinsic::sadd_with_overflow:
   case Intrinsic::uadd_with_overflow: {
     // Replace "add with overflow" intrinsics with an "add" instruction followed
@@ -1230,8 +1244,8 @@ bool X86FastISel::X86SelectCall(Instruction *I) {
       CC != CallingConv::X86_FastCall)
     return false;
 
-  // On X86, -tailcallopt changes the fastcc ABI. FastISel doesn't
-  // handle this for now.
+  // fastcc with -tailcallopt is intended to provide a guaranteed
+  // tail call optimization. Fastisel doesn't know how to do that.
   if (CC == CallingConv::Fast && PerformTailCallOpt)
     return false;
 

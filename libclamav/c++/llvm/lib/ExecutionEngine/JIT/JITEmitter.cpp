@@ -20,6 +20,7 @@
 #include "llvm/Constants.h"
 #include "llvm/Module.h"
 #include "llvm/DerivedTypes.h"
+#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/CodeGen/JITCodeEmitter.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
@@ -368,16 +369,16 @@ namespace {
     // the stub is unused.
     DenseMap<void *, SmallPtrSet<const Function*, 1> > StubFnRefs;
 
-    DebugLocTuple PrevDLT;
+    DILocation PrevDLT;
 
   public:
     JITEmitter(JIT &jit, JITMemoryManager *JMM, TargetMachine &TM)
       : SizeEstimate(0), Resolver(jit, *this), MMI(0), CurFn(0),
-          EmittedFunctions(this) {
+        EmittedFunctions(this), PrevDLT(NULL) {
       MemMgr = JMM ? JMM : JITMemoryManager::CreateDefaultMemManager();
       if (jit.getJITInfo().needsGOT()) {
         MemMgr->AllocateGOT();
-        DEBUG(errs() << "JIT is managing a GOT\n");
+        DEBUG(dbgs() << "JIT is managing a GOT\n");
       }
 
       if (DwarfExceptionHandling || JITEmitDebugInfo) {
@@ -431,7 +432,7 @@ namespace {
       if (MBBLocations.size() <= (unsigned)MBB->getNumber())
         MBBLocations.resize((MBB->getNumber()+1)*2);
       MBBLocations[MBB->getNumber()] = getCurrentPCValue();
-      DEBUG(errs() << "JIT: Emitting BB" << MBB->getNumber() << " at ["
+      DEBUG(dbgs() << "JIT: Emitting BB" << MBB->getNumber() << " at ["
                    << (void*) getCurrentPCValue() << "]\n");
     }
 
@@ -547,7 +548,7 @@ void *JITResolver::getLazyFunctionStub(Function *F) {
     TheJIT->updateGlobalMapping(F, Stub);
   }
 
-  DEBUG(errs() << "JIT: Lazy stub emitted at [" << Stub << "] for function '"
+  DEBUG(dbgs() << "JIT: Lazy stub emitted at [" << Stub << "] for function '"
         << F->getName() << "'\n");
 
   // Finally, keep track of the stub-to-Function mapping so that the
@@ -577,7 +578,7 @@ void *JITResolver::getGlobalValueIndirectSym(GlobalValue *GV, void *GVAddress) {
   IndirectSym = TheJIT->getJITInfo().emitGlobalValueIndirectSym(GV, GVAddress,
                                                                 JE);
 
-  DEBUG(errs() << "JIT: Indirect symbol emitted at [" << IndirectSym
+  DEBUG(dbgs() << "JIT: Indirect symbol emitted at [" << IndirectSym
         << "] for GV '" << GV->getName() << "'\n");
 
   return IndirectSym;
@@ -595,7 +596,7 @@ void *JITResolver::getExternalFunctionStub(void *FnAddr) {
   Stub = TheJIT->getJITInfo().emitFunctionStub(0, FnAddr, JE);
   JE.finishGVStub();
 
-  DEBUG(errs() << "JIT: Stub emitted at [" << Stub
+  DEBUG(dbgs() << "JIT: Stub emitted at [" << Stub
                << "] for external function at '" << FnAddr << "'\n");
   return Stub;
 }
@@ -605,7 +606,7 @@ unsigned JITResolver::getGOTIndexForAddr(void* addr) {
   if (!idx) {
     idx = ++nextGOTIndex;
     revGOTMap[addr] = idx;
-    DEBUG(errs() << "JIT: Adding GOT entry " << idx << " for addr ["
+    DEBUG(dbgs() << "JIT: Adding GOT entry " << idx << " for addr ["
                  << addr << "]\n");
   }
   return idx;
@@ -701,7 +702,7 @@ void *JITResolver::JITCompilerFn(void *Stub) {
                         + F->getName() + "' when lazy compiles are disabled!");
     }
 
-    DEBUG(errs() << "JIT: Lazily resolving function '" << F->getName()
+    DEBUG(dbgs() << "JIT: Lazily resolving function '" << F->getName()
           << "' In stub ptr = " << Stub << " actual ptr = "
           << ActualPtr << "\n");
 
@@ -806,10 +807,11 @@ void JITEmitter::AddStubToCurrentFunction(void *StubAddr) {
 
 void JITEmitter::processDebugLoc(DebugLoc DL, bool BeforePrintingInsn) {
   if (!DL.isUnknown()) {
-    DebugLocTuple CurDLT = EmissionDetails.MF->getDebugLocTuple(DL);
+    DILocation CurDLT = EmissionDetails.MF->getDILocation(DL);
 
     if (BeforePrintingInsn) {
-      if (CurDLT.Scope != 0 && PrevDLT != CurDLT) {
+      if (CurDLT.getScope().getNode() != 0 
+          && PrevDLT.getNode() != CurDLT.getNode()) {
         JITEvent_EmittedFunctionDetails::LineStart NextLine;
         NextLine.Address = getCurrentPCValue();
         NextLine.Loc = DL;
@@ -845,9 +847,7 @@ static unsigned GetJumpTableSizeInBytes(MachineJumpTableInfo *MJTI) {
   for (unsigned i = 0, e = JT.size(); i != e; ++i)
     NumEntries += JT[i].MBBs.size();
 
-  unsigned EntrySize = MJTI->getEntrySize();
-
-  return NumEntries * EntrySize;
+  return NumEntries * MJTI->getEntrySize(*TheJIT->getTargetData());
 }
 
 static uintptr_t RoundUpToAlign(uintptr_t Size, unsigned Alignment) {
@@ -864,7 +864,7 @@ unsigned JITEmitter::addSizeOfGlobal(const GlobalVariable *GV, unsigned Size) {
   size_t GVSize = (size_t)TheJIT->getTargetData()->getTypeAllocSize(ElTy);
   size_t GVAlign =
       (size_t)TheJIT->getTargetData()->getPreferredAlignment(GV);
-  DEBUG(errs() << "JIT: Adding in size " << GVSize << " alignment " << GVAlign);
+  DEBUG(dbgs() << "JIT: Adding in size " << GVSize << " alignment " << GVAlign);
   DEBUG(GV->dump());
   // Assume code section ends with worst possible alignment, so first
   // variable needs maximal padding.
@@ -992,7 +992,7 @@ unsigned JITEmitter::GetSizeOfGlobalsInBytes(MachineFunction &MF) {
       }
     }
   }
-  DEBUG(errs() << "JIT: About to look through initializers\n");
+  DEBUG(dbgs() << "JIT: About to look through initializers\n");
   // Look for more globals that are referenced only from initializers.
   // GVSet.end is computed each time because the set can grow as we go.
   for (SmallPtrSet<const GlobalVariable *, 8>::iterator I = GVSet.begin();
@@ -1006,16 +1006,15 @@ unsigned JITEmitter::GetSizeOfGlobalsInBytes(MachineFunction &MF) {
 }
 
 void JITEmitter::startFunction(MachineFunction &F) {
-  DEBUG(errs() << "JIT: Starting CodeGen of Function "
+  DEBUG(dbgs() << "JIT: Starting CodeGen of Function "
         << F.getFunction()->getName() << "\n");
 
   uintptr_t ActualSize = 0;
   // Set the memory writable, if it's not already
   MemMgr->setMemoryWritable();
   if (MemMgr->NeedsExactSize()) {
-    DEBUG(errs() << "JIT: ExactSize\n");
+    DEBUG(dbgs() << "JIT: ExactSize\n");
     const TargetInstrInfo* TII = F.getTarget().getInstrInfo();
-    MachineJumpTableInfo *MJTI = F.getJumpTableInfo();
     MachineConstantPool *MCP = F.getConstantPool();
 
     // Ensure the constant pool/jump table info is at least 4-byte aligned.
@@ -1027,11 +1026,14 @@ void JITEmitter::startFunction(MachineFunction &F) {
     // Add the constant pool size
     ActualSize += GetConstantPoolSizeInBytes(MCP, TheJIT->getTargetData());
 
-    // Add the aligment of the jump table info
-    ActualSize = RoundUpToAlign(ActualSize, MJTI->getAlignment());
+    if (MachineJumpTableInfo *MJTI = F.getJumpTableInfo()) {
+      // Add the aligment of the jump table info
+      ActualSize = RoundUpToAlign(ActualSize,
+                             MJTI->getEntryAlignment(*TheJIT->getTargetData()));
 
-    // Add the jump table size
-    ActualSize += GetJumpTableSizeInBytes(MJTI);
+      // Add the jump table size
+      ActualSize += GetJumpTableSizeInBytes(MJTI);
+    }
 
     // Add the alignment for the function
     ActualSize = RoundUpToAlign(ActualSize,
@@ -1040,12 +1042,12 @@ void JITEmitter::startFunction(MachineFunction &F) {
     // Add the function size
     ActualSize += TII->GetFunctionSizeInBytes(F);
 
-    DEBUG(errs() << "JIT: ActualSize before globals " << ActualSize << "\n");
+    DEBUG(dbgs() << "JIT: ActualSize before globals " << ActualSize << "\n");
     // Add the size of the globals that will be allocated after this function.
     // These are all the ones referenced from this function that were not
     // previously allocated.
     ActualSize += GetSizeOfGlobalsInBytes(F);
-    DEBUG(errs() << "JIT: ActualSize after globals " << ActualSize << "\n");
+    DEBUG(dbgs() << "JIT: ActualSize after globals " << ActualSize << "\n");
   } else if (SizeEstimate > 0) {
     // SizeEstimate will be non-zero on reallocation attempts.
     ActualSize = SizeEstimate;
@@ -1060,7 +1062,8 @@ void JITEmitter::startFunction(MachineFunction &F) {
   emitAlignment(16);
 
   emitConstantPool(F.getConstantPool());
-  initJumpTableInfo(F.getJumpTableInfo());
+  if (MachineJumpTableInfo *MJTI = F.getJumpTableInfo())
+    initJumpTableInfo(MJTI);
 
   // About to start emitting the machine code for the function.
   emitAlignment(std::max(F.getFunction()->getAlignment(), 8U));
@@ -1082,7 +1085,8 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
     return true;
   }
 
-  emitJumpTableInfo(F.getJumpTableInfo());
+  if (MachineJumpTableInfo *MJTI = F.getJumpTableInfo())
+    emitJumpTableInfo(MJTI);
 
   // FnStart is the start of the text, not the start of the constant pool and
   // other per-function data.
@@ -1104,7 +1108,7 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
         if (MR.isExternalSymbol()) {
           ResultPtr = TheJIT->getPointerToNamedFunction(MR.getExternalSymbol(),
                                                         false);
-          DEBUG(errs() << "JIT: Map \'" << MR.getExternalSymbol() << "\' to ["
+          DEBUG(dbgs() << "JIT: Map \'" << MR.getExternalSymbol() << "\' to ["
                        << ResultPtr << "]\n");
 
           // If the target REALLY wants a stub for this function, emit it now.
@@ -1136,7 +1140,7 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
         unsigned idx = Resolver.getGOTIndexForAddr(ResultPtr);
         MR.setGOTIndex(idx);
         if (((void**)MemMgr->getGOTBase())[idx] != ResultPtr) {
-          DEBUG(errs() << "JIT: GOT was out of date for " << ResultPtr
+          DEBUG(dbgs() << "JIT: GOT was out of date for " << ResultPtr
                        << " pointing at " << ((void**)MemMgr->getGOTBase())[idx]
                        << "\n");
           ((void**)MemMgr->getGOTBase())[idx] = ResultPtr;
@@ -1153,7 +1157,7 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
   if (MemMgr->isManagingGOT()) {
     unsigned idx = Resolver.getGOTIndexForAddr((void*)BufferBegin);
     if (((void**)MemMgr->getGOTBase())[idx] != (void*)BufferBegin) {
-      DEBUG(errs() << "JIT: GOT was out of date for " << (void*)BufferBegin
+      DEBUG(dbgs() << "JIT: GOT was out of date for " << (void*)BufferBegin
                    << " pointing at " << ((void**)MemMgr->getGOTBase())[idx]
                    << "\n");
       ((void**)MemMgr->getGOTBase())[idx] = (void*)BufferBegin;
@@ -1182,7 +1186,7 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
   TheJIT->NotifyFunctionEmitted(*F.getFunction(), FnStart, FnEnd-FnStart,
                                 EmissionDetails);
 
-  DEBUG(errs() << "JIT: Finished CodeGen of [" << (void*)FnStart
+  DEBUG(dbgs() << "JIT: Finished CodeGen of [" << (void*)FnStart
         << "] Function: " << F.getFunction()->getName()
         << ": " << (FnEnd-FnStart) << " bytes of text, "
         << Relocations.size() << " relocations\n");
@@ -1195,31 +1199,31 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
 
   DEBUG(
     if (sys::hasDisassembler()) {
-      errs() << "JIT: Disassembled code:\n";
-      errs() << sys::disassembleBuffer(FnStart, FnEnd-FnStart,
+      dbgs() << "JIT: Disassembled code:\n";
+      dbgs() << sys::disassembleBuffer(FnStart, FnEnd-FnStart,
                                        (uintptr_t)FnStart);
     } else {
-      errs() << "JIT: Binary code:\n";
+      dbgs() << "JIT: Binary code:\n";
       uint8_t* q = FnStart;
       for (int i = 0; q < FnEnd; q += 4, ++i) {
         if (i == 4)
           i = 0;
         if (i == 0)
-          errs() << "JIT: " << (long)(q - FnStart) << ": ";
+          dbgs() << "JIT: " << (long)(q - FnStart) << ": ";
         bool Done = false;
         for (int j = 3; j >= 0; --j) {
           if (q + j >= FnEnd)
             Done = true;
           else
-            errs() << (unsigned short)q[j];
+            dbgs() << (unsigned short)q[j];
         }
         if (Done)
           break;
-        errs() << ' ';
+        dbgs() << ' ';
         if (i == 3)
-          errs() << '\n';
+          dbgs() << '\n';
       }
-      errs()<< '\n';
+      dbgs()<< '\n';
     }
         );
 
@@ -1268,7 +1272,7 @@ bool JITEmitter::finishFunction(MachineFunction &F) {
 }
 
 void JITEmitter::retryWithMoreMemory(MachineFunction &F) {
-  DEBUG(errs() << "JIT: Ran out of space for native code.  Reattempting.\n");
+  DEBUG(dbgs() << "JIT: Ran out of space for native code.  Reattempting.\n");
   Relocations.clear();  // Clear the old relocations or we'll reapply them.
   ConstPoolAddresses.clear();
   ++NumRetries;
@@ -1319,7 +1323,7 @@ void JITEmitter::deallocateMemForFunction(const Function *F) {
     // in the JITResolver.  Were there a memory manager deallocateStub routine,
     // we could call that at this point too.
     if (FnRefs.empty()) {
-      DEBUG(errs() << "\nJIT: Invalidated Stub at [" << Stub << "]\n");
+      DEBUG(dbgs() << "\nJIT: Invalidated Stub at [" << Stub << "]\n");
       StubFnRefs.erase(Stub);
 
       // Invalidate the stub.  If it is a GV stub, update the JIT's global
@@ -1365,7 +1369,7 @@ void JITEmitter::emitConstantPool(MachineConstantPool *MCP) {
 
   if (ConstantPoolBase == 0) return;  // Buffer overflow.
 
-  DEBUG(errs() << "JIT: Emitted constant pool at [" << ConstantPoolBase
+  DEBUG(dbgs() << "JIT: Emitted constant pool at [" << ConstantPoolBase
                << "] (size: " << Size << ", alignment: " << Align << ")\n");
 
   // Initialize the memory for all of the constant pool entries.
@@ -1383,8 +1387,8 @@ void JITEmitter::emitConstantPool(MachineConstantPool *MCP) {
                         "entry has not been implemented!");
     }
     TheJIT->InitializeMemory(CPE.Val.ConstVal, (void*)CAddr);
-    DEBUG(errs() << "JIT:   CP" << i << " at [0x";
-          errs().write_hex(CAddr) << "]\n");
+    DEBUG(dbgs() << "JIT:   CP" << i << " at [0x";
+          dbgs().write_hex(CAddr) << "]\n");
 
     const Type *Ty = CPE.Val.ConstVal->getType();
     Offset += TheJIT->getTargetData()->getTypeAllocSize(Ty);
@@ -1402,13 +1406,14 @@ void JITEmitter::initJumpTableInfo(MachineJumpTableInfo *MJTI) {
   for (unsigned i = 0, e = JT.size(); i != e; ++i)
     NumEntries += JT[i].MBBs.size();
 
-  unsigned EntrySize = MJTI->getEntrySize();
+  unsigned EntrySize = MJTI->getEntrySize(*TheJIT->getTargetData());
 
   // Just allocate space for all the jump tables now.  We will fix up the actual
   // MBB entries in the tables after we emit the code for each block, since then
   // we will know the final locations of the MBBs in memory.
   JumpTable = MJTI;
-  JumpTableBase = allocateSpace(NumEntries * EntrySize, MJTI->getAlignment());
+  JumpTableBase = allocateSpace(NumEntries * EntrySize,
+                             MJTI->getEntryAlignment(*TheJIT->getTargetData()));
 }
 
 void JITEmitter::emitJumpTableInfo(MachineJumpTableInfo *MJTI) {
@@ -1418,8 +1423,32 @@ void JITEmitter::emitJumpTableInfo(MachineJumpTableInfo *MJTI) {
   const std::vector<MachineJumpTableEntry> &JT = MJTI->getJumpTables();
   if (JT.empty() || JumpTableBase == 0) return;
 
-  if (TargetMachine::getRelocationModel() == Reloc::PIC_) {
-    assert(MJTI->getEntrySize() == 4 && "Cross JIT'ing?");
+  
+  switch (MJTI->getEntryKind()) {
+  case MachineJumpTableInfo::EK_BlockAddress: {
+    // EK_BlockAddress - Each entry is a plain address of block, e.g.:
+    //     .word LBB123
+    assert(MJTI->getEntrySize(*TheJIT->getTargetData()) == sizeof(void*) &&
+           "Cross JIT'ing?");
+    
+    // For each jump table, map each target in the jump table to the address of
+    // an emitted MachineBasicBlock.
+    intptr_t *SlotPtr = (intptr_t*)JumpTableBase;
+    
+    for (unsigned i = 0, e = JT.size(); i != e; ++i) {
+      const std::vector<MachineBasicBlock*> &MBBs = JT[i].MBBs;
+      // Store the address of the basic block for this jump table slot in the
+      // memory we allocated for the jump table in 'initJumpTableInfo'
+      for (unsigned mi = 0, me = MBBs.size(); mi != me; ++mi)
+        *SlotPtr++ = getMachineBasicBlockAddress(MBBs[mi]);
+    }
+    break;
+  }
+      
+  case MachineJumpTableInfo::EK_Custom32:
+  case MachineJumpTableInfo::EK_GPRel32BlockAddress:
+  case MachineJumpTableInfo::EK_LabelDifference32: {
+    assert(MJTI->getEntrySize(*TheJIT->getTargetData()) == 4&&"Cross JIT'ing?");
     // For each jump table, place the offset from the beginning of the table
     // to the target address.
     int *SlotPtr = (int*)JumpTableBase;
@@ -1431,23 +1460,12 @@ void JITEmitter::emitJumpTableInfo(MachineJumpTableInfo *MJTI) {
       uintptr_t Base = (uintptr_t)SlotPtr;
       for (unsigned mi = 0, me = MBBs.size(); mi != me; ++mi) {
         uintptr_t MBBAddr = getMachineBasicBlockAddress(MBBs[mi]);
+        /// FIXME: USe EntryKind instead of magic "getPICJumpTableEntry" hook.
         *SlotPtr++ = TheJIT->getJITInfo().getPICJumpTableEntry(MBBAddr, Base);
       }
     }
-  } else {
-    assert(MJTI->getEntrySize() == sizeof(void*) && "Cross JIT'ing?");
-
-    // For each jump table, map each target in the jump table to the address of
-    // an emitted MachineBasicBlock.
-    intptr_t *SlotPtr = (intptr_t*)JumpTableBase;
-
-    for (unsigned i = 0, e = JT.size(); i != e; ++i) {
-      const std::vector<MachineBasicBlock*> &MBBs = JT[i].MBBs;
-      // Store the address of the basic block for this jump table slot in the
-      // memory we allocated for the jump table in 'initJumpTableInfo'
-      for (unsigned mi = 0, me = MBBs.size(); mi != me; ++mi)
-        *SlotPtr++ = getMachineBasicBlockAddress(MBBs[mi]);
-    }
+    break;
+  }
   }
 }
 
@@ -1503,9 +1521,9 @@ uintptr_t JITEmitter::getJumpTableEntryAddress(unsigned Index) const {
   const std::vector<MachineJumpTableEntry> &JT = JumpTable->getJumpTables();
   assert(Index < JT.size() && "Invalid jump table index!");
 
-  unsigned Offset = 0;
-  unsigned EntrySize = JumpTable->getEntrySize();
+  unsigned EntrySize = JumpTable->getEntrySize(*TheJIT->getTargetData());
 
+  unsigned Offset = 0;
   for (unsigned i = 0; i < Index; ++i)
     Offset += JT[i].MBBs.size();
 

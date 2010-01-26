@@ -32,6 +32,7 @@
 #include "llvm/GlobalVariable.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
@@ -950,9 +951,9 @@ SDValue SelectionDAGLegalize::LegalizeOp(SDValue Op) {
   switch (Node->getOpcode()) {
   default:
 #ifndef NDEBUG
-    errs() << "NODE: ";
-    Node->dump(&DAG);
-    errs() << "\n";
+    dbgs() << "NODE: ";
+    Node->dump( &DAG);
+    dbgs() << "\n";
 #endif
     llvm_unreachable("Do not know how to legalize this operator!");
 
@@ -1532,10 +1533,10 @@ SDValue SelectionDAGLegalize::ExpandVectorBuildThroughStack(SDNode* Node) {
     Idx = DAG.getNode(ISD::ADD, dl, FIPtr.getValueType(), FIPtr, Idx);
 
     // If EltVT smaller than OpVT, only store the bits necessary.
-    if (EltVT.bitsLT(OpVT))
+    if (!OpVT.isVector() && EltVT.bitsLT(OpVT)) {
       Stores.push_back(DAG.getTruncStore(DAG.getEntryNode(), dl,
                           Node->getOperand(i), Idx, SV, Offset, EltVT));
-    else
+    } else
       Stores.push_back(DAG.getStore(DAG.getEntryNode(), dl, 
                                     Node->getOperand(i), Idx, SV, Offset));
   }
@@ -2292,12 +2293,10 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
     EVT ExtraVT = cast<VTSDNode>(Node->getOperand(1))->getVT();
     EVT VT = Node->getValueType(0);
     EVT ShiftAmountTy = TLI.getShiftAmountTy();
-    if (VT.isVector()) {
+    if (VT.isVector())
       ShiftAmountTy = VT;
-      VT = VT.getVectorElementType();
-    }
-    unsigned BitsDiff = VT.getSizeInBits() -
-                        ExtraVT.getSizeInBits();
+    unsigned BitsDiff = VT.getScalarType().getSizeInBits() -
+                        ExtraVT.getScalarType().getSizeInBits();
     SDValue ShiftCst = DAG.getConstant(BitsDiff, ShiftAmountTy);
     Tmp1 = DAG.getNode(ISD::SHL, dl, Node->getValueType(0),
                        Node->getOperand(0), ShiftCst);
@@ -2817,9 +2816,12 @@ void SelectionDAGLegalize::ExpandNode(SDNode *Node,
     SDValue Index = Node->getOperand(2);
 
     EVT PTy = TLI.getPointerTy();
-    MachineFunction &MF = DAG.getMachineFunction();
-    unsigned EntrySize = MF.getJumpTableInfo()->getEntrySize();
-    Index= DAG.getNode(ISD::MUL, dl, PTy,
+
+    const TargetData &TD = *TLI.getTargetData();
+    unsigned EntrySize =
+      DAG.getMachineFunction().getJumpTableInfo()->getEntrySize(TD);
+    
+    Index = DAG.getNode(ISD::MUL, dl, PTy,
                         Index, DAG.getConstant(EntrySize, PTy));
     SDValue Addr = DAG.getNode(ISD::ADD, dl, PTy, Index, Table);
 

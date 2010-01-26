@@ -28,6 +28,7 @@
 #include "llvm/CodeGen/LiveVariables.h"
 #include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetOptions.h"
@@ -401,7 +402,7 @@ X86InstrInfo::X86InstrInfo(X86TargetMachine &tm)
     { X86::MOVSX64rr32,     X86::MOVSX64rm32, 0 },
     { X86::MOVSX64rr8,      X86::MOVSX64rm8, 0 },
     { X86::MOVUPDrr,        X86::MOVUPDrm, 16 },
-    { X86::MOVUPSrr,        X86::MOVUPSrm, 16 },
+    { X86::MOVUPSrr,        X86::MOVUPSrm, 0 },
     { X86::MOVZDI2PDIrr,    X86::MOVZDI2PDIrm, 0 },
     { X86::MOVZQI2PQIrr,    X86::MOVZQI2PQIrm, 0 },
     { X86::MOVZPQILo2PQIrr, X86::MOVZPQILo2PQIrm, 16 },
@@ -711,6 +712,62 @@ bool X86InstrInfo::isMoveInstr(const MachineInstr& MI,
   }
 }
 
+bool
+X86InstrInfo::isCoalescableExtInstr(const MachineInstr &MI,
+                                    unsigned &SrcReg, unsigned &DstReg,
+                                    unsigned &SubIdx) const {
+  switch (MI.getOpcode()) {
+  default: break;
+  case X86::MOVSX16rr8:
+  case X86::MOVZX16rr8:
+  case X86::MOVSX32rr8:
+  case X86::MOVZX32rr8:
+  case X86::MOVSX64rr8:
+  case X86::MOVZX64rr8:
+    if (!TM.getSubtarget<X86Subtarget>().is64Bit())
+      // It's not always legal to reference the low 8-bit of the larger
+      // register in 32-bit mode.
+      return false;
+  case X86::MOVSX32rr16:
+  case X86::MOVZX32rr16:
+  case X86::MOVSX64rr16:
+  case X86::MOVZX64rr16:
+  case X86::MOVSX64rr32:
+  case X86::MOVZX64rr32: {
+    if (MI.getOperand(0).getSubReg() || MI.getOperand(1).getSubReg())
+      // Be conservative.
+      return false;
+    SrcReg = MI.getOperand(1).getReg();
+    DstReg = MI.getOperand(0).getReg();
+    switch (MI.getOpcode()) {
+    default:
+      llvm_unreachable(0);
+      break;
+    case X86::MOVSX16rr8:
+    case X86::MOVZX16rr8:
+    case X86::MOVSX32rr8:
+    case X86::MOVZX32rr8:
+    case X86::MOVSX64rr8:
+    case X86::MOVZX64rr8:
+      SubIdx = 1;
+      break;
+    case X86::MOVSX32rr16:
+    case X86::MOVZX32rr16:
+    case X86::MOVSX64rr16:
+    case X86::MOVZX64rr16:
+      SubIdx = 3;
+      break;
+    case X86::MOVSX64rr32:
+    case X86::MOVZX64rr32:
+      SubIdx = 4;
+      break;
+    }
+    return true;
+  }
+  }
+  return false;
+}
+
 /// isFrameOperand - Return true and the FrameIndex if the specified
 /// operand and follow operands form a reference to the stack frame.
 bool X86InstrInfo::isFrameOperand(const MachineInstr *MI, unsigned int Op,
@@ -1003,8 +1060,7 @@ void X86InstrInfo::reMaterialize(MachineBasicBlock &MBB,
                                  unsigned DestReg, unsigned SubIdx,
                                  const MachineInstr *Orig,
                                  const TargetRegisterInfo *TRI) const {
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (I != MBB.end()) DL = I->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(I);
 
   if (SubIdx && TargetRegisterInfo::isPhysicalRegister(DestReg)) {
     DestReg = TRI->getSubReg(DestReg, SubIdx);
@@ -1018,12 +1074,16 @@ void X86InstrInfo::reMaterialize(MachineBasicBlock &MBB,
   switch (Opc) {
   default: break;
   case X86::MOV8r0:
-  case X86::MOV32r0: {
+  case X86::MOV16r0:
+  case X86::MOV32r0:
+  case X86::MOV64r0: {
     if (!isSafeToClobberEFLAGS(MBB, I)) {
       switch (Opc) {
       default: break;
       case X86::MOV8r0:  Opc = X86::MOV8ri;  break;
+      case X86::MOV16r0: Opc = X86::MOV16ri; break;
       case X86::MOV32r0: Opc = X86::MOV32ri; break;
+      case X86::MOV64r0: Opc = X86::MOV64ri; break;
       }
       Clone = false;
     }
@@ -1790,8 +1850,7 @@ bool X86InstrInfo::copyRegToReg(MachineBasicBlock &MBB,
                                 unsigned DestReg, unsigned SrcReg,
                                 const TargetRegisterClass *DestRC,
                                 const TargetRegisterClass *SrcRC) const {
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(MI);
 
   // Determine if DstRC and SrcRC have a common superclass in common.
   const TargetRegisterClass *CommonRC = DestRC;
@@ -2016,11 +2075,9 @@ void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                        unsigned SrcReg, bool isKill, int FrameIdx,
                                        const TargetRegisterClass *RC) const {
   const MachineFunction &MF = *MBB.getParent();
-  bool isAligned = (RI.getStackAlignment() >= 16) ||
-    RI.needsStackRealignment(MF);
+  bool isAligned = (RI.getStackAlignment() >= 16) || RI.canRealignStack(MF);
   unsigned Opc = getStoreRegOpcode(SrcReg, RC, isAligned, TM);
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(MI);
   addFrameReference(BuildMI(MBB, MI, DL, get(Opc)), FrameIdx)
     .addReg(SrcReg, getKillRegState(isKill));
 }
@@ -2111,11 +2168,9 @@ void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                         unsigned DestReg, int FrameIdx,
                                         const TargetRegisterClass *RC) const{
   const MachineFunction &MF = *MBB.getParent();
-  bool isAligned = (RI.getStackAlignment() >= 16) ||
-    RI.needsStackRealignment(MF);
+  bool isAligned = (RI.getStackAlignment() >= 16) || RI.canRealignStack(MF);
   unsigned Opc = getLoadRegOpcode(DestReg, RC, isAligned, TM);
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(MI);
   addFrameReference(BuildMI(MBB, MI, DL, get(Opc), DestReg), FrameIdx);
 }
 
@@ -2141,8 +2196,7 @@ bool X86InstrInfo::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
   if (CSI.empty())
     return false;
 
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(MI);
 
   bool is64Bit = TM.getSubtarget<X86Subtarget>().is64Bit();
   bool isWin64 = TM.getSubtarget<X86Subtarget>().isTargetWin64();
@@ -2180,8 +2234,7 @@ bool X86InstrInfo::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
   if (CSI.empty())
     return false;
 
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
+  DebugLoc DL = MBB.findDebugLoc(MI);
 
   MachineFunction &MF = *MBB.getParent();
   unsigned FPReg = RI.getFrameRegister(MF);
@@ -2290,8 +2343,12 @@ X86InstrInfo::foldMemoryOperandImpl(MachineFunction &MF,
     OpcodeTablePtr = &RegOp2MemOpTable2Addr;
     isTwoAddrFold = true;
   } else if (i == 0) { // If operand 0
-    if (MI->getOpcode() == X86::MOV32r0)
+    if (MI->getOpcode() == X86::MOV64r0)
+      NewMI = MakeM0Inst(*this, X86::MOV64mi32, MOs, MI);
+    else if (MI->getOpcode() == X86::MOV32r0)
       NewMI = MakeM0Inst(*this, X86::MOV32mi, MOs, MI);
+    else if (MI->getOpcode() == X86::MOV16r0)
+      NewMI = MakeM0Inst(*this, X86::MOV16mi, MOs, MI);
     else if (MI->getOpcode() == X86::MOV8r0)
       NewMI = MakeM0Inst(*this, X86::MOV8mi, MOs, MI);
     if (NewMI)
@@ -2354,7 +2411,7 @@ X86InstrInfo::foldMemoryOperandImpl(MachineFunction &MF,
   
   // No fusion 
   if (PrintFailedFusing)
-    errs() << "We failed to fuse operand " << i << " in " << *MI;
+    dbgs() << "We failed to fuse operand " << i << " in " << *MI;
   return NULL;
 }
 
@@ -2559,7 +2616,9 @@ bool X86InstrInfo::canFoldMemoryOperand(const MachineInstr *MI,
   } else if (OpNum == 0) { // If operand 0
     switch (Opc) {
     case X86::MOV8r0:
+    case X86::MOV16r0:
     case X86::MOV32r0:
+    case X86::MOV64r0:
       return true;
     default: break;
     }
@@ -2804,6 +2863,138 @@ unsigned X86InstrInfo::getOpcodeAfterMemoryUnfold(unsigned Opc,
     *LoadRegIndex = I->second.second & 0xf;
   return I->second.first;
 }
+
+bool
+X86InstrInfo::areLoadsFromSameBasePtr(SDNode *Load1, SDNode *Load2,
+                                     int64_t &Offset1, int64_t &Offset2) const {
+  if (!Load1->isMachineOpcode() || !Load2->isMachineOpcode())
+    return false;
+  unsigned Opc1 = Load1->getMachineOpcode();
+  unsigned Opc2 = Load2->getMachineOpcode();
+  switch (Opc1) {
+  default: return false;
+  case X86::MOV8rm:
+  case X86::MOV16rm:
+  case X86::MOV32rm:
+  case X86::MOV64rm:
+  case X86::LD_Fp32m:
+  case X86::LD_Fp64m:
+  case X86::LD_Fp80m:
+  case X86::MOVSSrm:
+  case X86::MOVSDrm:
+  case X86::MMX_MOVD64rm:
+  case X86::MMX_MOVQ64rm:
+  case X86::FsMOVAPSrm:
+  case X86::FsMOVAPDrm:
+  case X86::MOVAPSrm:
+  case X86::MOVUPSrm:
+  case X86::MOVUPSrm_Int:
+  case X86::MOVAPDrm:
+  case X86::MOVDQArm:
+  case X86::MOVDQUrm:
+  case X86::MOVDQUrm_Int:
+    break;
+  }
+  switch (Opc2) {
+  default: return false;
+  case X86::MOV8rm:
+  case X86::MOV16rm:
+  case X86::MOV32rm:
+  case X86::MOV64rm:
+  case X86::LD_Fp32m:
+  case X86::LD_Fp64m:
+  case X86::LD_Fp80m:
+  case X86::MOVSSrm:
+  case X86::MOVSDrm:
+  case X86::MMX_MOVD64rm:
+  case X86::MMX_MOVQ64rm:
+  case X86::FsMOVAPSrm:
+  case X86::FsMOVAPDrm:
+  case X86::MOVAPSrm:
+  case X86::MOVUPSrm:
+  case X86::MOVUPSrm_Int:
+  case X86::MOVAPDrm:
+  case X86::MOVDQArm:
+  case X86::MOVDQUrm:
+  case X86::MOVDQUrm_Int:
+    break;
+  }
+
+  // Check if chain operands and base addresses match.
+  if (Load1->getOperand(0) != Load2->getOperand(0) ||
+      Load1->getOperand(5) != Load2->getOperand(5))
+    return false;
+  // Segment operands should match as well.
+  if (Load1->getOperand(4) != Load2->getOperand(4))
+    return false;
+  // Scale should be 1, Index should be Reg0.
+  if (Load1->getOperand(1) == Load2->getOperand(1) &&
+      Load1->getOperand(2) == Load2->getOperand(2)) {
+    if (cast<ConstantSDNode>(Load1->getOperand(1))->getZExtValue() != 1)
+      return false;
+    SDValue Op2 = Load1->getOperand(2);
+    if (!isa<RegisterSDNode>(Op2) ||
+        cast<RegisterSDNode>(Op2)->getReg() != 0)
+      return 0;
+
+    // Now let's examine the displacements.
+    if (isa<ConstantSDNode>(Load1->getOperand(3)) &&
+        isa<ConstantSDNode>(Load2->getOperand(3))) {
+      Offset1 = cast<ConstantSDNode>(Load1->getOperand(3))->getSExtValue();
+      Offset2 = cast<ConstantSDNode>(Load2->getOperand(3))->getSExtValue();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool X86InstrInfo::shouldScheduleLoadsNear(SDNode *Load1, SDNode *Load2,
+                                           int64_t Offset1, int64_t Offset2,
+                                           unsigned NumLoads) const {
+  assert(Offset2 > Offset1);
+  if ((Offset2 - Offset1) / 8 > 64)
+    return false;
+
+  unsigned Opc1 = Load1->getMachineOpcode();
+  unsigned Opc2 = Load2->getMachineOpcode();
+  if (Opc1 != Opc2)
+    return false;  // FIXME: overly conservative?
+
+  switch (Opc1) {
+  default: break;
+  case X86::LD_Fp32m:
+  case X86::LD_Fp64m:
+  case X86::LD_Fp80m:
+  case X86::MMX_MOVD64rm:
+  case X86::MMX_MOVQ64rm:
+    return false;
+  }
+
+  EVT VT = Load1->getValueType(0);
+  switch (VT.getSimpleVT().SimpleTy) {
+  default: {
+    // XMM registers. In 64-bit mode we can be a bit more aggressive since we
+    // have 16 of them to play with.
+    if (TM.getSubtargetImpl()->is64Bit()) {
+      if (NumLoads >= 3)
+        return false;
+    } else if (NumLoads)
+      return false;
+    break;
+  }
+  case MVT::i8:
+  case MVT::i16:
+  case MVT::i32:
+  case MVT::i64:
+  case MVT::f32:
+  case MVT::f64:
+    if (NumLoads)
+      return false;
+  }
+
+  return true;
+}
+
 
 bool X86InstrInfo::
 ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const {
@@ -3424,8 +3615,7 @@ unsigned X86InstrInfo::getGlobalBaseReg(MachineFunction *MF) const {
   // Insert the set of GlobalBaseReg into the first MBB of the function
   MachineBasicBlock &FirstMBB = MF->front();
   MachineBasicBlock::iterator MBBI = FirstMBB.begin();
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MBBI != FirstMBB.end()) DL = MBBI->getDebugLoc();
+  DebugLoc DL = FirstMBB.findDebugLoc(MBBI);
   MachineRegisterInfo &RegInfo = MF->getRegInfo();
   unsigned PC = RegInfo.createVirtualRegister(X86::GR32RegisterClass);
   

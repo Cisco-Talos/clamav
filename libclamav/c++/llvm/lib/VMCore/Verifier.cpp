@@ -56,6 +56,7 @@
 #include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/CFG.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/InstVisitor.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallPtrSet.h"
@@ -85,9 +86,9 @@ namespace {  // Anonymous namespace for class
 
       for (Function::iterator I = F.begin(), E = F.end(); I != E; ++I) {
         if (I->empty() || !I->back().isTerminator()) {
-          errs() << "Basic Block does not have terminator!\n";
-          WriteAsOperand(errs(), I, true);
-          errs() << "\n";
+          dbgs() << "Basic Block does not have terminator!\n";
+          WriteAsOperand(dbgs(), I, true);
+          dbgs() << "\n";
           Broken = true;
         }
       }
@@ -262,12 +263,12 @@ namespace {
       default: llvm_unreachable("Unknown action");
       case AbortProcessAction:
         MessagesStr << "compilation aborted!\n";
-        errs() << MessagesStr.str();
+        dbgs() << MessagesStr.str();
         // Client should choose different reaction if abort is not desired
         abort();
       case PrintMessageAction:
         MessagesStr << "verification continues.\n";
-        errs() << MessagesStr.str();
+        dbgs() << MessagesStr.str();
         return false;
       case ReturnStatusAction:
         MessagesStr << "compilation terminated.\n";
@@ -1300,6 +1301,8 @@ void Verifier::visitAllocaInst(AllocaInst &AI) {
           &AI);
   Assert1(PTy->getElementType()->isSized(), "Cannot allocate unsized type",
           &AI);
+  Assert1(AI.getArraySize()->getType()->isInteger(32),
+          "Alloca array size must be i32", &AI);
   visitInstruction(AI);
 }
 
@@ -1538,8 +1541,8 @@ void Verifier::VerifyFunctionLocalMetadata(MDNode *N, Function *F,
   if (!Visited.insert(N))
     return;
   
-  for (unsigned i = 0, e = N->getNumElements(); i != e; ++i) {
-    Value *V = N->getElement(i);
+  for (unsigned i = 0, e = N->getNumOperands(); i != e; ++i) {
+    Value *V = N->getOperand(i);
     if (!V) continue;
     
     Function *ActualF = 0;
@@ -1578,7 +1581,7 @@ void Verifier::visitIntrinsicFunctionCall(Intrinsic::ID ID, CallInst &CI) {
 
   // If the intrinsic takes MDNode arguments, verify that they are either global
   // or are local to *this* function.
-  for (unsigned i = 0, e = CI.getNumOperands(); i != e; ++i)
+  for (unsigned i = 1, e = CI.getNumOperands(); i != e; ++i)
     if (MDNode *MD = dyn_cast<MDNode>(CI.getOperand(i))) {
       if (!MD->isFunctionLocal()) continue;
       SmallPtrSet<MDNode *, 32> Visited;
@@ -1588,11 +1591,17 @@ void Verifier::visitIntrinsicFunctionCall(Intrinsic::ID ID, CallInst &CI) {
   switch (ID) {
   default:
     break;
-  case Intrinsic::dbg_declare:  // llvm.dbg.declare
-    if (Constant *C = dyn_cast<Constant>(CI.getOperand(1)))
-      Assert1(C && !isa<ConstantPointerNull>(C),
-              "invalid llvm.dbg.declare intrinsic call", &CI);
-    break;
+  case Intrinsic::dbg_declare: {  // llvm.dbg.declare
+    Assert1(CI.getOperand(1) && isa<MDNode>(CI.getOperand(1)),
+                "invalid llvm.dbg.declare intrinsic call 1", &CI);
+    MDNode *MD = cast<MDNode>(CI.getOperand(1));
+    Assert1(MD->getNumOperands() == 1,
+                "invalid llvm.dbg.declare intrinsic call 2", &CI);
+    if (MD->getOperand(0))
+      if (Constant *C = dyn_cast<Constant>(MD->getOperand(0)))
+        Assert1(C && !isa<ConstantPointerNull>(C),
+                "invalid llvm.dbg.declare intrinsic call 3", &CI);
+  } break;
   case Intrinsic::memcpy:
   case Intrinsic::memmove:
   case Intrinsic::memset:
