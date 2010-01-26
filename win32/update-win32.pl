@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use XML::Twig;
-
+use File::Copy;
+use File::Temp 'tempfile';
 
 
 #########################################################
@@ -250,44 +251,37 @@ my @PROJECTS = (
 my %ref_files;
 my %files;
 my $exclude;
+my $do_patch = 0;
 
 sub ugly_print {
     no warnings 'recursion';
-    my $t = shift;
+    my ($t, $fh) = @_;
     return unless $t;
     my $haveatt = 0;
 
-    for(my $i=0; $i<$t->level; $i++) {
-	print "\t";
-    }
-    print "<".$t->gi;
+    print $fh "\t" x $t->level;
+    print $fh "<".$t->gi;
     if(scalar keys %{$t->atts}) {
-	print "\n";
+	print $fh "\n";
 	foreach (sort keys %{$t->atts}) {
-	    for(my $i=0; $i<=$t->level; $i++) {
-		print "\t";
-	    }
-	    print $_.'="'.$t->atts->{$_}."\"\n";
+	    print $fh "\t" x ($t->level + 1);
+	    print $fh $_.'="'.$t->atts->{$_}."\"\n";
 	}
 	$haveatt = 1;
     }
 
     if($haveatt) {
-        for(my $i=0; $i<$t->level; $i++) {
-	    print "\t";
-	}
-	print "\t" if($t->children);
+	print $fh "\t" x $t->level;
+	print $fh "\t" if($t->children);
     }
-    print "/" unless $t->children;
-    print ">\n";
-    ugly_print($t->first_child);
+    print $fh "/" unless $t->children;
+    print $fh ">\n";
+    ugly_print($t->first_child, $fh);
     if($t->children) {
-	for(my $i=0; $i<$t->level; $i++) {
-	    print "\t";
-	}
-	print "</".$t->gi.">\n";
+	print $fh "\t" x $t->level;
+	print $fh "</".$t->gi.">\n";
     }
-    ugly_print($t->next_sibling);
+    ugly_print($t->next_sibling, $fh);
 }
 
 sub file {
@@ -295,11 +289,12 @@ sub file {
     my $fname = $file->{'att'}->{'RelativePath'};
     return unless $fname =~ /^.*\.c(pp)?$/;
     return if defined($exclude) && $fname =~ /$exclude/;
-    warn "Warning: File $fname not in Makefile.am\n" unless defined($ref_files{$fname});
+    $file->delete unless !$do_patch || exists $ref_files{$fname};
     $files{$fname} = 1;
 }
 
-
+$do_patch = $#ARGV == 0 && $ARGV[0] eq '--regen';
+die("Usage:\nupdate-win32.pl [--regen]\n\nChecks the win32 build system and regenerates it if --regen is given\n\n") if $#ARGV == 0 && $ARGV[0] eq '--help';
 my $BASE_DIR = `git rev-parse --git-dir`;
 chomp($BASE_DIR);
 die "This script only works in a GIT repository\n" unless $BASE_DIR;
@@ -384,11 +379,41 @@ foreach (@PROJECTS) {
 	}
 	$got = 0 unless $trail;
     }
-    
-    my $xml = XML::Twig->new( keep_encoding => 1, twig_handlers => { File => \&file } );
-    $xml->parsefile("$BASE_DIR/$proj{output}");
+    close IN;
 
-    my @missing = grep ! exists $files{$_}, keys %ref_files;
-    warn "Warning: File $_ not in $proj{output}\n" foreach @missing;
-#    ugly_print($xml->root);
+    my $xml = XML::Twig->new( keep_encoding => 1, twig_handlers => { File => \&file } );
+    $xml->parsefile("$BASE_DIR/$proj{'output'}");
+
+    my @missing_in_vcproj = grep ! exists $files{$_}, keys %ref_files;
+    my @missing_in_makefile = grep ! exists $ref_files{$_}, keys %files;
+
+    if($do_patch) {
+	if($#missing_in_vcproj >=0) {
+	    my $filter;
+	    die("Cannot locate a proper filter in $proj{'output'}\n") unless $xml->root->first_child('Files') && $xml->root->first_child('Files')->first_child('Filter');
+	    foreach ($xml->root->first_child('Files')->children('Filter')) {
+		next unless $_->att('Name') =~ /^Source Files$/i;
+		$filter = $_;
+		last;
+	    }
+	    $filter = $xml->root->first_child('Files')->first_child('Filter') unless defined($filter);
+	    foreach (@missing_in_vcproj) {
+		my $addfile = $xml->root->new('File');
+		$addfile->set_att('RelativePath' => $_);
+		$addfile->paste($filter);
+		warn "Warning: File $_ not in $proj{'output'}: added!\n" foreach @missing_in_vcproj;
+	    }
+	}
+	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am: deleted!\n" foreach @missing_in_makefile;
+    } else {
+	warn "Warning: File $_ not in $proj{'output'}\n" foreach @missing_in_vcproj;
+	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am\n" foreach @missing_in_makefile;
+    }
+
+    my ($fh, $filename) = tempfile();
+    print $fh "<?xml version=\"1.0\" encoding=\"Windows-1252\"?>\n";
+    ugly_print($xml->root, $fh);
+    close $fh;
+    move($filename, "$proj{'output'}.new");
+    exit;
 }
