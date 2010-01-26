@@ -659,18 +659,12 @@ libllvmcodegen_la_SOURCES=\
 
 libllvmbitreader_la_SOURCES=\
  llvm/lib/Bitcode/Reader/BitReader.cpp\
- llvm/lib/Bitcode/Reader/BitcodeReader.cpp\
- llvm/lib/Bitcode/Reader/Deserialize.cpp\
- llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp\
- llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
+ llvm/lib/Bitcode/Reader/BitcodeReader.cpp
 
 libllvmbitwriter_la_SOURCES=\
  llvm/lib/Bitcode/Writer/BitWriter.cpp\
  llvm/lib/Bitcode/Writer/BitcodeWriter.cpp\
  llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp\
- llvm/lib/Bitcode/Writer/Serialize.cpp\
- llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp\
- llvm/lib/Bitcode/Writer/SerializeAPInt.cpp\
  llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
 
 libllvmasmparser_la_SOURCES=\
@@ -779,7 +773,6 @@ libllvmasmprinter_la_SOURCES=\
     llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp\
     llvm/lib/CodeGen/ELFCodeEmitter.cpp\
     llvm/lib/CodeGen/ELFWriter.cpp\
-    llvm/lib/CodeGen/MachOCodeEmitter.cpp\
     llvm/lib/CodeGen/MachOWriter.cpp
 
 if BUILD_X86
@@ -825,7 +818,7 @@ lli_SOURCES=\
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
-llc_CXXFLAGS=$(LLVM_CXXFLAGS)
+llc_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-rtti
 llc_LDADD=libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
 llc_SOURCES=\
     llvm/lib/MC/MCInstPrinter.cpp\

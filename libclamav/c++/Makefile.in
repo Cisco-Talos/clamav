@@ -186,7 +186,6 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
 	llvm/lib/CodeGen/ELFWriter.cpp \
-	llvm/lib/CodeGen/MachOCodeEmitter.cpp \
 	llvm/lib/CodeGen/MachOWriter.cpp \
 	llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp \
 	llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp \
@@ -211,18 +210,15 @@ am_libllvmasmprinter_la_OBJECTS =  \
 	libllvmasmprinter_la-OcamlGCPrinter.lo \
 	libllvmasmprinter_la-ELFCodeEmitter.lo \
 	libllvmasmprinter_la-ELFWriter.lo \
-	libllvmasmprinter_la-MachOCodeEmitter.lo \
 	libllvmasmprinter_la-MachOWriter.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
 libllvmasmprinter_la_OBJECTS = $(am_libllvmasmprinter_la_OBJECTS)
 libllvmbitreader_la_LIBADD =
-am_libllvmbitreader_la_OBJECTS = BitReader.lo BitcodeReader.lo \
-	Deserialize.lo DeserializeAPFloat.lo DeserializeAPInt.lo
+am_libllvmbitreader_la_OBJECTS = BitReader.lo BitcodeReader.lo
 libllvmbitreader_la_OBJECTS = $(am_libllvmbitreader_la_OBJECTS)
 libllvmbitwriter_la_LIBADD =
 am_libllvmbitwriter_la_OBJECTS = BitWriter.lo BitcodeWriter.lo \
-	BitcodeWriterPass.lo Serialize.lo SerializeAPFloat.lo \
-	SerializeAPInt.lo ValueEnumerator.lo
+	BitcodeWriterPass.lo ValueEnumerator.lo
 libllvmbitwriter_la_OBJECTS = $(am_libllvmbitwriter_la_OBJECTS)
 libllvmcodegen_la_LIBADD =
 am_libllvmcodegen_la_OBJECTS = AliasSetTracker.lo ConstantFolding.lo \
@@ -1407,18 +1403,12 @@ libllvmcodegen_la_SOURCES = \
 # Used only by make check
 libllvmbitreader_la_SOURCES = \
  llvm/lib/Bitcode/Reader/BitReader.cpp\
- llvm/lib/Bitcode/Reader/BitcodeReader.cpp\
- llvm/lib/Bitcode/Reader/Deserialize.cpp\
- llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp\
- llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
+ llvm/lib/Bitcode/Reader/BitcodeReader.cpp
 
 libllvmbitwriter_la_SOURCES = \
  llvm/lib/Bitcode/Writer/BitWriter.cpp\
  llvm/lib/Bitcode/Writer/BitcodeWriter.cpp\
  llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp\
- llvm/lib/Bitcode/Writer/Serialize.cpp\
- llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp\
- llvm/lib/Bitcode/Writer/SerializeAPInt.cpp\
  llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
 
 libllvmasmparser_la_SOURCES = \
@@ -1524,7 +1514,6 @@ libllvmasmprinter_la_SOURCES =  \
 	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
 	llvm/lib/CodeGen/ELFWriter.cpp \
-	llvm/lib/CodeGen/MachOCodeEmitter.cpp \
 	llvm/lib/CodeGen/MachOWriter.cpp $(am__append_14) \
 	$(am__append_15) $(am__append_16)
 libllvmfullcodegen_la_SOURCES = \
@@ -1550,7 +1539,7 @@ lli_SOURCES = \
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-llc_CXXFLAGS = $(LLVM_CXXFLAGS)
+llc_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-rtti
 llc_LDADD = libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
 llc_SOURCES = \
     llvm/lib/MC/MCInstPrinter.cpp\
@@ -1779,9 +1768,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DebugInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DeltaAlgorithm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DemoteRegToStack.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Deserialize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DeserializeAPFloat.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DeserializeAPInt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Disassembler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Dominators.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Dwarf.Plo@am__quote@
@@ -1947,9 +1933,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SelectionDAGBuilder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SelectionDAGISel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SelectionDAGPrinter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Serialize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SerializeAPFloat.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SerializeAPInt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ShadowStackGC.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ShrinkWrapping.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Signals.Plo@am__quote@
@@ -2049,7 +2032,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFWriter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-MachOCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-MachOWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-OcamlGCPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-PPCAsmPrinter.Plo@am__quote@
@@ -2722,14 +2704,6 @@ libllvmasmprinter_la-ELFWriter.lo: llvm/lib/CodeGen/ELFWriter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-ELFWriter.lo `test -f 'llvm/lib/CodeGen/ELFWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/ELFWriter.cpp
 
-libllvmasmprinter_la-MachOCodeEmitter.lo: llvm/lib/CodeGen/MachOCodeEmitter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-MachOCodeEmitter.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-MachOCodeEmitter.Tpo -c -o libllvmasmprinter_la-MachOCodeEmitter.lo `test -f 'llvm/lib/CodeGen/MachOCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOCodeEmitter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmasmprinter_la-MachOCodeEmitter.Tpo $(DEPDIR)/libllvmasmprinter_la-MachOCodeEmitter.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MachOCodeEmitter.cpp' object='libllvmasmprinter_la-MachOCodeEmitter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-MachOCodeEmitter.lo `test -f 'llvm/lib/CodeGen/MachOCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOCodeEmitter.cpp
-
 libllvmasmprinter_la-MachOWriter.lo: llvm/lib/CodeGen/MachOWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-MachOWriter.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Tpo -c -o libllvmasmprinter_la-MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Tpo $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Plo
@@ -2826,30 +2800,6 @@ BitcodeReader.lo: llvm/lib/Bitcode/Reader/BitcodeReader.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o BitcodeReader.lo `test -f 'llvm/lib/Bitcode/Reader/BitcodeReader.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/BitcodeReader.cpp
 
-Deserialize.lo: llvm/lib/Bitcode/Reader/Deserialize.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Deserialize.lo -MD -MP -MF $(DEPDIR)/Deserialize.Tpo -c -o Deserialize.lo `test -f 'llvm/lib/Bitcode/Reader/Deserialize.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/Deserialize.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/Deserialize.Tpo $(DEPDIR)/Deserialize.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Reader/Deserialize.cpp' object='Deserialize.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Deserialize.lo `test -f 'llvm/lib/Bitcode/Reader/Deserialize.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/Deserialize.cpp
-
-DeserializeAPFloat.lo: llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT DeserializeAPFloat.lo -MD -MP -MF $(DEPDIR)/DeserializeAPFloat.Tpo -c -o DeserializeAPFloat.lo `test -f 'llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/DeserializeAPFloat.Tpo $(DEPDIR)/DeserializeAPFloat.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp' object='DeserializeAPFloat.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o DeserializeAPFloat.lo `test -f 'llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp
-
-DeserializeAPInt.lo: llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT DeserializeAPInt.lo -MD -MP -MF $(DEPDIR)/DeserializeAPInt.Tpo -c -o DeserializeAPInt.lo `test -f 'llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/DeserializeAPInt.Tpo $(DEPDIR)/DeserializeAPInt.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp' object='DeserializeAPInt.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o DeserializeAPInt.lo `test -f 'llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
-
 BitWriter.lo: llvm/lib/Bitcode/Writer/BitWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT BitWriter.lo -MD -MP -MF $(DEPDIR)/BitWriter.Tpo -c -o BitWriter.lo `test -f 'llvm/lib/Bitcode/Writer/BitWriter.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/BitWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/BitWriter.Tpo $(DEPDIR)/BitWriter.Plo
@@ -2873,30 +2823,6 @@ BitcodeWriterPass.lo: llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp' object='BitcodeWriterPass.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o BitcodeWriterPass.lo `test -f 'llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp
-
-Serialize.lo: llvm/lib/Bitcode/Writer/Serialize.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Serialize.lo -MD -MP -MF $(DEPDIR)/Serialize.Tpo -c -o Serialize.lo `test -f 'llvm/lib/Bitcode/Writer/Serialize.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/Serialize.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/Serialize.Tpo $(DEPDIR)/Serialize.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Writer/Serialize.cpp' object='Serialize.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Serialize.lo `test -f 'llvm/lib/Bitcode/Writer/Serialize.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/Serialize.cpp
-
-SerializeAPFloat.lo: llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SerializeAPFloat.lo -MD -MP -MF $(DEPDIR)/SerializeAPFloat.Tpo -c -o SerializeAPFloat.lo `test -f 'llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SerializeAPFloat.Tpo $(DEPDIR)/SerializeAPFloat.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp' object='SerializeAPFloat.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SerializeAPFloat.lo `test -f 'llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp
-
-SerializeAPInt.lo: llvm/lib/Bitcode/Writer/SerializeAPInt.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SerializeAPInt.lo -MD -MP -MF $(DEPDIR)/SerializeAPInt.Tpo -c -o SerializeAPInt.lo `test -f 'llvm/lib/Bitcode/Writer/SerializeAPInt.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/SerializeAPInt.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SerializeAPInt.Tpo $(DEPDIR)/SerializeAPInt.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Bitcode/Writer/SerializeAPInt.cpp' object='SerializeAPInt.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SerializeAPInt.lo `test -f 'llvm/lib/Bitcode/Writer/SerializeAPInt.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/SerializeAPInt.cpp
 
 ValueEnumerator.lo: llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ValueEnumerator.lo -MD -MP -MF $(DEPDIR)/ValueEnumerator.Tpo -c -o ValueEnumerator.lo `test -f 'llvm/lib/Bitcode/Writer/ValueEnumerator.cpp' || echo '$(srcdir)/'`llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
