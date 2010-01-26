@@ -306,43 +306,46 @@ die "Cannot determine git version via git-describe\n" unless $VER && !$?;
 $VER = "devel-$VER";
 my $w = 0;
 
-print "Generating clamav-config.h...\n";
+print "Processing clamav-config.h...\n";
 
 open IN, "< $BASE_DIR/clamav-config.h.in" || die "Cannot find clamav-config.h.in: $!\n";
-open OUT, "> $BASE_DIR/win32/clamav-config.h" || die "Cannot open clamav-config.h: $!\n";
-
-print OUT "/* clamav-config.h.  Generated from clamav-config.h.in by update-win32.  */\n\n";
+$do_patch and open OUT, "> $BASE_DIR/win32/clamav-config.h" || die "Cannot open clamav-config.h: $!\n";
+$do_patch and  print OUT "/* clamav-config.h.  Generated from clamav-config.h.in by update-win32.  */\n\n";
 while(<IN>) {
     if(!/^#\s*undef (.*)/) {
-	print OUT $_;
+	$do_patch and print OUT $_;
 	next;
     }
     if($1 eq 'VERSION') {
-	print OUT "#define VERSION \"$VER\"\n";
+	$do_patch and print OUT "#define VERSION \"$VER\"\n";
 	next;
     }
     if(!exists($CONF{$1})) {
 	warn "Warning: clamav-config.h option '$1' is unknown. Please take a second to update this script.\n";
-	print OUT "/* #undef $1 */\n";
+	$do_patch and print OUT "/* #undef $1 */\n";
 	$w++;
 	next;
     }
     if($CONF{$1} eq -1) {
-	print OUT "/* #undef $1 */\n";
+	$do_patch and print OUT "/* #undef $1 */\n";
     } else {
-	print OUT "#define $1 $CONF{$1}\n";
+	$do_patch and print OUT "#define $1 $CONF{$1}\n";
     }
 }
-close OUT;
 close IN;
-
+if($do_patch) {
+    close OUT;
+    print "clamav-config.h generated ($w warnings)\n";
+} else {
+    print "clamav-config.h.in parsed ($w warnings)\n";
+}
 foreach (@PROJECTS) {
     my %proj = %$_;
     %files = ();
     %ref_files = ();
     my $got = 0;
     $exclude = $proj{'vcproj_only'};
-    print "Generating $proj{'output'}...\n";
+    print "Parsing $proj{'output'}...\n";
     open IN, "$proj{'makefile'}/Makefile.am" or die "Cannot open $proj{'makefile'}/Makefile.am\n";
     while(<IN>) {
 	my ($trail, $fname);
@@ -394,14 +397,15 @@ foreach (@PROJECTS) {
 	    }
 	}
 	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am: deleted!\n" foreach @missing_in_makefile;
+	my ($fh, $filename) = tempfile();
+	print $fh "<?xml version=\"1.0\" encoding=\"Windows-1252\"?>\n";
+	ugly_print($xml->root, $fh);
+	close $fh;
+	move($filename, "$proj{'output'}");
+	print "Regenerated $proj{'output'} (".($#missing_in_vcproj + $#missing_in_makefile + 2)." changes)\n";
     } else {
 	warn "Warning: File $_ not in $proj{'output'}\n" foreach @missing_in_vcproj;
 	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am\n" foreach @missing_in_makefile;
+	print "Parsed $proj{'output'} (".($#missing_in_vcproj + $#missing_in_makefile + 2)." warnings)\n";
     }
-
-    my ($fh, $filename) = tempfile();
-    print $fh "<?xml version=\"1.0\" encoding=\"Windows-1252\"?>\n";
-    ugly_print($xml->root, $fh);
-    close $fh;
-    move($filename, "$proj{'output'}");
 }
