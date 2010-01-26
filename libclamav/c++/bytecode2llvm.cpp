@@ -45,6 +45,7 @@
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/System/DataTypes.h"
+#include "llvm/System/Host.h"
 #include "llvm/System/Mutex.h"
 #include "llvm/System/Signals.h"
 #include "llvm/System/Threading.h"
@@ -60,8 +61,8 @@
 #include <new>
 
 #include "llvm/Config/config.h"
-#if !defined(LLVM_MULTITHREADED) || !LLVM_MULTITHREADED
-#error "Multithreading support must be available to LLVM!"
+#if !ENABLE_THREADS
+#error "Thread support was explicitly disabled. Cannot continue"
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1211,11 +1212,33 @@ public:
 	return true;
     }
 };
+
+static sys::Mutex llvm_api_lock;
+
+// This class automatically acquires the lock when instantiated,
+// and releases the lock when leaving scope.
+class LLVMApiScopedLock {
+    public:
+	// when multithreaded mode is false (no atomics available),
+	// we need to wrap all LLVM API calls with a giant mutex lock, but
+	// only then.
+	LLVMApiScopedLock() {
+	    if (!llvm_is_multithreaded())
+		llvm_api_lock.acquire();
+	}
+	~LLVMApiScopedLock() {
+	    if (!llvm_is_multithreaded())
+		llvm_api_lock.release();
+	}
+};
+
 }
 
 int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 		       const struct cli_bc_func *func)
 {
+    // no locks needed here, since LLVM automatically acquires a JIT lock
+    // if needed.
     jmp_buf env;
     void *code = bcs->engine->compiledFunctions[func];
     if (!code) {
@@ -1259,6 +1282,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
   if (!bcs->engine)
       return CL_EBYTECODE;
   jmp_buf env;
+  LLVMApiScopedLock scopedLock;
   // setup exception handler to longjmp back here
   ExceptionReturn.set((const jmp_buf*)&env);
   if (setjmp(env) != 0) {
@@ -1386,8 +1410,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 int bytecode_init(void)
 {
     // If already initialized return
-    if (llvm_is_multithreaded())
-	return 0;
+    if (llvm_is_multithreaded()) {
+	errs() << "bytecode_init: already initialized";
+	return CL_EARG;
+    }
     llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
@@ -1407,13 +1433,28 @@ int bytecode_init(void)
     // If we have a native target, initialize it to ensure it is linked in and
     // usable by the JIT.
     InitializeNativeTarget();
+
+    if (!llvm_is_multithreaded()) {
+	//TODO:cli_dbgmsg
+	DEBUG(errs() << "WARNING: ClamAV JIT built w/o atomic builtins\n"
+	      << "On x86 for best performance ClamAV should be built for i686, not i386!\n");
+    }
     return 0;
 }
 
 // Called once when loading a new set of BC files
 int cli_bytecode_init_jit(struct cli_all_bc *bcs)
 {
-    //TODO: if !llvm_is_multi...
+    LLVMApiScopedLock scopedLock;
+    std::string cpu = sys::getHostCPUName();
+    DEBUG(errs() << "host cpu is: " << cpu << "\n");
+    if (!cpu.compare("i386") ||
+	!cpu.compare("i486")) {
+	bcs->engine = 0;
+	DEBUG(errs() << "i[34]86 detected, falling back to interpreter (JIT needs pentium or better\n");
+	/* i386 and i486 has to fallback to interpreter */
+	return 0;
+    }
     bcs->engine = new(std::nothrow) cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;
@@ -1423,6 +1464,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs)
 
 int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 {
+    LLVMApiScopedLock scopedLock;
     if (bcs->engine) {
 	if (bcs->engine->EE)
 	    delete bcs->engine->EE;
