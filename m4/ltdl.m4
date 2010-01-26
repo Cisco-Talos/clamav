@@ -637,6 +637,7 @@ AC_SUBST([LT_DLLOADERS])
 AC_LANG_PUSH([C])
 
 LIBADD_DLOPEN=
+lt_save_LIBS="$LIBS"
 AC_SEARCH_LIBS([dlopen], [dl],
 	[AC_DEFINE([HAVE_LIBDL], [1],
 		   [Define if you have the libdl library or equivalent.])
@@ -660,11 +661,10 @@ AC_SEARCH_LIBS([dlopen], [dl],
 		LT_DLLOADERS="$LT_DLLOADERS ${lt_dlopen_dir+$lt_dlopen_dir/}dlopen.la"])])])
 if test x"$libltdl_cv_func_dlopen" = xyes || test x"$libltdl_cv_lib_dl_dlopen" = xyes
 then
-  lt_save_LIBS="$LIBS"
   LIBS="$LIBS $LIBADD_DLOPEN"
   AC_CHECK_FUNCS([dlerror])
-  LIBS="$lt_save_LIBS"
 fi
+LIBS="$lt_save_LIBS"
 AC_SUBST([LIBADD_DLOPEN])
 
 LIBADD_SHL_LOAD=

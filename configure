@@ -11173,6 +11173,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 LIBADD_DLOPEN=
+lt_save_LIBS="$LIBS"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
 $as_echo_n "checking for library containing dlopen... " >&6; }
 if test "${ac_cv_search_dlopen+set}" = set; then :
@@ -11307,7 +11308,6 @@ fi
 
 if test x"$libltdl_cv_func_dlopen" = xyes || test x"$libltdl_cv_lib_dl_dlopen" = xyes
 then
-  lt_save_LIBS="$LIBS"
   LIBS="$LIBS $LIBADD_DLOPEN"
   for ac_func in dlerror
 do :
@@ -11320,8 +11320,8 @@ _ACEOF
 fi
 done
 
-  LIBS="$lt_save_LIBS"
 fi
+LIBS="$lt_save_LIBS"
 
 
 LIBADD_SHL_LOAD=
@@ -14968,10 +14968,10 @@ $as_echo "$as_me: WARNING: ****** stability problems to the ClamAV developers!" 
 	fi
     fi
 
+    save_LIBS="$LIBS"
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	save_LIBS="$LIBS"
 	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflateEnd in -lz" >&5
 $as_echo_n "checking for inflateEnd in -lz... " >&6; }
@@ -15010,7 +15010,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_inflateEnd" >&5
 $as_echo "$ac_cv_lib_z_inflateEnd" >&6; }
 if test "x$ac_cv_lib_z_inflateEnd" = x""yes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz";FRESHCLAM_LIBS="$FRESHCLAM_LIBS -L$ZLIB_HOME/lib -lz"
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"
 else
   as_fn_error "Please install zlib and zlib-devel packages" "$LINENO" 5
 fi
@@ -15063,7 +15063,6 @@ else
 fi
 
 	LDFLAGS="$save_LDFLAGS"
-	LIBS="$save_LIBS"
     else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflateEnd in -lz" >&5
 $as_echo_n "checking for inflateEnd in -lz... " >&6; }
@@ -15102,7 +15101,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_inflateEnd" >&5
 $as_echo "$ac_cv_lib_z_inflateEnd" >&6; }
 if test "x$ac_cv_lib_z_inflateEnd" = x""yes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz";FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lz"
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"
 else
   as_fn_error "Please install zlib and zlib-devel packages" "$LINENO" 5
 fi
@@ -15155,6 +15154,7 @@ else
 fi
 
     fi
+    LIBS="$save_LIBS"
 fi
 
 # Check whether --enable-bzip2 was given.
