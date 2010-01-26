@@ -856,10 +856,10 @@ endif
 	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
 
 distclean-local:
-	rm -f llvm/lib/Makefile llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
-	rm -f llvm/test/Makefile llvm/test/lit.site.cfg llvm/test/Makefile.tests llvm/Makefile llvm/config.status
-	rm -f llvm/mklib llvm/tools/Makefile llvm/tools/llvmc/llvm-config.in llvm/utils/Makefile
-	rm -f llvm/Makefile.common llvm/Makefile.config llvm/config.log llvm/unittests/Makefile
+	rm -f llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
+	rm -f llvm/test/lit.site.cfg llvm/config.status
+	rm -f llvm/mklib llvm/tools/llvmc/llvm-config.in
+	rm -f llvm/Makefile.config llvm/config.log
 	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
 	rm -f llvm/include/llvm/Config/Disassemblers.def
 	rm -f llvm/include/llvm/System/DataTypes.h llvm/include/llvm/Config/Targets.def
