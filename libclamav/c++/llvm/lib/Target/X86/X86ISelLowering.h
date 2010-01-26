@@ -156,6 +156,11 @@ namespace llvm {
       /// relative displacements.
       WrapperRIP,
 
+      /// MOVQ2DQ - Copies a 64-bit value from a vector to another vector.
+      /// Can be used to move a vector value from a MMX register to a XMM
+      /// register.
+      MOVQ2DQ,
+
       /// PEXTRB - Extract an 8-bit value from a vector and zero extend it to
       /// i32, corresponds to X86::PEXTRB.
       PEXTRB,
@@ -371,11 +376,24 @@ namespace llvm {
   public:
     explicit X86TargetLowering(X86TargetMachine &TM);
 
+    /// getPICBaseSymbol - Return the X86-32 PIC base.
+    MCSymbol *getPICBaseSymbol(const MachineFunction *MF, MCContext &Ctx) const;
+    
+    virtual unsigned getJumpTableEncoding() const;
+
+    virtual const MCExpr *
+    LowerCustomJumpTableEntry(const MachineJumpTableInfo *MJTI,
+                              const MachineBasicBlock *MBB, unsigned uid,
+                              MCContext &Ctx) const;
+    
     /// getPICJumpTableRelocaBase - Returns relocation base for the given PIC
     /// jumptable.
-    SDValue getPICJumpTableRelocBase(SDValue Table,
-                                       SelectionDAG &DAG) const;
-
+    virtual SDValue getPICJumpTableRelocBase(SDValue Table,
+                                             SelectionDAG &DAG) const;
+    virtual const MCExpr *
+    getPICJumpTableRelocBaseExpr(const MachineFunction *MF,
+                                 unsigned JTI, MCContext &Ctx) const;
+    
     // Return the number of bytes that a function should pop when it returns (in
     // addition to the space used by the return address).
     //
@@ -634,6 +652,7 @@ namespace llvm {
     SDValue LowerAsSplatVectorLoad(SDValue SrcOp, EVT VT, DebugLoc dl,
                                    SelectionDAG &DAG);
     SDValue LowerBUILD_VECTOR(SDValue Op, SelectionDAG &DAG);
+    SDValue LowerCONCAT_VECTORS(SDValue Op, SelectionDAG &DAG);
     SDValue LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG);
     SDValue LowerEXTRACT_VECTOR_ELT(SDValue Op, SelectionDAG &DAG);
     SDValue LowerEXTRACT_VECTOR_ELT_SSE4(SDValue Op, SelectionDAG &DAG);

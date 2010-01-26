@@ -1162,7 +1162,7 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
   }
 
   // i1 can be simplified in many cases.
-  if (C1->getType() == Type::getInt1Ty(Context)) {
+  if (C1->getType()->isInteger(1)) {
     switch (Opcode) {
     case Instruction::Add:
     case Instruction::Sub:
@@ -1229,10 +1229,10 @@ static int IdxCompare(LLVMContext &Context, Constant *C1, Constant *C2,
 
   // Ok, we have two differing integer indices.  Sign extend them to be the same
   // type.  Long is always big enough, so we use it.
-  if (C1->getType() != Type::getInt64Ty(Context))
+  if (!C1->getType()->isInteger(64))
     C1 = ConstantExpr::getSExt(C1, Type::getInt64Ty(Context));
 
-  if (C2->getType() != Type::getInt64Ty(Context))
+  if (!C2->getType()->isInteger(64))
     C2 = ConstantExpr::getSExt(C2, Type::getInt64Ty(Context));
 
   if (C1 == C2) return 0;  // They are equal
@@ -1587,7 +1587,7 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
   }
 
   // If the comparison is a comparison between two i1's, simplify it.
-  if (C1->getType() == Type::getInt1Ty(Context)) {
+  if (C1->getType()->isInteger(1)) {
     switch(pred) {
     case ICmpInst::ICMP_EQ:
       if (isa<ConstantInt>(C2))
@@ -1673,14 +1673,15 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
     SmallVector<Constant*, 16> C1Elts, C2Elts;
     C1->getVectorElements(Context, C1Elts);
     C2->getVectorElements(Context, C2Elts);
+    if (C1Elts.empty() || C2Elts.empty())
+      return 0;
 
     // If we can constant fold the comparison of each element, constant fold
     // the whole vector comparison.
     SmallVector<Constant*, 4> ResElts;
     for (unsigned i = 0, e = C1Elts.size(); i != e; ++i) {
       // Compare the elements, producing an i1 result or constant expr.
-      ResElts.push_back(
-                    ConstantExpr::getCompare(pred, C1Elts[i], C2Elts[i]));
+      ResElts.push_back(ConstantExpr::getCompare(pred, C1Elts[i], C2Elts[i]));
     }
     return ConstantVector::get(&ResElts[0], ResElts.size());
   }
@@ -2042,10 +2043,10 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
 
             // Before adding, extend both operands to i64 to avoid
             // overflow trouble.
-            if (PrevIdx->getType() != Type::getInt64Ty(Context))
+            if (!PrevIdx->getType()->isInteger(64))
               PrevIdx = ConstantExpr::getSExt(PrevIdx,
                                               Type::getInt64Ty(Context));
-            if (Div->getType() != Type::getInt64Ty(Context))
+            if (!Div->getType()->isInteger(64))
               Div = ConstantExpr::getSExt(Div,
                                           Type::getInt64Ty(Context));
 

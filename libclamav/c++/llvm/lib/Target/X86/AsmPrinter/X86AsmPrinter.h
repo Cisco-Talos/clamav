@@ -124,18 +124,8 @@ class VISIBILITY_HIDDEN X86AsmPrinter : public AsmPrinter {
                          const char *Modifier=NULL);
   void printLeaMemReference(const MachineInstr *MI, unsigned Op,
                             const char *Modifier=NULL);
-  void printPICJumpTableSetLabel(unsigned uid,
-                                 const MachineBasicBlock *MBB) const;
-  void printPICJumpTableSetLabel(unsigned uid, unsigned uid2,
-                                 const MachineBasicBlock *MBB) const {
-    AsmPrinter::printPICJumpTableSetLabel(uid, uid2, MBB);
-  }
-  void printPICJumpTableEntry(const MachineJumpTableInfo *MJTI,
-                              const MachineBasicBlock *MBB,
-                              unsigned uid) const;
 
   void printPICLabel(const MachineInstr *MI, unsigned Op);
-  void PrintGlobalVariable(const GlobalVariable* GVar);
 
   void PrintPICBaseSymbol() const;
   

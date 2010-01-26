@@ -46,7 +46,10 @@ namespace llvm {
   class MachineFunction;
   class MachineFrameInfo;
   class MachineInstr;
+  class MachineJumpTableInfo;
   class MachineModuleInfo;
+  class MCContext;
+  class MCExpr;
   class DwarfWriter;
   class SDNode;
   class SDValue;
@@ -114,10 +117,6 @@ public:
   bool isLittleEndian() const { return IsLittleEndian; }
   MVT getPointerTy() const { return PointerTy; }
   MVT getShiftAmountTy() const { return ShiftAmountTy; }
-
-  /// usesGlobalOffsetTable - Return true if this target uses a GOT for PIC
-  /// codegen.
-  bool usesGlobalOffsetTable() const { return UsesGlobalOffsetTable; }
 
   /// isSelectExpensive - Return true if the select operation is expensive for
   /// this target.
@@ -752,11 +751,31 @@ public:
     return false;
   }
   
+  /// getJumpTableEncoding - Return the entry encoding for a jump table in the
+  /// current function.  The returned value is a member of the
+  /// MachineJumpTableInfo::JTEntryKind enum.
+  virtual unsigned getJumpTableEncoding() const;
+  
+  virtual const MCExpr *
+  LowerCustomJumpTableEntry(const MachineJumpTableInfo *MJTI,
+                            const MachineBasicBlock *MBB, unsigned uid,
+                            MCContext &Ctx) const {
+    assert(0 && "Need to implement this hook if target has custom JTIs");
+    return 0;
+  }
+  
   /// getPICJumpTableRelocaBase - Returns relocation base for the given PIC
   /// jumptable.
   virtual SDValue getPICJumpTableRelocBase(SDValue Table,
-                                             SelectionDAG &DAG) const;
+                                           SelectionDAG &DAG) const;
 
+  /// getPICJumpTableRelocBaseExpr - This returns the relocation base for the
+  /// given PIC jumptable, the same as getPICJumpTableRelocBase, but as an
+  /// MCExpr.
+  virtual const MCExpr *
+  getPICJumpTableRelocBaseExpr(const MachineFunction *MF,
+                               unsigned JTI, MCContext &Ctx) const;
+  
   /// isOffsetFoldingLegal - Return true if folding a constant offset
   /// with the given GlobalAddress is legal.  It is frequently not legal in
   /// PIC relocation models.
@@ -774,10 +793,12 @@ public:
   /// that want to combine 
   struct TargetLoweringOpt {
     SelectionDAG &DAG;
+    bool ShrinkOps;
     SDValue Old;
     SDValue New;
 
-    explicit TargetLoweringOpt(SelectionDAG &InDAG) : DAG(InDAG) {}
+    explicit TargetLoweringOpt(SelectionDAG &InDAG, bool Shrink = false) :
+      DAG(InDAG), ShrinkOps(Shrink) {}
     
     bool CombineTo(SDValue O, SDValue N) { 
       Old = O; 
@@ -884,10 +905,6 @@ public:
   //
 
 protected:
-  /// setUsesGlobalOffsetTable - Specify that this target does or doesn't use a
-  /// GOT for PC-relative code.
-  void setUsesGlobalOffsetTable(bool V) { UsesGlobalOffsetTable = V; }
-
   /// setShiftAmountType - Describe the type that should be used for shift
   /// amounts.  This type defaults to the pointer type.
   void setShiftAmountType(MVT VT) { ShiftAmountTy = VT; }
@@ -1478,7 +1495,7 @@ public:
   }
 
   /// isZExtFree - Return true if any actual instruction that defines a
-  /// value of type Ty1 implicit zero-extends the value to Ty2 in the result
+  /// value of type Ty1 implicitly zero-extends the value to Ty2 in the result
   /// register. This does not necessarily include registers defined in
   /// unknown ways, such as incoming arguments, or copies from unknown
   /// virtual registers. Also, if isTruncateFree(Ty2, Ty1) is true, this
@@ -1570,10 +1587,6 @@ private:
   ///
   bool IsLittleEndian;
 
-  /// UsesGlobalOffsetTable - True if this target uses a GOT for PIC codegen.
-  ///
-  bool UsesGlobalOffsetTable;
-  
   /// SelectIsExpensive - Tells the code generator not to expand operations
   /// into sequences that use the select operations if possible.
   bool SelectIsExpensive;

@@ -18,24 +18,21 @@
 #include "llvm/Instruction.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
+#include "llvm/ADT/SmallString.h"
 #include "SymbolTableListTraitsImpl.h"
 #include "llvm/Support/ValueHandle.h"
 using namespace llvm;
-
-//===----------------------------------------------------------------------===//
-// MetadataBase implementation.
-//
 
 //===----------------------------------------------------------------------===//
 // MDString implementation.
 //
 
 MDString::MDString(LLVMContext &C, StringRef S)
-  : MetadataBase(Type::getMetadataTy(C), Value::MDStringVal), Str(S) {}
+  : Value(Type::getMetadataTy(C), Value::MDStringVal), Str(S) {}
 
 MDString *MDString::get(LLVMContext &Context, StringRef Str) {
   LLVMContextImpl *pImpl = Context.pImpl;
-  StringMapEntry<MDString *> &Entry = 
+  StringMapEntry<MDString *> &Entry =
     pImpl->MDStringCache.GetOrCreateValue(Str);
   MDString *&S = Entry.getValue();
   if (!S) S = new MDString(Context, Entry.getKey());
@@ -44,7 +41,7 @@ MDString *MDString::get(LLVMContext &Context, StringRef Str) {
 
 MDString *MDString::get(LLVMContext &Context, const char *Str) {
   LLVMContextImpl *pImpl = Context.pImpl;
-  StringMapEntry<MDString *> &Entry = 
+  StringMapEntry<MDString *> &Entry =
     pImpl->MDStringCache.GetOrCreateValue(Str ? StringRef(Str) : StringRef());
   MDString *&S = Entry.getValue();
   if (!S) S = new MDString(Context, Entry.getKey());
@@ -52,35 +49,33 @@ MDString *MDString::get(LLVMContext &Context, const char *Str) {
 }
 
 //===----------------------------------------------------------------------===//
-// MDNodeElement implementation.
+// MDNodeOperand implementation.
 //
 
-// Use CallbackVH to hold MDNode elements.
+// Use CallbackVH to hold MDNode operands.
 namespace llvm {
-class MDNodeElement : public CallbackVH {
+class MDNodeOperand : public CallbackVH {
   MDNode *Parent;
 public:
-  MDNodeElement() {}
-  MDNodeElement(Value *V, MDNode *P) : CallbackVH(V), Parent(P) {}
-  ~MDNodeElement() {}
-  
-  void set(Value *V, MDNode *P) {
+  MDNodeOperand(Value *V, MDNode *P) : CallbackVH(V), Parent(P) {}
+  ~MDNodeOperand() {}
+
+  void set(Value *V) {
     setValPtr(V);
-    Parent = P;
   }
-  
+
   virtual void deleted();
   virtual void allUsesReplacedWith(Value *NV);
 };
 } // end namespace llvm.
 
 
-void MDNodeElement::deleted() {
-  Parent->replaceElement(this, 0);
+void MDNodeOperand::deleted() {
+  Parent->replaceOperand(this, 0);
 }
 
-void MDNodeElement::allUsesReplacedWith(Value *NV) {
-  Parent->replaceElement(this, NV);
+void MDNodeOperand::allUsesReplacedWith(Value *NV) {
+  Parent->replaceOperand(this, NV);
 }
 
 
@@ -89,64 +84,193 @@ void MDNodeElement::allUsesReplacedWith(Value *NV) {
 // MDNode implementation.
 //
 
-/// ~MDNode - Destroy MDNode.
-MDNode::~MDNode() {
-  LLVMContextImpl *pImpl = getType()->getContext().pImpl;
-  pImpl->MDNodeSet.RemoveNode(this);
-  delete [] Operands;
-  Operands = NULL;
+/// getOperandPtr - Helper function to get the MDNodeOperand's coallocated on
+/// the end of the MDNode.
+static MDNodeOperand *getOperandPtr(MDNode *N, unsigned Op) {
+  assert(Op < N->getNumOperands() && "Invalid operand number");
+  return reinterpret_cast<MDNodeOperand*>(N+1)+Op;
 }
 
 MDNode::MDNode(LLVMContext &C, Value *const *Vals, unsigned NumVals,
                bool isFunctionLocal)
-  : MetadataBase(Type::getMetadataTy(C), Value::MDNodeVal) {
+: Value(Type::getMetadataTy(C), Value::MDNodeVal) {
   NumOperands = NumVals;
-  Operands = new MDNodeElement[NumOperands];
-    
-  for (unsigned i = 0; i != NumVals; ++i) 
-    Operands[i].set(Vals[i], this);
-    
+
   if (isFunctionLocal)
-    SubclassData |= FunctionLocalBit;
+    setValueSubclassData(getSubclassDataFromValue() | FunctionLocalBit);
+
+  // Initialize the operand list, which is co-allocated on the end of the node.
+  for (MDNodeOperand *Op = getOperandPtr(this, 0), *E = Op+NumOperands;
+       Op != E; ++Op, ++Vals)
+    new (Op) MDNodeOperand(*Vals, this);
 }
 
-MDNode *MDNode::get(LLVMContext &Context, Value*const* Vals, unsigned NumVals,
-                    bool isFunctionLocal) {
+
+/// ~MDNode - Destroy MDNode.
+MDNode::~MDNode() {
+  assert((getSubclassDataFromValue() & DestroyFlag) != 0 &&
+         "Not being destroyed through destroy()?");
+  if (!isNotUniqued()) {
+    LLVMContextImpl *pImpl = getType()->getContext().pImpl;
+    pImpl->MDNodeSet.RemoveNode(this);
+  }
+
+  // Destroy the operands.
+  for (MDNodeOperand *Op = getOperandPtr(this, 0), *E = Op+NumOperands;
+       Op != E; ++Op)
+    Op->~MDNodeOperand();
+}
+
+static const Function *getFunctionForValue(Value *V) {
+  assert(!isa<MDNode>(V) && "does not iterate over metadata operands");
+  if (!V) return NULL;
+  if (Instruction *I = dyn_cast<Instruction>(V))
+    return I->getParent()->getParent();
+  if (BasicBlock *BB = dyn_cast<BasicBlock>(V))
+    return BB->getParent();
+  if (Argument *A = dyn_cast<Argument>(V))
+    return A->getParent();
+  return NULL;
+}
+
+#ifndef NDEBUG
+static const Function *assertLocalFunction(const MDNode *N) {
+  if (!N->isFunctionLocal()) return 0;
+
+  const Function *F = 0, *NewF = 0;
+  for (unsigned i = 0, e = N->getNumOperands(); i != e; ++i) {
+    if (Value *V = N->getOperand(i)) {
+      if (MDNode *MD = dyn_cast<MDNode>(V))
+        NewF = assertLocalFunction(MD);
+      else
+        NewF = getFunctionForValue(V);
+    }
+    if (F == 0)
+      F = NewF;
+    else 
+      assert((NewF == 0 || F == NewF) &&"inconsistent function-local metadata");
+  }
+  return F;
+}
+#endif
+
+// getFunction - If this metadata is function-local and recursively has a
+// function-local operand, return the first such operand's parent function.
+// Otherwise, return null. getFunction() should not be used for performance-
+// critical code because it recursively visits all the MDNode's operands.  
+const Function *MDNode::getFunction() const {
+#ifndef NDEBUG
+  return assertLocalFunction(this);
+#endif
+  if (!isFunctionLocal()) return NULL;
+
+  for (unsigned i = 0, e = getNumOperands(); i != e; ++i) {
+    if (Value *V = getOperand(i)) {
+      if (MDNode *MD = dyn_cast<MDNode>(V)) {
+        if (const Function *F = MD->getFunction())
+          return F;
+      } else {
+        return getFunctionForValue(V);
+      }
+    }
+  }
+  return NULL;
+}
+
+// destroy - Delete this node.  Only when there are no uses.
+void MDNode::destroy() {
+  setValueSubclassData(getSubclassDataFromValue() | DestroyFlag);
+  // Placement delete, the free the memory.
+  this->~MDNode();
+  free(this);
+}
+
+MDNode *MDNode::getMDNode(LLVMContext &Context, Value *const *Vals,
+                          unsigned NumVals, FunctionLocalness FL,
+                          bool Insert) {
   LLVMContextImpl *pImpl = Context.pImpl;
   FoldingSetNodeID ID;
   for (unsigned i = 0; i != NumVals; ++i)
     ID.AddPointer(Vals[i]);
 
   void *InsertPoint;
-  MDNode *N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint);
-  if (!N) {
-    // InsertPoint will have been set by the FindNodeOrInsertPos call.
-    N = new MDNode(Context, Vals, NumVals, isFunctionLocal);
-    pImpl->MDNodeSet.InsertNode(N, InsertPoint);
+  MDNode *N = NULL;
+  
+  if ((N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint)))
+    return N;
+    
+  if (!Insert)
+    return NULL;
+    
+  bool isFunctionLocal = false;
+  switch (FL) {
+  case FL_Unknown:
+    for (unsigned i = 0; i != NumVals; ++i) {
+      Value *V = Vals[i];
+      if (!V) continue;
+      if (isa<Instruction>(V) || isa<Argument>(V) || isa<BasicBlock>(V) ||
+          (isa<MDNode>(V) && cast<MDNode>(V)->isFunctionLocal())) {
+        isFunctionLocal = true;
+        break;
+      }
+    }
+    break;
+  case FL_No:
+    isFunctionLocal = false;
+    break;
+  case FL_Yes:
+    isFunctionLocal = true;
+    break;
   }
+
+  // Coallocate space for the node and Operands together, then placement new.
+  void *Ptr = malloc(sizeof(MDNode)+NumVals*sizeof(MDNodeOperand));
+  N = new (Ptr) MDNode(Context, Vals, NumVals, isFunctionLocal);
+
+  // InsertPoint will have been set by the FindNodeOrInsertPos call.
+  pImpl->MDNodeSet.InsertNode(N, InsertPoint);
+
   return N;
 }
 
+MDNode *MDNode::get(LLVMContext &Context, Value*const* Vals, unsigned NumVals) {
+  return getMDNode(Context, Vals, NumVals, FL_Unknown);
+}
+
+MDNode *MDNode::getWhenValsUnresolved(LLVMContext &Context, Value *const *Vals,
+                                      unsigned NumVals, bool isFunctionLocal) {
+  return getMDNode(Context, Vals, NumVals, isFunctionLocal ? FL_Yes : FL_No);
+}
+
+MDNode *MDNode::getIfExists(LLVMContext &Context, Value *const *Vals,
+                            unsigned NumVals) {
+  return getMDNode(Context, Vals, NumVals, FL_Unknown, false);
+}
+
+/// getOperand - Return specified operand.
+Value *MDNode::getOperand(unsigned i) const {
+  return *getOperandPtr(const_cast<MDNode*>(this), i);
+}
+
 void MDNode::Profile(FoldingSetNodeID &ID) const {
-  for (unsigned i = 0, e = getNumElements(); i != e; ++i)
-    ID.AddPointer(getElement(i));
+  for (unsigned i = 0, e = getNumOperands(); i != e; ++i)
+    ID.AddPointer(getOperand(i));
 }
 
 
-/// getElement - Return specified element.
-Value *MDNode::getElement(unsigned i) const {
-  assert(i < getNumElements() && "Invalid element number!");
-  return Operands[i];
-}
-
-
-
-// Replace value from this node's element list.
-void MDNode::replaceElement(MDNodeElement *Op, Value *To) {
+// Replace value from this node's operand list.
+void MDNode::replaceOperand(MDNodeOperand *Op, Value *To) {
   Value *From = *Op;
-  
+
   if (From == To)
     return;
+
+  // Update the operand.
+  Op->set(To);
+
+  // If this node is already not being uniqued (because one of the operands
+  // already went to null), then there is nothing else to do here.
+  if (isNotUniqued()) return;
 
   LLVMContextImpl *pImpl = getType()->getContext().pImpl;
 
@@ -154,13 +278,17 @@ void MDNode::replaceElement(MDNodeElement *Op, Value *To) {
   // this node to remove it, so we don't care what state the operands are in.
   pImpl->MDNodeSet.RemoveNode(this);
 
-  // Update the operand.
-  Op->set(To, this);
+  // If we are dropping an argument to null, we choose to not unique the MDNode
+  // anymore.  This commonly occurs during destruction, and uniquing these
+  // brings little reuse.
+  if (To == 0) {
+    setIsNotUniqued();
+    return;
+  }
 
-  // Insert updated "this" into the context's folding node set.
-  // If a node with same element list already exist then before inserting 
-  // updated "this" into the folding node set, replace all uses of existing 
-  // node with updated "this" node.
+  // Now that the node is out of the folding set, get ready to reinsert it.
+  // First, check to see if another node with the same operands already exists
+  // in the set.  If it doesn't exist, this returns the position to insert it.
   FoldingSetNodeID ID;
   Profile(ID);
   void *InsertPoint;
@@ -168,7 +296,7 @@ void MDNode::replaceElement(MDNodeElement *Op, Value *To) {
 
   if (N) {
     N->replaceAllUsesWith(this);
-    delete N;
+    N->destroy();
     N = pImpl->MDNodeSet.FindNodeOrInsertPos(ID, InsertPoint);
     assert(N == 0 && "shouldn't be in the map now!"); (void)N;
   }
@@ -180,21 +308,40 @@ void MDNode::replaceElement(MDNodeElement *Op, Value *To) {
 //===----------------------------------------------------------------------===//
 // NamedMDNode implementation.
 //
-static SmallVector<TrackingVH<MetadataBase>, 4> &getNMDOps(void *Operands) {
-  return *(SmallVector<TrackingVH<MetadataBase>, 4>*)Operands;
+
+namespace llvm {
+// SymbolTableListTraits specialization for MDSymbolTable.
+void ilist_traits<NamedMDNode>
+::addNodeToList(NamedMDNode *N) {
+  assert(N->getParent() == 0 && "Value already in a container!!");
+  Module *Owner = getListOwner();
+  N->setParent(Owner);
+  MDSymbolTable &ST = Owner->getMDSymbolTable();
+  ST.insert(N->getName(), N);
+}
+
+void ilist_traits<NamedMDNode>::removeNodeFromList(NamedMDNode *N) {
+  N->setParent(0);
+  Module *Owner = getListOwner();
+  MDSymbolTable &ST = Owner->getMDSymbolTable();
+  ST.remove(N->getName());
+}
+}
+
+static SmallVector<WeakVH, 4> &getNMDOps(void *Operands) {
+  return *(SmallVector<WeakVH, 4>*)Operands;
 }
 
 NamedMDNode::NamedMDNode(LLVMContext &C, const Twine &N,
-                         MetadataBase *const *MDs, 
+                         MDNode *const *MDs,
                          unsigned NumMDs, Module *ParentModule)
-  : MetadataBase(Type::getMetadataTy(C), Value::NamedMDNodeVal), Parent(0) {
+  : Value(Type::getMetadataTy(C), Value::NamedMDNodeVal), Parent(0) {
   setName(N);
-    
-  Operands = new SmallVector<TrackingVH<MetadataBase>, 4>();
-    
-  SmallVector<TrackingVH<MetadataBase>, 4> &Node = getNMDOps(Operands);
+  Operands = new SmallVector<WeakVH, 4>();
+
+  SmallVector<WeakVH, 4> &Node = getNMDOps(Operands);
   for (unsigned i = 0; i != NumMDs; ++i)
-    Node.push_back(TrackingVH<MetadataBase>(MDs[i]));
+    Node.push_back(WeakVH(MDs[i]));
 
   if (ParentModule)
     ParentModule->getNamedMDList().push_back(this);
@@ -202,11 +349,11 @@ NamedMDNode::NamedMDNode(LLVMContext &C, const Twine &N,
 
 NamedMDNode *NamedMDNode::Create(const NamedMDNode *NMD, Module *M) {
   assert(NMD && "Invalid source NamedMDNode!");
-  SmallVector<MetadataBase *, 4> Elems;
-  Elems.reserve(NMD->getNumElements());
-  
-  for (unsigned i = 0, e = NMD->getNumElements(); i != e; ++i)
-    Elems.push_back(NMD->getElement(i));
+  SmallVector<MDNode *, 4> Elems;
+  Elems.reserve(NMD->getNumOperands());
+
+  for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i)
+    Elems.push_back(NMD->getOperand(i));
   return new NamedMDNode(NMD->getContext(), NMD->getName().data(),
                          Elems.data(), Elems.size(), M);
 }
@@ -216,20 +363,20 @@ NamedMDNode::~NamedMDNode() {
   delete &getNMDOps(Operands);
 }
 
-/// getNumElements - Return number of NamedMDNode elements.
-unsigned NamedMDNode::getNumElements() const {
+/// getNumOperands - Return number of NamedMDNode operands.
+unsigned NamedMDNode::getNumOperands() const {
   return (unsigned)getNMDOps(Operands).size();
 }
 
-/// getElement - Return specified element.
-MetadataBase *NamedMDNode::getElement(unsigned i) const {
-  assert(i < getNumElements() && "Invalid element number!");
-  return getNMDOps(Operands)[i];
+/// getOperand - Return specified operand.
+MDNode *NamedMDNode::getOperand(unsigned i) const {
+  assert(i < getNumOperands() && "Invalid Operand number!");
+  return dyn_cast_or_null<MDNode>(getNMDOps(Operands)[i]);
 }
 
-/// addElement - Add metadata element.
-void NamedMDNode::addElement(MetadataBase *M) {
-  getNMDOps(Operands).push_back(TrackingVH<MetadataBase>(M));
+/// addOperand - Add metadata Operand.
+void NamedMDNode::addOperand(MDNode *M) {
+  getNMDOps(Operands).push_back(WeakVH(M));
 }
 
 /// eraseFromParent - Drop all references and remove the node from parent
@@ -243,225 +390,34 @@ void NamedMDNode::dropAllReferences() {
   getNMDOps(Operands).clear();
 }
 
+/// setName - Set the name of this named metadata.
+void NamedMDNode::setName(const Twine &NewName) {
+  assert (!NewName.isTriviallyEmpty() && "Invalid named metadata name!");
 
-//===----------------------------------------------------------------------===//
-// MetadataContextImpl implementation.
-//
-namespace llvm {
-class MetadataContextImpl {
-public:
-  typedef std::pair<unsigned, TrackingVH<MDNode> > MDPairTy;
-  typedef SmallVector<MDPairTy, 2> MDMapTy;
-  typedef DenseMap<const Instruction *, MDMapTy> MDStoreTy;
-  friend class BitcodeReader;
-private:
+  SmallString<256> NameData;
+  StringRef NameRef = NewName.toStringRef(NameData);
 
-  /// MetadataStore - Collection of metadata used in this context.
-  MDStoreTy MetadataStore;
-
-  /// MDHandlerNames - Map to hold metadata handler names.
-  StringMap<unsigned> MDHandlerNames;
-
-public:
-  /// registerMDKind - Register a new metadata kind and return its ID.
-  /// A metadata kind can be registered only once. 
-  unsigned registerMDKind(StringRef Name);
-
-  /// getMDKind - Return metadata kind. If the requested metadata kind
-  /// is not registered then return 0.
-  unsigned getMDKind(StringRef Name) const;
-
-  /// getMD - Get the metadata of given kind attached to an Instruction.
-  /// If the metadata is not found then return 0.
-  MDNode *getMD(unsigned Kind, const Instruction *Inst);
-
-  /// getMDs - Get the metadata attached to an Instruction.
-  void getMDs(const Instruction *Inst,
-              SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const;
-
-  /// addMD - Attach the metadata of given kind to an Instruction.
-  void addMD(unsigned Kind, MDNode *Node, Instruction *Inst);
-  
-  /// removeMD - Remove metadata of given kind attached with an instruction.
-  void removeMD(unsigned Kind, Instruction *Inst);
-  
-  /// removeAllMetadata - Remove all metadata attached with an instruction.
-  void removeAllMetadata(Instruction *Inst);
-
-  /// copyMD - If metadata is attached with Instruction In1 then attach
-  /// the same metadata to In2.
-  void copyMD(Instruction *In1, Instruction *In2);
-
-  /// getHandlerNames - Populate client-supplied smallvector using custom
-  /// metadata name and ID.
-  void getHandlerNames(SmallVectorImpl<std::pair<unsigned, StringRef> >&) const;
-
-  /// ValueIsDeleted - This handler is used to update metadata store
-  /// when a value is deleted.
-  void ValueIsDeleted(const Value *) {}
-  void ValueIsDeleted(Instruction *Inst) {
-    removeAllMetadata(Inst);
-  }
-  void ValueIsRAUWd(Value *V1, Value *V2);
-
-  /// ValueIsCloned - This handler is used to update metadata store
-  /// when In1 is cloned to create In2.
-  void ValueIsCloned(const Instruction *In1, Instruction *In2);
-};
-}
-
-/// registerMDKind - Register a new metadata kind and return its ID.
-/// A metadata kind can be registered only once. 
-unsigned MetadataContextImpl::registerMDKind(StringRef Name) {
-  unsigned Count = MDHandlerNames.size();
-  assert(MDHandlerNames.count(Name) == 0 && "Already registered MDKind!");
-  return MDHandlerNames[Name] = Count + 1;
-}
-
-/// getMDKind - Return metadata kind. If the requested metadata kind
-/// is not registered then return 0.
-unsigned MetadataContextImpl::getMDKind(StringRef Name) const {
-  StringMap<unsigned>::const_iterator I = MDHandlerNames.find(Name);
-  if (I == MDHandlerNames.end())
-    return 0;
-
-  return I->getValue();
-}
-
-/// addMD - Attach the metadata of given kind to an Instruction.
-void MetadataContextImpl::addMD(unsigned MDKind, MDNode *Node, 
-                                Instruction *Inst) {
-  assert(Node && "Invalid null MDNode");
-  Inst->HasMetadata = true;
-  MDMapTy &Info = MetadataStore[Inst];
-  if (Info.empty()) {
-    Info.push_back(std::make_pair(MDKind, Node));
-    MetadataStore.insert(std::make_pair(Inst, Info));
-    return;
-  }
-
-  // If there is an entry for this MDKind then replace it.
-  for (unsigned i = 0, e = Info.size(); i != e; ++i) {
-    MDPairTy &P = Info[i];
-    if (P.first == MDKind) {
-      Info[i] = std::make_pair(MDKind, Node);
-      return;
-    }
-  }
-
-  // Otherwise add a new entry.
-  Info.push_back(std::make_pair(MDKind, Node));
-}
-
-/// removeMD - Remove metadata of given kind attached with an instruction.
-void MetadataContextImpl::removeMD(unsigned Kind, Instruction *Inst) {
-  MDStoreTy::iterator I = MetadataStore.find(Inst);
-  if (I == MetadataStore.end())
+  // Name isn't changing?
+  if (getName() == NameRef)
     return;
 
-  MDMapTy &Info = I->second;
-  for (MDMapTy::iterator MI = Info.begin(), ME = Info.end(); MI != ME; ++MI) {
-    MDPairTy &P = *MI;
-    if (P.first == Kind) {
-      Info.erase(MI);
-      return;
-    }
-  }
+  Name = NameRef.str();
+  if (Parent)
+    Parent->getMDSymbolTable().insert(NameRef, this);
 }
 
-/// removeAllMetadata - Remove all metadata attached with an instruction.
-void MetadataContextImpl::removeAllMetadata(Instruction *Inst) {
-  MetadataStore.erase(Inst);
-  Inst->HasMetadata = false;
-}
-
-/// copyMD - If metadata is attached with Instruction In1 then attach
-/// the same metadata to In2.
-void MetadataContextImpl::copyMD(Instruction *In1, Instruction *In2) {
-  assert(In1 && In2 && "Invalid instruction!");
-  MDMapTy &In1Info = MetadataStore[In1];
-  if (In1Info.empty())
-    return;
-
-  for (MDMapTy::iterator I = In1Info.begin(), E = In1Info.end(); I != E; ++I)
-    addMD(I->first, I->second, In2);
-}
-
-/// getMD - Get the metadata of given kind attached to an Instruction.
-/// If the metadata is not found then return 0.
-MDNode *MetadataContextImpl::getMD(unsigned MDKind, const Instruction *Inst) {
-  MDMapTy &Info = MetadataStore[Inst];
-  if (Info.empty())
-    return NULL;
-
-  for (MDMapTy::iterator I = Info.begin(), E = Info.end(); I != E; ++I)
-    if (I->first == MDKind)
-      return I->second;
-  return NULL;
-}
-
-/// getMDs - Get the metadata attached to an Instruction.
-void MetadataContextImpl::
-getMDs(const Instruction *Inst,
-       SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const {
-  MDStoreTy::const_iterator I = MetadataStore.find(Inst);
-  if (I == MetadataStore.end())
-    return;
-  MDs.resize(I->second.size());
-  for (MDMapTy::const_iterator MI = I->second.begin(), ME = I->second.end();
-       MI != ME; ++MI)
-    // MD kinds are numbered from 1.
-    MDs[MI->first - 1] = std::make_pair(MI->first, MI->second);
-}
-
-/// getHandlerNames - Populate client supplied smallvector using custome
-/// metadata name and ID.
-void MetadataContextImpl::
-getHandlerNames(SmallVectorImpl<std::pair<unsigned, StringRef> >&Names) const {
-  Names.resize(MDHandlerNames.size());
-  for (StringMap<unsigned>::const_iterator I = MDHandlerNames.begin(),
-         E = MDHandlerNames.end(); I != E; ++I) 
-    // MD Handlers are numbered from 1.
-    Names[I->second - 1] = std::make_pair(I->second, I->first());
-}
-
-/// ValueIsCloned - This handler is used to update metadata store
-/// when In1 is cloned to create In2.
-void MetadataContextImpl::ValueIsCloned(const Instruction *In1, 
-                                        Instruction *In2) {
-  // Find Metadata handles for In1.
-  MDStoreTy::iterator I = MetadataStore.find(In1);
-  assert(I != MetadataStore.end() && "Invalid custom metadata info!");
-
-  // FIXME : Give all metadata handlers a chance to adjust.
-
-  MDMapTy &In1Info = I->second;
-  MDMapTy In2Info;
-  for (MDMapTy::iterator I = In1Info.begin(), E = In1Info.end(); I != E; ++I)
-    addMD(I->first, I->second, In2);
-}
-
-/// ValueIsRAUWd - This handler is used when V1's all uses are replaced by
-/// V2.
-void MetadataContextImpl::ValueIsRAUWd(Value *V1, Value *V2) {
-  Instruction *I1 = dyn_cast<Instruction>(V1);
-  Instruction *I2 = dyn_cast<Instruction>(V2);
-  if (!I1 || !I2)
-    return;
-
-  // FIXME : Give custom handlers a chance to override this.
-  ValueIsCloned(I1, I2);
+/// getName - Return a constant reference to this named metadata's name.
+StringRef NamedMDNode::getName() const {
+  return StringRef(Name);
 }
 
 //===----------------------------------------------------------------------===//
-// MetadataContext implementation.
+// LLVMContext MDKind naming implementation.
 //
-MetadataContext::MetadataContext() 
-  : pImpl(new MetadataContextImpl()) { }
-MetadataContext::~MetadataContext() { delete pImpl; }
 
+#ifndef NDEBUG
 /// isValidName - Return true if Name is a valid custom metadata handler name.
-bool MetadataContext::isValidName(StringRef MDName) {
+static bool isValidName(StringRef MDName) {
   if (MDName.empty())
     return false;
 
@@ -475,72 +431,123 @@ bool MetadataContext::isValidName(StringRef MDName) {
   }
   return true;
 }
+#endif
 
-/// registerMDKind - Register a new metadata kind and return its ID.
-/// A metadata kind can be registered only once. 
-unsigned MetadataContext::registerMDKind(StringRef Name) {
-  assert(isValidName(Name) && "Invalid custome metadata name!");
-  return pImpl->registerMDKind(Name);
-}
+/// getMDKindID - Return a unique non-zero ID for the specified metadata kind.
+unsigned LLVMContext::getMDKindID(StringRef Name) const {
+  assert(isValidName(Name) && "Invalid MDNode name");
 
-/// getMDKind - Return metadata kind. If the requested metadata kind
-/// is not registered then return 0.
-unsigned MetadataContext::getMDKind(StringRef Name) const {
-  return pImpl->getMDKind(Name);
-}
+  unsigned &Entry = pImpl->CustomMDKindNames[Name];
 
-/// getMD - Get the metadata of given kind attached to an Instruction.
-/// If the metadata is not found then return 0.
-MDNode *MetadataContext::getMD(unsigned Kind, const Instruction *Inst) {
-  return pImpl->getMD(Kind, Inst);
-}
-
-/// getMDs - Get the metadata attached to an Instruction.
-void MetadataContext::
-getMDs(const Instruction *Inst, 
-       SmallVectorImpl<std::pair<unsigned, MDNode*> > &MDs) const {
-  return pImpl->getMDs(Inst, MDs);
-}
-
-/// addMD - Attach the metadata of given kind to an Instruction.
-void MetadataContext::addMD(unsigned Kind, MDNode *Node, Instruction *Inst) {
-  pImpl->addMD(Kind, Node, Inst);
-}
-
-/// removeMD - Remove metadata of given kind attached with an instruction.
-void MetadataContext::removeMD(unsigned Kind, Instruction *Inst) {
-  pImpl->removeMD(Kind, Inst);
-}
-
-/// removeAllMetadata - Remove all metadata attached with an instruction.
-void MetadataContext::removeAllMetadata(Instruction *Inst) {
-  pImpl->removeAllMetadata(Inst);
-}
-
-/// copyMD - If metadata is attached with Instruction In1 then attach
-/// the same metadata to In2.
-void MetadataContext::copyMD(Instruction *In1, Instruction *In2) {
-  pImpl->copyMD(In1, In2);
+  // If this is new, assign it its ID.
+  if (Entry == 0) Entry = pImpl->CustomMDKindNames.size();
+  return Entry;
 }
 
 /// getHandlerNames - Populate client supplied smallvector using custome
 /// metadata name and ID.
-void MetadataContext::
-getHandlerNames(SmallVectorImpl<std::pair<unsigned, StringRef> >&N) const {
-  pImpl->getHandlerNames(N);
+void LLVMContext::getMDKindNames(SmallVectorImpl<StringRef> &Names) const {
+  Names.resize(pImpl->CustomMDKindNames.size()+1);
+  Names[0] = "";
+  for (StringMap<unsigned>::const_iterator I = pImpl->CustomMDKindNames.begin(),
+       E = pImpl->CustomMDKindNames.end(); I != E; ++I)
+    // MD Handlers are numbered from 1.
+    Names[I->second] = I->first();
 }
 
-/// ValueIsDeleted - This handler is used to update metadata store
-/// when a value is deleted.
-void MetadataContext::ValueIsDeleted(Instruction *Inst) {
-  pImpl->ValueIsDeleted(Inst);
-}
-void MetadataContext::ValueIsRAUWd(Value *V1, Value *V2) {
-  pImpl->ValueIsRAUWd(V1, V2);
+//===----------------------------------------------------------------------===//
+// Instruction Metadata method implementations.
+//
+
+void Instruction::setMetadata(const char *Kind, MDNode *Node) {
+  if (Node == 0 && !hasMetadata()) return;
+  setMetadata(getContext().getMDKindID(Kind), Node);
 }
 
-/// ValueIsCloned - This handler is used to update metadata store
-/// when In1 is cloned to create In2.
-void MetadataContext::ValueIsCloned(const Instruction *In1, Instruction *In2) {
-  pImpl->ValueIsCloned(In1, In2);
+MDNode *Instruction::getMetadataImpl(const char *Kind) const {
+  return getMetadataImpl(getContext().getMDKindID(Kind));
 }
+
+/// setMetadata - Set the metadata of of the specified kind to the specified
+/// node.  This updates/replaces metadata if already present, or removes it if
+/// Node is null.
+void Instruction::setMetadata(unsigned KindID, MDNode *Node) {
+  if (Node == 0 && !hasMetadata()) return;
+
+  // Handle the case when we're adding/updating metadata on an instruction.
+  if (Node) {
+    LLVMContextImpl::MDMapTy &Info = getContext().pImpl->MetadataStore[this];
+    assert(!Info.empty() == hasMetadata() && "HasMetadata bit is wonked");
+    if (Info.empty()) {
+      setHasMetadata(true);
+    } else {
+      // Handle replacement of an existing value.
+      for (unsigned i = 0, e = Info.size(); i != e; ++i)
+        if (Info[i].first == KindID) {
+          Info[i].second = Node;
+          return;
+        }
+    }
+
+    // No replacement, just add it to the list.
+    Info.push_back(std::make_pair(KindID, Node));
+    return;
+  }
+
+  // Otherwise, we're removing metadata from an instruction.
+  assert(hasMetadata() && getContext().pImpl->MetadataStore.count(this) &&
+         "HasMetadata bit out of date!");
+  LLVMContextImpl::MDMapTy &Info = getContext().pImpl->MetadataStore[this];
+
+  // Common case is removing the only entry.
+  if (Info.size() == 1 && Info[0].first == KindID) {
+    getContext().pImpl->MetadataStore.erase(this);
+    setHasMetadata(false);
+    return;
+  }
+
+  // Handle replacement of an existing value.
+  for (unsigned i = 0, e = Info.size(); i != e; ++i)
+    if (Info[i].first == KindID) {
+      Info[i] = Info.back();
+      Info.pop_back();
+      assert(!Info.empty() && "Removing last entry should be handled above");
+      return;
+    }
+  // Otherwise, removing an entry that doesn't exist on the instruction.
+}
+
+MDNode *Instruction::getMetadataImpl(unsigned KindID) const {
+  LLVMContextImpl::MDMapTy &Info = getContext().pImpl->MetadataStore[this];
+  assert(hasMetadata() && !Info.empty() && "Shouldn't have called this");
+
+  for (LLVMContextImpl::MDMapTy::iterator I = Info.begin(), E = Info.end();
+       I != E; ++I)
+    if (I->first == KindID)
+      return I->second;
+  return 0;
+}
+
+void Instruction::getAllMetadataImpl(SmallVectorImpl<std::pair<unsigned,
+                                       MDNode*> > &Result)const {
+  assert(hasMetadata() && getContext().pImpl->MetadataStore.count(this) &&
+         "Shouldn't have called this");
+  const LLVMContextImpl::MDMapTy &Info =
+    getContext().pImpl->MetadataStore.find(this)->second;
+  assert(!Info.empty() && "Shouldn't have called this");
+
+  Result.clear();
+  Result.append(Info.begin(), Info.end());
+
+  // Sort the resulting array so it is stable.
+  if (Result.size() > 1)
+    array_pod_sort(Result.begin(), Result.end());
+}
+
+/// removeAllMetadata - Remove all metadata from this instruction.
+void Instruction::removeAllMetadata() {
+  assert(hasMetadata() && "Caller should check");
+  getContext().pImpl->MetadataStore.erase(this);
+  setHasMetadata(false);
+}
+

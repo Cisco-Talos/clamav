@@ -509,6 +509,7 @@ private:
   void ScalarizeVectorResult(SDNode *N, unsigned OpNo);
   SDValue ScalarizeVecRes_BinOp(SDNode *N);
   SDValue ScalarizeVecRes_UnaryOp(SDNode *N);
+  SDValue ScalarizeVecRes_InregOp(SDNode *N);
 
   SDValue ScalarizeVecRes_BIT_CONVERT(SDNode *N);
   SDValue ScalarizeVecRes_CONVERT_RNDSAT(SDNode *N);
@@ -550,6 +551,7 @@ private:
   void SplitVectorResult(SDNode *N, unsigned OpNo);
   void SplitVecRes_BinOp(SDNode *N, SDValue &Lo, SDValue &Hi);
   void SplitVecRes_UnaryOp(SDNode *N, SDValue &Lo, SDValue &Hi);
+  void SplitVecRes_InregOp(SDNode *N, SDValue &Lo, SDValue &Hi);
 
   void SplitVecRes_BIT_CONVERT(SDNode *N, SDValue &Lo, SDValue &Hi);
   void SplitVecRes_BUILD_PAIR(SDNode *N, SDValue &Lo, SDValue &Hi);
@@ -607,6 +609,7 @@ private:
   SDValue WidenVecRes_SIGN_EXTEND_INREG(SDNode* N);
   SDValue WidenVecRes_SELECT(SDNode* N);
   SDValue WidenVecRes_SELECT_CC(SDNode* N);
+  SDValue WidenVecRes_SETCC(SDNode* N);
   SDValue WidenVecRes_UNDEF(SDNode *N);
   SDValue WidenVecRes_VECTOR_SHUFFLE(ShuffleVectorSDNode *N);
   SDValue WidenVecRes_VSETCC(SDNode* N);
@@ -615,6 +618,7 @@ private:
   SDValue WidenVecRes_Convert(SDNode *N);
   SDValue WidenVecRes_Shift(SDNode *N);
   SDValue WidenVecRes_Unary(SDNode *N);
+  SDValue WidenVecRes_InregOp(SDNode *N);
 
   // Widen Vector Operand.
   bool WidenVectorOperand(SDNode *N, unsigned ResNo);
@@ -630,43 +634,33 @@ private:
   // Vector Widening Utilities Support: LegalizeVectorTypes.cpp
   //===--------------------------------------------------------------------===//
 
-  /// Helper genWidenVectorLoads - Helper function to generate a set of
+  /// Helper GenWidenVectorLoads - Helper function to generate a set of
   /// loads to load a vector with a resulting wider type. It takes
-  ///   ExtType: Extension type
-  ///   LdChain: list of chains for the load we have generated.
-  ///   Chain:   incoming chain for the ld vector.
-  ///   BasePtr: base pointer to load from.
-  ///   SV:         memory disambiguation source value.
-  ///   SVOffset:   memory disambiugation offset.
-  ///   Alignment:  alignment of the memory.
-  ///   isVolatile: volatile load.
-  ///   LdWidth:    width of memory that we want to load.
-  ///   ResType:    the wider result result type for the resulting vector.
-  ///   dl:         DebugLoc to be applied to new nodes
-  SDValue GenWidenVectorLoads(SmallVector<SDValue, 16>& LdChain, SDValue Chain,
-                              SDValue BasePtr, const Value *SV,
-                              int SVOffset, unsigned Alignment,
-                              bool isVolatile, unsigned LdWidth,
-                              EVT ResType, DebugLoc dl);
+  ///   LdChain: list of chains for the load to be generated.
+  ///   Ld:      load to widen
+  SDValue GenWidenVectorLoads(SmallVector<SDValue, 16>& LdChain,
+                              LoadSDNode *LD);
+
+  /// GenWidenVectorExtLoads - Helper function to generate a set of extension
+  /// loads to load a ector with a resulting wider type.  It takes
+  ///   LdChain: list of chains for the load to be generated.
+  ///   Ld:      load to widen
+  ///   ExtType: extension element type
+  SDValue GenWidenVectorExtLoads(SmallVector<SDValue, 16>& LdChain,
+                                 LoadSDNode *LD, ISD::LoadExtType ExtType);
 
   /// Helper genWidenVectorStores - Helper function to generate a set of
   /// stores to store a widen vector into non widen memory
-  /// It takes
   ///   StChain: list of chains for the stores we have generated
-  ///   Chain:   incoming chain for the ld vector
-  ///   BasePtr: base pointer to load from
-  ///   SV:      memory disambiguation source value
-  ///   SVOffset:   memory disambiugation offset
-  ///   Alignment:  alignment of the memory
-  ///   isVolatile: volatile lod
-  ///   ValOp:   value to store
-  ///   StWidth: width of memory that we want to store
-  ///   dl:         DebugLoc to be applied to new nodes
-  void GenWidenVectorStores(SmallVector<SDValue, 16>& StChain, SDValue Chain,
-                            SDValue BasePtr, const Value *SV,
-                            int SVOffset, unsigned Alignment,
-                            bool isVolatile, SDValue ValOp,
-                            unsigned StWidth, DebugLoc dl);
+  ///   ST:      store of a widen value
+  void GenWidenVectorStores(SmallVector<SDValue, 16>& StChain, StoreSDNode *ST);
+
+  /// Helper genWidenVectorTruncStores - Helper function to generate a set of
+  /// stores to store a truncate widen vector into non widen memory
+  ///   StChain: list of chains for the stores we have generated
+  ///   ST:      store of a widen value
+  void GenWidenVectorTruncStores(SmallVector<SDValue, 16>& StChain,
+                                 StoreSDNode *ST);
 
   /// Modifies a vector input (widen or narrows) to a vector of NVT.  The
   /// input vector must have the same element type as NVT.

@@ -182,7 +182,7 @@ ICmpInst *IndVarSimplify::LinearFunctionTestReplace(Loop *L,
   else
     Opcode = ICmpInst::ICMP_EQ;
 
-  DEBUG(errs() << "INDVARS: Rewriting loop exit condition to:\n"
+  DEBUG(dbgs() << "INDVARS: Rewriting loop exit condition to:\n"
                << "      LHS:" << *CmpIndVar << '\n'
                << "       op:\t"
                << (Opcode == ICmpInst::ICMP_NE ? "!=" : "==") << "\n"
@@ -273,7 +273,7 @@ void IndVarSimplify::RewriteLoopExitValues(Loop *L,
 
         Value *ExitVal = Rewriter.expandCodeFor(ExitValue, PN->getType(), Inst);
 
-        DEBUG(errs() << "INDVARS: RLEV: AfterLoopVal = " << *ExitVal << '\n'
+        DEBUG(dbgs() << "INDVARS: RLEV: AfterLoopVal = " << *ExitVal << '\n'
                      << "  LoopVal = " << *Inst << "\n");
 
         PN->setIncomingValue(i, ExitVal);
@@ -401,7 +401,7 @@ bool IndVarSimplify::runOnLoop(Loop *L, LPPassManager &LPM) {
 
     ++NumInserted;
     Changed = true;
-    DEBUG(errs() << "INDVARS: New CanIV: " << *IndVar << '\n');
+    DEBUG(dbgs() << "INDVARS: New CanIV: " << *IndVar << '\n');
 
     // Now that the official induction variable is established, reinsert
     // the old canonical-looking variable after it so that the IR remains
@@ -438,7 +438,7 @@ bool IndVarSimplify::runOnLoop(Loop *L, LPPassManager &LPM) {
     IU->AddUsersIfInteresting(cast<Instruction>(NewICmp->getOperand(0)));
 
   // Clean up dead instructions.
-  DeleteDeadPHIs(L->getHeader());
+  Changed |= DeleteDeadPHIs(L->getHeader());
   // Check a post-condition.
   assert(L->isLCSSAForm() && "Indvars did not leave the loop in lcssa form!");
   return Changed;
@@ -470,6 +470,13 @@ void IndVarSimplify::RewriteIVExpressions(Loop *L, const Type *LargestType,
 
       // Compute the final addrec to expand into code.
       const SCEV *AR = IU->getReplacementExpr(*UI);
+
+      // Evaluate the expression out of the loop, if possible.
+      if (!L->contains(UI->getUser())) {
+        const SCEV *ExitVal = SE->getSCEVAtScope(AR, L->getParentLoop());
+        if (ExitVal->isLoopInvariant(L))
+          AR = ExitVal;
+      }
 
       // FIXME: It is an extremely bad idea to indvar substitute anything more
       // complex than affine induction variables.  Doing so will put expensive
@@ -506,7 +513,7 @@ void IndVarSimplify::RewriteIVExpressions(Loop *L, const Type *LargestType,
         NewVal->takeName(Op);
       User->replaceUsesOfWith(Op, NewVal);
       UI->setOperandValToReplace(NewVal);
-      DEBUG(errs() << "INDVARS: Rewrote IV '" << *AR << "' " << *Op << '\n'
+      DEBUG(dbgs() << "INDVARS: Rewrote IV '" << *AR << "' " << *Op << '\n'
                    << "   into = " << *NewVal << "\n");
       ++NumRemoved;
       Changed = true;
@@ -522,11 +529,10 @@ void IndVarSimplify::RewriteIVExpressions(Loop *L, const Type *LargestType,
   Rewriter.clear();
   // Now that we're done iterating through lists, clean up any instructions
   // which are now dead.
-  while (!DeadInsts.empty()) {
-    Instruction *Inst = dyn_cast_or_null<Instruction>(DeadInsts.pop_back_val());
-    if (Inst)
+  while (!DeadInsts.empty())
+    if (Instruction *Inst =
+          dyn_cast_or_null<Instruction>(DeadInsts.pop_back_val()))
       RecursivelyDeleteTriviallyDeadInstructions(Inst);
-  }
 }
 
 /// If there's a single exit block, sink any loop-invariant values that

@@ -170,6 +170,10 @@ namespace llvm {
   /// instructions.
   FunctionPass *createMachineSinkingPass();
 
+  /// createOptimizeExtsPass - This pass performs sign / zero extension
+  /// optimization by increasing uses of extended values.
+  FunctionPass *createOptimizeExtsPass();
+
   /// createStackSlotColoringPass - This pass performs stack slot coloring.
   FunctionPass *createStackSlotColoringPass(bool);
 
@@ -190,10 +194,6 @@ namespace llvm {
   /// createSjLjEHPass - This pass adapts exception handling code to use
   /// the GCC-style builtin setjmp/longjmp (sjlj) to handling EH control flow.
   FunctionPass *createSjLjEHPass(const TargetLowering *tli);
-
-  /// createMaxStackAlignmentCalculatorPass() - Determine the maximum required
-  /// alignment for a function.
-  FunctionPass* createMaxStackAlignmentCalculatorPass();
 
 } // End llvm namespace
 

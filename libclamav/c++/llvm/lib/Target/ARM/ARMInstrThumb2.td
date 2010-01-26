@@ -360,8 +360,8 @@ multiclass T2I_bin_ii12rs<bits<3> op23_21, string opc, PatFrag opnode,
                  opc, ".w\t$dst, $lhs, $rhs",
                  [(set GPR:$dst, (opnode GPR:$lhs, t2_so_reg:$rhs))]> {
      let Inst{31-27} = 0b11101;
-     let Inst{24} = 1;
      let Inst{26-25} = 0b01;
+     let Inst{24} = 1;
      let Inst{23-21} = op23_21;
      let Inst{20} = 0; // The S bit.
    }
@@ -1540,6 +1540,10 @@ class T2I_misc<bits<2> op1, bits<2> op2, dag oops, dag iops, InstrItinClass itin
 def t2CLZ : T2I_misc<0b11, 0b00, (outs GPR:$dst), (ins GPR:$src), IIC_iUNAr,
                     "clz", "\t$dst, $src", [(set GPR:$dst, (ctlz GPR:$src))]>;
 
+def t2RBIT : T2I_misc<0b01, 0b10, (outs GPR:$dst), (ins GPR:$src), IIC_iUNAr,
+                      "rbit", "\t$dst, $src",
+                      [(set GPR:$dst, (ARMrbit GPR:$src))]>;
+
 def t2REV : T2I_misc<0b01, 0b00, (outs GPR:$dst), (ins GPR:$src), IIC_iUNAr,
                    "rev", ".w\t$dst, $src", [(set GPR:$dst, (bswap GPR:$src))]>;
 
@@ -1605,16 +1609,18 @@ defm t2CMP  : T2I_cmp_irs<0b1101, "cmp",
 defm t2CMPz : T2I_cmp_irs<0b1101, "cmp",
                           BinOpFrag<(ARMcmpZ node:$LHS, node:$RHS)>>;
 
-defm t2CMN  : T2I_cmp_irs<0b1000, "cmn",
-                          BinOpFrag<(ARMcmp node:$LHS,(ineg node:$RHS))>>;
+//FIXME: Disable CMN, as CCodes are backwards from compare expectations
+//       Compare-to-zero still works out, just not the relationals
+//defm t2CMN  : T2I_cmp_irs<0b1000, "cmn",
+//                          BinOpFrag<(ARMcmp node:$LHS,(ineg node:$RHS))>>;
 defm t2CMNz : T2I_cmp_irs<0b1000, "cmn",
                           BinOpFrag<(ARMcmpZ node:$LHS,(ineg node:$RHS))>>;
 
-def : T2Pat<(ARMcmp  GPR:$src, t2_so_imm_neg:$imm),
-            (t2CMNri GPR:$src, t2_so_imm_neg:$imm)>;
+//def : T2Pat<(ARMcmp  GPR:$src, t2_so_imm_neg:$imm),
+//            (t2CMNri GPR:$src, t2_so_imm_neg:$imm)>;
 
 def : T2Pat<(ARMcmpZ  GPR:$src, t2_so_imm_neg:$imm),
-            (t2CMNri   GPR:$src, t2_so_imm_neg:$imm)>;
+            (t2CMNzri GPR:$src, t2_so_imm_neg:$imm)>;
 
 defm t2TST  : T2I_cmp_irs<0b0000, "tst",
                           BinOpFrag<(ARMcmpZ (and node:$LHS, node:$RHS), 0)>>;

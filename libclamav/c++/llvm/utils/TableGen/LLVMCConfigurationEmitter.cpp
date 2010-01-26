@@ -1086,14 +1086,28 @@ class ExtractOptionNames {
     if (ActionName == "forward" || ActionName == "forward_as" ||
         ActionName == "forward_value" ||
         ActionName == "forward_transformed_value" ||
-        ActionName == "switch_on" || ActionName == "parameter_equals" ||
+        ActionName == "switch_on" || ActionName == "any_switch_on" ||
+        ActionName == "parameter_equals" ||
         ActionName == "element_in_list" || ActionName == "not_empty" ||
         ActionName == "empty") {
       CheckNumberOfArguments(Stmt, 1);
-      const std::string& Name = InitPtrToString(Stmt.getArg(0));
-      OptionNames_.insert(Name);
+
+      Init* Arg = Stmt.getArg(0);
+      if (typeid(*Arg) == typeid(StringInit)) {
+        const std::string& Name = InitPtrToString(Arg);
+        OptionNames_.insert(Name);
+      }
+      else {
+        // It's a list.
+        const ListInit& List = InitPtrToList(Arg);
+        for (ListInit::const_iterator B = List.begin(), E = List.end();
+             B != E; ++B) {
+          const std::string& Name = InitPtrToString(*B);
+          OptionNames_.insert(Name);
+        }
+      }
     }
-    else if (ActionName == "and" || ActionName == "or") {
+    else if (ActionName == "and" || ActionName == "or" || ActionName == "not") {
       for (unsigned i = 0, NumArgs = Stmt.getNumArgs(); i < NumArgs; ++i) {
         this->processDag(Stmt.getArg(i));
       }
@@ -1192,7 +1206,7 @@ void EmitListTest(const ListInit& L, const char* LogicOp,
     if (isFirst)
       isFirst = false;
     else
-      O << " || ";
+      O << ' ' << LogicOp << ' ';
     Callback(InitPtrToString(*B), O);
   }
 }
@@ -1240,7 +1254,7 @@ bool EmitCaseTest1ArgList(const std::string& TestName,
                           const DagInit& d,
                           const OptionDescriptions& OptDescs,
                           raw_ostream& O) {
-  const ListInit& L = *static_cast<ListInit*>(d.getArg(0));
+  const ListInit& L = InitPtrToList(d.getArg(0));
 
   if (TestName == "any_switch_on") {
     EmitListTest(L, "||", EmitSwitchOn(OptDescs), O);
@@ -1397,7 +1411,7 @@ void EmitCaseTest(const DagInit& d, unsigned IndentLevel,
   else if (EmitCaseTest2Args(TestName, d, IndentLevel, OptDescs, O))
     return;
   else
-    throw TestName + ": unknown edge property!";
+    throw "Unknown test '" + TestName + "' used in the 'case' construct!";
 }
 
 
@@ -2895,7 +2909,6 @@ void CheckPluginData(PluginData& Data) {
   // Check that there are no options without side effects (specified
   // only in the OptionList).
   CheckForSuperfluousOptions(Data.Edges, Data.ToolDescs, Data.OptDescs);
-
 }
 
 void EmitPluginCode(const PluginData& Data, raw_ostream& O) {

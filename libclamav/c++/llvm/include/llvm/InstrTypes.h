@@ -20,6 +20,7 @@
 #include "llvm/OperandTraits.h"
 #include "llvm/Operator.h"
 #include "llvm/DerivedTypes.h"
+#include "llvm/ADT/Twine.h"
 
 namespace llvm {
 
@@ -160,7 +161,7 @@ public:
   /// Instruction is allowed to be a dereferenced end iterator.
   ///
   static BinaryOperator *Create(BinaryOps Op, Value *S1, Value *S2,
-                                const Twine &Name = "",
+                                const Twine &Name = Twine(),
                                 Instruction *InsertBefore = 0);
 
   /// Create() - Construct a binary instruction, given the opcode and the two
@@ -651,8 +652,7 @@ public:
 
 /// This class is the base class for the comparison instructions.
 /// @brief Abstract base class of comparison instructions.
-// FIXME: why not derive from BinaryOperator?
-class CmpInst: public Instruction {
+class CmpInst : public Instruction {
   void *operator new(size_t, unsigned);  // DO NOT IMPLEMENT
   CmpInst(); // do not implement
 protected:
@@ -664,6 +664,7 @@ protected:
           Value *LHS, Value *RHS, const Twine &Name,
           BasicBlock *InsertAtEnd);
 
+  virtual void Anchor() const; // Out of line virtual method.
 public:
   /// This enumeration lists the possible predicates for CmpInst subclasses.
   /// Values in the range 0-31 are reserved for FCmpInst, while values in the
@@ -732,10 +733,12 @@ public:
   }
 
   /// @brief Return the predicate for this instruction.
-  Predicate getPredicate() const { return Predicate(SubclassData); }
+  Predicate getPredicate() const {
+    return Predicate(getSubclassDataFromInstruction());
+  }
 
   /// @brief Set the predicate for this instruction to the specified value.
-  void setPredicate(Predicate P) { SubclassData = P; }
+  void setPredicate(Predicate P) { setInstructionSubclassData(P); }
 
   static bool isFPPredicate(Predicate P) {
     return P >= FIRST_FCMP_PREDICATE && P <= LAST_FCMP_PREDICATE;
@@ -855,6 +858,12 @@ public:
                              vt->getNumElements());
     }
     return Type::getInt1Ty(opnd_type->getContext());
+  }
+private:
+  // Shadow Value::setValueSubclassData with a private forwarding method so that
+  // subclasses cannot accidentally use it.
+  void setValueSubclassData(unsigned short D) {
+    Value::setValueSubclassData(D);
   }
 };
 

@@ -123,8 +123,8 @@ def FPSCR : ARMReg<1, "fpscr">;
 // r10 == Stack Limit
 //
 def GPR : RegisterClass<"ARM", [i32], 32, [R0, R1, R2, R3, R4, R5, R6,
-                                           R7, R8, R9, R10, R12, R11,
-                                           LR, SP, PC]> {
+                                           R7, R8, R9, R10, R11, R12,
+                                           SP, LR, PC]> {
   let MethodProtos = [{
     iterator allocation_order_begin(const MachineFunction &MF) const;
     iterator allocation_order_end(const MachineFunction &MF) const;
@@ -366,19 +366,6 @@ def QPR_8 : RegisterClass<"ARM", [v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
 
 // Condition code registers.
 def CCR : RegisterClass<"ARM", [i32], 32, [CPSR]>;
-
-// Just the stack pointer (for tSTRspi and friends).
-def JustSP : RegisterClass<"ARM", [i32], 32, [SP]> {
-  let MethodProtos = [{
-    iterator allocation_order_end(const MachineFunction &MF) const;
-  }];
-  let MethodBodies = [{
-      JustSPClass::iterator
-      JustSPClass::allocation_order_end(const MachineFunction &MF) const {
-        return allocation_order_begin(MF);
-      }
-  }];
-}
 
 //===----------------------------------------------------------------------===//
 // Subregister Set Definitions... now that we have all of the pieces, define the

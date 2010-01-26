@@ -17,8 +17,6 @@
 #include "llvm/DerivedTypes.h"
 #include "llvm/InlineAsm.h"
 #include "llvm/IntrinsicInst.h"
-#include "llvm/LLVMContext.h"
-#include "llvm/Metadata.h"
 #include "llvm/Module.h"
 #include "llvm/Operator.h"
 #include "llvm/AutoUpgrade.h"
@@ -739,7 +737,7 @@ bool BitcodeReader::ParseValueSymbolTable() {
 }
 
 bool BitcodeReader::ParseMetadata() {
-  unsigned NextValueNo = MDValueList.size();
+  unsigned NextMDValueNo = MDValueList.size();
 
   if (Stream.EnterSubBlock(bitc::METADATA_BLOCK_ID))
     return Error("Malformed block record");
@@ -768,6 +766,7 @@ bool BitcodeReader::ParseMetadata() {
       continue;
     }
 
+    bool IsFunctionLocal = false;
     // Read a record.
     Record.clear();
     switch (Stream.ReadRecord(Code, Record)) {
@@ -789,17 +788,25 @@ bool BitcodeReader::ParseMetadata() {
 
       // Read named metadata elements.
       unsigned Size = Record.size();
-      SmallVector<MetadataBase*, 8> Elts;
+      SmallVector<MDNode *, 8> Elts;
       for (unsigned i = 0; i != Size; ++i) {
-        Value *MD = MDValueList.getValueFwdRef(Record[i]);
-        if (MetadataBase *B = dyn_cast<MetadataBase>(MD))
-        Elts.push_back(B);
+        if (Record[i] == ~0U) {
+          Elts.push_back(NULL);
+          continue;
+        }
+        MDNode *MD = dyn_cast<MDNode>(MDValueList.getValueFwdRef(Record[i]));
+        if (MD == 0)
+          return Error("Malformed metadata record");
+        Elts.push_back(MD);
       }
       Value *V = NamedMDNode::Create(Context, Name.str(), Elts.data(),
                                      Elts.size(), TheModule);
-      MDValueList.AssignValue(V, NextValueNo++);
+      MDValueList.AssignValue(V, NextMDValueNo++);
       break;
     }
+    case bitc::METADATA_FN_NODE:
+      IsFunctionLocal = true;
+      // fall-through
     case bitc::METADATA_NODE: {
       if (Record.empty() || Record.size() % 2 == 1)
         return Error("Invalid METADATA_NODE record");
@@ -810,13 +817,15 @@ bool BitcodeReader::ParseMetadata() {
         const Type *Ty = getTypeByID(Record[i], false);
         if (Ty->isMetadataTy())
           Elts.push_back(MDValueList.getValueFwdRef(Record[i+1]));
-        else if (Ty != Type::getVoidTy(Context))
+        else if (!Ty->isVoidTy())
           Elts.push_back(ValueList.getValueFwdRef(Record[i+1], Ty));
         else
           Elts.push_back(NULL);
       }
-      Value *V = MDNode::get(Context, &Elts[0], Elts.size());
-      MDValueList.AssignValue(V, NextValueNo++);
+      Value *V = MDNode::getWhenValsUnresolved(Context, &Elts[0], Elts.size(),
+                                               IsFunctionLocal);
+      IsFunctionLocal = false;
+      MDValueList.AssignValue(V, NextMDValueNo++);
       break;
     }
     case bitc::METADATA_STRING: {
@@ -827,7 +836,7 @@ bool BitcodeReader::ParseMetadata() {
         String[i] = Record[i];
       Value *V = MDString::get(Context,
                                StringRef(String.data(), String.size()));
-      MDValueList.AssignValue(V, NextValueNo++);
+      MDValueList.AssignValue(V, NextMDValueNo++);
       break;
     }
     case bitc::METADATA_KIND: {
@@ -840,17 +849,10 @@ bool BitcodeReader::ParseMetadata() {
       (void) Kind;
       for (unsigned i = 1; i != RecordLength; ++i)
         Name[i-1] = Record[i];
-      MetadataContext &TheMetadata = Context.getMetadata();
-      unsigned ExistingKind = TheMetadata.getMDKind(Name.str());
-      if (ExistingKind == 0) {
-        unsigned NewKind = TheMetadata.registerMDKind(Name.str());
-        (void) NewKind;
-        assert (Kind == NewKind 
-                && "Unable to handle custom metadata mismatch!");
-      } else {
-        assert (ExistingKind == Kind 
-                && "Unable to handle custom metadata mismatch!");
-      }
+      
+      unsigned NewKind = TheModule->getMDKindID(Name.str());
+      assert(Kind == NewKind &&
+             "FIXME: Unable to handle custom metadata mismatch!");(void)NewKind;
       break;
     }
     }
@@ -1165,7 +1167,7 @@ bool BitcodeReader::ParseConstants() {
       Constant *Op0 = ValueList.getConstantFwdRef(Record[1], OpTy);
       Constant *Op1 = ValueList.getConstantFwdRef(Record[2], OpTy);
 
-      if (OpTy->isFloatingPoint())
+      if (OpTy->isFPOrFPVector())
         V = ConstantExpr::getFCmp(Record[3], Op0, Op1);
       else
         V = ConstantExpr::getICmp(Record[3], Op0, Op1);
@@ -1580,7 +1582,6 @@ bool BitcodeReader::ParseMetadataAttachment() {
   if (Stream.EnterSubBlock(bitc::METADATA_ATTACHMENT_ID))
     return Error("Malformed block record");
 
-  MetadataContext &TheMetadata = Context.getMetadata();
   SmallVector<uint64_t, 64> Record;
   while(1) {
     unsigned Code = Stream.ReadCode();
@@ -1606,7 +1607,7 @@ bool BitcodeReader::ParseMetadataAttachment() {
       for (unsigned i = 1; i != RecordLength; i = i+2) {
         unsigned Kind = Record[i];
         Value *Node = MDValueList.getValueFwdRef(Record[i+1]);
-        TheMetadata.addMD(Kind, cast<MDNode>(Node), Inst);
+        Inst->setMetadata(Kind, cast<MDNode>(Node));
       }
       break;
     }
@@ -1656,6 +1657,9 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
       case bitc::METADATA_ATTACHMENT_ID:
         if (ParseMetadataAttachment()) return true;
         break;
+      case bitc::METADATA_BLOCK_ID:
+        if (ParseMetadata()) return true;
+        break;
       }
       continue;
     }
@@ -1698,12 +1702,12 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
         if (Opc == Instruction::Add ||
             Opc == Instruction::Sub ||
             Opc == Instruction::Mul) {
-          if (Record[3] & (1 << bitc::OBO_NO_SIGNED_WRAP))
+          if (Record[OpNum] & (1 << bitc::OBO_NO_SIGNED_WRAP))
             cast<BinaryOperator>(I)->setHasNoSignedWrap(true);
-          if (Record[3] & (1 << bitc::OBO_NO_UNSIGNED_WRAP))
+          if (Record[OpNum] & (1 << bitc::OBO_NO_UNSIGNED_WRAP))
             cast<BinaryOperator>(I)->setHasNoUnsignedWrap(true);
         } else if (Opc == Instruction::SDiv) {
-          if (Record[3] & (1 << bitc::SDIV_EXACT))
+          if (Record[OpNum] & (1 << bitc::SDIV_EXACT))
             cast<BinaryOperator>(I)->setIsExact(true);
         }
       }
@@ -2248,7 +2252,7 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
     }
 
     // Non-void values get registered in the value table for future use.
-    if (I && I->getType() != Type::getVoidTy(Context))
+    if (I && !I->getType()->isVoidTy())
       ValueList.AssignValue(I, NextValueNo++);
   }
 

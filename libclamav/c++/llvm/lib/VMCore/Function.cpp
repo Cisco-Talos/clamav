@@ -160,7 +160,7 @@ Function::Function(const FunctionType *Ty, LinkageTypes Linkage,
 
   // If the function has arguments, mark them as lazily built.
   if (Ty->getNumParams())
-    SubclassData = 1;   // Set the "has lazy arguments" bit.
+    setValueSubclassData(1);   // Set the "has lazy arguments" bit.
   
   // Make sure that we get added to a function
   LeakDetector::addGarbageObject(this);
@@ -189,13 +189,14 @@ void Function::BuildLazyArguments() const {
   // Create the arguments vector, all arguments start out unnamed.
   const FunctionType *FT = getFunctionType();
   for (unsigned i = 0, e = FT->getNumParams(); i != e; ++i) {
-    assert(FT->getParamType(i) != Type::getVoidTy(FT->getContext()) &&
+    assert(!FT->getParamType(i)->isVoidTy() &&
            "Cannot have void typed arguments!");
     ArgumentList.push_back(new Argument(FT->getParamType(i)));
   }
   
   // Clear the lazy arguments bit.
-  const_cast<Function*>(this)->SubclassData &= ~1;
+  unsigned SDC = getSubclassDataFromValue();
+  const_cast<Function*>(this)->setValueSubclassData(SDC &= ~1);
 }
 
 size_t Function::arg_size() const {

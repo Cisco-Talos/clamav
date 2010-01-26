@@ -337,6 +337,10 @@ public:
                             MachineBasicBlock *DestB,
                             bool isCond);
 
+  /// findDebugLoc - find the next valid DebugLoc starting at MBBI, skipping
+  /// any DEBUG_VALUE instructions.  Return UnknownLoc if there is none.
+  DebugLoc findDebugLoc(MachineBasicBlock::iterator &MBBI);
+
   // Debugging methods.
   void dump() const;
   void print(raw_ostream &OS) const;
@@ -348,6 +352,10 @@ public:
   int getNumber() const { return Number; }
   void setNumber(int N) { Number = N; }
 
+  /// getSymbol - Return the MCSymbol for this basic block.
+  ///
+  MCSymbol *getSymbol(MCContext &Ctx) const;
+  
 private:   // Methods used to maintain doubly linked list of blocks...
   friend struct ilist_traits<MachineBasicBlock>;
 
