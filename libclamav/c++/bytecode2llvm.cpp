@@ -782,7 +782,7 @@ public:
 		unsigned c = 0;
 		for (unsigned j=0;j<bb->numInsts;j++) {
 		    const struct cli_bc_inst *inst = &bb->insts[j];
-		    Value *Op0, *Op1, *Op2;
+		    Value *Op0=0, *Op1=0, *Op2=0;
 		    // libclamav has already validated this.
 		    assert(inst->opcode < OP_BC_INVALID && "Invalid opcode");
 		    if (func->dbgnodes) {
