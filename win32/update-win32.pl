@@ -13,7 +13,7 @@ use File::Temp 'tempfile';
 
 use constant DEBUG => 0;
 
-# CLAMAV-CONFIG.H MACROES
+### CLAMAV-CONFIG.H MACROES ###
 # - Set to the proper win32 value or -1 to undef - #
 my %CONF = (
     'AC_APPLE_UNIVERSAL_BUILD' => -1,
@@ -194,7 +194,7 @@ my %CONF = (
     );
 
 
-# PROJECT FILES #
+### PROJECT FILES ###
 # - makefile: path to Makefile.am from the root of the repo
 # - sections: section of Makefile.am to parse (without _SOURCES or _la_SOURCES)
 # - output: path to the output vcproj file
@@ -228,9 +228,6 @@ my @PROJECTS = (
 
     # LLVMsystem #
     {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcproj'},
-
-    # LLVMsupport #
-    {makefile => 'libclamav/c++', sections => ['libllvmsupport'], output => 'win32/LLVMsupport.vcproj'},
 
     # LLVMcodgen #
     {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcproj'},

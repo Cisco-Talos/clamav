@@ -1,4 +1,5 @@
 !platform.h
+!clamav-config.h
 build
 *.ncb
 *.suo
