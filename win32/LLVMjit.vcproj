@@ -300,10 +300,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\VMCore\Mangler.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfo.cpp"
 				>
 			</File>
@@ -333,6 +329,14 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\MemoryBuiltins.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\Mangler.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\VMCore\IRBuilder.cpp"
 				>
 			</File>
 			<File
