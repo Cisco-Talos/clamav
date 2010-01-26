@@ -17800,10 +17800,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_control_in_msghdr" >&5
 $as_echo "$ac_cv_have_control_in_msghdr" >&6; }
 if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
-
-$as_echo "#define HAVE_CONTROL_IN_MSGHDR 1" >>confdefs.h
-
-
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking BSD 4.4 / RFC2292 style fd passing" >&5
 $as_echo_n "checking BSD 4.4 / RFC2292 style fd passing... " >&6; }
     # Check whether --enable-fdpassing was given.

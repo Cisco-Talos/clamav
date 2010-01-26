@@ -138,9 +138,6 @@
 /* Define to 1 if you have the `closedir' function. */
 #undef HAVE_CLOSEDIR
 
-/* ancillary data style fd pass */
-#undef HAVE_CONTROL_IN_MSGHDR
-
 /* Define to 1 if you have the `ctime_r' function. */
 #undef HAVE_CTIME_R
 

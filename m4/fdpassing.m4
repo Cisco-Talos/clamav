@@ -179,8 +179,6 @@ return 0;
 ], [ ac_cv_have_control_in_msghdr="yes" ], [ ac_cv_have_control_in_msghdr="no" ])
 ])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
-    AC_DEFINE([HAVE_CONTROL_IN_MSGHDR],1,[ancillary data style fd pass])
-
     dnl Check whether FD passing works <edwin@clamav.net>
     AC_MSG_CHECKING([BSD 4.4 / RFC2292 style fd passing])
     AC_ARG_ENABLE([fdpassing],[  --disable-fdpassing        don't build file descriptor passing support],
