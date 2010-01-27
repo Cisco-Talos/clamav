@@ -65,6 +65,10 @@
 #error "Thread support was explicitly disabled. Cannot continue"
 #endif
 
+#ifdef _GLIBCXX_PARALLEL
+#error "libstdc++ parallel mode is not supported for ClamAV. Please remove -D_GLIBCXX_PARALLEL from CXXFLAGS!"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #undef PACKAGE_BUGREPORT
 #undef PACKAGE_NAME
