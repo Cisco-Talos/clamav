@@ -387,6 +387,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
 	threadpool->thr_max = max_threads;
 	threadpool->thr_alive = 0;
 	threadpool->thr_idle = 0;
+	threadpool->thr_multiscan = 0;
 	threadpool->idle_timeout = idle_timeout;
 	threadpool->handler = handler;
 	threadpool->tasks = NULL;

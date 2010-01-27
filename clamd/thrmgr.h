@@ -69,6 +69,7 @@ typedef struct threadpool_tag {
 	int queue_max;
 	int thr_alive;
 	int thr_idle;
+	int thr_multiscan;
 	int idle_timeout;
 	struct task_desc *tasks;
 	
