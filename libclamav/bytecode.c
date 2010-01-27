@@ -111,7 +111,7 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	ctx->mpool = NULL;
     }
 #else
-    //TODO: implement for no-mmap case too
+    /*TODO: implement for no-mmap case too*/
 #endif
     return CL_SUCCESS;
 }
@@ -437,7 +437,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 	cli_dbgmsg("Skipping bytecode with functionality level: %u\n", flevel);
 	return CL_BREAK;
     }
-    // Optimistic parsing, check for error only at the end.
+    /* Optimistic parsing, check for error only at the end.*/
     bc->metadata.timestamp = readNumber(buffer, &offset, len, &ok);
     bc->metadata.sigmaker = readString(buffer, &offset, len, &ok);
     bc->metadata.targetExclude = readNumber(buffer, &offset, len, &ok);
@@ -1321,7 +1321,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		    }
 		    break;
 		}
-		// fall-through
+		/* fall-through */
 	    case PARSE_FUNC_HEADER:
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
@@ -1399,7 +1399,6 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
 {
     return *(uint32_t*)ctx->values;/*XXX*/
-//    return ctx->values[ctx->numParams];
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)
@@ -1571,7 +1570,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    break;
 		case OP_BC_GEP1:
 		case OP_BC_GEPZ:
-		    //three[0] is the type
+		    /*three[0] is the type*/
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
@@ -1762,8 +1761,8 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     printf("\tcompiled on: %s",
 	   cli_ctime(&stamp, buf, sizeof(buf)));
     printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
-    //TODO: parse and display arch name, also take it into account when
-    //JITing!
+    /*TODO: parse and display arch name, also take it into account when
+      JITing*/
     printf("\ttarget exclude: %d\n", bc->metadata.targetExclude);
     printf("\tbytecode type: ");
     switch (bc->kind) {

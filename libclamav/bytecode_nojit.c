@@ -59,7 +59,7 @@ int cli_bytecode_done_jit(struct cli_all_bc *allbc)
 }
 
 void cli_bytecode_debug(int argc, char **argv) {
-  // Empty
+  /* Empty */
 }
 
 int bytecode_init(void)
@@ -68,7 +68,7 @@ int bytecode_init(void)
 }
 
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
-    // Empty
+    /* Empty */
 }
 void cli_bytecode_printversion(void) {
   printf("LLVM not compiled in\n");

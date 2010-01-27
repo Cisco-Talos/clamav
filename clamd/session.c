@@ -233,9 +233,9 @@ int command(client_conn_t *conn, int *virus)
 	    }
 	    pthread_mutex_unlock(&conn->thrpool->pool_mutex);
 	    if (ret) {
-		// multiscan has 1 control thread, so there needs to be at least
-		// 1 threads that is a non-multiscan controlthread to scan and
-		// make progress.
+		/* multiscan has 1 control thread, so there needs to be at least
+		   1 threads that is a non-multiscan controlthread to scan and
+		   make progress. */
 		logg("^Not enough threads for multiscan. Max: %d, Alive: %d, Multiscan: %d+1\n",
 		     max, alive, multiscan);
 		conn_reply(conn, conn->filename, "Not enough threads for multiscan. Increase MaxThreads.", "ERROR");

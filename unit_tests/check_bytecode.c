@@ -118,7 +118,7 @@ START_TEST (test_apicalls2)
     cl_init(CL_INIT_DEFAULT);
     if (have_clamjit)/*FIXME: should work with both */
     runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0);
-//    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1);
+/*    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1); */
 }
 END_TEST
 
