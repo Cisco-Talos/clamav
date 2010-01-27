@@ -866,7 +866,7 @@ distclean-local:
 	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
 	rm -f llvm/include/llvm/Config/AsmParsers.def
 	if test $(abs_srcdir) != $(abs_builddir); then\
-	    rm -f llvm/lib/Makefile llvm/test/Makefile\
+	    rm -f llvm/Makefile llvm/lib/Makefile llvm/test/Makefile\
 	    llvm/test/Makefile.tests llvm/tools/Makefile llvm/utils/Makefile\
 	    llvm/Makefile.common llvm/unittests/Makefile;\
 	fi
