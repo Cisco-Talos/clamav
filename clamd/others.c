@@ -282,8 +282,21 @@ static int read_fd_data(struct fd_buf *buf)
       n = recvmsg(buf->fd, &msg, 0);
       if (n < 0)
 	  return -1;
-      if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-	  logg("^Control message truncated");
+      if (msg.msg_flags & MSG_TRUNC) {
+	  logg("^Message truncated at %d bytes\n", n);
+	  return -1;
+      }
+      if (msg.msg_flags & MSG_CTRUNC) {
+	  if (msg.msg_controllen > 0)
+	      logg("^Control message truncated at %d bytes, %d data read\n",
+		   msg.msg_controllen, n);
+	  else
+	      logg("^Control message truncated, no control data received, %d bytes read"
+#ifdef C_LINUX
+		   "(Is SELinux/AppArmor enabled, and blocking file descriptor passing?)"
+#endif
+		   "\n",
+		   n);
 	  return -1;
       }
       if (msg.msg_controllen) {
