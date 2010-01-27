@@ -238,7 +238,7 @@ int command(client_conn_t *conn, int *virus)
 		// make progress.
 		logg("^Not enough threads for multiscan. Max: %d, Alive: %d, Multiscan: %d+1\n",
 		     max, alive, multiscan);
-		conn_reply(conn, conn->filename, "Not enough threads for multiscan. Increase MaxThreads.","ERROR");
+		conn_reply(conn, conn->filename, "Not enough threads for multiscan. Increase MaxThreads.", "ERROR");
 		return 1;
 	    }
 	    flags &= ~CLI_FTW_NEED_STAT;
