@@ -1188,6 +1188,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					newres->virname = pt->virname;
 					newres->customdata = pt->customdata;
 					newres->next = *res;
+					newres->offset = realoff;
 					*res = newres;
 
 					pt = pt->next_same;
@@ -1229,6 +1230,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					return CL_EMEM;
 				    newres->virname = pt->virname;
 				    newres->customdata = pt->customdata;
+				    newres->offset = realoff;
 				    newres->next = *res;
 				    *res = newres;
 

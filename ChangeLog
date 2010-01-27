@@ -1,3 +1,7 @@
+Wed Jan 27 18:33:09 CET 2010 (tk)
+---------------------------------
+ * libclamav: provide offset in cli_ac_result (bb#1799)
+
 Tue Jan 26 19:39:18 CET 2010 (acab)
 -----------------------------------
  * win32: automatically check and regenerate vcprojs,

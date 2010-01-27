@@ -79,6 +79,7 @@ struct cli_ac_node {
 struct cli_ac_result {
     const char *virname;
     void *customdata;
+    off_t offset;
     struct cli_ac_result *next;
 };
 
