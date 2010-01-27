@@ -180,7 +180,7 @@ void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, unsigned level,
     ctx->trace_level = level;
 }
 
-uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t *scope, uint32_t scopeid)
+uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t *scope, uint32_t scopeid)
 {
     if (LIKELY(!ctx->trace_level))
 	return 0;
@@ -195,7 +195,7 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const const uint8_t *scop
     return 0;
 }
 
-uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t* dir, uint32_t dummy)
+uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const uint8_t* dir, uint32_t dummy)
 {
     if (LIKELY(!ctx->trace_level))
 	return 0;
@@ -203,7 +203,7 @@ uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const const uint8_t* 
     return 0;
 }
 
-uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *file, uint32_t line)
+uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const uint8_t *file, uint32_t line)
 {
     if (LIKELY(ctx->trace_level < trace_line))
 	return 0;
@@ -215,7 +215,7 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const const uint8_t *fil
     return 0;
 }
 
-uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uint32_t col)
+uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const uint8_t *op, uint32_t col)
 {
     if (LIKELY(ctx->trace_level < trace_col))
 	return 0;
@@ -240,7 +240,7 @@ uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const const uint8_t *op, uin
     return 0;
 }
 
-uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name, uint32_t value)
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t* name, uint32_t value)
 {
     if (LIKELY(ctx->trace_level < trace_val))
 	return 0;
@@ -254,7 +254,7 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const const uint8_t* name
     return 0;
 }
 
-uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const const uint8_t* ptr, uint32_t dummy)
+uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t* ptr, uint32_t dummy)
 {
     if (LIKELY(ctx->trace_level < trace_val))
 	return 0;
