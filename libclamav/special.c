@@ -47,7 +47,7 @@
 
 int cli_check_mydoom_log(int desc, cli_ctx *ctx)
 {
-	int32_t record[8], check;
+	uint32_t record[8], check;
 	int i, retval=CL_VIRUS, j;
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");

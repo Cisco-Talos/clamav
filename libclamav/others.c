@@ -121,7 +121,6 @@ static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
     const lt_dlinfo *info;
     char modulename[128];
     lt_dlhandle rhandle;
-    int canretry=1;
     unsigned i;
 
     if (lt_dladdsearchdir(SEARCH_LIBDIR)) {

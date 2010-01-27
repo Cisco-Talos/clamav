@@ -29,4 +29,4 @@ struct text_norm_state {
 
 int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_t out_len);
 void text_normalize_reset(struct text_norm_state* state);
-ssize_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len);
+size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len);

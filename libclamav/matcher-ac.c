@@ -1256,7 +1256,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 static int qcompare(const void *a, const void *b)
 {
-    return *(unsigned char *)a - *(unsigned char *)b;
+    return *(const unsigned char *)a - *(const unsigned char *)b;
 }
 
 /* FIXME: clean up the code */
@@ -1633,7 +1633,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-    new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
+    new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	mpool_ac_free_special(root->mempool, new);

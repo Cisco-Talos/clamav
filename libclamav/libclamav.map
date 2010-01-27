@@ -47,7 +47,6 @@ CLAMAV_PRIVATE {
     cli_rmdirs;
     cli_chomp;
     cli_rndnum;
-    cli_decodesig;
 
     cli_calloc;
     cli_ole2_extract;

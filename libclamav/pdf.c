@@ -253,7 +253,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 					 */
 					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
 						const char *r, *nq;
-						size_t len;
 						char b[14];
 
 						q += 4;

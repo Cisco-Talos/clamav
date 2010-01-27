@@ -620,7 +620,6 @@ int
 fileblobScan(const fileblob *fb)
 {
 	int rc;
-	cli_file_t ftype;
 	struct stat sb;
 
 	if(fb->isInfected)

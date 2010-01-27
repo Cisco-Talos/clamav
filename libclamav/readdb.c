@@ -1984,7 +1984,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
 	/* tokens[6] - not used */
 
-	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? atoi(tokens[7]) : CLI_OFF_ANY;
+	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? atoi(tokens[7]) : (int) CLI_OFF_ANY;
 
 	/* tokens[8] - not used */
 

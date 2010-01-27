@@ -34,6 +34,7 @@
 
 #include "platform.h"
 #include "cltypes.h"
+#include "others.h"
 
 static inline char	*med3(char *, char *, char *, int (*)(const void *, const void *));
 static inline void	 swapfunc(char *, char *, int, int);
@@ -155,11 +156,11 @@ loop:	SWAPINIT(a, es);
 	pn = (char *) a + n * es;
 	r = MIN(pa - (char *)a, pb - pa);
 	vecswap(a, pb - r, r);
-	r = MIN(pd - pc, pn - pd - es);
+	r = MIN((size_t) (pd - pc), (size_t) (pn - pd - es));
 	vecswap(pb, pn - r, r);
-	if ((r = pb - pa) > es)
+	if ((size_t) (r = pb - pa) > es)
 		cli_qsort(a, r / es, es, cmp);
-	if ((r = pd - pc) > es) { 
+	if ((size_t) (r = pd - pc) > es) { 
 		/* Iterate rather than recurse to save stack space */
 		a = pn - r;
 		n = r / es;

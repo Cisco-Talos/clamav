@@ -329,7 +329,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 static int
 cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
-	int retcode, i;
+	int retcode;
 	message *body;
 	char buffer[RFC2821LENGTH + 1];
 	mbox_ctx mctx;

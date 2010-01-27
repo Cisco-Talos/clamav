@@ -90,7 +90,7 @@ static const enum normalize_action char_action[256] = {
 /* Normalizes the text at @buf of length @buf_len, @buf can include \0 characters.
  * Stores the normalized text in @state's buffer. 
  * Returns how many bytes it consumed of the input. */
-ssize_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len)
+size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len)
 {
 	size_t i;
 	const unsigned char *out_end = state->out + state->out_len;
@@ -118,6 +118,6 @@ ssize_t text_normalize_buffer(struct text_norm_state *state, const unsigned char
 		}
 	}
 	state->out_pos = p - state->out;
-	return (ssize_t)i;
+	return i;
 }
 
