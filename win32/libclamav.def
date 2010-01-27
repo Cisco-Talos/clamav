@@ -30,7 +30,6 @@ EXPORTS cli_rmdirs
 EXPORTS cli_isnumber
 EXPORTS cli_strtok
 EXPORTS cli_cvdunpack
-EXPORTS cli_decodesig
 EXPORTS cli_chomp
 EXPORTS cli_strtokenize
 EXPORTS cli_versig2
