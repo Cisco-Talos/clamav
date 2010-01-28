@@ -864,7 +864,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
 {
-	unsigned int i;
+	unsigned int i, j;
 
 
     if(!data) {
@@ -919,6 +919,38 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	}
 	for(i = 1; i < lsigs; i++)
 	    data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
+
+	/* subsig offsets */
+	data->lsigsuboff = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
+	if(!data->lsigsuboff) {
+	    free(data->lsigcnt[0]);
+	    free(data->lsigcnt);
+	    if(partsigs)
+		free(data->offmatrix);
+	    if(reloffsigs)
+		free(data->offset);
+	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff\n");
+	    return CL_EMEM;
+	}
+	data->lsigsuboff[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
+	if(!data->lsigsuboff[0]) {
+	    free(data->lsigsuboff);
+	    free(data->lsigcnt[0]);
+	    free(data->lsigcnt);
+	    if(partsigs)
+		free(data->offmatrix);
+	    if(reloffsigs)
+		free(data->offset);
+	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff[0]\n");
+	    return CL_EMEM;
+	}
+	for(j = 0; j < 64; j++)
+	    data->lsigsuboff[0][j] = CLI_OFF_NONE;
+	for(i = 1; i < lsigs; i++) {
+	    data->lsigsuboff[i] = data->lsigsuboff[0] + 64 * i;
+	    for(j = 0; j < 64; j++)
+		data->lsigsuboff[i][j] = CLI_OFF_NONE;
+	}
     }
 
     return CL_SUCCESS;
@@ -977,6 +1009,8 @@ void cli_ac_freedata(struct cli_ac_data *data)
     if(data && data->lsigs) {
 	free(data->lsigcnt[0]);
 	free(data->lsigcnt);
+	free(data->lsigsuboff[0]);
+	free(data->lsigsuboff);
 	data->lsigs = 0;
     }
 
@@ -1177,6 +1211,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				} else { /* !pt->type */
 				    if(pt->lsigid[0]) {
 					mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
+					if(mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] == CLI_OFF_NONE)
+					    mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] = realoff;
 					pt = pt->next_same;
 					continue;
 				    }
@@ -1220,6 +1256,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    } else {
 				if(pt->lsigid[0]) {
 				    mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
+				    if(mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] == CLI_OFF_NONE)
+					mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] = realoff;
 				    pt = pt->next_same;
 				    continue;
 				}

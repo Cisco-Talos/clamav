@@ -108,7 +108,7 @@ void cli_bytecode_describe(const struct cli_bc *bc);
 /* Hooks */
 struct cli_exe_info;
 struct cli_ctx_tag;
-int cli_bytecode_runlsig(struct cli_ctx_tag *ctx, const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, fmap_t *fmap);
+int cli_bytecode_runlsig(struct cli_ctx_tag *ctx, const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map);
 int cli_bytecode_runhook(struct cli_ctx_tag *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, fmap_t *map, const char **virname);
 
 #ifdef __cplusplus

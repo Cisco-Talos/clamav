@@ -1624,7 +1624,7 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
     return 0;
 }
 
-int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, fmap_t *map)
+int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map)
 {
     int ret;
     struct cli_bc_ctx ctx;
