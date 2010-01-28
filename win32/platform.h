@@ -33,7 +33,10 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define getsockopt w32_getsockopt
 #define setsockopt w32_setsockopt
 #define bind w32_bind
+#define listen w32_listen
+#define accept w32_accept
 #define connect w32_connect
+#define shutdown w32_shutdown
 #define send w32_send
 #define recv w32_recv
 #define closesocket w32_closesocket
@@ -43,6 +46,8 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define inet_ntop w32_inet_ntop
 #define gethostbyname w32_gethostbyname
 #define select w32_select
+#define strerror w32_strerror
+#define strerror_r w32_strerror_r
 #define ftruncate _chsize
 #define getpid GetCurrentProcessId
 

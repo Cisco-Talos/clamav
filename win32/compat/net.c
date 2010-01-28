@@ -324,3 +324,27 @@ int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
     }
     return ret;
 }
+
+int w32_accept(int sockfd, const struct sockaddr *addr, socklen_t *addrlen) {
+    if(accept((SOCKET)sockfd, addr, addrlen)) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+int w32_listen(int sockfd, int backlog) {
+    if(listen((SOCKET)sockfd, backlog)) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+int w32_shutdown(int sockfd, int how) {
+    if(shutdown((SOCKET)sockfd, how)) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}

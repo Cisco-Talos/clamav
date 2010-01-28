@@ -269,10 +269,10 @@
 #define HAVE_OPENDIR 1
 
 /* Define to 1 if you have the `poll' function. */
-#define HAVE_POLL 1
+/* #undef HAVE_POLL */
 
 /* Define to 1 if you have the <poll.h> header file. */
-#define HAVE_POLL_H 1
+/* #undef HAVE_POLL_H */
 
 /* "pragma pack" */
 #define HAVE_PRAGMA_PACK 1
@@ -493,7 +493,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-r5076-703-g0222ee6"
+#define VERSION "devel-r5076-706-g0380088"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

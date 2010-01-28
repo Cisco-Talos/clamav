@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	Keyword="Win32Proj"
-	Name="freshclam"
-	ProjectGUID="{CEA52DD8-0418-42AD-B640-F33CC7C600CE}"
+	Name="clamd"
+	ProjectGUID="{B3CA73CF-E71E-42F3-95DE-43797A86C798}"
 	ProjectType="Visual C++"
-	RootNamespace="freshclam"
+	RootNamespace="clamd"
 	TargetFrameworkVersion="196613"
 	Version="9,00"
 	>
@@ -43,7 +43,7 @@
 				BasicRuntimeChecks="3"
 				CompileAs="1"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4996;4244;4018;4090;4333;4101;4146;4102"
+				DisableSpecificWarnings="4996;4244"
 				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -62,7 +62,6 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				AdditionalDependencies="dnsapi.lib"
 				GenerateDebugInformation="true"
 				LinkIncremental="1"
 				Name="VCLinkerTool"
@@ -116,10 +115,9 @@
 			/>
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
-				BufferSecurityCheck="false"
 				CompileAs="1"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4996;4244;4018;4090;4333;4101;4146;4102"
+				DisableSpecificWarnings="4996;4244"
 				EnableFunctionLevelLinking="true"
 				EnableIntrinsicFunctions="true"
 				Name="VCCLCompilerTool"
@@ -139,7 +137,6 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				AdditionalDependencies="dnsapi.lib"
 				EnableCOMDATFolding="2"
 				GenerateDebugInformation="true"
 				LinkIncremental="1"
@@ -180,40 +177,40 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\freshclam\dns.c"
+				RelativePath="..\clamd\clamd.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\execute.c"
+				RelativePath="..\clamd\localserver.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\freshclam.c"
+				RelativePath="..\clamd\others.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\manager.c"
+				RelativePath="..\clamd\scanner.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\mirman.c"
+				RelativePath="..\clamd\server-th.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\nonblock.c"
+				RelativePath="..\clamd\session.c"
 				>
 			</File>
 			<File
-				RelativePath="..\freshclam\notify.c"
+				RelativePath="..\clamd\tcpserver.c"
+				>
+			</File>
+			<File
+				RelativePath="..\clamd\thrmgr.c"
 				>
 			</File>
 			<Filter
 				Name="shared"
 				>
-				<File
-					RelativePath="..\shared\cdiff.c"
-					>
-				</File>
 				<File
 					RelativePath="..\shared\misc.c"
 					>
@@ -222,20 +219,16 @@
 					RelativePath="..\shared\output.c"
 					>
 				</File>
-				<File
-					RelativePath="..\shared\tar.c"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="compat"
 				>
 				<File
-					RelativePath=".\compat\resolv.c"
+					RelativePath=".\compat\libgen.c"
 					>
 				</File>
 				<File
-					RelativePath=".\compat\strptime.c"
+					RelativePath=".\compat\setargv.c"
 					>
 				</File>
 			</Filter>
@@ -251,10 +244,6 @@
 			Name="Resource Files"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\res\freshclam.rc"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

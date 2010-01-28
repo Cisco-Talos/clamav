@@ -185,10 +185,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\shared\getopt.c"
-				>
-			</File>
-			<File
 				RelativePath="..\shared\misc.c"
 				>
 			</File>

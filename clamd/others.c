@@ -69,11 +69,11 @@
 #include <limits.h>
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 #include "libclamav/others.h"
 
 #include "session.h"
 #include "others.h"
-#include "misc.h"
 
 #ifdef	_WIN32
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
@@ -551,6 +551,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	}
     } while (retval == -1 && !check_signals && errno == EINTR);
 #else
+    {
     fd_set rfds;
     struct timeval tv;
     int maxfd = -1;
@@ -628,6 +629,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	    continue;
 	}
     } while (retval == -1 && !check_signals && errno == EINTR);
+    }
 #endif
 
     if (retval == -1 && errno != EINTR) {

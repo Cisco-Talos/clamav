@@ -6,7 +6,7 @@
 	ProjectType="Visual C++"
 	RootNamespace="clamconf"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -187,10 +187,6 @@
 			<Filter
 				Name="shared"
 				>
-				<File
-					RelativePath="..\shared\getopt.c"
-					>
-				</File>
 				<File
 					RelativePath="..\shared\misc.c"
 					>

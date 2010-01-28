@@ -1,4 +1,4 @@
-/* Automatically generated on Wed Oct 14 14:49:39 GMT 2009 */
+/* Automatically generated on Thu Jan 28 23:51:23 CET 2010 */
 
 #include <errno.h>
 
@@ -336,12 +336,10 @@ static const struct errno_struct {
 #endif
 { ESRMNT, "Srmount error" },
 #endif /* __ERRNO_INCLUDE_UNUSED */
-#ifdef __ERRNO_INCLUDE_UNUSED
 #ifndef ECOMM
 #define ECOMM 1070
 #endif
 { ECOMM, "Communication error on send" },
-#endif /* __ERRNO_INCLUDE_UNUSED */
 #ifndef EPROTO
 #define EPROTO 1071
 #endif

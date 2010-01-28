@@ -7,6 +7,10 @@ EXPORTS cl_engine_set_num
 EXPORTS cl_engine_set_str
 EXPORTS cl_engine_free
 EXPORTS cl_engine_new
+EXPORTS cl_engine_settings_copy
+EXPORTS cl_engine_settings_free
+EXPORTS cl_engine_settings_apply
+EXPORTS cl_engine_get_num
 EXPORTS cl_strerror
 EXPORTS cl_init
 EXPORTS cl_retdbdir
@@ -18,9 +22,14 @@ EXPORTS cl_retflevel
 EXPORTS cl_cvdparse
 EXPORTS cl_cvdverify
 EXPORTS cl_retver
+EXPORTS cl_engine_addref
+EXPORTS cl_statinidir
+EXPORTS cl_statchkdir
+EXPORTS cl_statfree
 
 ; cli_stuff - should be mangled or exported by ordinal only
 EXPORTS cli_gentemp
+EXPORTS cli_gentempfd
 EXPORTS cli_gettmpdir
 EXPORTS cli_regcomp
 EXPORTS cli_regexec
@@ -33,6 +42,11 @@ EXPORTS cli_cvdunpack
 EXPORTS cli_chomp
 EXPORTS cli_strtokenize
 EXPORTS cli_versig2
+EXPORTS cli_strerror
+EXPORTS cli_rndnum
+EXPORTS cli_unlink
+EXPORTS cli_writen
+EXPORTS cli_ftw
 EXPORTS have_rar
 EXPORTS have_clamjit
 
@@ -88,16 +102,37 @@ EXPORTS CONFDIR_MILTER DATA
 ; winsock - bridging for now
 EXPORTS htonl
 EXPORTS htons
+EXPORTS ntohl
 EXPORTS ntohs
 EXPORTS gettimeofday
 EXPORTS pthread_mutex_lock
 EXPORTS pthread_mutex_unlock
+EXPORTS pthread_mutex_destroy
+EXPORTS pthread_once
+EXPORTS pthread_getspecific
+EXPORTS pthread_setspecific
+EXPORTS pthread_create
+EXPORTS pthread_cond_timedwait
+EXPORTS pthread_cond_init
+EXPORTS pthread_cond_broadcast
+EXPORTS pthread_cond_signal
+EXPORTS pthread_cond_destroy
+EXPORTS pthread_join
+EXPORTS pthread_key_create
+EXPORTS pthread_cond_wait
+EXPORTS pthread_attr_init
+EXPORTS pthread_attr_setdetachstate
+EXPORTS pthread_attr_destroy
+EXPORTS pthread_mutex_init
 
 EXPORTS w32_socket
 EXPORTS w32_getsockopt
 EXPORTS w32_setsockopt
 EXPORTS w32_bind
+EXPORTS w32_listen
+EXPORTS w32_accept
 EXPORTS w32_connect
+EXPORTS w32_shutdown
 EXPORTS w32_send
 EXPORTS w32_recv
 EXPORTS w32_closesocket
@@ -107,5 +142,6 @@ EXPORTS w32_freeaddrinfo
 EXPORTS w32_inet_ntop
 EXPORTS w32_gethostbyname
 EXPORTS w32_select
-
 EXPORTS w32_stat
+EXPORTS w32_strerror
+EXPORTS w32_strerror_r

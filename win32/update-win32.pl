@@ -104,8 +104,8 @@ my %CONF = (
     'HAVE_MMAP' => -1,
     'HAVE_NDIR_H' => -1,
     'HAVE_OPENDIR' => '1',
-    'HAVE_POLL' => '1',
-    'HAVE_POLL_H' => '1',
+    'HAVE_POLL' => -1,
+    'HAVE_POLL_H' => -1,
     'HAVE_PRAGMA_PACK' => '1',
     'HAVE_PRAGMA_PACK_HPPA' => -1,
     'HAVE_PRELOADED_SYMBOLS' => -1,
@@ -215,16 +215,19 @@ my @PROJECTS = (
     {makefile => 'libclamav/c++', sections => ['libclamavcxx'], output => 'win32/libclamavcxx.vcproj'},
 
     # CLAMSCAN #
-    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => 'optparser\\.c$', vcproj_only => 'compat\\\\'},
+    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},
+
+    # CLAMD #
+    {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$', vcproj_only => 'compat\\\\'},
 
     # FRESHCLAM #
-    {makefile => 'freshclam', sections => ['freshclam'], output => 'win32/freshclam.vcproj', makefile_only => 'optparser\\.c$', vcproj_only => 'compat\\\\'},
+    {makefile => 'freshclam', sections => ['freshclam'], output => 'win32/freshclam.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},
 
     # CLAMCONF #
-    {makefile => 'clamconf', sections => ['clamconf'], output => 'win32/clamconf.vcproj', makefile_only => 'optparser\\.c$'},
+    {makefile => 'clamconf', sections => ['clamconf'], output => 'win32/clamconf.vcproj', makefile_only => '(optparser\\.c$|getopt\\.c)$'},
 
     # CLAMBC #
-    {makefile => 'clambc', sections => ['clambc'], output => 'win32/clambc.vcproj', makefile_only => 'optparser\\.c$'},
+    {makefile => 'clambc', sections => ['clambc'], output => 'win32/clambc.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # LLVMsystem #
     {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcproj'},
@@ -232,7 +235,7 @@ my @PROJECTS = (
     # LLVMcodgen #
     {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcproj'},
 
-    # LLVMcodgen #
+    # LLVMx86codgen #
     {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcproj'},
 
     # LLVMjit #

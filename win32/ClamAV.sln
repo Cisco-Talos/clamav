@@ -46,6 +46,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMjit", "LLVMjit.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LLVMcodegen", "LLVMcodegen.vcproj", "{7472FD2F-DDE7-44B1-91FB-65C0BE81932B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamd", "clamd.vcproj", "{B3CA73CF-E71E-42F3-95DE-43797A86C798}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -100,6 +105,8 @@ Global
 		{7472FD2F-DDE7-44B1-91FB-65C0BE81932B}.Debug|Win32.Build.0 = Debug|Win32
 		{7472FD2F-DDE7-44B1-91FB-65C0BE81932B}.Release|Win32.ActiveCfg = Release|Win32
 		{7472FD2F-DDE7-44B1-91FB-65C0BE81932B}.Release|Win32.Build.0 = Release|Win32
+		{B3CA73CF-E71E-42F3-95DE-43797A86C798}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B3CA73CF-E71E-42F3-95DE-43797A86C798}.Release|Win32.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

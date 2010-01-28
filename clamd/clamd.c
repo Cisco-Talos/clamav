@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 {
         static struct cl_engine *engine = NULL;
 	const struct optstruct *opt;
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
         struct passwd *user = NULL;
 	struct sigaction sa;
 #endif

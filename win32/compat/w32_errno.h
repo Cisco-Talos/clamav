@@ -24,4 +24,7 @@
 #include <errno.h>
 #include "w32_errno_defs.c"
 
+char *w32_strerror(int errnum);
+int w32_strerror_r(int errnum, char *buf, size_t buflen);
+
 #endif

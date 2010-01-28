@@ -46,7 +46,7 @@ int glob_add(const char *path, int *argc, char ***argv);
 int _setargv() {
     char *cur = GetCommandLineA(), *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
-    int argc = 0, i, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0;
+    int argc = 0, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0;
     int *g_argc = __p___argc();
     char ***g_argv = __p___argv();
 
