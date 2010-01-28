@@ -6,7 +6,7 @@
 	ProjectType="Visual C++"
 	RootNamespace="clambc"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -117,6 +117,7 @@
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996;4244"
 				EnableFunctionLevelLinking="true"
 				EnableIntrinsicFunctions="true"
 				Name="VCCLCompilerTool"

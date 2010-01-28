@@ -493,7 +493,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-r5076-689-gb957384"
+#define VERSION "devel-r5076-703-g0222ee6"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

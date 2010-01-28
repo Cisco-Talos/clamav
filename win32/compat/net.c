@@ -20,6 +20,10 @@
 
 #include <winsock2.h>
 #include <Ws2tcpip.h>
+/* #define W2K_DNSAAPI_COMPAT */
+#ifdef W2K_DNSAAPI_COMPAT
+#include <Wspiapi.h>
+#endif
 #include "net.h"
 #include "w32_errno.h"
 

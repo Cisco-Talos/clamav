@@ -1420,11 +1420,11 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	i = matcher->icons[enginesize][x].group[0];
 	j = i % 64;
 	i /= 64;
-	if(!(set->v[0][i] & (1<<j))) continue;
+	if(!(set->v[0][i] & ((uint64_t)1<<j))) continue;
 	i = matcher->icons[enginesize][x].group[1];
 	j = i % 64;
 	i /= 64;
-	if(!(set->v[1][i] & (1<<j))) continue;
+	if(!(set->v[1][i] & ((uint64_t)1<<j))) continue;
 	
 	if(!metrics.ccount && !matcher->icons[enginesize][x].ccount) {
 	    /* BW matching */
@@ -1520,7 +1520,7 @@ void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned in
     else {
 	j = i % 64;
 	i /= 64;
-	set->v[type][i] |= 1<<j;
+	set->v[type][i] |= (uint64_t)1<<j;
     }
 }
 
