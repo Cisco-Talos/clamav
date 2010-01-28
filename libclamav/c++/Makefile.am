@@ -19,7 +19,7 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../ $(LLVM_INCLUDES) $(LLVM_DEFS)
-AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions -fno-rtti
+AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS=-I m4
 if DEBUG_BUILD
 LLVM_CONFIG=llvm/Debug/bin/llvm-config
@@ -43,7 +43,7 @@ lli_LDADD=libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la
 libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-rtti
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
@@ -818,7 +818,7 @@ lli_SOURCES=\
     llvm/tools/lli/lli.cpp
 
 llc_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
-llc_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-rtti
+llc_CXXFLAGS=$(LLVM_CXXFLAGS)
 llc_LDADD=libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
 llc_SOURCES=\
     llvm/lib/MC/MCInstPrinter.cpp\
