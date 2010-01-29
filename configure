@@ -25177,20 +25177,6 @@ if test "x$enable_debug" = "xyes"; then
 
 
    $as_echo_n "              release mode: "
-   if test "xyes" = "xno"; then :
-  $as_echo "yes (disabled)"
-elif test "xyes" = "xyes"; then :
-  $as_echo "yes"
-elif test "xyes" = "x"; then :
-  $as_echo "yes"
-else
-  $as_echo "yes (yes)"
-fi
-
-else
-
-
-   $as_echo_n "              release mode: "
    if test "xdebug build" = "xno"; then :
   $as_echo "no (disabled)"
 elif test "xdebug build" = "xyes"; then :
@@ -25199,6 +25185,20 @@ elif test "xdebug build" = "x"; then :
   $as_echo "no"
 else
   $as_echo "no (debug build)"
+fi
+
+else
+
+
+   $as_echo_n "              release mode: "
+   if test "xyes" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "yes"
+elif test "xyes" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes (yes)"
 fi
 
 fi

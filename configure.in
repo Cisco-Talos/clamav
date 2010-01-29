@@ -1662,9 +1662,9 @@ CL_MSG_STATUS([milter      ],[yes],[$have_milter])
 
 AC_MSG_NOTICE([Summary of engine performance features)])
 if test "x$enable_debug" = "xyes"; then
-    CL_MSG_STATUS([release mode],[yes],[yes])
-else
     CL_MSG_STATUS([release mode],[no],[debug build])
+else
+    CL_MSG_STATUS([release mode],[yes],[yes])
 fi
 have_jit="no"
 if test "$subdirfailed" = "no"; then
