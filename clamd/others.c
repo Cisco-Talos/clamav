@@ -440,9 +440,10 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *du
 
     /* we must have at least one fd, the control fd! */
     fds_cleanup(data);
+#ifndef _WIN32
     if (!data->nfds)
 	return 0;
-
+#endif
     for (i=0;i < data->nfds;i++) {
 	data->buf[i].got_newdata = 0;
     }

@@ -327,12 +327,12 @@ int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
 }
 
 int w32_accept(int sockfd, const struct sockaddr *addr, socklen_t *addrlen) {
-    int sock;
-    if((sock = (int)accept((SOCKET)sockfd, addr, addrlen)<0)) {
+    SOCKET s;
+    if((s = accept((SOCKET)sockfd, addr, addrlen))==INVALID_SOCKET) {
 	wsock2errno();
 	return -1;
     }
-    return sock;
+    return (int)s;
 }
 
 int w32_listen(int sockfd, int backlog) {
