@@ -327,11 +327,12 @@ int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
 }
 
 int w32_accept(int sockfd, const struct sockaddr *addr, socklen_t *addrlen) {
-    if(accept((SOCKET)sockfd, addr, addrlen)) {
+    int sock;
+    if((sock = (int)accept((SOCKET)sockfd, addr, addrlen)<0)) {
 	wsock2errno();
 	return -1;
     }
-    return 0;
+    return sock;
 }
 
 int w32_listen(int sockfd, int backlog) {
@@ -358,7 +359,7 @@ struct w32polldata {
     struct pollfd *polldata;
 };
 
-VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
+static VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
     WSANETWORKEVENTS evt;
     struct w32polldata *item = (struct w32polldata *)param;
     if(!timedout) {
@@ -368,6 +369,23 @@ VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
 	    if(evt.iErrorCode[i] & (FD_ACCEPT|FD_READ)) item->polldata->revents |= POLLIN;
 	    if(evt.iErrorCode[i] & FD_CLOSE) item->polldata->revents |= POLLHUP;
 	}
+<<<<<<< HEAD:win32/compat/net.c
+	if(SetEvent(item->setme)==0) {
+	    int a = GetLastError();
+	    a++;
+	}
+    }
+}
+
+int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
+    HANDLE *setme;
+    struct w32polldata *items;
+    unsigned int i, ret = 0;
+
+    setme = malloc(2 * sizeof(HANDLE));
+    setme[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
+    setme[1] = event;
+=======
     }
 }
 
@@ -376,6 +394,7 @@ int w32_poll(struct pollfd *fds, int nfds, int timeout) {
     struct w32polldata *items;
     unsigned int i, ret = 0;
 
+>>>>>>> d29df4cf2d499717dde976c27fa293470cfcf114:win32/compat/net.c
     timeout = timeout>=0 ? timeout*1000 : INFINITE;
     if(!nfds) {
 	Sleep(timeout);
@@ -385,7 +404,11 @@ int w32_poll(struct pollfd *fds, int nfds, int timeout) {
     for(i=0; i<nfds; i++) {
 	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	items[i].polldata = &fds[i];
+<<<<<<< HEAD:win32/compat/net.c
+	items[i].setme = setme[0];
+=======
 	items[i].setme = setme;
+>>>>>>> d29df4cf2d499717dde976c27fa293470cfcf114:win32/compat/net.c
 	if(WSAEventSelect(fds[i].fd, items[i].event, FD_ACCEPT|FD_READ|FD_CLOSE)) {
 	    /* handle error here */
 	}
@@ -393,7 +416,11 @@ int w32_poll(struct pollfd *fds, int nfds, int timeout) {
 	    /* handle errors here */
 	}
     }
+<<<<<<< HEAD:win32/compat/net.c
+    WaitForMultipleObjects(2 - (event == NULL) , setme, FALSE, timeout);
+=======
     WaitForSingleObject(setme, timeout); /* FIXME - add the pipe here */
+>>>>>>> d29df4cf2d499717dde976c27fa293470cfcf114:win32/compat/net.c
     for(i=0; i<nfds; i++) {
 	UnregisterWait(items[i].waiter);
 	WSAEventSelect(fds[i].fd, items[i].event, 0);
@@ -401,5 +428,10 @@ int w32_poll(struct pollfd *fds, int nfds, int timeout) {
 	ret += (items[i].polldata->revents != 0);
     }
     free(items);
+<<<<<<< HEAD:win32/compat/net.c
+    CloseHandle(setme[0]);
+    free(setme);
+=======
+>>>>>>> d29df4cf2d499717dde976c27fa293470cfcf114:win32/compat/net.c
     return ret;
 }

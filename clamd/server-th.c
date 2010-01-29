@@ -69,6 +69,9 @@ pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat dbstat;
 
+static void *event_wake_recv  = NULL;
+static void *event_wake_accept = NULL;
+
 static void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
@@ -326,7 +329,7 @@ static void *acceptloop_th(void *arg)
     pthread_mutex_lock(fds->buf_mutex);
     for (;;) {
 	/* Block waiting for data to become available for reading */
-	int new_sd = fds_poll_recv(fds, -1, 0);
+	int new_sd = fds_poll_recv(fds, -1, 0, event_wake_accept);
 
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds->nfds) {
@@ -418,7 +421,7 @@ static void *acceptloop_th(void *arg)
 
 		/* notify recvloop */
 #ifdef _WIN32
-		SetEvent(data->event_wake_recv);
+		SetEvent(event_wake_recv);
 #else
 		if (write(data->syncpipe_wake_recv[1], "", 1) == -1) {
 		    logg("!write syncpipe failed\n");
@@ -462,7 +465,7 @@ static void *acceptloop_th(void *arg)
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
 #ifdef _WIN32
-    SetEvent(data->event_wake_recv);
+    SetEvent(event_wake_recv);
 #else
     if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
 	logg("$Syncpipe write failed\n");
@@ -1065,8 +1068,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    return 1;
 	}
 #ifdef _WIN32
-	acceptdata.event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
-	acceptdata.event_wake_recv = CreateEvent(NULL, TRUE, FALSE, NULL);
+	event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
+	event_wake_recv = CreateEvent(NULL, TRUE, FALSE, NULL);
 #else
     if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
 	(pipe(acceptdata.syncpipe_wake_accept) == -1)) {
@@ -1102,9 +1105,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	/* signal that we can accept more connections */
 	if (fds->nfds <= (unsigned)max_queue)
 	    pthread_cond_signal(&acceptdata.cond_nfds);
-	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1);
+	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
 
+
+#ifndef _WIN32
 	if (!fds->nfds) {
+	    continue;
 	    /* at least the dummy/sync pipe should have remained */
 	    logg("!All recv() descriptors gone: fatal\n");
 	    pthread_mutex_lock(&exit_mutex);
@@ -1113,6 +1119,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_unlock(fds->buf_mutex);
 	    break;
 	}
+#endif
 
 	if (new_sd == -1 && errno != EINTR) {
 	    logg("!Failed to poll sockets, fatal\n");
@@ -1122,7 +1129,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	}
 
 
-	i = (rr_last + 1) % fds->nfds;
+	if(fds->nfds) i = (rr_last + 1) % fds->nfds;
 	for (j = 0;  j < fds->nfds && new_sd >= 0; j++, i = (i+1) % fds->nfds) {
 	    size_t pos = 0;
 	    int error = 0;
@@ -1311,7 +1318,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
 #ifdef _WIN32
-    SetEvent(acceptdata.event_wake_accept);
+    SetEvent(event_wake_accept);
 #else
     if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
 	logg("^Write to syncpipe failed\n");
@@ -1337,8 +1344,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     pthread_join(accept_th, NULL);
     fds_free(fds);
 #ifdef _WIN32
-    CloseHandle(acceptdata.event_wake_accept);
-    CloseHandle(acceptdata.event_wake_recv);
+    CloseHandle(event_wake_accept);
+    CloseHandle(event_wake_recv);
 #else
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);

@@ -207,7 +207,7 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
     if (fds_add(&fds, fd, 1, timeout_sec) == -1)
 	return -1;
     do {
-	ret = fds_poll_recv(&fds, timeout_sec, check_signals);
+	ret = fds_poll_recv(&fds, timeout_sec, check_signals, NULL);
     } while (ret == -1 && errno == EINTR);
     fds_free(&fds);
     return ret;
@@ -431,7 +431,7 @@ void fds_remove(struct fd_data *data, int fd)
  * Must be called with buf_mutex lock held.
  */
 /* TODO: handle ReadTimeout */
-int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *dummy)
 {
     unsigned fdsok = data->nfds;
     size_t i;
@@ -496,7 +496,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	int n = data->nfds;
 
 	fds_unlock(data);
+#ifdef _WIN32
+	retval = poll_with_event(data->poll_data, n, timeout, dummy);
+#else
 	retval = poll(data->poll_data, n, timeout);
+#endif
 	fds_lock(data);
 
 	if (retval > 0) {
