@@ -263,7 +263,7 @@ int cl_init(unsigned int initoptions)
 	unrar_main_header_t x;
 	if (((char*)&x.flags - (char*)&x) != 3) {
 	    cli_errmsg("Structure packing not working, got %u offset, expected %u\n",
-		       (char*)&x.flags - (char*)&x, 3);
+		       (unsigned)((char*)&x.flags - (char*)&x), 3);
 	    return CL_EARG;
 	}
     }
