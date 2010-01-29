@@ -300,6 +300,15 @@ extern int have_rar;
 		     (((v) & 0x00ff000000000000ULL) >> 40) | \
 		     (((v) & 0xff00000000000000ULL) >> 56))
 
+#ifndef HAVE_ATTRIB_PACKED 
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
 
 union unaligned_64 {
 	uint64_t una_u64;
@@ -315,18 +324,6 @@ union unaligned_16 {
 	uint16_t una_u16;
 	int16_t una_s16;
 } __attribute__((packed));
-#if WORDS_BIGENDIAN == 0
-
-#ifndef HAVE_ATTRIB_PACKED 
-#define __attribute__(x)
-#endif
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(1)
-#endif
-#ifdef HAVE_PRAGMA_PACK_HPPA
-#pragma pack 1
-#endif
-
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
@@ -334,6 +331,9 @@ union unaligned_16 {
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack
 #endif
+
+#if WORDS_BIGENDIAN == 0
+
 /* Little endian */
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)

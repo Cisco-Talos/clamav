@@ -59,6 +59,7 @@ typedef struct unrar_comment_header_tag
     uint16_t comm_crc __attribute__ ((packed));
 } unrar_comment_header_t;
 
+#define UNRAR_MAIN_HEADER_TAG_LEN 13
 typedef struct unrar_main_header_tag
 {
     uint16_t head_crc __attribute__ ((packed));
@@ -91,6 +92,14 @@ typedef struct unrar_file_header_tag
     off_t next_offset __attribute__ ((packed));
 } unrar_fileheader_t;
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PATCH_HPPA
+#pragma pack
+#endif
+
 typedef struct unrar_metadata_tag
 {
     uint64_t pack_size;
@@ -115,13 +124,6 @@ typedef struct unrar_state_tag {
     char filename[1024];
 } unrar_state_t;
 
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack()
-#endif
-
-#ifdef HAVE_PRAGMA_PATCH_HPPA
-#pragma pack
-#endif
 
 int unrar_open(int fd, const char *dirname, unrar_state_t *state);
 int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname);

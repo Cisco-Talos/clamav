@@ -1396,6 +1396,64 @@ if test "$have_cv_attrib_aligned" = yes; then
 	AC_DEFINE([HAVE_ATTRIB_ALIGNED], 1, [attrib aligned])
 fi
 
+dnl Sanity check that struct packing works
+AC_MSG_CHECKING([that structure packing works])
+AC_CACHE_VAL([have_cv_struct_pack],[
+    AC_TRY_RUN([
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c __attribute__((packed)); long l __attribute__((packed)); } s;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+struct { char c; long l;} s2;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c; long l; } __attribute__((packed)) s3;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+    int main(int argc, char **argv) {
+        if (sizeof(s)!=sizeof(s.c)+sizeof(s.l))
+	    return 1;
+	if (sizeof(s) != sizeof(s3))
+	    return 2;
+	return (sizeof(s2) >= sizeof(s)) ? 0 : 3;
+    }],
+    [have_cv_struct_pack=yes],
+    [have_cv_struct_pack=no],
+    [have_cv_struct_pack=yes])
+])
+AC_MSG_RESULT([$have_cv_struct_pack])
+
+if test "$have_cv_struct_pack" = "no"; then
+    AC_MSG_ERROR([Structure packing seems to be available, but is not working with this compiler])
+fi
+
 dnl Check if <sys/select.h> needs to be included for fd_set
 AC_MSG_CHECKING([for fd_set])
 AC_HEADER_EGREP([fd_mask], [sys/select.h], [have_fd_set=yes])

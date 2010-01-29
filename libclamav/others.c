@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
  *
@@ -259,6 +259,11 @@ int cl_init(unsigned int initoptions)
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
+    if (sizeof(unrar_main_header_t) != UNRAR_MAIN_HEADER_TAG_LEN) {
+	cli_errmsg("Structure packing not working, expected %u bytes, got %u bytes\n",
+		   sizeof(unrar_main_header_t), UNRAR_MAIN_HEADER_TAG_LEN);
+	return CL_EARG;
+    }
     /* put dlopen() stuff here, etc. */
     if (lt_init() == 0) {
 	cli_rarload();

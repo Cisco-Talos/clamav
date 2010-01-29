@@ -17613,6 +17613,82 @@ $as_echo "#define HAVE_ATTRIB_ALIGNED 1" >>confdefs.h
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking that structure packing works" >&5
+$as_echo_n "checking that structure packing works... " >&6; }
+if test "${have_cv_struct_pack+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    if test "$cross_compiling" = yes; then :
+  have_cv_struct_pack=yes
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c __attribute__((packed)); long l __attribute__((packed)); } s;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+struct { char c; long l;} s2;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c; long l; } __attribute__((packed)) s3;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+    int main(int argc, char **argv) {
+        if (sizeof(s)!=sizeof(s.c)+sizeof(s.l))
+	    return 1;
+	if (sizeof(s) != sizeof(s3))
+	    return 2;
+	return (sizeof(s2) >= sizeof(s)) ? 0 : 3;
+    }
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_cv_struct_pack=yes
+else
+  have_cv_struct_pack=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_struct_pack" >&5
+$as_echo "$have_cv_struct_pack" >&6; }
+
+if test "$have_cv_struct_pack" = "no"; then
+    as_fn_error "Structure packing seems to be available, but is not working with this compiler" "$LINENO" 5
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fd_set" >&5
 $as_echo_n "checking for fd_set... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
