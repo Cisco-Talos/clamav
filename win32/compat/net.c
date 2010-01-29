@@ -386,7 +386,10 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     setme[1] = event;
     timeout = timeout>=0 ? timeout*1000 : INFINITE;
     if(!nfds) {
-	Sleep(timeout);
+	if(event)
+	    WaitForSingleObject(event, timeout);
+	else
+	    Sleep(timeout);
 	return 0;
     }
     items = malloc(nfds * sizeof(struct w32polldata));

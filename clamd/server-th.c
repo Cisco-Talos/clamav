@@ -301,20 +301,11 @@ struct acceptdata {
     pthread_cond_t cond_nfds;
     int max_queue;
     int commandtimeout;
-#ifdef _WIN32
-    HANDLE event_wake_recv;
-    HANDLE event_wake_accept;
-#else
     int syncpipe_wake_recv[2];
     int syncpipe_wake_accept[2];
-#endif
 };
 
-#ifdef _WIN32
-#define ACCEPTDATA_INIT(mutex1, mutex2) { FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, NULL, NULL}
-#else
 #define ACCEPTDATA_INIT(mutex1, mutex2) { FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, {-1, -1}}
-#endif
 
 static void *acceptloop_th(void *arg)
 {
@@ -330,7 +321,9 @@ static void *acceptloop_th(void *arg)
     for (;;) {
 	/* Block waiting for data to become available for reading */
 	int new_sd = fds_poll_recv(fds, -1, 0, event_wake_accept);
-
+#ifdef _WIN32
+	ResetEvent(event_wake_accept);
+#endif
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds->nfds) {
 	    /* no more sockets to poll, all gave an error */
@@ -351,7 +344,7 @@ static void *acceptloop_th(void *arg)
 	    struct fd_buf *buf = &fds->buf[i];
 	    if (!buf->got_newdata)
 		continue;
-#ifndef _WIN32 // FIXME
+#ifndef _WIN32
 	    if (buf->fd == data->syncpipe_wake_accept[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -1107,8 +1100,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_cond_signal(&acceptdata.cond_nfds);
 	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
 
-
-#ifndef _WIN32
+#ifdef _WIN32
+	ResetEvent(event_wake_recv);
+#else
 	if (!fds->nfds) {
 	    continue;
 	    /* at least the dummy/sync pipe should have remained */
@@ -1137,7 +1131,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (!buf->got_newdata)
 		continue;
 
-#ifndef _WIN32 //FIXME
+#ifndef _WIN32
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
