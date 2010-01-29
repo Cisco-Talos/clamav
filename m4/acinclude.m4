@@ -609,12 +609,15 @@ fi
 fi
 
 ])
+have_autoitea06="no"
 case $ac_cv_c_fpu_bigendian in
 	yes)
 		AC_DEFINE([FPU_WORDS_BIGENDIAN], 1, [FPU byte ordering is big endian])
+                have_autoitea06="yes"
 		;;
 	no)
 		AC_DEFINE([FPU_WORDS_BIGENDIAN], 0, [FPU byte ordering is little endian])
+                have_autoitea06="yes"
 		;;
 	*)
 		AC_MSG_WARN([Unable to determine FPU endianess, some features may not be available in this build])
@@ -782,3 +785,13 @@ AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 	fi
 ])
 
+dnl CL_MSG_STATUS([featurename],[have_feature], [enable_feature])
+AC_DEFUN([CL_MSG_STATUS],
+[
+   m4_if($#,3,,[m4_fatal([$0: invalid number of arguments: $#])])
+   AS_ECHO_N(["              $1: "])
+   AS_IF([test "x$3" = "xno"], [AS_ECHO(["$2 (disabled)"])],
+	 [test "x$3" = "xyes"], [AS_ECHO(["$2"])],
+	 [test "x$3" = "x"], [AS_ECHO(["$2"])],
+	 [AS_ECHO(["$2 ($3)"])])
+])

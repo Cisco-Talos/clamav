@@ -12520,16 +12520,19 @@ fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_fpu_bigendian" >&5
 $as_echo "$ac_cv_c_fpu_bigendian" >&6; }
+have_autoitea06="no"
 case $ac_cv_c_fpu_bigendian in
 	yes)
 
 $as_echo "#define FPU_WORDS_BIGENDIAN 1" >>confdefs.h
 
+                have_autoitea06="yes"
 		;;
 	no)
 
 $as_echo "#define FPU_WORDS_BIGENDIAN 0" >>confdefs.h
 
+                have_autoitea06="yes"
 		;;
 	*)
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to determine FPU endianess, some features may not be available in this build" >&5
@@ -13986,6 +13989,7 @@ else
   enable_mempool="yes"
 fi
 
+have_mempool="no"
 if test "$enable_mempool" = "yes"; then
 	if test "$ac_cv_c_mmap_private" != "yes"; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (mmap not available or not usable)" >&5
@@ -14002,6 +14006,7 @@ $as_echo "$as_me: ****** mempool support disabled (anonymous mmap not available)
 
 $as_echo "#define USE_MPOOL 1" >>confdefs.h
 
+				have_mempool="yes"
 			fi
 		fi
 	fi
@@ -25054,6 +25059,232 @@ fi
 	  if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
+fi
+
+
+# Print a summary of what features we enabled
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of detected features follows" >&5
+$as_echo "$as_me: Summary of detected features follows" >&6;}
+
+cat <<EOF
+              OS          : $target_os
+              pthreads    : $have_pthreads ($THREAD_LIBS)
+EOF
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous  features" >&5
+$as_echo "$as_me: Summary of miscellaneous  features" >&6;}
+
+
+   $as_echo_n "              check       : "
+   if test "x$enable_check_ut" = "xno"; then :
+  $as_echo "$CHECK_LIBS (disabled)"
+elif test "x$enable_check_ut" = "xyes"; then :
+  $as_echo "$CHECK_LIBS"
+elif test "x$enable_check_ut" = "x"; then :
+  $as_echo "$CHECK_LIBS"
+else
+  $as_echo "$CHECK_LIBS ($enable_check_ut)"
+fi
+
+
+
+   $as_echo_n "              clamuko     : "
+   if test "x$want_clamuko" = "xno"; then :
+  $as_echo "$want_clamuko (disabled)"
+elif test "x$want_clamuko" = "xyes"; then :
+  $as_echo "$want_clamuko"
+elif test "x$want_clamuko" = "x"; then :
+  $as_echo "$want_clamuko"
+else
+  $as_echo "$want_clamuko ($want_clamuko)"
+fi
+
+if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then
+
+
+   $as_echo_n "              fdpassing   : "
+   if test "x$want_fdpassing" = "xno"; then :
+  $as_echo "$have_fdpass (disabled)"
+elif test "x$want_fdpassing" = "xyes"; then :
+  $as_echo "$have_fdpass"
+elif test "x$want_fdpassing" = "x"; then :
+  $as_echo "$have_fdpass"
+else
+  $as_echo "$have_fdpass ($want_fdpassing)"
+fi
+
+else
+
+
+   $as_echo_n "              fdpassing   : "
+   if test "x" = "xno"; then :
+  $as_echo "n/a (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "n/a"
+elif test "x" = "x"; then :
+  $as_echo "n/a"
+else
+  $as_echo "n/a ()"
+fi
+
+fi
+
+
+   $as_echo_n "              IPv6        : "
+   if test "x$want_ipv6" = "xno"; then :
+  $as_echo "$have_cv_ipv6 (disabled)"
+elif test "x$want_ipv6" = "xyes"; then :
+  $as_echo "$have_cv_ipv6"
+elif test "x$want_ipv6" = "x"; then :
+  $as_echo "$have_cv_ipv6"
+else
+  $as_echo "$have_cv_ipv6 ($want_ipv6)"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of optional tools" >&5
+$as_echo "$as_me: Summary of optional tools" >&6;}
+
+
+   $as_echo_n "              clamdtop    : "
+   if test "x$enable_clamdtop" = "xno"; then :
+  $as_echo "$CURSES_LIBS (disabled)"
+elif test "x$enable_clamdtop" = "xyes"; then :
+  $as_echo "$CURSES_LIBS"
+elif test "x$enable_clamdtop" = "x"; then :
+  $as_echo "$CURSES_LIBS"
+else
+  $as_echo "$CURSES_LIBS ($enable_clamdtop)"
+fi
+
+
+
+   $as_echo_n "              milter      : "
+   if test "x$have_milter" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "x$have_milter" = "xyes"; then :
+  $as_echo "yes"
+elif test "x$have_milter" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes ($have_milter)"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features)" >&5
+$as_echo "$as_me: Summary of engine performance features)" >&6;}
+if test "x$enable_debug" = "xyes"; then
+
+
+   $as_echo_n "              release mode: "
+   if test "xyes" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "yes"
+elif test "xyes" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes (yes)"
+fi
+
+else
+
+
+   $as_echo_n "              release mode: "
+   if test "xdebug build" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "xdebug build" = "xyes"; then :
+  $as_echo "no"
+elif test "xdebug build" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no (debug build)"
+fi
+
+fi
+have_jit="yes"
+if test "$subdirfailed" = "no"; then
+    have_jit="no"
+fi
+
+
+   $as_echo_n "              jit         : "
+   if test "x$enable_llvm" = "xno"; then :
+  $as_echo "$have_jit (disabled)"
+elif test "x$enable_llvm" = "xyes"; then :
+  $as_echo "$have_jit"
+elif test "x$enable_llvm" = "x"; then :
+  $as_echo "$have_jit"
+else
+  $as_echo "$have_jit ($enable_llvm)"
+fi
+
+
+
+   $as_echo_n "              mempool     : "
+   if test "x$enable_mempool" = "xno"; then :
+  $as_echo "$have_mempool (disabled)"
+elif test "x$enable_mempool" = "xyes"; then :
+  $as_echo "$have_mempool"
+elif test "x$enable_mempool" = "x"; then :
+  $as_echo "$have_mempool"
+else
+  $as_echo "$have_mempool ($enable_mempool)"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine detection features" >&5
+$as_echo "$as_me: Summary of engine detection features" >&6;}
+
+
+   $as_echo_n "              autoit_ea06 : "
+   if test "x" = "xno"; then :
+  $as_echo "$have_autoitea06 (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "$have_autoitea06"
+elif test "x" = "x"; then :
+  $as_echo "$have_autoitea06"
+else
+  $as_echo "$have_autoitea06 ()"
+fi
+
+
+
+   $as_echo_n "              bzip2       : "
+   if test "x$want_bzip2" = "xno"; then :
+  $as_echo "$ac_cv_c_cve_2008_1372 (disabled)"
+elif test "x$want_bzip2" = "xyes"; then :
+  $as_echo "$ac_cv_c_cve_2008_1372"
+elif test "x$want_bzip2" = "x"; then :
+  $as_echo "$ac_cv_c_cve_2008_1372"
+else
+  $as_echo "$ac_cv_c_cve_2008_1372 ($want_bzip2)"
+fi
+
+
+
+   $as_echo_n "              zlib        : "
+   if test "xyes" = "xno"; then :
+  $as_echo "$ZLIB_HOME (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "$ZLIB_HOME"
+elif test "xyes" = "x"; then :
+  $as_echo "$ZLIB_HOME"
+else
+  $as_echo "$ZLIB_HOME (yes)"
+fi
+
+
+
+   $as_echo_n "              unrar       : "
+   if test "x$want_unrar" = "xno"; then :
+  $as_echo "$want_unrar (disabled)"
+elif test "x$want_unrar" = "xyes"; then :
+  $as_echo "$want_unrar"
+elif test "x$want_unrar" = "x"; then :
+  $as_echo "$want_unrar"
+else
+  $as_echo "$want_unrar ($want_unrar)"
 fi
 
 
