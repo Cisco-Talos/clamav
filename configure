@@ -25202,9 +25202,9 @@ else
 fi
 
 fi
-have_jit="yes"
+have_jit="no"
 if test "$subdirfailed" = "no"; then
-    have_jit="no"
+    have_jit="yes"
 fi
 
 

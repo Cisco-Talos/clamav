@@ -1666,9 +1666,9 @@ if test "x$enable_debug" = "xyes"; then
 else
     CL_MSG_STATUS([release mode],[no],[debug build])
 fi
-have_jit="yes"
+have_jit="no"
 if test "$subdirfailed" = "no"; then
-    have_jit="no"
+    have_jit="yes"
 fi
 CL_MSG_STATUS([jit         ],[$have_jit],[$enable_llvm])
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
