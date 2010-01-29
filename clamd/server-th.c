@@ -298,11 +298,20 @@ struct acceptdata {
     pthread_cond_t cond_nfds;
     int max_queue;
     int commandtimeout;
+#ifdef _WIN32
+    HANDLE event_wake_recv;
+    HANDLE event_wake_accept;
+#else
     int syncpipe_wake_recv[2];
     int syncpipe_wake_accept[2];
+#endif
 };
 
+#ifdef _WIN32
+#define ACCEPTDATA_INIT(mutex1, mutex2) { FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, NULL, NULL}
+#else
 #define ACCEPTDATA_INIT(mutex1, mutex2) { FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, {-1, -1}}
+#endif
 
 static void *acceptloop_th(void *arg)
 {
@@ -339,6 +348,7 @@ static void *acceptloop_th(void *arg)
 	    struct fd_buf *buf = &fds->buf[i];
 	    if (!buf->got_newdata)
 		continue;
+#ifndef _WIN32 // FIXME
 	    if (buf->fd == data->syncpipe_wake_accept[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -346,6 +356,7 @@ static void *acceptloop_th(void *arg)
 		}
 		continue;
 	    }
+#endif
 	    if (buf->got_newdata == -1) {
 		logg("$Acceptloop closed FD: %d\n", buf->fd);
 		shutdown(buf->fd, 2);
@@ -406,10 +417,14 @@ static void *acceptloop_th(void *arg)
 		}
 
 		/* notify recvloop */
+#ifdef _WIN32
+		SetEvent(data->event_wake_recv);
+#else
 		if (write(data->syncpipe_wake_recv[1], "", 1) == -1) {
 		    logg("!write syncpipe failed\n");
 		    continue;
 		}
+#endif
 	    } else if (errno != EINTR) {
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
@@ -446,10 +461,13 @@ static void *acceptloop_th(void *arg)
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
+#ifdef _WIN32
+    SetEvent(data->event_wake_recv);
+#else
     if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
 	logg("$Syncpipe write failed\n");
     }
-
+#endif
     return NULL;
 }
 
@@ -1046,14 +1064,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    cl_engine_free(engine);
 	    return 1;
 	}
-
+#ifdef _WIN32
+	acceptdata.event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
+	acceptdata.event_wake_recv = CreateEvent(NULL, TRUE, FALSE, NULL);
+#else
     if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
 	(pipe(acceptdata.syncpipe_wake_accept) == -1)) {
 
 	logg("!pipe failed\n");
 	exit(-1);
     }
-
     syncpipe_wake_recv_w = acceptdata.syncpipe_wake_recv[1];
 
     if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1, 0) == -1 ||
@@ -1061,6 +1081,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("!failed to add pipe fd\n");
 	exit(-1);
     }
+#endif
 
     if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
@@ -1109,6 +1130,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (!buf->got_newdata)
 		continue;
 
+#ifndef _WIN32 //FIXME
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -1116,7 +1138,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		continue;
 	    }
-
+#endif
 	    if (buf->got_newdata == -1) {
 		if (buf->mode == MODE_WAITREPLY) {
 		    logg("$mode WAIT_REPLY -> closed\n");
@@ -1288,9 +1310,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
+#ifdef _WIN32
+    SetEvent(acceptdata.event_wake_accept);
+#else
     if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
 	logg("^Write to syncpipe failed\n");
     }
+#endif
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
@@ -1310,8 +1336,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     pthread_join(accept_th, NULL);
     fds_free(fds);
+#ifdef _WIN32
+    CloseHandle(acceptdata.event_wake_accept);
+    CloseHandle(acceptdata.event_wake_recv);
+#else
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);
+#endif
     if(dbstat.entries)
 	cl_statfree(&dbstat);
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");

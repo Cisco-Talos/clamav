@@ -39,6 +39,7 @@ void w32_freeaddrinfo(struct addrinfo *res);
 const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 struct hostent *w32_gethostbyname(const char *name);
 int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+int w32_poll(struct pollfd *fds, int nfds, int timeout);
 int w32_accept(int sockfd, const struct sockaddr *addr, socklen_t *addrlen);
 int w32_listen(int sockfd, int backlog);
 int w32_shutdown(int sockfd, int how);

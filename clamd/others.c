@@ -59,7 +59,6 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #else /* HAVE_POLL_H */
-#undef HAVE_POLL
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif /* HAVE_SYS_SELECT_H */

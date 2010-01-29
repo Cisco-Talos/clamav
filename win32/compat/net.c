@@ -24,6 +24,7 @@
 #ifdef W2K_DNSAAPI_COMPAT
 #include <Wspiapi.h>
 #endif
+#include <stdlib.h>
 #include "net.h"
 #include "w32_errno.h"
 
@@ -347,4 +348,58 @@ int w32_shutdown(int sockfd, int how) {
 	return -1;
     }
     return 0;
+}
+
+
+struct w32polldata {
+    HANDLE setme;
+    HANDLE event;
+    HANDLE waiter;
+    struct pollfd *polldata;
+};
+
+VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
+    WSANETWORKEVENTS evt;
+    struct w32polldata *item = (struct w32polldata *)param;
+    if(!timedout) {
+	unsigned int i;
+	WSAEnumNetworkEvents(item->polldata->fd, item->event, &evt);
+	for(i=0; i<evt.lNetworkEvents; i++) {
+	    if(evt.iErrorCode[i] & (FD_ACCEPT|FD_READ)) item->polldata->revents |= POLLIN;
+	    if(evt.iErrorCode[i] & FD_CLOSE) item->polldata->revents |= POLLHUP;
+	}
+    }
+}
+
+int w32_poll(struct pollfd *fds, int nfds, int timeout) {
+    HANDLE setme = CreateEvent(NULL, TRUE, FALSE, NULL);
+    struct w32polldata *items;
+    unsigned int i, ret = 0;
+
+    timeout = timeout>=0 ? timeout*1000 : INFINITE;
+    if(!nfds) {
+	Sleep(timeout);
+	return 0;
+    }
+    items = malloc(nfds * sizeof(struct w32polldata));
+    for(i=0; i<nfds; i++) {
+	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	items[i].polldata = &fds[i];
+	items[i].setme = setme;
+	if(WSAEventSelect(fds[i].fd, items[i].event, FD_ACCEPT|FD_READ|FD_CLOSE)) {
+	    /* handle error here */
+	}
+	if(RegisterWaitForSingleObject(&items[i].waiter, items[i].event, poll_cb, &items[i], timeout, WT_EXECUTEONLYONCE)) {
+	    /* handle errors here */
+	}
+    }
+    WaitForSingleObject(setme, timeout); /* FIXME - add the pipe here */
+    for(i=0; i<nfds; i++) {
+	UnregisterWait(items[i].waiter);
+	WSAEventSelect(fds[i].fd, items[i].event, 0);
+	CloseHandle(items[i].event);
+	ret += (items[i].polldata->revents != 0);
+    }
+    free(items);
+    return ret;
 }
