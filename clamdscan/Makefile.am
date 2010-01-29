@@ -36,9 +36,6 @@ clamdscan_SOURCES = \
     proto.h \
     client.c \
     client.h
-if VERSIONSCRIPT
-LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/clamdscan/clamdscan.map
-endif
 endif
 
 
