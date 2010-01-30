@@ -69,10 +69,8 @@ pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat dbstat;
 
-#ifdef _WIN32
-HANDLE event_wake_recv;
-HANDLE event_wake_accept;
-#endif
+void *event_wake_recv = NULL;
+void *event_wake_accept = NULL;
 
 static void scanner_thread(void *arg)
 {

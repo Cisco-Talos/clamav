@@ -1,3 +1,7 @@
+Sat Jan 30 04:19:29 CET 2010 (acab)
+-----------------------------------
+ * win32: clamd (sort of) works
+
 Thu Jan 28 12:53:45 CET 2010 (tk)
 ---------------------------------
  * libclamav: provide information about lsig matches to bytecode (bb#1799)
