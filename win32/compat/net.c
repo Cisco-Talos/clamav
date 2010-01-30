@@ -388,7 +388,7 @@ VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
 }
 
 int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
-    HANDLE *setme;
+    HANDLE *setme, cankill;
     struct w32polldata *items;
     unsigned int i, ret = 0;
 
@@ -421,12 +421,16 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     } else {
 	ret = 0;
     }
+    cankill = CreateEvent(NULL, TRUE, FALSE, NULL);
     for(i=0; i<nfds; i++) {
-	UnregisterWait(items[i].waiter);
+	ResetEvent(cankill);
+	UnregisterWaitEx(items[i].waiter, cankill);
 	WSAEventSelect(fds[i].fd, items[i].event, 0);
+	WaitForSingleObject(cankill, INFINITE);
 	CloseHandle(items[i].event);
 	ret += (items[i].polldata->revents != 0);
     }
+    CloseHandle(cankill);
     free(items);
     CloseHandle(setme[0]);
     free(setme);
