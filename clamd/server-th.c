@@ -69,8 +69,10 @@ pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat dbstat;
 
-static void *event_wake_recv  = NULL;
-static void *event_wake_accept = NULL;
+#ifdef _WIN32
+HANDLE event_wake_recv;
+HANDLE event_wake_accept;
+#endif
 
 static void scanner_thread(void *arg)
 {
@@ -1092,6 +1094,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     time(&start_time);
     for(;;) {
 	int new_sd;
+
 	/* Block waiting for connection on any of the sockets */
 	pthread_mutex_lock(fds->buf_mutex);
 	fds_cleanup(fds);
@@ -1099,12 +1102,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	if (fds->nfds <= (unsigned)max_queue)
 	    pthread_cond_signal(&acceptdata.cond_nfds);
 	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
-
 #ifdef _WIN32
 	ResetEvent(event_wake_recv);
 #else
 	if (!fds->nfds) {
-	    continue;
 	    /* at least the dummy/sync pipe should have remained */
 	    logg("!All recv() descriptors gone: fatal\n");
 	    pthread_mutex_lock(&exit_mutex);
@@ -1114,7 +1115,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    break;
 	}
 #endif
-
 	if (new_sd == -1 && errno != EINTR) {
 	    logg("!Failed to poll sockets, fatal\n");
 	    pthread_mutex_lock(&exit_mutex);
@@ -1131,7 +1131,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (!buf->got_newdata)
 		continue;
 
-#ifndef _WIN32
+#ifndef _WIN32 //FIXME
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {

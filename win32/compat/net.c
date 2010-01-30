@@ -326,13 +326,12 @@ int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
     return ret;
 }
 
-int w32_accept(int sockfd, const struct sockaddr *addr, socklen_t *addrlen) {
-    SOCKET s;
-    if((s = accept((SOCKET)sockfd, addr, addrlen))==INVALID_SOCKET) {
+int w32_accept(SOCKET sockfd, const struct sockaddr *addr, socklen_t *addrlen) {
+    if((sockfd = accept(sockfd, addr, addrlen)) == INVALID_SOCKET) {
 	wsock2errno();
 	return -1;
     }
-    return (int)s;
+    return (int)sockfd;
 }
 
 int w32_listen(int sockfd, int backlog) {
@@ -359,20 +358,32 @@ struct w32polldata {
     struct pollfd *polldata;
 };
 
-static VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
+VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
     WSANETWORKEVENTS evt;
     struct w32polldata *item = (struct w32polldata *)param;
     if(!timedout) {
 	unsigned int i;
 	WSAEnumNetworkEvents(item->polldata->fd, item->event, &evt);
-	for(i=0; i<evt.lNetworkEvents; i++) {
-	    if(evt.iErrorCode[i] & (FD_ACCEPT|FD_READ)) item->polldata->revents |= POLLIN;
-	    if(evt.iErrorCode[i] & FD_CLOSE) item->polldata->revents |= POLLHUP;
+	switch(evt.lNetworkEvents) {
+	    case FD_ACCEPT:
+		i = FD_ACCEPT_BIT;
+		item->polldata->revents = POLLIN;
+		break;
+	    case FD_READ:
+		i = FD_READ_BIT;
+		item->polldata->revents = POLLIN;
+		break;
+	    case FD_CLOSE:
+		i = FD_CLOSE_BIT;
+		item->polldata->revents = POLLHUP;
+		break;
+	    default:
+		i = -1;
+		item->polldata->revents = POLLERR;
 	}
-	if(SetEvent(item->setme)==0) {
-	    int a = GetLastError();
-	    a++;
-	}
+	if(i>=0 && evt.iErrorCode[i])
+	    item->polldata->revents = POLLERR;
+	SetEvent(item->setme);
     }
 }
 
@@ -381,17 +392,18 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     struct w32polldata *items;
     unsigned int i, ret = 0;
 
-    setme = malloc(2 * sizeof(HANDLE));
-    setme[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
-    setme[1] = event;
-    timeout = timeout>=0 ? timeout*1000 : INFINITE;
+    if(timeout <0) timeout = INFINITE;
     if(!nfds) {
-	if(event)
-	    WaitForSingleObject(event, timeout);
-	else
+	if(event) {
+	    if(WaitForSingleObject(event, timeout) == WAIT_OBJECT_0)
+		return 1;
+	} else
 	    Sleep(timeout);
 	return 0;
     }
+    setme = malloc(2 * sizeof(HANDLE));
+    setme[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
+    setme[1] = event;
     items = malloc(nfds * sizeof(struct w32polldata));
     for(i=0; i<nfds; i++) {
 	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -404,7 +416,11 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
 	    /* handle errors here */
 	}
     }
-    WaitForMultipleObjects(2 - (event == NULL) , setme, FALSE, timeout);
+    if((ret = WaitForMultipleObjects(2 - (event == NULL), setme, FALSE, timeout)) == WAIT_OBJECT_0 + 1) {
+	ret = 1;
+    } else {
+	ret = 0;
+    }
     for(i=0; i<nfds; i++) {
 	UnregisterWait(items[i].waiter);
 	WSAEventSelect(fds[i].fd, items[i].event, 0);

@@ -431,7 +431,7 @@ void fds_remove(struct fd_data *data, int fd)
  * Must be called with buf_mutex lock held.
  */
 /* TODO: handle ReadTimeout */
-int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *dummy)
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *event)
 {
     unsigned fdsok = data->nfds;
     size_t i;
@@ -498,7 +498,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *du
 
 	fds_unlock(data);
 #ifdef _WIN32
-	retval = poll_with_event(data->poll_data, n, timeout, dummy);
+	retval = poll_with_event(data->poll_data, n, timeout, event);
 #else
 	retval = poll(data->poll_data, n, timeout);
 #endif
