@@ -25,7 +25,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
@@ -58,8 +60,9 @@ int main(int argc, char **argv)
 	time_t starttime;
         struct optstruct *opts;
         const struct optstruct *opt;
+#ifndef _WIN32
 	struct sigaction sigact;
-
+#endif
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
@@ -117,11 +120,13 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
+#ifndef _WIN32
     memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = SIG_IGN;
     sigemptyset(&sigact.sa_mask);
     sigaddset(&sigact.sa_mask, SIGPIPE);
     sigaction(SIGPIPE, &sigact, NULL);
+#endif
 
     time(&starttime);
     /* ctime() does \n, but I need it once more */

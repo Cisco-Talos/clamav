@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	Keyword="Win32Proj"
-	Name="libclamunrar_iface"
-	ProjectGUID="{3E9C718E-7670-4E33-9D94-C4E9ABE49F81}"
+	Name="clamdscan"
+	ProjectGUID="{9571E1BE-DDDA-47CB-8675-238D405FCADA}"
 	ProjectType="Visual C++"
-	RootNamespace="libclamunrar_iface"
+	RootNamespace="clamdscan"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			CharacterSet="2"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
@@ -39,11 +39,11 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				BasicRuntimeChecks="3"
 				CompileAs="1"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4996"
+				DisableSpecificWarnings="4996;4244;4090"
 				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -64,9 +64,8 @@
 			<Tool
 				GenerateDebugInformation="true"
 				LinkIncremental="1"
-				ModuleDefinitionFile="$(SolutionDir)libclamunrar_iface.def"
 				Name="VCLinkerTool"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -93,7 +92,7 @@
 		</Configuration>
 		<Configuration
 			CharacterSet="2"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
@@ -115,11 +114,10 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;"
-				BufferSecurityCheck="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				CompileAs="1"
 				DebugInformationFormat="3"
-				DisableSpecificWarnings="4996"
+				DisableSpecificWarnings="4996;4244;4090"
 				EnableFunctionLevelLinking="true"
 				EnableIntrinsicFunctions="true"
 				Name="VCCLCompilerTool"
@@ -142,10 +140,9 @@
 				EnableCOMDATFolding="2"
 				GenerateDebugInformation="true"
 				LinkIncremental="1"
-				ModuleDefinitionFile="$(SolutionDir)libclamunrar_iface.def"
 				Name="VCLinkerTool"
 				OptimizeReferences="2"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -180,14 +177,42 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libclamunrar_iface\unrar_iface.c"
+				RelativePath="..\clamdscan\clamdscan.c"
 				>
 			</File>
+			<File
+				RelativePath="..\clamdscan\client.c"
+				>
+			</File>
+			<File
+				RelativePath="..\clamdscan\proto.c"
+				>
+			</File>
+			<Filter
+				Name="shared"
+				>
+				<File
+					RelativePath="..\shared\actions.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\misc.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\output.c"
+					>
+				</File>
+			</Filter>
 			<Filter
 				Name="compat"
 				>
 				<File
-					RelativePath=".\compat\snprintf.c"
+					RelativePath=".\compat\libgen.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\setargv.c"
 					>
 				</File>
 			</Filter>
@@ -203,14 +228,6 @@
 			Name="Resource Files"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\libclamunrar_iface.def"
-				>
-			</File>
-			<File
-				RelativePath=".\res\libclamunrar_iface.rc"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

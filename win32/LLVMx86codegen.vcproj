@@ -41,7 +41,7 @@
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				BasicRuntimeChecks="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
@@ -104,7 +104,7 @@
 			/>
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				DebugInformationFormat="1"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				EnableFunctionLevelLinking="false"
 				EnableIntrinsicFunctions="true"

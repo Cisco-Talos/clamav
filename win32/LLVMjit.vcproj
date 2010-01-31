@@ -6,7 +6,7 @@
 	ProjectType="Visual C++"
 	RootNamespace="LLVMjit"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -41,7 +41,7 @@
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				BasicRuntimeChecks="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				ExceptionHandling="1"
 				MinimalRebuild="true"
@@ -105,7 +105,7 @@
 			/>
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				EnableFunctionLevelLinking="false"
 				EnableIntrinsicFunctions="true"
@@ -156,47 +156,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Triple.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\SourceMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\APInt.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\ManagedStatic.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Statistic.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\StringExtras.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
+				RelativePath="..\libclamav\c++\llvm\lib\Analysis\AliasAnalysis.cpp"
 				>
 			</File>
 			<File
@@ -204,71 +164,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\StringMap.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Support\APFloat.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\circular_raw_ostream.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Debug.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\TargetRegistry.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\StringPool.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Dwarf.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Timer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\FoldingSet.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\MemoryBuffer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\FormattedStream.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\raw_ostream.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\ErrorHandling.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\Twine.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Support\StringRef.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Analysis\AliasAnalysis.cpp"
+				RelativePath="..\libclamav\c++\llvm\lib\Support\APInt.cpp"
 				>
 			</File>
 			<File
@@ -296,7 +196,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\circular_raw_ostream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\CommandLine.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\ConstantFold.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"
 				>
 			</File>
 			<File
@@ -308,11 +220,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Debug.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\DebugInfo.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\Dominators.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Dwarf.cpp"
 				>
 			</File>
 			<File
@@ -324,7 +244,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ErrorHandling.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\ExecutionEngine\ExecutionEngine.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\FoldingSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\FormattedStream.cpp"
 				>
 			</File>
 			<File
@@ -333,6 +265,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\Globals.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"
 				>
 			</File>
 			<File
@@ -353,6 +289,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\IntrinsicInst.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\VMCore\IRBuilder.cpp"
 				>
 			</File>
 			<File
@@ -412,6 +352,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\ManagedStatic.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\Mangler.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfo.cpp"
 				>
 			</File>
@@ -440,15 +388,11 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\MemoryBuffer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\MemoryBuiltins.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Target\Mangler.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\VMCore\IRBuilder.cpp"
 				>
 			</File>
 			<File
@@ -480,11 +424,51 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\PrintModulePass.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\PseudoSourceValue.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\raw_ostream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallPtrSet.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\SourceMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Statistic.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringExtras.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringMap.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringPool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\StringRef.cpp"
 				>
 			</File>
 			<File
@@ -516,7 +500,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\TargetRegistry.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\ExecutionEngine\JIT\TargetSelect.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Timer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Triple.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Support\Twine.cpp"
 				>
 			</File>
 			<File

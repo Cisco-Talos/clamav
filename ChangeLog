@@ -1,3 +1,7 @@
+Sun Jan 31 17:12:48 CET 2010 (acab)
+-----------------------------------
+ * win32: clamdscan added
+
 Sat Jan 30 04:19:29 CET 2010 (acab)
 -----------------------------------
  * win32: clamd (sort of) works

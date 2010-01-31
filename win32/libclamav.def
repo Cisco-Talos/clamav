@@ -104,6 +104,7 @@ EXPORTS htonl
 EXPORTS htons
 EXPORTS ntohl
 EXPORTS ntohs
+EXPORTS __WSAFDIsSet
 EXPORTS gettimeofday
 EXPORTS pthread_mutex_lock
 EXPORTS pthread_mutex_unlock

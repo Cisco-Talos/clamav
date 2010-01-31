@@ -6,7 +6,7 @@
 	ProjectType="Visual C++"
 	RootNamespace="LLVMcodegen"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -41,7 +41,7 @@
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				BasicRuntimeChecks="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				ExceptionHandling="1"
 				MinimalRebuild="true"
@@ -105,7 +105,7 @@
 			/>
 			<Tool
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 				EnableFunctionLevelLinking="false"
 				EnableIntrinsicFunctions="true"
@@ -400,11 +400,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfoDarwin.cpp"
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachOWriter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp"
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfoDarwin.cpp"
 				>
 			</File>
 			<File
@@ -417,6 +417,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCInst.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp"
 				>
 			</File>
 			<File
@@ -433,10 +437,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\OptimizeExts.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachOWriter.cpp"
 				>
 			</File>
 			<File
