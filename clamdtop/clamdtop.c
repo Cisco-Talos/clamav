@@ -567,7 +567,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 	}
 	conn->sd = s;
 	gettimeofday(&conn->tv_conn, NULL);
-	tv.tv_sec = 4;
+	tv.tv_sec = 30;
 	tv.tv_usec = 0;
 	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	return 0;
