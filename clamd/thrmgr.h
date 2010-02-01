@@ -62,8 +62,9 @@ typedef struct threadpool_tag {
 	pthread_attr_t pool_attr;
 
 	pthread_cond_t  idle_cond;
-	pthread_cond_t  queueable_cond;
-	
+	pthread_cond_t  queueable_single_cond;
+	pthread_cond_t  queueable_bulk_cond;
+
 	pool_state_t state;
 	int thr_max;
 	int queue_max;
