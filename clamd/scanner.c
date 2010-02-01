@@ -163,7 +163,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		pthread_mutex_lock(&reload_mutex);
 		client_conn->engine_timestamp = reloaded_time;
 		pthread_mutex_unlock(&reload_mutex);
-		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
+		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn, 1)) {
 		    logg("!thread dispatch failed\n");
 		    free(filename);
 		    return CL_EMEM;

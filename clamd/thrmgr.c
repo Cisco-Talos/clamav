@@ -745,7 +745,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
     return thrmgr_dispatch_internal(threadpool, user_data, 0);
 }
 
-int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data)
+int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data, int bulk)
 {
     int ret;
     if (group) {
@@ -754,7 +754,7 @@ int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *use
 	logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);
 	pthread_mutex_unlock(&group->mutex);
     }
-    if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, group ? 1 : 0)) && group) {
+    if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, bulk)) && group) {
 	pthread_mutex_lock(&group->mutex);
 	group->jobs--;
 	logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);

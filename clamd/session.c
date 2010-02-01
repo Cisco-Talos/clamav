@@ -368,6 +368,7 @@ int command(client_conn_t *conn, int *virus)
 static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *argument)
 {
     int ret = 0;
+    int bulk;
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 
     if(!dup_conn) {
@@ -382,6 +383,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	return -1;
     }
     dup_conn->scanfd = -1;
+    bulk = 1;
     switch (cmd) {
 	case COMMAND_FILDES:
 	    if (conn->scanfd == -1) {
@@ -407,10 +409,14 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	    break;
 	case COMMAND_STREAM:
 	case COMMAND_STATS:
+	    /* not a scan command, don't queue to bulk */
+	    bulk = 0;
 	    /* just dispatch the command */
 	    break;
     }
-    if(!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn)) {
+    if (!dup_conn->group)
+	bulk = 0;
+    if(!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn, bulk)) {
 	logg("!thread dispatch failed\n");
 	ret = -2;
     }
