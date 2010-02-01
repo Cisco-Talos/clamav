@@ -1,3 +1,7 @@
+Mon Feb  1 19:25:45 CET 2010 (tk)
+---------------------------------
+ * sigtool: add support for bytecode.cvd
+
 Sun Jan 31 17:12:48 CET 2010 (acab)
 -----------------------------------
  * win32: clamdscan added

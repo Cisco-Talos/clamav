@@ -107,6 +107,12 @@ static const struct dblist_s {
     { NULL,	    0 }
 };
 
+struct dblist_scan
+{
+    char *name;
+    struct dblist_scan *next;
+};
+
 static const char *getdbname(const char *str)
 {
     if(strstr(str, "main"))
@@ -115,6 +121,8 @@ static const char *getdbname(const char *str)
 	return "daily";
     else if(strstr(str, "safebrowsing"))
 	return "safebrowsing";
+    else if(strstr(str, "bytecode"))
+	return "bytecode";
     else {
 	mprintf("!getdbname: Can't extract db name\n");
 	return "UNKNOWN";
@@ -421,7 +429,7 @@ static char *sha256file(const char *file, unsigned int *size)
     return sha;
 }
 
-static int writeinfo(const char *dbname, const char *builder, const char *header, const struct optstruct *opts)
+static int writeinfo(const char *dbname, const char *builder, const char *header, const struct optstruct *opts, const struct dblist_scan *dbl)
 {
 	FILE *fh;
 	unsigned int i, bytes;
@@ -448,23 +456,40 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	return -1;
     }
 
-    for(i = 0; dblist[i].name; i++) {
-	if(!cli_strbcasestr(dblist[i].name, ".info") && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
-	    if(!(pt = sha256file(dblist[i].name, &bytes))) {
+    if(dbl) {
+	while(dbl) {
+	    if(!(pt = sha256file(dbl->name, &bytes))) {
 		mprintf("!writeinfo: Can't generate SHA256 for %s\n", file);
 		fclose(fh);
 		return -1;
 	    }
-	    if(fprintf(fh, "%s:%u:%s\n", dblist[i].name, bytes, pt) < 0) {
+	    if(fprintf(fh, "%s:%u:%s\n", dbl->name, bytes, pt) < 0) {
 		mprintf("!writeinfo: Can't write to info file\n");
 		fclose(fh);
 		free(pt);
 		return -1;
 	    }
 	    free(pt);
+	    dbl = dbl->next;
+	}
+    } else {
+	for(i = 0; dblist[i].name; i++) {
+	    if(!cli_strbcasestr(dblist[i].name, ".info") && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
+		if(!(pt = sha256file(dblist[i].name, &bytes))) {
+		    mprintf("!writeinfo: Can't generate SHA256 for %s\n", file);
+		    fclose(fh);
+		    return -1;
+		}
+		if(fprintf(fh, "%s:%u:%s\n", dblist[i].name, bytes, pt) < 0) {
+		    mprintf("!writeinfo: Can't write to info file\n");
+		    fclose(fh);
+		    free(pt);
+		    return -1;
+		}
+		free(pt);
+	    }
 	}
     }
-
     rewind(fh);
     sha256_init(&ctx);
     while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
@@ -605,9 +630,9 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 
 static int build(const struct optstruct *opts)
 {
-	int ret;
+	int ret, bc = 0;
 	size_t bytes;
-	unsigned int i, sigs = 0, oldsigs = 0, lines = 0, version, real_header, fl;
+	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl;
 	struct stat foo;
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512], patch[32], broken[32];
@@ -618,7 +643,17 @@ static int build(const struct optstruct *opts)
 	time_t timet;
 	struct tm *brokent;
 	struct cl_cvd *oldcvd;
+	struct dblist_scan *dblist2 = NULL, *lspt;
+	DIR *dd;
+	struct dirent *dent;
 
+#define FREE_LS(x)	    \
+    while(x) {		    \
+	lspt = x;	    \
+	x = x->next;	    \
+	free(lspt->name);   \
+	free(lspt);	    \
+    }
 
     if(!optget(opts, "server")->enabled) {
 	mprintf("!build: --server is required for --build\n");
@@ -631,6 +666,8 @@ static int build(const struct optstruct *opts)
     }
 
     dbname = getdbname(optget(opts, "build")->strarg);
+    if(!strcmp(dbname, "bytecode"))
+	bc = 1;
 
     if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
@@ -647,15 +684,46 @@ static int build(const struct optstruct *opts)
     if(!sigs) {
 	mprintf("!build: There are no signatures in database files\n");
     } else {
-	for(i = 0; dblist[i].name; i++)
-	    if(dblist[i].count && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK))
-		lines += countlines(dblist[i].name);
+	if(bc) {
+	    if((dd = opendir(".")) == NULL) {
+		mprintf("!build: Can't open current directory\n");
+		return -1;
+	    }
+	    while((dent = readdir(dd))) {
+		if(dent->d_ino) {
+		    if(cli_strbcasestr(dent->d_name, ".cbc")) {
+			lspt = (struct dblist_scan *) malloc(sizeof(struct dblist_scan));
+			if(!lspt) {
+			    FREE_LS(dblist2);
+			    mprintf("!build: Memory allocation error\n");
+			    return -1;
+			}
+			lspt->name = strdup(dent->d_name);
+			if(!lspt->name) {
+			    FREE_LS(dblist2);
+			    free(lspt);
+			    mprintf("!build: Memory allocation error\n");
+			    return -1;
+			}
+			lspt->next = dblist2;
+			dblist2 = lspt;
+			entries += 2; /* bytecode + lsig */
+		    }
+		}
+	    }
+	    closedir(dd);
+	} else {
+	    for(i = 0; dblist[i].name; i++)
+		if(dblist[i].count && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK))
+		    entries += countlines(dblist[i].name);
+	}
 
-	if(lines != sigs)
-	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, lines, sigs);
+	if(entries != sigs)
+	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, entries, sigs);
 
-	if(!lines || (sigs > lines && sigs - lines >= 1000)) {
+	if(!entries || (sigs > entries && sigs - entries >= 1000)) {
 	    mprintf("!Bad number of signatures in database files\n");
+	    FREE_LS(dblist2);
 	    return -1;
 	}
     }
@@ -667,6 +735,7 @@ static int build(const struct optstruct *opts)
 	    olddb[sizeof(olddb)-1]='\0';
 	} else {
 	    mprintf("!build: Not a CVD/CLD file\n");
+	    FREE_LS(dblist2);
 	    return -1;
 	}
 
@@ -691,6 +760,7 @@ static int build(const struct optstruct *opts)
 	mprintf("Version number: ");
 	if(scanf("%u", &version) == EOF) {
 	    mprintf("!build: scanf() failed\n");
+	    FREE_LS(dblist2);
 	    return -1;
 	}
     }
@@ -719,6 +789,7 @@ static int build(const struct optstruct *opts)
 	mprintf("Functionality level: ");
 	if(scanf("%u", &fl) == EOF || !fl || fl > 99) {
 	    mprintf("!build: Incorrect functionality level\n");
+	    FREE_LS(dblist2);
 	    return -1;
 	}
     } else {
@@ -751,8 +822,9 @@ static int build(const struct optstruct *opts)
     /* add current time */
     sprintf(header + strlen(header), ":%u", (unsigned int) timet);
 
-    if(writeinfo(dbname, builder, header, opts) == -1) {
+    if(writeinfo(dbname, builder, header, opts, dblist2) == -1) {
 	mprintf("!build: Can't generate info file\n");
+	FREE_LS(dblist2);
 	return -1;
     }
 
@@ -760,12 +832,14 @@ static int build(const struct optstruct *opts)
 
     if(!(tarfile = cli_gentemp("."))) {
 	mprintf("!build: Can't generate temporary name for tarfile\n");
+	FREE_LS(dblist2);
 	return -1;
     }
 
     if((tar = gzopen(tarfile, "wb")) == NULL) {
 	mprintf("!build: Can't open file %s for writing\n", tarfile);
 	free(tarfile);
+	FREE_LS(dblist2);
 	return -1;
     }
 
@@ -774,20 +848,43 @@ static int build(const struct optstruct *opts)
 	gzclose(tar);
 	unlink(tarfile);
 	free(tarfile);
+	FREE_LS(dblist2);
 	return -1;
     }
 
-    for(i = 0; dblist[i].name; i++) {
-	if(strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
-	    if(tar_addfile(-1, tar, dblist[i].name) == -1) {
+    if(bc) {
+	if(tar_addfile(-1, tar, "bytecode.info") == -1) {
+	    gzclose(tar);
+	    unlink(tarfile);
+	    free(tarfile);
+	    FREE_LS(dblist2);
+	    return -1;
+	}
+	lspt = dblist2;
+	while(lspt) {
+	    if(tar_addfile(-1, tar, lspt->name) == -1) {
 		gzclose(tar);
 		unlink(tarfile);
 		free(tarfile);
+		FREE_LS(dblist2);
 		return -1;
+	    }
+	}
+    } else {
+	for(i = 0; dblist[i].name; i++) {
+	    if(strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
+		if(tar_addfile(-1, tar, dblist[i].name) == -1) {
+		    gzclose(tar);
+		    unlink(tarfile);
+		    free(tarfile);
+		    FREE_LS(dblist2);
+		    return -1;
+		}
 	    }
 	}
     }
     gzclose(tar);
+    FREE_LS(dblist2);
 
     /* MD5 + dsig */
     if(!(fh = fopen(tarfile, "rb"))) {
