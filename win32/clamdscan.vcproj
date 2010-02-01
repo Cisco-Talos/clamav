@@ -228,6 +228,10 @@
 			Name="Resource Files"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\res\clamdscan.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

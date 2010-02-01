@@ -1,0 +1,6 @@
+#define RES_FNAME "clamdscan.exe"
+#define RES_NAME "clamdscan"
+#define RES_FDESC "ClamAV - clamdscan"
+#include "common.rc"
+
+1337 ICON "clam.ico"

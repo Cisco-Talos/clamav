@@ -364,25 +364,21 @@ VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
     if(!timedout) {
 	unsigned int i;
 	WSAEnumNetworkEvents(item->polldata->fd, item->event, &evt);
-	switch(evt.lNetworkEvents) {
-	    case FD_ACCEPT:
-		i = FD_ACCEPT_BIT;
-		item->polldata->revents = POLLIN;
-		break;
-	    case FD_READ:
-		i = FD_READ_BIT;
-		item->polldata->revents = POLLIN;
-		break;
-	    case FD_CLOSE:
-		i = FD_CLOSE_BIT;
-		item->polldata->revents = POLLHUP;
-		break;
-	    default:
-		i = -1;
+	if(evt.lNetworkEvents & FD_ACCEPT) {
+	    item->polldata->revents |= POLLIN;
+	    if(evt.iErrorCode[FD_ACCEPT_BIT])
 		item->polldata->revents = POLLERR;
 	}
-	if(i>=0 && evt.iErrorCode[i])
-	    item->polldata->revents = POLLERR;
+	if(evt.lNetworkEvents & FD_READ) {
+	    item->polldata->revents |= POLLIN;
+	    if(evt.iErrorCode[FD_READ_BIT])
+		item->polldata->revents = POLLERR;
+	}
+	if(evt.lNetworkEvents & FD_CLOSE) {
+	    item->polldata->revents |= POLLHUP;
+	    if(evt.iErrorCode[FD_CLOSE_BIT])
+		item->polldata->revents = POLLERR;
+	}
 	SetEvent(item->setme);
     }
 }
