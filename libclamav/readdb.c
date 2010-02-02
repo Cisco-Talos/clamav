@@ -1356,7 +1356,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return rc;
     }
     bc->id = bcs->count;/* must set after _load, since load zeroes */
-    sigs += 2;/* the bytecode itself and the logical sig */
+    sigs++;
     if (bc->kind == BC_LOGICAL || bc->lsig) {
 	if (!bc->lsig) {
 	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);

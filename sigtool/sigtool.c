@@ -707,7 +707,7 @@ static int build(const struct optstruct *opts)
 			}
 			lspt->next = dblist2;
 			dblist2 = lspt;
-			entries += 2; /* bytecode + lsig */
+			entries++;
 		    }
 		}
 	    }
