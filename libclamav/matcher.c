@@ -506,13 +506,13 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 		    continue; \
 		} \
 	    } \
-	    if(!xroot->ac_lsigtable[i]->bc) { \
+	    if(!xroot->ac_lsigtable[i]->bc_idx) { \
 		if(ctx->virname) \
 		    *ctx->virname = xroot->ac_lsigtable[i]->virname; \
 		ret = CL_VIRUS; \
 		break; \
 	    } \
-	    if(cli_bytecode_runlsig(ctx, &ctx->engine->bcs, xroot->ac_lsigtable[i]->bc, ctx->virname, xdata.lsigcnt[i], xdata.lsigsuboff[i], map) == CL_VIRUS) { \
+	    if(cli_bytecode_runlsig(ctx, &ctx->engine->bcs, xroot->ac_lsigtable[i]->bc_idx, ctx->virname, xdata.lsigcnt[i], xdata.lsigsuboff[i], map) == CL_VIRUS) { \
 		ret = CL_VIRUS; \
 		break; \
 	    } \

@@ -72,7 +72,7 @@ struct cli_ac_lsig {
     char *logic;
     const char *virname;
     struct cli_lsig_tdb tdb;
-    const struct cli_bc *bc;
+    unsigned bc_idx;
 };
 
 struct cli_matcher {

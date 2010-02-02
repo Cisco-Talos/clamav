@@ -1636,12 +1636,14 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
     return 0;
 }
 
-int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map)
+int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned bc_idx, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map)
 {
     int ret;
     struct cli_bc_ctx ctx;
+    const struct cli_bc *bc = &bcs->all_bcs[bc_idx-1];
 
     if (bc->hook_lsig_id) {
+	cli_dbgmsg("hook lsig id %d matched (bc %d)\n", bc->hook_lsig_id, bc->id);
 	/* this is a bytecode for a hook, defer running it until hook is
 	 * executed, so that it has all the info for the hook */
 	if (cctx->hook_lsig_matches)
@@ -1687,7 +1689,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	    if (!cctx->hook_lsig_matches ||
 		!cli_bitset_test(cctx->hook_lsig_matches, bc->hook_lsig_id-1))
 		continue;
-	    cli_dbgmsg("Bytecode: executing bytecode %u (lsig matched)" , bc->id);
+	    cli_dbgmsg("Bytecode: executing bytecode %u (lsig matched)\n" , bc->id);
 	}
 	cli_bytecode_context_setfuncid(ctx, bc, 0);
 	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
