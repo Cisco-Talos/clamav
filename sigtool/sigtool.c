@@ -869,6 +869,7 @@ static int build(const struct optstruct *opts)
 		FREE_LS(dblist2);
 		return -1;
 	    }
+	    lspt = lspt->next;
 	}
     } else {
 	for(i = 0; dblist[i].name; i++) {
@@ -971,7 +972,7 @@ static int build(const struct optstruct *opts)
 
     mprintf("Created %s\n", newcvd);
 
-    if(optget(opts, "no-cdiff")->enabled) {
+    if(!oldcvd || optget(opts, "no-cdiff")->enabled) {
 	mprintf("Skipping .cdiff creation\n");
 	return 0;
     }
