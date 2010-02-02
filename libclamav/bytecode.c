@@ -470,7 +470,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
     }
     offset++;
     *linelength = strtol(buffer+offset, &pos, 10);
-    if (*pos != '\n') {
+    if (*pos != '\0') {
 	cli_errmsg("Invalid number: %s\n", buffer+offset);
 	return CL_EMALFDB;
     }
@@ -1241,6 +1241,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	cli_errmsg("Unable to load bytecode (empty file)\n");
 	return CL_EMALFDB;
     }
+    cli_chomp(firstbuf);
     rc = parseHeader(bc, (unsigned char*)firstbuf, &linelength);
     if (rc == CL_BREAK) {
 	bc->state = bc_skip;
