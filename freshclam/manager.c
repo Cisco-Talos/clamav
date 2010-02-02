@@ -1859,6 +1859,31 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
     } else if(ret == 0)
 	updated = 1;
 
+    if(!optget(opts, "Bytecode")->enabled) {
+	    const char *dbname = NULL;
+
+	if(!access("bytecode.cvd", R_OK))
+	    dbname = "bytecode.cvd";
+	else if(!access("bytecode.cld", R_OK))
+            dbname = "bytecode.cld";
+
+	if(dbname) {
+	    if(unlink(dbname))
+		logg("^Bytecode is disabled but can't remove old %s\n", dbname);
+	    else
+		logg("*%s removed\n", dbname);
+	}
+    } else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
+
+	mirman_write("mirrors.dat", &mdat);
+	return ret;
+    } else if(ret == 0)
+	updated = 1;
     if(dnsreply)
 	free(dnsreply);
 

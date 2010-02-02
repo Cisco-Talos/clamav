@@ -1,3 +1,7 @@
+Tue Feb  2 14:23:18 CET 2010 (tk)
+---------------------------------
+ * freshclam: new option Bytecode
+
 Mon Feb  1 19:25:45 CET 2010 (tk)
 ---------------------------------
  * sigtool: add support for bytecode.cvd
