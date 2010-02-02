@@ -286,6 +286,19 @@ public:
     }
 };
 
+struct CommonFunctions {
+    Function *FHandler;
+    Function *FMemset;
+    Function *FMemmove;
+    Function *FMemcpy;
+    Function *FRealmemset;
+    Function *FRealMemmove;
+    Function *FRealmemcmp;
+    Function *FRealmemcpy;
+    Function *FBSwap16;
+    Function *FBSwap32;
+    Function *FBSwap64;
+};
 
 class VISIBILITY_HIDDEN LLVMCodegen {
 private:
@@ -311,6 +324,8 @@ private:
     unsigned numLocals;
     unsigned numArgs;
     std::vector<MDNode*> mdnodes;
+
+    struct CommonFunctions *CF;
 
     Value *getOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
     {
@@ -417,7 +432,7 @@ private:
 	Builder.CreateStore(V, Values[dest]);
     }
 
-    // Insert code that calls \arg FHandler if \arg FailCond is true.
+    // Insert code that calls \arg CF->FHandler if \arg FailCond is true.
     void InsertVerify(Value *FailCond, BasicBlock *&Fail, Function *FHandler, 
 		      Function *F) {
 	if (!Fail) {
@@ -483,13 +498,13 @@ private:
 
 
 public:
-    LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
+    LLVMCodegen(const struct cli_bc *bc, Module *M, struct CommonFunctions *CF, FunctionMapTy &cFuncs,
 		ExecutionEngine *EE, FunctionPassManager &PM,
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
 	PM(PM), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
-	Folder(EE->getTargetData()), Builder(Context, Folder) {
+	Folder(EE->getTargetData()), Builder(Context, Folder), CF(CF) {
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
@@ -587,85 +602,6 @@ public:
 		Ty = PointerType::getUnqual(ATy->getElementType());*/
 	    GVtypeMap[id] = Ty;
 	}
-	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
-						    false);
-	Function *FHandler = Function::Create(FTy, Function::ExternalLinkage,
-					      "clamjit.fail", M);
-	FHandler->setDoesNotReturn();
-	FHandler->setDoesNotThrow();
-	FHandler->addFnAttr(Attribute::NoInline);
-	EE->addGlobalMapping(FHandler, (void*)(intptr_t)jit_exception_handler);
-        EE->InstallLazyFunctionCreator(noUnknownFunctions);
-
-	std::vector<const Type*> args;
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-	args.push_back(Type::getInt8Ty(Context));
-	args.push_back(Type::getInt32Ty(Context));
-	args.push_back(Type::getInt32Ty(Context));
-	FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
-						   args, false);
-	Function *FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
-					     "llvm.memset.i32", M);
-	FMemset->setDoesNotThrow();
-	FMemset->setDoesNotCapture(1, true);
-
-	args.clear();
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-	args.push_back(Type::getInt32Ty(Context));
-	args.push_back(Type::getInt32Ty(Context));
-	FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
-						   args, false);
-	Function *FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-					     "llvm.memmove.i32", M);
-	FMemmove->setDoesNotThrow();
-	FMemmove->setDoesNotCapture(1, true);
-
-	Function *FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-					     "llvm.memcpy.i32", M);
-	FMemcpy->setDoesNotThrow();
-	FMemcpy->setDoesNotCapture(1, true);
-
-	args.clear();
-	args.push_back(Type::getInt16Ty(Context));
-	FunctionType *FuncTy_5 = FunctionType::get(Type::getInt16Ty(Context), args, false);
-	Function *FBSwap16 = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage,
-					      "llvm.bswap.i16", M);
-	FBSwap16->setDoesNotThrow();
-
-	args.clear();
-	args.push_back(Type::getInt32Ty(Context));
-	FunctionType *FuncTy_6 = FunctionType::get(Type::getInt32Ty(Context), args, false);
-	Function *FBSwap32 = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
-					      "llvm.bswap.i32", M);
-	FBSwap32->setDoesNotThrow();
-
-	args.clear();
-	args.push_back(Type::getInt64Ty(Context));
-	FunctionType *FuncTy_7 = FunctionType::get(Type::getInt64Ty(Context), args, false);
-	Function *FBSwap64 = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage,
-					      "llvm.bswap.i64", M);
-	FBSwap16->setDoesNotThrow();
-
-	FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
-	Function *FRealMemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
-						 "memset", M);
-	EE->addGlobalMapping(FRealMemset, (void*)(intptr_t)memset);
-	Function *FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
-						 "memmove", M);
-	EE->addGlobalMapping(FRealMemmove, (void*)(intptr_t)memmove);
-	Function *FRealMemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
-						 "memcpy", M);
-	EE->addGlobalMapping(FRealMemcpy, (void*)(intptr_t)memcpy);
-
-	args.clear();
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-	args.push_back(EE->getTargetData()->getIntPtrType(Context));
-	FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
-						   args, false);
-	Function* FRealMemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
-	EE->addGlobalMapping(FRealMemcmp, (void*)(intptr_t)memcmp);
 
 	// The hidden ctx param to all functions
 	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
@@ -849,7 +785,7 @@ public:
 			case OP_BC_UDIV:
 			{
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
-			    InsertVerify(Bad, Fail, FHandler, F);
+			    InsertVerify(Bad, Fail, CF->FHandler, F);
 			    Store(inst->dest, Builder.CreateUDiv(Op0, Op1));
 			    break;
 			}
@@ -857,14 +793,14 @@ public:
 			{
 			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
-			    InsertVerify(Bad, Fail, FHandler, F);
+			    InsertVerify(Bad, Fail, CF->FHandler, F);
 			    Store(inst->dest, Builder.CreateSDiv(Op0, Op1));
 			    break;
 			}
 			case OP_BC_UREM:
 			{
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
-			    InsertVerify(Bad, Fail, FHandler, F);
+			    InsertVerify(Bad, Fail, CF->FHandler, F);
 			    Store(inst->dest, Builder.CreateURem(Op0, Op1));
 			    break;
 			}
@@ -872,7 +808,7 @@ public:
 			{
 			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
-			    InsertVerify(Bad, Fail, FHandler, F);
+			    InsertVerify(Bad, Fail, CF->FHandler, F);
 			    Store(inst->dest, Builder.CreateSRem(Op0, Op1));
 			    break;
 			}
@@ -1063,7 +999,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-			    CallInst *c = Builder.CreateCall4(FMemset, Dst, Val, Len,
+			    CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1074,7 +1010,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-			    CallInst *c = Builder.CreateCall4(FMemcpy, Dst, Src, Len,
+			    CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1085,7 +1021,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-			    CallInst *c = Builder.CreateCall4(FMemmove, Dst, Src, Len,
+			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1096,7 +1032,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
-			    CallInst *c = Builder.CreateCall3(FRealMemcmp, Dst, Src, Len);
+			    CallInst *c = Builder.CreateCall3(CF->FRealmemcmp, Dst, Src, Len);
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    Store(inst->dest, c);
@@ -1109,7 +1045,7 @@ public:
 			    break;
 			case OP_BC_ABORT:
 			    if (!unreachable) {
-				CallInst *CI = Builder.CreateCall(FHandler);
+				CallInst *CI = Builder.CreateCall(CF->FHandler);
 				CI->setDoesNotReturn();
 				CI->setDoesNotThrow();
 				Builder.CreateUnreachable();
@@ -1118,7 +1054,7 @@ public:
 			    break;
 			case OP_BC_BSWAP16:
 			    {
-				CallInst *C = Builder.CreateCall(FBSwap16, convertOperand(func, inst, inst->u.unaryop));
+				CallInst *C = Builder.CreateCall(CF->FBSwap16, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
 				C->setDoesNotThrow(true);
 				Store(inst->dest, C);
@@ -1126,7 +1062,7 @@ public:
 			    }
 			case OP_BC_BSWAP32:
 			    {
-				CallInst *C = Builder.CreateCall(FBSwap32, convertOperand(func, inst, inst->u.unaryop));
+				CallInst *C = Builder.CreateCall(CF->FBSwap32, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
 				C->setDoesNotThrow(true);
 				Store(inst->dest, C);
@@ -1134,7 +1070,7 @@ public:
 			    }
 			case OP_BC_BSWAP64:
 			    {
-				CallInst *C = Builder.CreateCall(FBSwap64, convertOperand(func, inst, inst->u.unaryop));
+				CallInst *C = Builder.CreateCall(CF->FBSwap64, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
 				C->setDoesNotThrow(true);
 				Store(inst->dest, C);
@@ -1173,6 +1109,7 @@ public:
 
 	DEBUG(M->dump());
 	delete TypeMap;
+	std::vector<const Type*> args;
 	args.clear();
 	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
@@ -1235,6 +1172,91 @@ class LLVMApiScopedLock {
 		llvm_api_lock.release();
 	}
 };
+
+static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, Module *M)
+{
+    LLVMContext &Context = M->getContext();
+    FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
+					  false);
+    CF->FHandler = Function::Create(FTy, Function::ExternalLinkage,
+					  "clamjit.fail", M);
+    CF->FHandler->setDoesNotReturn();
+    CF->FHandler->setDoesNotThrow();
+    CF->FHandler->addFnAttr(Attribute::NoInline);
+
+    EE->addGlobalMapping(CF->FHandler, (void*)(intptr_t)jit_exception_handler);
+    EE->InstallLazyFunctionCreator(noUnknownFunctions);
+
+    std::vector<const Type*> args;
+    args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+    args.push_back(Type::getInt8Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
+    FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
+					       args, false);
+    CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
+					 "llvm.memset.i32", M);
+    CF->FMemset->setDoesNotThrow();
+    CF->FMemset->setDoesNotCapture(1, true);
+
+    args.clear();
+    args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+    args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+    args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
+    FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
+					       args, false);
+    CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
+					  "llvm.memmove.i32", M);
+    CF->FMemmove->setDoesNotThrow();
+    CF->FMemmove->setDoesNotCapture(1, true);
+
+    CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
+					 "llvm.memcpy.i32", M);
+    CF->FMemcpy->setDoesNotThrow();
+    CF->FMemcpy->setDoesNotCapture(1, true);
+
+    args.clear();
+    args.push_back(Type::getInt16Ty(Context));
+    FunctionType *FuncTy_5 = FunctionType::get(Type::getInt16Ty(Context), args, false);
+    CF->FBSwap16 = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage,
+					  "llvm.bswap.i16", M);
+    CF->FBSwap16->setDoesNotThrow();
+
+    args.clear();
+    args.push_back(Type::getInt32Ty(Context));
+    FunctionType *FuncTy_6 = FunctionType::get(Type::getInt32Ty(Context), args, false);
+    CF->FBSwap32 = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
+					  "llvm.bswap.i32", M);
+    CF->FBSwap32->setDoesNotThrow();
+
+    args.clear();
+    args.push_back(Type::getInt64Ty(Context));
+    FunctionType *FuncTy_7 = FunctionType::get(Type::getInt64Ty(Context), args, false);
+    CF->FBSwap64 = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage,
+					  "llvm.bswap.i64", M);
+    CF->FBSwap64->setDoesNotThrow();
+
+    FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
+    CF->FRealmemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+					     "memset", M);
+    EE->addGlobalMapping(CF->FRealmemset, (void*)(intptr_t)memset);
+    CF->FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+					      "memmove", M);
+    EE->addGlobalMapping(CF->FRealMemmove, (void*)(intptr_t)memmove);
+    CF->FRealmemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+					     "memcpy", M);
+    EE->addGlobalMapping(CF->FRealmemcpy, (void*)(intptr_t)memcpy);
+
+    args.clear();
+    args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+    args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+    args.push_back(EE->getTargetData()->getIntPtrType(Context));
+    FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
+				 args, false);
+    CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
+    EE->addGlobalMapping(CF->FRealmemcmp, (void*)(intptr_t)memcmp);
+}
 
 }
 
@@ -1322,6 +1344,9 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	EE->DisableLazyCompilation();
 	EE->DisableSymbolSearching();
 
+	struct CommonFunctions CF;
+	addFunctionProtos(&CF, EE, M);
+
 	FunctionPassManager OurFPM(MP);
 	// Set up the optimizer pipeline.  Start with registering info about how
 	// the target lays out data structures.
@@ -1382,7 +1407,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
 	    if (bc->state == bc_skip)
 		continue;
-	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE,
+	    LLVMCodegen Codegen(bc, M, &CF, bcs->engine->compiledFunctions, EE,
 				OurFPM, apiFuncs, apiMap);
 	    if (!Codegen.generate()) {
 		errs() << MODULE << "JIT codegen failed\n";
