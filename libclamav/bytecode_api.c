@@ -1,7 +1,7 @@
 /*
  *  ClamAV bytecode internal API
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *

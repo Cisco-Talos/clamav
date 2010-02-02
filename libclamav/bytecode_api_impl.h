@@ -2,7 +2,7 @@
  *  ClamAV bytecode internal API
  *  This is an automatically generated file!
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

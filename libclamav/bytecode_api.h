@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *  All rights reserved.
  *  Authors: Török Edvin
  *

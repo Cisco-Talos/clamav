@@ -1,7 +1,7 @@
 /*
  *  Load, verify and execute ClamAV bytecode.
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
