@@ -1,7 +1,0 @@
-LIBRARY libClamunrar
-VERSION 0.92.1
-EXPORTS rar_unpack @1
-EXPORTS rar_init_filters @2
-EXPORTS ppm_destructor @3
-EXPORTS ppm_constructor @4
-EXPORTS rarvm_free @5

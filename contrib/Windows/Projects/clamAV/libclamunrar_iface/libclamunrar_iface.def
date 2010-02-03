@@ -1,6 +1,0 @@
-LIBRARY libClamunrar_iface
-VERSION 0.92.1
-EXPORTS unrar_extract_next @1
-EXPORTS unrar_extract_next_prepare @2
-EXPORTS unrar_open @3
-EXPORTS unrar_close @4

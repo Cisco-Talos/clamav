@@ -1,0 +1,60 @@
+ClamAV for Win32
+----------------
+
+0- Requirements
+
+To build the source code you will need:
+- Git for windows with a git "shell"
+- Microsoft Visual Studio 2008 (the express version is just fine)
+
+To run the binaries at least Windows 2000 is required. Microsoft Visual C++ 2008
+runtime libraries needs to be installed on the system. See:
+http://www.microsoft.com/downloads/details.aspx?familyid=9b2da534-3e03-4391-8a4d-074b9f2bc1bf&displaylang=en
+
+
+1- Getting the code
+
+The win32 source code is merged in the ClamAV repository and is available
+via git.
+Clone the repository with: git clone git://git.clamav.net/git/clamav-devel
+See http://www.clamav.net/download/sources for more info.
+
+
+2- Code configuration
+
+After downloading the source code, minimal configuration is required:
+just run the win32/configure.bat script *from within the git shell*.
+Skip this step if you are building from an official release tarball.
+
+
+3- Compilation
+
+Open win32/ClamAV.sln in Visual Studio and build all.
+The output directory for the binaries is either /win32/Debug or /win32/Release,
+depending on the configuration you pick.
+
+
+4- Special notes
+
+The ClamAV tools in win32 are the same as in unix, so refer to their respective
+manpage for general usage.
+The major differences are listed below:
+- Config files path search order:
+  1- The content of the registry key "HKEY_LOCAL_MACHINE/Software/ClamAV/ConfDir"
+  2- The directory where libclamav.dll is located
+  3- "C:\ClamAV"
+
+- Database files path search order:
+  1- The content of the registry key "HKEY_LOCAL_MACHINE/Software/ClamAV/DataDir"
+  2- The directory "database" inside the directory where libclamav.dll is located
+  3- "C:\ClamAV\db"
+
+- Globbing
+Since the windows command prompt doesn't take care of wildcard expansion, minimal
+emulation of unix glob() is performed internally. It supports "*" and "?" only.
+
+- File paths
+Please always use the backslash as the path separator.
+SMB Network shares and UNC paths are supported.
+
+
