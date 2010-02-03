@@ -151,16 +151,16 @@ static char *makeabs(const char *basepath) {
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */
-static int client_scan(const char *file, int scantype, int *infected, int maxlevel, int session, int flags) {
+static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags) {
     int ret;
     char *fullpath = makeabs(file);
 
     if(!fullpath)
 	return 0;
     if (!session)
-	ret = serial_client_scan(fullpath, scantype, infected, maxlevel, flags);
+	ret = serial_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
     else
-	ret = parallel_client_scan(fullpath, scantype, infected, maxlevel, flags);
+	ret = parallel_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
     free(fullpath);
     return ret;
 }
@@ -218,7 +218,7 @@ int reload_clamd_database(const struct optstruct *opts)
     return 0;
 }
 
-int client(const struct optstruct *opts, int *infected)
+int client(const struct optstruct *opts, int *infected, int *err)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
@@ -265,7 +265,7 @@ int client(const struct optstruct *opts, int *infected)
 	struct stat sb;
 	fstat(0, &sb);
 	if((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, NULL)) >= 0)
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
 	    *infected = ret;
 	else
 	    errors = 1;
@@ -274,15 +274,21 @@ int client(const struct optstruct *opts, int *infected)
 	if(opts->filename && optget(opts, "file-list")->enabled)
 	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
-	while(!errors && (fname = filelist(opts, NULL))) {
+	while((fname = filelist(opts, NULL))) {
 	    if(!strcmp(fname, "-")) {
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    errors = client_scan(fname, scantype, infected, maxrec, session, flags);
+	    errors += client_scan(fname, scantype, infected, err, maxrec, session, flags);
+	    /* this may be too strict
+	    if(errors >= 10) {
+		logg("!Too many errors\n");
+		break;
+	    }
+	    */
 	}
     } else {
-	errors = client_scan("", scantype, infected, maxrec, session, flags);
+	errors = client_scan("", scantype, infected, err, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }

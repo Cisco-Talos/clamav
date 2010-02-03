@@ -247,7 +247,7 @@ static int send_fdpass(int sockd, const char *filename) {
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
-int dsresult(int sockd, int scantype, const char *filename, int *printok, int *files, int *errors) {
+int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors) {
     int infected = 0, len, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
@@ -288,8 +288,6 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *f
     while((len = recvln(&rcv, &bol, &eol))) {
 	if(len == -1) return -1;
 	beenthere = 1;
-	if(files)
-	    (*files)++;
 	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
 	    char *colon = strrchr(bol, ':');
@@ -351,9 +349,11 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
     int sockd, ret;
     const char *f = filename;
 
+    c->files++;
     switch(reason) {
     case error_stat:
 	logg("!Can't access file %s\n", path);
+	c->errors++;
 	return CL_SUCCESS;
     case error_mem:
 	logg("!Memory allocation failed in ftw\n");
@@ -378,12 +378,16 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
     if((sockd = dconnect()) < 0) {
 	if(filename) free(filename);
+	c->errors++;
 	return CL_EOPEN;
     }
-    ret = dsresult(sockd, c->scantype, f, &c->printok, &c->files, &c->errors);
+    ret = dsresult(sockd, c->scantype, f, &c->printok, &c->errors);
     if(filename) free(filename);
     closesocket(sockd);
-    if(ret < 0) return CL_EOPEN;
+    if(ret < 0) {
+	c->errors++;
+	return CL_EOPEN;
+    }
     c->infected += ret;
     if(reason == visit_directory_toplev)
 	return CL_BREAK;
@@ -392,7 +396,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
 /* Non-IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags) {
+int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_serial_data cdata;
     int ftw;
@@ -406,8 +410,9 @@ int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, in
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, NULL);
     *infected += cdata.infected;
+    *err += cdata.errors;
 
-    if((cdata.errors < cdata.files) && (ftw == CL_SUCCESS || ftw == CL_BREAK)) {
+    if(!cdata.errors && (ftw == CL_SUCCESS || ftw == CL_BREAK)) {
 	if(cdata.printok)
 	    logg("~%s: OK\n", file);
 	return 0;
@@ -496,9 +501,11 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     struct SCANID *cid;
     int res;
 
+    c->files++;
     switch(reason) {
     case error_stat:
 	logg("!Can't access file %s\n", path);
+	c->errors++;
 	return CL_SUCCESS;
     case error_mem:
 	logg("!Memory allocation failed in ftw\n");
@@ -551,7 +558,6 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     cid->file = filename;
     cid->next = c->ids;
     c->ids = cid;
-    c->files++;
 
     switch(c->scantype) {
 #ifdef HAVE_FD_PASSING
@@ -577,7 +583,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
 /* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags) {
+int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
     int ftw;
@@ -602,6 +608,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, NULL);
 
     if(ftw != CL_SUCCESS) {
+	*err += cdata.errors;
 	*infected += cdata.infected;
 	closesocket(cdata.sockd);
 	return 1;
@@ -612,15 +619,18 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
     closesocket(cdata.sockd);
 
     *infected += cdata.infected;
+    *err += cdata.errors;
 
     if(cdata.ids) {
 	logg("!Clamd closed the connection before scanning all files.\n");
 	return 1;
     }
+    if(cdata.errors)
+	return 1;
+
     if(!cdata.files)
 	return 0;
-    if(cdata.errors == cdata.files)
-	return 1;
+
     if(cdata.printok)
 	logg("~%s: OK\n", file);
     return 0;
