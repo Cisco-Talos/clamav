@@ -372,7 +372,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 
     if(del || xchg) {
 
-	if(!(fh = fopen(ctx->open_db, "r"))) {
+	if(!(fh = fopen(ctx->open_db, "rb"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
 	    return -1;
 	}
@@ -383,7 +383,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 	    return -1;
 	}
 
-	if(!(tmpfh = fopen(tmp, "w"))) {
+	if(!(tmpfh = fopen(tmp, "wb"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
 	    fclose(fh);
 	    free(tmp);
@@ -467,7 +467,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 
     if(add) {
 
-	if(!(fh = fopen(ctx->open_db, "a"))) {
+	if(!(fh = fopen(ctx->open_db, "ab"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
 	    return -1;
 	}
@@ -538,7 +538,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(src = fopen(srcdb, "r"))) {
+    if(!(src = fopen(srcdb, "rb"))) {
 	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
 	free(start_str);
 	free(end_str);
@@ -555,7 +555,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(dst = fopen(dstdb, "a"))) {
+    if(!(dst = fopen(dstdb, "ab"))) {
 	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
 	free(start_str);
 	free(end_str);
@@ -576,7 +576,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(tmp = fopen(tmpdb, "w"))) {
+    if(!(tmp = fopen(tmpdb, "wb"))) {
 	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
 	free(start_str);
 	free(end_str);
@@ -979,7 +979,7 @@ int cdiff_apply(int fd, unsigned short mode)
 
     } else { /* .script */
 
-	if(!(fh = fdopen(desc, "r"))) {
+	if(!(fh = fdopen(desc, "rb"))) {
 	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
 	    close(desc);
 	    free(line);
