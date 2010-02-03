@@ -419,7 +419,7 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
 		    items[i].polldata->revents = POLLHUP;
 		if(n == 1)
 		    items[i].polldata->revents = POLLIN;
-		if(n >= 0 || !RegisterWaitForSingleObject(&items[i].waiter, items[i].event, poll_cb, &items[i], timeout, 0*WT_EXECUTEONLYONCE)) {
+		if(n >= 0 || !RegisterWaitForSingleObject(&items[i].waiter, items[i].event, poll_cb, &items[i], timeout, WT_EXECUTEONLYONCE)) {
 		    WSAEventSelect(fds[i].fd, items[i].event, 0);
 		    CloseHandle(items[i].event);
 		    items[i].event = NULL;
