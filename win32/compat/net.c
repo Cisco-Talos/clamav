@@ -386,7 +386,7 @@ VOID CALLBACK poll_cb(PVOID param, BOOLEAN timedout) {
 int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     HANDLE *setme, cankill;
     struct w32polldata *items;
-    unsigned int i, ret = 0;
+    unsigned int i, ret = 0, reallywait = 1;
 
     if(timeout <0) timeout = INFINITE;
     if(!nfds) {
@@ -402,28 +402,47 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     setme[1] = event;
     items = malloc(nfds * sizeof(struct w32polldata));
     for(i=0; i<nfds; i++) {
-	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	items[i].polldata = &fds[i];
-	items[i].setme = setme[0];
-	if(WSAEventSelect(fds[i].fd, items[i].event, FD_ACCEPT|FD_READ|FD_CLOSE)) {
-	    /* handle error here */
-	}
-	if(RegisterWaitForSingleObject(&items[i].waiter, items[i].event, poll_cb, &items[i], timeout, WT_EXECUTEONLYONCE)) {
-	    /* handle errors here */
+	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if(items[i].event) {
+	    items[i].setme = setme[0];
+	    if(WSAEventSelect(fds[i].fd, items[i].event, FD_ACCEPT|FD_READ|FD_CLOSE)) {
+    		CloseHandle(items[i].event);
+		items[i].event = NULL;
+	    } else {
+		char c; /* Ugly workaround to FD_CLOSE not being persistent
+			   better win32 code is possible at the cost of a larger diff vs. the unix
+			   netcode - for now it stays ugly...
+			*/
+		int n = recv(fds[i].fd, &c, 1, MSG_PEEK);
+		if(!n)
+		    items[i].polldata->revents = POLLHUP;
+		if(n == 1)
+		    items[i].polldata->revents = POLLIN;
+		if(n >= 0 || !RegisterWaitForSingleObject(&items[i].waiter, items[i].event, poll_cb, &items[i], timeout, 0*WT_EXECUTEONLYONCE)) {
+		    WSAEventSelect(fds[i].fd, items[i].event, 0);
+		    CloseHandle(items[i].event);
+		    items[i].event = NULL;
+		    reallywait = 0;
+		}
+	    }
 	}
     }
-    if((ret = WaitForMultipleObjects(2 - (event == NULL), setme, FALSE, timeout)) == WAIT_OBJECT_0 + 1) {
-	ret = 1;
-    } else {
-	ret = 0;
+    if(reallywait) {
+	if(WaitForMultipleObjects(2 - (event == NULL), setme, FALSE, timeout) == WAIT_OBJECT_0 + 1)
+	    ret = 1;
+	 else
+	    ret = 0;
     }
     cankill = CreateEvent(NULL, TRUE, FALSE, NULL);
     for(i=0; i<nfds; i++) {
-	ResetEvent(cankill);
-	UnregisterWaitEx(items[i].waiter, cankill);
-	WSAEventSelect(fds[i].fd, items[i].event, 0);
-	WaitForSingleObject(cankill, INFINITE);
-	CloseHandle(items[i].event);
+	if(items[i].event) {
+	    ResetEvent(cankill);
+	    UnregisterWaitEx(items[i].waiter, cankill);
+	    WSAEventSelect(fds[i].fd, items[i].event, 0);
+	    WaitForSingleObject(cankill, INFINITE);
+	    CloseHandle(items[i].event);
+	}
 	ret += (items[i].polldata->revents != 0);
     }
     CloseHandle(cankill);

@@ -1,3 +1,7 @@
+Wed Feb  3 01:38:50 CET 2010 (acab)
+-----------------------------------
+ * win32: workaround HUP reset in poll, set stdin to binary mode
+
 Tue Feb  2 14:23:18 CET 2010 (tk)
 ---------------------------------
  * freshclam: new option Bytecode

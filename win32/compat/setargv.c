@@ -25,6 +25,8 @@
 #include "dirent.h"
 #include "libgen.h"
 
+#include <fcntl.h>
+
 /* THIS IS A HACK ! */
 /* _setargv is the designed way to customize command line parsing which we use here
    for globbing reasons (incidentally the globbing in setargv.obj is badly broken)
@@ -50,6 +52,7 @@ int _setargv() {
     int *g_argc = __p___argc();
     char ***g_argv = __p___argv();
 
+    _setmode(_fileno(stdin), _O_BINARY);
     do {
 	c = *cur;
 	switch(c) {
