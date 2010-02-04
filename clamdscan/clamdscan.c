@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Infected files: %d\n", infected);
 	if(err)
-	    logg("Errors: %d\n", err);
+	    logg("Total errors: %d\n", err);
 	if(notremoved) {
 	    logg("Not removed: %d\n", notremoved);
 	}

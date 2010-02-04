@@ -1,3 +1,8 @@
+Thu Feb  4 21:31:27 CET 2010 (tk)
+---------------------------------
+ * clamscan: properly report errors from libclamav; simplify
+	     error codes
+
 Wed Feb  3 18:23:08 CET 2010 (tk)
 ---------------------------------
  * clamdscan: fix error logic once again

@@ -186,39 +186,11 @@ Maximum depth directories are scanned at (default: 15).
 \fBclamscan \-r /var/spool/mail\fR
 .SH "RETURN CODES"
 .LP 
-Note: some return codes may only appear in a single file mode (when clamscan is started with a single argument). Those are marked with \fB(ofm)\fR.
-
 0 : No virus found.
 .TP 
 1 : Virus(es) found.
 .TP 
-40: Unknown option passed.
-.TP 
-50: Database initialization error.
-.TP 
-52: Not supported file type.
-.TP 
-53: Can't open directory.
-.TP 
-54: Can't open file. (ofm)
-.TP 
-55: Error reading file. (ofm)
-.TP 
-56: Can't stat input file / directory.
-.TP 
-57: Can't get absolute path name of current working directory.
-.TP 
-58: I/O error, please check your file system.
-.TP 
-62: Can't initialize logger.
-.TP 
-63: Can't create temporary files/directories (check permissions).
-.TP 
-64: Can't write to temporary directory (please specify another one).
-.TP 
-70: Can't allocate memory (calloc).
-.TP 
-71: Can't allocate memory (malloc).
+2 : Some error(s) occured.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
