@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
-	return 40;
+	return 2;
     }
 
     if(optget(opts, "verbose")->enabled) {
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    optfree(opts);
-	    return 62;
+	    return 2;
 	}
     } else 
 	logg_file = NULL;
@@ -159,6 +159,8 @@ int main(int argc, char **argv)
 	logg("Scanned directories: %u\n", info.dirs);
 	logg("Scanned files: %u\n", info.files);
 	logg("Infected files: %u\n", info.ifiles);
+	if(info.errors)
+	    logg("Total errors: %u\n", info.errors);
 	if(notremoved) {
 	    logg("Not removed: %u\n", notremoved);
 	}
