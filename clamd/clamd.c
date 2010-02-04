@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#define _BSD_SOURCE
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -483,7 +481,7 @@ int main(int argc, char **argv)
 		}
 		sock_gid = pgrp->gr_gid;
 	    }
-	    if(fchown(lsockets[nlsockets], -1, sock_gid)) {
+	    if(chown(optget(opts, "LocalSocket")->strarg, -1, sock_gid)) {
 		logg("!Failed to change socket ownership to group %s\n", gname);
 		ret = 1;
 		break;
@@ -500,7 +498,7 @@ int main(int argc, char **argv)
 	} else
 	    sock_mode = 0777 /* & ~umsk*/; /* conservative default: umask was 0 in clamd < 0.96 */
 
-	if(fchmod(lsockets[nlsockets], sock_mode & 0666)) {
+	if(chmod(optget(opts, "LocalSocket")->strarg, sock_mode & 0666)) {
 	    logg("!Cannot set socket permission to %s\n", optget(opts, "LocalSocketPerms")->strarg);
 	    ret = 1;
 	    break;
