@@ -184,6 +184,10 @@ const struct clam_option __clam_options[] = {
 
     { "LocalSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket" },
 
+    { "LocalSocketGroup", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup" },
+
+    { "LocalSocketPerms", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the permissions on the unix socket.", "660" },
+
     { "FixStaleSocket", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Remove a stale socket after unclean shutdown", "yes" },
 
     { "TCPSocket", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "A TCP port number the daemon will listen on.", "3310" },
