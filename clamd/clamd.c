@@ -487,11 +487,11 @@ int main(int argc, char **argv)
 		break;
 	    }
 	}
-	if(optget(opts, "LocalSocketPerms")->enabled) {
+	if(optget(opts, "LocalSocketMode")->enabled) {
 	    char *end;
-	    sock_mode = strtol(optget(opts, "LocalSocketPerms")->strarg, &end, 8);
+	    sock_mode = strtol(optget(opts, "LocalSocketMode")->strarg, &end, 8);
 	    if(*end) {
-		logg("!Invalid LocalSocketPerms %s\n", optget(opts, "LocalSocketPerms")->strarg);
+		logg("!Invalid LocalSocketMode %s\n", optget(opts, "LocalSocketMode")->strarg);
 		ret = 1;
 		break;
 	    }
@@ -499,7 +499,7 @@ int main(int argc, char **argv)
 	    sock_mode = 0777 /* & ~umsk*/; /* conservative default: umask was 0 in clamd < 0.96 */
 
 	if(chmod(optget(opts, "LocalSocket")->strarg, sock_mode & 0666)) {
-	    logg("!Cannot set socket permission to %s\n", optget(opts, "LocalSocketPerms")->strarg);
+	    logg("!Cannot set socket permission to %s\n", optget(opts, "LocalSocketMode")->strarg);
 	    ret = 1;
 	    break;
 	}

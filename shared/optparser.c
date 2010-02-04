@@ -186,7 +186,7 @@ const struct clam_option __clam_options[] = {
 
     { "LocalSocketGroup", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup" },
 
-    { "LocalSocketPerms", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the permissions on the unix socket.", "660" },
+    { "LocalSocketMode", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the permissions on the unix socket to the specified mode.", "660" },
 
     { "FixStaleSocket", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Remove a stale socket after unclean shutdown", "yes" },
 
@@ -394,6 +394,10 @@ const struct clam_option __clam_options[] = {
     { "ClamdSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an absolute path) e.g.:\n  ClamdSocket unix:/var/run/clamd/clamd.socket\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357" },
 
     { "MilterSocket",NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.socket\ninet:7357" },
+
+    { "MilterSocketGroup", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the group ownership for the (unix) milter socket.", "virusgroup" },
+
+    { "MilterSocketMode", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Sets the permissions on the (unix) milter socket to the specified mode.", "660" },
 
     { "LocalNet", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally orignated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
 
