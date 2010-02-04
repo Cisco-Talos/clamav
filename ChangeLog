@@ -1,3 +1,9 @@
+Thu Feb  4 22:17:49 CET 2010 (acab)
+-----------------------------------
+ * clamd: new options LocalSocketMode and LocalSocketGroup
+ * clamav-milter: new options MilterSocketMode and MilterSocketGroup
+   (bb#1789)
+
 Wed Feb  3 18:23:08 CET 2010 (tk)
 ---------------------------------
  * clamdscan: fix error logic once again

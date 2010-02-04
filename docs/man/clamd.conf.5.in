@@ -85,6 +85,16 @@ Default: @DBDIR@
 Path to a local (Unix) socket the daemon will listen on.
 .br 
 Default: no
+.TP
+\fLocalSocketGroup STRING
+Sets the group ownership on the unix socket.
+.br
+Default: the primary group of the user running clamd
+.TP
+\fLocalSocketMode STRING
+Sets the permissions on the unix socket to the specified mode.
+.br
+Default: socket is world readable and writable
 .TP 
 \fBFixStaleSocket BOOL\fR
 Remove stale socket after unclean shutdown.
