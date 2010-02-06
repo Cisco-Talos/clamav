@@ -1129,7 +1129,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (!buf->got_newdata)
 		continue;
 
-#ifndef _WIN32 //FIXME
+#ifndef _WIN32
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -1301,6 +1301,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
 #endif
+	    time(&start_time);
 	} else {
 	    pthread_mutex_unlock(&reload_mutex);
 	}

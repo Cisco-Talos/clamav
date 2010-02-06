@@ -1,3 +1,8 @@
+Sat Feb  6 16:02:28 CET 2010 (acab)
+-----------------------------------
+ * clamd/server-th.c: reset the selfcheck timeout even if we reload
+		      by other means (bb#1812)
+
 Thu Feb  4 22:17:49 CET 2010 (acab)
 -----------------------------------
  * clamd: new options LocalSocketMode and LocalSocketGroup
