@@ -1229,7 +1229,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     unsigned linelength=0;
     char firstbuf[FILEBUFF];
     enum parse_state state;
-    int rc;
+    int rc, end=0;
 
     memset(bc, 0, sizeof(*bc));
     bc->trusted = trust;
@@ -1257,7 +1257,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	return CL_EMEM;
     }
     state = PARSE_BC_LSIG;
-    while (cli_dbgets(buffer, linelength, f, dbio)) {
+    while (cli_dbgets(buffer, linelength, f, dbio) && !end) {
 	cli_chomp(buffer);
 	row++;
 	switch (state) {
@@ -1324,6 +1324,10 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		}
 		/* fall-through */
 	    case PARSE_FUNC_HEADER:
+                if (*buffer == 'S') {
+		    end = 1;
+		    break;
+		}
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);

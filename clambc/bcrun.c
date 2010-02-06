@@ -120,6 +120,41 @@ static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
+static void print_src(const char *file)
+{
+  char buf[4096];
+  int nread, i, found = 0;
+  FILE *f = fopen(file, "r");
+  if (!f) {
+    fprintf(stderr,"Unable to reopen %s\n", file);
+    return;
+  }
+  do {
+    nread = fread(buf, 1, sizeof(buf), f);
+    for (i=0;i<nread-1;i++) {
+      if (buf[i] == '\n' && buf[i+1] == 'S') {
+        found = 1;
+        i++;
+        break;
+      }
+    }
+  } while (!found && (nread == sizeof(buf)));
+  printf("Source code:");
+  do {
+    for (;i+1<nread;i++) {
+      if (buf[i] == 'S' || buf[i] == '\n') {
+        putc('\n', stdout);
+        continue;
+      }
+      putc((buf[i]&0xf | ((buf[i+1]&0xf)<<4)), stdout);
+      i++;
+    }
+    i=0;
+    nread = fread(buf, 1, sizeof(buf), f);
+  } while (nread > 0);
+  fclose(f);
+}
+
 int main(int argc, char *argv[])
 {
     FILE *f;
@@ -210,6 +245,7 @@ int main(int argc, char *argv[])
     printf("Bytecode loaded\n");
     if (optget(opts, "describe")->enabled) {
 	cli_bytecode_describe(bc);
+        print_src(opts->filename[0]);
     } else {
 
 	ctx = cli_bytecode_context_alloc();
