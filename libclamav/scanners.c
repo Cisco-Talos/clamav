@@ -187,7 +187,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	lseek(desc, 0, SEEK_SET);
 	ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR);
 	if(ret != CL_VIRUS) {
-	    *ctx->virname = "Encrypted.RAR";
+	    *ctx->virname = "Heuristics.Encrypted.RAR";
 	    return CL_VIRUS;
 	}
     }
@@ -229,7 +229,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		lseek(desc, 0, SEEK_SET);
 		ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR);
 		if(ret != CL_VIRUS)
-		    *ctx->virname = "Encrypted.RAR";
+		    *ctx->virname = "Heuristics.Encrypted.RAR";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -1298,7 +1298,7 @@ static int cli_scanriff(int desc, cli_ctx *ctx)
 
     if(cli_check_riff_exploit(desc) == 2) {
 	ret = CL_VIRUS;
-	*ctx->virname = "Exploit.W32.MS05-002";
+	*ctx->virname = "Heuristics.Exploit.W32.MS05-002";
     }
 
     return ret;
@@ -1310,7 +1310,7 @@ static int cli_scanjpeg(int desc, cli_ctx *ctx)
 
     if(cli_check_jpeg_exploit(desc, ctx) == 1) {
 	ret = CL_VIRUS;
-	*ctx->virname = "Exploit.W32.MS04-028";
+	*ctx->virname = "Heuristics.Exploit.W32.MS04-028";
     }
 
     return ret;
@@ -1569,13 +1569,13 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 
     if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
-	*ctx->virname = "Structured.CreditCardNumber";
+	*ctx->virname = "Heuristics.Structured.CreditCardNumber";
 	return CL_VIRUS;
     }
 
     if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
-	*ctx->virname = "Structured.SSN";
+	*ctx->virname = "Heuristics.Structured.SSN";
 	return CL_VIRUS;
     }
 

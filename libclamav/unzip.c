@@ -350,7 +350,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 
   if(detect_encrypted && (LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-    *ctx->virname = "Encrypted.Zip";
+    *ctx->virname = "Heuristics.Encrypted.Zip";
     *ret = CL_VIRUS;
     fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;

@@ -1,3 +1,8 @@
+Mon Feb  8 19:17:14 CET 2010 (tk)
+---------------------------------
+ * libclamav: prefix all engine detections with "Heuristics." (bb#1808)
+	      (also change Phishing.Heuristics.* -> Heuristics.Phishing.*)
+
 Mon Feb  8 13:40:06 CET 2010 (acab)
 ----------------------------------
  * libclamav: drop support for type 8 signatures. disasm matching is now

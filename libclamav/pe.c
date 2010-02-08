@@ -539,7 +539,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	/* truncated header? */
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -669,7 +669,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     if(nsections < 1 || nsections > 96) {
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	if(nsections)
@@ -689,7 +689,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-	        *ctx->virname = "Broken.Executable";
+	        *ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -700,7 +700,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
         cli_dbgmsg("Can't read optional file header\n");
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-	        *ctx->virname = "Broken.Executable";
+	        *ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -714,7 +714,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -730,7 +730,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    cli_warnmsg("Incorrect magic number in optional header\n");
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    cli_dbgmsg("9x compatibility mode\n");
@@ -772,7 +772,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    cli_dbgmsg("Can't read optional file header\n");
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -853,14 +853,14 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
         cli_dbgmsg("Bad virtual alignemnt\n");
         if(ctx->virname)
-	    *ctx->virname = "Broken.Executable";
+	    *ctx->virname = "Heuristics.Broken.Executable";
 	return CL_VIRUS;
     }
 
     if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
         cli_dbgmsg("Bad file alignemnt\n");
 	if(ctx->virname)
-	    *ctx->virname = "Broken.Executable";
+	    *ctx->virname = "Heuristics.Broken.Executable";
 	return CL_VIRUS;
     }
 
@@ -891,7 +891,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	free(exe_sections);
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -959,7 +959,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	if (DETECT_BROKEN && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
 	    if(ctx->virname)
-	        *ctx->virname = "Broken.Executable";
+	        *ctx->virname = "Heuristics.Broken.Executable";
 	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_VIRUS;
@@ -972,7 +972,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 		free(exe_sections);
 		if(DETECT_BROKEN) {
 		    if(ctx->virname)
-		        *ctx->virname = "Broken.Executable";
+		        *ctx->virname = "Heuristics.Broken.Executable";
 		    return CL_VIRUS;
 		}
 		return CL_CLEAN; /* no ninjas to see here! move along! */
@@ -1007,7 +1007,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    free(exe_sections);
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -1017,7 +1017,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    if (DETECT_BROKEN && exe_sections[i].urva!=hdr_size) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
 		return CL_VIRUS;
@@ -1028,7 +1028,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    if (DETECT_BROKEN && exe_sections[i].urva - exe_sections[i-1].urva != exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
 	        cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
 	        if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
 		return CL_VIRUS;
@@ -1050,7 +1050,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	free(exe_sections);
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
 	return CL_CLEAN;
@@ -1107,7 +1107,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	if(pt) {
 	    pt += 15;
 	    if((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
-	        *ctx->virname = "W32.Parite.B";
+	        *ctx->virname = "Heuristics.W32.Parite.B";
 		free(exe_sections);
 		return CL_VIRUS;
 	    }
@@ -1190,7 +1190,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 		break;
 	    case KZSLOOP:
 		if (op==kzdsize+0x48 && *kzcode==0x75 && kzlen-(int8_t)kzcode[1]-3<=kzinitlen && kzlen-(int8_t)kzcode[1]>=kzxorlen) {
-		    *ctx->virname = "W32.Kriz";
+		    *ctx->virname = "Heuristics.W32.Kriz";
 		    free(exe_sections);
 		    return CL_VIRUS;
 		}
@@ -1217,7 +1217,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
-		    *ctx->virname = dam ? "W32.Magistr.A.dam" : "W32.Magistr.A";
+		    *ctx->virname = dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A";
 		    free(exe_sections);
 		    return CL_VIRUS;
 		} 
@@ -1229,7 +1229,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
-		    *ctx->virname = dam ? "W32.Magistr.B.dam" : "W32.Magistr.B";
+		    *ctx->virname = dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B";
 		    free(exe_sections);
 		    return CL_VIRUS;
 		} 
@@ -1277,7 +1277,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	for(i=0;i<xsjs;i++) {
 	    if(!(code = fmap_need_off_once(map, jumps[i], 9))) continue;
 	    if((jump=cli_readint32(code))==0x60ec8b55 || (code[4]==0x0ec && ((jump==0x83ec8b55 && code[6]==0x60) || (jump==0x81ec8b55 && !code[7] && !code[8])))) {
-		*ctx->virname = "W32.Polipos.A";
+		*ctx->virname = "Heuristics.W32.Polipos.A";
 		free(jumps);
 		free(exe_sections);
 		return CL_VIRUS;
@@ -1299,7 +1299,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 		    else {
 			    cli_parseres_special(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), map, exe_sections, nsections, fsize, hdr_size, 0, 0, &m, stats);
 			    if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
-				    *ctx->virname = "Trojan.Swizzor.Gen";
+				    *ctx->virname = "Heuristics.Trojan.Swizzor.Gen";
 			    }
 			    free(stats);
 		    }

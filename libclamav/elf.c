@@ -215,7 +215,7 @@ int cli_scanelf(cli_ctx *ctx)
 	cli_dbgmsg("ELF: Suspicious number of program headers\n");
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
         }
 	return CL_EFORMAT;
@@ -228,7 +228,7 @@ int cli_scanelf(cli_ctx *ctx)
 	    cli_dbgmsg("ELF: phentsize != sizeof(struct elf_program_hdr32)\n");
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
@@ -275,7 +275,7 @@ int cli_scanelf(cli_ctx *ctx)
 		free(program_hdr);
 		if(DETECT_BROKEN) {
 		    if(ctx->virname)
-			*ctx->virname = "Broken.Executable";
+			*ctx->virname = "Heuristics.Broken.Executable";
 		    return CL_VIRUS;
 		}
 		return CL_CLEAN;
@@ -296,7 +296,7 @@ int cli_scanelf(cli_ctx *ctx)
 	    cli_dbgmsg("ELF: Can't calculate file offset of entry point\n");
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
+		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
@@ -313,7 +313,7 @@ int cli_scanelf(cli_ctx *ctx)
 	cli_dbgmsg("ELF: Suspicious number of sections\n");
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
         }
 	return CL_EFORMAT;
@@ -324,7 +324,7 @@ int cli_scanelf(cli_ctx *ctx)
 	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
+		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
         }
 	return CL_EFORMAT;
@@ -373,7 +373,7 @@ int cli_scanelf(cli_ctx *ctx)
             free(section_hdr);
             if(DETECT_BROKEN) {
                 if(ctx->virname)
-                    *ctx->virname = "Broken.Executable";
+                    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
             }
             return CL_CLEAN;
