@@ -146,7 +146,7 @@ static void print_src(const char *file)
         putc('\n', stdout);
         continue;
       }
-      putc((buf[i]&0xf | ((buf[i+1]&0xf)<<4)), stdout);
+      putc(((buf[i]&0xf) | ((buf[i+1]&0xf)<<4)), stdout);
       i++;
     }
     i=0;
