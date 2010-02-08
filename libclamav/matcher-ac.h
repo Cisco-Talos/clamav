@@ -39,6 +39,7 @@ struct cli_ac_data {
     uint32_t **lsigcnt;
     uint32_t **lsigsuboff;
     uint32_t *offset;
+    uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */
     struct cli_hashset vinfo;
 };
@@ -88,6 +89,7 @@ struct cli_ac_result {
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen);
+void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1);
 int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only);
 void cli_ac_freedata(struct cli_ac_data *data);
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx);

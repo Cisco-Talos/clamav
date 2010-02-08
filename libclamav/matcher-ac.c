@@ -952,6 +952,8 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 		data->lsigsuboff[i][j] = CLI_OFF_NONE;
 	}
     }
+    for (i=0;i<32;i++)
+	data->macro_lastmatch[i] = CLI_OFF_NONE;
 
     return CL_SUCCESS;
 }
@@ -1052,6 +1054,62 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
+static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff)
+{
+    if(mdata->lsigsuboff[lsigid1][lsigid2] == CLI_OFF_NONE)
+	mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
+    else if (mdata->lsigcnt[lsigid1][lsigid2] == 1) {
+	/* Check that the previous match had a macro match following it at the 
+	 * correct distance. This check is only done after the 1st match.*/
+	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
+	const struct cli_ac_patt *macropt;
+	uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
+	if (!tdb->macro_ptids)
+	    return;
+	id = tdb->macro_ptids[lsigid2];
+	if (!id)
+	    return;
+	macropt = root->ac_pattable[id];
+	smin = macropt->ch_mindist[0];
+	smax = macropt->ch_maxdist[0];
+	/* start of last macro match */
+	last_macro_match = mdata->macro_lastmatch[macropt->sigid];
+	/* start of previous lsig subsig match */
+	last_macroprev_match = mdata->lsigsuboff[lsigid1][lsigid2];
+	if (last_macro_match != CLI_OFF_NONE)
+	    cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
+		       last_macroprev_match, smin, smax, last_macro_match);
+	if (last_macro_match == CLI_OFF_NONE ||
+	    last_macroprev_match + smin > last_macro_match ||
+	    last_macroprev_match + smax < last_macro_match) {
+	    cli_dbgmsg("Canceled false lsig macro match\n");
+	    /* Previous match was false, cancel it and make this match the first
+	     * one.*/
+	    mdata->lsigcnt[lsigid1][lsigid2] = 0;
+	    mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
+	} else {
+	    /* mark the macro sig itself matched */
+	    mdata->lsigcnt[lsigid1][lsigid2+1]++;
+	    mdata->lsigsuboff[lsigid1][lsigid2+1] = last_macro_match;
+	}
+    }
+    if (realoff != CLI_OFF_NONE) {
+	mdata->lsigcnt[lsigid1][lsigid2]++;
+    }
+}
+
+void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
+{
+    const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
+    unsigned i;
+    /* Loop through all subsigs, and if they are tied to macros check that the
+     * macro matched at a correct distance */
+    for (i=0;i<tdb->subsigs;i++) {
+	lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE);
+    }
+}
+
+
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
@@ -1084,7 +1142,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    patt = current->list;
 	    while(patt) {
 		bp = i + 1 - patt->depth;
-		if(patt->offdata[0] != CLI_OFF_VERSION && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
+		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
 		    if(patt->offset_min == CLI_OFF_NONE) {
 			patt = patt->next;
 			continue;
@@ -1116,6 +1174,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				continue;
 			    }
 			    cli_dbgmsg("cli_ac_scanbuff: VI match for offset %x\n", realoff);
+			} else if (patt->offdata[0] == CLI_OFF_MACRO) {
+			    mdata->macro_lastmatch[patt->offdata[1]] = realoff;
+			    pt = pt->next_same;
+			    continue;
 			} else if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
 			    if(pt->offset_min == CLI_OFF_NONE) {
 				pt = pt->next_same;
@@ -1210,9 +1272,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				} else { /* !pt->type */
 				    if(pt->lsigid[0]) {
-					mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
-					if(mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] == CLI_OFF_NONE)
-					    mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] = realoff;
+					lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff);
 					pt = pt->next_same;
 					continue;
 				    }
@@ -1255,9 +1315,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				}
 			    } else {
 				if(pt->lsigid[0]) {
-				    mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
-				    if(mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] == CLI_OFF_NONE)
-					mdata->lsigsuboff[pt->lsigid[1]][pt->lsigid[2]] = realoff;
+				    lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff);
 				    pt = pt->next_same;
 				    continue;
 				}
@@ -1701,7 +1759,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	return ret;
     }
 
-    if(new->offdata[0] != CLI_OFF_ANY && new->offdata[0] != CLI_OFF_ABSOLUTE) {
+    if(new->offdata[0] != CLI_OFF_ANY && new->offdata[0] != CLI_OFF_ABSOLUTE && new->offdata[0] != CLI_OFF_MACRO) {
 	root->ac_reloff = (struct cli_ac_patt **) mpool_realloc2(root->mempool, root->ac_reloff, (root->ac_reloff_num + 1) * sizeof(struct cli_ac_patt *));
 	if(!root->ac_reloff) {
 	    cli_errmsg("cli_ac_addsig: Can't allocate memory for root->ac_reloff\n");

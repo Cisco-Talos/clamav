@@ -118,6 +118,44 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 
     hexlen = strlen(hexsig);
+    if (hexsig[0] == '$') {
+	/* macro */
+	unsigned smin, smax, tid;
+	struct cli_ac_patt *pt;
+	if (hexsig[hexlen-1] != '$') {
+	    cli_errmsg("cli_parseadd(): missing terminator $\n");
+	    return CL_EMALFDB;
+	}
+	if (!lsigid) {
+	    cli_errmsg("cli_parseadd(): macro signatures only valid inside logical signatures\n");
+	    return CL_EMALFDB;
+	}
+	if (sscanf(hexsig,"${%u-%u}%u$",
+		   &smin, &smax, &tid)  != 3) {
+	    cli_errmsg("cli_parseadd(): invalid macro signature format\n");
+	    return CL_EMALFDB;
+	}
+	if (tid >= 32) {
+	    cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
+	    return CL_EMALFDB;
+	}
+	pt = mpool_calloc(root->mempool, 1, sizeof(*pt));
+	if (!pt)
+	    return CL_EMEM;
+	/* this is not a pattern that will be matched by AC itself, rather it is a
+	 * pattern checked by the lsig code */
+	pt->ch_mindist[0] = smin;
+	pt->ch_maxdist[0] = smax;
+	pt->sigid = tid;
+	pt->length = root->ac_mindepth;
+	/* dummy */
+	pt->pattern = mpool_calloc(root->mempool, pt->length, sizeof(*pt->pattern));
+	if ((ret = cli_ac_addpatt(root, pt))) {
+	    free(pt);
+	    return ret;
+	}
+	return CL_SUCCESS;
+    }
     if(strchr(hexsig, '{')) {
 
 	root->ac_partsigs++;
@@ -239,7 +277,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI")) {
+    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
@@ -1112,6 +1150,8 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     mpool_free(x.mempool, x.range);	\
   if(x.cnt[CLI_TDB_STR])		\
     mpool_free(x.mempool, x.str);		\
+  if(x.macro_ptids)\
+    mpool_free(x.mempool, x.macro_ptids);\
   } while(0);
 
 #define LDB_TOKENS 67
@@ -1219,7 +1259,6 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     }
 
     lsigid[0] = lsig->id = root->ac_lsigs;
-    memcpy(&lsig->tdb, &tdb, sizeof(tdb));
 
     root->ac_lsigs++;
     newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
@@ -1235,6 +1274,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     lsig->bc_idx = bc_idx;
     newtable[root->ac_lsigs - 1] = lsig;
     root->ac_lsigtable = newtable;
+    tdb.subsigs = subsigs;
 
     for(i = 0; i < subsigs; i++) {
 	lsigid[1] = i;
@@ -1251,6 +1291,14 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 
 	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
 	    return ret;
+	if(sig[0] == '$' && i) {
+	    /* allow mapping from lsig back to pattern for macros */
+	    if (!tdb.macro_ptids)
+		tdb.macro_ptids = mpool_calloc(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
+	    if (!tdb.macro_ptids)
+		return CL_EMEM;
+	    tdb.macro_ptids[i-1] = root->ac_patterns-1;
+	}
 
 	if(tdb.engine) {
 	    if(tdb.engine[0] > cl_retflevel()) {
@@ -1265,6 +1313,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	    }
 	}
     }
+    memcpy(&lsig->tdb, &tdb, sizeof(tdb));
     return CL_SUCCESS;
 }
 

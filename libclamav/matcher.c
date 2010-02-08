@@ -184,6 +184,17 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 	} else if(!strncmp(offcpy, "VI", 2)) {
 	    /* versioninfo */
 	    offdata[0] = CLI_OFF_VERSION;
+	} else if (strchr(offcpy, '$')) {
+	    if (sscanf(offcpy, "$%u$", &n) != 1) {
+		cli_errmsg("cli_caloff: Invalid macro($) in offset: %s\n", offcpy);
+		return CL_EMALFDB;
+	    }
+	    if (n >= 32) {
+		cli_errmsg("cli_caloff: at most 32 macro groups supported\n");
+		return CL_EMALFDB;
+	    }
+	    offdata[0] = CLI_OFF_MACRO;
+	    offdata[1] = n;
 	} else {
 	    offdata[0] = CLI_OFF_ABSOLUTE;
 	    if(!cli_isnumber(offcpy)) {
@@ -194,7 +205,8 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
 	    *offset_max = *offset_min + offdata[2];
 	}
 
-	if(offdata[0] != CLI_OFF_ANY && offdata[0] != CLI_OFF_ABSOLUTE && offdata[0] != CLI_OFF_EOF_MINUS) {
+	if(offdata[0] != CLI_OFF_ANY && offdata[0] != CLI_OFF_ABSOLUTE &&
+	   offdata[0] != CLI_OFF_EOF_MINUS && offdata[0] != CLI_OFF_MACRO) {
 	    if(target != 1 && target != 6 && target != 9) {
 		cli_errmsg("cli_caloff: Invalid offset type for target %u\n", target);
 		return CL_EMALFDB;
@@ -472,6 +484,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     for(i = 0; i < xroot->ac_lsigs; i++) { \
 	evalcnt = 0; \
 	evalids = 0; \
+	cli_ac_chkmacro(xroot, &xdata, i);\
 	if(cli_ac_chklsig(xroot->ac_lsigtable[i]->logic, xroot->ac_lsigtable[i]->logic + strlen(xroot->ac_lsigtable[i]->logic), xdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) { \
 	    if(xroot->ac_lsigtable[i]->tdb.container && xroot->ac_lsigtable[i]->tdb.container[0] != ctx->container_type) \
 		continue; \
