@@ -168,8 +168,8 @@ EOF
 	die "Failed to run clamscan (phish-test2)";
     fi
 
-    grep "phish-test-ssl: Phishing.Heuristics.Email.SSL-Spoof FOUND" clamscan3.log >/dev/null || die "phish-test1 failed";
-    grep "phish-test-cloak: Phishing.Heuristics.Email.Cloaked.Null FOUND" clamscan3.log >/dev/null || die "phish-test2 failed";
+    grep "phish-test-ssl: Heuristics.Phishing.Email.SSL-Spoof FOUND" clamscan3.log >/dev/null || die "phish-test1 failed";
+    grep "phish-test-cloak: Heuristics.Phishing.Email.Cloaked.Null FOUND" clamscan3.log >/dev/null || die "phish-test2 failed";
     test_end $1
 }
 
@@ -303,7 +303,7 @@ test_clamd3() {
     start_clamd
     # Test HeuristicScanPrecedence feature
     run_clamdscan ../clam-phish-exe
-    grep "Phishing.Heuristics.Email.SpoofedDomain" clamdscan.log >/dev/null 2>/dev/null ||
+    grep "Heuristics.Phishing.Email.SpoofedDomain" clamdscan.log >/dev/null 2>/dev/null ||
         { cat clamdscan.log; die "HeuristicScanPrecedence on test failed!"; }
 
     if grep "^#define HAVE_FD_PASSING 1" $TOP/clamav-config.h >/dev/null; then
