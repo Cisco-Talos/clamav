@@ -1370,7 +1370,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 
     if(compr) {
 	close(fd);
-	if(!(gzs = gzopen(newfile, "ab"))) {
+	if(!(gzs = gzopen(newfile, "ab9f"))) {
 	    logg("!buildcld: gzopen() failed for %s\n", newfile);
 	    CHDIR_ERR(cwd);
 	    unlink(newfile);

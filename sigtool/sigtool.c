@@ -569,7 +569,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	return -1;
     }
 
-    if(!(gzh = gzopen(cdiff, "ab"))) {
+    if(!(gzh = gzopen(cdiff, "ab9f"))) {
 	mprintf("!script2cdiff: Can't open file %s for appending\n", cdiff);
 	unlink(cdiff);
 	free(cdiff);
@@ -836,7 +836,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if((tar = gzopen(tarfile, "wb")) == NULL) {
+    if((tar = gzopen(tarfile, "wb9f")) == NULL) {
 	mprintf("!build: Can't open file %s for writing\n", tarfile);
 	free(tarfile);
 	FREE_LS(dblist2);
