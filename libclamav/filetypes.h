@@ -41,7 +41,6 @@ typedef enum {
     /* Please do not add any new types above this line */
     CL_TYPE_ERROR,
     CL_TYPE_MSEXE,
-    CL_TYPE_PE_DISASM,
     CL_TYPE_ELF,
     CL_TYPE_MACHO,
     CL_TYPE_MACHO_UNIBIN,

@@ -1074,16 +1074,19 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
     epsize = fmap_readn(map, epbuff, ep, 4096);
 
-    CLI_UNPTEMP("DISASM",(exe_sections,0));
-    if(disasmbuf((unsigned char*)epbuff, epsize, ndesc))
-	ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
-    close(ndesc);
-    CLI_TMPUNLK();
-    free(tempfile);
-    if(ret == CL_VIRUS) {
-	free(exe_sections);
-	return ret;
-    }
+
+    /* Disasm scan disabled since it's now handled by the bytecode */
+
+    /* CLI_UNPTEMP("DISASM",(exe_sections,0)); */
+    /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
+    /* 	ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /* close(ndesc); */
+    /* CLI_TMPUNLK(); */
+    /* free(tempfile); */
+    /* if(ret == CL_VIRUS) { */
+    /* 	free(exe_sections); */
+    /* 	return ret; */
+    /* } */
 
     if(overlays) {
 	int overlays_sz = fsize - overlays;

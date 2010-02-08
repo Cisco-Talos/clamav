@@ -1,3 +1,8 @@
+Mon Feb  8 13:40:06 CET 2010 (acab)
+----------------------------------
+ * libclamav: drop support for type 8 signatures. disasm matching is now
+		done via bytecode
+
 Mon Feb  8 10:30:03 CET 2010 (tk)
 ---------------------------------
  * freshclam, sigtool: use zlib's Z_FILTERED strategy

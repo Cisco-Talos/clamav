@@ -136,7 +136,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { CL_TYPE_GRAPHICS,	    "GRAPHICS",	    5,	1   },
     { CL_TYPE_ELF,	    "ELF",	    6,	1   },
     { CL_TYPE_TEXT_ASCII,   "ASCII",	    7,	1   },
-    { CL_TYPE_PE_DISASM,    "DISASM",	    8,	1   },
+    { CL_TYPE_ERROR,        "NOT USED",	    8,	1   },
     { CL_TYPE_MACHO,	    "MACH-O",	    9,	1   }
 };
 
