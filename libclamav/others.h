@@ -331,6 +331,18 @@ void cli_errmsg(const char *str, ...);
 #define UNLIKELY(cond) (cond)
 #endif
 
+#if defined (__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define __hot__ __attribute__((hot))
+#else
+#define __hot__
+#endif
+
+#ifdef __GNUC__
+#define always_inline __attribute__((always_inline))
+#else
+#define always_inline
+#endif
+
 #define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
 
 #ifdef __GNUC__
