@@ -30,6 +30,7 @@
 #include "../libclamav/matcher.h"
 #include "../libclamav/matcher-ac.h"
 #include "../libclamav/matcher-bm.h"
+#include "../libclamav/others.h"
 #include "../libclamav/default.h"
 #include "checks.h"
 
@@ -46,19 +47,44 @@ static const struct ac_testdata_s {
     { "abdcabcddabccadbbdbacb", "6463{2-3}64646162(63|64|65)6361*6462????6261{-1}6362", "Test_5" },
     { "abcdefghijkabcdefghijk", "62????65666768*696a6b6162{2-3}656667[1-3]6b", "Test_6" },
     { "abcadbabcadbabcacb", "6?6164?26?62{3}?26162?361", "Test_7" },
+    /* testcase for filter bug: it was checking only first 32 chars, and last
+     * maxpatlen */
+    { "\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1dddddddddddddddddddd5\1\1\1\1\1\1\1\1\1\1\1\1\1","6464646464646464646464646464646464646464(35|36)","Test_8"},
 
     { NULL, NULL, NULL}
 };
 
-START_TEST (test_ac_scanbuff) {
+
+static cli_ctx ctx;
+static const char *virname = NULL;
+static void setup(void)
+{
 	struct cli_matcher *root;
+	virname = NULL;
+	ctx.virname = &virname;
+	ctx.engine = cl_engine_new();
+	fail_unless(!!ctx.engine, "cl_engine_new() failed");
+	root = (struct cli_matcher *) mpool_calloc(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
+	fail_unless(root != NULL, "root == NULL");
+#ifdef USE_MPOOL
+	root->mempool = ctx.engine->mempool;
+#endif
+
+	ctx.engine->root[0] = root;
+}
+
+static void teardown(void)
+{
+	cl_engine_free((struct cl_engine*)ctx.engine);
+}
+
+START_TEST (test_ac_scanbuff) {
 	struct cli_ac_data mdata;
-	const char *virname = NULL;
+	struct cli_matcher *root;
 	unsigned int i;
 	int ret;
 
-
-    root = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
+    root = ctx.engine->root[0];
     fail_unless(root != NULL, "root == NULL");
     root->ac_only = 1;
 
@@ -67,6 +93,7 @@ START_TEST (test_ac_scanbuff) {
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH);
     fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
+
 
     for(i = 0; ac_testdata[i].data; i++) {
 	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, "*", 0, NULL, 0);
@@ -83,14 +110,13 @@ START_TEST (test_ac_scanbuff) {
 	ret = cli_ac_scanbuff(ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
 	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff(ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
+	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
     }
 
     cli_ac_freedata(&mdata);
-    cli_ac_free(root);
-#ifdef USE_MPOOL
-    mpool_destroy(root->mempool);
-#endif
-    free(root);
 }
 END_TEST
 
@@ -100,7 +126,7 @@ START_TEST (test_bm_scanbuff) {
 	int ret;
 
 
-    root = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
+    root = ctx.engine->root[0];
     fail_unless(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
@@ -119,11 +145,6 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_bm_scanbuff("blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
-    cli_bm_free(root);
-#ifdef USE_MPOOL
-    mpool_destroy(root->mempool);
-#endif
-    free(root);
 }
 END_TEST
 
@@ -133,6 +154,7 @@ Suite *test_matchers_suite(void)
     TCase *tc_matchers;
     tc_matchers = tcase_create("matchers");
     suite_add_tcase(s, tc_matchers);
+    tcase_add_checked_fixture (tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
     return s;

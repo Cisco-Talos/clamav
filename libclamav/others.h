@@ -422,6 +422,12 @@ void cli_errmsg(const char *str, ...);
 #define always_inline inline
 #endif
 
+#if defined (__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define __hot__ __attribute__((hot))
+#else
+#define __hot__
+#endif
+
 #define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
 
 #ifdef __GNUC__

@@ -321,8 +321,12 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
+	filtering.h\
+	filtering.c\
 	fmap.c \
 	fmap.h \
+	perflogging.c\
+	perflogging.h\
 	default.h\
 	sha256.c\
 	sha256.h\
