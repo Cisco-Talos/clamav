@@ -400,13 +400,73 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     return ret;
 }
 
+
+static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff) {
+    int fd, ret, outsize = 0, bytes;
+    fmap_t *map = *ctx->fmap;
+    char *tmpname;
+    gzFile gz;
+
+    fd = dup(map->fd);
+    if(fd < 0)
+	return CL_EDUP;
+
+    lseek(fd, 0, SEEK_SET);
+    if(!(gz = gzdopen(fd, "rb"))) {
+	close(fd);
+	return CL_EOPEN;
+    }
+
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+	cli_dbgmsg("GZip: Can't generate temporary file.\n");
+	gzclose(gz);
+	return ret;
+    }
+    
+    while((bytes = gzread(gz, buff, FILEBUFF)) > 0) {
+	outsize += bytes;
+	if(cli_checklimits("GZip", ctx, outsize, 0, 0)!=CL_CLEAN)
+	    break;
+	if(cli_writen(fd, buff, bytes) != bytes) {
+	    close(fd);
+	    gzclose(gz);
+	    if(cli_unlink(tmpname)) {
+		free(tmpname);
+		return CL_EUNLINK;
+	    }
+	    free(tmpname);
+	    return CL_EWRITE;
+	}
+    }
+
+    gzclose(gz);
+
+    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
+	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
+	close(fd);
+	if(!ctx->engine->keeptmp) {
+	    if (cli_unlink(tmpname)) {
+	    	free(tmpname);
+		return CL_EUNLINK;
+	    }
+	}
+	free(tmpname);
+	return CL_VIRUS;
+    }
+    close(fd);
+    if(!ctx->engine->keeptmp)
+	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
+    free(tmpname);
+    return ret;
+}
+
 static int cli_scangzip(cli_ctx *ctx)
 {
 	int fd, ret = CL_CLEAN;
 	unsigned char buff[FILEBUFF];
 	char *tmpname;
 	z_stream z;
-	size_t at = 0;
+	size_t at = 0, outsize = 0;
 	fmap_t *map = *ctx->fmap;
  	
     cli_dbgmsg("in cli_scangzip()\n");
@@ -414,14 +474,7 @@ static int cli_scangzip(cli_ctx *ctx)
     memset(&z, 0, sizeof(z));
     if((ret = inflateInit2(&z, MAX_WBITS + 16)) != Z_OK) {
 	cli_dbgmsg("GZip: InflateInit failed: %d\n", ret);
-#ifdef ZLIB_VERNUM
-	cli_dbgmsg("zlib version %s (%04x), build flags = 0x%lx, runtime version %s\n",
-		   ZLIB_VERSION, ZLIB_VERNUM, zlibCompileFlags(), zlibVersion());
-#else
-	cli_dbgmsg("zlib version %s, runtime version %s\n",
-		   ZLIB_VERSION, zlibVersion());
-#endif
-	return CL_CLEAN;
+	return cli_scangzip_with_zib_from_the_80s(ctx, buff);
     }
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
@@ -462,6 +515,13 @@ static int cli_scangzip(cli_ctx *ctx)
 		    free(tmpname);
 		    return CL_EUNLINK;
 		}
+		free(tmpname);
+		return CL_EWRITE;
+	    }
+	    outsize += sizeof(buff) - z.avail_out;
+	    if(cli_checklimits("GZip", ctx, outsize, 0, 0)!=CL_CLEAN) {
+		at = map->len;
+		break;
 	    }
 	    if(inf == Z_STREAM_END) {
 		at -= z.avail_in;
@@ -473,7 +533,7 @@ static int cli_scangzip(cli_ctx *ctx)
 
     inflateEnd(&z);	    
 
-    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
+    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
 	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
 	close(fd);
 	if(!ctx->engine->keeptmp) {
