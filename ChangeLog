@@ -1,3 +1,8 @@
+Tue Feb  9 20:44:11 CET 2010 (acab)
+-----------------------------------
+ * clamav-milter: allow SkipAuthenticated to read names from a file
+		(bb#1684)
+
 Tue Feb  9 16:35:36 CET 2010 (acab)
 -----------------------------------
  * libclamav/scanners.c: fix gzip handler
