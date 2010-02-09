@@ -49,6 +49,22 @@
 #include "pe_icons.h"
 #include "regex/regex.h"
 
+static inline int matcher_run(const struct cli_matcher *root,
+			      const unsigned char *buffer, uint32_t length,
+			      const char **virname, struct cli_ac_data *mdata,
+			      uint32_t offset,
+			      cli_file_t ftype,
+			      struct cli_matched_type **ftoffset,
+			      unsigned int acmode,
+			      fmap_t *map,
+			      struct cli_bm_off *offdata)
+{
+    int ret;
+    if (root->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, map, offdata)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, root, mdata, offset, ftype, ftoffset, acmode, NULL);
+    return ret;
+}
+
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
@@ -79,8 +95,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, troot, offset, NULL, NULL)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
+	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, NULL);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -92,8 +107,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, groot, offset, NULL, NULL)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
+    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, NULL);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -444,8 +458,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(buff, bytes, ctx->virname, NULL, troot, offset, map, bm_offmode ? &toff : NULL)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(buff, bytes, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, ftoffset, acmode, NULL);
+	    ret = matcher_run(troot, buff, bytes, ctx->virname, &tdata, offset, ftype, ftoffset, acmode, map, bm_offmode ? &toff : NULL);
+
 	    if(ret == CL_VIRUS) {
 		if(!ftonly)
 		    cli_ac_freedata(&gdata);

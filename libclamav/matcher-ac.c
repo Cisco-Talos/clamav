@@ -333,7 +333,7 @@ static int ac_maketrans(struct cli_matcher *root)
 	    continue;
 	for(i = 0; i < 256; i++) {
 	    child = node->trans[i];
-	    if(!child) {
+	    if (!child || (!IS_FINAL(child) && IS_LEAF(child))) {
 		struct cli_ac_node *failtarget = node->fail;
 		while(IS_LEAF(failtarget) || !failtarget->trans[i])
 		    failtarget = failtarget->fail;
@@ -1132,14 +1132,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
-
-	if(IS_LEAF(current))
-	    current = current->fail;
-
 	current = current->trans[buffer[i]];
 
 	if(IS_FINAL(current)) {
 	    patt = current->list;
+	    if (IS_LEAF(current))
+		current = current->fail;
 	    while(patt) {
 		bp = i + 1 - patt->depth;
 		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
