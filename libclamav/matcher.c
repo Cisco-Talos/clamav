@@ -45,6 +45,20 @@
 #include "cltypes.h"
 #include "default.h"
 
+static inline int matcher_run(const struct cli_matcher *root,
+			      const unsigned char *buffer, uint32_t length,
+			      const char **virname, struct cli_ac_data *mdata,
+			      uint32_t offset,
+			      cli_file_t ftype,
+			      int desc,
+			      struct cli_matched_type **ftoffset,
+			      unsigned int acmode)
+{
+    int ret;
+    if (root->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, root, offset, ftype, desc)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, root, mdata, offset, ftype, desc, ftoffset, acmode, NULL);
+    return ret;
+}
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
@@ -76,8 +90,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -89,8 +102,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -328,8 +340,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, desc, ftoffset, acmode, NULL);
+	    ret = matcher_run(troot, upt, length, ctx->virname, &tdata, offset, ftype, desc, NULL, acmode);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
