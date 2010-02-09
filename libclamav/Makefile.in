@@ -148,12 +148,13 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
 	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
 	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
-	version.h mpool.c mpool.h fmap.c fmap.h default.h sha256.c \
-	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
-	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	bytecode_hooks.h cache.c cache.h bignum.c bignum_class.h
+	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
+	fmap.h perflogging.c perflogging.h default.h sha256.c sha256.h \
+	bignum.h bytecode.c bytecode.h bytecode_vm.c bytecode_priv.h \
+	clambc.h cpio.c cpio.h macho.c macho.h ishield.c ishield.h \
+	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
+	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
+	cache.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -197,7 +198,8 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-explode.lo libclamav_la-textnorm.lo \
 	libclamav_la-dlp.lo libclamav_la-js-norm.lo \
 	libclamav_la-uniq.lo libclamav_la-version.lo \
-	libclamav_la-mpool.lo libclamav_la-fmap.lo \
+	libclamav_la-mpool.lo libclamav_la-filtering.lo \
+	libclamav_la-fmap.lo libclamav_la-perflogging.lo \
 	libclamav_la-sha256.lo libclamav_la-bytecode.lo \
 	libclamav_la-bytecode_vm.lo libclamav_la-cpio.lo \
 	libclamav_la-macho.lo libclamav_la-ishield.lo \
@@ -644,12 +646,13 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
 	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
 	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
-	version.h mpool.c mpool.h fmap.c fmap.h default.h sha256.c \
-	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
-	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	bytecode_hooks.h cache.c cache.h $(am__append_7)
+	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
+	fmap.h perflogging.c perflogging.h default.h sha256.c sha256.h \
+	bignum.h bytecode.c bytecode.h bytecode_vm.c bytecode_priv.h \
+	clambc.h cpio.c cpio.h macho.c macho.h ishield.c ishield.h \
+	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
+	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
+	cache.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -806,6 +809,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-entconv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-explode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filetypes.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filtering.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hashtab.Plo@am__quote@
@@ -834,6 +838,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pdf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pe_icons.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-perflogging.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-petite.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-phish_domaincheck_db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-phish_whitelist.Plo@am__quote@
@@ -1579,6 +1584,14 @@ libclamav_la-mpool.lo: mpool.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-mpool.lo `test -f 'mpool.c' || echo '$(srcdir)/'`mpool.c
 
+libclamav_la-filtering.lo: filtering.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-filtering.lo -MD -MP -MF $(DEPDIR)/libclamav_la-filtering.Tpo -c -o libclamav_la-filtering.lo `test -f 'filtering.c' || echo '$(srcdir)/'`filtering.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-filtering.Tpo $(DEPDIR)/libclamav_la-filtering.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='filtering.c' object='libclamav_la-filtering.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-filtering.lo `test -f 'filtering.c' || echo '$(srcdir)/'`filtering.c
+
 libclamav_la-fmap.lo: fmap.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fmap.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fmap.Tpo -c -o libclamav_la-fmap.lo `test -f 'fmap.c' || echo '$(srcdir)/'`fmap.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fmap.Tpo $(DEPDIR)/libclamav_la-fmap.Plo
@@ -1586,6 +1599,14 @@ libclamav_la-fmap.lo: fmap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fmap.c' object='libclamav_la-fmap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fmap.lo `test -f 'fmap.c' || echo '$(srcdir)/'`fmap.c
+
+libclamav_la-perflogging.lo: perflogging.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-perflogging.lo -MD -MP -MF $(DEPDIR)/libclamav_la-perflogging.Tpo -c -o libclamav_la-perflogging.lo `test -f 'perflogging.c' || echo '$(srcdir)/'`perflogging.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-perflogging.Tpo $(DEPDIR)/libclamav_la-perflogging.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='perflogging.c' object='libclamav_la-perflogging.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-perflogging.lo `test -f 'perflogging.c' || echo '$(srcdir)/'`perflogging.c
 
 libclamav_la-sha256.lo: sha256.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-sha256.lo -MD -MP -MF $(DEPDIR)/libclamav_la-sha256.Tpo -c -o libclamav_la-sha256.lo `test -f 'sha256.c' || echo '$(srcdir)/'`sha256.c

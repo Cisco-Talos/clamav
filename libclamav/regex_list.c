@@ -65,104 +65,6 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
 /* ---------- */
 
-/* ----- shift-or filtering -------------- */
-
-#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & (1 << ((val) & 0x1f)))
-#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= (1 << ((val) & 0x1f)))
-
-static void SO_init(struct filter *m)
-{
-	memset(m->B, ~0, sizeof(m->B));
-	memset(m->end, ~0, sizeof(m->end));
-	memset(m->end_fast, ~0, sizeof(m->end_fast));
-}
-
-/* because we use uint32_t */
-#define MAXSOPATLEN 32
-
-/* merge another pattern into the filter
- * add('abc'); add('bcd'); will match [ab][bc][cd] */
-static int SO_preprocess_add(struct filter *m, const unsigned char *pattern, size_t len)
-{
-	uint16_t q;
-	uint8_t j;
-
-	/* cut length, and make it modulo 2 */
-	if(len > MAXSOPATLEN) {
-		len = MAXSOPATLEN;
-	} else {
-		/* we use 2-grams, must be multiple of 2 */
-		len = len & ~1;
-	}
-	if(!len)
-		return 0;
-
-	/* Shift-Or like preprocessing */
-	for(j=0;j < len-1;j++) {
-		/* use overlapping 2-grams. We need them overlapping because matching can start at any position */
-		q = cli_readint16( &pattern[j] );
-		m->B[q] &= ~(1 << j);
-	}
-	/* we use variable length patterns, use last character to mark pattern end,
-	 * can lead to false positives.*/
-	/* mark that at state j, the q-gram q can end the pattern */
-	if(j) {
-		j--;
-		m->end[q] &= ~(1 << j);
-		m->end_fast[pattern[j+1]] &= ~(1<<j);
-	}
-	return 0;
-}
-
-/* this is like a FSM, with multiple active states at the same time.
- * each bit in "state" means an active state, when a char is encountered
- * we determine what states can remain active.
- * The FSM transition rules are expressed as bit-masks */
-long SO_search(const struct filter *m, const unsigned char *data, unsigned long len)
-{
-	size_t j;
-	uint32_t state = ~0;
-	const uint32_t *B = m->B;
-	const uint32_t *End = m->end;
-	const uint32_t *EndFast = m->end_fast;
-
-	/* cut length, and make it modulo 2 */
-	if(len > MAXSOPATLEN) {
-		len = MAXSOPATLEN;
-	} else {
-		/* we use 2-grams, must be multiple of 2 */
-		len = len & ~1;
-	}
-	if(!len) return -1;
-	/* Shift-Or like search algorithm */
-	for(j=0;j < len-1; j++) {
-		const uint16_t q0 = cli_readint16( &data[j] );
-		uint32_t match_end;
-		state = (state << 1) | B[q0];
-		/* state marks with a 0 bit all active states
-		 * End[q0] marks with a 0 bit all states where the q-gram 'q' can end a pattern
-		 * if we got two 0's at matching positions, it means we encountered a pattern's end */
-		match_end = state | EndFast[data[j+1]];
-		if((match_end != 0xffffffff) && (state | End[q0]) !=  0xffffffff) {
-			/* note: we rely on short-circuit eval here, we only evaluate and fetch End[q0], if
-			 * end_fast has matched. This reduces cache pressure on End[], and allows us to keep the working
-			 * set inside L2 */
-
-			/* if state is reachable, and this character can finish a pattern, assume match */
-			/* to reduce false positives check if qgram can finish the pattern */
-			/* return position of probable match */
-			/* find first 0 starting from MSB, the position of that bit as counted from LSB, is the length of the
-			 * longest pattern that could match */
-			return j >= MAXSOPATLEN  ? j - MAXSOPATLEN : 0;
-		}
-	}
-	/* no match */
-	return -1;
-}
-
-/* ----------------------------------------------------------- */
-
-
 #define MATCH_SUCCESS 0
 #define MATCH_FAILED  -1
 
@@ -296,7 +198,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		if(!bufrev)
 			return CL_EMEM;
 		reverse_string(bufrev);
-		rc = SO_search(&matcher->filter, (const unsigned char*)bufrev, buffer_len) != -1;
+		rc = filter_search(&matcher->filter, (const unsigned char*)bufrev, buffer_len) != -1;
 		if(rc == -1) {
 			free(buffer);
 			free(bufrev);
@@ -381,7 +283,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	if((rc = cli_bm_init(&matcher->hostkey_prefix))) {
 		return rc;
 	}
-	SO_init(&matcher->filter);
+	filter_init(&matcher->filter);
 	return CL_SUCCESS;
 }
 
@@ -697,7 +599,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 		mpool_free(matcher->mempool, new);
 		return ret;
 	}
-	SO_preprocess_add(&matcher->filter, (const unsigned char*)suffix, len);
+	filter_add_static(&matcher->filter, (const unsigned char*)suffix, len, "regex");
 	return CL_SUCCESS;
 }
 
