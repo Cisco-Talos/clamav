@@ -1647,7 +1647,12 @@ cat <<EOF
 EOF
 
 AC_MSG_NOTICE([Summary of miscellaneous  features])
-CL_MSG_STATUS([check       ],[$CHECK_LIBS],[$enable_check_ut])
+if test "x$CHECK_LIBS" = "x"; then
+    check_libs="no"
+else
+    check_libs="$CHECK_LIBS"
+fi
+CL_MSG_STATUS([check       ],[$check_libs],[$enable_check_ut])
 CL_MSG_STATUS([clamuko     ],[$want_clamuko],[$want_clamuko])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then
     CL_MSG_STATUS([fdpassing   ],[$have_fdpass],[$want_fdpassing])

@@ -25073,17 +25073,22 @@ EOF
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous  features" >&5
 $as_echo "$as_me: Summary of miscellaneous  features" >&6;}
+if test "x$CHECK_LIBS" = "x"; then
+    check_libs="no"
+else
+    check_libs="$CHECK_LIBS"
+fi
 
 
    $as_echo_n "              check       : "
    if test "x$enable_check_ut" = "xno"; then :
-  $as_echo "$CHECK_LIBS (disabled)"
+  $as_echo "$check_libs (disabled)"
 elif test "x$enable_check_ut" = "xyes"; then :
-  $as_echo "$CHECK_LIBS"
+  $as_echo "$check_libs"
 elif test "x$enable_check_ut" = "x"; then :
-  $as_echo "$CHECK_LIBS"
+  $as_echo "$check_libs"
 else
-  $as_echo "$CHECK_LIBS ($enable_check_ut)"
+  $as_echo "$check_libs ($enable_check_ut)"
 fi
 
 
