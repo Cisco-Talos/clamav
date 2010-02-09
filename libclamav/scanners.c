@@ -414,6 +414,13 @@ static int cli_scangzip(cli_ctx *ctx)
     memset(&z, 0, sizeof(z));
     if((ret = inflateInit2(&z, MAX_WBITS + 16)) != Z_OK) {
 	cli_dbgmsg("GZip: InflateInit failed: %d\n", ret);
+#ifdef ZLIB_VERNUM
+	cli_dbgmsg("zlib version %s (%04x), build flags = 0x%lx, runtime version %s\n",
+		   ZLIB_VERSION, ZLIB_VERNUM, zlibCompileFlags(), zlibVersion());
+#else
+	cli_dbgmsg("zlib version %s, runtime version %s\n",
+		   ZLIB_VERSION, zlibVersion());
+#endif
 	return CL_CLEAN;
     }
 
