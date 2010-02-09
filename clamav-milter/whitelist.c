@@ -185,6 +185,7 @@ int smtpauth_init(const char *r) {
 	regex[rxused] = '$';
 	regex[rxused+1] = '\0';
 	r = regex;
+	fclose(f);
     }
 
     if(cli_regcomp(&authreg, r, REG_ICASE|REG_NOSUB|REG_EXTENDED)) {
