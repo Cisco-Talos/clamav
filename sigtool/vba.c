@@ -66,7 +66,7 @@ void destroy_ctx(cli_ctx *ctx) {
     close((*(ctx->fmap))->fd);
     funmap(*(ctx->fmap));
     free(ctx->fmap);
-    cl_engine_free(ctx->engine);
+    cl_engine_free((struct cl_engine *)ctx->engine);
     free(ctx);
 }
 
