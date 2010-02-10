@@ -387,7 +387,7 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
     root->ac_maxdepth = maxdepth;
 
     /* TODO: dconf here ?*/
-    if (cli_mtargets[root->type].enable_prefiltering && 0) {/* Disabled for now */
+    if (cli_mtargets[root->type].enable_prefiltering && 1) {/* Disabled for now */
 	root->filter = mpool_malloc(root->mempool, sizeof(*root->filter));
 	if (!root->filter) {
 	    cli_errmsg("cli_ac_init: Can't allocate memory for ac_root->filter\n");
