@@ -2302,7 +2302,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     if(!ctx.fmap)
 	return CL_EMEM;
     ctx.fmap--;
-    ctx.hook_lsig_matches = NULL; cli_bitset_init();
+    ctx.hook_lsig_matches = cli_bitset_init();
 
     rc = cli_magic_scandesc(desc, &ctx);
 
