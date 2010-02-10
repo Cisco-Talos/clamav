@@ -62,6 +62,16 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	    root->bm_reloff_num++;
     }
 
+    if(root->filter) {
+	/* the bm_suffix load balancing below can shorten the sig,
+	 * we want to see the entire signature! */
+	if (filter_add_static(root->filter, pattern->pattern, pattern->length, pattern->virname) == -1) {
+	    cli_warnmsg("cli_bm_addpatt: cannot use filter for trie\n");
+	    mpool_free(root->mempool, root->filter);
+	    root->filter = NULL;
+	}
+    }
+
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE
     /* try to load balance bm_suffix (at the cost of bm_shift) */
     for(i = 0; i < pattern->length - BM_BLOCK_SIZE + 1; i++) {

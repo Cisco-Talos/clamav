@@ -48,6 +48,31 @@
 #include "fmap.h"
 #include "pe_icons.h"
 #include "regex/regex.h"
+#include "filtering.h"
+#include "perflogging.h"
+
+#ifdef CLI_PERF_LOGGING
+
+static inline void PERF_LOG_FILTER(int32_t pos, int32_t length, int8_t trie)
+{
+    cli_perf_log_add(RAW_BYTES_SCANNED, length);
+    cli_perf_log_add(FILTER_BYTES_SCANNED, length - pos);
+    cli_perf_log_count2(TRIE_SCANNED, trie, length - pos);
+}
+
+static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length)
+{
+    if (bm_called)
+	cli_perf_log_add(BM_SCANNED, length);
+    if (acmode)
+	cli_perf_log_add(AC_SCANNED, length);
+    return 0;
+}
+
+#else
+static inline void PERF_LOG_FILTER(int32_t pos, uint32_t length, int8_t trie) {}
+static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length) { return 0; }
+#endif
 
 static inline int matcher_run(const struct cli_matcher *root,
 			      const unsigned char *buffer, uint32_t length,
@@ -60,8 +85,31 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      struct cli_bm_off *offdata)
 {
     int ret;
-    if (root->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, map, offdata)) != CL_VIRUS)
+    int32_t pos = 0;
+    struct filter_match_info info;
+    if (root->filter) {
+	if(filter_search_ext(root->filter, buffer, length, &info) == -1) {
+	    /*  for safety always scan last maxpatlen bytes */
+	    pos = length - root->maxpatlen - 1;
+	    if (pos < 0) pos = 0;
+	    PERF_LOG_FILTER(pos, length, root->type);
+	} else {
+	    /* must not cut buffer for 64[4-4]6161, because we must be able to check
+	     * 64! */
+	    pos = info.first_match - root->maxpatlen - 1;
+	    if (pos < 0) pos = 0;
+	    PERF_LOG_FILTER(pos, length, root->type);
+	}
+    } else {
+	PERF_LOG_FILTER(0, length, root->type);
+    }
+    length -= pos;
+    buffer += pos;
+    offset += pos;
+    if (root->ac_only || PERF_LOG_TRIES(0,1, length) || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, map, offdata)) != CL_VIRUS) {
+	PERF_LOG_TRIES(acmode, 0, length);
 	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, root, mdata, offset, ftype, ftoffset, acmode, NULL);
+    }
     return ret;
 }
 

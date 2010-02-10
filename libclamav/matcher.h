@@ -95,6 +95,7 @@ struct cli_matcher {
     struct cli_ac_patt **ac_reloff;
     uint32_t ac_reloff_num, ac_absoff_num;
     uint8_t ac_mindepth, ac_maxdepth;
+    struct filter *filter;
 
     uint16_t maxpatlen;
     uint8_t ac_only;
@@ -126,20 +127,21 @@ struct cli_mtarget {
     const char *name;
     uint8_t idx;    /* idx of matcher */
     uint8_t ac_only;
+    uint8_t enable_prefiltering;
 };
 
 #define CLI_MTARGETS 10
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
-    { 0,		    "GENERIC",	    0,	0   },
-    { CL_TYPE_MSEXE,	    "PE",	    1,	0   },
-    { CL_TYPE_MSOLE2,	    "OLE2",	    2,	1   },
-    { CL_TYPE_HTML,	    "HTML",	    3,	1   },
-    { CL_TYPE_MAIL,	    "MAIL",	    4,	1   },
-    { CL_TYPE_GRAPHICS,	    "GRAPHICS",	    5,	1   },
-    { CL_TYPE_ELF,	    "ELF",	    6,	1   },
-    { CL_TYPE_TEXT_ASCII,   "ASCII",	    7,	1   },
-    { CL_TYPE_ERROR,        "NOT USED",	    8,	1   },
-    { CL_TYPE_MACHO,	    "MACH-O",	    9,	1   }
+    { 0,                    "GENERIC",      0,  0, 1 },
+    { CL_TYPE_MSEXE,        "PE",           1,  0, 1 },
+    { CL_TYPE_MSOLE2,       "OLE2",         2,  1, 0 },
+    { CL_TYPE_HTML,         "HTML",         3,  1, 0 },
+    { CL_TYPE_MAIL,         "MAIL",         4,  1, 1 },
+    { CL_TYPE_GRAPHICS,     "GRAPHICS",     5,  1, 0 },
+    { CL_TYPE_ELF,          "ELF",          6,  1, 0 },
+    { CL_TYPE_TEXT_ASCII,   "ASCII",        7,  1, 1 },
+    { CL_TYPE_ERROR,        "NOT USED",     8,  1, 0 },
+    { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 }
 };
 
 struct cli_target_info {
