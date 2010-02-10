@@ -292,7 +292,7 @@ enum badness {
 	avoid_anywhere, /* includes avoid_first! */
 	/* not that bad, but still not best */
 	dontlike,
-	accept,
+	acceptable,
 	like
 };
 static inline void get_score(enum badness badness, unsigned i, const struct filter *m, const struct char_spec *spec0, const struct char_spec *spec1, int32_t *score, int32_t *score_end)
@@ -320,7 +320,7 @@ static inline void get_score(enum badness badness, unsigned i, const struct filt
 		case dontlike:
 			base = 0;
 			break;
-		case accept:
+		case acceptable:
 			base = 0x200;
 			break;
 		case like:
@@ -496,7 +496,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 				char_badness[i] = avoid_anywhere;
 		} else {
 			int8_t binary = 0;
-			enum badness scor = accept;
+			enum badness scor = acceptable;
 			for(k0=spec0->start;k0 <= spec0->end;k0 += spec0->step) {
 				for(k1=spec1->start;k1 <= spec1->end;k1 += spec1->step) {
 					unsigned char c0 = spec_ith_char(spec0, k0);
@@ -513,7 +513,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 						binary = 1;
 				}
 			}
-			if (scor == accept && binary) {
+			if (scor == acceptable && binary) {
 				/* slightly favor binary */
 				scor = like;
 			}
@@ -543,7 +543,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 		while ((kend > i+3) && char_badness[kend-1] == reject) kend--;
 		for (k=i;k<kend;k++) {
 			enum badness badness = char_badness[k];
-			if (badness < accept) {
+			if (badness < acceptable) {
 				if (badness == reject) {
 					/* this is a never pick */
 					kend = k;
