@@ -31,6 +31,7 @@
 #include "matcher.h"
 #include "matcher-bm.h"
 #include "filetypes.h"
+#include "filtering.h"
 
 #include "mpool.h"
 
