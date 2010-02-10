@@ -70,6 +70,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	    mpool_free(root->mempool, root->filter);
 	    root->filter = NULL;
 	}
+	/* TODO: should this affect maxpatlen? */
     }
 
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE

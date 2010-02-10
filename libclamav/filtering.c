@@ -451,11 +451,11 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 					spec->alt = pat->special_table[altcnt-1];
 					break;
 				    default:
+					stop = 1;
 					break;
 					/* TODO: should something be done here?
 					 * */
 				}
-				stop = 1;
 				break;
 			case CLI_MATCH_NIBBLE_HIGH:
 				spec->start = (p & 0xf0);

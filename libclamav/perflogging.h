@@ -34,6 +34,7 @@
 #else
 /*TODO: maybe we need a GCC version check too here */
 #include <pthread.h>
+#include <assert.h>
 #include "cltypes.h"
 
 enum perf_log_sumable {

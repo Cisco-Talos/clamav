@@ -359,6 +359,8 @@ int cli_ac_buildtrie(struct cli_matcher *root)
 	return CL_SUCCESS;
     }
 
+    if (root->filter)
+	cli_warnmsg("Using filter for trie %d\n", root->type);
     return ac_maketrans(root);
 }
 
@@ -1693,6 +1695,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    mpool_free(root->mempool, root->filter);
 	    root->filter = NULL;
 	}
+	/* TODO: should this affect maxpatlen? */
     }
 
     for(i = 0; i < root->ac_maxdepth && i < new->length; i++) {
