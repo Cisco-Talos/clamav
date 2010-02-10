@@ -59,7 +59,6 @@
 #include "libclamav/clamav.h"
 #include "libclamav/matcher.h"
 #include "libclamav/cvd.h"
-#include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
@@ -73,6 +72,7 @@
  * Force backward compatibility with the cdiff interpreter of clamav < 0.95
  */
 #define COMPATIBILITY_LIMIT 980
+
 
 static const struct dblist_s {
     const char *name;
@@ -1382,7 +1382,7 @@ static int vbadump(const struct optstruct *opts)
 	char *dir;
 	const char *pt;
 	struct uniq *vba = NULL;
-	cli_ctx ctx;
+	cli_ctx *ctx;
 
 
     if(optget(opts, "vba-hex")->enabled) {
@@ -1411,25 +1411,17 @@ static int vbadump(const struct optstruct *opts)
 	close(fd);
         return -1;
     }
-
-    ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
-    if(!ctx.fmap) {
-	printf("malloc failed\n");
-	return 1;
+    if(!(ctx = convenience_ctx(fd))) {
+	close(fd);
+	return -1;
     }
-    *ctx.fmap = fmap(fd, 0, 0);
-    if(*ctx.fmap) {
-	printf("fmap failed\n");
-	return 1;
-    }
-    
-    if(cli_ole2_extract(dir, NULL, &vba)) {
+    if(cli_ole2_extract(dir, ctx, &vba)) {
+	destroy_ctx(ctx);
 	cli_rmdirs(dir);
         free(dir);
-	close(fd);
         return -1;
     }
-    close(fd);
+    destroy_ctx(ctx);
     if (vba) 
       sigtool_vba_scandir(dir, hex_output, vba);
     cli_rmdirs(dir);
