@@ -434,7 +434,7 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	if(!hs->keys) {
 		return CL_EMEM;
 	}
-	hs->bitmap = cli_calloc(initial_capacity / 8, sizeof(*hs->bitmap));
+	hs->bitmap = cli_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));
 	if(!hs->bitmap) {
 		free(hs->keys);
 		return CL_EMEM;
@@ -554,4 +554,16 @@ ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array)
 		}
 	}
 	return j;
+}
+
+void cli_hashset_init_noalloc(struct cli_hashset *hs)
+{
+    memset(hs, 0, sizeof(*hs));
+}
+
+int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key)
+{
+    if (!hs->keys)
+	return 0;
+    return cli_hashset_contains(hs, key);
 }

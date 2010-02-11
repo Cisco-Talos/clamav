@@ -175,7 +175,7 @@ struct macho_fat_arch
 	return -1;					    \
     if(DETECT_BROKEN) {					    \
 	if(ctx->virname)				    \
-	    *ctx->virname = "Broken.Executable";	    \
+	    *ctx->virname = "Heuristics.Broken.Executable"; \
 	return CL_VIRUS;				    \
     }							    \
     return CL_EFORMAT

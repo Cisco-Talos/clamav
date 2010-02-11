@@ -25,9 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "bignum.h"
-
 int cli_versig(const char *md5, const char *dsig);
-unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e, mp_int n);
+int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str);
 
 #endif

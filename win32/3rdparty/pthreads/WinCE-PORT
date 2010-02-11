@@ -3,7 +3,12 @@ done by Tristan Savatier. The semaphore routines have been
 completely rewritten since (2005-04-25), having been progressively
 broken more and more by changes to the library. All of the semaphore
 routines implemented for W9x/WNT/2000 and up should now also work for
-WinCE. Also, pthread_mutex_timedlock should now work. [RPJ]
+WinCE. Also, pthread_mutex_timedlock should now work.
+
+Additional WinCE updates have been applied since this as well. Check the
+ChangeLog file and search for WINCE for example. (2007-01-07)
+
+[RPJ]
 
 ----
 

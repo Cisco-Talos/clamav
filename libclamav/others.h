@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -41,6 +41,8 @@
 #include "fmap.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
+#include "bytecode.h"
+#include "bytecode_api.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -97,8 +99,14 @@ extern uint8_t cli_debug_flag;
 #define NAME_MAX 256
 #endif
 
+typedef struct bitset_tag
+{
+        unsigned char *bitset;
+        unsigned long length;
+} bitset_t;
+
 /* internal clamav context */
-typedef struct {
+typedef struct cli_ctx_tag {
     const char **virname;
     unsigned long int *scanned;
     const struct cli_matcher *root;
@@ -109,9 +117,56 @@ typedef struct {
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
+    size_t container_size;
     struct cli_dconf *dconf;
     fmap_t **fmap;
+    bitset_t* hook_lsig_matches;
 } cli_ctx;
+
+
+typedef struct {uint64_t v[2][4];} icon_groupset;
+
+struct icomtr {
+    unsigned int group[2];
+    unsigned int color_avg[3];
+    unsigned int color_x[3];
+    unsigned int color_y[3];
+    unsigned int gray_avg[3];
+    unsigned int gray_x[3];
+    unsigned int gray_y[3];
+    unsigned int bright_avg[3];
+    unsigned int bright_x[3];
+    unsigned int bright_y[3];
+    unsigned int dark_avg[3];
+    unsigned int dark_x[3];
+    unsigned int dark_y[3];
+    unsigned int edge_avg[3];
+    unsigned int edge_x[3];
+    unsigned int edge_y[3];
+    unsigned int noedge_avg[3];
+    unsigned int noedge_x[3];
+    unsigned int noedge_y[3];
+    unsigned int rsum;
+    unsigned int gsum;
+    unsigned int bsum;
+    unsigned int ccount;
+    char *name;
+};
+
+struct icon_matcher {
+    char **group_names[2];
+    unsigned int group_counts[2];
+    struct icomtr *icons[3];
+    unsigned int icon_counts[3];
+};
+
+struct cli_dbinfo {
+    char *name;
+    unsigned char *hash;
+    size_t size;
+    struct cl_cvd *cvd;
+    struct cli_dbinfo *next;
+};
 
 struct cl_engine {
     uint32_t refcount; /* reference counter */
@@ -154,11 +209,8 @@ struct cl_engine {
     /* B-M matcher for whitelist db */
     struct cli_matcher *md5_fp;
 
-    /* Zip metadata */
-    struct cli_meta_node *zip_mlist;
-
-    /* RAR metadata */
-    struct cli_meta_node *rar_mlist;
+    /* Container metadata */
+    struct cli_cdb *cdb;
 
     /* Phishing .pdb and .wdb databases*/
     struct regex_matcher *whitelist_matcher;
@@ -177,8 +229,24 @@ struct cl_engine {
     /* PUA categories (to be included or excluded) */
     char *pua_cats;
 
+    /* Icon reference storage */
+    struct icon_matcher *iconcheck;
+
+    /* Negative cache storage */
+    struct CACHE *cache;
+
+    /* Database information from .info files */
+    struct cli_dbinfo *dbinfo;
+
     /* Used for memory pools */
     mpool_t *mempool;
+
+    /* Used for bytecode */
+    struct cli_all_bc bcs;
+    unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];
+    unsigned hooks_cnt[_BC_LAST_HOOK - _BC_START_HOOKS];
+    unsigned hook_lsig_ids;
+    enum bytecode_security bytecode_security;
 };
 
 struct cl_settings {
@@ -232,9 +300,6 @@ extern int have_rar;
 		     (((v) & 0x00ff000000000000ULL) >> 40) | \
 		     (((v) & 0xff00000000000000ULL) >> 56))
 
-
-#if WORDS_BIGENDIAN == 0
-
 #ifndef HAVE_ATTRIB_PACKED 
 #define __attribute__(x)
 #endif
@@ -245,12 +310,18 @@ extern int have_rar;
 #pragma pack 1
 #endif
 
+union unaligned_64 {
+	uint64_t una_u64;
+	int64_t una_s64;
+} __attribute__((packed));
+
 union unaligned_32 {
 	uint32_t una_u32;
 	int32_t una_s32;
 } __attribute__((packed));
 
 union unaligned_16 {
+	uint16_t una_u16;
 	int16_t una_s16;
 } __attribute__((packed));
 
@@ -260,6 +331,9 @@ union unaligned_16 {
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack
 #endif
+
+#if WORDS_BIGENDIAN == 0
+
 /* Little endian */
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)
@@ -307,8 +381,10 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #endif
 
 /* used by: spin, yc (C) aCaB */
-#define CLI_ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-#define CLI_ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
+#define __SHIFTBITS(a) (sizeof(a)<<3)
+#define __SHIFTMASK(a) (__SHIFTBITS(a)-1)
+#define CLI_ROL(a,b) a = ( a << ((b) & __SHIFTMASK(a)) ) | ( a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)) )
+#define CLI_ROR(a,b) a = ( a >> ((b) & __SHIFTMASK(a)) ) | ( a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)) )
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
@@ -317,12 +393,6 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #define CLI_SRS(n,s) ((((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s))) - (1<<(sizeof(n)*8-1-s)))
 #endif
 #define CLI_SAR(n,s) n = CLI_SRS(n,s)
-
-typedef struct bitset_tag
-{
-        unsigned char *bitset;
-        unsigned long length;
-} bitset_t;
 
 #ifdef __GNUC__
 void cli_warnmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
@@ -340,14 +410,22 @@ void cli_errmsg(const char *str, ...);
  * such as debug paths, and error paths */
 #if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 #define UNLIKELY(cond) __builtin_expect(!!(cond), 0)
+#define LIKELY(cond) __builtin_expect(!!(cond), 1)
 #else
 #define UNLIKELY(cond) (cond)
+#define LIKELY(cond) (cond)
 #endif
 
 #ifdef __GNUC__
 #define always_inline inline __attribute__((always_inline))
 #else
 #define always_inline inline
+#endif
+
+#if defined (__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define __hot__ __attribute__((hot))
+#else
+#define __hot__
 #endif
 
 #define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
@@ -407,7 +485,7 @@ int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsig
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
-void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *));
+void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

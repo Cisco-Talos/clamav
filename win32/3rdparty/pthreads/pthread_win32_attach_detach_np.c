@@ -91,6 +91,15 @@ pthread_win32_process_attach_np ()
 
 #endif
 
+#ifdef _WIN64
+
+/*
+ * InterlockedCompareExchange routine in WIN64 is an intrinsic function.
+ * See PTW32_INTERLOCKED_COMPARE_EXCHANGE implement.h
+ */
+
+#else
+
 #ifdef WINCE
 
   /*
@@ -143,6 +152,8 @@ pthread_win32_process_attach_np ()
     {
       ptw32_features |= PTW32_SYSTEM_INTERLOCKED_COMPARE_EXCHANGE;
     }
+
+#endif
 
   /*
    * Load QUSEREX.DLL and try to get address of QueueUserAPCEx

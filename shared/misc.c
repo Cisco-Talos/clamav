@@ -74,7 +74,7 @@ char *freshdbdir(void)
 
     /* try to find the most up-to-date db directory */
     dbdir = cl_retdbdir();
-    if((opts = optparse(CONFDIR"/freshclam.conf", 0, NULL, 0, OPT_FRESHCLAM, 0, NULL))) {
+    if((opts = optparse(CONFDIR_FRESHCLAM, 0, NULL, 0, OPT_FRESHCLAM, 0, NULL))) {
 	if((opt = optget(opts, "DatabaseDirectory"))->enabled) {
 	    if(strcmp(dbdir, opt->strarg)) {
 		    char *daily = (char *) malloc(strlen(opt->strarg) + strlen(dbdir) + 30);
@@ -117,6 +117,8 @@ void print_version(const char *dbdir)
 	char *fdbdir = NULL, *path;
 	const char *pt;
 	struct cl_cvd *daily;
+	time_t db_time;
+	unsigned int db_version = 0;
 
 
     if(dbdir)
@@ -136,17 +138,32 @@ void print_version(const char *dbdir)
     }
 
     sprintf(path, "%s"PATHSEP"daily.cvd", pt);
-    if(access(path, R_OK))
-	sprintf(path, "%s"PATHSEP"daily.cld", pt);
+    if(!access(path, R_OK)) {
+	daily = cl_cvdhead(path);
+	if(daily) {
+	    db_version = daily->version;
+	    db_time = daily->stime;
+	    cl_cvdfree(daily);
+	}
+    }
+
+    sprintf(path, "%s"PATHSEP"daily.cld", pt);
+    if(!access(path, R_OK)) {
+	daily = cl_cvdhead(path);
+	if(daily) {
+	    if(daily->version > db_version) {
+		db_version = daily->version;
+		db_time = daily->stime;
+	    }
+	    cl_cvdfree(daily);
+	}
+    }
 
     if(!dbdir)
 	free(fdbdir);
 
-    if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
-	    time_t t = (time_t) daily->stime;
-
-	printf("ClamAV %s/%d/%s", get_version(), daily->version, ctime(&t));
-	cl_cvdfree(daily);
+    if(db_version) {
+	printf("ClamAV %s/%u/%s", get_version(), db_version, ctime(&db_time));
     } else {
 	printf("ClamAV %s\n",get_version());
     }
@@ -319,7 +336,7 @@ int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_ad
 int cli_is_abspath(const char *path) {
 #ifdef _WIN32
     int len = strlen(path);
-    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len > 3 && path[1] == ':' && path[2] == '\\');
+    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len >= 2 && ((*path >= 'a' && *path <= 'z') || (*path >= 'A' && *path <= 'Z')) && path[1] == ':');
 #else
     return *path == '/';
 #endif

@@ -120,6 +120,7 @@ cli_binhex(const char *dir, fmap_t *map)
 	long bytesleft;
 	message *m;
 	fileblob *fb;
+	text *t_line;
 
 	size = (size_t)map->len;
 
@@ -179,9 +180,17 @@ cli_binhex(const char *dir, fmap_t *map)
 	if(line)
 		free(line);
 
-	if(binhexBegin(m) == NULL) {
+	if((t_line = binhexBegin(m)) == NULL) {
 		messageDestroy(m);
 		cli_dbgmsg("No binhex line found\n");
+		return CL_EFORMAT;
+	}
+
+	while(((t_line = t_line->t_next) != NULL) && (t_line->t_line == NULL));
+
+	if(!t_line) {
+		messageDestroy(m);
+		cli_dbgmsg("No binhex data to parse\n");
 		return CL_EFORMAT;
 	}
 
@@ -199,5 +208,6 @@ cli_binhex(const char *dir, fmap_t *map)
 	if(fb)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 	/* return CL_EIO; */	/* probably CL_EMEM, but we can't tell at this layer */
-	return CL_EMEM;
+	/* TK: CL_EMEM is too generic here and should not be reported for parsing errors */
+	return CL_EFORMAT;
 }

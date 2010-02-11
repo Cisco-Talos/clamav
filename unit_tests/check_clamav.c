@@ -516,12 +516,37 @@ void dconf_teardown(void)
 #endif
 }
 
+static void check_version_compatible()
+{
+    /* check 0.9.8 is not ABI compatible with 0.9.6,
+     * if by accident you compile with check 0.9.6 header
+     * and link with 0.9.8 then check will hang/crash. */
+    if ((check_major_version != CHECK_MAJOR_VERSION) ||
+	(check_minor_version != CHECK_MINOR_VERSION) ||
+	(check_micro_version != CHECK_MICRO_VERSION)) {
+	fprintf(stderr, "ERROR: check version mismatch!\n"
+		"\tVersion from header: %u.%u.%u\n"
+		"\tVersion from library: %u.%u.%u\n"
+		"\tMake sure check.h and -lcheck are same version!\n",
+		CHECK_MAJOR_VERSION,
+		CHECK_MINOR_VERSION,
+		CHECK_MICRO_VERSION,
+		check_major_version,
+		check_minor_version,
+		check_micro_version);
+	exit(EXIT_FAILURE);
+    }
+}
 
 int main(void)
 {
     int nf;
-    Suite *s = test_cl_suite();
-    SRunner *sr = srunner_create(s);
+    Suite *s;
+    SRunner *sr;
+
+    check_version_compatible();
+    s = test_cl_suite();
+    sr = srunner_create(s);
 #ifdef CHECK_HAVE_LOOPS
     srunner_add_suite(sr, test_cli_suite());
 #else

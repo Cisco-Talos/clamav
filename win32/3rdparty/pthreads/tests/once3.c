@@ -34,7 +34,7 @@
  * --------------------------------------------------------------------------
  *
  * Create several pthread_once objects and channel several threads
- * through each. Make the init_routine cancelable and cancel them with
+ * through each. Make the init_routine cancelable and cancel them
  * waiters waiting.
  *
  * Depends on API functions:
@@ -44,8 +44,6 @@
  *      pthread_cancel()
  *      pthread_once()
  */
-
-#define ASSERT_TRACE
 
 #include "test.h"
 
@@ -68,7 +66,6 @@ myfunc(void)
 {
   EnterCriticalSection(&numOnce.cs);
   numOnce.i++;
-  assert(numOnce.i > 0);
   LeaveCriticalSection(&numOnce.cs);
   /* Simulate slow once routine so that following threads pile up behind it */
   Sleep(10);
@@ -81,11 +78,11 @@ mythread(void * arg)
 {
   /*
    * Cancel every thread. These threads are deferred cancelable only, so
-   * only the thread performing the once routine (my_func) will see it (there are
+   * only the thread performing the init_routine will see it (there are
    * no other cancelation points here). The result will be that every thread
-   * eventually cancels only when it becomes the new once thread.
+   * eventually cancels only when it becomes the new initter.
    */
-  assert(pthread_cancel(pthread_self()) == 0);
+  pthread_cancel(pthread_self());
   assert(pthread_once(&once[(int) arg], myfunc) == 0);
   EnterCriticalSection(&numThreads.cs);
   numThreads.i++;

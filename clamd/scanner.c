@@ -84,6 +84,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     if (send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
 	logg("$Client disconnected while command was active!\n");
 	thrmgr_group_terminate(scandata->conn->group);
+	if (reason == visit_file)
+	    free(filename);
 	return CL_BREAK;
     }
 
@@ -104,8 +106,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    scandata->errors++;
 	    return CL_EMEM;
 	case error_stat:
-	    if (msg == scandata->toplevel_path)
-		conn_reply_errno(scandata->conn, msg, "lstat() failed:");
+	    conn_reply_errno(scandata->conn, msg, "lstat() failed:");
 	    logg("^lstat() failed on: %s\n", msg);
 	    scandata->errors++;
 	    return CL_SUCCESS;
@@ -162,7 +163,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		pthread_mutex_lock(&reload_mutex);
 		client_conn->engine_timestamp = reloaded_time;
 		pthread_mutex_unlock(&reload_mutex);
-		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
+		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn, 1)) {
 		    logg("!thread dispatch failed\n");
 		    free(filename);
 		    return CL_EMEM;
@@ -178,8 +179,10 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     if (access(filename, R_OK)) {
-	if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1)
+	if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("*Access denied: %s\n", filename);
 	scandata->errors++;
 	free(filename);
@@ -192,20 +195,25 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	free(filename);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
     }
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1)
+	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
-	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1)
+	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
     } else if (logok) {
 	logg("~%s: OK\n", filename);
@@ -382,7 +390,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	return -1;
     }
 
-    snprintf(peer_addr, sizeof(peer_addr), "%s", inet_ntoa(peer.sin_addr));
+    *peer_addr = '\0';
+    inet_ntop(peer.sin_family, &peer, peer_addr, sizeof(peer_addr));
     logg("*Accepted connection from %s on port %u, fd %d\n", peer_addr, port, acceptd);
 
     if(cli_gentempfd(optget(opts, "TemporaryDirectory")->strarg, &tmpname, &tmpd)) {

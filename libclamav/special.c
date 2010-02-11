@@ -47,7 +47,7 @@
 
 int cli_check_mydoom_log(int desc, cli_ctx *ctx)
 {
-	int32_t record[8], check;
+	uint32_t record[8], check;
 	int i, retval=CL_VIRUS, j;
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");
@@ -77,7 +77,7 @@ int cli_check_mydoom_log(int desc, cli_ctx *ctx)
     if (j < 2) {
 	retval = CL_CLEAN;
     } else if (retval==CL_VIRUS) {
-	*ctx->virname = "Worm.Mydoom.M.log";
+	*ctx->virname = "Heuristics.Worm.Mydoom.M.log";
     }
 
     return retval;

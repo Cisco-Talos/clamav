@@ -31,13 +31,13 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/actions.c \
     $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/libclamav/regex/strlcpy.c\
     clamdscan.c \
     proto.c \
     proto.h \
     client.c \
     client.h
 endif
+
 
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

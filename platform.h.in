@@ -33,3 +33,11 @@ typedef	unsigned	int	in_addr_t;
 #else
 #define PATHSEP "/"
 #endif
+
+#define CONFDIR_CLAMD CONFDIR PATHSEP "clamd.conf"
+#define CONFDIR_FRESHCLAM CONFDIR PATHSEP "freshclam.conf"
+#define CONFDIR_MILTER CONFDIR PATHSEP "clamav-milter.conf"
+
+/* Nothing is safe in windows, not even open */
+#define safe_open open
+

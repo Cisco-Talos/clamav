@@ -34,6 +34,13 @@
 #include "libclamav/str.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "libclamav/bytecode.h"
+
+#ifndef _WIN32
+extern const struct clam_option *clam_options;
+#else
+__declspec(dllimport) extern const struct clam_option *clam_options;
+#endif
 
 static struct _cfgfile {
     const char *name;
@@ -288,7 +295,9 @@ int main(int argc, char **argv)
 	printf("BZIP2 ");
 #endif
     if(have_rar)
-	printf("RAR");
+	printf("RAR ");
+    if (have_clamjit)
+	printf("JIT");
     printf("\n");
 
     if(!strlen(dbdir)) {
@@ -311,7 +320,8 @@ int main(int argc, char **argv)
 	    if(!cvd) {
 		printf("%s: Can't get information about the database\n", dbnames[i]);
 	    } else {
-		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime((const time_t *) &cvd->stime));
+		const time_t t = cvd->stime;
+		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime(&t));
 		if(cvd->fl > flevel)
 		    printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dbnames[i], cvd->fl, flevel);
 		cl_cvdfree(cvd);

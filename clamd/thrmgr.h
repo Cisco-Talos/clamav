@@ -62,13 +62,15 @@ typedef struct threadpool_tag {
 	pthread_attr_t pool_attr;
 
 	pthread_cond_t  idle_cond;
-	pthread_cond_t  queueable_cond;
-	
+	pthread_cond_t  queueable_single_cond;
+	pthread_cond_t  queueable_bulk_cond;
+
 	pool_state_t state;
 	int thr_max;
 	int queue_max;
 	int thr_alive;
 	int thr_idle;
+	int thr_multiscan;
 	int idle_timeout;
 	struct task_desc *tasks;
 	
@@ -97,7 +99,7 @@ enum thrmgr_exit {
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
-int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data);
+int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data, int bulk);
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);
 int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
 int thrmgr_group_need_terminate(jobgroup_t *group);

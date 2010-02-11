@@ -17,11 +17,8 @@
 #  MA 02110-1301, USA.
 
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
-
 lib_LTLIBRARIES =
 EXTRA_DIST =
-
-
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -78,6 +75,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -98,6 +96,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    md5.h\
 				    others_common.c \
 				    others.h \
+				    qsort.c \
 				    regex/strlcpy.c \
 				    regex/regcomp.c \
 				    regex/regerror.c \
@@ -112,8 +111,19 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static
 libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
+if ENABLE_LLVM
+LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
+LLVMDEP=c++/libclamavcxx.la
+SUBDIRS=c++
+else
+LLVMLIBADD=libclamav_nocxx.la
+LLVMDEP=libclamav_nocxx.la
+endif
+
+libclamav_nocxx_la_SOURCES = bytecode_nojit.c
+
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
+libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
@@ -167,8 +177,11 @@ libclamav_la_SOURCES = \
 	msexpand.h \
 	pe.c \
 	pe.h \
+	pe_icons.c \
+	pe_icons.h \
 	disasm.c \
 	disasm.h \
+	disasm-common.h \
 	disasmpriv.h \
 	upx.c \
 	upx.h \
@@ -282,7 +295,6 @@ libclamav_la_SOURCES = \
 	7z/Bra.c \
 	7z/Bra.h \
 	7z/Bra86.c \
-	7z/BraIA64.c \
 	7z/Archive/7z/7zIn.c \
 	7z/Archive/7z/7zIn.h \
 	7z/Archive/7z/7zDecode.c \
@@ -309,8 +321,12 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
+	filtering.h\
+	filtering.c\
 	fmap.c \
 	fmap.h \
+	perflogging.c\
+	perflogging.h\
 	default.h\
 	sha256.c\
 	sha256.h\
@@ -327,9 +343,14 @@ libclamav_la_SOURCES = \
 	ishield.c \
 	ishield.h \
 	type_desc.h \
+	bcfeatures.h \
 	bytecode_api.c \
 	bytecode_api_decl.c \
-	bytecode_api.h
+	bytecode_api.h \
+	bytecode_api_impl.h \
+	bytecode_hooks.h \
+	cache.c \
+	cache.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
@@ -362,7 +383,7 @@ version.h.tmp:
 	fi
 
 lib_LTLIBRARIES += libclamav.la
-noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
+noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 EXTRA_DIST += regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf

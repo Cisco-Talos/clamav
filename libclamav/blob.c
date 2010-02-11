@@ -29,6 +29,8 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>	/* for NAME_MAX */
@@ -618,7 +620,7 @@ int
 fileblobScan(const fileblob *fb)
 {
 	int rc;
-	cli_file_t ftype;
+	struct stat sb;
 
 	if(fb->isInfected)
 		return CL_VIRUS;
@@ -635,11 +637,11 @@ fileblobScan(const fileblob *fb)
 
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
+	fstat(fb->fd, &sb);
+	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS)
+	    return CL_VIRUS;
 
-	fb->ctx->container_type = CL_TYPE_MAIL;
 	rc = cli_magic_scandesc(fb->fd, fb->ctx);
-	fb->ctx->container_type = 0;
-
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;

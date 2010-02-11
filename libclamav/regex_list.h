@@ -27,16 +27,10 @@
 #include "phishcheck.h"
 #include "readdb.h"
 #include "matcher.h"
+#include "filtering.h"
 #include <zlib.h> /* for gzFile */
 
 #include "mpool.h"
-
-struct filter {
-	uint32_t B[65536];
-	uint32_t end_fast[256];
-	uint32_t end[65536];
-	unsigned long m;
-};
 
 struct regex_list_ht {
 	struct regex_list *head;
@@ -71,7 +65,6 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);
-long SO_search(const struct filter *m, const unsigned char *data, unsigned long len);
 
 #endif
 

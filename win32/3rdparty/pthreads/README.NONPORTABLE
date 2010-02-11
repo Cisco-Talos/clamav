@@ -72,6 +72,16 @@ pthread_getw32threadhandle_np(pthread_t thread);
 	Applications can use the win32 handle to set
 	win32 specific attributes of the thread.
 
+DWORD
+pthread_getw32threadid_np (pthread_t thread)
+
+	Returns the win32 thread ID that the POSIX
+	thread "thread" is running as.
+
+        Only valid when the library is built where
+        ! defined (__MINGW32__) || defined (__MSVCRT__) || defined (__DMC__)
+        and otherwise returns 0.
+
 
 int
 pthread_mutexattr_setkind_np(pthread_mutexattr_t * attr, int kind)
@@ -124,7 +134,7 @@ pthread_delay_np (const struct timespec *interval);
         [EINVAL]   The value specified by interval is invalid. 
 
 int
-pthread_num_processors_np
+pthread_num_processors_np (void)
 
         This routine (found on HPUX systems) returns the number of processors
         in the system. This implementation actually returns the number of

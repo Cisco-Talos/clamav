@@ -39,6 +39,7 @@ struct cli_dconf {
     uint32_t mail;
     uint32_t other;
     uint32_t phishing;
+    uint32_t bytecode;
 };
 
 /* PE flags */
@@ -102,6 +103,14 @@ struct cli_dconf {
 /* Phishing flags */
 #define PHISHING_CONF_ENGINE   0x1
 #define PHISHING_CONF_ENTCONV  0x2
+
+/* Bytecode flags */
+#define BYTECODE_INTERPRETER 0x1
+#define BYTECODE_JIT_X86 0x2
+#define BYTECODE_JIT_PPC 0x4
+#define BYTECODE_JIT_ARM 0x8
+
+#define BYTECODE_ENGINE_MASK (BYTECODE_INTERPRETER | BYTECODE_JIT_X86 | BYTECODE_JIT_PPC | BYTECODE_JIT_ARM)
 
 #ifdef USE_MPOOL
 struct cli_dconf *cli_dconf_init(mpool_t *);

@@ -8,39 +8,51 @@
 #include <io.h>
 #include <direct.h>
 #include <Ws2tcpip.h>
+#include <process.h>
 
 #include "gettimeofday.h"
 #include "snprintf.h"
 #include "net.h"
+#include "w32_errno.h"
+#include "w32_stat.h"
 
-typedef int ssize_t;
+#ifndef __cplusplus
 typedef unsigned short mode_t;
+#endif
+
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
-#define lstat stat
+#define sleep(sex) Sleep(sex)
+#define getuid() 0
+#define getgid() 0
+
+char *strptime(const char *s, const char *format, struct tm *tm);
 
 #define socket w32_socket
+#define getsockopt w32_getsockopt
+#define setsockopt w32_setsockopt
+#define bind w32_bind
+#define listen w32_listen
+#define accept w32_accept
 #define connect w32_connect
+#define shutdown w32_shutdown
 #define send w32_send
-//#define getsockopt(sock, lvl, name, val, len) getsockopt(sock, lvl, name, (char *)(val), len)
-
-/* FIXME: need to wrap all win32 and winsock functions and map
-    (WSA)GetLastError to errno */
-#define EWOULDBLOCK EAGAIN
+#define recv w32_recv
+#define closesocket w32_closesocket
+#define getservbyname w32_getservbyname
+#define getaddrinfo w32_getaddrinfo
+#define freeaddrinfo w32_freeaddrinfo
+#define inet_ntop w32_inet_ntop
+#define gethostbyname w32_gethostbyname
+#define select w32_select
+#define poll w32_poll
+#define strerror w32_strerror
+#define strerror_r w32_strerror_r
+#define ftruncate _chsize
+#define getpid GetCurrentProcessId
 
 #define PATH_MAX 32767
-
-#define S_IRUSR S_IREAD
-#define S_IWUSR S_IWRITE
-#define S_IRWXU (S_IRUSR|S_IWUSR)
-#define S_ISDIR(mode) ((_S_IFDIR & mode)!=0)
-#define S_ISREG(mode) ((_S_IFREG & mode)!=0)
-#define S_ISLNK(mode) (0)
-#define F_OK 0
-#define W_OK 2
-#define R_OK 4
-#define X_OK R_OK
 
 #define SEARCH_LIBDIR ""
 
@@ -61,4 +73,23 @@ typedef	unsigned	int	in_addr_t;
 
 #define PATHSEP "\\"
 
+#undef DATADIR
+#undef CONFDIR
+#if !defined(THIS_IS_LIBCLAMAV) && defined(_MSC_VER)
+#define LIBCLAMAV_EXPORT __declspec(dllimport)
+#else
+#define LIBCLAMAV_EXPORT
+#endif
+LIBCLAMAV_EXPORT extern const char *DATADIR;
+LIBCLAMAV_EXPORT extern const char *CONFDIR;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_CLAMD;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_FRESHCLAM;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
+#undef HAVE_CONFIG_H
+
+#ifdef OUT
+#undef OUT
+#endif
+
 #endif /* __PLATFORM_H */
+

@@ -41,6 +41,9 @@
 #endif
 
 #include <fcntl.h>
+#ifdef C_SOLARIS
+#include <stdio_ext.h>
+#endif
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
@@ -65,6 +68,9 @@ time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat dbstat;
+
+void *event_wake_recv = NULL;
+void *event_wake_accept = NULL;
 
 static void scanner_thread(void *arg)
 {
@@ -314,8 +320,10 @@ static void *acceptloop_th(void *arg)
     pthread_mutex_lock(fds->buf_mutex);
     for (;;) {
 	/* Block waiting for data to become available for reading */
-	int new_sd = fds_poll_recv(fds, -1, 0);
-
+	int new_sd = fds_poll_recv(fds, -1, 0, event_wake_accept);
+#ifdef _WIN32
+	ResetEvent(event_wake_accept);
+#endif
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds->nfds) {
 	    /* no more sockets to poll, all gave an error */
@@ -336,6 +344,7 @@ static void *acceptloop_th(void *arg)
 	    struct fd_buf *buf = &fds->buf[i];
 	    if (!buf->got_newdata)
 		continue;
+#ifndef _WIN32
 	    if (buf->fd == data->syncpipe_wake_accept[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -343,6 +352,7 @@ static void *acceptloop_th(void *arg)
 		}
 		continue;
 	    }
+#endif
 	    if (buf->got_newdata == -1) {
 		logg("$Acceptloop closed FD: %d\n", buf->fd);
 		shutdown(buf->fd, 2);
@@ -403,10 +413,14 @@ static void *acceptloop_th(void *arg)
 		}
 
 		/* notify recvloop */
+#ifdef _WIN32
+		SetEvent(event_wake_recv);
+#else
 		if (write(data->syncpipe_wake_recv[1], "", 1) == -1) {
 		    logg("!write syncpipe failed\n");
 		    continue;
 		}
+#endif
 	    } else if (errno != EINTR) {
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
@@ -443,10 +457,13 @@ static void *acceptloop_th(void *arg)
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
+#ifdef _WIN32
+    SetEvent(event_wake_recv);
+#else
     if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
 	logg("$Syncpipe write failed\n");
     }
-
+#endif
     return NULL;
 }
 
@@ -588,7 +605,7 @@ static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_bu
     return cmd;
 }
 
-//static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
+/* static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout) */
 static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct optstruct *opts, int *error, size_t *ppos, int readtimeout)
 {
     int rc;
@@ -937,6 +954,19 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
+#ifdef C_SOLARIS
+#ifdef F_BADFD
+	if (enable_extended_FILE_stdio(-1, -1) == -1) {
+	    logg("^Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
+	    rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;
+	}
+#elif !defined(_LP64)
+	if (rlim.rlim_cur > 255) {
+	    rlim.rlim_cur = 255;
+	    logg("^Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
+	}
+#endif
+#endif
 	opt = optget(opts,"MaxRecursion");
 	maxrec = opt->numarg;
 	max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
@@ -1030,14 +1060,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    cl_engine_free(engine);
 	    return 1;
 	}
-
+#ifdef _WIN32
+	event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
+	event_wake_recv = CreateEvent(NULL, TRUE, FALSE, NULL);
+#else
     if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
 	(pipe(acceptdata.syncpipe_wake_accept) == -1)) {
 
 	logg("!pipe failed\n");
 	exit(-1);
     }
-
     syncpipe_wake_recv_w = acceptdata.syncpipe_wake_recv[1];
 
     if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1, 0) == -1 ||
@@ -1045,6 +1077,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("!failed to add pipe fd\n");
 	exit(-1);
     }
+#endif
 
     if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
@@ -1059,14 +1092,17 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     time(&start_time);
     for(;;) {
 	int new_sd;
+
 	/* Block waiting for connection on any of the sockets */
 	pthread_mutex_lock(fds->buf_mutex);
 	fds_cleanup(fds);
 	/* signal that we can accept more connections */
 	if (fds->nfds <= (unsigned)max_queue)
 	    pthread_cond_signal(&acceptdata.cond_nfds);
-	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1);
-
+	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
+#ifdef _WIN32
+	ResetEvent(event_wake_recv);
+#else
 	if (!fds->nfds) {
 	    /* at least the dummy/sync pipe should have remained */
 	    logg("!All recv() descriptors gone: fatal\n");
@@ -1076,7 +1112,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_unlock(fds->buf_mutex);
 	    break;
 	}
-
+#endif
 	if (new_sd == -1 && errno != EINTR) {
 	    logg("!Failed to poll sockets, fatal\n");
 	    pthread_mutex_lock(&exit_mutex);
@@ -1085,7 +1121,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	}
 
 
-	i = (rr_last + 1) % fds->nfds;
+	if(fds->nfds) i = (rr_last + 1) % fds->nfds;
 	for (j = 0;  j < fds->nfds && new_sd >= 0; j++, i = (i+1) % fds->nfds) {
 	    size_t pos = 0;
 	    int error = 0;
@@ -1093,6 +1129,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (!buf->got_newdata)
 		continue;
 
+#ifndef _WIN32
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
@@ -1100,7 +1137,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		continue;
 	    }
-
+#endif
 	    if (buf->got_newdata == -1) {
 		if (buf->mode == MODE_WAITREPLY) {
 		    logg("$mode WAIT_REPLY -> closed\n");
@@ -1264,6 +1301,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
 #endif
+	    time(&start_time);
 	} else {
 	    pthread_mutex_unlock(&reload_mutex);
 	}
@@ -1272,9 +1310,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
+#ifdef _WIN32
+    SetEvent(event_wake_accept);
+#else
     if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
 	logg("^Write to syncpipe failed\n");
     }
+#endif
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
@@ -1294,8 +1336,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     pthread_join(accept_th, NULL);
     fds_free(fds);
+#ifdef _WIN32
+    CloseHandle(event_wake_accept);
+    CloseHandle(event_wake_recv);
+#else
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);
+#endif
     if(dbstat.entries)
 	cl_statfree(&dbstat);
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");

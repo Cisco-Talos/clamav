@@ -1,0 +1,11 @@
+AC_DEFUN_ONCE([AC_CONFIG_SUBDIRS_OPTIONAL],
+[
+AC_REQUIRE([AC_CONFIG_SUBDIRS])
+subdirfailed=no
+AC_CONFIG_SUBDIRS([$1])
+m4_define([_AC_OUTPUT_SUBDIRS],
+	  [
+       	  m4_pushdef([AC_MSG_ERROR],[subdirfailed=yes])
+	  ]m4_defn([_AC_OUTPUT_SUBDIRS])[
+	  m4_popdef([AC_MSG_ERROR])])
+])

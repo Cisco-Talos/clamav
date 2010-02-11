@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -26,11 +26,16 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "pe.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "readdb.h"
+#include "scanners.h"
 #include <string.h>
 
+/* TODO: we should make sure lsigcnt is never NULL, and has at least as many
+ * elements as the bytecode needs */
+static const uint32_t nomatch[64];
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
@@ -39,6 +44,27 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->values = NULL;
     ctx->operands = NULL;
     ctx->opsizes = NULL;
+    ctx->fmap = NULL;
+    ctx->off = 0;
+    ctx->ctx = NULL;
+    ctx->hooks.match_counts = nomatch;
+    /* TODO: init all hooks with safe values */
+    ctx->virname = NULL;
+    ctx->outfd = -1;
+    ctx->tempfile = NULL;
+    ctx->written = 0;
+    ctx->trace_level = trace_none;
+    ctx->trace = NULL;
+    ctx->trace_op = NULL;
+    ctx->trace_val = NULL;
+    ctx->trace_ptr = NULL;
+    ctx->scope = NULL;
+    ctx->scopeid = 0;
+    ctx->file = "??";
+    ctx->directory = "";
+    ctx->line = 0;
+    ctx->col = 0;
+    ctx->mpool = NULL;
     return ctx;
 }
 
@@ -48,17 +74,58 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
    free(ctx);
 }
 
-int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
+int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
+{
+    int fd;
+    *tempfilename = ctx->tempfile;
+    fd  = ctx->outfd;
+    ctx->tempfile = NULL;
+    ctx->outfd = -1;
+    return fd;
+}
+
+/* resets bytecode state, so you can run another bytecode with same ctx */
+static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     free(ctx->opsizes);
     free(ctx->values);
     free(ctx->operands);
-    memset(ctx, 0, sizeof(ctx));
+    ctx->operands = NULL;
+    ctx->values = NULL;
+    ctx->opsizes = NULL;
+    ctx->written = 0;
+    if (ctx->outfd != -1) {
+	cli_dbgmsg("Bytecode: nobody cared about FD %d, %s\n", ctx->outfd,
+		   ctx->tempfile);
+	if (ftruncate(ctx->outfd, 0) == -1)
+	    cli_dbgmsg("ftruncate failed\n");
+	close(ctx->outfd);
+	cli_unlink(ctx->tempfile);
+	free(ctx->tempfile);
+	ctx->tempfile = NULL;
+	ctx->outfd = -1;
+    }
+#if USE_MPOOL
+    if (ctx->mpool) {
+	mpool_destroy(ctx->mpool);
+	ctx->mpool = NULL;
+    }
+#else
+    /*TODO: implement for no-mmap case too*/
+#endif
+    return CL_SUCCESS;
+}
+
+int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
+{
+    cli_bytecode_context_reset(ctx);
+    memset(ctx, 0, sizeof(*ctx));
     return CL_SUCCESS;
 }
 
 static unsigned typesize(const struct cli_bc *bc, uint16_t type)
 {
+    type &= 0x7fff;
     if (!type)
 	return 0;
     if (type <= 8)
@@ -69,13 +136,17 @@ static unsigned typesize(const struct cli_bc *bc, uint16_t type)
 	return 4;
     if (type <= 64)
 	return 8;
-    return 0;
+    return bc->types[type-65].size;
 }
 
 static unsigned typealign(const struct cli_bc *bc, uint16_t type)
 {
-    unsigned size = typesize(bc, type);
-    return size ? size : 1;
+    type &= 0x7fff;
+    if (type <= 64) {
+	unsigned size = typesize(bc, type);
+	return size ? size : 1;
+    }
+    return bc->types[type-65].align;
 }
 
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid)
@@ -263,9 +334,8 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	*dest= 0;
 	ty = 8*readFixedNumber(p, off, len, ok, 1);
 	if (!ty) {
-	    cli_errmsg("bytecode: void type constant is invalid!\n");
-	    *ok = 0;
-	    return MAX_OP;
+	    /* This is a global variable */
+	    return 0x80000000 | v;
 	}
 	if (ty <= 8)
 	    *(uint8_t*)dest = v;
@@ -299,7 +369,7 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
     }
     (*off)++;
     l = readNumber(p, off, len, ok);
-    if (!l) {
+    if (!l || !ok) {
 	*datalen = l;
 	return NULL;
     }
@@ -345,12 +415,13 @@ static inline char *readString(const unsigned char *p, unsigned *off, unsigned l
     return str;
 }
 
-static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
+static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linelength)
 {
     uint64_t magic1;
     unsigned magic2;
     char ok = 1;
     unsigned offset, len, flevel;
+    char *pos;
     if (strncmp((const char*)buffer, BC_HEADER, sizeof(BC_HEADER)-1)) {
 	cli_errmsg("Missing file magic in bytecode");
 	return CL_EMALFDB;
@@ -362,22 +433,25 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 	cli_errmsg("Unable to parse functionality level in bytecode header\n");
 	return CL_EMALFDB;
     }
-    if (flevel > BC_FUNC_LEVEL) {
+    if (flevel != BC_FUNC_LEVEL) {
 	cli_dbgmsg("Skipping bytecode with functionality level: %u\n", flevel);
 	return CL_BREAK;
     }
-    // Optimistic parsing, check for error only at the end.
-    bc->verifier = readNumber(buffer, &offset, len, &ok);
-    bc->sigmaker = readString(buffer, &offset, len, &ok);
-    bc->id = readNumber(buffer, &offset, len, &ok);
+    /* Optimistic parsing, check for error only at the end.*/
+    bc->metadata.timestamp = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.sigmaker = readString(buffer, &offset, len, &ok);
+    bc->metadata.targetExclude = readNumber(buffer, &offset, len, &ok);
+    bc->kind = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxStack = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.targetExclude = readString(buffer, &offset, len, &ok);
+    bc->metadata.compiler = readString(buffer, &offset, len, &ok);
     bc->num_types = readNumber(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     bc->state = bc_loaded;
     bc->uses_apis = NULL;
+    bc->dbgnodes = NULL;
+    bc->dbgnode_cnt = 0;
     if (!ok) {
 	cli_errmsg("Invalid bytecode header at %u\n", offset);
 	return CL_EMALFDB;
@@ -390,9 +464,14 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
       cli_errmsg("Magic numbers don't match: %lx%lx, %u\n", m0, m1, magic2);
       return CL_EMALFDB;
     }
-    if (offset != len) {
-	cli_errmsg("Trailing garbage in bytecode header: %d extra bytes\n",
-		   len-offset);
+    if (buffer[offset] != ':') {
+	cli_errmsg("Expected : but found: %c\n", buffer[offset]);
+	return CL_EMALFDB;
+    }
+    offset++;
+    *linelength = strtol(buffer+offset, &pos, 10);
+    if (*pos != '\0') {
+	cli_errmsg("Invalid number: %s\n", buffer+offset);
 	return CL_EMALFDB;
     }
 
@@ -406,6 +485,23 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 	cli_errmsg("Out of memory allocating %u types\n", bc->num_types);
 	return CL_EMEM;
     }
+    return CL_SUCCESS;
+}
+
+static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
+{
+    const char *prefix;
+    char *vnames, *vend = strchr(buffer, ';');
+    if (vend) {
+	bc->lsig = cli_strdup(buffer);
+	*vend++ = '\0';
+	prefix = buffer;
+	vnames = strchr(vend, '{');
+    } else {
+	/* Not a logical signature, but we still have a virusname */
+	bc->lsig = NULL;
+    }
+
     return CL_SUCCESS;
 }
 
@@ -429,7 +525,7 @@ static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
 {
     unsigned j;
 
-    ty->numElements = readFixedNumber(buffer, off, len, ok, 1);
+    ty->numElements = readNumber(buffer, off, len, ok);
     if (!ok) {
 	cli_errmsg("Error parsing type\n");
 	*ok = 0;
@@ -453,9 +549,10 @@ static void add_static_types(struct cli_bc *bc)
 {
     unsigned i;
     for (i=0;i<NUM_STATIC_TYPES;i++) {
-	bc->types[i].kind = PointerType;
+	bc->types[i].kind = DPointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
+	bc->types[i].size = bc->types[i].align = sizeof(void*);
     }
 }
 
@@ -475,7 +572,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	return CL_BREAK;
     }
     add_static_types(bc);
-    for (i=(BC_START_TID - 64);i<bc->num_types;i++) {
+    for (i=(BC_START_TID - 65);i<bc->num_types-1;i++) {
 	struct cli_bc_type *ty = &bc->types[i];
 	uint8_t t = readFixedNumber(buffer, &offset, len, &ok, 1);
 	if (!ok) {
@@ -484,16 +581,22 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	}
 	switch (t) {
 	    case 1:
-		ty->kind = FunctionType;
+		ty->kind = DFunctionType;
+		ty->size = ty->align = sizeof(void*);
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
 		    return CL_EMALFDB;
 		}
+		if (!ty->numElements) {
+		    cli_errmsg("Function with no return type? %u\n", i);
+		    return CL_EMALFDB;
+		}
 		break;
 	    case 2:
 	    case 3:
-		ty->kind = (t == 2) ? StructType : PackedStructType;
+		ty->kind = (t == 2) ? DPackedStructType : DStructType;
+		ty->size = ty->align = 0;/* TODO:calculate size/align of structs */
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
@@ -501,7 +604,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		}
 		break;
 	    case 4:
-		ty->kind = ArrayType;
+		ty->kind = DArrayType;
 		/* number of elements of array, not subtypes! */
 		ty->numElements = readNumber(buffer, &offset, len, &ok);
 		if (!ok) {
@@ -511,7 +614,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		/* fall-through */
 	    case 5:
 		if (t == 5) {
-		    ty->kind = PointerType;
+		    ty->kind = DPointerType;
 		    ty->numElements = 1;
 		}
 		ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes));
@@ -523,6 +626,12 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
 		    return CL_EMALFDB;
+		}
+		if (t == 5) {
+		    ty->size = ty->align = sizeof(void*);
+		} else {
+		    ty->size = ty->numElements*typesize(bc, ty->containedTypes[0]);
+		    ty->align = typealign(bc, ty->containedTypes[0]);
 		}
 		break;
 	    default:
@@ -538,7 +647,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
-    const struct cli_bc_type *ty = &bc->types[tid - 63];
+    const struct cli_bc_type *ty = &bc->types[tid - 65];
     const struct cli_bc_type *apity = &cli_apicall_types[apitid];
     /* If we've already verified type equality, return.
      * Since we need to check equality of recursive types, we assume types are
@@ -556,13 +665,18 @@ static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid
 	 cli_dbgmsg("bytecode: type numElements mismatch: %u != %u\n", ty->numElements, apity->numElements);
 	 return 0;
      }
-    for (i=0;i<ty->numElements;i++) {
+     for (i=0;i<ty->numElements;i++) {
 	if (apity->containedTypes[i] < BC_START_TID) {
-	    if (ty->containedTypes[i] != apity->containedTypes[i])
+	    if (ty->containedTypes[i] != apity->containedTypes[i]) {
+		cli_dbgmsg("bytecode: contained type mismatch: %u != %u\n",
+			   ty->containedTypes[i], apity->containedTypes[i]);
 		return 0;
+	    }
 	} else if (!types_equal(bc, apity2ty, ty->containedTypes[i], apity->containedTypes[i] - BC_START_TID))
 	    return 0;
-    }
+	if (ty->kind == DArrayType)
+	    break;/* validated the contained type already */
+     }
     return 1;
 }
 
@@ -634,6 +748,159 @@ static int parseApis(struct cli_bc *bc, unsigned char *buffer)
     return CL_SUCCESS;
 }
 
+static uint16_t type_components(struct cli_bc *bc, uint16_t id, char *ok)
+{
+    unsigned i, sum=0;
+    const struct cli_bc_type *ty;
+    if (id <= 64)
+	return 1;
+    ty = &bc->types[id-65];
+    /* TODO: protect against recursive types */
+    switch (ty->kind) {
+	case DFunctionType:
+	    cli_errmsg("bytecode: function type not accepted for constant: %u\n", id);
+	    /* don't accept functions as constant initializers */
+	    *ok = 0;
+	    return 0;
+	case DPointerType:
+	    return 2;
+	case DStructType:
+	case DPackedStructType:
+	    for (i=0;i<ty->numElements;i++) {
+		sum += type_components(bc, ty->containedTypes[i], ok);
+	    }
+	    return sum;
+	case DArrayType:
+	    return type_components(bc, ty->containedTypes[0], ok)*ty->numElements;
+	default:
+	    *ok = 0;
+	    return 0;
+    }
+}
+
+static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
+			 unsigned char *buffer, unsigned *offset,
+			 unsigned len, char *ok)
+{
+    unsigned j=0;
+    while (*ok && buffer[*offset] != 0x60) {
+	if (j >= comp) {
+	    cli_errmsg("bytecode: constant has too many subcomponents, expected %u\n", comp);
+	    *ok = 0;
+	    return;
+	}
+	buffer[*offset] |= 0x20;
+	bc->globals[i][j++] = readNumber(buffer, offset, len, ok);
+    }
+    if (*ok && j != comp) {
+	cli_errmsg("bytecode: constant has too few subcomponents: %u < %u\n", j, comp);
+    }
+    (*offset)++;
+}
+
+/* parse constant globals with constant initializers */
+static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
+{
+    unsigned i, offset = 1, len = strlen((const char*)buffer), numglobals;
+    unsigned maxglobal;
+    char ok=1;
+
+    if (buffer[0] != 'G') {
+	cli_errmsg("bytecode: Invalid globals header: %c\n", buffer[0]);
+	return CL_EMALFDB;
+    }
+    maxglobal = readNumber(buffer, &offset, len, &ok);
+    if (maxglobal > cli_apicall_maxglobal) {
+	cli_dbgmsg("bytecode using global %u, but highest global known to libclamav is %u, skipping\n", maxglobal, cli_apicall_maxglobal);
+	return CL_BREAK;
+    }
+    numglobals = readNumber(buffer, &offset, len, &ok);
+    bc->globals = cli_calloc(numglobals, sizeof(*bc->globals));
+    if (!bc->globals) {
+	cli_errmsg("bytecode: OOM allocating memory for %u globals\n", numglobals);
+	return CL_EMEM;
+    }
+    bc->globaltys = cli_calloc(numglobals, sizeof(*bc->globaltys));
+    if (!bc->globaltys) {
+	cli_errmsg("bytecode: OOM allocating memory for %u global types\n", numglobals);
+	return CL_EMEM;
+    }
+    bc->num_globals = numglobals;
+    if (!ok)
+	return CL_EMALFDB;
+    for (i=0;i<numglobals;i++) {
+	unsigned comp;
+	bc->globaltys[i] = readTypeID(bc, buffer, &offset, len, &ok);
+	comp = type_components(bc, bc->globaltys[i], &ok);
+	if (!ok)
+	    return CL_EMALFDB;
+	bc->globals[i] = cli_malloc(sizeof(*bc->globals[0])*comp);
+	if (!bc->globals[i])
+	    return CL_EMEM;
+	readConstant(bc, i, comp, buffer, &offset, len, &ok);
+    }
+    if (!ok)
+	return CL_EMALFDB;
+    if (offset != len) {
+	cli_errmsg("Trailing garbage in globals: %d extra bytes\n",
+		   len-offset);
+	return CL_EMALFDB;
+    }
+    return CL_SUCCESS;
+}
+
+static int parseMD(struct cli_bc *bc, unsigned char *buffer)
+{
+    unsigned offset = 1, len = strlen(buffer);
+    unsigned numMD, i, b;
+    char ok = 1;
+    if (buffer[0] != 'D')
+	return CL_EMALFDB;
+    numMD = readNumber(buffer, &offset, len, &ok);
+    if (!ok) {
+	cli_errmsg("Unable to parse number of MD nodes\n");
+	return CL_EMALFDB;
+    }
+    b = bc->dbgnode_cnt;
+    bc->dbgnode_cnt += numMD;
+    bc->dbgnodes = cli_realloc(bc->dbgnodes, bc->dbgnode_cnt * sizeof(*bc->dbgnodes));
+    if (!bc->dbgnodes)
+	return CL_EMEM;
+    for (i=0;i<numMD;i++) {
+	unsigned j;
+	struct cli_bc_dbgnode_element* elts;
+	unsigned el = readNumber(buffer, &offset, len, &ok);
+	if (!ok) {
+	    cli_errmsg("Unable to parse number of elements\n");
+	    return CL_EMALFDB;
+	}
+	bc->dbgnodes[b+i].numelements = el;
+	bc->dbgnodes[b+i].elements = elts = cli_calloc(el, sizeof(*elts));
+	if (!elts)
+	    return CL_EMEM;
+	for (j=0;j<el;j++) {
+	    if (buffer[offset] == '|') {
+		elts[j].string = readData(buffer, &offset, len, &ok, &elts[j].len);
+		if (!ok)
+		    return CL_EMALFDB;
+	    } else {
+		elts[j].len = readNumber(buffer, &offset, len, &ok);
+		if (!ok)
+		    return CL_EMALFDB;
+		if (elts[j].len) {
+		    elts[j].constant = readNumber(buffer, &offset, len, &ok);
+		}
+		else
+		    elts[j].nodeid = readNumber(buffer, &offset, len, &ok);
+		if (!ok)
+		    return CL_EMALFDB;
+	    }
+	}
+    }
+    cli_dbgmsg("bytecode: Parsed %u nodes total\n", bc->dbgnode_cnt);
+    return CL_SUCCESS;
+}
+
 static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *buffer)
 {
     char ok=1;
@@ -654,6 +921,7 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
     }
     offset = 1;
     func->numArgs = readFixedNumber(buffer, &offset, len, &ok, 1);
+    func->returnType = readTypeID(bc, buffer, &offset, len, &ok);
     if (buffer[offset] != 'L') {
 	cli_errmsg("Invalid function locals header: %c\n", buffer[offset]);
 	return CL_EMALFDB;
@@ -672,6 +940,8 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
     }
     for (i=0;i<all_locals;i++) {
 	func->types[i] = readNumber(buffer, &offset, len, &ok);
+	if (readFixedNumber(buffer, &offset, len, &ok, 1))
+	    func->types[i] |= 0x8000;
     }
     if (!ok) {
 	cli_errmsg("Invalid local types\n");
@@ -766,26 +1036,26 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    cli_errmsg("Invalid type or operand\n");
 	    return CL_EMALFDB;
 	}
-	if (inst.opcode >= OP_INVALID) {
+	if (inst.opcode >= OP_BC_INVALID) {
 	    cli_errmsg("Invalid opcode: %u\n", inst.opcode);
 	    return CL_EMALFDB;
 	}
 
 	switch (inst.opcode) {
-	    case OP_JMP:
+	    case OP_BC_JMP:
 		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_RET:
+	    case OP_BC_RET:
 		inst.type = readNumber(buffer, &offset, len, &ok);
 		inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_BRANCH:
+	    case OP_BC_BRANCH:
 		inst.u.branch.condition = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_CALL_API:/* fall-through */
-	    case OP_CALL_DIRECT:
+	    case OP_BC_CALL_API:/* fall-through */
+	    case OP_BC_CALL_DIRECT:
 		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
 		    inst.u.ops.numOps = numOp;
@@ -793,9 +1063,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
 		    if (!inst.u.ops.ops) {
 			cli_errmsg("Out of memory allocating operands\n");
-			return CL_EMALFDB;
+			return CL_EMEM;
 		    }
-		    if (inst.opcode == OP_CALL_DIRECT)
+		    if (inst.opcode == OP_BC_CALL_DIRECT)
 			inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
 		    else
 			inst.u.ops.funcid = readAPIFuncID(bc, buffer, &offset, len, &ok);
@@ -804,9 +1074,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    }
 		}
 		break;
-	    case OP_ZEXT:
-	    case OP_SEXT:
-	    case OP_TRUNC:
+	    case OP_BC_ZEXT:
+	    case OP_BC_SEXT:
+	    case OP_BC_TRUNC:
 		inst.u.cast.source = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.cast.mask = bcfunc->types[inst.u.cast.source];
 		if (inst.u.cast.mask == 1)
@@ -820,27 +1090,50 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		else if (inst.u.cast.mask <= 64)
 		    inst.u.cast.size = 4;
 		/* calculate mask */
-		if (inst.opcode != OP_SEXT)
+		if (inst.opcode != OP_BC_SEXT)
 		    inst.u.cast.mask = inst.u.cast.mask != 64 ?
 			(1ull<<inst.u.cast.mask)-1 :
 			~0ull;
 		break;
-	    case OP_ICMP_EQ:
-	    case OP_ICMP_NE:
-	    case OP_ICMP_UGT:
-	    case OP_ICMP_UGE:
-	    case OP_ICMP_ULT:
-	    case OP_ICMP_ULE:
-	    case OP_ICMP_SGT:
-	    case OP_ICMP_SGE:
-	    case OP_ICMP_SLE:
-	    case OP_ICMP_SLT:
+	    case OP_BC_GEP1:
+	    case OP_BC_GEPZ:
+		inst.u.three[0] = readNumber(buffer, &offset, len, &ok);
+		inst.u.three[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		inst.u.three[2] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		break;
+	    case OP_BC_GEPN:
+		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
+		if (ok) {
+		    inst.u.ops.numOps = numOp+2;
+		    inst.u.ops.opsizes = NULL;
+		    inst.u.ops.ops = cli_calloc(numOp+2, sizeof(*inst.u.ops.ops));
+		    if (!inst.u.ops.ops) {
+			cli_errmsg("Out of memory allocating operands\n");
+			return CL_EMEM;
+		    }
+		    inst.u.ops.ops[0] = readNumber(buffer, &offset, len, &ok);
+		    for (i=1;i<numOp+2;i++)
+			inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
+		}
+		break;
+	    case OP_BC_ICMP_EQ:
+	    case OP_BC_ICMP_NE:
+	    case OP_BC_ICMP_UGT:
+	    case OP_BC_ICMP_UGE:
+	    case OP_BC_ICMP_ULT:
+	    case OP_BC_ICMP_ULE:
+	    case OP_BC_ICMP_SGT:
+	    case OP_BC_ICMP_SGE:
+	    case OP_BC_ICMP_SLE:
+	    case OP_BC_ICMP_SLT:
 		/* instruction type must be correct before readOperand! */
 		inst.type = readNumber(buffer, &offset, len, &ok);
 		/* fall-through */
 	    default:
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
+		    case 0:
+			break;
 		    case 1:
 			inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
@@ -854,7 +1147,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			inst.u.three[2] = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
 		    default:
-			cli_errmsg("Opcode with too many operands: %u?\n", numOp);
+			cli_errmsg("Opcode %u with too many operands: %u?\n", inst.opcode, numOp);
 			ok = 0;
 			break;
 		}
@@ -888,6 +1181,27 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	offset++;
     }
+    if (buffer[offset] == 'D') {
+	unsigned num;
+	offset += 3;
+	if (offset >= len)
+	    return CL_EMALFDB;
+	num = readNumber(buffer, &offset, len, &ok);
+	if (!ok)
+	    return CL_EMALFDB;
+	if (num != bcfunc->numInsts) {
+	    cli_errmsg("invalid number of dbg nodes, expected: %u, got: %u\n", bcfunc->numInsts, num);
+	    return CL_EMALFDB;
+	}
+	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
+	if (!bcfunc->dbgnodes)
+	    return CL_EMEM;
+	for (i=0;i<num;i++) {
+	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
+	    if (!ok)
+		return CL_EMALFDB;
+	}
+    }
     if (offset != len) {
 	cli_errmsg("Trailing garbage in basicblock: %d extra bytes\n",
 		   len-offset);
@@ -899,34 +1213,64 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 }
 
 enum parse_state {
-    PARSE_BC_HEADER=0,
-    PARSE_BC_TYPES,
+    PARSE_BC_TYPES=0,
     PARSE_BC_APIS,
+    PARSE_BC_GLOBALS,
+    PARSE_BC_LSIG,
+    PARSE_MD_OPT_HEADER,
     PARSE_FUNC_HEADER,
     PARSE_BB
 };
 
-int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
+int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int trust)
 {
     unsigned row = 0, current_func = 0, bb=0;
-    char buffer[FILEBUFF];
-    enum parse_state state = PARSE_BC_HEADER;
+    char *buffer;
+    unsigned linelength=0;
+    char firstbuf[FILEBUFF];
+    enum parse_state state;
+    int rc, end=0;
 
+    memset(bc, 0, sizeof(*bc));
+    bc->trusted = trust;
     if (!f && !dbio) {
 	cli_errmsg("Unable to load bytecode (null file)\n");
 	return CL_ENULLARG;
     }
-    while (cli_dbgets(buffer, FILEBUFF, f, dbio)) {
-	int rc;
+    if (!cli_dbgets(firstbuf, FILEBUFF, f, dbio)) {
+	cli_errmsg("Unable to load bytecode (empty file)\n");
+	return CL_EMALFDB;
+    }
+    cli_chomp(firstbuf);
+    rc = parseHeader(bc, (unsigned char*)firstbuf, &linelength);
+    if (rc == CL_BREAK) {
+	bc->state = bc_skip;
+	return CL_SUCCESS;
+    }
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("Error at bytecode line %u\n", row);
+	return rc;
+    }
+    buffer = cli_malloc(linelength);
+    if (!buffer) {
+	cli_errmsg("Out of memory allocating line of length %u\n", linelength);
+	return CL_EMEM;
+    }
+    state = PARSE_BC_LSIG;
+    while (cli_dbgets(buffer, linelength, f, dbio) && !end) {
 	cli_chomp(buffer);
 	row++;
 	switch (state) {
-	    case PARSE_BC_HEADER:
-		rc = parseHeader(bc, (unsigned char*)buffer);
-		if (rc == CL_BREAK) /* skip */
+	    case PARSE_BC_LSIG:
+		rc = parseLSig(bc, (unsigned char*)buffer);
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
+		    free(buffer);
 		    return CL_SUCCESS;
+		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_BC_TYPES;
@@ -935,24 +1279,59 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseTypes(bc, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		state = PARSE_BC_APIS;
 		break;
 	    case PARSE_BC_APIS:
 		rc = parseApis(bc, (unsigned char*)buffer);
-		if (rc == CL_BREAK) /* skip */
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
+		    free(buffer);
 		    return CL_SUCCESS;
+		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
-		state = PARSE_FUNC_HEADER;
+		state = PARSE_BC_GLOBALS;
 		break;
+	    case PARSE_BC_GLOBALS:
+		rc = parseGlobals(bc, (unsigned char*)buffer);
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
+		    free(buffer);
+		    return CL_SUCCESS;
+		}
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
+		    return rc;
+		}
+		state = PARSE_MD_OPT_HEADER;
+		break;
+	    case PARSE_MD_OPT_HEADER:
+		if (buffer[0] == 'D') {
+		    rc = parseMD(bc, (unsigned char*)buffer);
+		    if (rc != CL_SUCCESS) {
+			cli_errmsg("Error at bytecode line %u\n", row);
+			free(buffer);
+			return rc;
+		    }
+		    break;
+		}
+		/* fall-through */
 	    case PARSE_FUNC_HEADER:
+                if (*buffer == 'S') {
+		    end = 1;
+		    break;
+		}
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		bb = 0;
@@ -962,12 +1341,14 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		rc = parseBB(bc, current_func, bb++, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
+		    free(buffer);
 		    return rc;
 		}
 		if (bb >= bc->funcs[current_func].numBB) {
 		    if (bc->funcs[current_func].insn_idx != bc->funcs[current_func].numInsts) {
 			cli_errmsg("Parsed different number of instructions than declared: %u != %u\n",
 				   bc->funcs[current_func].insn_idx, bc->funcs[current_func].numInsts);
+			free(buffer);
 			return CL_EMALFDB;
 		    }
 		    cli_dbgmsg("Parsed %u BBs, %u instructions\n",
@@ -978,6 +1359,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		break;
 	}
     }
+    free(buffer);
     cli_dbgmsg("Parsed %d functions\n", current_func);
     if (current_func != bc->num_func) {
 	cli_errmsg("Loaded less functions than declared: %u vs. %u\n",
@@ -987,7 +1369,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
+int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;
@@ -999,62 +1381,89 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
 	return CL_EARG;
     }
-    memset(&func, 0, sizeof(func));
-    func.numInsts = 1;
-    func.numValues = 1;
-    func.numBytes = ctx->bytes;
-    memset(ctx->values+ctx->bytes-8, 0, 8);
+    if (bc->state == bc_interp) {
+	memset(&func, 0, sizeof(func));
+	func.numInsts = 1;
+	func.numValues = 1;
+	func.numBytes = ctx->bytes;
+	memset(ctx->values+ctx->bytes-8, 0, 8);
 
-    inst.opcode = OP_CALL_DIRECT;
-    inst.interp_op = OP_CALL_DIRECT*5;
-    inst.dest = func.numArgs;
-    inst.type = 0;
-    inst.u.ops.numOps = ctx->numParams;
-    inst.u.ops.funcid = ctx->funcid;
-    inst.u.ops.ops = ctx->operands;
-    inst.u.ops.opsizes = ctx->opsizes;
-    return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+	inst.opcode = OP_BC_CALL_DIRECT;
+	inst.interp_op = OP_BC_CALL_DIRECT*5;
+	inst.dest = func.numArgs;
+	inst.type = 0;
+	inst.u.ops.numOps = ctx->numParams;
+	inst.u.ops.funcid = ctx->funcid;
+	inst.u.ops.ops = ctx->operands;
+	inst.u.ops.opsizes = ctx->opsizes;
+	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+    }
+    return cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
 }
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
 {
     return *(uint32_t*)ctx->values;/*XXX*/
-//    return ctx->values[ctx->numParams];
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)
 {
     unsigned i, j, k;
-    free(bc->sigmaker);
-    free(bc->metadata.targetExclude);
+    free(bc->metadata.compiler);
+    free(bc->metadata.sigmaker);
 
-    for (i=0;i<bc->num_func;i++) {
-	struct cli_bc_func *f = &bc->funcs[i];
-	free(f->types);
+    if (bc->funcs) {
+	for (i=0;i<bc->num_func;i++) {
+	    struct cli_bc_func *f = &bc->funcs[i];
+	    if (!f)
+		continue;
+	    free(f->types);
 
-	for (j=0;j<f->numBB;j++) {
-	    struct cli_bc_bb *BB = &f->BB[j];
-	    for(k=0;k<BB->numInsts;k++) {
-		struct cli_bc_inst *ii = &BB->insts[k];
-		if (operand_counts[ii->opcode] > 3 ||
-		    ii->opcode == OP_CALL_DIRECT || ii->opcode == OP_CALL_API) {
-		    free(ii->u.ops.ops);
-		    free(ii->u.ops.opsizes);
+	    for (j=0;j<f->numBB;j++) {
+		struct cli_bc_bb *BB = &f->BB[j];
+		for(k=0;k<BB->numInsts;k++) {
+		    struct cli_bc_inst *ii = &BB->insts[k];
+		    if (operand_counts[ii->opcode] > 3 ||
+			ii->opcode == OP_BC_CALL_DIRECT || ii->opcode == OP_BC_CALL_API) {
+			free(ii->u.ops.ops);
+			free(ii->u.ops.opsizes);
+		    }
 		}
 	    }
+	    free(f->BB);
+	    free(f->allinsts);
+	    free(f->constants);
 	}
-	free(f->BB);
-	free(f->allinsts);
-	free(f->constants);
+	free(bc->funcs);
     }
-    free(bc->funcs);
-    for (i=NUM_STATIC_TYPES;i<bc->num_types;i++) {
-	if (bc->types[i].containedTypes)
-	    free(bc->types[i].containedTypes);
+    if (bc->types) {
+	for (i=NUM_STATIC_TYPES;i<bc->num_types;i++) {
+	    if (bc->types[i].containedTypes)
+		free(bc->types[i].containedTypes);
+	}
+	free(bc->types);
     }
-    free(bc->types);
+
+    if (bc->globals) {
+	for (i=0;i<bc->num_globals;i++) {
+	    free(bc->globals[i]);
+	}
+	free(bc->globals);
+    }
+    if (bc->dbgnodes) {
+	for (i=0;i<bc->dbgnode_cnt;i++) {
+	    for (j=0;j<bc->dbgnodes[i].numelements;j++) {
+		struct cli_bc_dbgnode_element *el =  &bc->dbgnodes[i].elements[j];
+		if (el && el->string)
+		    free(el->string);
+	    }
+	}
+	free(bc->dbgnodes);
+    }
+    free(bc->globaltys);
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
+    free(bc->lsig);
 }
 
 #define MAP(val) do { operand_t o = val; \
@@ -1074,10 +1483,6 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
-	    if (ty > 64) {
-		cli_errmsg("Bytecode: non-integer types not yet implemented\n");
-		return CL_EMALFDB;
-	    }
 	    align = typealign(bc, ty);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;
@@ -1092,56 +1497,57 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    struct cli_bc_inst *inst = &bcfunc->allinsts[j];
 	    inst->dest = map[inst->dest];
 	    switch (inst->opcode) {
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_UDIV:
-		case OP_SDIV:
-		case OP_UREM:
-		case OP_SREM:
-		case OP_SHL:
-		case OP_LSHR:
-		case OP_ASHR:
-		case OP_AND:
-		case OP_OR:
-		case OP_XOR:
-		case OP_ICMP_EQ:
-		case OP_ICMP_NE:
-		case OP_ICMP_UGT:
-		case OP_ICMP_UGE:
-		case OP_ICMP_ULT:
-		case OP_ICMP_ULE:
-		case OP_ICMP_SGT:
-		case OP_ICMP_SGE:
-		case OP_ICMP_SLT:
-		case OP_ICMP_SLE:
-		case OP_COPY:
+		case OP_BC_ADD:
+		case OP_BC_SUB:
+		case OP_BC_MUL:
+		case OP_BC_UDIV:
+		case OP_BC_SDIV:
+		case OP_BC_UREM:
+		case OP_BC_SREM:
+		case OP_BC_SHL:
+		case OP_BC_LSHR:
+		case OP_BC_ASHR:
+		case OP_BC_AND:
+		case OP_BC_OR:
+		case OP_BC_XOR:
+		case OP_BC_ICMP_EQ:
+		case OP_BC_ICMP_NE:
+		case OP_BC_ICMP_UGT:
+		case OP_BC_ICMP_UGE:
+		case OP_BC_ICMP_ULT:
+		case OP_BC_ICMP_ULE:
+		case OP_BC_ICMP_SGT:
+		case OP_BC_ICMP_SGE:
+		case OP_BC_ICMP_SLT:
+		case OP_BC_ICMP_SLE:
+		case OP_BC_COPY:
+		case OP_BC_STORE:
 		    MAP(inst->u.binop[0]);
 		    MAP(inst->u.binop[1]);
 		    break;
-		case OP_SEXT:
-		case OP_ZEXT:
-		case OP_TRUNC:
+		case OP_BC_SEXT:
+		case OP_BC_ZEXT:
+		case OP_BC_TRUNC:
 		    MAP(inst->u.cast.source);
 		    break;
-		case OP_BRANCH:
+		case OP_BC_BRANCH:
 		    MAP(inst->u.branch.condition);
 		    break;
-		case OP_JMP:
+		case OP_BC_JMP:
 		    break;
-		case OP_RET:
+		case OP_BC_RET:
 		    MAP(inst->u.unaryop);
 		    break;
-		case OP_SELECT:
+		case OP_BC_SELECT:
 		    MAP(inst->u.three[0]);
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
-		case OP_CALL_API:/* fall-through */
-		case OP_CALL_DIRECT:
+		case OP_BC_CALL_API:/* fall-through */
+		case OP_BC_CALL_DIRECT:
 		{
 		    struct cli_bc_func *target = NULL;
-		    if (inst->opcode == OP_CALL_DIRECT) {
+		    if (inst->opcode == OP_BC_CALL_DIRECT) {
 			target = &bc->funcs[inst->u.ops.funcid];
 			if (inst->u.ops.funcid > bc->num_func) {
 			    cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
@@ -1168,13 +1574,25 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			inst->u.ops.opsizes = NULL;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAP(inst->u.ops.ops[k]);
-			if (inst->opcode == OP_CALL_DIRECT)
+			if (inst->opcode == OP_BC_CALL_DIRECT)
 			    inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
 			else
 			    inst->u.ops.opsizes[k] = 32; /*XXX*/
 		    }
 		    break;
 		}
+		case OP_BC_LOAD:
+		    MAP(inst->u.unaryop);
+		    break;
+		case OP_BC_GEP1:
+		case OP_BC_GEPZ:
+		    /*three[0] is the type*/
+		    MAP(inst->u.three[1]);
+		    MAP(inst->u.three[2]);
+		    break;
+		case OP_BC_GEPN:
+		    /*TODO */
+		    break;
 		default:
 		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);
 		    return CL_EBYTECODE;
@@ -1186,21 +1604,242 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     return CL_SUCCESS;
 }
 
-static int cli_bytecode_prepare_jit(struct cli_bc *bc)
+int cli_bytecode_prepare(struct cli_all_bc *bcs)
 {
-    if (bc->state != bc_loaded) {
-	cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter");
-	return CL_EBYTECODE;
+    unsigned i;
+    int rc;
+    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS)
+	return CL_SUCCESS;
+    for (i=0;i<bcs->count;i++) {
+	struct cli_bc *bc = &bcs->all_bcs[i];
+	if (bc->state == bc_interp || bc->state == bc_jit)
+	    continue;
+	rc = cli_bytecode_prepare_interpreter(bc);
+	if (rc != CL_SUCCESS)
+	    return rc;
     }
-    cli_warnmsg("JIT not yet implemented\n");
-    return CL_EBYTECODE;
+    return CL_SUCCESS;
 }
 
-int cli_bytecode_prepare(struct cli_bc *bc)
+int cli_bytecode_init(struct cli_all_bc *allbc)
 {
-    if (bc->state == bc_interp || bc->state == bc_jit)
+    memset(allbc, 0, sizeof(*allbc));
+    return cli_bytecode_init_jit(allbc);
+}
+
+int cli_bytecode_done(struct cli_all_bc *allbc)
+{
+    return cli_bytecode_done_jit(allbc);
+}
+
+int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
+{
+    ctx->fmap = map;
+    ctx->file_size = map->len + map->offset;
+    ctx->hooks.filesize = &ctx->file_size;
+    return 0;
+}
+
+int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned bc_idx, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map)
+{
+    int ret;
+    struct cli_bc_ctx ctx;
+    const struct cli_bc *bc = &bcs->all_bcs[bc_idx-1];
+
+    if (bc->hook_lsig_id) {
+	cli_dbgmsg("hook lsig id %d matched (bc %d)\n", bc->hook_lsig_id, bc->id);
+	/* this is a bytecode for a hook, defer running it until hook is
+	 * executed, so that it has all the info for the hook */
+	if (cctx->hook_lsig_matches)
+	    cli_bitset_set(cctx->hook_lsig_matches, bc->hook_lsig_id-1);
 	return CL_SUCCESS;
-    if (cli_bytecode_prepare_jit(bc) == CL_SUCCESS)
+    }
+    memset(&ctx, 0, sizeof(ctx));
+    cli_bytecode_context_setfuncid(&ctx, bc, 0);
+    ctx.hooks.match_counts = lsigcnt;
+    cli_bytecode_context_setfile(&ctx, map);
+
+    cli_dbgmsg("Running bytecode for logical signature match\n");
+    ret = cli_bytecode_run(bcs, bc, &ctx);
+    if (ret != CL_SUCCESS) {
+	cli_warnmsg("Bytcode failed to run: %s\n", cl_strerror(ret));
 	return CL_SUCCESS;
-    return cli_bytecode_prepare_interpreter(bc);
+    }
+    if (ctx.virname) {
+	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
+	if (virname)
+	    *virname = ctx.virname;
+	cli_bytecode_context_clear(&ctx);
+	return CL_VIRUS;
+    }
+    ret = cli_bytecode_context_getresult_int(&ctx);
+    cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
+    cli_bytecode_context_clear(&ctx);
+    return CL_SUCCESS;
+}
+
+int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx,
+			 unsigned id, fmap_t *map, const char **virname)
+{
+    const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
+    unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
+    int ret;
+
+    cli_bytecode_context_setfile(ctx, map);
+    cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
+    for (i=0;i < hooks_cnt;i++) {
+	const struct cli_bc *bc = &engine->bcs.all_bcs[hooks[i]];
+	if (bc->lsig) {
+	    if (!cctx->hook_lsig_matches ||
+		!cli_bitset_test(cctx->hook_lsig_matches, bc->hook_lsig_id-1))
+		continue;
+	    cli_dbgmsg("Bytecode: executing bytecode %u (lsig matched)\n" , bc->id);
+	}
+	cli_bytecode_context_setfuncid(ctx, bc, 0);
+	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
+	if (ret != CL_SUCCESS) {
+	    cli_warnmsg("Bytecode failed to run: %s\n", cl_strerror(ret));
+	    return CL_SUCCESS;
+	}
+	if (ctx->virname) {
+	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
+	    if (virname)
+		*virname = ctx->virname;
+	    cli_bytecode_context_clear(ctx);
+	    return CL_VIRUS;
+	}
+	ret = cli_bytecode_context_getresult_int(ctx);
+	/* TODO: use prefix here */
+	cli_dbgmsg("Bytecode %u returned %u\n", bc->id, ret);
+	if (!ret) {
+	    char *tempfile;
+	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
+	    if (fd != -1) {
+		if (cctx && cctx->engine->keeptmp)
+		    cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
+			       bc->id, tempfile);
+		else
+		    cli_dbgmsg("Bytecode %u unpacked file\n", bc->id);
+		lseek(fd, 0, SEEK_SET);
+		cli_dbgmsg("***** Scanning unpacked file ******\n");
+		ret = cli_magic_scandesc(fd, cctx);
+		if (!cctx || !cctx->engine->keeptmp)
+		    if (ftruncate(fd, 0) == -1)
+			cli_dbgmsg("ftruncate failed\n");
+		close(fd);
+		if (!cctx || !cctx->engine->keeptmp) {
+		    if (cli_unlink(tempfile))
+			ret = CL_EUNLINK;
+		}
+		free(tempfile);
+		if (ret != CL_CLEAN) {
+		    if (ret == CL_VIRUS)
+			cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
+		    cli_bytecode_context_clear(ctx);
+		    return ret;
+		}
+		cli_bytecode_context_reset(ctx);
+		continue;
+	    }
+	}
+	cli_bytecode_context_reset(ctx);
+    }
+    return CL_CLEAN;
+}
+
+int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data)
+{
+    ctx->hooks.exeinfo = &data->exe_info;
+    ctx->hooks.pedata = data;
+    return 0;
+}
+
+void cli_bytecode_context_setctx(struct cli_bc_ctx *ctx, void *cctx)
+{
+    ctx->ctx = cctx;
+}
+
+void cli_bytecode_describe(const struct cli_bc *bc)
+{
+    char buf[128];
+    int cols;
+    unsigned i;
+    time_t stamp;
+    int had;
+
+    if (!bc) {
+	printf("(null bytecode)\n");
+	return;
+    }
+
+    stamp = bc->metadata.timestamp;
+    printf("Bytecode format functionality level: %u\n", BC_FUNC_LEVEL);
+    printf("Bytecode metadata:\n\tcompiler version: %s\n",
+	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
+    printf("\tcompiled on: %s",
+	   cli_ctime(&stamp, buf, sizeof(buf)));
+    printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
+    /*TODO: parse and display arch name, also take it into account when
+      JITing*/
+    printf("\ttarget exclude: %d\n", bc->metadata.targetExclude);
+    printf("\tbytecode type: ");
+    switch (bc->kind) {
+	case BC_GENERIC:
+	    puts("generic, not loadable by clamscan/clamd");
+	    break;
+	case BC_LOGICAL:
+	    puts("logical only");
+	    break;
+	case BC_PE_UNPACKER:
+	    puts("PE hook");
+	    break;
+	default:
+	    printf("Unknown (type %u)", bc->kind);
+	    break;
+    }
+    printf("\tbytecode logical signature: %s\n",
+	       bc->lsig ? bc->lsig : "<none>");
+    printf("\tvirusname prefix: %s\n",
+	   bc->vnameprefix);
+    printf("\tvirusnames: %u\n", bc->vnames_cnt);
+    printf("\tbytecode triggered on: ");
+    switch (bc->kind) {
+	case BC_GENERIC:
+	    puts("N/A (loaded in clambc only)");
+	    break;
+	case BC_LOGICAL:
+	    puts("files matching logical signature");
+	    break;
+	case BC_PE_UNPACKER:
+	    if (bc->lsig)
+		puts("PE files matching logical signature");
+	    else
+		puts("all PE files!");
+	    break;
+	default:
+	    puts("N/A (unknown type)\n");
+	    break;
+    }
+    printf("\tnumber of functions: %u\n\tnumber of types: %u\n",
+	   bc->num_func, bc->num_types);
+    printf("\tnumber of global constants: %u\n", (unsigned)bc->num_globals);
+    printf("\tnumber of debug nodes: %u\n", bc->dbgnode_cnt);
+    printf("\tbytecode APIs used:");
+    cols = 0; /* remaining */
+    had = 0;
+    for (i=0;i<cli_apicall_maxapi;i++) {
+	if (cli_bitset_test(bc->uses_apis, i)) {
+	    unsigned len = strlen(cli_apicalls[i].name);
+	    if (had)
+		printf(",");
+	    if (len > cols) {
+		printf("\n\t");
+		cols = 72;
+	    }
+	    printf(" %s", cli_apicalls[i].name);
+	    had = 1;
+	    cols -= len;
+	}
+    }
+    printf("\n");
 }

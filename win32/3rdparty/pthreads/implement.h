@@ -566,6 +566,7 @@ extern "C"
   int ptw32_cond_check_need_init (pthread_cond_t * cond);
   int ptw32_mutex_check_need_init (pthread_mutex_t * mutex);
   int ptw32_rwlock_check_need_init (pthread_rwlock_t * rwlock);
+  int ptw32_spinlock_check_need_init (pthread_spinlock_t * spinlock);
 
   PTW32_INTERLOCKED_LONG WINAPI
     ptw32_InterlockedCompareExchange (PTW32_INTERLOCKED_LPLONG location,
@@ -658,7 +659,9 @@ extern "C"
 #       endif
 #   endif
 #else
-#   include <process.h>
+#   ifndef WINCE
+#       include <process.h>
+#   endif
 #endif
 
 
@@ -667,7 +670,21 @@ extern "C"
  * See ptw32_InterlockedCompareExchange.c
  */
 #ifndef PTW32_INTERLOCKED_COMPARE_EXCHANGE
-#define PTW32_INTERLOCKED_COMPARE_EXCHANGE ptw32_interlocked_compare_exchange
+#  ifdef _WIN64
+     /*
+      * InterlockedCompareExchange is an intrinsic function in Win64.
+      */
+#    define PTW32_INTERLOCKED_COMPARE_EXCHANGE _InterlockedCompareExchange
+#  else
+     /*
+      * The routine pthread_win32_process_attach_np() in pthread_win32_attach_detach_np.c
+      * checks at runtime that InterlockedCompareExchange is supported within
+      * KERNEL32.DLL (or COREDLL.DLL for WinCE). This allows the same
+      * dll to run on all Win32 versions from Win95 onwards. Not sure if this
+      * is required for WinCE, but should work just the same anyway.
+      */
+#    define PTW32_INTERLOCKED_COMPARE_EXCHANGE ptw32_interlocked_compare_exchange
+#  endif
 #endif
 
 #ifndef PTW32_INTERLOCKED_EXCHANGE

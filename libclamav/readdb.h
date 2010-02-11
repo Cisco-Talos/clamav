@@ -47,10 +47,13 @@
 	cli_strbcasestr(ext, ".pdb")   ||	\
 	cli_strbcasestr(ext, ".gdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
+	cli_strbcasestr(ext, ".cbc")   ||	\
 	cli_strbcasestr(ext, ".ftm")   ||	\
 	cli_strbcasestr(ext, ".cfg")   ||	\
 	cli_strbcasestr(ext, ".cvd")   ||	\
-	cli_strbcasestr(ext, ".cld")		\
+	cli_strbcasestr(ext, ".cld")   ||	\
+	cli_strbcasestr(ext, ".cdb")   ||	\
+	cli_strbcasestr(ext, ".idb")		\
     )
 
 char *cli_virname(char *virname, unsigned int official);
@@ -60,5 +63,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio);
 
 char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio);
+
+int cli_initroots(struct cl_engine *engine, unsigned int options);
 
 #endif

@@ -22,6 +22,12 @@
 #define __W32_ERRNO_H
 
 #include <errno.h>
+// Make sure ETIMEDOUT matches with pthread's notion of ETIMEDOUT,
+// otherwise we get a mismatch (10060 vs 1110)
+#include <pthread.h>
 #include "w32_errno_defs.c"
+
+char *w32_strerror(int errnum);
+int w32_strerror_r(int errnum, char *buf, size_t buflen);
 
 #endif

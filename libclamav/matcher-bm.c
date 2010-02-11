@@ -31,6 +31,7 @@
 #include "matcher.h"
 #include "matcher-bm.h"
 #include "filetypes.h"
+#include "filtering.h"
 
 #include "mpool.h"
 
@@ -60,6 +61,17 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	    root->bm_absoff_num++;
 	else
 	    root->bm_reloff_num++;
+    }
+
+    if(root->filter) {
+	/* the bm_suffix load balancing below can shorten the sig,
+	 * we want to see the entire signature! */
+	if (filter_add_static(root->filter, pattern->pattern, pattern->length, pattern->virname) == -1) {
+	    cli_warnmsg("cli_bm_addpatt: cannot use filter for trie\n");
+	    mpool_free(root->mempool, root->filter);
+	    root->filter = NULL;
+	}
+	/* TODO: should this affect maxpatlen? */
     }
 
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE
@@ -140,11 +152,6 @@ int cli_bm_init(struct cli_matcher *root)
     return CL_SUCCESS;
 }
 
-static int qcompare(const void *a, const void *b)
-{
-    return *(const uint32_t *)a - *(const uint32_t *)b;
-}
-
 int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap_t *map)
 {
 	int ret;
@@ -195,7 +202,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
 
-    cli_qsort(data->offtab, data->cnt, sizeof(uint32_t), qcompare);
+    cli_qsort(data->offtab, data->cnt, sizeof(uint32_t), NULL);
     return CL_SUCCESS;
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
  *
@@ -66,6 +66,7 @@
 #include "matcher-ac.h"
 #include "default.h"
 #include "scanners.h"
+#include "bytecode.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
@@ -104,7 +105,8 @@ static int lt_init(void) {
     return 0;
 }
 
-#define PASTE(a,b) a#b
+#define PASTE2(a,b) a#b
+#define PASTE(a,b) PASTE2(a,b)
 
 static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
 {
@@ -119,7 +121,6 @@ static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
     const lt_dlinfo *info;
     char modulename[128];
     lt_dlhandle rhandle;
-    int canretry=1;
     unsigned i;
 
     if (lt_dladdsearchdir(SEARCH_LIBDIR)) {
@@ -254,10 +255,27 @@ const char *cl_strerror(int clerror)
 
 int cl_init(unsigned int initoptions)
 {
+        int rc;
+	struct timeval tv;
+	unsigned int pid = (unsigned int) getpid();
+
+    {
+	unrar_main_header_t x;
+	if (((char*)&x.flags - (char*)&x) != 3) {
+	    cli_errmsg("Structure packing not working, got %u offset, expected %u\n",
+		       (unsigned)((char*)&x.flags - (char*)&x), 3);
+	    return CL_EARG;
+	}
+    }
     /* put dlopen() stuff here, etc. */
     if (lt_init() == 0) {
 	cli_rarload();
     }
+    gettimeofday(&tv, (struct timezone *) 0);
+    srand(pid + tv.tv_usec*(pid+1) + clock());
+    rc = bytecode_init();
+    if (rc)
+	return rc;
     return CL_SUCCESS;
 }
 
@@ -280,6 +298,7 @@ struct cl_engine *cl_engine_new(void)
     new->min_cc_count = CLI_DEFAULT_MIN_CC_COUNT;
     new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
 
+    new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     new->refcount = 1;
     new->ac_only = 0;
     new->ac_mindepth = CLI_DEFAULT_AC_MINDEPTH;
@@ -361,6 +380,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    break;
 	case CL_ENGINE_KEEPTMP:
 	    engine->keeptmp = num;
+	    break;
+	case CL_ENGINE_BYTECODE_SECURITY:
+	    engine->bytecode_security = num;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");

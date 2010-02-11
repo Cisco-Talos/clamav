@@ -48,24 +48,33 @@ struct cli_lsig_tdb {
 #define CLI_TDB_RANGE	1
 #define CLI_TDB_STR	2
 #define CLI_TDB_RANGE2	3
+#define CLI_TDB_FTYPE	4
     uint32_t *val, *range;
     char *str;
     uint32_t cnt[3];
 
     const uint32_t *target;
-    const uint32_t *engine, *nos, *ep;
+    const uint32_t *engine, *nos, *ep, *filesize;
+    const uint32_t *container;
+    /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;
+    */
+    const char *icongrp1, *icongrp2;
+    uint32_t *macro_ptids;
+    uint32_t subsigs;
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #endif
 };
 
+struct cli_bc;
 struct cli_ac_lsig {
     uint32_t id;
     char *logic;
     const char *virname;
     struct cli_lsig_tdb tdb;
+    unsigned bc_idx;
 };
 
 struct cli_matcher {
@@ -86,6 +95,7 @@ struct cli_matcher {
     struct cli_ac_patt **ac_reloff;
     uint32_t ac_reloff_num, ac_absoff_num;
     uint8_t ac_mindepth, ac_maxdepth;
+    struct filter *filter;
 
     uint16_t maxpatlen;
     uint8_t ac_only;
@@ -94,11 +104,22 @@ struct cli_matcher {
 #endif
 };
 
-struct cli_meta_node {
-    char *filename, *virname;
-    struct cli_meta_node *next;
-    int csize, size, method;
-    unsigned int crc32, fileno, encrypted, maxdepth;
+struct cli_cdb
+{
+    char	*virname;   /* virus name */
+    cli_file_t	ctype;	    /* container type */
+    regex_t	name;	    /* filename regex */
+    size_t	csize[2];   /* container size (min, max); if csize[0] != csize[1]
+			     * then value of 0 makes the field ignored
+			     */
+    size_t	fsizec[2];  /* file size in container */
+    size_t	fsizer[2];  /* real file size */
+    int		encrypted;  /* file is encrypted; 2 == ignore */
+    int		filepos[2]; /* file position in container */
+    int		res1;	    /* reserved / format specific */
+    void	*res2;	    /* reserved / format specific */
+
+    struct cli_cdb *next;
 };
 
 struct cli_mtarget {
@@ -106,20 +127,21 @@ struct cli_mtarget {
     const char *name;
     uint8_t idx;    /* idx of matcher */
     uint8_t ac_only;
+    uint8_t enable_prefiltering;
 };
 
 #define CLI_MTARGETS 10
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
-    { 0,		    "GENERIC",	    0,	0   },
-    { CL_TYPE_MSEXE,	    "PE",	    1,	0   },
-    { CL_TYPE_MSOLE2,	    "OLE2",	    2,	1   },
-    { CL_TYPE_HTML,	    "HTML",	    3,	1   },
-    { CL_TYPE_MAIL,	    "MAIL",	    4,	1   },
-    { CL_TYPE_GRAPHICS,	    "GRAPHICS",	    5,	1   },
-    { CL_TYPE_ELF,	    "ELF",	    6,	1   },
-    { CL_TYPE_TEXT_ASCII,   "ASCII",	    7,	1   },
-    { CL_TYPE_PE_DISASM,    "DISASM",	    8,	1   },
-    { CL_TYPE_MACHO,	    "MACH-O",	    9,	1   }
+    { 0,                    "GENERIC",      0,  0, 1 },
+    { CL_TYPE_MSEXE,        "PE",           1,  0, 1 },
+    { CL_TYPE_MSOLE2,       "OLE2",         2,  1, 0 },
+    { CL_TYPE_HTML,         "HTML",         3,  1, 0 },
+    { CL_TYPE_MAIL,         "MAIL",         4,  1, 1 },
+    { CL_TYPE_GRAPHICS,     "GRAPHICS",     5,  1, 0 },
+    { CL_TYPE_ELF,          "ELF",          6,  1, 0 },
+    { CL_TYPE_TEXT_ASCII,   "ASCII",        7,  1, 1 },
+    { CL_TYPE_ERROR,        "NOT USED",     8,  1, 0 },
+    { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 }
 };
 
 struct cli_target_info {
@@ -136,14 +158,17 @@ struct cli_target_info {
 #define CLI_OFF_EP_MINUS    4
 #define CLI_OFF_SL_PLUS     5
 #define CLI_OFF_SX_PLUS     6
+#define CLI_OFF_VERSION     7
+#define CLI_OFF_MACRO       8
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
-int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
-
+int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, unsigned char *digest);
 int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 int cli_checkfp(int fd, cli_ctx *ctx);
+
+int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2);
 
 #endif

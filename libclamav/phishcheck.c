@@ -810,29 +810,29 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 				case CL_PHISH_CLEAN:
 					continue;
 				case CL_PHISH_NUMERIC_IP:
-					*ctx->virname="Phishing.Heuristics.Email.Cloaked.NumericIP";
+					*ctx->virname="Heuristics.Phishing.Email.Cloaked.NumericIP";
 					break;
 				case CL_PHISH_CLOAKED_NULL:
-					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Null";/*fakesite%01%00@fake.example.com*/
+					*ctx->virname="Heuristics.Phishing.Email.Cloaked.Null";/*fakesite%01%00@fake.example.com*/
 					break;
 				case CL_PHISH_SSL_SPOOF:
-					*ctx->virname="Phishing.Heuristics.Email.SSL-Spoof";
+					*ctx->virname="Heuristics.Phishing.Email.SSL-Spoof";
 					break;
 				case CL_PHISH_CLOAKED_UIU:
-					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://banksite@fake.example.com*/
+					*ctx->virname="Heuristics.Phishing.Email.Cloaked.Username";/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
-					*ctx->virname="Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
+					*ctx->virname="Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
 					break;
 				case CL_PHISH_HASH1:
-					*ctx->virname="Phishing.URL.Blacklisted";
+					*ctx->virname="Heuristics.Phishing.URL.Blacklisted";
 					break;
 				case CL_PHISH_HASH2:
-					*ctx->virname="Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
+					*ctx->virname="Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
 					break;
 				case CL_PHISH_NOMATCH:
 				default:
-					*ctx->virname="Phishing.Heuristics.Email.SpoofedDomain";
+					*ctx->virname="Heuristics.Phishing.Email.SpoofedDomain";
 					break;
 			}
 			return cli_found_possibly_unwanted(ctx);

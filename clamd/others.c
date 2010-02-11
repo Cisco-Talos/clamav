@@ -59,7 +59,6 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #else /* HAVE_POLL_H */
-#undef HAVE_POLL
 #if HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif /* HAVE_SYS_SELECT_H */
@@ -69,11 +68,11 @@
 #include <limits.h>
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 #include "libclamav/others.h"
 
 #include "session.h"
 #include "others.h"
-#include "misc.h"
 
 #ifdef	_WIN32
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
@@ -208,7 +207,7 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
     if (fds_add(&fds, fd, 1, timeout_sec) == -1)
 	return -1;
     do {
-	ret = fds_poll_recv(&fds, timeout_sec, check_signals);
+	ret = fds_poll_recv(&fds, timeout_sec, check_signals, NULL);
     } while (ret == -1 && errno == EINTR);
     fds_free(&fds);
     return ret;
@@ -237,7 +236,9 @@ void fds_cleanup(struct fd_data *data)
     logg("$Number of file descriptors polled: %u fds\n", (unsigned) data->nfds);
     /* Shrink buffer */
     newbuf = realloc(data->buf, j*sizeof(*newbuf));
-    if (newbuf)
+    if(!j)
+	data->buf = NULL;
+    else if (newbuf)
 	data->buf = newbuf;/* non-fatal if shrink fails */
 }
 
@@ -282,8 +283,21 @@ static int read_fd_data(struct fd_buf *buf)
       n = recvmsg(buf->fd, &msg, 0);
       if (n < 0)
 	  return -1;
-      if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-	  logg("^Control message truncated");
+      if (msg.msg_flags & MSG_TRUNC) {
+	  logg("^Message truncated at %d bytes\n", (int)n);
+	  return -1;
+      }
+      if (msg.msg_flags & MSG_CTRUNC) {
+	  if (msg.msg_controllen > 0)
+	      logg("^Control message truncated at %d bytes, %d data read\n",
+		   (int)msg.msg_controllen, (int)n);
+	  else
+	      logg("^Control message truncated, no control data received, %d bytes read"
+#ifdef C_LINUX
+		   "(Is SELinux/AppArmor enabled, and blocking file descriptor passing?)"
+#endif
+		   "\n",
+		   (int)n);
 	  return -1;
       }
       if (msg.msg_controllen) {
@@ -419,7 +433,7 @@ void fds_remove(struct fd_data *data, int fd)
  * Must be called with buf_mutex lock held.
  */
 /* TODO: handle ReadTimeout */
-int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *event)
 {
     unsigned fdsok = data->nfds;
     size_t i;
@@ -428,9 +442,10 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
     /* we must have at least one fd, the control fd! */
     fds_cleanup(data);
+#ifndef _WIN32
     if (!data->nfds)
 	return 0;
-
+#endif
     for (i=0;i < data->nfds;i++) {
 	data->buf[i].got_newdata = 0;
     }
@@ -484,7 +499,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	int n = data->nfds;
 
 	fds_unlock(data);
+#ifdef _WIN32
+	retval = poll_with_event(data->poll_data, n, timeout, event);
+#else
 	retval = poll(data->poll_data, n, timeout);
+#endif
 	fds_lock(data);
 
 	if (retval > 0) {
@@ -538,6 +557,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	}
     } while (retval == -1 && !check_signals && errno == EINTR);
 #else
+    {
     fd_set rfds;
     struct timeval tv;
     int maxfd = -1;
@@ -615,6 +635,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	    continue;
 	}
     } while (retval == -1 && !check_signals && errno == EINTR);
+    }
 #endif
 
     if (retval == -1 && errno != EINTR) {

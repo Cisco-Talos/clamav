@@ -1,0 +1,785 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="9.00"
+	Name="X86CodeGenTable_gen"
+	ProjectGUID="{313EC5A1-2BA7-4578-A50C-22768C91FA54}"
+	Keyword="Win32Proj"
+	TargetFrameworkVersion="0"
+	>
+	<Platforms>
+		<Platform
+			Name="Win32"
+		/>
+	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="Debug"
+			IntermediateDirectory="X86CodeGenTable_gen.dir\Debug"
+			ConfigurationType="10"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Debug\&quot;"
+				MkTypLibCompatible="false"
+				TargetEnvironment="1"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(InputName).tlb"
+				OutputDirectory="$(IntDir)"
+				HeaderFileName="$(InputName).h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="$(InputName)_i.c"
+				ProxyFileName="$(InputName)_p.c"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="X86CodeGenTable_gen.dir\Release"
+			ConfigurationType="10"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;Release\&quot;"
+				MkTypLibCompatible="false"
+				TargetEnvironment="1"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(InputName).tlb"
+				OutputDirectory="$(IntDir)"
+				HeaderFileName="$(InputName).h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="$(InputName)_i.c"
+				ProxyFileName="$(InputName)_p.c"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="MinSizeRel|Win32"
+			OutputDirectory="MinSizeRel"
+			IntermediateDirectory="X86CodeGenTable_gen.dir\MinSizeRel"
+			ConfigurationType="10"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;MinSizeRel\&quot;"
+				MkTypLibCompatible="false"
+				TargetEnvironment="1"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(InputName).tlb"
+				OutputDirectory="$(IntDir)"
+				HeaderFileName="$(InputName).h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="$(InputName)_i.c"
+				ProxyFileName="$(InputName)_p.c"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="RelWithDebInfo|Win32"
+			OutputDirectory="RelWithDebInfo"
+			IntermediateDirectory="X86CodeGenTable_gen.dir\RelWithDebInfo"
+			ConfigurationType="10"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="__STDC_LIMIT_MACROS,__STDC_CONSTANT_MACROS,_CRT_SECURE_NO_DEPRECATE,_CRT_SECURE_NO_WARNINGS,_SCL_SECURE_NO_WARNINGS,CRT_NONSTDC_NO_WARNINGS,_SCL_SECURE_NO_DEPRECATE,CMAKE_INTDIR=\&quot;RelWithDebInfo\&quot;"
+				MkTypLibCompatible="false"
+				TargetEnvironment="1"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(InputName).tlb"
+				OutputDirectory="$(IntDir)"
+				HeaderFileName="$(InputName).h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="$(InputName)_i.c"
+				ProxyFileName="$(InputName)_p.c"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="CMake Rules"
+			>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine=""
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine=""
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine=""
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description=""
+						CommandLine=""
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc;$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmMatcher.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-asm-matcher -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmMatcher.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmMatcher.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-asm-matcher -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmMatcher.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmMatcher.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-asm-matcher -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmMatcher.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmMatcher.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-asm-matcher -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmMatcher.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmMatcher.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-asm-writer -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-asm-writer -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-asm-writer -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-asm-writer -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter1.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-asm-writer -asmwriternum=1 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter1.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter1.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-asm-writer -asmwriternum=1 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter1.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter1.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-asm-writer -asmwriternum=1 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter1.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenAsmWriter1.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-asm-writer -asmwriternum=1 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenAsmWriter1.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenAsmWriter1.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenCallingConv.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-callingconv -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenCallingConv.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenCallingConv.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-callingconv -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenCallingConv.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenCallingConv.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-callingconv -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenCallingConv.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenCallingConv.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-callingconv -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenCallingConv.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenCallingConv.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenDAGISel.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-dag-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenDAGISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenDAGISel.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-dag-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenDAGISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenDAGISel.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-dag-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenDAGISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenDAGISel.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-dag-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenDAGISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenDAGISel.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenFastISel.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-fast-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenFastISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenFastISel.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-fast-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenFastISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenFastISel.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-fast-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenFastISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenFastISel.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-fast-isel -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenFastISel.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenFastISel.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrInfo.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-instr-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrInfo.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-instr-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrInfo.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-instr-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrInfo.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-instr-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrInfo.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrNames.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-instr-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrNames.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-instr-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrNames.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-instr-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenInstrNames.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-instr-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenInstrNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenInstrNames.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.h.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-register-desc-header -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.h.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.h.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-register-desc-header -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.h.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.h.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-register-desc-header -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.h.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.h.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-register-desc-header -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.h.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.h.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-register-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-register-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-register-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterInfo.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-register-desc -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterInfo.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterInfo.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterNames.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-register-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterNames.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-register-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterNames.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-register-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenRegisterNames.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-register-enums -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenRegisterNames.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenRegisterNames.inc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc.rule"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenSubtarget.inc..."
+						CommandLine="..\..\..\bin\Debug\tblgen.exe -gen-subtarget -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenSubtarget.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Debug\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenSubtarget.inc..."
+						CommandLine="..\..\..\bin\Release\tblgen.exe -gen-subtarget -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenSubtarget.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\Release\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="MinSizeRel|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenSubtarget.inc..."
+						CommandLine="..\..\..\bin\MinSizeRel\tblgen.exe -gen-subtarget -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenSubtarget.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\MinSizeRel\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="RelWithDebInfo|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Building X86GenSubtarget.inc..."
+						CommandLine="..\..\..\bin\RelWithDebInfo\tblgen.exe -gen-subtarget -I $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86 -I $(SolutionDir)../libclamav/c++/llvm/lib/Target -I $(SolutionDir)../libclamav/c++/llvm/include $(SolutionDir)../libclamav/c++/llvm/lib/Target/X86/X86.td -o $(SolutionDir)../win32/llvmbuild/lib/Target/X86/X86GenSubtarget.inc&#x0D;&#x0A;"
+						AdditionalDependencies="$(SolutionDir)..\win32\llvmbuild\bin\RelWithDebInfo\tblgen.exe;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86CallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86Instr64bit.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFormats.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrFPStack.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrInfo.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrMMX.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86InstrSSE.td;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86\X86RegisterInfo.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CodeGen\ValueTypes.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\CompilerDriver\Common.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Intrinsics.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsAlpha.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsARM.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsCellSPU.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsPowerPC.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsX86.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\IntrinsicsXCore.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\Target.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetCallingConv.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSchedule.td;$(SolutionDir)..\libclamav\c++\llvm\include\llvm\Target\TargetSelectionDAG.td;"
+						Outputs="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\X86GenSubtarget.inc"
+					/>
+				</FileConfiguration>
+			</File>
+		</Filter>
+		<File
+			RelativePath="$(SolutionDir)..\win32\llvmbuild\lib\Target\X86\CMakeFiles\X86CodeGenTable_gen"
+			>
+		</File>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

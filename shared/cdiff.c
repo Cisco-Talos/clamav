@@ -372,7 +372,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 
     if(del || xchg) {
 
-	if(!(fh = fopen(ctx->open_db, "r"))) {
+	if(!(fh = fopen(ctx->open_db, "rb"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
 	    return -1;
 	}
@@ -383,7 +383,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 	    return -1;
 	}
 
-	if(!(tmpfh = fopen(tmp, "w"))) {
+	if(!(tmpfh = fopen(tmp, "wb"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
 	    fclose(fh);
 	    free(tmp);
@@ -467,7 +467,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 
     if(add) {
 
-	if(!(fh = fopen(ctx->open_db, "a"))) {
+	if(!(fh = fopen(ctx->open_db, "ab"))) {
 	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
 	    return -1;
 	}
@@ -538,7 +538,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(src = fopen(srcdb, "r"))) {
+    if(!(src = fopen(srcdb, "rb"))) {
 	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
 	free(start_str);
 	free(end_str);
@@ -555,7 +555,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(dst = fopen(dstdb, "a"))) {
+    if(!(dst = fopen(dstdb, "ab"))) {
 	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
 	free(start_str);
 	free(end_str);
@@ -576,7 +576,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	return -1;
     }
 
-    if(!(tmp = fopen(tmpdb, "w"))) {
+    if(!(tmp = fopen(tmpdb, "wb"))) {
 	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
 	free(start_str);
 	free(end_str);
@@ -623,8 +623,8 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	    } while((lines < end_line) && fgets(lbuf, lbuflen, src) && lines++);
 
 	    fclose(dst);
+	    dst = NULL;
 	    free(dstdb);
-	    dstdb = NULL;
 	    free(start_str);
 
 	    if(strncmp(lbuf, end_str, strlen(end_str))) {
@@ -643,6 +643,12 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	}
 
 	if(fputs(lbuf, tmp) == EOF) {
+	    if(dst) {
+		fclose(dst);
+		free(dstdb);
+		free(start_str);
+		free(end_str);
+	    }
 	    free(srcdb);
 	    fclose(src);
 	    fclose(tmp);
@@ -656,7 +662,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
     fclose(src);
     fclose(tmp);
 
-    if(dstdb) {
+    if(dst) {
 	fclose(dst);
 	free(start_str);
 	free(end_str);
@@ -764,102 +770,6 @@ static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
     }
 
     free(cmd_name);
-    return 0;
-}
-
-static void pss_mgf(unsigned char *in, unsigned int inlen, unsigned char *out, unsigned int outlen)
-{
-	SHA256_CTX ctx;
-	unsigned int i, laps;
-	unsigned char cnt[4], digest[PSS_DIGEST_LENGTH];
-
-
-    laps = (outlen + PSS_DIGEST_LENGTH - 1) / PSS_DIGEST_LENGTH;
-
-    for(i = 0; i < laps; i++) {
-	cnt[0] = (unsigned char) 0;
-	cnt[1] = (unsigned char) 0;
-	cnt[2] = (unsigned char) (i / 256);
-	cnt[3] = (unsigned char) i;
-
-	sha256_init(&ctx);
-	sha256_update(&ctx, in, inlen);
-	sha256_update(&ctx, cnt, sizeof(cnt));
-	sha256_final(&ctx, digest);
-
-	if(i != laps - 1)
-	    memcpy(&out[i * PSS_DIGEST_LENGTH], digest, PSS_DIGEST_LENGTH);
-	else
-	    memcpy(&out[i * PSS_DIGEST_LENGTH], digest, outlen - i * PSS_DIGEST_LENGTH);
-    }
-}
-
-static int pss_versig(const unsigned char *sha256, const char *dsig)
-{
-	mp_int n, e;
-	SHA256_CTX ctx;
-	unsigned char *pt, digest1[PSS_DIGEST_LENGTH], digest2[PSS_DIGEST_LENGTH], *salt;
-	unsigned int plen = PSS_NBITS / 8, hlen, slen, i;
-	unsigned char dblock[PSS_NBITS / 8 - PSS_DIGEST_LENGTH - 1];
-	unsigned char mblock[PSS_NBITS / 8 - PSS_DIGEST_LENGTH - 1];
-	unsigned char fblock[8 + 2 * PSS_DIGEST_LENGTH];
-
-
-    hlen = slen = PSS_DIGEST_LENGTH;
-    mp_init(&n);
-    mp_read_radix(&n, PSS_NSTR, 10);
-    mp_init(&e);
-    mp_read_radix(&e, PSS_ESTR, 10);
-    if(!(pt = cli_decodesig(dsig, plen, e, n))) {
-	mp_clear(&n);
-	mp_clear(&e);
-	return -1;
-    }
-    mp_clear(&n);
-    mp_clear(&e);
-
-    if(pt[plen - 1] != 0xbc) {
-	/* cli_dbgmsg("cli_versigpss: Incorrect signature syntax (0xbc)\n"); */
-	free(pt);
-	return -1;
-    }
-
-    memcpy(mblock, pt, plen - hlen - 1);
-    memcpy(digest2, &pt[plen - hlen - 1], hlen);
-    free(pt);
-
-    pss_mgf(digest2, hlen, dblock, plen - hlen - 1);
-
-    for(i = 0; i < plen - hlen - 1; i++)
-	dblock[i] ^= mblock[i];
-
-    dblock[0] &= (0xff >> 1);
-
-    salt = memchr(dblock, 0x01, sizeof(dblock));
-    if(!salt) {
-	/* cli_dbgmsg("cli_versigpss: Can't find salt\n"); */
-	return -1;
-    }
-    salt++;
-
-    if((unsigned int) (dblock + sizeof(dblock) - salt) != slen) {
-	/* cli_dbgmsg("cli_versigpss: Bad salt size\n"); */
-	return -1;
-    }
-
-    memset(fblock, 0, 8);
-    memcpy(&fblock[8], sha256, hlen);
-    memcpy(&fblock[8 + hlen], salt, slen);
-
-    sha256_init(&ctx);
-    sha256_update(&ctx, fblock, sizeof(fblock));
-    sha256_final(&ctx, digest1);
-
-    if(memcmp(digest1, digest2, hlen)) {
-	/* cli_dbgmsg("cli_versigpss: Signature doesn't match.\n"); */
-	return -1;
-    }
-
     return 0;
 }
 
@@ -971,7 +881,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	}
 	sha256_final(&sha256ctx, digest);
 
-	if(pss_versig(digest, dsig)) {
+	if(cli_versig2(digest, dsig, PSS_NSTR, PSS_ESTR) != CL_SUCCESS) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");
 	    close(desc);
 	    free(line);
@@ -1069,7 +979,7 @@ int cdiff_apply(int fd, unsigned short mode)
 
     } else { /* .script */
 
-	if(!(fh = fdopen(desc, "r"))) {
+	if(!(fh = fdopen(desc, "rb"))) {
 	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
 	    close(desc);
 	    free(line);

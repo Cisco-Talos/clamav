@@ -1,0 +1,4 @@
+#define RES_FNAME "libclamunrar.dll"
+#define RES_NAME "libclamunrar"
+#define RES_FDESC "ClamAV - libclamunrar"
+#include "common.rc"

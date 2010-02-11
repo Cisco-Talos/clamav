@@ -25,7 +25,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
@@ -53,13 +55,14 @@ static void print_server_version(const struct optstruct *opt)
 
 int main(int argc, char **argv)
 {
-	int ds, dms, ret, infected = 0;
+	int ds, dms, ret, infected = 0, err = 0;
 	struct timeval t1, t2;
 	time_t starttime;
         struct optstruct *opts;
         const struct optstruct *opt;
+#ifndef _WIN32
 	struct sigaction sigact;
-
+#endif
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
@@ -117,21 +120,23 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
+#ifndef _WIN32
     memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = SIG_IGN;
     sigemptyset(&sigact.sa_mask);
     sigaddset(&sigact.sa_mask, SIGPIPE);
     sigaction(SIGPIPE, &sigact, NULL);
+#endif
 
     time(&starttime);
     /* ctime() does \n, but I need it once more */
 
     gettimeofday(&t1, NULL);
 
-    ret = client(opts, &infected);
+    ret = client(opts, &infected, &err);
 
     /* TODO: Implement STATUS in clamd */
-    if((infected || ret != 2) && !optget(opts, "no-summary")->enabled) {
+    if(!optget(opts, "no-summary")->enabled) {
 	gettimeofday(&t2, NULL);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -139,6 +144,8 @@ int main(int argc, char **argv)
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Infected files: %d\n", infected);
+	if(err)
+	    logg("Total errors: %d\n", err);
 	if(notremoved) {
 	    logg("Not removed: %d\n", notremoved);
 	}

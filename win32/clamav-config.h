@@ -1,4 +1,5 @@
-/* clamav-config.h.  Generated from clamav-config.h.in by configure.  */
+/* clamav-config.h.  Generated from clamav-config.h.in by update-win32.  */
+
 /* clamav-config.h.in.  Generated from configure.in by autoheader.  */
 
 /* Define if building universal (internal helper macro) */
@@ -32,10 +33,10 @@
 #define CL_THREAD_SAFE 1
 
 /* where to look for the config file */
-#define CONFDIR "/usr/local/etc"
+#define CONFDIR "C:\\ClamAV"
 
 /* curses header location */
-/* #define CURSES_INCLUDE <ncurses.h>
+/* #undef CURSES_INCLUDE */
 
 /* os is aix */
 /* #undef C_AIX */
@@ -83,7 +84,7 @@
 /* #undef C_SOLARIS */
 
 /* Path to virus database directory. */
-#define DATADIR "c:\\db"
+#define DATADIR "C:\\ClamAV\\db"
 
 /* "default FD_SETSIZE value" */
 #define DEFAULT_FD_SETSIZE 1024
@@ -104,28 +105,28 @@
 /* #undef FRESHCLAM_NO_CACHE */
 
 /* Define to 1 if you have the `argz_add' function. */
-#define HAVE_ARGZ_ADD 1
+/* #undef HAVE_ARGZ_ADD */
 
 /* Define to 1 if you have the `argz_append' function. */
-#define HAVE_ARGZ_APPEND 1
+/* #undef HAVE_ARGZ_APPEND */
 
 /* Define to 1 if you have the `argz_count' function. */
-#define HAVE_ARGZ_COUNT 1
+/* #undef HAVE_ARGZ_COUNT */
 
 /* Define to 1 if you have the `argz_create_sep' function. */
-#define HAVE_ARGZ_CREATE_SEP 1
+/* #undef HAVE_ARGZ_CREATE_SEP */
 
 /* Define to 1 if you have the <argz.h> header file. */
-#define HAVE_ARGZ_H 1
+/* #undef HAVE_ARGZ_H */
 
 /* Define to 1 if you have the `argz_insert' function. */
-#define HAVE_ARGZ_INSERT 1
+/* #undef HAVE_ARGZ_INSERT */
 
 /* Define to 1 if you have the `argz_next' function. */
-#define HAVE_ARGZ_NEXT 1
+/* #undef HAVE_ARGZ_NEXT */
 
 /* Define to 1 if you have the `argz_stringify' function. */
-#define HAVE_ARGZ_STRINGIFY 1
+/* #undef HAVE_ARGZ_STRINGIFY */
 
 /* attrib aligned */
 /* #undef HAVE_ATTRIB_ALIGNED */
@@ -138,9 +139,6 @@
 
 /* Define to 1 if you have the `closedir' function. */
 #define HAVE_CLOSEDIR 1
-
-/* ancillary data style fd pass */
-#define HAVE_CONTROL_IN_MSGHDR 1
 
 /* Define to 1 if you have the `ctime_r' function. */
 #define HAVE_CTIME_R 1
@@ -165,7 +163,7 @@
 /* #undef HAVE_DLD_H */
 
 /* Define to 1 if you have the `dlerror' function. */
-#define HAVE_DLERROR 1
+/* #undef HAVE_DLERROR */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -177,10 +175,10 @@
 /* #undef HAVE_DYLD */
 
 /* Define to 1 if the system has the type `error_t'. */
-#define HAVE_ERROR_T 1
+/* #undef HAVE_ERROR_T */
 
 /* have working file descriptor passing support */
-#define HAVE_FD_PASSING 1
+/* #undef HAVE_FD_PASSING */
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #define HAVE_FSEEKO 1
@@ -188,35 +186,26 @@
 /* have getaddrinfo() */
 #define HAVE_GETADDRINFO 1
 
-/* gethostbyname_r takes 3 arguments */
-/* #undef HAVE_GETHOSTBYNAME_R_3 */
-
-/* gethostbyname_r takes 5 arguments */
-/* #undef HAVE_GETHOSTBYNAME_R_5 */
-
-/* gethostbyname_r takes 6 arguments */
-#define HAVE_GETHOSTBYNAME_R_6 1
-
 /* Define to 1 if getpagesize() is available */
 #define HAVE_GETPAGESIZE 1
 
 /* Define to 1 if you have the <grp.h> header file. */
-#define HAVE_GRP_H 1
+/* #undef HAVE_GRP_H */
 
 /* iconv() available */
-/* #undef HAVE_ICONV 1 */
+/* #undef HAVE_ICONV */
 
 /* Define to 1 if you have the `inet_ntop' function. */
 #define HAVE_INET_NTOP 1
 
 /* Define to 1 if you have the `initgroups' function. */
-#define HAVE_INITGROUPS 1
+/* #undef HAVE_INITGROUPS */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 /* #undef HAVE_INTTYPES_H */
 
 /* in_addr_t is defined */
-/* #define HAVE_IN_ADDR_T */
+/* #undef HAVE_IN_ADDR_T */
 
 /* in_port_t is defined */
 #define HAVE_IN_PORT_T 1
@@ -234,7 +223,7 @@
 /* #undef HAVE_LIBMILTER_MFAPI_H */
 
 /* Define to '1' if you have the ncurses.h library */
-/* #undef HAVE_LIBNCURSES 1 */
+/* #undef HAVE_LIBNCURSES */
 
 /* Define to '1' if you have the curses.h library */
 /* #undef HAVE_LIBPDCURSES */
@@ -283,7 +272,7 @@
 #define HAVE_POLL 1
 
 /* Define to 1 if you have the <poll.h> header file. */
-#define HAVE_POLL_H 1
+/* #undef HAVE_POLL_H */
 
 /* "pragma pack" */
 #define HAVE_PRAGMA_PACK 1
@@ -292,7 +281,7 @@
 /* #undef HAVE_PRAGMA_PACK_HPPA */
 
 /* Define if libtool can extract symbol lists from object files. */
-#define HAVE_PRELOADED_SYMBOLS 1
+/* #undef HAVE_PRELOADED_SYMBOLS */
 
 /* Define to 1 if you have the `pthread_yield' function. */
 #define HAVE_PTHREAD_YIELD 1
@@ -325,7 +314,7 @@
 #define HAVE_SENDMSG 1
 
 /* Define to 1 if you have the `setgroups' function. */
-#define HAVE_SETGROUPS 1
+/* #undef HAVE_SETGROUPS */
 
 /* Define to 1 if you have the `setsid' function. */
 #define HAVE_SETSID 1
@@ -337,7 +326,7 @@
 #define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the <stdbool.h> header file. */
-/* #define HAVE_STDBOOL_H */
+/* #undef HAVE_STDBOOL_H */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
@@ -346,7 +335,7 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the `strcasestr' function. */
-/* #define HAVE_STRCASESTR */
+/* #undef HAVE_STRCASESTR */
 
 /* Define to 1 if you have the `strerror_r' function. */
 #define HAVE_STRERROR_R 1
@@ -400,7 +389,7 @@
 /* #undef HAVE_SYS_UIO_H */
 
 /* Define to 1 if you have the <termios.h> header file. */
-/* #define HAVE_TERMIOS_H */
+/* #undef HAVE_TERMIOS_H */
 
 /* Define to 1 if you have the <unistd.h> header file. */
 /* #undef HAVE_UNISTD_H */
@@ -409,7 +398,7 @@
 #define HAVE_VSNPRINTF 1
 
 /* This value is set to 1 to indicate that the system argz facility works */
-#define HAVE_WORKING_ARGZ 1
+/* #undef HAVE_WORKING_ARGZ */
 
 /* "Full library version number" */
 #define LIBCLAMAV_FULLVER "6.0.4"
@@ -421,7 +410,7 @@
 /* #undef LTDL_DLOPEN_DEPLIBS */
 
 /* Define to the system default library search path. */
-#define LT_DLSEARCH_PATH "/lib:/usr/lib:/usr/local/lib:/usr/lib/atlas:/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
+#define LT_DLSEARCH_PATH ""
 
 /* The archive extension */
 #define LT_LIBEXT "dll"
@@ -435,7 +424,7 @@
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
-#define LT_OBJDIR ".libs/"
+#define LT_OBJDIR ""
 
 /* disable assertions */
 #define NDEBUG 1
@@ -444,7 +433,7 @@
 /* #undef NEED_USCORE */
 
 /* bzip funtions do not have bz2 prefix */
-/* #define NOBZ2PREFIX */
+/* #undef NOBZ2PREFIX */
 
 /* "no fd_set" */
 /* #undef NO_FD_SET */
@@ -504,7 +493,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-20091010"
+#define VERSION "devel-r5076-766-g7af2e27"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
@@ -513,11 +502,11 @@
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD
 # if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 0
+#  define WORDS_BIGENDIAN 1
 # endif
 #else
 # ifndef WORDS_BIGENDIAN
-#  define WORDS_BIGENDIAN 0
+#define WORDS_BIGENDIAN 0
 # endif
 #endif
 

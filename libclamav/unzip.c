@@ -297,11 +297,10 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int detect_encrypted) {
   uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
-  struct cli_meta_node *meta = ctx->engine->zip_mlist;
 
   if(!(lh = fmap_need_off(map, loff, SIZEOF_LH))) {
       cli_dbgmsg("cli_unzip: lh - out of file\n");
@@ -322,7 +321,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
-  if(meta || cli_debug_flag) {
+  if(ctx->engine->cdb || cli_debug_flag) {
       uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
       char *src;
       if(nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
@@ -337,20 +336,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n", ((LH_flags & F_ENCR)!=0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->recursion);
   /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
-  while(meta &&
-	(
-	 meta->encrypted != ((LH_flags & F_ENCR)!=0) ||
-	 (meta->size>0   && (uint32_t)meta->size   != LH_usize) ||
-	 (meta->csize>0  && (uint32_t)meta->csize  != LH_csize) ||
-	 (meta->crc32    && meta->crc32  != LH_crc32) ||
-	 (meta->method>0 && meta->method != LH_method) ||
-	 (meta->fileno   && meta->fileno != fc ) ||
-	 (meta->maxdepth && ctx->recursion > meta->maxdepth) ||
-	 (meta->filename && !cli_matchregex(name, meta->filename))
-	 )
-	) meta = meta->next;
-  if(meta) {
-    *ctx->virname = meta->virname;
+  if(cli_matchmeta(ctx, name, LH_csize, LH_usize, (LH_flags & F_ENCR)!=0, fc, LH_crc32, NULL) == CL_VIRUS) {
     *ret = CL_VIRUS;
     return 0;
   }
@@ -362,9 +348,9 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     return 0;
   }
 
-  if((LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
+  if(detect_encrypted && (LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-    *ctx->virname = "Encrypted.Zip";
+    *ctx->virname = "Heuristics.Encrypted.Zip";
     *ret = CL_VIRUS;
     fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
@@ -469,7 +455,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd);
+      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd, 1);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   fmap_unneed_ptr(map, ch, SIZEOF_CH);
   return last?0:coff;
@@ -525,7 +511,7 @@ int cli_unzip(cli_ctx *ctx) {
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     fc = 0;
-    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
+    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, 1))) {
       fc++;
       lhoff+=coff;
       if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
@@ -558,7 +544,7 @@ int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
-  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL);
+  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL, 0);
 
   return ret;
 }

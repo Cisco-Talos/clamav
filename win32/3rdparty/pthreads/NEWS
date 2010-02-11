@@ -1,3 +1,51 @@
+RELEASE 2.9.0
+-------------
+(2008-??-??)
+
+General
+-------
+New bug fixes in this release since 2.8.0 have NOT been applied to the
+1.x.x series.
+
+Version 1 no longer maintained
+------------------------------
+The 1.x.x series is no longer maintained. However, if you really need a
+version 1, the differences between 1.11.0 and 2.7.0 are very small, mainly
+revolving around the pthread_once_t_ struct. Those differences applied
+as a patch to the current 2.x.x should work. Don't forget to change
+the version numbering in pthread.h before building. If you distribute
+such a version 1.x.x please bear in mind that your numbers may clash
+with those of others doing the same thing. Please consider also making
+identifying changes in version.rc to differentiate your build.
+
+Testing and verification
+------------------------
+This release has been tested on UP and SMP architectures. Thanks to Tim
+Theisen for running the Win32 SMP tests.
+
+Bug fixes
+---------
+Various modifications and fixes to build and test for WinCE.
+- Marcel Ruff, Sinan Kaya
+
+Fix pthread_cond_destroy() - should not be a cancellation point. Other
+minor build problems fixed.
+- Romano Paolo Tenca
+
+Remove potential deadlock condition from pthread_cond_destroy().
+- Eric Berge
+
+Various modifications to build and test for Win64.
+- Kip Streithorst
+
+Various fixes to the QueueUserAPCEx async cancellation helper DLL
+and pthreads code cleanups.
+- Sebastian Gottschalk
+
+Removed potential NULL pointer reference.
+- Robert Kindred
+
+
 RELEASE 2.8.0
 -------------
 (2006-12-22)

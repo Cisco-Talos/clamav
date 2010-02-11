@@ -85,13 +85,26 @@ static void help(void)
 }
 
 static struct optstruct *opts;
-/* needs to be global, so that valgrind reports it as reachable, and not
- * as definetely/indirectly lost when daemonizing clamd */
-static struct cl_engine *engine = NULL;
+
+/* When running under valgrind and daemonizing, valgrind incorrectly reports
+ * leaks from the engine, because it can't see that all the memory is still
+ * reachable (some pointers are stored mangled in the JIT). 
+ * So free the engine on exit from the parent too (during daemonize)
+ */
+static struct cl_engine *gengine = NULL;
+static void free_engine(void)
+{
+    if (gengine) {
+	cl_engine_free(gengine);
+	gengine = NULL;
+    }
+}
+
 int main(int argc, char **argv)
 {
+        static struct cl_engine *engine = NULL;
 	const struct optstruct *opt;
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
         struct passwd *user = NULL;
 	struct sigaction sa;
 #endif
@@ -101,7 +114,7 @@ int main(int argc, char **argv)
 	int ret, tcpsock = 0, localsock = 0, i, min_port, max_port;
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
-	unsigned int dboptions = CL_DB_CVDNOTMP;
+	unsigned int dboptions = 0;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -151,8 +164,6 @@ int main(int argc, char **argv)
 	optfree(opts);
 	return 0;
     }
-
-    umask(0);
 
     /* drop privileges */
 #ifndef _WIN32
@@ -372,6 +383,11 @@ int main(int argc, char **argv)
 	logg("#Not loading PUA signatures.\n");
     }
 
+    if(optget(opts, "OfficialDatabaseOnly")->enabled) {
+	dboptions |= CL_DB_OFFICIAL_ONLY;
+	logg("#Only loading official signatures.\n");
+    }
+
     /* set the temporary dir */
     if((opt = optget(opts, "TemporaryDirectory"))->enabled) {
 	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
@@ -388,6 +404,26 @@ int main(int argc, char **argv)
 	dboptions |= CL_DB_PHISHING;
     else
 	logg("#Not loading phishing signatures.\n");
+
+    if(optget(opts,"Bytecode")->enabled)
+	dboptions |= CL_DB_BYTECODE;
+
+    if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
+	enum bytecode_security s;
+	if (!strcmp(opt->strarg, "TrustSigned"))
+	    s = CL_BYTECODE_TRUST_SIGNED;
+	else if (!strcmp(opt->strarg, "None"))
+	    s = CL_BYTECODE_TRUST_ALL;
+	else if (!strcmp(opt->strarg, "Paranoid"))
+	    s = CL_BYTECODE_TRUST_NOTHING;
+	else {
+	    logg("!Unable to parse bytecode security setting:%s\n",
+		 opt->strarg);
+	    ret = 1;
+	    break;
+	}
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s);
+    }
 
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
@@ -426,10 +462,48 @@ int main(int argc, char **argv)
     }
 #ifndef _WIN32
     if(localsock) {
+	mode_t sock_mode, umsk = umask(0777); /* socket is created with 000 to avoid races */
 	if ((lsockets[nlsockets] = localserver(opts)) == -1) {
+	    ret = 1;
+	    umask(umsk);
+	    break;
+	}
+	umask(umsk); /* restore umask */
+	if(optget(opts, "LocalSocketGroup")->enabled) {
+	    char *gname = optget(opts, "LocalSocketGroup")->strarg, *end;
+	    gid_t sock_gid = strtol(gname, &end, 10);
+	    if(*end) {
+		struct group *pgrp = getgrnam(gname);
+		if(!pgrp) {
+		    logg("!Unknown group %s\n", gname);
+		    ret = 1;
+		    break;
+		}
+		sock_gid = pgrp->gr_gid;
+	    }
+	    if(chown(optget(opts, "LocalSocket")->strarg, -1, sock_gid)) {
+		logg("!Failed to change socket ownership to group %s\n", gname);
+		ret = 1;
+		break;
+	    }
+	}
+	if(optget(opts, "LocalSocketMode")->enabled) {
+	    char *end;
+	    sock_mode = strtol(optget(opts, "LocalSocketMode")->strarg, &end, 8);
+	    if(*end) {
+		logg("!Invalid LocalSocketMode %s\n", optget(opts, "LocalSocketMode")->strarg);
+		ret = 1;
+		break;
+	    }
+	} else
+	    sock_mode = 0777 /* & ~umsk*/; /* conservative default: umask was 0 in clamd < 0.96 */
+
+	if(chmod(optget(opts, "LocalSocket")->strarg, sock_mode & 0666)) {
+	    logg("!Cannot set socket permission to %s\n", optget(opts, "LocalSocketMode")->strarg);
 	    ret = 1;
 	    break;
 	}
+
 	nlsockets++;
     }
 
@@ -441,11 +515,14 @@ int main(int argc, char **argv)
 		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK);
 	}
 #endif
+	gengine = engine;
+	atexit(free_engine);
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
 	    ret = 1;
 	    break;
 	}
+	gengine = NULL;
 #ifdef C_BSD
 	for(ret=0;ret<nlsockets;ret++) {
 		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK);

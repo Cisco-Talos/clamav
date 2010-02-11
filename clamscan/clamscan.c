@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
-	return 40;
+	return 2;
     }
 
     if(optget(opts, "verbose")->enabled) {
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    optfree(opts);
-	    return 62;
+	    return 2;
 	}
     } else 
 	logg_file = NULL;
@@ -159,6 +159,8 @@ int main(int argc, char **argv)
 	logg("Scanned directories: %u\n", info.dirs);
 	logg("Scanned files: %u\n", info.files);
 	logg("Infected files: %u\n", info.ifiles);
+	if(info.errors)
+	    logg("Total errors: %u\n", info.errors);
 	if(notremoved) {
 	    logg("Not removed: %u\n", notremoved);
 	}
@@ -201,6 +203,7 @@ void help(void)
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
     mprintf("                                         all supported db files from DIR\n");
+    mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf("    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems\n");
@@ -208,17 +211,10 @@ void help(void)
     mprintf("    --remove[=yes/no(*)]                 Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                     Copy infected files into DIRECTORY\n");
-#ifdef HAVE_REGEX_H
     mprintf("    --exclude=REGEX                      Don't scan file names matching REGEX\n");
     mprintf("    --exclude-dir=REGEX                  Don't scan directories matching REGEX\n");
     mprintf("    --include=REGEX                      Only scan file names matching REGEX\n");
     mprintf("    --include-dir=REGEX                  Only scan directories matching REGEX\n");
-#else
-    mprintf("    --exclude=PATT                       Don't scan file names containing PATT\n");
-    mprintf("    --exclude-dir=PATT                   Don't scan directories containing PATT\n");
-    mprintf("    --include=PATT                       Only scan file names containing PATT\n");
-    mprintf("    --include-dir=PATT                   Only scan directories containing PATT\n");
-#endif
     mprintf("\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");

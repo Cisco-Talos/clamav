@@ -220,7 +220,27 @@ int command(client_conn_t *conn, int *virus)
 	    thrmgr_setactivetask(NULL, "CONTSCAN");
 	    type = TYPE_CONTSCAN;
 	    break;
-	case COMMAND_MULTISCAN:
+	case COMMAND_MULTISCAN: {
+	    int multiscan, max, alive;
+	    pthread_mutex_lock(&conn->thrpool->pool_mutex);
+	    multiscan = conn->thrpool->thr_multiscan;
+	    max = conn->thrpool->thr_max;
+	    if (multiscan+1 < max)
+		conn->thrpool->thr_multiscan = multiscan+1;
+	    else {
+		alive = conn->thrpool->thr_alive;
+		ret = -1;
+	    }
+	    pthread_mutex_unlock(&conn->thrpool->pool_mutex);
+	    if (ret) {
+		/* multiscan has 1 control thread, so there needs to be at least
+		   1 threads that is a non-multiscan controlthread to scan and
+		   make progress. */
+		logg("^Not enough threads for multiscan. Max: %d, Alive: %d, Multiscan: %d+1\n",
+		     max, alive, multiscan);
+		conn_reply(conn, conn->filename, "Not enough threads for multiscan. Increase MaxThreads.", "ERROR");
+		return 1;
+	    }
 	    flags &= ~CLI_FTW_NEED_STAT;
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
@@ -228,6 +248,7 @@ int command(client_conn_t *conn, int *virus)
 	    if (!group)
 		return CL_EMEM;
 	    break;
+	    }
 	case COMMAND_MULTISCANFILE:
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
 	    scandata.group = NULL;
@@ -324,6 +345,9 @@ int command(client_conn_t *conn, int *virus)
 	    return -1;
     if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN) {
 	thrmgr_group_waitforall(group, &ok, &error, &total);
+	pthread_mutex_lock(&conn->thrpool->pool_mutex);
+	conn->thrpool->thr_multiscan--;
+	pthread_mutex_unlock(&conn->thrpool->pool_mutex);
     } else {
 	error = scandata.errors;
 	total = scandata.total;
@@ -344,6 +368,7 @@ int command(client_conn_t *conn, int *virus)
 static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *argument)
 {
     int ret = 0;
+    int bulk;
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 
     if(!dup_conn) {
@@ -358,6 +383,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	return -1;
     }
     dup_conn->scanfd = -1;
+    bulk = 1;
     switch (cmd) {
 	case COMMAND_FILDES:
 	    if (conn->scanfd == -1) {
@@ -383,10 +409,14 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	    break;
 	case COMMAND_STREAM:
 	case COMMAND_STATS:
+	    /* not a scan command, don't queue to bulk */
+	    bulk = 0;
 	    /* just dispatch the command */
 	    break;
     }
-    if(!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn)) {
+    if (!dup_conn->group)
+	bulk = 0;
+    if(!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn, bulk)) {
 	logg("!thread dispatch failed\n");
 	ret = -2;
     }

@@ -25,13 +25,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
-#endif
-#include <sys/stat.h>
-#ifndef	C_WINDOWS
 #include <sys/un.h>
 #endif
+#include <sys/stat.h>
 #include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -40,13 +38,13 @@
 #include "libclamav/clamav.h"
 
 #include "shared/optparser.h"
+#include "shared/output.h"
 
 #include "others.h"
 #include "server.h"
-#include "output.h"
 #include "localserver.h"
 
-#ifdef C_WINDOWS
+#ifdef _WIN32
 int localserver(const struct optstruct *opts)
 {
     logg("!Localserver is not supported on this platform");
@@ -121,4 +119,4 @@ int localserver(const struct optstruct *opts)
 
     return sockfd;
 }
-#endif /* C_WINDOWS */
+#endif

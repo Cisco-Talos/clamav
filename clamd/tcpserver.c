@@ -40,11 +40,11 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "others.h"
 #include "server.h"
 #include "tcpserver.h"
-#include "misc.h"
 
 int tcpserver(const struct optstruct *opts)
 {

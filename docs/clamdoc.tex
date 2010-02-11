@@ -67,7 +67,7 @@
     \setcounter{page}{0}
 
     \pagestyle{empty}
-    \includegraphics[width=353pt]{clam.eps}
+    \includegraphics[width=353pt]{clam}
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
@@ -238,6 +238,21 @@
     \begin{itemize}
 	\item bzip2 and bzip2-devel library
 	\item \verb+check+ unit testing framework \footnote{See section \ref{unit-testing} on how to run the unit tests}.
+    \end{itemize}
+    The following packages are optional, but \textbf{required for bytecode JIT support}:
+    \footnote{if not available ClamAV will fall back to an interpreter}
+    \begin{itemize}
+        \item GCC C and C++ compilers (minimum 4.1.3, recommended 4.3.4 or newer)\\
+	    the package for these compilers are usually called: gcc, g++, or gcc-c++.
+	    \footnote{Note that several versions of GCC have bugs when compiling LLVM, see
+		\url{http://llvm.org/docs/GettingStarted.html#brokengcc} for a
+		    full list.}
+	\item A supported CPU for the JIT, either of: X86, X86-64, PowerPC, PowerPC64
+    \end{itemize}
+    The following packages are optional, but needed for the JIT unit tests:
+    \begin{itemize}
+     \item GNU Make (version 3.79, recommended 3.81)
+     \item Python (version 2.5.4 or newer), for running the JIT unit tests
     \end{itemize}
 
     \subsection{Installing on shell account}
@@ -851,9 +866,6 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	Initialize the phishing detection module and load .wdb and .pdb files.
 	\item \textbf{CL\_DB\_PUA}\\
 	Load signatures for Potentially Unwanted Applications.
-	\item \textbf{CL\_DB\_CVDNOTMP}\\
-	Load CVD files directly without unpacking them into a temporary
-	directory.
     \end{itemize}
     \verb+cl_load()+ returns \verb+CL_SUCCESS+ on success and another code on
     failure.

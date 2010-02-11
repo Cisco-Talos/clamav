@@ -257,6 +257,8 @@ char *nc_recv(int s) {
 	}
 	if(res==-1) {
 	    char er[256];
+	    if (errno == EAGAIN)
+		continue;
 	    strerror_print("!recv failed after successful select");
 	    close(s);
 	    return NULL;

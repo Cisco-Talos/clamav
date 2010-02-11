@@ -35,7 +35,7 @@
  */
 
 #ifndef _UWIN
-//#   include <process.h>
+/*#   include <process.h> */
 #endif
 #include "pthread.h"
 #include "implement.h"
@@ -77,8 +77,18 @@ ptw32_semwait (sem_t * sem)
     {
       if ((result = pthread_mutex_lock (&s->lock)) == 0)
         {
-          int v = --s->value;
+          int v;
 
+	  /* See sem_destroy.c
+	   */
+	  if (*sem == NULL)
+	    {
+	      (void) pthread_mutex_unlock (&s->lock);
+	      errno = EINVAL;
+	      return -1;
+	    }
+
+          v = --s->value;
           (void) pthread_mutex_unlock (&s->lock);
 
           if (v < 0)
@@ -89,6 +99,13 @@ ptw32_semwait (sem_t * sem)
 #ifdef NEED_SEM
 		  if (pthread_mutex_lock (&s->lock) == 0)
 		    {
+        	      if (*sem == NULL)
+        	        {
+        	          (void) pthread_mutex_unlock (&s->lock);
+        	          errno = EINVAL;
+        	          return -1;
+        	        }
+
 		      if (s->leftToUnblock > 0)
 			{
 			  --s->leftToUnblock;

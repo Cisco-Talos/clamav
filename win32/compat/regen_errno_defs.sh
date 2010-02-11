@@ -43,7 +43,7 @@ for pippo in `cat "$INFILE"`; do
 	value=$((value+1000))
 	[ $value -gt $maxerr ] && maxerr=$value
 	descr=`echo $pippo | cut -d'|' -f3`
-	git grep $symbol > /dev/null
+	git grep $symbol | egrep -v '(referrno|w32_errno_defs)' > /dev/null
 	used=$?
 	[ $used -ne 0 ] && echo "#ifdef __ERRNO_INCLUDE_UNUSED" >> "$OUTFILE"
 	echo -e "#ifndef $symbol\n#define $symbol $value\n#endif\n{ $symbol, \"$descr\" }," >> "$OUTFILE"

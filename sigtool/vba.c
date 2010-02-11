@@ -33,7 +33,6 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/vba_extract.h"
-#include "libclamav/others.h"
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
 #include "shared/output.h"
@@ -50,6 +49,26 @@ typedef struct mac_token2_tag
     const char *str;
 
 } mac_token2_t;
+
+cli_ctx *convenience_ctx(int fd) {
+    cli_ctx *ctx;
+    if(!(ctx = malloc(sizeof(*ctx))) ||
+       !(ctx->engine = cl_engine_new()) ||
+       !(ctx->fmap = cli_malloc(sizeof(struct F_MAP *))) ||
+       !(*ctx->fmap = fmap(fd, 0, 0))) {
+	printf("malloc failed\n");
+	return NULL; /* and leak */
+    }
+    return ctx;
+}
+
+void destroy_ctx(cli_ctx *ctx) {
+    close((*(ctx->fmap))->fd);
+    funmap(*(ctx->fmap));
+    free(ctx->fmap);
+    cl_engine_free((struct cl_engine *)ctx->engine);
+    free(ctx);
+}
 
 int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
 
@@ -967,7 +986,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
     const char *tmpdir;
     char *dir;
     int ret = CL_CLEAN, desc;
-    cli_ctx ctx;
+    cli_ctx *ctx;
 
 
     if ((dd = opendir (dirname)) != NULL) {
@@ -993,40 +1012,46 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 				/* generate the temporary directory */
 				dir = cli_gentemp (tmpdir);
+				if(!dir) {
+				    printf("cli_gentemp() failed\n");
+				    closedir (dd);
+				    return -1;
+				}
+
 				if (mkdir (dir, 0700)) {
 				    printf ("Can't create temporary directory %s\n", dir);
+				    closedir (dd);
+				    free(dir);
 				    return CL_ETMPDIR;
 				}
 
 				if ((desc = open (fname, O_RDONLY|O_BINARY)) == -1) {
 				    printf ("Can't open file %s\n", fname);
+				    closedir (dd);
+				    free(dir);
 				    return 1;
 				}
 
-				ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
-				if(!ctx.fmap) {
-				    printf("malloc failed\n");
+				if(!(ctx = convenience_ctx(desc))) {
+				    close(desc);
+				    closedir(dd);
+				    free(dir);
 				    return 1;
 				}
-				*ctx.fmap = fmap(desc, 0, 0);
-				if(*ctx.fmap) {
-				    printf("fmap failed\n");
-				    return 1;
-				}
-				if ((ret = cli_ole2_extract (dir, &ctx, &vba))) {
+				if ((ret = cli_ole2_extract (dir, ctx, &vba))) {
 				    printf ("ERROR %s\n", cl_strerror (ret));
+				    destroy_ctx(ctx);
 				    cli_rmdirs (dir);
 				    free (dir);
+				    closedir (dd);
 				    return ret;
 				}
 
 				if(vba)
 				    sigtool_vba_scandir (dir, hex_output, vba);
+				destroy_ctx(ctx);
 				cli_rmdirs (dir);
 				free (dir);
-				funmap(*ctx.fmap);
-				free(ctx.fmap);
-				close(desc);
 			    }
 			}
 

@@ -1,4 +1,105 @@
-2006-12-20  Ross Johnson <ross.johnson@homemail.com.au>
+2009-03-03  Stephan O'Farrill <stephan dot ofarrill at gmail dot com>
+
+	* pthread_attr_getschedpolicy.c: Add "const" to function parameter
+	in accordance with SUSv3 (POSIX).
+	* pthread_attr_getinheritsched.c: Likewise.
+	* pthread_mutexattr_gettype.c: Likewise.
+
+
+2008-06-06  Robert Kindred  <RKindred at SwRI dot edu>
+
+        * ptw32_throw.c (ptw32_throw): Remove possible reference to NULL
+        pointer. (At the same time made the switch block conditionally
+        included only if exitCode is needed - RPJ.)
+        * pthread_testcancel.c (pthread_testcancel): Remove duplicate and
+        misplaced pthread_mutex_unlock().
+
+2008-02-21  Sebastian Gottschalk  <seppig_relay at gmx dot de>
+
+        * pthread_attr_getdetachstate.c (pthread_attr_getdetachstate):
+        Remove potential and superfluous null pointer assignment.
+
+2007-11-22  Ivan Pizhenko  <ivanp4 at ua dot fm>
+
+        * pthread.h (gmtime_r): gmtime returns 0 if tm represents a time
+        prior to 1/1/1970. Notice this to prevent raising an exception.
+        * pthread.h (localtime_r): Likewise for localtime.
+
+2007-07-14  Marcel Ruff  <mr at marcelruff dot info>
+
+        * errno.c (_errno): Fix test for pthread_self() success.
+        * need_errno.h: Remove unintentional line wrap from #if line.
+
+2007-07-14  Mike Romanchuk  <mromanchuk at empirix dot com>
+
+        * pthread.h (timespec): Fix tv_sec type.
+
+2007-01-07  Sinan Kaya <sinan.kaya at siemens dot com>
+
+        * need_errno.h: Fix declaration of _errno - the local version of
+        _errno() is used, e.g. by WinCE.
+
+2007-01-06  Ross Johnson <ross.johnson at homemail dot com dot au>
+
+        * ptw32_semwait.c: Add check for invalid sem_t after acquiring the
+        sem_t state guard mutex and before affecting changes to sema state.
+                
+2007-01-06  Marcel Ruff <mr at marcelruff dot info>
+
+        * error.c: Fix reference to pthread handle exitStatus member for
+        builds that use NEED_ERRNO (i.e. WINCE).
+        * context.h: Add support for ARM processor (WinCE).
+        * mutex.c (process.h): Exclude for WINCE.
+        * create.c: Likewise.
+        * exit.c: Likewise.
+        * implement.h: Likewise.
+        * pthread_detach.c (signal.h): Exclude for WINCE.
+        * pthread_join.c: Likewise.
+        * pthread_kill.c: Likewise.
+        * pthread_rwlock_init.c (errno.h): Remove - included by pthread.h.
+        * pthread_rwlock_destroy.c: Likewise.
+        * pthread_rwlock_rdlock.c: Likewise.
+        * pthread_rwlock_timedrdlock.c: Likewise.
+        * pthread_rwlock_timedwrlock.c: Likewise.
+        * pthread_rwlock_tryrdlock.c: Likewise.
+        * pthread_rwlock_trywrlock.c: likewise.
+        * pthread_rwlock_unlock.c: Likewise.
+        * pthread_rwlock_wrlock.c: Likewise.
+        * pthread_rwlockattr_destroy.c: Likewise.
+        * pthread_rwlockattr_getpshared.c: Likewise.
+        * pthread_rwlockattr_init.c: Likewise.
+        * pthread_rwlockattr_setpshared.c: Likewise.
+
+2007-01-06  Romano Paolo Tenca <rotenca at telvia dot it>
+
+        * pthread_cond_destroy.c: Replace sem_wait() with non-cancelable
+        ptw32_semwait() since pthread_cond_destroy() is not a cancelation
+        point.
+        * implement.h (ptw32_spinlock_check_need_init): Add prototype.
+        * ptw32_MCS_lock.c: Reverse order of includes.
+
+2007-01-06  Eric Berge <eric dot berge at quantum dot com>
+
+        * pthread_cond_destroy.c: Add LeaveCriticalSection before returning
+        after errors.
+
+2007-01-04  Ross Johnson <ross.johnson at homemail dot com dot au>
+
+        * ptw32_InterlockedCompareExchange.c: Conditionally skip for
+        Win64 as not required.
+        * pthread_win32_attach_detach_np.c (pthread_win32_process_attach_np):
+        Test for InterlockedCompareExchange is not required for Win64.
+        * context.h: New file. Included by pthread_cancel.h and any tests
+        that need it (e.g. context1.c).
+        * pthread_cancel.c: Architecture-dependent context macros moved
+        to context.h.
+
+2007-01-04  Kip Streithorst <KSTREITH at ball dot com>
+
+        * implement.h (PTW32_INTERLOCKED_COMPARE_EXCHANGE): Add Win64
+        support.
+        
+2006-12-20  Ross Johnson <ross.johnson at homemail dot com dot au>
 
         * sem_destroy.c: Fix the race involving invalidation of the sema;
         fix incorrect return of EBUSY resulting from the mutex trylock

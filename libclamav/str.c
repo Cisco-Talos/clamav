@@ -120,7 +120,7 @@ uint16_t *cli_hex2ui(const char *hex)
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
+	cli_errmsg("cli_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex, len);
 	return NULL;
     }
 
@@ -582,3 +582,13 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, si
 	return 0;
 }
 
+int cli_hexnibbles(char *str, int len)
+{
+    int i;
+    for(i=0; i<len; i++) {
+	int c = cli_hex2int(str[i]);
+	if(c<0) return 1;
+	str[i] = c;
+    }
+    return 0;
+}

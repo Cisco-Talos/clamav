@@ -47,7 +47,6 @@ CLAMAV_PRIVATE {
     cli_rmdirs;
     cli_chomp;
     cli_rndnum;
-    cli_decodesig;
 
     cli_calloc;
     cli_ole2_extract;
@@ -118,12 +117,16 @@ CLAMAV_PRIVATE {
     cli_ac_scanbuff;
     cli_ac_freedata;
     cli_ac_free;
+    cli_ac_chklsig;
     cli_parse_add;
     cli_bm_init;
     cli_bm_scanbuff;
     cli_bm_free;
+    cli_initroots;
+    cli_scanbuff;
     html_screnc_decode;
     mpool_create;
+    mpool_calloc;
     mpool_destroy;
     mpool_free;
     mpool_getstats;
@@ -131,6 +134,7 @@ CLAMAV_PRIVATE {
     mp_read_radix;
     mp_clear;
     cli_versig;
+    cli_versig2;
     cli_filecopy;
     cli_ftw;
     cli_unlink;
@@ -145,6 +149,7 @@ CLAMAV_PRIVATE {
     messageDestroy;
     base64Flush;
     have_rar;
+    have_clamjit;
     cli_bytecode_load;
     cli_bytecode_prepare;
     cli_bytecode_run;
@@ -154,10 +159,19 @@ CLAMAV_PRIVATE {
     cli_bytecode_context_setfuncid;
     cli_bytecode_context_setparam_int;
     cli_bytecode_context_setparam_ptr;
+    cli_bytecode_context_setfile;
     cli_bytecode_context_getresult_int;
     cli_bytecode_context_clear;
+    cli_bytecode_init;
+    cli_bytecode_done;
+    cli_bytecode_debug;
+    cli_hex2ui;
     fmap;
     funmap;
+    cli_bytecode_context_set_trace;
+    cli_bytecode_debug_printsrc;
+    cli_bytecode_printversion;
+    cli_bytecode_describe;
   local:
     *;
 };

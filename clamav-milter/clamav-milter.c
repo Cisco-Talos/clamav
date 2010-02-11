@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
     const struct optstruct *opt;
     struct optstruct *opts;
     time_t currtime;
+    mode_t umsk;
     int ret;
 
     memset(&descr, 0, sizeof(struct smfiDesc));
@@ -280,6 +281,7 @@ int main(int argc, char **argv) {
 	return 1;
     }
     opt = optget(opts, "FixStaleSocket");
+    umsk = umask(0777); /* socket is created with 000 to avoid races */ 
     if(smfi_opensocket(opt->enabled) == MI_FAILURE) {
 	logg("!Failed to create socket %s\n", my_socket);
 	localnets_free();
@@ -287,6 +289,65 @@ int main(int argc, char **argv) {
 	logg_close();
 	optfree(opts);
 	return 1;
+    }
+    umask(umsk); /* restore umask */
+    if(strncmp(my_socket, "inet:", 5) && strncmp(my_socket, "inet6:", 6)) {
+	/* set group ownership and perms on the local socket */
+	char *sock_name = my_socket;
+	mode_t sock_mode;
+	if(!strncmp(my_socket, "unix:", 5))
+	    sock_name += 5;
+	if(!strncmp(my_socket, "local:", 6))
+	    sock_name += 6;
+	if(*my_socket == ':')
+	    sock_name ++;
+
+	if(optget(opts, "MilterSocketGroup")->enabled) {
+	    char *gname = optget(opts, "MilterSocketGroup")->strarg, *end;
+	    gid_t sock_gid = strtol(gname, &end, 10);
+	    if(*end) {
+		struct group *pgrp = getgrnam(gname);
+		if(!pgrp) {
+		    logg("!Unknown group %s\n", gname);
+		    localnets_free();
+		    whitelist_free();
+		    logg_close();
+		    optfree(opts);
+		    return 1;
+		}
+		sock_gid = pgrp->gr_gid;
+	    }
+	    if(chown(sock_name, -1, sock_gid)) {
+		logg("!Failed to change socket ownership to group %s\n", gname);
+		localnets_free();
+		whitelist_free();
+		logg_close();
+		optfree(opts);
+		return 1;
+	    }
+	}
+	if(optget(opts, "MilterSocketMode")->enabled) {
+	    char *end;
+	    sock_mode = strtol(optget(opts, "MilterSocketMode")->strarg, &end, 8);
+	    if(*end) {
+		logg("!Invalid MilterSocketMode %s\n", optget(opts, "MilterSocketMode")->strarg);
+		localnets_free();
+		whitelist_free();
+		logg_close();
+		optfree(opts);
+		return 1;
+	    }
+	} else
+	    sock_mode = 0777 & ~umsk;
+
+	if(chmod(sock_name, sock_mode & 0666)) {
+	    logg("!Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
+	    localnets_free();
+	    whitelist_free();
+	    logg_close();
+	    optfree(opts);
+	    return 1;
+	}
     }
 
     maxfilesize = optget(opts, "MaxFileSize")->numarg;

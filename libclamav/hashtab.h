@@ -24,6 +24,7 @@
 #define _HASHTAB_H
 #include <stdio.h>
 #include <stddef.h>
+#include <sys/types.h>
 #include "cltypes.h"
 typedef long cli_element_data;
 
@@ -103,5 +104,13 @@ int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key);
 int cli_hashset_clear(struct cli_hashset* hs);
 void cli_hashset_destroy(struct cli_hashset* hs);
 ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array);
+
+/* Initializes the set without allocating memory, you can do lookups on it
+ * using _contains_maybe_noalloc. You need to initialize it using _init
+ * before using _addkey or _removekey though */
+void cli_hashset_init_noalloc(struct cli_hashset *hs);
+/* this works like its _contains counterpart above, except that the hashset may
+ * have not been initialized by _init, only by _init_noalloc */
+int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key);
 #endif
 

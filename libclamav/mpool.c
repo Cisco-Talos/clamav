@@ -117,6 +117,9 @@ static const unsigned int fragsz[] = {
  507976, /*       9       0      USE */
  525976, /*       1       0      USE */
 1048576, /*       0       0 USE/POW2 */
+2097152,
+4194304,
+8388608,
  /* MAX_ALLOCATION is 184549376 but that's really not need here */
 };
 
@@ -182,6 +185,9 @@ static const unsigned int fragsz[] = {
  262144, /*       0       0     POW2 */
  525752, /*       1       0      USE */
 1048576, /*       0       0 USE/POW2 */
+2097152,
+4194304,
+8388608,
 };
 #endif
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
@@ -199,13 +205,16 @@ struct MP {
 };
 
 struct FRAG {
-  union {
-    struct FRAG *next;
-    unsigned int sbits;
-  } u;
 #ifdef CL_DEBUG
   unsigned int magic;
 #endif
+  union {
+    struct FRAG *next;
+    unsigned int sbits;
+    int64_t dummy_align;
+    /* needed to align to 64-bit on sparc, since pointers are 32-bit only,
+     * yet we need 64-bit alignment for struct containing int64 members */
+  } u;
   void *fake;
 };
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
@@ -449,7 +458,7 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
     return NULL;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *hex) {
+unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
     unsigned char *str;
     size_t len = strlen((const char*)hex);
 
@@ -519,7 +528,7 @@ uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex) {
   len = strlen(hex);
 
   if(len % 2 != 0) {
-    cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
+    cli_errmsg("cli_mpool_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex, len);
     return NULL;
   }
 

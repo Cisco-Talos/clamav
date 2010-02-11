@@ -135,21 +135,28 @@ pthread_cond_destroy (pthread_cond_t * cond)
        * all already signaled waiters to let them retract their
        * waiter status - SEE NOTE 1 ABOVE!!!
        */
-      if (sem_wait (&(cv->semBlockLock)) != 0)
+      if (ptw32_semwait (&(cv->semBlockLock)) != 0) /* Non-cancelable */
 	{
-	  return errno;
+	  result = errno;
 	}
-
-      /*
-       * !TRY! lock mtxUnblockLock; try will detect busy condition
-       * and will not cause a deadlock with respect to concurrent
-       * signal/broadcast.
-       */
-      if ((result = pthread_mutex_trylock (&(cv->mtxUnblockLock))) != 0)
-	{
-	  (void) sem_post (&(cv->semBlockLock));
-	  return result;
+      else
+        {
+          /*
+           * !TRY! lock mtxUnblockLock; try will detect busy condition
+           * and will not cause a deadlock with respect to concurrent
+           * signal/broadcast.
+           */
+          if ((result = pthread_mutex_trylock (&(cv->mtxUnblockLock))) != 0)
+	    {
+	      (void) sem_post (&(cv->semBlockLock));
+	    }
 	}
+	
+      if (result != 0)
+        {
+          LeaveCriticalSection (&ptw32_cond_list_lock);
+          return result;
+        }
 
       /*
        * Check whether cv is still busy (still has waiters)

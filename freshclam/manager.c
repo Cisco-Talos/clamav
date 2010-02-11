@@ -211,9 +211,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		else
 			port = 8080;
 
-#ifndef	C_WINDOWS
 		endservent();
-#endif
 	}
 
     } else {
@@ -527,7 +525,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
 	char logfile[256], fbuff[FILEBUFF];
 	char *pt, *pt2, *auth = NULL;
-	const char *line, *country = NULL, *user, *proxy = NULL;
+	const char *line, *country = NULL, *user, *proxy = NULL, *hostid = NULL;
 	struct optstruct *clamdopt;
 	const struct optstruct *opt;
 	struct stat sb;
@@ -536,12 +534,25 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
 
 
+    if(optget(opts, "HTTPUserAgent")->enabled) {
+	logg("!SubmitDetectionStats: HTTPUserAgent must be disabled for SubmitDetectionStats to work\n");
+	return 56;
+    }
+
     if((opt = optget(opts, "DetectionStatsCountry"))->enabled) {
 	if(strlen(opt->strarg) != 2 || !isalpha(opt->strarg[0]) || !isalpha(opt->strarg[1])) {
 	    logg("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
 	    return 56;
 	}
 	country = opt->strarg;
+    }
+
+    if((opt = optget(opts, "DetectionStatsHostID"))->enabled) {
+	if(strlen(opt->strarg) != 32) {
+	    logg("!SubmitDetectionStats: The unique ID must be 32 characters long\n");
+	    return 56;
+	}
+	hostid = opt->strarg;
     }
 
     if(!(clamdopt = optparse(clamdcfg, 0, NULL, 1, OPT_CLAMD, 0, NULL))) {
@@ -604,10 +615,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	strncpy(newstatsdat, line, sizeof(newstatsdat));
     }
 
-    if((opt = optget(opts, "HTTPUserAgent"))->enabled)
-	strncpy(uastr, opt->strarg, sizeof(uastr));
-    else
-	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")%s%s", get_version(), country ? ":" : "", country ? country : "");
+    snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"):%s:%s", get_version(), country ? country : "", hostid ? hostid : "");
     uastr[sizeof(uastr) - 1] = 0;
 
     if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
@@ -1118,10 +1126,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	    return 57; /* FIXME */
 	}
 
-        if(totalsize > 0) {
-	    totaldownloaded += bread;
+	totaldownloaded += bread;
+        if(totalsize > 0)
             percentage = (int) (100 * (float) totaldownloaded / totalsize);
-	}
 
         if(!mprintf_quiet) {
             if(totalsize > 0) {
@@ -1137,9 +1144,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     closesocket(sd);
     close(fd);
 
-    if(bread == -1) {
+    if(bread == -1 || !totaldownloaded) {
 	logg("%cgetfile: Download interrupted: %s (IP: %s)\n", logerr ? '!' : '^', strerror(errno), ipaddr);
-	mirman_update(mdat->currip, mdat->af, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return 52;
     }
 
@@ -1363,7 +1370,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 
     if(compr) {
 	close(fd);
-	if(!(gzs = gzopen(newfile, "ab"))) {
+	if(!(gzs = gzopen(newfile, "ab9f"))) {
 	    logg("!buildcld: gzopen() failed for %s\n", newfile);
 	    CHDIR_ERR(cwd);
 	    unlink(newfile);
@@ -1396,6 +1403,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	else
 	    close(fd);
 	unlink(newfile);
+	closedir(dir);
 	return -1;
     }
 
@@ -1472,6 +1480,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    field = 2;
 	} else if(!strcmp(dbname, "safebrowsing")) {
 	    field = 6;
+	} else if(!strcmp(dbname, "bytecode")) {
+	    field = 7;
 	} else {
 	    logg("!updatedb: Unknown database name (%s) passed.\n", dbname);
 	    cl_cvdfree(current);
@@ -1685,6 +1695,13 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(unlink(localname))
 	    logg("^Can't unlink the old database file %s. Please remove it manually.\n", localname);
 
+    if(!optget(opts, "ScriptedUpdates")->enabled) {
+	snprintf(localname, sizeof(localname), "%s.cld", dbname);
+	if(!access(localname, R_OK))
+	    if(unlink(localname))
+		logg("^Can't unlink the old database file %s. Please remove it manually.\n", localname);
+    }
+
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", newdb, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
@@ -1844,6 +1861,31 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
     } else if(ret == 0)
 	updated = 1;
 
+    if(!optget(opts, "Bytecode")->enabled) {
+	    const char *dbname = NULL;
+
+	if(!access("bytecode.cvd", R_OK))
+	    dbname = "bytecode.cvd";
+	else if(!access("bytecode.cld", R_OK))
+            dbname = "bytecode.cld";
+
+	if(dbname) {
+	    if(unlink(dbname))
+		logg("^Bytecode is disabled but can't remove old %s\n", dbname);
+	    else
+		logg("*%s removed\n", dbname);
+	}
+    } else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
+
+	mirman_write("mirrors.dat", &mdat);
+	return ret;
+    } else if(ret == 0)
+	updated = 1;
     if(dnsreply)
 	free(dnsreply);
 

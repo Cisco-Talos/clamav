@@ -329,7 +329,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 static int
 cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
-	int retcode, i;
+	int retcode;
 	message *body;
 	char buffer[RFC2821LENGTH + 1];
 	mbox_ctx mctx;
@@ -545,7 +545,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	}
 
 	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted && (*ctx->virname == NULL)) {
-		*ctx->virname = "Phishing.Heuristics.Email";
+		*ctx->virname = "Heuristics.Phishing.Email";
 		ctx->found_possibly_unwanted = 0;
 		retcode = CL_VIRUS;
 	}

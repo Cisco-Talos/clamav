@@ -569,10 +569,11 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 
     if((dd = opendir(dirname)) != NULL) {
 	struct dirent *dent;
+	int err;
 	errno = 0;
 	ret = CL_SUCCESS;
 #ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result.d, &dent) && dent) {
+	while(!(err = readdir_r(dd, &result.d, &dent)) && dent) {
 #elif defined(HAVE_READDIR_R_2)
 	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
 #else
@@ -680,7 +681,19 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    }
 	    errno = 0;
 	}
+#ifndef HAVE_READDIR_R_3
+	err = errno;
+#endif
 	closedir(dd);
+	if (err) {
+	    char errs[128];
+	    cli_errmsg("Unable to readdir() directory %s: %s\n", dirname,
+		       cli_strerror(errno, errs, sizeof(errs)));
+	    /* report error to callback using error_stat */
+	    ret = callback(NULL, NULL, dirname, error_stat, data);
+	    if (ret != CL_SUCCESS)
+		return ret;
+	}
 
 	if (entries) {
 	    cli_qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
@@ -693,6 +706,10 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		    free(entry->statbuf);
 		if (ret != CL_SUCCESS)
 		    break;
+	    }
+	    for (i++;i<entries_cnt;i++) {
+		struct dirent_data *entry = &entries[i];
+		free(entry->filename);
 	    }
 	    free(entries);
 	}
@@ -751,7 +768,7 @@ unsigned int cli_rndnum(unsigned int max)
     if(name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
 	    struct timeval tv;
 	gettimeofday(&tv, (struct timezone *) 0);
-	srand(tv.tv_usec+clock());
+	srand(tv.tv_usec+clock()+rand());
     }
 
     return 1 + (unsigned int) (max * (rand() / (1.0 + RAND_MAX)));
@@ -829,84 +846,4 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 	cflags |= REG_ICASE;
     }
     return cli_regcomp_real(preg, pattern, cflags);
-}
-
-/* Public domain qsort implementation by Raymond Gardner and Paul Edwards */
-#define  SWAP(a, b)  (qsort_swap((char *)(a), (char *)(b), size))
-#define  COMP(a, b)  ((*comp)((void *)(a), (void *)(b)))
-#define  T           7 /* subfiles of T or fewer elements will
-			* be sorted by a simple insertion sort
-			* T must be at least 3
-			*/
-
-static void qsort_swap(char *a, char *b, size_t nbytes)
-{
-	char tmp;
-
-   do {
-      tmp = *a;
-      *a++ = *b;
-      *b++ = tmp;
-   } while(--nbytes);
-}
-
-void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *))
-{
-	char *stack[40], **sp;
-	char *i, *j, *limit;
-	size_t thresh;
-	char *base;
-
-    base = (char *) basep;
-    thresh = T * size;
-    sp = stack;
-    limit = base + nelems * size;
-    while(1) {
-	if(limit - base > thresh) {
-	    SWAP(((((size_t) (limit - base)) / size) / 2) * size + base, base);
-	    i = base + size;
-	    j = limit - size;
-	    if(COMP(i, j) > 0)
-		SWAP(i, j);
-	    if(COMP(base, j) > 0)
-		SWAP(base, j);
-	    if(COMP(i, base) > 0)
-		SWAP(i, base);
-	    while(1) {
-		do
-		    i += size;
-		while(COMP(i, base) < 0);
-		do
-		    j -= size;
-		while(COMP(j, base) > 0);
-		if(i > j)
-		    break;
-		SWAP(i, j);
-	    }
-	    SWAP(base, j);
-	    if(j - base > limit - i) {
-		sp[0] = base;
-		sp[1] = j;
-		base = i;
-	    } else {
-		sp[0] = i;
-		sp[1] = limit;
-		limit = j;
-	    }
-	    sp += 2;
-	} else {
-	    for(j = base, i = j + size; i < limit; j = i, i += size)
-		for(; COMP(j, j + size) > 0; j -= size) {
-		    SWAP(j, j+size);
-		    if(j == base)
-			break;
-		}
-	    if(sp != stack) {
-		sp -= 2;
-		base = sp[0];
-		limit = sp[1];
-	    } else
-		break;
-	}
-    }
 }

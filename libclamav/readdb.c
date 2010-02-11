@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -56,6 +56,8 @@
 #include "cltypes.h"
 #include "default.h"
 #include "md5.h"
+#include "sha256.h"
+#include "dsig.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -69,7 +71,10 @@
 #endif
 
 #include "mpool.h"
-
+#include "bytecode.h"
+#include "bytecode_api.h"
+#include "bytecode_priv.h"
+#include "cache.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -113,6 +118,44 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 
     hexlen = strlen(hexsig);
+    if (hexsig[0] == '$') {
+	/* macro */
+	unsigned smin, smax, tid;
+	struct cli_ac_patt *pt;
+	if (hexsig[hexlen-1] != '$') {
+	    cli_errmsg("cli_parseadd(): missing terminator $\n");
+	    return CL_EMALFDB;
+	}
+	if (!lsigid) {
+	    cli_errmsg("cli_parseadd(): macro signatures only valid inside logical signatures\n");
+	    return CL_EMALFDB;
+	}
+	if (sscanf(hexsig,"${%u-%u}%u$",
+		   &smin, &smax, &tid)  != 3) {
+	    cli_errmsg("cli_parseadd(): invalid macro signature format\n");
+	    return CL_EMALFDB;
+	}
+	if (tid >= 32) {
+	    cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
+	    return CL_EMALFDB;
+	}
+	pt = mpool_calloc(root->mempool, 1, sizeof(*pt));
+	if (!pt)
+	    return CL_EMEM;
+	/* this is not a pattern that will be matched by AC itself, rather it is a
+	 * pattern checked by the lsig code */
+	pt->ch_mindist[0] = smin;
+	pt->ch_maxdist[0] = smax;
+	pt->sigid = tid;
+	pt->length = root->ac_mindepth;
+	/* dummy */
+	pt->pattern = mpool_calloc(root->mempool, pt->length, sizeof(*pt->pattern));
+	if ((ret = cli_ac_addpatt(root, pt))) {
+	    free(pt);
+	    return ret;
+	}
+	return CL_SUCCESS;
+    }
     if(strchr(hexsig, '{')) {
 
 	root->ac_partsigs++;
@@ -234,7 +277,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?(") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ',')))) {
+    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
@@ -251,15 +294,16 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 	bm_new->length = hexlen / 2;
 
-	bm_new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
+	bm_new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
 	if(!bm_new->virname) {
 	    mpool_free(root->mempool, bm_new->pattern);
 	    mpool_free(root->mempool, bm_new);
 	    return CL_EMEM;
 	}
 
-	if(bm_new->length > root->maxpatlen)
+	if(bm_new->length > root->maxpatlen) {
 	    root->maxpatlen = bm_new->length;
+	}
 
 	if((ret = cli_bm_addpatt(root, bm_new, offset))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
@@ -273,7 +317,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return CL_SUCCESS;
 }
 
-static int cli_initroots(struct cl_engine *engine, unsigned int options)
+int cli_initroots(struct cl_engine *engine, unsigned int options)
 {
 	int i, ret;
 	struct cli_matcher *root;
@@ -346,6 +390,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->readpt[bread] = 0;
 		dbio->bufpt = dbio->buf;
 		dbio->size -= bread;
+		dbio->bread += bread;
+		sha256_update(&dbio->sha256ctx, dbio->readpt, bread);
 	    }
 	    nl = strchr(dbio->bufpt, '\n');
 	    if(nl) {
@@ -390,9 +436,14 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	else
 	    pt = fgets(buff, bs, dbio->fs);
 
-	dbio->size -= strlen(buff);
-	if(!pt)
+	if(!pt) {
 	    cli_errmsg("cli_dbgets: Preliminary end of data\n");
+	    return pt;
+	}
+	bs = strlen(buff);
+	dbio->size -= bs;
+	dbio->bread += bs;
+	sha256_update(&dbio->sha256ctx, buff, bs);
 	return pt;
     }
 }
@@ -406,7 +457,7 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
+    if(cli_bm_scanbuff((const unsigned char *) signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
 	if(md5_expected) {
 	    cli_md5_init(&md5ctx);
             cli_md5_update(&md5ctx, entry, strlen(entry));
@@ -459,7 +510,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 
 static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char buffer[FILEBUFF], *buffer_cpy, *pt, *start;
+	char buffer[FILEBUFF], *buffer_cpy = NULL, *pt, *start;
 	unsigned int line = 0, sigs = 0;
 	int ret = 0;
 	struct cli_matcher *root;
@@ -521,6 +572,232 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     return CL_SUCCESS;
 }
 
+#define ICO_TOKENS 4
+static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+{
+        const char *tokens[ICO_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
+	uint8_t *hash;
+	int ret = CL_SUCCESS;
+	unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
+	struct icomtr *metric;
+	struct icon_matcher *matcher;
+
+
+    if(!(matcher = (struct icon_matcher *)mpool_calloc(engine->mempool, sizeof(*matcher),1))) 
+	return CL_EMEM;
+    
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(buffer[0] == '#')
+	    continue;
+
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
+	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
+	if(tokens_count != ICO_TOKENS) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong token count)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(strlen(tokens[3]) != 124) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong length)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
+	    continue;
+
+	hash = (uint8_t *)tokens[3];
+	if(cli_hexnibbles((char *)hash, 124)) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	size = (hash[0] << 4) + hash[1];
+	if(size != 32 && size != 24 && size != 16) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad size)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	enginesize = (size >> 3) - 2;
+	hash+=2;
+
+	metric = (struct icomtr *)mpool_realloc(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
+	if(!metric) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	matcher->icons[enginesize] = metric;
+	metric += matcher->icon_counts[enginesize];
+	matcher->icon_counts[enginesize]++;
+
+	for(i=0; i<3; i++) {
+	    if((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->color_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->color_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad color data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    if((metric->gray_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+		break;
+	    if((metric->gray_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+		break;
+	    if((metric->gray_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+		break;
+	    hash += 7;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad gray data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->bright_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->bright_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad bright data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->dark_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->dark_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad dark data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->edge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->edge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad edge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	for(i=0; i<3; i++) {
+	    metric->noedge_avg[i] = (hash[0] << 4) | hash[1];
+	    if((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+		break;
+	    if((metric->noedge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+		break;
+	    hash += 6;
+	}
+	if(i!=3) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad noedge data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	metric->rsum = (hash[0] << 4) | hash[1];
+	metric->gsum = (hash[2] << 4) | hash[3];
+	metric->bsum = (hash[4] << 4) | hash[5];
+	metric->ccount = (hash[6] << 4) | hash[7];
+	if(metric->rsum + metric->gsum + metric->bsum > 103 || metric->ccount > 100) {
+	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(metric->name = cli_mpool_strdup(engine->mempool, tokens[0]))) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	for(i=0; i<matcher->group_counts[0]; i++) {
+	    if(!strcmp(tokens[1], matcher->group_names[0][i]))
+		break;
+	}
+	if(i==matcher->group_counts[0]) {
+	    if(!(matcher->group_names[0] = mpool_realloc(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[0][i] = cli_mpool_strdup(engine->mempool, tokens[1]))) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    matcher->group_counts[0]++;
+	}
+	metric->group[0] = i;
+
+	for(i=0; i<matcher->group_counts[1]; i++) {
+	    if(!strcmp(tokens[2], matcher->group_names[1][i]))
+		break;
+	}
+	if(i==matcher->group_counts[1]) {
+	    if(!(matcher->group_names[1] = mpool_realloc(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
+	       !(matcher->group_names[1][i] = cli_mpool_strdup(engine->mempool, tokens[2]))) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    matcher->group_counts[1]++;
+	}
+	metric->group[1] = i;
+
+	if(matcher->group_counts[0] > 256 || matcher->group_counts[1] > 256) {
+	    cli_errmsg("cli_loadidb: too many icon groups!\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("cli_loadidb: Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadidb: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    engine->iconcheck = matcher;
+    return CL_SUCCESS;
+}
+
 static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
 	int ret = 0;
@@ -567,7 +844,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned short sdb, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[NDB_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	const char *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0, tokens_count;
@@ -694,12 +971,19 @@ struct lsig_attrib {
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
 	struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS	2
-	    { "Target",	    CLI_TDB_UINT,	(void **) &tdb->target	    },
-	    { "Engine",	    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+#define ATTRIB_TOKENS	8
+	    { "Target",		    CLI_TDB_UINT,	(void **) &tdb->target	    },
+	    { "Engine",		    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+
+	    { "FileSize",	    CLI_TDB_RANGE,	(void **) &tdb->filesize    },
+	    { "EntryPoint",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
+	    { "NumberOfSections",   CLI_TDB_RANGE,	(void **) &tdb->nos	    },
+
+	    { "IconGroup1",	    CLI_TDB_STR,	(void **) &tdb->icongrp1    },
+	    { "IconGroup2",	    CLI_TDB_STR,	(void **) &tdb->icongrp2    },
+
+	    { "Container",	    CLI_TDB_FTYPE,	(void **) &tdb->container   },
 /*
-	    { "NoS",	    CLI_TDB_RANGE,	(void **) &tdb->nos	    },
-	    { "EP",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
 	    { "SectOff",    CLI_TDB_RANGE2,	(void **) &tdb->sectoff	    },
 	    { "SectRVA",    CLI_TDB_RANGE2,	(void **) &tdb->sectrva	    },
 	    { "SectVSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectvsz	    },
@@ -737,7 +1021,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
 	if(!apt) {
 	    cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
-	    continue;
+	    return 1;
 	}
 
 	switch(apt->type) {
@@ -753,6 +1037,20 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		    return -1;
 		}
 		tdb->val[cnt] = atoi(pt);
+		break;
+
+	    case CLI_TDB_FTYPE:
+		if((v1 = cli_ftcode(pt)) == CL_TYPE_ERROR) {
+		    cli_dbgmsg("lsigattribs: Unknown file type in %s\n", tokens[i]);
+		    return 1; /* skip */
+		}
+		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
+		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+		if(!tdb->val) {
+		    tdb->cnt[CLI_TDB_UINT] = 0;
+		    return -1;
+		}
+		tdb->val[cnt] = v1;
 		break;
 
 	    case CLI_TDB_RANGE:
@@ -827,6 +1125,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	    continue;
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
+	    case CLI_TDB_FTYPE:
 		*apt->pt = (uint32_t *) &tdb->val[off[i]];
 		break;
 
@@ -851,21 +1150,178 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     mpool_free(x.mempool, x.range);	\
   if(x.cnt[CLI_TDB_STR])		\
     mpool_free(x.mempool, x.str);		\
+  if(x.macro_ptids)\
+    mpool_free(x.mempool, x.macro_ptids);\
   } while(0);
 
 #define LDB_TOKENS 67
+static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy)
+{
+    const char *sig, *virname, *offset, *logic;
+    struct cli_ac_lsig **newtable, *lsig;
+    char *tokens[LDB_TOKENS+1], *pt;
+    int i, subsigs, tokens_count;
+    unsigned short target = 0;
+    struct cli_matcher *root;
+    struct cli_lsig_tdb tdb;
+    uint32_t lsigid[2];
+    int ret;
+
+    tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
+    if(tokens_count < 4) {
+	return CL_EMALFDB;
+    }
+    virname = tokens[0];
+    logic = tokens[2];
+
+    if (chkpua && cli_chkpua(virname, engine->pua_cats, options))
+	    return CL_SUCCESS;
+
+    if (chkign && cli_chkign(engine->ignored, virname, buffer_cpy))
+	return CL_SUCCESS;
+
+    subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
+    if(subsigs == -1) {
+	return CL_EMALFDB;
+    }
+    subsigs++;
+    if(subsigs > 64) {
+	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	return CL_EMALFDB;
+    }
+    if (!line) {
+	/* This is a logical signature from the bytecode, we need all
+	 * subsignatures, even if not referenced from the logical expression */
+	if (subsigs > tokens_count-3) {
+	    cli_errmsg("load_oneldb: Too many subsignatures: %u (max %u)\n",
+		       subsigs, tokens_count-3);
+	    return CL_EMALFDB;
+	}
+	subsigs = tokens_count-3;
+    } else if(subsigs != tokens_count - 3) {
+	cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
+	return CL_EMALFDB;
+    }
+
+    /* TDB */
+    memset(&tdb, 0, sizeof(tdb));
+#ifdef USE_MPOOL
+    tdb.mempool = engine->mempool;
+#endif
+    if((ret = lsigattribs(tokens[1], &tdb))) {
+	FREE_TDB(tdb);
+	if(ret == 1) {
+	    cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
+	    (*sigs)--;
+	    return CL_SUCCESS;
+	}
+	return CL_EMALFDB;
+    }
+
+    if(!tdb.target) {
+	cli_errmsg("cli_loadldb: No target specified in TDB\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    } else if(tdb.target[0] >= CLI_MTARGETS) {
+	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
+	FREE_TDB(tdb);
+	(*sigs)--;
+	return CL_SUCCESS;
+    }
+
+    if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
+	cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    }
+
+    if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
+	cli_errmsg("cli_loadldb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
+	FREE_TDB(tdb);
+	return CL_EMALFDB;
+    }
+
+    root = engine->root[tdb.target[0]];
+
+    lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+    if(!lsig) {
+	cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
+	FREE_TDB(tdb);
+	return CL_EMEM;
+    }
+
+    lsig->logic = cli_mpool_strdup(engine->mempool, logic);
+    if(!lsig->logic) {
+	cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
+	FREE_TDB(tdb);
+	mpool_free(engine->mempool, lsig);
+	return CL_EMEM;
+    }
+
+    lsigid[0] = lsig->id = root->ac_lsigs;
+
+    root->ac_lsigs++;
+    newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+    if(!newtable) {
+	root->ac_lsigs--;
+	cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
+	FREE_TDB(tdb);
+	mpool_free(engine->mempool, lsig);
+	return CL_EMEM;
+    }
+    /* 0 marks no bc, we can't use a pointer to bc, since that is
+     * realloced/moved during load */
+    lsig->bc_idx = bc_idx;
+    newtable[root->ac_lsigs - 1] = lsig;
+    root->ac_lsigtable = newtable;
+    tdb.subsigs = subsigs;
+
+    for(i = 0; i < subsigs; i++) {
+	lsigid[1] = i;
+	sig = tokens[3 + i];
+
+	if((pt = strchr(tokens[3 + i], ':'))) {
+	    *pt = 0;
+	    sig = ++pt;
+	    offset = tokens[3 + i];
+	} else {
+	    offset = "*";
+	    sig = tokens[3 + i];
+	}
+
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
+	    return ret;
+	if(sig[0] == '$' && i) {
+	    /* allow mapping from lsig back to pattern for macros */
+	    if (!tdb.macro_ptids)
+		tdb.macro_ptids = mpool_calloc(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
+	    if (!tdb.macro_ptids)
+		return CL_EMEM;
+	    tdb.macro_ptids[i-1] = root->ac_patterns-1;
+	}
+
+	if(tdb.engine) {
+	    if(tdb.engine[0] > cl_retflevel()) {
+		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
+		FREE_TDB(tdb);
+		(*sigs)--;
+		return CL_SUCCESS;
+	    } else if(tdb.engine[1] < cl_retflevel()) {
+		FREE_TDB(tdb);
+		(*sigs)--;
+		return CL_SUCCESS;
+	    }
+	}
+    }
+    memcpy(&lsig->tdb, &tdb, sizeof(tdb));
+    return CL_SUCCESS;
+}
+
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char *tokens[LDB_TOKENS];
-	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy, *pt;
-	const char *sig, *virname, *offset, *logic;
-	struct cli_matcher *root;
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy = NULL;
 	unsigned int line = 0, sigs = 0;
-	unsigned short target = 0;
-	struct cli_ac_lsig **newtable, *lsig;
-	uint32_t lsigid[2];
-	int ret = CL_SUCCESS, i, subsigs, tokens_count;
-	struct cli_lsig_tdb tdb;
+	int ret;
 
 
     if((ret = cli_initroots(engine, options)))
@@ -874,139 +1330,18 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(sizeof(buffer))))
 	    return CL_EMEM;
-
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
 	sigs++;
 	cli_chomp(buffer);
+
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
-
-	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
-	if(tokens_count < 4) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	virname = tokens[0];
-	logic = tokens[2];
-
-	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
-	    if(cli_chkpua(virname, engine->pua_cats, options))
-		continue;
-
-	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
-	    continue;
-
-	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
-	if(subsigs == -1) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
-	subsigs++;
-
-	if(subsigs > 64) {
-	    cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	/* TDB */
-	memset(&tdb, 0, sizeof(tdb));
-#ifdef USE_MPOOL
-	tdb.mempool = engine->mempool;
-#endif
-
-	if(lsigattribs(tokens[1], &tdb) == -1) {
-	    FREE_TDB(tdb);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
-	if(tdb.engine) {
-	    if(tdb.engine[0] > cl_retflevel()) {
-		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
-		FREE_TDB(tdb);
-		sigs--;
-		continue;
-	    } else if(tdb.engine[1] < cl_retflevel()) {
-		FREE_TDB(tdb);
-		sigs--;
-		continue;
-	    }
-	}
-
-	if(!tdb.target) {
-	    cli_errmsg("cli_loadldb: No target specified in TDB\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMALFDB;
-	    break;
-	} else if(tdb.target[0] >= CLI_MTARGETS) {
-	    cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s\n", virname);
-	    FREE_TDB(tdb);
-	    sigs--;
-	    continue;
-	}
-
-	root = engine->root[tdb.target[0]];
-
-	lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
-	if(!lsig) {
-	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMEM;
-	    break;
-	}
-
-	lsig->logic = cli_mpool_strdup(engine->mempool, logic);
-	if(!lsig->logic) {
-	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
-	    FREE_TDB(tdb);
-	    ret = CL_EMEM;
-	    mpool_free(engine->mempool, lsig);
-	    break;
-	}
-
-	lsigid[0] = lsig->id = root->ac_lsigs;
-	memcpy(&lsig->tdb, &tdb, sizeof(tdb));
-
-	root->ac_lsigs++;
-	newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
-	if(!newtable) {
-	    root->ac_lsigs--;
-	    cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
-	    FREE_TDB(tdb);
-	    mpool_free(engine->mempool, lsig);
-	    ret = CL_EMEM;
-	    break;
-	}
-	newtable[root->ac_lsigs - 1] = lsig;
-	root->ac_lsigtable = newtable;
-
-	for(i = 0; i < subsigs; i++) {
-	    if(i + 3 >= tokens_count) {
-		cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
-		ret = CL_EMALFDB;
-		break;
-	    }
-	    lsigid[1] = i;
-	    sig = tokens[3 + i];
-
-	    if((pt = strchr(tokens[3 + i], ':'))) {
-		*pt = 0;
-		sig = ++pt;
-		offset = tokens[3 + i];
-	    } else {
-		offset = "*";
-		sig = tokens[3 + i];
-	    }
-
-	    if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
-		ret = CL_EMALFDB;
-		break;
-	    }
-	}
-	if(ret)
+	ret = load_oneldb(buffer,
+			  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+			  !!engine->ignored,
+			  engine, options, dbname, line, &sigs, 0, buffer_cpy);
+	if (ret)
 	    break;
     }
     if(engine->ignored)
@@ -1025,6 +1360,90 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(signo)
 	*signo += sigs;
 
+    return CL_SUCCESS;
+}
+
+static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+    int rc;
+    struct cli_all_bc *bcs = &engine->bcs;
+    struct cli_bc *bc;
+    unsigned sigs = 0;
+    unsigned security_trust = 0;
+
+
+    /* TODO: virusname have a common prefix, and whitelist by that */
+    if((rc = cli_initroots(engine, options)))
+	return rc;
+
+    if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	return CL_SUCCESS;
+    }
+    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
+    if (!bcs->all_bcs) {
+	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
+	return CL_EMEM;
+    }
+    bcs->count++;
+    bc = &bcs->all_bcs[bcs->count-1];
+
+    switch (engine->bytecode_security) {
+	case CL_BYTECODE_TRUST_ALL:
+	    security_trust = 1;
+	    cli_dbgmsg("bytecode: trusting all bytecode!\n");
+	    break;
+	case CL_BYTECODE_TRUST_SIGNED:
+	    security_trust = !!(options & CL_DB_SIGNED);
+	    break;
+	default:
+	    security_trust = 0;
+    }
+
+    rc = cli_bytecode_load(bc, fs, dbio, security_trust);
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
+	return rc;
+    }
+    bc->id = bcs->count;/* must set after _load, since load zeroes */
+    sigs++;
+    if (bc->kind == BC_LOGICAL || bc->lsig) {
+	if (!bc->lsig) {
+	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
+	    return CL_EMALFDB;
+	}
+	cli_dbgmsg("Bytecode %s(%u) has logical signature: %s\n", dbname, bc->id, bc->lsig);
+	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bcs->count, NULL);
+	if (rc != CL_SUCCESS) {
+	    cli_errmsg("Problem parsing logical signature %s for bytecode %s: %s\n",
+		       bc->lsig, dbname, cl_strerror(rc));
+	    return rc;
+	}
+    }
+    if (bc->kind != BC_LOGICAL) {
+	if (bc->lsig) {
+	    /* runlsig will only flip a status bit, not report a match,
+	     * when the hooks are executed we only execute the hook if its
+	     * status bit is on */
+	    bc->hook_lsig_id = ++engine->hook_lsig_ids;
+	}
+	if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
+	    unsigned hook = bc->kind - _BC_START_HOOKS;
+	    unsigned cnt = ++engine->hooks_cnt[hook];
+	    engine->hooks[hook] = cli_realloc2(engine->hooks[hook],
+					       sizeof(*engine->hooks[0])*cnt);
+	    if (!engine->hooks[hook]) {
+		cli_errmsg("Out of memory allocating memory for hook %u", hook);
+		return CL_EMEM;
+	    }
+	    engine->hooks[hook][cnt-1] = bcs->count-1;
+	} else switch (bc->kind) {
+	    default:
+		cli_errmsg("Bytecode: unhandled bytecode kind %u\n", bc->kind);
+		return CL_EMALFDB;
+	}
+    }
+    if (signo)
+	*signo += sigs;
     return CL_SUCCESS;
 }
 
@@ -1151,12 +1570,120 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
+#define INFO_NSTR "11088894983048545473659556106627194923928941791795047620591658697413581043322715912172496806525381055880964520618400224333320534660299233983755341740679502866829909679955734391392668378361221524205396631090105151641270857277080310734320951653700508941717419168723942507890702904702707587451621691050754307850383399865346487203798464178537392211402786481359824461197231102895415093770394216666324484593935762408468516826633192140826667923494822045805347809932848454845886971706424360558667862775876072059437703365380209101697738577515476935085469455279994113145977994084618328482151013142393373316337519977244732747977"
+#define INFO_ESTR "100002049"
+#define INFO_TOKENS 3
+static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
+{
+	const char *tokens[INFO_TOKENS + 1];
+	char buffer[FILEBUFF];
+	unsigned int line = 0, tokens_count, len;
+	unsigned char hash[32];
+        struct cli_dbinfo *last = NULL, *new;
+	int ret = CL_SUCCESS, dsig = 0;
+	SHA256_CTX ctx;
+
+    sha256_init(&ctx);
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(!strncmp(buffer, "DSIG:", 5)) {
+	    dsig = 1;
+	    sha256_final(&ctx, hash);
+	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
+		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
+		ret = CL_EMALFDB;
+	    }
+	    break;
+	}
+	len = strlen(buffer);
+	if(dbio->usebuf && buffer[len - 1] != '\n' && len + 1 < FILEBUFF) {
+	    /* cli_dbgets in buffered mode strips \n */
+	    buffer[len] = '\n';
+	    buffer[len + 1] = 0;
+	}
+	sha256_update(&ctx, buffer, strlen(buffer));
+	cli_chomp(buffer);
+	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
+	    if(engine->dbinfo) { /* shouldn't be initialized at this point */
+		cli_errmsg("cli_loadinfo: engine->dbinfo already initialized\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    last = engine->dbinfo = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
+	    if(!engine->dbinfo) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    engine->dbinfo->cvd = cl_cvdparse(buffer);
+	    if(!engine->dbinfo->cvd) {
+		cli_errmsg("cli_loadinfo: Can't parse header entry\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    continue;
+	}
+
+	if(!last) {
+	    cli_errmsg("cli_loadinfo: Incorrect file format\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	tokens_count = cli_strtokenize(buffer, ':', INFO_TOKENS + 1, tokens);
+	if(tokens_count != INFO_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+        new = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_dbinfo));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+	new->name = (unsigned char *) cli_mpool_strdup(engine->mempool, tokens[0]);
+	if(!new->name) {
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(!cli_isnumber(tokens[1])) {
+	    cli_errmsg("cli_loadinfo: Invalid value in the size field\n");
+	    mpool_free(engine->mempool, new->name);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	new->size = atoi(tokens[1]);
+
+	if(strlen(tokens[2]) != 64 || !(new->hash = cli_mpool_hex2str(engine->mempool, tokens[2]))) {
+	    cli_errmsg("cli_loadinfo: Malformed SHA256 string at line %u\n", line);
+	    mpool_free(engine->mempool, new->name);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	last->next = new;
+	last = new;
+    }
+
+    if(!dsig) {
+	cli_errmsg("cli_loadinfo: Digital signature not found\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadinfo: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    return CL_SUCCESS;
+}
+
 #define IGN_MAX_TOKENS   3
 static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
 	const char *tokens[IGN_MAX_TOKENS + 1], *signame, *hash = NULL;
 	char buffer[FILEBUFF];
-	unsigned int line = 0, tokens_count, i, len;
+	unsigned int line = 0, tokens_count, len;
         struct cli_bm_patt *new;
 	int ret = CL_SUCCESS;
 
@@ -1202,14 +1729,14 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    ret = CL_EMEM;
 	    break;
 	}
-	new->pattern = cli_mpool_strdup(engine->mempool, signame);
+	new->pattern = (unsigned char *) cli_mpool_strdup(engine->mempool, signame);
 	if(!new->pattern) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
 	    break;
 	}
 	if(hash) {
-	    if(strlen(hash) != 32 || !(new->virname = (unsigned char *) cli_mpool_hex2str(engine->mempool, hash))) {
+	    if(strlen(hash) != 32 || !(new->virname = (char *) cli_mpool_hex2str(engine->mempool, hash))) {
 		cli_errmsg("cli_loadign: Malformed MD5 string at line %u\n", line);
 		mpool_free(engine->mempool, new->pattern);
 		mpool_free(engine->mempool, new);
@@ -1235,11 +1762,6 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     }
 
     return CL_SUCCESS;
-}
-
-static int scomp(const void *a, const void *b)
-{
-    return *(const uint32_t *)a - *(const uint32_t *)b;
 }
 
 #define MD5_HDB	    0
@@ -1285,7 +1807,7 @@ static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
 static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD5_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
@@ -1344,7 +1866,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	new->filesize = atoi(tokens[size_field]);
 
-	new->virname = cli_mpool_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mpool_free(engine->mempool, new->pattern);
 	    mpool_free(engine->mempool, new);
@@ -1402,10 +1924,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy;
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	unsigned int line = 0, sigs = 0, tokens_count;
-	int ret = CL_SUCCESS, crc;
-	struct cli_meta_node *new;
+	int ret = CL_SUCCESS;
+	struct cli_cdb *new;
 
 
     if(engine->ignored)
@@ -1458,18 +1980,19 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 
-	new = (struct cli_meta_node *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_meta_node));
+	new = (struct cli_cdb *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	new->virname = cli_mpool_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
 	    break;
 	}
+	new->ctype = (type == 1) ? CL_TYPE_ZIP : CL_TYPE_RAR;
 
 	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
 	    mpool_free(engine->mempool, new->virname);
@@ -1477,64 +2000,47 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 	}
 
-	new->encrypted = atoi(tokens[1]);
-	new->filename = cli_mpool_strdup(engine->mempool, tokens[2]);
-	if(!new->filename) {
+	new->encrypted = strcmp(tokens[1], "*") ? atoi(tokens[1]) : 2;
+
+	if(strcmp(tokens[2], "*") && cli_regcomp(&new->name, tokens[2], REG_EXTENDED | REG_NOSUB)) {
+	    cli_errmsg("cli_loadmd: Can't compile regular expression %s in signature for %s\n", tokens[2], tokens[0]);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
+	    ret = CL_EMEM;
 	    break;
-	} else {
-	    if(!strcmp(new->filename, "*")) {
-	        mpool_free(engine->mempool, new->filename);
-		new->filename = NULL;
-	    }
 	}
+	new->csize[0] = new->csize[1] = CLI_OFF_ANY;
 
 	if(!strcmp(tokens[3], "*"))
-	    new->size = -1;
+	    new->fsizer[0] = new->fsizer[1] = CLI_OFF_ANY;
 	else
-	    new->size = atoi(tokens[3]);
+	    new->fsizer[0] = new->fsizer[1] = atoi(tokens[3]);
 
 	if(!strcmp(tokens[4], "*"))
-	    new->csize = -1;
+	    new->fsizec[0] = new->fsizec[1] = CLI_OFF_ANY;
 	else
-	    new->csize = atoi(tokens[4]);
+	    new->fsizec[0] = new->fsizec[1] = atoi(tokens[4]);
 
-	if(!strcmp(tokens[5], "*")) {
-	    new->crc32 = 0;
-	} else {
-	    crc = cli_hex2num(tokens[5]);
-	    if(crc == -1) {
+	if(strcmp(tokens[5], "*")) {
+	    new->res1 = cli_hex2num(tokens[5]);
+	    if(new->res1 == -1) {
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
 	        ret = CL_EMALFDB;
 		break;
 	    }
-	    new->crc32 = (unsigned int) crc;
 	}
 
-	if(!strcmp(tokens[6], "*"))
-	    new->method = -1;
-	else
-	    new->method = atoi(tokens[6]);
+	/* tokens[6] - not used */
 
-	if(!strcmp(tokens[7], "*"))
-	    new->fileno = 0;
-	else
-	    new->fileno = atoi(tokens[7]);
+	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? atoi(tokens[7]) : (int) CLI_OFF_ANY;
 
-	if(!strcmp(tokens[8], "*"))
-	    new->maxdepth = 0;
-	else
-	    new->maxdepth = atoi(tokens[8]);
+	/* tokens[8] - not used */
 
-	if(type == 1) {
-	    new->next = engine->zip_mlist;
-	    engine->zip_mlist = new;
-	} else {
-	    new->next = engine->rar_mlist;
-	    engine->rar_mlist = new;
-	}
-
+	new->next = engine->cdb;
+	engine->cdb = new;
 	sigs++;
     }
     if(engine->ignored)
@@ -1547,6 +2053,179 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    return CL_SUCCESS;
+}
+
+/*    0		 1		2		3	         4	       5	      6	      7	      8   9    10     11
+ * VirusName:ContainerType:ContainerSize:FileNameREGEX:FileSizeInContainer:FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
+ */
+
+#define CDB_TOKENS 12
+static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+{
+	const char *tokens[CDB_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
+	unsigned int line = 0, sigs = 0, tokens_count, n0, n1;
+	int ret = CL_SUCCESS;
+	struct cli_cdb *new;
+
+
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	if(buffer[0] == '#')
+	    continue;
+
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
+	tokens_count = cli_strtokenize(buffer, ':', CDB_TOKENS + 1, tokens);
+	if(tokens_count > CDB_TOKENS || tokens_count < CDB_TOKENS - 2) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(tokens_count > 10) { /* min version */
+	    if(!cli_isnumber(tokens[10])) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    if((unsigned int) atoi(tokens[10]) > cl_retflevel()) {
+		cli_dbgmsg("cli_loadcdb: Container signature for %s not loaded (required f-level: %u)\n", tokens[0], atoi(tokens[10]));
+		continue;
+	    }
+	    if(tokens_count == CDB_TOKENS) { /* max version */
+		if(!cli_isnumber(tokens[11])) {
+		    ret = CL_EMALFDB;
+		    break;
+		}
+		if((unsigned int) atoi(tokens[11]) < cl_retflevel())
+		    continue;
+	    }
+	}
+
+	new = (struct cli_cdb *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
+	if(!new->virname) {
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(!strcmp(tokens[1], "*")) {
+	    new->ctype = CL_TYPE_ANY;
+	} else if((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
+	    cli_dbgmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(strcmp(tokens[3], "*") && cli_regcomp(&new->name, tokens[3], REG_EXTENDED | REG_NOSUB)) {
+	    cli_errmsg("cli_loadcdb: Can't compile regular expression %s in signature for %s\n", tokens[3], tokens[0]);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    ret = CL_EMEM;
+	    break;
+	}
+
+#define CDBRANGE(token_str, dest)					    \
+	if(strcmp(token_str, "*")) {					    \
+	    if(strchr(token_str, '-')) {				    \
+		if(sscanf(token_str, "%u-%u", &n0, &n1) != 2) {		    \
+		    ret = CL_EMALFDB;					    \
+		} else {						    \
+		    dest[0] = n0;					    \
+		    dest[1] = n1;					    \
+		}							    \
+	    } else {							    \
+		if(!cli_isnumber(token_str))				    \
+		    ret = CL_EMALFDB;					    \
+		else							    \
+		    dest[0] = dest[1] = atoi(token_str);		    \
+	    }								    \
+	    if(ret != CL_SUCCESS) {					    \
+		cli_errmsg("cli_loadcdb: Invalid value %s in signature for %s\n",\
+		    token_str, tokens[0]);				    \
+		if(new->name.re_magic)					    \
+		    cli_regfree(&new->name);				    \
+		mpool_free(engine->mempool, new->virname);		    \
+		mpool_free(engine->mempool, new);			    \
+		ret = CL_EMEM;						    \
+		break;							    \
+	    }								    \
+	} else {							    \
+	    dest[0] = dest[1] = CLI_OFF_ANY;				    \
+	}
+
+	CDBRANGE(tokens[2], new->csize);
+	CDBRANGE(tokens[4], new->fsizec);
+	CDBRANGE(tokens[5], new->fsizer);
+	CDBRANGE(tokens[7], new->filepos);
+
+	if(!strcmp(tokens[6], "*")) {
+	    new->encrypted = 2;
+	} else {
+	    if(strcmp(tokens[6], "0") && strcmp(tokens[6], "1")) {
+		cli_errmsg("cli_loadcdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMEM;
+		break;
+	    }
+	    new->encrypted = *tokens[6] - 0x30;
+	}
+
+	if(strcmp(tokens[9], "*")) {
+	    new->res2 = cli_mpool_strdup(engine->mempool, tokens[9]);
+	    if(!new->res2) {
+		cli_errmsg("cli_loadcdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
+		if(new->name.re_magic)
+		    cli_regfree(&new->name);
+		mpool_free(engine->mempool, new->virname);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMEM;
+		break;
+	    }
+	}
+
+	new->next = engine->cdb;
+	engine->cdb = new;
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing database at line %u\n", line);
 	return ret;
     }
 
@@ -1588,10 +2267,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cvd")) {
-	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cvd"), options, 0);
+	ret = cli_cvdload(fs, engine, signo, options, 0, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cld"), options | CL_DB_CVDNOTMP, 1);
+	ret = cli_cvdload(fs, engine, signo, options, 1, dbname);
 
     } else if(cli_strbcasestr(dbname, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);
@@ -1631,7 +2310,11 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	    ret = cli_loadldb(fs, engine, signo, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
-
+    } else if(cli_strbcasestr(filename, ".cbc")) {
+	if(options & CL_DB_BYTECODE)
+	    ret = cli_loadcbc(fs, engine, signo, options, dbio, dbname);
+	else
+	    skipped = 1;
     } else if(cli_strbcasestr(dbname, ".sdb")) {
 	ret = cli_loadndb(fs, engine, signo, 1, options, dbio, dbname);
 
@@ -1643,6 +2326,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cfg")) {
 	ret = cli_dconf_load(fs, engine, options, dbio);
+
+    } else if(cli_strbcasestr(dbname, ".info")) {
+	ret = cli_loadinfo(fs, engine, options, dbio);
 
     } else if(cli_strbcasestr(dbname, ".wdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
@@ -1659,6 +2345,12 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2")) {
 	ret = cli_loadign(fs, engine, options, dbio);
+
+    } else if(cli_strbcasestr(dbname, ".idb")) {
+    	ret = cli_loadidb(fs, engine, signo, options, dbio);
+
+    } else if(cli_strbcasestr(dbname, ".cdb")) {
+    	ret = cli_loadcdb(fs, engine, signo, options, dbio);
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
@@ -1691,7 +2383,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	} result;
 #endif
 	char *dbfile;
-	int ret = CL_EOPEN;
+	int ret = CL_EOPEN, have_cld;
+	struct cl_cvd *daily_cld, *daily_cvd;
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
@@ -1739,8 +2432,38 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
-    if(access(dbfile, R_OK))
-	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
+    have_cld = !access(dbfile, R_OK);
+    if(have_cld) {
+	daily_cld = cl_cvdhead(dbfile);
+	if(!daily_cld) {
+	    cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+	    free(dbfile);
+	    closedir(dd);
+	    return CL_EMALFDB;
+	}
+    }
+    sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname); 
+    if(!access(dbfile, R_OK)) {
+	if(have_cld) {
+	    daily_cvd = cl_cvdhead(dbfile);
+	    if(!daily_cvd) {
+		cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+		free(dbfile);
+		if(have_cld)
+		    cl_cvdfree(daily_cld);
+		closedir(dd);
+		return CL_EMALFDB;
+	    }
+	    if(daily_cld->version > daily_cvd->version)
+		sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	    cl_cvdfree(daily_cvd);
+	}
+    } else {
+	sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+    }
+    if(have_cld)
+	cl_cvdfree(daily_cld);
+
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	closedir(dd);
@@ -1776,6 +2499,11 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	if(dent->d_ino)
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.cfg") && CLI_DBEXT(dent->d_name)) {
+		if((options & CL_DB_OFFICIAL_ONLY) && !strstr(dirname, "clamav-") && !cli_strbcasestr(dent->d_name, ".cld") && !cli_strbcasestr(dent->d_name, ".cvd")) {
+		    cli_dbgmsg("Skipping unofficial database %s\n", dent->d_name);
+		    continue;
+		}
+
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
 		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
@@ -1825,10 +2553,20 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	if((ret = phishing_init(engine)))
 	    return ret;
 
+    if((dboptions & CL_DB_BYTECODE) && !engine->bcs.engine && (engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	if((ret = cli_bytecode_init(&engine->bcs)))
+	    return ret;
+    } else {
+	cli_dbgmsg("Bytecode engine disabled\n");
+    }
+
+    if(cli_cache_init(engine))
+	return CL_EMEM;
+
     engine->dboptions |= dboptions;
 
     switch(sb.st_mode & S_IFMT) {
-	case S_IFREG: 
+	case S_IFREG:
 	    ret = cli_load(path, engine, signo, dboptions, NULL);
 	    break;
 
@@ -2046,7 +2784,6 @@ int cl_statfree(struct cl_stat *dbstat)
 int cl_engine_free(struct cl_engine *engine)
 {
 	unsigned int i, j;
-	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
 
 
@@ -2111,26 +2848,35 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, root);
     }
 
-    metapt = engine->zip_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	mpool_free(engine->mempool, metah->virname);
-	if(metah->filename)
-	    mpool_free(engine->mempool, metah->filename);
-	mpool_free(engine->mempool, metah);
+    while(engine->cdb) {
+	struct cli_cdb *pt = engine->cdb;
+	engine->cdb = pt->next;
+	if(pt->name.re_magic)
+	    cli_regfree(&pt->name);
+	mpool_free(engine->mempool, pt->res2);
+	mpool_free(engine->mempool, pt->virname);
+	mpool_free(engine->mempool, pt);
     }
 
-    metapt = engine->rar_mlist;
-    while(metapt) {
-	metah = metapt;
-	metapt = metapt->next;
-	mpool_free(engine->mempool, metah->virname);
-	if(metah->filename)
-	    mpool_free(engine->mempool, metah->filename);
-	mpool_free(engine->mempool, metah);
+    while(engine->dbinfo) {
+	struct cli_dbinfo *pt = engine->dbinfo;
+	engine->dbinfo = pt->next;
+	mpool_free(engine->mempool, pt->name);
+	mpool_free(engine->mempool, pt->hash);
+	free(pt->cvd);
+	mpool_free(engine->mempool, pt);
     }
 
+    if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+	if (engine->bcs.all_bcs)
+	    for(i=0;i<engine->bcs.count;i++)
+		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+	cli_bytecode_done(&engine->bcs);
+	free(engine->bcs.all_bcs);
+	for (i=0;i<_BC_LAST_HOOK - _BC_START_HOOKS;i++) {
+	    free (engine->hooks[i]);
+	}
+    }
     if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
     if(engine->dconf)
@@ -2139,8 +2885,32 @@ int cl_engine_free(struct cl_engine *engine)
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
 
+    if(engine->iconcheck) {
+	struct icon_matcher *iconcheck = engine->iconcheck;
+	for(i=0; i<3; i++) {
+	    if(iconcheck->icons[i]) {
+		mpool_free(engine->mempool, iconcheck->icons[i]->name);
+		mpool_free(engine->mempool, iconcheck->icons[i]);
+	    }
+	}
+	if(iconcheck->group_names[0]) {
+	    for(i=0; i<iconcheck->group_counts[0]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[0][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[0]);
+	}
+	if(iconcheck->group_names[1]) {
+	    for(i=0; i<iconcheck->group_counts[1]; i++)
+		mpool_free(engine->mempool, iconcheck->group_names[1][i]);
+	    mpool_free(engine->mempool, iconcheck->group_names[1]);
+	}
+	mpool_free(engine->mempool, iconcheck);
+    }	
+
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
+
+    if(engine->cache)
+	cli_cache_destroy(engine);
 
     cli_ftfree(engine);
     if(engine->ignored) {
@@ -2174,7 +2944,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
 #endif
 		cli_hashset_destroy(&root->md5_sizes_hs);
-		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), NULL);
 	}
 }
 
@@ -2196,7 +2966,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
-	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
 
@@ -2214,6 +2984,12 @@ int cl_engine_compile(struct cl_engine *engine)
     }
     cli_dconf_print(engine->dconf);
     mpool_flush(engine->mempool);
+
+    /* Compile bytecode */
+    if((ret = cli_bytecode_prepare(&engine->bcs))) {
+	cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
+	return ret;
+    }
 
     engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;

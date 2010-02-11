@@ -93,7 +93,6 @@ Scan stream \- on this command clamd will return "PORT number" you should connec
 Start/end a clamd session which will allow you to run multiple commands per TCP session. (use IDSESSION instead)
 .SH "OPTIONS"
 .LP 
-
 .TP 
 \fB\-h, \-\-help\fR
 Output help information and exit.
@@ -103,6 +102,18 @@ Print the version number and exit.
 .TP 
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
+.SH "SIGNALS"
+.LP 
+Clamd recognizes the following signals:
+.TP 
+\fBSIGHUP\fR
+Reopen the logfile.
+.TP 
+\fBSIGUSR2\fR
+Reload the signature databases.
+.TP 
+\fBSIGTERM\fR
+Perform a clean exit.
 .SH "FILES"
 .LP 
 @CFGDIR@/clamd.conf

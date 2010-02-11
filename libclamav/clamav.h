@@ -73,16 +73,19 @@ typedef enum {
 #define CL_DB_PHISHING	    0x2
 #define CL_DB_PHISHING_URLS 0x8
 #define CL_DB_PUA	    0x10
-#define CL_DB_CVDNOTMP	    0x20
+#define CL_DB_CVDNOTMP	    0x20    /* obsolete */
 #define CL_DB_OFFICIAL	    0x40    /* internal */
 #define CL_DB_PUA_MODE	    0x80
 #define CL_DB_PUA_INCLUDE   0x100
 #define CL_DB_PUA_EXCLUDE   0x200
 #define CL_DB_COMPILED	    0x400   /* internal */
 #define CL_DB_DIRECTORY	    0x800   /* internal */
+#define CL_DB_OFFICIAL_ONLY 0x1000
+#define CL_DB_BYTECODE      0x2000
+#define CL_DB_SIGNED	    0x4000
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_CVDNOTMP)
+#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
 
 /* scan options */
 #define CL_SCAN_RAW			0x0
@@ -132,7 +135,14 @@ enum cl_engine_field {
     CL_ENGINE_AC_MINDEPTH,	    /* uint32_t */
     CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
     CL_ENGINE_TMPDIR,		    /* (char *) */
-    CL_ENGINE_KEEPTMP		    /* uint32_t */
+    CL_ENGINE_KEEPTMP,		    /* uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY     /* uint32_t */
+};
+
+enum bytecode_security {
+    CL_BYTECODE_TRUST_ALL=0, /* insecure, debug setting */
+    CL_BYTECODE_TRUST_SIGNED, /* default */
+    CL_BYTECODE_TRUST_NOTHING /* paranoid setting */
 };
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);

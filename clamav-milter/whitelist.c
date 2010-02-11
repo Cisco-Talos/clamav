@@ -120,10 +120,80 @@ int whitelisted(const char *addr, int from) {
 
 
 int smtpauth_init(const char *r) {
-    if (cli_regcomp(&authreg, r, REG_ICASE|REG_NOSUB|REG_EXTENDED)) {
-	logg("!Failed to compile regex '%s' for SkipAuthSenders\n", r);
+    char *regex = NULL;
+
+    if(!strncmp(r, "file:", 5)) {
+	char buf[2048];
+	FILE *f = fopen(r+5, "r");
+	int rxsize = 0, rxavail = 0, rxused=0;
+
+	if(!f) {
+	    logg("!Cannot open whitelist file '%s'\n", r+5);
+	    return 1;
+	}
+	while(fgets(buf, sizeof(buf), f) != NULL) {
+	    int len;
+	    char *ptr;
+
+	    if(*buf == '#' || *buf == ':' || *buf == '!')
+		continue;
+	    len = strlen(buf) - 1;
+	    for(;len>=0; len--) {
+		if(buf[len] != '\n' && buf[len] != '\r') break;
+		buf[len] = '\0';
+	    }
+	    if(len<=0) continue;
+	    if(len*3+1 > rxavail) {
+		ptr = regex;
+		regex = realloc(regex, rxsize + 2048);
+		if(!regex) {
+		    logg("!Cannot allocate memory for SkipAuthenticated file\n");
+		    return 1;
+		}
+		rxavail = 2048;
+		rxsize += 2048;
+		if(!ptr) {
+		    regex[0] = '^';
+		    regex[1] = '(';
+		    rxavail -= 2;
+		    rxused = 2;
+		}
+	    }
+	    ptr = buf;
+	    while(*ptr) {
+		if((*ptr>='A' && *ptr<='Z') || (*ptr>='a' && *ptr<='z') || (*ptr>='0' && *ptr<='9') || *ptr=='@') {
+		    regex[rxused] = *ptr;
+		    rxused++;
+		    rxavail--;
+		} else {
+		    regex[rxused] = '[';
+		    regex[rxused+1] = *ptr;
+		    regex[rxused+2] = ']';
+		    rxused += 3;
+		    rxavail -= 3;
+		}
+		ptr++;
+	    }
+	    regex[rxused++] = '|';
+	    rxavail--;
+	}
+	if(rxavail < 4 && !(regex = realloc(regex, rxsize + 4))) {
+	    logg("!Cannot allocate memory for SkipAuthenticated file\n");
+	    return 1;
+	}
+	regex[rxused-1] = ')';
+	regex[rxused] = '$';
+	regex[rxused+1] = '\0';
+	r = regex;
+	fclose(f);
+    }
+
+    if(cli_regcomp(&authreg, r, REG_ICASE|REG_NOSUB|REG_EXTENDED)) {
+	logg("!Failed to compile regex '%s' for SkipAuthenticated\n", r);
+	if(regex) free(regex);
 	return 1;
     }
+    if(regex) free(regex);
     skipauth = 1;
     return 0;
 }

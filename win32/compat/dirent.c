@@ -21,34 +21,47 @@
 #include <errno.h>
 #include "others.h"
 #include "dirent.h"
+#include "w32_stat.h"
 #include "shared/misc.h"
 
 DIR *opendir(const char *name) {
     DIR *d;
     DWORD attrs;
     int len;
+    struct stat sb;
+    wchar_t *wpath;
 
+    if(stat(name, &sb) < 0)
+	return NULL;
+
+    if(!S_ISDIR(sb.st_mode)) {
+	errno = ENOTDIR;
+	return NULL;
+    }
     if(!(d = cli_malloc(sizeof(*d)))) {
 	errno = ENOMEM;
 	return NULL;
     }
-    len = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, name, -1, d->entry, sizeof(d->entry) / sizeof(d->entry[0]));
-    if(!len || len >= PATH_MAX - 4) {
+    wpath = uncpath(name);
+    if(!wpath)
+	return NULL;
+    wcsncpy(d->entry, wpath, sizeof(d->entry) / sizeof(d->entry[0]));
+    free(wpath);
+    d->entry[sizeof(d->entry) / sizeof(d->entry[0])] = L'\0';
+    len = wcslen(d->entry);
+
+    if(len >= sizeof(d->entry) / sizeof(d->entry[0]) - 4) {
 	free(d);
-	errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
+	errno = ENAMETOOLONG;
 	return NULL;
     }
-    /* FIXME: this should be UNC'd */
-    if((attrs = GetFileAttributesW(d->entry)) == INVALID_FILE_ATTRIBUTES) {
-	free(d);
-	errno = ENOENT;
-	return NULL;
+    while(len--) {
+	if(d->entry[len] == L'\\')
+	    d->entry[len] = L'\0';
+	else
+	    break;
     }
-    if(!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
-	free(d);
-	errno = ENOTDIR;
-	return NULL;
-    }
+
     wcsncat(d->entry, L"\\*.*", 4);
     d->dh = INVALID_HANDLE_VALUE;
     return d;
