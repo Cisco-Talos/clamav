@@ -1480,6 +1480,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    field = 2;
 	} else if(!strcmp(dbname, "safebrowsing")) {
 	    field = 6;
+	} else if(!strcmp(dbname, "bytecode")) {
+	    field = 7;
 	} else {
 	    logg("!updatedb: Unknown database name (%s) passed.\n", dbname);
 	    cl_cvdfree(current);
