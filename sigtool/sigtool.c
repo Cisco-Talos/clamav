@@ -1604,8 +1604,8 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	    }
 	}
 #ifdef COMPATIBILITY_LIMIT
-       if(strlen(nbuff) > COMPATIBILITY_LIMIT) {
-           mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
+       if(!cli_strbcasestr(newpath, ".cbc") && strlen(nbuff) > COMPATIBILITY_LIMIT) {
+	   mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
            if(old)
                fclose(old);
 	   fclose(new);
