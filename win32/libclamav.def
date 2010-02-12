@@ -26,6 +26,7 @@ EXPORTS cl_engine_addref
 EXPORTS cl_statinidir
 EXPORTS cl_statchkdir
 EXPORTS cl_statfree
+EXPORTS cl_countsigs
 
 ; cli_stuff - should be mangled or exported by ordinal only
 EXPORTS cli_gentemp

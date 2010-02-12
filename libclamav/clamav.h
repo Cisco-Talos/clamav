@@ -112,6 +112,11 @@ typedef enum {
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
 
+/* cl_countsigs options */
+#define CL_COUNTSIGS_OFFICIAL	    0x1
+#define CL_COUNTSIGS_UNOFFICIAL	    0x2
+#define CL_COUNTSIGS_ALL	    (CL_COUNTSIGS_OFFICIAL | CL_COUNTSIGS_UNOFFICIAL)
+
 struct cl_engine;
 struct cl_settings;
 
@@ -206,6 +211,9 @@ extern void cl_cvdfree(struct cl_cvd *cvd);
 extern int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
 extern int cl_statchkdir(const struct cl_stat *dbstat);
 extern int cl_statfree(struct cl_stat *dbstat);
+
+/* count signatures */
+extern int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs);
 
 /* enable debug messages */
 extern void cl_debug(void);

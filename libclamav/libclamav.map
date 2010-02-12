@@ -26,6 +26,7 @@ CLAMAV_PUBLIC {
     cl_statchkdir;
     cl_statfree;
     cl_statinidir;
+    cl_countsigs;
     cl_strerror;
   local:
     *;
