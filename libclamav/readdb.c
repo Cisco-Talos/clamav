@@ -3014,3 +3014,108 @@ int cl_engine_addref(struct cl_engine *engine)
 
     return CL_SUCCESS;
 }
+
+static int countentries(const char *dbname, unsigned int *sigs)
+{
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1];
+	FILE *fs;
+	unsigned int entry = 0;
+
+    fs = fopen(dbname, "r");
+    if(!fs) {
+	cli_errmsg("countentries: Can't open file %s\n", dbname);
+	return CL_EOPEN;
+    }
+    while(fgets(buffer, sizeof(buffer), fs)) {
+	if(buffer[0] == '#')
+	    continue;
+	entry++;
+    }
+    fclose(fs);
+    *sigs += entry;
+    return CL_SUCCESS;
+}
+
+static int countsigs(const char *dbname, unsigned int options, unsigned int *sigs)
+{
+    if((cli_strbcasestr(dbname, ".cvd") || cli_strbcasestr(dbname, ".cld"))) {
+	if(options & CL_COUNTSIGS_OFFICIAL) {
+		struct cl_cvd *cvd = cl_cvdhead(dbname);
+	    if(!cvd) {
+		cli_errmsg("countsigs: Can't parse %s\n", dbname);
+		return CL_ECVD;
+	    }
+	    *sigs += cvd->sigs;
+	    cl_cvdfree(cvd);
+	}
+    } else if(cli_strbcasestr(dbname, ".cbc")) {
+	if(options & CL_COUNTSIGS_UNOFFICIAL)
+	    (*sigs)++;
+
+    } else if(cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg")) {
+	/* ignore */
+
+    } else if((options & CL_COUNTSIGS_UNOFFICIAL) && CLI_DBEXT(dbname)) {
+	return countentries(dbname, sigs);
+    }
+
+    return CL_SUCCESS;
+}
+
+int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
+{
+	struct stat sb;
+	char fname[1024];
+	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	union {
+	    struct dirent d;
+	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+	} result;
+#endif
+	DIR *dd;
+	int ret;
+
+    if(!sigs)
+	return CL_ENULLARG;
+
+    if(stat(path, &sb) == -1) {
+	cli_errmsg("cl_countsigs: Can't stat %s\n", path);
+	return CL_ESTAT;
+    }
+
+    if((sb.st_mode & S_IFMT) == S_IFREG) {
+	return countsigs(path, countoptions, sigs);
+
+    } else if((sb.st_mode & S_IFMT) == S_IFDIR) {
+	if((dd = opendir(path)) == NULL) {
+	    cli_errmsg("cl_countsigs: Can't open directory %s\n", path);
+	    return CL_EOPEN;
+	}
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result.d, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
+#else
+	while((dent = readdir(dd))) {
+#endif
+	    if(dent->d_ino) {
+		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
+		    snprintf(fname, sizeof(fname), "%s"PATHSEP"%s", path, dent->d_name);
+		    fname[sizeof(fname) - 1] = 0;
+		    ret = countsigs(fname, countoptions, sigs);
+		    if(ret != CL_SUCCESS) {
+			closedir(dd);
+			return ret;
+		    }
+		}
+	    }
+	}
+	closedir(dd);
+    } else {
+	cli_errmsg("cl_countsigs: Unsupported file type\n");
+	return CL_EARG;
+    }
+
+    return CL_SUCCESS;
+}

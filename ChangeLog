@@ -1,3 +1,7 @@
+Fri Feb 12 15:51:19 CET 2010 (tk)
+---------------------------------
+ * libclamav: add cl_countsigs() (bb#1473)
+
 Tue Feb  9 20:44:11 CET 2010 (acab)
 -----------------------------------
  * clamav-milter: allow SkipAuthenticated to read names from a file
