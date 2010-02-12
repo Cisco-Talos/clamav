@@ -52,8 +52,8 @@ int cli_binhex(cli_ctx *ctx) {
     size_t enc_done=0, enc_todo=map->len;
     unsigned int dec_done=0, chunksz = 0, chunkoff=0;
     uint32_t datalen, reslen;
-    int in_data = 0, in_run = 0, _6bit=-1, datafd, resfd, ret = CL_CLEAN;
-    enum binhex_phase { IN_HEADER, IN_DATA, IN_LIMBO1, IN_LIMBO2, IN_RES } write_phase = IN_HEADER;
+    int in_data = 0, in_run = 0, datafd, resfd, ret = CL_CLEAN;
+    enum binhex_phase { IN_BANNER, IN_HEADER, IN_DATA, IN_LIMBO1, IN_LIMBO2, IN_RES } write_phase = IN_BANNER;
     char *dname, *rname;
 
     cli_dbgmsg("in cli_binhex\n");
@@ -87,6 +87,10 @@ int cli_binhex(cli_ctx *ctx) {
 		    cli_dbgmsg("cli_binhex: possibly truncated file\n");
 		    break;
 		}
+		if((ret = cli_checklimits("cli_binhex(data)", ctx, datalen, 0, 0)) != CL_CLEAN)
+		    break;
+		if(cli_checklimits("cli_binhex(resources)", ctx, reslen, 0, 0) != CL_CLEAN)
+		    reslen = 0;
 		cli_dbgmsg("cli_binhex: decoding '%s' - %u bytes of data to %s - %u bytes or resources to %s\n", decoded+1, datalen, dname, reslen, rname);
 		memmove(decoded, &decoded[hdrlen], dec_done - hdrlen);
 		dec_done -= hdrlen;
@@ -166,39 +170,38 @@ int cli_binhex(cli_ctx *ctx) {
 	enc_done++;
 	enc_todo--;
 
-	if((char)b == '\r' || (char)b == '\n') { /* FIXME: skip eol on 8bit encoding ? */
+	if((char)b == '\r' || (char)b == '\n') {
 	    in_data = 1;
 	    continue;
 	}
 	if(!in_data) continue;
-	if(_6bit < 0) {
-	    _6bit = ((char)b == ':');
-	    continue;
+	if(write_phase == IN_BANNER) {
+	    if((char)b != ':') {
+		cli_dbgmsg("cli_binhex: broken file (missing stream start identifier)\n");
+		break;
+	    }
+	    write_phase++;
 	}
-	if(_6bit) {
-	    if((char)b == ':')
-		continue;
-	    if(b > 0x7f || (b = hqxtbl[b]) == 0xff) {
-		cli_dbgmsg("cli_binhex: Invalid character (%02x)\n", encoded[chunkoff-1]);
-		break;
-	    }
-	    switch((offset++) & 3) { /* 6 bits per char */
-	    case 0: /* left-6h */
-		spare_bits = b<<2;
-		continue;
-	    case 1: /* left-2l + middle-4h */
-		this_byte = spare_bits | (b>>4);
-		spare_bits = b<<4;
-		break;
-	    case 2: /* middle-4l + right-2h */
-		this_byte = spare_bits | (b>>2);
-		spare_bits = b<<6;
-		break;
-	    case 3: /* right-6l */
-		this_byte = spare_bits | b;
-	    }
-	} else {
-	    this_byte = b;
+	if((char)b == ':')
+	    continue;
+	if(b > 0x7f || (b = hqxtbl[b]) == 0xff) {
+	    cli_dbgmsg("cli_binhex: Invalid character (%02x)\n", encoded[chunkoff-1]);
+	    break;
+	}
+	switch((offset++) & 3) { /* 6 bits per char */
+	case 0: /* left-6h */
+	    spare_bits = b<<2;
+	    continue;
+	case 1: /* left-2l + middle-4h */
+	    this_byte = spare_bits | (b>>4);
+	    spare_bits = b<<4;
+	    break;
+	case 2: /* middle-4l + right-2h */
+	    this_byte = spare_bits | (b>>2);
+	    spare_bits = b<<6;
+	    break;
+	case 3: /* right-6l */
+	    this_byte = spare_bits | b;
 	}
 
 	if(in_run) {
