@@ -130,6 +130,7 @@ struct cli_bc_ctx {
     fmap_t *fmap;
     const char *virname;
     struct cli_bc_hooks hooks;
+    const struct cli_exe_section *sections;
     int outfd;
     char *tempfile;
     void *ctx;

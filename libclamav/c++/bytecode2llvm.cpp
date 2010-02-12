@@ -453,23 +453,20 @@ private:
     Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
     {
         if (const PointerType *PTy = dyn_cast<PointerType>(Ty)) {
-          Value *idxs[2] = {
-	      ConstantInt::get(Type::getInt32Ty(Context), 0),
-	      ConstantInt::get(Type::getInt32Ty(Context), components[c++])
+
+          Value *idxs[1] = {
+	      ConstantInt::get(Type::getInt64Ty(Context), components[c++])
 	  };
 	  unsigned idx = components[c++];
 	  if (!idx)
 	      return ConstantPointerNull::get(PTy);
 	  assert(idx < globals.size());
 	  GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
-	  const Type *GTy = GetElementPtrInst::getIndexedType(GV->getType(), idxs, 2);
-	  if (!GTy) {
-	      errs() << "Type mismatch for GEP: " << *PTy->getElementType() <<
-		  "; base is " << *GV << "\n";
-	      llvm_report_error("(libclamav) Type mismatch converting constant");
-	  }
+	  const Type *IP8Ty = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
+	  Constant *C = ConstantExpr::getPointerCast(GV, IP8Ty);
+	  //TODO: check constant bounds here
 	  return ConstantExpr::getPointerCast(
-	      ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2),
+	      ConstantExpr::getInBoundsGetElementPtr(C, idxs, 1),
 	      PTy);
         }
 	if (isa<IntegerType>(Ty)) {
@@ -520,7 +517,9 @@ public:
 		<< " expected type: " << *ETy;
 	    if (Ty)
 		errs() << " actual type: " << *Ty;
-	    errs() << " base: " << *Base << " indices: ";
+	    errs() << " base: " << *Base << ";";
+	    Base->getType()->dump();
+	    errs() << "\n indices: ";
 	    for (InputIterator I=Start; I != End; I++) {
 		errs() << **I << ", ";
 	    }
@@ -649,6 +648,7 @@ public:
 	    Functions[j]->setCallingConv(CallingConv::Fast);
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
+	const Type *I64Ty = Type::getInt64Ty(Context);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -696,18 +696,21 @@ public:
 		    Ty = PointerType::getUnqual(PointerType::getUnqual(Ty));
 		    Value *Cast = Builder.CreateBitCast(GEP, Ty);
 		    Value *SpecialGV = Builder.CreateLoad(Cast);
+		    const Type *IP8Ty = Type::getInt8Ty(Context);
+		    IP8Ty = PointerType::getUnqual(IP8Ty);
+		    SpecialGV = Builder.CreateBitCast(SpecialGV, IP8Ty);
 		    SpecialGV->setName("g"+Twine(g-_FIRST_GLOBAL)+"_");
 		    Value *C[] = {
-			ConstantInt::get(Type::getInt32Ty(Context), 0),
 			ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])
 		    };
-		    globals[i] = createGEP(SpecialGV, 0, C, C+2);
+		    globals[i] = createGEP(SpecialGV, 0, C, C+1);
 		    if (!globals[i]) {
 			errs() << i << ":" << g << ":" << bc->globals[i][0] <<"\n";
 			Ty->dump();
 			llvm_report_error("(libclamav) unable to create fake global");
 		    }
-		    else if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(globals[i])) {
+		    globals[i] = Builder.CreateBitCast(globals[i], Ty);
+		    if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(globals[i])) {
 			GI->setIsInBounds(true);
 			GI->setName("geped"+Twine(i)+"_");
 		    }
@@ -948,7 +951,8 @@ public:
 			{
 			    const Type *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
-			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
+			    Value *Op = convertOperand(func, I64Ty, inst->u.three[2]);
+			    Op = Builder.CreateTrunc(Op, I32Ty);
 			    if (!createGEP(inst->dest, V, &Op, &Op+1))
 				return false;
 			    break;
@@ -959,7 +963,8 @@ public:
 			    Ops[0] = ConstantInt::get(Type::getInt32Ty(Context), 0);
 			    const Type *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
-			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
+			    Ops[1] = convertOperand(func, I64Ty, inst->u.three[2]);
+			    Ops[1] = Builder.CreateTrunc(Ops[1], I32Ty);
 			    if (!createGEP(inst->dest, V, Ops, Ops+2))
 				return false;
 			    break;
@@ -970,8 +975,11 @@ public:
 			    assert(inst->u.ops.numOps > 2);
 			    const Type *SrcTy = mapType(inst->u.ops.ops[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
-			    for (unsigned a=2;a<inst->u.ops.numOps;a++)
-				Idxs.push_back(convertOperand(func, I32Ty, inst->u.ops.ops[a]));
+			    for (unsigned a=2;a<inst->u.ops.numOps;a++) {
+				Value *Op = convertOperand(func, I64Ty, inst->u.ops.ops[a]);
+				Op = Builder.CreateTrunc(Op, I32Ty);
+				Idxs.push_back(Op);
+			    }
 			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
 				return false;
 			    break;

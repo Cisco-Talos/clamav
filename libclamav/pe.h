@@ -137,18 +137,17 @@ struct pe_image_section_hdr {
 
 /** Data for the bytecode PE hook */
 struct cli_pe_hook_data {
-    struct cli_exe_info exe_info;
-    struct pe_image_file_hdr *file_hdr;
-    struct pe_image_optional_hdr32 *opt32;
-    struct pe_image_optional_hdr64 *opt64;
-    struct pe_image_data_dir *dirs;
-    uint32_t e_lfanew;/**< address of new exe header */
-    uint32_t overlays;/**< number of overlays */
-    int32_t overlays_sz;/**< size of overlays */
-    uint32_t hdr_size;/**< internally needed by rawaddr */
-    /* FIXME: these should not be necessary (they are for now) */
-    uint8_t dummyn;
-    uint8_t *dummy EBOUNDS(dummyn);
+  uint32_t offset;
+  uint32_t ep;
+  uint16_t nsections;
+  struct pe_image_file_hdr file_hdr;
+  struct pe_image_optional_hdr32 opt32;
+  struct pe_image_optional_hdr64 opt64;
+  struct pe_image_data_dir dirs[16];
+  uint32_t e_lfanew;/**< address of new exe header */
+  uint32_t overlays;/**< number of overlays */
+  int32_t overlays_sz;/**< size of overlays */
+  uint32_t hdr_size;/**< internally needed by rawaddr */
 };
 
 int cli_scanpe(cli_ctx *ctx, icon_groupset *set);

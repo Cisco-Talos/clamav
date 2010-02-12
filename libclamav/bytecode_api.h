@@ -40,10 +40,6 @@
 struct DISASM_RESULT;
 #endif
 
-struct foo {
-    struct foo *nxt;
-};
-
 /** Bytecode trigger kind */
 enum BytecodeKind {
     /** generic bytecode, not tied a specific hook */
@@ -66,8 +62,6 @@ enum { PE_INVALID_RVA = 0xFFFFFFFF };
  *  access it.
  * */
 extern const uint32_t __clambc_match_counts[64];
-/** Executable info, if this is a PE hook */
-extern const struct cli_exe_info __clambc_exeinfo;
 /** PE data, if this is a PE hook */
 extern const struct cli_pe_hook_data __clambc_pedata;
 /** File size (max 4G) */
@@ -76,7 +70,6 @@ extern const uint32_t __clambc_filesize[1];
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
 
-uint32_t test0(struct foo*, uint32_t);
 uint32_t test1(uint32_t, uint32_t);
 
 /**
@@ -196,6 +189,8 @@ int32_t file_byteat(uint32_t offset);
 void* malloc(uint32_t size);
 
 uint32_t test2(uint32_t a);
+
+int32_t get_pe_section(struct cli_exe_section *section, uint32_t num);
 
 #endif
 #endif

@@ -30,7 +30,6 @@
 #define BYTECODE_API_IMPL_H
 
 struct cli_bc_bctx;
-uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
 int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
@@ -50,5 +49,6 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
 int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t);
 uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t);
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*, uint32_t);
 
 #endif

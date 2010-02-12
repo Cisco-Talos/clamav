@@ -1747,9 +1747,9 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     return CL_CLEAN;
 }
 
-int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data)
+int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data, const struct cli_exe_section *sections)
 {
-    ctx->hooks.exeinfo = &data->exe_info;
+    ctx->sections = sections;
     ctx->hooks.pedata = data;
     return 0;
 }

@@ -42,11 +42,6 @@
 #include "pe.h"
 #include "disasm.h"
 
-uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo* s, uint32_t u)
-{
-    return (s && s->nxt == s && u == 0xdeadbeef) ? 0x12345678 : 0x55;
-}
-
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
@@ -273,7 +268,7 @@ uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
   uint32_t ret;
   int err = 0;
   const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
-  ret = cli_rawaddr(rva, pe->exe_info.section, pe->exe_info.nsections, &err,
+  ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
 		    ctx->file_size, pe->hdr_size);
   if (err)
     return PE_INVALID_RVA;
@@ -355,3 +350,11 @@ uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
 #endif
 }
 
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section* section, uint32_t num)
+{
+    if (num < ctx->hooks.pedata->nsections) {
+	memcpy(section, &ctx->sections[num], sizeof(*section));
+	return 0;
+    }
+    return -1;
+}

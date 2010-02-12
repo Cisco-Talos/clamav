@@ -31,7 +31,7 @@ struct bytecode_metadata {
     unsigned targetExclude;
 };
 
-#define BC_FUNC_LEVEL 5
+#define BC_FUNC_LEVEL 6
 #define BC_HEADER "ClamBC"
 
 enum bc_opcode {
@@ -121,7 +121,6 @@ enum bc_global {
   GLOBAL_MATCH_COUNTS = 0x8000,
   GLOBAL_KIND,
   GLOBAL_VIRUSNAMES,
-  GLOBAL_EXEINFO,
   GLOBAL_PEDATA,
   GLOBAL_FILESIZE,
   _LAST_GLOBAL
