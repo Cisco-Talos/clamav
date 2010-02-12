@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2010 Sourcefire, Inc.
  *
- *  Authors: Nigel Horne
+ *  Authors: aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -17,197 +17,214 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- * Change History:
- * $Log: binhex.c,v $
- * Revision 1.23  2007/02/12 20:46:08  njh
- * Various tidy
- *
- * Revision 1.22  2006/07/31 09:19:52  njh
- * Use MAP_PRIVATE
- *
- * Revision 1.21  2006/07/01 16:17:35  njh
- * Added destroy flag
- *
- * Revision 1.20  2006/07/01 03:47:50  njh
- * Don't loop if binhex runs out of memory
- *
- * Revision 1.19  2006/05/19 11:02:12  njh
- * Just include mbox.h
- *
- * Revision 1.18  2006/04/09 19:59:27  kojm
- * update GPL headers with new address for FSF
- *
- * Revision 1.17  2005/11/06 14:03:26  nigelhorne
- * Ensure NAME_MAX isn't redefined on BeOS
- *
- * Revision 1.16  2005/05/14 16:13:25  nigelhorne
- * Ensure munmap is the right size
- *
- * Revision 1.15  2005/05/13 19:30:34  nigelhorne
- * Clean cli_realloc call
- *
- * Revision 1.14  2005/03/10 08:51:30  nigelhorne
- * Tidy
- *
- * Revision 1.13  2005/01/19 05:29:41  nigelhorne
- * tidy
- *
- * Revision 1.12  2004/12/27 14:17:14  nigelhorne
- * Fix segfault if write to temporary file fails
- *
- * Revision 1.11  2004/12/17 12:03:38  nigelhorne
- * Tidy up for machines without MMAP
- *
- * Revision 1.10  2004/12/16 15:29:51  nigelhorne
- * Tidy
- *
- * Revision 1.9  2004/11/28 22:06:39  nigelhorne
- * Tidy space only headers code
- *
- * Revision 1.8  2004/11/28 21:05:50  nigelhorne
- * Handle headers with only spaces
- *
- * Revision 1.7  2004/11/23 09:05:26  nigelhorne
- * Fix crash in base64 encoded binhex files
- *
- * Revision 1.6  2004/11/22 15:16:53  nigelhorne
- * Use cli_realloc instead of many cli_mallocs
- *
- * Revision 1.5  2004/11/18 20:11:34  nigelhorne
- * Fix segfault
- *
- * Revision 1.4  2004/11/18 19:30:29  kojm
- * add support for Mac's HQX file format
- *
- * Revision 1.3  2004/11/18 18:24:45  nigelhorne
- * Added binhex.h
- *
- * Revision 1.2  2004/11/18 18:09:06  nigelhorne
- * First draft of binhex.c
- *
  */
-static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $";
-
-#include "clamav.h"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_THREAD_SAFE
-#ifndef	_REENTRANT
-#define	_REENTRANT	/* for Solaris 2.8 */
-#endif
-#endif
+#include <string.h>
 
-#include <stdio.h>
-#include <memory.h>
-#include <sys/stat.h>
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
-
+#include "scanners.h"
+#include "cltypes.h"
 #include "others.h"
-#include "mbox.h"
-#include "binhex.h"
+#include "clamav.h"
 #include "fmap.h"
 
-int
-cli_binhex(const char *dir, fmap_t *map)
-{
-	char *buf, *start, *line;
-	size_t size;
-	long bytesleft;
-	message *m;
-	fileblob *fb;
-	text *t_line;
 
-	size = (size_t)map->len;
+static const uint8_t hqxtbl[] = {
+    /*           00   01   02   03   04   05   06   07   08   09   0a   0b   0c   0d   0e   0f */
+    /* 00-0f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+    /* 10-1f */	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+    /* 20-2f */	0xff,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0xff,0xff,
+    /* 30-3f */	0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0xff,0x14,0x15,0xff,0xff,0xff,0xff,0xff,0xff,
+    /* 40-4f */	0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f,0x20,0x21,0x22,0x23,0x24,0xff,
+    /* 50-5f */	0x25,0x26,0x27,0x28,0x29,0x2a,0x2b,0xff,0x2c,0x2d,0x2e,0x2f,0xff,0xff,0xff,0xff,
+    /* 60-6f */	0x30,0x31,0x32,0x33,0x34,0x35,0x36,0xff,0x37,0x38,0x39,0x3a,0x3b,0x3c,0xff,0xff,
+    /* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+};
 
-	if(size == 0)
-		return CL_CLEAN;
+#define BH_FLUSH_SZ (BUFSIZ - 256)
 
-	m = messageCreate();
-	if(m == NULL)
-		return CL_EMEM;
+int cli_binhex(cli_ctx *ctx) {
+    fmap_t *map = *ctx->fmap;
+    uint8_t *encoded, decoded[BUFSIZ], spare_bits, last_byte=0, this_byte, offset=0;
+    size_t enc_done=0, enc_todo=map->len;
+    unsigned int dec_done=0, chunksz = 0, chunkoff=0;
+    uint32_t datalen, reslen;
+    int in_data = 0, in_run = 0, _6bit=-1, datafd, resfd, ret = CL_CLEAN;
+    enum binhex_phase { IN_HEADER, IN_DATA, IN_LIMBO1, IN_LIMBO2, IN_RES } write_phase = IN_HEADER;
+    char *dname, *rname;
 
-	start = buf = fmap_need_off_once(map, 0, size);
-	if(!buf) {
-		messageDestroy(m);
-		return CL_EMAP;
-	}
+    cli_dbgmsg("in cli_binhex\n");
+    if(!map->len) return CL_CLEAN;
 
-	cli_dbgmsg("mmap'ed binhex file\n");
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &dname, &datafd)) != CL_SUCCESS)
+	return ret;
 
-	bytesleft = (long)size;
-	line = NULL;
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &rname, &resfd)) != CL_SUCCESS) {
+	close(datafd);
+	if(cli_unlink(dname)) ret = CL_EUNLINK;
+	free(dname);
+	return ret;
+    }
 
-	while(bytesleft > 0) {
-		int length = bytesleft;
-		char *ptr, *newline;
-
-		/*printf("%d: ", bytesleft);*/
-
-		for(ptr = buf; bytesleft && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
-			--bytesleft;
+    while(1) {
+	uint8_t b;
+	if(!enc_todo || dec_done >= BH_FLUSH_SZ) {
+	    if(!enc_todo && !dec_done) {
+		cli_dbgmsg("cli_binhex: possibly truncated file\n");
+		break;
+	    }
+	    if(write_phase == IN_HEADER) {
+		uint32_t namelen = (uint32_t)decoded[0], hdrlen = 1 + namelen + 1 + 4 + 4 + 2;
+		datalen = (decoded[hdrlen]<<24) | (decoded[hdrlen+1]<<16) | (decoded[hdrlen+2]<<8) | decoded[hdrlen+3];
+		hdrlen += 4;
+		reslen = (decoded[hdrlen]<<24) | (decoded[hdrlen+1]<<16) | (decoded[hdrlen+2]<<8) | decoded[hdrlen+3];
+		hdrlen += 4 + 2;
+		decoded[namelen+1] = 0;
+		if(dec_done <= hdrlen) {
+		    cli_dbgmsg("cli_binhex: possibly truncated file\n");
+		    break;
 		}
-
-		length -= bytesleft;
-		/*printf("%d: ", length);*/
-
-		newline = cli_realloc(line, (size_t)(length + 1));
-		if(newline == NULL)
-			break;
-
-		line = newline;
-
-		memcpy(line, buf, length);
-		line[length] = '\0';
-
-		/*puts(line);*/
-
-		if(messageAddStr(m, line) < 0)
-			break;
-
-		if((bytesleft > 0) && (*ptr == '\r')) {
-			ptr++;
-			bytesleft--;
+		cli_dbgmsg("cli_binhex: decoding '%s' - %u bytes of data to %s - %u bytes or resources to %s\n", decoded+1, datalen, dname, reslen, rname);
+		memmove(decoded, &decoded[hdrlen], dec_done - hdrlen);
+		dec_done -= hdrlen;
+		write_phase++;
+	    }
+	    if(dec_done && write_phase == IN_DATA) {
+		unsigned int todo = MIN(dec_done, datalen);
+		datalen -= todo;
+		dec_done -= todo;
+		if(cli_writen(datafd, decoded, todo)!=(int)todo) {
+		    ret = CL_EWRITE;
+		    break;
 		}
-		buf = ++ptr;
-		bytesleft--;
+		if(!datalen) {
+		    write_phase++;
+		    lseek(datafd, 0, SEEK_SET);
+		    ret = cli_magic_scandesc(datafd, ctx);
+		    if(ret == CL_VIRUS) break;
+		}
+		if(dec_done)
+		    memmove(decoded, &decoded[todo], dec_done);
+	    }
+	    if(dec_done && write_phase == IN_LIMBO1) {
+		if(dec_done > 1) {
+		    if(reslen<5) {
+			cli_dbgmsg("cli_binhex: skipping resources (too small)\n");
+			break;
+		    }
+		    dec_done-=2;
+		    write_phase+=2;
+		    if(dec_done)
+			memmove(decoded, &decoded[2], dec_done);
+		} else {
+		    dec_done--;
+		    write_phase++;
+		    if(dec_done)
+			memmove(decoded, &decoded[1], dec_done);
+		}
+	    }
+	    if(dec_done && write_phase == IN_LIMBO2) {
+		if(reslen<5) {
+		    cli_dbgmsg("cli_binhex: skipping resources (too small)\n");
+		    break;
+		}
+		write_phase++;
+		if(--dec_done)
+		    memmove(decoded, &decoded[1], dec_done);
+	    }
+	    if(dec_done && write_phase == IN_RES) {
+		unsigned int todo = MIN(dec_done, reslen);
+		reslen -= todo;
+		dec_done -= todo;
+		if(cli_writen(resfd, decoded, todo)!=(int)todo) {
+		    ret = CL_EWRITE;
+		    break;
+		}
+		if(!reslen) {
+		    lseek(resfd, 0, SEEK_SET);
+		    ret = cli_magic_scandesc(resfd, ctx);
+		    break;
+		}
+	    }
 	}
 
-	if(line)
-		free(line);
+	if(!chunksz) {
+	    chunksz = MIN(enc_todo, map->pgsz);
+	    encoded = fmap_need_off_once(map, enc_done, chunksz);
+	    if(!encoded) {
+		ret = CL_EREAD;
+		break;
+	    }
+	    chunkoff = 0;
+	}
+	chunksz--;
 
-	if((t_line = binhexBegin(m)) == NULL) {
-		messageDestroy(m);
-		cli_dbgmsg("No binhex line found\n");
-		return CL_EFORMAT;
+	b = encoded[chunkoff++];
+	enc_done++;
+	enc_todo--;
+
+	if((char)b == '\r' || (char)b == '\n') { /* FIXME: skip eol on 8bit encoding ? */
+	    in_data = 1;
+	    continue;
+	}
+	if(!in_data) continue;
+	if(_6bit < 0) {
+	    _6bit = ((char)b == ':');
+	    continue;
+	}
+	if(_6bit) {
+	    if((char)b == ':')
+		continue;
+	    if(b > 0x7f || (b = hqxtbl[b]) == 0xff) {
+		cli_dbgmsg("cli_binhex: Invalid character (%02x)\n", encoded[chunkoff-1]);
+		break;
+	    }
+	    switch((offset++) & 3) { /* 6 bits per char */
+	    case 0: /* left-6h */
+		spare_bits = b<<2;
+		continue;
+	    case 1: /* left-2l + middle-4h */
+		this_byte = spare_bits | (b>>4);
+		spare_bits = b<<4;
+		break;
+	    case 2: /* middle-4l + right-2h */
+		this_byte = spare_bits | (b>>2);
+		spare_bits = b<<6;
+		break;
+	    case 3: /* right-6l */
+		this_byte = spare_bits | b;
+	    }
+	} else {
+	    this_byte = b;
 	}
 
-	while(((t_line = t_line->t_next) != NULL) && (t_line->t_line == NULL));
-
-	if(!t_line) {
-		messageDestroy(m);
-		cli_dbgmsg("No binhex data to parse\n");
-		return CL_EFORMAT;
+	if(in_run) {
+	    in_run = 0;
+	    if(!this_byte)
+		this_byte = 0x90;
+	    else {
+		while(--this_byte) 
+		    decoded[dec_done++] = last_byte;
+		continue;
+	    }
+	} else if(this_byte == 0x90) {
+	    in_run = 1;
+	    continue;
 	}
+	decoded[dec_done++] = this_byte;
+	last_byte = this_byte;
+    }
 
-	/* similar to binhexMessage */
-	messageSetEncoding(m, "x-binhex");
-
-	fb = messageToFileblob(m, dir, 1);
-	if(fb) {
-		cli_dbgmsg("Binhex file decoded to %s\n", fileblobGetFilename(fb));
-		fileblobDestroy(fb);
-	} else
-		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
-	messageDestroy(m);
-
-	if(fb)
-		return CL_CLEAN;	/* a lie - but it gets things going */
-	/* return CL_EIO; */	/* probably CL_EMEM, but we can't tell at this layer */
-	/* TK: CL_EMEM is too generic here and should not be reported for parsing errors */
-	return CL_EFORMAT;
+    close(datafd);
+    close(resfd);
+    if(!ctx->engine->keeptmp) {
+	if(cli_unlink(dname) && ret != CL_VIRUS) ret = CL_EUNLINK;
+	if(cli_unlink(rname) && ret != CL_VIRUS) ret = CL_EUNLINK;
+    }
+    free(dname);
+    free(rname);
+    return ret;
 }

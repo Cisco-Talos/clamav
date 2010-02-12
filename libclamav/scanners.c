@@ -1243,36 +1243,6 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
     return ret;
 }
 
-static int cli_scanbinhex(cli_ctx *ctx)
-{
-	char *dir;
-	int ret = CL_CLEAN;
-
-
-    cli_dbgmsg("in cli_scanbinhex()\n");
-
-    /* generate temporary directory */
-    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
-	return CL_EMEM;
-
-    if(mkdir(dir, 0700)) {
-	cli_errmsg("Binhex: Can't create temporary directory %s\n", dir);
-	free(dir);
-	return CL_ETMPDIR;
-    }
-
-    if((ret = cli_binhex(dir, *ctx->fmap)))
-	cli_dbgmsg("Binhex: %s\n", cl_strerror(ret));
-    else
-	ret = cli_scandir(dir, ctx);
-
-    if(!ctx->engine->keeptmp)
-	cli_rmdirs(dir);
-
-    free(dir);
-    return ret;
-}
-
 static int cli_scanmschm(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN, rc;
@@ -2135,7 +2105,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_BINHEX:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BINHEX))
-		ret = cli_scanbinhex(ctx);
+		ret = cli_binhex(ctx);
 	    break;
 
 	case CL_TYPE_SCRENC:
