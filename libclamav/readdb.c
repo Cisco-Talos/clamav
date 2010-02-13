@@ -1409,6 +1409,11 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
 	return rc;
     }
+    if (bc->state == bc_skip) {
+	cli_bytecode_destroy(bc);
+	bcs->count--;
+	return CL_SUCCESS;
+    }
     bc->id = bcs->count;/* must set after _load, since load zeroes */
     sigs++;
     if (bc->kind == BC_LOGICAL || bc->lsig) {

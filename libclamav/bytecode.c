@@ -434,7 +434,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 	return CL_EMALFDB;
     }
     if (flevel != BC_FUNC_LEVEL) {
-	cli_dbgmsg("Skipping bytecode with functionality level: %u\n", flevel);
+	cli_dbgmsg("Skipping bytecode with functionality level: %u (current %u)\n", flevel, BC_FUNC_LEVEL);
 	return CL_BREAK;
     }
     /* Optimistic parsing, check for error only at the end.*/
