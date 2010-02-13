@@ -1,3 +1,7 @@
+Sat Feb 13 02:55:55 CET 2010 (acab)
+-----------------------------------
+ * libclamav: refactor binhex processor with one pass decoder (bb#1236)
+
 Fri Feb 12 15:51:19 CET 2010 (tk)
 ---------------------------------
  * libclamav: add cl_countsigs() (bb#1473)
