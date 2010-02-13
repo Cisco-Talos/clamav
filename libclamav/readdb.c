@@ -150,7 +150,12 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	pt->length = root->ac_mindepth;
 	/* dummy */
 	pt->pattern = mpool_calloc(root->mempool, pt->length, sizeof(*pt->pattern));
+	if (pt->pattern) {
+	    free(pt);
+	    return CL_EMEM;
+	}
 	if ((ret = cli_ac_addpatt(root, pt))) {
+	    mpool_free(root->mempool, pt->pattern);
 	    free(pt);
 	    return ret;
 	}
