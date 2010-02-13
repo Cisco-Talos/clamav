@@ -51,6 +51,8 @@ static void help(void)
     printf("clambc <file> [function] [param1 ...]\n\n");
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
+    printf("    --info                 -i         Print information about bytecode\n");
+    printf("    --printsrc             -p         Print bytecode source\n");
     printf("    --trace <level>                   Set bytecode trace level 0..7 (default 7)\n");
     printf("    --no-trace-showsource             Don't show source line during tracing\n");
     printf("    file                              file to test\n");
@@ -120,6 +122,7 @@ static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
+extern uint8_t cli_debug_flag;
 static void print_src(const char *file)
 {
   char buf[4096];
@@ -139,7 +142,8 @@ static void print_src(const char *file)
       }
     }
   } while (!found && (nread == sizeof(buf)));
-  printf("Source code:");
+  if (cli_debug_flag)
+      printf("[clambc] Source code:");
   do {
     for (;i+1<nread;i++) {
       if (buf[i] == 'S' || buf[i] == '\n') {
@@ -149,6 +153,8 @@ static void print_src(const char *file)
       putc(((buf[i]&0xf) | ((buf[i+1]&0xf)<<4)), stdout);
       i++;
     }
+    if (i == nread-1 && nread != 1)
+	fseek(f, -1, SEEK_CUR);
     i=0;
     nread = fread(buf, 1, sizeof(buf), f);
   } while (nread > 0);
@@ -199,7 +205,9 @@ int main(int argc, char *argv[])
 	exit(3);
     }
 
-    cl_debug();
+    if (optget(opts,"debug")->enabled) {
+	cl_debug();
+    }
     rc = cl_init(CL_INIT_DEFAULT);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to init libclamav: %s\n", cl_strerror(rc));
@@ -233,20 +241,22 @@ int main(int argc, char *argv[])
 	optfree(opts);
 	exit(4);
     }
-
-    rc = cli_bytecode_prepare(&bcs);
-    if (rc != CL_SUCCESS) {
-	fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
-	optfree(opts);
-	exit(4);
-    }
     fclose(f);
-
-    printf("Bytecode loaded\n");
-    if (optget(opts, "describe")->enabled) {
+    if (cli_debug_flag)
+    printf("[clambc] Bytecode loaded\n");
+    if (optget(opts, "info")->enabled) {
 	cli_bytecode_describe(bc);
+    } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
+	rc = cli_bytecode_prepare(&bcs);
+	if (rc != CL_SUCCESS) {
+	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
+	    optfree(opts);
+	    exit(4);
+	}
+	if (cli_debug_flag)
+	    printf("[clambc] Bytecode prepared\n");
 
 	ctx = cli_bytecode_context_alloc();
 	if (!ctx) {
@@ -269,7 +279,8 @@ int main(int argc, char *argv[])
 	    funcid = atoi(opts->filename[1]);
 	}
 	cli_bytecode_context_setfuncid(ctx, bc, funcid);
-	printf("Running bytecode function :%u\n", funcid);
+	if (cli_debug_flag)
+	    printf("[clambc] Running bytecode function :%u\n", funcid);
 
 	if (opts->filename[1]) {
 	    i=2;
@@ -308,9 +319,11 @@ int main(int argc, char *argv[])
 	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
 	} else {
 	    uint64_t v;
-	    printf("Bytecode run finished\n");
+	    if (cli_debug_flag)
+		printf("[clambc] Bytecode run finished\n");
 	    v = cli_bytecode_context_getresult_int(ctx);
-	    printf("Bytecode returned: 0x%llx\n", (long long)v);
+	    if (cli_debug_flag)
+		printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
 	}
 	cli_bytecode_context_destroy(ctx);
     }
@@ -320,6 +333,7 @@ int main(int argc, char *argv[])
     optfree(opts);
     if (fd != -1)
 	close(fd);
-    printf("Exiting\n");
+    if (cli_debug_flag)
+	printf("[clambc] Exiting\n");
     return 0;
 }

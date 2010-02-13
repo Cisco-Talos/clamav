@@ -66,7 +66,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR_FRESHCLAM, FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR_MILTER, FLAG_REQUIRED, OPT_MILTER, "", "" },
     { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC, "", "" },
-    { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC | OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "verbose", 'v', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "quiet", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "leave-temps", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
@@ -121,7 +121,8 @@ const struct clam_option __clam_options[] = {
     { NULL, "generate-config", 'g', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMCONF, "", "" },
 
     { NULL, "force-interpreter", 'f', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Force using the interpreter instead of the JIT", "" },
-    { NULL, "describe", 'd', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and describe bytecode without executing", ""},
+    { NULL, "info", 'i', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and print bytecode information without executing", ""},
+    { NULL, "printsrc", 'p', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print source code of bytecode", ""},
     { NULL, "input", 'i', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
     { NULL, "trace", 't', TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},
