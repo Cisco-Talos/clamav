@@ -72,19 +72,19 @@ int cli_binhex(cli_ctx *ctx) {
     while(1) {
 	uint8_t b;
 	if(!enc_todo || dec_done >= BH_FLUSH_SZ) {
-	    if(!enc_todo && !dec_done) {
-		cli_dbgmsg("cli_binhex: possibly truncated file\n");
-		break;
-	    }
 	    if(write_phase == IN_HEADER) {
 		uint32_t namelen = (uint32_t)decoded[0], hdrlen = 1 + namelen + 1 + 4 + 4 + 2;
+		if(!dec_done) {
+		    cli_dbgmsg("cli_binhex: file is empty\n");
+		    break;
+		}
 		datalen = (decoded[hdrlen]<<24) | (decoded[hdrlen+1]<<16) | (decoded[hdrlen+2]<<8) | decoded[hdrlen+3];
 		hdrlen += 4;
 		reslen = (decoded[hdrlen]<<24) | (decoded[hdrlen+1]<<16) | (decoded[hdrlen+2]<<8) | decoded[hdrlen+3];
 		hdrlen += 4 + 2;
 		decoded[namelen+1] = 0;
 		if(dec_done <= hdrlen) {
-		    cli_dbgmsg("cli_binhex: possibly truncated file\n");
+		    cli_dbgmsg("cli_binhex: file too short for header\n");
 		    break;
 		}
 		if((ret = cli_checklimits("cli_binhex(data)", ctx, datalen, 0, 0)) != CL_CLEAN)
@@ -152,6 +152,18 @@ int cli_binhex(cli_ctx *ctx) {
 		    ret = cli_magic_scandesc(resfd, ctx);
 		    break;
 		}
+	    }
+	    if(!enc_todo) {
+		if(write_phase == IN_DATA) {
+		    cli_dbgmsg("cli_binhex: scanning partially extracted data fork\n");
+		    lseek(datafd, 0, SEEK_SET);
+		    ret = cli_magic_scandesc(datafd, ctx);
+		} else if(write_phase == IN_RES) {
+		    cli_dbgmsg("cli_binhex: scanning partially extracted resource fork\n");
+		    lseek(resfd, 0, SEEK_SET);
+		    ret = cli_magic_scandesc(resfd, ctx);
+		}
+		break;
 	    }
 	}
 
