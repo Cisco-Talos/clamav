@@ -1929,7 +1929,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype)) == CL_VIRUS) {
-	    ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	    ret = cli_checkfp(hash, hashed_size, ctx);
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
@@ -2178,7 +2178,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->container_size = current_container_size;
 
     if(ret == CL_VIRUS) {
-	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	ret = cli_checkfp(hash, hashed_size, ctx);
 	funmap(*ctx->fmap);
 	ctx->fmap--;
 	cli_bitset_free(ctx->hook_lsig_matches);
@@ -2196,7 +2196,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	if(cli_scanraw(ctx, type, typercg, &dettype) == CL_VIRUS) {
-	    ret =  cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	    ret =  cli_checkfp(hash, hashed_size, ctx);
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
@@ -2238,7 +2238,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->hook_lsig_matches = old_hook_lsig_matches;
 
     if(ret == CL_VIRUS)
-	ret = cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	ret = cli_checkfp(hash, hashed_size, ctx);
 
     switch(ret) {
 	case CL_EFORMAT:

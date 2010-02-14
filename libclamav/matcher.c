@@ -353,54 +353,23 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, un
     return CL_SUCCESS;
 }
 
-int cli_checkfp(int fd, cli_ctx *ctx)
+int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 {
-	unsigned char *digest;
 	char md5[33];
 	unsigned int i;
 	const char *virname;
-	off_t pos;
-	struct stat sb;
 	const struct cli_bm_patt *patt = NULL;
 
 
-    if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
-	cli_errmsg("cli_checkfp(): lseek() failed\n");
-	return 0;
+    if(ctx->engine->md5_fp && cli_bm_scanbuff(digest, 16, &virname, &patt, ctx->engine->md5_fp, 0, NULL, NULL) == CL_VIRUS && patt->filesize == size) {
+	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
+	return CL_CLEAN;
     }
-
-    lseek(fd, 0, SEEK_SET);
-
-    if(ctx->engine->md5_fp) {
-	if(fstat(fd, &sb) == -1) {
-	    cli_errmsg("cli_checkfp(): fstat(%d) failed\n", fd);
-	    lseek(fd, pos, SEEK_SET);
-	    return 0;
-	}
-
-	if(!(digest = cli_md5digest(fd))) {
-	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
-	    lseek(fd, pos, SEEK_SET);
-	    return 0;
-	}
-
-	if(cli_bm_scanbuff(digest, 16, &virname, &patt, ctx->engine->md5_fp, 0, NULL, NULL) == CL_VIRUS && patt->filesize == sb.st_size) {
-	    cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
-	    free(digest);
-	    lseek(fd, pos, SEEK_SET);
-	    return 1;
-	}
-
-	for(i = 0; i < 16; i++)
-	    sprintf(md5 + i * 2, "%02x", digest[i]);
-	md5[32] = 0;
-	cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) sb.st_size, *ctx->virname ? *ctx->virname : "Name");
-
-	free(digest);
-    }
-
-    lseek(fd, pos, SEEK_SET);
-    return 0;
+    for(i = 0; i < 16; i++)
+	sprintf(md5 + i * 2, "%02x", digest[i]);
+    md5[32] = 0;
+    cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size, *ctx->virname ? *ctx->virname : "Name");
+    return CL_VIRUS;
 }
 
 static int matchicon(cli_ctx *ctx, const char *grp1, const char *grp2)
