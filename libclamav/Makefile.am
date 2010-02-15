@@ -363,14 +363,14 @@ endif
 .PHONY: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
-	@if test -f version.h.static; then\
+	$(AM_V_GEN) if test -f version.h.static; then\
 		cp version.h.static version.h;\
 	elif ! diff $@ version.h.tmp >/dev/null 2>/dev/null; then\
 		cp version.h.tmp $@;\
 	fi
 
 version.h.tmp:
-	@test -f version.h || touch version.h;\
+	$(AM_V_GEN) test -f version.h || touch version.h;\
 	rm -f $@;\
 	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null || echo "exported")";\
 	if test "$$REVISION" = "exported"; then\
