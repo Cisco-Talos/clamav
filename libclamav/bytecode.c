@@ -1572,8 +1572,8 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			    return CL_EBYTECODE;
 			}
 		    } else {
-			/* APIs have 2 parameters always */
-			if (inst->u.ops.numOps != 2) {
+			/* APIs have at most 2 parameters always */
+			if (inst->u.ops.numOps > 2) {
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
 			    return CL_EBYTECODE;
 			}
@@ -1605,6 +1605,30 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.three[2]);
 		    break;
 		case OP_BC_GEPN:
+		    /*TODO */
+		    break;
+		case OP_BC_MEMSET:
+		case OP_BC_MEMCPY:
+		case OP_BC_MEMMOVE:
+		case OP_BC_MEMCMP:
+		    /*TODO*/
+		    break;
+		case OP_BC_ISBIGENDIAN:
+		    /*TODO */
+		    break;
+		case OP_BC_ABORT:
+		    /* TODO */
+		    break;
+		case OP_BC_BSWAP16:
+		    /*TODO */
+		    break;
+		case OP_BC_BSWAP32:
+		    /*TODO */
+		    break;
+		case OP_BC_BSWAP64:
+		    /*TODO */
+		    break;
+		case OP_BC_PTRDIFF32:
 		    /*TODO */
 		    break;
 		default:
