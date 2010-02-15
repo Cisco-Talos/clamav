@@ -1468,7 +1468,12 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 }
 
 #define MAP(val) do { operand_t o = val; \
+    if (o & 0x80000000) {\
+	o &= 0x7fffffff;\
+	o = bcfunc->numValues + bcfunc->numConstants + o;\
+    }\
     if (o > totValues) {\
+	printf("%d\n", _FIRST_GLOBAL);\
 	cli_errmsg("bytecode: operand out of range: %u > %u, for instruction %u in function %u\n", o, totValues, j, i);\
 	return CL_EBYTECODE;\
     }\
@@ -1480,7 +1485,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 
     for (i=0;i<bc->num_func;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
-	unsigned totValues = bcfunc->numValues + bcfunc->numConstants;
+	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
@@ -1494,6 +1499,13 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	for (j=0;j<bcfunc->numConstants;j++) {
 	    map[bcfunc->numValues+j] = bcfunc->numBytes;
 	    bcfunc->numBytes += 8;
+	}
+	for (j=0;j<bc->num_globals;j++) {
+	    uint16_t ty = bc->globaltys[j];
+	    unsigned align = typealign(bc, ty);
+	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
+	    map[bcfunc->numValues+bcfunc->numConstants+j] = bcfunc->numBytes;
+	    bcfunc->numBytes += typesize(bc, ty);
 	}
 	for (j=0;j<bcfunc->numInsts;j++) {
 	    struct cli_bc_inst *inst = &bcfunc->allinsts[j];
