@@ -32,6 +32,7 @@
 #include "clamav.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
+#include "libclamav/dconf.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -224,7 +225,7 @@ int main(int argc, char *argv[])
     if (optget(opts, "force-interpreter")->enabled) {
 	bcs.engine = NULL;
     } else {
-	rc = cli_bytecode_init(&bcs);
+	rc = cli_bytecode_init(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to init bytecode engine: %s\n", cl_strerror(rc));
 	    optfree(opts);
@@ -249,7 +250,7 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
-	rc = cli_bytecode_prepare(&bcs);
+	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
 	    optfree(opts);

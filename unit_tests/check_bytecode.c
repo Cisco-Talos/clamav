@@ -33,6 +33,7 @@
 #include "../libclamav/others.h"
 #include "../libclamav/bytecode.h"
 #include "checks.h"
+#include "../libclamav/dconf.h"
 
 static void runtest(const char *file, uint64_t expected, int fail, int nojit)
 {
@@ -51,7 +52,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
     cl_debug();
 
     if (!nojit) {
-	rc = cli_bytecode_init(&bcs);
+	rc = cli_bytecode_init(&bcs, BYTECODE_ENGINE_MASK);
 	fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
     } else {
 	bcs.engine = NULL;
@@ -64,7 +65,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
-    rc = cli_bytecode_prepare(&bcs);
+    rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
     if (have_clamjit && !nojit && nojit != -1) {

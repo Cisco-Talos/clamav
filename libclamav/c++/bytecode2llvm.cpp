@@ -25,6 +25,7 @@
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/ADT/Triple.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -57,6 +58,7 @@
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/System/ThreadLocal.h"
+#include "dconf.h"
 #include <cstdlib>
 #include <csetjmp>
 #include <new>
@@ -1480,12 +1482,47 @@ int bytecode_init(void)
     return 0;
 }
 
+extern "C" uint8_t cli_debug_flag;
 // Called once when loading a new set of BC files
-int cli_bytecode_init_jit(struct cli_all_bc *bcs)
+int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 {
     LLVMApiScopedLock scopedLock;
+    Triple triple(sys::getHostTriple());
+    if (cli_debug_flag)
+	errs() << "host triple is: " << sys::getHostTriple() << "\n";
+    enum Triple::ArchType arch = triple.getArch();
+    switch (arch) {
+	case Triple::arm:
+	    if (!(dconfmask & BYTECODE_JIT_ARM)) {
+		if (cli_debug_flag)
+		    errs() << "host triple is: " << sys::getHostTriple() << "\n";
+		return 0;
+	    }
+	    break;
+	case Triple::ppc:
+	case Triple::ppc64:
+	    if (!(dconfmask & BYTECODE_JIT_PPC)) {
+		if (cli_debug_flag)
+		    errs() << "JIT disabled for ppc\n";
+		return 0;
+	    }
+	    break;
+	case Triple::x86:
+	case Triple::x86_64:
+	    if (!(dconfmask & BYTECODE_JIT_X86)) {
+		if (cli_debug_flag)
+		    errs() << "JIT disabled for x86\n";
+		return 0;
+	    }
+	    break;
+	default:
+	    errs() << "Not supported architecture for " << triple.str() << "\n";
+	    return CL_EBYTECODE;
+    }
+
     std::string cpu = sys::getHostCPUName();
-    DEBUG(errs() << "host cpu is: " << cpu << "\n");
+    if (cli_debug_flag)
+	errs() << "host cpu is: " << cpu << "\n";
     if (!cpu.compare("i386") ||
 	!cpu.compare("i486")) {
 	bcs->engine = 0;

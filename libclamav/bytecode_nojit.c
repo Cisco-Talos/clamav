@@ -48,7 +48,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, con
     return CL_EBYTECODE;
 }
 
-int cli_bytecode_init_jit(struct cli_all_bc *allbc)
+int cli_bytecode_init_jit(struct cli_all_bc *allbc, unsigned dconfmask)
 {
     return CL_SUCCESS;
 }

@@ -24,6 +24,7 @@
 #include "clamav-config.h"
 #endif
 
+#include "dconf.h"
 #include "clamav.h"
 #include "others.h"
 #include "pe.h"
@@ -1476,6 +1477,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
     unsigned i, j, k;
+
     for (i=0;i<bc->num_func;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants;
@@ -1604,7 +1606,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_prepare(struct cli_all_bc *bcs)
+int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 {
     unsigned i;
     int rc;
@@ -1614,6 +1616,10 @@ int cli_bytecode_prepare(struct cli_all_bc *bcs)
 	struct cli_bc *bc = &bcs->all_bcs[i];
 	if (bc->state == bc_interp || bc->state == bc_jit)
 	    continue;
+	if (!(dconfmask & BYTECODE_INTERPRETER)) {
+	    cli_warnmsg("Bytecode needs interpreter, but interpreter is disabled\n");
+	    continue;
+	}
 	rc = cli_bytecode_prepare_interpreter(bc);
 	if (rc != CL_SUCCESS)
 	    return rc;
@@ -1621,10 +1627,10 @@ int cli_bytecode_prepare(struct cli_all_bc *bcs)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_init(struct cli_all_bc *allbc)
+int cli_bytecode_init(struct cli_all_bc *allbc, unsigned dconfmask)
 {
     memset(allbc, 0, sizeof(*allbc));
-    return cli_bytecode_init_jit(allbc);
+    return cli_bytecode_init_jit(allbc, dconfmask);
 }
 
 int cli_bytecode_done(struct cli_all_bc *allbc)
