@@ -123,7 +123,7 @@ static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
-extern uint8_t cli_debug_flag;
+static uint8_t cli_debug_flag=0;
 static void print_src(const char *file)
 {
   char buf[4096];
@@ -208,6 +208,7 @@ int main(int argc, char *argv[])
 
     if (optget(opts,"debug")->enabled) {
 	cl_debug();
+	cli_debug_flag=1;
     }
     rc = cl_init(CL_INIT_DEFAULT);
     if (rc != CL_SUCCESS) {
