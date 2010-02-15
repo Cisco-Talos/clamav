@@ -99,6 +99,7 @@ struct cli_dconf {
 #define OTHER_CONF_CRYPTFF  0x10
 #define OTHER_CONF_DLP	    0x20
 #define OTHER_CONF_MYDOOMLOG	0x40
+#define OTHER_CONF_PREFILTERING 0x80
 
 /* Phishing flags */
 #define PHISHING_CONF_ENGINE   0x1

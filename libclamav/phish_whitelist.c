@@ -57,7 +57,7 @@ int init_whitelist(struct cl_engine* engine)
 #endif
 		if(!engine->whitelist_matcher)
 			return CL_EMEM;
-		return	init_regex_list(engine->whitelist_matcher);
+		return	init_regex_list(engine->whitelist_matcher, engine->dconf->other&OTHER_CONF_PREFILTERING);
 	}
 	else
 		return CL_ENULLARG;

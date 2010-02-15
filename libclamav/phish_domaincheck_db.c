@@ -56,7 +56,7 @@ int init_domainlist(struct cl_engine* engine)
 #ifdef USE_MPOOL
 		((struct regex_matcher*)engine->domainlist_matcher)->mempool = engine->mempool;
 #endif
-		return init_regex_list(engine->domainlist_matcher);
+		return init_regex_list(engine->domainlist_matcher, engine->dconf->other&OTHER_CONF_PREFILTERING);
 	}
 	else
 		return CL_ENULLARG;

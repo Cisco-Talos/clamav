@@ -228,7 +228,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
 
 	assert(best_pos < len-1);
 	if (pattern[best_pos] == 0 && pattern[best_pos+1] == 0) {
-		cli_warnmsg("filter: subsignature begins with zero (static): %s\n", name);
+		cli_dbgmsg("!filter: subsignature begins with zero (static): %s\n", name);
 	}
 	pattern += best_pos;
 	len -= best_pos;
@@ -627,7 +627,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 				unsigned char c0 = spec_ith_char(spec0, k0);
 				unsigned char c1 = spec_ith_char(spec1, k1);
 				if (!c0 && !c1 && !i) {
-					cli_warnmsg("filter: subsignature begins with zero: %s\n",pat->virname);
+					cli_dbgmsg("!filter: subsignature begins with zero: %s\n",pat->virname);
 				}
 				filter_set_atpos(m, i, c0 | (c1<<8));
 			}

@@ -251,7 +251,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 
 /* Initialization & loading */
 /* Initializes @matcher, allocating necesarry substructures */
-int init_regex_list(struct regex_matcher* matcher)
+int init_regex_list(struct regex_matcher* matcher, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
 	mpool_t *mp = matcher->mempool;
@@ -270,7 +270,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->suffixes.mempool = mp;
 	assert(mp && "mempool must be initialized");
 #endif
-	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
+	if((rc = cli_ac_init(&matcher->suffixes, 2, 32, dconf_prefiltering))) {
 		return rc;
 	}
 #ifdef USE_MPOOL
@@ -385,7 +385,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio)
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio, uint8_t dconf_prefiltering)
 {
 	int rc,line=0,entry=0;
 	char buffer[FILEBUFF];
@@ -401,7 +401,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 
 	cli_dbgmsg("Loading regex_list\n");
 	if(!matcher->list_inited) {
-		rc = init_regex_list(matcher);
+		rc = init_regex_list(matcher, dconf_prefiltering);
 		if (!matcher->list_inited) {
 			cli_errmsg("Regex list failed to initialize!\n");
 			fatal_error(matcher);

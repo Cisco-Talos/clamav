@@ -157,7 +157,7 @@ static void rsetup(void)
 #ifdef USE_MPOOL
 	matcher.mempool = mpool_create();
 #endif
-	rc = init_regex_list(&matcher);
+	rc = init_regex_list(&matcher, 1);
 	fail_unless(rc == 0, "init_regex_list");
 }
 
@@ -298,7 +298,7 @@ static void psetup_impl(int load2)
 	f = fdopen(open_testfile("input/daily.pdb"),"r");
 	fail_unless(!!f, "fopen daily.pdb");
 
-	rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL);
+	rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL, 1);
 	fail_unless(rc == 0, "load_regex_matcher");
 	fclose(f);
 
@@ -309,7 +309,7 @@ static void psetup_impl(int load2)
 		fail_unless(!!f, "fopen daily.gdb");
 
 		signo = 0;
-		rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL);
+		rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL, 1);
 		fail_unless(rc == 0, "load_regex_matcher");
 		fclose(f);
 
@@ -322,7 +322,7 @@ static void psetup_impl(int load2)
 
 	f = fdopen(open_testfile("input/daily.wdb"),"r");
 	signo = 0;
-	rc = load_regex_matcher(engine->whitelist_matcher, f, &signo, 0, 1, NULL);
+	rc = load_regex_matcher(engine->whitelist_matcher, f, &signo, 0, 1, NULL, 1);
 	fail_unless(rc == 0,"load_regex_matcher");
 	fclose(f);
 

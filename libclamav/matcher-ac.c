@@ -360,11 +360,11 @@ int cli_ac_buildtrie(struct cli_matcher *root)
     }
 
     if (root->filter)
-	cli_warnmsg("Using filter for trie %d\n", root->type);
+	cli_dbgmsg("!Using filter for trie %d\n", root->type);
     return ac_maketrans(root);
 }
 
-int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
+int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
     assert(root->mempool && "mempool must be initialized");
@@ -386,8 +386,7 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
     root->ac_mindepth = mindepth;
     root->ac_maxdepth = maxdepth;
 
-    /* TODO: dconf here ?*/
-    if (cli_mtargets[root->type].enable_prefiltering && 0) {/* Disabled for now */
+    if (cli_mtargets[root->type].enable_prefiltering && dconf_prefiltering) {
 	root->filter = mpool_malloc(root->mempool, sizeof(*root->filter));
 	if (!root->filter) {
 	    cli_errmsg("cli_ac_init: Can't allocate memory for ac_root->filter\n");
