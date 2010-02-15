@@ -35,7 +35,6 @@
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
-#include "llvm/ModuleProvider.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/CommandLine.h"
@@ -1332,11 +1331,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
   // LLVM itself never throws exceptions, but operator new may throw bad_alloc
   try {
     Module *M = new Module("ClamAV jit module", bcs->engine->Context);
-    ExistingModuleProvider *MP = new ExistingModuleProvider(M);
     {
 	// Create the JIT.
 	std::string ErrorMsg;
-	EngineBuilder builder(MP);
+	EngineBuilder builder(M);
 	builder.setErrorStr(&ErrorMsg);
 	builder.setEngineKind(EngineKind::JIT);
 	builder.setOptLevel(CodeGenOpt::Default);
@@ -1358,7 +1356,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	struct CommonFunctions CF;
 	addFunctionProtos(&CF, EE, M);
 
-	FunctionPassManager OurFPM(MP);
+	FunctionPassManager OurFPM(M);
 	// Set up the optimizer pipeline.  Start with registering info about how
 	// the target lays out data structures.
 	OurFPM.add(new TargetData(*EE->getTargetData()));
