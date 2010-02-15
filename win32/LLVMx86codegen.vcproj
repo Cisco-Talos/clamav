@@ -154,7 +154,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\DeadMachineInstructionElim.cpp"
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCCodeEmitter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCTargetExpr.cpp"
 				>
 			</File>
 			<File

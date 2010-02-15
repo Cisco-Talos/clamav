@@ -187,7 +187,6 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
 	llvm/lib/CodeGen/ELFWriter.cpp \
-	llvm/lib/CodeGen/MachOWriter.cpp \
 	llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp \
 	llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp \
 	llvm/lib/Target/X86/AsmPrinter/X86IntelInstPrinter.cpp \
@@ -210,8 +209,7 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 am_libllvmasmprinter_la_OBJECTS =  \
 	libllvmasmprinter_la-OcamlGCPrinter.lo \
 	libllvmasmprinter_la-ELFCodeEmitter.lo \
-	libllvmasmprinter_la-ELFWriter.lo \
-	libllvmasmprinter_la-MachOWriter.lo $(am__objects_1) \
+	libllvmasmprinter_la-ELFWriter.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
 libllvmasmprinter_la_OBJECTS = $(am_libllvmasmprinter_la_OBJECTS)
 libllvmbitreader_la_LIBADD =
@@ -318,13 +316,11 @@ am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp \
 	llvm/lib/Target/PowerPC/PPCJITInfo.cpp \
 	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp \
-	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp \
 	llvm/lib/Target/PowerPC/PPCPredicates.cpp \
 	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp \
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp \
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp \
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp \
-	llvm/lib/Target/TargetMachOWriterInfo.cpp
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
 @BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_OBJECTS =  \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCBranchSelector.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCCodeEmitter.lo \
@@ -334,13 +330,11 @@ am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCInstrInfo.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCJITInfo.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCMCAsmInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCPredicates.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCRegisterInfo.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCSubtarget.lo \
 @BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCTargetMachine.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo
+@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo
 libllvmpowerpccodegen_la_OBJECTS =  \
 	$(am_libllvmpowerpccodegen_la_OBJECTS)
 @BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_rpath =
@@ -941,7 +935,10 @@ libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
 	$(am__append_10)
 libclamavcxx_la_LDFLAGS = -no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp ClamBCModule.h
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
+			  ClamBCRTChecks.cpp\
+			  ClamBCModule.h
+
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
@@ -1160,13 +1157,11 @@ libllvmsupport_la_SOURCES = \
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
 @BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/TargetMachOWriterInfo.cpp
+@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
 
 @BUILD_ARM_TRUE@libllvmarmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
 @BUILD_ARM_TRUE@libllvmarmcodegen_la_SOURCES = \
@@ -1534,8 +1529,7 @@ libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/ll
 libllvmasmprinter_la_SOURCES =  \
 	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
-	llvm/lib/CodeGen/ELFWriter.cpp \
-	llvm/lib/CodeGen/MachOWriter.cpp $(am__append_14) \
+	llvm/lib/CodeGen/ELFWriter.cpp $(am__append_14) \
 	$(am__append_15) $(am__append_16)
 libllvmfullcodegen_la_SOURCES = \
 	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
@@ -2053,7 +2047,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ARMMCInstLower.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-ELFWriter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-MachOWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-OcamlGCPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-PPCAsmPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmasmprinter_la-X86ATTInstPrinter.Plo@am__quote@
@@ -2069,13 +2062,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCInstrInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCJITInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCMCAsmInfo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCMachOWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCPredicates.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCRegisterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCSubtarget.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PPCTargetMachine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-PowerPCTargetInfo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCAsmInfoCOFF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MCCodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmx86codegen_la-MachineModuleInfoImpls.Plo@am__quote@
@@ -2738,14 +2729,6 @@ libllvmasmprinter_la-ELFWriter.lo: llvm/lib/CodeGen/ELFWriter.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/ELFWriter.cpp' object='libllvmasmprinter_la-ELFWriter.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-ELFWriter.lo `test -f 'llvm/lib/CodeGen/ELFWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/ELFWriter.cpp
-
-libllvmasmprinter_la-MachOWriter.lo: llvm/lib/CodeGen/MachOWriter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-MachOWriter.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Tpo -c -o libllvmasmprinter_la-MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Tpo $(DEPDIR)/libllvmasmprinter_la-MachOWriter.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/MachOWriter.cpp' object='libllvmasmprinter_la-MachOWriter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmasmprinter_la-MachOWriter.lo `test -f 'llvm/lib/CodeGen/MachOWriter.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/MachOWriter.cpp
 
 libllvmasmprinter_la-X86AsmPrinter.lo: llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmasmprinter_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmasmprinter_la-X86AsmPrinter.lo -MD -MP -MF $(DEPDIR)/libllvmasmprinter_la-X86AsmPrinter.Tpo -c -o libllvmasmprinter_la-X86AsmPrinter.lo `test -f 'llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp
@@ -4795,14 +4778,6 @@ libllvmpowerpccodegen_la-PPCMCAsmInfo.lo: llvm/lib/Target/PowerPC/PPCMCAsmInfo.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-PPCMCAsmInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp
 
-libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo: llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmpowerpccodegen_la-PPCMachOWriterInfo.Tpo -c -o libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmpowerpccodegen_la-PPCMachOWriterInfo.Tpo $(DEPDIR)/libllvmpowerpccodegen_la-PPCMachOWriterInfo.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' object='libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-PPCMachOWriterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
-
 libllvmpowerpccodegen_la-PPCPredicates.lo: llvm/lib/Target/PowerPC/PPCPredicates.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmpowerpccodegen_la-PPCPredicates.lo -MD -MP -MF $(DEPDIR)/libllvmpowerpccodegen_la-PPCPredicates.Tpo -c -o libllvmpowerpccodegen_la-PPCPredicates.lo `test -f 'llvm/lib/Target/PowerPC/PPCPredicates.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCPredicates.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmpowerpccodegen_la-PPCPredicates.Tpo $(DEPDIR)/libllvmpowerpccodegen_la-PPCPredicates.Plo
@@ -4842,14 +4817,6 @@ libllvmpowerpccodegen_la-PowerPCTargetInfo.lo: llvm/lib/Target/PowerPC/TargetInf
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' object='libllvmpowerpccodegen_la-PowerPCTargetInfo.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-PowerPCTargetInfo.lo `test -f 'llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
-
-libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo: llvm/lib/Target/TargetMachOWriterInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Tpo -c -o libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo `test -f 'llvm/lib/Target/TargetMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetMachOWriterInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Tpo $(DEPDIR)/libllvmpowerpccodegen_la-TargetMachOWriterInfo.Plo
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/TargetMachOWriterInfo.cpp' object='libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmpowerpccodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libllvmpowerpccodegen_la-TargetMachOWriterInfo.lo `test -f 'llvm/lib/Target/TargetMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetMachOWriterInfo.cpp
 
 APSInt.lo: llvm/lib/Support/APSInt.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT APSInt.lo -MD -MP -MF $(DEPDIR)/APSInt.Tpo -c -o APSInt.lo `test -f 'llvm/lib/Support/APSInt.cpp' || echo '$(srcdir)/'`llvm/lib/Support/APSInt.cpp

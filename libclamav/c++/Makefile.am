@@ -44,7 +44,9 @@ libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp ClamBCModule.h
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
+			  ClamBCRTChecks.cpp\
+			  ClamBCModule.h
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmx86codegen.la
@@ -398,13 +400,11 @@ libllvmpowerpccodegen_la_SOURCES=\
 	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
-	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
 	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp\
-	llvm/lib/Target/TargetMachOWriterInfo.cpp
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
 endif
 
 if BUILD_ARM
@@ -781,8 +781,7 @@ libllvmasmprinter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm
 libllvmasmprinter_la_SOURCES=\
     llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp\
     llvm/lib/CodeGen/ELFCodeEmitter.cpp\
-    llvm/lib/CodeGen/ELFWriter.cpp\
-    llvm/lib/CodeGen/MachOWriter.cpp
+    llvm/lib/CodeGen/ELFWriter.cpp
 
 if BUILD_X86
 libllvmasmprinter_la_SOURCES+=llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\

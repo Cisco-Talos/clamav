@@ -156,6 +156,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\VMCore\GVMaterializer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Analysis\PointerTracking.cpp"
 				>
 			</File>
@@ -405,10 +409,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\VMCore\Module.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\VMCore\ModuleProvider.cpp"
 				>
 			</File>
 			<File

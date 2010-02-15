@@ -156,6 +156,18 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\OptimizePHIs.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCNullStreamer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\DeadMachineInstructionElim.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Transforms\Utils\AddrModeMatcher.cpp"
 				>
 			</File>
@@ -397,10 +409,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachineVerifier.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachOWriter.cpp"
 				>
 			</File>
 			<File
