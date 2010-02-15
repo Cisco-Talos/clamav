@@ -18,7 +18,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 lib_LTLIBRARIES =
-EXTRA_DIST =
+EXTRA_DIST = c++/Makefile.nollvm.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -118,6 +118,9 @@ SUBDIRS=c++
 else
 LLVMLIBADD=libclamav_nocxx.la
 LLVMDEP=libclamav_nocxx.la
+c++/Makefile: c++/Makefile.nollvm.in
+	$(AM_V_at) cp $< $@
+distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c

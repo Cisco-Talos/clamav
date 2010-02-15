@@ -1,0 +1,9 @@
+.PHONY: distdir distclean maintainer-clean
+distdir:
+	echo "make distdir requires --enable-llvm"
+	exit 1
+
+# nothing to do here, rules must exist for distclean to succeed
+distclean:
+	-rm -f Makefile
+maintainer-clean:
