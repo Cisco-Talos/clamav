@@ -209,7 +209,7 @@ int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t lang, ui
 }
 
 
-uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err, size_t fsize, uint32_t hdr_size)
+uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t nos, unsigned int *err, size_t fsize, uint32_t hdr_size)
 {
     int i, found = 0;
     uint32_t ret;
