@@ -1925,19 +1925,28 @@ void SelectionDAG::ComputeMaskedBits(SDValue Op, const APInt &Mask,
   }
   case ISD::SREM:
     if (ConstantSDNode *Rem = dyn_cast<ConstantSDNode>(Op.getOperand(1))) {
-      const APInt &RA = Rem->getAPIntValue();
-      if (RA.isPowerOf2() || (-RA).isPowerOf2()) {
-        APInt LowBits = RA.isStrictlyPositive() ? (RA - 1) : ~RA;
+      const APInt &RA = Rem->getAPIntValue().abs();
+      if (RA.isPowerOf2()) {
+        APInt LowBits = RA - 1;
         APInt Mask2 = LowBits | APInt::getSignBit(BitWidth);
         ComputeMaskedBits(Op.getOperand(0), Mask2,KnownZero2,KnownOne2,Depth+1);
 
-        // If the sign bit of the first operand is zero, the sign bit of
-        // the result is zero. If the first operand has no one bits below
-        // the second operand's single 1 bit, its sign will be zero.
-        if (KnownZero2[BitWidth-1] || ((KnownZero2 & LowBits) == LowBits))
-          KnownZero2 |= ~LowBits;
+        // The low bits of the first operand are unchanged by the srem.
+        KnownZero = KnownZero2 & LowBits;
+        KnownOne = KnownOne2 & LowBits;
 
-        KnownZero |= KnownZero2 & Mask;
+        // If the first operand is non-negative or has all low bits zero, then
+        // the upper bits are all zero.
+        if (KnownZero2[BitWidth-1] || ((KnownZero2 & LowBits) == LowBits))
+          KnownZero |= ~LowBits;
+
+        // If the first operand is negative and not all low bits are zero, then
+        // the upper bits are all one.
+        if (KnownOne2[BitWidth-1] && ((KnownOne2 & LowBits) != 0))
+          KnownOne |= ~LowBits;
+
+        KnownZero &= Mask;
+        KnownOne &= Mask;
 
         assert((KnownZero & KnownOne) == 0&&"Bits known to be one AND zero?");
       }
@@ -2755,13 +2764,16 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
     // EXTRACT_VECTOR_ELT of INSERT_VECTOR_ELT is often formed when vector
     // operations are lowered to scalars.
     if (N1.getOpcode() == ISD::INSERT_VECTOR_ELT) {
-      // If the indices are the same, return the inserted element.
-      if (N1.getOperand(2) == N2)
-        return N1.getOperand(1);
-      // If the indices are known different, extract the element from
+      // If the indices are the same, return the inserted element else
+      // if the indices are known different, extract the element from
       // the original vector.
-      else if (isa<ConstantSDNode>(N1.getOperand(2)) &&
-               isa<ConstantSDNode>(N2))
+      if (N1.getOperand(2) == N2) {
+        if (VT == N1.getOperand(1).getValueType())
+          return N1.getOperand(1);
+        else
+          return getSExtOrTrunc(N1.getOperand(1), DL, VT);
+      } else if (isa<ConstantSDNode>(N1.getOperand(2)) &&
+                 isa<ConstantSDNode>(N2))
         return getNode(ISD::EXTRACT_VECTOR_ELT, DL, VT, N1.getOperand(0), N2);
     }
     break;
@@ -4860,23 +4872,23 @@ SelectionDAG::getMachineNode(unsigned Opcode, DebugLoc DL, SDVTList VTs,
 }
 
 /// getTargetExtractSubreg - A convenience function for creating
-/// TargetInstrInfo::EXTRACT_SUBREG nodes.
+/// TargetOpcode::EXTRACT_SUBREG nodes.
 SDValue
 SelectionDAG::getTargetExtractSubreg(int SRIdx, DebugLoc DL, EVT VT,
                                      SDValue Operand) {
   SDValue SRIdxVal = getTargetConstant(SRIdx, MVT::i32);
-  SDNode *Subreg = getMachineNode(TargetInstrInfo::EXTRACT_SUBREG, DL,
+  SDNode *Subreg = getMachineNode(TargetOpcode::EXTRACT_SUBREG, DL,
                                   VT, Operand, SRIdxVal);
   return SDValue(Subreg, 0);
 }
 
 /// getTargetInsertSubreg - A convenience function for creating
-/// TargetInstrInfo::INSERT_SUBREG nodes.
+/// TargetOpcode::INSERT_SUBREG nodes.
 SDValue
 SelectionDAG::getTargetInsertSubreg(int SRIdx, DebugLoc DL, EVT VT,
                                     SDValue Operand, SDValue Subreg) {
   SDValue SRIdxVal = getTargetConstant(SRIdx, MVT::i32);
-  SDNode *Result = getMachineNode(TargetInstrInfo::INSERT_SUBREG, DL,
+  SDNode *Result = getMachineNode(TargetOpcode::INSERT_SUBREG, DL,
                                   VT, Operand, Subreg, SRIdxVal);
   return SDValue(Result, 0);
 }
@@ -5212,11 +5224,12 @@ unsigned SelectionDAG::AssignTopologicalOrder() {
       }
     }
     if (I == SortedPos) {
-      allnodes_iterator J = I;
-      SDNode *S = ++J;
-      dbgs() << "Offending node:\n";
+#ifndef NDEBUG
+      SDNode *S = ++I;
+      dbgs() << "Overran sorted position:\n";
       S->dumprFull();
-      assert(0 && "Overran sorted position");
+#endif
+      llvm_unreachable(0);
     }
   }
 
@@ -5237,7 +5250,7 @@ unsigned SelectionDAG::AssignTopologicalOrder() {
 }
 
 /// AssignOrdering - Assign an order to the SDNode.
-void SelectionDAG::AssignOrdering(SDNode *SD, unsigned Order) {
+void SelectionDAG::AssignOrdering(const SDNode *SD, unsigned Order) {
   assert(SD && "Trying to assign an order to a null node!");
   Ordering->add(SD, Order);
 }

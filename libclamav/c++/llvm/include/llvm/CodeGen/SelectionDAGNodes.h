@@ -609,7 +609,7 @@ namespace ISD {
   /// which do not reference a specific memory location should be less than
   /// this value. Those that do must not be less than this value, and can
   /// be used with SelectionDAG::getMemIntrinsicNode.
-  static const int FIRST_TARGET_MEMORY_OPCODE = 1 << 14;
+  static const int FIRST_TARGET_MEMORY_OPCODE = BUILTIN_OP_END+80;
 
   /// Node predicates
 
@@ -821,6 +821,8 @@ public:
   /// set the SDNode
   void setNode(SDNode *N) { Node = N; }
 
+  inline SDNode *operator->() const { return Node; }
+  
   bool operator==(const SDValue &O) const {
     return Node == O.Node && ResNo == O.ResNo;
   }

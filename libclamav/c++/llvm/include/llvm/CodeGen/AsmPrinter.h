@@ -80,13 +80,6 @@ namespace llvm {
     DwarfWriter *DW;
 
   public:
-    /// Flags to specify different kinds of comments to output in
-    /// assembly code.  These flags carry semantic information not
-    /// otherwise easily derivable from the IR text.
-    ///
-    enum CommentFlag {
-      ReloadReuse = 0x1
-    };
 
     /// Output stream on which we're printing assembly code.
     ///
@@ -149,7 +142,8 @@ namespace llvm {
 
   protected:
     explicit AsmPrinter(formatted_raw_ostream &o, TargetMachine &TM,
-                        const MCAsmInfo *T, bool V);
+                        MCContext &Ctx, MCStreamer &Streamer,
+                        const MCAsmInfo *T);
     
   public:
     virtual ~AsmPrinter();
@@ -207,21 +201,51 @@ namespace llvm {
                                        unsigned AsmVariant, 
                                        const char *ExtraCode);
     
+    /// runOnMachineFunction - Emit the specified function out to the
+    /// OutStreamer.
+    virtual bool runOnMachineFunction(MachineFunction &MF) {
+      SetupMachineFunction(MF);
+      EmitFunctionHeader();
+      EmitFunctionBody();
+      return false;
+    }      
+    
     /// SetupMachineFunction - This should be called when a new MachineFunction
     /// is being processed from runOnMachineFunction.
     void SetupMachineFunction(MachineFunction &MF);
+    
+    /// EmitFunctionHeader - This method emits the header for the current
+    /// function.
+    void EmitFunctionHeader();
+    
+    /// EmitFunctionBody - This method emits the body and trailer for a
+    /// function.
+    void EmitFunctionBody();
+
+    /// EmitInstruction - Targets should implement this to emit instructions.
+    virtual void EmitInstruction(const MachineInstr *MI) {
+      assert(0 && "EmitInstruction not implemented");
+    }
+    
+    /// EmitFunctionBodyStart - Targets can override this to emit stuff before
+    /// the first basic block in the function.
+    virtual void EmitFunctionBodyStart() {}
+
+    /// EmitFunctionBodyEnd - Targets can override this to emit stuff after
+    /// the last basic block in the function.
+    virtual void EmitFunctionBodyEnd() {}
     
     /// EmitConstantPool - Print to the current output stream assembly
     /// representations of the constants in the constant pool MCP. This is
     /// used to print out constants which have been "spilled to memory" by
     /// the code generator.
     ///
-    void EmitConstantPool(MachineConstantPool *MCP);
-
+    virtual void EmitConstantPool();
+    
     /// EmitJumpTableInfo - Print assembly representations of the jump tables 
     /// used by the current function to the current output stream.  
     ///
-    void EmitJumpTableInfo(MachineFunction &MF);
+    void EmitJumpTableInfo();
     
     /// EmitGlobalVariable - Emit the specified global variable to the .s file.
     virtual void EmitGlobalVariable(const GlobalVariable *GV);
@@ -276,19 +300,15 @@ namespace llvm {
 
     /// printLabel - This method prints a local label used by debug and
     /// exception handling tables.
-    void printLabel(const MachineInstr *MI) const;
     void printLabel(unsigned Id) const;
 
     /// printDeclare - This method prints a local variable declaration used by
     /// debug tables.
     void printDeclare(const MachineInstr *MI) const;
 
-    /// EmitComments - Pretty-print comments for instructions
-    void EmitComments(const MachineInstr &MI) const;
-
     /// GetGlobalValueSymbol - Return the MCSymbol for the specified global
     /// value.
-    MCSymbol *GetGlobalValueSymbol(const GlobalValue *GV) const;
+    virtual MCSymbol *GetGlobalValueSymbol(const GlobalValue *GV) const;
 
     /// GetSymbolWithGlobalValueBase - Return the MCSymbol for a symbol with
     /// global value name as its base, with the specified suffix, and where the
@@ -313,11 +333,9 @@ namespace llvm {
 
     /// GetBlockAddressSymbol - Return the MCSymbol used to satisfy BlockAddress
     /// uses of the specified basic block.
-    MCSymbol *GetBlockAddressSymbol(const BlockAddress *BA,
-                                    const char *Suffix = "") const;
+    MCSymbol *GetBlockAddressSymbol(const BlockAddress *BA) const;
     MCSymbol *GetBlockAddressSymbol(const Function *F,
-                                    const BasicBlock *BB,
-                                    const char *Suffix = "") const;
+                                    const BasicBlock *BB) const;
 
     /// EmitBasicBlockStart - This method prints the label for the specified
     /// MachineBasicBlock, an alignment (if present) and a comment describing
@@ -331,12 +349,21 @@ namespace llvm {
     void EmitGlobalConstant(const Constant* CV, unsigned AddrSpace = 0);
     
   protected:
+    virtual void EmitFunctionEntryLabel();
+    
     virtual void EmitMachineConstantPoolValue(MachineConstantPoolValue *MCPV);
+
+    /// printOffset - This is just convenient handler for printing offsets.
+    void printOffset(int64_t Offset) const;
+
+  private:
 
     /// processDebugLoc - Processes the debug information of each machine
     /// instruction's DebugLoc. 
     void processDebugLoc(const MachineInstr *MI, bool BeforePrintingInsn);
     
+    void printLabelInst(const MachineInstr *MI) const;
+
     /// printInlineAsm - This method formats and prints the specified machine
     /// instruction that is an inline asm.
     void printInlineAsm(const MachineInstr *MI) const;
@@ -348,14 +375,12 @@ namespace llvm {
     /// printKill - This method prints the specified kill machine instruction.
     void printKill(const MachineInstr *MI) const;
 
-    /// printVisibility - This prints visibility information about symbol, if
+    /// EmitVisibility - This emits visibility information about symbol, if
     /// this is suported by the target.
-    void printVisibility(MCSymbol *Sym, unsigned Visibility) const;
+    void EmitVisibility(MCSymbol *Sym, unsigned Visibility) const;
     
-    /// printOffset - This is just convenient handler for printing offsets.
-    void printOffset(int64_t Offset) const;
- 
-  private:
+    void EmitLinkage(unsigned Linkage, MCSymbol *GVSym) const;
+    
     void EmitJumpTableEntry(const MachineJumpTableInfo *MJTI,
                             const MachineBasicBlock *MBB,
                             unsigned uid) const;

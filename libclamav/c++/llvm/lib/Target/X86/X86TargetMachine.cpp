@@ -30,9 +30,8 @@ static const MCAsmInfo *createMCAsmInfo(const Target &T, StringRef TT) {
   case Triple::MinGW32:
   case Triple::MinGW64:
   case Triple::Cygwin:
-    return new X86MCAsmInfoCOFF(TheTriple);
   case Triple::Win32:
-    return new X86WinMCAsmInfo(TheTriple);
+    return new X86MCAsmInfoCOFF(TheTriple);
   default:
     return new X86ELFMCAsmInfo(TheTriple);
   }
@@ -48,8 +47,10 @@ extern "C" void LLVMInitializeX86Target() {
   RegisterAsmInfoFn B(TheX86_64Target, createMCAsmInfo);
 
   // Register the code emitter.
-  TargetRegistry::RegisterCodeEmitter(TheX86_32Target, createX86MCCodeEmitter);
-  TargetRegistry::RegisterCodeEmitter(TheX86_64Target, createX86MCCodeEmitter);
+  TargetRegistry::RegisterCodeEmitter(TheX86_32Target,
+                                      createX86_32MCCodeEmitter);
+  TargetRegistry::RegisterCodeEmitter(TheX86_64Target,
+                                      createX86_64MCCodeEmitter);
 }
 
 
@@ -145,10 +146,6 @@ bool X86TargetMachine::addInstSelector(PassManagerBase &PM,
   // Install an instruction selector.
   PM.add(createX86ISelDag(*this, OptLevel));
 
-  // If we're using Fast-ISel, clean up the mess.
-  if (EnableFastISel)
-    PM.add(createDeadMachineInstructionElimPass());
-
   // Install a pass to insert x87 FP_REG_KILL instructions, as needed.
   PM.add(createX87FPRegKillInserterPass());
 
@@ -168,22 +165,6 @@ bool X86TargetMachine::addPostRegAlloc(PassManagerBase &PM,
 
 bool X86TargetMachine::addCodeEmitter(PassManagerBase &PM,
                                       CodeGenOpt::Level OptLevel,
-                                      MachineCodeEmitter &MCE) {
-  // FIXME: Move this to TargetJITInfo!
-  // On Darwin, do not override 64-bit setting made in X86TargetMachine().
-  if (DefRelocModel == Reloc::Default && 
-      (!Subtarget.isTargetDarwin() || !Subtarget.is64Bit())) {
-    setRelocationModel(Reloc::Static);
-    Subtarget.setPICStyle(PICStyles::None);
-  }
-  
-  PM.add(createX86CodeEmitterPass(*this, MCE));
-
-  return false;
-}
-
-bool X86TargetMachine::addCodeEmitter(PassManagerBase &PM,
-                                      CodeGenOpt::Level OptLevel,
                                       JITCodeEmitter &JCE) {
   // FIXME: Move this to TargetJITInfo!
   // On Darwin, do not override 64-bit setting made in X86TargetMachine().
@@ -196,34 +177,6 @@ bool X86TargetMachine::addCodeEmitter(PassManagerBase &PM,
 
   PM.add(createX86JITCodeEmitterPass(*this, JCE));
 
-  return false;
-}
-
-bool X86TargetMachine::addCodeEmitter(PassManagerBase &PM,
-                                      CodeGenOpt::Level OptLevel,
-                                      ObjectCodeEmitter &OCE) {
-  PM.add(createX86ObjectCodeEmitterPass(*this, OCE));
-  return false;
-}
-
-bool X86TargetMachine::addSimpleCodeEmitter(PassManagerBase &PM,
-                                            CodeGenOpt::Level OptLevel,
-                                            MachineCodeEmitter &MCE) {
-  PM.add(createX86CodeEmitterPass(*this, MCE));
-  return false;
-}
-
-bool X86TargetMachine::addSimpleCodeEmitter(PassManagerBase &PM,
-                                            CodeGenOpt::Level OptLevel,
-                                            JITCodeEmitter &JCE) {
-  PM.add(createX86JITCodeEmitterPass(*this, JCE));
-  return false;
-}
-
-bool X86TargetMachine::addSimpleCodeEmitter(PassManagerBase &PM,
-                                            CodeGenOpt::Level OptLevel,
-                                            ObjectCodeEmitter &OCE) {
-  PM.add(createX86ObjectCodeEmitterPass(*this, OCE));
   return false;
 }
 

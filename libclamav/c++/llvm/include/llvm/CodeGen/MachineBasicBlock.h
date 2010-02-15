@@ -21,6 +21,9 @@ namespace llvm {
 
 class BasicBlock;
 class MachineFunction;
+class MCContext;
+class MCSymbol;
+class StringRef;
 class raw_ostream;
 
 template <>
@@ -338,7 +341,7 @@ public:
                             bool isCond);
 
   /// findDebugLoc - find the next valid DebugLoc starting at MBBI, skipping
-  /// any DEBUG_VALUE instructions.  Return UnknownLoc if there is none.
+  /// any DBG_VALUE instructions.  Return UnknownLoc if there is none.
   DebugLoc findDebugLoc(MachineBasicBlock::iterator &MBBI);
 
   // Debugging methods.

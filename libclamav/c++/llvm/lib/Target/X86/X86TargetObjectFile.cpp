@@ -8,9 +8,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "X86TargetObjectFile.h"
+#include "X86MCTargetExpr.h"
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/MC/MCContext.h"
-#include "llvm/MC/MCExpr.h"
 #include "llvm/Target/Mangler.h"
 #include "llvm/ADT/SmallString.h"
 using namespace llvm;
@@ -35,7 +35,7 @@ getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
   // Add information about the stub reference to MachOMMI so that the stub gets
   // emitted by the asmprinter.
   MCSymbol *Sym = getContext().GetOrCreateSymbol(Name.str());
-  const MCSymbol *&StubSym = MachOMMI.getGVStubEntry(Sym);
+  MCSymbol *&StubSym = MachOMMI.getGVStubEntry(Sym);
   if (StubSym == 0) {
     Name.clear();
     Mang->getNameWithPrefix(Name, GV, false);
@@ -55,11 +55,12 @@ getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
   IsIndirect = true;
   IsPCRel    = true;
   
+  // FIXME: Use GetSymbolWithGlobalValueBase.
   SmallString<128> Name;
   Mang->getNameWithPrefix(Name, GV, false);
-  Name += "@GOTPCREL";
+  const MCSymbol *Sym = getContext().CreateSymbol(Name);
   const MCExpr *Res =
-    MCSymbolRefExpr::Create(Name.str(), getContext());
+    X86MCTargetExpr::Create(Sym, X86MCTargetExpr::GOTPCREL, getContext());
   const MCExpr *Four = MCConstantExpr::Create(4, getContext());
   return MCBinaryExpr::CreateAdd(Res, Four, getContext());
 }

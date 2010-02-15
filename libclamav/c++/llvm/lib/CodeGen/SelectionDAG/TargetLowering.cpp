@@ -540,6 +540,24 @@ TargetLowering::~TargetLowering() {
   delete &TLOF;
 }
 
+/// canOpTrap - Returns true if the operation can trap for the value type.
+/// VT must be a legal type.
+bool TargetLowering::canOpTrap(unsigned Op, EVT VT) const {
+  assert(isTypeLegal(VT));
+  switch (Op) {
+  default:
+    return false;
+  case ISD::FDIV:
+  case ISD::FREM:
+  case ISD::SDIV:
+  case ISD::UDIV:
+  case ISD::SREM:
+  case ISD::UREM:
+    return true;
+  }
+}
+
+
 static unsigned getVectorTypeBreakdownMVT(MVT VT, MVT &IntermediateVT,
                                        unsigned &NumIntermediates,
                                        EVT &RegisterVT,
@@ -2366,7 +2384,7 @@ getRegForInlineAsmConstraint(const std::string &Constraint,
        E = RI->regclass_end(); RCI != E; ++RCI) {
     const TargetRegisterClass *RC = *RCI;
     
-    // If none of the the value types for this register class are valid, we 
+    // If none of the value types for this register class are valid, we 
     // can't use it.  For example, 64-bit reg classes on 32-bit targets.
     bool isLegal = false;
     for (TargetRegisterClass::vt_iterator I = RC->vt_begin(), E = RC->vt_end();

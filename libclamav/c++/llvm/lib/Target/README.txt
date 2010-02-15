@@ -1751,22 +1751,71 @@ from gcc.
 Missed instcombine transformation:
 define i32 @a(i32 %x) nounwind readnone {
 entry:
-  %shr = lshr i32 %x, 5                           ; <i32> [#uses=1]
-  %xor = xor i32 %shr, 67108864                   ; <i32> [#uses=1]
-  %sub = add i32 %xor, -67108864                  ; <i32> [#uses=1]
-  ret i32 %sub
+  %rem = srem i32 %x, 32
+  %shl = shl i32 1, %rem
+  ret i32 %shl
 }
 
-This function is equivalent to "ashr i32 %x, 5".  Testcase derived from gcc.
+The srem can be transformed to an and because if x is negative, the shift is
+undefined. Testcase derived from gcc.
 
 //===---------------------------------------------------------------------===//
 
-isSafeToLoadUnconditionally should allow a GEP of a global/alloca with constant
-indicies within the bounds of the allocated object. Reduced example:
+Missed instcombine/dagcombine transformation:
+define i32 @a(i32 %x, i32 %y) nounwind readnone {
+entry:
+  %mul = mul i32 %y, -8
+  %sub = sub i32 %x, %mul
+  ret i32 %sub
+}
 
-const int a[] = {3,6};
-int b(int y) { int* x = y ? &a[0] : &a[1]; return *x; }
+Should compile to something like x+y*8, but currently compiles to an
+inefficient result.  Testcase derived from gcc.
 
-All the loads should be eliminated.  Testcase derived from gcc.
+//===---------------------------------------------------------------------===//
+
+Missed instcombine/dagcombine transformation:
+define void @lshift_lt(i8 zeroext %a) nounwind {
+entry:
+  %conv = zext i8 %a to i32
+  %shl = shl i32 %conv, 3
+  %cmp = icmp ult i32 %shl, 33
+  br i1 %cmp, label %if.then, label %if.end
+
+if.then:
+  tail call void @bar() nounwind
+  ret void
+
+if.end:
+  ret void
+}
+declare void @bar() nounwind
+
+The shift should be eliminated.  Testcase derived from gcc.
+
+//===---------------------------------------------------------------------===//
+
+These compile into different code, one gets recognized as a switch and the
+other doesn't due to phase ordering issues (PR6212):
+
+int test1(int mainType, int subType) {
+  if (mainType == 7)
+    subType = 4;
+  else if (mainType == 9)
+    subType = 6;
+  else if (mainType == 11)
+    subType = 9;
+  return subType;
+}
+
+int test2(int mainType, int subType) {
+  if (mainType == 7)
+    subType = 4;
+  if (mainType == 9)
+    subType = 6;
+  if (mainType == 11)
+    subType = 9;
+  return subType;
+}
 
 //===---------------------------------------------------------------------===//

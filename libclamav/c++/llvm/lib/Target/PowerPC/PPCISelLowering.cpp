@@ -1572,7 +1572,7 @@ PPCTargetLowering::LowerFormalArguments_SVR4(
 
   EVT PtrVT = DAG.getTargetLoweringInfo().getPointerTy();
   // Potential tail calls could cause overwriting of argument stack slots.
-  bool isImmutable = !(PerformTailCallOpt && (CallConv==CallingConv::Fast));
+  bool isImmutable = !(GuaranteedTailCallOpt && (CallConv==CallingConv::Fast));
   unsigned PtrByteSize = 4;
 
   // Assign locations to all of the incoming arguments.
@@ -1773,7 +1773,7 @@ PPCTargetLowering::LowerFormalArguments_Darwin(
   EVT PtrVT = DAG.getTargetLoweringInfo().getPointerTy();
   bool isPPC64 = PtrVT == MVT::i64;
   // Potential tail calls could cause overwriting of argument stack slots.
-  bool isImmutable = !(PerformTailCallOpt && (CallConv==CallingConv::Fast));
+  bool isImmutable = !(GuaranteedTailCallOpt && (CallConv==CallingConv::Fast));
   unsigned PtrByteSize = isPPC64 ? 8 : 4;
 
   unsigned ArgOffset = PPCFrameInfo::getLinkageSize(isPPC64, true);
@@ -2164,7 +2164,7 @@ CalculateParameterAndLinkageAreaSize(SelectionDAG &DAG,
                       PPCFrameInfo::getMinCallFrameSize(isPPC64, true));
 
   // Tail call needs the stack to be aligned.
-  if (CC==CallingConv::Fast && PerformTailCallOpt) {
+  if (CC==CallingConv::Fast && GuaranteedTailCallOpt) {
     unsigned TargetAlign = DAG.getMachineFunction().getTarget().getFrameInfo()->
       getStackAlignment();
     unsigned AlignMask = TargetAlign-1;
@@ -2200,6 +2200,9 @@ PPCTargetLowering::IsEligibleForTailCallOptimization(SDValue Callee,
                                                      bool isVarArg,
                                       const SmallVectorImpl<ISD::InputArg> &Ins,
                                                      SelectionDAG& DAG) const {
+  if (!GuaranteedTailCallOpt)
+    return false;
+
   // Variable argument functions are not supported.
   if (isVarArg)
     return false;
@@ -2601,7 +2604,7 @@ PPCTargetLowering::FinishCall(CallingConv::ID CallConv, DebugLoc dl,
   // the stack. Account for this here so these bytes can be pushed back on in
   // PPCRegisterInfo::eliminateCallFramePseudoInstr.
   int BytesCalleePops =
-    (CallConv==CallingConv::Fast && PerformTailCallOpt) ? NumBytes : 0;
+    (CallConv==CallingConv::Fast && GuaranteedTailCallOpt) ? NumBytes : 0;
 
   if (InFlag.getNode())
     Ops.push_back(InFlag);
@@ -2673,11 +2676,15 @@ PPCTargetLowering::FinishCall(CallingConv::ID CallConv, DebugLoc dl,
 SDValue
 PPCTargetLowering::LowerCall(SDValue Chain, SDValue Callee,
                              CallingConv::ID CallConv, bool isVarArg,
-                             bool isTailCall,
+                             bool &isTailCall,
                              const SmallVectorImpl<ISD::OutputArg> &Outs,
                              const SmallVectorImpl<ISD::InputArg> &Ins,
                              DebugLoc dl, SelectionDAG &DAG,
                              SmallVectorImpl<SDValue> &InVals) {
+  if (isTailCall)
+    isTailCall = IsEligibleForTailCallOptimization(Callee, CallConv, isVarArg,
+                                                   Ins, DAG);
+
   if (PPCSubTarget.isSVR4ABI() && !PPCSubTarget.isPPC64()) {
     return LowerCall_SVR4(Chain, Callee, CallConv, isVarArg,
                           isTailCall, Outs, Ins,
@@ -2700,10 +2707,6 @@ PPCTargetLowering::LowerCall_SVR4(SDValue Chain, SDValue Callee,
   // See PPCTargetLowering::LowerFormalArguments_SVR4() for a description
   // of the 32-bit SVR4 ABI stack frame layout.
 
-  assert((!isTailCall ||
-          (CallConv == CallingConv::Fast && PerformTailCallOpt)) &&
-         "IsEligibleForTailCallOptimization missed a case!");
-
   assert((CallConv == CallingConv::C ||
           CallConv == CallingConv::Fast) && "Unknown calling convention!");
 
@@ -2717,7 +2720,7 @@ PPCTargetLowering::LowerCall_SVR4(SDValue Chain, SDValue Callee,
   // and restoring the callers stack pointer in this functions epilog. This is
   // done because by tail calling the called function might overwrite the value
   // in this function's (MF) stack pointer stack slot 0(SP).
-  if (PerformTailCallOpt && CallConv==CallingConv::Fast)
+  if (GuaranteedTailCallOpt && CallConv==CallingConv::Fast)
     MF.getInfo<PPCFunctionInfo>()->setHasFastCall();
   
   // Count how many bytes are to be pushed on the stack, including the linkage
@@ -2920,7 +2923,7 @@ PPCTargetLowering::LowerCall_Darwin(SDValue Chain, SDValue Callee,
   // and restoring the callers stack pointer in this functions epilog. This is
   // done because by tail calling the called function might overwrite the value
   // in this function's (MF) stack pointer stack slot 0(SP).
-  if (PerformTailCallOpt && CallConv==CallingConv::Fast)
+  if (GuaranteedTailCallOpt && CallConv==CallingConv::Fast)
     MF.getInfo<PPCFunctionInfo>()->setHasFastCall();
 
   unsigned nAltivecParamsAtEnd = 0;

@@ -2640,7 +2640,7 @@ SDValue DAGCombiner::visitSRA(SDNode *N) {
 
       // If the shift is not a no-op (in which case this should be just a sign
       // extend already), the truncated to type is legal, sign_extend is legal
-      // on that type, and the the truncate to that type is both legal and free,
+      // on that type, and the truncate to that type is both legal and free,
       // perform the transform.
       if ((ShiftAmt > 0) &&
           TLI.isOperationLegalOrCustom(ISD::SIGN_EXTEND, TruncVT) &&
@@ -5403,12 +5403,16 @@ SDValue DAGCombiner::visitEXTRACT_VECTOR_ELT(SDNode *N) {
   SDValue InVec = N->getOperand(0);
 
  if (InVec.getOpcode() == ISD::SCALAR_TO_VECTOR) {
-   // If the operand is wider than the vector element type then it is implicitly
-   // truncated.  Make that explicit here.
+   // Check if the result type doesn't match the inserted element type. A
+   // SCALAR_TO_VECTOR may truncate the inserted element and the
+   // EXTRACT_VECTOR_ELT may widen the extracted vector.
    EVT EltVT = InVec.getValueType().getVectorElementType();
    SDValue InOp = InVec.getOperand(0);
-   if (InOp.getValueType() != EltVT)
-     return DAG.getNode(ISD::TRUNCATE, InVec.getDebugLoc(), EltVT, InOp);
+   EVT NVT = N->getValueType(0);
+   if (InOp.getValueType() != NVT) {
+     assert(InOp.getValueType().isInteger() && NVT.isInteger());
+     return DAG.getSExtOrTrunc(InOp, InVec.getDebugLoc(), NVT);
+   }
    return InOp;
  }
 

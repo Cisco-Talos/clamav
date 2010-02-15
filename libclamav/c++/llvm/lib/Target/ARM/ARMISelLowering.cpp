@@ -897,11 +897,13 @@ void ARMTargetLowering::PassF64ArgInRegs(DebugLoc dl, SelectionDAG &DAG,
 SDValue
 ARMTargetLowering::LowerCall(SDValue Chain, SDValue Callee,
                              CallingConv::ID CallConv, bool isVarArg,
-                             bool isTailCall,
+                             bool &isTailCall,
                              const SmallVectorImpl<ISD::OutputArg> &Outs,
                              const SmallVectorImpl<ISD::InputArg> &Ins,
                              DebugLoc dl, SelectionDAG &DAG,
                              SmallVectorImpl<SDValue> &InVals) {
+  // ARM target does not yet support tail call optimization.
+  isTailCall = false;
 
   // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;
@@ -1438,7 +1440,8 @@ SDValue ARMTargetLowering::LowerGLOBAL_OFFSET_TABLE(SDValue Op,
 }
 
 SDValue
-ARMTargetLowering::LowerINTRINSIC_WO_CHAIN(SDValue Op, SelectionDAG &DAG) {
+ARMTargetLowering::LowerINTRINSIC_WO_CHAIN(SDValue Op, SelectionDAG &DAG,
+                                           const ARMSubtarget *Subtarget) {
   unsigned IntNo = cast<ConstantSDNode>(Op.getOperand(0))->getZExtValue();
   DebugLoc dl = Op.getDebugLoc();
   switch (IntNo) {
@@ -1474,7 +1477,11 @@ ARMTargetLowering::LowerINTRINSIC_WO_CHAIN(SDValue Op, SelectionDAG &DAG) {
     return Result;
   }
   case Intrinsic::eh_sjlj_setjmp:
-    return DAG.getNode(ARMISD::EH_SJLJ_SETJMP, dl, MVT::i32, Op.getOperand(1));
+    SDValue Val = Subtarget->isThumb() ?
+      DAG.getCopyFromReg(DAG.getEntryNode(), dl, ARM::SP, MVT::i32) :
+      DAG.getConstant(0, MVT::i32);
+    return DAG.getNode(ARMISD::EH_SJLJ_SETJMP, dl, MVT::i32, Op.getOperand(1),
+                       Val);
   }
 }
 
@@ -3023,7 +3030,8 @@ SDValue ARMTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) {
   case ISD::RETURNADDR:    break;
   case ISD::FRAMEADDR:     return LowerFRAMEADDR(Op, DAG);
   case ISD::GLOBAL_OFFSET_TABLE: return LowerGLOBAL_OFFSET_TABLE(Op, DAG);
-  case ISD::INTRINSIC_WO_CHAIN: return LowerINTRINSIC_WO_CHAIN(Op, DAG);
+  case ISD::INTRINSIC_WO_CHAIN: return LowerINTRINSIC_WO_CHAIN(Op, DAG,
+                                                               Subtarget);
   case ISD::BIT_CONVERT:   return ExpandBIT_CONVERT(Op.getNode(), DAG);
   case ISD::SHL:
   case ISD::SRL:
@@ -3852,8 +3860,11 @@ bool ARMTargetLowering::allowsUnalignedMemoryAccesses(EVT VT) const {
   if (!Subtarget->hasV6Ops())
     // Pre-v6 does not support unaligned mem access.
     return false;
-  else if (!Subtarget->hasV6Ops()) {
-    // v6 may or may not support unaligned mem access.
+  else {
+    // v6+ may or may not support unaligned mem access depending on the system
+    // configuration.
+    // FIXME: This is pretty conservative. Should we provide cmdline option to
+    // control the behaviour?
     if (!Subtarget->isTargetDarwin())
       return false;
   }

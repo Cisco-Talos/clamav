@@ -60,6 +60,10 @@ namespace llvm {
 
     /// @name Assembly File Formatting.
     /// @{
+    
+    /// isVerboseAsm - Return true if this streamer supports verbose assembly at
+    /// all.
+    virtual bool isVerboseAsm() const { return false; }
 
     /// AddComment - Add a comment that can be emitted to the generated .s
     /// file if applicable as a QoI issue to make the output of the compiler
@@ -265,11 +269,21 @@ namespace llvm {
   /// createAsmStreamer - Create a machine code streamer which will print out
   /// assembly for the native target, suitable for compiling with a native
   /// assembler.
+  ///
+  /// \param InstPrint - If given, the instruction printer to use. If not given
+  /// the MCInst representation will be printed.
+  ///
+  /// \param CE - If given, a code emitter to use to show the instruction
+  /// encoding inline with the assembly.
+  ///
+  /// \param ShowInst - Whether to show the MCInst representation inline with
+  /// the assembly.
   MCStreamer *createAsmStreamer(MCContext &Ctx, formatted_raw_ostream &OS,
                                 const MCAsmInfo &MAI, bool isLittleEndian,
                                 bool isVerboseAsm,
                                 MCInstPrinter *InstPrint = 0,
-                                MCCodeEmitter *CE = 0);
+                                MCCodeEmitter *CE = 0,
+                                bool ShowInst = false);
 
   // FIXME: These two may end up getting rolled into a single
   // createObjectStreamer interface, which implements the assembler backend, and
@@ -278,7 +292,7 @@ namespace llvm {
   /// createMachOStream - Create a machine code streamer which will generative
   /// Mach-O format object files.
   MCStreamer *createMachOStreamer(MCContext &Ctx, raw_ostream &OS,
-                                  MCCodeEmitter *CE = 0);
+                                  MCCodeEmitter *CE);
 
   /// createELFStreamer - Create a machine code streamer which will generative
   /// ELF format object files.

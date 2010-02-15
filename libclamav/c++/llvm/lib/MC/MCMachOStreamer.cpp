@@ -87,6 +87,7 @@ public:
 
   const MCExpr *AddValueSymbols(const MCExpr *Value) {
     switch (Value->getKind()) {
+    case MCExpr::Target: assert(0 && "Can't handle target exprs yet!");
     case MCExpr::Constant:
       break;
 
@@ -332,7 +333,24 @@ void MCMachOStreamer::EmitBytes(StringRef Data, unsigned AddrSpace) {
 
 void MCMachOStreamer::EmitValue(const MCExpr *Value, unsigned Size,
                                 unsigned AddrSpace) {
-  new MCFillFragment(*AddValueSymbols(Value), Size, 1, CurSectionData);
+  // Assume the front-end will have evaluate things absolute expressions, so
+  // just create data + fixup.
+  MCDataFragment *DF = dyn_cast_or_null<MCDataFragment>(getCurrentFragment());
+  if (!DF)
+    DF = new MCDataFragment(CurSectionData);
+
+  // Avoid fixups when possible.
+  int64_t AbsValue;
+  if (Value->EvaluateAsAbsolute(AbsValue)) {
+    // FIXME: Endianness assumption.
+    for (unsigned i = 0; i != Size; ++i)
+      DF->getContents().push_back(uint8_t(AbsValue >> (i * 8)));
+  } else {
+    DF->getFixups().push_back(MCAsmFixup(DF->getContents().size(),
+                                         *AddValueSymbols(Value),
+                                         MCFixup::getKindForSize(Size)));
+    DF->getContents().resize(DF->getContents().size() + Size, 0);
+  }
 }
 
 void MCMachOStreamer::EmitValueToAlignment(unsigned ByteAlignment,
@@ -362,13 +380,25 @@ void MCMachOStreamer::EmitInstruction(const MCInst &Inst) {
   if (!Emitter)
     llvm_unreachable("no code emitter available!");
 
-  // FIXME: Emitting an instruction should cause S_ATTR_SOME_INSTRUCTIONS to
-  //        be set for the current section.
-  // FIXME: Relocations!
+  CurSectionData->setHasInstructions(true);
+
+  SmallVector<MCFixup, 4> Fixups;
   SmallString<256> Code;
   raw_svector_ostream VecOS(Code);
-  Emitter->EncodeInstruction(Inst, VecOS);
-  EmitBytes(VecOS.str(), 0);
+  Emitter->EncodeInstruction(Inst, VecOS, Fixups);
+  VecOS.flush();
+
+  // Add the fixups and data.
+  MCDataFragment *DF = dyn_cast_or_null<MCDataFragment>(getCurrentFragment());
+  if (!DF)
+    DF = new MCDataFragment(CurSectionData);
+  for (unsigned i = 0, e = Fixups.size(); i != e; ++i) {
+    MCFixup &F = Fixups[i];
+    DF->getFixups().push_back(MCAsmFixup(DF->getContents().size()+F.getOffset(),
+                                         *F.getValue(),
+                                         F.getKind()));
+  }
+  DF->getContents().append(Code.begin(), Code.end());
 }
 
 void MCMachOStreamer::Finish() {

@@ -22,11 +22,10 @@ MCAsmInfo::MCAsmInfo() {
   HasSubsectionsViaSymbols = false;
   HasMachoZeroFillDirective = false;
   HasStaticCtorDtorReferenceInStaticMode = false;
-  NeedsSet = false;
   MaxInstLength = 4;
   PCSymbol = "$";
   SeparatorChar = ';';
-  CommentColumn = 60;
+  CommentColumn = 40;
   CommentString = "#";
   GlobalPrefix = "";
   PrivateGlobalPrefix = ".";
@@ -50,8 +49,9 @@ MCAsmInfo::MCAsmInfo() {
   TextAlignFillValue = 0;
   GPRel32Directive = 0;
   GlobalDirective = "\t.globl\t";
-  SetDirective = 0;
+  HasSetDirective = true;
   HasLCOMMDirective = false;
+  COMMDirectiveAlignmentIsInBytes = true;
   HasDotTypeDotSizeDirective = true;
   HasSingleParameterDotFile = true;
   HasNoDeadStrip = false;

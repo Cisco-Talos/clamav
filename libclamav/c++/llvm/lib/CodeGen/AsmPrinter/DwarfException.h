@@ -103,7 +103,7 @@ class DwarfException : public DwarfPrinter {
   ///     exception.  If it matches then the exception and type id are passed
   ///     on to the landing pad.  Otherwise the next action is looked up.  This
   ///     chain is terminated with a next action of zero.  If no type id is
-  ///     found the the frame is unwound and handling continues.
+  ///     found the frame is unwound and handling continues.
   ///  3. Type id table contains references to all the C++ typeinfo for all
   ///     catches in the function.  This tables is reversed indexed base 1.
 
@@ -135,7 +135,7 @@ class DwarfException : public DwarfPrinter {
   struct ActionEntry {
     int ValueForTypeID; // The value to write - may not be equal to the type id.
     int NextAction;
-    struct ActionEntry *Previous;
+    unsigned Previous;
   };
 
   /// CallSiteEntry - Structure describing an entry in the call-site table.
@@ -197,7 +197,7 @@ public:
 
   /// BeginFunction - Gather pre-function exception information.  Assumes being
   /// emitted immediately after the function entry point.
-  void BeginFunction(MachineFunction *MF);
+  void BeginFunction(const MachineFunction *MF);
 
   /// EndFunction - Gather and emit post-function exception information.
   void EndFunction();

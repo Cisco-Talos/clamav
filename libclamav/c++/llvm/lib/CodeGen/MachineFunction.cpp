@@ -187,7 +187,7 @@ MachineFunction::CreateMachineInstr(const TargetInstrDesc &TID,
 }
 
 /// CloneMachineInstr - Create a new MachineInstr which is a copy of the
-/// 'Orig' instruction, identical in all ways except the the instruction
+/// 'Orig' instruction, identical in all ways except the instruction
 /// has no parent, prev, or next.
 ///
 MachineInstr *
@@ -453,8 +453,7 @@ MCSymbol *MachineFunction::getJTISymbol(unsigned JTI, MCContext &Ctx,
                                         bool isLinkerPrivate) const {
   assert(JumpTableInfo && "No jump tables");
   
-  const std::vector<MachineJumpTableEntry> &JTs =JumpTableInfo->getJumpTables();
-  assert(JTI < JTs.size() && "Invalid JTI!");
+  assert(JTI < JumpTableInfo->getJumpTables().size() && "Invalid JTI!");
   const MCAsmInfo &MAI = *getTarget().getMCAsmInfo();
   
   const char *Prefix = isLinkerPrivate ? MAI.getLinkerPrivateGlobalPrefix() :

@@ -228,8 +228,7 @@ Constant::PossibleRelocationsTy Constant::getRelocationInfo() const {
 /// type, returns the elements of the vector in the specified smallvector.
 /// This handles breaking down a vector undef into undef elements, etc.  For
 /// constant exprs and other cases we can't handle, we return an empty vector.
-void Constant::getVectorElements(LLVMContext &Context,
-                                 SmallVectorImpl<Constant*> &Elts) const {
+void Constant::getVectorElements(SmallVectorImpl<Constant*> &Elts) const {
   assert(isa<VectorType>(getType()) && "Not a vector constant!");
   
   if (const ConstantVector *CV = dyn_cast<ConstantVector>(this)) {
@@ -586,6 +585,27 @@ Constant* ConstantStruct::get(LLVMContext &Context,
   return get(Context, std::vector<Constant*>(Vals, Vals+NumVals), Packed);
 }
 
+ConstantUnion::ConstantUnion(const UnionType *T, Constant* V)
+  : Constant(T, ConstantUnionVal,
+             OperandTraits<ConstantUnion>::op_end(this) - 1, 1) {
+  Use *OL = OperandList;
+  assert(T->getElementTypeIndex(V->getType()) >= 0 &&
+      "Initializer for union element isn't a member of union type!");
+  *OL = V;
+}
+
+// ConstantUnion accessors.
+Constant* ConstantUnion::get(const UnionType* T, Constant* V) {
+  LLVMContextImpl* pImpl = T->getContext().pImpl;
+  
+  // Create a ConstantAggregateZero value if all elements are zeros...
+  if (!V->isNullValue())
+    return pImpl->UnionConstants.getOrCreate(T, V);
+
+  return ConstantAggregateZero::get(T);
+}
+
+
 ConstantVector::ConstantVector(const VectorType *T,
                                const std::vector<Constant*> &V)
   : Constant(T, ConstantVectorVal,
@@ -646,9 +666,20 @@ Constant* ConstantExpr::getNSWNeg(Constant* C) {
   return getNSWSub(ConstantFP::getZeroValueForNegation(C->getType()), C);
 }
 
+Constant* ConstantExpr::getNUWNeg(Constant* C) {
+  assert(C->getType()->isIntOrIntVector() &&
+         "Cannot NEG a nonintegral value!");
+  return getNUWSub(ConstantFP::getZeroValueForNegation(C->getType()), C);
+}
+
 Constant* ConstantExpr::getNSWAdd(Constant* C1, Constant* C2) {
   return getTy(C1->getType(), Instruction::Add, C1, C2,
                OverflowingBinaryOperator::NoSignedWrap);
+}
+
+Constant* ConstantExpr::getNUWAdd(Constant* C1, Constant* C2) {
+  return getTy(C1->getType(), Instruction::Add, C1, C2,
+               OverflowingBinaryOperator::NoUnsignedWrap);
 }
 
 Constant* ConstantExpr::getNSWSub(Constant* C1, Constant* C2) {
@@ -656,9 +687,19 @@ Constant* ConstantExpr::getNSWSub(Constant* C1, Constant* C2) {
                OverflowingBinaryOperator::NoSignedWrap);
 }
 
+Constant* ConstantExpr::getNUWSub(Constant* C1, Constant* C2) {
+  return getTy(C1->getType(), Instruction::Sub, C1, C2,
+               OverflowingBinaryOperator::NoUnsignedWrap);
+}
+
 Constant* ConstantExpr::getNSWMul(Constant* C1, Constant* C2) {
   return getTy(C1->getType(), Instruction::Mul, C1, C2,
                OverflowingBinaryOperator::NoSignedWrap);
+}
+
+Constant* ConstantExpr::getNUWMul(Constant* C1, Constant* C2) {
+  return getTy(C1->getType(), Instruction::Mul, C1, C2,
+               OverflowingBinaryOperator::NoUnsignedWrap);
 }
 
 Constant* ConstantExpr::getExactSDiv(Constant* C1, Constant* C2) {
@@ -990,6 +1031,13 @@ void ConstantStruct::destroyConstant() {
 
 // destroyConstant - Remove the constant from the constant table...
 //
+void ConstantUnion::destroyConstant() {
+  getType()->getContext().pImpl->UnionConstants.remove(this);
+  destroyConstantImpl();
+}
+
+// destroyConstant - Remove the constant from the constant table...
+//
 void ConstantVector::destroyConstant() {
   getType()->getContext().pImpl->VectorConstants.remove(this);
   destroyConstantImpl();
@@ -1134,7 +1182,7 @@ static inline Constant *getFoldedCast(
   Instruction::CastOps opc, Constant *C, const Type *Ty) {
   assert(Ty->isFirstClassType() && "Cannot cast to an aggregate type!");
   // Fold a few common cases
-  if (Constant *FC = ConstantFoldCastInstruction(Ty->getContext(), opc, C, Ty))
+  if (Constant *FC = ConstantFoldCastInstruction(opc, C, Ty))
     return FC;
 
   LLVMContextImpl *pImpl = Ty->getContext().pImpl;
@@ -1150,24 +1198,24 @@ Constant *ConstantExpr::getCast(unsigned oc, Constant *C, const Type *Ty) {
   Instruction::CastOps opc = Instruction::CastOps(oc);
   assert(Instruction::isCast(opc) && "opcode out of range");
   assert(C && Ty && "Null arguments to getCast");
-  assert(Ty->isFirstClassType() && "Cannot cast to an aggregate type!");
+  assert(CastInst::castIsValid(opc, C, Ty) && "Invalid constantexpr cast!");
 
   switch (opc) {
-    default:
-      llvm_unreachable("Invalid cast opcode");
-      break;
-    case Instruction::Trunc:    return getTrunc(C, Ty);
-    case Instruction::ZExt:     return getZExt(C, Ty);
-    case Instruction::SExt:     return getSExt(C, Ty);
-    case Instruction::FPTrunc:  return getFPTrunc(C, Ty);
-    case Instruction::FPExt:    return getFPExtend(C, Ty);
-    case Instruction::UIToFP:   return getUIToFP(C, Ty);
-    case Instruction::SIToFP:   return getSIToFP(C, Ty);
-    case Instruction::FPToUI:   return getFPToUI(C, Ty);
-    case Instruction::FPToSI:   return getFPToSI(C, Ty);
-    case Instruction::PtrToInt: return getPtrToInt(C, Ty);
-    case Instruction::IntToPtr: return getIntToPtr(C, Ty);
-    case Instruction::BitCast:  return getBitCast(C, Ty);
+  default:
+    llvm_unreachable("Invalid cast opcode");
+    break;
+  case Instruction::Trunc:    return getTrunc(C, Ty);
+  case Instruction::ZExt:     return getZExt(C, Ty);
+  case Instruction::SExt:     return getSExt(C, Ty);
+  case Instruction::FPTrunc:  return getFPTrunc(C, Ty);
+  case Instruction::FPExt:    return getFPExtend(C, Ty);
+  case Instruction::UIToFP:   return getUIToFP(C, Ty);
+  case Instruction::SIToFP:   return getSIToFP(C, Ty);
+  case Instruction::FPToUI:   return getFPToUI(C, Ty);
+  case Instruction::FPToSI:   return getFPToSI(C, Ty);
+  case Instruction::PtrToInt: return getPtrToInt(C, Ty);
+  case Instruction::IntToPtr: return getIntToPtr(C, Ty);
+  case Instruction::BitCast:  return getBitCast(C, Ty);
   }
   return 0;
 } 
@@ -1347,20 +1395,8 @@ Constant *ConstantExpr::getIntToPtr(Constant *C, const Type *DstTy) {
 }
 
 Constant *ConstantExpr::getBitCast(Constant *C, const Type *DstTy) {
-  // BitCast implies a no-op cast of type only. No bits change.  However, you 
-  // can't cast pointers to anything but pointers.
-#ifndef NDEBUG
-  const Type *SrcTy = C->getType();
-  assert((isa<PointerType>(SrcTy) == isa<PointerType>(DstTy)) &&
-         "BitCast cannot cast pointer to non-pointer and vice versa");
-
-  // Now we know we're not dealing with mismatched pointer casts (ptr->nonptr
-  // or nonptr->ptr). For all the other types, the cast is okay if source and 
-  // destination bit widths are identical.
-  unsigned SrcBitSize = SrcTy->getPrimitiveSizeInBits();
-  unsigned DstBitSize = DstTy->getPrimitiveSizeInBits();
-#endif
-  assert(SrcBitSize == DstBitSize && "BitCast requires types of same width");
+  assert(CastInst::castIsValid(Instruction::BitCast, C, DstTy) &&
+         "Invalid constantexpr bitcast!");
   
   // It is common to ask for a bitcast of a value to its own type, handle this
   // speedily.
@@ -1380,8 +1416,7 @@ Constant *ConstantExpr::getTy(const Type *ReqTy, unsigned Opcode,
          "Operand types in binary constant expression should match");
 
   if (ReqTy == C1->getType() || ReqTy == Type::getInt1Ty(ReqTy->getContext()))
-    if (Constant *FC = ConstantFoldBinaryInstruction(ReqTy->getContext(),
-                                                     Opcode, C1, C2))
+    if (Constant *FC = ConstantFoldBinaryInstruction(Opcode, C1, C2))
       return FC;          // Fold a few common cases...
 
   std::vector<Constant*> argVec(1, C1); argVec.push_back(C2);
@@ -1491,30 +1526,35 @@ Constant* ConstantExpr::getSizeOf(const Type* Ty) {
 }
 
 Constant* ConstantExpr::getAlignOf(const Type* Ty) {
-  // alignof is implemented as: (i64) gep ({i8,Ty}*)null, 0, 1
+  // alignof is implemented as: (i64) gep ({i1,Ty}*)null, 0, 1
   // Note that a non-inbounds gep is used, as null isn't within any object.
   const Type *AligningTy = StructType::get(Ty->getContext(),
-                                   Type::getInt8Ty(Ty->getContext()), Ty, NULL);
+                                   Type::getInt1Ty(Ty->getContext()), Ty, NULL);
   Constant *NullPtr = Constant::getNullValue(AligningTy->getPointerTo());
-  Constant *Zero = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 0);
+  Constant *Zero = ConstantInt::get(Type::getInt64Ty(Ty->getContext()), 0);
   Constant *One = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 1);
   Constant *Indices[2] = { Zero, One };
   Constant *GEP = getGetElementPtr(NullPtr, Indices, 2);
   return getCast(Instruction::PtrToInt, GEP,
-                 Type::getInt32Ty(Ty->getContext()));
+                 Type::getInt64Ty(Ty->getContext()));
 }
 
 Constant* ConstantExpr::getOffsetOf(const StructType* STy, unsigned FieldNo) {
+  return getOffsetOf(STy, ConstantInt::get(Type::getInt32Ty(STy->getContext()),
+                                           FieldNo));
+}
+
+Constant* ConstantExpr::getOffsetOf(const Type* Ty, Constant *FieldNo) {
   // offsetof is implemented as: (i64) gep (Ty*)null, 0, FieldNo
   // Note that a non-inbounds gep is used, as null isn't within any object.
   Constant *GEPIdx[] = {
-    ConstantInt::get(Type::getInt64Ty(STy->getContext()), 0),
-    ConstantInt::get(Type::getInt32Ty(STy->getContext()), FieldNo)
+    ConstantInt::get(Type::getInt64Ty(Ty->getContext()), 0),
+    FieldNo
   };
   Constant *GEP = getGetElementPtr(
-                Constant::getNullValue(PointerType::getUnqual(STy)), GEPIdx, 2);
+                Constant::getNullValue(PointerType::getUnqual(Ty)), GEPIdx, 2);
   return getCast(Instruction::PtrToInt, GEP,
-                 Type::getInt64Ty(STy->getContext()));
+                 Type::getInt64Ty(Ty->getContext()));
 }
 
 Constant *ConstantExpr::getCompare(unsigned short pred, 
@@ -1528,8 +1568,7 @@ Constant *ConstantExpr::getSelectTy(const Type *ReqTy, Constant *C,
   assert(!SelectInst::areInvalidOperands(C, V1, V2)&&"Invalid select operands");
 
   if (ReqTy == V1->getType())
-    if (Constant *SC = ConstantFoldSelectInstruction(
-                                                ReqTy->getContext(), C, V1, V2))
+    if (Constant *SC = ConstantFoldSelectInstruction(C, V1, V2))
       return SC;        // Fold common cases
 
   std::vector<Constant*> argVec(3, C);
@@ -1549,9 +1588,8 @@ Constant *ConstantExpr::getGetElementPtrTy(const Type *ReqTy, Constant *C,
          cast<PointerType>(ReqTy)->getElementType() &&
          "GEP indices invalid!");
 
-  if (Constant *FC = ConstantFoldGetElementPtr(
-                              ReqTy->getContext(), C, /*inBounds=*/false,
-                              (Constant**)Idxs, NumIdx))
+  if (Constant *FC = ConstantFoldGetElementPtr(C, /*inBounds=*/false,
+                                               (Constant**)Idxs, NumIdx))
     return FC;          // Fold a few common cases...
 
   assert(isa<PointerType>(C->getType()) &&
@@ -1577,9 +1615,8 @@ Constant *ConstantExpr::getInBoundsGetElementPtrTy(const Type *ReqTy,
          cast<PointerType>(ReqTy)->getElementType() &&
          "GEP indices invalid!");
 
-  if (Constant *FC = ConstantFoldGetElementPtr(
-                              ReqTy->getContext(), C, /*inBounds=*/true,
-                              (Constant**)Idxs, NumIdx))
+  if (Constant *FC = ConstantFoldGetElementPtr(C, /*inBounds=*/true,
+                                               (Constant**)Idxs, NumIdx))
     return FC;          // Fold a few common cases...
 
   assert(isa<PointerType>(C->getType()) &&
@@ -1635,8 +1672,7 @@ ConstantExpr::getICmp(unsigned short pred, Constant *LHS, Constant *RHS) {
   assert(pred >= ICmpInst::FIRST_ICMP_PREDICATE && 
          pred <= ICmpInst::LAST_ICMP_PREDICATE && "Invalid ICmp Predicate");
 
-  if (Constant *FC = ConstantFoldCompareInstruction(
-                                             LHS->getContext(), pred, LHS, RHS))
+  if (Constant *FC = ConstantFoldCompareInstruction(pred, LHS, RHS))
     return FC;          // Fold a few common cases...
 
   // Look up the constant in the table first to ensure uniqueness
@@ -1659,8 +1695,7 @@ ConstantExpr::getFCmp(unsigned short pred, Constant *LHS, Constant *RHS) {
   assert(LHS->getType() == RHS->getType());
   assert(pred <= FCmpInst::LAST_FCMP_PREDICATE && "Invalid FCmp Predicate");
 
-  if (Constant *FC = ConstantFoldCompareInstruction(
-                                            LHS->getContext(), pred, LHS, RHS))
+  if (Constant *FC = ConstantFoldCompareInstruction(pred, LHS, RHS))
     return FC;          // Fold a few common cases...
 
   // Look up the constant in the table first to ensure uniqueness
@@ -1680,8 +1715,7 @@ ConstantExpr::getFCmp(unsigned short pred, Constant *LHS, Constant *RHS) {
 
 Constant *ConstantExpr::getExtractElementTy(const Type *ReqTy, Constant *Val,
                                             Constant *Idx) {
-  if (Constant *FC = ConstantFoldExtractElementInstruction(
-                                                ReqTy->getContext(), Val, Idx))
+  if (Constant *FC = ConstantFoldExtractElementInstruction(Val, Idx))
     return FC;          // Fold a few common cases.
   // Look up the constant in the table first to ensure uniqueness
   std::vector<Constant*> ArgVec(1, Val);
@@ -1703,8 +1737,7 @@ Constant *ConstantExpr::getExtractElement(Constant *Val, Constant *Idx) {
 
 Constant *ConstantExpr::getInsertElementTy(const Type *ReqTy, Constant *Val,
                                            Constant *Elt, Constant *Idx) {
-  if (Constant *FC = ConstantFoldInsertElementInstruction(
-                                            ReqTy->getContext(), Val, Elt, Idx))
+  if (Constant *FC = ConstantFoldInsertElementInstruction(Val, Elt, Idx))
     return FC;          // Fold a few common cases.
   // Look up the constant in the table first to ensure uniqueness
   std::vector<Constant*> ArgVec(1, Val);
@@ -1729,8 +1762,7 @@ Constant *ConstantExpr::getInsertElement(Constant *Val, Constant *Elt,
 
 Constant *ConstantExpr::getShuffleVectorTy(const Type *ReqTy, Constant *V1,
                                            Constant *V2, Constant *Mask) {
-  if (Constant *FC = ConstantFoldShuffleVectorInstruction(
-                                            ReqTy->getContext(), V1, V2, Mask))
+  if (Constant *FC = ConstantFoldShuffleVectorInstruction(V1, V2, Mask))
     return FC;          // Fold a few common cases...
   // Look up the constant in the table first to ensure uniqueness
   std::vector<Constant*> ArgVec(1, V1);
@@ -1763,8 +1795,7 @@ Constant *ConstantExpr::getInsertValueTy(const Type *ReqTy, Constant *Agg,
          "insertvalue type invalid!");
   assert(Agg->getType()->isFirstClassType() &&
          "Non-first-class type for constant InsertValue expression");
-  Constant *FC = ConstantFoldInsertValueInstruction(
-                                  ReqTy->getContext(), Agg, Val, Idxs, NumIdx);
+  Constant *FC = ConstantFoldInsertValueInstruction(Agg, Val, Idxs, NumIdx);
   assert(FC && "InsertValue constant expr couldn't be folded!");
   return FC;
 }
@@ -1790,8 +1821,7 @@ Constant *ConstantExpr::getExtractValueTy(const Type *ReqTy, Constant *Agg,
          "extractvalue indices invalid!");
   assert(Agg->getType()->isFirstClassType() &&
          "Non-first-class type for constant extractvalue expression");
-  Constant *FC = ConstantFoldExtractValueInstruction(
-                                        ReqTy->getContext(), Agg, Idxs, NumIdx);
+  Constant *FC = ConstantFoldExtractValueInstruction(Agg, Idxs, NumIdx);
   assert(FC && "ExtractValue constant expr couldn't be folded!");
   return FC;
 }
@@ -2079,6 +2109,11 @@ void ConstantStruct::replaceUsesOfWithOnConstant(Value *From, Value *To,
   
   // Delete the old constant!
   destroyConstant();
+}
+
+void ConstantUnion::replaceUsesOfWithOnConstant(Value *From, Value *To,
+                                                 Use *U) {
+  assert(false && "Implement replaceUsesOfWithOnConstant for unions");
 }
 
 void ConstantVector::replaceUsesOfWithOnConstant(Value *From, Value *To,

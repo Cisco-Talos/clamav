@@ -33,6 +33,7 @@ class MachineRegisterInfo;
 class MachineFrameInfo;
 class MachineConstantPool;
 class MachineJumpTableInfo;
+class Pass;
 class TargetMachine;
 class TargetRegisterClass;
 
@@ -177,6 +178,11 @@ public:
   ///
   void setAlignment(unsigned A) { Alignment = A; }
 
+  /// EnsureAlignment - Make sure the function is at least 'A' bits aligned.
+  void EnsureAlignment(unsigned A) {
+    if (Alignment < A) Alignment = A;
+  }
+  
   /// getInfo - Keep track of various per-function pieces of information for
   /// backends that would like to do so.
   ///
@@ -324,7 +330,7 @@ public:
                                    bool NoImp = false);
 
   /// CloneMachineInstr - Create a new MachineInstr which is a copy of the
-  /// 'Orig' instruction, identical in all ways except the the instruction
+  /// 'Orig' instruction, identical in all ways except the instruction
   /// has no parent, prev, or next.
   ///
   /// See also TargetInstrInfo::duplicate() for target-specific fixes to cloned

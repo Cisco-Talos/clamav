@@ -78,8 +78,9 @@ typedef struct LLVMOpaqueValue *LLVMValueRef;
 typedef struct LLVMOpaqueBasicBlock *LLVMBasicBlockRef;
 typedef struct LLVMOpaqueBuilder *LLVMBuilderRef;
 
-/* Used to provide a module to JIT or interpreter.
- * See the llvm::ModuleProvider class.
+/* Interface used to provide a module to JIT or interpreter.  This is now just a
+ * synonym for llvm::Module, but we have to keep using the different type to
+ * keep binary compatibility.
  */
 typedef struct LLVMOpaqueModuleProvider *LLVMModuleProviderRef;
 
@@ -117,7 +118,8 @@ typedef enum {
     LLVMNoCaptureAttribute  = 1<<21,
     LLVMNoRedZoneAttribute  = 1<<22,
     LLVMNoImplicitFloatAttribute = 1<<23,
-    LLVMNakedAttribute      = 1<<24
+    LLVMNakedAttribute      = 1<<24,
+    LLVMInlineHintAttribute = 1<<25
 } LLVMAttribute;
 
 typedef enum {
@@ -191,7 +193,8 @@ typedef enum {
   LLVMPointerTypeKind,     /**< Pointers */
   LLVMOpaqueTypeKind,      /**< Opaque: type with unknown structure */
   LLVMVectorTypeKind,      /**< SIMD 'packed' format, or other vector type */
-  LLVMMetadataTypeKind     /**< Metadata */
+  LLVMMetadataTypeKind,    /**< Metadata */
+  LLVMUnionTypeKind        /**< Unions */
 } LLVMTypeKind;
 
 typedef enum {
@@ -210,8 +213,7 @@ typedef enum {
   LLVMDLLImportLinkage,   /**< Function to be imported from DLL */
   LLVMDLLExportLinkage,   /**< Function to be accessible from DLL */
   LLVMExternalWeakLinkage,/**< ExternalWeak linkage description */
-  LLVMGhostLinkage,       /**< Stand-in functions for streaming fns from
-                               bitcode */
+  LLVMGhostLinkage,       /**< Obsolete */
   LLVMCommonLinkage,      /**< Tentative definitions */
   LLVMLinkerPrivateLinkage /**< Like Private, but linker removes. */
 } LLVMLinkage;
@@ -370,6 +372,13 @@ LLVMTypeRef LLVMStructType(LLVMTypeRef *ElementTypes, unsigned ElementCount,
 unsigned LLVMCountStructElementTypes(LLVMTypeRef StructTy);
 void LLVMGetStructElementTypes(LLVMTypeRef StructTy, LLVMTypeRef *Dest);
 LLVMBool LLVMIsPackedStruct(LLVMTypeRef StructTy);
+
+/* Operations on union types */
+LLVMTypeRef LLVMUnionTypeInContext(LLVMContextRef C, LLVMTypeRef *ElementTypes,
+                                   unsigned ElementCount);
+LLVMTypeRef LLVMUnionType(LLVMTypeRef *ElementTypes, unsigned ElementCount);
+unsigned LLVMCountUnionElementTypes(LLVMTypeRef UnionTy);
+void LLVMGetUnionElementTypes(LLVMTypeRef UnionTy, LLVMTypeRef *Dest);
 
 /* Operations on array, pointer, and vector types (sequence types) */
 LLVMTypeRef LLVMArrayType(LLVMTypeRef ElementType, unsigned ElementCount);
@@ -914,17 +923,15 @@ LLVMValueRef LLVMBuildPtrDiff(LLVMBuilderRef, LLVMValueRef LHS,
 
 /*===-- Module providers --------------------------------------------------===*/
 
-/* Encapsulates the module M in a module provider, taking ownership of the
- * module.
- * See the constructor llvm::ExistingModuleProvider::ExistingModuleProvider.
+/* Changes the type of M so it can be passed to FunctionPassManagers and the
+ * JIT.  They take ModuleProviders for historical reasons.
  */
 LLVMModuleProviderRef
 LLVMCreateModuleProviderForExistingModule(LLVMModuleRef M);
 
-/* Destroys the module provider MP as well as the contained module.
- * See the destructor llvm::ModuleProvider::~ModuleProvider.
+/* Destroys the module M.
  */
-void LLVMDisposeModuleProvider(LLVMModuleProviderRef MP);
+void LLVMDisposeModuleProvider(LLVMModuleProviderRef M);
 
 
 /*===-- Memory buffers ----------------------------------------------------===*/
@@ -981,7 +988,6 @@ void LLVMDisposePassManager(LLVMPassManagerRef PM);
 }
 
 namespace llvm {
-  class ModuleProvider;
   class MemoryBuffer;
   class PassManagerBase;
   
@@ -1018,11 +1024,16 @@ namespace llvm {
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(BasicBlock,         LLVMBasicBlockRef    )
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(IRBuilder<>,        LLVMBuilderRef       )
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PATypeHolder,       LLVMTypeHandleRef    )
-  DEFINE_SIMPLE_CONVERSION_FUNCTIONS(ModuleProvider,     LLVMModuleProviderRef)
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(MemoryBuffer,       LLVMMemoryBufferRef  )
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(LLVMContext,        LLVMContextRef       )
   DEFINE_SIMPLE_CONVERSION_FUNCTIONS(Use,                LLVMUseIteratorRef           )
   DEFINE_STDCXX_CONVERSION_FUNCTIONS(PassManagerBase,    LLVMPassManagerRef   )
+  /* LLVMModuleProviderRef exists for historical reasons, but now just holds a
+   * Module.
+   */
+  inline Module *unwrap(LLVMModuleProviderRef MP) {
+    return reinterpret_cast<Module*>(MP);
+  }
   
   #undef DEFINE_STDCXX_CONVERSION_FUNCTIONS
   #undef DEFINE_ISA_CONVERSION_FUNCTIONS

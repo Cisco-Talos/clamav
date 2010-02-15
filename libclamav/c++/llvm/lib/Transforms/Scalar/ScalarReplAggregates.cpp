@@ -202,12 +202,18 @@ bool SROA::performPromotion(Function &F) {
   return Changed;
 }
 
-/// getNumSAElements - Return the number of elements in the specific struct or
-/// array.
-static uint64_t getNumSAElements(const Type *T) {
+/// ShouldAttemptScalarRepl - Decide if an alloca is a good candidate for
+/// SROA.  It must be a struct or array type with a small number of elements.
+static bool ShouldAttemptScalarRepl(AllocaInst *AI) {
+  const Type *T = AI->getAllocatedType();
+  // Do not promote any struct into more than 32 separate vars.
   if (const StructType *ST = dyn_cast<StructType>(T))
-    return ST->getNumElements();
-  return cast<ArrayType>(T)->getNumElements();
+    return ST->getNumElements() <= 32;
+  // Arrays are much less likely to be safe for SROA; only consider
+  // them if they are very small.
+  if (const ArrayType *AT = dyn_cast<ArrayType>(T))
+    return AT->getNumElements() <= 8;
+  return false;
 }
 
 // performScalarRepl - This algorithm is a simple worklist driven algorithm,
@@ -266,21 +272,17 @@ bool SROA::performScalarRepl(Function &F) {
     // Do not promote [0 x %struct].
     if (AllocaSize == 0) continue;
 
+    // If the alloca looks like a good candidate for scalar replacement, and if
+    // all its users can be transformed, then split up the aggregate into its
+    // separate elements.
+    if (ShouldAttemptScalarRepl(AI) && isSafeAllocaToScalarRepl(AI)) {
+      DoScalarReplacement(AI, WorkList);
+      Changed = true;
+      continue;
+    }
+
     // Do not promote any struct whose size is too big.
     if (AllocaSize > SRThreshold) continue;
-
-    if ((isa<StructType>(AI->getAllocatedType()) ||
-         isa<ArrayType>(AI->getAllocatedType())) &&
-        // Do not promote any struct into more than "32" separate vars.
-        getNumSAElements(AI->getAllocatedType()) <= SRThreshold/4) {
-      // Check that all of the users of the allocation are capable of being
-      // transformed.
-      if (isSafeAllocaToScalarRepl(AI)) {
-        DoScalarReplacement(AI, WorkList);
-        Changed = true;
-        continue;
-      }
-    }
 
     // If we can turn this aggregate value (potentially with casts) into a
     // simple scalar value that can be mem2reg'd into a register value.
@@ -681,7 +683,7 @@ void SROA::RewriteGEP(GetElementPtrInst *GEPI, AllocaInst *AI, uint64_t Offset,
     Val->takeName(GEPI);
   }
   if (Val->getType() != GEPI->getType())
-    Val = new BitCastInst(Val, GEPI->getType(), Val->getNameStr(), GEPI);
+    Val = new BitCastInst(Val, GEPI->getType(), Val->getName(), GEPI);
   GEPI->replaceAllUsesWith(Val);
   DeadInsts.push_back(GEPI);
 }
@@ -769,7 +771,7 @@ void SROA::RewriteMemIntrinUserOfAlloca(MemIntrinsic *MI, Instruction *Inst,
       Value *Idx[2] = { Zero,
                       ConstantInt::get(Type::getInt32Ty(MI->getContext()), i) };
       OtherElt = GetElementPtrInst::CreateInBounds(OtherPtr, Idx, Idx + 2,
-                                           OtherPtr->getNameStr()+"."+Twine(i),
+                                              OtherPtr->getName()+"."+Twine(i),
                                                    MI);
       uint64_t EltOffset;
       const PointerType *OtherPtrTy = cast<PointerType>(OtherPtr->getType());
@@ -853,12 +855,11 @@ void SROA::RewriteMemIntrinUserOfAlloca(MemIntrinsic *MI, Instruction *Inst,
     
     // Cast the element pointer to BytePtrTy.
     if (EltPtr->getType() != BytePtrTy)
-      EltPtr = new BitCastInst(EltPtr, BytePtrTy, EltPtr->getNameStr(), MI);
+      EltPtr = new BitCastInst(EltPtr, BytePtrTy, EltPtr->getName(), MI);
     
     // Cast the other pointer (if we have one) to BytePtrTy. 
     if (OtherElt && OtherElt->getType() != BytePtrTy)
-      OtherElt = new BitCastInst(OtherElt, BytePtrTy,OtherElt->getNameStr(),
-                                 MI);
+      OtherElt = new BitCastInst(OtherElt, BytePtrTy, OtherElt->getName(), MI);
     
     unsigned EltSize = TD->getTypeAllocSize(EltTy);
     

@@ -47,17 +47,6 @@ namespace llvm {
     /// emitted in Static relocation model.
     bool HasStaticCtorDtorReferenceInStaticMode;  // Default is false.
     
-    /// NeedsSet - True if target asm treats expressions in data directives
-    /// as linktime-relocatable.  For assembly-time computation, we need to
-    /// use a .set.  Thus:
-    /// .set w, x-y
-    /// .long w
-    /// is computed at assembly time, while
-    /// .long x-y
-    /// is relocated if the relative locations of x and y change at linktime.
-    /// We want both these things in different places.
-    bool NeedsSet;                           // Defaults to false.
-    
     /// MaxInstLength - This is the maximum possible length of an instruction,
     /// which is needed to compute the size of an inline asm.
     unsigned MaxInstLength;                  // Defaults to 4.
@@ -73,7 +62,7 @@ namespace llvm {
 
     /// CommentColumn - This indicates the comment num (zero-based) at
     /// which asm comments should be printed.
-    unsigned CommentColumn;                  // Defaults to 60
+    unsigned CommentColumn;                  // Defaults to 40
 
     /// CommentString - This indicates the comment character used by the
     /// assembler.
@@ -184,13 +173,16 @@ namespace llvm {
     ///
     const char *ExternDirective;             // Defaults to NULL.
     
-    /// SetDirective - This is the name of a directive that can be used to tell
-    /// the assembler to set the value of a variable to some expression.
-    const char *SetDirective;                // Defaults to null.
+    /// HasSetDirective - True if the assembler supports the .set directive.
+    bool HasSetDirective;                    // Defaults to true.
     
     /// HasLCOMMDirective - This is true if the target supports the .lcomm
     /// directive.
-    bool HasLCOMMDirective;              // Defaults to false.
+    bool HasLCOMMDirective;                  // Defaults to false.
+    
+    /// COMMDirectiveAlignmentIsInBytes - True is COMMDirective's optional
+    /// alignment is to be specified in bytes instead of log2(n).
+    bool COMMDirectiveAlignmentIsInBytes;    // Defaults to true;
     
     /// HasDotTypeDotSizeDirective - True if the target has .type and .size
     /// directives, this is true for most ELF targets.
@@ -321,9 +313,6 @@ namespace llvm {
     bool hasStaticCtorDtorReferenceInStaticMode() const {
       return HasStaticCtorDtorReferenceInStaticMode;
     }
-    bool needsSet() const {
-      return NeedsSet;
-    }
     unsigned getMaxInstLength() const {
       return MaxInstLength;
     }
@@ -387,11 +376,12 @@ namespace llvm {
     const char *getExternDirective() const {
       return ExternDirective;
     }
-    const char *getSetDirective() const {
-      return SetDirective;
-    }
+    bool hasSetDirective() const { return HasSetDirective; }
     bool hasLCOMMDirective() const { return HasLCOMMDirective; }
     bool hasDotTypeDotSizeDirective() const {return HasDotTypeDotSizeDirective;}
+    bool getCOMMDirectiveAlignmentIsInBytes() const {
+      return COMMDirectiveAlignmentIsInBytes;
+    }
     bool hasSingleParameterDotFile() const { return HasSingleParameterDotFile; }
     bool hasNoDeadStrip() const { return HasNoDeadStrip; }
     const char *getWeakRefDirective() const { return WeakRefDirective; }

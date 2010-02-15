@@ -36,8 +36,9 @@ class VISIBILITY_HIDDEN X86AsmPrinter : public AsmPrinter {
   const X86Subtarget *Subtarget;
  public:
   explicit X86AsmPrinter(formatted_raw_ostream &O, TargetMachine &TM,
-                            const MCAsmInfo *T, bool V)
-    : AsmPrinter(O, TM, T, V) {
+                         MCContext &Ctx, MCStreamer &Streamer,
+                         const MCAsmInfo *T)
+    : AsmPrinter(O, TM, Ctx, Streamer, T) {
     Subtarget = &TM.getSubtarget<X86Subtarget>();
   }
 
@@ -57,14 +58,10 @@ class VISIBILITY_HIDDEN X86AsmPrinter : public AsmPrinter {
   
   virtual void EmitEndOfAsmFile(Module &M);
   
-  void printInstructionThroughMCStreamer(const MachineInstr *MI);
-
-
-  void printMCInst(const MCInst *MI);
-
+  virtual void EmitInstruction(const MachineInstr *MI);
+  
   void printSymbolOperand(const MachineOperand &MO);
-  
-  
+  virtual MCSymbol *GetGlobalValueSymbol(const GlobalValue *GV) const;
 
   // These methods are used by the tablegen'erated instruction printer.
   void printOperand(const MachineInstr *MI, unsigned OpNo,
@@ -130,9 +127,6 @@ class VISIBILITY_HIDDEN X86AsmPrinter : public AsmPrinter {
   void PrintPICBaseSymbol() const;
   
   bool runOnMachineFunction(MachineFunction &F);
-
-  void emitFunctionHeader(const MachineFunction &MF);
-
 };
 
 } // end namespace llvm

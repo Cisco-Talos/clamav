@@ -9,7 +9,7 @@
 //
 // Heuristic PBQP solver. This solver is able to perform optimal reductions for
 // nodes of degree 0, 1 or 2. For nodes of degree >2 a plugable heuristic is
-// used to to select a node for reduction. 
+// used to select a node for reduction. 
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,7 +18,6 @@
 
 #include "Graph.h"
 #include "Solution.h"
-#include "llvm/Support/raw_ostream.h"
 #include <vector>
 #include <limits>
 
@@ -107,8 +106,11 @@ namespace PBQP {
     Solution s;
     std::vector<Graph::NodeItr> stack;
 
-    std::vector<NodeData> nodeData;
-    std::vector<EdgeData> edgeData;
+    typedef std::list<NodeData> NodeDataList;
+    NodeDataList nodeDataList;
+
+    typedef std::list<EdgeData> EdgeDataList;
+    EdgeDataList edgeDataList;
 
   public:
 
@@ -364,8 +366,8 @@ namespace PBQP {
       } else if (addedEdge) {
         // If the edge was added, and non-null, finish setting it up, add it to
         // the solver & notify heuristic.
-        edgeData.push_back(EdgeData());
-        g.setEdgeData(yzeItr, &edgeData.back());
+        edgeDataList.push_back(EdgeData());
+        g.setEdgeData(yzeItr, &edgeDataList.back());
         addSolverEdge(yzeItr);
         h.handleAddEdge(yzeItr);
       }
@@ -402,22 +404,18 @@ namespace PBQP {
         simplify();
       }
 
-      // Reserve space for the node and edge data.
-      nodeData.resize(g.getNumNodes());
-      edgeData.resize(g.getNumEdges());
-
       // Create node data objects.
-      unsigned ndIndex = 0;     
       for (Graph::NodeItr nItr = g.nodesBegin(), nEnd = g.nodesEnd();
-	       nItr != nEnd; ++nItr, ++ndIndex) {
-        g.setNodeData(nItr, &nodeData[ndIndex]);
+	       nItr != nEnd; ++nItr) {
+        nodeDataList.push_back(NodeData());
+        g.setNodeData(nItr, &nodeDataList.back());
       }
 
       // Create edge data objects.
-      unsigned edIndex = 0;
       for (Graph::EdgeItr eItr = g.edgesBegin(), eEnd = g.edgesEnd();
-           eItr != eEnd; ++eItr, ++edIndex) {
-        g.setEdgeData(eItr, &edgeData[edIndex]);
+           eItr != eEnd; ++eItr) {
+        edgeDataList.push_back(EdgeData());
+        g.setEdgeData(eItr, &edgeDataList.back());
         addSolverEdge(eItr);
       }
     }
@@ -495,14 +493,23 @@ namespace PBQP {
 
     bool tryNormaliseEdgeMatrix(Graph::EdgeItr &eItr) {
 
+      const PBQPNum infinity = std::numeric_limits<PBQPNum>::infinity();
+
       Matrix &edgeCosts = g.getEdgeCosts(eItr);
       Vector &uCosts = g.getNodeCosts(g.getEdgeNode1(eItr)),
              &vCosts = g.getNodeCosts(g.getEdgeNode2(eItr));
 
       for (unsigned r = 0; r < edgeCosts.getRows(); ++r) {
-        PBQPNum rowMin = edgeCosts.getRowMin(r);
+        PBQPNum rowMin = infinity;
+
+        for (unsigned c = 0; c < edgeCosts.getCols(); ++c) {
+          if (vCosts[c] != infinity && edgeCosts[r][c] < rowMin)
+            rowMin = edgeCosts[r][c];
+        }
+
         uCosts[r] += rowMin;
-        if (rowMin != std::numeric_limits<PBQPNum>::infinity()) {
+
+        if (rowMin != infinity) {
           edgeCosts.subFromRow(r, rowMin);
         }
         else {
@@ -511,9 +518,16 @@ namespace PBQP {
       }
 
       for (unsigned c = 0; c < edgeCosts.getCols(); ++c) {
-        PBQPNum colMin = edgeCosts.getColMin(c);
+        PBQPNum colMin = infinity;
+
+        for (unsigned r = 0; r < edgeCosts.getRows(); ++r) {
+          if (uCosts[r] != infinity && edgeCosts[r][c] < colMin)
+            colMin = edgeCosts[r][c];
+        }
+
         vCosts[c] += colMin;
-        if (colMin != std::numeric_limits<PBQPNum>::infinity()) {
+
+        if (colMin != infinity) {
           edgeCosts.subFromCol(c, colMin);
         }
         else {
@@ -563,8 +577,8 @@ namespace PBQP {
 
     void cleanup() {
       h.cleanup();
-      nodeData.clear();
-      edgeData.clear();
+      nodeDataList.clear();
+      edgeDataList.clear();
     }
   };
 

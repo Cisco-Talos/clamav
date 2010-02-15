@@ -540,7 +540,7 @@ bool MachineBasicBlock::CorrectExtraCFGEdges(MachineBasicBlock *DestA,
 }
 
 /// findDebugLoc - find the next valid DebugLoc starting at MBBI, skipping
-/// any DEBUG_VALUE instructions.  Return UnknownLoc if there is none.
+/// any DBG_VALUE instructions.  Return UnknownLoc if there is none.
 DebugLoc
 MachineBasicBlock::findDebugLoc(MachineBasicBlock::iterator &MBBI) {
   DebugLoc DL;
@@ -548,8 +548,7 @@ MachineBasicBlock::findDebugLoc(MachineBasicBlock::iterator &MBBI) {
   if (MBBI != E) {
     // Skip debug declarations, we don't want a DebugLoc from them.
     MachineBasicBlock::iterator MBBI2 = MBBI;
-    while (MBBI2 != E &&
-           MBBI2->getOpcode()==TargetInstrInfo::DEBUG_VALUE)
+    while (MBBI2 != E && MBBI2->isDebugValue())
       MBBI2++;
     if (MBBI2 != E)
       DL = MBBI2->getDebugLoc();

@@ -18,6 +18,7 @@
 #ifndef LLVM_CODEGEN_PBQP_HEURISTICS_BRIGGS_H
 #define LLVM_CODEGEN_PBQP_HEURISTICS_BRIGGS_H
 
+#include "llvm/Support/Compiler.h"
 #include "../HeuristicSolver.h"
 #include "../HeuristicBase.h"
 
@@ -127,14 +128,7 @@ namespace PBQP {
       /// selected for heuristic reduction instead.
       bool shouldOptimallyReduce(Graph::NodeItr nItr) {
         if (getSolver().getSolverDegree(nItr) < 3) {
-          if (getGraph().getNodeCosts(nItr)[0] !=
-                std::numeric_limits<PBQPNum>::infinity()) {
-            return true;
-          }
-          // Otherwise we have an infinite spill cost node.
-          initializeNode(nItr);
-          NodeData &nd = getHeuristicNodeData(nItr);
-          return nd.isAllocable;
+          return true;
         }
         // else
         return false;
@@ -273,7 +267,7 @@ namespace PBQP {
         if (!nd.isHeuristic)
           return;
 
-        EdgeData &ed = getHeuristicEdgeData(eItr);
+        EdgeData &ed ATTRIBUTE_UNUSED = getHeuristicEdgeData(eItr);
 
         assert(ed.isUpToDate && "Edge data is not up to date.");
 

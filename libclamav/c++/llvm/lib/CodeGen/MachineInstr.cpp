@@ -127,7 +127,8 @@ void MachineOperand::ChangeToImmediate(int64_t ImmVal) {
 /// the specified value.  If an operand is known to be an register already,
 /// the setReg method should be used.
 void MachineOperand::ChangeToRegister(unsigned Reg, bool isDef, bool isImp,
-                                      bool isKill, bool isDead, bool isUndef) {
+                                      bool isKill, bool isDead, bool isUndef,
+                                      bool isDebug) {
   // If this operand is already a register operand, use setReg to update the 
   // register's use/def lists.
   if (isReg()) {
@@ -152,6 +153,7 @@ void MachineOperand::ChangeToRegister(unsigned Reg, bool isDef, bool isImp,
   IsDead = isDead;
   IsUndef = isUndef;
   IsEarlyClobber = false;
+  IsDebug = isDebug;
   SubReg = 0;
 }
 
@@ -740,20 +742,6 @@ unsigned MachineInstr::getNumExplicitOperands() const {
 }
 
 
-/// isLabel - Returns true if the MachineInstr represents a label.
-///
-bool MachineInstr::isLabel() const {
-  return getOpcode() == TargetInstrInfo::DBG_LABEL ||
-         getOpcode() == TargetInstrInfo::EH_LABEL ||
-         getOpcode() == TargetInstrInfo::GC_LABEL;
-}
-
-/// isDebugLabel - Returns true if the MachineInstr represents a debug label.
-///
-bool MachineInstr::isDebugLabel() const {
-  return getOpcode() == TargetInstrInfo::DBG_LABEL;
-}
-
 /// findRegisterUseOperandIdx() - Returns the MachineOperand that is a use of
 /// the specific register or -1 if it is not found. It further tightens
 /// the search criteria to a use that kills the register if isKill is true.
@@ -819,7 +807,7 @@ int MachineInstr::findFirstPredOperandIdx() const {
 /// first tied use operand index by reference is UseOpIdx is not null.
 bool MachineInstr::
 isRegTiedToUseOperand(unsigned DefOpIdx, unsigned *UseOpIdx) const {
-  if (getOpcode() == TargetInstrInfo::INLINEASM) {
+  if (isInlineAsm()) {
     assert(DefOpIdx >= 2);
     const MachineOperand &MO = getOperand(DefOpIdx);
     if (!MO.isReg() || !MO.isDef() || MO.getReg() == 0)
@@ -878,7 +866,7 @@ isRegTiedToUseOperand(unsigned DefOpIdx, unsigned *UseOpIdx) const {
 /// operand index by reference.
 bool MachineInstr::
 isRegTiedToDefOperand(unsigned UseOpIdx, unsigned *DefOpIdx) const {
-  if (getOpcode() == TargetInstrInfo::INLINEASM) {
+  if (isInlineAsm()) {
     const MachineOperand &MO = getOperand(UseOpIdx);
     if (!MO.isReg() || !MO.isUse() || MO.getReg() == 0)
       return false;
@@ -1046,7 +1034,7 @@ bool MachineInstr::hasVolatileMemoryRef() const {
 
 /// isInvariantLoad - Return true if this instruction is loading from a
 /// location whose value is invariant across the function.  For example,
-/// loading a value from the constant pool or from from the argument area
+/// loading a value from the constant pool or from the argument area
 /// of a function if it does not change.  This should only return true of
 /// *all* loads the instruction does are invariant (if it does multiple loads).
 bool MachineInstr::isInvariantLoad(AliasAnalysis *AA) const {
@@ -1088,7 +1076,7 @@ bool MachineInstr::isInvariantLoad(AliasAnalysis *AA) const {
 /// merges together the same virtual register, return the register, otherwise
 /// return 0.
 unsigned MachineInstr::isConstantValuePHI() const {
-  if (getOpcode() != TargetInstrInfo::PHI)
+  if (!isPHI())
     return 0;
   assert(getNumOperands() >= 3 &&
          "It's illegal to have a PHI without source operands");

@@ -195,13 +195,13 @@ void DwarfPrinter::EmitReference(const MCSymbol *Sym, bool IsPCRelative,
   if (IsPCRelative) O << "-" << MAI->getPCSymbol();
 }
 
-/// EmitDifference - Emit the difference between two labels.  Some assemblers do
-/// not behave with absolute expressions with data directives, so there is an
-/// option (needsSet) to use an intermediary set expression.
+/// EmitDifference - Emit the difference between two labels.  If this assembler
+/// supports .set, we emit a .set of a temporary and then use it in the .word.
 void DwarfPrinter::EmitDifference(const char *TagHi, unsigned NumberHi,
                                   const char *TagLo, unsigned NumberLo,
                                   bool IsSmall) {
-  if (MAI->needsSet()) {
+  if (MAI->hasSetDirective()) {
+    // FIXME: switch to OutStreamer.EmitAssignment.
     O << "\t.set\t";
     PrintLabelName("set", SetCounter, Flavor);
     O << ",";
@@ -232,7 +232,8 @@ void DwarfPrinter::EmitSectionOffset(const char* Label, const char* Section,
   else
     printAbsolute = MAI->isAbsoluteDebugSectionOffsets();
 
-  if (MAI->needsSet() && useSet) {
+  if (MAI->hasSetDirective() && useSet) {
+    // FIXME: switch to OutStreamer.EmitAssignment.
     O << "\t.set\t";
     PrintLabelName("set", SetCounter, Flavor);
     O << ",";
@@ -247,7 +248,6 @@ void DwarfPrinter::EmitSectionOffset(const char* Label, const char* Section,
     PrintRelDirective(IsSmall);
     PrintLabelName("set", SetCounter, Flavor);
     ++SetCounter;
-    O << "\n";
   } else {
     PrintRelDirective(IsSmall, true);
     PrintLabelName(Label, LabelNumber);
@@ -256,7 +256,6 @@ void DwarfPrinter::EmitSectionOffset(const char* Label, const char* Section,
       O << "-";
       PrintLabelName(Section, SectionNumber);
     }
-    O << "\n";
   }
 }
 

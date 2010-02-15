@@ -1786,6 +1786,18 @@ BinaryOperator *BinaryOperator::CreateNSWNeg(Value *Op, const Twine &Name,
   return BinaryOperator::CreateNSWSub(zero, Op, Name, InsertAtEnd);
 }
 
+BinaryOperator *BinaryOperator::CreateNUWNeg(Value *Op, const Twine &Name,
+                                             Instruction *InsertBefore) {
+  Value *zero = ConstantFP::getZeroValueForNegation(Op->getType());
+  return BinaryOperator::CreateNUWSub(zero, Op, Name, InsertBefore);
+}
+
+BinaryOperator *BinaryOperator::CreateNUWNeg(Value *Op, const Twine &Name,
+                                             BasicBlock *InsertAtEnd) {
+  Value *zero = ConstantFP::getZeroValueForNegation(Op->getType());
+  return BinaryOperator::CreateNUWSub(zero, Op, Name, InsertAtEnd);
+}
+
 BinaryOperator *BinaryOperator::CreateFNeg(Value *Op, const Twine &Name,
                                            Instruction *InsertBefore) {
   Value *zero = ConstantFP::getZeroValueForNegation(Op->getType());
@@ -2504,7 +2516,8 @@ CastInst::castIsValid(Instruction::CastOps op, Value *S, const Type *DstTy) {
 
   // Check for type sanity on the arguments
   const Type *SrcTy = S->getType();
-  if (!SrcTy->isFirstClassType() || !DstTy->isFirstClassType())
+  if (!SrcTy->isFirstClassType() || !DstTy->isFirstClassType() ||
+      SrcTy->isAggregateType() || DstTy->isAggregateType())
     return false;
 
   // Get the size of the types in bits, we'll need this later
@@ -2865,25 +2878,53 @@ ICmpInst::makeConstantRange(Predicate pred, const APInt &C) {
   default: llvm_unreachable("Invalid ICmp opcode to ConstantRange ctor!");
   case ICmpInst::ICMP_EQ: Upper++; break;
   case ICmpInst::ICMP_NE: Lower++; break;
-  case ICmpInst::ICMP_ULT: Lower = APInt::getMinValue(BitWidth); break;
-  case ICmpInst::ICMP_SLT: Lower = APInt::getSignedMinValue(BitWidth); break;
+  case ICmpInst::ICMP_ULT:
+    Lower = APInt::getMinValue(BitWidth);
+    // Check for an empty-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/false);
+    break;
+  case ICmpInst::ICMP_SLT:
+    Lower = APInt::getSignedMinValue(BitWidth);
+    // Check for an empty-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/false);
+    break;
   case ICmpInst::ICMP_UGT: 
     Lower++; Upper = APInt::getMinValue(BitWidth);        // Min = Next(Max)
+    // Check for an empty-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/false);
     break;
   case ICmpInst::ICMP_SGT:
     Lower++; Upper = APInt::getSignedMinValue(BitWidth);  // Min = Next(Max)
+    // Check for an empty-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/false);
     break;
   case ICmpInst::ICMP_ULE: 
     Lower = APInt::getMinValue(BitWidth); Upper++; 
+    // Check for a full-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/true);
     break;
   case ICmpInst::ICMP_SLE: 
     Lower = APInt::getSignedMinValue(BitWidth); Upper++; 
+    // Check for a full-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/true);
     break;
   case ICmpInst::ICMP_UGE:
     Upper = APInt::getMinValue(BitWidth);        // Min = Next(Max)
+    // Check for a full-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/true);
     break;
   case ICmpInst::ICMP_SGE:
     Upper = APInt::getSignedMinValue(BitWidth);  // Min = Next(Max)
+    // Check for a full-set condition.
+    if (Lower == Upper)
+      return ConstantRange(BitWidth, /*isFullSet=*/true);
     break;
   }
   return ConstantRange(Lower, Upper);
