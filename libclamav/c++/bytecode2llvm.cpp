@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 #define DEBUG_TYPE "clamavjit"
+#include "ClamBCModule.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/StringMap.h"
@@ -190,6 +191,7 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("memmove", (void*)(intptr_t)memmove)
 	.Case("memcpy", (void*)(intptr_t)memcpy)
 	.Case("memset", (void*)(intptr_t)memset)
+	.Case("abort", (void*)(intptr_t)jit_exception_handler)
 	.Default(0);
     if (addr)
 	return addr;
@@ -649,6 +651,8 @@ public:
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
 	const Type *I64Ty = Type::getInt64Ty(Context);
+	if (!bc->trusted)
+	    PM.add(createClamBCRTChecks());
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -751,6 +755,7 @@ public:
 			case OP_BC_STORE:
 			case OP_BC_COPY:
 			case OP_BC_RET:
+			case OP_BC_PTRDIFF32:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -951,8 +956,8 @@ public:
 			{
 			    const Type *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
-			    Value *Op = convertOperand(func, I64Ty, inst->u.three[2]);
-			    Op = Builder.CreateTrunc(Op, I32Ty);
+			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
+//			    Op = Builder.CreateTrunc(Op, I32Ty);
 			    if (!createGEP(inst->dest, V, &Op, &Op+1))
 				return false;
 			    break;
@@ -963,8 +968,8 @@ public:
 			    Ops[0] = ConstantInt::get(Type::getInt32Ty(Context), 0);
 			    const Type *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
-			    Ops[1] = convertOperand(func, I64Ty, inst->u.three[2]);
-			    Ops[1] = Builder.CreateTrunc(Ops[1], I32Ty);
+			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
+//			    Ops[1] = Builder.CreateTrunc(Ops[1], I32Ty);
 			    if (!createGEP(inst->dest, V, Ops, Ops+2))
 				return false;
 			    break;
@@ -976,8 +981,8 @@ public:
 			    const Type *SrcTy = mapType(inst->u.ops.ops[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
 			    for (unsigned a=2;a<inst->u.ops.numOps;a++) {
-				Value *Op = convertOperand(func, I64Ty, inst->u.ops.ops[a]);
-				Op = Builder.CreateTrunc(Op, I32Ty);
+				Value *Op = convertOperand(func, I32Ty, inst->u.ops.ops[a]);
+//				Op = Builder.CreateTrunc(Op, I32Ty);
 				Idxs.push_back(Op);
 			    }
 			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
@@ -1114,7 +1119,6 @@ public:
 	    delete [] Values;
 	    delete [] BB;
 	}
-
 	DEBUG(M->dump());
 	delete TypeMap;
 	std::vector<const Type*> args;
@@ -1153,9 +1157,6 @@ public:
 			compiledFunctions[func] = code;
 		}
 	  }
-	}
-	if (!bc->trusted) {
-	    //TODO: call verifier to insert runtime checks
 	}
 	delete [] Functions;
 	return true;

@@ -44,7 +44,7 @@ libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmx86codegen.la
@@ -441,6 +441,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Analysis/CaptureTracking.cpp\
 	llvm/lib/Analysis/DebugInfo.cpp\
 	llvm/lib/Analysis/MemoryBuiltins.cpp\
+	llvm/lib/Analysis/PointerTracking.cpp\
 	llvm/lib/Analysis/ValueTracking.cpp\
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp\
 	llvm/lib/CodeGen/ELFWriter.cpp\

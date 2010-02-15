@@ -106,7 +106,8 @@ CONFIG_HEADER = clamavcxx-config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo
+am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo \
+	libclamavcxx_la-ClamBCRTChecks.lo
 libclamavcxx_la_OBJECTS = $(am_libclamavcxx_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -279,8 +280,8 @@ libllvminterpreter_la_OBJECTS = $(am_libllvminterpreter_la_OBJECTS)
 libllvmjit_la_LIBADD =
 am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
 	CaptureTracking.lo DebugInfo.lo MemoryBuiltins.lo \
-	ValueTracking.lo ELFCodeEmitter.lo ELFWriter.lo \
-	MachineBasicBlock.lo MachineFunction.lo \
+	PointerTracking.lo ValueTracking.lo ELFCodeEmitter.lo \
+	ELFWriter.lo MachineBasicBlock.lo MachineFunction.lo \
 	MachineFunctionAnalysis.lo MachineFunctionPass.lo \
 	MachineInstr.lo MachineModuleInfo.lo MachineRegisterInfo.lo \
 	ObjectCodeEmitter.lo PseudoSourceValue.lo \
@@ -929,7 +930,7 @@ libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
 	$(am__append_10)
 libclamavcxx_la_LDFLAGS = -no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
@@ -1186,6 +1187,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Analysis/CaptureTracking.cpp\
 	llvm/lib/Analysis/DebugInfo.cpp\
 	llvm/lib/Analysis/MemoryBuiltins.cpp\
+	llvm/lib/Analysis/PointerTracking.cpp\
 	llvm/lib/Analysis/ValueTracking.cpp\
 	llvm/lib/CodeGen/ELFCodeEmitter.cpp\
 	llvm/lib/CodeGen/ELFWriter.cpp\
@@ -1900,6 +1902,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Passes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PluginLoader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PointerTracking.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PostRASchedulerList.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PreAllocSplitting.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PrettyStackTrace.Plo@am__quote@
@@ -1994,6 +1997,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VirtRegRewriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/circular_raw_ostream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/count-count.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-ClamBCRTChecks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-bytecode2llvm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-TestMain.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-gtest-death-test.Plo@am__quote@
@@ -2399,6 +2403,14 @@ libclamavcxx_la-bytecode2llvm.lo: bytecode2llvm.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bytecode2llvm.cpp' object='libclamavcxx_la-bytecode2llvm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamavcxx_la-bytecode2llvm.lo `test -f 'bytecode2llvm.cpp' || echo '$(srcdir)/'`bytecode2llvm.cpp
+
+libclamavcxx_la-ClamBCRTChecks.lo: ClamBCRTChecks.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -MT libclamavcxx_la-ClamBCRTChecks.lo -MD -MP -MF $(DEPDIR)/libclamavcxx_la-ClamBCRTChecks.Tpo -c -o libclamavcxx_la-ClamBCRTChecks.lo `test -f 'ClamBCRTChecks.cpp' || echo '$(srcdir)/'`ClamBCRTChecks.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamavcxx_la-ClamBCRTChecks.Tpo $(DEPDIR)/libclamavcxx_la-ClamBCRTChecks.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ClamBCRTChecks.cpp' object='libclamavcxx_la-ClamBCRTChecks.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamavcxx_la-ClamBCRTChecks.lo `test -f 'ClamBCRTChecks.cpp' || echo '$(srcdir)/'`ClamBCRTChecks.cpp
 
 libgoogletest_la-gtest-death-test.lo: llvm/utils/unittest/googletest/gtest-death-test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-death-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-death-test.Tpo -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
@@ -3935,6 +3947,14 @@ MemoryBuiltins.lo: llvm/lib/Analysis/MemoryBuiltins.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/MemoryBuiltins.cpp' object='MemoryBuiltins.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o MemoryBuiltins.lo `test -f 'llvm/lib/Analysis/MemoryBuiltins.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/MemoryBuiltins.cpp
+
+PointerTracking.lo: llvm/lib/Analysis/PointerTracking.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT PointerTracking.lo -MD -MP -MF $(DEPDIR)/PointerTracking.Tpo -c -o PointerTracking.lo `test -f 'llvm/lib/Analysis/PointerTracking.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/PointerTracking.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/PointerTracking.Tpo $(DEPDIR)/PointerTracking.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/PointerTracking.cpp' object='PointerTracking.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o PointerTracking.lo `test -f 'llvm/lib/Analysis/PointerTracking.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/PointerTracking.cpp
 
 ValueTracking.lo: llvm/lib/Analysis/ValueTracking.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ValueTracking.lo -MD -MP -MF $(DEPDIR)/ValueTracking.Tpo -c -o ValueTracking.lo `test -f 'llvm/lib/Analysis/ValueTracking.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/ValueTracking.cpp
