@@ -930,7 +930,7 @@ libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
 	$(am__append_10)
 libclamavcxx_la_LDFLAGS = -no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp ClamBCModule.h
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
 TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
