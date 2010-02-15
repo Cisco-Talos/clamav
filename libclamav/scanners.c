@@ -2231,14 +2231,14 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	default:
 	    break;
     }
+
+    if(ret == CL_VIRUS)
+	ret = cli_checkfp(hash, hashed_size, ctx);
     ctx->recursion--;
     funmap(*ctx->fmap);
     ctx->fmap--;
     cli_bitset_free(ctx->hook_lsig_matches);
     ctx->hook_lsig_matches = old_hook_lsig_matches;
-
-    if(ret == CL_VIRUS)
-	ret = cli_checkfp(hash, hashed_size, ctx);
 
     switch(ret) {
 	case CL_EFORMAT:
