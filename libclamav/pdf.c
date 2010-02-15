@@ -44,7 +44,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 
 #include "clamav.h"
 #include "others.h"
-#include "mbox.h"
 #include "pdf.h"
 #include "scanners.h"
 #include "fmap.h"
@@ -70,7 +69,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
-	table_t *md5table;
 	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
 	fmap_t *map = *ctx->fmap;
@@ -160,7 +158,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
 	printed_predictor_message = printed_embedded_font_message = 0;
 
-	md5table = tableCreate();
 	/*
 	 * not true, since edits may put data after the trailer
 	xreflength = (size_t)(trailerstart - xrefstart);
@@ -179,7 +176,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
-		unsigned char *md5digest;
 		unsigned long length, objlen, real_streamlen, calculated_streamlen;
 		int is_embedded_font, predictor;
 		char fullname[NAME_MAX + 1];
@@ -496,33 +492,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 			files++;
 	
 			lseek(fout, 0, SEEK_SET);
-			if((md5digest = cli_md5digest(fout))) {
-				unsigned int i;
-				char md5str[33];
-
-				for(i = 0; i < 16; i++)
-					sprintf(md5str + 2*i, "%02x", md5digest[i]);
-				md5str[32] = 0;
-				free(md5digest);
-
-				if(tableFind(md5table, md5str) >= 0) {
-					cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
-					ctx->scannedfiles++;
-					close(fout);
-					if (cli_unlink(fullname)) {
-						rc = CL_EUNLINK;
-						break;
-					}
-					if(cli_updatelimits(ctx, real_streamlen) != CL_SUCCESS) {
-						rc = CL_CLEAN;
-						break;
-					}
-					continue;
-				} else
-					tableInsert(md5table, md5str, 1);
-			}
-
-			lseek(fout, 0, SEEK_SET);
 			rc = cli_magic_scandesc(fout, ctx);
 		}
 		close(fout);
@@ -531,8 +500,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 		if(rc != CL_CLEAN) break;
 	}
 
-
-	tableDestroy(md5table);
 
 	cli_dbgmsg("cli_pdf: returning %d\n", rc);
 	return rc;
