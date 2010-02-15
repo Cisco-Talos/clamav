@@ -3098,10 +3098,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_void:isVoid 335:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 336:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBA:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(335)) {
+    if (CN1 == INT64_C(336)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3111,10 +3111,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 336:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 337:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBF:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(336)) {
+    if (CN1 == INT64_C(337)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3124,10 +3124,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 337:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 338:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBI:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(337)) {
+    if (CN1 == INT64_C(338)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3137,10 +3137,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 338:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 339:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBST:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(338)) {
+    if (CN1 == INT64_C(339)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3150,10 +3150,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 339:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 340:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBT:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(339)) {
+    if (CN1 == INT64_C(340)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3163,10 +3163,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 340:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 341:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBTST:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(340)) {
+    if (CN1 == INT64_C(341)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3176,10 +3176,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 341:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 342:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBZ:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(341)) {
+    if (CN1 == INT64_C(342)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3189,10 +3189,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 342:iPTR, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 343:iPTR, xoaddr:iPTR:$dst)
     // Emits: (DCBZL:isVoid xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(342)) {
+    if (CN1 == INT64_C(343)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -3202,10 +3202,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 203:iPTR, VRRC:v16i8:$rS, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 204:iPTR, VRRC:v16i8:$rS, xoaddr:iPTR:$dst)
     // Emits: (STVEBX:isVoid VRRC:v16i8:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(203)) {
+    if (CN1 == INT64_C(204)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue CPTmpN3_0;
@@ -3216,10 +3216,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 204:iPTR, VRRC:v8i16:$rS, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 205:iPTR, VRRC:v8i16:$rS, xoaddr:iPTR:$dst)
     // Emits: (STVEHX:isVoid VRRC:v8i16:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(204)) {
+    if (CN1 == INT64_C(205)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue CPTmpN3_0;
@@ -3230,10 +3230,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 205:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 206:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Emits: (STVEWX:isVoid VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(205)) {
+    if (CN1 == INT64_C(206)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue CPTmpN3_0;
@@ -3244,10 +3244,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 206:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 207:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Emits: (STVX:isVoid VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(206)) {
+    if (CN1 == INT64_C(207)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue CPTmpN3_0;
@@ -3258,10 +3258,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 207:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
+    // Pattern: (intrinsic_void:isVoid 208:iPTR, VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Emits: (STVXL:isVoid VRRC:v4i32:$rS, xoaddr:iPTR:$dst)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(207)) {
+    if (CN1 == INT64_C(208)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue CPTmpN3_0;
@@ -3272,10 +3272,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 188:iPTR, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 189:iPTR, (imm:i32):$STRM)
     // Emits: (DSS:isVoid 0:i32, (imm:i32):$STRM, 0:i32, 0:i32)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(188)) {
+    if (CN1 == INT64_C(189)) {
       SDValue N2 = N->getOperand(2);
       if (N2.getNode()->getOpcode() == ISD::Constant) {
         SDNode *Result = Emit_47(N, PPC::DSS);
@@ -3283,10 +3283,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 190:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 191:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DST:isVoid 0:i32, (imm:i32):$STRM, GPRC:i32:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(190)) {
+    if (CN1 == INT64_C(191)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3297,10 +3297,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 193:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 194:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTT:isVoid 1:i32, (imm:i32):$STRM, GPRC:i32:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(193)) {
+    if (CN1 == INT64_C(194)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3311,10 +3311,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 191:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 192:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTST:isVoid 0:i32, (imm:i32):$STRM, GPRC:i32:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(191)) {
+    if (CN1 == INT64_C(192)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3325,10 +3325,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 192:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 193:iPTR, GPRC:i32:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTSTT:isVoid 1:i32, (imm:i32):$STRM, GPRC:i32:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(192)) {
+    if (CN1 == INT64_C(193)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3339,10 +3339,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 190:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 191:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DST64:isVoid 0:i32, (imm:i32):$STRM, G8RC:i64:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(190)) {
+    if (CN1 == INT64_C(191)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3353,10 +3353,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 193:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 194:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTT64:isVoid 1:i32, (imm:i32):$STRM, G8RC:i64:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(193)) {
+    if (CN1 == INT64_C(194)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3367,10 +3367,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 191:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 192:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTST64:isVoid 0:i32, (imm:i32):$STRM, G8RC:i64:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(191)) {
+    if (CN1 == INT64_C(192)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3381,10 +3381,10 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 192:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
+    // Pattern: (intrinsic_void:isVoid 193:iPTR, G8RC:i64:$rA, GPRC:i32:$rB, (imm:i32):$STRM)
     // Emits: (DSTSTT64:isVoid 1:i32, (imm:i32):$STRM, G8RC:i64:$rA, GPRC:i32:$rB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(192)) {
+    if (CN1 == INT64_C(193)) {
       SDValue N2 = N->getOperand(2);
       SDValue N3 = N->getOperand(3);
       SDValue N4 = N->getOperand(4);
@@ -3395,26 +3395,26 @@ SDNode *Select_ISD_INTRINSIC_VOID(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_void:isVoid 343:iPTR)
+    // Pattern: (intrinsic_void:isVoid 344:iPTR)
     // Emits: (SYNC:isVoid)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(343)) {
+    if (CN1 == INT64_C(344)) {
       SDNode *Result = Emit_43(N, PPC::SYNC);
       return Result;
     }
 
-    // Pattern: (intrinsic_void:isVoid 202:iPTR, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_void:isVoid 203:iPTR, VRRC:v4i32:$vB)
     // Emits: (MTVSCR:isVoid VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(202)) {
+    if (CN1 == INT64_C(203)) {
       SDNode *Result = Emit_44(N, PPC::MTVSCR);
       return Result;
     }
 
-    // Pattern: (intrinsic_void:isVoid 189:iPTR)
+    // Pattern: (intrinsic_void:isVoid 190:iPTR)
     // Emits: (DSSALL:isVoid 1:i32, 0:i32, 0:i32, 0:i32)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(189)) {
+    if (CN1 == INT64_C(190)) {
       SDNode *Result = Emit_46(N, PPC::DSSALL);
       return Result;
     }
@@ -3441,10 +3441,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v16i8(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_wo_chain:v16i8 197:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_wo_chain:v16i8 198:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVSL:v16i8 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(197)) {
+    if (CN1 == INT64_C(198)) {
       SDValue N1 = N->getOperand(1);
       SDValue CPTmpN1_0;
       SDValue CPTmpN1_1;
@@ -3454,10 +3454,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v16i8(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 198:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_wo_chain:v16i8 199:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVSR:v16i8 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(198)) {
+    if (CN1 == INT64_C(199)) {
       SDValue N1 = N->getOperand(1);
       SDValue CPTmpN1_0;
       SDValue CPTmpN1_1;
@@ -3467,146 +3467,146 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v16i8(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 209:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 210:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VADDSBS:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(209)) {
+    if (CN1 == INT64_C(210)) {
       SDNode *Result = Emit_51(N, PPC::VADDSBS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 212:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 213:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VADDUBS:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(212)) {
+    if (CN1 == INT64_C(213)) {
       SDNode *Result = Emit_51(N, PPC::VADDUBS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 215:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 216:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VAVGSB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(215)) {
+    if (CN1 == INT64_C(216)) {
       SDNode *Result = Emit_51(N, PPC::VAVGSB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 218:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 219:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VAVGUB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(218)) {
+    if (CN1 == INT64_C(219)) {
       SDNode *Result = Emit_51(N, PPC::VAVGUB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 255:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 256:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMAXSB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(255)) {
+    if (CN1 == INT64_C(256)) {
       SDNode *Result = Emit_51(N, PPC::VMAXSB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 258:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 259:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMAXUB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(258)) {
+    if (CN1 == INT64_C(259)) {
       SDNode *Result = Emit_51(N, PPC::VMAXUB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 264:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 265:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMINSB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(264)) {
+    if (CN1 == INT64_C(265)) {
       SDNode *Result = Emit_51(N, PPC::VMINSB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 267:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 268:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMINUB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(267)) {
+    if (CN1 == INT64_C(268)) {
       SDNode *Result = Emit_51(N, PPC::VMINUB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 318:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 319:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VSUBSBS:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(318)) {
+    if (CN1 == INT64_C(319)) {
       SDNode *Result = Emit_51(N, PPC::VSUBSBS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 321:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 322:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VSUBUBS:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(321)) {
+    if (CN1 == INT64_C(322)) {
       SDNode *Result = Emit_51(N, PPC::VSUBUBS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 299:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 300:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VRLB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(299)) {
+    if (CN1 == INT64_C(300)) {
       SDNode *Result = Emit_51(N, PPC::VRLB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 305:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 306:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VSLB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(305)) {
+    if (CN1 == INT64_C(306)) {
       SDNode *Result = Emit_51(N, PPC::VSLB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 310:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 311:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VSRAB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(310)) {
+    if (CN1 == INT64_C(311)) {
       SDNode *Result = Emit_51(N, PPC::VSRAB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 313:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 314:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VSRB:v16i8 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(313)) {
+    if (CN1 == INT64_C(314)) {
       SDNode *Result = Emit_51(N, PPC::VSRB, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 288:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 289:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VPKSHSS:v16i8 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(288)) {
+    if (CN1 == INT64_C(289)) {
       SDNode *Result = Emit_51(N, PPC::VPKSHSS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 289:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 290:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VPKSHUS:v16i8 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(289)) {
+    if (CN1 == INT64_C(290)) {
       SDNode *Result = Emit_51(N, PPC::VPKSHUS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 290:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 291:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VPKSWSS:v16i8 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(290)) {
+    if (CN1 == INT64_C(291)) {
       SDNode *Result = Emit_51(N, PPC::VPKSWSS, MVT::v16i8);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v16i8 292:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v16i8 293:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VPKUHUS:v16i8 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(292)) {
+    if (CN1 == INT64_C(293)) {
       SDNode *Result = Emit_51(N, PPC::VPKUHUS, MVT::v16i8);
       return Result;
     }
@@ -3634,210 +3634,210 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v8i16(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_wo_chain:v8i16 261:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
+    // Pattern: (intrinsic_wo_chain:v8i16 262:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Emits: (VMHADDSHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(261)) {
+    if (CN1 == INT64_C(262)) {
       SDNode *Result = Emit_52(N, PPC::VMHADDSHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 262:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
+    // Pattern: (intrinsic_wo_chain:v8i16 263:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Emits: (VMHRADDSHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(262)) {
+    if (CN1 == INT64_C(263)) {
       SDNode *Result = Emit_52(N, PPC::VMHRADDSHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 270:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
+    // Pattern: (intrinsic_wo_chain:v8i16 271:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Emits: (VMLADDUHM:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v8i16:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(270)) {
+    if (CN1 == INT64_C(271)) {
       SDNode *Result = Emit_52(N, PPC::VMLADDUHM, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 210:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 211:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VADDSHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(210)) {
+    if (CN1 == INT64_C(211)) {
       SDNode *Result = Emit_51(N, PPC::VADDSHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 213:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 214:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VADDUHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(213)) {
+    if (CN1 == INT64_C(214)) {
       SDNode *Result = Emit_51(N, PPC::VADDUHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 216:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 217:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VAVGSH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(216)) {
+    if (CN1 == INT64_C(217)) {
       SDNode *Result = Emit_51(N, PPC::VAVGSH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 219:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 220:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VAVGUH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(219)) {
+    if (CN1 == INT64_C(220)) {
       SDNode *Result = Emit_51(N, PPC::VAVGUH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 256:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 257:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMAXSH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(256)) {
+    if (CN1 == INT64_C(257)) {
       SDNode *Result = Emit_51(N, PPC::VMAXSH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 259:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 260:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMAXUH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(259)) {
+    if (CN1 == INT64_C(260)) {
       SDNode *Result = Emit_51(N, PPC::VMAXUH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 265:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 266:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMINSH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(265)) {
+    if (CN1 == INT64_C(266)) {
       SDNode *Result = Emit_51(N, PPC::VMINSH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 268:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 269:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMINUH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(268)) {
+    if (CN1 == INT64_C(269)) {
       SDNode *Result = Emit_51(N, PPC::VMINUH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 277:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 278:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMULESB:v8i16 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(277)) {
+    if (CN1 == INT64_C(278)) {
       SDNode *Result = Emit_51(N, PPC::VMULESB, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 279:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 280:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMULEUB:v8i16 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(279)) {
+    if (CN1 == INT64_C(280)) {
       SDNode *Result = Emit_51(N, PPC::VMULEUB, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 281:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 282:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMULOSB:v8i16 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(281)) {
+    if (CN1 == INT64_C(282)) {
       SDNode *Result = Emit_51(N, PPC::VMULOSB, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 283:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 284:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Emits: (VMULOUB:v8i16 VRRC:v16i8:$vA, VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(283)) {
+    if (CN1 == INT64_C(284)) {
       SDNode *Result = Emit_51(N, PPC::VMULOUB, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 319:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 320:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VSUBSHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(319)) {
+    if (CN1 == INT64_C(320)) {
       SDNode *Result = Emit_51(N, PPC::VSUBSHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 322:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 323:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VSUBUHS:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(322)) {
+    if (CN1 == INT64_C(323)) {
       SDNode *Result = Emit_51(N, PPC::VSUBUHS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 300:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 301:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VRLH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(300)) {
+    if (CN1 == INT64_C(301)) {
       SDNode *Result = Emit_51(N, PPC::VRLH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 306:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 307:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VSLH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(306)) {
+    if (CN1 == INT64_C(307)) {
       SDNode *Result = Emit_51(N, PPC::VSLH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 311:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 312:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VSRAH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(311)) {
+    if (CN1 == INT64_C(312)) {
       SDNode *Result = Emit_51(N, PPC::VSRAH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 314:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 315:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VSRH:v8i16 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(314)) {
+    if (CN1 == INT64_C(315)) {
       SDNode *Result = Emit_51(N, PPC::VSRH, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 287:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 288:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VPKPX:v8i16 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(287)) {
+    if (CN1 == INT64_C(288)) {
       SDNode *Result = Emit_51(N, PPC::VPKPX, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 291:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 292:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VPKSWUS:v8i16 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(291)) {
+    if (CN1 == INT64_C(292)) {
       SDNode *Result = Emit_51(N, PPC::VPKSWUS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 293:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 294:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VPKUWUS:v8i16 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(293)) {
+    if (CN1 == INT64_C(294)) {
       SDNode *Result = Emit_51(N, PPC::VPKUWUS, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 330:iPTR, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 331:iPTR, VRRC:v16i8:$vB)
     // Emits: (VUPKHSB:v8i16 VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(330)) {
+    if (CN1 == INT64_C(331)) {
       SDNode *Result = Emit_53(N, PPC::VUPKHSB, MVT::v8i16);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v8i16 333:iPTR, VRRC:v16i8:$vB)
+    // Pattern: (intrinsic_wo_chain:v8i16 334:iPTR, VRRC:v16i8:$vB)
     // Emits: (VUPKLSB:v8i16 VRRC:v16i8:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(333)) {
+    if (CN1 == INT64_C(334)) {
       SDNode *Result = Emit_53(N, PPC::VUPKLSB, MVT::v8i16);
       return Result;
     }
@@ -3860,10 +3860,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_wo_chain:v4i32 249:iPTR, VRRC:v4f32:$vB, (imm:i32):$UIMM)
+    // Pattern: (intrinsic_wo_chain:v4i32 250:iPTR, VRRC:v4f32:$vB, (imm:i32):$UIMM)
     // Emits: (VCTSXS:v4i32 (imm:i32):$UIMM, VRRC:v4f32:$vB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(249)) {
+    if (CN1 == INT64_C(250)) {
       SDValue N1 = N->getOperand(1);
       SDValue N2 = N->getOperand(2);
       if (N2.getNode()->getOpcode() == ISD::Constant) {
@@ -3872,10 +3872,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 250:iPTR, VRRC:v4f32:$vB, (imm:i32):$UIMM)
+    // Pattern: (intrinsic_wo_chain:v4i32 251:iPTR, VRRC:v4f32:$vB, (imm:i32):$UIMM)
     // Emits: (VCTUXS:v4i32 (imm:i32):$UIMM, VRRC:v4f32:$vB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(250)) {
+    if (CN1 == INT64_C(251)) {
       SDValue N1 = N->getOperand(1);
       SDValue N2 = N->getOperand(2);
       if (N2.getNode()->getOpcode() == ISD::Constant) {
@@ -3884,330 +3884,330 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 286:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v16i8:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 287:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v16i8:$vC)
     // Emits: (VPERM:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v16i8:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(286)) {
+    if (CN1 == INT64_C(287)) {
       SDNode *Result = Emit_52(N, PPC::VPERM, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 303:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 304:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v4i32:$vC)
     // Emits: (VSEL:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(303)) {
+    if (CN1 == INT64_C(304)) {
       SDNode *Result = Emit_52(N, PPC::VSEL, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 208:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 209:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VADDCUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(208)) {
+    if (CN1 == INT64_C(209)) {
       SDNode *Result = Emit_51(N, PPC::VADDCUW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 211:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 212:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VADDSWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(211)) {
+    if (CN1 == INT64_C(212)) {
       SDNode *Result = Emit_51(N, PPC::VADDSWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 214:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 215:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VADDUWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(214)) {
+    if (CN1 == INT64_C(215)) {
       SDNode *Result = Emit_51(N, PPC::VADDUWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 217:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 218:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VAVGSW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(217)) {
+    if (CN1 == INT64_C(218)) {
       SDNode *Result = Emit_51(N, PPC::VAVGSW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 220:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 221:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VAVGUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(220)) {
+    if (CN1 == INT64_C(221)) {
       SDNode *Result = Emit_51(N, PPC::VAVGUW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 257:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 258:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VMAXSW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(257)) {
+    if (CN1 == INT64_C(258)) {
       SDNode *Result = Emit_51(N, PPC::VMAXSW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 260:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 261:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VMAXUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(260)) {
+    if (CN1 == INT64_C(261)) {
       SDNode *Result = Emit_51(N, PPC::VMAXUW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 266:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 267:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VMINSW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(266)) {
+    if (CN1 == INT64_C(267)) {
       SDNode *Result = Emit_51(N, PPC::VMINSW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 269:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 270:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VMINUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(269)) {
+    if (CN1 == INT64_C(270)) {
       SDNode *Result = Emit_51(N, PPC::VMINUW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 271:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 272:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMMBM:v4i32 VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(271)) {
+    if (CN1 == INT64_C(272)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMMBM, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 272:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 273:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMSHM:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(272)) {
+    if (CN1 == INT64_C(273)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMSHM, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 273:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 274:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMSHS:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(273)) {
+    if (CN1 == INT64_C(274)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMSHS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 274:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 275:iPTR, VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMUBM:v4i32 VRRC:v16i8:$vA, VRRC:v16i8:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(274)) {
+    if (CN1 == INT64_C(275)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMUBM, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 275:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 276:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMUHM:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(275)) {
+    if (CN1 == INT64_C(276)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMUHM, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 276:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
+    // Pattern: (intrinsic_wo_chain:v4i32 277:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Emits: (VMSUMUHS:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB, VRRC:v4i32:$vC)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(276)) {
+    if (CN1 == INT64_C(277)) {
       SDNode *Result = Emit_52(N, PPC::VMSUMUHS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 278:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 279:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMULESH:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(278)) {
+    if (CN1 == INT64_C(279)) {
       SDNode *Result = Emit_51(N, PPC::VMULESH, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 280:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 281:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMULEUH:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(280)) {
+    if (CN1 == INT64_C(281)) {
       SDNode *Result = Emit_51(N, PPC::VMULEUH, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 282:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 283:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMULOSH:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(282)) {
+    if (CN1 == INT64_C(283)) {
       SDNode *Result = Emit_51(N, PPC::VMULOSH, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 284:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 285:iPTR, VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Emits: (VMULOUH:v4i32 VRRC:v8i16:$vA, VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(284)) {
+    if (CN1 == INT64_C(285)) {
       SDNode *Result = Emit_51(N, PPC::VMULOUH, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 317:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 318:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUBCUW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(317)) {
+    if (CN1 == INT64_C(318)) {
       SDNode *Result = Emit_51(N, PPC::VSUBCUW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 320:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 321:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUBSWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(320)) {
+    if (CN1 == INT64_C(321)) {
       SDNode *Result = Emit_51(N, PPC::VSUBSWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 323:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 324:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUBUWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(323)) {
+    if (CN1 == INT64_C(324)) {
       SDNode *Result = Emit_51(N, PPC::VSUBUWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 328:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 329:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUMSWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(328)) {
+    if (CN1 == INT64_C(329)) {
       SDNode *Result = Emit_51(N, PPC::VSUMSWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 324:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 325:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUM2SWS:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(324)) {
+    if (CN1 == INT64_C(325)) {
       SDNode *Result = Emit_51(N, PPC::VSUM2SWS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 325:iPTR, VRRC:v16i8:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 326:iPTR, VRRC:v16i8:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUM4SBS:v4i32 VRRC:v16i8:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(325)) {
+    if (CN1 == INT64_C(326)) {
       SDNode *Result = Emit_51(N, PPC::VSUM4SBS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 326:iPTR, VRRC:v8i16:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 327:iPTR, VRRC:v8i16:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUM4SHS:v4i32 VRRC:v8i16:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(326)) {
+    if (CN1 == INT64_C(327)) {
       SDNode *Result = Emit_51(N, PPC::VSUM4SHS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 327:iPTR, VRRC:v16i8:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 328:iPTR, VRRC:v16i8:$vA, VRRC:v4i32:$vB)
     // Emits: (VSUM4UBS:v4i32 VRRC:v16i8:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(327)) {
+    if (CN1 == INT64_C(328)) {
       SDNode *Result = Emit_51(N, PPC::VSUM4UBS, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 301:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 302:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VRLW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(301)) {
+    if (CN1 == INT64_C(302)) {
       SDNode *Result = Emit_51(N, PPC::VRLW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 304:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 305:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSL:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(304)) {
+    if (CN1 == INT64_C(305)) {
       SDNode *Result = Emit_51(N, PPC::VSL, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 307:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 308:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSLO:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(307)) {
+    if (CN1 == INT64_C(308)) {
       SDNode *Result = Emit_51(N, PPC::VSLO, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 308:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 309:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSLW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(308)) {
+    if (CN1 == INT64_C(309)) {
       SDNode *Result = Emit_51(N, PPC::VSLW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 309:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 310:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSR:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(309)) {
+    if (CN1 == INT64_C(310)) {
       SDNode *Result = Emit_51(N, PPC::VSR, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 315:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 316:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSRO:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(315)) {
+    if (CN1 == INT64_C(316)) {
       SDNode *Result = Emit_51(N, PPC::VSRO, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 312:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 313:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSRAW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(312)) {
+    if (CN1 == INT64_C(313)) {
       SDNode *Result = Emit_51(N, PPC::VSRAW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 316:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 317:iPTR, VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Emits: (VSRW:v4i32 VRRC:v4i32:$vA, VRRC:v4i32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(316)) {
+    if (CN1 == INT64_C(317)) {
       SDNode *Result = Emit_51(N, PPC::VSRW, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 329:iPTR, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 330:iPTR, VRRC:v8i16:$vB)
     // Emits: (VUPKHPX:v4i32 VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(329)) {
+    if (CN1 == INT64_C(330)) {
       SDNode *Result = Emit_53(N, PPC::VUPKHPX, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 331:iPTR, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 332:iPTR, VRRC:v8i16:$vB)
     // Emits: (VUPKHSH:v4i32 VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(331)) {
+    if (CN1 == INT64_C(332)) {
       SDNode *Result = Emit_53(N, PPC::VUPKHSH, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 332:iPTR, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 333:iPTR, VRRC:v8i16:$vB)
     // Emits: (VUPKLPX:v4i32 VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(332)) {
+    if (CN1 == INT64_C(333)) {
       SDNode *Result = Emit_53(N, PPC::VUPKLPX, MVT::v4i32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4i32 334:iPTR, VRRC:v8i16:$vB)
+    // Pattern: (intrinsic_wo_chain:v4i32 335:iPTR, VRRC:v8i16:$vB)
     // Emits: (VUPKLSH:v4i32 VRRC:v8i16:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(334)) {
+    if (CN1 == INT64_C(335)) {
       SDNode *Result = Emit_53(N, PPC::VUPKLSH, MVT::v4i32);
       return Result;
     }
@@ -4223,10 +4223,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4f32(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_wo_chain:v4f32 221:iPTR, VRRC:v4i32:$vB, (imm:i32):$UIMM)
+    // Pattern: (intrinsic_wo_chain:v4f32 222:iPTR, VRRC:v4i32:$vB, (imm:i32):$UIMM)
     // Emits: (VCFSX:v4f32 (imm:i32):$UIMM, VRRC:v4i32:$vB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(221)) {
+    if (CN1 == INT64_C(222)) {
       SDValue N1 = N->getOperand(1);
       SDValue N2 = N->getOperand(2);
       if (N2.getNode()->getOpcode() == ISD::Constant) {
@@ -4235,10 +4235,10 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4f32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 222:iPTR, VRRC:v4i32:$vB, (imm:i32):$UIMM)
+    // Pattern: (intrinsic_wo_chain:v4f32 223:iPTR, VRRC:v4i32:$vB, (imm:i32):$UIMM)
     // Emits: (VCFUX:v4f32 (imm:i32):$UIMM, VRRC:v4i32:$vB)
     // Pattern complexity = 11  cost = 1  size = 0
-    if (CN1 == INT64_C(222)) {
+    if (CN1 == INT64_C(223)) {
       SDValue N1 = N->getOperand(1);
       SDValue N2 = N->getOperand(2);
       if (N2.getNode()->getOpcode() == ISD::Constant) {
@@ -4247,98 +4247,98 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4f32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 251:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 252:iPTR, VRRC:v4f32:$vB)
     // Emits: (VEXPTEFP:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(251)) {
+    if (CN1 == INT64_C(252)) {
       SDNode *Result = Emit_53(N, PPC::VEXPTEFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 252:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 253:iPTR, VRRC:v4f32:$vB)
     // Emits: (VLOGEFP:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(252)) {
+    if (CN1 == INT64_C(253)) {
       SDNode *Result = Emit_53(N, PPC::VLOGEFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 254:iPTR, VRRC:v4f32:$vA, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 255:iPTR, VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Emits: (VMAXFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(254)) {
+    if (CN1 == INT64_C(255)) {
       SDNode *Result = Emit_51(N, PPC::VMAXFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 263:iPTR, VRRC:v4f32:$vA, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 264:iPTR, VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Emits: (VMINFP:v4f32 VRRC:v4f32:$vA, VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(263)) {
+    if (CN1 == INT64_C(264)) {
       SDNode *Result = Emit_51(N, PPC::VMINFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 294:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 295:iPTR, VRRC:v4f32:$vB)
     // Emits: (VREFP:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(294)) {
+    if (CN1 == INT64_C(295)) {
       SDNode *Result = Emit_53(N, PPC::VREFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 295:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 296:iPTR, VRRC:v4f32:$vB)
     // Emits: (VRFIM:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(295)) {
+    if (CN1 == INT64_C(296)) {
       SDNode *Result = Emit_53(N, PPC::VRFIM, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 296:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 297:iPTR, VRRC:v4f32:$vB)
     // Emits: (VRFIN:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(296)) {
+    if (CN1 == INT64_C(297)) {
       SDNode *Result = Emit_53(N, PPC::VRFIN, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 297:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 298:iPTR, VRRC:v4f32:$vB)
     // Emits: (VRFIP:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(297)) {
+    if (CN1 == INT64_C(298)) {
       SDNode *Result = Emit_53(N, PPC::VRFIP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 298:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 299:iPTR, VRRC:v4f32:$vB)
     // Emits: (VRFIZ:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(298)) {
+    if (CN1 == INT64_C(299)) {
       SDNode *Result = Emit_53(N, PPC::VRFIZ, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 302:iPTR, VRRC:v4f32:$vB)
+    // Pattern: (intrinsic_wo_chain:v4f32 303:iPTR, VRRC:v4f32:$vB)
     // Emits: (VRSQRTEFP:v4f32 VRRC:v4f32:$vB)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(302)) {
+    if (CN1 == INT64_C(303)) {
       SDNode *Result = Emit_53(N, PPC::VRSQRTEFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 253:iPTR, VRRC:v4f32:$A, VRRC:v4f32:$B, VRRC:v4f32:$C)
+    // Pattern: (intrinsic_wo_chain:v4f32 254:iPTR, VRRC:v4f32:$A, VRRC:v4f32:$B, VRRC:v4f32:$C)
     // Emits: (VMADDFP:v4f32 VRRC:v16i8:$A, VRRC:v16i8:$B, VRRC:v16i8:$C)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(253)) {
+    if (CN1 == INT64_C(254)) {
       SDNode *Result = Emit_52(N, PPC::VMADDFP, MVT::v4f32);
       return Result;
     }
 
-    // Pattern: (intrinsic_wo_chain:v4f32 285:iPTR, VRRC:v4f32:$A, VRRC:v4f32:$B, VRRC:v4f32:$C)
+    // Pattern: (intrinsic_wo_chain:v4f32 286:iPTR, VRRC:v4f32:$A, VRRC:v4f32:$B, VRRC:v4f32:$C)
     // Emits: (VNMSUBFP:v4f32 VRRC:v16i8:$A, VRRC:v16i8:$B, VRRC:v16i8:$C)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(285)) {
+    if (CN1 == INT64_C(286)) {
       SDNode *Result = Emit_52(N, PPC::VNMSUBFP, MVT::v4f32);
       return Result;
     }
@@ -4360,7 +4360,7 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v16i8(SDNode *N) {
   ConstantSDNode *Tmp0 = dyn_cast<ConstantSDNode>(N1.getNode());
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
-    if (CN1 == INT64_C(194)) {
+    if (CN1 == INT64_C(195)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -4387,10 +4387,10 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v8i16(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_w_chain:v8i16 195:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_w_chain:v8i16 196:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVEHX:v8i16 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(195)) {
+    if (CN1 == INT64_C(196)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -4400,10 +4400,10 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v8i16(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_w_chain:v8i16 201:iPTR)
+    // Pattern: (intrinsic_w_chain:v8i16 202:iPTR)
     // Emits: (MFVSCR:v8i16)
     // Pattern complexity = 8  cost = 1  size = 0
-    if (CN1 == INT64_C(201)) {
+    if (CN1 == INT64_C(202)) {
       SDNode *Result = Emit_56(N, PPC::MFVSCR, MVT::v8i16);
       return Result;
     }
@@ -4420,10 +4420,10 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v4i32(SDNode *N) {
   if (Tmp0) {
     int64_t CN1 = Tmp0->getSExtValue();
 
-    // Pattern: (intrinsic_w_chain:v4i32 196:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_w_chain:v4i32 197:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVEWX:v4i32 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(196)) {
+    if (CN1 == INT64_C(197)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -4433,10 +4433,10 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v4i32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_w_chain:v4i32 199:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_w_chain:v4i32 200:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVX:v4i32 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(199)) {
+    if (CN1 == INT64_C(200)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;
@@ -4446,10 +4446,10 @@ SDNode *Select_ISD_INTRINSIC_W_CHAIN_v4i32(SDNode *N) {
       }
     }
 
-    // Pattern: (intrinsic_w_chain:v4i32 200:iPTR, xoaddr:iPTR:$src)
+    // Pattern: (intrinsic_w_chain:v4i32 201:iPTR, xoaddr:iPTR:$src)
     // Emits: (LVXL:v4i32 xoaddr:iPTR:$src)
     // Pattern complexity = 17  cost = 1  size = 0
-    if (CN1 == INT64_C(200)) {
+    if (CN1 == INT64_C(201)) {
       SDValue N2 = N->getOperand(2);
       SDValue CPTmpN2_0;
       SDValue CPTmpN2_1;

@@ -21,7 +21,7 @@ namespace PPC {
     IMPLICIT_DEF	= 8,
     SUBREG_TO_REG	= 9,
     COPY_TO_REGCLASS	= 10,
-    DEBUG_VALUE	= 11,
+    DBG_VALUE	= 11,
     ADD4	= 12,
     ADD8	= 13,
     ADDC	= 14,

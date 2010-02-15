@@ -143,7 +143,6 @@ libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/regexec.c\
 	llvm/lib/Support/regfree.c\
 	llvm/lib/Support/regstrlcpy.c
-
 if MAINTAINER_MODE
 BUILT_SOURCES+=$(TBLGENFILES)
 noinst_PROGRAMS = tblgen
@@ -157,14 +156,19 @@ tblgen_LDFLAGS=-pthread -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMa
 tblgen_SOURCES=\
   llvm/utils/TableGen/AsmMatcherEmitter.cpp\
   llvm/utils/TableGen/AsmWriterEmitter.cpp\
+  llvm/utils/TableGen/AsmWriterInst.cpp\
   llvm/utils/TableGen/CallingConvEmitter.cpp\
   llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp\
   llvm/utils/TableGen/CodeEmitterGen.cpp\
   llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
   llvm/utils/TableGen/CodeGenInstruction.cpp\
   llvm/utils/TableGen/CodeGenTarget.cpp\
-  llvm/utils/TableGen/DisassemblerEmitter.cpp\
   llvm/utils/TableGen/DAGISelEmitter.cpp\
+  llvm/utils/TableGen/DAGISelMatcher.cpp\
+  llvm/utils/TableGen/DAGISelMatcherEmitter.cpp\
+  llvm/utils/TableGen/DAGISelMatcherGen.cpp\
+  llvm/utils/TableGen/DisassemblerEmitter.cpp\
+  llvm/utils/TableGen/EDEmitter.cpp\
   llvm/utils/TableGen/FastISelEmitter.cpp\
   llvm/utils/TableGen/InstrEnumEmitter.cpp\
   llvm/utils/TableGen/InstrInfoEmitter.cpp\
@@ -359,7 +363,6 @@ endif
 if BUILD_X86
 libllvmx86codegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
 libllvmx86codegen_la_SOURCES=\
-	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
 	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
 	llvm/lib/MC/MCAsmInfoCOFF.cpp\
 	llvm/lib/MC/MCCodeEmitter.cpp\
@@ -376,6 +379,8 @@ libllvmx86codegen_la_SOURCES=\
 	llvm/lib/Target/X86/X86InstrInfo.cpp\
 	llvm/lib/Target/X86/X86JITInfo.cpp\
 	llvm/lib/Target/X86/X86MCAsmInfo.cpp\
+	llvm/lib/Target/X86/X86MCCodeEmitter.cpp\
+	llvm/lib/Target/X86/X86MCTargetExpr.cpp\
 	llvm/lib/Target/X86/X86RegisterInfo.cpp\
 	llvm/lib/Target/X86/X86Subtarget.cpp\
 	llvm/lib/Target/X86/X86TargetMachine.cpp\
@@ -515,6 +520,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/Core.cpp\
 	llvm/lib/VMCore/Dominators.cpp\
 	llvm/lib/VMCore/Function.cpp\
+	llvm/lib/VMCore/GVMaterializer.cpp\
 	llvm/lib/VMCore/Globals.cpp\
 	llvm/lib/VMCore/IRBuilder.cpp\
 	llvm/lib/VMCore/InlineAsm.cpp\
@@ -525,7 +531,6 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/LeakDetector.cpp\
 	llvm/lib/VMCore/Metadata.cpp\
 	llvm/lib/VMCore/Module.cpp\
-	llvm/lib/VMCore/ModuleProvider.cpp\
 	llvm/lib/VMCore/Pass.cpp\
 	llvm/lib/VMCore/PassManager.cpp\
 	llvm/lib/VMCore/PrintModulePass.cpp\
@@ -561,6 +566,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/CalcSpillWeights.cpp\
 	llvm/lib/CodeGen/CodePlacementOpt.cpp\
 	llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
+	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
 	llvm/lib/CodeGen/DwarfEHPrepare.cpp\
 	llvm/lib/CodeGen/ExactHazardRecognizer.cpp\
 	llvm/lib/CodeGen/GCMetadata.cpp\
@@ -572,7 +578,6 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
 	llvm/lib/CodeGen/LiveVariables.cpp\
 	llvm/lib/CodeGen/LowerSubregs.cpp\
-	llvm/lib/CodeGen/MachOWriter.cpp\
 	llvm/lib/CodeGen/MachineDominators.cpp\
 	llvm/lib/CodeGen/MachineLICM.cpp\
 	llvm/lib/CodeGen/MachineLoopInfo.cpp\
@@ -581,6 +586,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/CodeGen/MachineSink.cpp\
 	llvm/lib/CodeGen/MachineVerifier.cpp\
 	llvm/lib/CodeGen/OptimizeExts.cpp\
+	llvm/lib/CodeGen/OptimizePHIs.cpp\
 	llvm/lib/CodeGen/PHIElimination.cpp\
 	llvm/lib/CodeGen/Passes.cpp\
 	llvm/lib/CodeGen/PostRASchedulerList.cpp\
@@ -633,6 +639,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/MC/MCAssembler.cpp\
 	llvm/lib/MC/MCInst.cpp\
 	llvm/lib/MC/MCMachOStreamer.cpp\
+	llvm/lib/MC/MCNullStreamer.cpp\
 	llvm/lib/MC/MCStreamer.cpp\
 	llvm/lib/Target/TargetFrameInfo.cpp\
 	llvm/lib/Target/TargetSubtarget.cpp\
@@ -654,6 +661,7 @@ libllvmcodegen_la_SOURCES=\
 	llvm/lib/Transforms/Utils/SSAUpdater.cpp\
 	llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
 	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
+
 
 
 # Used only by make check
@@ -796,7 +804,6 @@ libllvmasmprinter_la_SOURCES+= llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp 
 endif
 
 libllvmfullcodegen_la_SOURCES=\
-	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
 	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
 	llvm/lib/CodeGen/IfConversion.cpp\
 	llvm/lib/CodeGen/IntrinsicLowering.cpp\
@@ -811,8 +818,7 @@ libllvmfullcodegen_la_SOURCES=\
 	llvm/lib/Target/Target.cpp\
 	llvm/lib/Target/TargetAsmLexer.cpp\
 	llvm/lib/Target/TargetELFWriterInfo.cpp\
-	llvm/lib/Target/TargetIntrinsicInfo.cpp\
-	llvm/lib/Target/TargetMachOWriterInfo.cpp
+	llvm/lib/Target/TargetIntrinsicInfo.cpp
 
 lli_LDADD+=libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la libllvmsupport.la libllvmsystem.la
 lli_SOURCES=\

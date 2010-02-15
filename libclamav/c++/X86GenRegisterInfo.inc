@@ -121,7 +121,7 @@ namespace {     // Register classes...
 
   // GR8_NOREX Register Class...
   static const unsigned GR8_NOREX[] = {
-    X86::AL, X86::CL, X86::DL, X86::AH, X86::CH, X86::DH, X86::BL, X86::BH, X86::SIL, X86::DIL, X86::BPL, X86::SPL, 
+    X86::AL, X86::CL, X86::DL, X86::AH, X86::CH, X86::DH, X86::BL, X86::BH, 
   };
 
   // RFP32 Register Class...
@@ -1271,8 +1271,9 @@ GR8_ABCD_HClass::GR8_ABCD_HClass()  : TargetRegisterClass(GR8_ABCD_HRegClassID, 
 
 GR8_ABCD_LClass::GR8_ABCD_LClass()  : TargetRegisterClass(GR8_ABCD_LRegClassID, "GR8_ABCD_L", GR8_ABCD_LVTs, GR8_ABCD_LSubclasses, GR8_ABCD_LSuperclasses, GR8_ABCD_LSubRegClasses, GR8_ABCD_LSuperRegClasses, 1, 1, 1, GR8_ABCD_L, GR8_ABCD_L + 4) {}
 
+    // In 64-bit mode, it's not safe to blindly allocate H registers.
     static const unsigned X86_GR8_NOREX_AO_64[] = {
-      X86::AL, X86::CL, X86::DL, X86::SIL, X86::DIL, X86::BL, X86::BPL
+      X86::AL, X86::CL, X86::DL, X86::BL
     };
 
     GR8_NOREXClass::iterator
@@ -1288,21 +1289,14 @@ GR8_ABCD_LClass::GR8_ABCD_LClass()  : TargetRegisterClass(GR8_ABCD_LRegClassID, 
     GR8_NOREXClass::iterator
     GR8_NOREXClass::allocation_order_end(const MachineFunction &MF) const {
       const TargetMachine &TM = MF.getTarget();
-      const TargetRegisterInfo *RI = TM.getRegisterInfo();
       const X86Subtarget &Subtarget = TM.getSubtarget<X86Subtarget>();
-      // Does the function dedicate RBP / EBP to being a frame ptr?
-      if (!Subtarget.is64Bit())
-        // In 32-mode, none of the 8-bit registers aliases EBP or ESP.
-        return begin() + 8;
-      else if (RI->hasFP(MF))
-        // If so, don't allocate SPL or BPL.
-        return array_endof(X86_GR8_NOREX_AO_64) - 1;
-      else
-        // If not, just don't allocate SPL.
+      if (Subtarget.is64Bit())
         return array_endof(X86_GR8_NOREX_AO_64);
+      else
+        return end();
     }
   
-GR8_NOREXClass::GR8_NOREXClass()  : TargetRegisterClass(GR8_NOREXRegClassID, "GR8_NOREX", GR8_NOREXVTs, GR8_NOREXSubclasses, GR8_NOREXSuperclasses, GR8_NOREXSubRegClasses, GR8_NOREXSuperRegClasses, 1, 1, 1, GR8_NOREX, GR8_NOREX + 12) {}
+GR8_NOREXClass::GR8_NOREXClass()  : TargetRegisterClass(GR8_NOREXRegClassID, "GR8_NOREX", GR8_NOREXVTs, GR8_NOREXSubclasses, GR8_NOREXSuperclasses, GR8_NOREXSubRegClasses, GR8_NOREXSuperRegClasses, 1, 1, 1, GR8_NOREX, GR8_NOREX + 8) {}
 
 RFP32Class::RFP32Class()  : TargetRegisterClass(RFP32RegClassID, "RFP32", RFP32VTs, RFP32Subclasses, RFP32Superclasses, RFP32SubRegClasses, RFP32SuperRegClasses, 4, 4, 1, RFP32, RFP32 + 7) {}
 

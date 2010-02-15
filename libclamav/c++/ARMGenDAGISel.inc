@@ -2741,38 +2741,45 @@ SDNode *Select_ARMISD_CMPZ(SDNode *N) {
 
 DISABLE_INLINE SDNode *Emit_29(SDNode *N, unsigned Opc0) {
   SDValue N0 = N->getOperand(0);
-  return CurDAG->SelectNodeTo(N, Opc0, MVT::i32, N0);
+  SDValue N1 = N->getOperand(1);
+  return CurDAG->SelectNodeTo(N, Opc0, MVT::i32, N0, N1);
 }
 SDNode *Select_ARMISD_EH_SJLJ_SETJMP_i32(SDNode *N) {
 
-  // Pattern: (ARMeh_sjlj_setjmp:i32 GPR:i32:$src)
-  // Emits: (Int_eh_sjlj_setjmp:isVoid GPR:i32:$src)
+  // Pattern: (ARMeh_sjlj_setjmp:i32 GPR:i32:$src, GPR:i32:$val)
+  // Emits: (Int_eh_sjlj_setjmp:isVoid GPR:i32:$src, GPR:i32:$val)
   // Pattern complexity = 3  cost = 1  size = 0
   if ((!Subtarget->isThumb())) {
     SDValue N0 = N->getOperand(0);
-    if (N0.getValueType() == MVT::i32) {
+    SDValue N1 = N->getOperand(1);
+    if (N0.getValueType() == MVT::i32 &&
+        N1.getValueType() == MVT::i32) {
       SDNode *Result = Emit_29(N, ARM::Int_eh_sjlj_setjmp);
       return Result;
     }
   }
 
-  // Pattern: (ARMeh_sjlj_setjmp:i32 GPR:i32:$src)
-  // Emits: (tInt_eh_sjlj_setjmp:isVoid GPR:i32:$src)
+  // Pattern: (ARMeh_sjlj_setjmp:i32 tGPR:i32:$src, tGPR:i32:$val)
+  // Emits: (tInt_eh_sjlj_setjmp:isVoid tGPR:i32:$src, tGPR:i32:$val)
   // Pattern complexity = 3  cost = 1  size = 0
   if ((Subtarget->isThumb1Only())) {
     SDValue N0 = N->getOperand(0);
-    if (N0.getValueType() == MVT::i32) {
+    SDValue N1 = N->getOperand(1);
+    if (N0.getValueType() == MVT::i32 &&
+        N1.getValueType() == MVT::i32) {
       SDNode *Result = Emit_29(N, ARM::tInt_eh_sjlj_setjmp);
       return Result;
     }
   }
 
-  // Pattern: (ARMeh_sjlj_setjmp:i32 GPR:i32:$src)
-  // Emits: (t2Int_eh_sjlj_setjmp:isVoid GPR:i32:$src)
+  // Pattern: (ARMeh_sjlj_setjmp:i32 GPR:i32:$src, tGPR:i32:$val)
+  // Emits: (t2Int_eh_sjlj_setjmp:isVoid GPR:i32:$src, tGPR:i32:$val)
   // Pattern complexity = 3  cost = 1  size = 0
   if ((Subtarget->isThumb2())) {
     SDValue N0 = N->getOperand(0);
-    if (N0.getValueType() == MVT::i32) {
+    SDValue N1 = N->getOperand(1);
+    if (N0.getValueType() == MVT::i32 &&
+        N1.getValueType() == MVT::i32) {
       SDNode *Result = Emit_29(N, ARM::t2Int_eh_sjlj_setjmp);
       return Result;
     }
@@ -2848,7 +2855,7 @@ SDNode *Select_ARMISD_FTOSI_f32(SDNode *N) {
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
     SDValue N0 = N->getOperand(0);
     if (N0.getValueType() == MVT::f32) {
-      SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VCVTf2sd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+      SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VCVTf2sd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
       return Result;
     }
   }
@@ -2887,7 +2894,7 @@ SDNode *Select_ARMISD_FTOUI_f32(SDNode *N) {
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
     SDValue N0 = N->getOperand(0);
     if (N0.getValueType() == MVT::f32) {
-      SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VCVTf2ud_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+      SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VCVTf2ud_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
       return Result;
     }
   }
@@ -2969,54 +2976,52 @@ DISABLE_INLINE SDNode *Emit_37(SDNode *N, unsigned Opc0, MVT::SimpleValueType VT
   return ResNode;
 }
 SDNode *Select_ARMISD_PIC_ADD_i32(SDNode *N) {
-  if (OptLevel != CodeGenOpt::None) {
 
-    // Pattern: (ARMpic_add:i32 (ld:i32 (ARMWrapper:iPTR (tconstpool:iPTR):$addr))<<P:Predicate_unindexedload>><<P:Predicate_load>>, (imm:i32):$cp)
-    // Emits: (tLDRpci_pic:i32 (tconstpool:i32):$addr, (imm:i32):$cp)
-    // Pattern complexity = 16  cost = 1  size = 0
-    if ((Subtarget->isThumb1Only())) {
-      SDValue N0 = N->getOperand(0);
-      if (N0.getNode()->getOpcode() == ISD::LOAD &&
-          N0.hasOneUse() &&
-          IsLegalAndProfitableToFold(N0.getNode(), N, N)) {
-        SDValue Chain0 = N0.getNode()->getOperand(0);
-        if (Predicate_unindexedload(N0.getNode()) &&
-            Predicate_load(N0.getNode())) {
-          SDValue N01 = N0.getNode()->getOperand(1);
-          if (N01.getNode()->getOpcode() == ARMISD::Wrapper) {
-            SDValue N010 = N01.getNode()->getOperand(0);
-            if (N010.getNode()->getOpcode() == ISD::TargetConstantPool) {
-              SDValue N1 = N->getOperand(1);
-              if (N1.getNode()->getOpcode() == ISD::Constant) {
-                SDNode *Result = Emit_37(N, ARM::tLDRpci_pic, MVT::i32);
-                return Result;
-              }
+  // Pattern: (ARMpic_add:i32 (ld:i32 (ARMWrapper:iPTR (tconstpool:iPTR):$addr))<<P:Predicate_unindexedload>><<P:Predicate_load>>, (imm:i32):$cp)
+  // Emits: (tLDRpci_pic:i32 (tconstpool:i32):$addr, (imm:i32):$cp)
+  // Pattern complexity = 16  cost = 1  size = 0
+  if ((Subtarget->isThumb1Only())) {
+    SDValue N0 = N->getOperand(0);
+    if (N0.getNode()->getOpcode() == ISD::LOAD &&
+        N0.hasOneUse() &&
+        IsLegalAndProfitableToFold(N0.getNode(), N, N)) {
+      SDValue Chain0 = N0.getNode()->getOperand(0);
+      if (Predicate_unindexedload(N0.getNode()) &&
+          Predicate_load(N0.getNode())) {
+        SDValue N01 = N0.getNode()->getOperand(1);
+        if (N01.getNode()->getOpcode() == ARMISD::Wrapper) {
+          SDValue N010 = N01.getNode()->getOperand(0);
+          if (N010.getNode()->getOpcode() == ISD::TargetConstantPool) {
+            SDValue N1 = N->getOperand(1);
+            if (N1.getNode()->getOpcode() == ISD::Constant) {
+              SDNode *Result = Emit_37(N, ARM::tLDRpci_pic, MVT::i32);
+              return Result;
             }
           }
         }
       }
     }
+  }
 
-    // Pattern: (ARMpic_add:i32 (ld:i32 (ARMWrapper:iPTR (tconstpool:iPTR):$addr))<<P:Predicate_unindexedload>><<P:Predicate_load>>, (imm:i32):$cp)
-    // Emits: (t2LDRpci_pic:i32 (tconstpool:i32):$addr, (imm:i32):$cp)
-    // Pattern complexity = 16  cost = 1  size = 0
-    if ((Subtarget->isThumb2())) {
-      SDValue N0 = N->getOperand(0);
-      if (N0.getNode()->getOpcode() == ISD::LOAD &&
-          N0.hasOneUse() &&
-          IsLegalAndProfitableToFold(N0.getNode(), N, N)) {
-        SDValue Chain0 = N0.getNode()->getOperand(0);
-        if (Predicate_unindexedload(N0.getNode()) &&
-            Predicate_load(N0.getNode())) {
-          SDValue N01 = N0.getNode()->getOperand(1);
-          if (N01.getNode()->getOpcode() == ARMISD::Wrapper) {
-            SDValue N010 = N01.getNode()->getOperand(0);
-            if (N010.getNode()->getOpcode() == ISD::TargetConstantPool) {
-              SDValue N1 = N->getOperand(1);
-              if (N1.getNode()->getOpcode() == ISD::Constant) {
-                SDNode *Result = Emit_37(N, ARM::t2LDRpci_pic, MVT::i32);
-                return Result;
-              }
+  // Pattern: (ARMpic_add:i32 (ld:i32 (ARMWrapper:iPTR (tconstpool:iPTR):$addr))<<P:Predicate_unindexedload>><<P:Predicate_load>>, (imm:i32):$cp)
+  // Emits: (t2LDRpci_pic:i32 (tconstpool:i32):$addr, (imm:i32):$cp)
+  // Pattern complexity = 16  cost = 1  size = 0
+  if ((Subtarget->isThumb2())) {
+    SDValue N0 = N->getOperand(0);
+    if (N0.getNode()->getOpcode() == ISD::LOAD &&
+        N0.hasOneUse() &&
+        IsLegalAndProfitableToFold(N0.getNode(), N, N)) {
+      SDValue Chain0 = N0.getNode()->getOperand(0);
+      if (Predicate_unindexedload(N0.getNode()) &&
+          Predicate_load(N0.getNode())) {
+        SDValue N01 = N0.getNode()->getOperand(1);
+        if (N01.getNode()->getOpcode() == ARMISD::Wrapper) {
+          SDValue N010 = N01.getNode()->getOperand(0);
+          if (N010.getNode()->getOpcode() == ISD::TargetConstantPool) {
+            SDValue N1 = N->getOperand(1);
+            if (N1.getNode()->getOpcode() == ISD::Constant) {
+              SDNode *Result = Emit_37(N, ARM::t2LDRpci_pic, MVT::i32);
+              return Result;
             }
           }
         }
@@ -3163,7 +3168,7 @@ SDNode *Select_ARMISD_SITOF_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VCVTs2fd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2i32), SPR:f32:$a, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 4  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VCVTs2fd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2i32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VCVTs2fd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2i32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -3322,7 +3327,7 @@ SDNode *Select_ARMISD_UITOF_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VCVTu2fd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2i32), SPR:f32:$a, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 4  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VCVTu2fd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2i32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VCVTu2fd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2i32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -4032,7 +4037,7 @@ SDNode *Select_ARMISD_VDUPLANE_v16i8(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v16i8) {
-    SDNode *Result = Emit_46(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VDUPLN8q, MVT::v8i8, MVT::v16i8);
+    SDNode *Result = Emit_46(N, TargetOpcode::EXTRACT_SUBREG, ARM::VDUPLN8q, MVT::v8i8, MVT::v16i8);
     return Result;
   }
 
@@ -4089,7 +4094,7 @@ SDNode *Select_ARMISD_VDUPLANE_v8i16(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v8i16) {
-    SDNode *Result = Emit_47(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VDUPLN16q, MVT::v4i16, MVT::v8i16);
+    SDNode *Result = Emit_47(N, TargetOpcode::EXTRACT_SUBREG, ARM::VDUPLN16q, MVT::v4i16, MVT::v8i16);
     return Result;
   }
 
@@ -4146,7 +4151,7 @@ SDNode *Select_ARMISD_VDUPLANE_v4i32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v4i32) {
-    SDNode *Result = Emit_48(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VDUPLN32q, MVT::v2i32, MVT::v4i32);
+    SDNode *Result = Emit_48(N, TargetOpcode::EXTRACT_SUBREG, ARM::VDUPLN32q, MVT::v2i32, MVT::v4i32);
     return Result;
   }
 
@@ -4168,7 +4173,7 @@ SDNode *Select_ARMISD_VDUPLANE_v2i64(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v2i64) {
-    SDNode *Result = Emit_49(N, TargetInstrInfo::EXTRACT_SUBREG, TargetInstrInfo::INSERT_SUBREG, MVT::i64, MVT::v2i64);
+    SDNode *Result = Emit_49(N, TargetOpcode::EXTRACT_SUBREG, TargetOpcode::INSERT_SUBREG, MVT::i64, MVT::v2i64);
     return Result;
   }
 
@@ -4213,7 +4218,7 @@ SDNode *Select_ARMISD_VDUPLANE_v4f32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v4f32) {
-    SDNode *Result = Emit_48(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VDUPLNfq, MVT::v2f32, MVT::v4f32);
+    SDNode *Result = Emit_48(N, TargetOpcode::EXTRACT_SUBREG, ARM::VDUPLNfq, MVT::v2f32, MVT::v4f32);
     return Result;
   }
 
@@ -4226,7 +4231,7 @@ SDNode *Select_ARMISD_VDUPLANE_v2f64(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v2f64) {
-    SDNode *Result = Emit_49(N, TargetInstrInfo::EXTRACT_SUBREG, TargetInstrInfo::INSERT_SUBREG, MVT::f64, MVT::v2f64);
+    SDNode *Result = Emit_49(N, TargetOpcode::EXTRACT_SUBREG, TargetOpcode::INSERT_SUBREG, MVT::f64, MVT::v2f64);
     return Result;
   }
 
@@ -4395,7 +4400,7 @@ SDNode *Select_ARMISD_VGETLANEs_i32(SDNode *N) {
     // Emits: (VGETLNs8:i32 (EXTRACT_SUBREG:v8i8 QPR:v16i8:$src, (DSubReg_i8_reg:i32 (imm:i32):$lane)), (SubReg_i8_lane:i32 (imm:i32):$lane))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v16i8) {
-      SDNode *Result = Emit_46(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VGETLNs8, MVT::v8i8, MVT::i32);
+      SDNode *Result = Emit_46(N, TargetOpcode::EXTRACT_SUBREG, ARM::VGETLNs8, MVT::v8i8, MVT::i32);
       return Result;
     }
 
@@ -4403,7 +4408,7 @@ SDNode *Select_ARMISD_VGETLANEs_i32(SDNode *N) {
     // Emits: (VGETLNs16:i32 (EXTRACT_SUBREG:v4i16 QPR:v16i8:$src, (DSubReg_i16_reg:i32 (imm:i32):$lane)), (SubReg_i16_lane:i32 (imm:i32):$lane))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v8i16) {
-      SDNode *Result = Emit_47(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VGETLNs16, MVT::v4i16, MVT::i32);
+      SDNode *Result = Emit_47(N, TargetOpcode::EXTRACT_SUBREG, ARM::VGETLNs16, MVT::v4i16, MVT::i32);
       return Result;
     }
   }
@@ -4443,7 +4448,7 @@ SDNode *Select_ARMISD_VGETLANEu_i32(SDNode *N) {
     // Emits: (VGETLNu8:i32 (EXTRACT_SUBREG:v8i8 QPR:v16i8:$src, (DSubReg_i8_reg:i32 (imm:i32):$lane)), (SubReg_i8_lane:i32 (imm:i32):$lane))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v16i8) {
-      SDNode *Result = Emit_46(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VGETLNu8, MVT::v8i8, MVT::i32);
+      SDNode *Result = Emit_46(N, TargetOpcode::EXTRACT_SUBREG, ARM::VGETLNu8, MVT::v8i8, MVT::i32);
       return Result;
     }
 
@@ -4451,7 +4456,7 @@ SDNode *Select_ARMISD_VGETLANEu_i32(SDNode *N) {
     // Emits: (VGETLNu16:i32 (EXTRACT_SUBREG:v4i16 QPR:v16i8:$src, (DSubReg_i16_reg:i32 (imm:i32):$lane)), (SubReg_i16_lane:i32 (imm:i32):$lane))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v8i16) {
-      SDNode *Result = Emit_47(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VGETLNu16, MVT::v4i16, MVT::i32);
+      SDNode *Result = Emit_47(N, TargetOpcode::EXTRACT_SUBREG, ARM::VGETLNu16, MVT::v4i16, MVT::i32);
       return Result;
     }
   }
@@ -11329,7 +11334,7 @@ SDNode *Select_ISD_ADD_v8i16(SDNode *N) {
             SDValue N111 = N11.getNode()->getOperand(1);
             if (N111.getNode()->getOpcode() == ISD::Constant &&
                 N110.getValueType() == MVT::v8i16) {
-              SDNode *Result = Emit_133(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
+              SDNode *Result = Emit_133(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
               return Result;
             }
           }
@@ -11344,7 +11349,7 @@ SDNode *Select_ISD_ADD_v8i16(SDNode *N) {
           if (N101.getNode()->getOpcode() == ISD::Constant) {
             SDValue N11 = N1.getNode()->getOperand(1);
             if (N100.getValueType() == MVT::v8i16) {
-              SDNode *Result = Emit_134(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
+              SDNode *Result = Emit_134(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
               return Result;
             }
           }
@@ -11365,7 +11370,7 @@ SDNode *Select_ISD_ADD_v8i16(SDNode *N) {
           if (N011.getNode()->getOpcode() == ISD::Constant) {
             SDValue N1 = N->getOperand(1);
             if (N010.getValueType() == MVT::v8i16) {
-              SDNode *Result = Emit_135(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
+              SDNode *Result = Emit_135(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
               return Result;
             }
           }
@@ -11382,7 +11387,7 @@ SDNode *Select_ISD_ADD_v8i16(SDNode *N) {
           SDValue N01 = N0.getNode()->getOperand(1);
           SDValue N1 = N->getOperand(1);
           if (N000.getValueType() == MVT::v8i16) {
-            SDNode *Result = Emit_136(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
+            SDNode *Result = Emit_136(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv8i16, MVT::v4i16, MVT::v8i16);
             return Result;
           }
         }
@@ -11891,7 +11896,7 @@ SDNode *Select_ISD_ADD_v4i32(SDNode *N) {
             SDValue N111 = N11.getNode()->getOperand(1);
             if (N111.getNode()->getOpcode() == ISD::Constant &&
                 N110.getValueType() == MVT::v4i32) {
-              SDNode *Result = Emit_137(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
+              SDNode *Result = Emit_137(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
               return Result;
             }
           }
@@ -11906,7 +11911,7 @@ SDNode *Select_ISD_ADD_v4i32(SDNode *N) {
           if (N101.getNode()->getOpcode() == ISD::Constant) {
             SDValue N11 = N1.getNode()->getOperand(1);
             if (N100.getValueType() == MVT::v4i32) {
-              SDNode *Result = Emit_138(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
+              SDNode *Result = Emit_138(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
               return Result;
             }
           }
@@ -11927,7 +11932,7 @@ SDNode *Select_ISD_ADD_v4i32(SDNode *N) {
           if (N011.getNode()->getOpcode() == ISD::Constant) {
             SDValue N1 = N->getOperand(1);
             if (N010.getValueType() == MVT::v4i32) {
-              SDNode *Result = Emit_139(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
+              SDNode *Result = Emit_139(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
               return Result;
             }
           }
@@ -11944,7 +11949,7 @@ SDNode *Select_ISD_ADD_v4i32(SDNode *N) {
           SDValue N01 = N0.getNode()->getOperand(1);
           SDValue N1 = N->getOperand(1);
           if (N000.getValueType() == MVT::v4i32) {
-            SDNode *Result = Emit_140(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
+            SDNode *Result = Emit_140(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslv4i32, MVT::v2i32, MVT::v4i32);
             return Result;
           }
         }
@@ -15612,7 +15617,7 @@ SDNode *Select_ISD_EXTRACT_VECTOR_ELT_i32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v4i32) {
-    SDNode *Result = Emit_48(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VGETLNi32, MVT::v2i32, MVT::i32);
+    SDNode *Result = Emit_48(N, TargetOpcode::EXTRACT_SUBREG, ARM::VGETLNi32, MVT::v2i32, MVT::i32);
     return Result;
   }
 
@@ -15647,7 +15652,7 @@ SDNode *Select_ISD_EXTRACT_VECTOR_ELT_f32(SDNode *N) {
     // Emits: (EXTRACT_SUBREG:f32 (COPY_TO_REGCLASS:v2f32 DPR:v2f32:$src1, DPR_VFP2:f64), (SSubReg_f32_reg:i32 (imm:i32):$src2))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v2f32) {
-      SDNode *Result = Emit_202(N, TargetInstrInfo::COPY_TO_REGCLASS, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f32);
+      SDNode *Result = Emit_202(N, TargetOpcode::COPY_TO_REGCLASS, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f32);
       return Result;
     }
 
@@ -15655,7 +15660,7 @@ SDNode *Select_ISD_EXTRACT_VECTOR_ELT_f32(SDNode *N) {
     // Emits: (EXTRACT_SUBREG:f32 (COPY_TO_REGCLASS:v4f32 QPR:v4f32:$src1, QPR_VFP2:v16i8), (SSubReg_f32_reg:i32 (imm:i32):$src2))
     // Pattern complexity = 6  cost = 2  size = 0
     if (N0.getValueType() == MVT::v4f32) {
-      SDNode *Result = Emit_203(N, TargetInstrInfo::COPY_TO_REGCLASS, TargetInstrInfo::EXTRACT_SUBREG, MVT::v4f32, MVT::f32);
+      SDNode *Result = Emit_203(N, TargetOpcode::COPY_TO_REGCLASS, TargetOpcode::EXTRACT_SUBREG, MVT::v4f32, MVT::f32);
       return Result;
     }
   }
@@ -15676,7 +15681,7 @@ SDNode *Select_ISD_EXTRACT_VECTOR_ELT_f64(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   if (N1.getNode()->getOpcode() == ISD::Constant &&
       N0.getValueType() == MVT::v2f64) {
-    SDNode *Result = Emit_204(N, TargetInstrInfo::EXTRACT_SUBREG, MVT::f64);
+    SDNode *Result = Emit_204(N, TargetOpcode::EXTRACT_SUBREG, MVT::f64);
     return Result;
   }
 
@@ -15698,7 +15703,7 @@ SDNode *Select_ISD_FABS_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VABSfd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$a, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 4  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VABSfd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VABSfd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -15813,7 +15818,7 @@ SDNode *Select_ISD_FADD_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VADDfd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$a, 1:i32), (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$b, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 6  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_206(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VADDfd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_206(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VADDfd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -16085,7 +16090,7 @@ SDNode *Select_ISD_FADD_v4f32(SDNode *N) {
             SDValue N111 = N11.getNode()->getOperand(1);
             if (N111.getNode()->getOpcode() == ISD::Constant &&
                 N110.getValueType() == MVT::v4f32) {
-              SDNode *Result = Emit_137(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
+              SDNode *Result = Emit_137(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
               return Result;
             }
           }
@@ -16100,7 +16105,7 @@ SDNode *Select_ISD_FADD_v4f32(SDNode *N) {
           if (N101.getNode()->getOpcode() == ISD::Constant) {
             SDValue N11 = N1.getNode()->getOperand(1);
             if (N100.getValueType() == MVT::v4f32) {
-              SDNode *Result = Emit_138(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
+              SDNode *Result = Emit_138(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
               return Result;
             }
           }
@@ -16121,7 +16126,7 @@ SDNode *Select_ISD_FADD_v4f32(SDNode *N) {
           if (N011.getNode()->getOpcode() == ISD::Constant) {
             SDValue N1 = N->getOperand(1);
             if (N010.getValueType() == MVT::v4f32) {
-              SDNode *Result = Emit_139(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
+              SDNode *Result = Emit_139(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
               return Result;
             }
           }
@@ -16138,7 +16143,7 @@ SDNode *Select_ISD_FADD_v4f32(SDNode *N) {
           SDValue N01 = N0.getNode()->getOperand(1);
           SDValue N1 = N->getOperand(1);
           if (N000.getValueType() == MVT::v4f32) {
-            SDNode *Result = Emit_140(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
+            SDNode *Result = Emit_140(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLAslfq, MVT::v2f32, MVT::v4f32);
             return Result;
           }
         }
@@ -16252,7 +16257,7 @@ SDNode *Select_ISD_FMUL_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VMULfd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$a, 1:i32), (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$b, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 6  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_206(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VMULfd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_206(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VMULfd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -16418,7 +16423,7 @@ SDNode *Select_ISD_FMUL_v4f32(SDNode *N) {
         SDValue N11 = N1.getNode()->getOperand(1);
         if (N11.getNode()->getOpcode() == ISD::Constant &&
             N10.getValueType() == MVT::v4f32) {
-          SDNode *Result = Emit_210(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslfq, MVT::v2f32, MVT::v4f32);
+          SDNode *Result = Emit_210(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslfq, MVT::v2f32, MVT::v4f32);
           return Result;
         }
       }
@@ -16433,7 +16438,7 @@ SDNode *Select_ISD_FMUL_v4f32(SDNode *N) {
       if (N01.getNode()->getOpcode() == ISD::Constant) {
         SDValue N1 = N->getOperand(1);
         if (N00.getValueType() == MVT::v4f32) {
-          SDNode *Result = Emit_211(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslfq, MVT::v2f32, MVT::v4f32);
+          SDNode *Result = Emit_211(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslfq, MVT::v2f32, MVT::v4f32);
           return Result;
         }
       }
@@ -16486,7 +16491,7 @@ SDNode *Select_ISD_FNEG_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VNEGf32d_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$a, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 4  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_32(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VNEGf32d_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_32(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VNEGf32d_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -16685,7 +16690,7 @@ SDNode *Select_ISD_FSUB_f32(SDNode *N) {
   // Emits: (EXTRACT_SUBREG:f32 (VSUBfd_sfp:f64 (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$a, 1:i32), (INSERT_SUBREG:f64 (IMPLICIT_DEF:v2f32), SPR:f32:$b, 1:i32)), 1:i32)
   // Pattern complexity = 3  cost = 6  size = 0
   if ((Subtarget->hasNEON()) && (Subtarget->useNEONForSinglePrecisionFP())) {
-    SDNode *Result = Emit_206(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, ARM::VSUBfd_sfp, TargetInstrInfo::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
+    SDNode *Result = Emit_206(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, ARM::VSUBfd_sfp, TargetOpcode::EXTRACT_SUBREG, MVT::v2f32, MVT::f64, MVT::v2f32, MVT::f64, MVT::f64, MVT::f32);
     return Result;
   }
 
@@ -16856,7 +16861,7 @@ SDNode *Select_ISD_FSUB_v4f32(SDNode *N) {
           SDValue N111 = N11.getNode()->getOperand(1);
           if (N111.getNode()->getOpcode() == ISD::Constant &&
               N110.getValueType() == MVT::v4f32) {
-            SDNode *Result = Emit_137(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslfq, MVT::v2f32, MVT::v4f32);
+            SDNode *Result = Emit_137(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslfq, MVT::v2f32, MVT::v4f32);
             return Result;
           }
         }
@@ -16871,7 +16876,7 @@ SDNode *Select_ISD_FSUB_v4f32(SDNode *N) {
         if (N101.getNode()->getOpcode() == ISD::Constant) {
           SDValue N11 = N1.getNode()->getOperand(1);
           if (N100.getValueType() == MVT::v4f32) {
-            SDNode *Result = Emit_138(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslfq, MVT::v2f32, MVT::v4f32);
+            SDNode *Result = Emit_138(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslfq, MVT::v2f32, MVT::v4f32);
             return Result;
           }
         }
@@ -16940,7 +16945,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v16i8(SDNode *N) {
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant &&
       N1.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_213(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VSETLNi8, TargetInstrInfo::INSERT_SUBREG, MVT::v8i8, MVT::f64, MVT::v16i8);
+    SDNode *Result = Emit_213(N, TargetOpcode::EXTRACT_SUBREG, ARM::VSETLNi8, TargetOpcode::INSERT_SUBREG, MVT::v8i8, MVT::f64, MVT::v16i8);
     return Result;
   }
 
@@ -16985,7 +16990,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v8i16(SDNode *N) {
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant &&
       N1.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_214(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VSETLNi16, TargetInstrInfo::INSERT_SUBREG, MVT::v4i16, MVT::f64, MVT::v8i16);
+    SDNode *Result = Emit_214(N, TargetOpcode::EXTRACT_SUBREG, ARM::VSETLNi16, TargetOpcode::INSERT_SUBREG, MVT::v4i16, MVT::f64, MVT::v8i16);
     return Result;
   }
 
@@ -17028,7 +17033,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v4i32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant) {
-    SDNode *Result = Emit_215(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VSETLNi32, TargetInstrInfo::INSERT_SUBREG, MVT::v2i32, MVT::f64, MVT::v4i32);
+    SDNode *Result = Emit_215(N, TargetOpcode::EXTRACT_SUBREG, ARM::VSETLNi32, TargetOpcode::INSERT_SUBREG, MVT::v2i32, MVT::f64, MVT::v4i32);
     return Result;
   }
 
@@ -17051,7 +17056,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v2f32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant) {
-    SDNode *Result = Emit_216(N, TargetInstrInfo::COPY_TO_REGCLASS, TargetInstrInfo::INSERT_SUBREG, MVT::v2f32, MVT::v2f32);
+    SDNode *Result = Emit_216(N, TargetOpcode::COPY_TO_REGCLASS, TargetOpcode::INSERT_SUBREG, MVT::v2f32, MVT::v2f32);
     return Result;
   }
 
@@ -17074,7 +17079,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v4f32(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant) {
-    SDNode *Result = Emit_217(N, TargetInstrInfo::COPY_TO_REGCLASS, TargetInstrInfo::INSERT_SUBREG, MVT::v4f32, MVT::v4f32);
+    SDNode *Result = Emit_217(N, TargetOpcode::COPY_TO_REGCLASS, TargetOpcode::INSERT_SUBREG, MVT::v4f32, MVT::v4f32);
     return Result;
   }
 
@@ -17095,7 +17100,7 @@ SDNode *Select_ISD_INSERT_VECTOR_ELT_v2f64(SDNode *N) {
   SDValue N1 = N->getOperand(1);
   SDValue N2 = N->getOperand(2);
   if (N2.getNode()->getOpcode() == ISD::Constant) {
-    SDNode *Result = Emit_218(N, TargetInstrInfo::INSERT_SUBREG, MVT::v2f64);
+    SDNode *Result = Emit_218(N, TargetOpcode::INSERT_SUBREG, MVT::v2f64);
     return Result;
   }
 
@@ -19275,7 +19280,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v8i16(SDNode *N) {
               N1.getValueType() == MVT::v8i16 &&
               N2.getValueType() == MVT::v8i16 &&
               N20.getValueType() == MVT::v8i16) {
-            SDNode *Result = Emit_228(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQDMULHslv8i16, MVT::v4i16, MVT::v8i16);
+            SDNode *Result = Emit_228(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQDMULHslv8i16, MVT::v4i16, MVT::v8i16);
             return Result;
           }
         }
@@ -19294,7 +19299,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v8i16(SDNode *N) {
               N1.getValueType() == MVT::v8i16 &&
               N2.getValueType() == MVT::v8i16 &&
               N20.getValueType() == MVT::v8i16) {
-            SDNode *Result = Emit_228(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQRDMULHslv8i16, MVT::v4i16, MVT::v8i16);
+            SDNode *Result = Emit_228(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQRDMULHslv8i16, MVT::v4i16, MVT::v8i16);
             return Result;
           }
         }
@@ -19313,7 +19318,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v8i16(SDNode *N) {
             if (N1.getValueType() == MVT::v8i16 &&
                 N10.getValueType() == MVT::v8i16 &&
                 N2.getValueType() == MVT::v8i16) {
-              SDNode *Result = Emit_231(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQDMULHslv8i16, MVT::v4i16, MVT::v8i16);
+              SDNode *Result = Emit_231(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQDMULHslv8i16, MVT::v4i16, MVT::v8i16);
               return Result;
             }
           }
@@ -19333,7 +19338,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v8i16(SDNode *N) {
             if (N1.getValueType() == MVT::v8i16 &&
                 N10.getValueType() == MVT::v8i16 &&
                 N2.getValueType() == MVT::v8i16) {
-              SDNode *Result = Emit_231(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQRDMULHslv8i16, MVT::v4i16, MVT::v8i16);
+              SDNode *Result = Emit_231(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQRDMULHslv8i16, MVT::v4i16, MVT::v8i16);
               return Result;
             }
           }
@@ -21518,7 +21523,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
               N1.getValueType() == MVT::v4i32 &&
               N2.getValueType() == MVT::v4i32 &&
               N20.getValueType() == MVT::v4i32) {
-            SDNode *Result = Emit_234(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQDMULHslv4i32, MVT::v2i32, MVT::v4i32);
+            SDNode *Result = Emit_234(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQDMULHslv4i32, MVT::v2i32, MVT::v4i32);
             return Result;
           }
         }
@@ -21537,7 +21542,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
               N1.getValueType() == MVT::v4i32 &&
               N2.getValueType() == MVT::v4i32 &&
               N20.getValueType() == MVT::v4i32) {
-            SDNode *Result = Emit_234(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQRDMULHslv4i32, MVT::v2i32, MVT::v4i32);
+            SDNode *Result = Emit_234(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQRDMULHslv4i32, MVT::v2i32, MVT::v4i32);
             return Result;
           }
         }
@@ -21556,7 +21561,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
             if (N1.getValueType() == MVT::v4i32 &&
                 N10.getValueType() == MVT::v4i32 &&
                 N2.getValueType() == MVT::v4i32) {
-              SDNode *Result = Emit_236(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQDMULHslv4i32, MVT::v2i32, MVT::v4i32);
+              SDNode *Result = Emit_236(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQDMULHslv4i32, MVT::v2i32, MVT::v4i32);
               return Result;
             }
           }
@@ -21576,7 +21581,7 @@ SDNode *Select_ISD_INTRINSIC_WO_CHAIN_v4i32(SDNode *N) {
             if (N1.getValueType() == MVT::v4i32 &&
                 N10.getValueType() == MVT::v4i32 &&
                 N2.getValueType() == MVT::v4i32) {
-              SDNode *Result = Emit_236(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VQRDMULHslv4i32, MVT::v2i32, MVT::v4i32);
+              SDNode *Result = Emit_236(N, TargetOpcode::EXTRACT_SUBREG, ARM::VQRDMULHslv4i32, MVT::v2i32, MVT::v4i32);
               return Result;
             }
           }
@@ -26551,7 +26556,7 @@ SDNode *Select_ISD_MUL_v8i16(SDNode *N) {
         SDValue N11 = N1.getNode()->getOperand(1);
         if (N11.getNode()->getOpcode() == ISD::Constant &&
             N10.getValueType() == MVT::v8i16) {
-          SDNode *Result = Emit_259(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslv8i16, MVT::v4i16, MVT::v8i16);
+          SDNode *Result = Emit_259(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslv8i16, MVT::v4i16, MVT::v8i16);
           return Result;
         }
       }
@@ -26566,7 +26571,7 @@ SDNode *Select_ISD_MUL_v8i16(SDNode *N) {
       if (N01.getNode()->getOpcode() == ISD::Constant) {
         SDValue N1 = N->getOperand(1);
         if (N00.getValueType() == MVT::v8i16) {
-          SDNode *Result = Emit_260(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslv8i16, MVT::v4i16, MVT::v8i16);
+          SDNode *Result = Emit_260(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslv8i16, MVT::v4i16, MVT::v8i16);
           return Result;
         }
       }
@@ -26681,7 +26686,7 @@ SDNode *Select_ISD_MUL_v4i32(SDNode *N) {
         SDValue N11 = N1.getNode()->getOperand(1);
         if (N11.getNode()->getOpcode() == ISD::Constant &&
             N10.getValueType() == MVT::v4i32) {
-          SDNode *Result = Emit_210(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslv4i32, MVT::v2i32, MVT::v4i32);
+          SDNode *Result = Emit_210(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslv4i32, MVT::v2i32, MVT::v4i32);
           return Result;
         }
       }
@@ -26696,7 +26701,7 @@ SDNode *Select_ISD_MUL_v4i32(SDNode *N) {
       if (N01.getNode()->getOpcode() == ISD::Constant) {
         SDValue N1 = N->getOperand(1);
         if (N00.getValueType() == MVT::v4i32) {
-          SDNode *Result = Emit_211(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMULslv4i32, MVT::v2i32, MVT::v4i32);
+          SDNode *Result = Emit_211(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMULslv4i32, MVT::v2i32, MVT::v4i32);
           return Result;
         }
       }
@@ -33893,7 +33898,7 @@ DISABLE_INLINE SDNode *Emit_288(SDNode *N, unsigned Opc0, unsigned Opc1, MVT::Si
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v8i8(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_288(N, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi8, MVT::v8i8, MVT::v8i8);
+    SDNode *Result = Emit_288(N, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi8, MVT::v8i8, MVT::v8i8);
     return Result;
   }
 
@@ -33916,7 +33921,7 @@ DISABLE_INLINE SDNode *Emit_289(SDNode *N, unsigned Opc0, unsigned Opc1, unsigne
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v16i8(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_289(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi8, TargetInstrInfo::INSERT_SUBREG, MVT::v16i8, MVT::v8i8, MVT::f64, MVT::v16i8);
+    SDNode *Result = Emit_289(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi8, TargetOpcode::INSERT_SUBREG, MVT::v16i8, MVT::v8i8, MVT::f64, MVT::v16i8);
     return Result;
   }
 
@@ -33927,7 +33932,7 @@ SDNode *Select_ISD_SCALAR_TO_VECTOR_v16i8(SDNode *N) {
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v4i16(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_288(N, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi16, MVT::v4i16, MVT::v4i16);
+    SDNode *Result = Emit_288(N, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi16, MVT::v4i16, MVT::v4i16);
     return Result;
   }
 
@@ -33938,7 +33943,7 @@ SDNode *Select_ISD_SCALAR_TO_VECTOR_v4i16(SDNode *N) {
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v8i16(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_289(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi16, TargetInstrInfo::INSERT_SUBREG, MVT::v8i16, MVT::v4i16, MVT::f64, MVT::v8i16);
+    SDNode *Result = Emit_289(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi16, TargetOpcode::INSERT_SUBREG, MVT::v8i16, MVT::v4i16, MVT::f64, MVT::v8i16);
     return Result;
   }
 
@@ -33949,7 +33954,7 @@ SDNode *Select_ISD_SCALAR_TO_VECTOR_v8i16(SDNode *N) {
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v2i32(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_288(N, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi32, MVT::v2i32, MVT::v2i32);
+    SDNode *Result = Emit_288(N, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi32, MVT::v2i32, MVT::v2i32);
     return Result;
   }
 
@@ -33960,7 +33965,7 @@ SDNode *Select_ISD_SCALAR_TO_VECTOR_v2i32(SDNode *N) {
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v4i32(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::i32) {
-    SDNode *Result = Emit_289(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::IMPLICIT_DEF, ARM::VSETLNi32, TargetInstrInfo::INSERT_SUBREG, MVT::v4i32, MVT::v2i32, MVT::f64, MVT::v4i32);
+    SDNode *Result = Emit_289(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::IMPLICIT_DEF, ARM::VSETLNi32, TargetOpcode::INSERT_SUBREG, MVT::v4i32, MVT::v2i32, MVT::f64, MVT::v4i32);
     return Result;
   }
 
@@ -33977,7 +33982,7 @@ DISABLE_INLINE SDNode *Emit_290(SDNode *N, unsigned Opc0, unsigned Opc1, MVT::Si
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v2f32(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::f32) {
-    SDNode *Result = Emit_290(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, MVT::v2f32, MVT::v2f32);
+    SDNode *Result = Emit_290(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, MVT::v2f32, MVT::v2f32);
     return Result;
   }
 
@@ -33988,7 +33993,7 @@ SDNode *Select_ISD_SCALAR_TO_VECTOR_v2f32(SDNode *N) {
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v4f32(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::f32) {
-    SDNode *Result = Emit_290(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, MVT::v4f32, MVT::v4f32);
+    SDNode *Result = Emit_290(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, MVT::v4f32, MVT::v4f32);
     return Result;
   }
 
@@ -34005,7 +34010,7 @@ DISABLE_INLINE SDNode *Emit_291(SDNode *N, unsigned Opc0, unsigned Opc1, MVT::Si
 SDNode *Select_ISD_SCALAR_TO_VECTOR_v2f64(SDNode *N) {
   SDValue N0 = N->getOperand(0);
   if (N0.getValueType() == MVT::f64) {
-    SDNode *Result = Emit_291(N, TargetInstrInfo::IMPLICIT_DEF, TargetInstrInfo::INSERT_SUBREG, MVT::v2f64, MVT::v2f64);
+    SDNode *Result = Emit_291(N, TargetOpcode::IMPLICIT_DEF, TargetOpcode::INSERT_SUBREG, MVT::v2f64, MVT::v2f64);
     return Result;
   }
 
@@ -36294,7 +36299,7 @@ SDNode *Select_ISD_SUB_v8i16(SDNode *N) {
           SDValue N111 = N11.getNode()->getOperand(1);
           if (N111.getNode()->getOpcode() == ISD::Constant &&
               N110.getValueType() == MVT::v8i16) {
-            SDNode *Result = Emit_133(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslv8i16, MVT::v4i16, MVT::v8i16);
+            SDNode *Result = Emit_133(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslv8i16, MVT::v4i16, MVT::v8i16);
             return Result;
           }
         }
@@ -36309,7 +36314,7 @@ SDNode *Select_ISD_SUB_v8i16(SDNode *N) {
         if (N101.getNode()->getOpcode() == ISD::Constant) {
           SDValue N11 = N1.getNode()->getOperand(1);
           if (N100.getValueType() == MVT::v8i16) {
-            SDNode *Result = Emit_134(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslv8i16, MVT::v4i16, MVT::v8i16);
+            SDNode *Result = Emit_134(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslv8i16, MVT::v4i16, MVT::v8i16);
             return Result;
           }
         }
@@ -36507,7 +36512,7 @@ SDNode *Select_ISD_SUB_v4i32(SDNode *N) {
           SDValue N111 = N11.getNode()->getOperand(1);
           if (N111.getNode()->getOpcode() == ISD::Constant &&
               N110.getValueType() == MVT::v4i32) {
-            SDNode *Result = Emit_137(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslv4i32, MVT::v2i32, MVT::v4i32);
+            SDNode *Result = Emit_137(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslv4i32, MVT::v2i32, MVT::v4i32);
             return Result;
           }
         }
@@ -36522,7 +36527,7 @@ SDNode *Select_ISD_SUB_v4i32(SDNode *N) {
         if (N101.getNode()->getOpcode() == ISD::Constant) {
           SDValue N11 = N1.getNode()->getOperand(1);
           if (N100.getValueType() == MVT::v4i32) {
-            SDNode *Result = Emit_138(N, TargetInstrInfo::EXTRACT_SUBREG, ARM::VMLSslv4i32, MVT::v2i32, MVT::v4i32);
+            SDNode *Result = Emit_138(N, TargetOpcode::EXTRACT_SUBREG, ARM::VMLSslv4i32, MVT::v2i32, MVT::v4i32);
             return Result;
           }
         }

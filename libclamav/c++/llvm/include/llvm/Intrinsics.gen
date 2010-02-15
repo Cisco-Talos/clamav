@@ -166,6 +166,7 @@
     eh_return_i32,                            // llvm.eh.return.i32
     eh_return_i64,                            // llvm.eh.return.i64
     eh_selector,                              // llvm.eh.selector
+    eh_sjlj_callsite,                         // llvm.eh.sjlj.callsite
     eh_sjlj_longjmp,                          // llvm.eh.sjlj.longjmp
     eh_sjlj_lsda,                             // llvm.eh.sjlj.lsda
     eh_sjlj_setjmp,                           // llvm.eh.sjlj.setjmp
@@ -926,6 +927,7 @@
   "llvm.eh.return.i32",
   "llvm.eh.return.i64",
   "llvm.eh.selector",
+  "llvm.eh.sjlj.callsite",
   "llvm.eh.sjlj.longjmp",
   "llvm.eh.sjlj.lsda",
   "llvm.eh.sjlj.setjmp",
@@ -1679,6 +1681,7 @@
   true,
   true,
   true,
+  false,
   false,
   false,
   false,
@@ -2457,6 +2460,7 @@
     if (Len == 18 && !memcmp(Name, "llvm.eh.return.i32", 18)) return Intrinsic::eh_return_i32;
     if (Len == 18 && !memcmp(Name, "llvm.eh.return.i64", 18)) return Intrinsic::eh_return_i64;
     if (Len == 16 && !memcmp(Name, "llvm.eh.selector", 16)) return Intrinsic::eh_selector;
+    if (Len == 21 && !memcmp(Name, "llvm.eh.sjlj.callsite", 21)) return Intrinsic::eh_sjlj_callsite;
     if (Len == 20 && !memcmp(Name, "llvm.eh.sjlj.longjmp", 20)) return Intrinsic::eh_sjlj_longjmp;
     if (Len == 17 && !memcmp(Name, "llvm.eh.sjlj.lsda", 17)) return Intrinsic::eh_sjlj_lsda;
     if (Len == 19 && !memcmp(Name, "llvm.eh.sjlj.setjmp", 19)) return Intrinsic::eh_sjlj_setjmp;
@@ -4174,6 +4178,7 @@
   case Intrinsic::memory_barrier:		// llvm.memory.barrier
     VerifyIntrinsicPrototype(ID, IF, 1, 5, MVT::isVoid, MVT::i1, MVT::i1, MVT::i1, MVT::i1, MVT::i1);
     break;
+  case Intrinsic::eh_sjlj_callsite:		// llvm.eh.sjlj.callsite
   case Intrinsic::pcmarker:		// llvm.pcmarker
   case Intrinsic::ppc_altivec_dss:		// llvm.ppc.altivec.dss
     VerifyIntrinsicPrototype(ID, IF, 1, 1, MVT::isVoid, MVT::i32);
@@ -5795,6 +5800,7 @@
     ArgTys.push_back(IntegerType::get(Context, 1));
     ArgTys.push_back(IntegerType::get(Context, 1));
     break;
+  case Intrinsic::eh_sjlj_callsite:		// llvm.eh.sjlj.callsite
   case Intrinsic::pcmarker:		// llvm.pcmarker
   case Intrinsic::ppc_altivec_dss:		// llvm.ppc.altivec.dss
     ResultTy = Type::getVoidTy(Context);
@@ -6147,6 +6153,7 @@ AttrListPtr Intrinsic::getAttributes(ID id) {  // No intrinsic can throw excepti
   case Intrinsic::cttz:
   case Intrinsic::dbg_declare:
   case Intrinsic::dbg_value:
+  case Intrinsic::eh_sjlj_callsite:
   case Intrinsic::eh_sjlj_longjmp:
   case Intrinsic::eh_sjlj_lsda:
   case Intrinsic::eh_sjlj_setjmp:
@@ -7077,6 +7084,8 @@ case Intrinsic::dbg_value:
   return DoesNotAccessMemory;
 case Intrinsic::eh_exception:
   return OnlyReadsMemory;
+case Intrinsic::eh_sjlj_callsite:
+  return DoesNotAccessMemory;
 case Intrinsic::eh_sjlj_longjmp:
   return DoesNotAccessMemory;
 case Intrinsic::eh_sjlj_lsda:
