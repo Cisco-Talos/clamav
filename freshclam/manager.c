@@ -1144,11 +1144,14 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     closesocket(sd);
     close(fd);
 
-    if(bread == -1 || !totaldownloaded) {
+    if(bread == -1) {
 	logg("%cgetfile: Download interrupted: %s (IP: %s)\n", logerr ? '!' : '^', strerror(errno), ipaddr);
 	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return 52;
     }
+
+    if(!totaldownloaded)
+	return 53;
 
     if(totalsize > 0)
         logg("Downloading %s [%i%%]\n", srcfile, percentage);
@@ -1250,7 +1253,10 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
 
     logg("*Retrieving http://%s/%s\n", hostname, patch);
     if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist))) {
-        logg("%cgetpatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, hostname);
+	if(ret == 53)
+	    logg("Empty script %s, need to download entire database\n", patch);
+	else
+	    logg("%cgetpatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, hostname);
         unlink(tempname);
         free(tempname);
 	CHDIR_ERR(olddir);
@@ -1643,7 +1649,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(ret) {
 	    cli_rmdirs(tmpdir);
 	    free(tmpdir);
-	    logg("^Incremental update failed, trying to download %s\n", cvdfile);
+	    if(ret != 53)
+		logg("^Incremental update failed, trying to download %s\n", cvdfile);
 	    mirman_whitelist(mdat, 2);
 	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 	    if(ret) {
