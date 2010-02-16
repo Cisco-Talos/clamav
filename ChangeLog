@@ -1,3 +1,7 @@
+Tue Feb 16 16:41:30 CET 2010 (tk)
+---------------------------------
+ * libclamav/cvd.c: enable new dsig check for main db
+
 Tue Feb 16 16:27:13 CET 2010 (tk)
 ---------------------------------
  * freshclam/manager.c: handle empty cdiffs more gently

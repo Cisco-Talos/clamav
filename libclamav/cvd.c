@@ -46,8 +46,6 @@
 
 #define TAR_BLOCKSIZE 512
 
-#define DB_NOCHECK 0x80000 /* FIXME: temporary */
-
 static int cli_untgz(int fd, const char *destdir)
 {
 	char *path, osize[13], name[101], type;
@@ -309,7 +307,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	else
 	    off = ftell(dbio->fs);
 
-	if((!dbinfo && !(options & DB_NOCHECK) && cli_strbcasestr(name, ".info")) || ((dbinfo || (options & DB_NOCHECK)) && CLI_DBEXT(name))) {
+	if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
 	    ret = cli_load(name, engine, signo, options, dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
@@ -318,11 +316,9 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		return CL_EMALFDB;
 	    }
 	    if(!dbinfo) {
-		if(!(options & DB_NOCHECK)) { /* FIXME: temporary */
-		    free(dbio->buf);
-		    CLOSE_DBIO;
-		    return CL_SUCCESS;
-		}
+		free(dbio->buf);
+		CLOSE_DBIO;
+		return CL_SUCCESS;
 	    } else {
 		db = dbinfo;
 		while(db && strcmp(db->name, name))
@@ -600,30 +596,20 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     }
 
     cfd = fileno(fs);
-
-    if(strstr(dbname, "main.")) /* FIXME: temporary */
-	options |= DB_NOCHECK;
-    else
-	ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
-    /*
+    ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
     if(ret != CL_SUCCESS)
 	return ret;
-    options |= CL_DB_SIGNED;
-    */
-    if(ret != CL_SUCCESS)
-	options |= DB_NOCHECK;
 
-    if(!(options & DB_NOCHECK)) { /* FIXME: temporary */
-	dbinfo = engine->dbinfo;
-	if(!dbinfo || !dbinfo->cvd || (dbinfo->cvd->version != cvd.version) || (dbinfo->cvd->sigs != cvd.sigs) || (dbinfo->cvd->fl != cvd.fl) || (dbinfo->cvd->stime != cvd.stime)) {
-	    cli_errmsg("cli_cvdload: Corrupted CVD header\n");
-	    return CL_EMALFDB;
-	}
-	dbinfo = engine->dbinfo ? engine->dbinfo->next : NULL;
-	if(!dbinfo)
-	    return CL_EMALFDB;
-	options |= CL_DB_SIGNED;
+    dbinfo = engine->dbinfo;
+    if(!dbinfo || !dbinfo->cvd || (dbinfo->cvd->version != cvd.version) || (dbinfo->cvd->sigs != cvd.sigs) || (dbinfo->cvd->fl != cvd.fl) || (dbinfo->cvd->stime != cvd.stime)) {
+	cli_errmsg("cli_cvdload: Corrupted CVD header\n");
+	return CL_EMALFDB;
     }
+    dbinfo = engine->dbinfo ? engine->dbinfo->next : NULL;
+    if(!dbinfo)
+	return CL_EMALFDB;
+
+    options |= CL_DB_SIGNED;
     ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, dbinfo);
 
     while(engine->dbinfo) {
