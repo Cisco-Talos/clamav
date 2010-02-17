@@ -867,9 +867,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 
-	if(!strncmp(buffer, "Exploit.JPEG.Comment", 20)) /* temporary */
-	    continue;
-
 	if(!phish)
 	    if(!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
 		continue;
@@ -879,8 +876,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', NDB_TOKENS + 1, tokens);
-	/* FIXME: re-enable after fixing invalid sig @ main.ndb:53467 */
-	if(tokens_count < 4 /*|| tokens_count > 6*/) {
+	if(tokens_count < 4 || tokens_count > 6) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
