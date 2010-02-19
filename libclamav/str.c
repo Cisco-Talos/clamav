@@ -137,7 +137,7 @@ uint16_t *cli_hex2ui(const char *hex)
 
 char *cli_hex2str(const char *hex)
 {
-    unsigned char *str;
+    char *str;
     size_t len;
 
     len = strlen(hex);
@@ -158,11 +158,11 @@ char *cli_hex2str(const char *hex)
     return str;
 }
 
-int cli_hex2str_to(const char *hex, unsigned char *ptr, size_t len)
+int cli_hex2str_to(const char *hex, char *ptr, size_t len)
 {
     size_t i;
     int c;
-    unsigned char val;
+    char val;
 
     for(i = 0; i < len; i += 2) {
 	if((c = cli_hex2int(hex[i])) >= 0) {

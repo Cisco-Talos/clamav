@@ -514,8 +514,6 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
 	struct macho_fat_arch fat_arch;
 	unsigned int conv, i, matcher = 0;
 	int ret = CL_CLEAN;
-	struct stat sb;
-	off_t pos;
 	fmap_t *map = *ctx->fmap;
 	ssize_t at;
 

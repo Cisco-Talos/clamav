@@ -121,7 +121,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     if (hexsig[0] == '$') {
 	/* macro */
 	unsigned smin, smax, tid;
-	struct cli_ac_patt *pt;
+	struct cli_ac_patt *patt;
 	if (hexsig[hexlen-1] != '$') {
 	    cli_errmsg("cli_parseadd(): missing terminator $\n");
 	    return CL_EMALFDB;
@@ -139,24 +139,24 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
 	    return CL_EMALFDB;
 	}
-	pt = mpool_calloc(root->mempool, 1, sizeof(*pt));
-	if (!pt)
+	patt = mpool_calloc(root->mempool, 1, sizeof(*patt));
+	if (!patt)
 	    return CL_EMEM;
 	/* this is not a pattern that will be matched by AC itself, rather it is a
 	 * pattern checked by the lsig code */
-	pt->ch_mindist[0] = smin;
-	pt->ch_maxdist[0] = smax;
-	pt->sigid = tid;
-	pt->length = root->ac_mindepth;
+	patt->ch_mindist[0] = smin;
+	patt->ch_maxdist[0] = smax;
+	patt->sigid = tid;
+	patt->length = root->ac_mindepth;
 	/* dummy */
-	pt->pattern = mpool_calloc(root->mempool, pt->length, sizeof(*pt->pattern));
-	if (pt->pattern) {
-	    free(pt);
+	patt->pattern = mpool_calloc(root->mempool, patt->length, sizeof(*patt->pattern));
+	if (patt->pattern) {
+	    free(patt);
 	    return CL_EMEM;
 	}
-	if ((ret = cli_ac_addpatt(root, pt))) {
-	    mpool_free(root->mempool, pt->pattern);
-	    free(pt);
+	if ((ret = cli_ac_addpatt(root, patt))) {
+	    mpool_free(root->mempool, patt->pattern);
+	    free(patt);
 	    return ret;
 	}
 	return CL_SUCCESS;
@@ -2455,8 +2455,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	    if(!daily_cvd) {
 		cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
 		free(dbfile);
-		if(have_cld)
-		    cl_cvdfree(daily_cld);
+		cl_cvdfree(daily_cld);
 		closedir(dd);
 		return CL_EMALFDB;
 	    }
