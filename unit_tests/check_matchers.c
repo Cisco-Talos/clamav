@@ -56,12 +56,15 @@ static const struct ac_testdata_s {
 
 
 static cli_ctx ctx;
+static fmap_t *thefmap = NULL;
 static const char *virname = NULL;
 static void setup(void)
 {
 	struct cli_matcher *root;
 	virname = NULL;
+	thefmap = NULL;
 	ctx.virname = &virname;
+	ctx.fmap = &thefmap;
 	ctx.engine = cl_engine_new();
 	fail_unless(!!ctx.engine, "cl_engine_new() failed");
 	root = (struct cli_matcher *) mpool_calloc(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
