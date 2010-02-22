@@ -161,7 +161,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, NULL);
+	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, *ctx->fmap, NULL);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -173,7 +173,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, NULL);
+    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, *ctx->fmap, NULL);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
