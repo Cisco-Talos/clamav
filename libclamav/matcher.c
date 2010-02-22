@@ -506,8 +506,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	}
 
 	if(!ftonly) {
-	    if(groot->ac_only || (ret = cli_bm_scanbuff(buff, bytes, ctx->virname, NULL, groot, offset, map, NULL)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(buff, bytes, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, ftoffset, acmode, NULL);
+	    ret = matcher_run(groot, buff, bytes, ctx->virname, &gdata, offset, ftype, ftoffset, acmode, map, NULL);
 	    if(ret == CL_VIRUS) {
 		cli_ac_freedata(&gdata);
 		if(troot) {
