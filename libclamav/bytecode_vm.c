@@ -728,6 +728,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		const union unaligned_32 *ptr;
 		READP(ptr, inst->u.unaryop);
+		if (!ptr) {
+		    cli_dbgmsg("Bytecode attempted to load from null pointer!\n");
+		    return CL_EBYTECODE;
+		}
 		WRITE32(inst->dest, (ptr->una_u32));
 		break;
 	    }

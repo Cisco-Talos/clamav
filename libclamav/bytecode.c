@@ -24,6 +24,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <assert.h>
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"
@@ -598,6 +599,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	    case 3:
 		ty->kind = (t == 2) ? DPackedStructType : DStructType;
 		ty->size = ty->align = 0;/* TODO:calculate size/align of structs */
+		ty->align = 8;
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
@@ -1386,6 +1388,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	memset(&func, 0, sizeof(func));
 	func.numInsts = 1;
 	func.numValues = 1;
+	func.numConstants = 0;
 	func.numBytes = ctx->bytes;
 	memset(ctx->values+ctx->bytes-8, 0, 8);
 
@@ -1487,10 +1490,12 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
+	bcfunc->numBytes = 0;
 	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
 	    align = typealign(bc, ty);
+	    assert(align);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;
 	    bcfunc->numBytes += typesize(bc, ty);
@@ -1503,6 +1508,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	for (j=0;j<bc->num_globals;j++) {
 	    uint16_t ty = bc->globaltys[j];
 	    unsigned align = typealign(bc, ty);
+	    assert(align);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[bcfunc->numValues+bcfunc->numConstants+j] = bcfunc->numBytes;
 	    bcfunc->numBytes += typesize(bc, ty);
