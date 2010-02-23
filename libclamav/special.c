@@ -488,10 +488,13 @@ int cli_detect_swizz(struct swizz_stats *stats)
 			uint32_t v = gn[i];
 			gn[i] = (v<<15)/all;
 			if (cli_debug_flag)
-			cli_dbgmsg("%lu, ", (unsigned long)gn[i]);
+			    fprintf(stderr, "%lu, ", (unsigned long)gn[i]);
 		}
 		global_swizz = swizz_j48_global(gn) ? CL_VIRUS : CL_CLEAN;
-		cli_dbgmsg("\ncli_detect_swizz: global: %s\n", global_swizz ? "suspicious" : "clean");
+		if (cli_debug_flag) {
+		    fprintf(stderr, "\n");
+		    cli_dbgmsg("cli_detect_swizz: global: %s\n", global_swizz ? "suspicious" : "clean");
+		}
 	}
 
 	if (stats->errors > stats->entries || stats->errors >= SWIZZ_MAXERRORS) {
