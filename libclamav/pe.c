@@ -478,6 +478,8 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
 					stats->errors++;
 					continue;
 				}
+				if ((id&0xff) != 0x09) /* english res only */
+				    continue;
 				if((str = fmap_need_off_once(map, rawaddr, isz)))
 					cli_detect_swizz_str(str, isz, stats, type);
 			}
