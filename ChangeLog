@@ -1,3 +1,7 @@
+Thu Feb 25 17:20:27 CET 2010 (tk)
+---------------------------------
+ * docs: update signatures.pdf
+
 Tue Feb 16 16:41:30 CET 2010 (tk)
 ---------------------------------
  * libclamav/cvd.c: enable new dsig check for main db
