@@ -46,7 +46,7 @@ struct GICONS {
 static int groupicon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct GICONS *gicons = ptr;
     type = type; lang = lang;
-    cli_dbgmsg("got group %u\n", name);
+    cli_dbgmsg("groupicon_cb: got group %u\n", name);
     if(!gicons->cnt || gicons->lastg == name) {
 	gicons->rvas[gicons->cnt] = rva;
 	gicons->cnt++;
@@ -65,7 +65,7 @@ struct ICONS {
 static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICONS *icons = ptr;
     type = type; lang = lang;
-    cli_dbgmsg("got icon %u\n", name);
+    cli_dbgmsg("icon_cb: got icon %u\n", name);
     if(icons->cnt > 100) 
 	return 1;
     icons->rvas[icons->cnt] = rva;
@@ -111,7 +111,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
 		    while(icnt && gsz >= 14) {
 			dir = (struct icondir *)grp;
-			cli_dbgmsg("Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, dir->depth, dir->id, dir->planes, dir->palcnt, dir->rsvd, dir->sz);
+			cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, dir->depth, dir->id, dir->planes, dir->palcnt, dir->rsvd, dir->sz);
 			findres(3, dir->id, resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
 			grp += 14;
 			gsz -= 14;
@@ -630,42 +630,62 @@ static uint32_t labdiff2(unsigned int b) {
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
 
-/* #define DUMPMATCHING */
-#ifdef DUMPMATCHING
-#define DUMPBMP
-#endif
-
-/* #define DUMPBMP */
-#ifdef DUMPBMP
-int nimage = 0;
-static void makebmp(char *step, int w, int h, void *data) {
-    unsigned int tmp, y;
-    char fname[256];
+static void makebmp(char *step, char *tempd, int w, int h, void *data) {
+    unsigned int tmp1, tmp2, tmp3, tmp4, y;
+    char *fname;
     FILE *f;
 
-    snprintf(fname, sizeof(fname), "out-%02d-%s.bmp", nimage++, step);
-    f = fopen(fname, "w");
-    fwrite("BM", 2, 1, f);
-    tmp = 0x28 + 0xe + w * h * 4;
-    fwrite(&tmp, 4, 1, f);
-    fwrite("aCaB\x36\x00\x00\x00\x28\x00\x00\x00", 12, 1, f);
-    fwrite(&w, 4, 1, f);
-    fwrite(&h, 4, 1, f);
-    tmp = (32 << 16) | 1;
-    fwrite(&tmp, 4, 1, f);
-    tmp = 0;
-    fwrite(&tmp, 4, 1, f);
-    tmp = w * h * 4;
-    fwrite(&tmp, 4, 1, f);
-    fwrite("\1\0\0\0\1\0\0\0\0\0\0\0\0\0\0\0", 16, 1, f);
+    if(!tempd) return;
+    if(!(fname = cli_gentemp(tempd))) return;
+    if(!(f = fopen(fname, "wb"))) {
+	cli_unlink(fname);
+	cli_dbgmsg("makebmp: failed to create file %s\n", fname);
+	free(fname);
+	return;
+    }
+    cli_writeint32(&tmp1, 0x28 + 0xe + w * h * 4);
+    cli_writeint32(&tmp2, (32 << 16) | 1);
+    tmp3 = 0;
+    cli_writeint32(&tmp4, w * h * 4);
+    if(!fwrite("BM", 2, 1, f) ||
+       !fwrite(&tmp1, 4, 1, f) ||
+       !fwrite("aCaB\x36\x00\x00\x00\x28\x00\x00\x00", 12, 1, f) ||
+       !fwrite(&w, 4, 1, f) ||
+       !fwrite(&h, 4, 1, f) ||
+       !fwrite(&tmp2, 4, 1, f) ||
+       !fwrite(&tmp3, 4, 1, f) ||
+       !fwrite(&tmp4, 4, 1, f) ||
+       !fwrite("\1\0\0\0\1\0\0\0\0\0\0\0\0\0\0\0", 16, 1, f)) {
+	fclose(f);
+	cli_unlink(fname);
+	free(fname);
+	cli_dbgmsg("makebmp: failed to write outoput\n");
+	return;
+    }
+
     for(y=h-1; y<h; y--)
-	fwrite(&((unsigned int *)data)[y*w], w, 4, f);
-    fclose(f);
-    cli_dbgmsg("%s saved\n", fname);
-}
+#if WORDS_BIGENDIAN == 0
+	if(!fwrite(&((unsigned int *)data)[y*w], w*4, 1, f))
+	    break;
 #else
-#define makebmp(a,b,c,d)
+    {
+	int x;
+	for(x=0; x<w; x++) {
+	    cli_writeint32(&tmp1, ((unsigned int *)data)[y*w]);
+	    if(!fwrite(&tmp1, 4, 1, f))
+		break;
+	}
+	if(x!=w)
+	    break;
+    }
 #endif
+    fclose(f);
+    if(y<h)
+	cli_unlink(fname);
+    else
+	cli_dbgmsg("makebmp: Image %s dumped to %s\n", step, fname);
+    free(fname);
+}
 
 static unsigned int matchpoint(unsigned int side, unsigned int *x1, unsigned int *y1, unsigned int *avg1, const unsigned int *x2, const unsigned int *y2, const unsigned int *avg2, unsigned int max) {
     unsigned int i, j, best, match = 0, ksize = side / 4;
@@ -743,7 +763,7 @@ static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *
 	*s = 255 * (*delta) / max;
 }
 
-static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res) {
+static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, char *tempd) {
     unsigned int x, y, xk, yk, i, j, *tmp;
     unsigned int ksize = side / 4, bwonly = 0;
     unsigned int edge_avg[6], edge_x[6], edge_y[6], noedge_avg[6], noedge_x[6], noedge_y[6];
@@ -977,7 +997,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	imagedata[y * side] = 0xff000000;
 	imagedata[y * side + side - 1] = 0xff000000;
     }
-    makebmp("3-edge", side, side, imagedata);
+    makebmp("3-edge", tempd, side, side, imagedata);
 
 
     /* gaussian blur */
@@ -1010,7 +1030,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	    imagedata[y * side + x] = 0xff000000 | sum | (sum<<8) | (sum<<16);
 	}
     }
-    makebmp("4-gauss", side, side, imagedata);
+    makebmp("4-gauss", tempd, side, side, imagedata);
 
 
     /* calculate edges */
@@ -1168,6 +1188,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     } bmphdr;
     struct icomtr metrics;
     unsigned char *rawimage;
+    char *tempd;
     uint32_t *palette = NULL, *imagedata, *imagedata2;
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
@@ -1179,6 +1200,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     if(!ctx || !ctx->engine || !(matcher=ctx->engine->iconcheck))
 	return CL_SUCCESS;
     map = *ctx->fmap;
+    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->engine->tmpdir ? ctx->engine->tmpdir : cli_gettmpdir()) : NULL;
     icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
 
     /* read the bitmap header */
@@ -1195,7 +1217,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     }
 
     if(EC32(bmphdr.sz) < sizeof(bmphdr)) {
-	cli_dbgmsg("BMP header too small\n");
+	cli_dbgmsg("parseicon: BMP header too small\n");
 	return CL_SUCCESS;
     }
 
@@ -1206,11 +1228,11 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     height = EC32(bmphdr.h) / 2;
     depth = EC32(bmphdr.depth);
     if(width > 256 || height > 256 || width < 16 || height < 16) {
-	cli_dbgmsg("Image too small or too big (%ux%u)\n", width, height);
+	cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
 	return CL_SUCCESS;
     }
     if(width < height * 3 / 4 || height < width * 3 / 4) {
-	cli_dbgmsg("Image not square enough (%ux%u)\n", width, height);
+	cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
 	return CL_SUCCESS;
     }	
 
@@ -1224,14 +1246,14 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    scalemode = 2;
     }
 
-    cli_dbgmsg("Bitmap - %ux%ux%u\n", width, height, depth);
+    cli_dbgmsg("parseicon: Bitmap - %ux%ux%u\n", width, height, depth);
 
     /* check color depth and load palette */
     switch(depth) {
     default:
     case 0:
 	/* PNG OR JPEG */
-	cli_dbgmsg("PNG icons are not yet sported\n");
+	cli_dbgmsg("parseicon: PNG icons are not yet sported\n");
 	return CL_SUCCESS;
     case 1:
     case 4:
@@ -1314,7 +1336,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     }
 
     if(palette) fmap_unneed_ptr(map, palette, (1<<depth) * sizeof(int));
-    makebmp("0-noalpha", width, height, imagedata);
+    makebmp("0-noalpha", tempd, width, height, imagedata);
 
     /* Set alpha on or off based on the mask */
     if(depth & 0x1f) {
@@ -1332,7 +1354,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    }
 	}
     }
-    makebmp("1-alpha-mask", width, height, imagedata);
+    makebmp("1-alpha-mask", tempd, width, height, imagedata);
 
     /* Blend alpha */
     for(y=0; y<height; y++) {
@@ -1367,7 +1389,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    }
 	    width /= 2;
 	    height /= 2;
-	    cli_dbgmsg("Fast scaling to %ux%u\n", width, height);
+	    cli_dbgmsg("parseicon: Fast scaling to %ux%u\n", width, height);
 	}
 	break;
     case 2:
@@ -1389,7 +1411,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 		return CL_SUCCESS;
 	    }
 	    memset(newdata, 0xaaccaabb, newsize * newsize * sizeof(*newdata));
-	    cli_dbgmsg("Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
+	    cli_dbgmsg("parseicon: Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
 	    for(y = 0; y<newsize; y++) {
 		unsigned int oldy = (unsigned int)((y * scaley) * width + 0.5f);
 		for(x = 0; x<newsize; x++)
@@ -1401,13 +1423,9 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    imagedata = newdata;
 	}
     }
-    makebmp("2-alpha-blend", width, height, imagedata);
-#ifdef DUMPMATCHING
-    imagedata2 = malloc(width*height*4);
-    memcpy(imagedata2, imagedata, width*height*4);
-#endif
+    makebmp("2-alpha-blend", tempd, width, height, imagedata);
 
-    getmetrics(width, imagedata, &metrics);
+    getmetrics(width, imagedata, &metrics, tempd);
     free(imagedata);
 
     enginesize = (width >> 3) - 2;
@@ -1459,35 +1477,26 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	} else
 	    confidence = (color + (gray + bright + noedge)*2/3 + dark + edge + colors) / 6;
 
-	cli_dbgmsg("edge confidence: %u%%\n", edge);
-	cli_dbgmsg("noedge confidence: %u%%\n", noedge);
+	cli_dbgmsg("parseicon: edge confidence: %u%%\n", edge);
+	cli_dbgmsg("parseicon: noedge confidence: %u%%\n", noedge);
 	if(!bwmatch) {
-	    cli_dbgmsg("color confidence: %u%%\n", color);
-	    cli_dbgmsg("gray confidence: %u%%\n", gray);
+	    cli_dbgmsg("parseicon: color confidence: %u%%\n", color);
+	    cli_dbgmsg("parseicon: gray confidence: %u%%\n", gray);
 	}
-	cli_dbgmsg("bright confidence: %u%%\n", bright);
-	cli_dbgmsg("dark confidence: %u%%\n", dark);
+	cli_dbgmsg("parseicon: bright confidence: %u%%\n", bright);
+	cli_dbgmsg("parseicon: dark confidence: %u%%\n", dark);
 	if(!bwmatch)
-	    cli_dbgmsg("spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
+	    cli_dbgmsg("parseicon: spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
 
 	if(confidence >= positivematch) {
-	    char name[128];
-	    cli_warnmsg("confidence: %u\n", confidence);
+	    cli_dbgmsg("confidence: %u\n", confidence);
 
 	    if(ctx->virname) 
 		*ctx->virname = matcher->icons[enginesize][x].name;
-#ifdef DUMPMATCHING
-	    snprintf(name, sizeof(name), "match-%s-%u%%", *ctx->virname, confidence);
-	    makebmp(name, width, height, imagedata2);
-	    free(imagedata2);
-#endif
 	    return CL_VIRUS;
 	}
     }
 
-#ifdef DUMPMATCHING    
-    free(imagedata2);
-#endif
     return CL_SUCCESS;
 }
 
@@ -1515,7 +1524,7 @@ void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned in
 	    break;
     }
     if(i == j)
-	cli_dbgmsg("cli_icon_addgroup: failed to locate icon group%u %s\n", type, groupname);
+	cli_dbgmsg("cli_icongroupset_add: failed to locate icon group%u %s\n", type, groupname);
     else {
 	j = i % 64;
 	i /= 64;
