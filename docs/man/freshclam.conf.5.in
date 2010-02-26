@@ -154,10 +154,20 @@ Country of origin of malware/detection statistics (for statistical purposes only
 .br
 Default: disabled
 .TP
+\fBDetectionStatsHostID STRING\fR
+This option enables support for our "Personal Statistics" service. When this option is enabled, the information on malware detected by your clamd installation is made available to you through our website. To get your HostID, log on http://www.stats.clamav.net and add a new host to your host list. Once you have the HostID, uncomment this option and paste the HostID here. As soon as your freshclam starts submitting information to our stats collecting service, you will be able to view the statistics of this clamd installation by logging into http://www.stats.clamav.net with the same credentials you used to generate the HostID. For more information refer to: http://www.clamav.net/support/faq/faq-cctts/. This feature requires SubmitDetectionStats to be enabled.
+.br
+Default: disabled
+.TP
 \fBSafeBrowsing BOOL\fR
 This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See http://code.google.com/support/bin/answer.py?answer=70015 and http://safebrowsing.clamav.net for more information.
 .br
 Default: disabled
+.TP
+\fBBytecode BOOL\fR
+This option enables downloading of bytecode.cvd, which includes additional detection mechanisms and improvements to the ClamAV engine.
+.br
+Default: enabled
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf

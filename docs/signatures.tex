@@ -152,7 +152,7 @@ MalwareName=HexSignature
     information such as a target file type, virus offset or engine version,
     making the detection more reliable. The format is:
     \begin{verbatim}
-MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
+MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
     \end{verbatim}
     where \verb+TargetType+ is one of the following numbers specifying
     the type of the target file:
@@ -203,7 +203,9 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
     \verb+Offset+.\\
 
     \noindent
-    All signatures in the extended format must be placed inside \verb+*.ndb+ files.
+    Optional \verb+MinFL+ and \verb+MaxFL+ parameters can restrict the signature
+    to specific engine releases. All signatures in the extended format must be
+    placed inside \verb+*.ndb+ files.
 
     \subsubsection{Logical signatures}\label{ndb}
     Logical signatures allow combining of multiple signatures in extended
@@ -289,20 +291,141 @@ cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     information and examples please see
     \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
 
+    \subsection{Icon signatures for PE files}
+    ClamAV 0.96 includes an approximate/fuzzy icon matcher to help
+    detecting malicious executables disguising themselves as innocent
+    looking image files, office documents and the like.
+
+    Icon matching is only triggered via .ldb signatures using the special
+    attribute tokens \verb+IconGroup1+ or \verb+IconGroup2+. These identify
+    two (optional) groups of icons defined in a .idb database file. The
+    format of the .idb file is:
+    \begin{verbatim}
+ICONNAME:GROUP1:GROUP2:ICON_HASH
+    \end{verbatim}
+    where:
+    \begin{itemize}
+	\item \verb+ICON_NAME+ is a unique string identifier for a specific
+	icon,
+	\item \verb+GROUP1+ is a string identifier for the first group of
+	icons (\verb+IconGroup1+)
+	\item \verb+GROUP2+ is a string identifier for the second group of
+	icons (\verb+IconGroup2+),
+	\item \verb+ICON_HASH+ is a fuzzy hash of the icon image
+    \end{itemize}
+    The \verb+ICON_HASH+ field can be obtained from the debug output of
+    libclamav. For example:
+    \begin{verbatim}
+LibClamAV debug: ICO SIGNATURE:
+ICON_NAME:GROUP1:GROUP2:18e2e0304ce60a0cc3a09053a30000414100057e
+000afe0000e 80006e510078b0a08910d11ad04105e0811510f084e01040c080
+a1d0b0021000a39002a41
+    \end{verbatim}
+
+    \subsection{Signatures for Version Information metadata in PE files}
+    Starting with ClamAV 0.96 it is possible to easily match certain
+    information built into PE files (executables and dynamic link libraries).
+    Whenever you lookup the properties of a PE executable file in windows,
+    you are presented with a bunch of details about the file itself.
+
+    These info are stored in a special area of the file resources which goes
+    under the name of \verb+VS_VERSION_INFORMATION+ (or versioninfo for short).
+    It is divided into 2 parts. The first part (which is rather uninteresting)
+    is really a bunch of numbers and flags indicating the product and file
+    version. It was originally intended for use with installers which, after
+    parsing it, should be able to determine whether a certain executable or
+    library are to be upgraded/overwritten or are already up to date. Suffice
+    to say, this approach never really worked and is generally never used.
+
+    The second block is much more interesting: it is a simple list of key/value
+    strings, intended for user information and completely ignored by the OS.
+    For example, if you look at ping.exe you can see the company being \emph{"Microsoft
+    Corporation"}, the description \emph{"TCP/IP Ping command"}, the internal name
+    \emph{"ping.exe"} and so on... Depending on the OS version, some keys may be given
+    peculiar visibility in the file properties dialog, however they are internally
+    all the same.
+
+    To match a versioninfo key/value pair, the special file offset anchor \verb+VI+ was
+    introduced.  This is similar to the other anchors (like \verb+EP+ and \verb+SL+)
+    except that, instead of matching the hex pattern against a single offset, it checks
+    it against each and every key/value pair in the file. The \verb+VI+ token doesn't
+    need nor accept a \verb#+/-# offset like e.g. \verb#EP+1#. As for the hex signature
+    itself, it's just the utf16 dump of the key and value. Only the \verb+??+ and
+    \verb+(aa|bb)+ wildcards are allowed in the signature. Usually, you don't need to
+    bother figuring it out: each key/value pair together with the corresponding VI-based
+    signature is printed by \verb+clamscan+ when the \verb+--debug+ option is given.
+
+    For example \verb+clamscan --debug freecell.exe+ produces:
+    \begin{verbatim}
+[...]
+Recognized MS-EXE/DLL file
+in cli_peheader
+versioninfo_cb: type: 10, name: 1, lang: 410, rva: 9608
+cli_peheader: parsing version info @ rva 9608 (1/1)
+VersionInfo (d2de): 'CompanyName'='Microsoft Corporation' -
+VI:43006f006d00700061006e0079004e0061006d006500000000004d006900
+630072006f0073006f0066007400200043006f00720070006f0072006100740
+069006f006e000000
+VersionInfo (d32a): 'FileDescription'='Entertainment Pack
+FreeCell Game' - VI:460069006c006500440065007300630072006900700
+0740069006f006e000000000045006e007400650072007400610069006e006d
+0065006e00740020005000610063006b0020004600720065006500430065006
+c006c002000470061006d0065000000
+VersionInfo (d396): 'FileVersion'='5.1.2600.0 (xpclient.010817
+-1148)' - VI:460069006c006500560065007200730069006f006e00000000
+0035002e0031002e0032003600300030002e003000200028007800700063006
+c00690065006e0074002e003000310030003800310037002d00310031003400
+380029000000
+VersionInfo (d3fa): 'InternalName'='freecell' - VI:49006e007400
+650072006e0061006c004e0061006d006500000066007200650065006300650
+06c006c000000
+VersionInfo (d4ba): 'OriginalFilename'='freecell' - VI:4f007200
+6900670069006e0061006c00460069006c0065006e0061006d0065000000660
+0720065006500630065006c006c000000
+VersionInfo (d4f6): 'ProductName'='Sistema operativo Microsoft
+Windows' - VI:500072006f0064007500630074004e0061006d00650000000
+000530069007300740065006d00610020006f00700065007200610074006900
+76006f0020004d006900630072006f0073006f0066007400ae0020005700690
+06e0064006f0077007300ae000000
+VersionInfo (d562): 'ProductVersion'='5.1.2600.0' - VI:50007200
+6f006400750063007400560065007200730069006f006e00000035002e00310
+02e0032003600300030002e0030000000
+[...]
+    \end{verbatim}
+Although VI-based signatures are intended for use in logical signatures you can test them
+using ordinary \verb+.ndb+ files. For example:
+    \begin{verbatim}
+my_test_vi_sig:1:VI:paste_your_hex_sig_here
+    \end{verbatim}
+Final note. If you want to decode a VI-based signature into a human readable form you can use:
+    \begin{verbatim}
+echo hex_string | xxd -r -p | strings -el
+    \end{verbatim}
+For example:
+    \begin{verbatim}
+$ echo 460069006c0065004400650073006300720069007000740069006f006e
+000000000045006e007400650072007400610069006e006d0065006e007400200
+05000610063006b0020004600720065006500430065006c006c00200047006100
+6d0065000000 | xxd -r -p | strings -el
+FileDescription
+Entertainment Pack FreeCell Game
+    \end{verbatim}
+
     \subsection{Signatures based on container metadata}
     ClamAV 0.96 allows creating generic signatures matching files stored
     inside different container types which meet specific conditions.
     The signature format is
 \begin{verbatim}
-VirusName:ContainerType:ContainerSize:FileNameREGEX:FileSizeInContainer:
-FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
+VirusName:ContainerType:ContainerSize:FileNameREGEX:
+FileSizeInContainer:FileSizeReal:IsEncrypted:FilePos:
+Res1:Res2[:MinFL[:MaxFL]]
 \end{verbatim}
     where the corresponding fields are:
     \begin{itemize}
 	\item \verb+VirusName:+ Virus name to be displayed when signature matches
 	\item \verb+ContainerType:+ one of \verb+CL_TYPE_ZIP+, \verb+CL_TYPE_RAR+,
-	\verb+CL_TYPE_ARJ+, \verb+CL_TYPE_CAB+, \verb+CL_TYPE_7Z+,
-	\verb+CL_TYPE_MAIL+, \verb+CL_TYPE_(POSIX|OLD)_TAR+,
+	\verb+CL_TYPE_ARJ+,\\
+	\verb+CL_TYPE_CAB+, \verb+CL_TYPE_7Z+, \verb+CL_TYPE_MAIL+, \verb+CL_TYPE_(POSIX|OLD)_TAR+,\\
 	\verb+CL_TYPE_CPIO_(OLD|ODC|NEWC|CRC)+ or \verb+*+ to match
 	any of the container types listed here
 	\item \verb+ContainerSize:+ size of the container file itself (eg. size of
@@ -327,7 +450,8 @@ FileSizeReal:IsEncrypted:FilePos:Res1:Res2[:MinFL[:MaxFL]]
     The (now obsolete) archive metadata signatures can be only applied
     to ZIP and RAR files and have the following format:
 \begin{verbatim}
-virname:encrypted:filename:normal size:csize:crc32:cmethod:fileno:max depth
+virname:encrypted:filename:normal size:csize:crc32:cmethod:
+fileno:max depth
 \end{verbatim}
     where the corresponding fields are:
     \begin{itemize}
