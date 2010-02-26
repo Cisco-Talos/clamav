@@ -1145,8 +1145,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 	sprintf(ptr, "%02x", res->gsum); ptr+=2;
 	sprintf(ptr, "%02x", res->bsum); ptr+=2;
 	sprintf(ptr, "%02x", res->ccount);
-	cli_dbgmsg("ICO SIGNATURE: ICON.NAME:%s\n", mstr);
-
+	cli_dbgmsg("IDB SIGNATURE: ICON_NAME:GROUP1:GROUP2:%s\n", mstr);
     }
 
     return CL_CLEAN;
