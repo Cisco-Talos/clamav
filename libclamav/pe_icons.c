@@ -630,7 +630,7 @@ static uint32_t labdiff2(unsigned int b) {
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
 
-static void makebmp(char *step, char *tempd, int w, int h, void *data) {
+static void makebmp(const char *step, const char *tempd, int w, int h, void *data) {
     unsigned int tmp1, tmp2, tmp3, tmp4, y;
     char *fname;
     FILE *f;
@@ -763,7 +763,7 @@ static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *
 	*s = 255 * (*delta) / max;
 }
 
-static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, char *tempd) {
+static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, const char *tempd) {
     unsigned int x, y, xk, yk, i, j, *tmp;
     unsigned int ksize = side / 4, bwonly = 0;
     unsigned int edge_avg[6], edge_x[6], edge_y[6], noedge_avg[6], noedge_x[6], noedge_y[6];
@@ -1188,7 +1188,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     } bmphdr;
     struct icomtr metrics;
     unsigned char *rawimage;
-    char *tempd;
+    const char *tempd;
     uint32_t *palette = NULL, *imagedata, *imagedata2;
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
