@@ -500,7 +500,6 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
     if(!objs) {
         cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
-        funmap(map);
         return CL_CLEAN;
     }
 
@@ -508,7 +507,6 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
                h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if(le32_to_host(h1->magic) != 0x28635349) {
         cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
-        funmap(map);
         return CL_CLEAN;
     }
 
