@@ -290,7 +290,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	return UNRAR_ERR;
     }
 
-    unpack_data = (unpack_data_t *) malloc(sizeof(unpack_data_t));
+    unpack_data = (unpack_data_t *) calloc(1, sizeof(unpack_data_t));
     if(!unpack_data) {
 	free(main_hdr);
 	free(state->comment_dir);
