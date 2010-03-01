@@ -41,6 +41,164 @@ Verification OK.
     The ClamAV project distributes a number of CVD files, including
     \emph{main.cvd} and \emph{daily.cvd}.
 
+    \section{Debug information from libclamav}
+    In order to create efficient signatures for ClamAV it's important
+    to understand how the engine handles input files. The best way
+    to see how it works is having a look at the debug information from
+    libclamav. You can do it by calling \verb+clamscan+ with the
+    \verb+--debug+ and \verb+--leave-temps+ flags. The first switch
+    makes clamscan display all the interesting information from
+    libclamav and the second one avoids deleting temporary files so
+    they can be analyzed further. The now important part of the info
+    is:
+    \begin{verbatim}
+$ clamscan --debug attachment.exe
+[...]
+LibClamAV debug: Recognized MS-EXE/DLL file
+LibClamAV debug: Matched signature for file type PE
+LibClamAV debug: File type: Executable
+    \end{verbatim}
+    The engine recognized a windows executable.
+    \begin{verbatim}
+LibClamAV debug: Machine type: 80386
+LibClamAV debug: NumberOfSections: 3
+LibClamAV debug: TimeDateStamp: Fri Jan 10 04:57:55 2003
+LibClamAV debug: SizeOfOptionalHeader: e0
+LibClamAV debug: File format: PE
+LibClamAV debug: MajorLinkerVersion: 6
+LibClamAV debug: MinorLinkerVersion: 0
+LibClamAV debug: SizeOfCode: 0x9000
+LibClamAV debug: SizeOfInitializedData: 0x1000
+LibClamAV debug: SizeOfUninitializedData: 0x1e000
+LibClamAV debug: AddressOfEntryPoint: 0x27070
+LibClamAV debug: BaseOfCode: 0x1f000
+LibClamAV debug: SectionAlignment: 0x1000
+LibClamAV debug: FileAlignment: 0x200
+LibClamAV debug: MajorSubsystemVersion: 4
+LibClamAV debug: MinorSubsystemVersion: 0
+LibClamAV debug: SizeOfImage: 0x29000
+LibClamAV debug: SizeOfHeaders: 0x400
+LibClamAV debug: NumberOfRvaAndSizes: 16
+LibClamAV debug: Subsystem: Win32 GUI
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 0
+LibClamAV debug: Section name: UPX0
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0x1e000 0x1e000
+LibClamAV debug: VirtualAddress: 0x1000 0x1000
+LibClamAV debug: SizeOfRawData: 0x0 0x0
+LibClamAV debug: PointerToRawData: 0x400 0x400
+LibClamAV debug: Section's memory is executable
+LibClamAV debug: Section's memory is writeable
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 1
+LibClamAV debug: Section name: UPX1
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0x9000 0x9000
+LibClamAV debug: VirtualAddress: 0x1f000 0x1f000
+LibClamAV debug: SizeOfRawData: 0x8200 0x8200
+LibClamAV debug: PointerToRawData: 0x400 0x400
+LibClamAV debug: Section's memory is executable
+LibClamAV debug: Section's memory is writeable
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 2
+LibClamAV debug: Section name: UPX2
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0x1000 0x1000
+LibClamAV debug: VirtualAddress: 0x28000 0x28000
+LibClamAV debug: SizeOfRawData: 0x200 0x1ff
+LibClamAV debug: PointerToRawData: 0x8600 0x8600
+LibClamAV debug: Section's memory is writeable
+LibClamAV debug: ------------------------------------
+LibClamAV debug: EntryPoint offset: 0x8470 (33904)
+    \end{verbatim}
+    The section structure displayed above suggests the executable is
+    packed with UPX.
+    \begin{verbatim}
+LibClamAV debug: ------------------------------------
+LibClamAV debug: EntryPoint offset: 0x8470 (33904)
+LibClamAV debug: UPX/FSG/MEW: empty section found - assuming
+                 compression
+LibClamAV debug: UPX: bad magic - scanning for imports
+LibClamAV debug: UPX: PE structure rebuilt from compressed file
+LibClamAV debug: UPX: Successfully decompressed with NRV2B
+LibClamAV debug: UPX/FSG: Decompressed data saved in
+                 /tmp/clamav-90d2d25c9dca42bae6fa9a764a4bcede
+LibClamAV debug: ***** Scanning decompressed file *****
+LibClamAV debug: Recognized MS-EXE/DLL file
+LibClamAV debug: Matched signature for file type PE
+    \end{verbatim}
+    Indeed, libclamav recognizes the UPX data and saves the decompressed
+    (and rebuilt) executable into \verb+/tmp/clamav-90d2d25c9dca42bae6fa9a764a4bcede+.
+    Then it continues by scanning this new file:
+    \begin{verbatim}
+LibClamAV debug: File type: Executable
+LibClamAV debug: Machine type: 80386
+LibClamAV debug: NumberOfSections: 3
+LibClamAV debug: TimeDateStamp: Thu Jan 27 11:43:15 2011
+LibClamAV debug: SizeOfOptionalHeader: e0
+LibClamAV debug: File format: PE
+LibClamAV debug: MajorLinkerVersion: 6
+LibClamAV debug: MinorLinkerVersion: 0
+LibClamAV debug: SizeOfCode: 0xc000
+LibClamAV debug: SizeOfInitializedData: 0x19000
+LibClamAV debug: SizeOfUninitializedData: 0x0
+LibClamAV debug: AddressOfEntryPoint: 0x7b9f
+LibClamAV debug: BaseOfCode: 0x1000
+LibClamAV debug: SectionAlignment: 0x1000
+LibClamAV debug: FileAlignment: 0x1000
+LibClamAV debug: MajorSubsystemVersion: 4
+LibClamAV debug: MinorSubsystemVersion: 0
+LibClamAV debug: SizeOfImage: 0x26000
+LibClamAV debug: SizeOfHeaders: 0x1000
+LibClamAV debug: NumberOfRvaAndSizes: 16
+LibClamAV debug: Subsystem: Win32 GUI
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 0
+LibClamAV debug: Section name: .text
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0xc000 0xc000
+LibClamAV debug: VirtualAddress: 0x1000 0x1000
+LibClamAV debug: SizeOfRawData: 0xc000 0xc000
+LibClamAV debug: PointerToRawData: 0x1000 0x1000
+LibClamAV debug: Section contains executable code
+LibClamAV debug: Section's memory is executable
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 1
+LibClamAV debug: Section name: .rdata
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0x2000 0x2000
+LibClamAV debug: VirtualAddress: 0xd000 0xd000
+LibClamAV debug: SizeOfRawData: 0x2000 0x2000
+LibClamAV debug: PointerToRawData: 0xd000 0xd000
+LibClamAV debug: ------------------------------------
+LibClamAV debug: Section 2
+LibClamAV debug: Section name: .data
+LibClamAV debug: Section data (from headers - in memory)
+LibClamAV debug: VirtualSize: 0x17000 0x17000
+LibClamAV debug: VirtualAddress: 0xf000 0xf000
+LibClamAV debug: SizeOfRawData: 0x17000 0x17000
+LibClamAV debug: PointerToRawData: 0xf000 0xf000
+LibClamAV debug: Section's memory is writeable
+LibClamAV debug: ------------------------------------
+LibClamAV debug: EntryPoint offset: 0x7b9f (31647)
+LibClamAV debug: Bytecode executing hook id 257 (0 hooks)
+attachment.exe: OK
+[...]
+    \end{verbatim}
+    No additional files get created by libclamav. By writing
+    a signature for the decompressed file you have more chances
+    that the engine will detect the target data when it gets
+    compressed with another packer.
+
+    This method should be applied to all files for which you want
+    to create signatures. By analyzing the debug information you
+    can quickly see how the engine recognizes and preprocesses
+    the data and what additional files get created. Signatures
+    created for bottom-level temporary files are usually more
+    generic and should help detecting the same malware in
+    different forms.
+
     \section{Signature formats}
 
     \subsection{MD5}
@@ -71,6 +229,14 @@ Time: 0.024 sec (0 m 0 s)
     include any number of signatures. To get them automatically loaded
     each time clamscan/clamd starts just copy the database file(s) into
     the local virus database directory (eg. /usr/local/share/clamav).
+
+    \emph{The hash-based signatures shall not be used for text files,
+    HTML and any other data that gets internally preprocessed before
+    pattern matching. If you really want to use a hash signature in
+    such a case, run clamscan with --debug and --leave-temps flags
+    as described above and create a signature for a preprocessed file
+    left in /tmp. Please keep in mind that a hash signature will stop
+    matching as soon as a single byte changes in the target file.}
 
     \subsection{MD5, PE section based}
     You can create a MD5 signature for a specific section in a PE file.
