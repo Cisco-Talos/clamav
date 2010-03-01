@@ -1101,6 +1101,7 @@ int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 	default:
 		retval = rar_unpack29(fd, solid, unpack_data);
 		if(retval == FALSE) {
+		    rarvm_free(&unpack_data->rarvm_data);
 		    retval = rar_unpack20(fd, solid, unpack_data);
 		    if(retval == FALSE)
 			retval = rar_unpack15(fd, solid, unpack_data);
