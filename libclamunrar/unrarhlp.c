@@ -15,6 +15,12 @@
 
 #include "libclamunrar/unrarhlp.h"
 
+#ifdef RAR_HIGH_DEBUG
+#define rar_dbgmsg printf
+#else
+static void rar_dbgmsg(const char* fmt,...){}
+#endif
+
 #define RAR_MAX_ALLOCATION 184549376
 
 void *rar_malloc(size_t size)
@@ -23,7 +29,7 @@ void *rar_malloc(size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	fprintf(stderr, "UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
 	return NULL;
     }
 
@@ -41,7 +47,7 @@ void *rar_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	fprintf(stderr, "UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
 	return NULL;
     }
 
