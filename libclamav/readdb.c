@@ -1469,6 +1469,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     while(1) {
 	if(internal) {
+	    options |= CL_DB_OFFICIAL;
 	    if(!ftypes_int[line])
 		break;
 	    strncpy(buffer, ftypes_int[line], sizeof(buffer));
