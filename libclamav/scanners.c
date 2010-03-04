@@ -1931,11 +1931,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
-	else
-	    cache_add(hash, hashed_size, ctx);
-
+	else if(ctx->recursion != ctx->engine->maxreclevel)
+	    cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */                                                  
 	funmap(*ctx->fmap);
-	ctx->fmap--; 
+	ctx->fmap--;
 	return ret;
     }
 
