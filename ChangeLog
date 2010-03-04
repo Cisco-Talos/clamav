@@ -1,3 +1,7 @@
+Thu Mar  4 14:41:39 CET 2010 (tk)
+---------------------------------
+ * libclamav/matcher-bm.c: only sort correct offsets (bb#1840)
+
 Thu Feb 25 17:20:27 CET 2010 (tk)
 ---------------------------------
  * docs: update signatures.pdf
