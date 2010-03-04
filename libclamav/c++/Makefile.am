@@ -79,7 +79,7 @@ TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegi
 BUILT_SOURCES=
 EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
 
-libllvmsystem_la_LDFLAGS=-pthread
+libllvmsystem_la_LDFLAGS=@THREAD_LIBS@
 libllvmsystem_la_LIBADD=
 libllvmsystem_la_SOURCES=\
 	llvm/lib/System/Alarm.cpp\
@@ -151,7 +151,7 @@ noinst_PROGRAMS = tblgen
 tblgen_CXXFLAGS=$(LLVM_CXXFLAGS)
 tblgen_CFLAGS=
 #TODO: if VERSIONSCRIPT
-tblgen_LDFLAGS=-pthread -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+tblgen_LDFLAGS=@THREAD_LIBS@ -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
 # tblgen needs rtti (for now), and we build everything else with -fno-rtti
 # since tblgen is only a maintainer-mode tool, build these files twice (once for
 # libllvmsupport.la -fno-rtti, and once here, with defaults (rtti)).
