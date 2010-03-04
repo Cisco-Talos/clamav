@@ -195,7 +195,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap
 	    free(data->offset);
 	    return ret;
 	} else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length <= info.fsize)) {
-	    if(!data->cnt || (data->offset[patt->offset_min] != data->offtab[data->cnt - 1])) {
+	    if(!data->cnt || (data->offset[patt->offset_min] + patt->prefix_length != data->offtab[data->cnt - 1])) {
 		data->offtab[data->cnt] = data->offset[patt->offset_min] + patt->prefix_length;
 		if(data->offtab[data->cnt] >= map->len)
 		    continue;

@@ -1,3 +1,7 @@
+Thu Mar  4 17:33:18 CET 2010 (tk)
+---------------------------------
+ * libclamav/matcher-bm.c: fix array check (bb#1840)
+
 Thu Mar  4 15:32:40 CET 2010 (tk)
 ---------------------------------
  * libclamav/scanners.c: set container type in cli_scanraw() (bb#1842)
