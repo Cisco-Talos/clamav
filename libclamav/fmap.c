@@ -184,7 +184,7 @@ static void fmap_aging(fmap_t *m) {
 	}
 	if(avail) { /* at least one page is paged and not locked */
 	    for(i=0; i<avail; i++) {
-		char *pptr = (char *)m + i * m->pgsz + m->hdrsz;
+		char *pptr = (char *)m + freeme[i] * m->pgsz + m->hdrsz;
 		/* we mark the page as seen */
 		fmap_bitmap[freeme[i]] = FM_MASK_SEEN;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
