@@ -269,6 +269,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     memset(&info, 0, sizeof(info));
     i = BM_MIN_LENGTH - BM_BLOCK_SIZE;
     if(offdata) {
+	if(!offdata->cnt)
+	    return CL_CLEAN;
 	for(; offdata->pos && offdata->offtab[offdata->pos] > offset; offdata->pos--);
 	if(offdata->offtab[offdata->pos] < offset)
 	    offdata->pos++;
