@@ -1869,6 +1869,16 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 }
 
 
+static void emax_reached(cli_ctx *ctx) {
+    fmap_t **ctx_fmap = ctx->fmap;
+    while(*ctx_fmap) {
+	fmap_t *map = *ctx_fmap;
+	map->dont_cache_flag = 1;
+	ctx_fmap--;
+    }
+    cli_dbgmsg("emax_reached: marked parents as non cacheable\n");
+}
+
 #define LINESTR(x) #x
 #define LINESTR2(x) LINESTR(x)
 #define __AT__  " at line "LINESTR2(__LINE__)
@@ -1876,6 +1886,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);	\
     return retcode;							\
     } while(0)
+
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
@@ -1890,7 +1901,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
-	ret_from_magicscan(CL_CLEAN); /* FIXMEDONTCACHE */
+	emax_reached(ctx);
+	ret_from_magicscan(CL_CLEAN);
     }
 
     if(fstat(desc, &sb) == -1) {
@@ -1913,8 +1925,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	ret_from_magicscan(CL_EMALFDB);
     }
 
-    if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
-        ret_from_magicscan(CL_CLEAN); /* FIXMEDONTCACHE */
+    if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN) {
+	emax_reached(ctx);
+        ret_from_magicscan(CL_CLEAN);
+    }
 
     ctx->fmap++;
     if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
@@ -1944,7 +1958,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(ctx->recursion != ctx->engine->maxreclevel)
 		cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */
 	    else 
-		{} /* FIXMEDONTCACHE */
+		emax_reached(ctx);
 	}
 
 	funmap(*ctx->fmap);

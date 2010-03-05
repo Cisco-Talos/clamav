@@ -407,6 +407,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     if((*ctx->fmap = fmap(desc, 0, 0))) {
 	ret = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, NULL);
+	map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
 	funmap(*ctx->fmap);
     }
     *ctx->fmap = map;
