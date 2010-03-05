@@ -1,3 +1,7 @@
+Fri Mar  5 22:16:45 CET 2010 (acab)
+-----------------------------------
+ * libclamav: don't cache clean results due to EMAX - final fix for bb#1856
+
 Fri Mar  5 22:01:20 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix scanning of utf16 data (bb#1853)

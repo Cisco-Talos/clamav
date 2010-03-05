@@ -263,6 +263,7 @@ struct node { /* a node */
     struct node *next;
     struct node *prev;
     uint32_t size;
+    uint32_t minrec;
 };
 
 struct cache_set { /* a tree */
@@ -367,7 +368,7 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
 
 /* Looks up a node and splays it up to the root of the tree */
 static int splay(int64_t *md5, size_t len, struct cache_set *cs) {
-    struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
+    struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int comp, found = 0;
 
     if(!root)
@@ -426,7 +427,7 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs) {
 
 
 /* Looks up an hash in the tree and maintains the replacement chain */
-static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size) {
+static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t reclevel) {
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
@@ -450,8 +451,6 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
 	    printf("\n");
 	}
 #endif
-#define TO_END_OF_CHAIN
-#ifdef TO_END_OF_CHAIN
     	if(q) {
 	    if(o)
 		o->next = q;
@@ -463,18 +462,6 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
 	    p->next = NULL;
 	    cs->last = p;
 	}
-#else
-	if(cs->last != p) {
-	    if(cs->last == q) cs->last = p;
-	    if(o) o->next = q;
-	    else cs->first = q;
-	    p->next = q->next;
-	    if(q->next) q->next->prev = p;
-	    q->next = p;
-	    q->prev = o;
-	    p->prev = q;
-	}
-#endif
 #ifdef PRINT_CHAINS
 	{
 	    struct node *x = cs->first;
@@ -492,7 +479,8 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
 	    printf("\n");
 	}
 #endif
-	return 1;
+	if(reclevel >= p->minrec)
+	    return 1;
     }
     return 0;
 }
@@ -500,13 +488,16 @@ static int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size
 /* If the hash is present nothing happens.
    Otherwise a new node is created for the hash picking one from the begin of the chain.
    Used nodes are moved to the end of the chain */
-static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) {
+static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t reclevel) {
     struct node *newnode;
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
-    if(splay(hash, size, cs))
+    if(splay(hash, size, cs)) {
+	if(cs->root->minrec > reclevel)
+	    cs->root->minrec = reclevel;
 	return; /* Already there */
+    }
 
     ptree("1:\n");
     if(printtree(cs, cs->root, 0)) {
@@ -607,6 +598,7 @@ static void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size) 
     newnode->digest[1] = hash[1];
     newnode->up = NULL;
     newnode->size = size;
+    newnode->minrec = reclevel;
     cs->root = newnode;
 
     ptree("3: %lld\n", hash[1]);
@@ -674,7 +666,7 @@ void cli_cache_destroy(struct cl_engine *engine) {
 }
 
 /* Looks up an hash in the proper tree */
-static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache) {
+static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t reclevel) {
     unsigned int key = getkey(md5);
     int ret = CL_VIRUS;
     struct CACHE *c;
@@ -685,7 +677,7 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 	return ret;
     }
 
-    ret = (cacheset_lookup(&c->cacheset, md5, len)) ? CL_CLEAN : CL_VIRUS;
+    ret = (cacheset_lookup(&c->cacheset, md5, len, reclevel)) ? CL_CLEAN : CL_VIRUS;
     pthread_mutex_unlock(&c->mutex);
     /* if(ret == CL_CLEAN) cli_warnmsg("cached\n"); */
     return ret;
@@ -694,6 +686,7 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 /* Adds an hash to the cache */
 void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     unsigned int key = getkey(md5);
+    uint32_t level;
     struct CACHE *c;
 
     if(!ctx || !ctx->engine || !ctx->engine->cache)
@@ -709,14 +702,15 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     cacheset_add(&c->cacheset, md5, size, ctx->engine->mempool);
 #else
 #ifdef USE_SPLAY
-    cacheset_add(&c->cacheset, md5, size);
+    cacheset_add(&c->cacheset, md5, size, level);
 #else
 #error #define USE_SPLAY or USE_LRUHASHCACHE
 #endif
 #endif
 
     pthread_mutex_unlock(&c->mutex);
-    cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
+    level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
+    cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
     return;
 }
 
@@ -745,7 +739,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 	cli_md5_update(&md5, buf, readme);
     }
     cli_md5_final(hash, &md5);
-    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache);
+    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
     cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");
     return ret;
 }
