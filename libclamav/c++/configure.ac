@@ -123,6 +123,21 @@ case "$target_cpu" in
 	    build_arm=yes
 	    ;;
 esac
+
+# FreeBSD is only one which needs something else than -pthread,
+# according to the logic in ClamAV's main configure.in.
+case "$target_os" in
+freebsd[[45]]*)
+    THREAD_LIBS="-pthread -lc_r"
+    ;;
+freebsd*)
+    THREAD_LIBS="-lthr"
+    ;;
+*)
+    THREAD_LIBS="-pthread"
+esac
+AC_SUBST([THREAD_LIBS])
+
 if test "$enable_alltargets" = "yes"; then
 	build_x86=yes
 	build_ppc=yes

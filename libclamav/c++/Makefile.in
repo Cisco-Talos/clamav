@@ -841,6 +841,7 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+THREAD_LIBS = @THREAD_LIBS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -951,7 +952,7 @@ TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRe
 # LLVM
 BUILT_SOURCES = $(am__append_13) llvm/config.status
 EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
-libllvmsystem_la_LDFLAGS = -pthread
+libllvmsystem_la_LDFLAGS = @THREAD_LIBS@
 libllvmsystem_la_LIBADD = 
 libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
 	llvm/lib/System/Atomic.cpp llvm/lib/System/Disassembler.cpp \
@@ -1012,7 +1013,7 @@ libllvmsupport_la_SOURCES = \
 @MAINTAINER_MODE_TRUE@tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
 @MAINTAINER_MODE_TRUE@tblgen_CFLAGS = 
 #TODO: if VERSIONSCRIPT
-@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = -pthread -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = @THREAD_LIBS@ -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
 # tblgen needs rtti (for now), and we build everything else with -fno-rtti
 # since tblgen is only a maintainer-mode tool, build these files twice (once for
 # libllvmsupport.la -fno-rtti, and once here, with defaults (rtti)).
