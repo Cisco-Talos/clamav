@@ -2306,15 +2306,13 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.container_type = CL_TYPE_ANY;
     ctx.container_size = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
-    ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 1);
+    ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 2);
     if(!ctx.fmap)
 	return CL_EMEM;
-    ctx.fmap--;
     ctx.hook_lsig_matches = cli_bitset_init();
 
     rc = cli_magic_scandesc(desc, &ctx);
 
-    ctx.fmap++;
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
