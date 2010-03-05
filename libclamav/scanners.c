@@ -1685,7 +1685,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype)
+static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype, unsigned char *refhash)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
@@ -1703,7 +1703,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     if(typercg)
 	acmode |= AC_SCAN_FT;
 
-    ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, NULL);
+    ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, refhash);
 
     if(ret >= CL_TYPENO) {
 	ctx->recursion++;
@@ -1931,11 +1931,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
-	else
-	    cache_add(hash, hashed_size, ctx);
-
+	else if(ctx->recursion != ctx->engine->maxreclevel)
+	    cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */                                                  
 	funmap(*ctx->fmap);
-	ctx->fmap--; 
+	ctx->fmap--;
 	return ret;
     }
 
@@ -1953,7 +1952,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return CL_EMEM;
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
-	if((ret = cli_scanraw(ctx, type, 0, &dettype)) == CL_VIRUS) {
+	if((ret = cli_scanraw(ctx, type, 0, &dettype, hash)) == CL_VIRUS) {
 	    ret = cli_checkfp(hash, hashed_size, ctx);
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
@@ -2220,7 +2219,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-	if(cli_scanraw(ctx, type, typercg, &dettype) == CL_VIRUS) {
+	if(cli_scanraw(ctx, type, typercg, &dettype, hash) == CL_VIRUS) {
 	    ret =  cli_checkfp(hash, hashed_size, ctx);
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
