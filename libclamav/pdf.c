@@ -470,7 +470,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			}
 
 			ret = ascii85decode(streamstart, calculated_streamlen, tmpbuf);
-
 			if(ret == -1) {
 				free(tmpbuf);
 				close(fout);
@@ -503,8 +502,11 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 
 				if(is_flatedecode)
 					rc = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
-				else
-				  rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EWRITE;
+				else {
+				  if (real_streamlen > calculated_streamlen)
+				      real_streamlen = calculated_streamlen;
+				  rc = (unsigned long)cli_writen(fout, (const char *)tmpbuf, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EWRITE;
+				}
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
