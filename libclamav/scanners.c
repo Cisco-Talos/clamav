@@ -1882,7 +1882,7 @@ static void emax_reached(cli_ctx *ctx) {
 #define LINESTR(x) #x
 #define LINESTR2(x) LINESTR(x)
 #define __AT__  " at line "LINESTR2(__LINE__)
-#define ret_from_magicscan(retcode) {					\
+#define ret_from_magicscan(retcode) do {					\
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);	\
     return retcode;							\
     } while(0)
