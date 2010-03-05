@@ -1,3 +1,7 @@
+Fri Mar  5 19:11:25 CET 2010 (tk)
+---------------------------------
+ * libclamav: fix cl_cvdparse() leak (bb#1859)
+
 Thu Mar  4 17:33:18 CET 2010 (tk)
 ---------------------------------
  * libclamav/matcher-bm.c: fix array check (bb#1840)

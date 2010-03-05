@@ -617,7 +617,8 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	engine->dbinfo = dbinfo->next;
 	mpool_free(engine->mempool, dbinfo->name);
 	mpool_free(engine->mempool, dbinfo->hash);
-	free(dbinfo->cvd);
+	if(dbinfo->cvd)
+	    cl_cvdfree(dbinfo->cvd);
 	mpool_free(engine->mempool, dbinfo);
     }
 

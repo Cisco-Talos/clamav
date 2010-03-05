@@ -2869,7 +2869,8 @@ int cl_engine_free(struct cl_engine *engine)
 	engine->dbinfo = pt->next;
 	mpool_free(engine->mempool, pt->name);
 	mpool_free(engine->mempool, pt->hash);
-	free(pt->cvd);
+	if(pt->cvd)
+	    cl_cvdfree(pt->cvd);
 	mpool_free(engine->mempool, pt);
     }
 
