@@ -1961,6 +1961,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		emax_reached(ctx);
 	}
 
+	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	funmap(*ctx->fmap);
 	ctx->fmap--;
 	ret_from_magicscan(ret);
@@ -1970,14 +1971,17 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	funmap(*ctx->fmap);
-	ctx->fmap--; 
+	ctx->fmap--;
+	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(CL_EREAD);
     }
     lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
     ctx->hook_lsig_matches = cli_bitset_init();
-    if (!ctx->hook_lsig_matches)
+    if (!ctx->hook_lsig_matches) {
+	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(CL_EMEM);
+    }
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype, hash)) == CL_VIRUS) {
