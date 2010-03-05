@@ -1868,6 +1868,14 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     return ret;
 }
 
+
+#define LINESTR(x) #x
+#define LINESTR2(x) LINESTR(x)
+#define __AT__  " at line "LINESTR2(__LINE__)
+#define ret_from_magicscan(retcode) {					\
+    cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);	\
+    return retcode;							\
+    } while(0)
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
@@ -1879,45 +1887,46 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
 
+    cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
-	return CL_CLEAN;
+	ret_from_magicscan(CL_CLEAN); /* FIXMEDONTCACHE */
     }
 
     if(fstat(desc, &sb) == -1) {
 	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
-	return CL_ESTAT;
+	ret_from_magicscan(CL_ESTAT);
     }
 
     if(sb.st_size <= 5) {
 	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) sb.st_size);
-	return CL_CLEAN;
+	ret_from_magicscan(CL_CLEAN);
     }
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
-	return CL_ENULLARG;
+	ret_from_magicscan(CL_ENULLARG);
     }
 
     if(!(ctx->engine->dboptions & CL_DB_COMPILED)) {
 	cli_errmsg("CRITICAL: engine not compiled\n");
-	return CL_EMALFDB;
+	ret_from_magicscan(CL_EMALFDB);
     }
 
     if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
-        return CL_CLEAN;
+        ret_from_magicscan(CL_CLEAN); /* FIXMEDONTCACHE */
 
     ctx->fmap++;
     if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
 	cli_errmsg("CRITICAL: fmap() failed\n");
 	ctx->fmap--;
-	return CL_EMEM;
+	ret_from_magicscan(CL_EMEM);
     }
 
     if(cache_check(hash, ctx) == CL_CLEAN) {
 	funmap(*ctx->fmap);
 	ctx->fmap--;
-	return CL_CLEAN;
+	ret_from_magicscan(CL_CLEAN);
     }
     hashed_size = (*ctx->fmap)->len;
     old_hook_lsig_matches = ctx->hook_lsig_matches;
@@ -1931,11 +1940,16 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
-	else if(ctx->recursion != ctx->engine->maxreclevel)
-	    cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */                                                  
+	else if(ret == CL_CLEAN) {
+	    if(ctx->recursion != ctx->engine->maxreclevel)
+		cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */
+	    else 
+		{} /* FIXMEDONTCACHE */
+	}
+
 	funmap(*ctx->fmap);
 	ctx->fmap--;
-	return ret;
+	ret_from_magicscan(ret);
     }
 
     type = cli_filetype2(*ctx->fmap, ctx->engine); /* FIXMEFMAP: port to fmap */
@@ -1943,13 +1957,13 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	funmap(*ctx->fmap);
 	ctx->fmap--; 
-	return CL_EREAD;
+	ret_from_magicscan(CL_EREAD);
     }
     lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
     ctx->hook_lsig_matches = cli_bitset_init();
     if (!ctx->hook_lsig_matches)
-	return CL_EMEM;
+	ret_from_magicscan(CL_EMEM);
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype, hash)) == CL_VIRUS) {
@@ -1958,7 +1972,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
-	    return ret;
+	    ret_from_magicscan(ret);
 	}
 	lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
     }
@@ -2207,7 +2221,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	ctx->fmap--;
 	cli_bitset_free(ctx->hook_lsig_matches);
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	return ret;
+	ret_from_magicscan(ret);
     }
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
@@ -2225,7 +2239,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
-	    return ret;
+	    ret_from_magicscan(ret);
 	}
     }
 
@@ -2272,9 +2286,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
 	case CL_CLEAN:
 	    cache_add(hash, hashed_size, ctx);
-	    return CL_CLEAN;
+	    ret_from_magicscan(CL_CLEAN);
 	default:
-	    return ret;
+	    ret_from_magicscan(ret);
     }
 }
 

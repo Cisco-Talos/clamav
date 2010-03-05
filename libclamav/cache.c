@@ -716,6 +716,7 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 #endif
 
     pthread_mutex_unlock(&c->mutex);
+    cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
     return;
 }
 
@@ -725,6 +726,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map;
     size_t todo, at = 0;
     cli_md5_ctx md5;
+    int ret;
 
     if(!ctx || !ctx->engine || !ctx->engine->cache)
        return CL_VIRUS;
@@ -743,5 +745,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 	cli_md5_update(&md5, buf, readme);
     }
     cli_md5_final(hash, &md5);
-    return cache_lookup_hash(hash, map->len, ctx->engine->cache);
+    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache);
+    cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");
+    return ret;
 }
