@@ -30,7 +30,8 @@
 
 typedef struct {
     int fd;
-    unsigned int dumb;
+    unsigned short dumb;
+    unsigned short dont_cache_flag;
     time_t mtime;
     size_t offset;
     size_t len;

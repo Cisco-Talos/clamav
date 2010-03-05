@@ -92,7 +92,8 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 fmap_t *fmap(int fd, off_t offset, size_t len) {
-    unsigned int pages, mapsz, hdrsz, dumb = 1;
+    unsigned int pages, mapsz, hdrsz;
+    unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
@@ -148,6 +149,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
     m->hdrsz = hdrsz;
     m->pgsz = pgsz;
     m->paged = 0;
+    m->dont_cache_flag = 0;
     return m;
 }
 
@@ -494,7 +496,8 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
 /* vvvvv WIN32 STUFF BELOW vvvvv */
 
 fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
-    unsigned int pages, mapsz, hdrsz, dumb = 1;
+    unsigned int pages, mapsz, hdrsz;
+    unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
@@ -549,6 +552,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
     m->hdrsz = hdrsz;
     m->pgsz = pgsz;
     m->paged = 0;
+    m->dont_cache_flag = 0;
     return m;
 }
 
