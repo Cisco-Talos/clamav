@@ -1138,7 +1138,7 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
 	at += bytes;
 	decoded = cli_utf16toascii(buff, bytes);
 	if(decoded) {
-	    if(write(fd, decoded, strlen(decoded)) == -1) {
+	    if(write(fd, decoded, bytes / 2) == -1) {
 		cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
 		free(decoded);
 		close(fd);

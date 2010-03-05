@@ -186,7 +186,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 
 	    decoded = (unsigned char *) cli_utf16toascii((char *) buff, bread);
 	    if(decoded) {
-		sret = cli_ac_scanbuff(decoded, strlen((char *) decoded), NULL, NULL, NULL,  engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
+		sret = cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL,  engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
 		free(decoded);
 		if(sret == CL_TYPE_HTML)
 		    ret = CL_TYPE_HTML_UTF16;

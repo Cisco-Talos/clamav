@@ -1,3 +1,7 @@
+Fri Mar  5 22:01:20 CET 2010 (tk)
+---------------------------------
+ * libclamav: fix scanning of utf16 data (bb#1853)
+
 Fri Mar  5 21:14:12 CET 2010 (tk)
 ---------------------------------
  * libclamav/matcher-bm.c: properly handle scan boundaries in
