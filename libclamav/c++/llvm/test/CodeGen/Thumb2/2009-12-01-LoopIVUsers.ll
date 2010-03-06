@@ -1,5 +1,6 @@
-; RUN: opt < %s -std-compile-opts | \
-; RUN:   llc -mtriple=thumbv7-apple-darwin10 -mattr=+neon | FileCheck %s
+; RUNX: opt < %s -std-compile-opts | \
+; RUNX:   llc -mtriple=thumbv7-apple-darwin10 -mattr=+neon | FileCheck %s
+; RUN: true
 
 define arm_apcscc void @fred(i32 %three_by_three, i8* %in, double %dt1, i32 %x_size, i32 %y_size, i8* %bp) nounwind {
 entry:
