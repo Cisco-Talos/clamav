@@ -22,6 +22,7 @@ add_llvm_library(LLVMCodeGen
   LiveVariables.cpp
   LowerSubregs.cpp
   MachineBasicBlock.cpp
+  MachineCSE.cpp
   MachineDominators.cpp
   MachineFunction.cpp
   MachineFunctionAnalysis.cpp
@@ -67,6 +68,7 @@ add_llvm_library(LLVMCodeGen
   StrongPHIElimination.cpp
   TailDuplication.cpp
   TargetInstrInfoImpl.cpp
+  TargetLoweringObjectFileImpl.cpp
   TwoAddressInstructionPass.cpp
   UnreachableBlockElim.cpp
   VirtRegMap.cpp

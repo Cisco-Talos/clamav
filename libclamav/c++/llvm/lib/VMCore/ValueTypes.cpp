@@ -36,17 +36,17 @@ EVT EVT::getExtendedVectorVT(LLVMContext &Context, EVT VT,
 
 bool EVT::isExtendedFloatingPoint() const {
   assert(isExtended() && "Type is not extended!");
-  return LLVMTy->isFPOrFPVector();
+  return LLVMTy->isFPOrFPVectorTy();
 }
 
 bool EVT::isExtendedInteger() const {
   assert(isExtended() && "Type is not extended!");
-  return LLVMTy->isIntOrIntVector();
+  return LLVMTy->isIntOrIntVectorTy();
 }
 
 bool EVT::isExtendedVector() const {
   assert(isExtended() && "Type is not extended!");
-  return isa<VectorType>(LLVMTy);
+  return LLVMTy->isVectorTy();
 }
 
 bool EVT::isExtended64BitVector() const {
@@ -126,6 +126,7 @@ std::string EVT::getEVTString() const {
   case MVT::v8f32:   return "v8f32";
   case MVT::v2f64:   return "v2f64";
   case MVT::v4f64:   return "v4f64";
+  case MVT::Metadata:return "Metadata";
   }
 }
 

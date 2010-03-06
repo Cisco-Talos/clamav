@@ -125,6 +125,11 @@ public:
     return TypeConstraints;
   }
   
+  /// getKnownType - If the type constraints on this node imply a fixed type
+  /// (e.g. all stores return void, etc), then return it as an
+  /// MVT::SimpleValueType.  Otherwise, return EEVT::isUnknown.
+  unsigned getKnownType() const;
+  
   /// hasProperty - Return true if this node has the specified property.
   ///
   bool hasProperty(enum SDNP Prop) const { return Properties & (1 << Prop); }
@@ -215,6 +220,13 @@ public:
   TreePatternNode *getChild(unsigned N) const { return Children[N]; }
   void setChild(unsigned i, TreePatternNode *N) {
     Children[i] = N;
+  }
+  
+  /// hasChild - Return true if N is any of our children.
+  bool hasChild(const TreePatternNode *N) const {
+    for (unsigned i = 0, e = Children.size(); i != e; ++i)
+      if (Children[i] == N) return true;
+    return false;
   }
 
   const std::vector<std::string> &getPredicateFns() const {return PredicateFns;}
@@ -459,19 +471,21 @@ public:
   
 /// PatternToMatch - Used by CodeGenDAGPatterns to keep tab of patterns
 /// processed to produce isel.
-struct PatternToMatch {
+class PatternToMatch {
+public:
   PatternToMatch(ListInit *preds,
                  TreePatternNode *src, TreePatternNode *dst,
                  const std::vector<Record*> &dstregs,
-                 unsigned complexity):
-    Predicates(preds), SrcPattern(src), DstPattern(dst), Dstregs(dstregs),
-    AddedComplexity(complexity) {}
+                 unsigned complexity, unsigned uid)
+    : Predicates(preds), SrcPattern(src), DstPattern(dst),
+      Dstregs(dstregs), AddedComplexity(complexity), ID(uid) {}
 
   ListInit        *Predicates;  // Top level predicate conditions to match.
   TreePatternNode *SrcPattern;  // Source pattern to match.
   TreePatternNode *DstPattern;  // Resulting pattern.
   std::vector<Record*> Dstregs; // Physical register defs being matched.
   unsigned         AddedComplexity; // Add to matching pattern complexity.
+  unsigned         ID;          // Unique ID for the record.
 
   ListInit        *getPredicates() const { return Predicates; }
   TreePatternNode *getSrcPattern() const { return SrcPattern; }
@@ -567,7 +581,7 @@ public:
     abort();
   }
   
-  const DAGDefaultOperand &getDefaultOperand(Record *R) {
+  const DAGDefaultOperand &getDefaultOperand(Record *R) const {
     assert(DefaultOperands.count(R) &&"Isn't an analyzed default operand!");
     return DefaultOperands.find(R)->second;
   }
@@ -617,6 +631,7 @@ private:
   void InferInstructionFlags();
   void GenerateVariants();
   
+  void AddPatternToMatch(const TreePattern *Pattern, const PatternToMatch &PTM);
   void FindPatternInputsAndOutputs(TreePattern *I, TreePatternNode *Pat,
                                    std::map<std::string,
                                    TreePatternNode*> &InstInputs,

@@ -271,7 +271,7 @@ static bool DominatesMergePoint(Value *V, BasicBlock *BB,
 ConstantInt *SimplifyCFGOpt::GetConstantInt(Value *V) {
   // Normal constant int.
   ConstantInt *CI = dyn_cast<ConstantInt>(V);
-  if (CI || !TD || !isa<Constant>(V) || !isa<PointerType>(V->getType()))
+  if (CI || !TD || !isa<Constant>(V) || !V->getType()->isPointerTy())
     return CI;
 
   // This is some kind of pointer constant. Turn it into a pointer-sized
@@ -701,7 +701,7 @@ bool SimplifyCFGOpt::FoldValueComparisonIntoPredecessors(TerminatorInst *TI) {
         AddPredecessorToBlock(NewSuccessors[i], Pred, BB);
 
       // Convert pointer to int before we switch.
-      if (isa<PointerType>(CV->getType())) {
+      if (CV->getType()->isPointerTy()) {
         assert(TD && "Cannot switch on pointer without TargetData");
         CV = new PtrToIntInst(CV, TD->getIntPtrType(CV->getContext()),
                               "magicptr", PTI);
@@ -915,7 +915,7 @@ static bool SpeculativelyExecuteBB(BranchInst *BI, BasicBlock *BB1) {
   case Instruction::Add:
   case Instruction::Sub:
     // Not worth doing for vector ops.
-    if (isa<VectorType>(HInst->getType()))
+    if (HInst->getType()->isVectorTy())
       return false;
     break;
   case Instruction::And:
@@ -925,7 +925,7 @@ static bool SpeculativelyExecuteBB(BranchInst *BI, BasicBlock *BB1) {
   case Instruction::LShr:
   case Instruction::AShr:
     // Don't mess with vector operations.
-    if (isa<VectorType>(HInst->getType()))
+    if (HInst->getType()->isVectorTy())
       return false;
     break;   // These are all cheap and non-trapping instructions.
   }
@@ -1077,7 +1077,7 @@ static bool FoldCondBranchOnPHI(BranchInst *BI) {
   for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
     ConstantInt *CB;
     if ((CB = dyn_cast<ConstantInt>(PN->getIncomingValue(i))) &&
-        CB->getType()->isInteger(1)) {
+        CB->getType()->isIntegerTy(1)) {
       // Okay, we now know that all edges from PredBB should be revectored to
       // branch to RealDest.
       BasicBlock *PredBB = PN->getIncomingBlock(i);
@@ -2068,7 +2068,7 @@ bool SimplifyCFGOpt::run(BasicBlock *BB) {
           if (!TrueWhenEqual) std::swap(DefaultBB, EdgeBB);
 
           // Convert pointer to int before we switch.
-          if (isa<PointerType>(CompVal->getType())) {
+          if (CompVal->getType()->isPointerTy()) {
             assert(TD && "Cannot switch on pointer without TargetData");
             CompVal = new PtrToIntInst(CompVal,
                                        TD->getIntPtrType(CompVal->getContext()),

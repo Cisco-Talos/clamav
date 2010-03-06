@@ -89,7 +89,7 @@ public:
     VectorTyID,      ///< 15: SIMD 'packed' format, or other vector type
 
     NumTypeIDs,                         // Must remain as last defined ID
-    LastPrimitiveTyID = LabelTyID,
+    LastPrimitiveTyID = MetadataTyID,
     FirstDerivedTyID = IntegerTyID
   };
 
@@ -182,6 +182,9 @@ public:
   // are defined in private classes defined in Type.cpp for primitive types.
   //
 
+  /// getDescription - Return the string representation of the type.
+  std::string getDescription() const;
+
   /// getTypeID - Return the type id for the type.  This will return one
   /// of the TypeID enum elements defined above.
   ///
@@ -205,55 +208,60 @@ public:
   /// isPPC_FP128Ty - Return true if this is powerpc long double.
   bool isPPC_FP128Ty() const { return ID == PPC_FP128TyID; }
 
+  /// isFloatingPointTy - Return true if this is one of the five floating point
+  /// types
+  bool isFloatingPointTy() const { return ID == FloatTyID || ID == DoubleTyID ||
+      ID == X86_FP80TyID || ID == FP128TyID || ID == PPC_FP128TyID; }
+
+  /// isFPOrFPVectorTy - Return true if this is a FP type or a vector of FP.
+  ///
+  bool isFPOrFPVectorTy() const;
+ 
   /// isLabelTy - Return true if this is 'label'.
   bool isLabelTy() const { return ID == LabelTyID; }
 
   /// isMetadataTy - Return true if this is 'metadata'.
   bool isMetadataTy() const { return ID == MetadataTyID; }
 
-  /// getDescription - Return the string representation of the type.
-  std::string getDescription() const;
-
-  /// isInteger - True if this is an instance of IntegerType.
+  /// isIntegerTy - True if this is an instance of IntegerType.
   ///
-  bool isInteger() const { return ID == IntegerTyID; } 
+  bool isIntegerTy() const { return ID == IntegerTyID; } 
 
-  /// isInteger - Return true if this is an IntegerType of the specified width.
-  bool isInteger(unsigned Bitwidth) const;
+  /// isIntegerTy - Return true if this is an IntegerType of the given width.
+  bool isIntegerTy(unsigned Bitwidth) const;
 
-  /// isIntOrIntVector - Return true if this is an integer type or a vector of
+  /// isIntOrIntVectorTy - Return true if this is an integer type or a vector of
   /// integer types.
   ///
-  bool isIntOrIntVector() const;
+  bool isIntOrIntVectorTy() const;
   
-  /// isFloatingPoint - Return true if this is one of the five floating point
-  /// types
-  bool isFloatingPoint() const { return ID == FloatTyID || ID == DoubleTyID ||
-      ID == X86_FP80TyID || ID == FP128TyID || ID == PPC_FP128TyID; }
+  /// isFunctionTy - True if this is an instance of FunctionType.
+  ///
+  bool isFunctionTy() const { return ID == FunctionTyID; }
 
-  /// isFPOrFPVector - Return true if this is a FP type or a vector of FP types.
+  /// isStructTy - True if this is an instance of StructType.
   ///
-  bool isFPOrFPVector() const;
- 
-  /// isFunction - True if this is an instance of FunctionType.
-  ///
-  bool isFunction() const { return ID == FunctionTyID; }
+  bool isStructTy() const { return ID == StructTyID; }
 
-  /// isStruct - True if this is an instance of StructType.
+  /// isUnionTy - True if this is an instance of UnionType.
   ///
-  bool isStruct() const { return ID == StructTyID; }
+  bool isUnionTy() const { return ID == UnionTyID; }
 
-  /// isArray - True if this is an instance of ArrayType.
+  /// isArrayTy - True if this is an instance of ArrayType.
   ///
-  bool isArray() const { return ID == ArrayTyID; }
+  bool isArrayTy() const { return ID == ArrayTyID; }
 
-  /// isPointer - True if this is an instance of PointerType.
+  /// isPointerTy - True if this is an instance of PointerType.
   ///
-  bool isPointer() const { return ID == PointerTyID; }
+  bool isPointerTy() const { return ID == PointerTyID; }
 
-  /// isVector - True if this is an instance of VectorType.
+  /// isOpaqueTy - True if this is an instance of OpaqueType.
   ///
-  bool isVector() const { return ID == VectorTyID; }
+  bool isOpaqueTy() const { return ID == OpaqueTyID; }
+
+  /// isVectorTy - True if this is an instance of VectorType.
+  ///
+  bool isVectorTy() const { return ID == VectorTyID; }
 
   /// isAbstract - True if the type is either an Opaque type, or is a derived
   /// type that includes an opaque type somewhere in it.
@@ -307,7 +315,7 @@ public:
   ///
   bool isSized() const {
     // If it's a primitive, it is always sized.
-    if (ID == IntegerTyID || isFloatingPoint() || ID == PointerTyID)
+    if (ID == IntegerTyID || isFloatingPointTy() || ID == PointerTyID)
       return true;
     // If it is not something that can have a size (e.g. a function or label),
     // it doesn't have a size.

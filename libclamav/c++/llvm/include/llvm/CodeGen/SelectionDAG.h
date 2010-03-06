@@ -581,18 +581,18 @@ public:
   /// determined by their operands, and they produce a value AND a token chain.
   ///
   SDValue getLoad(EVT VT, DebugLoc dl, SDValue Chain, SDValue Ptr,
-                    const Value *SV, int SVOffset, bool isVolatile=false,
-                    unsigned Alignment=0);
+                  const Value *SV, int SVOffset, bool isVolatile,
+                  bool isNonTemporal, unsigned Alignment);
   SDValue getExtLoad(ISD::LoadExtType ExtType, DebugLoc dl, EVT VT,
-                       SDValue Chain, SDValue Ptr, const Value *SV,
-                       int SVOffset, EVT MemVT, bool isVolatile=false,
-                       unsigned Alignment=0);
+                     SDValue Chain, SDValue Ptr, const Value *SV,
+                     int SVOffset, EVT MemVT, bool isVolatile,
+                     bool isNonTemporal, unsigned Alignment);
   SDValue getIndexedLoad(SDValue OrigLoad, DebugLoc dl, SDValue Base,
                            SDValue Offset, ISD::MemIndexedMode AM);
   SDValue getLoad(ISD::MemIndexedMode AM, DebugLoc dl, ISD::LoadExtType ExtType,
                   EVT VT, SDValue Chain, SDValue Ptr, SDValue Offset,
                   const Value *SV, int SVOffset, EVT MemVT,
-                  bool isVolatile=false, unsigned Alignment=0);
+                  bool isVolatile, bool isNonTemporal, unsigned Alignment);
   SDValue getLoad(ISD::MemIndexedMode AM, DebugLoc dl, ISD::LoadExtType ExtType,
                   EVT VT, SDValue Chain, SDValue Ptr, SDValue Offset,
                   EVT MemVT, MachineMemOperand *MMO);
@@ -600,13 +600,14 @@ public:
   /// getStore - Helper function to build ISD::STORE nodes.
   ///
   SDValue getStore(SDValue Chain, DebugLoc dl, SDValue Val, SDValue Ptr,
-                     const Value *SV, int SVOffset, bool isVolatile=false,
-                     unsigned Alignment=0);
+                   const Value *SV, int SVOffset, bool isVolatile,
+                   bool isNonTemporal, unsigned Alignment);
   SDValue getStore(SDValue Chain, DebugLoc dl, SDValue Val, SDValue Ptr,
                    MachineMemOperand *MMO);
   SDValue getTruncStore(SDValue Chain, DebugLoc dl, SDValue Val, SDValue Ptr,
-                          const Value *SV, int SVOffset, EVT TVT,
-                          bool isVolatile=false, unsigned Alignment=0);
+                        const Value *SV, int SVOffset, EVT TVT,
+                        bool isNonTemporal, bool isVolatile,
+                        unsigned Alignment);
   SDValue getTruncStore(SDValue Chain, DebugLoc dl, SDValue Val, SDValue Ptr,
                         EVT TVT, MachineMemOperand *MMO);
   SDValue getIndexedStore(SDValue OrigStoe, DebugLoc dl, SDValue Base,
@@ -667,27 +668,8 @@ public:
   SDNode *SelectNodeTo(SDNode *N, unsigned TargetOpc, SDVTList VTs,
                        const SDValue *Ops, unsigned NumOps);
 
-  /// MorphNodeTo - These *mutate* the specified node to have the specified
+  /// MorphNodeTo - This *mutates* the specified node to have the specified
   /// return type, opcode, and operands.
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT, SDValue Op1);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT,
-                      SDValue Op1, SDValue Op2);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT,
-                      SDValue Op1, SDValue Op2, SDValue Op3);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT,
-                      const SDValue *Ops, unsigned NumOps);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1, EVT VT2);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1,
-                      EVT VT2, const SDValue *Ops, unsigned NumOps);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1,
-                      EVT VT2, EVT VT3, const SDValue *Ops, unsigned NumOps);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1,
-                      EVT VT2, SDValue Op1);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1,
-                      EVT VT2, SDValue Op1, SDValue Op2);
-  SDNode *MorphNodeTo(SDNode *N, unsigned Opc, EVT VT1,
-                      EVT VT2, SDValue Op1, SDValue Op2, SDValue Op3);
   SDNode *MorphNodeTo(SDNode *N, unsigned Opc, SDVTList VTs,
                       const SDValue *Ops, unsigned NumOps);
 
@@ -896,6 +878,15 @@ public:
 
   /// isKnownNeverNan - Test whether the given SDValue is known to never be NaN.
   bool isKnownNeverNaN(SDValue Op) const;
+
+  /// isKnownNeverZero - Test whether the given SDValue is known to never be
+  /// positive or negative Zero.
+  bool isKnownNeverZero(SDValue Op) const;
+
+  /// isEqualTo - Test whether two SDValues are known to compare equal. This
+  /// is true if they are the same value, or if one is negative zero and the
+  /// other positive zero.
+  bool isEqualTo(SDValue A, SDValue B) const;
 
   /// isVerifiedDebugInfoDesc - Returns true if the specified SDValue has
   /// been verified as a debug information descriptor.

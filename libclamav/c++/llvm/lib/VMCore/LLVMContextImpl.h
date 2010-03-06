@@ -229,12 +229,28 @@ public:
       if (I->second->use_empty())
         delete I->second;
     }
-    MDNodeSet.clear();
+    AlwaysOpaqueTy->dropRef();
     AlwaysOpaqueTy->dropRef();
     for (OpaqueTypesTy::iterator I = OpaqueTypes.begin(), E = OpaqueTypes.end();
         I != E; ++I) {
       (*I)->AbstractTypeUsers.clear();
       delete *I;
+    }
+    // Destroy MDNode operands first.
+    for (FoldingSetIterator<MDNode> I = MDNodeSet.begin(), E = MDNodeSet.end();
+         I != E;) {
+      MDNode *N = &(*I);
+      ++I;
+      N->replaceAllOperandsWithNull();
+    }
+    while (!MDNodeSet.empty()) {
+      MDNode *N = &(*MDNodeSet.begin());
+      N->destroy();
+    }
+    // Destroy MDStrings.
+    for (StringMap<MDString*>::iterator I = MDStringCache.begin(),
+           E = MDStringCache.end(); I != E; ++I) {
+      delete I->second;
     }
   }
 };

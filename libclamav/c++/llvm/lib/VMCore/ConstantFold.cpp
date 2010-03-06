@@ -112,7 +112,7 @@ static Constant *FoldBitCast(Constant *V, const Type *DestTy) {
             IdxList.push_back(Zero);
           } else if (const SequentialType *STy = 
                      dyn_cast<SequentialType>(ElTy)) {
-            if (isa<PointerType>(ElTy)) break;  // Can't index into pointers!
+            if (ElTy->isPointerTy()) break;  // Can't index into pointers!
             ElTy = STy->getElementType();
             IdxList.push_back(Zero);
           } else {
@@ -155,12 +155,12 @@ static Constant *FoldBitCast(Constant *V, const Type *DestTy) {
 
   // Handle integral constant input.
   if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
-    if (DestTy->isInteger())
+    if (DestTy->isIntegerTy())
       // Integral -> Integral. This is a no-op because the bit widths must
       // be the same. Consequently, we just fold to V.
       return V;
 
-    if (DestTy->isFloatingPoint())
+    if (DestTy->isFloatingPointTy())
       return ConstantFP::get(DestTy->getContext(),
                              APFloat(CI->getValue(),
                                      !DestTy->isPPC_FP128Ty()));
@@ -189,7 +189,7 @@ static Constant *FoldBitCast(Constant *V, const Type *DestTy) {
 /// 
 static Constant *ExtractConstantBytes(Constant *C, unsigned ByteStart,
                                       unsigned ByteSize) {
-  assert(isa<IntegerType>(C->getType()) &&
+  assert(C->getType()->isIntegerTy() &&
          (cast<IntegerType>(C->getType())->getBitWidth() & 7) == 0 &&
          "Non-byte sized integer input");
   unsigned CSize = cast<IntegerType>(C->getType())->getBitWidth()/8;
@@ -334,11 +334,7 @@ static Constant *getFoldedSizeOf(const Type *Ty, const Type *DestTy,
     Constant *E = getFoldedSizeOf(ATy->getElementType(), DestTy, true);
     return ConstantExpr::getNUWMul(E, N);
   }
-  if (const VectorType *VTy = dyn_cast<VectorType>(Ty)) {
-    Constant *N = ConstantInt::get(DestTy, VTy->getNumElements());
-    Constant *E = getFoldedSizeOf(VTy->getElementType(), DestTy, true);
-    return ConstantExpr::getNUWMul(E, N);
-  }
+
   if (const StructType *STy = dyn_cast<StructType>(Ty))
     if (!STy->isPacked()) {
       unsigned NumElems = STy->getNumElements();
@@ -361,10 +357,26 @@ static Constant *getFoldedSizeOf(const Type *Ty, const Type *DestTy,
       }
     }
 
+  if (const UnionType *UTy = dyn_cast<UnionType>(Ty)) {
+    unsigned NumElems = UTy->getNumElements();
+    // Check for a union with all members having the same size.
+    Constant *MemberSize =
+      getFoldedSizeOf(UTy->getElementType(0), DestTy, true);
+    bool AllSame = true;
+    for (unsigned i = 1; i != NumElems; ++i)
+      if (MemberSize !=
+          getFoldedSizeOf(UTy->getElementType(i), DestTy, true)) {
+        AllSame = false;
+        break;
+      }
+    if (AllSame)
+      return MemberSize;
+  }
+
   // Pointer size doesn't depend on the pointee type, so canonicalize them
   // to an arbitrary pointee.
   if (const PointerType *PTy = dyn_cast<PointerType>(Ty))
-    if (!PTy->getElementType()->isInteger(1))
+    if (!PTy->getElementType()->isIntegerTy(1))
       return
         getFoldedSizeOf(PointerType::get(IntegerType::get(PTy->getContext(), 1),
                                          PTy->getAddressSpace()),
@@ -426,10 +438,28 @@ static Constant *getFoldedAlignOf(const Type *Ty, const Type *DestTy,
       return MemberAlign;
   }
 
+  if (const UnionType *UTy = dyn_cast<UnionType>(Ty)) {
+    // Union alignment is the maximum alignment of any member.
+    // Without target data, we can't compare much, but we can check to see
+    // if all the members have the same alignment.
+    unsigned NumElems = UTy->getNumElements();
+    // Check for a union with all members having the same alignment.
+    Constant *MemberAlign =
+      getFoldedAlignOf(UTy->getElementType(0), DestTy, true);
+    bool AllSame = true;
+    for (unsigned i = 1; i != NumElems; ++i)
+      if (MemberAlign != getFoldedAlignOf(UTy->getElementType(i), DestTy, true)) {
+        AllSame = false;
+        break;
+      }
+    if (AllSame)
+      return MemberAlign;
+  }
+
   // Pointer alignment doesn't depend on the pointee type, so canonicalize them
   // to an arbitrary pointee.
   if (const PointerType *PTy = dyn_cast<PointerType>(Ty))
-    if (!PTy->getElementType()->isInteger(1))
+    if (!PTy->getElementType()->isIntegerTy(1))
       return
         getFoldedAlignOf(PointerType::get(IntegerType::get(PTy->getContext(),
                                                            1),
@@ -464,13 +494,7 @@ static Constant *getFoldedOffsetOf(const Type *Ty, Constant *FieldNo,
     Constant *E = getFoldedSizeOf(ATy->getElementType(), DestTy, true);
     return ConstantExpr::getNUWMul(E, N);
   }
-  if (const VectorType *VTy = dyn_cast<VectorType>(Ty)) {
-    Constant *N = ConstantExpr::getCast(CastInst::getCastOpcode(FieldNo, false,
-                                                                DestTy, false),
-                                        FieldNo, DestTy);
-    Constant *E = getFoldedSizeOf(VTy->getElementType(), DestTy, true);
-    return ConstantExpr::getNUWMul(E, N);
-  }
+
   if (const StructType *STy = dyn_cast<StructType>(Ty))
     if (!STy->isPacked()) {
       unsigned NumElems = STy->getNumElements();
@@ -551,7 +575,7 @@ Constant *llvm::ConstantFoldCastInstruction(unsigned opc, Constant *V,
   // operating on each element. In the cast of bitcasts, the element
   // count may be mismatched; don't attempt to handle that here.
   if (ConstantVector *CV = dyn_cast<ConstantVector>(V))
-    if (isa<VectorType>(DestTy) &&
+    if (DestTy->isVectorTy() &&
         cast<VectorType>(DestTy)->getNumElements() ==
         CV->getType()->getNumElements()) {
       std::vector<Constant*> res;
@@ -629,12 +653,12 @@ Constant *llvm::ConstantFoldCastInstruction(unsigned opc, Constant *V,
               ConstantInt *CI = cast<ConstantInt>(CE->getOperand(2));
               if (CI->isOne() &&
                   STy->getNumElements() == 2 &&
-                  STy->getElementType(0)->isInteger(1)) {
+                  STy->getElementType(0)->isIntegerTy(1)) {
                 return getFoldedAlignOf(STy->getElementType(1), DestTy, false);
               }
             }
           // Handle an offsetof-like expression.
-          if (isa<StructType>(Ty) || isa<ArrayType>(Ty) || isa<VectorType>(Ty)){
+          if (Ty->isStructTy() || Ty->isArrayTy() || Ty->isVectorTy()){
             if (Constant *C = getFoldedOffsetOf(Ty, CE->getOperand(2),
                                                 DestTy, false))
               return C;
@@ -885,7 +909,7 @@ Constant *llvm::ConstantFoldInsertValueInstruction(Constant *Agg,
     unsigned numOps;
     if (const ArrayType *AR = dyn_cast<ArrayType>(AggTy))
       numOps = AR->getNumElements();
-    else if (isa<UnionType>(AggTy))
+    else if (AggTy->isUnionTy())
       numOps = 1;
     else
       numOps = cast<StructType>(AggTy)->getNumElements();
@@ -1105,6 +1129,10 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode,
           return ConstantExpr::getLShr(C1, C2);
       break;
     }
+  } else if (isa<ConstantInt>(C1)) {
+    // If C1 is a ConstantInt and C2 is not, swap the operands.
+    if (Instruction::isCommutative(Opcode))
+      return ConstantExpr::get(Opcode, C2, C1);
   }
 
   // At this point we know neither constant is an UndefValue.
@@ -1364,35 +1392,12 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode,
   } else if (isa<ConstantExpr>(C2)) {
     // If C2 is a constant expr and C1 isn't, flop them around and fold the
     // other way if possible.
-    switch (Opcode) {
-    case Instruction::Add:
-    case Instruction::FAdd:
-    case Instruction::Mul:
-    case Instruction::FMul:
-    case Instruction::And:
-    case Instruction::Or:
-    case Instruction::Xor:
-      // No change of opcode required.
+    if (Instruction::isCommutative(Opcode))
       return ConstantFoldBinaryInstruction(Opcode, C2, C1);
-
-    case Instruction::Shl:
-    case Instruction::LShr:
-    case Instruction::AShr:
-    case Instruction::Sub:
-    case Instruction::FSub:
-    case Instruction::SDiv:
-    case Instruction::UDiv:
-    case Instruction::FDiv:
-    case Instruction::URem:
-    case Instruction::SRem:
-    case Instruction::FRem:
-    default:  // These instructions cannot be flopped around.
-      break;
-    }
   }
 
   // i1 can be simplified in many cases.
-  if (C1->getType()->isInteger(1)) {
+  if (C1->getType()->isIntegerTy(1)) {
     switch (Opcode) {
     case Instruction::Add:
     case Instruction::Sub:
@@ -1427,7 +1432,7 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode,
 /// isZeroSizedType - This type is zero sized if its an array or structure of
 /// zero sized types.  The only leaf zero sized type is an empty structure.
 static bool isMaybeZeroSizedType(const Type *Ty) {
-  if (isa<OpaqueType>(Ty)) return true;  // Can't say.
+  if (Ty->isOpaqueTy()) return true;  // Can't say.
   if (const StructType *STy = dyn_cast<StructType>(Ty)) {
 
     // If all of elements have zero size, this does too.
@@ -1458,10 +1463,10 @@ static int IdxCompare(Constant *C1, Constant *C2,  const Type *ElTy) {
 
   // Ok, we have two differing integer indices.  Sign extend them to be the same
   // type.  Long is always big enough, so we use it.
-  if (!C1->getType()->isInteger(64))
+  if (!C1->getType()->isIntegerTy(64))
     C1 = ConstantExpr::getSExt(C1, Type::getInt64Ty(C1->getContext()));
 
-  if (!C2->getType()->isInteger(64))
+  if (!C2->getType()->isIntegerTy(64))
     C2 = ConstantExpr::getSExt(C2, Type::getInt64Ty(C1->getContext()));
 
   if (C1 == C2) return 0;  // They are equal
@@ -1667,7 +1672,7 @@ static ICmpInst::Predicate evaluateICmpRelation(Constant *V1, Constant *V2,
       // If the cast is not actually changing bits, and the second operand is a
       // null pointer, do the comparison with the pre-casted value.
       if (V2->isNullValue() &&
-          (isa<PointerType>(CE1->getType()) || CE1->getType()->isInteger())) {
+          (CE1->getType()->isPointerTy() || CE1->getType()->isIntegerTy())) {
         if (CE1->getOpcode() == Instruction::ZExt) isSigned = false;
         if (CE1->getOpcode() == Instruction::SExt) isSigned = true;
         return evaluateICmpRelation(CE1Op0,
@@ -1813,7 +1818,7 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
 
   // Handle some degenerate cases first
   if (isa<UndefValue>(C1) || isa<UndefValue>(C2))
-    return UndefValue::get(ResultTy);
+    return ConstantInt::get(ResultTy, CmpInst::isTrueWhenEqual(pred));
 
   // No compile-time operations on this type yet.
   if (C1->getType()->isPPC_FP128Ty())
@@ -1842,7 +1847,7 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
   }
 
   // If the comparison is a comparison between two i1's, simplify it.
-  if (C1->getType()->isInteger(1)) {
+  if (C1->getType()->isIntegerTy(1)) {
     switch(pred) {
     case ICmpInst::ICMP_EQ:
       if (isa<ConstantInt>(C2))
@@ -1914,7 +1919,7 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
       return ConstantInt::get(ResultTy, R==APFloat::cmpGreaterThan ||
                                         R==APFloat::cmpEqual);
     }
-  } else if (isa<VectorType>(C1->getType())) {
+  } else if (C1->getType()->isVectorTy()) {
     SmallVector<Constant*, 16> C1Elts, C2Elts;
     C1->getVectorElements(C1Elts);
     C2->getVectorElements(C2Elts);
@@ -1931,7 +1936,7 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
     return ConstantVector::get(&ResElts[0], ResElts.size());
   }
 
-  if (C1->getType()->isFloatingPoint()) {
+  if (C1->getType()->isFloatingPointTy()) {
     int Result = -1;  // -1 = unknown, 0 = known false, 1 = known true.
     switch (evaluateFCmpRelation(C1, C2)) {
     default: llvm_unreachable("Unknown relation!");
@@ -2065,7 +2070,7 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
     if (ConstantExpr *CE2 = dyn_cast<ConstantExpr>(C2)) {
       Constant *CE2Op0 = CE2->getOperand(0);
       if (CE2->getOpcode() == Instruction::BitCast &&
-          isa<VectorType>(CE2->getType())==isa<VectorType>(CE2Op0->getType())) {
+          CE2->getType()->isVectorTy() == CE2Op0->getType()->isVectorTy()) {
         Constant *Inverse = ConstantExpr::getBitCast(C1, CE2Op0->getType());
         return ConstantExpr::getICmp(pred, Inverse, CE2Op0);
       }
@@ -2073,8 +2078,8 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
 
     // If the left hand side is an extension, try eliminating it.
     if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
-      if (CE1->getOpcode() == Instruction::SExt ||
-          CE1->getOpcode() == Instruction::ZExt) {
+      if ((CE1->getOpcode() == Instruction::SExt && ICmpInst::isSigned(pred)) ||
+          (CE1->getOpcode() == Instruction::ZExt && !ICmpInst::isSigned(pred))){
         Constant *CE1Op0 = CE1->getOperand(0);
         Constant *CE1Inverse = ConstantExpr::getTrunc(CE1, CE1Op0->getType());
         if (CE1Inverse == CE1Op0) {
@@ -2092,27 +2097,8 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
       // If C2 is a constant expr and C1 isn't, flip them around and fold the
       // other way if possible.
       // Also, if C1 is null and C2 isn't, flip them around.
-      switch (pred) {
-      case ICmpInst::ICMP_EQ:
-      case ICmpInst::ICMP_NE:
-        // No change of predicate required.
-        return ConstantExpr::getICmp(pred, C2, C1);
-
-      case ICmpInst::ICMP_ULT:
-      case ICmpInst::ICMP_SLT:
-      case ICmpInst::ICMP_UGT:
-      case ICmpInst::ICMP_SGT:
-      case ICmpInst::ICMP_ULE:
-      case ICmpInst::ICMP_SLE:
-      case ICmpInst::ICMP_UGE:
-      case ICmpInst::ICMP_SGE:
-        // Change the predicate as necessary to swap the operands.
-        pred = ICmpInst::getSwappedPredicate((ICmpInst::Predicate)pred);
-        return ConstantExpr::getICmp(pred, C2, C1);
-
-      default:  // These predicates cannot be flopped around.
-        break;
-      }
+      pred = ICmpInst::getSwappedPredicate((ICmpInst::Predicate)pred);
+      return ConstantExpr::getICmp(pred, C2, C1);
     }
   }
   return 0;
@@ -2184,7 +2170,7 @@ Constant *llvm::ConstantFoldGetElementPtr(Constant *C,
            I != E; ++I)
         LastTy = *I;
 
-      if ((LastTy && isa<ArrayType>(LastTy)) || Idx0->isNullValue()) {
+      if ((LastTy && LastTy->isArrayTy()) || Idx0->isNullValue()) {
         SmallVector<Value*, 16> NewIndices;
         NewIndices.reserve(NumIdx + CE->getNumOperands());
         for (unsigned i = 1, e = CE->getNumOperands()-1; i != e; ++i)
@@ -2266,10 +2252,10 @@ Constant *llvm::ConstantFoldGetElementPtr(Constant *C,
 
             // Before adding, extend both operands to i64 to avoid
             // overflow trouble.
-            if (!PrevIdx->getType()->isInteger(64))
+            if (!PrevIdx->getType()->isIntegerTy(64))
               PrevIdx = ConstantExpr::getSExt(PrevIdx,
                                            Type::getInt64Ty(Div->getContext()));
-            if (!Div->getType()->isInteger(64))
+            if (!Div->getType()->isIntegerTy(64))
               Div = ConstantExpr::getSExt(Div,
                                           Type::getInt64Ty(Div->getContext()));
 

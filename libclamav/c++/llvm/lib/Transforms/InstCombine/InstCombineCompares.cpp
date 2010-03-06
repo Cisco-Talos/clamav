@@ -877,25 +877,26 @@ Instruction *InstCombiner::FoldICmpDivCst(ICmpInst &ICI, BinaryOperator *DivI,
   case ICmpInst::ICMP_EQ:
     if (LoOverflow && HiOverflow)
       return ReplaceInstUsesWith(ICI, ConstantInt::getFalse(ICI.getContext()));
-    else if (HiOverflow)
+    if (HiOverflow)
       return new ICmpInst(DivIsSigned ? ICmpInst::ICMP_SGE :
                           ICmpInst::ICMP_UGE, X, LoBound);
-    else if (LoOverflow)
+    if (LoOverflow)
       return new ICmpInst(DivIsSigned ? ICmpInst::ICMP_SLT :
                           ICmpInst::ICMP_ULT, X, HiBound);
-    else
-      return InsertRangeTest(X, LoBound, HiBound, DivIsSigned, true, ICI);
+    return ReplaceInstUsesWith(ICI,
+                               InsertRangeTest(X, LoBound, HiBound, DivIsSigned,
+                                               true));
   case ICmpInst::ICMP_NE:
     if (LoOverflow && HiOverflow)
       return ReplaceInstUsesWith(ICI, ConstantInt::getTrue(ICI.getContext()));
-    else if (HiOverflow)
+    if (HiOverflow)
       return new ICmpInst(DivIsSigned ? ICmpInst::ICMP_SLT :
                           ICmpInst::ICMP_ULT, X, LoBound);
-    else if (LoOverflow)
+    if (LoOverflow)
       return new ICmpInst(DivIsSigned ? ICmpInst::ICMP_SGE :
                           ICmpInst::ICMP_UGE, X, HiBound);
-    else
-      return InsertRangeTest(X, LoBound, HiBound, DivIsSigned, false, ICI);
+    return ReplaceInstUsesWith(ICI, InsertRangeTest(X, LoBound, HiBound,
+                                                    DivIsSigned, false));
   case ICmpInst::ICMP_ULT:
   case ICmpInst::ICMP_SLT:
     if (LoOverflow == +1)   // Low bound is greater than input range.
@@ -1606,7 +1607,7 @@ Instruction *InstCombiner::visitICmpInst(ICmpInst &I) {
   const Type *Ty = Op0->getType();
 
   // icmp's with boolean values can always be turned into bitwise operations
-  if (Ty->isInteger(1)) {
+  if (Ty->isIntegerTy(1)) {
     switch (I.getPredicate()) {
     default: llvm_unreachable("Invalid icmp instruction!");
     case ICmpInst::ICMP_EQ: {               // icmp eq i1 A, B -> ~(A^B)
@@ -1650,7 +1651,7 @@ Instruction *InstCombiner::visitICmpInst(ICmpInst &I) {
   unsigned BitWidth = 0;
   if (TD)
     BitWidth = TD->getTypeSizeInBits(Ty->getScalarType());
-  else if (Ty->isIntOrIntVector())
+  else if (Ty->isIntOrIntVectorTy())
     BitWidth = Ty->getScalarSizeInBits();
 
   bool isSignBit = false;
@@ -1988,7 +1989,7 @@ Instruction *InstCombiner::visitICmpInst(ICmpInst &I) {
   // values.  If the ptr->ptr cast can be stripped off both arguments, we do so
   // now.
   if (BitCastInst *CI = dyn_cast<BitCastInst>(Op0)) {
-    if (isa<PointerType>(Op0->getType()) && 
+    if (Op0->getType()->isPointerTy() && 
         (isa<Constant>(Op1) || isa<BitCastInst>(Op1))) { 
       // We keep moving the cast from the left operand over to the right
       // operand, where it can often be eliminated completely.
@@ -2458,17 +2459,17 @@ Instruction *InstCombiner::visitFCmpInst(FCmpInst &I) {
           return SelectInst::Create(LHSI->getOperand(0), Op1, Op2);
         break;
       }
-    case Instruction::Load:
-      if (GetElementPtrInst *GEP =
-          dyn_cast<GetElementPtrInst>(LHSI->getOperand(0))) {
-        if (GlobalVariable *GV = dyn_cast<GlobalVariable>(GEP->getOperand(0)))
-          if (GV->isConstant() && GV->hasDefinitiveInitializer() &&
-              !cast<LoadInst>(LHSI)->isVolatile())
-            if (Instruction *Res = FoldCmpLoadFromIndexedGlobal(GEP, GV, I))
-              return Res;
+      case Instruction::Load:
+        if (GetElementPtrInst *GEP =
+            dyn_cast<GetElementPtrInst>(LHSI->getOperand(0))) {
+          if (GlobalVariable *GV = dyn_cast<GlobalVariable>(GEP->getOperand(0)))
+            if (GV->isConstant() && GV->hasDefinitiveInitializer() &&
+                !cast<LoadInst>(LHSI)->isVolatile())
+              if (Instruction *Res = FoldCmpLoadFromIndexedGlobal(GEP, GV, I))
+                return Res;
+        }
+        break;
       }
-      break;
-    }
   }
 
   return Changed ? &I : 0;

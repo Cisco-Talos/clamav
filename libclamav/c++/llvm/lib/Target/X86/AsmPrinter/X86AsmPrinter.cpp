@@ -33,11 +33,11 @@
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
+#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Target/Mangler.h"
-#include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Target/TargetRegistry.h"
 #include "llvm/ADT/SmallString.h"
@@ -601,6 +601,28 @@ void X86AsmPrinter::EmitEndOfAsmFile(Module &M) {
         for (unsigned i = 0, e = DLLExportedFns.size(); i != e; ++i)
           O << "\t.ascii \" -export:" << *DLLExportedFns[i] << "\"\n";
       }
+    }
+  }
+
+  if (Subtarget->isTargetELF()) {
+    TargetLoweringObjectFileELF &TLOFELF =
+      static_cast<TargetLoweringObjectFileELF &>(getObjFileLowering());
+
+    MachineModuleInfoELF &MMIELF = MMI->getObjFileInfo<MachineModuleInfoELF>();
+
+    // Output stubs for external and common global variables.
+    MachineModuleInfoELF::SymbolListTy Stubs = MMIELF.GetGVStubList();
+    if (!Stubs.empty()) {
+      OutStreamer.SwitchSection(TLOFELF.getDataRelSection());
+      const TargetData *TD = TM.getTargetData();
+
+      for (unsigned i = 0, e = Stubs.size(); i != e; ++i)
+        O << *Stubs[i].first << ":\n"
+          << (TD->getPointerSize() == 8 ?
+              MAI->getData64bitsDirective() : MAI->getData32bitsDirective())
+          << *Stubs[i].second << '\n';
+
+      Stubs.clear();
     }
   }
 }

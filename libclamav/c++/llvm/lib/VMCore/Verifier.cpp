@@ -161,7 +161,8 @@ namespace {
     VerifierFailureAction action;
                           // What to do if verification fails.
     Module *Mod;          // Module we are verifying right now
-    DominatorTree *DT; // Dominator Tree, caution can be null!
+    LLVMContext *Context; // Context within which we are verifying
+    DominatorTree *DT;    // Dominator Tree, caution can be null!
 
     std::string Messages;
     raw_string_ostream MessagesStr;
@@ -178,24 +179,25 @@ namespace {
     Verifier()
       : FunctionPass(&ID), 
       Broken(false), RealPass(true), action(AbortProcessAction),
-      DT(0), MessagesStr(Messages) {}
+      Mod(0), Context(0), DT(0), MessagesStr(Messages) {}
     explicit Verifier(VerifierFailureAction ctn)
       : FunctionPass(&ID), 
-      Broken(false), RealPass(true), action(ctn), DT(0),
+      Broken(false), RealPass(true), action(ctn), Mod(0), Context(0), DT(0),
       MessagesStr(Messages) {}
     explicit Verifier(bool AB)
       : FunctionPass(&ID), 
       Broken(false), RealPass(true),
-      action( AB ? AbortProcessAction : PrintMessageAction), DT(0),
-      MessagesStr(Messages) {}
+      action( AB ? AbortProcessAction : PrintMessageAction), Mod(0),
+      Context(0), DT(0), MessagesStr(Messages) {}
     explicit Verifier(DominatorTree &dt)
       : FunctionPass(&ID), 
-      Broken(false), RealPass(false), action(PrintMessageAction),
-      DT(&dt), MessagesStr(Messages) {}
+      Broken(false), RealPass(false), action(PrintMessageAction), Mod(0),
+      Context(0), DT(&dt), MessagesStr(Messages) {}
 
 
     bool doInitialization(Module &M) {
       Mod = &M;
+      Context = &M.getContext();
       verifyTypeSymbolTable(M.getTypeSymbolTable());
 
       // If this is a real pass, in a pass manager, we must abort before
@@ -211,6 +213,7 @@ namespace {
       if (RealPass) DT = &getAnalysis<DominatorTree>();
 
       Mod = F.getParent();
+      if (!Context) Context = &F.getContext();
 
       visit(F);
       InstsInThisBlock.clear();
@@ -314,6 +317,7 @@ namespace {
     void visitStoreInst(StoreInst &SI);
     void visitInstruction(Instruction &I);
     void visitTerminatorInst(TerminatorInst &I);
+    void visitBranchInst(BranchInst &BI);
     void visitReturnInst(ReturnInst &RI);
     void visitSwitchInst(SwitchInst &SI);
     void visitSelectInst(SelectInst &SI);
@@ -429,7 +433,7 @@ void Verifier::visitGlobalValue(GlobalValue &GV) {
 
   if (GV.hasAppendingLinkage()) {
     GlobalVariable *GVar = dyn_cast<GlobalVariable>(&GV);
-    Assert1(GVar && isa<ArrayType>(GVar->getType()->getElementType()),
+    Assert1(GVar && GVar->getType()->getElementType()->isArrayTy(),
             "Only global arrays can have appending linkage!", GVar);
   }
 }
@@ -596,13 +600,16 @@ void Verifier::visitFunction(Function &F) {
   const FunctionType *FT = F.getFunctionType();
   unsigned NumArgs = F.arg_size();
 
+  Assert1(Context == &F.getContext(),
+          "Function context does not match Module context!", &F);
+
   Assert1(!F.hasCommonLinkage(), "Functions may not have common linkage", &F);
   Assert2(FT->getNumParams() == NumArgs,
           "# formal arguments must match # of arguments for function type!",
           &F, FT);
   Assert1(F.getReturnType()->isFirstClassType() ||
           F.getReturnType()->isVoidTy() || 
-          isa<StructType>(F.getReturnType()),
+          F.getReturnType()->isStructTy(),
           "Functions cannot return aggregate values!", &F);
 
   Assert1(!F.hasStructRetAttr() || F.getReturnType()->isVoidTy(),
@@ -743,6 +750,14 @@ void Verifier::visitTerminatorInst(TerminatorInst &I) {
   visitInstruction(I);
 }
 
+void Verifier::visitBranchInst(BranchInst &BI) {
+  if (BI.isConditional()) {
+    Assert2(BI.getCondition()->getType()->isIntegerTy(1),
+            "Branch condition is not 'i1' type!", &BI, BI.getCondition());
+  }
+  visitTerminatorInst(BI);
+}
+
 void Verifier::visitReturnInst(ReturnInst &RI) {
   Function *F = RI.getParent()->getParent();
   unsigned N = RI.getNumOperands();
@@ -821,9 +836,9 @@ void Verifier::visitTruncInst(TruncInst &I) {
   unsigned SrcBitSize = SrcTy->getScalarSizeInBits();
   unsigned DestBitSize = DestTy->getScalarSizeInBits();
 
-  Assert1(SrcTy->isIntOrIntVector(), "Trunc only operates on integer", &I);
-  Assert1(DestTy->isIntOrIntVector(), "Trunc only produces integer", &I);
-  Assert1(isa<VectorType>(SrcTy) == isa<VectorType>(DestTy),
+  Assert1(SrcTy->isIntOrIntVectorTy(), "Trunc only operates on integer", &I);
+  Assert1(DestTy->isIntOrIntVectorTy(), "Trunc only produces integer", &I);
+  Assert1(SrcTy->isVectorTy() == DestTy->isVectorTy(),
           "trunc source and destination must both be a vector or neither", &I);
   Assert1(SrcBitSize > DestBitSize,"DestTy too big for Trunc", &I);
 
@@ -836,9 +851,9 @@ void Verifier::visitZExtInst(ZExtInst &I) {
   const Type *DestTy = I.getType();
 
   // Get the size of the types in bits, we'll need this later
-  Assert1(SrcTy->isIntOrIntVector(), "ZExt only operates on integer", &I);
-  Assert1(DestTy->isIntOrIntVector(), "ZExt only produces an integer", &I);
-  Assert1(isa<VectorType>(SrcTy) == isa<VectorType>(DestTy),
+  Assert1(SrcTy->isIntOrIntVectorTy(), "ZExt only operates on integer", &I);
+  Assert1(DestTy->isIntOrIntVectorTy(), "ZExt only produces an integer", &I);
+  Assert1(SrcTy->isVectorTy() == DestTy->isVectorTy(),
           "zext source and destination must both be a vector or neither", &I);
   unsigned SrcBitSize = SrcTy->getScalarSizeInBits();
   unsigned DestBitSize = DestTy->getScalarSizeInBits();
@@ -857,9 +872,9 @@ void Verifier::visitSExtInst(SExtInst &I) {
   unsigned SrcBitSize = SrcTy->getScalarSizeInBits();
   unsigned DestBitSize = DestTy->getScalarSizeInBits();
 
-  Assert1(SrcTy->isIntOrIntVector(), "SExt only operates on integer", &I);
-  Assert1(DestTy->isIntOrIntVector(), "SExt only produces an integer", &I);
-  Assert1(isa<VectorType>(SrcTy) == isa<VectorType>(DestTy),
+  Assert1(SrcTy->isIntOrIntVectorTy(), "SExt only operates on integer", &I);
+  Assert1(DestTy->isIntOrIntVectorTy(), "SExt only produces an integer", &I);
+  Assert1(SrcTy->isVectorTy() == DestTy->isVectorTy(),
           "sext source and destination must both be a vector or neither", &I);
   Assert1(SrcBitSize < DestBitSize,"Type too small for SExt", &I);
 
@@ -874,9 +889,9 @@ void Verifier::visitFPTruncInst(FPTruncInst &I) {
   unsigned SrcBitSize = SrcTy->getScalarSizeInBits();
   unsigned DestBitSize = DestTy->getScalarSizeInBits();
 
-  Assert1(SrcTy->isFPOrFPVector(),"FPTrunc only operates on FP", &I);
-  Assert1(DestTy->isFPOrFPVector(),"FPTrunc only produces an FP", &I);
-  Assert1(isa<VectorType>(SrcTy) == isa<VectorType>(DestTy),
+  Assert1(SrcTy->isFPOrFPVectorTy(),"FPTrunc only operates on FP", &I);
+  Assert1(DestTy->isFPOrFPVectorTy(),"FPTrunc only produces an FP", &I);
+  Assert1(SrcTy->isVectorTy() == DestTy->isVectorTy(),
           "fptrunc source and destination must both be a vector or neither",&I);
   Assert1(SrcBitSize > DestBitSize,"DestTy too big for FPTrunc", &I);
 
@@ -892,9 +907,9 @@ void Verifier::visitFPExtInst(FPExtInst &I) {
   unsigned SrcBitSize = SrcTy->getScalarSizeInBits();
   unsigned DestBitSize = DestTy->getScalarSizeInBits();
 
-  Assert1(SrcTy->isFPOrFPVector(),"FPExt only operates on FP", &I);
-  Assert1(DestTy->isFPOrFPVector(),"FPExt only produces an FP", &I);
-  Assert1(isa<VectorType>(SrcTy) == isa<VectorType>(DestTy),
+  Assert1(SrcTy->isFPOrFPVectorTy(),"FPExt only operates on FP", &I);
+  Assert1(DestTy->isFPOrFPVectorTy(),"FPExt only produces an FP", &I);
+  Assert1(SrcTy->isVectorTy() == DestTy->isVectorTy(),
           "fpext source and destination must both be a vector or neither", &I);
   Assert1(SrcBitSize < DestBitSize,"DestTy too small for FPExt", &I);
 
@@ -906,14 +921,14 @@ void Verifier::visitUIToFPInst(UIToFPInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  bool SrcVec = isa<VectorType>(SrcTy);
-  bool DstVec = isa<VectorType>(DestTy);
+  bool SrcVec = SrcTy->isVectorTy();
+  bool DstVec = DestTy->isVectorTy();
 
   Assert1(SrcVec == DstVec,
           "UIToFP source and dest must both be vector or scalar", &I);
-  Assert1(SrcTy->isIntOrIntVector(),
+  Assert1(SrcTy->isIntOrIntVectorTy(),
           "UIToFP source must be integer or integer vector", &I);
-  Assert1(DestTy->isFPOrFPVector(),
+  Assert1(DestTy->isFPOrFPVectorTy(),
           "UIToFP result must be FP or FP vector", &I);
 
   if (SrcVec && DstVec)
@@ -929,14 +944,14 @@ void Verifier::visitSIToFPInst(SIToFPInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  bool SrcVec = isa<VectorType>(SrcTy);
-  bool DstVec = isa<VectorType>(DestTy);
+  bool SrcVec = SrcTy->isVectorTy();
+  bool DstVec = DestTy->isVectorTy();
 
   Assert1(SrcVec == DstVec,
           "SIToFP source and dest must both be vector or scalar", &I);
-  Assert1(SrcTy->isIntOrIntVector(),
+  Assert1(SrcTy->isIntOrIntVectorTy(),
           "SIToFP source must be integer or integer vector", &I);
-  Assert1(DestTy->isFPOrFPVector(),
+  Assert1(DestTy->isFPOrFPVectorTy(),
           "SIToFP result must be FP or FP vector", &I);
 
   if (SrcVec && DstVec)
@@ -952,13 +967,14 @@ void Verifier::visitFPToUIInst(FPToUIInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  bool SrcVec = isa<VectorType>(SrcTy);
-  bool DstVec = isa<VectorType>(DestTy);
+  bool SrcVec = SrcTy->isVectorTy();
+  bool DstVec = DestTy->isVectorTy();
 
   Assert1(SrcVec == DstVec,
           "FPToUI source and dest must both be vector or scalar", &I);
-  Assert1(SrcTy->isFPOrFPVector(), "FPToUI source must be FP or FP vector", &I);
-  Assert1(DestTy->isIntOrIntVector(),
+  Assert1(SrcTy->isFPOrFPVectorTy(), "FPToUI source must be FP or FP vector",
+          &I);
+  Assert1(DestTy->isIntOrIntVectorTy(),
           "FPToUI result must be integer or integer vector", &I);
 
   if (SrcVec && DstVec)
@@ -974,14 +990,14 @@ void Verifier::visitFPToSIInst(FPToSIInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  bool SrcVec = isa<VectorType>(SrcTy);
-  bool DstVec = isa<VectorType>(DestTy);
+  bool SrcVec = SrcTy->isVectorTy();
+  bool DstVec = DestTy->isVectorTy();
 
   Assert1(SrcVec == DstVec,
           "FPToSI source and dest must both be vector or scalar", &I);
-  Assert1(SrcTy->isFPOrFPVector(),
+  Assert1(SrcTy->isFPOrFPVectorTy(),
           "FPToSI source must be FP or FP vector", &I);
-  Assert1(DestTy->isIntOrIntVector(),
+  Assert1(DestTy->isIntOrIntVectorTy(),
           "FPToSI result must be integer or integer vector", &I);
 
   if (SrcVec && DstVec)
@@ -997,8 +1013,8 @@ void Verifier::visitPtrToIntInst(PtrToIntInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  Assert1(isa<PointerType>(SrcTy), "PtrToInt source must be pointer", &I);
-  Assert1(DestTy->isInteger(), "PtrToInt result must be integral", &I);
+  Assert1(SrcTy->isPointerTy(), "PtrToInt source must be pointer", &I);
+  Assert1(DestTy->isIntegerTy(), "PtrToInt result must be integral", &I);
 
   visitInstruction(I);
 }
@@ -1008,8 +1024,8 @@ void Verifier::visitIntToPtrInst(IntToPtrInst &I) {
   const Type *SrcTy = I.getOperand(0)->getType();
   const Type *DestTy = I.getType();
 
-  Assert1(SrcTy->isInteger(), "IntToPtr source must be an integral", &I);
-  Assert1(isa<PointerType>(DestTy), "IntToPtr result must be a pointer",&I);
+  Assert1(SrcTy->isIntegerTy(), "IntToPtr source must be an integral", &I);
+  Assert1(DestTy->isPointerTy(), "IntToPtr result must be a pointer",&I);
 
   visitInstruction(I);
 }
@@ -1025,7 +1041,7 @@ void Verifier::visitBitCastInst(BitCastInst &I) {
 
   // BitCast implies a no-op cast of type only. No bits change.
   // However, you can't cast pointers to anything but pointers.
-  Assert1(isa<PointerType>(DestTy) == isa<PointerType>(DestTy),
+  Assert1(DestTy->isPointerTy() == DestTy->isPointerTy(),
           "Bitcast requires both operands to be pointer or neither", &I);
   Assert1(SrcBitSize == DestBitSize, "Bitcast requires types of same width",&I);
 
@@ -1068,11 +1084,11 @@ void Verifier::visitPHINode(PHINode &PN) {
 void Verifier::VerifyCallSite(CallSite CS) {
   Instruction *I = CS.getInstruction();
 
-  Assert1(isa<PointerType>(CS.getCalledValue()->getType()),
+  Assert1(CS.getCalledValue()->getType()->isPointerTy(),
           "Called function must be a pointer!", I);
   const PointerType *FPTy = cast<PointerType>(CS.getCalledValue()->getType());
 
-  Assert1(isa<FunctionType>(FPTy->getElementType()),
+  Assert1(FPTy->getElementType()->isFunctionTy(),
           "Called function is not pointer to function type!", I);
   const FunctionType *FTy = cast<FunctionType>(FPTy->getElementType());
 
@@ -1151,7 +1167,7 @@ void Verifier::visitBinaryOperator(BinaryOperator &B) {
   case Instruction::UDiv:
   case Instruction::SRem:
   case Instruction::URem:
-    Assert1(B.getType()->isIntOrIntVector(),
+    Assert1(B.getType()->isIntOrIntVectorTy(),
             "Integer arithmetic operators only work with integral types!", &B);
     Assert1(B.getType() == B.getOperand(0)->getType(),
             "Integer arithmetic operators must have same type "
@@ -1164,7 +1180,7 @@ void Verifier::visitBinaryOperator(BinaryOperator &B) {
   case Instruction::FMul:
   case Instruction::FDiv:
   case Instruction::FRem:
-    Assert1(B.getType()->isFPOrFPVector(),
+    Assert1(B.getType()->isFPOrFPVectorTy(),
             "Floating-point arithmetic operators only work with "
             "floating-point types!", &B);
     Assert1(B.getType() == B.getOperand(0)->getType(),
@@ -1175,7 +1191,7 @@ void Verifier::visitBinaryOperator(BinaryOperator &B) {
   case Instruction::And:
   case Instruction::Or:
   case Instruction::Xor:
-    Assert1(B.getType()->isIntOrIntVector(),
+    Assert1(B.getType()->isIntOrIntVectorTy(),
             "Logical operators only work with integral types!", &B);
     Assert1(B.getType() == B.getOperand(0)->getType(),
             "Logical operators must have same type for operands and result!",
@@ -1184,7 +1200,7 @@ void Verifier::visitBinaryOperator(BinaryOperator &B) {
   case Instruction::Shl:
   case Instruction::LShr:
   case Instruction::AShr:
-    Assert1(B.getType()->isIntOrIntVector(),
+    Assert1(B.getType()->isIntOrIntVectorTy(),
             "Shifts only work with integral types!", &B);
     Assert1(B.getType() == B.getOperand(0)->getType(),
             "Shift return type must be same as operands!", &B);
@@ -1203,7 +1219,7 @@ void Verifier::visitICmpInst(ICmpInst& IC) {
   Assert1(Op0Ty == Op1Ty,
           "Both operands to ICmp instruction are not of the same type!", &IC);
   // Check that the operands are the right type
-  Assert1(Op0Ty->isIntOrIntVector() || isa<PointerType>(Op0Ty),
+  Assert1(Op0Ty->isIntOrIntVectorTy() || Op0Ty->isPointerTy(),
           "Invalid operand types for ICmp instruction", &IC);
 
   visitInstruction(IC);
@@ -1216,7 +1232,7 @@ void Verifier::visitFCmpInst(FCmpInst& FC) {
   Assert1(Op0Ty == Op1Ty,
           "Both operands to FCmp instruction are not of the same type!", &FC);
   // Check that the operands are the right type
-  Assert1(Op0Ty->isFPOrFPVector(),
+  Assert1(Op0Ty->isFPOrFPVectorTy(),
           "Invalid operand types for FCmp instruction", &FC);
   visitInstruction(FC);
 }
@@ -1270,7 +1286,7 @@ void Verifier::visitGetElementPtrInst(GetElementPtrInst &GEP) {
     GetElementPtrInst::getIndexedType(GEP.getOperand(0)->getType(),
                                       Idxs.begin(), Idxs.end());
   Assert1(ElTy, "Invalid indices for GEP pointer type!", &GEP);
-  Assert2(isa<PointerType>(GEP.getType()) &&
+  Assert2(GEP.getType()->isPointerTy() &&
           cast<PointerType>(GEP.getType())->getElementType() == ElTy,
           "GEP is not of right type for indices!", &GEP, ElTy);
   visitInstruction(GEP);
@@ -1302,7 +1318,7 @@ void Verifier::visitAllocaInst(AllocaInst &AI) {
           &AI);
   Assert1(PTy->getElementType()->isSized(), "Cannot allocate unsized type",
           &AI);
-  Assert1(AI.getArraySize()->getType()->isInteger(32),
+  Assert1(AI.getArraySize()->getType()->isIntegerTy(32),
           "Alloca array size must be i32", &AI);
   visitInstruction(AI);
 }
@@ -1481,7 +1497,7 @@ void Verifier::visitInstruction(Instruction &I) {
 void Verifier::VerifyType(const Type *Ty) {
   if (!Types.insert(Ty)) return;
 
-  Assert1(&Mod->getContext() == &Ty->getContext(),
+  Assert1(Context == &Ty->getContext(),
           "Type context does not match Module context!", Ty);
 
   switch (Ty->getTypeID()) {
@@ -1616,7 +1632,7 @@ void Verifier::visitIntrinsicFunctionCall(Intrinsic::ID ID, CallInst &CI) {
     if (ID == Intrinsic::gcroot) {
       AllocaInst *AI =
         dyn_cast<AllocaInst>(CI.getOperand(1)->stripPointerCasts());
-      Assert1(AI && isa<PointerType>(AI->getType()->getElementType()),
+      Assert1(AI && AI->getType()->getElementType()->isPointerTy(),
               "llvm.gcroot parameter #1 must be a pointer alloca.", &CI);
       Assert1(isa<Constant>(CI.getOperand(2)),
               "llvm.gcroot parameter #2 must be a constant.", &CI);
@@ -1734,7 +1750,7 @@ bool Verifier::PerformTypeCheck(Intrinsic::ID ID, Function *F, const Type *Ty,
       }
     }
   } else if (VT == MVT::iAny) {
-    if (!EltTy->isInteger()) {
+    if (!EltTy->isIntegerTy()) {
       CheckFailed(IntrinsicParam(ArgNo, NumRets) + " is not "
                   "an integer type.", F);
       return false;
@@ -1759,7 +1775,7 @@ bool Verifier::PerformTypeCheck(Intrinsic::ID ID, Function *F, const Type *Ty,
       break;
     }
   } else if (VT == MVT::fAny) {
-    if (!EltTy->isFloatingPoint()) {
+    if (!EltTy->isFloatingPointTy()) {
       CheckFailed(IntrinsicParam(ArgNo, NumRets) + " is not "
                   "a floating-point type.", F);
       return false;
@@ -1778,7 +1794,7 @@ bool Verifier::PerformTypeCheck(Intrinsic::ID ID, Function *F, const Type *Ty,
     }
     Suffix += ".v" + utostr(NumElts) + EVT::getEVT(EltTy).getEVTString();
   } else if (VT == MVT::iPTR) {
-    if (!isa<PointerType>(Ty)) {
+    if (!Ty->isPointerTy()) {
       CheckFailed(IntrinsicParam(ArgNo, NumRets) + " is not a "
                   "pointer and a pointer is required.", F);
       return false;

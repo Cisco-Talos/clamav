@@ -194,11 +194,10 @@ Value *llvm::SimplifyICmpInst(unsigned Predicate, Value *LHS, Value *RHS,
   const Type *ITy = GetCompareTy(LHS);
   
   // icmp X, X -> true/false
-  if (LHS == RHS)
+  // X icmp undef -> true/false.  For example, icmp ugt %X, undef -> false
+  // because X could be 0.
+  if (LHS == RHS || isa<UndefValue>(RHS))
     return ConstantInt::get(ITy, CmpInst::isTrueWhenEqual(Pred));
-
-  if (isa<UndefValue>(RHS))                  // X icmp undef -> undef
-    return UndefValue::get(ITy);
   
   // icmp <global/alloca*/null>, <global/alloca*/null> - Global/Stack value
   // addresses never equal each other!  We already know that Op0 != Op1.
@@ -282,6 +281,32 @@ Value *llvm::SimplifyFCmpInst(unsigned Predicate, Value *LHS, Value *RHS,
                "Comparison must be either ordered or unordered!");
         // True if unordered.
         return ConstantInt::getTrue(CFP->getContext());
+      }
+      // Check whether the constant is an infinity.
+      if (CFP->getValueAPF().isInfinity()) {
+        if (CFP->getValueAPF().isNegative()) {
+          switch (Pred) {
+          case FCmpInst::FCMP_OLT:
+            // No value is ordered and less than negative infinity.
+            return ConstantInt::getFalse(CFP->getContext());
+          case FCmpInst::FCMP_UGE:
+            // All values are unordered with or at least negative infinity.
+            return ConstantInt::getTrue(CFP->getContext());
+          default:
+            break;
+          }
+        } else {
+          switch (Pred) {
+          case FCmpInst::FCMP_OGT:
+            // No value is ordered and greater than infinity.
+            return ConstantInt::getFalse(CFP->getContext());
+          case FCmpInst::FCMP_ULE:
+            // All values are unordered with and at most infinity.
+            return ConstantInt::getTrue(CFP->getContext());
+          default:
+            break;
+          }
+        }
       }
     }
   }

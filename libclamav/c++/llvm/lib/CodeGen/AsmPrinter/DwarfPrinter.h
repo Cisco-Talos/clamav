@@ -28,6 +28,7 @@ class Module;
 class MCAsmInfo;
 class TargetData;
 class TargetRegisterInfo;
+class GlobalValue;
 class MCSymbol;
 class Twine;
 
@@ -85,6 +86,10 @@ public:
   const MCAsmInfo *getMCAsmInfo() const { return MAI; }
   const TargetData *getTargetData() const { return TD; }
 
+  /// SizeOfEncodedValue - Return the size of the encoding in bytes.
+  unsigned SizeOfEncodedValue(unsigned Encoding) const;
+
+  void PrintRelDirective(unsigned Encoding) const;
   void PrintRelDirective(bool Force32Bit = false,
                          bool isInSection = false) const;
 
@@ -106,7 +111,8 @@ public:
   void EmitSLEB128(int Value, const char *Desc) const;
 
   /// EmitULEB128 - emit the specified unsigned leb128 value.
-  void EmitULEB128(unsigned Value, const char *Desc = 0) const;
+  void EmitULEB128(unsigned Value, const char *Desc = 0,
+                   unsigned PadTo = 0) const;
 
   
   /// PrintLabelName - Print label name in form used by Dwarf writer.
@@ -139,6 +145,10 @@ public:
                      bool Force32Bit = false) const;
   void EmitReference(const MCSymbol *Sym, bool IsPCRelative = false,
                      bool Force32Bit = false) const;
+
+  void EmitReference(const char *Tag, unsigned Number, unsigned Encoding) const;
+  void EmitReference(const MCSymbol *Sym, unsigned Encoding) const;
+  void EmitReference(const GlobalValue *GV, unsigned Encoding) const;
 
   /// EmitDifference - Emit the difference between two labels.
   void EmitDifference(const DWLabel &LabelHi, const DWLabel &LabelLo,

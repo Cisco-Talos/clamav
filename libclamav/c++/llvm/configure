@@ -616,11 +616,9 @@ LLVM_DATADIR
 LLVM_LIBDIR
 LLVM_BINDIR
 LLVM_PREFIX
+SHLIBPATH_VAR
 SHLIBEXT
 LLVMGCC_LANGS
-LLVMGCC_MAJVERS
-LLVMGCC_VERSION
-LLVMGCCLIBEXEC
 LLVMGCCDIR
 LLVMCC1PLUS
 LLVMCC1
@@ -631,6 +629,7 @@ USE_OPROFILE
 USE_UDIS86
 NO_MISSING_FIELD_INITIALIZERS
 NO_VARIADIC_MACROS
+LLVMCC_OPTION
 LLVMGXX
 LLVMGCC
 LLVMGXXCOMMAND
@@ -689,12 +688,16 @@ ENABLE_LLVMC_DYNAMIC
 BINUTILS_INCDIR
 EXTRA_OPTIONS
 OPTIMIZE_OPTION
+ENABLE_BUILT_CLANG
+CLANGXXPATH
+CLANGPATH
 ENABLE_CBE_PRINTF_A
 LLVM_ENUM_DISASSEMBLERS
 LLVM_ENUM_ASM_PARSERS
 LLVM_ENUM_ASM_PRINTERS
 LLVM_ENUM_TARGETS
 TARGETS_TO_BUILD
+ENABLE_SHARED
 ENABLE_PIC
 ENABLE_THREADS
 ENABLE_DOXYGEN
@@ -796,11 +799,14 @@ enable_jit
 enable_doxygen
 enable_threads
 enable_pic
+enable_shared
 enable_targets
 enable_cbe_printf_a
 with_llvmgccdir
 with_llvmgcc
 with_llvmgxx
+with_clang
+with_built_clang
 with_optimize_option
 with_extra_options
 enable_bindings
@@ -816,6 +822,7 @@ enable_llvmc_dynamic
 enable_llvmc_dynamic_plugins
 with_tclinclude
 enable_ltdl_install
+with_llvmcc
 with_udis86
 with_oprofile
 '
@@ -842,6 +849,7 @@ projects/llvm-java
 projects/llvm-tv
 projects/llvm-poolalloc
 projects/poolalloc
+projects/safecode
 projects/llvm-kernel'
 
 # Initialize some variables set by options.
@@ -1473,6 +1481,8 @@ Optional Features:
   --enable-threads        Use threads if available (default is YES)
   --enable-pic            Build LLVM with Position Independent Code (default
                           is YES)
+  --enable-shared         Build a shared library and link tools against it
+                          (default is NO)
   --enable-targets        Build specific host targets: all or
                           target1,target2,... Valid targets are: host, x86,
                           x86_64, sparc, powerpc, alpha, arm, mips, spu,
@@ -1498,6 +1508,10 @@ Optional Packages:
                           searches PATH)
   --with-llvmgxx          Specify location of llvm-g++ driver (default
                           searches PATH)
+  --with-clang            Specify location of clang compiler (default is
+                          --with-built-clang)
+  --with-built-clang      Use the compiled Clang as the LLVM compiler
+                          (default=check)
   --with-optimize-option  Select the compiler options to use for optimized
                           builds
   --with-extra-options    Specify additional options to compile LLVM with
@@ -1514,6 +1528,8 @@ Optional Packages:
   --with-binutils-include Specify path to binutils/include/ containing
                           plugin-api.h file for gold plugin.
   --with-tclinclude       directory where tcl headers are
+  --with-llvmcc=<name>    Choose the LLVM capable compiler to use (llvm-gcc,
+                          clang, or none; default=check)
   --with-udis86=<path>    Use udis86 external x86 disassembler library
   --with-oprofile=<prefix>
                           Tell OProfile >= 0.9.4 how to symbolize JIT output
@@ -2523,6 +2539,8 @@ subdirs="$subdirs projects/sample"
  ;;
       poolalloc)    subdirs="$subdirs projects/poolalloc"
  ;;
+      safecode)     subdirs="$subdirs projects/safecode"
+ ;;
       llvm-kernel)  subdirs="$subdirs projects/llvm-kernel"
  ;;
       *)
@@ -2853,6 +2871,7 @@ else
   msp430-*)               llvm_cv_target_arch="MSP430" ;;
   s390x-*)                llvm_cv_target_arch="SystemZ" ;;
   bfin-*)                 llvm_cv_target_arch="Blackfin" ;;
+  mblaze-*)               llvm_cv_target_arch="MBlaze" ;;
   *)                      llvm_cv_target_arch="Unknown" ;;
 esac
 fi
@@ -4746,6 +4765,8 @@ else
  ;;
     Blackfin)    TARGET_HAS_JIT=0
  ;;
+    MBlaze)      TARGET_HAS_JIT=0
+ ;;
     *)           TARGET_HAS_JIT=0
  ;;
   esac
@@ -4812,6 +4833,23 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# Check whether --enable-shared was given.
+if test "${enable_shared+set}" = set; then :
+  enableval=$enable_shared;
+else
+  enableval=default
+fi
+
+case "$enableval" in
+  yes) ENABLE_SHARED=1
+ ;;
+  no)  ENABLE_SHARED=0
+ ;;
+  default) ENABLE_SHARED=0
+ ;;
+  *) as_fn_error "Invalid setting for --enable-shared. Use \"yes\" or \"no\"" "$LINENO" 5 ;;
+esac
+
 TARGETS_TO_BUILD=""
 # Check whether --enable-targets was given.
 if test "${enable_targets+set}" = set; then :
@@ -4824,7 +4862,7 @@ if test "$enableval" = host-only ; then
   enableval=host
 fi
 case "$enableval" in
-  all) TARGETS_TO_BUILD="X86 Sparc PowerPC Alpha ARM Mips CellSPU PIC16 XCore MSP430 SystemZ Blackfin CBackend MSIL CppBackend" ;;
+  all) TARGETS_TO_BUILD="X86 Sparc PowerPC Alpha ARM Mips CellSPU PIC16 XCore MSP430 SystemZ Blackfin CBackend MSIL CppBackend MBlaze" ;;
   *)for a_target in `echo $enableval|sed -e 's/,/ /g' ` ; do
       case "$a_target" in
         x86)      TARGETS_TO_BUILD="X86 $TARGETS_TO_BUILD" ;;
@@ -4843,6 +4881,7 @@ case "$enableval" in
         cbe)      TARGETS_TO_BUILD="CBackend $TARGETS_TO_BUILD" ;;
         msil)     TARGETS_TO_BUILD="MSIL $TARGETS_TO_BUILD" ;;
         cpp)      TARGETS_TO_BUILD="CppBackend $TARGETS_TO_BUILD" ;;
+        mblaze)   TARGETS_TO_BUILD="MBlaze $TARGETS_TO_BUILD" ;;
         host) case "$llvm_cv_target_arch" in
             x86)         TARGETS_TO_BUILD="X86 $TARGETS_TO_BUILD" ;;
             x86_64)      TARGETS_TO_BUILD="X86 $TARGETS_TO_BUILD" ;;
@@ -4851,6 +4890,7 @@ case "$enableval" in
             Alpha)       TARGETS_TO_BUILD="Alpha $TARGETS_TO_BUILD" ;;
             ARM)         TARGETS_TO_BUILD="ARM $TARGETS_TO_BUILD" ;;
             Mips)        TARGETS_TO_BUILD="Mips $TARGETS_TO_BUILD" ;;
+            MBlaze)      TARGETS_TO_BUILD="MBlaze $TARGETS_TO_BUILD" ;;
             CellSPU|SPU) TARGETS_TO_BUILD="CellSPU $TARGETS_TO_BUILD" ;;
             PIC16)       TARGETS_TO_BUILD="PIC16 $TARGETS_TO_BUILD" ;;
             XCore)       TARGETS_TO_BUILD="XCore $TARGETS_TO_BUILD" ;;
@@ -4970,6 +5010,65 @@ fi
 if test -n "$LLVMGXX" && test -z "$LLVMGCC"; then
    as_fn_error "Invalid llvm-gcc. Use --with-llvmgcc when --with-llvmgxx is used" "$LINENO" 5;
 fi
+
+
+# Check whether --with-clang was given.
+if test "${with_clang+set}" = set; then :
+  withval=$with_clang;
+else
+  with_clang=default
+fi
+
+
+
+# Check whether --with-built-clang was given.
+if test "${with_built_clang+set}" = set; then :
+  withval=$with_built_clang;
+else
+  with_built_clang=check
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking clang compiler" >&5
+$as_echo_n "checking clang compiler... " >&6; }
+WITH_CLANGPATH=""
+WITH_BUILT_CLANG=0
+if test "$with_clang" != "default"; then
+   WITH_CLANGPATH="$with_clang"
+   if ! test -x "$WITH_CLANGPATH"; then
+     as_fn_error "invalid --with-clang, path does not specify an executable" "$LINENO" 5
+   fi
+elif test "$with_built_clang" = "yes"; then
+   WITH_BUILT_CLANG=1
+elif test "$with_built_clang" = "no"; then
+   WITH_BUILT_CLANG=0
+else
+   if test "$with_built_clang" != "check"; then
+      as_fn_error "invalid value for --with-built-clang." "$LINENO" 5
+   fi
+
+   if test -f ${srcdir}/tools/clang/README.txt; then
+     WITH_BUILT_CLANG=1
+   fi
+fi
+
+if ! test -z "$WITH_CLANGPATH"; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $WITH_CLANGPATH" >&5
+$as_echo "$WITH_CLANGPATH" >&6; }
+   WITH_CLANGXXPATH=`"$WITH_CLANGPATH" --print-prog-name=clang++`
+elif test "$WITH_BUILT_CLANG" = "1"; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: built" >&5
+$as_echo "built" >&6; }
+else
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: none" >&5
+$as_echo "none" >&6; }
+fi
+CLANGPATH=$WITH_CLANGPATH
+
+CLANGXXPATH=$WITH_CLANGXXPATH
+
+ENABLE_BUILT_CLANG=$WITH_BUILT_CLANG
+
 
 
 # Check whether --with-optimize-option was given.
@@ -9445,7 +9544,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9448 "configure"
+#line 9547 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9913,6 +10012,34 @@ else
   LLVMGXXCOMMAND=$LLVMGXXCOMMAND
 
 fi
+
+
+# Check whether --with-llvmcc was given.
+if test "${with_llvmcc+set}" = set; then :
+  withval=$with_llvmcc;
+else
+  with_llvmcc=check
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking LLVM capable compiler" >&5
+$as_echo_n "checking LLVM capable compiler... " >&6; }
+if test "$with_llvmcc" != "check"; then
+   if (test "$with_llvmcc" != "llvm-gcc" &&
+       test "$with_llvmcc" != "clang" &&
+       test "$with_llvmcc" != "none"); then
+      as_fn_error "invalid value for --with-llvmcc, expected 'llvm-gcc', 'clang', or 'none'." "$LINENO" 5
+   fi
+   WITH_LLVMCC="$with_llvmcc"
+elif test -n "$LLVMGCC"; then
+   WITH_LLVMCC=llvm-gcc
+elif test -n "$WITH_CLANGPATH" || test "$WITH_BUILT_CLANG" -ne "0"; then
+   WITH_LLVMCC=clang
+else
+   WITH_LLVMCC=none
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $WITH_LLVMCC" >&5
+$as_echo "$WITH_LLVMCC" >&6; }
+LLVMCC_OPTION=$WITH_LLVMCC
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking tool compatibility" >&5
@@ -11298,6 +11425,7 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+    ac_save_CXXFLAGS=$CXXFLAGS
     CXXFLAGS=-pedantic
     if test "$cross_compiling" = yes; then :
   ac_cv_huge_val_sanity=yes
@@ -11322,6 +11450,7 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
+    CXXFLAGS=$ac_save_CXXFLAGS
     ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -12384,15 +12513,6 @@ $as_echo_n "checking llvm-gcc component support... " >&6; }
   llvmgccdir=`echo "$llvmcc1path" | sed 's,/libexec/.*,,'`
   LLVMGCCDIR=$llvmgccdir
 
-  llvmgcclibexec=`echo "$llvmcc1path" | sed 's,/cc1,,'`
-  LLVMGCCLIBEXEC=$llvmgcclibexec
-
-  llvmgccversion=`"$LLVMGCC" -dumpversion 2>&1 | sed 's/^\([0-9.]*\).*/\1/'`
-  llvmgccmajvers=`echo $llvmgccversion | sed 's/^\([0-9]\).*/\1/'`
-  LLVMGCC_VERSION=$llvmgccversion
-
-  LLVMGCC_MAJVERS=$llvmgccmajvers
-
   llvmgcclangs=`"$LLVMGCC" -v --help 2>&1 | grep '^Configured with:' | sed 's/^.*--enable-languages=\([^ ]*\).*/\1/'`
   LLVMGCC_LANGS=$llvmgcclangs
 
@@ -12401,6 +12521,9 @@ $as_echo "ok" >&6; }
 fi
 
 SHLIBEXT=$libltdl_cv_shlibext
+
+
+SHLIBPATH_VAR=$libltdl_cv_shlibpath_var
 
 
 # Translate the various configuration directories and other basic
@@ -12413,7 +12536,7 @@ eval LLVM_PREFIX="${prefix}";
 eval LLVM_BINDIR="${prefix}/bin";
 eval LLVM_LIBDIR="${prefix}/lib";
 eval LLVM_DATADIR="${prefix}/share/llvm";
-eval LLVM_DOCSDIR="${prefix}/docs/llvm";
+eval LLVM_DOCSDIR="${prefix}/share/doc/llvm";
 eval LLVM_ETCDIR="${prefix}/etc/llvm";
 eval LLVM_INCLUDEDIR="${prefix}/include";
 eval LLVM_INFODIR="${prefix}/info";

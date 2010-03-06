@@ -179,17 +179,16 @@ public:
     return MemRefsEnd - MemRefs == 1;
   }
 
+  enum MICheckType {
+    CheckDefs,      // Check all operands for equality
+    IgnoreDefs,     // Ignore all definitions
+    IgnoreVRegDefs  // Ignore virtual register definitions
+  };
+
   /// isIdenticalTo - Return true if this instruction is identical to (same
   /// opcode and same operands as) the specified instruction.
-  bool isIdenticalTo(const MachineInstr *Other) const {
-    if (Other->getOpcode() != getOpcode() ||
-        Other->getNumOperands() != getNumOperands())
-      return false;
-    for (unsigned i = 0, e = getNumOperands(); i != e; ++i)
-      if (!getOperand(i).isIdenticalTo(Other->getOperand(i)))
-        return false;
-    return true;
-  }
+  bool isIdenticalTo(const MachineInstr *Other,
+                     MICheckType Check = CheckDefs) const;
 
   /// removeFromParent - This method unlinks 'this' from the containing basic
   /// block, and returns it, but does not delete it.
@@ -331,13 +330,13 @@ public:
   /// isSafeToMove - Return true if it is safe to move this instruction. If
   /// SawStore is set to true, it means that there is a store (or call) between
   /// the instruction's location and its intended destination.
-  bool isSafeToMove(const TargetInstrInfo *TII, bool &SawStore,
-                    AliasAnalysis *AA) const;
+  bool isSafeToMove(const TargetInstrInfo *TII, AliasAnalysis *AA,
+                    bool &SawStore) const;
 
   /// isSafeToReMat - Return true if it's safe to rematerialize the specified
   /// instruction which defined the specified register instead of copying it.
-  bool isSafeToReMat(const TargetInstrInfo *TII, unsigned DstReg,
-                     AliasAnalysis *AA) const;
+  bool isSafeToReMat(const TargetInstrInfo *TII, AliasAnalysis *AA,
+                     unsigned DstReg) const;
 
   /// hasVolatileMemoryRef - Return true if this instruction may have a
   /// volatile memory reference, or if the information describing the
@@ -418,6 +417,30 @@ private:
   /// this instruction from their respective use lists.  This requires that the
   /// operands not be on their use lists yet.
   void AddRegOperandsToUseLists(MachineRegisterInfo &RegInfo);
+};
+
+/// MachineInstrExpressionTrait - Special DenseMapInfo traits to compare
+/// MachineInstr* by *value* of the instruction rather than by pointer value.
+/// The hashing and equality testing functions ignore definitions so this is
+/// useful for CSE, etc.
+struct MachineInstrExpressionTrait : DenseMapInfo<MachineInstr*> {
+  static inline MachineInstr *getEmptyKey() {
+    return 0;
+  }
+
+  static inline MachineInstr *getTombstoneKey() {
+    return reinterpret_cast<MachineInstr*>(-1);
+  }
+
+  static unsigned getHashValue(const MachineInstr* const &MI);
+
+  static bool isEqual(const MachineInstr* const &LHS,
+                      const MachineInstr* const &RHS) {
+    if (RHS == getEmptyKey() || RHS == getTombstoneKey() ||
+        LHS == getEmptyKey() || LHS == getTombstoneKey())
+      return LHS == RHS;
+    return LHS->isIdenticalTo(RHS, MachineInstr::IgnoreVRegDefs);
+  }
 };
 
 //===----------------------------------------------------------------------===//

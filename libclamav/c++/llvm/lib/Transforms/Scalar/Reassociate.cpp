@@ -182,7 +182,7 @@ unsigned Reassociate::getRank(Value *V) {
 
   // If this is a not or neg instruction, do not count it for rank.  This
   // assures us that X and ~X will have the same rank.
-  if (!I->getType()->isInteger() ||
+  if (!I->getType()->isIntegerTy() ||
       (!BinaryOperator::isNot(I) && !BinaryOperator::isNeg(I)))
     ++Rank;
 
@@ -597,19 +597,35 @@ Value *Reassociate::RemoveFactorFromExpression(Value *V, Value *Factor) {
 
 /// FindSingleUseMultiplyFactors - If V is a single-use multiply, recursively
 /// add its operands as factors, otherwise add V to the list of factors.
+///
+/// Ops is the top-level list of add operands we're trying to factor.
 static void FindSingleUseMultiplyFactors(Value *V,
-                                         SmallVectorImpl<Value*> &Factors) {
+                                         SmallVectorImpl<Value*> &Factors,
+                                       const SmallVectorImpl<ValueEntry> &Ops,
+                                         bool IsRoot) {
   BinaryOperator *BO;
-  if ((!V->hasOneUse() && !V->use_empty()) ||
+  if (!(V->hasOneUse() || V->use_empty()) || // More than one use.
       !(BO = dyn_cast<BinaryOperator>(V)) ||
       BO->getOpcode() != Instruction::Mul) {
     Factors.push_back(V);
     return;
   }
   
+  // If this value has a single use because it is another input to the add
+  // tree we're reassociating and we dropped its use, it actually has two
+  // uses and we can't factor it.
+  if (!IsRoot) {
+    for (unsigned i = 0, e = Ops.size(); i != e; ++i)
+      if (Ops[i].Op == V) {
+        Factors.push_back(V);
+        return;
+      }
+  }
+  
+  
   // Otherwise, add the LHS and RHS to the list of factors.
-  FindSingleUseMultiplyFactors(BO->getOperand(1), Factors);
-  FindSingleUseMultiplyFactors(BO->getOperand(0), Factors);
+  FindSingleUseMultiplyFactors(BO->getOperand(1), Factors, Ops, false);
+  FindSingleUseMultiplyFactors(BO->getOperand(0), Factors, Ops, false);
 }
 
 /// OptimizeAndOrXor - Optimize a series of operands to an 'and', 'or', or 'xor'
@@ -753,7 +769,7 @@ Value *Reassociate::OptimizeAdd(Instruction *I,
     
     // Compute all of the factors of this added value.
     SmallVector<Value*, 8> Factors;
-    FindSingleUseMultiplyFactors(BOp, Factors);
+    FindSingleUseMultiplyFactors(BOp, Factors, Ops, true);
     assert(Factors.size() > 1 && "Bad linearize!");
     
     // Add one to FactorOccurrences for each unique factor in this op.
@@ -929,8 +945,8 @@ void Reassociate::ReassociateBB(BasicBlock *BB) {
       }
 
     // Reject cases where it is pointless to do this.
-    if (!isa<BinaryOperator>(BI) || BI->getType()->isFloatingPoint() || 
-        isa<VectorType>(BI->getType()))
+    if (!isa<BinaryOperator>(BI) || BI->getType()->isFloatingPointTy() || 
+        BI->getType()->isVectorTy())
       continue;  // Floating point ops are not associative.
 
     // Do not reassociate boolean (i1) expressions.  We want to preserve the
@@ -939,7 +955,7 @@ void Reassociate::ReassociateBB(BasicBlock *BB) {
     // is not further optimized, it is likely to be transformed back to a
     // short-circuited form for code gen, and the source order may have been
     // optimized for the most likely conditions.
-    if (BI->getType()->isInteger(1))
+    if (BI->getType()->isIntegerTy(1))
       continue;
 
     // If this is a subtract instruction which is not already in negate form,

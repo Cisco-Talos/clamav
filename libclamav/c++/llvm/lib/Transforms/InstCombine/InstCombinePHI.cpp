@@ -266,6 +266,7 @@ Instruction *InstCombiner::FoldPHIArgLoadIntoPHI(PHINode &PN) {
   // and if TD isn't around, we can't handle the mixed case.
   bool isVolatile = FirstLI->isVolatile();
   unsigned LoadAlignment = FirstLI->getAlignment();
+  unsigned LoadAddrSpace = FirstLI->getPointerAddressSpace();
   
   // We can't sink the load if the loaded value could be modified between the
   // load and the PHI.
@@ -290,6 +291,7 @@ Instruction *InstCombiner::FoldPHIArgLoadIntoPHI(PHINode &PN) {
     // the load and the PHI.
     if (LI->isVolatile() != isVolatile ||
         LI->getParent() != PN.getIncomingBlock(i) ||
+        LI->getPointerAddressSpace() != LoadAddrSpace ||
         !isSafeAndProfitableToSinkLoad(LI))
       return 0;
       
@@ -371,7 +373,7 @@ Instruction *InstCombiner::FoldPHIArgOpIntoPHI(PHINode &PN) {
 
     // Be careful about transforming integer PHIs.  We don't want to pessimize
     // the code by turning an i32 into an i1293.
-    if (isa<IntegerType>(PN.getType()) && isa<IntegerType>(CastSrcTy)) {
+    if (PN.getType()->isIntegerTy() && CastSrcTy->isIntegerTy()) {
       if (!ShouldChangeType(PN.getType(), CastSrcTy))
         return 0;
     }
@@ -832,7 +834,7 @@ Instruction *InstCombiner::visitPHINode(PHINode &PN) {
   // it is only used by trunc or trunc(lshr) operations.  If so, we split the
   // PHI into the various pieces being extracted.  This sort of thing is
   // introduced when SROA promotes an aggregate to a single large integer type.
-  if (isa<IntegerType>(PN.getType()) && TD &&
+  if (PN.getType()->isIntegerTy() && TD &&
       !TD->isLegalInteger(PN.getType()->getPrimitiveSizeInBits()))
     if (Instruction *Res = SliceUpIllegalIntegerPHI(PN))
       return Res;

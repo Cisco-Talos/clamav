@@ -30,6 +30,7 @@
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineJumpTableInfo.h"
+#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCInst.h"
@@ -37,7 +38,6 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Target/TargetData.h"
-#include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Target/TargetRegistry.h"
@@ -122,6 +122,7 @@ namespace {
     void printT2AddrModeSoRegOperand(const MachineInstr *MI, int OpNum);
 
     void printPredicateOperand(const MachineInstr *MI, int OpNum);
+    void printMandatoryPredicateOperand(const MachineInstr *MI, int OpNum);
     void printSBitModifierOperand(const MachineInstr *MI, int OpNum);
     void printPCLabel(const MachineInstr *MI, int OpNum);
     void printRegisterList(const MachineInstr *MI, int OpNum);
@@ -784,6 +785,12 @@ void ARMAsmPrinter::printPredicateOperand(const MachineInstr *MI, int OpNum) {
   ARMCC::CondCodes CC = (ARMCC::CondCodes)MI->getOperand(OpNum).getImm();
   if (CC != ARMCC::AL)
     O << ARMCondCodeToString(CC);
+}
+
+void ARMAsmPrinter::printMandatoryPredicateOperand(const MachineInstr *MI,
+                                                   int OpNum) {
+  ARMCC::CondCodes CC = (ARMCC::CondCodes)MI->getOperand(OpNum).getImm();
+  O << ARMCondCodeToString(CC);
 }
 
 void ARMAsmPrinter::printSBitModifierOperand(const MachineInstr *MI, int OpNum){

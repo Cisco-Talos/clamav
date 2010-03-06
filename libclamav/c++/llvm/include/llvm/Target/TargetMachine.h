@@ -68,15 +68,6 @@ namespace CodeGenOpt {
   };
 }
 
-// Specify if we should encode the LSDA pointer in the FDE as 4- or 8-bytes.
-namespace DwarfLSDAEncoding {
-  enum Encoding {
-    Default,
-    FourByte,
-    EightByte
-  };
-}
-
 //===----------------------------------------------------------------------===//
 ///
 /// TargetMachine - Primary interface to the complete machine description for
@@ -179,20 +170,6 @@ public:
   /// is false.
   static void setAsmVerbosityDefault(bool);
 
-  /// getLSDAEncoding - Returns the LSDA pointer encoding. The choices are
-  /// 4-byte, 8-byte, and target default. The CIE is hard-coded to indicate that
-  /// the LSDA pointer in the FDE section is an "sdata4", and should be encoded
-  /// as a 4-byte pointer by default. However, some systems may require a
-  /// different size due to bugs or other conditions. We will default to a
-  /// 4-byte encoding unless the system tells us otherwise.
-  ///
-  /// FIXME: This call-back isn't good! We should be using the correct encoding
-  /// regardless of the system. However, there are some systems which have bugs
-  /// that prevent this from occuring.
-  virtual DwarfLSDAEncoding::Encoding getLSDAEncoding() const {
-    return DwarfLSDAEncoding::Default;
-  }
-
   /// CodeGenFileType - These enums are meant to be passed into
   /// addPassesToEmitFile to indicate what type of file to emit, and returned by
   /// it to indicate what type of file could actually be made.
@@ -212,8 +189,9 @@ public:
   /// is not supported, or false on success.
   virtual bool addPassesToEmitFile(PassManagerBase &,
                                    formatted_raw_ostream &,
-                                   CodeGenFileType Filetype,
-                                   CodeGenOpt::Level) {
+                                   CodeGenFileType,
+                                   CodeGenOpt::Level,
+                                   bool DisableVerify = true) {
     return true;
   }
 
@@ -225,7 +203,8 @@ public:
   ///
   virtual bool addPassesToEmitMachineCode(PassManagerBase &,
                                           JITCodeEmitter &,
-                                          CodeGenOpt::Level) {
+                                          CodeGenOpt::Level,
+                                          bool DisableVerify = true) {
     return true;
   }
 
@@ -235,7 +214,8 @@ public:
   virtual bool WantsWholeFile() const { return false; }
   virtual bool addPassesToEmitWholeFile(PassManager &, formatted_raw_ostream &,
                                         CodeGenFileType,
-                                        CodeGenOpt::Level) {
+                                        CodeGenOpt::Level,
+                                        bool DisableVerify = true) {
     return true;
   }
 };
@@ -250,7 +230,8 @@ protected: // Can only create subclasses.
   /// addCommonCodeGenPasses - Add standard LLVM codegen passes used for
   /// both emitting to assembly files or machine code output.
   ///
-  bool addCommonCodeGenPasses(PassManagerBase &, CodeGenOpt::Level);
+  bool addCommonCodeGenPasses(PassManagerBase &, CodeGenOpt::Level,
+                              bool DisableVerify);
 
 private:
   virtual void setCodeModelForJIT();
@@ -265,7 +246,8 @@ public:
   virtual bool addPassesToEmitFile(PassManagerBase &PM,
                                    formatted_raw_ostream &Out,
                                    CodeGenFileType FileType,
-                                   CodeGenOpt::Level);
+                                   CodeGenOpt::Level,
+                                   bool DisableVerify = true);
   
   /// addPassesToEmitMachineCode - Add passes to the specified pass manager to
   /// get machine code emitted.  This uses a JITCodeEmitter object to handle
@@ -275,7 +257,8 @@ public:
   ///
   virtual bool addPassesToEmitMachineCode(PassManagerBase &PM,
                                           JITCodeEmitter &MCE,
-                                          CodeGenOpt::Level);
+                                          CodeGenOpt::Level,
+                                          bool DisableVerify = true);
   
   /// Target-Independent Code Generator Pass Configuration Options.
   

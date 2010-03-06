@@ -1,4 +1,4 @@
-; RUN: opt < %s -anders-aa -argpromotion
+; RUN: opt < %s -argpromotion
 ; XFAIL: *
 
 declare void @llvm.gcroot(i8**, i8*)

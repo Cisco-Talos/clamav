@@ -45,6 +45,7 @@ Please clean the source directory.")
 endif()
 
 set(LLVM_ALL_TARGETS
+  MBlaze
   X86
   )
 

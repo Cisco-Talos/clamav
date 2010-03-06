@@ -16,6 +16,7 @@
 #include "llvm/Support/CallSite.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Analysis/MemoryBuiltins.h"
+#include "llvm/Transforms/Utils/BuildLibCalls.h"
 using namespace llvm;
 
 /// getPromotedType - Return the specified type promoted as it would be to pass
@@ -199,7 +200,7 @@ Instruction *InstCombiner::SimplifyMemSet(MemSetInst *MI) {
   // Extract the length and alignment and fill if they are constant.
   ConstantInt *LenC = dyn_cast<ConstantInt>(MI->getLength());
   ConstantInt *FillC = dyn_cast<ConstantInt>(MI->getValue());
-  if (!LenC || !FillC || !FillC->getType()->isInteger(8))
+  if (!LenC || !FillC || !FillC->getType()->isIntegerTy(8))
     return 0;
   uint64_t Len = LenC->getZExtValue();
   Alignment = MI->getAlignment();
@@ -304,29 +305,39 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
   switch (II->getIntrinsicID()) {
   default: break;
   case Intrinsic::objectsize: {
-    const Type *ReturnTy = CI.getType();
-    Value *Op1 = II->getOperand(1);
-    bool Min = (cast<ConstantInt>(II->getOperand(2))->getZExtValue() == 1);
-    
     // We need target data for just about everything so depend on it.
     if (!TD) break;
     
+    const Type *ReturnTy = CI.getType();
+    bool Min = (cast<ConstantInt>(II->getOperand(2))->getZExtValue() == 1);
+
     // Get to the real allocated thing and offset as fast as possible.
-    Op1 = Op1->stripPointerCasts();
+    Value *Op1 = II->getOperand(1)->stripPointerCasts();
     
     // If we've stripped down to a single global variable that we
     // can know the size of then just return that.
     if (GlobalVariable *GV = dyn_cast<GlobalVariable>(Op1)) {
       if (GV->hasDefinitiveInitializer()) {
         Constant *C = GV->getInitializer();
-        size_t globalSize = TD->getTypeAllocSize(C->getType());
-        return ReplaceInstUsesWith(CI, ConstantInt::get(ReturnTy, globalSize));
+        uint64_t GlobalSize = TD->getTypeAllocSize(C->getType());
+        return ReplaceInstUsesWith(CI, ConstantInt::get(ReturnTy, GlobalSize));
       } else {
+        // Can't determine size of the GV.
         Constant *RetVal = ConstantInt::get(ReturnTy, Min ? 0 : -1ULL);
         return ReplaceInstUsesWith(CI, RetVal);
       }
-    } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Op1)) {
-      
+    } else if (AllocaInst *AI = dyn_cast<AllocaInst>(Op1)) {
+      // Get alloca size.
+      if (AI->getAllocatedType()->isSized()) {
+        uint64_t AllocaSize = TD->getTypeAllocSize(AI->getAllocatedType());
+        if (AI->isArrayAllocation()) {
+          const ConstantInt *C = dyn_cast<ConstantInt>(AI->getArraySize());
+          if (!C) break;
+          AllocaSize *= C->getZExtValue();
+        }
+        return ReplaceInstUsesWith(CI, ConstantInt::get(ReturnTy, AllocaSize));
+      }
+    } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Op1)) {      
       // Only handle constant GEPs here.
       if (CE->getOpcode() != Instruction::GetElementPtr) break;
       GEPOperator *GEP = cast<GEPOperator>(CE);
@@ -337,25 +348,34 @@ Instruction *InstCombiner::visitCallInst(CallInst &CI) {
       Operand = Operand->stripPointerCasts();
       if (GlobalVariable *GV = dyn_cast<GlobalVariable>(Operand))
         if (!GV->hasDefinitiveInitializer()) break;
-      
+        
       // Get what we're pointing to and its size. 
       const PointerType *BaseType = 
         cast<PointerType>(Operand->getType());
-      size_t Size = TD->getTypeAllocSize(BaseType->getElementType());
+      uint64_t Size = TD->getTypeAllocSize(BaseType->getElementType());
       
       // Get the current byte offset into the thing. Use the original
       // operand in case we're looking through a bitcast.
       SmallVector<Value*, 8> Ops(CE->op_begin()+1, CE->op_end());
       const PointerType *OffsetType =
         cast<PointerType>(GEP->getPointerOperand()->getType());
-      size_t Offset = TD->getIndexedOffset(OffsetType, &Ops[0], Ops.size());
+      uint64_t Offset = TD->getIndexedOffset(OffsetType, &Ops[0], Ops.size());
 
-      assert(Size >= Offset);
+      if (Size < Offset) {
+        // Out of bound reference? Negative index normalized to large
+        // index? Just return "I don't know".
+        Constant *RetVal = ConstantInt::get(ReturnTy, Min ? 0 : -1ULL);
+        return ReplaceInstUsesWith(CI, RetVal);
+      }
       
       Constant *RetVal = ConstantInt::get(ReturnTy, Size-Offset);
       return ReplaceInstUsesWith(CI, RetVal);
       
-    }
+    } 
+
+    // Do not return "I don't know" here. Later optimization passes could
+    // make it possible to evaluate objectsize to a constant.
+    break;
   }
   case Intrinsic::bswap:
     // bswap(bswap(x)) -> x
@@ -721,6 +741,122 @@ static bool isSafeToEliminateVarargsCast(const CallSite CS,
   return true;
 }
 
+// Try to fold some different type of calls here.
+// Currently we're only working with the checking functions, memcpy_chk, 
+// mempcpy_chk, memmove_chk, memset_chk, strcpy_chk, stpcpy_chk, strncpy_chk,
+// strcat_chk and strncat_chk.
+Instruction *InstCombiner::tryOptimizeCall(CallInst *CI, const TargetData *TD) {
+  if (CI->getCalledFunction() == 0) return 0;
+  
+  StringRef Name = CI->getCalledFunction()->getName();
+  BasicBlock *BB = CI->getParent();
+  IRBuilder<> B(CI->getParent()->getContext());
+  
+  // Set the builder to the instruction after the call.
+  B.SetInsertPoint(BB, CI);
+
+  if (Name == "__memcpy_chk") {
+    ConstantInt *SizeCI = dyn_cast<ConstantInt>(CI->getOperand(4));
+    if (!SizeCI)
+      return 0;
+    ConstantInt *SizeArg = dyn_cast<ConstantInt>(CI->getOperand(3));
+    if (!SizeArg)
+      return 0;
+    if (SizeCI->isAllOnesValue() ||
+        SizeCI->getZExtValue() <= SizeArg->getZExtValue()) {
+      EmitMemCpy(CI->getOperand(1), CI->getOperand(2), CI->getOperand(3),
+                 1, B, TD);
+      return ReplaceInstUsesWith(*CI, CI->getOperand(1));
+    }
+    return 0;
+  }
+
+  // Should be similar to memcpy.
+  if (Name == "__mempcpy_chk") {
+    return 0;
+  }
+
+  if (Name == "__memmove_chk") {
+    ConstantInt *SizeCI = dyn_cast<ConstantInt>(CI->getOperand(4));
+    if (!SizeCI)
+      return 0;
+    ConstantInt *SizeArg = dyn_cast<ConstantInt>(CI->getOperand(3));
+    if (!SizeArg)
+      return 0;
+    if (SizeCI->isAllOnesValue() ||
+        SizeCI->getZExtValue() <= SizeArg->getZExtValue()) {
+      EmitMemMove(CI->getOperand(1), CI->getOperand(2), CI->getOperand(3),
+                  1, B, TD);
+      return ReplaceInstUsesWith(*CI, CI->getOperand(1));
+    }
+    return 0;
+  }
+
+  if (Name == "__memset_chk") {
+    ConstantInt *SizeCI = dyn_cast<ConstantInt>(CI->getOperand(4));
+    if (!SizeCI)
+      return 0;
+    ConstantInt *SizeArg = dyn_cast<ConstantInt>(CI->getOperand(3));
+    if (!SizeArg)
+      return 0;
+    if (SizeCI->isAllOnesValue() ||
+        SizeCI->getZExtValue() <= SizeArg->getZExtValue()) {
+      Value *Val = B.CreateIntCast(CI->getOperand(2), B.getInt8Ty(),
+                                   false);
+      EmitMemSet(CI->getOperand(1), Val,  CI->getOperand(3), B, TD);
+      return ReplaceInstUsesWith(*CI, CI->getOperand(1));
+    }
+    return 0;
+  }
+
+  if (Name == "__strcpy_chk") {
+    ConstantInt *SizeCI = dyn_cast<ConstantInt>(CI->getOperand(3));
+    if (!SizeCI)
+      return 0;
+    // If a) we don't have any length information, or b) we know this will
+    // fit then just lower to a plain strcpy. Otherwise we'll keep our
+    // strcpy_chk call which may fail at runtime if the size is too long.
+    // TODO: It might be nice to get a maximum length out of the possible
+    // string lengths for varying.
+    if (SizeCI->isAllOnesValue() ||
+      SizeCI->getZExtValue() >= GetStringLength(CI->getOperand(2))) {
+      Value *Ret = EmitStrCpy(CI->getOperand(1), CI->getOperand(2), B, TD);
+      return ReplaceInstUsesWith(*CI, Ret);
+    }
+    return 0;
+  }
+
+  // Should be similar to strcpy.
+  if (Name == "__stpcpy_chk") {
+    return 0;
+  }
+
+  if (Name == "__strncpy_chk") {
+    ConstantInt *SizeCI = dyn_cast<ConstantInt>(CI->getOperand(4));
+    if (!SizeCI)
+      return 0;
+    ConstantInt *SizeArg = dyn_cast<ConstantInt>(CI->getOperand(3));
+    if (!SizeArg)
+      return 0;
+    if (SizeCI->isAllOnesValue() ||
+        SizeCI->getZExtValue() <= SizeArg->getZExtValue()) {
+      Value *Ret = EmitStrCpy(CI->getOperand(1), CI->getOperand(2), B, TD);
+      return ReplaceInstUsesWith(*CI, Ret);
+    }
+    return 0; 
+  }
+
+  if (Name == "__strcat_chk") {
+    return 0;
+  }
+
+  if (Name == "__strncat_chk") {
+    return 0;
+  }
+
+  return 0;
+}
+
 // visitCallSite - Improvements for call and invoke instructions.
 //
 Instruction *InstCombiner::visitCallSite(CallSite CS) {
@@ -807,6 +943,16 @@ Instruction *InstCombiner::visitCallSite(CallSite CS) {
     Changed = true;
   }
 
+  // Try to optimize the call if possible, we require TargetData for most of
+  // this.  None of these calls are seen as possibly dead so go ahead and
+  // delete the instruction now.
+  if (CallInst *CI = dyn_cast<CallInst>(CS.getInstruction())) {
+    Instruction *I = tryOptimizeCall(CI, TD);
+    // If we changed something return the result, etc. Otherwise let
+    // the fallthrough check.
+    if (I) return EraseInstFromFunction(*I);
+  }
+
   return Changed ? CS.getInstruction() : 0;
 }
 
@@ -831,7 +977,7 @@ bool InstCombiner::transformConstExprCastCall(CallSite CS) {
   const Type *OldRetTy = Caller->getType();
   const Type *NewRetTy = FT->getReturnType();
 
-  if (isa<StructType>(NewRetTy))
+  if (NewRetTy->isStructTy())
     return false; // TODO: Handle multiple return values.
 
   // Check to see if we are changing the return type...
@@ -839,9 +985,9 @@ bool InstCombiner::transformConstExprCastCall(CallSite CS) {
     if (Callee->isDeclaration() &&
         // Conversion is ok if changing from one pointer type to another or from
         // a pointer to an integer of the same size.
-        !((isa<PointerType>(OldRetTy) || !TD ||
+        !((OldRetTy->isPointerTy() || !TD ||
            OldRetTy == TD->getIntPtrType(Caller->getContext())) &&
-          (isa<PointerType>(NewRetTy) || !TD ||
+          (NewRetTy->isPointerTy() || !TD ||
            NewRetTy == TD->getIntPtrType(Caller->getContext()))))
       return false;   // Cannot transform this return value.
 
@@ -888,9 +1034,9 @@ bool InstCombiner::transformConstExprCastCall(CallSite CS) {
     // Converting from one pointer type to another or between a pointer and an
     // integer of the same size is safe even if we do not have a body.
     bool isConvertible = ActTy == ParamTy ||
-      (TD && ((isa<PointerType>(ParamTy) ||
+      (TD && ((ParamTy->isPointerTy() ||
       ParamTy == TD->getIntPtrType(Caller->getContext())) &&
-              (isa<PointerType>(ActTy) ||
+              (ActTy->isPointerTy() ||
               ActTy == TD->getIntPtrType(Caller->getContext()))));
     if (Callee->isDeclaration() && !isConvertible) return false;
   }

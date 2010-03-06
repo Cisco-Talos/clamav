@@ -201,7 +201,7 @@ static unsigned getJumpThreadDuplicationCost(const BasicBlock *BB) {
     if (isa<DbgInfoIntrinsic>(I)) continue;
     
     // If this is a pointer->pointer bitcast, it is free.
-    if (isa<BitCastInst>(I) && isa<PointerType>(I->getType()))
+    if (isa<BitCastInst>(I) && I->getType()->isPointerTy())
       continue;
     
     // All other instructions count for at least one unit.
@@ -214,7 +214,7 @@ static unsigned getJumpThreadDuplicationCost(const BasicBlock *BB) {
     if (const CallInst *CI = dyn_cast<CallInst>(I)) {
       if (!isa<IntrinsicInst>(CI))
         Size += 3;
-      else if (!isa<VectorType>(CI->getType()))
+      else if (!CI->getType()->isVectorTy())
         Size += 1;
     }
   }
@@ -405,7 +405,7 @@ ComputeValueKnownInPredecessors(Value *V, BasicBlock *BB,PredValueInfo &Result){
     // If comparing a live-in value against a constant, see if we know the
     // live-in value on any predecessors.
     if (LVI && isa<Constant>(Cmp->getOperand(1)) &&
-        Cmp->getType()->isInteger() && // Not vector compare.
+        Cmp->getType()->isIntegerTy() && // Not vector compare.
         (!isa<Instruction>(Cmp->getOperand(0)) ||
          cast<Instruction>(Cmp->getOperand(0))->getParent() != BB)) {
       Constant *RHSCst = cast<Constant>(Cmp->getOperand(1));

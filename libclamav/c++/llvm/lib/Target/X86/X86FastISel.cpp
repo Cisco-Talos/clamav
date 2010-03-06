@@ -388,6 +388,8 @@ bool X86FastISel::X86SelectAddress(Value *V, X86AddressMode &AM) {
   }
 
   case Instruction::GetElementPtr: {
+    X86AddressMode SavedAM = AM;
+
     // Pattern-match simple GEPs.
     uint64_t Disp = (int32_t)AM.Disp;
     unsigned IndexReg = AM.IndexReg;
@@ -428,7 +430,13 @@ bool X86FastISel::X86SelectAddress(Value *V, X86AddressMode &AM) {
     AM.IndexReg = IndexReg;
     AM.Scale = Scale;
     AM.Disp = (uint32_t)Disp;
-    return X86SelectAddress(U->getOperand(0), AM);
+    if (X86SelectAddress(U->getOperand(0), AM))
+      return true;
+    
+    // If we couldn't merge the sub value into this addr mode, revert back to
+    // our address and just match the value instead of completely failing.
+    AM = SavedAM;
+    break;
   unsupported_gep:
     // Ok, the GEP indices weren't all covered.
     break;
@@ -786,8 +794,8 @@ bool X86FastISel::X86SelectCmp(Instruction *I) {
 
 bool X86FastISel::X86SelectZExt(Instruction *I) {
   // Handle zero-extension from i1 to i8, which is common.
-  if (I->getType()->isInteger(8) &&
-      I->getOperand(0)->getType()->isInteger(1)) {
+  if (I->getType()->isIntegerTy(8) &&
+      I->getOperand(0)->getType()->isIntegerTy(1)) {
     unsigned ResultReg = getRegForValue(I->getOperand(0));
     if (ResultReg == 0) return false;
     // Set the high bits to zero.
@@ -949,7 +957,7 @@ bool X86FastISel::X86SelectBranch(Instruction *I) {
 bool X86FastISel::X86SelectShift(Instruction *I) {
   unsigned CReg = 0, OpReg = 0, OpImm = 0;
   const TargetRegisterClass *RC = NULL;
-  if (I->getType()->isInteger(8)) {
+  if (I->getType()->isIntegerTy(8)) {
     CReg = X86::CL;
     RC = &X86::GR8RegClass;
     switch (I->getOpcode()) {
@@ -958,7 +966,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL8rCL; OpImm = X86::SHL8ri; break;
     default: return false;
     }
-  } else if (I->getType()->isInteger(16)) {
+  } else if (I->getType()->isIntegerTy(16)) {
     CReg = X86::CX;
     RC = &X86::GR16RegClass;
     switch (I->getOpcode()) {
@@ -967,7 +975,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL16rCL; OpImm = X86::SHL16ri; break;
     default: return false;
     }
-  } else if (I->getType()->isInteger(32)) {
+  } else if (I->getType()->isIntegerTy(32)) {
     CReg = X86::ECX;
     RC = &X86::GR32RegClass;
     switch (I->getOpcode()) {
@@ -976,7 +984,7 @@ bool X86FastISel::X86SelectShift(Instruction *I) {
     case Instruction::Shl:  OpReg = X86::SHL32rCL; OpImm = X86::SHL32ri; break;
     default: return false;
     }
-  } else if (I->getType()->isInteger(64)) {
+  } else if (I->getType()->isIntegerTy(64)) {
     CReg = X86::RCX;
     RC = &X86::GR64RegClass;
     switch (I->getOpcode()) {
@@ -1161,6 +1169,8 @@ bool X86FastISel::X86VisitIntrinsicCall(IntrinsicInst &I) {
     if (!X86SelectAddress(DI->getAddress(), AM))
       return false;
     const TargetInstrDesc &II = TII.get(TargetOpcode::DBG_VALUE);
+    // FIXME may need to add RegState::Debug to any registers produced,
+    // although ESP/EBP should be the only ones at the moment.
     addFullAddress(BuildMI(MBB, DL, II), AM).addImm(0).
                                         addMetadata(DI->getVariable());
     return true;

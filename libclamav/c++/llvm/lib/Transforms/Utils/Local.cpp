@@ -46,7 +46,7 @@ using namespace llvm;
 static Value *getUnderlyingObjectWithOffset(Value *V, const TargetData *TD,
                                             uint64_t &ByteOffset,
                                             unsigned MaxLookup = 6) {
-  if (!isa<PointerType>(V->getType()))
+  if (!V->getType()->isPointerTy())
     return V;
   for (unsigned Count = 0; MaxLookup == 0 || Count < MaxLookup; ++Count) {
     if (GEPOperator *GEP = dyn_cast<GEPOperator>(V)) {
@@ -65,7 +65,7 @@ static Value *getUnderlyingObjectWithOffset(Value *V, const TargetData *TD,
     } else {
       return V;
     }
-    assert(isa<PointerType>(V->getType()) && "Unexpected operand type!");
+    assert(V->getType()->isPointerTy() && "Unexpected operand type!");
   }
   return V;
 }
@@ -490,6 +490,17 @@ void llvm::MergeBasicBlockIntoOnlyPred(BasicBlock *DestBB, Pass *P) {
   // Splice all the instructions from PredBB to DestBB.
   PredBB->getTerminator()->eraseFromParent();
   DestBB->getInstList().splice(DestBB->begin(), PredBB->getInstList());
+
+  // Zap anything that took the address of DestBB.  Not doing this will give the
+  // address an invalid value.
+  if (DestBB->hasAddressTaken()) {
+    BlockAddress *BA = BlockAddress::get(DestBB);
+    Constant *Replacement =
+      ConstantInt::get(llvm::Type::getInt32Ty(BA->getContext()), 1);
+    BA->replaceAllUsesWith(ConstantExpr::getIntToPtr(Replacement,
+                                                     BA->getType()));
+    BA->destroyConstant();
+  }
   
   // Anything that branched to PredBB now branches to DestBB.
   PredBB->replaceAllUsesWith(DestBB);

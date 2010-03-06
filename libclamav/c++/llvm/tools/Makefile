@@ -23,6 +23,7 @@ PARALLEL_DIRS := opt llvm-as llvm-dis \
                  bugpoint llvm-bcanalyzer llvm-stub \
                  llvm-mc llvmc \
                  edis
+                 
 
 # Let users override the set of tools to build from the command line.
 ifdef ONLY_TOOLS
@@ -32,16 +33,27 @@ endif
 
 include $(LEVEL)/Makefile.config
 
+# These libraries build as dynamic libraries (.dylib /.so), they can only be
+# built if ENABLE_PIC is set.
 ifeq ($(ENABLE_PIC),1)
-  DIRS += lto
-  ifdef BINUTILS_INCDIR
-    DIRS += gold
+  # No support for dynamic libraries on windows targets.
+  ifneq ($(TARGET_OS), $(filter $(TARGET_OS), Cygwin MingW))
+    PARALLEL_DIRS += edis
+    
+    # gold only builds if binutils is around.  It requires "lto" to build before
+    # it so it is added to DIRS.
+    ifdef BINUTILS_INCDIR
+      PARALLEL_DIRS += gold
+      DIRS += lto
+    else
+      PARALLEL_DIRS += lto
+    endif
   endif
 endif
 
-# No support for lto / gold on windows targets
-ifeq ($(TARGET_OS), $(filter $(TARGET_OS), Cygwin MingW))
-  DIRS := $(filter-out lto gold, $(DIRS))
+# Only build edis if X86 target support is enabled.
+ifeq ($(filter $(TARGETS_TO_BUILD), X86),)
+  PARALLEL_DIRS := $(filter-out edis, $(PARALLEL_DIRS))
 endif
 
 include $(LEVEL)/Makefile.common

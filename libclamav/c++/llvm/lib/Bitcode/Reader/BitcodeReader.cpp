@@ -108,17 +108,17 @@ static int GetDecodedBinaryOpcode(unsigned Val, const Type *Ty) {
   switch (Val) {
   default: return -1;
   case bitc::BINOP_ADD:
-    return Ty->isFPOrFPVector() ? Instruction::FAdd : Instruction::Add;
+    return Ty->isFPOrFPVectorTy() ? Instruction::FAdd : Instruction::Add;
   case bitc::BINOP_SUB:
-    return Ty->isFPOrFPVector() ? Instruction::FSub : Instruction::Sub;
+    return Ty->isFPOrFPVectorTy() ? Instruction::FSub : Instruction::Sub;
   case bitc::BINOP_MUL:
-    return Ty->isFPOrFPVector() ? Instruction::FMul : Instruction::Mul;
+    return Ty->isFPOrFPVectorTy() ? Instruction::FMul : Instruction::Mul;
   case bitc::BINOP_UDIV: return Instruction::UDiv;
   case bitc::BINOP_SDIV:
-    return Ty->isFPOrFPVector() ? Instruction::FDiv : Instruction::SDiv;
+    return Ty->isFPOrFPVectorTy() ? Instruction::FDiv : Instruction::SDiv;
   case bitc::BINOP_UREM: return Instruction::URem;
   case bitc::BINOP_SREM:
-    return Ty->isFPOrFPVector() ? Instruction::FRem : Instruction::SRem;
+    return Ty->isFPOrFPVectorTy() ? Instruction::FRem : Instruction::SRem;
   case bitc::BINOP_SHL:  return Instruction::Shl;
   case bitc::BINOP_LSHR: return Instruction::LShr;
   case bitc::BINOP_ASHR: return Instruction::AShr;
@@ -963,12 +963,12 @@ bool BitcodeReader::ParseConstants() {
       V = Constant::getNullValue(CurTy);
       break;
     case bitc::CST_CODE_INTEGER:   // INTEGER: [intval]
-      if (!isa<IntegerType>(CurTy) || Record.empty())
+      if (!CurTy->isIntegerTy() || Record.empty())
         return Error("Invalid CST_INTEGER record");
       V = ConstantInt::get(CurTy, DecodeSignRotatedValue(Record[0]));
       break;
     case bitc::CST_CODE_WIDE_INTEGER: {// WIDE_INTEGER: [n x intval]
-      if (!isa<IntegerType>(CurTy) || Record.empty())
+      if (!CurTy->isIntegerTy() || Record.empty())
         return Error("Invalid WIDE_INTEGER record");
 
       unsigned NumWords = Record.size();
@@ -1175,7 +1175,7 @@ bool BitcodeReader::ParseConstants() {
       Constant *Op0 = ValueList.getConstantFwdRef(Record[1], OpTy);
       Constant *Op1 = ValueList.getConstantFwdRef(Record[2], OpTy);
 
-      if (OpTy->isFPOrFPVector())
+      if (OpTy->isFPOrFPVectorTy())
         V = ConstantExpr::getFCmp(Record[3], Op0, Op1);
       else
         V = ConstantExpr::getICmp(Record[3], Op0, Op1);
@@ -1407,7 +1407,7 @@ bool BitcodeReader::ParseModule() {
       if (Record.size() < 6)
         return Error("Invalid MODULE_CODE_GLOBALVAR record");
       const Type *Ty = getTypeByID(Record[0]);
-      if (!isa<PointerType>(Ty))
+      if (!Ty->isPointerTy())
         return Error("Global not a pointer type!");
       unsigned AddressSpace = cast<PointerType>(Ty)->getAddressSpace();
       Ty = cast<PointerType>(Ty)->getElementType();
@@ -1450,7 +1450,7 @@ bool BitcodeReader::ParseModule() {
       if (Record.size() < 8)
         return Error("Invalid MODULE_CODE_FUNCTION record");
       const Type *Ty = getTypeByID(Record[0]);
-      if (!isa<PointerType>(Ty))
+      if (!Ty->isPointerTy())
         return Error("Function not a pointer type!");
       const FunctionType *FTy =
         dyn_cast<FunctionType>(cast<PointerType>(Ty)->getElementType());
@@ -1491,7 +1491,7 @@ bool BitcodeReader::ParseModule() {
       if (Record.size() < 3)
         return Error("Invalid MODULE_ALIAS record");
       const Type *Ty = getTypeByID(Record[0]);
-      if (!isa<PointerType>(Ty))
+      if (!Ty->isPointerTy())
         return Error("Function not a pointer type!");
 
       GlobalAlias *NewGA = new GlobalAlias(Ty, GetDecodedLinkage(Record[2]),
@@ -1622,6 +1622,7 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
   if (Stream.EnterSubBlock(bitc::FUNCTION_BLOCK_ID))
     return Error("Malformed block record");
 
+  InstructionList.clear();
   unsigned ModuleValueListSize = ValueList.size();
 
   // Add all the function arguments to the value table.
@@ -1892,7 +1893,7 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
           OpNum+1 != Record.size())
         return Error("Invalid CMP record");
 
-      if (LHS->getType()->isFPOrFPVector())
+      if (LHS->getType()->isFPOrFPVectorTy())
         I = new FCmpInst((FCmpInst::Predicate)Record[OpNum], LHS, RHS);
       else
         I = new ICmpInst((ICmpInst::Predicate)Record[OpNum], LHS, RHS);
@@ -1932,7 +1933,7 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
 
         const Type *ReturnType = F->getReturnType();
         if (Vs.size() > 1 ||
-            (isa<StructType>(ReturnType) &&
+            (ReturnType->isStructTy() &&
              (Vs.empty() || Vs[0]->getType() != ReturnType))) {
           Value *RV = UndefValue::get(ReturnType);
           for (unsigned i = 0, e = Vs.size(); i != e; ++i) {

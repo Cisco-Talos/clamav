@@ -65,7 +65,7 @@ public:
   }
 
   SDNode *Select(SDNode *N);
-  virtual void InstructionSelect();
+
   bool SelectShifterOperandReg(SDNode *Op, SDValue N, SDValue &A,
                                SDValue &B, SDValue &C);
   bool SelectAddrMode2(SDNode *Op, SDValue N, SDValue &Base,
@@ -200,11 +200,6 @@ static bool isOpcWithIntImmediate(SDNode *N, unsigned Opc, unsigned& Imm) {
          isInt32Immediate(N->getOperand(1).getNode(), Imm);
 }
 
-
-void ARMDAGToDAGISel::InstructionSelect() {
-  SelectRoot(*CurDAG);
-  CurDAG->RemoveDeadNodes();
-}
 
 bool ARMDAGToDAGISel::SelectShifterOperandReg(SDNode *Op,
                                               SDValue N,

@@ -23,6 +23,7 @@
 #include "llvm/Target/TargetData.h"
 #include "llvm/Support/GetElementPtrTypeIterator.h"
 #include "llvm/Support/MathExtras.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include <cstring>
 using namespace llvm;
 
@@ -49,11 +50,11 @@ void llvm::ComputeMaskedBits(Value *V, const APInt &Mask,
   assert(V && "No Value?");
   assert(Depth <= MaxDepth && "Limit Search Depth");
   unsigned BitWidth = Mask.getBitWidth();
-  assert((V->getType()->isIntOrIntVector() || isa<PointerType>(V->getType())) &&
-         "Not integer or pointer type!");
+  assert((V->getType()->isIntOrIntVectorTy() || V->getType()->isPointerTy())
+         && "Not integer or pointer type!");
   assert((!TD ||
           TD->getTypeSizeInBits(V->getType()->getScalarType()) == BitWidth) &&
-         (!V->getType()->isIntOrIntVector() ||
+         (!V->getType()->isIntOrIntVectorTy() ||
           V->getType()->getScalarSizeInBits() == BitWidth) &&
          KnownZero.getBitWidth() == BitWidth && 
          KnownOne.getBitWidth() == BitWidth &&
@@ -249,7 +250,7 @@ void llvm::ComputeMaskedBits(Value *V, const APInt &Mask,
     unsigned SrcBitWidth;
     // Note that we handle pointer operands here because of inttoptr/ptrtoint
     // which fall through here.
-    if (isa<PointerType>(SrcTy))
+    if (SrcTy->isPointerTy())
       SrcBitWidth = TD->getTypeSizeInBits(SrcTy);
     else
       SrcBitWidth = SrcTy->getScalarSizeInBits();
@@ -269,10 +270,10 @@ void llvm::ComputeMaskedBits(Value *V, const APInt &Mask,
   }
   case Instruction::BitCast: {
     const Type *SrcTy = I->getOperand(0)->getType();
-    if ((SrcTy->isInteger() || isa<PointerType>(SrcTy)) &&
+    if ((SrcTy->isIntegerTy() || SrcTy->isPointerTy()) &&
         // TODO: For now, not handling conversions like:
         // (bitcast i64 %x to <2 x i32>)
-        !isa<VectorType>(I->getType())) {
+        !I->getType()->isVectorTy()) {
       ComputeMaskedBits(I->getOperand(0), Mask, KnownZero, KnownOne, TD,
                         Depth+1);
       return;
@@ -649,7 +650,7 @@ bool llvm::MaskedValueIsZero(Value *V, const APInt &Mask,
 ///
 unsigned llvm::ComputeNumSignBits(Value *V, const TargetData *TD,
                                   unsigned Depth) {
-  assert((TD || V->getType()->isIntOrIntVector()) &&
+  assert((TD || V->getType()->isIntOrIntVectorTy()) &&
          "ComputeNumSignBits requires a TargetData object to operate "
          "on non-integer values!");
   const Type *Ty = V->getType();
@@ -823,7 +824,7 @@ bool llvm::ComputeMultiple(Value *V, unsigned Base, Value *&Multiple,
 
   assert(V && "No Value?");
   assert(Depth <= MaxDepth && "Limit Search Depth");
-  assert(V->getType()->isInteger() && "Not integer or pointer type!");
+  assert(V->getType()->isIntegerTy() && "Not integer or pointer type!");
 
   const Type *T = V->getType();
 
@@ -980,7 +981,7 @@ bool llvm::CannotBeNegativeZero(const Value *V, unsigned Depth) {
 /// may not be represented in the result.
 static Value *GetLinearExpression(Value *V, APInt &Scale, APInt &Offset,
                                   const TargetData *TD, unsigned Depth) {
-  assert(isa<IntegerType>(V->getType()) && "Not an integer value");
+  assert(V->getType()->isIntegerTy() && "Not an integer value");
 
   // Limit our recursion depth.
   if (Depth == 6) {
@@ -1253,7 +1254,7 @@ Value *llvm::FindInsertedValue(Value *V, const unsigned *idx_begin,
   if (idx_begin == idx_end)
     return V;
   // We have indices, so V should have an indexable type
-  assert((isa<StructType>(V->getType()) || isa<ArrayType>(V->getType()))
+  assert((V->getType()->isStructTy() || V->getType()->isArrayTy())
          && "Not looking at a struct or array?");
   assert(ExtractValueInst::getIndexedType(V->getType(), idx_begin, idx_end)
          && "Invalid indices for type?");
@@ -1372,7 +1373,7 @@ bool llvm::GetConstantStringInfo(Value *V, std::string &Str, uint64_t Offset,
     // Make sure the index-ee is a pointer to array of i8.
     const PointerType *PT = cast<PointerType>(GEP->getOperand(0)->getType());
     const ArrayType *AT = dyn_cast<ArrayType>(PT->getElementType());
-    if (AT == 0 || !AT->getElementType()->isInteger(8))
+    if (AT == 0 || !AT->getElementType()->isIntegerTy(8))
       return false;
     
     // Check to make sure that the first operand of the GEP is an integer and
@@ -1411,7 +1412,7 @@ bool llvm::GetConstantStringInfo(Value *V, std::string &Str, uint64_t Offset,
   
   // Must be a Constant Array
   ConstantArray *Array = dyn_cast<ConstantArray>(GlobalInit);
-  if (Array == 0 || !Array->getType()->getElementType()->isInteger(8))
+  if (Array == 0 || !Array->getType()->getElementType()->isIntegerTy(8))
     return false;
   
   // Get the number of elements in the array
@@ -1435,4 +1436,132 @@ bool llvm::GetConstantStringInfo(Value *V, std::string &Str, uint64_t Offset,
   
   // The array isn't null terminated, but maybe this is a memcpy, not a strcpy.
   return true;
+}
+
+// These next two are very similar to the above, but also look through PHI
+// nodes.
+// TODO: See if we can integrate these two together.
+
+/// GetStringLengthH - If we can compute the length of the string pointed to by
+/// the specified pointer, return 'len+1'.  If we can't, return 0.
+static uint64_t GetStringLengthH(Value *V, SmallPtrSet<PHINode*, 32> &PHIs) {
+  // Look through noop bitcast instructions.
+  if (BitCastInst *BCI = dyn_cast<BitCastInst>(V))
+    return GetStringLengthH(BCI->getOperand(0), PHIs);
+
+  // If this is a PHI node, there are two cases: either we have already seen it
+  // or we haven't.
+  if (PHINode *PN = dyn_cast<PHINode>(V)) {
+    if (!PHIs.insert(PN))
+      return ~0ULL;  // already in the set.
+
+    // If it was new, see if all the input strings are the same length.
+    uint64_t LenSoFar = ~0ULL;
+    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
+      uint64_t Len = GetStringLengthH(PN->getIncomingValue(i), PHIs);
+      if (Len == 0) return 0; // Unknown length -> unknown.
+
+      if (Len == ~0ULL) continue;
+
+      if (Len != LenSoFar && LenSoFar != ~0ULL)
+        return 0;    // Disagree -> unknown.
+      LenSoFar = Len;
+    }
+
+    // Success, all agree.
+    return LenSoFar;
+  }
+
+  // strlen(select(c,x,y)) -> strlen(x) ^ strlen(y)
+  if (SelectInst *SI = dyn_cast<SelectInst>(V)) {
+    uint64_t Len1 = GetStringLengthH(SI->getTrueValue(), PHIs);
+    if (Len1 == 0) return 0;
+    uint64_t Len2 = GetStringLengthH(SI->getFalseValue(), PHIs);
+    if (Len2 == 0) return 0;
+    if (Len1 == ~0ULL) return Len2;
+    if (Len2 == ~0ULL) return Len1;
+    if (Len1 != Len2) return 0;
+    return Len1;
+  }
+
+  // If the value is not a GEP instruction nor a constant expression with a
+  // GEP instruction, then return unknown.
+  User *GEP = 0;
+  if (GetElementPtrInst *GEPI = dyn_cast<GetElementPtrInst>(V)) {
+    GEP = GEPI;
+  } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
+    if (CE->getOpcode() != Instruction::GetElementPtr)
+      return 0;
+    GEP = CE;
+  } else {
+    return 0;
+  }
+
+  // Make sure the GEP has exactly three arguments.
+  if (GEP->getNumOperands() != 3)
+    return 0;
+
+  // Check to make sure that the first operand of the GEP is an integer and
+  // has value 0 so that we are sure we're indexing into the initializer.
+  if (ConstantInt *Idx = dyn_cast<ConstantInt>(GEP->getOperand(1))) {
+    if (!Idx->isZero())
+      return 0;
+  } else
+    return 0;
+
+  // If the second index isn't a ConstantInt, then this is a variable index
+  // into the array.  If this occurs, we can't say anything meaningful about
+  // the string.
+  uint64_t StartIdx = 0;
+  if (ConstantInt *CI = dyn_cast<ConstantInt>(GEP->getOperand(2)))
+    StartIdx = CI->getZExtValue();
+  else
+    return 0;
+
+  // The GEP instruction, constant or instruction, must reference a global
+  // variable that is a constant and is initialized. The referenced constant
+  // initializer is the array that we'll use for optimization.
+  GlobalVariable* GV = dyn_cast<GlobalVariable>(GEP->getOperand(0));
+  if (!GV || !GV->isConstant() || !GV->hasInitializer() ||
+      GV->mayBeOverridden())
+    return 0;
+  Constant *GlobalInit = GV->getInitializer();
+
+  // Handle the ConstantAggregateZero case, which is a degenerate case. The
+  // initializer is constant zero so the length of the string must be zero.
+  if (isa<ConstantAggregateZero>(GlobalInit))
+    return 1;  // Len = 0 offset by 1.
+
+  // Must be a Constant Array
+  ConstantArray *Array = dyn_cast<ConstantArray>(GlobalInit);
+  if (!Array || !Array->getType()->getElementType()->isIntegerTy(8))
+    return false;
+
+  // Get the number of elements in the array
+  uint64_t NumElts = Array->getType()->getNumElements();
+
+  // Traverse the constant array from StartIdx (derived above) which is
+  // the place the GEP refers to in the array.
+  for (unsigned i = StartIdx; i != NumElts; ++i) {
+    Constant *Elt = Array->getOperand(i);
+    ConstantInt *CI = dyn_cast<ConstantInt>(Elt);
+    if (!CI) // This array isn't suitable, non-int initializer.
+      return 0;
+    if (CI->isZero())
+      return i-StartIdx+1; // We found end of string, success!
+  }
+
+  return 0; // The array isn't null terminated, conservatively return 'unknown'.
+}
+
+/// GetStringLength - If we can compute the length of the string pointed to by
+/// the specified pointer, return 'len+1'.  If we can't, return 0.
+uint64_t llvm::GetStringLength(Value *V) {
+  if (!V->getType()->isPointerTy()) return 0;
+
+  SmallPtrSet<PHINode*, 32> PHIs;
+  uint64_t Len = GetStringLengthH(V, PHIs);
+  // If Len is ~0ULL, we had an infinite phi cycle: this is dead code, so return
+  // an empty string as a length.
+  return Len == ~0ULL ? 1 : Len;
 }

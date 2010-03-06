@@ -1027,11 +1027,15 @@ private:
   /// then they will be delete[]'d when the node is destroyed.
   uint16_t OperandsNeedDelete : 1;
 
+  /// HasDebugValue - This tracks whether this node has one or more dbg_value
+  /// nodes corresponding to it.
+  uint16_t HasDebugValue : 1;
+
 protected:
   /// SubclassData - This member is defined by this class, but is not used for
   /// anything.  Subclasses can use it to hold whatever state they find useful.
   /// This field is initialized to zero by the ctor.
-  uint16_t SubclassData : 15;
+  uint16_t SubclassData : 14;
 
 private:
   /// NodeId - Unique id per SDNode in the DAG.
@@ -1093,6 +1097,12 @@ public:
     assert(isMachineOpcode() && "Not a MachineInstr opcode!");
     return ~NodeType;
   }
+
+  /// getHasDebugValue - get this bit.
+  bool getHasDebugValue() const { return HasDebugValue; }
+
+  /// setHasDebugValue - set this bit.
+  void setHasDebugValue(bool b) { HasDebugValue = b; }
 
   /// use_empty - Return true if there are no uses of this node.
   ///
@@ -1357,8 +1367,8 @@ protected:
 
   SDNode(unsigned Opc, const DebugLoc dl, SDVTList VTs, const SDValue *Ops,
          unsigned NumOps)
-    : NodeType(Opc), OperandsNeedDelete(true), SubclassData(0),
-      NodeId(-1),
+    : NodeType(Opc), OperandsNeedDelete(true), HasDebugValue(false),
+      SubclassData(0), NodeId(-1),
       OperandList(NumOps ? new SDUse[NumOps] : 0),
       ValueList(VTs.VTs), UseList(NULL),
       NumOperands(NumOps), NumValues(VTs.NumVTs),
@@ -1595,7 +1605,10 @@ public:
     return SubclassData;
   }
 
+  // We access subclass data here so that we can check consistency
+  // with MachineMemOperand information.
   bool isVolatile() const { return (SubclassData >> 5) & 1; }
+  bool isNonTemporal() const { return (SubclassData >> 6) & 1; }
 
   /// Returns the SrcValue and offset that describes the location of the access
   const Value *getSrcValue() const { return MMO->getValue(); }
@@ -1761,7 +1774,12 @@ public:
   bool isSplat() const { return isSplatMask(Mask, getValueType(0)); }
   int  getSplatIndex() const { 
     assert(isSplat() && "Cannot get splat index for non-splat!");
-    return Mask[0];
+    EVT VT = getValueType(0);
+    for (unsigned i = 0, e = VT.getVectorNumElements(); i != e; ++i) {
+      if (Mask[i] != -1)
+        return Mask[i];
+    }
+    return -1;
   }
   static bool isSplatMask(const int *Mask, EVT VT);
 
@@ -1806,6 +1824,12 @@ public:
 
   const APFloat& getValueAPF() const { return Value->getValueAPF(); }
   const ConstantFP *getConstantFPValue() const { return Value; }
+
+  /// isZero - Return true if the value is positive or negative zero.
+  bool isZero() const { return Value->isZero(); }
+
+  /// isNaN - Return true if the value is a NaN.
+  bool isNaN() const { return Value->isNaN(); }
 
   /// isExactlyValue - We don't rely on operator== working on double values, as
   /// it returns true for things that are clearly not equal, like -0.0 and 0.0.

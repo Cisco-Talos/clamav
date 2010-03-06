@@ -22,55 +22,14 @@ namespace llvm {
   /// Lower PHI instructions to copies.  
   class PHIElimination : public MachineFunctionPass {
     MachineRegisterInfo  *MRI; // Machine register information
-  private:
-
-    typedef SmallSet<MachineBasicBlock*, 4> PHIKillList;
-    typedef DenseMap<unsigned, PHIKillList> PHIKillMap;
-    typedef DenseMap<unsigned, MachineBasicBlock*> PHIDefMap;
 
   public:
-
-    typedef PHIKillList::iterator phi_kill_iterator;
-    typedef PHIKillList::const_iterator const_phi_kill_iterator;
-
     static char ID; // Pass identification, replacement for typeid
     PHIElimination() : MachineFunctionPass(&ID) {}
 
     virtual bool runOnMachineFunction(MachineFunction &Fn);
     
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
-
-    /// Return true if the given vreg was defined by a PHI intsr prior to
-    /// lowering.
-    bool hasPHIDef(unsigned vreg) const {
-      return PHIDefs.count(vreg);
-    }
-
-    /// Returns the block in which the PHI instruction which defined the
-    /// given vreg used to reside. 
-    MachineBasicBlock* getPHIDefBlock(unsigned vreg) {
-      PHIDefMap::iterator phiDefItr = PHIDefs.find(vreg);
-      assert(phiDefItr != PHIDefs.end() && "vreg has no phi-def.");
-      return phiDefItr->second;
-    }
-
-    /// Returns true if the given vreg was killed by a PHI instr.
-    bool hasPHIKills(unsigned vreg) const {
-      return PHIKills.count(vreg);
-    }
-
-    /// Returns an iterator over the BasicBlocks which contained PHI
-    /// kills of this register prior to lowering.
-    phi_kill_iterator phiKillsBegin(unsigned vreg) {
-      PHIKillMap::iterator phiKillItr = PHIKills.find(vreg);
-      assert(phiKillItr != PHIKills.end() && "vreg has no phi-kills.");
-      return phiKillItr->second.begin();
-    } 
-    phi_kill_iterator phiKillsEnd(unsigned vreg) {
-      PHIKillMap::iterator phiKillItr = PHIKills.find(vreg);
-      assert(phiKillItr != PHIKills.end() && "vreg has no phi-kills.");
-      return phiKillItr->second.end();
-    }
 
   private:
     /// EliminatePHINodes - Eliminate phi nodes by inserting copy instructions
@@ -109,12 +68,29 @@ namespace llvm {
     // SkipPHIsAndLabels - Copies need to be inserted after phi nodes and
     // also after any exception handling labels: in landing pads execution
     // starts at the label, so any copies placed before it won't be executed!
+    // We also deal with DBG_VALUEs, which are a bit tricky:
+    //  PHI
+    //  DBG_VALUE
+    //  LABEL
+    // Here the DBG_VALUE needs to be skipped, and if it refers to a PHI it
+    // needs to be annulled or, better, moved to follow the label, as well.
+    //  PHI
+    //  DBG_VALUE
+    //  no label
+    // Here it is not a good idea to skip the DBG_VALUE.
+    // FIXME: For now we skip and annul all DBG_VALUEs, maximally simple and
+    // maximally stupid.
     MachineBasicBlock::iterator SkipPHIsAndLabels(MachineBasicBlock &MBB,
                                                 MachineBasicBlock::iterator I) {
       // Rather than assuming that EH labels come before other kinds of labels,
       // just skip all labels.
-      while (I != MBB.end() && (I->isPHI() || I->isLabel()))
+      while (I != MBB.end() && 
+             (I->isPHI() || I->isLabel() || I->isDebugValue())) {
+        if (I->isDebugValue() && I->getNumOperands()==3 && 
+            I->getOperand(0).isReg())
+          I->getOperand(0).setReg(0U);
         ++I;
+      }
       return I;
     }
 
@@ -122,21 +98,13 @@ namespace llvm {
     typedef DenseMap<BBVRegPair, unsigned> VRegPHIUse;
 
     VRegPHIUse VRegPHIUseCount;
-    PHIDefMap PHIDefs;
-    PHIKillMap PHIKills;
 
     // Defs of PHI sources which are implicit_def.
     SmallPtrSet<MachineInstr*, 4> ImpDefs;
 
-    // Lowered PHI nodes may be reused. We provide special DenseMap traits to
-    // match PHI nodes with identical arguments.
-    struct PHINodeTraits : public DenseMapInfo<MachineInstr*> {
-      static unsigned getHashValue(const MachineInstr *PtrVal);
-      static bool isEqual(const MachineInstr *LHS, const MachineInstr *RHS);
-    };
-
     // Map reusable lowered PHI node -> incoming join register.
-    typedef DenseMap<MachineInstr*, unsigned, PHINodeTraits> LoweredPHIMap;
+    typedef DenseMap<MachineInstr*, unsigned,
+                     MachineInstrExpressionTrait> LoweredPHIMap;
     LoweredPHIMap LoweredPHIs;
   };
 

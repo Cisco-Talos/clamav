@@ -35,7 +35,7 @@ static Constant *SubOne(ConstantInt *C) {
 // Otherwise, return null.
 //
 static inline Value *dyn_castFoldableMul(Value *V, ConstantInt *&CST) {
-  if (!V->hasOneUse() || !V->getType()->isInteger())
+  if (!V->hasOneUse() || !V->getType()->isIntegerTy())
     return 0;
   
   Instruction *I = dyn_cast<Instruction>(V);
@@ -145,10 +145,10 @@ Instruction *InstCombiner::visitAdd(BinaryOperator &I) {
     }
   }
 
-  if (I.getType()->isInteger(1))
+  if (I.getType()->isIntegerTy(1))
     return BinaryOperator::CreateXor(LHS, RHS);
 
-  if (I.getType()->isInteger()) {
+  if (I.getType()->isIntegerTy()) {
     // X + X --> X << 1
     if (LHS == RHS)
       return BinaryOperator::CreateShl(LHS, ConstantInt::get(I.getType(), 1));
@@ -168,7 +168,7 @@ Instruction *InstCombiner::visitAdd(BinaryOperator &I) {
   // -A + B  -->  B - A
   // -A + -B  -->  -(A + B)
   if (Value *LHSV = dyn_castNegVal(LHS)) {
-    if (LHS->getType()->isIntOrIntVector()) {
+    if (LHS->getType()->isIntOrIntVectorTy()) {
       if (Value *RHSV = dyn_castNegVal(RHS)) {
         Value *NewAdd = Builder->CreateAdd(LHSV, RHSV, "sum");
         return BinaryOperator::CreateNeg(NewAdd);
@@ -222,7 +222,7 @@ Instruction *InstCombiner::visitAdd(BinaryOperator &I) {
   }
 
   // W*X + Y*Z --> W * (X+Z)  iff W == Y
-  if (I.getType()->isIntOrIntVector()) {
+  if (I.getType()->isIntOrIntVectorTy()) {
     Value *W, *X, *Y, *Z;
     if (match(LHS, m_Mul(m_Value(W), m_Value(X))) &&
         match(RHS, m_Mul(m_Value(Y), m_Value(Z)))) {
@@ -373,10 +373,10 @@ Instruction *InstCombiner::visitFAdd(BinaryOperator &I) {
     if (CFP->getValueAPF().isPosZero() && CannotBeNegativeZero(LHS))
       return ReplaceInstUsesWith(I, LHS);
 
-  // Check for (add double (sitofp x), y), see if we can merge this into an
+  // Check for (fadd double (sitofp x), y), see if we can merge this into an
   // integer add followed by a promotion.
   if (SIToFPInst *LHSConv = dyn_cast<SIToFPInst>(LHS)) {
-    // (add double (sitofp x), fpcst) --> (sitofp (add int x, intcst))
+    // (fadd double (sitofp x), fpcst) --> (sitofp (add int x, intcst))
     // ... if the constant fits in the integer value.  This is useful for things
     // like (double)(x & 1234) + 4.0 -> (double)((X & 1234)+4) which no longer
     // requires a constant pool load, and generally allows the add to be better
@@ -394,7 +394,7 @@ Instruction *InstCombiner::visitFAdd(BinaryOperator &I) {
       }
     }
     
-    // (add double (sitofp x), (sitofp y)) --> (sitofp (add int x, y))
+    // (fadd double (sitofp x), (sitofp y)) --> (sitofp (add int x, y))
     if (SIToFPInst *RHSConv = dyn_cast<SIToFPInst>(RHS)) {
       // Only do this if x/y have the same type, if at last one of them has a
       // single use (so we don't increase the number of int->fp conversions),
@@ -560,7 +560,7 @@ Instruction *InstCombiner::visitSub(BinaryOperator &I) {
     return ReplaceInstUsesWith(I, Op0);    // undef - X -> undef
   if (isa<UndefValue>(Op1))
     return ReplaceInstUsesWith(I, Op1);    // X - undef -> undef
-  if (I.getType()->isInteger(1))
+  if (I.getType()->isIntegerTy(1))
     return BinaryOperator::CreateXor(Op0, Op1);
   
   if (ConstantInt *C = dyn_cast<ConstantInt>(Op0)) {
