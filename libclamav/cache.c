@@ -692,6 +692,7 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     if(!ctx || !ctx->engine || !ctx->engine->cache)
        return;
 
+    level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
     c = &ctx->engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("cli_add: mutex lock fail\n");
@@ -709,7 +710,6 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 #endif
 
     pthread_mutex_unlock(&c->mutex);
-    level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
     cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
     return;
 }
