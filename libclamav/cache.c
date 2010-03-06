@@ -501,58 +501,19 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     ptree("1:\n");
     if(printtree(cs, cs->root, 0)) {
-	abort();
+	cli_errmsg("cacheset_add: inconsistent tree before choosing newnode, good luck\n");
+	return;
     }
 
     newnode = cs->first;
-    /*#define TAKE_FIRST*/
-#ifdef TAKE_FIRST
-    if((newnode->left || newnode->right || newnode->up)) {
-	if(!splay(newnode->digest, newnode->size, cs)) {
-	    cli_errmsg("WTF\n");
-	    abort();
-	}
-	if(!newnode->left) {
-	    cs->root = newnode->right;
-	    newnode->right->up = NULL;
-	} else if(!newnode->right) {
-	    cs->root = newnode->left;
-	    newnode->left->up = NULL;
-	} else {
-	    cs->root = newnode->left;
-	    newnode->left->up = NULL;
-	    if(splay(newnode->digest, newnode->size, cs)) {
-		cli_errmsg("WTF #2\n");
-		abort();
-	    }
-	    cs->root->up = NULL;
-	    cs->root->right = newnode->right;
-	    if(newnode->right) newnode->right->up = cs->root;
-	}
-	newnode->up = NULL;
-	newnode->right = NULL;
-	newnode->left = NULL;
-	if(splay(hash, size, cs)) {
-	    cli_errmsg("WTF #3\n");
-	    abort();
-	}
-    }
-    newnode->prev = cs->last;
-    cs->last->next = newnode;
-    cs->last = newnode;
-    newnode->next->prev = NULL;
-    cs->first = newnode->next;
-    newnode->next = NULL;
-
-#else
     while(newnode) {
     	if(!newnode->right && !newnode->left)
     	    break;
     	newnode = newnode->next;
     }
     if(!newnode) {
-    	cli_errmsg("NO NEWNODE!\n");
-    	abort();
+	cli_errmsg("cacheset_add: tree has got no end nodes\n");
+	return;
     }
     if(newnode->up) {
     	if(newnode->up->left == newnode)
@@ -571,11 +532,11 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
     newnode->next = NULL;
     cs->last->next = newnode;
     cs->last = newnode;
-#endif
 
     ptree("2:\n");
     if(printtree(cs, cs->root, 0)) {
-	abort();
+	cli_errmsg("cacheset_add: inconsistent tree before adding newnode, good luck\n");
+	return;
     }
 
     if(!cs->root) {
@@ -603,7 +564,8 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     ptree("3: %lld\n", hash[1]);
     if(printtree(cs, cs->root, 0)) {
-	abort();
+	cli_errmsg("cacheset_add: inconsistent tree after adding newnode, good luck\n");
+	return;
     }
 }
 #endif /* USE_SPLAY */
