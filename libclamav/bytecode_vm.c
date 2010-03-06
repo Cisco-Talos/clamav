@@ -262,7 +262,15 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     x = *(uint_type(n)*)&(from)[(p)];\
     TRACE_R(x)
 
-#define READN(x, n, p) READNfrom(func->numBytes, values, x, n, p)
+#define READN(x, n, p)\
+ do {\
+     if (p&0x80000000) {\
+	 uint32_t pg = p&0x7fffffff;\
+	 READNfrom(ctx->numGlobals, ctx->globals, x, n, p);\
+     } else {\
+	 READNfrom(func->numBytes, values, x, n, p);\
+     }\
+ } while (0)
 
 #define READ1(x, p) READN(x, 8, p);\
     x = x&1

@@ -67,6 +67,8 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->line = 0;
     ctx->col = 0;
     ctx->mpool = NULL;
+    ctx->numGlobals = 0;
+    ctx->globals = NULL;
     return ctx;
 }
 

@@ -147,6 +147,8 @@ struct cli_bc_ctx {
     unsigned line;
     unsigned col;
     mpool_t *mpool;
+    uint32_t numGlobals;
+    uint8_t* globals;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
