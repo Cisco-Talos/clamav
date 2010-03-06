@@ -956,7 +956,7 @@ TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRe
 # Rule to rerun LLVM's configure if it changed, before building anything else
 # LLVM
 BUILT_SOURCES = $(am__append_13) llvm/config.status
-EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
+EXTRA_DIST = $(top_srcdir)/llvm llvmcheck.sh $(TBLGENFILES)
 libllvmsystem_la_LDFLAGS = @THREAD_LIBS@
 libllvmsystem_la_LIBADD = 
 libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
@@ -1527,13 +1527,8 @@ FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
 FileCheck_LDADD = libllvmsupport.la libllvmsystem.la 
 FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
 check_LTLIBRARIES = libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
-check_SCRIPTS = llvmdejagnu.sh
+check_SCRIPTS = llvmcheck.sh
 TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
-# Disable LLVM make check for now, there are some things to fix first:
-#   - check python version (2.4 doesn't work, needs 2.5+)
-#   - run llvm's make check after clamav's was run
-#   - have a way to run only clamav's make check and not llvm's
-#@ifGNUmake@ TESTS+=llvmdejagnu.sh
 libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
 			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM
 
@@ -7828,6 +7823,11 @@ uninstall-am:
 
 @MAINTAINER_MODE_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
 @MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
+# Disable LLVM make check for now, there are some things to fix first:
+#   - check python version (2.4 doesn't work, needs 2.5+)
+#   - run llvm's make check after clamav's was run
+#   - have a way to run only clamav's make check and not llvm's
+@ifGNUmake@ TESTS+=llvmcheck.sh
 
 #bytecode2llvm.cpp: build-llvm
 

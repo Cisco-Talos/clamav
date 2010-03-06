@@ -156,6 +156,22 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachineModuleInfoImpls.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\TargetLoweringObjectFileImpl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\MCSectionMachO.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\MachineCSE.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\CodeGen\OptimizePHIs.cpp"
 				>
 			</File>

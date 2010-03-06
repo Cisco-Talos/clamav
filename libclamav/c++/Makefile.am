@@ -77,7 +77,7 @@ TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegi
     ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
 
 BUILT_SOURCES=
-EXTRA_DIST=$(top_srcdir)/llvm llvmdejagnu.sh $(TBLGENFILES)
+EXTRA_DIST=$(top_srcdir)/llvm llvmcheck.sh $(TBLGENFILES)
 
 libllvmsystem_la_LDFLAGS=@THREAD_LIBS@
 libllvmsystem_la_LIBADD=
@@ -772,14 +772,14 @@ FileCheck_SOURCES=llvm/utils/FileCheck/FileCheck.cpp
 
 check_LTLIBRARIES=libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
-check_SCRIPTS=llvmdejagnu.sh
+check_SCRIPTS=llvmcheck.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
 TESTS=llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT
 # Disable LLVM make check for now, there are some things to fix first:
 #   - check python version (2.4 doesn't work, needs 2.5+)
 #   - run llvm's make check after clamav's was run
 #   - have a way to run only clamav's make check and not llvm's
-#@ifGNUmake@ TESTS+=llvmdejagnu.sh
+@ifGNUmake@ TESTS+=llvmcheck.sh
 
 libllvmasmprinter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
 			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM

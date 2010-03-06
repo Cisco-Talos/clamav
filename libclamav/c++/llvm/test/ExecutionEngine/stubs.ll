@@ -1,4 +1,5 @@
 ; RUN: llvm-as < %s | lli -disable-lazy-compilation=false
+; XFAIL: *
 
 define i32 @main() nounwind {
 entry:

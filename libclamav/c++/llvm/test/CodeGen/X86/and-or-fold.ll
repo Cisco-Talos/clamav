@@ -1,5 +1,6 @@
 ; RUN: llc < %s -mtriple=i686-apple-darwin | FileCheck -check-prefix=DARWIN %s
-; RUN: opt < %s -O2 | llc -mtriple=x86_64-apple-darwin | FileCheck -check-prefix=DARWIN-OPT %s
+; ClamAV local: no opt
+; RUNX: opt < %s -O2 | llc -mtriple=x86_64-apple-darwin | FileCheck -check-prefix=DARWIN-OPT %s
 
 ; The dag combiner should fold together (x&127)|(y&16711680) -> (x|y)&c1
 ; in this case.

@@ -1,4 +1,5 @@
 ; RUN: llvm-as < %s | lli - test
+; XFAIL: *
 
 declare i32 @puts(i8*)
 

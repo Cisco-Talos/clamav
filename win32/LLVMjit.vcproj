@@ -388,10 +388,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\c++\llvm\lib\MC\MCSectionMachO.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCSymbol.cpp"
 				>
 			</File>

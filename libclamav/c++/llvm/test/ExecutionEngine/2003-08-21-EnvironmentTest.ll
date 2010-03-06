@@ -1,5 +1,6 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: lli %t.bc > /dev/null
+; XFAIL: *
 
 ;
 ; Regression Test: EnvironmentTest.ll

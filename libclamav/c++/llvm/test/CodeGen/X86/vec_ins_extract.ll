@@ -1,6 +1,8 @@
-; RUN: opt < %s -scalarrepl -instcombine | \
-; RUN:   llc -march=x86 -mcpu=yonah | not grep sub.*esp
-; XFAIL: *
+; CLAMAV-local: no opt
+; RUNX: opt < %s -scalarrepl -instcombine | \
+; RUNX:   llc -march=x86 -mcpu=yonah | not grep sub.*esp
+; RUN: true
+;
 
 ; This checks that various insert/extract idiom work without going to the
 ; stack.

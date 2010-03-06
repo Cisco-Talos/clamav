@@ -1,5 +1,7 @@
 ; RUN: llvm-as %s -o %t.bc
 ; RUN: lli %t.bc > /dev/null
+; CLAMAV-local: no external funcs
+; XFAIL: *
 
 define i32 @main() {
 	%X = malloc i32		; <i32*> [#uses=1]
