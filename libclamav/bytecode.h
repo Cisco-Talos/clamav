@@ -66,6 +66,8 @@ struct cli_bc {
   unsigned dbgnode_cnt;
   unsigned hook_lsig_id;
   unsigned trusted;
+  uint32_t numGlobalBytes;
+  uint8_t *globalBytes;
 };
 
 struct cli_all_bc {
