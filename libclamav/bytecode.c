@@ -1477,7 +1477,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	o &= 0x7fffffff;\
 	if (o > bc->num_globals) {\
 	    cli_errmsg("bytecode: global out of range: %u > %u, for instruction %u in function %u\n",\
-		       o, bc->num_globals, j, i);\
+		       o, (unsigned)bc->num_globals, j, i);\
 	    return CL_EBYTECODE;\
 	}\
 	val = 0x80000000 | gmap[o];\
