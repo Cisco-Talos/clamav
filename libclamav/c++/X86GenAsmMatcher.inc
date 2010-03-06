@@ -6293,7 +6293,7 @@ MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
     unsigned Opcode;
     ConversionKind ConvertFn;
     MatchClassKind Classes[5];
-  } MatchTable[2049] = {
+  } MatchTable[2037] = {
     { X86::CBW, Convert, { MCK_cbtw } },
     { X86::CLC, Convert, { MCK_clc } },
     { X86::CLD, Convert, { MCK_cld } },
@@ -7364,9 +7364,11 @@ MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
     { X86::MOVLPSrm, Convert__Reg1_2__Tie0__Mem5_1, { MCK_movlps, MCK_Mem, MCK_FR32 } },
     { X86::MOVMSKPDrr, Convert__Reg1_2__Reg1_1, { MCK_movmskpd, MCK_FR32, MCK_GR32 } },
     { X86::MOVMSKPSrr, Convert__Reg1_2__Reg1_1, { MCK_movmskps, MCK_FR32, MCK_GR32 } },
+    { X86::MOVNTDQ_64mr, Convert__Mem5_2__Reg1_1, { MCK_movntdq, MCK_FR32, MCK_Mem } },
     { X86::MOVNTDQmr, Convert__Mem5_2__Reg1_1, { MCK_movntdq, MCK_FR32, MCK_Mem } },
     { X86::MOVNTDQArm, Convert__Reg1_2__Mem5_1, { MCK_movntdqa, MCK_Mem, MCK_FR32 } },
     { X86::MOVNTImr, Convert__Mem5_2__Reg1_1, { MCK_movnti, MCK_GR32, MCK_Mem } },
+    { X86::MOVNTI_64mr, Convert__Mem5_2__Reg1_1, { MCK_movnti, MCK_GR64, MCK_Mem } },
     { X86::MOVNTPDmr, Convert__Mem5_2__Reg1_1, { MCK_movntpd, MCK_FR32, MCK_Mem } },
     { X86::MOVNTPSmr, Convert__Mem5_2__Reg1_1, { MCK_movntps, MCK_FR32, MCK_Mem } },
     { X86::MMX_MOVNTQmr, Convert__Mem5_2__Reg1_1, { MCK_movntq, MCK_VR64, MCK_Mem } },
@@ -7411,32 +7413,18 @@ MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
     { X86::MOVSX64rm8, Convert__Reg1_2__Mem5_1, { MCK_movsbq, MCK_Mem, MCK_GR64 } },
     { X86::MOVSX16rr8W, Convert__Reg1_2__Reg1_1, { MCK_movsbw, MCK_GR8, MCK_GR16 } },
     { X86::MOVSX16rm8W, Convert__Reg1_2__Mem5_1, { MCK_movsbw, MCK_Mem, MCK_GR16 } },
-    { X86::MOVLPDrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLSD2PDrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPD2SDrr, Convert__Reg1_2__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSD2PDrr, Convert__Reg1_2__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSDrr, Convert__Reg1_2__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPD2SDmr, Convert__Mem5_2__Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
+    { X86::MOVSDrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movsd, MCK_FR32, MCK_FR32 } },
     { X86::MOVSDmr, Convert__Mem5_2__Reg1_1, { MCK_movsd, MCK_FR32, MCK_Mem } },
-    { X86::MOVSD2PDrm, Convert__Reg1_2__Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVSDrm, Convert__Reg1_2__Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
-    { X86::MOVZSD2PDrm, Convert__Reg1_2__Mem5_1, { MCK_movsd, MCK_Mem, MCK_FR32 } },
     { X86::MOVSHDUPrr, Convert__Reg1_2__Reg1_1, { MCK_movshdup, MCK_FR32, MCK_FR32 } },
     { X86::MOVSHDUPrm, Convert__Reg1_2__Mem5_1, { MCK_movshdup, MCK_Mem, MCK_FR32 } },
     { X86::MOVSLDUPrr, Convert__Reg1_2__Reg1_1, { MCK_movsldup, MCK_FR32, MCK_FR32 } },
     { X86::MOVSLDUPrm, Convert__Reg1_2__Mem5_1, { MCK_movsldup, MCK_Mem, MCK_FR32 } },
     { X86::MOVSX64rr32, Convert__Reg1_2__Reg1_1, { MCK_movslq, MCK_GR32, MCK_GR64 } },
     { X86::MOVSX64rm32, Convert__Reg1_2__Mem5_1, { MCK_movslq, MCK_Mem, MCK_GR64 } },
-    { X86::MOVLPSrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVLSS2PSrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPS2SSrr, Convert__Reg1_2__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSS2PSrr, Convert__Reg1_2__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVSSrr, Convert__Reg1_2__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
-    { X86::MOVPS2SSmr, Convert__Mem5_2__Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
+    { X86::MOVSSrr, Convert__Reg1_2__Tie0__Reg1_1, { MCK_movss, MCK_FR32, MCK_FR32 } },
     { X86::MOVSSmr, Convert__Mem5_2__Reg1_1, { MCK_movss, MCK_FR32, MCK_Mem } },
-    { X86::MOVSS2PSrm, Convert__Reg1_2__Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSSrm, Convert__Reg1_2__Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
-    { X86::MOVZSS2PSrm, Convert__Reg1_2__Mem5_1, { MCK_movss, MCK_Mem, MCK_FR32 } },
     { X86::MOVSX32rr16, Convert__Reg1_2__Reg1_1, { MCK_movswl, MCK_GR16, MCK_GR32 } },
     { X86::MOVSX32rm16, Convert__Reg1_2__Mem5_1, { MCK_movswl, MCK_Mem, MCK_GR32 } },
     { X86::MOVSX64rr16, Convert__Reg1_2__Reg1_1, { MCK_movswq, MCK_GR16, MCK_GR64 } },
@@ -8364,7 +8352,7 @@ MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
     Classes[i] = InvalidMatchClass;
 
   // Search the table.
-  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 2049; it != ie; ++it) {
+  for (const MatchEntry *it = MatchTable, *ie = MatchTable + 2037; it != ie; ++it) {
     if (!IsSubclass(Classes[0], it->Classes[0]))
       continue;
     if (!IsSubclass(Classes[1], it->Classes[1]))

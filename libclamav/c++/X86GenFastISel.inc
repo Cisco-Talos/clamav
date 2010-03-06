@@ -704,30 +704,10 @@ switch (RetVT.SimpleTy) {
 }
 }
 
-unsigned FastEmit_ISD_SCALAR_TO_VECTOR_MVT_f32_r(MVT RetVT, unsigned Op0) {
-  if (RetVT.SimpleTy != MVT::v4f32)
-    return 0;
-  if ((Subtarget->hasSSE1())) {
-    return FastEmitInst_r(X86::MOVSS2PSrr, X86::VR128RegisterClass, Op0);
-  }
-  return 0;
-}
-
-unsigned FastEmit_ISD_SCALAR_TO_VECTOR_MVT_f64_r(MVT RetVT, unsigned Op0) {
-  if (RetVT.SimpleTy != MVT::v2f64)
-    return 0;
-  if ((Subtarget->hasSSE2())) {
-    return FastEmitInst_r(X86::MOVSD2PDrr, X86::VR128RegisterClass, Op0);
-  }
-  return 0;
-}
-
 unsigned FastEmit_ISD_SCALAR_TO_VECTOR_r(MVT VT, MVT RetVT, unsigned Op0) {
   switch (VT.SimpleTy) {
   case MVT::i32: return FastEmit_ISD_SCALAR_TO_VECTOR_MVT_i32_r(RetVT, Op0);
   case MVT::i64: return FastEmit_ISD_SCALAR_TO_VECTOR_MVT_i64_r(RetVT, Op0);
-  case MVT::f32: return FastEmit_ISD_SCALAR_TO_VECTOR_MVT_f32_r(RetVT, Op0);
-  case MVT::f64: return FastEmit_ISD_SCALAR_TO_VECTOR_MVT_f64_r(RetVT, Op0);
   default: return 0;
   }
 }

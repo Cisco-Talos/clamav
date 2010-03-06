@@ -75,14 +75,12 @@ static bool CC_PPC_SVR4_Common(unsigned ValNo, EVT ValVT,
   }
 
   if (LocVT == MVT::i32) {
-    if (!ArgFlags.isInReg()) {
-      static const unsigned RegList1[] = {
-        PPC::R3, PPC::R4, PPC::R5, PPC::R6, PPC::R7, PPC::R8, PPC::R9, PPC::R10
-      };
-      if (unsigned Reg = State.AllocateReg(RegList1, 8)) {
-        State.addLoc(CCValAssign::getReg(ValNo, ValVT, Reg, LocVT, LocInfo));
-        return false;
-      }
+    static const unsigned RegList1[] = {
+      PPC::R3, PPC::R4, PPC::R5, PPC::R6, PPC::R7, PPC::R8, PPC::R9, PPC::R10
+    };
+    if (unsigned Reg = State.AllocateReg(RegList1, 8)) {
+      State.addLoc(CCValAssign::getReg(ValNo, ValVT, Reg, LocVT, LocInfo));
+      return false;
     }
   }
 

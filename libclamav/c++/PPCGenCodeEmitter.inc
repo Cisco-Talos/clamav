@@ -155,8 +155,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3959423012U,	// FDIVS
     4227858490U,	// FMADD
     3959423034U,	// FMADDS
-    4227858576U,	// FMRD
-    4227858576U,	// FMRS
+    4227858576U,	// FMR
     4227858576U,	// FMRSD
     4227858488U,	// FMSUB
     3959423032U,	// FMSUBS
@@ -336,7 +335,6 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     2080376108U,	// STWBRX
     2080375085U,	// STWCX
     2483027968U,	// STWU
-    2483027968U,	// STWU8
     2080375150U,	// STWUX
     2080375086U,	// STWX
     2080375086U,	// STWX8
@@ -772,8 +770,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::STFSU:
     case PPC::STHU:
     case PPC::STHU8:
-    case PPC::STWU:
-    case PPC::STWU8: {
+    case PPC::STWU: {
       // op: A
       op = getMachineOpValue(MI, MI.getOperand(1));
       Value |= (op & 31U) << 21;
@@ -1155,8 +1152,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::FCFID:
     case PPC::FCTIDZ:
     case PPC::FCTIWZ:
-    case PPC::FMRD:
-    case PPC::FMRS:
+    case PPC::FMR:
     case PPC::FMRSD:
     case PPC::FNABSD:
     case PPC::FNABSS:

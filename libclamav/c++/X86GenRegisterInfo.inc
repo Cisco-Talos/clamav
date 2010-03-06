@@ -496,12 +496,12 @@ namespace X86 {   // Register class instances
 
   // VR128 Sub-register Classes...
   static const TargetRegisterClass* const VR128SubRegClasses[] = {
-    NULL
+    &X86::FR32RegClass, &X86::FR64RegClass, NULL
   };
 
   // VR256 Sub-register Classes...
   static const TargetRegisterClass* const VR256SubRegClasses[] = {
-    NULL
+    &X86::FR32RegClass, &X86::FR64RegClass, &X86::VR128RegClass, NULL
   };
 
   // VR64 Sub-register Classes...
@@ -531,12 +531,12 @@ namespace X86 {   // Register class instances
 
   // FR32 Super-register Classes...
   static const TargetRegisterClass* const FR32SuperRegClasses[] = {
-    NULL
+    &X86::VR128RegClass, &X86::VR256RegClass, NULL
   };
 
   // FR64 Super-register Classes...
   static const TargetRegisterClass* const FR64SuperRegClasses[] = {
-    NULL
+    &X86::VR128RegClass, &X86::VR256RegClass, NULL
   };
 
   // GR16 Super-register Classes...
@@ -651,7 +651,7 @@ namespace X86 {   // Register class instances
 
   // VR128 Super-register Classes...
   static const TargetRegisterClass* const VR128SuperRegClasses[] = {
-    NULL
+    &X86::VR256RegClass, NULL
   };
 
   // VR256 Super-register Classes...
@@ -1366,7 +1366,7 @@ namespace {
   };
 
 
-  // Number of hash collisions: 14
+  // Number of hash collisions: 20
   const unsigned SubregHashTable[] = { X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1393,7 +1393,7 @@ namespace {
                                        X86::R9, X86::R9W, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R9D, X86::R9W, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM2, X86::XMM2, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EIP, X86::IP, 
@@ -1437,7 +1437,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM3, X86::XMM3, 
                                        X86::RAX, X86::EAX, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1469,7 +1469,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RIP, X86::IP, 
                                        X86::EAX, X86::AL, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM4, X86::XMM4, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1507,7 +1507,7 @@ namespace {
                                        X86::R11D, X86::R11W, 
                                        X86::EAX, X86::AX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM5, X86::XMM5, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1545,7 +1545,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EBX, X86::BH, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM6, X86::XMM6, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1585,7 +1585,7 @@ namespace {
                                        X86::R12D, X86::R12B, 
                                        X86::R12W, X86::R12B, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM7, X86::XMM7, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1603,7 +1603,7 @@ namespace {
                                        X86::R15D, X86::R15W, 
                                        X86::RSI, X86::SI, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM0, X86::XMM0, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1621,7 +1621,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R12, X86::R12D, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM8, X86::XMM8, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1639,7 +1639,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RSI, X86::SIL, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM1, X86::XMM1, 
                                        X86::SI, X86::SIL, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1659,7 +1659,7 @@ namespace {
                                        X86::R12, X86::R12W, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R12D, X86::R12W, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM9, X86::XMM9, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1677,7 +1677,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R8, X86::R8B, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM10, X86::XMM10, 
                                        X86::R8D, X86::R8B, 
                                        X86::R8W, X86::R8B, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1717,7 +1717,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RSP, X86::SPL, 
                                        X86::SP, X86::SPL, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM11, X86::XMM11, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1753,7 +1753,7 @@ namespace {
                                        X86::R8, X86::R8W, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R8D, X86::R8W, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM12, X86::XMM12, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1793,7 +1793,7 @@ namespace {
                                        X86::R10D, X86::R10B, 
                                        X86::R10W, X86::R10B, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM13, X86::XMM13, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1829,7 +1829,7 @@ namespace {
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R9, X86::R9B, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM14, X86::XMM14, 
                                        X86::R9D, X86::R9B, 
                                        X86::R9W, X86::R9B, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1867,7 +1867,7 @@ namespace {
                                        X86::R10D, X86::R10W, 
                                        X86::R9, X86::R9D, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM15, X86::XMM15, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1882,7 +1882,7 @@ X86::NoRegister, X86::NoRegister };
   const unsigned SubregHashTableSize = 512;
 
 
-  // Number of hash collisions: 18
+  // Number of hash collisions: 23
   const unsigned SuperregHashTable[] = { X86::DX, X86::RDX, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -1899,7 +1899,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EDX, X86::RDX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM14, X86::YMM14, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::BP, X86::EBP, 
                                        X86::BPL, X86::EBP, 
@@ -1935,7 +1935,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::BX, X86::RBX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM15, X86::YMM15, 
                                        X86::BH, X86::EBX, 
                                        X86::BL, X86::EBX, 
                                        X86::EIP, X86::RIP, 
@@ -1973,7 +1973,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM2, X86::YMM2, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::ESI, X86::RSI, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2011,7 +2011,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM3, X86::YMM3, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::ESP, X86::RSP, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2049,7 +2049,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::SIL, X86::RSI, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM4, X86::YMM4, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2087,7 +2087,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::SP, X86::RSP, 
                                        X86::SPL, X86::RSP, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM5, X86::YMM5, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::SI, X86::ESI, 
                                        X86::SIL, X86::ESI, 
@@ -2125,7 +2125,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM6, X86::YMM6, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::SP, X86::ESP, 
@@ -2163,7 +2163,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM7, X86::YMM7, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2181,7 +2181,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM0, X86::YMM0, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::BH, X86::BX, 
                                        X86::BL, X86::BX, 
@@ -2201,7 +2201,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM8, X86::YMM8, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2219,7 +2219,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM1, X86::YMM1, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2239,6 +2239,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM9, X86::YMM9, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2256,8 +2257,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM10, X86::YMM10, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2295,7 +2295,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM11, X86::YMM11, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2335,7 +2335,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::ECX, X86::RCX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM12, X86::YMM12, 
                                        X86::CH, X86::CX, 
                                        X86::CL, X86::CX, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2383,7 +2383,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::DH, X86::RDX, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM13, X86::YMM13, 
                                        X86::R9B, X86::R9D, 
                                        X86::DL, X86::RDX, 
                                        X86::R9W, X86::R9D, 
@@ -2398,7 +2398,7 @@ X86::NoRegister, X86::NoRegister };
   const unsigned SuperregHashTableSize = 512;
 
 
-  // Number of hash collisions: 23
+  // Number of hash collisions: 31
   const unsigned AliasesHashTable[] = { X86::DX, X86::RDX, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2425,7 +2425,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM2, X86::XMM2, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EIP, X86::IP, 
@@ -2469,7 +2469,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM3, X86::XMM3, 
                                        X86::RAX, X86::EAX, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2501,7 +2501,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EAX, X86::AL, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM4, X86::XMM4, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2539,7 +2539,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EAX, X86::AX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM5, X86::XMM5, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2577,7 +2577,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EBX, X86::BH, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM6, X86::XMM6, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2615,7 +2615,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::EBX, X86::BL, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM7, X86::XMM7, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2653,7 +2653,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM8, X86::XMM8, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2691,13 +2691,13 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM9, X86::XMM9, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM0, X86::YMM0, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::BH, X86::BX, 
                                        X86::BL, X86::BX, 
@@ -2735,7 +2735,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM1, X86::YMM1, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2773,7 +2773,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::ECX, X86::CH, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM10, X86::YMM10, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2811,7 +2811,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM11, X86::YMM11, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2849,7 +2849,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM12, X86::YMM12, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::CH, X86::CX, 
@@ -2893,7 +2893,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM13, X86::YMM13, 
                                        X86::R10, X86::R10W, 
                                        X86::R10B, X86::R10W, 
                                        X86::R10D, X86::R10W, 
@@ -2925,7 +2925,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::BP, X86::RBP, 
                                        X86::BPL, X86::RBP, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM14, X86::YMM14, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RDI, X86::EDI, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -2963,7 +2963,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::BX, X86::RBX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM15, X86::YMM15, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RDX, X86::EDX, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3001,7 +3001,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM2, X86::YMM2, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3039,7 +3039,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM3, X86::YMM3, 
                                        X86::RIP, X86::EIP, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3077,7 +3077,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM4, X86::YMM4, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3121,7 +3121,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::SIL, X86::ESI, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM5, X86::YMM5, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::R12, X86::R12B, 
@@ -3145,7 +3145,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM0, X86::XMM0, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3155,7 +3155,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::RSP, X86::ESP, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM6, X86::YMM6, 
                                        X86::SP, X86::ESP, 
                                        X86::SPL, X86::ESP, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3183,6 +3183,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM1, X86::XMM1, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3190,8 +3191,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM7, X86::YMM7, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3221,6 +3221,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM10, X86::XMM10, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3228,8 +3229,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM8, X86::YMM8, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3259,6 +3259,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM11, X86::XMM11, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3266,8 +3267,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::XMM9, X86::YMM9, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3297,7 +3297,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM12, X86::XMM12, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3337,7 +3337,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::CX, X86::RCX, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM13, X86::XMM13, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3373,7 +3373,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM14, X86::XMM14, 
                                        X86::DH, X86::DX, 
                                        X86::DIL, X86::RDI, 
                                        X86::DI, X86::RDI, 
@@ -3411,7 +3411,7 @@ X86::NoRegister, X86::NoRegister };
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::DH, X86::RDX, 
-                                       X86::NoRegister, X86::NoRegister, 
+                                       X86::YMM15, X86::XMM15, 
                                        X86::NoRegister, X86::NoRegister, 
                                        X86::DL, X86::RDX, 
                                        X86::NoRegister, X86::NoRegister, 
@@ -3554,38 +3554,38 @@ X86::NoRegister, X86::NoRegister };
   const unsigned ST5_AliasSet[] = { 0 };
   const unsigned ST6_AliasSet[] = { 0 };
   const unsigned ST7_AliasSet[] = { 0 };
-  const unsigned XMM0_AliasSet[] = { 0 };
-  const unsigned XMM1_AliasSet[] = { 0 };
-  const unsigned XMM10_AliasSet[] = { 0 };
-  const unsigned XMM11_AliasSet[] = { 0 };
-  const unsigned XMM12_AliasSet[] = { 0 };
-  const unsigned XMM13_AliasSet[] = { 0 };
-  const unsigned XMM14_AliasSet[] = { 0 };
-  const unsigned XMM15_AliasSet[] = { 0 };
-  const unsigned XMM2_AliasSet[] = { 0 };
-  const unsigned XMM3_AliasSet[] = { 0 };
-  const unsigned XMM4_AliasSet[] = { 0 };
-  const unsigned XMM5_AliasSet[] = { 0 };
-  const unsigned XMM6_AliasSet[] = { 0 };
-  const unsigned XMM7_AliasSet[] = { 0 };
-  const unsigned XMM8_AliasSet[] = { 0 };
-  const unsigned XMM9_AliasSet[] = { 0 };
-  const unsigned YMM0_AliasSet[] = { 0 };
-  const unsigned YMM1_AliasSet[] = { 0 };
-  const unsigned YMM10_AliasSet[] = { 0 };
-  const unsigned YMM11_AliasSet[] = { 0 };
-  const unsigned YMM12_AliasSet[] = { 0 };
-  const unsigned YMM13_AliasSet[] = { 0 };
-  const unsigned YMM14_AliasSet[] = { 0 };
-  const unsigned YMM15_AliasSet[] = { 0 };
-  const unsigned YMM2_AliasSet[] = { 0 };
-  const unsigned YMM3_AliasSet[] = { 0 };
-  const unsigned YMM4_AliasSet[] = { 0 };
-  const unsigned YMM5_AliasSet[] = { 0 };
-  const unsigned YMM6_AliasSet[] = { 0 };
-  const unsigned YMM7_AliasSet[] = { 0 };
-  const unsigned YMM8_AliasSet[] = { 0 };
-  const unsigned YMM9_AliasSet[] = { 0 };
+  const unsigned XMM0_AliasSet[] = { X86::YMM0, 0 };
+  const unsigned XMM1_AliasSet[] = { X86::YMM1, 0 };
+  const unsigned XMM10_AliasSet[] = { X86::YMM10, 0 };
+  const unsigned XMM11_AliasSet[] = { X86::YMM11, 0 };
+  const unsigned XMM12_AliasSet[] = { X86::YMM12, 0 };
+  const unsigned XMM13_AliasSet[] = { X86::YMM13, 0 };
+  const unsigned XMM14_AliasSet[] = { X86::YMM14, 0 };
+  const unsigned XMM15_AliasSet[] = { X86::YMM15, 0 };
+  const unsigned XMM2_AliasSet[] = { X86::YMM2, 0 };
+  const unsigned XMM3_AliasSet[] = { X86::YMM3, 0 };
+  const unsigned XMM4_AliasSet[] = { X86::YMM4, 0 };
+  const unsigned XMM5_AliasSet[] = { X86::YMM5, 0 };
+  const unsigned XMM6_AliasSet[] = { X86::YMM6, 0 };
+  const unsigned XMM7_AliasSet[] = { X86::YMM7, 0 };
+  const unsigned XMM8_AliasSet[] = { X86::YMM8, 0 };
+  const unsigned XMM9_AliasSet[] = { X86::YMM9, 0 };
+  const unsigned YMM0_AliasSet[] = { X86::XMM0, 0 };
+  const unsigned YMM1_AliasSet[] = { X86::XMM1, 0 };
+  const unsigned YMM10_AliasSet[] = { X86::XMM10, 0 };
+  const unsigned YMM11_AliasSet[] = { X86::XMM11, 0 };
+  const unsigned YMM12_AliasSet[] = { X86::XMM12, 0 };
+  const unsigned YMM13_AliasSet[] = { X86::XMM13, 0 };
+  const unsigned YMM14_AliasSet[] = { X86::XMM14, 0 };
+  const unsigned YMM15_AliasSet[] = { X86::XMM15, 0 };
+  const unsigned YMM2_AliasSet[] = { X86::XMM2, 0 };
+  const unsigned YMM3_AliasSet[] = { X86::XMM3, 0 };
+  const unsigned YMM4_AliasSet[] = { X86::XMM4, 0 };
+  const unsigned YMM5_AliasSet[] = { X86::XMM5, 0 };
+  const unsigned YMM6_AliasSet[] = { X86::XMM6, 0 };
+  const unsigned YMM7_AliasSet[] = { X86::XMM7, 0 };
+  const unsigned YMM8_AliasSet[] = { X86::XMM8, 0 };
+  const unsigned YMM9_AliasSet[] = { X86::XMM9, 0 };
 
 
   // Register Sub-registers Sets...
@@ -3732,22 +3732,22 @@ X86::NoRegister, X86::NoRegister };
   const unsigned XMM7_SubRegsSet[] = { 0 };
   const unsigned XMM8_SubRegsSet[] = { 0 };
   const unsigned XMM9_SubRegsSet[] = { 0 };
-  const unsigned YMM0_SubRegsSet[] = { 0 };
-  const unsigned YMM1_SubRegsSet[] = { 0 };
-  const unsigned YMM10_SubRegsSet[] = { 0 };
-  const unsigned YMM11_SubRegsSet[] = { 0 };
-  const unsigned YMM12_SubRegsSet[] = { 0 };
-  const unsigned YMM13_SubRegsSet[] = { 0 };
-  const unsigned YMM14_SubRegsSet[] = { 0 };
-  const unsigned YMM15_SubRegsSet[] = { 0 };
-  const unsigned YMM2_SubRegsSet[] = { 0 };
-  const unsigned YMM3_SubRegsSet[] = { 0 };
-  const unsigned YMM4_SubRegsSet[] = { 0 };
-  const unsigned YMM5_SubRegsSet[] = { 0 };
-  const unsigned YMM6_SubRegsSet[] = { 0 };
-  const unsigned YMM7_SubRegsSet[] = { 0 };
-  const unsigned YMM8_SubRegsSet[] = { 0 };
-  const unsigned YMM9_SubRegsSet[] = { 0 };
+  const unsigned YMM0_SubRegsSet[] = { X86::XMM0, 0 };
+  const unsigned YMM1_SubRegsSet[] = { X86::XMM1, 0 };
+  const unsigned YMM10_SubRegsSet[] = { X86::XMM10, 0 };
+  const unsigned YMM11_SubRegsSet[] = { X86::XMM11, 0 };
+  const unsigned YMM12_SubRegsSet[] = { X86::XMM12, 0 };
+  const unsigned YMM13_SubRegsSet[] = { X86::XMM13, 0 };
+  const unsigned YMM14_SubRegsSet[] = { X86::XMM14, 0 };
+  const unsigned YMM15_SubRegsSet[] = { X86::XMM15, 0 };
+  const unsigned YMM2_SubRegsSet[] = { X86::XMM2, 0 };
+  const unsigned YMM3_SubRegsSet[] = { X86::XMM3, 0 };
+  const unsigned YMM4_SubRegsSet[] = { X86::XMM4, 0 };
+  const unsigned YMM5_SubRegsSet[] = { X86::XMM5, 0 };
+  const unsigned YMM6_SubRegsSet[] = { X86::XMM6, 0 };
+  const unsigned YMM7_SubRegsSet[] = { X86::XMM7, 0 };
+  const unsigned YMM8_SubRegsSet[] = { X86::XMM8, 0 };
+  const unsigned YMM9_SubRegsSet[] = { X86::XMM9, 0 };
 
 
   // Register Super-registers Sets...
@@ -3878,22 +3878,22 @@ X86::NoRegister, X86::NoRegister };
   const unsigned ST5_SuperRegsSet[] = { 0 };
   const unsigned ST6_SuperRegsSet[] = { 0 };
   const unsigned ST7_SuperRegsSet[] = { 0 };
-  const unsigned XMM0_SuperRegsSet[] = { 0 };
-  const unsigned XMM1_SuperRegsSet[] = { 0 };
-  const unsigned XMM10_SuperRegsSet[] = { 0 };
-  const unsigned XMM11_SuperRegsSet[] = { 0 };
-  const unsigned XMM12_SuperRegsSet[] = { 0 };
-  const unsigned XMM13_SuperRegsSet[] = { 0 };
-  const unsigned XMM14_SuperRegsSet[] = { 0 };
-  const unsigned XMM15_SuperRegsSet[] = { 0 };
-  const unsigned XMM2_SuperRegsSet[] = { 0 };
-  const unsigned XMM3_SuperRegsSet[] = { 0 };
-  const unsigned XMM4_SuperRegsSet[] = { 0 };
-  const unsigned XMM5_SuperRegsSet[] = { 0 };
-  const unsigned XMM6_SuperRegsSet[] = { 0 };
-  const unsigned XMM7_SuperRegsSet[] = { 0 };
-  const unsigned XMM8_SuperRegsSet[] = { 0 };
-  const unsigned XMM9_SuperRegsSet[] = { 0 };
+  const unsigned XMM0_SuperRegsSet[] = { X86::YMM0, 0 };
+  const unsigned XMM1_SuperRegsSet[] = { X86::YMM1, 0 };
+  const unsigned XMM10_SuperRegsSet[] = { X86::YMM10, 0 };
+  const unsigned XMM11_SuperRegsSet[] = { X86::YMM11, 0 };
+  const unsigned XMM12_SuperRegsSet[] = { X86::YMM12, 0 };
+  const unsigned XMM13_SuperRegsSet[] = { X86::YMM13, 0 };
+  const unsigned XMM14_SuperRegsSet[] = { X86::YMM14, 0 };
+  const unsigned XMM15_SuperRegsSet[] = { X86::YMM15, 0 };
+  const unsigned XMM2_SuperRegsSet[] = { X86::YMM2, 0 };
+  const unsigned XMM3_SuperRegsSet[] = { X86::YMM3, 0 };
+  const unsigned XMM4_SuperRegsSet[] = { X86::YMM4, 0 };
+  const unsigned XMM5_SuperRegsSet[] = { X86::YMM5, 0 };
+  const unsigned XMM6_SuperRegsSet[] = { X86::YMM6, 0 };
+  const unsigned XMM7_SuperRegsSet[] = { X86::YMM7, 0 };
+  const unsigned XMM8_SuperRegsSet[] = { X86::YMM8, 0 };
+  const unsigned XMM9_SuperRegsSet[] = { X86::YMM9, 0 };
   const unsigned YMM0_SuperRegsSet[] = { 0 };
   const unsigned YMM1_SuperRegsSet[] = { 0 };
   const unsigned YMM10_SuperRegsSet[] = { 0 };
@@ -4426,100 +4426,244 @@ unsigned X86GenRegisterInfo::getSubReg(unsigned RegNo, unsigned Index) const {
     case 4: return X86::R15D;
     };
     break;
+  case X86::XMM0:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM0;
+    case 2: return X86::XMM0;
+    };
+    break;
+  case X86::XMM1:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM1;
+    case 2: return X86::XMM1;
+    };
+    break;
+  case X86::XMM2:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM2;
+    case 2: return X86::XMM2;
+    };
+    break;
+  case X86::XMM3:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM3;
+    case 2: return X86::XMM3;
+    };
+    break;
+  case X86::XMM4:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM4;
+    case 2: return X86::XMM4;
+    };
+    break;
+  case X86::XMM5:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM5;
+    case 2: return X86::XMM5;
+    };
+    break;
+  case X86::XMM6:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM6;
+    case 2: return X86::XMM6;
+    };
+    break;
+  case X86::XMM7:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM7;
+    case 2: return X86::XMM7;
+    };
+    break;
+  case X86::XMM8:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM8;
+    case 2: return X86::XMM8;
+    };
+    break;
+  case X86::XMM9:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM9;
+    case 2: return X86::XMM9;
+    };
+    break;
+  case X86::XMM10:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM10;
+    case 2: return X86::XMM10;
+    };
+    break;
+  case X86::XMM11:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM11;
+    case 2: return X86::XMM11;
+    };
+    break;
+  case X86::XMM12:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM12;
+    case 2: return X86::XMM12;
+    };
+    break;
+  case X86::XMM13:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM13;
+    case 2: return X86::XMM13;
+    };
+    break;
+  case X86::XMM14:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM14;
+    case 2: return X86::XMM14;
+    };
+    break;
+  case X86::XMM15:
+    switch (Index) {
+    default: return 0;
+    case 1: return X86::XMM15;
+    case 2: return X86::XMM15;
+    };
+    break;
   case X86::YMM0:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM0;
+    case 2: return X86::XMM0;
+    case 3: return X86::XMM0;
     };
     break;
   case X86::YMM1:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM1;
+    case 2: return X86::XMM1;
+    case 3: return X86::XMM1;
     };
     break;
   case X86::YMM2:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM2;
+    case 2: return X86::XMM2;
+    case 3: return X86::XMM2;
     };
     break;
   case X86::YMM3:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM3;
+    case 2: return X86::XMM3;
+    case 3: return X86::XMM3;
     };
     break;
   case X86::YMM4:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM4;
+    case 2: return X86::XMM4;
+    case 3: return X86::XMM4;
     };
     break;
   case X86::YMM5:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM5;
+    case 2: return X86::XMM5;
+    case 3: return X86::XMM5;
     };
     break;
   case X86::YMM6:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM6;
+    case 2: return X86::XMM6;
+    case 3: return X86::XMM6;
     };
     break;
   case X86::YMM7:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM7;
+    case 2: return X86::XMM7;
+    case 3: return X86::XMM7;
     };
     break;
   case X86::YMM8:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM8;
+    case 2: return X86::XMM8;
+    case 3: return X86::XMM8;
     };
     break;
   case X86::YMM9:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM9;
+    case 2: return X86::XMM9;
+    case 3: return X86::XMM9;
     };
     break;
   case X86::YMM10:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM10;
+    case 2: return X86::XMM10;
+    case 3: return X86::XMM10;
     };
     break;
   case X86::YMM11:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM11;
+    case 2: return X86::XMM11;
+    case 3: return X86::XMM11;
     };
     break;
   case X86::YMM12:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM12;
+    case 2: return X86::XMM12;
+    case 3: return X86::XMM12;
     };
     break;
   case X86::YMM13:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM13;
+    case 2: return X86::XMM13;
+    case 3: return X86::XMM13;
     };
     break;
   case X86::YMM14:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM14;
+    case 2: return X86::XMM14;
+    case 3: return X86::XMM14;
     };
     break;
   case X86::YMM15:
     switch (Index) {
     default: return 0;
     case 1: return X86::XMM15;
+    case 2: return X86::XMM15;
+    case 3: return X86::XMM15;
     };
     break;
   };
@@ -4734,53 +4878,149 @@ unsigned X86GenRegisterInfo::getSubRegIndex(unsigned RegNo, unsigned SubRegNo) c
     if (SubRegNo == X86::R15W)  return 3;
     if (SubRegNo == X86::R15D)  return 4;
     return 0;
+  case X86::XMM0:
+    if (SubRegNo == X86::XMM0)  return 1;
+    if (SubRegNo == X86::XMM0)  return 2;
+    return 0;
+  case X86::XMM1:
+    if (SubRegNo == X86::XMM1)  return 1;
+    if (SubRegNo == X86::XMM1)  return 2;
+    return 0;
+  case X86::XMM2:
+    if (SubRegNo == X86::XMM2)  return 1;
+    if (SubRegNo == X86::XMM2)  return 2;
+    return 0;
+  case X86::XMM3:
+    if (SubRegNo == X86::XMM3)  return 1;
+    if (SubRegNo == X86::XMM3)  return 2;
+    return 0;
+  case X86::XMM4:
+    if (SubRegNo == X86::XMM4)  return 1;
+    if (SubRegNo == X86::XMM4)  return 2;
+    return 0;
+  case X86::XMM5:
+    if (SubRegNo == X86::XMM5)  return 1;
+    if (SubRegNo == X86::XMM5)  return 2;
+    return 0;
+  case X86::XMM6:
+    if (SubRegNo == X86::XMM6)  return 1;
+    if (SubRegNo == X86::XMM6)  return 2;
+    return 0;
+  case X86::XMM7:
+    if (SubRegNo == X86::XMM7)  return 1;
+    if (SubRegNo == X86::XMM7)  return 2;
+    return 0;
+  case X86::XMM8:
+    if (SubRegNo == X86::XMM8)  return 1;
+    if (SubRegNo == X86::XMM8)  return 2;
+    return 0;
+  case X86::XMM9:
+    if (SubRegNo == X86::XMM9)  return 1;
+    if (SubRegNo == X86::XMM9)  return 2;
+    return 0;
+  case X86::XMM10:
+    if (SubRegNo == X86::XMM10)  return 1;
+    if (SubRegNo == X86::XMM10)  return 2;
+    return 0;
+  case X86::XMM11:
+    if (SubRegNo == X86::XMM11)  return 1;
+    if (SubRegNo == X86::XMM11)  return 2;
+    return 0;
+  case X86::XMM12:
+    if (SubRegNo == X86::XMM12)  return 1;
+    if (SubRegNo == X86::XMM12)  return 2;
+    return 0;
+  case X86::XMM13:
+    if (SubRegNo == X86::XMM13)  return 1;
+    if (SubRegNo == X86::XMM13)  return 2;
+    return 0;
+  case X86::XMM14:
+    if (SubRegNo == X86::XMM14)  return 1;
+    if (SubRegNo == X86::XMM14)  return 2;
+    return 0;
+  case X86::XMM15:
+    if (SubRegNo == X86::XMM15)  return 1;
+    if (SubRegNo == X86::XMM15)  return 2;
+    return 0;
   case X86::YMM0:
     if (SubRegNo == X86::XMM0)  return 1;
+    if (SubRegNo == X86::XMM0)  return 2;
+    if (SubRegNo == X86::XMM0)  return 3;
     return 0;
   case X86::YMM1:
     if (SubRegNo == X86::XMM1)  return 1;
+    if (SubRegNo == X86::XMM1)  return 2;
+    if (SubRegNo == X86::XMM1)  return 3;
     return 0;
   case X86::YMM2:
     if (SubRegNo == X86::XMM2)  return 1;
+    if (SubRegNo == X86::XMM2)  return 2;
+    if (SubRegNo == X86::XMM2)  return 3;
     return 0;
   case X86::YMM3:
     if (SubRegNo == X86::XMM3)  return 1;
+    if (SubRegNo == X86::XMM3)  return 2;
+    if (SubRegNo == X86::XMM3)  return 3;
     return 0;
   case X86::YMM4:
     if (SubRegNo == X86::XMM4)  return 1;
+    if (SubRegNo == X86::XMM4)  return 2;
+    if (SubRegNo == X86::XMM4)  return 3;
     return 0;
   case X86::YMM5:
     if (SubRegNo == X86::XMM5)  return 1;
+    if (SubRegNo == X86::XMM5)  return 2;
+    if (SubRegNo == X86::XMM5)  return 3;
     return 0;
   case X86::YMM6:
     if (SubRegNo == X86::XMM6)  return 1;
+    if (SubRegNo == X86::XMM6)  return 2;
+    if (SubRegNo == X86::XMM6)  return 3;
     return 0;
   case X86::YMM7:
     if (SubRegNo == X86::XMM7)  return 1;
+    if (SubRegNo == X86::XMM7)  return 2;
+    if (SubRegNo == X86::XMM7)  return 3;
     return 0;
   case X86::YMM8:
     if (SubRegNo == X86::XMM8)  return 1;
+    if (SubRegNo == X86::XMM8)  return 2;
+    if (SubRegNo == X86::XMM8)  return 3;
     return 0;
   case X86::YMM9:
     if (SubRegNo == X86::XMM9)  return 1;
+    if (SubRegNo == X86::XMM9)  return 2;
+    if (SubRegNo == X86::XMM9)  return 3;
     return 0;
   case X86::YMM10:
     if (SubRegNo == X86::XMM10)  return 1;
+    if (SubRegNo == X86::XMM10)  return 2;
+    if (SubRegNo == X86::XMM10)  return 3;
     return 0;
   case X86::YMM11:
     if (SubRegNo == X86::XMM11)  return 1;
+    if (SubRegNo == X86::XMM11)  return 2;
+    if (SubRegNo == X86::XMM11)  return 3;
     return 0;
   case X86::YMM12:
     if (SubRegNo == X86::XMM12)  return 1;
+    if (SubRegNo == X86::XMM12)  return 2;
+    if (SubRegNo == X86::XMM12)  return 3;
     return 0;
   case X86::YMM13:
     if (SubRegNo == X86::XMM13)  return 1;
+    if (SubRegNo == X86::XMM13)  return 2;
+    if (SubRegNo == X86::XMM13)  return 3;
     return 0;
   case X86::YMM14:
     if (SubRegNo == X86::XMM14)  return 1;
+    if (SubRegNo == X86::XMM14)  return 2;
+    if (SubRegNo == X86::XMM14)  return 3;
     return 0;
   case X86::YMM15:
     if (SubRegNo == X86::XMM15)  return 1;
+    if (SubRegNo == X86::XMM15)  return 2;
+    if (SubRegNo == X86::XMM15)  return 3;
     return 0;
   };
   return 0;

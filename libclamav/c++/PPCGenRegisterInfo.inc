@@ -372,10 +372,8 @@ F8RCClass::F8RCClass()  : TargetRegisterClass(F8RCRegClassID, "F8RC", F8RCVTs, F
     G8RCClass::iterator
     G8RCClass::allocation_order_begin(const MachineFunction &MF) const {
       // 64-bit SVR4 ABI: r2 is reserved for the TOC pointer.
-      if (!MF.getTarget().getSubtarget<PPCSubtarget>().isDarwin())
-        return begin()+1;
-
-      return begin();
+      // Darwin: r2 is reserved for CR save/restore sequence.
+      return begin()+1;
     }
     G8RCClass::iterator
     G8RCClass::allocation_order_end(const MachineFunction &MF) const {
@@ -391,10 +389,8 @@ G8RCClass::G8RCClass()  : TargetRegisterClass(G8RCRegClassID, "G8RC", G8RCVTs, G
     GPRCClass::allocation_order_begin(const MachineFunction &MF) const {
       // 32-bit SVR4 ABI: r2 is reserved for the OS.
       // 64-bit SVR4 ABI: r2 is reserved for the TOC pointer.
-      if (!MF.getTarget().getSubtarget<PPCSubtarget>().isDarwin())
-        return begin()+1;
-
-      return begin();
+      // Darwin: R2 is reserved for CR save/restore sequence.
+      return begin()+1;
     }
     GPRCClass::iterator
     GPRCClass::allocation_order_end(const MachineFunction &MF) const {

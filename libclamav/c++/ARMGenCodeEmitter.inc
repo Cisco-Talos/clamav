@@ -63,6 +63,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     0U,	// ATOMIC_SWAP_I8
     167772160U,	// B
     130023455U,	// BFC
+    130023440U,	// BFI
     62914560U,	// BICri
     29360128U,	// BICrr
     29360128U,	// BICrs
@@ -84,6 +85,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     167772160U,	// Bcc
     234881024U,	// CDP
     4261412864U,	// CDP2
+    4117757968U,	// CLREX
     24055568U,	// CLZ
     57671680U,	// CMNzri
     24117248U,	// CMNzrr
@@ -97,17 +99,48 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     0U,	// CONSTPOOL_ENTRY
     4043309056U,	// CPS
     52429040U,	// DBG
+    4117758043U,	// DMBish
+    4117758042U,	// DMBishst
+    4117758039U,	// DMBnsh
+    4117758038U,	// DMBnshst
+    4117758035U,	// DMBosh
+    4117758034U,	// DMBoshst
+    4117758046U,	// DMBst
+    4117758027U,	// DSBish
+    4117758026U,	// DSBishst
+    4117758023U,	// DSBnsh
+    4117758022U,	// DSBnshst
+    4117758019U,	// DSBosh
+    4117758018U,	// DSBoshst
+    4117758030U,	// DSBst
     35651584U,	// EORri
     2097152U,	// EORrr
     2097152U,	// EORrs
     246418176U,	// FCONSTD
     246417920U,	// FCONSTS
     250739216U,	// FMSTAT
+    4117758063U,	// ISBsy
     0U,	// Int_MemBarrierV6
     4118802527U,	// Int_MemBarrierV7
     0U,	// Int_SyncBarrierV6
     4118802511U,	// Int_SyncBarrierV7
     0U,	// Int_eh_sjlj_setjmp
+    4249878528U,	// LDC2L_OFFSET
+    4241489920U,	// LDC2L_OPTION
+    4235198464U,	// LDC2L_POST
+    4251975680U,	// LDC2L_PRE
+    4245684224U,	// LDC2_OFFSET
+    4237295616U,	// LDC2_OPTION
+    4231004160U,	// LDC2_POST
+    4247781376U,	// LDC2_PRE
+    223346688U,	// LDCL_OFFSET
+    214958080U,	// LDCL_OPTION
+    208666624U,	// LDCL_POST
+    225443840U,	// LDCL_PRE
+    219152384U,	// LDC_OFFSET
+    210763776U,	// LDC_OPTION
+    204472320U,	// LDC_POST
+    221249536U,	// LDC_PRE
     135266304U,	// LDM
     135266304U,	// LDM_RET
     84934656U,	// LDR
@@ -116,18 +149,23 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     72351744U,	// LDRB_POST
     91226112U,	// LDRB_PRE
     16777424U,	// LDRD
+    208U,	// LDRD_POST
+    18874576U,	// LDRD_PRE
     26218399U,	// LDREX
     30412703U,	// LDREXB
     28315551U,	// LDREXD
     32509855U,	// LDREXH
     17825968U,	// LDRH
-    3145904U,	// LDRH_POST
+    3145904U,	// LDRHT
+    1048752U,	// LDRH_POST
     19923120U,	// LDRH_PRE
     17826000U,	// LDRSB
-    3145936U,	// LDRSB_POST
+    3145936U,	// LDRSBT
+    1048784U,	// LDRSB_POST
     19923152U,	// LDRSB_PRE
     17826032U,	// LDRSH
-    3145968U,	// LDRSH_POST
+    3145968U,	// LDRSHT
+    1048816U,	// LDRSH_POST
     19923184U,	// LDRSH_PRE
     70254592U,	// LDRT
     68157440U,	// LDR_POST
@@ -161,7 +199,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     16777216U,	// MRS
     20971520U,	// MRSsys
     18874368U,	// MSR
+    52428800U,	// MSRi
     23068672U,	// MSRsys
+    56623104U,	// MSRsysi
     144U,	// MUL
     65011712U,	// MVNi
     31457280U,	// MVNr
@@ -181,6 +221,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     16777392U,	// PICSTRH
     109051920U,	// PKHBT
     109051984U,	// PKHTB
+    4111466496U,	// PLDWi
+    4145020928U,	// PLDWr
+    4115660800U,	// PLDi
+    4149215232U,	// PLDr
+    4098883584U,	// PLIi
+    4132438016U,	// PLIr
     16777296U,	// QADD
     102760464U,	// QADD16
     102760592U,	// QADD8
@@ -195,6 +241,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     113184560U,	// REV
     113184688U,	// REV16
     117378992U,	// REVSH
+    4161798144U,	// RFE
+    4163895296U,	// RFEW
     40894464U,	// RSBSri
     7340032U,	// RSBSrs
     39845888U,	// RSBri
@@ -203,6 +251,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     15728640U,	// RSCSrs
     48234496U,	// RSCri
     14680064U,	// RSCrs
+    101711888U,	// SADD16
+    101712016U,	// SADD8
+    101711920U,	// SASX
     47185920U,	// SBCSSri
     13631488U,	// SBCSSrr
     13631488U,	// SBCSSrs
@@ -210,23 +261,44 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     12582912U,	// SBCrr
     12582912U,	// SBCrs
     127926352U,	// SBFX
+    109052080U,	// SEL
     4043375104U,	// SETENDBE
     4043374592U,	// SETENDLE
     52428804U,	// SEV
+    103809040U,	// SHADD16
+    103809168U,	// SHADD8
+    103809072U,	// SHASX
+    103809104U,	// SHSAX
+    103809136U,	// SHSUB16
+    103809264U,	// SHSUB8
+    23068784U,	// SMC
     16777344U,	// SMLABB
     16777408U,	// SMLABT
+    117440528U,	// SMLAD
+    117440560U,	// SMLADX
     14680208U,	// SMLAL
     20971648U,	// SMLALBB
     20971712U,	// SMLALBT
+    121634832U,	// SMLALD
+    121634864U,	// SMLALDX
     20971680U,	// SMLALTB
     20971744U,	// SMLALTT
     16777376U,	// SMLATB
     16777440U,	// SMLATT
     18874496U,	// SMLAWB
     18874560U,	// SMLAWT
+    117440592U,	// SMLSD
+    117440624U,	// SMLSDX
+    121634896U,	// SMLSLD
+    121634928U,	// SMLSLDX
     122683408U,	// SMMLA
+    122683440U,	// SMMLAR
     122683600U,	// SMMLS
+    122683632U,	// SMMLSR
     122744848U,	// SMMUL
+    122744880U,	// SMMULR
+    117501968U,	// SMUAD
+    117502000U,	// SMUADX
     23068800U,	// SMULBB
     23068864U,	// SMULBT
     12583056U,	// SMULL
@@ -234,6 +306,32 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     23068896U,	// SMULTT
     18874528U,	// SMULWB
     18874592U,	// SMULWT
+    117502032U,	// SMUSD
+    117502064U,	// SMUSDX
+    4164943872U,	// SRS
+    4167041024U,	// SRSW
+    111149104U,	// SSAT16
+    111149136U,	// SSATasr
+    111149072U,	// SSATlsl
+    101711952U,	// SSAX
+    101711984U,	// SSUB16
+    101712112U,	// SSUB8
+    4248829952U,	// STC2L_OFFSET
+    4240441344U,	// STC2L_OPTION
+    4234149888U,	// STC2L_POST
+    4250927104U,	// STC2L_PRE
+    4244635648U,	// STC2_OFFSET
+    4236247040U,	// STC2_OPTION
+    4229955584U,	// STC2_POST
+    4246732800U,	// STC2_PRE
+    222298112U,	// STCL_OFFSET
+    213909504U,	// STCL_OPTION
+    207618048U,	// STCL_POST
+    224395264U,	// STCL_PRE
+    218103808U,	// STC_OFFSET
+    209715200U,	// STC_OPTION
+    203423744U,	// STC_POST
+    220200960U,	// STC_PRE
     134217728U,	// STM
     83886080U,	// STR
     88080384U,	// STRB
@@ -241,12 +339,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     71303168U,	// STRB_POST
     90177536U,	// STRB_PRE
     16777456U,	// STRD
+    240U,	// STRD_POST
+    18874608U,	// STRD_PRE
     25169808U,	// STREX
     29364112U,	// STREXB
     27266960U,	// STREXD
     31461264U,	// STREXH
     16777392U,	// STRH
-    2097328U,	// STRH_POST
+    2097328U,	// STRHT
+    176U,	// STRH_POST
     18874544U,	// STRH_PRE
     69206016U,	// STRT
     67108864U,	// STR_POST
@@ -260,10 +361,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     251658240U,	// SVC
     16777360U,	// SWP
     20971664U,	// SWPB
+    109052016U,	// SXTAB16rr
+    109052016U,	// SXTAB16rr_rot
     111149168U,	// SXTABrr
     111149168U,	// SXTABrr_rot
     112197744U,	// SXTAHrr
     112197744U,	// SXTAHrr_rot
+    110035056U,	// SXTB16r
+    110035056U,	// SXTB16r_rot
     112132208U,	// SXTBr
     112132208U,	// SXTBr_rot
     113180784U,	// SXTHr
@@ -276,7 +381,16 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     51380224U,	// TSTri
     17825792U,	// TSTrr
     17825792U,	// TSTrs
+    105906192U,	// UADD16
+    105906320U,	// UADD8
+    105906224U,	// UASX
     132120656U,	// UBFX
+    108003344U,	// UHADD16
+    108003472U,	// UHADD8
+    108003376U,	// UHASX
+    108003408U,	// UHSAX
+    108003440U,	// UHSUB16
+    108003568U,	// UHSUB8
     4194448U,	// UMAAL
     10485904U,	// UMLAL
     8388752U,	// UMULL
@@ -286,6 +400,16 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     106954832U,	// UQSAX
     106954864U,	// UQSUB16
     106954992U,	// UQSUB8
+    125890576U,	// USAD8
+    125829136U,	// USADA8
+    115343408U,	// USAT16
+    115343440U,	// USATasr
+    115343376U,	// USATlsl
+    105906256U,	// USAX
+    105906288U,	// USUB16
+    105906416U,	// USUB8
+    113246320U,	// UXTAB16rr
+    113246320U,	// UXTAB16rr_rot
     115343472U,	// UXTABrr
     115343472U,	// UXTABrr_rot
     116392048U,	// UXTAHrr
@@ -395,6 +519,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4078962768U,	// VCEQv4i32
     4077914192U,	// VCEQv8i16
     4076865552U,	// VCEQv8i8
+    4088463680U,	// VCEQzv16i8
+    4088988928U,	// VCEQzv2f32
+    4088987904U,	// VCEQzv2i32
+    4088988992U,	// VCEQzv4f32
+    4088725760U,	// VCEQzv4i16
+    4088987968U,	// VCEQzv4i32
+    4088725824U,	// VCEQzv8i16
+    4088463616U,	// VCEQzv8i8
     4076867072U,	// VCGEfd
     4076867136U,	// VCGEfq
     4060087120U,	// VCGEsv16i8
@@ -409,6 +541,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4078961488U,	// VCGEuv4i32
     4077912912U,	// VCGEuv8i16
     4076864272U,	// VCGEuv8i8
+    4088463552U,	// VCGEzv16i8
+    4088988800U,	// VCGEzv2f32
+    4088987776U,	// VCGEzv2i32
+    4088988864U,	// VCGEzv4f32
+    4088725632U,	// VCGEzv4i16
+    4088987840U,	// VCGEzv4i32
+    4088725696U,	// VCGEzv8i16
+    4088463488U,	// VCGEzv8i8
     4078964224U,	// VCGTfd
     4078964288U,	// VCGTfq
     4060087104U,	// VCGTsv16i8
@@ -423,12 +563,36 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4078961472U,	// VCGTuv4i32
     4077912896U,	// VCGTuv8i16
     4076864256U,	// VCGTuv8i8
+    4088463424U,	// VCGTzv16i8
+    4088988672U,	// VCGTzv2f32
+    4088987648U,	// VCGTzv2i32
+    4088988736U,	// VCGTzv4f32
+    4088725504U,	// VCGTzv4i16
+    4088987712U,	// VCGTzv4i32
+    4088725568U,	// VCGTzv8i16
+    4088463360U,	// VCGTzv8i8
+    4088463808U,	// VCLEzv16i8
+    4088989056U,	// VCLEzv2f32
+    4088988032U,	// VCLEzv2i32
+    4088989120U,	// VCLEzv4f32
+    4088725888U,	// VCLEzv4i16
+    4088988096U,	// VCLEzv4i32
+    4088725952U,	// VCLEzv8i16
+    4088463744U,	// VCLEzv8i8
     4088398912U,	// VCLSv16i8
     4088923136U,	// VCLSv2i32
     4088660992U,	// VCLSv4i16
     4088923200U,	// VCLSv4i32
     4088661056U,	// VCLSv8i16
     4088398848U,	// VCLSv8i8
+    4088463936U,	// VCLTzv16i8
+    4088989184U,	// VCLTzv2f32
+    4088988160U,	// VCLTzv2i32
+    4088989248U,	// VCLTzv4f32
+    4088726016U,	// VCLTzv4i16
+    4088988224U,	// VCLTzv4i32
+    4088726080U,	// VCLTzv8i16
+    4088463872U,	// VCLTzv8i8
     4088399040U,	// VCLZv16i8
     4088923264U,	// VCLZv2i32
     4088661120U,	// VCLZv4i16
@@ -531,9 +695,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4077912640U,	// VHSUBuv8i16
     4076864000U,	// VHSUBuv8i8
     4095739712U,	// VLD1d16
+    4095738432U,	// VLD1d16Q
+    4095739456U,	// VLD1d16T
     4095739776U,	// VLD1d32
+    4095738496U,	// VLD1d32Q
+    4095739520U,	// VLD1d32T
     4095739840U,	// VLD1d64
     4095739648U,	// VLD1d8
+    4095738368U,	// VLD1d8Q
+    4095739392U,	// VLD1d8T
     4095739776U,	// VLD1df
     4095740480U,	// VLD1q16
     4095740544U,	// VLD1q32
@@ -548,9 +718,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4104128832U,	// VLD2LNq32a
     4104128832U,	// VLD2LNq32b
     4095739968U,	// VLD2d16
+    4095740224U,	// VLD2d16D
     4095740032U,	// VLD2d32
+    4095740288U,	// VLD2d32D
     4095740608U,	// VLD2d64
     4095739904U,	// VLD2d8
+    4095740160U,	// VLD2d8D
     4095738688U,	// VLD2q16
     4095738752U,	// VLD2q32
     4095738624U,	// VLD2q8
@@ -594,6 +767,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     210766592U,	// VLDRQ
     219154944U,	// VLDRS
     4060090112U,	// VMAXfd
+    4060090112U,	// VMAXfd_sfp
     4060090176U,	// VMAXfq
     4060087872U,	// VMAXsv16i8
     4062184960U,	// VMAXsv2i32
@@ -608,6 +782,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4077913664U,	// VMAXuv8i16
     4076865024U,	// VMAXuv8i8
     4062187264U,	// VMINfd
+    4060090112U,	// VMINfd_sfp
     4062187328U,	// VMINfq
     4060087888U,	// VMINsv16i8
     4062184976U,	// VMINsv2i32
@@ -740,9 +915,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     246483776U,	// VNEGDcc
     246483520U,	// VNEGS
     246483520U,	// VNEGScc
-    4088989568U,	// VNEGf32d
-    4088989568U,	// VNEGf32d_sfp
     4088989632U,	// VNEGf32q
+    4088989568U,	// VNEGfd
+    4088989568U,	// VNEGfd_sfp
     4088726400U,	// VNEGs16d
     4088726464U,	// VNEGs16q
     4088988544U,	// VNEGs32d
@@ -1147,9 +1322,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4086301776U,	// VSRIv8i16
     4085777424U,	// VSRIv8i8
     4093642560U,	// VST1d16
+    4093641280U,	// VST1d16Q
+    4093642304U,	// VST1d16T
     4093642624U,	// VST1d32
+    4093641344U,	// VST1d32Q
+    4093642368U,	// VST1d32T
     4093642688U,	// VST1d64
     4093642496U,	// VST1d8
+    4093641216U,	// VST1d8Q
+    4093642240U,	// VST1d8T
     4093642624U,	// VST1df
     4093643328U,	// VST1q16
     4093643392U,	// VST1q32
@@ -1164,9 +1345,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4102031680U,	// VST2LNq32a
     4102031680U,	// VST2LNq32b
     4093642816U,	// VST2d16
+    4093643072U,	// VST2d16D
     4093642880U,	// VST2d32
+    4093643136U,	// VST2d32D
     4093643456U,	// VST2d64
     4093642752U,	// VST2d8
+    4093643008U,	// VST2d8D
     4093641536U,	// VST2q16
     4093641600U,	// VST2q32
     4093641472U,	// VST2q8
@@ -1237,6 +1421,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4078962752U,	// VSUBv4i32
     4077914176U,	// VSUBv8i16
     4076865536U,	// VSUBv8i8
+    4088528896U,	// VSWPd
+    4088528960U,	// VSWPq
     4088399872U,	// VTBL1
     4088400128U,	// VTBL2
     4088400384U,	// VTBL3
@@ -1322,7 +1508,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3927965696U,	// t2BICrr
     3927965696U,	// t2BICrs
     3931049728U,	// t2BR_JT
+    4089479168U,	// t2BXJ
     4026564608U,	// t2Bcc
+    4088430624U,	// t2CLREX
     4205899904U,	// t2CLZ
     4044361472U,	// t2CMNzri
     3943698176U,	// t2CMNzrr
@@ -1333,15 +1521,33 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4054847232U,	// t2CMPzri
     3954183936U,	// t2CMPzrr
     3954183936U,	// t2CMPzrs
+    4087382016U,	// t2CPS
+    4087382256U,	// t2DBG
+    4088430683U,	// t2DMBish
+    4088430682U,	// t2DMBishst
+    4088430679U,	// t2DMBnsh
+    4088430678U,	// t2DMBnshst
+    4088430675U,	// t2DMBosh
+    4088430674U,	// t2DMBoshst
+    4088430686U,	// t2DMBst
+    4088430667U,	// t2DSBish
+    4088430666U,	// t2DSBishst
+    4088430663U,	// t2DSBnsh
+    4088430662U,	// t2DSBnshst
+    4088430659U,	// t2DSBosh
+    4088430658U,	// t2DSBoshst
+    4088430670U,	// t2DSBst
     4034920448U,	// t2EORri
     3934257152U,	// t2EORrr
     3934257152U,	// t2EORrs
+    4088430703U,	// t2ISBsy
     48896U,	// t2IT
     4089417567U,	// t2Int_MemBarrierV7
     4089417551U,	// t2Int_SyncBarrierV7
     0U,	// t2Int_eh_sjlj_setjmp
     3893362688U,	// t2LDM
     3893362688U,	// t2LDM_RET
+    4161801728U,	// t2LDRBT
     4161800448U,	// t2LDRB_POST
     4161801472U,	// t2LDRB_PRE
     4170186752U,	// t2LDRBi12
@@ -1354,24 +1560,28 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3905949519U,	// t2LDREXB
     3905945727U,	// t2LDREXD
     3905949535U,	// t2LDREXH
+    4163898880U,	// t2LDRHT
     4163897600U,	// t2LDRH_POST
     4163898624U,	// t2LDRH_PRE
     4172283904U,	// t2LDRHi12
     4163898368U,	// t2LDRHi8
     4164878336U,	// t2LDRHpci
     4163895296U,	// t2LDRHs
+    4178578944U,	// t2LDRSBT
     4178577664U,	// t2LDRSB_POST
     4178578688U,	// t2LDRSB_PRE
     4186963968U,	// t2LDRSBi12
     4178578432U,	// t2LDRSBi8
     4179558400U,	// t2LDRSBpci
     4178575360U,	// t2LDRSBs
+    4180676096U,	// t2LDRSHT
     4180674816U,	// t2LDRSH_POST
     4180675840U,	// t2LDRSH_PRE
     4189061120U,	// t2LDRSHi12
     4180675584U,	// t2LDRSHi8
     4181655552U,	// t2LDRSHpci
     4180672512U,	// t2LDRSHs
+    4165996032U,	// t2LDRT
     4165994752U,	// t2LDR_POST
     4165995776U,	// t2LDR_PRE
     4174381056U,	// t2LDRi12
@@ -1401,10 +1611,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3931045936U,	// t2MOVrx
     3932094560U,	// t2MOVsra_flag
     3932094544U,	// t2MOVsrl_flag
+    4091576320U,	// t2MRS
+    4092624896U,	// t2MRSsys
+    4085284864U,	// t2MSR
+    4086333440U,	// t2MSRsys
     4211142656U,	// t2MUL
     4033806336U,	// t2MVNi
     3933143040U,	// t2MVNr
     3933143040U,	// t2MVNs
+    4087382016U,	// t2NOP
     4032823296U,	// t2ORNri
     3932160000U,	// t2ORNrr
     3932160000U,	// t2ORNrs
@@ -1413,16 +1628,48 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3930062848U,	// t2ORRrs
     3938451456U,	// t2PKHBT
     3938451488U,	// t2PKHTB
+    4172345344U,	// t2PLDWi12
+    4163959808U,	// t2PLDWi8
+    4164939776U,	// t2PLDWpci
+    4163956736U,	// t2PLDWr
+    4163956736U,	// t2PLDWs
+    4170248192U,	// t2PLDi12
+    4161862656U,	// t2PLDi8
+    4162842624U,	// t2PLDpci
+    4161859584U,	// t2PLDr
+    4161859584U,	// t2PLDs
+    4187025408U,	// t2PLIi12
+    4178639872U,	// t2PLIi8
+    4179619840U,	// t2PLIpci
+    4178636800U,	// t2PLIr
+    4178636800U,	// t2PLIs
+    4202754176U,	// t2QADD
+    4203802640U,	// t2QADD16
+    4202754064U,	// t2QADD8
+    4204851216U,	// t2QASX
+    4202754192U,	// t2QDADD
+    4202754224U,	// t2QDSUB
+    4209045520U,	// t2QSAX
+    4202754208U,	// t2QSUB
+    4207996944U,	// t2QSUB16
+    4206948368U,	// t2QSUB8
     4203802784U,	// t2RBIT
     4203802752U,	// t2REV
     4203802768U,	// t2REV16
     4203802800U,	// t2REVSH
+    3893362688U,	// t2RFEDB
+    3895459840U,	// t2RFEDBW
+    3918528512U,	// t2RFEIA
+    3920625664U,	// t2RFEIAW
     3931045936U,	// t2RORri
     4200656896U,	// t2RORrr
     4056940544U,	// t2RSBSri
     3956277248U,	// t2RSBSrs
     4055891968U,	// t2RSBri
     3955228672U,	// t2RSBrs
+    4203802624U,	// t2SADD16
+    4202754048U,	// t2SADD8
+    4204851200U,	// t2SASX
     4050649088U,	// t2SBCSri
     3949985792U,	// t2SBCSrr
     3949985792U,	// t2SBCSrs
@@ -1430,16 +1677,43 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3948937216U,	// t2SBCrr
     3948937216U,	// t2SBCrs
     4081057792U,	// t2SBFX
+    4220580080U,	// t2SDIV
+    4204851328U,	// t2SEL
+    4087382020U,	// t2SEV
+    4203802656U,	// t2SHADD16
+    4202754080U,	// t2SHADD8
+    4204851232U,	// t2SHASX
+    4209045536U,	// t2SHSAX
+    4207996960U,	// t2SHSUB16
+    4206948384U,	// t2SHSUB8
+    4159733760U,	// t2SMC
     4212129792U,	// t2SMLABB
     4212129808U,	// t2SMLABT
+    4213178368U,	// t2SMLAD
+    4213178384U,	// t2SMLADX
     4223664128U,	// t2SMLAL
+    4223664256U,	// t2SMLALBB
+    4223664272U,	// t2SMLALBT
+    4223664320U,	// t2SMLALD
+    4223664336U,	// t2SMLALDX
+    4223664288U,	// t2SMLALTB
+    4223664304U,	// t2SMLALTT
     4212129824U,	// t2SMLATB
     4212129840U,	// t2SMLATT
     4214226944U,	// t2SMLAWB
     4214226960U,	// t2SMLAWT
+    4215275520U,	// t2SMLSD
+    4215275536U,	// t2SMLSDX
+    4224712896U,	// t2SMLSLD
+    4224712912U,	// t2SMLSLDX
     4216324096U,	// t2SMMLA
+    4216324112U,	// t2SMMLAR
     4217372672U,	// t2SMMLS
+    4217372688U,	// t2SMMLSR
     4216385536U,	// t2SMMUL
+    4216385552U,	// t2SMMULR
+    4213239808U,	// t2SMUAD
+    4213239824U,	// t2SMUADX
     4212191232U,	// t2SMULBB
     4212191248U,	// t2SMULBT
     4219469824U,	// t2SMULL
@@ -1447,7 +1721,20 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4212191280U,	// t2SMULTT
     4214288384U,	// t2SMULWB
     4214288400U,	// t2SMULWT
+    4215336960U,	// t2SMUSD
+    4215336976U,	// t2SMUSDX
+    3892314112U,	// t2SRSDB
+    3894411264U,	// t2SRSDBW
+    3917479936U,	// t2SRSIA
+    3919577088U,	// t2SRSIAW
+    4078960640U,	// t2SSAT16
+    4078960640U,	// t2SSATasr
+    4076863488U,	// t2SSATlsl
+    4209045504U,	// t2SSAX
+    4207996928U,	// t2SSUB16
+    4206948352U,	// t2SSUB8
     3892314112U,	// t2STM
+    4160753152U,	// t2STRBT
     4160751872U,	// t2STRB_POST
     4160752896U,	// t2STRB_PRE
     4169138176U,	// t2STRBi12
@@ -1458,11 +1745,13 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     3904900928U,	// t2STREXB
     3904897136U,	// t2STREXD
     3904900944U,	// t2STREXH
+    4162850304U,	// t2STRHT
     4162849024U,	// t2STRH_POST
     4162850048U,	// t2STRH_PRE
     4171235328U,	// t2STRHi12
     4162849792U,	// t2STRHi8
     4162846720U,	// t2STRHs
+    4164947456U,	// t2STRT
     4164946176U,	// t2STR_POST
     4164947200U,	// t2STR_PRE
     4173332480U,	// t2STRi12
@@ -1481,16 +1770,22 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4070572032U,	// t2SUBri12
     3953131520U,	// t2SUBrr
     3953131520U,	// t2SUBrs
+    4196462720U,	// t2SXTAB16rr
+    4196462720U,	// t2SXTAB16rr_rot
     4198559872U,	// t2SXTABrr
     4198559872U,	// t2SXTABrr_rot
     4194365568U,	// t2SXTAHrr
     4194365568U,	// t2SXTAHrr_rot
+    4197445760U,	// t2SXTB16r
+    4197445760U,	// t2SXTB16r_rot
     4199542912U,	// t2SXTBr
     4199542912U,	// t2SXTBr_rot
     4195348608U,	// t2SXTHr
     4195348608U,	// t2SXTHr_rot
     3906990080U,	// t2TBB
+    3906007040U,	// t2TBBgen
     3906990096U,	// t2TBH
+    3906007056U,	// t2TBHgen
     4035972864U,	// t2TEQri
     3935309568U,	// t2TEQrr
     3935309568U,	// t2TEQrs
@@ -1498,10 +1793,36 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4027584256U,	// t2TSTri
     3926920960U,	// t2TSTrr
     3926920960U,	// t2TSTrs
+    4203802688U,	// t2UADD16
+    4202754112U,	// t2UADD8
+    4204851264U,	// t2UASX
     4089446400U,	// t2UBFX
+    4222677232U,	// t2UDIV
+    4203802720U,	// t2UHADD16
+    4202754144U,	// t2UHADD8
+    4204851296U,	// t2UHASX
+    4209045600U,	// t2UHSAX
+    4207997024U,	// t2UHSUB16
+    4206948448U,	// t2UHSUB8
     4225761376U,	// t2UMAAL
     4225761280U,	// t2UMLAL
     4221566976U,	// t2UMULL
+    4203802704U,	// t2UQADD16
+    4202754128U,	// t2UQADD8
+    4204851280U,	// t2UQASX
+    4209045584U,	// t2UQSAX
+    4207997008U,	// t2UQSUB16
+    4206948432U,	// t2UQSUB8
+    4218482688U,	// t2USAD8
+    4218421248U,	// t2USADA8
+    4087349248U,	// t2USAT16
+    4087349248U,	// t2USATasr
+    4085252096U,	// t2USATlsl
+    4209045568U,	// t2USAX
+    4207996992U,	// t2USUB16
+    4206948416U,	// t2USUB8
+    4197511296U,	// t2UXTAB16rr
+    4197511296U,	// t2UXTAB16rr_rot
     4199608448U,	// t2UXTABrr
     4199608448U,	// t2UXTABrr_rot
     4195414144U,	// t2UXTAHrr
@@ -1512,6 +1833,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4200591488U,	// t2UXTBr_rot
     4196397184U,	// t2UXTHr
     4196397184U,	// t2UXTHr_rot
+    4087382018U,	// t2WFE
+    4087382019U,	// t2WFI
+    4087382017U,	// t2YIELD
     16704U,	// tADC
     17408U,	// tADDhirr
     7168U,	// tADDi3
@@ -1555,6 +1879,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     17664U,	// tCMPzhir
     10240U,	// tCMPzi8
     17024U,	// tCMPzr
+    46688U,	// tCPS
     16448U,	// tEOR
     0U,	// tInt_eh_sjlj_setjmp
     51200U,	// tLDM
@@ -1587,6 +1912,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     17920U,	// tMOVtgpr2gpr
     17216U,	// tMUL
     17344U,	// tMVN
+    48896U,	// tNOP
     17152U,	// tORR
     17528U,	// tPICADD
     48128U,	// tPOP
@@ -1599,6 +1925,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     16960U,	// tRSB
     38912U,	// tRestore
     16768U,	// tSBC
+    46664U,	// tSETENDBE
+    46656U,	// tSETENDLE
+    48960U,	// tSEV
     49152U,	// tSTM
     20480U,	// tSTR
     21504U,	// tSTRB
@@ -1612,13 +1941,18 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     6656U,	// tSUBrr
     45184U,	// tSUBspi
     0U,	// tSUBspi_
+    57088U,	// tSVC
     45632U,	// tSXTB
     45568U,	// tSXTH
     36864U,	// tSpill
     4026585088U,	// tTPsoft
+    56832U,	// tTRAP
     16896U,	// tTST
     45760U,	// tUXTB
     45696U,	// tUXTH
+    48928U,	// tWFE
+    48944U,	// tWFI
+    48912U,	// tYIELD
     0U
   };
   const unsigned opcode = MI.getOpcode();
@@ -1669,6 +2003,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::ATOMIC_SWAP_I8:
     case ARM::B:
     case ARM::BFC:
+    case ARM::BFI:
     case ARM::BICri:
     case ARM::BICrr:
     case ARM::BICrs:
@@ -1690,6 +2025,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::Bcc:
     case ARM::CDP:
     case ARM::CDP2:
+    case ARM::CLREX:
     case ARM::CLZ:
     case ARM::CMNzri:
     case ARM::CMNzrr:
@@ -1703,17 +2039,48 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::CONSTPOOL_ENTRY:
     case ARM::CPS:
     case ARM::DBG:
+    case ARM::DMBish:
+    case ARM::DMBishst:
+    case ARM::DMBnsh:
+    case ARM::DMBnshst:
+    case ARM::DMBosh:
+    case ARM::DMBoshst:
+    case ARM::DMBst:
+    case ARM::DSBish:
+    case ARM::DSBishst:
+    case ARM::DSBnsh:
+    case ARM::DSBnshst:
+    case ARM::DSBosh:
+    case ARM::DSBoshst:
+    case ARM::DSBst:
     case ARM::EORri:
     case ARM::EORrr:
     case ARM::EORrs:
     case ARM::FCONSTD:
     case ARM::FCONSTS:
     case ARM::FMSTAT:
+    case ARM::ISBsy:
     case ARM::Int_MemBarrierV6:
     case ARM::Int_MemBarrierV7:
     case ARM::Int_SyncBarrierV6:
     case ARM::Int_SyncBarrierV7:
     case ARM::Int_eh_sjlj_setjmp:
+    case ARM::LDC2L_OFFSET:
+    case ARM::LDC2L_OPTION:
+    case ARM::LDC2L_POST:
+    case ARM::LDC2L_PRE:
+    case ARM::LDC2_OFFSET:
+    case ARM::LDC2_OPTION:
+    case ARM::LDC2_POST:
+    case ARM::LDC2_PRE:
+    case ARM::LDCL_OFFSET:
+    case ARM::LDCL_OPTION:
+    case ARM::LDCL_POST:
+    case ARM::LDCL_PRE:
+    case ARM::LDC_OFFSET:
+    case ARM::LDC_OPTION:
+    case ARM::LDC_POST:
+    case ARM::LDC_PRE:
     case ARM::LDM:
     case ARM::LDM_RET:
     case ARM::LDR:
@@ -1722,17 +2089,22 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::LDRB_POST:
     case ARM::LDRB_PRE:
     case ARM::LDRD:
+    case ARM::LDRD_POST:
+    case ARM::LDRD_PRE:
     case ARM::LDREX:
     case ARM::LDREXB:
     case ARM::LDREXD:
     case ARM::LDREXH:
     case ARM::LDRH:
+    case ARM::LDRHT:
     case ARM::LDRH_POST:
     case ARM::LDRH_PRE:
     case ARM::LDRSB:
+    case ARM::LDRSBT:
     case ARM::LDRSB_POST:
     case ARM::LDRSB_PRE:
     case ARM::LDRSH:
+    case ARM::LDRSHT:
     case ARM::LDRSH_POST:
     case ARM::LDRSH_PRE:
     case ARM::LDRT:
@@ -1767,7 +2139,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::MRS:
     case ARM::MRSsys:
     case ARM::MSR:
+    case ARM::MSRi:
     case ARM::MSRsys:
+    case ARM::MSRsysi:
     case ARM::MUL:
     case ARM::MVNi:
     case ARM::MVNr:
@@ -1787,6 +2161,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::PICSTRH:
     case ARM::PKHBT:
     case ARM::PKHTB:
+    case ARM::PLDWi:
+    case ARM::PLDWr:
+    case ARM::PLDi:
+    case ARM::PLDr:
+    case ARM::PLIi:
+    case ARM::PLIr:
     case ARM::QADD:
     case ARM::QADD16:
     case ARM::QADD8:
@@ -1801,6 +2181,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::REV:
     case ARM::REV16:
     case ARM::REVSH:
+    case ARM::RFE:
+    case ARM::RFEW:
     case ARM::RSBSri:
     case ARM::RSBSrs:
     case ARM::RSBri:
@@ -1809,6 +2191,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::RSCSrs:
     case ARM::RSCri:
     case ARM::RSCrs:
+    case ARM::SADD16:
+    case ARM::SADD8:
+    case ARM::SASX:
     case ARM::SBCSSri:
     case ARM::SBCSSrr:
     case ARM::SBCSSrs:
@@ -1816,23 +2201,44 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::SBCrr:
     case ARM::SBCrs:
     case ARM::SBFX:
+    case ARM::SEL:
     case ARM::SETENDBE:
     case ARM::SETENDLE:
     case ARM::SEV:
+    case ARM::SHADD16:
+    case ARM::SHADD8:
+    case ARM::SHASX:
+    case ARM::SHSAX:
+    case ARM::SHSUB16:
+    case ARM::SHSUB8:
+    case ARM::SMC:
     case ARM::SMLABB:
     case ARM::SMLABT:
+    case ARM::SMLAD:
+    case ARM::SMLADX:
     case ARM::SMLAL:
     case ARM::SMLALBB:
     case ARM::SMLALBT:
+    case ARM::SMLALD:
+    case ARM::SMLALDX:
     case ARM::SMLALTB:
     case ARM::SMLALTT:
     case ARM::SMLATB:
     case ARM::SMLATT:
     case ARM::SMLAWB:
     case ARM::SMLAWT:
+    case ARM::SMLSD:
+    case ARM::SMLSDX:
+    case ARM::SMLSLD:
+    case ARM::SMLSLDX:
     case ARM::SMMLA:
+    case ARM::SMMLAR:
     case ARM::SMMLS:
+    case ARM::SMMLSR:
     case ARM::SMMUL:
+    case ARM::SMMULR:
+    case ARM::SMUAD:
+    case ARM::SMUADX:
     case ARM::SMULBB:
     case ARM::SMULBT:
     case ARM::SMULL:
@@ -1840,6 +2246,32 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::SMULTT:
     case ARM::SMULWB:
     case ARM::SMULWT:
+    case ARM::SMUSD:
+    case ARM::SMUSDX:
+    case ARM::SRS:
+    case ARM::SRSW:
+    case ARM::SSAT16:
+    case ARM::SSATasr:
+    case ARM::SSATlsl:
+    case ARM::SSAX:
+    case ARM::SSUB16:
+    case ARM::SSUB8:
+    case ARM::STC2L_OFFSET:
+    case ARM::STC2L_OPTION:
+    case ARM::STC2L_POST:
+    case ARM::STC2L_PRE:
+    case ARM::STC2_OFFSET:
+    case ARM::STC2_OPTION:
+    case ARM::STC2_POST:
+    case ARM::STC2_PRE:
+    case ARM::STCL_OFFSET:
+    case ARM::STCL_OPTION:
+    case ARM::STCL_POST:
+    case ARM::STCL_PRE:
+    case ARM::STC_OFFSET:
+    case ARM::STC_OPTION:
+    case ARM::STC_POST:
+    case ARM::STC_PRE:
     case ARM::STM:
     case ARM::STR:
     case ARM::STRB:
@@ -1847,11 +2279,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::STRB_POST:
     case ARM::STRB_PRE:
     case ARM::STRD:
+    case ARM::STRD_POST:
+    case ARM::STRD_PRE:
     case ARM::STREX:
     case ARM::STREXB:
     case ARM::STREXD:
     case ARM::STREXH:
     case ARM::STRH:
+    case ARM::STRHT:
     case ARM::STRH_POST:
     case ARM::STRH_PRE:
     case ARM::STRT:
@@ -1866,10 +2301,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::SVC:
     case ARM::SWP:
     case ARM::SWPB:
+    case ARM::SXTAB16rr:
+    case ARM::SXTAB16rr_rot:
     case ARM::SXTABrr:
     case ARM::SXTABrr_rot:
     case ARM::SXTAHrr:
     case ARM::SXTAHrr_rot:
+    case ARM::SXTB16r:
+    case ARM::SXTB16r_rot:
     case ARM::SXTBr:
     case ARM::SXTBr_rot:
     case ARM::SXTHr:
@@ -1882,7 +2321,16 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::TSTri:
     case ARM::TSTrr:
     case ARM::TSTrs:
+    case ARM::UADD16:
+    case ARM::UADD8:
+    case ARM::UASX:
     case ARM::UBFX:
+    case ARM::UHADD16:
+    case ARM::UHADD8:
+    case ARM::UHASX:
+    case ARM::UHSAX:
+    case ARM::UHSUB16:
+    case ARM::UHSUB8:
     case ARM::UMAAL:
     case ARM::UMLAL:
     case ARM::UMULL:
@@ -1892,6 +2340,16 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::UQSAX:
     case ARM::UQSUB16:
     case ARM::UQSUB8:
+    case ARM::USAD8:
+    case ARM::USADA8:
+    case ARM::USAT16:
+    case ARM::USATasr:
+    case ARM::USATlsl:
+    case ARM::USAX:
+    case ARM::USUB16:
+    case ARM::USUB8:
+    case ARM::UXTAB16rr:
+    case ARM::UXTAB16rr_rot:
     case ARM::UXTABrr:
     case ARM::UXTABrr_rot:
     case ARM::UXTAHrr:
@@ -2001,6 +2459,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VCEQv4i32:
     case ARM::VCEQv8i16:
     case ARM::VCEQv8i8:
+    case ARM::VCEQzv16i8:
+    case ARM::VCEQzv2f32:
+    case ARM::VCEQzv2i32:
+    case ARM::VCEQzv4f32:
+    case ARM::VCEQzv4i16:
+    case ARM::VCEQzv4i32:
+    case ARM::VCEQzv8i16:
+    case ARM::VCEQzv8i8:
     case ARM::VCGEfd:
     case ARM::VCGEfq:
     case ARM::VCGEsv16i8:
@@ -2015,6 +2481,14 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VCGEuv4i32:
     case ARM::VCGEuv8i16:
     case ARM::VCGEuv8i8:
+    case ARM::VCGEzv16i8:
+    case ARM::VCGEzv2f32:
+    case ARM::VCGEzv2i32:
+    case ARM::VCGEzv4f32:
+    case ARM::VCGEzv4i16:
+    case ARM::VCGEzv4i32:
+    case ARM::VCGEzv8i16:
+    case ARM::VCGEzv8i8:
     case ARM::VCGTfd:
     case ARM::VCGTfq:
     case ARM::VCGTsv16i8:
@@ -2029,12 +2503,36 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VCGTuv4i32:
     case ARM::VCGTuv8i16:
     case ARM::VCGTuv8i8:
+    case ARM::VCGTzv16i8:
+    case ARM::VCGTzv2f32:
+    case ARM::VCGTzv2i32:
+    case ARM::VCGTzv4f32:
+    case ARM::VCGTzv4i16:
+    case ARM::VCGTzv4i32:
+    case ARM::VCGTzv8i16:
+    case ARM::VCGTzv8i8:
+    case ARM::VCLEzv16i8:
+    case ARM::VCLEzv2f32:
+    case ARM::VCLEzv2i32:
+    case ARM::VCLEzv4f32:
+    case ARM::VCLEzv4i16:
+    case ARM::VCLEzv4i32:
+    case ARM::VCLEzv8i16:
+    case ARM::VCLEzv8i8:
     case ARM::VCLSv16i8:
     case ARM::VCLSv2i32:
     case ARM::VCLSv4i16:
     case ARM::VCLSv4i32:
     case ARM::VCLSv8i16:
     case ARM::VCLSv8i8:
+    case ARM::VCLTzv16i8:
+    case ARM::VCLTzv2f32:
+    case ARM::VCLTzv2i32:
+    case ARM::VCLTzv4f32:
+    case ARM::VCLTzv4i16:
+    case ARM::VCLTzv4i32:
+    case ARM::VCLTzv8i16:
+    case ARM::VCLTzv8i8:
     case ARM::VCLZv16i8:
     case ARM::VCLZv2i32:
     case ARM::VCLZv4i16:
@@ -2137,9 +2635,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VHSUBuv8i16:
     case ARM::VHSUBuv8i8:
     case ARM::VLD1d16:
+    case ARM::VLD1d16Q:
+    case ARM::VLD1d16T:
     case ARM::VLD1d32:
+    case ARM::VLD1d32Q:
+    case ARM::VLD1d32T:
     case ARM::VLD1d64:
     case ARM::VLD1d8:
+    case ARM::VLD1d8Q:
+    case ARM::VLD1d8T:
     case ARM::VLD1df:
     case ARM::VLD1q16:
     case ARM::VLD1q32:
@@ -2154,9 +2658,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VLD2LNq32a:
     case ARM::VLD2LNq32b:
     case ARM::VLD2d16:
+    case ARM::VLD2d16D:
     case ARM::VLD2d32:
+    case ARM::VLD2d32D:
     case ARM::VLD2d64:
     case ARM::VLD2d8:
+    case ARM::VLD2d8D:
     case ARM::VLD2q16:
     case ARM::VLD2q32:
     case ARM::VLD2q8:
@@ -2200,6 +2707,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VLDRQ:
     case ARM::VLDRS:
     case ARM::VMAXfd:
+    case ARM::VMAXfd_sfp:
     case ARM::VMAXfq:
     case ARM::VMAXsv16i8:
     case ARM::VMAXsv2i32:
@@ -2214,6 +2722,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VMAXuv8i16:
     case ARM::VMAXuv8i8:
     case ARM::VMINfd:
+    case ARM::VMINfd_sfp:
     case ARM::VMINfq:
     case ARM::VMINsv16i8:
     case ARM::VMINsv2i32:
@@ -2346,9 +2855,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VNEGDcc:
     case ARM::VNEGS:
     case ARM::VNEGScc:
-    case ARM::VNEGf32d:
-    case ARM::VNEGf32d_sfp:
     case ARM::VNEGf32q:
+    case ARM::VNEGfd:
+    case ARM::VNEGfd_sfp:
     case ARM::VNEGs16d:
     case ARM::VNEGs16q:
     case ARM::VNEGs32d:
@@ -2753,9 +3262,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VSRIv8i16:
     case ARM::VSRIv8i8:
     case ARM::VST1d16:
+    case ARM::VST1d16Q:
+    case ARM::VST1d16T:
     case ARM::VST1d32:
+    case ARM::VST1d32Q:
+    case ARM::VST1d32T:
     case ARM::VST1d64:
     case ARM::VST1d8:
+    case ARM::VST1d8Q:
+    case ARM::VST1d8T:
     case ARM::VST1df:
     case ARM::VST1q16:
     case ARM::VST1q32:
@@ -2770,9 +3285,12 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VST2LNq32a:
     case ARM::VST2LNq32b:
     case ARM::VST2d16:
+    case ARM::VST2d16D:
     case ARM::VST2d32:
+    case ARM::VST2d32D:
     case ARM::VST2d64:
     case ARM::VST2d8:
+    case ARM::VST2d8D:
     case ARM::VST2q16:
     case ARM::VST2q32:
     case ARM::VST2q8:
@@ -2843,6 +3361,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::VSUBv4i32:
     case ARM::VSUBv8i16:
     case ARM::VSUBv8i8:
+    case ARM::VSWPd:
+    case ARM::VSWPq:
     case ARM::VTBL1:
     case ARM::VTBL2:
     case ARM::VTBL3:
@@ -2928,7 +3448,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2BICrr:
     case ARM::t2BICrs:
     case ARM::t2BR_JT:
+    case ARM::t2BXJ:
     case ARM::t2Bcc:
+    case ARM::t2CLREX:
     case ARM::t2CLZ:
     case ARM::t2CMNzri:
     case ARM::t2CMNzrr:
@@ -2939,15 +3461,33 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2CMPzri:
     case ARM::t2CMPzrr:
     case ARM::t2CMPzrs:
+    case ARM::t2CPS:
+    case ARM::t2DBG:
+    case ARM::t2DMBish:
+    case ARM::t2DMBishst:
+    case ARM::t2DMBnsh:
+    case ARM::t2DMBnshst:
+    case ARM::t2DMBosh:
+    case ARM::t2DMBoshst:
+    case ARM::t2DMBst:
+    case ARM::t2DSBish:
+    case ARM::t2DSBishst:
+    case ARM::t2DSBnsh:
+    case ARM::t2DSBnshst:
+    case ARM::t2DSBosh:
+    case ARM::t2DSBoshst:
+    case ARM::t2DSBst:
     case ARM::t2EORri:
     case ARM::t2EORrr:
     case ARM::t2EORrs:
+    case ARM::t2ISBsy:
     case ARM::t2IT:
     case ARM::t2Int_MemBarrierV7:
     case ARM::t2Int_SyncBarrierV7:
     case ARM::t2Int_eh_sjlj_setjmp:
     case ARM::t2LDM:
     case ARM::t2LDM_RET:
+    case ARM::t2LDRBT:
     case ARM::t2LDRB_POST:
     case ARM::t2LDRB_PRE:
     case ARM::t2LDRBi12:
@@ -2960,24 +3500,28 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2LDREXB:
     case ARM::t2LDREXD:
     case ARM::t2LDREXH:
+    case ARM::t2LDRHT:
     case ARM::t2LDRH_POST:
     case ARM::t2LDRH_PRE:
     case ARM::t2LDRHi12:
     case ARM::t2LDRHi8:
     case ARM::t2LDRHpci:
     case ARM::t2LDRHs:
+    case ARM::t2LDRSBT:
     case ARM::t2LDRSB_POST:
     case ARM::t2LDRSB_PRE:
     case ARM::t2LDRSBi12:
     case ARM::t2LDRSBi8:
     case ARM::t2LDRSBpci:
     case ARM::t2LDRSBs:
+    case ARM::t2LDRSHT:
     case ARM::t2LDRSH_POST:
     case ARM::t2LDRSH_PRE:
     case ARM::t2LDRSHi12:
     case ARM::t2LDRSHi8:
     case ARM::t2LDRSHpci:
     case ARM::t2LDRSHs:
+    case ARM::t2LDRT:
     case ARM::t2LDR_POST:
     case ARM::t2LDR_PRE:
     case ARM::t2LDRi12:
@@ -3007,10 +3551,15 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2MOVrx:
     case ARM::t2MOVsra_flag:
     case ARM::t2MOVsrl_flag:
+    case ARM::t2MRS:
+    case ARM::t2MRSsys:
+    case ARM::t2MSR:
+    case ARM::t2MSRsys:
     case ARM::t2MUL:
     case ARM::t2MVNi:
     case ARM::t2MVNr:
     case ARM::t2MVNs:
+    case ARM::t2NOP:
     case ARM::t2ORNri:
     case ARM::t2ORNrr:
     case ARM::t2ORNrs:
@@ -3019,16 +3568,48 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2ORRrs:
     case ARM::t2PKHBT:
     case ARM::t2PKHTB:
+    case ARM::t2PLDWi12:
+    case ARM::t2PLDWi8:
+    case ARM::t2PLDWpci:
+    case ARM::t2PLDWr:
+    case ARM::t2PLDWs:
+    case ARM::t2PLDi12:
+    case ARM::t2PLDi8:
+    case ARM::t2PLDpci:
+    case ARM::t2PLDr:
+    case ARM::t2PLDs:
+    case ARM::t2PLIi12:
+    case ARM::t2PLIi8:
+    case ARM::t2PLIpci:
+    case ARM::t2PLIr:
+    case ARM::t2PLIs:
+    case ARM::t2QADD:
+    case ARM::t2QADD16:
+    case ARM::t2QADD8:
+    case ARM::t2QASX:
+    case ARM::t2QDADD:
+    case ARM::t2QDSUB:
+    case ARM::t2QSAX:
+    case ARM::t2QSUB:
+    case ARM::t2QSUB16:
+    case ARM::t2QSUB8:
     case ARM::t2RBIT:
     case ARM::t2REV:
     case ARM::t2REV16:
     case ARM::t2REVSH:
+    case ARM::t2RFEDB:
+    case ARM::t2RFEDBW:
+    case ARM::t2RFEIA:
+    case ARM::t2RFEIAW:
     case ARM::t2RORri:
     case ARM::t2RORrr:
     case ARM::t2RSBSri:
     case ARM::t2RSBSrs:
     case ARM::t2RSBri:
     case ARM::t2RSBrs:
+    case ARM::t2SADD16:
+    case ARM::t2SADD8:
+    case ARM::t2SASX:
     case ARM::t2SBCSri:
     case ARM::t2SBCSrr:
     case ARM::t2SBCSrs:
@@ -3036,16 +3617,43 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2SBCrr:
     case ARM::t2SBCrs:
     case ARM::t2SBFX:
+    case ARM::t2SDIV:
+    case ARM::t2SEL:
+    case ARM::t2SEV:
+    case ARM::t2SHADD16:
+    case ARM::t2SHADD8:
+    case ARM::t2SHASX:
+    case ARM::t2SHSAX:
+    case ARM::t2SHSUB16:
+    case ARM::t2SHSUB8:
+    case ARM::t2SMC:
     case ARM::t2SMLABB:
     case ARM::t2SMLABT:
+    case ARM::t2SMLAD:
+    case ARM::t2SMLADX:
     case ARM::t2SMLAL:
+    case ARM::t2SMLALBB:
+    case ARM::t2SMLALBT:
+    case ARM::t2SMLALD:
+    case ARM::t2SMLALDX:
+    case ARM::t2SMLALTB:
+    case ARM::t2SMLALTT:
     case ARM::t2SMLATB:
     case ARM::t2SMLATT:
     case ARM::t2SMLAWB:
     case ARM::t2SMLAWT:
+    case ARM::t2SMLSD:
+    case ARM::t2SMLSDX:
+    case ARM::t2SMLSLD:
+    case ARM::t2SMLSLDX:
     case ARM::t2SMMLA:
+    case ARM::t2SMMLAR:
     case ARM::t2SMMLS:
+    case ARM::t2SMMLSR:
     case ARM::t2SMMUL:
+    case ARM::t2SMMULR:
+    case ARM::t2SMUAD:
+    case ARM::t2SMUADX:
     case ARM::t2SMULBB:
     case ARM::t2SMULBT:
     case ARM::t2SMULL:
@@ -3053,7 +3661,20 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2SMULTT:
     case ARM::t2SMULWB:
     case ARM::t2SMULWT:
+    case ARM::t2SMUSD:
+    case ARM::t2SMUSDX:
+    case ARM::t2SRSDB:
+    case ARM::t2SRSDBW:
+    case ARM::t2SRSIA:
+    case ARM::t2SRSIAW:
+    case ARM::t2SSAT16:
+    case ARM::t2SSATasr:
+    case ARM::t2SSATlsl:
+    case ARM::t2SSAX:
+    case ARM::t2SSUB16:
+    case ARM::t2SSUB8:
     case ARM::t2STM:
+    case ARM::t2STRBT:
     case ARM::t2STRB_POST:
     case ARM::t2STRB_PRE:
     case ARM::t2STRBi12:
@@ -3064,11 +3685,13 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2STREXB:
     case ARM::t2STREXD:
     case ARM::t2STREXH:
+    case ARM::t2STRHT:
     case ARM::t2STRH_POST:
     case ARM::t2STRH_PRE:
     case ARM::t2STRHi12:
     case ARM::t2STRHi8:
     case ARM::t2STRHs:
+    case ARM::t2STRT:
     case ARM::t2STR_POST:
     case ARM::t2STR_PRE:
     case ARM::t2STRi12:
@@ -3087,16 +3710,22 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2SUBri12:
     case ARM::t2SUBrr:
     case ARM::t2SUBrs:
+    case ARM::t2SXTAB16rr:
+    case ARM::t2SXTAB16rr_rot:
     case ARM::t2SXTABrr:
     case ARM::t2SXTABrr_rot:
     case ARM::t2SXTAHrr:
     case ARM::t2SXTAHrr_rot:
+    case ARM::t2SXTB16r:
+    case ARM::t2SXTB16r_rot:
     case ARM::t2SXTBr:
     case ARM::t2SXTBr_rot:
     case ARM::t2SXTHr:
     case ARM::t2SXTHr_rot:
     case ARM::t2TBB:
+    case ARM::t2TBBgen:
     case ARM::t2TBH:
+    case ARM::t2TBHgen:
     case ARM::t2TEQri:
     case ARM::t2TEQrr:
     case ARM::t2TEQrs:
@@ -3104,10 +3733,36 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2TSTri:
     case ARM::t2TSTrr:
     case ARM::t2TSTrs:
+    case ARM::t2UADD16:
+    case ARM::t2UADD8:
+    case ARM::t2UASX:
     case ARM::t2UBFX:
+    case ARM::t2UDIV:
+    case ARM::t2UHADD16:
+    case ARM::t2UHADD8:
+    case ARM::t2UHASX:
+    case ARM::t2UHSAX:
+    case ARM::t2UHSUB16:
+    case ARM::t2UHSUB8:
     case ARM::t2UMAAL:
     case ARM::t2UMLAL:
     case ARM::t2UMULL:
+    case ARM::t2UQADD16:
+    case ARM::t2UQADD8:
+    case ARM::t2UQASX:
+    case ARM::t2UQSAX:
+    case ARM::t2UQSUB16:
+    case ARM::t2UQSUB8:
+    case ARM::t2USAD8:
+    case ARM::t2USADA8:
+    case ARM::t2USAT16:
+    case ARM::t2USATasr:
+    case ARM::t2USATlsl:
+    case ARM::t2USAX:
+    case ARM::t2USUB16:
+    case ARM::t2USUB8:
+    case ARM::t2UXTAB16rr:
+    case ARM::t2UXTAB16rr_rot:
     case ARM::t2UXTABrr:
     case ARM::t2UXTABrr_rot:
     case ARM::t2UXTAHrr:
@@ -3118,6 +3773,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::t2UXTBr_rot:
     case ARM::t2UXTHr:
     case ARM::t2UXTHr_rot:
+    case ARM::t2WFE:
+    case ARM::t2WFI:
+    case ARM::t2YIELD:
     case ARM::tADC:
     case ARM::tADDhirr:
     case ARM::tADDi3:
@@ -3161,6 +3819,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::tCMPzhir:
     case ARM::tCMPzi8:
     case ARM::tCMPzr:
+    case ARM::tCPS:
     case ARM::tEOR:
     case ARM::tInt_eh_sjlj_setjmp:
     case ARM::tLDM:
@@ -3193,6 +3852,7 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::tMOVtgpr2gpr:
     case ARM::tMUL:
     case ARM::tMVN:
+    case ARM::tNOP:
     case ARM::tORR:
     case ARM::tPICADD:
     case ARM::tPOP:
@@ -3205,6 +3865,9 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::tRSB:
     case ARM::tRestore:
     case ARM::tSBC:
+    case ARM::tSETENDBE:
+    case ARM::tSETENDLE:
+    case ARM::tSEV:
     case ARM::tSTM:
     case ARM::tSTR:
     case ARM::tSTRB:
@@ -3218,13 +3881,18 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::tSUBrr:
     case ARM::tSUBspi:
     case ARM::tSUBspi_:
+    case ARM::tSVC:
     case ARM::tSXTB:
     case ARM::tSXTH:
     case ARM::tSpill:
     case ARM::tTPsoft:
+    case ARM::tTRAP:
     case ARM::tTST:
     case ARM::tUXTB:
-    case ARM::tUXTH: {
+    case ARM::tUXTH:
+    case ARM::tWFE:
+    case ARM::tWFI:
+    case ARM::tYIELD: {
       break;
     }
   default:
