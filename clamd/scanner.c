@@ -391,7 +391,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     }
 
     *peer_addr = '\0';
-    inet_ntop(peer.sin_family, &peer, peer_addr, sizeof(peer_addr));
+    inet_ntop(peer.sin_family, &peer.sin_addr, peer_addr, sizeof(peer_addr));
     logg("*Accepted connection from %s on port %u, fd %d\n", peer_addr, port, acceptd);
 
     if(cli_gentempfd(optget(opts, "TemporaryDirectory")->strarg, &tmpname, &tmpd)) {
