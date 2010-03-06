@@ -230,7 +230,6 @@ public:
         delete I->second;
     }
     AlwaysOpaqueTy->dropRef();
-    AlwaysOpaqueTy->dropRef();
     for (OpaqueTypesTy::iterator I = OpaqueTypes.begin(), E = OpaqueTypes.end();
         I != E; ++I) {
       (*I)->AbstractTypeUsers.clear();
