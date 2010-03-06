@@ -793,6 +793,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		ptr->una_u64 = v;
 		break;
 	    }
+	    DEFINE_OP(OP_BC_ISBIGENDIAN) {
+		WRITE8(inst->dest, WORDS_BIGENDIAN);
+		break;
+	    }
 	    /* TODO: implement OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN */
 	    default:
 		cli_errmsg("Opcode %u of type %u is not implemented yet!\n",
