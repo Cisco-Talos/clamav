@@ -6,7 +6,7 @@ FILES = clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip \
 	clam.exe.mbox.base64 clam.exe.mbox.uu clam.exe.binhex clam.ole.doc \
 	clam.impl.zip clam.exe.html clam.bz2.zip clam.bin-be.cpio clam.bin-le.cpio \
 	clam.newc.cpio clam.odc.cpio clam-yc.exe clam_IScab_int.exe \
-	clam_IScab_ext.exe clam_ISmsi_int.exe clam_ISmsi_ext.exe clam.7z
+	clam_IScab_ext.exe clam_ISmsi_int.exe clam_ISmsi_ext.exe clam.7z clam_cache_emax.tgz
 
 SPLIT_DIR=$(top_srcdir)/test/.split
 
