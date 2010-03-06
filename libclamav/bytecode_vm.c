@@ -256,24 +256,19 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     TRACE_W(x, p, PSIZE*8);\
     *(void**)&values[p] = x
 
-#define READ1(x, p) CHECK_GT(func->numBytes, p);\
-    x = (*(uint8_t*)&values[p])&1;\
+#define uint_type(n) uint##n##_t
+#define READN(x, n, p)\
+    CHECK_GT(func->numBytes, p+(n/8)-1);\
+    x = *(uint_type(n)*)&values[p];\
     TRACE_R(x)
-#define READ8(x, p) CHECK_GT(func->numBytes, p);\
-    x = *(uint8_t*)&values[p];\
-    TRACE_R(x)
-#define READ16(x, p) CHECK_GT(func->numBytes, p+1);\
-    CHECK_EQ((p)&1, 0);\
-    x = *(uint16_t*)&values[p];\
-    TRACE_R(x)
-#define READ32(x, p) CHECK_GT(func->numBytes, p+3);\
-    CHECK_EQ((p)&3, 0);\
-    x = *(uint32_t*)&values[p];\
-    TRACE_R(x)
-#define READ64(x, p) CHECK_GT(func->numBytes, p+7);\
-    CHECK_EQ((p)&7, 0);\
-    x = *(uint64_t*)&values[p];\
-    TRACE_R(x)
+
+#define READ1(x, p) READN(x, 8, p);\
+    x = x&1
+#define READ8(x, p) READN(x, 8, p)
+#define READ16(x, p) READN(x, 16, p)
+#define READ32(x, p) READN(x, 32, p)
+#define READ64(x, p) READN(x, 64, p)
+
 #define PSIZE sizeof(void*)
 #define READP(x, p) CHECK_GT(func->numBytes, p+PSIZE-1);\
     CHECK_EQ((p)&(PSIZE-1), 0);\
