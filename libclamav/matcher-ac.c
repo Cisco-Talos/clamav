@@ -360,7 +360,7 @@ int cli_ac_buildtrie(struct cli_matcher *root)
     }
 
     if (root->filter)
-	cli_dbgmsg("!Using filter for trie %d\n", root->type);
+	cli_dbgmsg("Using filter for trie %d\n", root->type);
     return ac_maketrans(root);
 }
 

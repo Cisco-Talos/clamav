@@ -127,6 +127,13 @@
  *
  */
 
+/*#define DETAILED_DEBUG*/
+#ifdef DETAILED_DEBUG
+#define detailed_dbg cli_dbgmsg
+#else
+#define detailed_dbg(...)
+#endif
+
 #define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & (1 << ((val) & 0x1f)))
 #define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= (1 << ((val) & 0x1f)))
 
@@ -228,7 +235,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
 
 	assert(best_pos < len-1);
 	if (pattern[best_pos] == 0 && pattern[best_pos+1] == 0) {
-		cli_dbgmsg("!filter: subsignature begins with zero (static): %s\n", name);
+		detailed_dbg("filter (warning): subsignature begins with zero (static): %s\n", name);
 	}
 	pattern += best_pos;
 	len -= best_pos;
@@ -612,8 +619,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 		return -1;
 	}
 	assert(best_score_len >= 2);
-
-	cli_dbgmsg("filter %s score: %ld, %u (+ %u)\n", pat->virname, (long)best_score, best_score_i, best_score_len);
+	detailed_dbg("filter %s score: %ld, %u (+ %u)\n", pat->virname, (long)best_score, best_score_i, best_score_len);
 	/* Shift-Or like preprocessing */
 	assert(1 < best_score_len);
 	for (i=0;i < best_score_len-1;i++) {
@@ -627,7 +633,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 				unsigned char c0 = spec_ith_char(spec0, k0);
 				unsigned char c1 = spec_ith_char(spec1, k1);
 				if (!c0 && !c1 && !i) {
-					cli_dbgmsg("!filter: subsignature begins with zero: %s\n",pat->virname);
+					detailed_dbg("filter (warning): subsignature begins with zero: %s\n",pat->virname);
 				}
 				filter_set_atpos(m, i, c0 | (c1<<8));
 			}
@@ -640,7 +646,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 			unsigned char c0 = spec_ith_char(spec0, k0);
 			unsigned char c1 = spec_ith_char(spec1, k1);
 			if (!c0 && !c1) {
-				cli_dbgmsg("filter: subsignature ends with zero: %s\n",pat->virname);
+				detailed_dbg("filter (warning): subsignature ends with zero: %s\n",pat->virname);
 			}
 			filter_set_end(m, j, c0 | (c1<<8));
 		}
