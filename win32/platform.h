@@ -23,7 +23,7 @@ typedef unsigned short mode_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
-#define sleep(sex) Sleep(sex)
+#define sleep(sex) Sleep(1000*(sex))
 #define getuid() 0
 #define getgid() 0
 
