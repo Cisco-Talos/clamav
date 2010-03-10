@@ -1,83 +1,81 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Closest mirrors</TITLE>
-<META NAME="description" CONTENT="Closest mirrors">
+<TITLE>Testing</TITLE>
+<META NAME="description" CONTENT="Testing">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node24.html">
 <LINK REL="previous" HREF="node22.html">
-<LINK REL="up" HREF="node22.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node24.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html497"
+<A NAME="tex2html502"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html493"
-  HREF="node22.html">
+<A NAME="tex2html498"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html489"
+<A NAME="tex2html492"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html495"
+<A NAME="tex2html500"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html498"
-  HREF="node24.html">ClamAV Active Malware Report</A>
-<B> Up:</B> <A NAME="tex2html494"
-  HREF="node22.html">Setting up auto-updating</A>
-<B> Previous:</B> <A NAME="tex2html490"
-  HREF="node22.html">Setting up auto-updating</A>
- &nbsp; <B>  <A NAME="tex2html496"
+<B> Next:</B> <A NAME="tex2html503"
+  HREF="node24.html">Setting up auto-updating</A>
+<B> Up:</B> <A NAME="tex2html499"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html493"
+  HREF="node22.html">clamav-milter</A>
+ &nbsp; <B>  <A NAME="tex2html501"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00054100000000000000">
-Closest mirrors</A>
-</H3>
-    The <code>DatabaseMirror</code> directive in the config file specifies the
-    database server <code>freshclam</code> will attempt (up to <code>MaxAttempts</code>
-    times) to download the database from. The default database mirror
-    is <TT><A NAME="tex2html14"
-  HREF="database.clamav.net">database.clamav.net</A></TT> but multiple directives are allowed.
-    In order to download the database from the closest mirror you should  
-    configure <code>freshclam</code> to use <TT><A NAME="tex2html15"
-  HREF="db.xx.clamav.net">db.xx.clamav.net</A></TT> where xx
-    represents your country code. For example, if your server is in "Ascension
-    Island" you should have the following lines included in <code>freshclam.conf</code>:
+<H2><A NAME="SECTION00053000000000000000">
+Testing</A>
+</H2>
+    Try to scan recursively the source directory:
     <PRE>
-	DNSDatabaseInfo current.cvd.clamav.net
-	DatabaseMirror db.ac.clamav.net
-	DatabaseMirror database.clamav.net
+	$ clamscan -r -l scan.txt clamav-x.yz
 </PRE>
-    The second entry acts as a fallback in case the connection to the first
-    mirror fails for some reason. The full list of two-letters country codes
-    is available at <TT><A NAME="tex2html16"
-  HREF="http://www.iana.org/cctld/cctld-whois.htm">http://www.iana.org/cctld/cctld-whois.htm</A></TT>
+    It should find some test files in the clamav-x.yz/test directory.
+    The scan result will be saved in the <code>scan.txt</code> log file
+    <A NAME="tex2html17"
+  HREF="footnode.html#foot203"><SUP><SPAN CLASS="arabic">8</SPAN></SUP></A>.
+    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
+    directly to its socket and run the SCAN command):
+    <PRE>
+	$ clamdscan -l scan.txt clamav-x.yz
+</PRE>
+    Please note that the scanned files must be accessible by the user running
+    <code>clamd</code> or you will get an error.
+
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

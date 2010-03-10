@@ -1,81 +1,96 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Testing</TITLE>
-<META NAME="description" CONTENT="Testing">
+<TITLE>On-access scanning</TITLE>
+<META NAME="description" CONTENT="On-access scanning">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node22.html">
 <LINK REL="previous" HREF="node20.html">
-<LINK REL="up" HREF="node17.html">
+<LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node22.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html474"
+<A NAME="tex2html478"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html470"
-  HREF="node17.html">
+<A NAME="tex2html474"
+  HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html464"
+<A NAME="tex2html470"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html472"
+<A NAME="tex2html476"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html475"
-  HREF="node22.html">Setting up auto-updating</A>
-<B> Up:</B> <A NAME="tex2html471"
-  HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html465"
-  HREF="node20.html">clamav-milter</A>
- &nbsp; <B>  <A NAME="tex2html473"
+<B> Next:</B> <A NAME="tex2html479"
+  HREF="node22.html">clamav-milter</A>
+<B> Up:</B> <A NAME="tex2html475"
+  HREF="node20.html">clamd</A>
+<B> Previous:</B> <A NAME="tex2html471"
+  HREF="node20.html">clamd</A>
+ &nbsp; <B>  <A NAME="tex2html477"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00053000000000000000">
-Testing</A>
-</H2>
-    Try to scan recursively the source directory:
+<H3><A NAME="SECTION00051100000000000000">
+On-access scanning</A>
+</H3>
+    One of the interesting features of <code>clamd</code> is on-access scanning
+    based on the Dazuko module, available from <TT><A NAME="tex2html16"
+  HREF="http://dazuko.org/">http://dazuko.org/</A></TT>.
+    <SPAN  CLASS="textbf">This module is not required to run clamd - furthermore, you
+    shouldn't run Dazuko on production systems</SPAN>. At the moment Dazuko is
+    avaliable for Linux and FreeBSD, but the following information only covers
+    Linux.
     <PRE>
-	$ clamscan -r -l scan.txt clamav-x.yz
+	$ tar zxpvf dazuko-a.b.c.tar.gz
+	$ cd dazuko-a.b.c
+	$ make dazuko
+	or
+	$ make dazuko-smp (for smp kernels)
+	$ su
+	# insmod dazuko.o
+	# cp dazuko.o /lib/modules/`uname -r`/misc
+	# depmod -a
 </PRE>
-    It should find some test files in the clamav-x.yz/test directory.
-    The scan result will be saved in the <code>scan.txt</code> log file
-    <A NAME="tex2html13"
-  HREF="footnode.html#foot191"><SUP><SPAN CLASS="arabic">5</SPAN></SUP></A>.
-    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
-    directly to its socket and run the SCAN command):
+    Depending on your Linux distribution you may need to add a "dazuko" entry to
+    <SPAN  CLASS="textit">/etc/modules</SPAN> or run the module during system's startup by adding
     <PRE>
-	$ clamdscan -l scan.txt clamav-x.yz
+	/sbin/modprobe dazuko
 </PRE>
-    Please note that the scanned files must be accessible by the user running
-    <code>clamd</code> or you will get an error.
+    to some startup file. You must also create a new device:
+    <PRE>
+	$ cat /proc/devices | grep dazuko
+	254 dazuko
+	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
+</PRE>
+    Now configure Clamuko in <code>clamd.conf</code> and read the <A HREF="node30.html#clamuko">5.3</A>
+    section.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

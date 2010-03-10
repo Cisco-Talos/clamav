@@ -1,76 +1,82 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Output format</TITLE>
-<META NAME="description" CONTENT="Output format">
+<TITLE>Clamdscan</TITLE>
+<META NAME="description" CONTENT="Clamdscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node30.html">
 <LINK REL="previous" HREF="node28.html">
-<LINK REL="up" HREF="node25.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node30.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html571"
+<A NAME="tex2html577"
   HREF="node30.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html567"
-  HREF="node25.html">
+<A NAME="tex2html573"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html563"
+<A NAME="tex2html567"
   HREF="node28.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html569"
+<A NAME="tex2html575"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html572"
-  HREF="node30.html">clamscan</A>
-<B> Up:</B> <A NAME="tex2html568"
-  HREF="node25.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html564"
-  HREF="node28.html">Clamuko</A>
- &nbsp; <B>  <A NAME="tex2html570"
+<B> Next:</B> <A NAME="tex2html578"
+  HREF="node30.html">Clamuko</A>
+<B> Up:</B> <A NAME="tex2html574"
+  HREF="node27.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html568"
+  HREF="node28.html">Clam daemon</A>
+ &nbsp; <B>  <A NAME="tex2html576"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00064000000000000000">
-Output format</A>
+<H2><A NAME="SECTION00062000000000000000">
+Clam<SPAN  CLASS="textbf">d</SPAN>scan</A>
 </H2>
+    <code>clamdscan</code> is a simple <code>clamd</code> client. In many cases you can
+    use it as a <code>clamscan</code> replacement however you must remember that:
+    
+<UL>
+<LI>it only depends on <code>clamd</code>
+</LI>
+<LI>although it accepts the same command line options as
+	      <code>clamscan</code> most of them are ignored because they must be
+	      enabled directly in <code>clamd</code>, i.e. <code>clamd.conf</code>
+</LI>
+<LI>in TCP mode scanned files must be accessible for <code>clamd</code>,
+	      if you enabled LocalSocket in clamd.conf then clamdscan will
+	      try to workaround this limitation by using FILDES
+    
+</LI>
+</UL>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html573"
-  HREF="node30.html">clamscan</A>
-<LI><A NAME="tex2html574"
-  HREF="node31.html">clamd</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

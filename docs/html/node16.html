@@ -1,102 +1,71 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Reporting a unit test failure bug</TITLE>
-<META NAME="description" CONTENT="Reporting a unit test failure bug">
+<TITLE>Compilation with clamav-milter enabled</TITLE>
+<META NAME="description" CONTENT="Compilation with clamav-milter enabled">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node17.html">
 <LINK REL="previous" HREF="node15.html">
-<LINK REL="up" HREF="node9.html">
+<LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node17.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html408"
+<A NAME="tex2html414"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html404"
-  HREF="node9.html">
+<A NAME="tex2html410"
+  HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html400"
+<A NAME="tex2html404"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html406"
+<A NAME="tex2html412"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html409"
-  HREF="node17.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html405"
-  HREF="node9.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html401"
-  HREF="node15.html">Running unit tests</A>
- &nbsp; <B>  <A NAME="tex2html407"
+<B> Next:</B> <A NAME="tex2html415"
+  HREF="node17.html">Running unit tests</A>
+<B> Up:</B> <A NAME="tex2html411"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html405"
+  HREF="node15.html">Compilation of base package</A>
+ &nbsp; <B>  <A NAME="tex2html413"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00047000000000000000">
-Reporting a unit test failure bug</A>
+<H2><A NAME="SECTION00045000000000000000">
+Compilation with clamav-milter enabled</A>
 </H2>
-	If <code>make check</code> says that some tests failed we encourage you to report a bug on our bugzilla: <TT><A NAME="tex2html10"
-  HREF="http://bugs.clamav.net">http://bugs.clamav.net</A></TT>.
-	The information we need is (see also <TT><A NAME="tex2html11"
-  HREF="http://clamav.net/bugs">http://clamav.net/bugs</A></TT>):
-	
-<UL>
-<LI>The exact output from <code>make check</code>	 
-</LI>
-<LI>Output of <code>uname -mrsp</code> 
-</LI>
-<LI>your <code>config.log</code>	 
-</LI>
-<LI>The following files from the <code>unit_tests/</code> directory:
-		
-<UL>
-<LI><code>test.log</code>
-</LI>
-<LI><code>clamscan.log</code>
-</LI>
-<LI><code>clamdscan.log</code>
-		
-</LI>
-</UL>
-</LI>
-<LI><code>/tmp/clamd-test.log</code> if it exists
-</LI>
-<LI>where and how you installed the check package
-</LI>
-<LI>Output of <code>pkg-config check --cflags --libs</code>
-</LI>
-<LI>Optionally if <code>valgrind</code> is available on your platform, the output of the following:
-	 <PRE>
-$ make check
-$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
+    libmilter and its development files are required. To enable clamav-milter,
+    configure ClamAV with
+    <PRE>
+	$ ./configure --enable-milter
 </PRE>
-</LI>
-</UL>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

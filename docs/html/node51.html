@@ -1,71 +1,219 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Forking daemons</TITLE>
-<META NAME="description" CONTENT="Forking daemons">
+<TITLE>Data scan functions</TITLE>
+<META NAME="description" CONTENT="Data scan functions">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node52.html">
 <LINK REL="previous" HREF="node50.html">
-<LINK REL="up" HREF="node48.html">
+<LINK REL="up" HREF="node43.html">
 <LINK REL="next" HREF="node52.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html870"
+<A NAME="tex2html881"
   HREF="node52.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html866"
-  HREF="node48.html">
+<A NAME="tex2html877"
+  HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html860"
+<A NAME="tex2html871"
   HREF="node50.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html868"
+<A NAME="tex2html879"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html871"
-  HREF="node52.html">clamav-config</A>
-<B> Up:</B> <A NAME="tex2html867"
-  HREF="node48.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html861"
-  HREF="node50.html">Memory</A>
- &nbsp; <B>  <A NAME="tex2html869"
+<B> Next:</B> <A NAME="tex2html882"
+  HREF="node52.html">Memory</A>
+<B> Up:</B> <A NAME="tex2html878"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html872"
+  HREF="node50.html">Database checks</A>
+ &nbsp; <B>  <A NAME="tex2html880"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00076300000000000000">
-Forking daemons</A>
+<H3><A NAME="SECTION00073800000000000000">
+Data scan functions</A>
 </H3>
-    If you're using libclamav with a forking daemon you should call
-    <code>srand()</code> inside a forked child before making any calls to the
-    libclamav functions. This will avoid possible collisions with temporary
-    filenames created by other processes of the daemon. This procedure
-    is not required for multi-threaded daemons.
+    It's possible to scan a file or descriptor using:
+    <PRE>
+	int cl_scanfile(const char *filename, const char **virname,
+	unsigned long int *scanned, const struct cl_engine *engine,
+	unsigned int options);
+
+	int cl_scandesc(int desc, const char **virname, unsigned
+	long int *scanned, const struct cl_engine *engine,
+	unsigned int options);
+</PRE>
+    Both functions will store a virus name under the pointer <code>virname</code>,
+    the virus name is part of the engine structure and must not be released
+    directly. If the third argument (<code>scanned</code>) is not NULL, the
+    functions will increase its value with the size of scanned data (in
+    <code>CL_COUNT_PRECISION</code> units).
+    The last argument (<code>options</code>) specified the scan options and supports
+    the following flags (which can be combined using bit operators):
+    
+<UL>
+<LI><SPAN  CLASS="textbf">CL_SCAN_STDOPT</SPAN>
+<BR>
+This is an alias for a recommended set of scan options. You
+	      should use it to make your software ready for new features
+	      in the future versions of libclamav.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_RAW</SPAN>
+<BR>
+Use it alone if you want to disable support for special files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_ARCHIVE</SPAN>
+<BR>
+This flag enables transparent scanning of various archive formats.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKENCRYPTED</SPAN>
+<BR>
+With this flag the library will mark encrypted archives as viruses
+	      (Encrypted.Zip, Encrypted.RAR).
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_MAIL</SPAN>
+<BR>
+Enable support for mail files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_OLE2</SPAN>
+<BR>
+Enables support for OLE2 containers (used by MS Office and .msi
+	      files).
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_PDF</SPAN>
+<BR>
+Enables scanning within PDF files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_PE</SPAN>
+<BR>
+This flag enables deep scanning of Portable Executable files and
+	      allows libclamav to unpack executables compressed with run-time
+	      unpackers.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_ELF</SPAN>
+<BR>
+Enable support for ELF files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKBROKEN</SPAN>
+<BR>
+libclamav will try to detect broken executables and mark them as
+	      Broken.Executable.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_HTML</SPAN>
+<BR>
+This flag enables HTML normalisation (including ScrEnc
+	      decryption).
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_ALGORITHMIC</SPAN>
+<BR>
+Enable algorithmic detection of viruses.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_BLOCKSSL</SPAN>
+<BR>
+Phishing module: always block SSL mismatches in URLs.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_BLOCKCLOAK</SPAN>
+<BR>
+Phishing module: always block cloaked URLs.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED</SPAN>
+<BR>
+Enable the DLP module which scans for credit card and SSN
+	      numbers.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED_SSN_NORMAL</SPAN>
+<BR>
+Search for SSNs formatted as xx-yy-zzzz.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED_SSN_STRIPPED</SPAN>
+<BR>
+Search for SSNs formatted as xxyyzzzz.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_PARTIAL_MESSAGE</SPAN>
+<BR>
+Scan RFC1341 messages split over many emails. You will need to
+	      periodically clean up <code>$TemporaryDirectory/clamav-partial</code>
+	      directory.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_HEURISTIC_PRECEDENCE</SPAN>
+<BR>
+Allow heuristic match to take precedence. When enabled, if
+	      a heuristic scan (such as phishingScan) detects a possible
+	      virus/phish it will stop scan immediately. Recommended, saves CPU
+	      scan-time. When disabled, virus/phish detected by heuristic scans
+	      will be reported only at the end of a scan. If an archive
+	      contains both a heuristically detected virus/phishing, and a real
+	      malware, the real malware will be reported.
+    
+</LI>
+</UL>
+    All functions return <code>CL_CLEAN</code> when the file seems clean,
+    <code>CL_VIRUS</code> when a virus is detected and another value on failure.
+    <PRE>
+	    ...
+	    const char *virname;
+
+	if((ret = cl_scanfile("/tmp/test.exe", &amp;virname, NULL, engine,
+	CL_STDOPT)) == CL_VIRUS) {
+	    printf("Virus detected: %s\n", virname);
+	} else {
+	    printf("No virus detected.\n");
+	    if(ret != CL_CLEAN)
+	        printf("Error: %s\n", cl_strerror(ret));
+	}
+</PRE>
 
 <P>
-<BR><HR>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html881"
+  HREF="node52.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html877"
+  HREF="node43.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html871"
+  HREF="node50.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html879"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html882"
+  HREF="node52.html">Memory</A>
+<B> Up:</B> <A NAME="tex2html878"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html872"
+  HREF="node50.html">Database checks</A>
+ &nbsp; <B>  <A NAME="tex2html880"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

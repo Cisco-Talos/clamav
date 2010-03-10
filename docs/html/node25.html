@@ -1,86 +1,83 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Usage</TITLE>
-<META NAME="description" CONTENT="Usage">
+<TITLE>Closest mirrors</TITLE>
+<META NAME="description" CONTENT="Closest mirrors">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node32.html">
-<LINK REL="previous" HREF="node17.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="previous" HREF="node24.html">
+<LINK REL="up" HREF="node24.html">
 <LINK REL="next" HREF="node26.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html519"
+<A NAME="tex2html525"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html515"
-  HREF="clamdoc.html">
+<A NAME="tex2html521"
+  HREF="node24.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html509"
+<A NAME="tex2html517"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html517"
+<A NAME="tex2html523"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html520"
-  HREF="node26.html">Clam daemon</A>
-<B> Up:</B> <A NAME="tex2html516"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html510"
-  HREF="node24.html">ClamAV Active Malware Report</A>
- &nbsp; <B>  <A NAME="tex2html518"
+<B> Next:</B> <A NAME="tex2html526"
+  HREF="node26.html">ClamAV Active Malware Report</A>
+<B> Up:</B> <A NAME="tex2html522"
+  HREF="node24.html">Setting up auto-updating</A>
+<B> Previous:</B> <A NAME="tex2html518"
+  HREF="node24.html">Setting up auto-updating</A>
+ &nbsp; <B>  <A NAME="tex2html524"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00060000000000000000">
-Usage</A>
-</H1>
-
+<H3><A NAME="SECTION00054100000000000000">
+Closest mirrors</A>
+</H3>
+    The <code>DatabaseMirror</code> directive in the config file specifies the
+    database server <code>freshclam</code> will attempt (up to <code>MaxAttempts</code>
+    times) to download the database from. The default database mirror
+    is <TT><A NAME="tex2html18"
+  HREF="database.clamav.net">database.clamav.net</A></TT> but multiple directives are allowed.
+    In order to download the database from the closest mirror you should  
+    configure <code>freshclam</code> to use <TT><A NAME="tex2html19"
+  HREF="db.xx.clamav.net">db.xx.clamav.net</A></TT> where xx
+    represents your country code. For example, if your server is in "Ascension
+    Island" you should have the following lines included in <code>freshclam.conf</code>:
+    <PRE>
+	DNSDatabaseInfo current.cvd.clamav.net
+	DatabaseMirror db.ac.clamav.net
+	DatabaseMirror database.clamav.net
+</PRE>
+    The second entry acts as a fallback in case the connection to the first
+    mirror fails for some reason. The full list of two-letters country codes
+    is available at <TT><A NAME="tex2html20"
+  HREF="http://www.iana.org/cctld/cctld-whois.htm">http://www.iana.org/cctld/cctld-whois.htm</A></TT>
 <P>
-<BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html521"
-  HREF="node26.html">Clam daemon</A>
-<LI><A NAME="tex2html522"
-  HREF="node27.html">Clam<SPAN  CLASS="textbf">d</SPAN>scan</A>
-<LI><A NAME="tex2html523"
-  HREF="node28.html">Clamuko</A>
-<LI><A NAME="tex2html524"
-  HREF="node29.html">Output format</A>
-<UL>
-<LI><A NAME="tex2html525"
-  HREF="node30.html">clamscan</A>
-<LI><A NAME="tex2html526"
-  HREF="node31.html">clamd</A>
-</UL></UL>
-<!--End of Table of Child-Links-->
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

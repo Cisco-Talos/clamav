@@ -1,85 +1,98 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamscan</TITLE>
-<META NAME="description" CONTENT="clamscan">
+<TITLE>Clamuko</TITLE>
+<META NAME="description" CONTENT="Clamuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node31.html">
 <LINK REL="previous" HREF="node29.html">
-<LINK REL="up" HREF="node29.html">
+<LINK REL="up" HREF="node27.html">
 <LINK REL="next" HREF="node31.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html585"
+<A NAME="tex2html589"
   HREF="node31.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html581"
-  HREF="node29.html">
+<A NAME="tex2html585"
+  HREF="node27.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html575"
+<A NAME="tex2html579"
   HREF="node29.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html583"
+<A NAME="tex2html587"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html586"
-  HREF="node31.html">clamd</A>
-<B> Up:</B> <A NAME="tex2html582"
-  HREF="node29.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html576"
-  HREF="node29.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html584"
+<B> Next:</B> <A NAME="tex2html590"
+  HREF="node31.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html586"
+  HREF="node27.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html580"
+  HREF="node29.html">Clamdscan</A>
+ &nbsp; <B>  <A NAME="tex2html588"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00064100000000000000">
-clamscan</A>
-</H3>
-    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
-    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
-    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
-    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
-    A typical output from <code>clamscan</code> looks like this:
+<H2><A NAME="SECTION00063000000000000000"></A><A NAME="clamuko"></A>
+<BR>
+Clamuko
+</H2>
+    Clamuko is a special thread in <code>clamd</code> that performs on-access
+    scanning under Linux and FreeBSD and shares internal virus database
+    with the daemon. <SPAN  CLASS="textbf">You must follow some important rules when
+    using it:</SPAN>
+    
+<UL>
+<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the
+<BR>
+SIGTERM signal. In other case you can lose access
+	      to protected files until the system is restarted.
+</LI>
+<LI>Never protect the directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (including
+	      <code>clamd</code>!) will not be able to detect any viruses. In the
+	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
+    
+</LI>
+</UL>
+    For example, to protect the whole system add the following lines to
+    <code>clamd.conf</code>:
     <PRE>
-	/tmp/test/removal-tool.exe: Worm.Sober FOUND
-	/tmp/test/md5.o: OK
-	/tmp/test/blob.c: OK
-	/tmp/test/message.c: OK
-	/tmp/test/error.hta: VBS.Inor.D FOUND
+	ClamukoScanOnAccess
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
 </PRE>
-    When a virus is found its name is printed between the <code>filename:</code> and
-    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
-    and only prints the first virus found within an archive:
-    <PRE>
-	zolw@localhost:/tmp$ clamscan malware.zip 
-	malware.zip: Worm.Mydoom.U FOUND
-</PRE>
+    You can also use clamuko to protect files on Samba/Netatalk but a far
+    more better and safe idea is to use the <SPAN  CLASS="textbf">samba-vscan</SPAN> module.
+    NFS is not supported because Dazuko doesn't intercept NFS access calls.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

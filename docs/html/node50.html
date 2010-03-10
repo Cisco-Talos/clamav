@@ -1,69 +1,109 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Memory</TITLE>
-<META NAME="description" CONTENT="Memory">
+<TITLE>Database checks</TITLE>
+<META NAME="description" CONTENT="Database checks">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node51.html">
 <LINK REL="previous" HREF="node49.html">
-<LINK REL="up" HREF="node48.html">
+<LINK REL="up" HREF="node43.html">
 <LINK REL="next" HREF="node51.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html858"
+<A NAME="tex2html869"
   HREF="node51.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html854"
-  HREF="node48.html">
+<A NAME="tex2html865"
+  HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html848"
+<A NAME="tex2html859"
   HREF="node49.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html856"
+<A NAME="tex2html867"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html859"
-  HREF="node51.html">Forking daemons</A>
-<B> Up:</B> <A NAME="tex2html855"
-  HREF="node48.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html849"
-  HREF="node49.html">Data scan functions</A>
- &nbsp; <B>  <A NAME="tex2html857"
+<B> Next:</B> <A NAME="tex2html870"
+  HREF="node51.html">Data scan functions</A>
+<B> Up:</B> <A NAME="tex2html866"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html860"
+  HREF="node49.html">Limits</A>
+ &nbsp; <B>  <A NAME="tex2html868"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00076200000000000000">
-Memory</A>
+<H3><A NAME="SECTION00073700000000000000">
+Database checks</A>
 </H3>
-    Because the engine structure occupies a few megabytes of system memory, you
-    should release it with <code>cl_engine_free()</code> if you no longer need to
-    scan files.
+    It's very important  to keep the internal instance of the database up to
+    date. You can watch database changes with the <code>cl_stat..()</code> family
+    of functions.
+    <PRE>
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
+</PRE>
+    Initialization:
+    <PRE>
+	    ...
+	    struct cl_stat dbstat;
+
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you just need to call <code>cl_statchkdir</code> and check
+    its return value (0 - no change, 1 - some change occured). Remember to reset
+    the <code>cl_stat</code> structure after reloading the database.
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Libclamav <SPAN CLASS="MATH"><IMG
+ WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img5.png"
+ ALT="$\ge0.96$"></SPAN> includes and additional call to check the number of
+    signatures that can be loaded from a given directory:
+    <PRE>
+	int cl_countsigs(const char *path, unsigned int countoptions,
+	    unsigned int *sigs);
+</PRE>
+    The first argument points to the database directory, the second one
+    specifies what signatures should be counted:
+    <code>CL_COUNTSIGS_OFFICIAL</code> (official signatures),
+<BR>    <code>CL_COUNTSIGS_UNOFFICIAL</code> (third party signatures),
+    <code>CL_COUNTSIGS_ALL</code> (all signatures). The last argument points
+    to the counter to which the number of detected signatures will
+    be added (therefore the counter should be initially set to 0).
+    The call returns <code>CL_SUCCESS</code> or an error code.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

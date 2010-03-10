@@ -1,141 +1,85 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>LibClamAV</TITLE>
-<META NAME="description" CONTENT="LibClamAV">
+<TITLE>clamscan</TITLE>
+<META NAME="description" CONTENT="clamscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node59.html">
-<LINK REL="previous" HREF="node25.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node33.html">
+<LINK REL="previous" HREF="node31.html">
+<LINK REL="up" HREF="node31.html">
 <LINK REL="next" HREF="node33.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html607"
+<A NAME="tex2html613"
   HREF="node33.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html603"
-  HREF="clamdoc.html">
+<A NAME="tex2html609"
+  HREF="node31.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html597"
+<A NAME="tex2html603"
   HREF="node31.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html605"
+<A NAME="tex2html611"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html608"
-  HREF="node33.html">Licence</A>
-<B> Up:</B> <A NAME="tex2html604"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html598"
-  HREF="node31.html">clamd</A>
- &nbsp; <B>  <A NAME="tex2html606"
+<B> Next:</B> <A NAME="tex2html614"
+  HREF="node33.html">clamd</A>
+<B> Up:</B> <A NAME="tex2html610"
+  HREF="node31.html">Output format</A>
+<B> Previous:</B> <A NAME="tex2html604"
+  HREF="node31.html">Output format</A>
+ &nbsp; <B>  <A NAME="tex2html612"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00070000000000000000">
-LibClamAV</A>
-</H1>
-    Libclamav provides an easy and effective way to add a virus protection into
-    your software. The library is thread-safe and transparently recognizes and
-    scans within archives, mail files, MS Office document files, executables
-    and other special formats.
+<H3><A NAME="SECTION00064100000000000000">
+clamscan</A>
+</H3>
+    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
+    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
+    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
+    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
+    A typical output from <code>clamscan</code> looks like this:
+    <PRE>
+	/tmp/test/removal-tool.exe: Worm.Sober FOUND
+	/tmp/test/md5.o: OK
+	/tmp/test/blob.c: OK
+	/tmp/test/message.c: OK
+	/tmp/test/error.hta: VBS.Inor.D FOUND
+</PRE>
+    When a virus is found its name is printed between the <code>filename:</code> and
+    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
+    and only prints the first virus found within an archive:
+    <PRE>
+	zolw@localhost:/tmp$ clamscan malware.zip 
+	malware.zip: Worm.Mydoom.U FOUND
+</PRE>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html609"
-  HREF="node33.html">Licence</A>
-<LI><A NAME="tex2html610"
-  HREF="node34.html">Supported formats</A>
-<UL>
-<LI><A NAME="tex2html611"
-  HREF="node35.html">Executables</A>
-<LI><A NAME="tex2html612"
-  HREF="node36.html">Mail files</A>
-<LI><A NAME="tex2html613"
-  HREF="node37.html">Archives and compressed files</A>
-<LI><A NAME="tex2html614"
-  HREF="node38.html">Documents</A>
-<LI><A NAME="tex2html615"
-  HREF="node39.html">Data Loss Prevention</A>
-<LI><A NAME="tex2html616"
-  HREF="node40.html">Others</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html617"
-  HREF="node41.html">API</A>
-<UL>
-<LI><A NAME="tex2html618"
-  HREF="node42.html">Header file</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html619"
-  HREF="node43.html">Initialization</A>
-<UL>
-<LI><A NAME="tex2html620"
-  HREF="node44.html">Database loading</A>
-<LI><A NAME="tex2html621"
-  HREF="node45.html">Error handling</A>
-<LI><A NAME="tex2html622"
-  HREF="node46.html">Engine structure</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html623"
-  HREF="node47.html">Limits</A>
-<LI><A NAME="tex2html624"
-  HREF="node48.html">Database reloading</A>
-<UL>
-<LI><A NAME="tex2html625"
-  HREF="node49.html">Data scan functions</A>
-<LI><A NAME="tex2html626"
-  HREF="node50.html">Memory</A>
-<LI><A NAME="tex2html627"
-  HREF="node51.html">Forking daemons</A>
-<LI><A NAME="tex2html628"
-  HREF="node52.html">clamav-config</A>
-<LI><A NAME="tex2html629"
-  HREF="node53.html">Example</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html630"
-  HREF="node54.html">CVD format</A>
-<LI><A NAME="tex2html631"
-  HREF="node55.html">Contributors</A>
-<LI><A NAME="tex2html632"
-  HREF="node56.html">Donors</A>
-<LI><A NAME="tex2html633"
-  HREF="node57.html">Graphics</A>
-<LI><A NAME="tex2html634"
-  HREF="node58.html">OpenAntiVirus</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

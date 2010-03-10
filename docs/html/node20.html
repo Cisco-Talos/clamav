@@ -1,73 +1,85 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-milter</TITLE>
-<META NAME="description" CONTENT="clamav-milter">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node21.html">
-<LINK REL="previous" HREF="node18.html">
-<LINK REL="up" HREF="node17.html">
+<LINK REL="next" HREF="node22.html">
+<LINK REL="previous" HREF="node19.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node21.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html462"
+<A NAME="tex2html467"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html458"
-  HREF="node17.html">
+<A NAME="tex2html463"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html452"
+<A NAME="tex2html457"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html460"
+<A NAME="tex2html465"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html463"
-  HREF="node21.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html459"
-  HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html453"
-  HREF="node19.html">On-access scanning</A>
- &nbsp; <B>  <A NAME="tex2html461"
+<B> Next:</B> <A NAME="tex2html468"
+  HREF="node21.html">On-access scanning</A>
+<B> Up:</B> <A NAME="tex2html464"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html458"
+  HREF="node19.html">Configuration</A>
+ &nbsp; <B>  <A NAME="tex2html466"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00052000000000000000">
-clamav-milter</A>
+<H2><A NAME="SECTION00051000000000000000">
+clamd</A>
 </H2>
-    ClamAV 0.95 includes a new, redesigned clamav-milter. The most notable
-    difference is that the internal mode has been dropped and now a working
-    clamd companion is required. The second important difference is that now
-    the milter has got its own configuration and log files. To compile ClamAV
-    with the clamav-milter just run <code>./configure</code> <code>--enable-milter</code>
-    and make as usual. Please consult your MTA's manual on how to connect it
-    with the milter.
+    Before you start using the daemon you have to edit the configuration file
+    (in other case <code>clamd</code> won't run):
+    <PRE>
+	$ clamd
+	ERROR: Please edit the example config file /etc/clamd.conf.
+</PRE>
+    This shows the location of the default configuration file. The format and
+    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
+    manual. The config file is well commented and configuration should be
+    straightforward.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html469"
+  HREF="node21.html">On-access scanning</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

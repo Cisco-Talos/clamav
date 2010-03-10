@@ -1,81 +1,81 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Compilation of base package</TITLE>
-<META NAME="description" CONTENT="Compilation of base package">
+<TITLE>Installing on shell account</TITLE>
+<META NAME="description" CONTENT="Installing on shell account">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node14.html">
 <LINK REL="previous" HREF="node12.html">
-<LINK REL="up" HREF="node9.html">
+<LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node14.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html374"
+<A NAME="tex2html378"
   HREF="node14.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html370"
-  HREF="node9.html">
+<A NAME="tex2html374"
+  HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html364"
+<A NAME="tex2html368"
   HREF="node12.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html372"
+<A NAME="tex2html376"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html375"
-  HREF="node14.html">Compilation with clamav-milter enabled</A>
-<B> Up:</B> <A NAME="tex2html371"
-  HREF="node9.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html365"
-  HREF="node12.html">Adding new system user</A>
- &nbsp; <B>  <A NAME="tex2html373"
+<B> Next:</B> <A NAME="tex2html379"
+  HREF="node14.html">Adding new system user</A>
+<B> Up:</B> <A NAME="tex2html375"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html369"
+  HREF="node12.html">Requirements</A>
+ &nbsp; <B>  <A NAME="tex2html377"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00044000000000000000">
-Compilation of base package</A>
+<H2><A NAME="SECTION00042000000000000000">
+Installing on shell account</A>
 </H2>
-    Once you have created the clamav user and group, please extract the archive:
+    To install ClamAV locally on an unprivileged shell account you need not
+    create any additional users or groups. Assuming your home directory is
+    <code>/home/gary</code> you should build it as follows:
     <PRE>
-	$ zcat clamav-x.yz.tar.gz | tar xvf -
-	$ cd clamav-x.yz
+	$ ./configure --prefix=/home/gary/clamav --disable-clamav
+	$ make; make install
 </PRE>
-    Assuming you want to install the configuration files in /etc, configure
-    and build the software as follows:
+    To test your installation execute:
     <PRE>
-	$ ./configure --sysconfdir=/etc
-	$ make
-	$ su -c "make install"
+	$ ~/clamav/bin/freshclam
+	$ ~/clamav/bin/clamscan ~
 </PRE>
-    In the last step the software is installed into the /usr/local directory
-    and the config files into /etc. <SPAN  CLASS="textbf">WARNING: Never enable the SUID
-    or SGID bits for Clam AntiVirus binaries.</SPAN>
+    The <code>--disable-clamav</code> switch disables the check for existence of
+    the <SPAN  CLASS="textit">clamav</SPAN> user and group but <code>clamscan</code> would still require an
+    unprivileged account to work in a superuser mode.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

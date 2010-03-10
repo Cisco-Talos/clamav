@@ -1,73 +1,60 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Initialization</TITLE>
-<META NAME="description" CONTENT="Initialization">
+<TITLE>API</TITLE>
+<META NAME="description" CONTENT="API">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node47.html">
-<LINK REL="previous" HREF="node41.html">
-<LINK REL="up" HREF="node32.html">
+<LINK REL="next" HREF="node56.html">
+<LINK REL="previous" HREF="node36.html">
+<LINK REL="up" HREF="node34.html">
 <LINK REL="next" HREF="node44.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html768"
+<A NAME="tex2html773"
   HREF="node44.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html764"
-  HREF="node32.html">
+<A NAME="tex2html769"
+  HREF="node34.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html758"
+<A NAME="tex2html763"
   HREF="node42.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html766"
+<A NAME="tex2html771"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html769"
-  HREF="node44.html">Database loading</A>
-<B> Up:</B> <A NAME="tex2html765"
-  HREF="node32.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html759"
-  HREF="node42.html">Header file</A>
- &nbsp; <B>  <A NAME="tex2html767"
+<B> Next:</B> <A NAME="tex2html774"
+  HREF="node44.html">Header file</A>
+<B> Up:</B> <A NAME="tex2html770"
+  HREF="node34.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html764"
+  HREF="node42.html">Others</A>
+ &nbsp; <B>  <A NAME="tex2html772"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-Initialization</A>
+<H2><A NAME="SECTION00073000000000000000">
+API</A>
 </H2>
-    Before using libclamav, you should call <code>cl_init()</code> to initialize
-    it. When it's done, you're ready to create a new scan engine by calling
-    <code>cl_engine_new()</code>. To free resources allocated by the engine use
-    <code>cl_engine_free()</code>. Function prototypes:
-    <PRE>
-	int cl_init(unsigned int options);
-	struct cl_engine *cl_engine_new(void);
-	int cl_engine_free(struct cl_engine *engine);
-</PRE>
-    <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
-    on success or another code on error. <code>cl_engine_new()</code> return
-    a pointer or NULL if there's not enough memory to allocate a new
-    engine structure.
 
 <P>
 <BR><HR>
@@ -75,18 +62,36 @@ Initialization</A>
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
 <UL CLASS="ChildLinks">
-<LI><A NAME="tex2html770"
-  HREF="node44.html">Database loading</A>
-<LI><A NAME="tex2html771"
-  HREF="node45.html">Error handling</A>
-<LI><A NAME="tex2html772"
-  HREF="node46.html">Engine structure</A>
+<LI><A NAME="tex2html775"
+  HREF="node44.html">Header file</A>
+<LI><A NAME="tex2html776"
+  HREF="node45.html">Initialization</A>
+<LI><A NAME="tex2html777"
+  HREF="node46.html">Database loading</A>
+<LI><A NAME="tex2html778"
+  HREF="node47.html">Error handling</A>
+<LI><A NAME="tex2html779"
+  HREF="node48.html">Engine structure</A>
+<LI><A NAME="tex2html780"
+  HREF="node49.html">Limits</A>
+<LI><A NAME="tex2html781"
+  HREF="node50.html">Database checks</A>
+<LI><A NAME="tex2html782"
+  HREF="node51.html">Data scan functions</A>
+<LI><A NAME="tex2html783"
+  HREF="node52.html">Memory</A>
+<LI><A NAME="tex2html784"
+  HREF="node53.html">Forking daemons</A>
+<LI><A NAME="tex2html785"
+  HREF="node54.html">clamav-config</A>
+<LI><A NAME="tex2html786"
+  HREF="node55.html">Example</A>
 </UL>
 <!--End of Table of Child-Links-->
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

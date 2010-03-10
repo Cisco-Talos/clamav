@@ -1,85 +1,102 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>Reporting a unit test failure bug</TITLE>
+<META NAME="description" CONTENT="Reporting a unit test failure bug">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node20.html">
 <LINK REL="previous" HREF="node17.html">
-<LINK REL="up" HREF="node17.html">
+<LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node19.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html439"
+<A NAME="tex2html436"
   HREF="node19.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html435"
-  HREF="node17.html">
+<A NAME="tex2html432"
+  HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html429"
+<A NAME="tex2html428"
   HREF="node17.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html437"
+<A NAME="tex2html434"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html440"
-  HREF="node19.html">On-access scanning</A>
-<B> Up:</B> <A NAME="tex2html436"
-  HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html430"
-  HREF="node17.html">Configuration</A>
- &nbsp; <B>  <A NAME="tex2html438"
+<B> Next:</B> <A NAME="tex2html437"
+  HREF="node19.html">Configuration</A>
+<B> Up:</B> <A NAME="tex2html433"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html429"
+  HREF="node17.html">Running unit tests</A>
+ &nbsp; <B>  <A NAME="tex2html435"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00051000000000000000">
-clamd</A>
+<H2><A NAME="SECTION00047000000000000000">
+Reporting a unit test failure bug</A>
 </H2>
-    Before you start using the daemon you have to edit the configuration file
-    (in other case <code>clamd</code> won't run):
-    <PRE>
-	$ clamd
-	ERROR: Please edit the example config file /etc/clamd.conf.
+	If <code>make check</code> says that some tests failed we encourage you to report a bug on our bugzilla: <TT><A NAME="tex2html14"
+  HREF="http://bugs.clamav.net">http://bugs.clamav.net</A></TT>.
+	The information we need is (see also <TT><A NAME="tex2html15"
+  HREF="http://clamav.net/bugs">http://clamav.net/bugs</A></TT>):
+	
+<UL>
+<LI>The exact output from <code>make check</code>	 
+</LI>
+<LI>Output of <code>uname -mrsp</code> 
+</LI>
+<LI>your <code>config.log</code>	 
+</LI>
+<LI>The following files from the <code>unit_tests/</code> directory:
+		
+<UL>
+<LI><code>test.log</code>
+</LI>
+<LI><code>clamscan.log</code>
+</LI>
+<LI><code>clamdscan.log</code>
+		
+</LI>
+</UL>
+</LI>
+<LI><code>/tmp/clamd-test.log</code> if it exists
+</LI>
+<LI>where and how you installed the check package
+</LI>
+<LI>Output of <code>pkg-config check --cflags --libs</code>
+</LI>
+<LI>Optionally if <code>valgrind</code> is available on your platform, the output of the following:
+	 <PRE>
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
 </PRE>
-    This shows the location of the default configuration file. The format and
-    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
-    manual. The config file is well commented and configuration should be
-    straightforward.
+</LI>
+</UL>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html441"
-  HREF="node19.html">On-access scanning</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

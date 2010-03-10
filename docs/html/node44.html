@@ -1,19 +1,19 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database loading</TITLE>
-<META NAME="description" CONTENT="Database loading">
+<TITLE>Header file</TITLE>
+<META NAME="description" CONTENT="Header file">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -27,102 +27,44 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html783"
+<A NAME="tex2html797"
   HREF="node45.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html779"
+<A NAME="tex2html793"
   HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html773"
+<A NAME="tex2html787"
   HREF="node43.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html781"
+<A NAME="tex2html795"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html784"
-  HREF="node45.html">Error handling</A>
-<B> Up:</B> <A NAME="tex2html780"
-  HREF="node43.html">Initialization</A>
-<B> Previous:</B> <A NAME="tex2html774"
-  HREF="node43.html">Initialization</A>
- &nbsp; <B>  <A NAME="tex2html782"
+<B> Next:</B> <A NAME="tex2html798"
+  HREF="node45.html">Initialization</A>
+<B> Up:</B> <A NAME="tex2html794"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html788"
+  HREF="node43.html">API</A>
+ &nbsp; <B>  <A NAME="tex2html796"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074100000000000000">
-Database loading</A>
+<H3><A NAME="SECTION00073100000000000000">
+Header file</A>
 </H3>
-    The following set of functions provides an interface for loading
-    the virus database:
+    Every program using libclamav must include the header file <code>clamav.h</code>:
     <PRE>
-	const char *cl_retdbdir(void);
-
-	int cl_load(const char *path, struct cl_engine *engine,
-		    unsigned int *signo, unsigned int options);
-</PRE>
-    <code>cl_retdbdir()</code> returns the default (hardcoded) path to the directory
-    with ClamAV databases.
-    <code>cl_load()</code> loads a single database file or all databases from a
-    given directory (when <code>path</code> points to a directory). The second
-    argument is used for passing in the pointer to the engine that should
-    be previously allocated with <code>cl_engine_new()</code>. A number of loaded
-    signatures will be <SPAN  CLASS="textbf">added</SPAN> to <code>signo</code> <A NAME="tex2html20"
-  HREF="footnode.html#foot325"><SUP><SPAN CLASS="arabic">8</SPAN></SUP></A>. The last argument can
-    pass the following flags:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">CL_DB_STDOPT</SPAN>
-<BR>
-This is an alias for a recommended set of scan options.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING</SPAN>
-<BR>
-Load phishing signatures.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING_URLS</SPAN>
-<BR>
-Initialize the phishing detection module and load .wdb and .pdb files.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PUA</SPAN>
-<BR>
-Load signatures for Potentially Unwanted Applications.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_CVDNOTMP</SPAN>
-<BR>
-Load CVD files directly without unpacking them into a temporary
-	directory.
-    
-</LI>
-</UL>
-    <code>cl_load()</code> returns <code>CL_SUCCESS</code> on success and another code on
-    failure.
-    <PRE>
-	    ...
-	    struct cl_engine *engine;
-	    unsigned int sigs = 0;
-	    int ret;
-
-	if((ret = cl_init()) != CL_SUCCESS) {
-	    printf("cl_init() error: %s\n", cl_strerror(ret));
-	    return 1;
-	}
-
-	if(!(engine = cl_engine_new())) {
-	    printf("Can't create new engine\n");
-	    return 1;
-	}
-
-	ret = cl_load(cl_retdbdir(), engine, &amp;sigs, CL_DB_STDOPT);
+	#include &lt;clamav.h&gt;
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

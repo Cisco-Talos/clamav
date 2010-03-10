@@ -1,71 +1,75 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Compilation with clamav-milter enabled</TITLE>
-<META NAME="description" CONTENT="Compilation with clamav-milter enabled">
+<TITLE>Adding new system user and group</TITLE>
+<META NAME="description" CONTENT="Adding new system user and group">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node15.html">
 <LINK REL="previous" HREF="node13.html">
-<LINK REL="up" HREF="node9.html">
+<LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node15.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html386"
+<A NAME="tex2html390"
   HREF="node15.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html382"
-  HREF="node9.html">
+<A NAME="tex2html386"
+  HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html376"
+<A NAME="tex2html380"
   HREF="node13.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html384"
+<A NAME="tex2html388"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html387"
-  HREF="node15.html">Running unit tests</A>
-<B> Up:</B> <A NAME="tex2html383"
-  HREF="node9.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html377"
-  HREF="node13.html">Compilation of base package</A>
- &nbsp; <B>  <A NAME="tex2html385"
+<B> Next:</B> <A NAME="tex2html391"
+  HREF="node15.html">Compilation of base package</A>
+<B> Up:</B> <A NAME="tex2html387"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html381"
+  HREF="node13.html">Installing on shell account</A>
+ &nbsp; <B>  <A NAME="tex2html389"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00045000000000000000">
-Compilation with clamav-milter enabled</A>
+<H2><A NAME="SECTION00043000000000000000">
+Adding new system user and group</A>
 </H2>
-    libmilter and its development files are required. To enable clamav-milter,
-    configure ClamAV with
+    If you are installing ClamAV for the first time, you have to add a new
+    user and group to your system:
     <PRE>
-	$ ./configure --enable-milter
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
 </PRE>
+    Consult a system manual if your OS has not <SPAN  CLASS="textit">groupadd</SPAN> and
+    <SPAN  CLASS="textit">useradd</SPAN> utilities. <SPAN  CLASS="textbf">Don't forget to lock access to the
+    account!</SPAN>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,23 +1,24 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Engine structure</TITLE>
-<META NAME="description" CONTENT="Engine structure">
+<TITLE>Database loading</TITLE>
+<META NAME="description" CONTENT="Database loading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node47.html">
 <LINK REL="previous" HREF="node45.html">
 <LINK REL="up" HREF="node43.html">
 <LINK REL="next" HREF="node47.html">
@@ -26,55 +27,105 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html805"
+<A NAME="tex2html821"
   HREF="node47.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html801"
+<A NAME="tex2html817"
   HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html797"
+<A NAME="tex2html811"
   HREF="node45.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html803"
+<A NAME="tex2html819"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html806"
-  HREF="node47.html">Limits</A>
-<B> Up:</B> <A NAME="tex2html802"
-  HREF="node43.html">Initialization</A>
-<B> Previous:</B> <A NAME="tex2html798"
-  HREF="node45.html">Error handling</A>
- &nbsp; <B>  <A NAME="tex2html804"
+<B> Next:</B> <A NAME="tex2html822"
+  HREF="node47.html">Error handling</A>
+<B> Up:</B> <A NAME="tex2html818"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html812"
+  HREF="node45.html">Initialization</A>
+ &nbsp; <B>  <A NAME="tex2html820"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074300000000000000">
-Engine structure</A>
+<H3><A NAME="SECTION00073300000000000000">
+Database loading</A>
 </H3>
-    When all required databases are loaded you should prepare the detection
-    engine by calling <code>cl_engine_compile()</code>. In case of failure you
-    should still free the memory allocated to the engine with
-    <code>cl_engine_free()</code>:
+    The following set of functions provides an interface for loading
+    the virus database:
     <PRE>
-	int cl_engine_compile(struct cl_engine *engine);
+	const char *cl_retdbdir(void);
+
+	int cl_load(const char *path, struct cl_engine *engine,
+		    unsigned int *signo, unsigned int options);
 </PRE>
-    In our example:
+    <code>cl_retdbdir()</code> returns the default (hardcoded) path to the directory
+    with ClamAV databases.
+    <code>cl_load()</code> loads a single database file or all databases from a
+    given directory (when <code>path</code> points to a directory). The second
+    argument is used for passing in the pointer to the engine that should
+    be previously allocated with <code>cl_engine_new()</code>. A number of loaded
+    signatures will be <SPAN  CLASS="textbf">added</SPAN> to <code>signo</code> <A NAME="tex2html23"
+  HREF="footnode.html#foot336"><SUP><SPAN CLASS="arabic">10</SPAN></SUP></A>. The last argument can
+    pass the following flags:
+    
+<UL>
+<LI><SPAN  CLASS="textbf">CL_DB_STDOPT</SPAN>
+<BR>
+This is an alias for a recommended set of scan options.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_PHISHING</SPAN>
+<BR>
+Load phishing signatures.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_PHISHING_URLS</SPAN>
+<BR>
+Initialize the phishing detection module and load .wdb and .pdb files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_PUA</SPAN>
+<BR>
+Load signatures for Potentially Unwanted Applications.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_OFFICIAL_ONLY</SPAN>
+<BR>
+Only load official signatures from digitally signed databases.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_BYTECODE</SPAN>
+<BR>
+Load bytecode.
+    
+</LI>
+</UL>
+    <code>cl_load()</code> returns <code>CL_SUCCESS</code> on success and another code on
+    failure.
     <PRE>
-	if((ret = cl_engine_compile(engine)) != CL_SUCCESS) {
-	    printf("cl_engine_compile() error: %s\n", cl_strerror(ret));
-	    cl_engine_free(engine);
+	    ...
+	    struct cl_engine *engine;
+	    unsigned int sigs = 0;
+	    int ret;
+
+	if((ret = cl_init()) != CL_SUCCESS) {
+	    printf("cl_init() error: %s\n", cl_strerror(ret));
 	    return 1;
 	}
+
+	if(!(engine = cl_engine_new())) {
+	    printf("Can't create new engine\n");
+	    return 1;
+	}
+
+	ret = cl_load(cl_retdbdir(), engine, &amp;sigs, CL_DB_STDOPT);
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,236 +1,114 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clam daemon</TITLE>
-<META NAME="description" CONTENT="Clam daemon">
+<TITLE>ClamAV Active Malware Report</TITLE>
+<META NAME="description" CONTENT="ClamAV Active Malware Report">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node27.html">
-<LINK REL="previous" HREF="node25.html">
-<LINK REL="up" HREF="node25.html">
+<LINK REL="previous" HREF="node24.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node27.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html537"
+<A NAME="tex2html535"
   HREF="node27.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html533"
-  HREF="node25.html">
+<A NAME="tex2html531"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html527"
   HREF="node25.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html535"
+<A NAME="tex2html533"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html538"
-  HREF="node27.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html534"
-  HREF="node25.html">Usage</A>
+<B> Next:</B> <A NAME="tex2html536"
+  HREF="node27.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html532"
+  HREF="node19.html">Configuration</A>
 <B> Previous:</B> <A NAME="tex2html528"
-  HREF="node25.html">Usage</A>
- &nbsp; <B>  <A NAME="tex2html536"
+  HREF="node25.html">Closest mirrors</A>
+ &nbsp; <B>  <A NAME="tex2html534"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00061000000000000000"></A><A NAME="clamd"></A>
-<BR>
-Clam daemon
+<H2><A NAME="SECTION00055000000000000000">
+ClamAV Active Malware Report</A>
 </H2>
-    <code>clamd</code> is a multi-threaded daemon that uses <SPAN  CLASS="textit">libclamav</SPAN>
-    to scan files for viruses. It may work in one or both modes listening on:
-    
-<UL>
-<LI>Unix (local) socket
-</LI>
-<LI>TCP socket
-    
-</LI>
-</UL>
-    The daemon is fully configurable via the <code>clamd.conf</code> file
-    <A NAME="tex2html18"
-  HREF="footnode.html#foot227"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>. <code>clamd</code> recognizes the following commands:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">PING</SPAN>
-<BR>
-Check the daemon's state (should reply with "PONG").
-</LI>
-<LI><SPAN  CLASS="textbf">VERSION</SPAN>
-<BR>
-Print program and database versions.
-</LI>
-<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
-<BR>
-Reload the databases.
-</LI>
-<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
-<BR>
-Perform a clean exit.
-</LI>
-<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
-<BR>
-Scan file or directory (recursively) with archive support
-	    enabled (a full path is required).
-</LI>
-<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
-<BR>
-Scan file or directory (recursively) with archive and special file
-	    support disabled (a full path is required).
-</LI>
-<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
-<BR>
-Scan file or directory (recursively) with archive support
-	    enabled and don't stop the scanning when a virus is found.
-</LI>
-<LI><SPAN  CLASS="textbf">MULTISCAN file/directory</SPAN>
-<BR>
-Scan file in a standard way or scan directory (recursively) using
-	    multiple threads (to make the scanning faster on SMP machines).
-</LI>
-<LI><SPAN  CLASS="textbf">INSTREAM</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to prefix this command with <SPAN  CLASS="textbf">n</SPAN> or
-	    <SPAN  CLASS="textbf">z</SPAN>.</SPAN>
-<BR>
-Scan a stream of data. The stream is sent to clamd in chunks,
-	    after INSTREAM, on the same socket on which the command
-	    was sent. This avoids the overhead of establishing new TCP
-	    connections and problems with NAT. The format of the chunk is:
-	    <code>&lt;length&gt;&lt;data&gt;</code> where <code>&lt;length&gt;</code> is the size of the
-	    following data in bytes expressed as a 4 byte unsigned integer in
-	    network byte order and <code>&lt;data&gt;</code> is the actual chunk. Streaming
-	    is terminated by sending a zero-length chunk. Note: do not exceed
-	    StreamMaxLength as defined in clamd.conf, otherwise clamd will
-	    reply with <SPAN  CLASS="textit">INSTREAM size limit exceeded</SPAN> and close the
-	    connection.
-</LI>
-<LI><SPAN  CLASS="textbf">FILDES</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to newline terminate this command, or prefix
-	    with <SPAN  CLASS="textbf">n</SPAN> or <SPAN  CLASS="textbf">z</SPAN>. This command only works on UNIX
-	    domain sockets.</SPAN>
-<BR>
-Scan a file descriptor. After issuing a FILDES command a subsequent
-	    rfc2292/bsd4.4 style packet (with at least one dummy character) is
-	    sent to clamd carrying the file descriptor to be scanned inside the
-	    ancillary data. Alternatively the file descriptor may be sent in
-	    the same packet, including the extra character.
-</LI>
-<LI><SPAN  CLASS="textbf">STATS</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to newline terminate this command, or prefix
-	    with <SPAN  CLASS="textbf">n</SPAN> or <SPAN  CLASS="textbf">z</SPAN>, it is recommended to only use the
-	    <SPAN  CLASS="textbf">z</SPAN> prefix.</SPAN>
-<BR>
-On this command clamd provides statistics about the scan queue,
-	    contents of scan queue, and memory usage. The exact reply format is
-	    subject to changes in future releases.
-</LI>
-<LI><SPAN  CLASS="textbf">IDSESSION, END</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to prefix this command with <SPAN  CLASS="textbf">n</SPAN> or
-	    <SPAN  CLASS="textbf">z</SPAN>, also all commands inside <SPAN  CLASS="textbf">IDSESSION</SPAN> must be
-	    prefixed.</SPAN>
-<BR>
-Start/end a clamd session. Within a session multiple
-	    SCAN, INSTREAM, FILDES, VERSION, STATS commands can be sent on the
-	    same socket without opening new connections. Replies from clamd
-	    will be in the form <code>&lt;id&gt;: &lt;response&gt;</code> where <code>&lt;id&gt;</code> is
-	    the request number (in ASCII, starting from 1) and <code>&lt;response&gt;</code>
-	    is the usual clamd reply. The reply lines have the same delimiter
-	    as the corresponding command had. Clamd will process the commands
-	    asynchronously, and reply as soon as it has finished processing.
-	    Clamd requires clients to read all the replies it sent, before
-	    sending more commands to prevent send() deadlocks. The recommended
-	    way to implement a client that uses IDSESSION is with non-blocking
-	    sockets, and a select()/poll() loop: whenever send would block,
-	    sleep in select/poll until either you can write more data, or read
-	    more replies. <SPAN  CLASS="textit">Note that using non-blocking sockets without
-	    the select/poll loop and alternating recv()/send() doesn't comply
-	    with clamd's requirements.</SPAN> If clamd detects that a client has
-	    deadlocked, it will close the connection. Note that clamd may
-	    close an IDSESSION connection too if the client doesn't follow the
-	    protocol's requirements.
-</LI>
-<LI><SPAN  CLASS="textbf">STREAM</SPAN> (deprecated, use <SPAN  CLASS="textbf">INSTREAM</SPAN> instead)
-<BR>
-Scan stream: clamd will return a new port number you should
-	    connect to and send data to scan.
-    
-</LI>
-</UL>
-    It's recommended to prefix clamd commands with the letter <SPAN  CLASS="textbf">z</SPAN>
-    (eg. zSCAN) to indicate that the command will be delimited by a NULL
-    character and that clamd should continue reading command data until a NULL
-    character is read. The null delimiter assures that the complete command
-    and its entire argument will be processed as a single command. Alternatively
-    commands may be prefixed with the letter <SPAN  CLASS="textbf">n</SPAN> (e.g. nSCAN) to use
-    a newline character as the delimiter. Clamd replies will honour the
-    requested terminator in turn. If clamd doesn't recognize the command, or
-    the command doesn't follow the requirements specified below, it will reply
-    with an error message, and close the connection.
-    
-    Clamd can handle the following signals:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
-</LI>
-<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
-</LI>
-<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
-    
-</LI>
-</UL>
-    Clamd should not be started in the background using the shell operator
-    <code>&amp;</code> or external tools. Instead, you should run and wait for clamd
-    to load the database and daemonize itself. After that, clamd is instantly
-    ready to accept connections and perform file scanning.
+
+<P>
+The ClamAV Active Malware Report that was introduced in ClamAV 0.94.1 uses
+    freshclam to send summary data to our server about the malware that has
+    been detected. This data is then used to generate real-time reports on
+    active malware. These reports, along with geographical and historic trends,
+    will be published on <TT><A NAME="tex2html21"
+  HREF="http://www.clamav.net/">http://www.clamav.net/</A></TT>.
+
+<P>
+The more data that we receive from ClamAV users, the more reports, and the
+    better the quality of the reports, will be. To enable the submission of
+    data to us for use in the Active Malware Report, enable
+    SubmitDetectionStats in freshclam.conf, and LogTime and LogFile in
+    clamd.conf. You should only enable this feature if you're running clamd
+    to scan incoming data in your environment.
+
+<P>
+The only private data that is transferred is an IP address, which is used
+    to create the geographical data. The size of the data that is sent is small;
+    it contains just the filename, malware name and time of detection. The data
+    is sent in sets of 10 records, up to 50 records per session. For example,
+    if you have 45 new records, then freshclam will submit 40; if 78 then it
+    will submit the latest 50 entries; and if you have 9 records no statistics
+    will be sent.
 
 <P>
 
 <DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html537"
+<A NAME="tex2html535"
   HREF="node27.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html533"
-  HREF="node25.html">
+<A NAME="tex2html531"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html527"
   HREF="node25.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html535"
+<A NAME="tex2html533"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html538"
-  HREF="node27.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html534"
-  HREF="node25.html">Usage</A>
+<B> Next:</B> <A NAME="tex2html536"
+  HREF="node27.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html532"
+  HREF="node19.html">Configuration</A>
 <B> Previous:</B> <A NAME="tex2html528"
-  HREF="node25.html">Usage</A>
- &nbsp; <B>  <A NAME="tex2html536"
+  HREF="node25.html">Closest mirrors</A>
+ &nbsp; <B>  <A NAME="tex2html534"
   HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

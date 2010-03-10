@@ -1,81 +1,87 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Installing on shell account</TITLE>
-<META NAME="description" CONTENT="Installing on shell account">
+<TITLE>Installation</TITLE>
+<META NAME="description" CONTENT="Installation">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node12.html">
-<LINK REL="previous" HREF="node10.html">
-<LINK REL="up" HREF="node9.html">
+<LINK REL="next" HREF="node19.html">
+<LINK REL="previous" HREF="node6.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node12.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html350"
+<A NAME="tex2html347"
   HREF="node12.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html346"
-  HREF="node9.html">
+<A NAME="tex2html343"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html340"
+<A NAME="tex2html337"
   HREF="node10.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html348"
+<A NAME="tex2html345"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html351"
-  HREF="node12.html">Adding new system user</A>
-<B> Up:</B> <A NAME="tex2html347"
-  HREF="node9.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html341"
-  HREF="node10.html">Requirements</A>
- &nbsp; <B>  <A NAME="tex2html349"
+<B> Next:</B> <A NAME="tex2html348"
+  HREF="node12.html">Requirements</A>
+<B> Up:</B> <A NAME="tex2html344"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html338"
+  HREF="node10.html">Binary packages</A>
+ &nbsp; <B>  <A NAME="tex2html346"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00042000000000000000">
-Installing on shell account</A>
-</H2>
-    To install ClamAV locally on an unprivileged shell account you need not
-    create any additional users or groups. Assuming your home directory is
-    <code>/home/gary</code> you should build it as follows:
-    <PRE>
-	$ ./configure --prefix=/home/gary/clamav --disable-clamav
-	$ make; make install
-</PRE>
-    To test your installation execute:
-    <PRE>
-	$ ~/clamav/bin/freshclam
-	$ ~/clamav/bin/clamscan ~
-</PRE>
-    The <code>--disable-clamav</code> switch disables the check for existence of
-    the <SPAN  CLASS="textit">clamav</SPAN> user and group but <code>clamscan</code> would still require an
-    unprivileged account to work in a superuser mode.
+<H1><A NAME="SECTION00040000000000000000">
+Installation</A>
+</H1>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html349"
+  HREF="node12.html">Requirements</A>
+<LI><A NAME="tex2html350"
+  HREF="node13.html">Installing on shell account</A>
+<LI><A NAME="tex2html351"
+  HREF="node14.html">Adding new system user and group</A>
+<LI><A NAME="tex2html352"
+  HREF="node15.html">Compilation of base package</A>
+<LI><A NAME="tex2html353"
+  HREF="node16.html">Compilation with clamav-milter enabled</A>
+<LI><A NAME="tex2html354"
+  HREF="node17.html">Running unit tests</A>
+<LI><A NAME="tex2html355"
+  HREF="node18.html">Reporting a unit test failure bug</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

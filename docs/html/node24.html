@@ -1,114 +1,146 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>ClamAV Active Malware Report</TITLE>
-<META NAME="description" CONTENT="ClamAV Active Malware Report">
+<TITLE>Setting up auto-updating</TITLE>
+<META NAME="description" CONTENT="Setting up auto-updating">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node22.html">
-<LINK REL="up" HREF="node17.html">
+<LINK REL="next" HREF="node26.html">
+<LINK REL="previous" HREF="node23.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node25.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html507"
+<A NAME="tex2html514"
   HREF="node25.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html503"
-  HREF="node17.html">
+<A NAME="tex2html510"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html499"
+<A NAME="tex2html504"
   HREF="node23.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html505"
+<A NAME="tex2html512"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html508"
-  HREF="node25.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html504"
-  HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html500"
-  HREF="node23.html">Closest mirrors</A>
- &nbsp; <B>  <A NAME="tex2html506"
+<B> Next:</B> <A NAME="tex2html515"
+  HREF="node25.html">Closest mirrors</A>
+<B> Up:</B> <A NAME="tex2html511"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html505"
+  HREF="node23.html">Testing</A>
+ &nbsp; <B>  <A NAME="tex2html513"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00055000000000000000">
-ClamAV Active Malware Report</A>
+<H2><A NAME="SECTION00054000000000000000">
+Setting up auto-updating</A>
 </H2>
+    <code>freshclam</code> is the automatic database update tool for Clam AntiVirus.
+    It can work in two modes:
+    
+<UL>
+<LI>interactive - on demand from command line
+</LI>
+<LI>daemon - silently in the background
+    
+</LI>
+</UL>
+    <code>freshclam</code> is advanced tool: it supports scripted updates (instead
+    of transferring the whole CVD file at each update it only transfers the
+    differences between the latest and the current database via a special
+    script), database version checks through DNS, proxy servers (with
+    authentication), digital signatures and various error scenarios.
+    <SPAN  CLASS="textbf">Quick test: run freshclam (as superuser) with no parameters
+    and check the output.</SPAN> If everything is OK you may create the log file in
+    /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or another user <code>freshclam</code> will be
+    running as):
+    <PRE>
+	# touch /var/log/freshclam.log
+	# chmod 600 /var/log/freshclam.log
+	# chown clamav /var/log/freshclam.log
+</PRE>
+    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file <code>freshclam.conf</code>
+    and point the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive to the log file. Finally, to
+    run <code>freshclam</code> in the daemon mode, execute:
+    <PRE>
+	# freshclam -d
+</PRE>
+    The other way is to use the <SPAN  CLASS="textit">cron</SPAN> daemon. You have to add the
+    following line to the crontab of <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> user:
+    <SMALL CLASS="SMALL">    </SMALL><PRE>
+N * * * *	/usr/local/bin/freshclam --quiet
+</PRE>
+    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
+    number between 3 and 57 of your choice. Please don't choose any multiple
+    of 10, because there are already too many clients using those time slots.</SPAN>
+    Proxy settings are only configurable via the configuration file and
+    <code>freshclam</code> will require strict permission settings for the config
+    file when <code>HTTPProxyPassword</code> is turned on.
+    <PRE>
+	HTTPProxyServer myproxyserver.com
+	HTTPProxyPort 1234
+	HTTPProxyUsername myusername
+	HTTPProxyPassword mypass
+</PRE>
 
 <P>
-The ClamAV Active Malware Report that was introduced in ClamAV 0.94.1 uses
-    freshclam to send summary data to our server about the malware that has
-    been detected. This data is then used to generate real-time reports on
-    active malware. These reports, along with geographical and historic trends,
-    will be published on <TT><A NAME="tex2html17"
-  HREF="http://www.clamav.net/">http://www.clamav.net/</A></TT>.
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
-<P>
-The more data that we receive from ClamAV users, the more reports, and the
-    better the quality of the reports, will be. To enable the submission of
-    data to us for use in the Active Malware Report, enable
-    SubmitDetectionStats in freshclam.conf, and LogTime and LogFile in
-    clamd.conf. You should only enable this feature if you're running clamd
-    to scan incoming data in your environment.
-
-<P>
-The only private data that is transferred is an IP address, which is used
-    to create the geographical data. The size of the data that is sent is small;
-    it contains just the filename, malware name and time of detection. The data
-    is sent in sets of 10 records, up to 50 records per session. For example,
-    if you have 45 new records, then freshclam will submit 40; if 78 then it
-    will submit the latest 50 entries; and if you have 9 records no statistics
-    will be sent.
-
-<P>
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html516"
+  HREF="node25.html">Closest mirrors</A>
+</UL>
+<!--End of Table of Child-Links-->
 
 <DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html507"
+<A NAME="tex2html514"
   HREF="node25.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html503"
-  HREF="node17.html">
+<A NAME="tex2html510"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html499"
+<A NAME="tex2html504"
   HREF="node23.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html505"
+<A NAME="tex2html512"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html508"
-  HREF="node25.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html504"
-  HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html500"
-  HREF="node23.html">Closest mirrors</A>
- &nbsp; <B>  <A NAME="tex2html506"
+<B> Next:</B> <A NAME="tex2html515"
+  HREF="node25.html">Closest mirrors</A>
+<B> Up:</B> <A NAME="tex2html511"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html505"
+  HREF="node23.html">Testing</A>
+ &nbsp; <B>  <A NAME="tex2html513"
   HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

@@ -1,75 +1,139 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Adding new system user and group</TITLE>
-<META NAME="description" CONTENT="Adding new system user and group">
+<TITLE>Requirements</TITLE>
+<META NAME="description" CONTENT="Requirements">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node13.html">
 <LINK REL="previous" HREF="node11.html">
-<LINK REL="up" HREF="node9.html">
+<LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node13.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html362"
+<A NAME="tex2html366"
   HREF="node13.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html358"
-  HREF="node9.html">
+<A NAME="tex2html362"
+  HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html352"
+<A NAME="tex2html356"
   HREF="node11.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html360"
+<A NAME="tex2html364"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html363"
-  HREF="node13.html">Compilation of base package</A>
-<B> Up:</B> <A NAME="tex2html359"
-  HREF="node9.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html353"
-  HREF="node11.html">Installing on shell account</A>
- &nbsp; <B>  <A NAME="tex2html361"
+<B> Next:</B> <A NAME="tex2html367"
+  HREF="node13.html">Installing on shell account</A>
+<B> Up:</B> <A NAME="tex2html363"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html357"
+  HREF="node11.html">Installation</A>
+ &nbsp; <B>  <A NAME="tex2html365"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00043000000000000000">
-Adding new system user and group</A>
+<H2><A NAME="SECTION00041000000000000000">
+Requirements</A>
 </H2>
-    If you are installing ClamAV for the first time, you have to add a new
-    user and group to your system:
-    <PRE>
-	# groupadd clamav
-	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
-</PRE>
-    Consult a system manual if your OS has not <SPAN  CLASS="textit">groupadd</SPAN> and
-    <SPAN  CLASS="textit">useradd</SPAN> utilities. <SPAN  CLASS="textbf">Don't forget to lock access to the
-    account!</SPAN>
+    The following components are required to compile ClamAV under UNIX:
+    <A NAME="tex2html6"
+  HREF="footnode.html#foot125"><SUP><SPAN CLASS="arabic">3</SPAN></SUP></A>    
+<UL>
+<LI>zlib and zlib-devel packages
+</LI>
+<LI>gcc compiler suite (tested with 2.9x, 3.x and 4.x series)
+<BR>	      <SPAN  CLASS="textbf">If you are compiling with higher optimization levels
+	      than the default one (-O2 for gcc), be aware that there
+	      have been reports of misoptimizations. The build system of ClamAV
+	      only checks for bugs affecting the default settings, it is your
+	      responsibility to check that your compiler version doesn't
+	      have any bugs.</SPAN>
+    
+</LI>
+</UL>
+    The following packages are optional but <SPAN  CLASS="textbf">highly recommended</SPAN>:
+    
+<UL>
+<LI>bzip2 and bzip2-devel library
+</LI>
+<LI><code>check</code> unit testing framework <A NAME="tex2html7"
+  HREF="footnode.html#foot787"><SUP><SPAN CLASS="arabic">4</SPAN></SUP></A>.
+    
+</LI>
+</UL>
+    The following packages are optional, but <SPAN  CLASS="textbf">required for bytecode JIT support</SPAN>:
+    <A NAME="tex2html8"
+  HREF="footnode.html#foot134"><SUP><SPAN CLASS="arabic">5</SPAN></SUP></A>    
+<UL>
+<LI>GCC C and C++ compilers (minimum 4.1.3, recommended 4.3.4 or newer)
+<BR>
+the package for these compilers are usually called: gcc, g++, or gcc-c++.
+	    <A NAME="tex2html9"
+  HREF="footnode.html#foot788"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>
+</LI>
+<LI>A supported CPU for the JIT, either of: X86, X86-64, PowerPC, PowerPC64
+    
+</LI>
+</UL>
+    The following packages are optional, but needed for the JIT unit tests:
+    
+<UL>
+<LI>GNU Make (version 3.79, recommended 3.81)
+</LI>
+<LI>Python (version 2.5.4 or newer), for running the JIT unit tests
+    
+</LI>
+</UL>
 
 <P>
-<BR><HR>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html366"
+  HREF="node13.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html362"
+  HREF="node11.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html356"
+  HREF="node11.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html364"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html367"
+  HREF="node13.html">Installing on shell account</A>
+<B> Up:</B> <A NAME="tex2html363"
+  HREF="node11.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html357"
+  HREF="node11.html">Installation</A>
+ &nbsp; <B>  <A NAME="tex2html365"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

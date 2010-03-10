@@ -1,71 +1,89 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Licence</TITLE>
-<META NAME="description" CONTENT="Licence">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node34.html">
 <LINK REL="previous" HREF="node32.html">
-<LINK REL="up" HREF="node32.html">
+<LINK REL="up" HREF="node31.html">
 <LINK REL="next" HREF="node34.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html645"
+<A NAME="tex2html623"
   HREF="node34.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html641"
-  HREF="node32.html">
+<A NAME="tex2html619"
+  HREF="node31.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html635"
+<A NAME="tex2html615"
   HREF="node32.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html643"
+<A NAME="tex2html621"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html646"
-  HREF="node34.html">Supported formats</A>
-<B> Up:</B> <A NAME="tex2html642"
-  HREF="node32.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html636"
-  HREF="node32.html">LibClamAV</A>
- &nbsp; <B>  <A NAME="tex2html644"
+<B> Next:</B> <A NAME="tex2html624"
+  HREF="node34.html">LibClamAV</A>
+<B> Up:</B> <A NAME="tex2html620"
+  HREF="node31.html">Output format</A>
+<B> Previous:</B> <A NAME="tex2html616"
+  HREF="node32.html">clamscan</A>
+ &nbsp; <B>  <A NAME="tex2html622"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00071000000000000000">
-Licence</A>
-</H2>
-    Libclamav is licensed under the GNU GPL v2 licence. This means you are
-    <SPAN  CLASS="textbf">not allowed</SPAN> to link commercial, close-source applications
-    against it<A NAME="tex2html19"
-  HREF="footnode.html#foot298"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>.
-    All software using libclamav must be GPL compliant.
+<H3><A NAME="SECTION00064200000000000000">
+clamd</A>
+</H3>
+    The output format of <code>clamd</code> is very similar to <code>clamscan</code>.
+    <PRE>
+	zolw@localhost:~$ telnet localhost 3310
+	Trying 127.0.0.1...
+	Connected to localhost.
+	Escape character is '^]'.
+	SCAN /home/zolw/test
+	/home/zolw/test/clam.exe: ClamAV-Test-File FOUND
+	Connection closed by foreign host.
+</PRE>
+    In the <SPAN  CLASS="textbf">SCAN</SPAN> mode it closes the connection when the first virus
+    is found.
+    <PRE>
+	SCAN /home/zolw/test/clam.zip
+	/home/zolw/test/clam.zip: ClamAV-Test-File FOUND
+</PRE>
+    <SPAN  CLASS="textbf">CONTSCAN</SPAN> and <SPAN  CLASS="textbf">MULTISCAN</SPAN> don't stop scanning in case
+    a virus is found.
+<BR>
+Error messages are printed in the following format:
+    <PRE>
+	SCAN /no/such/file
+	/no/such/file: Can't stat() the file. ERROR
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>

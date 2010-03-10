@@ -1,85 +1,75 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+<!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Limits</TITLE>
-<META NAME="description" CONTENT="Limits">
+<TITLE>Error handling</TITLE>
+<META NAME="description" CONTENT="Error handling">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2008">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node48.html">
-<LINK REL="previous" HREF="node43.html">
-<LINK REL="up" HREF="node32.html">
+<LINK REL="previous" HREF="node46.html">
+<LINK REL="up" HREF="node43.html">
 <LINK REL="next" HREF="node48.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html817"
+<A NAME="tex2html833"
   HREF="node48.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html813"
-  HREF="node32.html">
+<A NAME="tex2html829"
+  HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html807"
+<A NAME="tex2html823"
   HREF="node46.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html815"
+<A NAME="tex2html831"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html818"
-  HREF="node48.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html814"
-  HREF="node32.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html808"
-  HREF="node46.html">Engine structure</A>
- &nbsp; <B>  <A NAME="tex2html816"
+<B> Next:</B> <A NAME="tex2html834"
+  HREF="node48.html">Engine structure</A>
+<B> Up:</B> <A NAME="tex2html830"
+  HREF="node43.html">API</A>
+<B> Previous:</B> <A NAME="tex2html824"
+  HREF="node46.html">Database loading</A>
+ &nbsp; <B>  <A NAME="tex2html832"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00075000000000000000">
-Limits</A>
-</H2>
-    When you create a new engine with <code>cl_engine_new()</code>, it will have
-    all internal settings set to default values as recommended by the
-    ClamAV authors. It's possible to check and modify the values (numerical
-    and strings) using the following set of functions:
+<H3><A NAME="SECTION00073400000000000000">
+Error handling</A>
+</H3>
+    Use <code>cl_strerror()</code> to convert error codes into human readable
+    messages.  The function returns a statically allocated string:
     <PRE>
-int cl_engine_set_num(struct cl_engine *engine,
-  enum cl_engine_field field, long long num);
-
-long long cl_engine_get_num(const struct cl_engine *engine,
-  enum cl_engine_field field, int *err);
-
-int cl_engine_set_str(struct cl_engine *engine,
-  enum cl_engine_field field, const char *str);
-
-const char *cl_engine_get_str(const struct cl_engine *engine,
-  enum cl_engine_field field, int *err);
+	if(ret != CL_SUCCESS) {
+	    printf("cl_load() error: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
 </PRE>
-    Please don't modify the default values unless you know what you're doing.
-    Refer to the ClamAV sources (clamscan, clamd) for examples.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-08-06
+2010-03-10
 </ADDRESS>
 </BODY>
 </HTML>
