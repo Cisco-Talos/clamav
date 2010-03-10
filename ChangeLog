@@ -1,3 +1,7 @@
+Wed Mar 10 20:04:46 CET 2010 (tk)
+---------------------------------
+ * V 0.96rc1
+
 Tue Mar  9 02:42:37 CET 2010 (acab)
 -----------------------------------
  * win32/platform.h: make sleep() wait seconds rather than ms (bb#1866)
