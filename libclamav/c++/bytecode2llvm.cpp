@@ -57,7 +57,6 @@
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/System/ThreadLocal.h"
-#include "dconf.h"
 #include <cstdlib>
 #include <csetjmp>
 #include <new>
@@ -77,8 +76,10 @@
 #undef PACKAGE_STRING
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
+#undef PACKAGE_URL
 #include "clamav-config.h"
 #endif
+#include "dconf.h"
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -258,7 +259,10 @@ public:
 		    break;
 		}
 		case DPointerType:
-		    Ty = PointerType::getUnqual(Elts[0]);
+		    if (!PointerType::isValidElementType(Elts[0]))
+			Ty = PointerType::getUnqual(Type::getInt8Ty(Context));
+		    else
+			Ty = PointerType::getUnqual(Elts[0]);
 		    break;
 		case DStructType:
 		    Ty = StructType::get(Context, Elts);
@@ -651,7 +655,6 @@ public:
 	    Functions[j]->setCallingConv(CallingConv::Fast);
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
-	const Type *I64Ty = Type::getInt64Ty(Context);
 	if (!bc->trusted)
 	    PM.add(createClamBCRTChecks());
 	for (unsigned j=0;j<bc->num_func;j++) {
