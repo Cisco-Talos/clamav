@@ -16444,6 +16444,7 @@ fi
 
 
 if test "$enable_debug" = "yes"; then
+  VERSION_SUFFIX="$VERSION_SUFFIX-debug"
 
 $as_echo "#define CL_DEBUG 1" >>confdefs.h
 
