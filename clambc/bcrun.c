@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     bcs.all_bcs = bc;
     bcs.count = 1;
 
-    rc = cli_bytecode_load(bc, f, NULL, 0);
+    rc = cli_bytecode_load(bc, f, NULL, optget(opts, "trust-bytecode")->enabled);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to load bytecode: %s\n", cl_strerror(rc));
 	optfree(opts);
@@ -251,7 +251,6 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
-	bc->trusted = 1;
 	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));

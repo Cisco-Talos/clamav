@@ -382,6 +382,12 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    engine->keeptmp = num;
 	    break;
 	case CL_ENGINE_BYTECODE_SECURITY:
+#ifndef CL_DEBUG
+	    if (num == CL_BYTECODE_TRUST_ALL) {
+		cli_errmsg("cl_engine_set_num: CL_BYTECODE_TRUST_ALL is only supported when ClamAV is built in debug mode\n");
+		return CL_EARG;
+	    }
+#endif
 	    engine->bytecode_security = num;
 	    break;
 	default:

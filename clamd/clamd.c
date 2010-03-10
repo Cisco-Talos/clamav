@@ -422,7 +422,11 @@ int main(int argc, char **argv)
 	    ret = 1;
 	    break;
 	}
-	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s);
+	if ((ret = cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s))) {
+	    logg("Invalid bytecode security setting %s: %s\n", opt->strarg, cl_strerror(ret));
+	    ret = 1;
+	    break;
+	}
     }
 
     if(optget(opts,"PhishingScanURLs")->enabled)

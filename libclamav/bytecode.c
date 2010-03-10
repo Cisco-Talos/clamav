@@ -1237,6 +1237,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     int rc, end=0;
 
     memset(bc, 0, sizeof(*bc));
+    cli_dbgmsg("Loading %s bytecode\n", trust ? "trusted" : "untrusted");
     bc->trusted = trust;
     if (!f && !dbio) {
 	cli_errmsg("Unable to load bytecode (null file)\n");
