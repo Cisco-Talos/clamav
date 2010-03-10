@@ -2356,6 +2356,7 @@ int cli_found_possibly_unwanted(cli_ctx* ctx)
 	} else {
 		cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
 	}
+	emax_reached(ctx);
 	return CL_CLEAN;
 }
 

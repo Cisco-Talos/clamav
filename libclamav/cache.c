@@ -655,6 +655,8 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
        return;
 
     level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
+    if (ctx->found_possibly_unwanted && (level || !ctx->recursion))
+	return;
     c = &ctx->engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("cli_add: mutex lock fail\n");
