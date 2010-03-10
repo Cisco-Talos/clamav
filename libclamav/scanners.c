@@ -1871,6 +1871,8 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
 static void emax_reached(cli_ctx *ctx) {
     fmap_t **ctx_fmap = ctx->fmap;
+    if (!ctx_fmap)
+	return;
     while(*ctx_fmap) {
 	fmap_t *map = *ctx_fmap;
 	map->dont_cache_flag = 1;
