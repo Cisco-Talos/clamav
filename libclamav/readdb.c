@@ -1380,6 +1380,12 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
 	return CL_SUCCESS;
     }
+#ifndef CL_DEBUG
+    if (!(options & CL_DB_SIGNED)) {
+	cli_warnmsg("Only loading signed bytecode, skipping load of unsigned bytecode!\n");
+	return CL_SUCCESS;
+    }
+#endif
     bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
     if (!bcs->all_bcs) {
 	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
