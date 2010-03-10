@@ -651,7 +651,7 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     uint32_t level;
     struct CACHE *c;
 
-    if(!ctx || !ctx->engine || !ctx->engine->cache || ctx->found_possibly_unwanted)
+    if(!ctx || !ctx->engine || !ctx->engine->cache)
        return;
 
     level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
