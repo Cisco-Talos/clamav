@@ -71,7 +71,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus -devel\\
+	\huge Clam AntiVirus 0.96rc1\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -83,7 +83,7 @@
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
     ClamAV User Manual,
-    \copyright \  2007 - 2009 Sourcefire, Inc.
+    \copyright \  2007 - 2010 Sourcefire, Inc.
     Authors: Tomasz Kojm\\
     This document is distributed under the terms of the GNU General
     Public License v2.\\
@@ -127,15 +127,20 @@
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
 	\item{Supports on-access scanning (Linux and FreeBSD only)}
-	\item{Detects over 570.000 viruses, worms and trojans, including
+	\item{Detects over 720.000 viruses, worms and trojans, including
 	      Microsoft Office macro viruses, mobile malware, and other threats}
+	\item{Built-in bytecode interpreter allows the ClamAV signature writers
+	      to create and distribute very complex detection routines and
+	      remotely enhance the scanner's functionality}
 	\item{Scans within archives and compressed files (also protects
 	      against archive bombs), built-in support includes:
 	    \begin{itemize}
 		\item Zip (including SFX)
 		\item RAR (including SFX)
+		\item 7Zip
 		\item ARJ (including SFX)
 		\item Tar
+		\item CPIO
 		\item Gzip
 		\item Bzip2
 		\item MS OLE2
@@ -145,6 +150,7 @@
 		\item BinHex
 		\item SIS (SymbianOS packages)
 		\item AutoIt
+		\item InstallShield
 	    \end{itemize}}
 	\item{Supports Portable Executable (32/64-bit) files compressed or obfuscated with:}
 	    \begin{itemize}
@@ -159,6 +165,7 @@
 		\item Upack
 		\item Y0da Cryptor
 	    \end{itemize}
+	\item{Supports ELF and Mach-O files (both 32- and 64-bit)}
 	\item{Supports almost all mail file formats}
 	\item{Support for other special files/formats includes:}
 	    \begin{itemize}
@@ -203,18 +210,19 @@
     \section{Base package}
 
     \subsection{Supported platforms}
-    Most popular UNIX operating systems are supported. Clam AntiVirus 0.9x was
-    tested on:
-    \begin{itemize}
-	\item{GNU/Linux}
-	\item{Solaris}
-	\item{FreeBSD}
-	\item{OpenBSD} \footnote{Installation from a port is recommended.}
-	\item{Mac OS X}
-    \end{itemize}
-    Some features may not be available on your operating system. If you
-    are successfully running Clam AntiVirus on a system not listed above
-    please let us know.
+	\subsubsection{UNIX}
+	The most popular UNIX operating systems are supported. Clam AntiVirus 0.9x is
+	regularly tested on:
+	\begin{itemize}
+	    \item{GNU/Linux}
+	    \item{Solaris}
+	    \item{FreeBSD}
+	    \item{OpenBSD} \footnote{Installation from a port is recommended.}
+	    \item{Mac OS X}
+	\end{itemize}
+
+	\subsubsection{Windows}
+	Starting with 0.96 ClamAV builds natively under Visual Studio.
 
     \subsection{Binary packages}
     You can find the up-to-date list of binary packages at our website:
@@ -223,7 +231,9 @@
     \section{Installation}
 
     \subsection{Requirements}
-    The following elements are required to compile ClamAV:
+    The following components are required to compile ClamAV under UNIX:
+    \footnote{For Windows instructions please see win32/README in the
+    main source code directory.}
     \begin{itemize}
 	\item zlib and zlib-devel packages
 	\item gcc compiler suite (tested with 2.9x, 3.x and 4.x series)\\
@@ -428,7 +438,7 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
     section.
 
     \subsection{clamav-milter}
-    ClamAV 0.95 includes a new, redesigned clamav-milter. The most notable
+    ClamAV $\ge0.95$ includes a new, redesigned clamav-milter. The most notable
     difference is that the internal mode has been dropped and now a working
     clamd companion is required. The second important difference is that now
     the milter has got its own configuration and log files. To compile ClamAV
@@ -746,15 +756,14 @@ N * * * *	/usr/local/bin/freshclam --quiet
 
     \subsection{Licence}
     Libclamav is licensed under the GNU GPL v2 licence. This means you are
-    \textbf{not allowed} to link commercial, close-source applications
-    against it\footnote{You can still use clamd or clamscan instead}.
-    All software using libclamav must be GPL compliant.
+    \textbf{not allowed} to link commercial, closed-source software
+    against it. All software using libclamav must be GPL compliant.
 
-    \subsection{Supported formats}
+    \subsection{Supported formats and features}
 
     \subsubsection{Executables}
-    The library has a built-in support for 32/64-bit Portable Executable files
-    and 32-bit ELF files. Additionally, it can handle PE files compressed or
+    The library has a built-in support for 32- and 64-bit Portable Executable,
+    ELF and Mach-O files. Additionally, it can handle PE files compressed or
     obfuscated with the following tools:
     \begin{itemize}
 	\item Aspack (2.12)
@@ -779,7 +788,9 @@ N * * * *	/usr/local/bin/freshclam --quiet
     \begin{itemize}
 	\item Zip (+ SFX)
 	\item RAR (+ SFX)
+	\item 7Zip
 	\item Tar
+	\item CPIO
 	\item Gzip
 	\item Bzip2
 	\item MS OLE2
@@ -790,6 +801,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item SIS (SymbianOS packages)
 	\item AutoIt
 	\item NSIS
+	\item InstallShield
     \end{itemize}
 
     \subsubsection{Documents}
@@ -824,7 +836,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	#include <clamav.h>
     \end{verbatim}
 
-    \subsection{Initialization}
+    \subsubsection{Initialization}
     Before using libclamav, you should call \verb+cl_init()+ to initialize
     it. When it's done, you're ready to create a new scan engine by calling
     \verb+cl_engine_new()+. To free resources allocated by the engine use
@@ -866,6 +878,10 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	Initialize the phishing detection module and load .wdb and .pdb files.
 	\item \textbf{CL\_DB\_PUA}\\
 	Load signatures for Potentially Unwanted Applications.
+	\item \textbf{CL\_DB\_OFFICIAL\_ONLY}\\
+	Only load official signatures from digitally signed databases.
+	\item \textbf{CL\_DB\_BYTECODE}\\
+	Load bytecode.
     \end{itemize}
     \verb+cl_load()+ returns \verb+CL_SUCCESS+ on success and another code on
     failure.
@@ -916,7 +932,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	}
     \end{verbatim}
 
-    \subsection{Limits}
+    \subsubsection{Limits}
     When you create a new engine with \verb+cl_engine_new()+, it will have
     all internal settings set to default values as recommended by the
     ClamAV authors. It's possible to check and modify the values (numerical
@@ -937,7 +953,7 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
     Please don't modify the default values unless you know what you're doing.
     Refer to the ClamAV sources (clamscan, clamd) for examples.
 
-    \subsection{Database reloading}
+    \subsubsection{Database checks}
     It's very important  to keep the internal instance of the database up to
     date. You can watch database changes with the \verb+cl_stat..()+ family
     of functions.
@@ -955,7 +971,8 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
 	cl_statinidir(dbdir, &dbstat);
     \end{verbatim}
     To check for a change you just need to call \verb+cl_statchkdir+ and check
-    its return value (0 - no change, 1 - some change occured):
+    its return value (0 - no change, 1 - some change occured). Remember to reset
+    the \verb+cl_stat+ structure after reloading the database.
     \begin{verbatim}
 	if(cl_statchkdir(&dbstat) == 1) {
 	    reload_database...;
@@ -963,7 +980,20 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
 	    cl_statinidir(cl_retdbdir(), &dbstat);
 	}
     \end{verbatim}
-    Remember to reset the \verb+cl_stat+ structure after each reload.
+    Libclamav $\ge0.96$ includes and additional call to check the number of
+    signatures that can be loaded from a given directory:
+    \begin{verbatim}
+	int cl_countsigs(const char *path, unsigned int countoptions,
+	    unsigned int *sigs);
+    \end{verbatim}
+    The first argument points to the database directory, the second one
+    specifies what signatures should be counted:
+    \verb+CL_COUNTSIGS_OFFICIAL+ (official signatures),\\
+    \verb+CL_COUNTSIGS_UNOFFICIAL+ (third party signatures),
+    \verb+CL_COUNTSIGS_ALL+ (all signatures). The last argument points
+    to the counter to which the number of detected signatures will
+    be added (therefore the counter should be initially set to 0).
+    The call returns \verb+CL_SUCCESS+ or an error code.
 
     \subsubsection{Data scan functions}
     It's possible to scan a file or descriptor using:

@@ -1,9 +1,39 @@
-0.95.2
-------
+0.96rc1
+-------
 
-This version improves handling of archives, adds support for --file-list
-in clamscan and clamdscan, and fixes various issues found in previous
-releases.
+This release of ClamAV introduces new malware detection mechanisms and other
+significant improvements to the scan engine. The key features include:
+
+    - The Bytecode Interpreter: the interpreter built into LibClamAV allows
+      the signature writers to create and distribute very complex detection
+      routines and remotely enhance the scanner's functionality
+
+    - Heuristic improvements: improve the PE heuristics detection engine by
+      adding support of bogus icons and fake PE header information. In a
+      nutshell, ClamAV can now detect malware that tries to disguise itself
+      as a harmless application by using the most common Windows program icons.
+
+    - Signature Improvements: logical signature improvements to allow more
+      detailed matching and referencing groups of signatures. Additionally,
+      improvements to wildcard matching on word boundaries and newlines.
+
+    - Support for new archives: 7zip, InstallShield and CPIO. LibClamAV
+      can now transparently unpack and inspect their contents.
+
+    - Support for new executable file formats: 64-bit ELF files and OS X
+      Universal Binaries with Mach-O files. Additionally, the PE module
+      can now decompress and inspect executables packed with UPX 3.0.
+
+    - Performance improvements: overall performance improvements and memory
+      optimizations for a better overall resource utilization experience.
+
+    - Native Windows Support: ClamAV will now build natively under Visual
+      Studio. This will allow 3rd Party application developers on Windows
+      to easily integrate LibClamAV into their applications.
+
+The complete list of changes is available in the ChangeLog file. For upgrade
+notes and tips please see: https://wiki.clamav.net/Main/UpgradeNotes096
 
 --
 The ClamAV team (http://www.clamav.net/team)
+
