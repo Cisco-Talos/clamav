@@ -318,6 +318,29 @@ namespace {
       LHS = SE->getNoopOrZeroExtend(LHS, LTy);
       RHS = SE->getNoopOrZeroExtend(RHS, LTy);
     }
+    bool checkCondition(CallInst *CI, Instruction *I)
+    {
+      for (Value::use_iterator U=CI->use_begin(),UE=CI->use_end();
+           U != UE; ++U) {
+        if (ICmpInst *ICI = dyn_cast<ICmpInst>(U)) {
+          if (ICI->getOperand(0)->stripPointerCasts() == CI &&
+              isa<ConstantPointerNull>(ICI->getOperand(1))) {
+            for (Value::use_iterator JU=ICI->use_begin(),JUE=ICI->use_end();
+                 JU != JUE; ++JU) {
+              if (BranchInst *BI = dyn_cast<BranchInst>(JU)) {
+                if (!BI->isConditional())
+                  continue;
+                BasicBlock *S = BI->getSuccessor(ICI->getPredicate() ==
+                                                 ICmpInst::ICMP_EQ);
+                if (DT->dominates(S, I->getParent()))
+                  return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
     bool validateAccess(Value *Pointer, Value *Length, Instruction *I)
     {
         // get base
@@ -331,6 +354,21 @@ namespace {
             << *Length << " at " << *I << "\n";
 
           return false;
+        }
+
+        if (CallInst *CI = dyn_cast<CallInst>(Base->stripPointerCasts())) {
+          if (I->getParent() == CI->getParent()) {
+            errs() << "No null pointer check after function call " << *Base
+              << "\n";
+            errs() << " before use in same block at " << *I << "\n";
+            return false;
+          }
+          if (!checkCondition(CI, I)) {
+            errs() << "No null pointer check after function call " << *Base
+              << "\n";
+            errs() << " before use at " << *I << "\n";
+            return false;
+          }
         }
 
         const Type *I64Ty =
@@ -370,7 +408,7 @@ namespace {
         if (Max == Limit)
           return true;
         DEBUG(dbgs() << "Max != Limit: " << *Max << ", " << *Limit << "\n");
-        //TODO: insert check
+
         return insertCheck(OffsetP, Limit, I);
     }
 

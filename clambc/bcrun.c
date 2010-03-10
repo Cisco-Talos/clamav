@@ -251,6 +251,7 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
+	bc->trusted = 1;
 	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
