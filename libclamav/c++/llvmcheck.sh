@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 mkdir -p llvm/Release/bin
 mkdir -p llvm/Debug/bin
 cp lli llc llvm-as not count FileCheck tblgen llvm-dis llvm/Release/bin/
