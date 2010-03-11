@@ -34,10 +34,10 @@ BEGIN
 	    VALUE "InternalName", RES_NAME
 	    VALUE "OriginalFilename", RES_FNAME
 	    VALUE "ProductName", "ClamAV"
-	    VALUE "ProductVersion", RES_VER_S
+	    VALUE "ProductVersion", RES_VER_S " ("  REPO_VERSION ")"
 	    VALUE "LegalCopyright", "(C) 2009 Sourcefire, Inc."
-	    //VALUE "LegalTrademarks", ""
-	    //VALUE "Comments", ""
+	    VALUE "LegalTrademarks", "License: GNU GPL, Version 2"
+	    VALUE "Comments", REPO_VERSION
 	}
     }
     BLOCK "VarFileInfo" {
