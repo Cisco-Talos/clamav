@@ -30,6 +30,12 @@ if test "$cxxset" != set; then
 # don't use the default -O2 -g because -g bloats the C++ binaries too much
   CXXFLAGS="-O2"
 fi
+case "$target_os" in
+solaris*)
+  CXXFLAGS="$CXXFLAGS -include llvm/System/Solaris.h"
+  AC_MSG_NOTICE([Building on Solaris])
+  ;;
+esac
 
 AM_MAINTAINER_MODE
 LT_INIT([disable-static])
