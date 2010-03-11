@@ -86,12 +86,12 @@ Path to a local (Unix) socket the daemon will listen on.
 .br 
 Default: no
 .TP
-\fLocalSocketGroup STRING
+\fBLocalSocketGroup STRING\fR
 Sets the group ownership on the unix socket.
 .br
 Default: the primary group of the user running clamd
 .TP
-\fLocalSocketMode STRING
+\fBLocalSocketMode STRING\fR
 Sets the permissions on the unix socket to the specified mode.
 .br
 Default: socket is world readable and writable
