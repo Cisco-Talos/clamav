@@ -59,6 +59,8 @@ Process::GetPageSize()
   return static_cast<unsigned>(page_size);
 }
 
+/* ClamAV: we don't link with -lmalloc */
+#undef HAVE_MALLINFO
 size_t Process::GetMallocUsage() {
 #if defined(HAVE_MALLINFO)
   struct mallinfo mi;

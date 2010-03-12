@@ -32,7 +32,7 @@ if test "$cxxset" != set; then
 fi
 case "$target_os" in
 solaris*)
-  CXXFLAGS="$CXXFLAGS -include llvm/System/Solaris.h"
+  CXXFLAGS="$CXXFLAGS -include llvm/include/llvm/System/Solaris.h"
   AC_MSG_NOTICE([Building on Solaris])
   ;;
 esac

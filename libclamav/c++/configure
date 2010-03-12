@@ -3783,7 +3783,7 @@ if test "$cxxset" != set; then
 fi
 case "$target_os" in
 solaris*)
-  CXXFLAGS="$CXXFLAGS -include llvm/System/Solaris.h"
+  CXXFLAGS="$CXXFLAGS -include llvm/include/llvm/System/Solaris.h"
   { $as_echo "$as_me:${as_lineno-$LINENO}: Building on Solaris" >&5
 $as_echo "$as_me: Building on Solaris" >&6;}
   ;;
