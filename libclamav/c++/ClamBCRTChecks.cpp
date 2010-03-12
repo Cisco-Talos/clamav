@@ -101,6 +101,7 @@ namespace {
       }
 
       if (!valid) {
+	DEBUG(F.dump());
         ClamBCModule::stop("Verification found errors!", &F, 0);	
 	// replace function with call to abort
         std::vector<const Type*>args;
@@ -230,8 +231,17 @@ namespace {
 
       const Type *Ty;
       Value *V = PT->computeAllocationCountValue(Base, Ty);
-      if (!V)
-        return BoundsMap[Base] = 0;
+      if (!V) {
+	  Base = Base->stripPointerCasts();
+	  if (CallInst *CI = dyn_cast<CallInst>(Base)) {
+	      Function *F = CI->getCalledFunction();
+	      if (F && F->getName().equals("malloc") && F->getFunctionType()->getNumParams() == 2) {
+		  V = CI->getOperand(2);
+	      }
+	  }
+	  if (!V)
+	      return BoundsMap[Base] = 0;
+      }
       unsigned size = TD->getTypeAllocSize(Ty);
       if (size > 1) {
         Constant *C = cast<Constant>(V);
@@ -346,10 +356,11 @@ namespace {
         // get base
         Value *Base = getPointerBase(Pointer);
 
+	Value *SBase = Base->stripPointerCasts();
         // get bounds
-        Value *Bounds = getPointerBounds(Base);
+        Value *Bounds = getPointerBounds(SBase);
         if (!Bounds) {
-          errs() << "No bounds for base " << *Base << "\n";
+          errs() << "No bounds for base " << *SBase << "\n";
           errs() << " while checking access to " << *Pointer << " of length "
             << *Length << " at " << *I << "\n";
 

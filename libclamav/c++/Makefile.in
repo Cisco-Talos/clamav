@@ -298,7 +298,7 @@ am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
 	circular_raw_ostream.lo raw_ostream.lo Mangler.lo \
 	SubtargetFeature.lo TargetData.lo TargetInstrInfo.lo \
 	TargetLoweringObjectFile.lo TargetMachine.lo \
-	TargetRegisterInfo.lo AsmWriter.lo Attributes.lo \
+	TargetRegisterInfo.lo DCE.lo AsmWriter.lo Attributes.lo \
 	AutoUpgrade.lo BasicBlock.lo ConstantFold.lo Constants.lo \
 	Core.lo Dominators.lo Function.lo GVMaterializer.lo Globals.lo \
 	IRBuilder.lo InlineAsm.lo Instruction.lo Instructions.lo \
@@ -1271,6 +1271,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Target/TargetLoweringObjectFile.cpp\
 	llvm/lib/Target/TargetMachine.cpp\
 	llvm/lib/Target/TargetRegisterInfo.cpp\
+	llvm/lib/Transforms/Scalar/DCE.cpp\
 	llvm/lib/VMCore/AsmWriter.cpp\
 	llvm/lib/VMCore/Attributes.cpp\
 	llvm/lib/VMCore/AutoUpgrade.cpp\
@@ -1780,6 +1781,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Core.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CriticalAntiDepBreaker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DAGCombiner.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DCE.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DIE.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DeadMachineInstructionElim.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Debug.Plo@am__quote@
@@ -4498,6 +4500,14 @@ TargetRegisterInfo.lo: llvm/lib/Target/TargetRegisterInfo.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/TargetRegisterInfo.cpp' object='TargetRegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o TargetRegisterInfo.lo `test -f 'llvm/lib/Target/TargetRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetRegisterInfo.cpp
+
+DCE.lo: llvm/lib/Transforms/Scalar/DCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT DCE.lo -MD -MP -MF $(DEPDIR)/DCE.Tpo -c -o DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/DCE.Tpo $(DEPDIR)/DCE.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/DCE.cpp' object='DCE.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
 
 AsmWriter.lo: llvm/lib/VMCore/AsmWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT AsmWriter.lo -MD -MP -MF $(DEPDIR)/AsmWriter.Tpo -c -o AsmWriter.lo `test -f 'llvm/lib/VMCore/AsmWriter.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/AsmWriter.cpp

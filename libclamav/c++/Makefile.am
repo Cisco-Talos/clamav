@@ -512,6 +512,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/Target/TargetLoweringObjectFile.cpp\
 	llvm/lib/Target/TargetMachine.cpp\
 	llvm/lib/Target/TargetRegisterInfo.cpp\
+	llvm/lib/Transforms/Scalar/DCE.cpp\
 	llvm/lib/VMCore/AsmWriter.cpp\
 	llvm/lib/VMCore/Attributes.cpp\
 	llvm/lib/VMCore/AutoUpgrade.cpp\

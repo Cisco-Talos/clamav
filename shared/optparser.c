@@ -122,6 +122,7 @@ const struct clam_option __clam_options[] = {
 
     { NULL, "force-interpreter", 'f', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Force using the interpreter instead of the JIT", "" },
     { NULL, "trust-bytecode", 't', TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMBC, "Trust loaded bytecode (default yes)", ""},
+    { NULL, "trust-loaded-bytecode", 't', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Trust loaded bytecode (default: only if signed)", ""},
     { NULL, "info", 'i', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and print bytecode information without executing", ""},
     { NULL, "printsrc", 'p', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print source code of bytecode", ""},
     { NULL, "input", 'i', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},

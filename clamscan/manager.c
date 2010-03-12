@@ -401,6 +401,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "leave-temps")->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
 
+    if(optget(opts, "trust-loaded-bytecode")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, CL_BYTECODE_TRUST_ALL);
+
     if((opt = optget(opts, "tempdir"))->enabled) {
 	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
 	    logg("!cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));

@@ -610,7 +610,8 @@ public:
 	}
 
 	// The hidden ctx param to all functions
-	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
+	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
+	const Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(Context), maxh));
 
 	globals.reserve(bc->num_globals);
 	BitVector FakeGVs;
@@ -697,9 +698,14 @@ public:
 			continue;
 		    unsigned g = bc->globals[i][1];
 		    unsigned offset = GVoffsetMap[g];
+
 		    Constant *Idx = ConstantInt::get(Type::getInt32Ty(Context),
 						     offset);
-		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
+		    Value *Idxs[2] = {
+			ConstantInt::get(Type::getInt32Ty(Context), 0),
+			Idx
+		    };
+		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idxs, Idxs+2);
 		    const Type *Ty = GVtypeMap[g];
 		    Ty = PointerType::getUnqual(PointerType::getUnqual(Ty));
 		    Value *Cast = Builder.CreateBitCast(GEP, Ty);
@@ -1127,7 +1133,7 @@ public:
 	delete TypeMap;
 	std::vector<const Type*> args;
 	args.clear();
-	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(HiddenCtx);
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
 						   args, false);
 	for (unsigned j=0;j<bc->num_func;j++) {
@@ -1365,10 +1371,12 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(new TargetData(*EE->getTargetData()));
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
+	OurFPM.add(createDeadCodeEliminationPass());
 	OurFPM.doInitialization();
 
 	//TODO: create a wrapper that calls pthread_getspecific
-	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(bcs->engine->Context));
+	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
+	const Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
 
 	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes, HiddenCtx);
 	Function **apiFuncs = new Function *[cli_apicall_maxapi];
