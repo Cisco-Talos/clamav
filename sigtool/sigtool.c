@@ -67,6 +67,7 @@
 #include "libclamav/default.h"
 #include "libclamav/fmap.h"
 #include "libclamav/readdb.h"
+#include "libclamav/others.h"
 
 #define MAX_DEL_LOOKAHEAD   200
 
@@ -795,7 +796,7 @@ static int build(const struct optstruct *opts)
 	    return -1;
 	}
     } else {
-	fl = cl_retflevel();
+	fl = CL_FLEVEL_SIGTOOL;
     }
     sprintf(header + strlen(header), "%u:", fl);
 

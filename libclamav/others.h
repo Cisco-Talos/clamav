@@ -55,6 +55,7 @@
 
 #define CL_FLEVEL 50
 #define CL_FLEVEL_DCONF	CL_FLEVEL
+#define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
 
