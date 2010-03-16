@@ -1,150 +1,192 @@
 LIBRARY libclamav
-; cl_stuff - should be exported as is
-EXPORTS cl_debug
-EXPORTS cl_load
-EXPORTS cl_engine_compile
-EXPORTS cl_engine_set_num
-EXPORTS cl_engine_set_str
-EXPORTS cl_engine_free
-EXPORTS cl_engine_new
-EXPORTS cl_engine_settings_copy
-EXPORTS cl_engine_settings_free
-EXPORTS cl_engine_settings_apply
-EXPORTS cl_engine_get_num
-EXPORTS cl_strerror
-EXPORTS cl_init
-EXPORTS cl_retdbdir
-EXPORTS cl_scandesc
-EXPORTS cl_scanfile
-EXPORTS cl_cvdfree
-EXPORTS cl_cvdhead
-EXPORTS cl_retflevel
-EXPORTS cl_cvdparse
-EXPORTS cl_cvdverify
-EXPORTS cl_retver
-EXPORTS cl_engine_addref
-EXPORTS cl_statinidir
-EXPORTS cl_statchkdir
-EXPORTS cl_statfree
-EXPORTS cl_countsigs
+; cl_functions
+; ------------
+;
+; These APIs are stable and can be safey linked by name or ordinal
+; Note: add new exports to the bottom of this block!
 
-; cli_stuff - should be mangled or exported by ordinal only
-EXPORTS cli_gentemp
-EXPORTS cli_gentempfd
-EXPORTS cli_gettmpdir
-EXPORTS cli_regcomp
-EXPORTS cli_regexec
-EXPORTS cli_regfree
-EXPORTS cli_ctime
-EXPORTS cli_rmdirs
-EXPORTS cli_isnumber
-EXPORTS cli_strtok
-EXPORTS cli_cvdunpack
-EXPORTS cli_chomp
-EXPORTS cli_strtokenize
-EXPORTS cli_versig2
-EXPORTS cli_strerror
-EXPORTS cli_rndnum
-EXPORTS cli_unlink
-EXPORTS cli_writen
-EXPORTS cli_ftw
-EXPORTS have_rar
-EXPORTS have_clamjit
+EXPORTS cl_countsigs @1
+EXPORTS cl_cvdfree @2
+EXPORTS cl_cvdhead @3
+EXPORTS cl_cvdparse @4
+EXPORTS cl_cvdverify @5
+EXPORTS cl_debug @6
+EXPORTS cl_engine_addref @7
+EXPORTS cl_engine_compile @8
+EXPORTS cl_engine_free @9
+EXPORTS cl_engine_get_num @10
+EXPORTS cl_engine_new @11
+EXPORTS cl_engine_set_num @12
+EXPORTS cl_engine_set_str @13
+EXPORTS cl_engine_settings_apply @14
+EXPORTS cl_engine_settings_copy @15
+EXPORTS cl_engine_settings_free @16
+EXPORTS cl_init @17
+EXPORTS cl_load @18
+EXPORTS cl_retdbdir @19
+EXPORTS cl_retflevel @20
+EXPORTS cl_retver @21
+EXPORTS cl_scandesc @22
+EXPORTS cl_scanfile @23
+EXPORTS cl_statchkdir @24
+EXPORTS cl_statfree @25
+EXPORTS cl_statinidir @26
+EXPORTS cl_strerror @27
 
-EXPORTS cli_bytecode_done
-EXPORTS cli_bytecode_destroy
-EXPORTS cli_bytecode_context_destroy
-EXPORTS cli_bytecode_context_getresult_int
-EXPORTS cli_bytecode_run
-EXPORTS funmap
-EXPORTS cli_bytecode_context_setfile
-EXPORTS fmap
-EXPORTS cli_bytecode_context_setparam_int
-EXPORTS cli_bytecode_context_setfuncid
-EXPORTS cli_bytecode_context_set_trace
-EXPORTS cli_bytecode_context_alloc
-EXPORTS cli_bytecode_prepare
-EXPORTS cli_bytecode_load
-EXPORTS cli_bytecode_init
-EXPORTS cli_bytecode_debug
-EXPORTS cli_bytecode_debug_printsrc
-EXPORTS cli_bytecode_printversion
-EXPORTS cli_bytecode_describe
 
-; shared stuff - to be either double compiled into the tools or treated like cli_xxx
-EXPORTS opendir
-EXPORTS readdir
-EXPORTS closedir
-EXPORTS safe_open
-EXPORTS snprintf
-EXPORTS mp_init
-EXPORTS mp_read_radix
-EXPORTS mp_clear
-EXPORTS sha256_init
-EXPORTS sha256_update
-EXPORTS sha256_final
-EXPORTS gzopen
-EXPORTS gzgets
-EXPORTS gzdopen
-EXPORTS gzclose
-EXPORTS gzwrite
+; path variables
+; --------------
+;
+; These variables (char *) are for primary use by the ClamAV tools
+; They are however stable and safe to link by 3rd parties
 
-EXPORTS optget
-EXPORTS optparse
-EXPORTS optfree
-EXPORTS clam_options DATA
+EXPORTS DATADIR @1000 DATA
+EXPORTS CONFDIR @1001 DATA
+EXPORTS CONFDIR_CLAMD @1002 DATA
+EXPORTS CONFDIR_FRESHCLAM @1003 DATA
+EXPORTS CONFDIR_MILTER @1004 DATA
 
-EXPORTS DATADIR DATA
-EXPORTS CONFDIR DATA
-EXPORTS CONFDIR_CLAMD DATA
-EXPORTS CONFDIR_FRESHCLAM DATA
-EXPORTS CONFDIR_MILTER DATA
 
-; winsock - bridging for now
-EXPORTS htonl
-EXPORTS htons
-EXPORTS ntohl
-EXPORTS ntohs
-EXPORTS __WSAFDIsSet
-EXPORTS gettimeofday
-EXPORTS pthread_mutex_lock
-EXPORTS pthread_mutex_unlock
-EXPORTS pthread_mutex_destroy
-EXPORTS pthread_once
-EXPORTS pthread_getspecific
-EXPORTS pthread_setspecific
-EXPORTS pthread_create
-EXPORTS pthread_cond_timedwait
-EXPORTS pthread_cond_init
-EXPORTS pthread_cond_broadcast
-EXPORTS pthread_cond_signal
-EXPORTS pthread_cond_destroy
-EXPORTS pthread_join
-EXPORTS pthread_key_create
-EXPORTS pthread_cond_wait
-EXPORTS pthread_attr_init
-EXPORTS pthread_attr_setdetachstate
-EXPORTS pthread_attr_destroy
-EXPORTS pthread_mutex_init
+; PRIVATE SYMBOLS!!!
+; ------------------
+; All the following symbols are private and therefore only exported by
+; ordinals. The API and ABI is guaranteed to break frequently and
+; ordinals will be randomized at each and every minor release.
+; LINK AT YOUR OWN RISK!
 
-EXPORTS w32_socket
-EXPORTS w32_getsockopt
-EXPORTS w32_setsockopt
-EXPORTS w32_bind
-EXPORTS w32_listen
-EXPORTS w32_accept
-EXPORTS w32_connect
-EXPORTS w32_shutdown
-EXPORTS w32_send
-EXPORTS w32_recv
-EXPORTS w32_closesocket
-EXPORTS w32_getservbyname
-EXPORTS w32_getaddrinfo
-EXPORTS w32_freeaddrinfo
-EXPORTS w32_inet_ntop
-EXPORTS w32_gethostbyname
-EXPORTS w32_select
-EXPORTS poll_with_event
-EXPORTS w32_stat
-EXPORTS w32_strerror
-EXPORTS w32_strerror_r
+; cli_xxxxx and other internal internal symbols required by the tools
+EXPORTS cli_gentemp @44203 NONAME
+EXPORTS cli_gentempfd @44204 NONAME
+EXPORTS cli_gettmpdir @44205 NONAME
+EXPORTS cli_regcomp @44206 NONAME
+EXPORTS cli_regexec @44207 NONAME
+EXPORTS cli_regfree @44208 NONAME
+EXPORTS cli_ctime @44209 NONAME
+EXPORTS cli_rmdirs @44210 NONAME
+EXPORTS cli_isnumber @44211 NONAME
+EXPORTS cli_strtok @44212 NONAME
+EXPORTS cli_cvdunpack @44213 NONAME
+EXPORTS cli_chomp @44214 NONAME
+EXPORTS cli_strtokenize @44215 NONAME
+EXPORTS cli_versig2 @44216 NONAME
+EXPORTS cli_strerror @44217 NONAME
+EXPORTS cli_rndnum @44218 NONAME
+EXPORTS cli_unlink @44219 NONAME
+EXPORTS cli_writen @44220 NONAME
+EXPORTS cli_ftw @44221 NONAME
+EXPORTS have_rar @44222 NONAME
+EXPORTS have_clamjit @44223 NONAME
+EXPORTS cli_bytecode_done @44224 NONAME
+EXPORTS cli_bytecode_destroy @44225 NONAME
+EXPORTS cli_bytecode_context_destroy @44226 NONAME
+EXPORTS cli_bytecode_context_getresult_int @44227 NONAME
+EXPORTS cli_bytecode_run @44228 NONAME
+EXPORTS funmap @44229 NONAME
+EXPORTS cli_bytecode_context_setfile @44230 NONAME
+EXPORTS fmap @44231 NONAME
+EXPORTS cli_bytecode_context_setparam_int @44232 NONAME
+EXPORTS cli_bytecode_context_setfuncid @44233 NONAME
+EXPORTS cli_bytecode_context_set_trace @44234 NONAME
+EXPORTS cli_bytecode_context_alloc @44235 NONAME
+EXPORTS cli_bytecode_prepare @44236 NONAME
+EXPORTS cli_bytecode_load @44237 NONAME
+EXPORTS cli_bytecode_init @44238 NONAME
+EXPORTS cli_bytecode_debug @44239 NONAME
+EXPORTS cli_bytecode_debug_printsrc @44240 NONAME
+EXPORTS cli_bytecode_printversion @44241 NONAME
+EXPORTS cli_bytecode_describe @44242 NONAME
+EXPORTS cli_malloc @44243 NONAME
+EXPORTS cli_wm_decrypt_macro @44244 NONAME
+EXPORTS cli_wm_readdir @44245 NONAME
+EXPORTS cli_ppt_vba_read @44246 NONAME
+EXPORTS cli_vba_inflate @44247 NONAME
+EXPORTS cli_vba_readdir @44248 NONAME
+EXPORTS uniq_get @44249 NONAME
+EXPORTS cli_ole2_extract @44250 NONAME
+EXPORTS cli_calloc @44251 NONAME
+EXPORTS cli_str2hex @44252 NONAME
+EXPORTS cli_md5stream @44253 NONAME
+EXPORTS cli_md5file @44254 NONAME
+EXPORTS html_normalise_map @44255 NONAME
+EXPORTS cli_utf16toascii @44256 NONAME
+EXPORTS cli_strbcasestr @44257 NONAME
+EXPORTS cli_ac_chklsig @44258 NONAME
+EXPORTS cli_parse_add @44259 NONAME
+EXPORTS cli_initroots @44260 NONAME
+EXPORTS cli_hex2str @44261 NONAME
+EXPORTS cli_hex2ui @44262 NONAME
+
+; compatibility layer, tommath, zlib
+EXPORTS gettimeofday @44263 NONAME
+EXPORTS opendir @44264 NONAME
+EXPORTS readdir @44265 NONAME
+EXPORTS closedir @44266 NONAME
+EXPORTS safe_open @44267 NONAME
+EXPORTS snprintf @44268 NONAME
+EXPORTS mp_init @44269 NONAME
+EXPORTS mp_read_radix @44270 NONAME
+EXPORTS mp_clear @44271 NONAME
+EXPORTS sha256_init @44272 NONAME
+EXPORTS sha256_update @44273 NONAME
+EXPORTS sha256_final @44274 NONAME
+EXPORTS optget @44275 NONAME
+EXPORTS optparse @44276 NONAME
+EXPORTS optfree @44277 NONAME
+EXPORTS clam_options @44278 NONAME DATA
+
+; zlib
+EXPORTS gzopen @44279 NONAME
+EXPORTS gzgets @44280 NONAME
+EXPORTS gzdopen @44281 NONAME
+EXPORTS gzclose @44282 NONAME
+EXPORTS gzwrite @44283 NONAME
+
+; pthreads
+EXPORTS pthread_mutex_lock @44284 NONAME
+EXPORTS pthread_mutex_unlock @44285 NONAME
+EXPORTS pthread_mutex_destroy @44286 NONAME
+EXPORTS pthread_once @44287 NONAME
+EXPORTS pthread_getspecific @44288 NONAME
+EXPORTS pthread_setspecific @44289 NONAME
+EXPORTS pthread_create @44290 NONAME
+EXPORTS pthread_cond_timedwait @44291 NONAME
+EXPORTS pthread_cond_init @44292 NONAME
+EXPORTS pthread_cond_broadcast @44293 NONAME
+EXPORTS pthread_cond_signal @44294 NONAME
+EXPORTS pthread_cond_destroy @44295 NONAME
+EXPORTS pthread_join @44296 NONAME
+EXPORTS pthread_key_create @44297 NONAME
+EXPORTS pthread_cond_wait @44298 NONAME
+EXPORTS pthread_attr_init @44299 NONAME
+EXPORTS pthread_attr_setdetachstate @44300 NONAME
+EXPORTS pthread_attr_destroy @44301 NONAME
+EXPORTS pthread_mutex_init @44302 NONAME
+
+; winsock bridge and compatibility functions
+EXPORTS htonl @44303 NONAME
+EXPORTS htons @44304 NONAME
+EXPORTS ntohl @44305 NONAME
+EXPORTS ntohs @44306 NONAME
+EXPORTS __WSAFDIsSet @44307 NONAME
+EXPORTS w32_socket @44308 NONAME
+EXPORTS w32_getsockopt @44309 NONAME
+EXPORTS w32_setsockopt @44310 NONAME
+EXPORTS w32_bind @44311 NONAME
+EXPORTS w32_listen @44312 NONAME
+EXPORTS w32_accept @44313 NONAME
+EXPORTS w32_connect @44314 NONAME
+EXPORTS w32_shutdown @44315 NONAME
+EXPORTS w32_send @44316 NONAME
+EXPORTS w32_recv @44317 NONAME
+EXPORTS w32_closesocket @44318 NONAME
+EXPORTS w32_getservbyname @44319 NONAME
+EXPORTS w32_getaddrinfo @44320 NONAME
+EXPORTS w32_freeaddrinfo @44321 NONAME
+EXPORTS w32_inet_ntop @44322 NONAME
+EXPORTS w32_gethostbyname @44323 NONAME
+EXPORTS w32_select @44324 NONAME
+EXPORTS poll_with_event @44325 NONAME
+EXPORTS w32_stat @44326 NONAME
+EXPORTS w32_strerror @44327 NONAME
+EXPORTS w32_strerror_r @44328 NONAME
+EXPORTS inet_addr @44329 NONAME

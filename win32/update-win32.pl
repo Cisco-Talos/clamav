@@ -244,6 +244,8 @@ my @PROJECTS = (
     # LLVMjit #
     {makefile => 'libclamav/c++', sections => ['libllvmjit'], output => 'win32/LLVMjit.vcproj'},
 
+    # sigtool #
+    {makefile => 'sigtool', sections => ['sigtool'], output => 'win32/sigtool.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     );
 

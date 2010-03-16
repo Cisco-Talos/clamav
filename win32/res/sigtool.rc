@@ -1,0 +1,6 @@
+#define RES_FNAME "sigtool.exe"
+#define RES_NAME "sigtool"
+#define RES_FDESC "ClamAV - sigtool"
+#include "common.rc"
+
+1337 ICON "clam.ico"

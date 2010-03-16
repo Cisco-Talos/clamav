@@ -56,6 +56,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamdscan", "clamdscan.vcpr
 		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sigtool", "sigtool.vcproj", "{38B89BC0-6C00-4ABB-A179-24FEE81D1890}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -118,6 +123,10 @@ Global
 		{9571E1BE-DDDA-47CB-8675-238D405FCADA}.Debug|Win32.Build.0 = Debug|Win32
 		{9571E1BE-DDDA-47CB-8675-238D405FCADA}.Release|Win32.ActiveCfg = Release|Win32
 		{9571E1BE-DDDA-47CB-8675-238D405FCADA}.Release|Win32.Build.0 = Release|Win32
+		{38B89BC0-6C00-4ABB-A179-24FEE81D1890}.Debug|Win32.ActiveCfg = Debug|Win32
+		{38B89BC0-6C00-4ABB-A179-24FEE81D1890}.Debug|Win32.Build.0 = Debug|Win32
+		{38B89BC0-6C00-4ABB-A179-24FEE81D1890}.Release|Win32.ActiveCfg = Release|Win32
+		{38B89BC0-6C00-4ABB-A179-24FEE81D1890}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
