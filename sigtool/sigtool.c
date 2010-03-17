@@ -677,7 +677,7 @@ static int build(const struct optstruct *opts)
 	return 50;
     }
 
-    if((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA))) {
+    if((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED))) {
 	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
 	cl_engine_free(engine);
 	return -1;
