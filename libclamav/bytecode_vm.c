@@ -30,9 +30,12 @@
 #include "readdb.h"
 #include <string.h>
 
+/* Enable this to catch more bugs in the RC phase */
+#define CL_BYTECODE_DEBUG
+
 /* These checks will also be done by the bytecode verifier, but for
  * debugging purposes we have explicit checks, these should never fail! */
-#ifdef CL_DEBUG
+#ifdef CL_BYTECODE_DEBUG
 static int bcfail(const char *msg, long a, long b,
 		  const char *file, unsigned line)
 {
