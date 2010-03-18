@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <io.h>
+#include <fcntl.h>
 #include <direct.h>
 #include <Ws2tcpip.h>
 #include <process.h>
@@ -73,6 +74,8 @@ typedef	unsigned	int	in_addr_t;
 
 #define PATHSEP "\\"
 
+void w32_glob(int *argc_ptr, char ***argv_ptr);
+
 #undef DATADIR
 #undef CONFDIR
 #if !defined(THIS_IS_LIBCLAMAV) && defined(_MSC_VER)
@@ -90,6 +93,9 @@ LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
 #ifdef OUT
 #undef OUT
 #endif
+
+int real_main(int, char**);
+#define main main(int argc, char **argv) { _setmode(_fileno(stdin), _O_BINARY); w32_glob(&argc, &argv); return real_main(argc, argv); }; int real_main
 
 #endif /* __PLATFORM_H */
 

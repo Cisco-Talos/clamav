@@ -190,18 +190,6 @@
 				>
 			</File>
 			<Filter
-				Name="compat"
-				>
-				<File
-					RelativePath=".\compat\libgen.c"
-					>
-				</File>
-				<File
-					RelativePath=".\compat\setargv.c"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="shared"
 				>
 				<File

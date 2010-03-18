@@ -6,7 +6,7 @@
 	ProjectType="Visual C++"
 	RootNamespace="libclamav"
 	TargetFrameworkVersion="196613"
-	Version="9.00"
+	Version="9,00"
 	>
 	<Platforms>
 		<Platform
@@ -185,14 +185,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\libclamav\filtering.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\perflogging.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\7z.c"
 				>
 			</File>
@@ -282,6 +274,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\filetypes.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\filtering.c"
 				>
 			</File>
 			<File
@@ -390,6 +386,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\pe_icons.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\perflogging.c"
 				>
 			</File>
 			<File
@@ -789,6 +789,10 @@
 				</File>
 				<File
 					RelativePath=".\compat\gettimeofday.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\glob.c"
 					>
 				</File>
 				<File

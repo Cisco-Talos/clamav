@@ -215,13 +215,13 @@ my @PROJECTS = (
     {makefile => 'libclamav/c++', sections => ['libclamavcxx'], output => 'win32/libclamavcxx.vcproj'},
 
     # CLAMSCAN #
-    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},
+    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # CLAMDSCAN #
-    {makefile => 'clamdscan', sections => ['clamdscan'], output => 'win32/clamdscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},
+    {makefile => 'clamdscan', sections => ['clamdscan'], output => 'win32/clamdscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # CLAMD #
-    {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$', vcproj_only => 'compat\\\\'},
+    {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$'},
 
     # FRESHCLAM #
     {makefile => 'freshclam', sections => ['freshclam'], output => 'win32/freshclam.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},

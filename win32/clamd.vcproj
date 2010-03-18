@@ -220,18 +220,6 @@
 					>
 				</File>
 			</Filter>
-			<Filter
-				Name="compat"
-				>
-				<File
-					RelativePath=".\compat\libgen.c"
-					>
-				</File>
-				<File
-					RelativePath=".\compat\setargv.c"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
