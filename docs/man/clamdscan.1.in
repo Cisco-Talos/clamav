@@ -37,9 +37,7 @@ Save the scan report to FILE.
 Scan files listed line by line in FILE.
 .TP 
 \fB\-m, \-\-multiscan\fR
-In multiscan mode several files are scanned in parallel, one for each available scan thread in clamd.
-This is achieved either via MULTISCAN or IDSESSION requests, depending on the configuration and other options.
-Can be combined with \-\-fdpass (see below)
+In the multiscan mode clamd will attempt to scan the directory contents in parallel using available threads. This option is especially useful on multiprocessor and multi-core systems. If you pass more than one file or directory in the command line, they are put in a queue and sent to clamd individually. This means, that single files are always scanned by a single thread. Similarly, clamdscan will wait for clamd to finish a directory scan (performed in multiscan mode) before sending request to scan another directory. This option can be combined with \-\-fdpass (see below).
 .TP 
 \fB\-\-remove\fR
 Remove infected files. \fBBe careful.\fR
