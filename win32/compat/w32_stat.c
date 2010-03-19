@@ -46,9 +46,13 @@ wchar_t *uncpath(const char *path) {
 		errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
 		return NULL;
 	    }
-	    len += 4;
-	    dest[len] = L'\\';
-	    len++;
+	    if(*path == '\\')
+		len = 6; /* Current drive root */
+	    else {
+		len += 4; /* A 'really' relative path */
+		dest[len] = L'\\';
+		len++;
+	    }
 	} else {
 	    /* C:\ and friends */
 	    len = 4;
@@ -96,6 +100,20 @@ wchar_t *uncpath(const char *path) {
 	}
     }
 
+    /* strip double slashes */
+    if((stripme = wcsstr(&dest[4], L"\\\\"))) {
+	strip_from = stripme;
+	while(1) {
+	    wchar_t c = *strip_from;
+	    strip_from++;
+	    if(c == L'\\' && *strip_from == L'\\')
+		continue;
+	    *stripme = c;
+	    stripme++;
+	    if(!c)
+		break;
+	}
+    }
     if(wcslen(dest) == 6 && !wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
 	dest[6] = L'\\';
 	dest[7] = L'\0';
