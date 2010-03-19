@@ -55,6 +55,7 @@ uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
 int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*, uint32_t);
 int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
 int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t);
+int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -141,7 +142,8 @@ const struct cli_apicall cli_apicalls[]={
 	{"test2", 8, 3, 2},
 	{"get_pe_section", 10, 12, 1},
 	{"fill_buffer", 9, 0, 4},
-	{"extract_new", 8, 4, 2}
+	{"extract_new", 8, 4, 2},
+	{"read_number", 8, 5, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -168,7 +170,8 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_pe_rawaddr,
 	(cli_apicall_int1)cli_bcapi_file_byteat,
 	(cli_apicall_int1)cli_bcapi_test2,
-	(cli_apicall_int1)cli_bcapi_extract_new
+	(cli_apicall_int1)cli_bcapi_extract_new,
+	(cli_apicall_int1)cli_bcapi_read_number
 };
 const cli_apicall_malloclike cli_apicalls3[] = {
 	(cli_apicall_malloclike)cli_bcapi_malloc

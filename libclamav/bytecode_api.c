@@ -414,7 +414,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 	(ftruncate(ctx->outfd, 0) == -1)) {
 
 	close(ctx->outfd);
-	if (!(cctx && cctx->engine->keeptmp))
+	if (!(cctx && cctx->engine->keeptmp) && ctx->tempfile)
 	    cli_unlink(ctx->tempfile);
 	free(ctx->tempfile);
 	ctx->tempfile = NULL;
@@ -423,3 +423,31 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     cli_dbgmsg("bytecode: extracting new file with id %u\n", id);
     return res;
 }
+
+#define BUF 16
+int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
+{
+    unsigned char number[16];
+    unsigned i;
+    unsigned char *p;
+    int32_t result;
+
+    if (radix != 10 && radix != 16 || !ctx->fmap)
+	return -1;
+    while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
+	for (i=0;i<BUF;i++) {
+	    if (p[i] >= '0' && p[i] <= '9') {
+		unsigned char *endptr;
+		p = fmap_need_ptr_once(ctx->fmap, p+i, 16);
+		if (!p)
+		    return -1;
+		result = strtoul(p, &endptr, radix);
+		ctx->off += i + (endptr - p);
+		return result;
+	    }
+	}
+	ctx->off += BUF;
+    }
+    return -1;
+}
+

@@ -216,5 +216,13 @@ int32_t fill_buffer(uint8_t* buffer, uint32_t len, uint32_t filled, uint32_t cur
 */
 int32_t extract_new(int32_t id);
 
+/**
+  * Reads a number in the specified radix starting from the current position.
+  * Non-numeric characters are ignored.
+  * @param[in] radix 10 or 16
+  * @return the number read
+  */
+int32_t read_number(uint32_t radix);
+
 #endif
 #endif

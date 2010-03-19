@@ -768,6 +768,7 @@ static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
     }
     if (*ok && j != comp) {
 	cli_errmsg("bytecode: constant has too few subcomponents: %u < %u\n", j, comp);
+//	*ok = 0;
     }
     (*offset)++;
 }

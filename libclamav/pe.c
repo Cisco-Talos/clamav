@@ -2258,7 +2258,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	case CL_SUCCESS:
 	    ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
 	    cli_bytecode_context_destroy(bc_ctx);
-	    if (ndesc != -1) {
+	    if (ndesc != -1 && tempfile) {
 		CLI_UNPRESULTS("bytecode PE hook", 1, 1, (0));
 	    }
 	    break;
