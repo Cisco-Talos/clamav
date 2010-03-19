@@ -57,10 +57,11 @@ int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
     int n;
     if (!ctx->fmap)
 	return -1;
-    if (size < 0) {
+    if (size < 0 || size > CLI_MAX_ALLOCATION) {
 	cli_errmsg("bytecode: negative read size: %d\n", size);
 	return -1;
     }
+/*    cli_dbgmsg("read data at %d\n", ctx->off);*/
     n = fmap_readn(ctx->fmap, data, ctx->off, size);
     if (n <= 0)
 	return n;
@@ -357,4 +358,28 @@ int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*
 	return 0;
     }
     return -1;
+}
+
+int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
+			      uint32_t buflen, uint32_t filled,
+			      uint32_t pos, uint32_t fill)
+{
+    int32_t res, remaining, tofill;
+    if (!buf || !buflen || buflen > CLI_MAX_ALLOCATION || filled > buflen)
+	return -1;
+    if (ctx->off >= ctx->file_size)
+	return 0;
+    remaining = filled - pos;
+    if (remaining) {
+	if (!CLI_ISCONTAINED(buf, buflen, buf+pos, remaining))
+	    return -1;
+	memmove(buf, buf+pos, remaining);
+    }
+    tofill = buflen - remaining;
+    if (!CLI_ISCONTAINED(buf, buflen, buf+remaining, tofill))
+	return -1;
+    res = cli_bcapi_read(ctx, buf+remaining, tofill);
+    if (res <= 0)
+	return res;
+    return remaining + res;
 }

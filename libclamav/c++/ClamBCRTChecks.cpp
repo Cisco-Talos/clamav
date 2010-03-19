@@ -125,6 +125,7 @@ namespace {
 		BBI->replaceAllUsesWith(UndefValue::get(BBI->getType()));
 	    BB->getInstList().erase(BBI++);
 	}
+	DEBUG(F.dump());
       }
       return Changed;
     }

@@ -174,7 +174,7 @@ uint32_t pe_rawaddr(uint32_t rva);
   * @param[in] data the sequence of bytes to look for
   * @param len length of \p data, cannot be more than 1024
   * @return offset in the current file if match is found, -1 otherwise */
-int32_t file_find(const uint8_t* data, uint32_t len); 
+int32_t file_find(const uint8_t* data, uint32_t len);
 
 /** Read a single byte from current file
   * @param offset file offset
@@ -190,7 +190,23 @@ void* malloc(uint32_t size);
 
 uint32_t test2(uint32_t a);
 
+/** Gets information about the specified PE section.
+ * @param[out] section PE section information will be stored here
+ * @param[in] num PE section number */
 int32_t get_pe_section(struct cli_exe_section *section, uint32_t num);
+
+/** Fills the specified buffer with at least \p fill bytes.
+ * @param[out] buffer the buffer to fill
+ * @param[in] len length of buffer
+ * @param[in] filled how much of the buffer is currently filled
+ * @param[in] cursor position of cursor in buffer
+ * @param[in] fill amount of bytes to fill in (0 is valid)
+ * @return <0 on error,
+ *          0 on EOF,
+ *          number bytes available in buffer (starting from 0)
+ * The character at the cursor will be at position 0 after this call.
+ */
+int32_t fill_buffer(uint8_t* buffer, uint32_t len, uint32_t filled, uint32_t cur, uint32_t fill);
 
 #endif
 #endif
