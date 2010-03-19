@@ -87,7 +87,7 @@ if test "$enable_llvm" = "auto"; then
      [[023]].*)
 	AC_MSG_ERROR([C++ compiler too old (${gxx_version})])
         ;;
-     4.0.1*|4.1.[[12]]*)
+     4.1.[[1]]*)
         AC_MSG_ERROR([C++ compiler is buggy])
         ;;
      *)

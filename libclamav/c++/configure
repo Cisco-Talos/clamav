@@ -14499,7 +14499,7 @@ $as_echo_n "checking for supported C++ compiler version... " >&6; }
      [023].*)
 	as_fn_error "C++ compiler too old (${gxx_version})" "$LINENO" 5
         ;;
-     4.0.1*|4.1.[12]*)
+     4.1.[1]*)
         as_fn_error "C++ compiler is buggy" "$LINENO" 5
         ;;
      *)
