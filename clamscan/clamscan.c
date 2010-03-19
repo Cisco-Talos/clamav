@@ -216,6 +216,8 @@ void help(void)
     mprintf("    --include=REGEX                      Only scan file names matching REGEX\n");
     mprintf("    --include-dir=REGEX                  Only scan directories matching REGEX\n");
     mprintf("\n");
+    mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
+    mprintf("    --bytecode-trust-all[=yes/no(*)]     Trust all loaded bytecode\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
     mprintf("    --include-pua=CAT                    Load PUA sigs of category CAT\n");

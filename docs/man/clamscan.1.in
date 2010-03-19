@@ -78,6 +78,12 @@ Move infected files into DIRECTORY. Directory must be writable for the '@CLAMAVU
 \fB\-\-copy=DIRECTORY\fR
 Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
+\fB\-\-bytecode[=yes(*)/no]\fR
+With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
+.TP 
+\fB\-\-bytecode\-trust\-all[=yes/no(*)]\fR
+This option disables safety checks and makes ClamAV trust all bytecode. It should only be used for debugging.
+.TP 
 \fB\-\-detect\-pua[=yes/no(*)]\fR
 Detect Possibly Unwanted Applications.
 .TP 

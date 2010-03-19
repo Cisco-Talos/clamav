@@ -78,8 +78,11 @@ Default: system specific (usually /tmp or /var/tmp).
 .TP 
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
+.TP 
+\fBOfficialDatabaseOnly BOOL\fR
+Only load the official signatures published by the ClamAV project.
 .br 
-Default: @DBDIR@
+Default: no
 .TP 
 \fBLocalSocket STRING\fR
 Path to a local (Unix) socket the daemon will listen on.
@@ -236,7 +239,17 @@ Limit data port range.
 .br 
 Default: 2048
 .TP 
-\fBDetectPUA\fR
+\fBBytecode BOOL\fR
+With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
+.br
+Default: yes
+.TP 
+\fBBytecodeSecurity STRING\fR
+Set bytecode security level. Possible values: \fBNone\fR: no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS, \fBTrustSigned\fR: trust bytecode loaded from signed .c[lv]d files and insert runtime safety checks for bytecode loaded from other sources, \fBParanoid\fR: don't trust any bytecode, insert runtime checks for all. The recommended setting is \fBTrustSigned\fR, because bytecode in .cvd files already has safety checks inserted into it.
+.br 
+Default: TrustSigned
+.TP 
+\fBDetectPUA BOOL\fR
 Detect Possibly Unwanted Applications.
 .br 
 Default: No
@@ -403,6 +416,11 @@ Default: 10000
 Enable Clamuko. Dazuko (/dev/dazuko) must be configured and running.
 .br 
 Default: no
+.TP 
+\fBClamukoScannerCount NUMBER\fR
+The number of scanner threads that will be started (DazukoFS only). Having multiple scanner threads allows Clamuko to serve multiple processes simultaneously. This is particularly beneficial on SMP machines.
+.br 
+Default: 3
 .TP 
 \fBClamukoScanOnOpen BOOL\fR
 Scan files on open.
