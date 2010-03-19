@@ -140,6 +140,12 @@ static char *makeabs(const char *basepath) {
 	    free(ret);
 	    return NULL;
 	}
+#ifdef _WIN32
+	if(*basepath == '\\') {
+	    namelen = 2;
+	    basepath++;
+	} else
+#endif
 	namelen = strlen(ret);
 	snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP"%s", basepath);
     } else {
