@@ -49,7 +49,8 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	unsigned int cttl, size, txtlen = 0;
 
 
-    *ttl = 0;
+    if(ttl)
+	*ttl = 0;
     if(res_init() < 0) {
 	logg("^res_init failed\n");
 	return NULL;
@@ -136,7 +137,8 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
     memcpy(txt, pt+1, txtlen);
     txt[txtlen] = 0;
-    *ttl = cttl;
+    if(ttl)
+	*ttl = cttl;
 
     return txt;
 }

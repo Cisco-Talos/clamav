@@ -1456,13 +1456,14 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     return 0;
 }
 
-static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr)
+static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra)
 {
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
 	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[32], cwd[512];
+	char extradbinfo[64], *extradnsreply = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
 	unsigned int can_whitelist = 0;
@@ -1477,7 +1478,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	mdat->dbflevel = current->fl;
     }
 
-    if(!nodb && dnsreply) {
+    if(!nodb && !extra && dnsreply) {
 	    int field = 0;
 
 	if(!strcmp(dbname, "main")) {
@@ -1506,8 +1507,43 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
 	}
     }
+#ifdef HAVE_RESOLV_H
+    else if(!nodb && extra && !optget(opts, "no-dns")->enabled) {
+	snprintf(extradbinfo, sizeof(extradbinfo), "%s.cvd.clamav.net", dbname);
+	if((extradnsreply = txtquery(extradbinfo, NULL))) {
+	    if((pt = cli_strtok(extradnsreply, 1, ":"))) {
+		    int rt;
+		    time_t ct;
 
-    if(dnsreply) {
+		rt = atoi(pt);
+		free(pt);
+		time(&ct);
+		if((int) ct - rt > 10800) {
+		    logg("^DNS record is older than 3 hours.\n");
+		    free(extradnsreply);
+		    extradnsreply = NULL;
+		}
+	    } else {
+		logg("^No timestamp in TXT record for %s\n", cvdfile);
+		free(extradnsreply);
+		extradnsreply = NULL;
+	    }
+	    if((pt = cli_strtok(extradnsreply, 0, ":"))) {
+		if(!cli_isnumber(pt)) {
+		    logg("^Broken database version in TXT record for %s\n", cvdfile);
+		} else {
+		    newver = atoi(pt);
+		    logg("*%s version from DNS: %d\n", cvdfile, newver);
+		}
+		free(pt);
+	    } else {
+		logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
+	    }
+	}
+    }
+#endif
+
+    if(dnsreply && !extra) {
 	if((pt = cli_strtok(dnsreply, 5, ":"))) {
 	    remote_flevel = atoi(pt);
 	    free(pt);
@@ -1814,7 +1850,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1828,7 +1864,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1856,7 +1892,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    else
 		logg("*%s removed\n", safedb);
 	}
-    } else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    } else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1882,7 +1918,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    else
 		logg("*%s removed\n", dbname);
 	}
-    } else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    } else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1895,6 +1931,20 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	updated = 1;
     if(dnsreply)
 	free(dnsreply);
+
+    /* handle extra dbs */
+    if((opt = optget(opts, "ExtraDatabase"))->enabled) {
+	while(opt) {
+	    if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, NULL, localip, outdated, &mdat, logerr, 1)) > 50) {
+		if(newver)
+		    free(newver);
+		mirman_write("mirrors.dat", &mdat);
+		return ret;
+	    } else if(ret == 0)
+		updated = 1;
+	    opt = opt->nextarg;
+	}
+    }
 
     mirman_write("mirrors.dat", &mdat);
 
