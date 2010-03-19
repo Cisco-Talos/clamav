@@ -2380,7 +2380,7 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 {
 	int fd, ret;
 
-    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
+    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
     ret = cl_scandesc(fd, virname, scanned, engine, scanoptions);

@@ -166,7 +166,7 @@ static int send_stream(int sockd, const char *filename) {
     unsigned long int todo = maxstream;
 
     if(filename) {
-	if((fd = open(filename, O_RDONLY | O_BINARY))<0) {
+	if((fd = safe_open(filename, O_RDONLY | O_BINARY))<0) {
 	    logg("~%s: Access denied. ERROR\n", filename);
 	    return 0;
 	}
