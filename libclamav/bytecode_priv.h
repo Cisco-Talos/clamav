@@ -135,6 +135,8 @@ struct cli_bc_ctx {
     char *tempfile;
     void *ctx;
     unsigned written;
+    unsigned filewritten;
+    unsigned found;
     bc_dbg_callback_trace trace;
     bc_dbg_callback_trace_op trace_op;
     bc_dbg_callback_trace_val trace_val;

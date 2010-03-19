@@ -208,5 +208,13 @@ int32_t get_pe_section(struct cli_exe_section *section, uint32_t num);
  */
 int32_t fill_buffer(uint8_t* buffer, uint32_t len, uint32_t filled, uint32_t cur, uint32_t fill);
 
+/**
+ * Prepares for extracting a new file, if we've already extracted one it scans
+ * it.
+ * @param[in] id an id for the new file (for example position in container)
+ * @return 1 if previous extracted file was infected
+*/
+int32_t extract_new(int32_t id);
+
 #endif
 #endif

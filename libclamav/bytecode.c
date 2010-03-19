@@ -40,35 +40,7 @@
 static const uint32_t nomatch[64];
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
-    struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
-    ctx->bc = NULL;
-    ctx->func = NULL;
-    ctx->values = NULL;
-    ctx->operands = NULL;
-    ctx->opsizes = NULL;
-    ctx->fmap = NULL;
-    ctx->off = 0;
-    ctx->ctx = NULL;
-    ctx->hooks.match_counts = nomatch;
-    /* TODO: init all hooks with safe values */
-    ctx->virname = NULL;
-    ctx->outfd = -1;
-    ctx->tempfile = NULL;
-    ctx->written = 0;
-    ctx->trace_level = trace_none;
-    ctx->trace = NULL;
-    ctx->trace_op = NULL;
-    ctx->trace_val = NULL;
-    ctx->trace_ptr = NULL;
-    ctx->scope = NULL;
-    ctx->scopeid = 0;
-    ctx->file = "??";
-    ctx->directory = "";
-    ctx->line = 0;
-    ctx->col = 0;
-    ctx->mpool = NULL;
-    ctx->numGlobals = 0;
-    ctx->globals = NULL;
+    struct cli_bc_ctx *ctx = cli_calloc(1, sizeof(*ctx));
     return ctx;
 }
 
@@ -84,7 +56,7 @@ int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilen
     *tempfilename = ctx->tempfile;
     fd  = ctx->outfd;
     ctx->tempfile = NULL;
-    ctx->outfd = -1;
+    ctx->outfd = 0;
     return fd;
 }
 
@@ -97,18 +69,15 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->operands = NULL;
     ctx->values = NULL;
     ctx->opsizes = NULL;
-    ctx->written = 0;
-    if (ctx->outfd != -1) {
-	cli_dbgmsg("Bytecode: nobody cared about FD %d, %s\n", ctx->outfd,
-		   ctx->tempfile);
-	if (ftruncate(ctx->outfd, 0) == -1)
-	    cli_dbgmsg("ftruncate failed\n");
-	close(ctx->outfd);
-	cli_unlink(ctx->tempfile);
+    if (ctx->outfd) {
+	cli_bcapi_extract_new(ctx, -1);
+	if (ctx->outfd)
+	    close(ctx->outfd);
 	free(ctx->tempfile);
 	ctx->tempfile = NULL;
-	ctx->outfd = -1;
+	ctx->outfd = 0;
     }
+    ctx->written = 0;
 #if USE_MPOOL
     if (ctx->mpool) {
 	mpool_destroy(ctx->mpool);
@@ -1721,6 +1690,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned b
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
+    ctx.ctx = cctx;
     cli_bytecode_context_setfile(&ctx, map);
 
     cli_dbgmsg("Running bytecode for logical signature match\n");

@@ -51,5 +51,6 @@ uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t);
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
 int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*, uint32_t);
 int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
+int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t);
 
 #endif

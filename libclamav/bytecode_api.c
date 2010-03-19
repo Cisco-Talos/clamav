@@ -141,7 +141,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 	cli_warnmsg("Bytecode API: called with negative length!\n");
 	return -1;
     }
-    if (ctx->outfd == -1) {
+    if (!ctx->outfd) {
 	ctx->tempfile = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
 	if (!ctx->tempfile) {
 	    cli_dbgmsg("Bytecode API: Unable to allocate memory for tempfile\n");
@@ -149,10 +149,12 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 	}
 	ctx->outfd = open(ctx->tempfile, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 	if (ctx->outfd == -1) {
+	    ctx->outfd = 0;
 	    cli_warnmsg("Bytecode API: Can't create file %s\n", ctx->tempfile);
 	    free(ctx->tempfile);
 	    return -1;
 	}
+	cli_dbgmsg("bytecode opened new tempfile: %s\n", ctx->tempfile);
     }
     if (cli_checklimits("bytecode api", cctx, ctx->written + len, 0, 0))
 	return -1;
@@ -365,21 +367,59 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
 			      uint32_t pos, uint32_t fill)
 {
     int32_t res, remaining, tofill;
-    if (!buf || !buflen || buflen > CLI_MAX_ALLOCATION || filled > buflen)
+    if (!buf || !buflen || buflen > CLI_MAX_ALLOCATION || filled > buflen) {
+	cli_dbgmsg("fill_buffer1\n");
 	return -1;
-    if (ctx->off >= ctx->file_size)
+    }
+    if (ctx->off >= ctx->file_size) {
+	cli_dbgmsg("fill_buffer2\n");
 	return 0;
+    }
     remaining = filled - pos;
     if (remaining) {
-	if (!CLI_ISCONTAINED(buf, buflen, buf+pos, remaining))
+	if (!CLI_ISCONTAINED(buf, buflen, buf+pos, remaining)) {
+	    cli_dbgmsg("fill_buffer3\n");
 	    return -1;
+	}
 	memmove(buf, buf+pos, remaining);
     }
     tofill = buflen - remaining;
-    if (!CLI_ISCONTAINED(buf, buflen, buf+remaining, tofill))
+    if (!CLI_ISCONTAINED(buf, buflen, buf+remaining, tofill)) {
+	cli_dbgmsg("fill_buffer4\n");
 	return -1;
+    }
     res = cli_bcapi_read(ctx, buf+remaining, tofill);
     if (res <= 0)
 	return res;
     return remaining + res;
+}
+
+int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
+{
+    cli_ctx *cctx;
+    int res;
+    cli_dbgmsg("previous tempfile had %u bytes\n", ctx->written);
+    if (!ctx->written)
+	return 0;
+    if (cli_updatelimits(ctx->ctx, ctx->written))
+	return -1;
+    ctx->written = 0;
+    lseek(ctx->outfd, 0, SEEK_SET);
+    cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
+    res = cli_magic_scandesc(ctx->outfd, ctx->ctx);
+    if (res == CL_VIRUS)
+	ctx->found = 1;
+    cctx = (cli_ctx*)ctx->ctx;
+    if ((cctx && cctx->engine->keeptmp) ||
+	(ftruncate(ctx->outfd, 0) == -1)) {
+
+	close(ctx->outfd);
+	if (!(cctx && cctx->engine->keeptmp))
+	    cli_unlink(ctx->tempfile);
+	free(ctx->tempfile);
+	ctx->tempfile = NULL;
+	ctx->outfd = 0;
+    }
+    cli_dbgmsg("bytecode: extracting new file with id %u\n", id);
+    return res;
 }

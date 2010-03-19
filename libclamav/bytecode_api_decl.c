@@ -54,6 +54,7 @@ uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t);
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
 int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*, uint32_t);
 int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
+int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -76,11 +77,11 @@ static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16
 static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
-static uint16_t cli_tmp8[]={32, 65, 32, 32, 32, 32};
-static uint16_t cli_tmp9[]={32, 79, 32};
-static uint16_t cli_tmp10[]={80};
-static uint16_t cli_tmp11[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
-static uint16_t cli_tmp12[]={32, 32};
+static uint16_t cli_tmp8[]={32, 32};
+static uint16_t cli_tmp9[]={32, 65, 32, 32, 32, 32};
+static uint16_t cli_tmp10[]={32, 80, 32};
+static uint16_t cli_tmp11[]={81};
+static uint16_t cli_tmp12[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
 static uint16_t cli_tmp13[]={65, 32};
 static uint16_t cli_tmp14[]={32, 65, 32};
 static uint16_t cli_tmp15[]={32, 85, 32};
@@ -100,11 +101,11 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp5, 8, 0, 0},
 	{DArrayType, cli_tmp6, 1, 0, 0},
 	{DArrayType, cli_tmp7, 64, 0, 0},
-	{DFunctionType, cli_tmp8, 6, 0, 0},
-	{DFunctionType, cli_tmp9, 3, 0, 0},
-	{DPointerType, cli_tmp10, 1, 0, 0},
-	{DStructType, cli_tmp11, 9, 0, 0},
-	{DFunctionType, cli_tmp12, 2, 0, 0},
+	{DFunctionType, cli_tmp8, 2, 0, 0},
+	{DFunctionType, cli_tmp9, 6, 0, 0},
+	{DFunctionType, cli_tmp10, 3, 0, 0},
+	{DPointerType, cli_tmp11, 1, 0, 0},
+	{DStructType, cli_tmp12, 9, 0, 0},
 	{DFunctionType, cli_tmp13, 2, 0, 0},
 	{DFunctionType, cli_tmp14, 3, 0, 0},
 	{DFunctionType, cli_tmp15, 3, 0, 0},
@@ -125,7 +126,7 @@ const struct cli_apicall cli_apicalls[]={
 	{"seek", 21, 1, 0},
 	{"setvirusname", 14, 2, 1},
 	{"debug_print_str", 14, 3, 1},
-	{"debug_print_uint", 12, 0, 2},
+	{"debug_print_uint", 8, 0, 2},
 	{"disasm_x86", 15, 4, 1},
 	{"trace_directory", 14, 5, 1},
 	{"trace_scope", 14, 6, 1},
@@ -133,13 +134,14 @@ const struct cli_apicall cli_apicalls[]={
 	{"trace_op", 14, 8, 1},
 	{"trace_value", 14, 9, 1},
 	{"trace_ptr", 14, 10, 1},
-	{"pe_rawaddr", 12, 1, 2},
+	{"pe_rawaddr", 8, 1, 2},
 	{"file_find", 14, 11, 1},
-	{"file_byteat", 12, 2, 2},
+	{"file_byteat", 8, 2, 2},
 	{"malloc", 13, 0, 3},
-	{"test2", 12, 3, 2},
-	{"get_pe_section", 9, 12, 1},
-	{"fill_buffer", 8, 0, 4}
+	{"test2", 8, 3, 2},
+	{"get_pe_section", 10, 12, 1},
+	{"fill_buffer", 9, 0, 4},
+	{"extract_new", 8, 4, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -165,7 +167,8 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_debug_print_uint,
 	(cli_apicall_int1)cli_bcapi_pe_rawaddr,
 	(cli_apicall_int1)cli_bcapi_file_byteat,
-	(cli_apicall_int1)cli_bcapi_test2
+	(cli_apicall_int1)cli_bcapi_test2,
+	(cli_apicall_int1)cli_bcapi_extract_new
 };
 const cli_apicall_malloclike cli_apicalls3[] = {
 	(cli_apicall_malloclike)cli_bcapi_malloc
