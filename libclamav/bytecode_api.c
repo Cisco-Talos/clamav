@@ -429,7 +429,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 {
     unsigned char number[16];
     unsigned i;
-    unsigned char *p;
+    char *p;
     int32_t result;
 
     if (radix != 10 && radix != 16 || !ctx->fmap)
@@ -437,7 +437,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
     while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
 	for (i=0;i<BUF;i++) {
 	    if (p[i] >= '0' && p[i] <= '9') {
-		unsigned char *endptr;
+		char *endptr;
 		p = fmap_need_ptr_once(ctx->fmap, p+i, 16);
 		if (!p)
 		    return -1;
@@ -451,3 +451,53 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
     return -1;
 }
 
+int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
+{
+}
+int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+{
+}
+int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+{
+}
+int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+{
+}
+int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
+{
+}
+
+int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx)
+{
+    z_stream *s;
+    s = cli_realloc(ctx->z_streams, (ctx->z_nstreams+1)*sizeof(*ctx->z_streams));
+    if (!s)
+	return -1;
+    ctx->z_streams = s;
+    ctx->z_nstreams++;
+    s = &s[ctx->z_nstreams-1];
+    memset(s, 0, sizeof(*s));
+    return inflateInit2(s, MAX_WBITS+16);
+}
+
+int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id,
+				  uint8_t* in, uint32_t in_size,
+				  uint8_t* out, uint32_t out_size)
+{
+    if (id >= ctx->z_nstreams)
+	return -1;
+    z_stream *s = &ctx->z_streams[id];
+    s->next_in = in;
+    s->avail_in = in_size;
+    s->next_out = out;
+    s->avail_out = out_size;
+    return inflate(s, 0);
+}
+
+int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t id)
+{
+    if (id >= ctx->z_nstreams)
+	return -1;
+    z_stream *s = &ctx->z_streams[id];
+    return inflateEnd(s);
+}

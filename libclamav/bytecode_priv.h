@@ -23,6 +23,7 @@
 #ifndef BYTECODE_PRIV_H
 #define BYTECODE_PRIV_H
 
+#include <zlib.h>
 #include "bytecode.h"
 #include "type_desc.h"
 #include "execs.h"
@@ -151,6 +152,8 @@ struct cli_bc_ctx {
     mpool_t *mpool;
     uint32_t numGlobals;
     uint8_t* globals;
+    z_stream* z_streams;
+    unsigned z_nstreams;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

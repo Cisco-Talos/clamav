@@ -33,29 +33,37 @@
 #include "bytecode_priv.h"
 #include <stdlib.h>
 
-uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
-int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
-int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
-int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t, uint32_t);
-uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t);
-uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT*, uint32_t);
-uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t);
-int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
-int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t);
-uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t);
-uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t);
-int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*, uint32_t);
-int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
-int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t);
-int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t);
+uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx , uint32_t, uint32_t);
+int32_t cli_bcapi_read(struct cli_bc_ctx *ctx , uint8_t*, int32_t);
+int32_t cli_bcapi_write(struct cli_bc_ctx *ctx , uint8_t*, int32_t);
+int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx , uint32_t);
+uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx , struct DISASM_RESULT*, uint32_t);
+uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx , uint32_t);
+int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx , uint32_t);
+uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx , uint32_t);
+uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx , uint32_t);
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx , struct cli_exe_section*, uint32_t);
+int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx , uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
+int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx , uint32_t);
+int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t, uint8_t*, uint32_t, uint8_t*, uint32_t);
+int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -79,19 +87,21 @@ static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
 static uint16_t cli_tmp8[]={32, 32};
-static uint16_t cli_tmp9[]={32, 65, 32, 32, 32, 32};
-static uint16_t cli_tmp10[]={32, 80, 32};
-static uint16_t cli_tmp11[]={81};
-static uint16_t cli_tmp12[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
-static uint16_t cli_tmp13[]={65, 32};
-static uint16_t cli_tmp14[]={32, 65, 32};
-static uint16_t cli_tmp15[]={32, 85, 32};
-static uint16_t cli_tmp16[]={86};
-static uint16_t cli_tmp17[]={16, 8, 8, 8, 88, 87};
-static uint16_t cli_tmp18[]={8};
+static uint16_t cli_tmp9[]={32, 32, 65, 32, 65, 32};
+static uint16_t cli_tmp10[]={32};
+static uint16_t cli_tmp11[]={32, 32, 32};
+static uint16_t cli_tmp12[]={32, 65, 32, 32, 32, 32};
+static uint16_t cli_tmp13[]={32, 83, 32};
+static uint16_t cli_tmp14[]={84};
+static uint16_t cli_tmp15[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
+static uint16_t cli_tmp16[]={65, 32};
+static uint16_t cli_tmp17[]={32, 65, 32};
+static uint16_t cli_tmp18[]={32, 88, 32};
 static uint16_t cli_tmp19[]={89};
-static uint16_t cli_tmp20[]={8};
-static uint16_t cli_tmp21[]={32, 32, 32};
+static uint16_t cli_tmp20[]={16, 8, 8, 8, 91, 90};
+static uint16_t cli_tmp21[]={8};
+static uint16_t cli_tmp22[]={92};
+static uint16_t cli_tmp23[]={8};
 
 const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp0, 11, 0, 0},
@@ -104,51 +114,64 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DArrayType, cli_tmp7, 64, 0, 0},
 	{DFunctionType, cli_tmp8, 2, 0, 0},
 	{DFunctionType, cli_tmp9, 6, 0, 0},
-	{DFunctionType, cli_tmp10, 3, 0, 0},
-	{DPointerType, cli_tmp11, 1, 0, 0},
-	{DStructType, cli_tmp12, 9, 0, 0},
-	{DFunctionType, cli_tmp13, 2, 0, 0},
-	{DFunctionType, cli_tmp14, 3, 0, 0},
-	{DFunctionType, cli_tmp15, 3, 0, 0},
-	{DPointerType, cli_tmp16, 1, 0, 0},
-	{DStructType, cli_tmp17, 6, 0, 0},
-	{DArrayType, cli_tmp18, 29, 0, 0},
-	{DArrayType, cli_tmp19, 3, 0, 0},
-	{DArrayType, cli_tmp20, 10, 0, 0},
-	{DFunctionType, cli_tmp21, 3, 0, 0}
+	{DFunctionType, cli_tmp10, 1, 0, 0},
+	{DFunctionType, cli_tmp11, 3, 0, 0},
+	{DFunctionType, cli_tmp12, 6, 0, 0},
+	{DFunctionType, cli_tmp13, 3, 0, 0},
+	{DPointerType, cli_tmp14, 1, 0, 0},
+	{DStructType, cli_tmp15, 9, 0, 0},
+	{DFunctionType, cli_tmp16, 2, 0, 0},
+	{DFunctionType, cli_tmp17, 3, 0, 0},
+	{DFunctionType, cli_tmp18, 3, 0, 0},
+	{DPointerType, cli_tmp19, 1, 0, 0},
+	{DStructType, cli_tmp20, 6, 0, 0},
+	{DArrayType, cli_tmp21, 29, 0, 0},
+	{DArrayType, cli_tmp22, 3, 0, 0},
+	{DArrayType, cli_tmp23, 10, 0, 0}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"test1", 21, 0, 0},
-	{"read", 14, 0, 1},
-	{"write", 14, 1, 1},
-	{"seek", 21, 1, 0},
-	{"setvirusname", 14, 2, 1},
-	{"debug_print_str", 14, 3, 1},
+	{"test1", 11, 0, 0},
+	{"read", 17, 0, 1},
+	{"write", 17, 1, 1},
+	{"seek", 11, 1, 0},
+	{"setvirusname", 17, 2, 1},
+	{"debug_print_str", 17, 3, 1},
 	{"debug_print_uint", 8, 0, 2},
-	{"disasm_x86", 15, 4, 1},
-	{"trace_directory", 14, 5, 1},
-	{"trace_scope", 14, 6, 1},
-	{"trace_source", 14, 7, 1},
-	{"trace_op", 14, 8, 1},
-	{"trace_value", 14, 9, 1},
-	{"trace_ptr", 14, 10, 1},
+	{"disasm_x86", 18, 4, 1},
+	{"trace_directory", 17, 5, 1},
+	{"trace_scope", 17, 6, 1},
+	{"trace_source", 17, 7, 1},
+	{"trace_op", 17, 8, 1},
+	{"trace_value", 17, 9, 1},
+	{"trace_ptr", 17, 10, 1},
 	{"pe_rawaddr", 8, 1, 2},
-	{"file_find", 14, 11, 1},
+	{"file_find", 17, 11, 1},
 	{"file_byteat", 8, 2, 2},
-	{"malloc", 13, 0, 3},
+	{"malloc", 16, 0, 3},
 	{"test2", 8, 3, 2},
-	{"get_pe_section", 10, 12, 1},
-	{"fill_buffer", 9, 0, 4},
+	{"get_pe_section", 13, 12, 1},
+	{"fill_buffer", 12, 0, 4},
 	{"extract_new", 8, 4, 2},
-	{"read_number", 8, 5, 2}
+	{"read_number", 8, 5, 2},
+	{"hashset_new", 10, 0, 5},
+	{"hashset_add", 11, 2, 0},
+	{"hashset_remove", 11, 3, 0},
+	{"hashset_contains", 11, 4, 0},
+	{"hashset_done", 8, 6, 2},
+	{"inflate_init", 10, 1, 5},
+	{"inflate_process", 9, 0, 6},
+	{"inflate_done", 8, 7, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_test1,
-	(cli_apicall_int2)cli_bcapi_seek
+	(cli_apicall_int2)cli_bcapi_seek,
+	(cli_apicall_int2)cli_bcapi_hashset_add,
+	(cli_apicall_int2)cli_bcapi_hashset_remove,
+	(cli_apicall_int2)cli_bcapi_hashset_contains
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_read,
@@ -171,12 +194,21 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_file_byteat,
 	(cli_apicall_int1)cli_bcapi_test2,
 	(cli_apicall_int1)cli_bcapi_extract_new,
-	(cli_apicall_int1)cli_bcapi_read_number
+	(cli_apicall_int1)cli_bcapi_read_number,
+	(cli_apicall_int1)cli_bcapi_hashset_done,
+	(cli_apicall_int1)cli_bcapi_inflate_done
 };
 const cli_apicall_malloclike cli_apicalls3[] = {
 	(cli_apicall_malloclike)cli_bcapi_malloc
 };
 const cli_apicall_ptrbuffdata cli_apicalls4[] = {
 	(cli_apicall_ptrbuffdata)cli_bcapi_fill_buffer
+};
+const cli_apicall_allocobj cli_apicalls5[] = {
+	(cli_apicall_allocobj)cli_bcapi_hashset_new,
+	(cli_apicall_allocobj)cli_bcapi_inflate_init
+};
+const cli_apicall_bufops cli_apicalls6[] = {
+	(cli_apicall_bufops)cli_bcapi_inflate_process
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

@@ -224,5 +224,16 @@ int32_t extract_new(int32_t id);
   */
 int32_t read_number(uint32_t radix);
 
+int32_t hashset_new(void);
+int32_t hashset_add(int32_t hs, uint32_t key);
+int32_t hashset_remove(int32_t hs, uint32_t key);
+int32_t hashset_contains(int32_t hs, uint32_t key);
+int32_t hashset_done(int32_t id);
+
+int32_t inflate_init(void);
+int32_t inflate_process(int32_t id, uint8_t *input, uint32_t input_size,
+                        uint8_t *output, uint32_t output_size);
+int32_t inflate_done(int32_t id);
+
 #endif
 #endif
