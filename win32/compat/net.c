@@ -350,6 +350,14 @@ int w32_shutdown(int sockfd, int how) {
     return 0;
 }
 
+int sock_set_nonblock(int sockfd) {
+    u_long arg = 1;
+    if(ioctlsocket((SOCKET)sockfd, FIONBIO, &arg)) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
 
 struct w32polldata {
     HANDLE setme;

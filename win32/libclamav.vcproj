@@ -812,6 +812,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\compat\random.c"
+					>
+				</File>
+				<File
 					RelativePath=".\compat\snprintf.c"
 					>
 				</File>

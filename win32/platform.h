@@ -16,6 +16,7 @@
 #include "net.h"
 #include "w32_errno.h"
 #include "w32_stat.h"
+#include "random.h"
 
 #ifndef __cplusplus
 typedef unsigned short mode_t;
@@ -30,6 +31,8 @@ typedef unsigned short mode_t;
 
 char *strptime(const char *s, const char *format, struct tm *tm);
 
+#define srand w32_srand
+#define rand w32_rand
 #define socket w32_socket
 #define getsockopt w32_getsockopt
 #define setsockopt w32_setsockopt

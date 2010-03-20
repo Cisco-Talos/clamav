@@ -387,7 +387,10 @@ static void *acceptloop_th(void *arg)
 
 	    if (new_sd >= 0) {
 		int ret, flags;
-
+#ifdef _WIN32
+		sock_set_nonblock(new_fd);
+		logg("^Can't set socket to nonblocking mode, errno %d\n", errno);
+#else
 #ifdef F_GETFL
 		flags = fcntl(new_sd, F_GETFL, 0);
 		if (flags != -1) {
@@ -400,6 +403,7 @@ static void *acceptloop_th(void *arg)
 		}
 #else
 		logg("^Nonblocking sockets not available!\n");
+#endif
 #endif
 		logg("$Got new connection, FD %d\n", new_sd);
 		pthread_mutex_lock(recv_fds->buf_mutex);
