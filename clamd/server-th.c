@@ -388,8 +388,8 @@ static void *acceptloop_th(void *arg)
 	    if (new_sd >= 0) {
 		int ret, flags;
 #ifdef _WIN32
-		sock_set_nonblock(new_sd);
-		logg("^Can't set socket to nonblocking mode, errno %d\n", errno);
+		if(sock_set_nonblock(new_sd))
+		    logg("^Can't set socket to nonblocking mode, errno %d\n", errno);
 #else
 #ifdef F_GETFL
 		flags = fcntl(new_sd, F_GETFL, 0);
