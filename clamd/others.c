@@ -523,13 +523,14 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *ev
 		if (revents & (POLLIN|POLLHUP)) {
 		    logg("$Received POLLIN|POLLHUP on fd %d\n",data->poll_data[i].fd);
 		}
+#ifndef _WIN32
 		if (revents & POLLHUP) {
                        /* avoid SHUT_WR problem on Mac OS X */
                        int ret = send(data->poll_data[i].fd, &n, 0, 0);
                        if (!ret || (ret == -1 && errno == EINTR))
                                revents &= ~POLLHUP;
 		}
-
+#endif
 		if (revents & POLLIN) {
 		    int ret = read_fd_data(&data->buf[i]);
 		    /* Data available to be read */
