@@ -75,7 +75,6 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	int opt_failed = 0;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
-
 	size = map->len - offset;
 
 	if(size <= 7)	/* doesn't even include the file header */

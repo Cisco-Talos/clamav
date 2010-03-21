@@ -453,18 +453,57 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 
 int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
 {
+    unsigned  n = ctx->nhashsets+1;
+    struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets)*n);
+    if (!s)
+	return -1;
+    ctx->hashsets = s;
+    ctx->nhashsets = n;
+    s = &s[n-1];
+    cli_hashset_init(s, 16, 80);
+    return n-1;
 }
+
+static struct cli_hashset *get_hashset(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || id >= ctx->nhashsets || !ctx->hashsets)
+	return NULL;
+    return &ctx->hashsets[id];
+}
+
 int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
 {
+    struct cli_hashset *s = get_hashset(ctx, id);
+    if (!s)
+	return -1;
+    return cli_hashset_addkey(s, key);
 }
+
 int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
 {
+    struct cli_hashset *s = get_hashset(ctx, id);
+    if (!s)
+	return -1;
+//    return cli_hashset_removekey(s, key);
 }
+
 int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
 {
+    struct cli_hashset *s = get_hashset(ctx, id);
+    if (!s)
+	return 0;
+    return cli_hashset_contains(s, key);
 }
+
+int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx, int32_t id)
+{
+    struct cli_hashset *s = get_hashset(ctx, id);
+    return !s->count;
+}
+
 int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
 {
+    /* TODO */
 }
 
 int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
@@ -503,21 +542,24 @@ int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t at)
     if (!b) {
 	return -1;
     }
-    b = &b[n-1];
     ctx->buffers = b;
     ctx->nbuffers = n;
+    b = &b[n-1];
 
     /* NULL data means read from file at pos read_cursor */
     b->data = NULL;
     b->size = 0;
     b->read_cursor = at;
     b->write_cursor = 0;
+    return n-1;
 }
 
 static struct bc_buffer *get_buffer(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (!ctx->buffers || id < 0 || id >= ctx->nbuffers)
+    if (!ctx->buffers || id < 0 || id >= ctx->nbuffers) {
+	cli_dbgmsg("bytecode api: invalid buffer id %u\n", id);
 	return NULL;
+    }
     return &ctx->buffers[id];
 }
 
@@ -614,8 +656,10 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
     z_stream stream;
     struct bc_inflate *b;
     unsigned n = ctx->ninflates + 1;
-    if (!get_buffer(ctx, from) || !get_buffer(ctx, to))
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to)) {
+	cli_dbgmsg("bytecode api: inflate_init: invalid buffers!\n");
 	return -1;
+    }
     memset(&stream, 0, sizeof(stream));
     ret = inflateInit2(&stream, windowBits);
     switch (ret) {
@@ -663,7 +707,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
     int ret;
     unsigned avail_in_orig, avail_out_orig;
     struct bc_inflate *b = get_inflate(ctx, id);
-    if (!b)
+    if (!b || b->from == -1 || b->to == -1)
 	return -1;
 
     b->stream.avail_in = avail_in_orig =
@@ -685,7 +729,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
 	if (!b->needSync) {
 	    ret = inflate(&b->stream, Z_NO_FLUSH);
 	    if (ret == Z_DATA_ERROR) {
-		cli_dbgmsg("bytecode api: inflate at %u: %s\n", b->stream.total_in,
+		cli_dbgmsg("bytecode api: inflate at %u: %s, trying to recover\n", b->stream.total_in,
 			   b->stream.msg);
 		b->needSync = 1;
 	    }
@@ -693,6 +737,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
 	if (b->needSync) {
 	    ret = inflateSync(&b->stream);
 	    if (ret == Z_OK) {
+		cli_dbgmsg("bytecode api: successfully recovered inflate stream\n");
 		b->needSync = 0;
 		continue;
 	    }

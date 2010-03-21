@@ -229,6 +229,7 @@ int32_t hashset_add(int32_t hs, uint32_t key);
 int32_t hashset_remove(int32_t hs, uint32_t key);
 int32_t hashset_contains(int32_t hs, uint32_t key);
 int32_t hashset_done(int32_t id);
+int32_t hashset_empty(int32_t id);
 
 int32_t  buffer_pipe_new(uint32_t size);
 int32_t  buffer_pipe_new_fromfile(uint32_t pos);

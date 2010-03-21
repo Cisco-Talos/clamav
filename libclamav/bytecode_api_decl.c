@@ -61,6 +61,7 @@ int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t, uint32_t);
 int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t, uint32_t);
 int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t, uint32_t);
 int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx , uint32_t);
 int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t);
 uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t);
@@ -172,18 +173,19 @@ const struct cli_apicall cli_apicalls[]={
 	{"hashset_remove", 10, 3, 0},
 	{"hashset_contains", 10, 4, 0},
 	{"hashset_done", 8, 6, 2},
-	{"buffer_pipe_new", 8, 7, 2},
-	{"buffer_pipe_new_fromfile", 8, 8, 2},
-	{"buffer_pipe_read_avail", 8, 9, 2},
+	{"hashset_empty", 8, 7, 2},
+	{"buffer_pipe_new", 8, 8, 2},
+	{"buffer_pipe_new_fromfile", 8, 9, 2},
+	{"buffer_pipe_read_avail", 8, 10, 2},
 	{"buffer_pipe_read_get", 11, 0, 6},
 	{"buffer_pipe_read_stopped", 10, 5, 0},
-	{"buffer_pipe_write_avail", 8, 10, 2},
+	{"buffer_pipe_write_avail", 8, 11, 2},
 	{"buffer_pipe_write_get", 11, 1, 6},
 	{"buffer_pipe_write_stopped", 10, 6, 0},
-	{"buffer_pipe_done", 8, 11, 2},
+	{"buffer_pipe_done", 8, 12, 2},
 	{"inflate_init", 9, 0, 7},
-	{"inflate_process", 8, 12, 2},
-	{"inflate_done", 8, 13, 2}
+	{"inflate_process", 8, 13, 2},
+	{"inflate_done", 8, 14, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -218,6 +220,7 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_extract_new,
 	(cli_apicall_int1)cli_bcapi_read_number,
 	(cli_apicall_int1)cli_bcapi_hashset_done,
+	(cli_apicall_int1)cli_bcapi_hashset_empty,
 	(cli_apicall_int1)cli_bcapi_buffer_pipe_new,
 	(cli_apicall_int1)cli_bcapi_buffer_pipe_new_fromfile,
 	(cli_apicall_int1)cli_bcapi_buffer_pipe_read_avail,

@@ -30,6 +30,7 @@
 #include "bytecode_hooks.h"
 #include "fmap.h"
 #include "mpool.h"
+#include "hashtab.h"
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -171,6 +172,8 @@ struct cli_bc_ctx {
     unsigned ninflates;
     struct bc_buffer *buffers;
     unsigned nbuffers;
+    struct cli_hashset *hashsets;
+    unsigned nhashsets;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
