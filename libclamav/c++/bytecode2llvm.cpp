@@ -104,6 +104,7 @@ struct cli_bcengine {
     } guard;
 };
 
+extern "C" uint8_t cli_debug_flag;
 namespace {
 
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
@@ -202,6 +203,21 @@ static void* noUnknownFunctions(const std::string& name) {
     llvm_error_handler(0, reason);
     return 0;
 }
+
+class NotifyListener : public JITEventListener {
+public:
+    virtual void NotifyFunctionEmitted(const Function &F,
+				       void *Code, size_t Size,
+				       const EmittedFunctionDetails &Details)
+    {
+	if (!cli_debug_flag)
+	    return;
+	errs() << "bytecode JIT: emitted function " << F.getName() << 
+	    " of " << Size << " bytes at 0x";
+	errs().write_hex((uintptr_t)Code);
+	errs() << "\n";
+    }
+};
 
 class LLVMTypeMapper {
 private:
@@ -339,7 +355,11 @@ private:
 	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
 	if (operand < func->numValues)
 	    return Values[operand];
-	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
+	unsigned w = Ty->getPrimitiveSizeInBits();
+	if (w > 1)
+	    w = (w+7)/8;
+	else
+	    w = 0;
 	return convertOperand(func, map[w], operand);
     }
 
@@ -366,7 +386,11 @@ private:
 	    }
 	    return V;
 	}
-	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
+	unsigned w = Ty->getPrimitiveSizeInBits();
+	if (w > 1)
+	    w = (w+7)/8;
+	else
+	    w = 0;
 	return convertOperand(func, map[w], operand);
     }
 
@@ -1356,6 +1380,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    return CL_EBYTECODE;
 	}
 
+	EE->RegisterJITEventListener(new NotifyListener());
 //	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
 	// for now.
@@ -1503,7 +1528,6 @@ int bytecode_init(void)
     return 0;
 }
 
-extern "C" uint8_t cli_debug_flag;
 // Called once when loading a new set of BC files
 int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 {
