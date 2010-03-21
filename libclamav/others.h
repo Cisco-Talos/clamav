@@ -419,6 +419,7 @@ void cli_errmsg(const char *str, ...);
 
 #ifdef __GNUC__
 #define always_inline inline __attribute__((always_inline))
+#define never_inline __attribute__((noinline))
 #else
 #define always_inline inline
 #endif

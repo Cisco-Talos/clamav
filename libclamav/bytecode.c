@@ -1441,6 +1441,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
     free(bc->lsig);
+    free(bc->globalBytes);
 }
 
 #define MAP(val) do { operand_t o = val; \
@@ -1476,6 +1477,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	gmap[j] = bc->numGlobalBytes;
 	bc->numGlobalBytes += typesize(bc, ty);
     }
+    bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
+    if (!bc->globalBytes)
+	return CL_EMEM;
 
     for (i=0;i<bc->num_func;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];

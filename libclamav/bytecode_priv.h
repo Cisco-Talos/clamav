@@ -166,8 +166,6 @@ struct cli_bc_ctx {
     unsigned line;
     unsigned col;
     mpool_t *mpool;
-    uint32_t numGlobals;
-    uint8_t* globals;
     struct bc_inflate* inflates;
     unsigned ninflates;
     struct bc_buffer *buffers;
