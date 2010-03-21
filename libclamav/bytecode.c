@@ -1461,10 +1461,16 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     }\
     val = map[o]; } while (0)
 
+static inline int64_t ptr_compose(int32_t id, uint32_t offset)
+{
+    uint64_t i = id;
+    return (i << 32) | offset;
+}
+
 static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
     unsigned i, j, k;
-    unsigned *gmap;
+    uint64_t *gmap;
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap)
@@ -1480,6 +1486,24 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
     if (!bc->globalBytes)
 	return CL_EMEM;
+    for (j=0;j<bc->num_globals;j++) {
+	struct cli_bc_type *ty;
+	if (bc->globaltys[j] < 65)
+	    continue;
+	ty = &bc->types[bc->globaltys[j]-65];
+	switch (ty->kind) {
+	    case DPointerType:
+		*(uint64_t*)&bc->globalBytes[gmap[j]] =
+		    ptr_compose(bc->globals[j][1] - _FIRST_GLOBAL + 1,
+				bc->globals[j][0]);
+		break;
+	    default:
+		/*TODO*/
+		if (!bc->globals[j][1])
+		    continue; /* null */
+		break;
+	}
+    }
 
     for (i=0;i<bc->num_func;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];

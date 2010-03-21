@@ -484,7 +484,6 @@ private:
     Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
     {
         if (const PointerType *PTy = dyn_cast<PointerType>(Ty)) {
-
           Value *idxs[1] = {
 	      ConstantInt::get(Type::getInt64Ty(Context), components[c++])
 	  };

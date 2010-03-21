@@ -272,7 +272,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
  do {\
      if (p&0x80000000) {\
 	 uint32_t pg = p&0x7fffffff;\
-	 READNfrom(bc->numGlobalBytes, bc->globals, x, n, pg);\
+	 READNfrom(bc->numGlobalBytes, bc->globalBytes, x, n, pg);\
      } else {\
 	 READNfrom(func->numBytes, values, x, n, p);\
      }\
@@ -287,7 +287,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 
 #define PSIZE sizeof(int64_t)
 #define READP(x, p, asize) { int64_t iptr__;\
-    READN(iptr__, 8, p);\
+    READN(iptr__, 64, p);\
     x = ptr_torealptr(&ptrinfos, iptr__, (asize));\
     if (!x) {\
 	stop = CL_EBYTECODE;\
@@ -479,20 +479,27 @@ static inline int32_t ptr_register_stack(struct ptr_infos *infos,
     return ptr_compose(-(n-1), 0);
 }
 
-static inline int64_t ptr_register_glob(struct ptr_infos *infos,
-					void *values, uint32_t size)
+static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
+						void *values, uint32_t size, unsigned n)
 {
-    unsigned n = infos->nstacks + 1;
-    struct ptr_info *sinfos = cli_realloc(infos->stack_infos,
-					  sizeof(*sinfos)*n);
-    if (!sinfos)
-	return 0;
-    infos->stack_infos = sinfos;
-    infos->nstacks = n;
-    sinfos = &sinfos[n-1];
+    struct ptr_info *sinfos;
+    if (n > infos->nglobs) {
+	sinfos = cli_realloc(infos->glob_infos, sizeof(*sinfos)*n);
+	if (!sinfos)
+	    return 0;
+	infos->glob_infos = sinfos;
+	infos->nglobs = n;
+    }
+    sinfos = &infos->glob_infos[n-1];
     sinfos->base = values;
     sinfos->size = size;
     return ptr_compose(n, 0);
+}
+
+static inline int64_t ptr_register_glob(struct ptr_infos *infos,
+					void *values, uint32_t size)
+{
+    return ptr_register_glob_fixedid(infos, values, size, infos->nglobs+1);
 }
 
 static inline int64_t ptr_index(int64_t ptr, uint32_t off)
@@ -544,6 +551,29 @@ static always_inline int check_sdivops(int64_t op0, int64_t op1)
     return op1 == 0 || (op0 == -1 && op1 ==  (-9223372036854775807LL-1LL));
 }
 
+static unsigned globaltypesize(uint16_t id)
+{
+    const struct cli_bc_type *ty;
+    if (id <= 64)
+	return (id + 7)/8;
+    if (id <= 69)
+	return 8; /* ptr */
+    ty = &cli_apicall_types[id - 69];
+    switch (ty->kind) {
+	case DArrayType:
+	    return ty->numElements*globaltypesize(ty->containedTypes[0]);
+	case DStructType:
+	case DPackedStructType:
+	    {
+		unsigned i, s = 0;
+		for (i=0;i<ty->numElements;i++)
+		    s += globaltypesize(ty->containedTypes[i]);
+		return s;
+	    }
+    }
+    return 0;
+}
+
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
@@ -557,6 +587,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
+    for (i=0;i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
+	const struct cli_apiglobal *g = &cli_globals[i];
+	void *apiglobal = (void*)(((char*)&ctx->hooks) + g->offset);
+	uint32_t size = globaltypesize(g->type);
+	ptr_register_glob_fixedid(&ptrinfos, apiglobal, size, g->globalid - _FIRST_GLOBAL+1);
+    }
+
     do {
 	pc++;
 	switch (inst->interp_op) {
