@@ -230,9 +230,18 @@ int32_t hashset_remove(int32_t hs, uint32_t key);
 int32_t hashset_contains(int32_t hs, uint32_t key);
 int32_t hashset_done(int32_t id);
 
-int32_t inflate_init(void);
-int32_t inflate_process(int32_t id, uint8_t *input, uint32_t input_size,
-                        uint8_t *output, uint32_t output_size);
+int32_t  buffer_pipe_new(uint32_t size);
+int32_t  buffer_pipe_new_fromfile(uint32_t pos);
+uint32_t buffer_pipe_read_avail(int32_t id);
+uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
+int32_t  buffer_pipe_read_stopped(int32_t id, uint32_t amount);
+uint32_t buffer_pipe_write_avail(int32_t id);
+uint8_t *buffer_pipe_write_get(int32_t id, uint32_t size);
+int32_t  buffer_pipe_write_stopped(int32_t id, uint32_t amount);
+int32_t  buffer_pipe_done(int32_t id);
+
+int32_t inflate_init(int32_t from_buffer, int32_t to_buffer, int32_t windowBits);
+int32_t inflate_process(int32_t id);
 int32_t inflate_done(int32_t id);
 
 #endif

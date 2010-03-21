@@ -467,37 +467,266 @@ int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
 {
 }
 
-int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx)
+int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
 {
-    z_stream *s;
-    s = cli_realloc(ctx->z_streams, (ctx->z_nstreams+1)*sizeof(*ctx->z_streams));
-    if (!s)
+    unsigned char *data;
+    struct bc_buffer *b;
+    unsigned n = ctx->nbuffers + 1;
+
+    data = cli_malloc(size);
+    if (!data)
 	return -1;
-    ctx->z_streams = s;
-    ctx->z_nstreams++;
-    s = &s[ctx->z_nstreams-1];
-    memset(s, 0, sizeof(*s));
-    return inflateInit2(s, MAX_WBITS+16);
+    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers)*n);
+    if (!b) {
+	free(data);
+	return -1;
+    }
+    ctx->buffers = b;
+    ctx->nbuffers = n;
+    b = &b[n-1];
+
+    b->data = data;
+    b->size = size;
+    b->write_cursor = b->read_cursor = 0;
+    return n-1;
 }
 
-int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id,
-				  uint8_t* in, uint32_t in_size,
-				  uint8_t* out, uint32_t out_size)
+int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t at)
 {
-    if (id >= ctx->z_nstreams)
+    struct bc_buffer *b;
+    unsigned n = ctx->nbuffers + 1;
+
+    if (at >= ctx->file_size)
 	return -1;
-    z_stream *s = &ctx->z_streams[id];
-    s->next_in = in;
-    s->avail_in = in_size;
-    s->next_out = out;
-    s->avail_out = out_size;
-    return inflate(s, 0);
+
+    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers)*n);
+    if (!b) {
+	return -1;
+    }
+    b = &b[n-1];
+    ctx->buffers = b;
+    ctx->nbuffers = n;
+
+    /* NULL data means read from file at pos read_cursor */
+    b->data = NULL;
+    b->size = 0;
+    b->read_cursor = at;
+    b->write_cursor = 0;
+}
+
+static struct bc_buffer *get_buffer(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (!ctx->buffers || id < 0 || id >= ctx->nbuffers)
+	return NULL;
+    return &ctx->buffers[id];
+}
+
+uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t id)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b)
+	return 0;
+    if (b->data) {
+	if (b->write_cursor <= b->read_cursor)
+	    return 0;
+	return b->write_cursor - b->read_cursor;
+    }
+    if (!ctx->fmap || ctx->off >= ctx->file_size)
+	return 0;
+    if (ctx->off + BUFSIZ <= ctx->file_size)
+	return BUFSIZ;
+    return ctx->file_size - ctx->off;
+}
+
+uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b || size > cli_bcapi_buffer_pipe_read_avail(ctx, id) || !size)
+	return NULL;
+    if (b->data)
+	return b->data + b->read_cursor;
+    return fmap_need_off(ctx->fmap, b->read_cursor, size);
+}
+
+int32_t cli_bcapi_buffer_pipe_read_stopped(struct cli_bc_ctx *ctx , int32_t id, uint32_t amount)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b)
+	return -1;
+    if (b->data) {
+	if (b->write_cursor <= b->read_cursor)
+	    return -1;
+	if (b->read_cursor + amount > b->write_cursor)
+	    b->read_cursor = b->write_cursor;
+	else
+	    b->read_cursor += amount;
+	if (b->read_cursor >= b->size &&
+	    b->write_cursor >= b->size)
+	    b->read_cursor = b->write_cursor = 0;
+	return 0;
+    }
+    b->read_cursor += amount;
+    return 0;
+}
+
+uint32_t cli_bcapi_buffer_pipe_write_avail(struct cli_bc_ctx *ctx, int32_t id)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b)
+	return 0;
+    if (!b->data)
+	return 0;
+    if (b->write_cursor >= b->size)
+	return 0;
+    return b->size - b->write_cursor;
+}
+
+uint8_t* cli_bcapi_buffer_pipe_write_get(struct cli_bc_ctx *ctx, int32_t id, uint32_t size)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b || size > cli_bcapi_buffer_pipe_write_avail(ctx, id) || !size)
+	return NULL;
+    if (!b->data)
+	return NULL;
+    return b->data + b->write_cursor;
+}
+
+int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
+{
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b || !b->data)
+	return -1;
+    if (b->write_cursor + size >= b->size)
+	b->write_cursor = b->size;
+    else
+	b->write_cursor += size;
+    return 0;
+}
+
+int32_t cli_bcapi_buffer_pipe_done(struct cli_bc_ctx *ctx , int32_t id)
+{
+    /* TODO */
+}
+
+int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to, int32_t windowBits)
+{
+    int ret;
+    z_stream stream;
+    struct bc_inflate *b;
+    unsigned n = ctx->ninflates + 1;
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to))
+	return -1;
+    memset(&stream, 0, sizeof(stream));
+    ret = inflateInit2(&stream, windowBits);
+    switch (ret) {
+	case Z_MEM_ERROR:
+	    cli_dbgmsg("bytecode api: inflateInit2: out of memory!\n");
+	    return -1;
+	case Z_VERSION_ERROR:
+	    cli_dbgmsg("bytecode api: inflateinit2: zlib version error!\n");
+	    return -1;
+	case Z_STREAM_ERROR:
+	    cli_dbgmsg("bytecode api: inflateinit2: zlib stream error!\n");
+	    return -1;
+	case Z_OK:
+	    break;
+	default:
+	    cli_dbgmsg("bytecode api: inflateInit2: unknown error %d\n", ret);
+	    return -1;
+    }
+
+    b = cli_realloc(ctx->inflates, sizeof(*ctx->inflates)*n);
+    if (!b) {
+	inflateEnd(&stream);
+	return -1;
+    }
+    ctx->inflates = b;
+    ctx->ninflates = n;
+    b = &b[n-1];
+
+    b->from = from;
+    b->to = to;
+    b->needSync = 0;
+    memcpy(&b->stream, &stream, sizeof(stream));
+    return n-1;
+}
+
+static struct bc_inflate *get_inflate(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || id >= ctx->ninflates || !ctx->inflates)
+	return NULL;
+    return &ctx->inflates[id];
+}
+
+int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
+{
+    int ret;
+    unsigned avail_in_orig, avail_out_orig;
+    struct bc_inflate *b = get_inflate(ctx, id);
+    if (!b)
+	return -1;
+
+    b->stream.avail_in = avail_in_orig =
+	cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+
+    b->stream.next_in = cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+						       b->stream.avail_in);
+
+    b->stream.avail_out = avail_out_orig =
+	cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
+
+    b->stream.next_out = cli_bcapi_buffer_pipe_write_get(ctx, b->to,
+							 b->stream.avail_out);
+
+    if (!b->stream.avail_in || !b->stream.avail_out)
+	return -1;
+    /* try hard to extract data, skipping over corrupted data */
+    do {
+	if (!b->needSync) {
+	    ret = inflate(&b->stream, Z_NO_FLUSH);
+	    if (ret == Z_DATA_ERROR) {
+		cli_dbgmsg("bytecode api: inflate at %u: %s\n", b->stream.total_in,
+			   b->stream.msg);
+		b->needSync = 1;
+	    }
+	}
+	if (b->needSync) {
+	    ret = inflateSync(&b->stream);
+	    if (ret == Z_OK) {
+		b->needSync = 0;
+		continue;
+	    }
+	}
+	break;
+    } while (1);
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    cli_bcapi_buffer_pipe_write_stopped(ctx, b->to, avail_out_orig - b->stream.avail_out);
+
+    if (ret == Z_MEM_ERROR) {
+	cli_dbgmsg("bytecode api: out of memory!\n");
+	cli_bcapi_inflate_done(ctx, id);
+	return ret;
+    }
+    if (ret == Z_STREAM_END) {
+	cli_bcapi_inflate_done(ctx, id);
+    }
+    if (ret == Z_BUF_ERROR) {
+	cli_dbgmsg("bytecode api: buffer error!\n");
+    }
+
+    return ret;
 }
 
 int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t id)
 {
-    if (id >= ctx->z_nstreams)
+    int ret;
+    struct bc_inflate *b = get_inflate(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
 	return -1;
-    z_stream *s = &ctx->z_streams[id];
-    return inflateEnd(s);
+    ret = inflateEnd(&b->stream);
+    if (ret == Z_STREAM_ERROR)
+	cli_dbgmsg("bytecode api: inflateEnd: %s\n", b->stream.msg);
+    b->from = b->to = -1;
+    return ret;
 }
+

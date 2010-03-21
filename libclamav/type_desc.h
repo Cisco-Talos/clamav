@@ -47,7 +47,8 @@ typedef uint32_t (*cli_apicall_int1)(struct cli_bc_ctx *, uint32_t);
 typedef void* (*cli_apicall_malloclike)(struct cli_bc_ctx *, uint32_t);
 typedef void* (*cli_apicall_ptrbuffdata)(struct cli_bc_ctx *, void*, uint32_t, uint32_t, uint32_t, uint32_t);
 typedef int32_t (*cli_apicall_allocobj)(struct cli_bc_ctx *);
-typedef int32_t (*cli_apicall_bufops)(struct cli_bc_ctx *, int32_t, void*, uint32_t, void*, uint32_t);
+typedef void* (*cli_apicall_bufget)(struct cli_bc_ctx *, int32_t, uint32_t);
+typedef int32_t (*cli_apicall_int3)(struct cli_bc_ctx *, int32_t, int32_t, int32_t);
 
 struct cli_apicall {
     const char *name;
@@ -78,7 +79,8 @@ extern const cli_apicall_int1 cli_apicalls2[];
 extern const cli_apicall_malloclike cli_apicalls3[];
 extern const cli_apicall_ptrbuffdata cli_apicalls4[];
 extern const cli_apicall_allocobj cli_apicalls5[];
-extern const cli_apicall_bufops cli_apicalls6[];
+extern const cli_apicall_bufget cli_apicalls6[];
+extern const cli_apicall_int3 cli_apicalls7[];
 extern const unsigned cli_apicall_maxapi;
 extern const unsigned cli_apicall_maxglobal;
 

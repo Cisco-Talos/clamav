@@ -116,6 +116,21 @@ enum trace_level {
     trace_op,
     trace_val
 };
+
+struct bc_buffer {
+    unsigned char *data;
+    unsigned size;
+    unsigned write_cursor;
+    unsigned read_cursor;
+};
+
+struct bc_inflate {
+    z_stream stream;
+    int32_t from;
+    int32_t to;
+    int8_t  needSync;
+};
+
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
@@ -152,8 +167,10 @@ struct cli_bc_ctx {
     mpool_t *mpool;
     uint32_t numGlobals;
     uint8_t* globals;
-    z_stream* z_streams;
-    unsigned z_nstreams;
+    struct bc_inflate* inflates;
+    unsigned ninflates;
+    struct bc_buffer *buffers;
+    unsigned nbuffers;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

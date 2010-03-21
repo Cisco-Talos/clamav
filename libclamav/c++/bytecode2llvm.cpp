@@ -1408,6 +1408,9 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		case 6:
 		    dest = (void*)(intptr_t)cli_apicalls6[api->idx];
 		    break;
+		case 7:
+		    dest = (void*)(intptr_t)cli_apicalls7[api->idx];
+		    break;
 		default:
 		    llvm_unreachable("invalid api type");
 	    }
