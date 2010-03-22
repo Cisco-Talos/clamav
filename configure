@@ -972,6 +972,7 @@ with_user
 with_group
 enable_clamav
 enable_debug
+enable_unsigned_bytecode
 enable_no_cache
 enable_dns_fix
 enable_bigstack
@@ -1647,6 +1648,7 @@ Optional Features:
   --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing
   --disable-clamav	  disable test for clamav user/group
   --enable-debug	  enable debug code
+  --enable-unsigned-bytecode	  enable load of unsigned bytecode
   --enable-no-cache	  use "Cache-Control: no-cache" in freshclam
   --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)
   --enable-bigstack	  increase thread stack size
@@ -5164,13 +5166,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5167: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5169: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5170: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5172: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5173: output\"" >&5)
+  (eval echo "\"\$as_me:5175: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6365,7 +6367,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6368 "configure"' > conftest.$ac_ext
+  echo '#line 6370 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7893,11 +7895,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7896: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7898: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7900: \$? = $ac_status" >&5
+   echo "$as_me:7902: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8232,11 +8234,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8235: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8237: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8239: \$? = $ac_status" >&5
+   echo "$as_me:8241: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8337,11 +8339,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8340: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8342: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8344: \$? = $ac_status" >&5
+   echo "$as_me:8346: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8392,11 +8394,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8395: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8397: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8399: \$? = $ac_status" >&5
+   echo "$as_me:8401: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10776,7 +10778,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10779 "configure"
+#line 10781 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10872,7 +10874,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10875 "configure"
+#line 10877 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11544,7 +11546,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11547 "configure"
+#line 11549 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -16451,6 +16453,25 @@ $as_echo "#define CL_DEBUG 1" >>confdefs.h
 else
 
 $as_echo "#define NDEBUG 1" >>confdefs.h
+
+fi
+
+# Check whether --enable-unsigned-bytecode was given.
+if test "${enable_unsigned_bytecode+set}" = set; then :
+  enableval=$enable_unsigned_bytecode; enable_unsigned-bytecode=$enableval
+else
+  enable_unsigned-bytecode="no"
+fi
+
+
+if test "$enable_unsigned-bc" = "yes"; then
+  VERSION_SUFFIX="$VERSION_SUFFIX-unsigned-bc"
+
+$as_echo "#define CL_BCUNSIGNED 1" >>confdefs.h
+
+else
+
+$as_echo "#define CL_BCUNSIGNED 1" >>confdefs.h
 
 fi
 

@@ -23,6 +23,9 @@
 /* enable clamuko */
 /* #undef CLAMUKO */
 
+/* disable loading of unsigned bytecode */
+/* #undef CL_BCUNSIGNED */
+
 /* enable debugging */
 /* #undef CL_DEBUG */
 
@@ -493,7 +496,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.96rc1-19-gc491083"
+#define VERSION "devel-clamav-0.96rc1-54-g96fb6ef"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

@@ -21,6 +21,9 @@
 /* enable clamuko */
 #undef CLAMUKO
 
+/* disable loading of unsigned bytecode */
+#undef CL_BCUNSIGNED
+
 /* enable debugging */
 #undef CL_DEBUG
 

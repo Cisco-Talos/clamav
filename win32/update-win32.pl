@@ -24,6 +24,7 @@ my %CONF = (
     'CLAMAVUSER' => '"clamav"',
     'CLAMUKO' => -1,
     'CL_DEBUG' => -1,
+    'CL_BCUNSIGNED' => -1,
     'CL_EXPERIMENTAL' => -1,
     'CL_THREAD_SAFE' => '1',
     'CONFDIR' => '"C:\\\\ClamAV"',
