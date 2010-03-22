@@ -74,6 +74,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     184549376U,	// BL_pred
     3942645760U,	// BLr9
     184549376U,	// BLr9_pred
+    27324416U,	// BMOVPCRX
+    27324416U,	// BMOVPCRXr9
     3778019088U,	// BRIND
     8450048U,	// BR_JTadd
     118550528U,	// BR_JTm
@@ -182,6 +184,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     60817408U,	// MOVCCi
     27262976U,	// MOVCCr
     27262976U,	// MOVCCs
+    27324430U,	// MOVPCLR
+    3785420800U,	// MOVPCRX
     54525952U,	// MOVTi16
     60817408U,	// MOVi
     50331648U,	// MOVi16
@@ -2014,6 +2018,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::BL_pred:
     case ARM::BLr9:
     case ARM::BLr9_pred:
+    case ARM::BMOVPCRX:
+    case ARM::BMOVPCRXr9:
     case ARM::BRIND:
     case ARM::BR_JTadd:
     case ARM::BR_JTm:
@@ -2122,6 +2128,8 @@ unsigned ARMCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case ARM::MOVCCi:
     case ARM::MOVCCr:
     case ARM::MOVCCs:
+    case ARM::MOVPCLR:
+    case ARM::MOVPCRX:
     case ARM::MOVTi16:
     case ARM::MOVi:
     case ARM::MOVi16:
