@@ -245,5 +245,7 @@ int32_t inflate_init(int32_t from_buffer, int32_t to_buffer, int32_t windowBits)
 int32_t inflate_process(int32_t id);
 int32_t inflate_done(int32_t id);
 
+int32_t bytecode_rt_error(int32_t locationid);
+
 #endif
 #endif
