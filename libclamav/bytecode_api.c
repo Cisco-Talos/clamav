@@ -295,10 +295,10 @@ static inline const char* cli_memmem(const char *haystack, unsigned hlen,
 	haystack = memchr(haystack, c, hlen - nlen + 1);
 	if (!haystack)
 	    return NULL;
+	hlen -= haystack+1 - p;
 	p = haystack + 1;
 	if (!memcmp(p, needle, nlen-1))
 	    return haystack;
-	hlen -= p - haystack;
 	haystack = p;
     }
     return NULL;
@@ -316,12 +316,12 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
     for (;;) {
 	const char *p;
 	n = fmap_readn(map, buf, off, sizeof(buf));
-	if ((unsigned)n < len)
+	if ((unsigned)n < len || n < 0)
 	    return -1;
 	p = cli_memmem(buf, n, data, len);
 	if (p)
 	    return off + p - buf;
-	off += n-len;
+	off += n;
     }
     return -1;
 }
@@ -726,7 +726,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
     b->stream.next_out = cli_bcapi_buffer_pipe_write_get(ctx, b->to,
 							 b->stream.avail_out);
 
-    if (!b->stream.avail_in || !b->stream.avail_out)
+    if (!b->stream.avail_in || !b->stream.avail_out || !b->stream.next_in || !b->stream.next_out)
 	return -1;
     /* try hard to extract data, skipping over corrupted data */
     do {
