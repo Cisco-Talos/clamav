@@ -66,7 +66,6 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 #if SIZEOF_VOID_P==8
 static const unsigned int fragsz[] = {
 /* SIZE        PERM    TEMP     MAX    ACT! */
-     8,  /* Sparc SIGBUSes without this */
      16, /* 1487281    7051 1487281      USE */
      24, /*   89506     103   89510      USE */
      32, /* 1313968      65 1313969      USE */
@@ -143,7 +142,6 @@ static const unsigned int fragsz[] = {
 
 static const unsigned int fragsz[] = {
 /* SIZE        PERM    TEMP    ACT! */
-      8, /* Sparc SIGBUSes without this */
      16, /* 1487589    7134 1487589      USE */
      24, /*  116448     127  116452      USE */
      32, /* 1287128      95 1287134      USE */
@@ -233,7 +231,10 @@ struct MPMAP {
 struct MP {
   unsigned int psize;
   struct FRAG *avail[FRAGSBITS];
-  struct MPMAP mpm;
+  union {
+      struct MPMAP mpm;
+      uint64_t dummy_align;
+  } u;
 };
 
 struct FRAG {
@@ -275,20 +276,20 @@ struct MP *mpool_create() {
   memset(&mp, 0, sizeof(mp));
   mp.psize = cli_getpagesize();
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
-  mp.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
-  mp.mpm.size = sz - align_to_voidptr(sizeof(mp));
+  mp.u.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
+  mp.u.mpm.size = sz - align_to_voidptr(sizeof(mp));
   if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
     return NULL;
 #ifdef CL_DEBUG
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
   memcpy(mpool_p, &mp, sizeof(mp));
-  spam("Map created @%p->%p - size %u out of %u - voidptr=%u\n", mpool_p, (char *)mpool_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size, SIZEOF_VOID_P);
+  spam("Map created @%p->%p - size %u out of %u - voidptr=%u\n", mpool_p, (char *)mpool_p + mp.u.mpm.size, mp.u.mpm.usize, mp.u.mpm.size, SIZEOF_VOID_P);
   return mpool_p;
 }
 
 void mpool_destroy(struct MP *mp) {
-  struct MPMAP *mpm_next = mp->mpm.next, *mpm;
+  struct MPMAP *mpm_next = mp->u.mpm.next, *mpm;
   unsigned int mpmsize;
 
   while((mpm = mpm_next)) {
@@ -299,7 +300,7 @@ void mpool_destroy(struct MP *mp) {
 #endif
     munmap((void *)mpm, mpmsize);
   }
-  mpmsize = mp->mpm.size;
+  mpmsize = mp->u.mpm.size;
 #ifdef CL_DEBUG
   memset(mp, FREEPOISON, mpmsize + align_to_voidptr(sizeof(*mp)));
 #endif
@@ -309,7 +310,7 @@ void mpool_destroy(struct MP *mp) {
 
 void mpool_flush(struct MP *mp) {
     size_t used = 0, mused;
-    struct MPMAP *mpm_next = mp->mpm.next, *mpm;
+    struct MPMAP *mpm_next = mp->u.mpm.next, *mpm;
 
 #ifdef EXIT_ON_FLUSH
     exit(0);
@@ -328,15 +329,15 @@ void mpool_flush(struct MP *mp) {
 	used += mpm->size;
     }
 
-    mused = align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(*mp)));
-    if (mused < mp->mpm.size + align_to_voidptr(sizeof(*mp))) {
+    mused = align_to_pagesize(mp, mp->u.mpm.usize + align_to_voidptr(sizeof(*mp)));
+    if (mused < mp->u.mpm.size + align_to_voidptr(sizeof(*mp))) {
 #ifdef CL_DEBUG
-	memset((char *)mp + mused, FREEPOISON, mp->mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+	memset((char *)mp + mused, FREEPOISON, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
 #endif
-	munmap((char *)mp + mused, mp->mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
-	mp->mpm.size = mused - align_to_voidptr(sizeof(*mp));
+	munmap((char *)mp + mused, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+	mp->u.mpm.size = mused - align_to_voidptr(sizeof(*mp));
     }
-    used += mp->mpm.size;
+    used += mp->u.mpm.size;
     spam("Map flushed @%p, in use: %lu\n", mp, used);
 }
 
@@ -352,7 +353,7 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
   mp = eng->mempool;
   if (!mp)
     return -1;
-  for(mpm = &mp->mpm; mpm; mpm = mpm->next) {
+  for(mpm = &mp->u.mpm; mpm; mpm = mpm->next) {
     sum_used += mpm->usize;
     sum_total += mpm->size;
   }
@@ -365,7 +366,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   unsigned int i, needed = align_to_voidptr(size + FRAG_OVERHEAD);
   const unsigned int sbits = to_bits(needed);
   struct FRAG *f = NULL;
-  struct MPMAP *mpm = &mp->mpm;
+  struct MPMAP *mpm = &mp->u.mpm;
 
   /*  check_all(mp); */
   if (!size || sbits == FRAGSBITS) {
@@ -422,8 +423,8 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 #endif
   mpm->size = i;
   mpm->usize = needed + align_to_voidptr(sizeof(*mpm));
-  mpm->next = mp->mpm.next;
-  mp->mpm.next = mpm;
+  mpm->next = mp->u.mpm.next;
+  mp->u.mpm.next = mpm;
   f = (struct FRAG *)((char *)mpm + align_to_voidptr(sizeof(*mpm)));
   spam("malloc @%p size %u (new map)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
   f->u.sbits = sbits;
@@ -579,7 +580,7 @@ uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex) {
 #ifdef DEBUGMPOOL
 void mpool_stats(struct MP *mp) {
   unsigned int i=0, ta=0, tu=0;
-  struct MPMAP *mpm = &mp->mpm;
+  struct MPMAP *mpm = &mp->u.mpm;
 
   cli_warnmsg("MEMORY POOL STATISTICS\n map  \tsize\tused\t%\n");
   while(mpm) {
@@ -593,7 +594,7 @@ void mpool_stats(struct MP *mp) {
 }
 
 void check_all(struct MP *mp) {
-  struct MPMAP *mpm = &mp->mpm;
+  struct MPMAP *mpm = &mp->u.mpm;
   while(mpm) {
     volatile unsigned char *c = (unsigned char *)mpm;
     unsigned int len = mpm->size;
