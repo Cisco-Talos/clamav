@@ -141,7 +141,8 @@ enum cl_engine_field {
     CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
     CL_ENGINE_TMPDIR,		    /* (char *) */
     CL_ENGINE_KEEPTMP,		    /* uint32_t */
-    CL_ENGINE_BYTECODE_SECURITY     /* uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY,     /* uint32_t */
+    CL_ENGINE_BYTECODE_TIMEOUT       /* uint32_t */
 };
 
 enum bytecode_security {

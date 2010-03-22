@@ -136,6 +136,7 @@ struct cli_bc_ctx {
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
     const struct cli_bc_func *func;
+    uint32_t bytecode_timeout;
     unsigned bytes;
     uint16_t *opsizes;
     char *values;

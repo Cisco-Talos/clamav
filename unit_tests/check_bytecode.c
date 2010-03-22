@@ -34,6 +34,7 @@
 #include "../libclamav/bytecode.h"
 #include "checks.h"
 #include "../libclamav/dconf.h"
+#include "../libclamav/bytecode_priv.h"
 
 static void runtest(const char *file, uint64_t expected, int fail, int nojit)
 {
@@ -73,6 +74,8 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
     }
 
     ctx = cli_bytecode_context_alloc();
+    /* small timeout, these bytecodes are fast! */
+    ctx->bytecode_timeout = 100000;
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
@@ -144,6 +147,14 @@ FIXME: match_counts should be initialized in clambc mode
 }
 END_TEST
 
+START_TEST (test_inf)
+{
+    cl_init(CL_INIT_DEFAULT);
+    if (have_clamjit)
+	runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0);
+}
+END_TEST
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -156,5 +167,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_apicalls2);
     tcase_add_test(tc_cli_arith, test_div0);
     tcase_add_test(tc_cli_arith, test_lsig);
+    tcase_add_test(tc_cli_arith, test_inf);
     return s;
 }

@@ -1358,6 +1358,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     struct timeval tv0, tv1;
     struct timespec abstimeout;
     int timedout = 0;
+    uint32_t timeoutus;
     // no locks needed here, since LLVM automatically acquires a JIT lock
     // if needed.
     void *code = bcs->engine->compiledFunctions[func];
@@ -1382,8 +1383,9 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 	return CL_EBYTECODE;
     }
 
-    abstimeout.tv_sec = tv0.tv_sec + 5;
-    abstimeout.tv_nsec = tv0.tv_usec*1000;
+    timeoutus = ctx->bytecode_timeout + tv0.tv_usec;
+    abstimeout.tv_nsec = 1000*(timeoutus%1000000);
+    abstimeout.tv_sec = tv0.tv_sec + timeoutus/1000000;
     do {
 	ret = pthread_cond_timedwait(&bcthr.cond, &bcthr.mutex, &abstimeout);
     } while (!bcthr.finished && ret != ETIMEDOUT);

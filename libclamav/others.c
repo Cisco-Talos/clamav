@@ -299,6 +299,8 @@ struct cl_engine *cl_engine_new(void)
     new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
 
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
+    /* 5 seconds timeout */
+    new->bytecode_timeout = 5000000;
     new->refcount = 1;
     new->ac_only = 0;
     new->ac_mindepth = CLI_DEFAULT_AC_MINDEPTH;
@@ -389,6 +391,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    }
 #endif
 	    engine->bytecode_security = num;
+	    break;
+	case CL_ENGINE_BYTECODE_TIMEOUT:
+	    engine->bytecode_timeout = num;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");

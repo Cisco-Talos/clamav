@@ -428,6 +428,9 @@ int main(int argc, char **argv)
 	    break;
 	}
     }
+    if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
+    }
 
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;

@@ -403,6 +403,8 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "bytecode-trust-all")->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, CL_BYTECODE_TRUST_ALL);
+    if((opt = optget(opts,"bytecode-timeout"))->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 
     if((opt = optget(opts, "tempdir"))->enabled) {
 	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
