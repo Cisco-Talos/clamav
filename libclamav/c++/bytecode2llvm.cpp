@@ -96,6 +96,7 @@ using namespace llvm;
 typedef DenseMap<const struct cli_bc_func*, void*> FunctionMapTy;
 struct cli_bcengine {
     ExecutionEngine *EE;
+    JITEventListener *Listener;
     LLVMContext Context;
     FunctionMapTy compiledFunctions;
     union {
@@ -1378,8 +1379,8 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		errs() << MODULE << "JIT not registered?\n";
 	    return CL_EBYTECODE;
 	}
-
-	EE->RegisterJITEventListener(new NotifyListener());
+	bcs->engine->Listener  = new NotifyListener();
+	EE->RegisterJITEventListener(bcs->engine->Listener);
 //	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
 	// for now.
@@ -1585,8 +1586,11 @@ int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 {
     LLVMApiScopedLock scopedLock;
     if (bcs->engine) {
-	if (bcs->engine->EE)
+	if (bcs->engine->EE) {
+	    bcs->engine->EE->UnregisterJITEventListener(bcs->engine->Listener);
 	    delete bcs->engine->EE;
+	}
+	delete bcs->engine->Listener;
 	delete bcs->engine;
 	bcs->engine = 0;
     }
