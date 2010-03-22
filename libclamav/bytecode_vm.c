@@ -264,7 +264,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 #define uint_type(n) uint##n##_t
 #define READNfrom(maxBytes, from, x, n, p)\
     CHECK_GT((maxBytes), (p)+(n/8)-1);\
-    CHECK_EQ((p)&(n-1), 0);\
+    CHECK_EQ((p)&(n/8-1), 0);\
     x = *(uint_type(n)*)&(from)[(p)];\
     TRACE_R(x)
 

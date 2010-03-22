@@ -1483,9 +1483,13 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	gmap[j] = bc->numGlobalBytes;
 	bc->numGlobalBytes += typesize(bc, ty);
     }
-    bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
-    if (!bc->globalBytes)
-	return CL_EMEM;
+    if (bc->numGlobalBytes) {
+	bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
+	if (!bc->globalBytes)
+	    return CL_EMEM;
+    } else
+	bc->globalBytes = NULL;
+
     for (j=0;j<bc->num_globals;j++) {
 	struct cli_bc_type *ty;
 	if (bc->globaltys[j] < 65)
