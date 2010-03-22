@@ -825,9 +825,9 @@ fi
 
 AC_ARG_ENABLE([unsigned-bytecode],
 [  --enable-unsigned-bytecode	  enable load of unsigned bytecode],
-enable_unsigned-bytecode=$enableval, enable_unsigned-bytecode="no")
+enable_unsignedbytecode="$enableval", enable_unsignedbytecode="no")
 
-if test "$enable_unsigned-bc" = "yes"; then
+if test "$enable_unsignedbytecode" = "yes"; then
   VERSION_SUFFIX="$VERSION_SUFFIX-unsigned-bc"
   AC_DEFINE([CL_BCUNSIGNED],1,[enable loading of unsigned bytecode])
 else
