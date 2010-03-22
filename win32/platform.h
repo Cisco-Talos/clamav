@@ -11,6 +11,11 @@
 #include <Ws2tcpip.h>
 #include <process.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "gettimeofday.h"
 #include "snprintf.h"
 #include "net.h"
@@ -18,7 +23,9 @@
 #include "w32_stat.h"
 #include "random.h"
 
-#ifndef __cplusplus
+#ifdef __cplusplus
+}
+#else
 typedef unsigned short mode_t;
 #endif
 
