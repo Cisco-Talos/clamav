@@ -66,6 +66,7 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 #if SIZEOF_VOID_P==8
 static const unsigned int fragsz[] = {
 /* SIZE        PERM    TEMP     MAX    ACT! */
+     8,  /* Sparc SIGBUSes without this */
      16, /* 1487281    7051 1487281      USE */
      24, /*   89506     103   89510      USE */
      32, /* 1313968      65 1313969      USE */
@@ -140,8 +141,9 @@ static const unsigned int fragsz[] = {
 
 #else
 
-static const unsigned int fragsz[] = { 
+static const unsigned int fragsz[] = {
 /* SIZE        PERM    TEMP    ACT! */
+      8, /* Sparc SIGBUSes without this */
      16, /* 1487589    7134 1487589      USE */
      24, /*  116448     127  116452      USE */
      32, /* 1287128      95 1287134      USE */
