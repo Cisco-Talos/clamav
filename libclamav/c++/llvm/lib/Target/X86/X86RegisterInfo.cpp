@@ -294,12 +294,19 @@ X86RegisterInfo::getCrossCopyRegClass(const TargetRegisterClass *RC) const {
 const unsigned *
 X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   bool callsEHReturn = false;
+  bool ghcCall = false;
 
   if (MF) {
     const MachineFrameInfo *MFI = MF->getFrameInfo();
     const MachineModuleInfo *MMI = MFI->getMachineModuleInfo();
     callsEHReturn = (MMI ? MMI->callsEHReturn() : false);
+    const Function *F = MF->getFunction();
+    ghcCall = (F ? F->getCallingConv() == CallingConv::GHC : false);
   }
+
+  static const unsigned GhcCalleeSavedRegs[] = {
+    0
+  };
 
   static const unsigned CalleeSavedRegs32Bit[] = {
     X86::ESI, X86::EDI, X86::EBX, X86::EBP,  0
@@ -326,7 +333,9 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     X86::XMM14, X86::XMM15, 0
   };
 
-  if (Is64Bit) {
+  if (ghcCall) {
+    return GhcCalleeSavedRegs;
+  } else if (Is64Bit) {
     if (IsWin64)
       return CalleeSavedRegsWin64;
     else
@@ -1057,7 +1066,8 @@ void X86RegisterInfo::emitPrologue(MachineFunction &MF) const {
       BuildMI(MBB, MBBI, DL, TII.get(X86::MOV32ri), X86::EAX)
         .addImm(NumBytes);
       BuildMI(MBB, MBBI, DL, TII.get(X86::CALLpcrel32))
-        .addExternalSymbol("_alloca");
+        .addExternalSymbol("_alloca")
+        .addReg(StackPtr, RegState::Define | RegState::Implicit);
     } else {
       // Save EAX
       BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH32r))
@@ -1068,7 +1078,8 @@ void X86RegisterInfo::emitPrologue(MachineFunction &MF) const {
       BuildMI(MBB, MBBI, DL, TII.get(X86::MOV32ri), X86::EAX)
         .addImm(NumBytes - 4);
       BuildMI(MBB, MBBI, DL, TII.get(X86::CALLpcrel32))
-        .addExternalSymbol("_alloca");
+        .addExternalSymbol("_alloca")
+        .addReg(StackPtr, RegState::Define | RegState::Implicit);
 
       // Restore EAX
       MachineInstr *MI = addRegOffset(BuildMI(MF, DL, TII.get(X86::MOV32rm),

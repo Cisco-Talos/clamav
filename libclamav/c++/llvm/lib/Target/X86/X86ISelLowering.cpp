@@ -1378,6 +1378,8 @@ bool X86TargetLowering::IsCalleePop(bool IsVarArg, CallingConv::ID CallingConv){
     return !Subtarget->is64Bit();
   case CallingConv::Fast:
     return GuaranteedTailCallOpt;
+  case CallingConv::GHC:
+    return GuaranteedTailCallOpt;
   }
 }
 
@@ -1385,7 +1387,9 @@ bool X86TargetLowering::IsCalleePop(bool IsVarArg, CallingConv::ID CallingConv){
 /// given CallingConvention value.
 CCAssignFn *X86TargetLowering::CCAssignFnForNode(CallingConv::ID CC) const {
   if (Subtarget->is64Bit()) {
-    if (Subtarget->isTargetWin64())
+    if (CC == CallingConv::GHC)
+      return CC_X86_64_GHC;
+    else if (Subtarget->isTargetWin64())
       return CC_X86_Win64_C;
     else
       return CC_X86_64_C;
@@ -1395,6 +1399,8 @@ CCAssignFn *X86TargetLowering::CCAssignFnForNode(CallingConv::ID CC) const {
     return CC_X86_32_FastCall;
   else if (CC == CallingConv::Fast)
     return CC_X86_32_FastCC;
+  else if (CC == CallingConv::GHC)
+    return CC_X86_32_GHC;
   else
     return CC_X86_32_C;
 }
@@ -1412,10 +1418,16 @@ CreateCopyOfByValArgument(SDValue Src, SDValue Dst, SDValue Chain,
                        /*AlwaysInline=*/true, NULL, 0, NULL, 0);
 }
 
+/// IsTailCallConvention - Return true if the calling convention is one that
+/// supports tail call optimization.
+static bool IsTailCallConvention(CallingConv::ID CC) {
+  return (CC == CallingConv::Fast || CC == CallingConv::GHC);
+}
+
 /// FuncIsMadeTailCallSafe - Return true if the function is being made into
 /// a tailcall target by changing its ABI.
 static bool FuncIsMadeTailCallSafe(CallingConv::ID CC) {
-  return GuaranteedTailCallOpt && CC == CallingConv::Fast;
+  return GuaranteedTailCallOpt && IsTailCallConvention(CC);
 }
 
 SDValue
@@ -1479,8 +1491,8 @@ X86TargetLowering::LowerFormalArguments(SDValue Chain,
   bool Is64Bit = Subtarget->is64Bit();
   bool IsWin64 = Subtarget->isTargetWin64();
 
-  assert(!(isVarArg && CallConv == CallingConv::Fast) &&
-         "Var args not supported with calling convention fastcc");
+  assert(!(isVarArg && IsTailCallConvention(CallConv)) &&
+         "Var args not supported with calling convention fastcc or ghc");
 
   // Assign locations to all of the incoming arguments.
   SmallVector<CCValAssign, 16> ArgLocs;
@@ -1683,7 +1695,7 @@ X86TargetLowering::LowerFormalArguments(SDValue Chain,
   } else {
     BytesToPopOnReturn  = 0; // Callee pops nothing.
     // If this is an sret function, the return should pop the hidden pointer.
-    if (!Is64Bit && CallConv != CallingConv::Fast && ArgsAreStructReturn(Ins))
+    if (!Is64Bit && !IsTailCallConvention(CallConv) && ArgsAreStructReturn(Ins))
       BytesToPopOnReturn = 4;
   }
 
@@ -1779,8 +1791,8 @@ X86TargetLowering::LowerCall(SDValue Chain, SDValue Callee,
       ++NumTailCalls;
   }
 
-  assert(!(isVarArg && CallConv == CallingConv::Fast) &&
-         "Var args not supported with calling convention fastcc");
+  assert(!(isVarArg && IsTailCallConvention(CallConv)) &&
+         "Var args not supported with calling convention fastcc or ghc");
 
   // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;
@@ -1794,7 +1806,7 @@ X86TargetLowering::LowerCall(SDValue Chain, SDValue Callee,
     // This is a sibcall. The memory operands are available in caller's
     // own caller's stack.
     NumBytes = 0;
-  else if (GuaranteedTailCallOpt && CallConv == CallingConv::Fast)
+  else if (GuaranteedTailCallOpt && IsTailCallConvention(CallConv))
     NumBytes = GetAlignedArgumentStackSize(NumBytes, DAG);
 
   int FPDiff = 0;
@@ -2150,7 +2162,7 @@ X86TargetLowering::LowerCall(SDValue Chain, SDValue Callee,
   unsigned NumBytesForCalleeToPush;
   if (IsCalleePop(isVarArg, CallConv))
     NumBytesForCalleeToPush = NumBytes;    // Callee pops everything
-  else if (!Is64Bit && CallConv != CallingConv::Fast && IsStructRet)
+  else if (!Is64Bit && !IsTailCallConvention(CallConv) && IsStructRet)
     // If this is a call to a struct-return function, the callee
     // pops the hidden struct pointer, so we have to push it back.
     // This is common for Darwin/X86, Linux & Mingw32 targets.
@@ -2288,14 +2300,14 @@ X86TargetLowering::IsEligibleForTailCallOptimization(SDValue Callee,
                                     const SmallVectorImpl<ISD::OutputArg> &Outs,
                                     const SmallVectorImpl<ISD::InputArg> &Ins,
                                                      SelectionDAG& DAG) const {
-  if (CalleeCC != CallingConv::Fast &&
+  if (!IsTailCallConvention(CalleeCC) &&
       CalleeCC != CallingConv::C)
     return false;
 
   // If -tailcallopt is specified, make fastcc functions tail-callable.
   const Function *CallerF = DAG.getMachineFunction().getFunction();
   if (GuaranteedTailCallOpt) {
-    if (CalleeCC == CallingConv::Fast &&
+    if (IsTailCallConvention(CalleeCC) &&
         CallerF->getCallingConv() == CalleeCC)
       return true;
     return false;
@@ -6418,24 +6430,13 @@ X86TargetLowering::LowerDYNAMIC_STACKALLOC(SDValue Op,
   EVT IntPtr = getPointerTy();
   EVT SPTy = Subtarget->is64Bit() ? MVT::i64 : MVT::i32;
 
-  Chain = DAG.getCALLSEQ_START(Chain, DAG.getIntPtrConstant(0, true));
-
   Chain = DAG.getCopyToReg(Chain, dl, X86::EAX, Size, Flag);
   Flag = Chain.getValue(1);
 
-  SDVTList  NodeTys = DAG.getVTList(MVT::Other, MVT::Flag);
-  SDValue Ops[] = { Chain,
-                      DAG.getTargetExternalSymbol("_alloca", IntPtr),
-                      DAG.getRegister(X86::EAX, IntPtr),
-                      DAG.getRegister(X86StackPtr, SPTy),
-                      Flag };
-  Chain = DAG.getNode(X86ISD::CALL, dl, NodeTys, Ops, 5);
-  Flag = Chain.getValue(1);
+  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Flag);
 
-  Chain = DAG.getCALLSEQ_END(Chain,
-                             DAG.getIntPtrConstant(0, true),
-                             DAG.getIntPtrConstant(0, true),
-                             Flag);
+  Chain = DAG.getNode(X86ISD::MINGW_ALLOCA, dl, NodeTys, Chain, Flag);
+  Flag = Chain.getValue(1);
 
   Chain = DAG.getCopyFromReg(Chain, dl, X86StackPtr, SPTy).getValue(1);
 
@@ -7741,6 +7742,7 @@ const char *X86TargetLowering::getTargetNodeName(unsigned Opcode) const {
   case X86ISD::MUL_IMM:            return "X86ISD::MUL_IMM";
   case X86ISD::PTEST:              return "X86ISD::PTEST";
   case X86ISD::VASTART_SAVE_XMM_REGS: return "X86ISD::VASTART_SAVE_XMM_REGS";
+  case X86ISD::MINGW_ALLOCA:       return "X86ISD::MINGW_ALLOCA";
   }
 }
 
@@ -8410,6 +8412,29 @@ X86TargetLowering::EmitLoweredSelect(MachineInstr *MI,
   return BB;
 }
 
+MachineBasicBlock *
+X86TargetLowering::EmitLoweredMingwAlloca(MachineInstr *MI,
+                                          MachineBasicBlock *BB,
+                   DenseMap<MachineBasicBlock*, MachineBasicBlock*> *EM) const {
+  const TargetInstrInfo *TII = getTargetMachine().getInstrInfo();
+  DebugLoc DL = MI->getDebugLoc();
+  MachineFunction *F = BB->getParent();
+
+  // The lowering is pretty easy: we're just emitting the call to _alloca.  The
+  // non-trivial part is impdef of ESP.
+  // FIXME: The code should be tweaked as soon as we'll try to do codegen for
+  // mingw-w64.
+
+  BuildMI(BB, DL, TII->get(X86::CALLpcrel32))
+    .addExternalSymbol("_alloca")
+    .addReg(X86::EAX, RegState::Implicit)
+    .addReg(X86::ESP, RegState::Implicit)
+    .addReg(X86::EAX, RegState::Define | RegState::Implicit)
+    .addReg(X86::ESP, RegState::Define | RegState::Implicit);
+
+  F->DeleteMachineInstr(MI);   // The pseudo instruction is gone now.
+  return BB;
+}
 
 MachineBasicBlock *
 X86TargetLowering::EmitInstrWithCustomInserter(MachineInstr *MI,
@@ -8417,6 +8442,8 @@ X86TargetLowering::EmitInstrWithCustomInserter(MachineInstr *MI,
                    DenseMap<MachineBasicBlock*, MachineBasicBlock*> *EM) const {
   switch (MI->getOpcode()) {
   default: assert(false && "Unexpected instr type to insert");
+  case X86::MINGW_ALLOCA:
+    return EmitLoweredMingwAlloca(MI, BB, EM);
   case X86::CMOV_GR8:
   case X86::CMOV_V1I64:
   case X86::CMOV_FR32:
