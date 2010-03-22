@@ -33,6 +33,7 @@
 #include "bytecode_priv.h"
 #include "readdb.h"
 #include "scanners.h"
+#include "bytecode_api_impl.h"
 #include <string.h>
 
 /* TODO: we should make sure lsigcnt is never NULL, and has at least as many

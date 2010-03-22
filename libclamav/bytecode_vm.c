@@ -53,7 +53,7 @@ static int never_inline bcfail(const char *msg, long a, long b,
 #define CHECK_GT(a, b) do {if ((a) <= (b)) return \
     bcfail("Condition failed "#a" > "#b,(a),(b), __FILE__, __LINE__); } while(0)
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
-#define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)x);
+#define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)(x));
 #define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
 #else
 static inline int bcfail(const char *msg, long a, long b,

@@ -41,6 +41,7 @@
 #include "others.h"
 #include "pe.h"
 #include "disasm.h"
+#include "scanners.h"
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -432,7 +433,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
     char *p;
     int32_t result;
 
-    if (radix != 10 && radix != 16 || !ctx->fmap)
+    if ((radix != 10 && radix != 16) || !ctx->fmap)
 	return -1;
     while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
 	for (i=0;i<BUF;i++) {
@@ -485,6 +486,7 @@ int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t id, uint32_t k
     if (!s)
 	return -1;
 //    return cli_hashset_removekey(s, key);
+    return -1;
 }
 
 int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
@@ -504,6 +506,7 @@ int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx, int32_t id)
 int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
 {
     /* TODO */
+    return -1;
 }
 
 int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
@@ -648,6 +651,7 @@ int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx , int32_t id,
 int32_t cli_bcapi_buffer_pipe_done(struct cli_bc_ctx *ctx , int32_t id)
 {
     /* TODO */
+    return -1;
 }
 
 int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to, int32_t windowBits)
@@ -729,7 +733,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
 	if (!b->needSync) {
 	    ret = inflate(&b->stream, Z_NO_FLUSH);
 	    if (ret == Z_DATA_ERROR) {
-		cli_dbgmsg("bytecode api: inflate at %u: %s, trying to recover\n", b->stream.total_in,
+		cli_dbgmsg("bytecode api: inflate at %lu: %s, trying to recover\n", b->stream.total_in,
 			   b->stream.msg);
 		b->needSync = 1;
 	    }
