@@ -1579,6 +1579,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
     if (!bcs->engine)
 	return CL_EMEM;
     bcs->engine->EE = 0;
+    bcs->engine->Listener = 0;
     return 0;
 }
 
@@ -1587,7 +1588,8 @@ int cli_bytecode_done_jit(struct cli_all_bc *bcs)
     LLVMApiScopedLock scopedLock;
     if (bcs->engine) {
 	if (bcs->engine->EE) {
-	    bcs->engine->EE->UnregisterJITEventListener(bcs->engine->Listener);
+	    if (bcs->engine->Listener)
+		bcs->engine->EE->UnregisterJITEventListener(bcs->engine->Listener);
 	    delete bcs->engine->EE;
 	}
 	delete bcs->engine->Listener;
