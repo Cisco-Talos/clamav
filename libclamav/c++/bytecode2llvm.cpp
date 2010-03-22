@@ -20,6 +20,10 @@
  *  MA 02110-1301, USA.
  */
 #define DEBUG_TYPE "clamavjit"
+#include <pthread.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 #include "ClamBCModule.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
@@ -60,6 +64,7 @@
 #include <cstdlib>
 #include <csetjmp>
 #include <new>
+#include <cerrno>
 
 #include "llvm/Config/config.h"
 #if !ENABLE_THREADS
@@ -1303,20 +1308,17 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
 }
 
-int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
-		       const struct cli_bc_func *func)
+struct bc_thread {
+    void *code;
+    struct cli_bc_ctx *ctx;
+    int finished;
+    pthread_mutex_t  mutex;
+    pthread_cond_t cond;
+};
+
+static int bytecode_thread_execute(intptr_t code, struct cli_bc_ctx *ctx)
 {
-    // no locks needed here, since LLVM automatically acquires a JIT lock
-    // if needed.
     jmp_buf env;
-    void *code = bcs->engine->compiledFunctions[func];
-    if (!code) {
-	errs() << MODULE << "Unable to find compiled function\n";
-	if (func->numArgs)
-	    errs() << MODULE << "Function has "
-		<< (unsigned)func->numArgs << " arguments, it must have 0 to be called as entrypoint\n";
-	return CL_EBYTECODE;
-    }
     // execute;
     if (setjmp(env) == 0) {
 	// setup exception handler to longjmp back here
@@ -1329,7 +1331,86 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     errs().changeColor(raw_ostream::RED, true) << MODULE
 	<< "*** JITed code intercepted runtime error!\n";
     errs().resetColor();
-    return CL_EBYTECODE;
+    return 1;
+}
+
+static void* bytecode_thread(void* dummy)
+{
+    int ret;
+    struct bc_thread *thr = (struct bc_thread*)dummy;
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+    ret = bytecode_thread_execute((intptr_t)thr->code, thr->ctx);
+    pthread_mutex_lock(&thr->mutex);
+    thr->finished = 1;
+    pthread_cond_signal(&thr->cond);
+    pthread_mutex_unlock(&thr->mutex);
+    return ret ? dummy : NULL;
+}
+extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
+int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
+		       const struct cli_bc_func *func)
+{
+    char buf[1024];
+    int ret;
+    void *threadret;
+    pthread_t thread;
+    struct timeval tv0, tv1;
+    struct timespec abstimeout;
+    int timedout = 0;
+    // no locks needed here, since LLVM automatically acquires a JIT lock
+    // if needed.
+    void *code = bcs->engine->compiledFunctions[func];
+    if (!code) {
+	errs() << MODULE << "Unable to find compiled function\n";
+	if (func->numArgs)
+	    errs() << MODULE << "Function has "
+		<< (unsigned)func->numArgs << " arguments, it must have 0 to be called as entrypoint\n";
+	return CL_EBYTECODE;
+    }
+    struct bc_thread bcthr = {
+	code, ctx, 0,
+	PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER
+    };
+    gettimeofday(&tv0, NULL);
+    pthread_mutex_lock(&bcthr.mutex);
+    ret = pthread_create(&thread, NULL, bytecode_thread, &bcthr);
+    if (ret) {
+	errs() << "Bytecode: failed to create new thread!";
+	errs() << cli_strerror(ret, buf, sizeof(buf));
+	errs() << "\n";
+	return CL_EBYTECODE;
+    }
+
+    abstimeout.tv_sec = tv0.tv_sec + 5;
+    abstimeout.tv_nsec = tv0.tv_usec*1000;
+    do {
+	ret = pthread_cond_timedwait(&bcthr.cond, &bcthr.mutex, &abstimeout);
+    } while (!bcthr.finished && ret != ETIMEDOUT);
+    pthread_mutex_unlock(&bcthr.mutex);
+    if (ret == ETIMEDOUT) {
+	errs() << "Bytecode run timed out, canceling thread\n";
+	timedout = 1;
+	ret = pthread_cancel(thread);
+	if (ret) {
+	    errs() << "Bytecode: failed to create new thread!";
+	    errs() << cli_strerror(ret, buf, sizeof(buf));
+	    errs() << "\n";
+	}
+    }
+    ret = pthread_join(thread, &threadret);
+    if (ret) {
+	errs() << "Bytecode: failed to create new thread!";
+	errs() << cli_strerror(ret, buf, sizeof(buf));
+	errs() << "\n";
+    }
+    if (cli_debug_flag) {
+	gettimeofday(&tv1, NULL);
+	tv1.tv_sec -= tv0.tv_sec;
+	tv1.tv_usec -= tv0.tv_usec;
+	errs() << "bytecode finished in " << (tv1.tv_sec*1000000 + tv1.tv_usec) << "us\n";
+    }
+    return timedout ? CL_ETIMEOUT : (threadret ? CL_EBYTECODE : CL_SUCCESS);
 }
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
