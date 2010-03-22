@@ -138,7 +138,7 @@ static void print_src(const char *file)
     for (i=0;i<nread-1;i++) {
       if (buf[i] == '\n' && buf[i+1] == 'S') {
         found = 1;
-        i++;
+        i+=2;
         break;
       }
     }
