@@ -81,6 +81,15 @@ foreach my $comp (keys %{$compdeps{'codegen'}}) {
 foreach my $comp (keys %{$compdeps{'jit'}}) {
     delete $compdeps{'fullcodegen'}{$comp};
 }
+foreach my $comp (keys %{$compdeps{'support'}}) {
+    $compdeps{'support_nodups'}{$comp}=1;
+}
+
+foreach my $comp (keys %{$compdeps{'jit'}}) {
+    next unless defined $compdeps{'support_nodups'}{$comp};
+    delete $compdeps{'support_nodups'}{$comp};
+}
+@allcomponents=(@allcomponents,'codegen','support_nodups');
 
 foreach my $comp (@allcomponents) {
     print "libllvm$comp"."_la_SOURCES=";

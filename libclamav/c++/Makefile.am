@@ -100,6 +100,9 @@ libllvmsystem_la_SOURCES=\
 	llvm/lib/System/Threading.cpp\
 	llvm/lib/System/TimeValue.cpp
 
+# support is split into 2:
+# a full llvmsupport, and another that contains only objs
+# that aren't already contained in llvmjit
 libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/APFloat.cpp\
 	llvm/lib/Support/APInt.cpp\
@@ -145,6 +148,25 @@ libllvmsupport_la_SOURCES=\
 	llvm/lib/Support/regexec.c\
 	llvm/lib/Support/regfree.c\
 	llvm/lib/Support/regstrlcpy.c
+
+libllvmsupport_nodups_la_SOURCES=\
+	llvm/lib/Support/APSInt.cpp\
+	llvm/lib/Support/DeltaAlgorithm.cpp\
+	llvm/lib/Support/FileUtilities.cpp\
+	llvm/lib/Support/IsInf.cpp\
+	llvm/lib/Support/IsNAN.cpp\
+	llvm/lib/Support/MemoryObject.cpp\
+	llvm/lib/Support/PluginLoader.cpp\
+	llvm/lib/Support/Regex.cpp\
+	llvm/lib/Support/SlowOperationInformer.cpp\
+	llvm/lib/Support/SystemUtils.cpp\
+	llvm/lib/Support/raw_os_ostream.cpp\
+	llvm/lib/Support/regcomp.c\
+	llvm/lib/Support/regerror.c\
+	llvm/lib/Support/regexec.c\
+	llvm/lib/Support/regfree.c\
+	llvm/lib/Support/regstrlcpy.c
+
 if MAINTAINER_MODE
 BUILT_SOURCES+=$(TBLGENFILES)
 noinst_PROGRAMS = tblgen
@@ -704,7 +726,7 @@ libgoogletest_la_SOURCES=\
 
 #-Wno-variadic-macros
 llvmunittest_ADT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ADT_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_ADT_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_ADT_SOURCES=\
     llvm/unittests/ADT/APFloatTest.cpp\
     llvm/unittests/ADT/APIntTest.cpp\
@@ -721,7 +743,7 @@ llvmunittest_ADT_SOURCES=\
 
 llvmunittest_Support_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_Support_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_Support_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_Support_SOURCES=\
     llvm/unittests/Support/AllocatorTest.cpp\
     llvm/unittests/Support/ConstantRangeTest.cpp\
@@ -733,7 +755,7 @@ llvmunittest_Support_SOURCES=\
 
 llvmunittest_VMCore_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_VMCore_LDADD=libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_VMCore_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES=\
     llvm/lib/Analysis/IPA/CallGraph.cpp\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
@@ -753,7 +775,7 @@ llvmunittest_JIT_SOURCES=\
 
 llvmunittest_ExecutionEngine_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD) libllvmsupport.la libllvmsystem.la
+llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
 llvmunittest_ExecutionEngine_SOURCES=\
     llvm/lib/CodeGen/IntrinsicLowering.cpp\
     llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
@@ -768,10 +790,10 @@ not_LDADD=libllvmsystem.la
 
 FileCheck_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 FileCheck_CXXFLAGS=$(LLVM_CXXFLAGS)
-FileCheck_LDADD=libllvmsupport.la libllvmsystem.la 
+FileCheck_LDADD=libllvmsupport.la libllvmsystem.la
 FileCheck_SOURCES=llvm/utils/FileCheck/FileCheck.cpp
 
-check_LTLIBRARIES=libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_LTLIBRARIES=libllvmbitreader.la libllvmsupport_nodups.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT FileCheck
 check_SCRIPTS=llvmcheck.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
@@ -824,7 +846,7 @@ libllvmfullcodegen_la_SOURCES=\
 	llvm/lib/Target/TargetELFWriterInfo.cpp\
 	llvm/lib/Target/TargetIntrinsicInfo.cpp
 
-lli_LDADD+=libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+lli_LDADD+=libllvmfullcodegen.la libllvmcodegen.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 lli_SOURCES=\
     llvm/tools/lli/lli.cpp
 
@@ -837,13 +859,13 @@ llc_SOURCES=\
 
 llvm_as_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_as_CXXFLAGS=$(LLVM_CXXFLAGS)
-llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_as_SOURCES=\
     llvm/tools/llvm-as/llvm-as.cpp
 
 llvm_dis_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_dis_CXXFLAGS=$(LLVM_CXXFLAGS)
-llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvm_dis_LDADD=libllvmasmparser.la libllvmbitreader.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_dis_SOURCES=\
     llvm/tools/llvm-dis/llvm-dis.cpp
 

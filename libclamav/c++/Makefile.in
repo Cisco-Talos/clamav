@@ -353,6 +353,14 @@ am_libllvmsupport_la_OBJECTS = APFloat.lo APInt.lo APSInt.lo \
 	raw_os_ostream.lo raw_ostream.lo regcomp.lo regerror.lo \
 	regexec.lo regfree.lo regstrlcpy.lo
 libllvmsupport_la_OBJECTS = $(am_libllvmsupport_la_OBJECTS)
+libllvmsupport_nodups_la_LIBADD =
+am_libllvmsupport_nodups_la_OBJECTS = APSInt.lo DeltaAlgorithm.lo \
+	FileUtilities.lo IsInf.lo IsNAN.lo MemoryObject.lo \
+	PluginLoader.lo Regex.lo SlowOperationInformer.lo \
+	SystemUtils.lo raw_os_ostream.lo regcomp.lo regerror.lo \
+	regexec.lo regfree.lo regstrlcpy.lo
+libllvmsupport_nodups_la_OBJECTS =  \
+	$(am_libllvmsupport_nodups_la_OBJECTS)
 libllvmsystem_la_DEPENDENCIES =
 am_libllvmsystem_la_OBJECTS = Alarm.lo Atomic.lo Disassembler.lo \
 	DynamicLibrary.lo Errno.lo Host.lo IncludeFile.lo Memory.lo \
@@ -433,19 +441,19 @@ am_lli_OBJECTS = lli.$(OBJEXT)
 lli_OBJECTS = $(am_lli_OBJECTS)
 lli_DEPENDENCIES = libllvmbitreader.la libllvmfullcodegen.la \
 	libllvmjit.la $(am__append_3) $(am__append_7) $(am__append_11) \
-	libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la \
-	libllvmsupport.la libllvmsystem.la
+	libllvmfullcodegen.la libllvmcodegen.la \
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 am_llvm_as_OBJECTS = llvm_as-llvm-as.$(OBJEXT)
 llvm_as_OBJECTS = $(am_llvm_as_OBJECTS)
 llvm_as_DEPENDENCIES = libllvmasmparser.la libllvmbitwriter.la \
-	libllvmjit.la libllvmsupport.la libllvmsystem.la
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_as_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_as_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_llvm_dis_OBJECTS = llvm_dis-llvm-dis.$(OBJEXT)
 llvm_dis_OBJECTS = $(am_llvm_dis_OBJECTS)
 llvm_dis_DEPENDENCIES = libllvmasmparser.la libllvmbitreader.la \
-	libllvmjit.la libllvmsupport.la libllvmsystem.la
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_dis_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_dis_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -462,16 +470,16 @@ am_llvmunittest_ADT_OBJECTS = llvmunittest_ADT-APFloatTest.$(OBJEXT) \
 	llvmunittest_ADT-TripleTest.$(OBJEXT) \
 	llvmunittest_ADT-TwineTest.$(OBJEXT)
 llvmunittest_ADT_OBJECTS = $(am_llvmunittest_ADT_OBJECTS)
-llvmunittest_ADT_DEPENDENCIES = libgoogletest.la libllvmjit.la \
-	libllvmsupport.la libllvmsystem.la
+llvmunittest_ADT_DEPENDENCIES = libgoogletest.la \
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 am_llvmunittest_ExecutionEngine_OBJECTS =  \
 	llvmunittest_ExecutionEngine-IntrinsicLowering.$(OBJEXT) \
 	llvmunittest_ExecutionEngine-ExecutionEngineTest.$(OBJEXT)
 llvmunittest_ExecutionEngine_OBJECTS =  \
 	$(am_llvmunittest_ExecutionEngine_OBJECTS)
 llvmunittest_ExecutionEngine_DEPENDENCIES = libgoogletest.la \
-	libllvminterpreter.la $(libclamavcxx_la_LIBADD) \
-	libllvmsupport.la libllvmsystem.la
+	libllvminterpreter.la libllvmsupport_nodups.la \
+	$(libclamavcxx_la_LIBADD) libllvmsystem.la
 am_llvmunittest_JIT_OBJECTS =  \
 	llvmunittest_JIT-JITEventListenerTest.$(OBJEXT) \
 	llvmunittest_JIT-JITMemoryManagerTest.$(OBJEXT) \
@@ -488,8 +496,8 @@ am_llvmunittest_Support_OBJECTS =  \
 	llvmunittest_Support-ValueHandleTest.$(OBJEXT) \
 	llvmunittest_Support-raw_ostream_test.$(OBJEXT)
 llvmunittest_Support_OBJECTS = $(am_llvmunittest_Support_OBJECTS)
-llvmunittest_Support_DEPENDENCIES = libgoogletest.la libllvmjit.la \
-	libllvmsupport.la libllvmsystem.la
+llvmunittest_Support_DEPENDENCIES = libgoogletest.la \
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 am_llvmunittest_VMCore_OBJECTS =  \
 	llvmunittest_VMCore-CallGraph.$(OBJEXT) \
 	llvmunittest_VMCore-CallGraphSCCPass.$(OBJEXT) \
@@ -499,8 +507,8 @@ am_llvmunittest_VMCore_OBJECTS =  \
 	llvmunittest_VMCore-MetadataTest.$(OBJEXT) \
 	llvmunittest_VMCore-PassManagerTest.$(OBJEXT)
 llvmunittest_VMCore_OBJECTS = $(am_llvmunittest_VMCore_OBJECTS)
-llvmunittest_VMCore_DEPENDENCIES = libgoogletest.la libllvmjit.la \
-	libllvmsupport.la libllvmsystem.la
+llvmunittest_VMCore_DEPENDENCIES = libgoogletest.la \
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 am_not_OBJECTS = not-not.$(OBJEXT)
 not_OBJECTS = $(am_not_OBJECTS)
 not_DEPENDENCIES = libllvmsystem.la
@@ -727,10 +735,11 @@ SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(libllvmfullcodegen_la_SOURCES) \
 	$(libllvminterpreter_la_SOURCES) $(libllvmjit_la_SOURCES) \
 	$(libllvmpowerpccodegen_la_SOURCES) \
-	$(libllvmsupport_la_SOURCES) $(libllvmsystem_la_SOURCES) \
-	$(libllvmx86codegen_la_SOURCES) $(FileCheck_SOURCES) \
-	$(count_SOURCES) $(llc_SOURCES) $(lli_SOURCES) \
-	$(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
+	$(libllvmsupport_la_SOURCES) \
+	$(libllvmsupport_nodups_la_SOURCES) \
+	$(libllvmsystem_la_SOURCES) $(libllvmx86codegen_la_SOURCES) \
+	$(FileCheck_SOURCES) $(count_SOURCES) $(llc_SOURCES) \
+	$(lli_SOURCES) $(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
 	$(llvmunittest_ADT_SOURCES) \
 	$(llvmunittest_ExecutionEngine_SOURCES) \
 	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
@@ -744,7 +753,9 @@ DIST_SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(libllvmcodegen_la_SOURCES) $(libllvmfullcodegen_la_SOURCES) \
 	$(libllvminterpreter_la_SOURCES) $(libllvmjit_la_SOURCES) \
 	$(am__libllvmpowerpccodegen_la_SOURCES_DIST) \
-	$(libllvmsupport_la_SOURCES) $(libllvmsystem_la_SOURCES) \
+	$(libllvmsupport_la_SOURCES) \
+	$(libllvmsupport_nodups_la_SOURCES) \
+	$(libllvmsystem_la_SOURCES) \
 	$(am__libllvmx86codegen_la_SOURCES_DIST) $(FileCheck_SOURCES) \
 	$(count_SOURCES) $(llc_SOURCES) $(lli_SOURCES) \
 	$(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
@@ -932,8 +943,8 @@ noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la \
 	$(am__append_8) $(am__append_12)
 lli_LDADD = libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la \
 	$(am__append_3) $(am__append_7) $(am__append_11) \
-	libllvmfullcodegen.la libllvmcodegen.la libllvmjit.la \
-	libllvmsupport.la libllvmsystem.la
+	libllvmfullcodegen.la libllvmcodegen.la \
+	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 libclamavcxx_la_LIBADD = libllvmjit.la $(am__append_1) $(am__append_5) \
 	$(am__append_9) libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
@@ -969,6 +980,10 @@ libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
 	llvm/lib/System/Signals.cpp llvm/lib/System/ThreadLocal.cpp \
 	llvm/lib/System/Threading.cpp llvm/lib/System/TimeValue.cpp \
 	llvm/config.status
+
+# support is split into 2:
+# a full llvmsupport, and another that contains only objs
+# that aren't already contained in llvmjit
 libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/APFloat.cpp\
 	llvm/lib/Support/APInt.cpp\
@@ -1009,6 +1024,24 @@ libllvmsupport_la_SOURCES = \
 	llvm/lib/Support/circular_raw_ostream.cpp\
 	llvm/lib/Support/raw_os_ostream.cpp\
 	llvm/lib/Support/raw_ostream.cpp\
+	llvm/lib/Support/regcomp.c\
+	llvm/lib/Support/regerror.c\
+	llvm/lib/Support/regexec.c\
+	llvm/lib/Support/regfree.c\
+	llvm/lib/Support/regstrlcpy.c
+
+libllvmsupport_nodups_la_SOURCES = \
+	llvm/lib/Support/APSInt.cpp\
+	llvm/lib/Support/DeltaAlgorithm.cpp\
+	llvm/lib/Support/FileUtilities.cpp\
+	llvm/lib/Support/IsInf.cpp\
+	llvm/lib/Support/IsNAN.cpp\
+	llvm/lib/Support/MemoryObject.cpp\
+	llvm/lib/Support/PluginLoader.cpp\
+	llvm/lib/Support/Regex.cpp\
+	llvm/lib/Support/SlowOperationInformer.cpp\
+	llvm/lib/Support/SystemUtils.cpp\
+	llvm/lib/Support/raw_os_ostream.cpp\
 	llvm/lib/Support/regcomp.c\
 	llvm/lib/Support/regerror.c\
 	llvm/lib/Support/regexec.c\
@@ -1462,7 +1495,7 @@ libgoogletest_la_SOURCES = \
 
 #-Wno-variadic-macros
 llvmunittest_ADT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ADT_LDADD = libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_ADT_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_ADT_SOURCES = \
     llvm/unittests/ADT/APFloatTest.cpp\
     llvm/unittests/ADT/APIntTest.cpp\
@@ -1479,7 +1512,7 @@ llvmunittest_ADT_SOURCES = \
 
 llvmunittest_Support_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_Support_LDADD = libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_Support_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_Support_SOURCES = \
     llvm/unittests/Support/AllocatorTest.cpp\
     llvm/unittests/Support/ConstantRangeTest.cpp\
@@ -1491,7 +1524,7 @@ llvmunittest_Support_SOURCES = \
 
 llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_VMCore_LDADD = libgoogletest.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvmunittest_VMCore_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES = \
     llvm/lib/Analysis/IPA/CallGraph.cpp\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
@@ -1511,7 +1544,7 @@ llvmunittest_JIT_SOURCES = \
 
 llvmunittest_ExecutionEngine_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
 #-Wno-variadic-macros
-llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD) libllvmsupport.la libllvmsystem.la
+llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
 llvmunittest_ExecutionEngine_SOURCES = \
     llvm/lib/CodeGen/IntrinsicLowering.cpp\
     llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
@@ -1525,9 +1558,9 @@ not_SOURCES = llvm/utils/not/not.cpp
 not_LDADD = libllvmsystem.la
 FileCheck_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
-FileCheck_LDADD = libllvmsupport.la libllvmsystem.la 
+FileCheck_LDADD = libllvmsupport.la libllvmsystem.la
 FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
-check_LTLIBRARIES = libllvmbitreader.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_LTLIBRARIES = libllvmbitreader.la libllvmsupport_nodups.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
 check_SCRIPTS = llvmcheck.sh
 TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
 libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
@@ -1566,13 +1599,13 @@ llc_SOURCES = \
 
 llvm_as_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_as_CXXFLAGS = $(LLVM_CXXFLAGS)
-llvm_as_LDADD = libllvmasmparser.la libllvmbitwriter.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvm_as_LDADD = libllvmasmparser.la libllvmbitwriter.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_as_SOURCES = \
     llvm/tools/llvm-as/llvm-as.cpp
 
 llvm_dis_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 llvm_dis_CXXFLAGS = $(LLVM_CXXFLAGS)
-llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmjit.la libllvmsupport.la libllvmsystem.la
+llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvm_dis_SOURCES = \
     llvm/tools/llvm-dis/llvm-dis.cpp
 
@@ -1676,6 +1709,8 @@ libllvmpowerpccodegen.la: $(libllvmpowerpccodegen_la_OBJECTS) $(libllvmpowerpcco
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmpowerpccodegen_la_rpath) $(libllvmpowerpccodegen_la_OBJECTS) $(libllvmpowerpccodegen_la_LIBADD) $(LIBS)
 libllvmsupport.la: $(libllvmsupport_la_OBJECTS) $(libllvmsupport_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmsupport_la_OBJECTS) $(libllvmsupport_la_LIBADD) $(LIBS)
+libllvmsupport_nodups.la: $(libllvmsupport_nodups_la_OBJECTS) $(libllvmsupport_nodups_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmsupport_nodups_la_OBJECTS) $(libllvmsupport_nodups_la_LIBADD) $(LIBS)
 libllvmsystem.la: $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libllvmsystem_la_LINK)  $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_LIBADD) $(LIBS)
 libllvmx86codegen.la: $(libllvmx86codegen_la_OBJECTS) $(libllvmx86codegen_la_DEPENDENCIES) 
