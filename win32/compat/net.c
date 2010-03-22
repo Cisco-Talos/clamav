@@ -350,15 +350,6 @@ int w32_shutdown(int sockfd, int how) {
     return 0;
 }
 
-int sock_set_nonblock(int sockfd) {
-    u_long arg = 1;
-    if(ioctlsocket((SOCKET)sockfd, FIONBIO, &arg)) {
-	wsock2errno();
-	return -1;
-    }
-    return 0;
-}
-
 struct w32polldata {
     HANDLE setme;
     HANDLE event;
@@ -459,3 +450,21 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
     free(setme);
     return ret;
 }
+
+int fcntl(int fd, int cmd, ...) {
+    va_list ap;
+    va_start(ap, cmd);
+
+    if(cmd == F_GETFL)
+	    return 0;
+    if(cmd == F_SETFL) {
+	u_long arg = va_arg(ap, long) == O_NONBLOCK;
+	if(ioctlsocket((SOCKET)fd, FIONBIO, &arg)) {
+	    wsock2errno();
+	    return -1;
+	}
+	return 0;
+    }
+    return -1;
+}
+

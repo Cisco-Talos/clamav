@@ -24,6 +24,10 @@
 typedef int socklen_t;
 typedef int ssize_t;
 
+#define F_GETFL 1
+#define F_SETFL 2
+#define O_NONBLOCK 1
+
 int w32_socket(int domain, int type, int protocol);
 int w32_getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 int w32_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
@@ -43,6 +47,6 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event);
 int w32_accept(SOCKET sockfd, const struct sockaddr *addr, socklen_t *addrlen);
 int w32_listen(int sockfd, int backlog);
 int w32_shutdown(int sockfd, int how);
-int sock_set_nonblock(int sockfd);
+int fcntl(int fd, int cmd, ...);
 
 #endif
