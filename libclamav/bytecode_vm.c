@@ -461,7 +461,7 @@ static inline int64_t ptr_compose(int32_t id, uint32_t offset)
     return (i << 32) | offset;
 }
 
-static inline int32_t ptr_register_stack(struct ptr_infos *infos,
+static inline int64_t ptr_register_stack(struct ptr_infos *infos,
 					 unsigned char *values,
 					 uint32_t off, uint32_t size)
 {
@@ -476,7 +476,7 @@ static inline int32_t ptr_register_stack(struct ptr_infos *infos,
     sinfos = &sinfos[n-1];
     sinfos->base = values + off;
     sinfos->size = size;
-    return ptr_compose(-(n-1), 0);
+    return ptr_compose(-n, 0);
 }
 
 static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
@@ -524,7 +524,7 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
 	return NULL;
     }
     if (ptrid < 0) {
-	ptrid = -ptrid;
+	ptrid = -ptrid-1;
 	if (UNLIKELY(ptrid >= infos->nstacks)) {
 	    bcfail("ptr", ptrid, infos->nstacks, __FILE__, __LINE__);
 	    return NULL;
@@ -589,6 +589,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     char *old_values;
     struct ptr_infos ptrinfos;
     struct timeval tv0, tv1, timeout;
+    int stackid = 0;
 
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
@@ -789,6 +790,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		    break;
 		}
 		values = stack_entry->values;
+		/* TODO: unregister on ret */
 		TRACE_EXEC(inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
 		if (stack_depth > 10000) {
 		    cli_errmsg("bytecode: stack depth exceeded\n");
@@ -835,6 +837,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		    }
 		}
 		func = func2;
+		stackid = ptr_register_stack(&ptrinfos, values, 0, func->numBytes)>>32;
 		CHECK_GT(func->numBB, 0);
 		stop = jump(func, 0, &bb, &inst, &bb_inst);
 		stack_depth++;
@@ -953,6 +956,17 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    }
 	    DEFINE_OP(OP_BC_ISBIGENDIAN) {
 		WRITE8(inst->dest, WORDS_BIGENDIAN);
+		break;
+	    }
+	    DEFINE_OP(OP_BC_GEPZ) {
+		int64_t ptr;
+		if (!(inst->interp_op%5)) {
+		    WRITE64(inst->dest, ptr_compose(stackid,
+						    inst->u.unaryop));
+		} else {
+		    READ64(ptr, inst->u.unaryop);
+		    WRITE64(inst->dest, ptr);
+		}
 		break;
 	    }
 	    /* TODO: implement OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN */

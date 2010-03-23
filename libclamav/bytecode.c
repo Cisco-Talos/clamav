@@ -553,7 +553,7 @@ static void add_static_types(struct cli_bc *bc)
 	bc->types[i].kind = DPointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
-	bc->types[i].size = bc->types[i].align = sizeof(void*);
+	bc->types[i].size = bc->types[i].align = 8;
     }
 }
 
@@ -1694,6 +1694,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		case OP_BC_GEP1:
 		case OP_BC_GEPZ:
 		    /*three[0] is the type*/
+		    if (bcfunc->types[inst->u.three[1]]&0x8000)
+			inst->interp_op = 5*(inst->interp_op/5);
+		    else
+			inst->interp_op = 5*(inst->interp_op/5)+3;
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
