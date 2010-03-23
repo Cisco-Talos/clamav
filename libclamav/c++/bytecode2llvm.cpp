@@ -27,9 +27,15 @@
 #include "ClamBCModule.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
+#include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
+#include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/Verifier.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -37,6 +43,7 @@
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/LLVMContext.h"
+#include "llvm/Intrinsics.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/Support/Compiler.h"
@@ -58,8 +65,8 @@
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/TargetFolder.h"
-#include "llvm/Analysis/Verifier.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/System/ThreadLocal.h"
 #include <cstdlib>
 #include <csetjmp>
@@ -328,6 +335,187 @@ struct CommonFunctions {
     Function *FBSwap32;
     Function *FBSwap64;
 };
+
+// loops with tripcounts higher than this need timeout check
+static const unsigned LoopThreshold = 1000;
+
+// after every N API calls we need timeout check
+static const unsigned ApiThreshold = 100;
+
+class RuntimeLimits : public FunctionPass {
+    typedef SmallVector<std::pair<const BasicBlock*, const BasicBlock*>, 16>
+	BBPairVectorTy;
+    typedef SmallSet<BasicBlock*, 16> BBSetTy;
+    typedef DenseMap<const BasicBlock*, unsigned> BBMapTy;
+    bool loopNeedsTimeoutCheck(ScalarEvolution &SE, const Loop *L, BBMapTy &Map) {
+	// This BB is a loop header, if trip count is small enough
+	// no timeout checks are needed here.
+	const SCEV *S = SE.getMaxBackedgeTakenCount(L);
+	if (isa<SCEVCouldNotCompute>(S))
+	    return true;
+	DEBUG(errs() << "Found loop trip count" << *S << "\n");
+	ConstantRange CR = SE.getUnsignedRange(S);
+	uint64_t max = CR.getUnsignedMax().getLimitedValue();
+	DEBUG(errs() << "Found max trip count " << max << "\n");
+	if (max > LoopThreshold)
+	    return true;
+	unsigned apicalls = 0;
+	for (Loop::block_iterator J=L->block_begin(),JE=L->block_end();
+	     J != JE; ++J) {
+	    apicalls += Map[*J];
+	}
+	apicalls *= max;
+	if (apicalls > ApiThreshold) {
+	    DEBUG(errs() << "apicall threshold exceeded: " << apicalls << "\n");
+	    return true;
+	}
+	Map[L->getHeader()] = apicalls;
+	return false;
+    }
+
+public:
+    static char ID;
+    RuntimeLimits() : FunctionPass(&ID) {}
+
+
+    virtual bool runOnFunction(Function &F) {
+	bool Changed = false;
+	BBSetTy BackedgeTargets;
+	if (!F.isDeclaration()) {
+	    // Get the common backedge targets.
+	    // Note that we don't rely on LoopInfo here, since
+	    // it is possible to construct a CFG that doesn't have natural loops,
+	    // yet it does have backedges, and thus can lead to unbounded/high
+	    // execution time.
+	    BBPairVectorTy V;
+	    FindFunctionBackedges(F, V);
+	    for (BBPairVectorTy::iterator I=V.begin(),E=V.end();I != E; ++I) {
+		BackedgeTargets.insert(const_cast<BasicBlock*>(I->second));
+	    }
+	}
+	BBSetTy  needsTimeoutCheck;
+	BBMapTy BBMap;
+	DominatorTree &DT = getAnalysis<DominatorTree>();
+	for (Function::iterator I=F.begin(),E=F.end(); I != E; ++I) {
+	    BasicBlock *BB = &*I;
+	    unsigned apicalls = 0;
+	    for (BasicBlock::const_iterator J=BB->begin(),JE=BB->end();
+		 J != JE; ++J) {
+		if (const CallInst *CI = dyn_cast<CallInst>(J)) {
+		    Function *F = CI->getCalledFunction();
+		    if (!F || F->isDeclaration())
+			apicalls++;
+		}
+	    }
+	    if (apicalls > ApiThreshold) {
+		DEBUG(errs() << "apicall threshold exceeded: " << apicalls << "\n");
+		needsTimeoutCheck.insert(BB);
+		apicalls = 0;
+	    }
+	    BBMap[BB] = apicalls;
+	}
+	if (!BackedgeTargets.empty()) {
+	    LoopInfo &LI = getAnalysis<LoopInfo>();
+	    ScalarEvolution &SE = getAnalysis<ScalarEvolution>();
+
+	    // Now check whether any of these backedge targets are part of a loop
+	    // with a small constant trip count
+	    for (BBSetTy::iterator I=BackedgeTargets.begin(),E=BackedgeTargets.end();
+		 I != E; ++I) {
+		const Loop *L = LI.getLoopFor(*I);
+		if (L && L->getHeader() == *I &&
+		    !loopNeedsTimeoutCheck(SE, L, BBMap))
+		    continue;
+		needsTimeoutCheck.insert(*I);
+		BBMap[*I] = 0;
+	    }
+	}
+	// Estimate number of apicalls by walking dominator-tree bottom-up.
+	// BBs that have timeout checks are considered to have 0 APIcalls
+	// (since we already checked for timeout).
+	for (po_iterator<DomTreeNode*> I = po_begin(DT.getRootNode()),
+	     E = po_end(DT.getRootNode()); I != E; ++I) {
+	    if (needsTimeoutCheck.count(I->getBlock()))
+		continue;
+	    unsigned apicalls = BBMap[I->getBlock()];
+	    for (DomTreeNode::iterator J=I->begin(),JE=I->end();
+		 J != JE; ++J) {
+		apicalls += BBMap[(*J)->getBlock()];
+	    }
+	    if (apicalls > ApiThreshold) {
+		needsTimeoutCheck.insert(I->getBlock());
+		apicalls = 0;
+	    }
+	    BBMap[I->getBlock()] = apicalls;
+	}
+	if (needsTimeoutCheck.empty())
+	    return false;
+	DEBUG(errs() << "needs timeoutcheck:\n");
+	std::vector<const Type*>args;
+	FunctionType* abrtTy = FunctionType::get(
+	    Type::getVoidTy(F.getContext()),args,false);
+	Constant *func_abort =
+	    F.getParent()->getOrInsertFunction("abort", abrtTy);
+	BasicBlock *AbrtBB = BasicBlock::Create(F.getContext(), "", &F);
+        CallInst* AbrtC = CallInst::Create(func_abort, "", AbrtBB);
+        AbrtC->setCallingConv(CallingConv::C);
+        AbrtC->setTailCall(true);
+        AbrtC->setDoesNotReturn(true);
+        AbrtC->setDoesNotThrow(true);
+        new UnreachableInst(F.getContext(), AbrtBB);
+	IRBuilder<false> Builder(F.getContext());
+	Function *LSBarrier = Intrinsic::getDeclaration(F.getParent(),
+							Intrinsic::memory_barrier);
+	Value *Flag = F.arg_begin();
+	Value *MBArgs[] = {
+	    ConstantInt::getFalse(F.getContext()),
+	    ConstantInt::getFalse(F.getContext()),
+	    ConstantInt::getTrue(F.getContext()),
+	    ConstantInt::getFalse(F.getContext()),
+	    ConstantInt::getFalse(F.getContext())
+	};
+	verifyFunction(F);
+	BasicBlock *BB = &F.getEntryBlock();
+	Builder.SetInsertPoint(BB, BB->getTerminator());
+	Flag = Builder.CreatePointerCast(Flag, PointerType::getUnqual(
+		Type::getInt1Ty(F.getContext())));
+	for (BBSetTy::iterator I=needsTimeoutCheck.begin(),
+	     E=needsTimeoutCheck.end(); I != E; ++I) {
+	    BasicBlock *BB = *I;
+	    Builder.SetInsertPoint(BB, BB->getTerminator());
+	    // store-load barrier: will be a no-op on x86 but not other arches
+	    Builder.CreateCall(LSBarrier, MBArgs, MBArgs+5);
+	    // Load Flag that tells us we timed out (first byte in bc_ctx)
+	    Value *Cond = Builder.CreateLoad(Flag, true);
+	    BasicBlock *newBB = SplitBlock(BB, BB->getTerminator(), this);
+	    TerminatorInst *TI = BB->getTerminator();
+	    BranchInst::Create(AbrtBB, newBB, Cond, TI);
+	    TI->eraseFromParent();
+	    BB->dump();
+	    // Update dominator info
+	    DomTreeNode *N = DT.getNode(AbrtBB);
+	    if (!N) {
+		DT.addNewBlock(AbrtBB, BB);
+	    } else {
+		BasicBlock *DomBB = DT.findNearestCommonDominator(BB,
+								  N->getIDom()->getBlock());
+		DT.changeImmediateDominator(AbrtBB, DomBB);
+	    }
+	    DEBUG(errs() << *I << "\n");
+	}
+	F.dump();
+	verifyFunction(F);
+	return true;
+    }
+
+    virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+      AU.setPreservesAll();
+      AU.addRequired<LoopInfo>();
+      AU.addRequired<ScalarEvolution>();
+      AU.addRequired<DominatorTree>();
+    }
+};
+char RuntimeLimits::ID;
 
 class VISIBILITY_HIDDEN LLVMCodegen {
 private:
@@ -687,6 +875,7 @@ public:
 	const Type *I32Ty = Type::getInt32Ty(Context);
 	if (!bc->trusted)
 	    PM.add(createClamBCRTChecks());
+	PM.add(new RuntimeLimits());
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -1373,6 +1562,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 	code, ctx, 0,
 	PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER
     };
+    ctx->timeout = 0;
     gettimeofday(&tv0, NULL);
     pthread_mutex_lock(&bcthr.mutex);
     ret = pthread_create(&thread, NULL, bytecode_thread, &bcthr);
@@ -1393,12 +1583,15 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     if (ret == ETIMEDOUT) {
 	errs() << "Bytecode run timed out, canceling thread\n";
 	timedout = 1;
+	ctx->timeout = 1;
+#if 0
 	ret = pthread_cancel(thread);
 	if (ret) {
 	    errs() << "Bytecode: failed to create new thread!";
 	    errs() << cli_strerror(ret, buf, sizeof(buf));
 	    errs() << "\n";
 	}
+#endif
     }
     ret = pthread_join(thread, &threadret);
     if (ret) {

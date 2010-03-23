@@ -133,6 +133,7 @@ struct bc_inflate {
 };
 
 struct cli_bc_ctx {
+    uint8_t timeout;/* must be first byte in struct! */
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
     const struct cli_bc_func *func;
