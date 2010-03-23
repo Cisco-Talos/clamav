@@ -42,7 +42,7 @@ static const uint32_t nomatch[64];
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_calloc(1, sizeof(*ctx));
-    ctx->bytecode_timeout = 5000000;
+    ctx->bytecode_timeout = 5000;
     return ctx;
 }
 

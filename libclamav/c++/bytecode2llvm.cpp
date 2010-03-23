@@ -379,7 +379,6 @@ public:
 
 
     virtual bool runOnFunction(Function &F) {
-	bool Changed = false;
 	BBSetTy BackedgeTargets;
 	if (!F.isDeclaration()) {
 	    // Get the common backedge targets.
@@ -491,7 +490,6 @@ public:
 	    TerminatorInst *TI = BB->getTerminator();
 	    BranchInst::Create(AbrtBB, newBB, Cond, TI);
 	    TI->eraseFromParent();
-	    BB->dump();
 	    // Update dominator info
 	    DomTreeNode *N = DT.getNode(AbrtBB);
 	    if (!N) {
@@ -503,8 +501,7 @@ public:
 	    }
 	    DEBUG(errs() << *I << "\n");
 	}
-	F.dump();
-	verifyFunction(F);
+	//verifyFunction(F);
 	return true;
     }
 
@@ -1497,15 +1494,31 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
 }
 
-struct bc_thread {
-    void *code;
-    struct cli_bc_ctx *ctx;
+struct bc_watchdog {
+    volatile uint8_t* timeout;
+    struct timespec * abstimeout;
+    pthread_mutex_t   mutex;
+    pthread_cond_t    cond;
     int finished;
-    pthread_mutex_t  mutex;
-    pthread_cond_t cond;
 };
 
-static int bytecode_thread_execute(intptr_t code, struct cli_bc_ctx *ctx)
+static void *bytecode_watchdog(void *arg)
+{
+    int ret = 0;
+    struct bc_watchdog *w = (struct bc_watchdog*)arg;
+    pthread_mutex_lock(&w->mutex);
+    while (!w->finished && ret != ETIMEDOUT) {
+	ret = pthread_cond_timedwait(&w->cond, &w->mutex, w->abstimeout);
+    }
+    pthread_mutex_unlock(&w->mutex);
+    if (ret == ETIMEDOUT) {
+	*w->timeout = 1;
+	errs() << "Bytecode run timed out, timeout flag set\n";
+    }
+    return NULL;
+}
+
+static int bytecode_execute(intptr_t code, struct cli_bc_ctx *ctx)
 {
     jmp_buf env;
     // execute;
@@ -1520,33 +1533,17 @@ static int bytecode_thread_execute(intptr_t code, struct cli_bc_ctx *ctx)
     errs().changeColor(raw_ostream::RED, true) << MODULE
 	<< "*** JITed code intercepted runtime error!\n";
     errs().resetColor();
-    return 1;
+    return CL_EBYTECODE;
 }
 
-static void* bytecode_thread(void* dummy)
-{
-    int ret;
-    struct bc_thread *thr = (struct bc_thread*)dummy;
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-    ret = bytecode_thread_execute((intptr_t)thr->code, thr->ctx);
-    pthread_mutex_lock(&thr->mutex);
-    thr->finished = 1;
-    pthread_cond_signal(&thr->cond);
-    pthread_mutex_unlock(&thr->mutex);
-    return ret ? dummy : NULL;
-}
 extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
 int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 		       const struct cli_bc_func *func)
 {
     char buf[1024];
     int ret;
-    void *threadret;
     pthread_t thread;
     struct timeval tv0, tv1;
-    struct timespec abstimeout;
-    int timedout = 0;
     uint32_t timeoutus;
     // no locks needed here, since LLVM automatically acquires a JIT lock
     // if needed.
@@ -1558,54 +1555,43 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 		<< (unsigned)func->numArgs << " arguments, it must have 0 to be called as entrypoint\n";
 	return CL_EBYTECODE;
     }
-    struct bc_thread bcthr = {
-	code, ctx, 0,
-	PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER
-    };
-    ctx->timeout = 0;
     gettimeofday(&tv0, NULL);
-    pthread_mutex_lock(&bcthr.mutex);
-    ret = pthread_create(&thread, NULL, bytecode_thread, &bcthr);
-    if (ret) {
+    struct timespec abstime;
+
+    timeoutus = (ctx->bytecode_timeout%1000)*1000 + tv0.tv_usec;
+    abstime.tv_sec = tv0.tv_sec + ctx->bytecode_timeout/1000 + timeoutus/1000000;
+    abstime.tv_nsec = 1000*(timeoutus%1000000);
+    ctx->timeout = 0;
+
+    struct bc_watchdog w = {
+	&ctx->timeout,
+	&abstime,
+	PTHREAD_MUTEX_INITIALIZER,
+	PTHREAD_COND_INITIALIZER,
+	0
+    };
+
+    if ((ret = pthread_create(&thread, NULL, bytecode_watchdog, &w))) {
 	errs() << "Bytecode: failed to create new thread!";
 	errs() << cli_strerror(ret, buf, sizeof(buf));
 	errs() << "\n";
 	return CL_EBYTECODE;
     }
 
-    timeoutus = ctx->bytecode_timeout + tv0.tv_usec;
-    abstimeout.tv_nsec = 1000*(timeoutus%1000000);
-    abstimeout.tv_sec = tv0.tv_sec + timeoutus/1000000;
-    do {
-	ret = pthread_cond_timedwait(&bcthr.cond, &bcthr.mutex, &abstimeout);
-    } while (!bcthr.finished && ret != ETIMEDOUT);
-    pthread_mutex_unlock(&bcthr.mutex);
-    if (ret == ETIMEDOUT) {
-	errs() << "Bytecode run timed out, canceling thread\n";
-	timedout = 1;
-	ctx->timeout = 1;
-#if 0
-	ret = pthread_cancel(thread);
-	if (ret) {
-	    errs() << "Bytecode: failed to create new thread!";
-	    errs() << cli_strerror(ret, buf, sizeof(buf));
-	    errs() << "\n";
-	}
-#endif
-    }
-    ret = pthread_join(thread, &threadret);
-    if (ret) {
-	errs() << "Bytecode: failed to create new thread!";
-	errs() << cli_strerror(ret, buf, sizeof(buf));
-	errs() << "\n";
-    }
+    ret = bytecode_execute((intptr_t)code, ctx);
+    pthread_mutex_lock(&w.mutex);
+    w.finished = 1;
+    pthread_cond_signal(&w.cond);
+    pthread_mutex_unlock(&w.mutex);
+    pthread_join(thread, NULL);
+
     if (cli_debug_flag) {
 	gettimeofday(&tv1, NULL);
 	tv1.tv_sec -= tv0.tv_sec;
 	tv1.tv_usec -= tv0.tv_usec;
 	errs() << "bytecode finished in " << (tv1.tv_sec*1000000 + tv1.tv_usec) << "us\n";
     }
-    return timedout ? CL_ETIMEOUT : (threadret ? CL_EBYTECODE : CL_SUCCESS);
+    return ctx->timeout ? CL_ETIMEOUT : ret;
 }
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
