@@ -161,7 +161,72 @@ static void print_src(const char *file)
   } while (nread > 0);
   fclose(f);
 }
-
+static uint32_t deadbeefcounts[64] = {
+    0xdeadbeef,
+    0,
+    0xbeefdead,
+    0,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+    0xdeadbeef,
+};
 int main(int argc, char *argv[])
 {
     FILE *f;
@@ -315,7 +380,8 @@ int main(int argc, char *argv[])
 	    }
 	    funmap(map);
 	}
-
+	/* for testing */
+	ctx->hooks.match_counts = deadbeefcounts;
 	rc = cli_bytecode_run(&bcs, bc, ctx);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));

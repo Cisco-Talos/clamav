@@ -491,8 +491,12 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
 	infos->nglobs = n;
     }
     sinfos = &infos->glob_infos[n-1];
+    if (!values)
+	size = 0;
     sinfos->base = values;
     sinfos->size = size;
+    cli_dbgmsg("bytecode: registered ctx variable at %p (+%u) id %u\n", values,
+	       size, n);
     return ptr_compose(n, 0);
 }
 
@@ -584,18 +588,39 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     char *values = ctx->values;
     char *old_values;
     struct ptr_infos ptrinfos;
+    struct timeval tv0, tv1, timeout;
 
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
     for (i=0;i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
 	const struct cli_apiglobal *g = &cli_globals[i];
-	void *apiglobal = (void*)(((char*)&ctx->hooks) + g->offset);
+	void **apiglobal = (void**)(((char*)ctx) + g->offset);
+	if (!apiglobal)
+	    continue;
+	void *apiptr = *apiglobal;
 	uint32_t size = globaltypesize(g->type);
-	ptr_register_glob_fixedid(&ptrinfos, apiglobal, size, g->globalid - _FIRST_GLOBAL+1);
+	ptr_register_glob_fixedid(&ptrinfos, apiptr, size, g->globalid - _FIRST_GLOBAL+1);
     }
+    ptr_register_glob_fixedid(&ptrinfos, bc->globalBytes, bc->numGlobalBytes,
+			      cli_apicall_maxglobal - _FIRST_GLOBAL + 2);
+
+    gettimeofday(&tv0, NULL);
+    timeout.tv_usec = tv0.tv_usec + ctx->bytecode_timeout*1000;
+    timeout.tv_sec = tv0.tv_sec + timeout.tv_usec/1000000;
+    timeout.tv_usec %= 1000000;
 
     do {
 	pc++;
+	if (!(pc % 5000)) {
+	    gettimeofday(&tv1, NULL);
+	    if (tv1.tv_sec > timeout.tv_sec ||
+		(tv1.tv_sec == timeout.tv_sec &&
+		 tv1.tv_usec > timeout.tv_usec)) {
+		cli_errmsg("Bytecode run timed out in interpreter\n");
+		stop = CL_ETIMEOUT;
+		break;
+	    }
+	}
 	switch (inst->interp_op) {
 	    DEFINE_BINOP(OP_BC_ADD, res = op0 + op1);
 	    DEFINE_BINOP(OP_BC_SUB, res = op0 - op1);
@@ -730,14 +755,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			break;
 		    }
 		    case 1: {
-			cli_errmsg("bytecode: type 1 apicalls not yet implemented!\n");
-			stop = CL_EBYTECODE;
-		/*	void *p;
-			uint32_t u;
-			p = ...;
-			u = READ32(v, inst->u.ops.ops[1]);
-			res =  cli_apicalls1[api->idx](p, u);
-			break;*/
+			void* arg1;
+			unsigned arg2;
+			/* check that arg2 is size of arg1 */
+			READ32(arg2, inst->u.ops.ops[1]);
+			READP(arg1, inst->u.ops.ops[0], arg2);
+			res = cli_apicalls1[api->idx](ctx, arg1, arg2);
+			break;
 		    }
 		    case 2: {
 			int32_t a;
@@ -745,16 +769,9 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			res = cli_apicalls2[api->idx](ctx, a);
 			break;
 		    }
-		    case 3: {
-			cli_errmsg("bytecode: type 3 apicalls not yet implemented!\n");
+		    default:
+			cli_errmsg("bytecode: type %u apicalls not yet implemented!\n", api->kind);
 			stop = CL_EBYTECODE;
-		/*	void *p;
-			uint32_t u;
-			p = ...;
-			u = READ32(v, inst->u.ops.ops[1]);
-			res =  cli_apicalls1[api->idx](p, u);
-			break;*/
-			    }
 		}
 		WRITE32(inst->dest, res);
 		break;
@@ -951,6 +968,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    CHECK_GT(bb->numInsts, bb_inst);
 	}
     } while (stop == CL_SUCCESS);
+    if (cli_debug_flag) {
+	gettimeofday(&tv1, NULL);
+	tv1.tv_sec -= tv0.tv_sec;
+	tv1.tv_usec -= tv0.tv_usec;
+	cli_dbgmsg("intepreter bytecode run finished in %dus\n",
+		   tv1.tv_sec*1000000 + tv1.tv_usec);
+    }
 
     cli_stack_destroy(&stack);
     return stop == CL_BREAK ? CL_SUCCESS : stop;

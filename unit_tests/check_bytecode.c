@@ -120,9 +120,8 @@ END_TEST
 START_TEST (test_apicalls2)
 {
     cl_init(CL_INIT_DEFAULT);
-    if (have_clamjit)/*FIXME: should work with both */
     runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0);
-/*    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1); */
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1); 
 }
 END_TEST
 
@@ -138,20 +137,16 @@ END_TEST
 START_TEST (test_lsig)
 {
     cl_init(CL_INIT_DEFAULT);
-#if 0
-FIXME: match_counts should be initialized in clambc mode
-    if (have_clamjit)/* FIXME: should work with both */
     runtest("input/lsig.cbc", 0, 0, 0);
-  //runtest("input/lsig.cbc", 0, CL_EBYTECODE, 1);
-#endif
+    runtest("input/lsig.cbc", 0, 0, 1);
 }
 END_TEST
 
 START_TEST (test_inf)
 {
     cl_init(CL_INIT_DEFAULT);
-    if (have_clamjit)
-	runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1);
 }
 END_TEST
 

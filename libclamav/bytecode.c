@@ -36,9 +36,35 @@
 #include "bytecode_api_impl.h"
 #include <string.h>
 
-/* TODO: we should make sure lsigcnt is never NULL, and has at least as many
- * elements as the bytecode needs */
-static const uint32_t nomatch[64];
+/* dummy values */
+static const uint32_t nomatch[64] = {
+    0xdeadbeef, 0xdeaddead, 0xbeefdead, 0xdeaddead, 0xdeadbeef, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static const uint16_t nokind;
+static const uint32_t nofilesize;
+static const struct cli_pe_hook_data nopedata;
+
+static void context_safe(struct cli_bc_ctx *ctx)
+{
+    /* make sure these are never NULL */
+    if (!ctx->hooks.kind)
+	ctx->hooks.kind = &nokind;
+    if (!ctx->hooks.match_counts)
+	ctx->hooks.match_counts = nomatch;
+    if (!ctx->hooks.filesize)
+	ctx->hooks.filesize = &nofilesize;
+    if (!ctx->hooks.pedata)
+	ctx->hooks.pedata = &nopedata;
+}
+
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_calloc(1, sizeof(*ctx));
@@ -1146,8 +1172,11 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		inst.interp_op += 2;
 	    else if (inst.type <= 32)
 		inst.interp_op += 3;
-	    else if (inst.type <= 64)
+	    else if (inst.type <= 65)
 		inst.interp_op += 4;
+	    else {
+		cli_dbgmsg("unknown inst type: %d\n", inst.type);
+	    }
 	}
 	BB->insts[BB->numInsts++] = inst;
     }
@@ -1359,6 +1388,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
 	return CL_EARG;
     }
+    context_safe(ctx);
     if (bc->state == bc_interp) {
 	memset(&func, 0, sizeof(func));
 	func.numInsts = 1;
@@ -1473,6 +1503,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
     unsigned i, j, k;
     uint64_t *gmap;
+    unsigned bcglobalid = cli_apicall_maxglobal - _FIRST_GLOBAL+2;
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap)
@@ -1499,10 +1530,47 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	ty = &bc->types[bc->globaltys[j]-65];
 	switch (ty->kind) {
 	    case DPointerType:
-		*(uint64_t*)&bc->globalBytes[gmap[j]] =
-		    ptr_compose(bc->globals[j][1] - _FIRST_GLOBAL + 1,
-				bc->globals[j][0]);
-		break;
+		{
+		    uint64_t ptr;
+		    if (bc->globals[j][1] >= _FIRST_GLOBAL) {
+			ptr = ptr_compose(bc->globals[j][1] - _FIRST_GLOBAL + 1,
+					    bc->globals[j][0]);
+		    } else {
+			if (bc->globals[j][1] > bc->num_globals)
+			    continue;
+			ptr = ptr_compose(bcglobalid,
+					  gmap[bc->globals[j][1]] + bc->globals[j][0]);
+		    }
+		    *(uint64_t*)&bc->globalBytes[gmap[j]] = ptr;
+		    break;
+		}
+	    case DArrayType:
+		{
+		    unsigned elsize, i, off = gmap[j];
+		    /* TODO: support other than ints in arrays */
+		    elsize = typesize(bc, ty->containedTypes[0]);
+		    switch (elsize) {
+			case 1:
+			    for(i=0;i<ty->numElements;i++)
+				bc->globalBytes[off+i] = bc->globals[j][i];
+			    break;
+			case 2:
+			    for(i=0;i<ty->numElements;i++)
+				*(uint16_t*)&bc->globalBytes[off+i*2] = bc->globals[j][i];
+			    break;
+			case 4:
+			    for(i=0;i<ty->numElements;i++)
+				*(uint32_t*)&bc->globalBytes[off+i*4] = bc->globals[j][i];
+			    break;
+			case 8:
+			    for(i=0;i<ty->numElements;i++)
+				*(uint64_t*)&bc->globalBytes[off+i*8] = bc->globals[j][i];
+			    break;
+			default:
+			    cli_dbgmsg("interpreter: unsupported elsize: %u\n", elsize);
+		    }
+		    break;
+		}
 	    default:
 		/*TODO*/
 		if (!bc->globals[j][1])
