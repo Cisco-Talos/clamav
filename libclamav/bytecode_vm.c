@@ -962,9 +962,9 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		int64_t ptr;
 		if (!(inst->interp_op%5)) {
 		    WRITE64(inst->dest, ptr_compose(stackid,
-						    inst->u.unaryop));
+						    inst->u.three[1]));
 		} else {
-		    READ64(ptr, inst->u.unaryop);
+		    READ64(ptr, inst->u.three[1]);
 		    WRITE64(inst->dest, ptr);
 		}
 		break;
