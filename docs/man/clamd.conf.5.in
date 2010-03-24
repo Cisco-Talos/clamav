@@ -138,7 +138,7 @@ ReadTimeout.
 Default: 5
 .TP
 \fBSendBufTimeout NUMBER\fR
-This option specifies how long to wait (in miliseconds) if the send buffer is full.
+This option specifies how long to wait (in milliseconds) if the send buffer is full.
 Keep this value low to prevent clamd hanging.
 .br
 Default: 500
@@ -248,6 +248,11 @@ Default: yes
 Set bytecode security level. Possible values: \fBNone\fR: no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS, \fBTrustSigned\fR: trust bytecode loaded from signed .c[lv]d files and insert runtime safety checks for bytecode loaded from other sources, \fBParanoid\fR: don't trust any bytecode, insert runtime checks for all. The recommended setting is \fBTrustSigned\fR, because bytecode in .cvd files already has safety checks inserted into it.
 .br 
 Default: TrustSigned
+.TP 
+\fBBytecodeTimeout NUMBER\fR
+Set bytecode timeout in milliseconds.
+.br
+Default: 60000
 .TP 
 \fBDetectPUA BOOL\fR
 Detect Possibly Unwanted Applications.

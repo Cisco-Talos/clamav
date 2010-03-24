@@ -84,6 +84,9 @@ With this option enabled ClamAV will load bytecode from the database. It is high
 \fB\-\-bytecode\-trust\-all[=yes/no(*)]\fR
 This option disables safety checks and makes ClamAV trust all bytecode. It should only be used for debugging.
 .TP 
+\fB\-\-bytecode\-timeout=N\fR
+Set bytecode timeout in milliseconds (default: 60000 = 60s)
+.TP 
 \fB\-\-detect\-pua[=yes/no(*)]\fR
 Detect Possibly Unwanted Applications.
 .TP 
