@@ -29,22 +29,30 @@
 #include <limits.h>
 #include <string.h>
 #include <check.h>
+#include <fcntl.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/bytecode.h"
 #include "checks.h"
 #include "../libclamav/dconf.h"
 #include "../libclamav/bytecode_priv.h"
+#include "../libclamav/pe.h"
 
-static void runtest(const char *file, uint64_t expected, int fail, int nojit)
+static void runtest(const char *file, uint64_t expected, int fail, int nojit,
+		    const char *infile, struct cli_pe_hook_data *pedata,
+		    struct cli_exe_section *sections, const char *expectedvirname)
 {
+    fmap_t *map = NULL;
     int rc;
     int fd = open_testfile(file);
     FILE *f;
     struct cli_bc bc;
+    cli_ctx cctx;
     struct cli_bc_ctx *ctx;
     struct cli_all_bc bcs;
     uint64_t v;
+
+    memset(&cctx, 0, sizeof(cctx));
 
     fail_unless(fd >= 0, "retmagic open failed");
     f = fdopen(fd, "r");
@@ -78,6 +86,18 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
     ctx->bytecode_timeout = 10;
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
+    if (infile) {
+	int fdin = open(infile, O_RDONLY);
+	fail_unless(fdin >= 0, "failed to open infile");
+	map = fmap(fdin, 0, 0);
+	fail_unless(!!map, "unable to fmap infile");
+	ctx->ctx = &cctx;
+	if (pedata)
+	    ctx->hooks.pedata = pedata;
+	ctx->sections = sections;
+	cli_bytecode_context_setfile(ctx, map);
+    }
+
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
     rc = cli_bytecode_run(&bcs, &bc, ctx);
     fail_unless_fmt(rc == fail, "cli_bytecode_run failed, expected: %u, have: %u\n",
@@ -88,7 +108,14 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
 	fail_unless_fmt(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
 			expected, v);
     }
+    if (infile && expectedvirname) {
+	fail_unless(ctx->virname &&
+		    !strcmp(ctx->virname, expectedvirname),
+		    "Invalid virname, expected: %s\n", expectedvirname);
+    }
     cli_bytecode_context_destroy(ctx);
+    if (map)
+	funmap(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
 }
@@ -96,32 +123,32 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit)
 START_TEST (test_retmagic)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0);
-    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
 START_TEST (test_arith)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0);
-    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
 START_TEST (test_apicalls)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0);
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
 START_TEST (test_apicalls2)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0);
-    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1); 
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
@@ -129,24 +156,49 @@ START_TEST (test_div0)
 {
     cl_init(CL_INIT_DEFAULT);
     /* must not crash on div#0 but catch it */
-    runtest("input/div0.cbc", 0, CL_EBYTECODE, 0);
-    runtest("input/div0.cbc", 0, CL_EBYTECODE, 1);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 0, NULL, NULL, NULL, NULL);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
 START_TEST (test_lsig)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/lsig.cbc", 0, 0, 0);
-    runtest("input/lsig.cbc", 0, 0, 1);
+    runtest("input/lsig.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/lsig.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
 START_TEST (test_inf)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0);
-    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_matchwithread)
+{
+    struct cli_exe_section sect;
+    struct cli_pe_hook_data pedata;
+    cl_init(CL_INIT_DEFAULT);
+    memset(&pedata, 0, sizeof(pedata));
+    pedata.ep = 64;
+    pedata.opt32.ImageBase = 0x400000;
+    pedata.hdr_size = 0x400;
+    pedata.nsections = 1;
+    sect.rva = 4096;
+    sect.vsz = 4096;
+    sect.raw = 0;
+    sect.rsz = 512;
+    sect.urva = 4096;
+    sect.uvsz = 4096;
+    sect.uraw = 1;
+    sect.ursz = 512;
+    runtest("input/matchwithread.cbc", 0, 0, 0, "../test/clam.exe", &pedata,
+	    &sect, "ClamAV-Test-File-detected-via-bytecode");
+    runtest("input/matchwithread.cbc", 0, 0, 1, "../test/clam.exe", &pedata,
+	    &sect, "ClamAV-Test-File-detected-via-bytecode");
 }
 END_TEST
 
@@ -163,5 +215,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_div0);
     tcase_add_test(tc_cli_arith, test_lsig);
     tcase_add_test(tc_cli_arith, test_inf);
+    tcase_add_test(tc_cli_arith, test_matchwithread);
     return s;
 }

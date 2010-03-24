@@ -125,7 +125,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "bytecode-trust-all", 't', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Trust loaded bytecode (default: only if signed)", ""},
     { NULL, "info", 'i', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and print bytecode information without executing", ""},
     { NULL, "printsrc", 'p', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print source code of bytecode", ""},
-    { NULL, "input", 'i', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
+    { NULL, "input", 'r', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
     { NULL, "trace", 't', TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},
 
