@@ -62,3 +62,9 @@ Malloc in debug (as opposed to release) mode fails after allocating some 90k
 chunks; such builds won't be able to handle large databases.
 Just do yourself a favour and always build in release mode.
 
+
+5- Special thanks
+
+Special thanks to Gianluigi Tiesi and Mark Pizzolato for their valuable help in
+coding and testing.
+
