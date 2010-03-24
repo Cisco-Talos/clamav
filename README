@@ -2,7 +2,7 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.96rc1
+0.96rc2
 -------
 
 This release of ClamAV introduces new malware detection mechanisms and other
