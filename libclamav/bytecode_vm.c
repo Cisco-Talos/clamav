@@ -29,6 +29,9 @@
 #include "type_desc.h"
 #include "readdb.h"
 #include <string.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 
 /* Enable this to catch more bugs in the RC phase */
 #define CL_BYTECODE_DEBUG
@@ -594,12 +597,14 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
     for (i=0;i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
+	void *apiptr;
+	uint32_t size;
 	const struct cli_apiglobal *g = &cli_globals[i];
 	void **apiglobal = (void**)(((char*)ctx) + g->offset);
 	if (!apiglobal)
 	    continue;
-	void *apiptr = *apiglobal;
-	uint32_t size = globaltypesize(g->type);
+	apiptr = *apiglobal;
+	size = globaltypesize(g->type);
 	ptr_register_glob_fixedid(&ptrinfos, apiptr, size, g->globalid - _FIRST_GLOBAL+1);
     }
     ptr_register_glob_fixedid(&ptrinfos, bc->globalBytes, bc->numGlobalBytes,
@@ -1094,7 +1099,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	gettimeofday(&tv1, NULL);
 	tv1.tv_sec -= tv0.tv_sec;
 	tv1.tv_usec -= tv0.tv_usec;
-	cli_dbgmsg("intepreter bytecode run finished in %dus\n",
+	cli_dbgmsg("intepreter bytecode run finished in %luus\n",
 		   tv1.tv_sec*1000000 + tv1.tv_usec);
     }
 
