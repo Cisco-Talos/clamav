@@ -1,4 +1,4 @@
-//===-- LLVMContextImpl.h - The LLVMContextImpl opaque class --------------===//
+//===-- LLVMContextImpl.h - The LLVMContextImpl opaque class ----*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,9 +19,9 @@
 #include "LeaksContext.h"
 #include "TypesContext.h"
 #include "llvm/LLVMContext.h"
-#include "llvm/Metadata.h"
 #include "llvm/Constants.h"
 #include "llvm/DerivedTypes.h"
+#include "llvm/Metadata.h"
 #include "llvm/Assembly/Writer.h"
 #include "llvm/Support/ValueHandle.h"
 #include "llvm/ADT/APFloat.h"
@@ -36,8 +36,6 @@ namespace llvm {
 
 class ConstantInt;
 class ConstantFP;
-class MDString;
-class MDNode;
 class LLVMContext;
 class Type;
 class Value;
@@ -105,6 +103,11 @@ public:
   StringMap<MDString*> MDStringCache;
   
   FoldingSet<MDNode> MDNodeSet;
+  // MDNodes may be uniqued or not uniqued.  When they're not uniqued, they
+  // aren't in the MDNodeSet, but they're still shared between objects, so no
+  // one object can destroy them.  This set allows us to at least destroy them
+  // on Context destruction.
+  SmallPtrSet<MDNode*, 1> NonUniquedMDNodes;
   
   ConstantUniqueMap<char, Type, ConstantAggregateZero> AggZeroConstants;
 
@@ -130,6 +133,8 @@ public:
   
   DenseMap<std::pair<Function*, BasicBlock*> , BlockAddress*> BlockAddresses;
   ConstantUniqueMap<ExprMapKeyType, Type, ConstantExpr> ExprConstants;
+
+  ConstantUniqueMap<InlineAsmKeyType, PointerType, InlineAsm> InlineAsms;
   
   ConstantInt *TheTrueVal;
   ConstantInt *TheFalseVal;
@@ -190,68 +195,8 @@ public:
   /// context.
   DenseMap<const Instruction *, MDMapTy> MetadataStore;
   
-  
-  LLVMContextImpl(LLVMContext &C) : TheTrueVal(0), TheFalseVal(0),
-    VoidTy(C, Type::VoidTyID),
-    LabelTy(C, Type::LabelTyID),
-    FloatTy(C, Type::FloatTyID),
-    DoubleTy(C, Type::DoubleTyID),
-    MetadataTy(C, Type::MetadataTyID),
-    X86_FP80Ty(C, Type::X86_FP80TyID),
-    FP128Ty(C, Type::FP128TyID),
-    PPC_FP128Ty(C, Type::PPC_FP128TyID),
-    Int1Ty(C, 1),
-    Int8Ty(C, 8),
-    Int16Ty(C, 16),
-    Int32Ty(C, 32),
-    Int64Ty(C, 64),
-    AlwaysOpaqueTy(new OpaqueType(C)) {
-    // Make sure the AlwaysOpaqueTy stays alive as long as the Context.
-    AlwaysOpaqueTy->addRef();
-    OpaqueTypes.insert(AlwaysOpaqueTy);
-  }
-
-  ~LLVMContextImpl() {
-    ExprConstants.freeConstants();
-    ArrayConstants.freeConstants();
-    StructConstants.freeConstants();
-    VectorConstants.freeConstants();
-    AggZeroConstants.freeConstants();
-    NullPtrConstants.freeConstants();
-    UndefValueConstants.freeConstants();
-    for (IntMapTy::iterator I = IntConstants.begin(), E = IntConstants.end(); 
-         I != E; ++I) {
-      if (I->second->use_empty())
-        delete I->second;
-    }
-    for (FPMapTy::iterator I = FPConstants.begin(), E = FPConstants.end(); 
-         I != E; ++I) {
-      if (I->second->use_empty())
-        delete I->second;
-    }
-    AlwaysOpaqueTy->dropRef();
-    for (OpaqueTypesTy::iterator I = OpaqueTypes.begin(), E = OpaqueTypes.end();
-        I != E; ++I) {
-      (*I)->AbstractTypeUsers.clear();
-      delete *I;
-    }
-    // Destroy MDNode operands first.
-    for (FoldingSetIterator<MDNode> I = MDNodeSet.begin(), E = MDNodeSet.end();
-         I != E;) {
-      MDNode *N = &(*I);
-      ++I;
-      N->replaceAllOperandsWithNull();
-    }
-    while (!MDNodeSet.empty()) {
-      MDNode *N = &(*MDNodeSet.begin());
-      N->destroy();
-    }
-    // Destroy MDStrings.
-    for (StringMap<MDString*>::iterator I = MDStringCache.begin(),
-           E = MDStringCache.end(); I != E; ++I) {
-      delete I->second;
-    }
-  }
+  LLVMContextImpl(LLVMContext &C);
+  ~LLVMContextImpl();
 };
 
 }
