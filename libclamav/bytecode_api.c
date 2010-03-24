@@ -518,7 +518,7 @@ int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
     struct bc_buffer *b;
     unsigned n = ctx->nbuffers + 1;
 
-    data = cli_malloc(size);
+    data = cli_calloc(1, size);
     if (!data)
 	return -1;
     b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers)*n);
