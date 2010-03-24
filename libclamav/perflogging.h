@@ -26,7 +26,7 @@
  * statistics, such as which tries are used, efficiency of filtering and so on.
  * it must have as little overhead as possible */
 
-//#define CLI_PERF_LOGGING
+/* #define CLI_PERF_LOGGING */
 #ifdef CLI_PERF_LOGGING
 
 #ifndef __GNUC__

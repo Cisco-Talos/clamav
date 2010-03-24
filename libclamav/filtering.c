@@ -448,7 +448,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 				break;
 			case CLI_MATCH_SPECIAL:
 				assert(pat->special_table);
-//				assert(altcnt < pat->alt);
+				/* assert(altcnt < pat->alt); */
 				assert(pat->special_table[altcnt]);
 				switch (pat->special_table[altcnt++]->type) {
 				    case 1: /* ALT_CHAR */

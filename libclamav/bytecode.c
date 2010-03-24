@@ -1629,7 +1629,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    assert(align);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;
-	    //printf("%d -> %d, %u\n", j, map[j], typesize(bc, ty));
+	    /* printf("%d -> %d, %u\n", j, map[j], typesize(bc, ty)); */
 	    bcfunc->numBytes += typesize(bc, ty);
 	}
 	bcfunc->numBytes = (bcfunc->numBytes + 7)&~7;
