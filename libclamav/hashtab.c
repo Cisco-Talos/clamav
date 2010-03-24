@@ -453,6 +453,7 @@ void cli_hashset_destroy(struct cli_hashset* hs)
 
 #define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & (1 << ((val) & 0x1f)))
 #define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= (1 << ((val) & 0x1f)))
+#define BITMAP_REMOVE(bmap, val) ((bmap)[(val) >> 5] &= ~(1 << ((val) & 0x1f)))
 
 /*
  * searches the hashset for the @key.
@@ -474,7 +475,6 @@ static inline size_t cli_hashset_search(const struct cli_hashset* hs, const uint
 	/* we have either found the key, or a candidate insertion position */
 	return idx;
 }
-
 
 static void cli_hashset_addkey_internal(struct cli_hashset* hs, const uint32_t key)
 {
@@ -527,6 +527,16 @@ int cli_hashset_addkey(struct cli_hashset* hs, const uint32_t key)
 	}
 	cli_hashset_addkey_internal(hs, key);
 	return 0;
+}
+
+int cli_hashset_removekey(struct cli_hashset* hs, const uint32_t key)
+{
+    const size_t idx = cli_hashset_search(hs, key);
+    if (BITMAP_CONTAINS(hs->bitmap, idx)) {
+	BITMAP_REMOVE(hs->bitmap, idx);
+	hs->keys[idx] = 0;
+	hs->count--;
+    }
 }
 
 int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key)

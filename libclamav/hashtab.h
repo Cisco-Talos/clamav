@@ -104,6 +104,7 @@ int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key);
 int cli_hashset_clear(struct cli_hashset* hs);
 void cli_hashset_destroy(struct cli_hashset* hs);
 ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array);
+int cli_hashset_removekey(struct cli_hashset* hs, const uint32_t key);
 
 /* Initializes the set without allocating memory, you can do lookups on it
  * using _contains_maybe_noalloc. You need to initialize it using _init
