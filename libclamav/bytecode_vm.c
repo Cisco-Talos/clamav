@@ -961,8 +961,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    DEFINE_OP(OP_BC_GEPZ) {
 		int64_t ptr;
 		if (!(inst->interp_op%5)) {
+		    int32_t off;
+		    READ32(off, inst->u.three[2]);
 		    WRITE64(inst->dest, ptr_compose(stackid,
-						    inst->u.three[1]));
+						    inst->u.three[1]+off));
 		} else {
 		    READ64(ptr, inst->u.three[1]);
 		    WRITE64(inst->dest, ptr);
