@@ -536,7 +536,9 @@ int cli_hashset_removekey(struct cli_hashset* hs, const uint32_t key)
 	BITMAP_REMOVE(hs->bitmap, idx);
 	hs->keys[idx] = 0;
 	hs->count--;
+	return 0;
     }
+    return -1;
 }
 
 int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key)
