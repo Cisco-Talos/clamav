@@ -1155,8 +1155,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			break;
 		}
 	}
-	if (inst.opcode == OP_BC_COPY)
+	if (inst.opcode == OP_BC_STORE)
 	    inst.type = bcfunc->types[inst.u.binop[0]]&0x7fff;
+	if (inst.opcode == OP_BC_COPY)
+	    inst.type = bcfunc->types[inst.u.binop[1]]&0x7fff;
 	if (!ok) {
 	    cli_errmsg("Invalid instructions or operands\n");
 	    return CL_EMALFDB;
@@ -1711,6 +1713,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		case OP_BC_MEMCPY:
 		case OP_BC_MEMMOVE:
 		case OP_BC_MEMCMP:
+		    MAP(inst->u.three[0]);
+		    MAP(inst->u.three[1]);
+		    MAP(inst->u.three[2]);
 		    /*TODO*/
 		    break;
 		case OP_BC_ISBIGENDIAN:

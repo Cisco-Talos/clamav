@@ -953,8 +953,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		uint8_t *ptr;
 		uint8_t v;
-		READP(ptr, BINOP(0), 1);
-		READ1(v, BINOP(1));
+		READP(ptr, BINOP(1), 1);
+		READ1(v, BINOP(0));
 		*ptr = v;
 		break;
 	    }
@@ -962,8 +962,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		uint8_t *ptr;
 		uint8_t v;
-		READP(ptr, BINOP(0), 1);
-		READ8(v, BINOP(1));
+		READP(ptr, BINOP(1), 1);
+		READ8(v, BINOP(0));
 		*ptr = v;
 		break;
 	    }
@@ -971,8 +971,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		union unaligned_16 *ptr;
 		uint16_t v;
-		READP(ptr, BINOP(0), 2);
-		READ16(v, BINOP(1));
+		READP(ptr, BINOP(1), 2);
+		READ16(v, BINOP(0));
 		ptr->una_s16 = v;
 		break;
 	    }
@@ -980,8 +980,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		union unaligned_32 *ptr;
 		uint32_t v;
-		READP(ptr, BINOP(0), 4);
-		READ32(v, BINOP(1));
+		READP(ptr, BINOP(1), 4);
+		READ32(v, BINOP(0));
 		ptr->una_u32 = v;
 		break;
 	    }
@@ -989,8 +989,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    {
 		union unaligned_64 *ptr;
 		uint64_t v;
-		READP(ptr, BINOP(0), 8);
-		READ64(v, BINOP(1));
+		READP(ptr, BINOP(1), 8);
+		READ64(v, BINOP(0));
 		ptr->una_u64 = v;
 		break;
 	    }
@@ -1009,6 +1009,72 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		    READ64(ptr, inst->u.three[1]);
 		    WRITE64(inst->dest, ptr);
 		}
+		break;
+	    }
+	    DEFINE_OP(OP_BC_MEMCMP) {
+		int32_t arg3;
+		void *arg1, *arg2;
+		READ32(arg3, inst->u.three[2]);
+		READP(arg1, inst->u.three[0], arg3);
+		READP(arg2, inst->u.three[1], arg3);
+		WRITE32(inst->dest, memcmp(arg1, arg2, arg3));
+		break;
+	    }
+	    DEFINE_OP(OP_BC_MEMCPY) {
+		int32_t arg3;
+		void *arg1, *arg2, *resp;
+		int64_t res;
+
+		READ32(arg3, inst->u.three[2]);
+		READP(arg1, inst->u.three[0], arg3);
+		READP(arg2, inst->u.three[1], arg3);
+		memcpy(arg1, arg2, arg3);
+		READ64(res, inst->u.three[0]);
+		WRITE64(inst->dest, res);
+		break;
+	    }
+	    DEFINE_OP(OP_BC_MEMMOVE) {
+		int32_t arg3;
+		void *arg1, *arg2, *resp;
+		int64_t res;
+
+		READ32(arg3, inst->u.three[2]);
+		READP(arg1, inst->u.three[0], arg3);
+		READP(arg2, inst->u.three[1], arg3);
+		memmove(arg1, arg2, arg3);
+		READ64(res, inst->u.three[0]);
+		WRITE64(inst->dest, res);
+		break;
+	    }
+	    DEFINE_OP(OP_BC_MEMSET) {
+		int32_t arg2, arg3;
+		void *arg1;
+		int64_t res;
+
+		READ32(arg3, inst->u.three[2]);
+		READP(arg1, inst->u.three[0], arg3);
+		READ32(arg2, inst->u.three[1]);
+		memset(arg1, arg2, arg3);
+		READ64(res, inst->u.three[0]);
+		WRITE64(inst->dest, res);
+		break;
+	    }
+	    DEFINE_OP(OP_BC_BSWAP16) {
+		int16_t arg1;
+		READ16(arg1, inst->u.unaryop);
+		WRITE16(inst->dest, cbswap16(arg1));
+		break;
+	    }
+	    DEFINE_OP(OP_BC_BSWAP32) {
+		int32_t arg1;
+		READ32(arg1, inst->u.unaryop);
+		WRITE32(inst->dest, cbswap32(arg1));
+		break;
+	    }
+	    DEFINE_OP(OP_BC_BSWAP64) {
+		int32_t arg1;
+		READ64(arg1, inst->u.unaryop);
+		WRITE64(inst->dest, cbswap64(arg1));
 		break;
 	    }
 	    /* TODO: implement OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN */
