@@ -59,13 +59,15 @@ int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
     if (!ctx->fmap)
 	return -1;
     if (size < 0 || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("bytecode: negative read size: %d\n", size);
+	cli_warnmsg("bytecode: negative read size: %d\n", size);
 	return -1;
     }
 /*    cli_dbgmsg("read data at %d\n", ctx->off);*/
     n = fmap_readn(ctx->fmap, data, ctx->off, size);
-    if (n <= 0)
+    if (n <= 0) {
+	cli_dbgmsg("bcapi_read: fmap_readn failed\n");
 	return n;
+    }
     ctx->off += n;
     return n;
 }
@@ -73,8 +75,10 @@ int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 {
     off_t off;
-    if (!ctx->fmap)
+    if (!ctx->fmap) {
+	cli_dbgmsg("bcapi_seek: no fmap\n");
 	return -1;
+    }
     switch (whence) {
 	case 0:
 	    off = pos;
@@ -86,8 +90,11 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 	    off = ctx->file_size + pos;
 	    break;
     }
-    if (off < 0 || off > ctx->file_size)
+    if (off < 0 || off > ctx->file_size) {
+	cli_dbgmsg("bcapi_seek: out of file: %ld (max %d)\n",
+		   off, ctx->file_size);
 	return -1;
+    }
     ctx->off = off;
     return off;
 }
@@ -125,8 +132,10 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     n = MIN(32, ctx->fmap->len - ctx->off);
     buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
     next = cli_disasm_one(buf, n, res, 0);
-    if (!next)
+    if (!next) {
+	cli_dbgmsg("bcapi_disasm: failed\n");
 	return -1;
+    }
     return ctx->off + next - buf;
 }
 
@@ -162,7 +171,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     res = cli_writen(ctx->outfd, data, len);
     if (res > 0) ctx->written += res;
     if (res == -1)
-	    cli_dbgmsg("Bytecode API: write failed: %d\n", errno);
+	cli_dbgmsg("Bytecode API: write failed: %d\n", errno);
     return res;
 }
 
@@ -274,8 +283,10 @@ uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
   const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
   ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
 		    ctx->file_size, pe->hdr_size);
-  if (err)
+  if (err) {
+    cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
     return PE_INVALID_RVA;
+  }
   return ret;
 }
 
@@ -311,8 +322,10 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
     uint32_t off = ctx->off, newoff;
     int n;
 
-    if (!map || len > sizeof(buf)/4 || len <= 0)
+    if (!map || len > sizeof(buf)/4 || len <= 0) {
+	cli_dbgmsg("bcapi_file_find preconditions not met\n");
 	return -1;
+    }
     for (;;) {
 	const char *p;
 	n = fmap_readn(map, buf, off, sizeof(buf));
@@ -329,10 +342,14 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
 int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off)
 {
     unsigned char c;
-    if (!ctx->fmap)
+    if (!ctx->fmap) {
+	cli_dbgmsg("bcapi_file_byteat: no fmap\n");
 	return -1;
-    if (fmap_readn(ctx->fmap, &c, off, 1) != 1)
+    }
+    if (fmap_readn(ctx->fmap, &c, off, 1) != 1) {
+	cli_dbgmsg("bcapi_file_byteat: fmap_readn failed at %u\n", off);
 	return -1;
+    }
     return c;
 }
 
@@ -390,8 +407,10 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
 	return -1;
     }
     res = cli_bcapi_read(ctx, buf+remaining, tofill);
-    if (res <= 0)
+    if (res <= 0) {
+	cli_dbgmsg("fill_buffer5\n");
 	return res;
+    }
     return remaining + res;
 }
 

@@ -39,7 +39,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    return CL_EBYTECODE;
 	}
     }
-    cli_warnmsg("JIT not compiled in\n");
+    cli_dbgmsg("JIT not compiled in\n");
     return CL_EBYTECODE;
 }
 

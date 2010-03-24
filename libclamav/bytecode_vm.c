@@ -42,7 +42,7 @@
 static int never_inline bcfail(const char *msg, long a, long b,
 		  const char *file, unsigned line)
 {
-    cli_errmsg("bytecode: check failed %s (%lx and %lx) at %s:%u\n", msg, a, b, file, line);
+    cli_warnmsg("bytecode: check failed %s (%lx and %lx) at %s:%u\n", msg, a, b, file, line);
     return CL_EARG;
 }
 
@@ -131,7 +131,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
     }
 
     if(bytes >= STACK_CHUNKSIZE) {
-	cli_errmsg("cli_stack_alloc: Attempt to allocate more than STACK_CHUNKSIZE bytes!\n");
+	cli_warnmsg("cli_stack_alloc: Attempt to allocate more than STACK_CHUNKSIZE bytes!\n");
 	return NULL;
     }
     /* not enough room here, allocate new chunk */
@@ -153,17 +153,17 @@ static always_inline void cli_stack_free(struct stack *stack, void *data)
     uint16_t last_size;
     struct stack_chunk *chunk = stack->chunk;
     if (!chunk) {
-	cli_errmsg("cli_stack_free: stack empty!\n");
+	cli_warnmsg("cli_stack_free: stack empty!\n");
 	return;
     }
     if ((chunk->u.data + chunk->used) != ((char*)data + stack->last_size*sizeof(align_t))) {
-	cli_errmsg("cli_stack_free: wrong free order: %p, expected %p\n",
+	cli_warnmsg("cli_stack_free: wrong free order: %p, expected %p\n",
 		   data, chunk->u.data + chunk->used - stack->last_size*sizeof(align_t));
 	return;
     }
     last_size = *(uint16_t*)&chunk->u.data[chunk->used-2];
     if (chunk->used < stack->last_size*sizeof(align_t)) {
-	cli_errmsg("cli_stack_free: last_size is corrupt!\n");
+	cli_warnmsg("cli_stack_free: last_size is corrupt!\n");
 	return;
     }
     chunk->used -= stack->last_size*sizeof(align_t);
@@ -622,7 +622,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    if (tv1.tv_sec > timeout.tv_sec ||
 		(tv1.tv_sec == timeout.tv_sec &&
 		 tv1.tv_usec > timeout.tv_usec)) {
-		cli_errmsg("Bytecode run timed out in interpreter\n");
+		cli_warnmsg("Bytecode run timed out in interpreter\n");
 		stop = CL_ETIMEOUT;
 		break;
 	    }
@@ -816,7 +816,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			break;
 		    }
 		    default:
-			cli_errmsg("bytecode: type %u apicalls not yet implemented!\n", api->kind);
+			cli_warnmsg("bytecode: type %u apicalls not yet implemented!\n", api->kind);
 			stop = CL_EBYTECODE;
 		}
 		WRITE32(inst->dest, res);
@@ -838,7 +838,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		/* TODO: unregister on ret */
 		TRACE_EXEC(inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
 		if (stack_depth > 10000) {
-		    cli_errmsg("bytecode: stack depth exceeded\n");
+		    cli_warnmsg("bytecode: stack depth exceeded\n");
 		    stop = CL_EBYTECODE;
 		    break;
 		}
