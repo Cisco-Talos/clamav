@@ -1731,13 +1731,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    /* TODO */
 		    break;
 		case OP_BC_BSWAP16:
-		    /*TODO */
-		    break;
 		case OP_BC_BSWAP32:
-		    /*TODO */
-		    break;
 		case OP_BC_BSWAP64:
-		    /*TODO */
+		    MAP(inst->u.unaryop);
 		    break;
 		case OP_BC_PTRDIFF32:
 		    /*TODO */
