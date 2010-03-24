@@ -1477,7 +1477,6 @@ X86TargetLowering::LowerFormalArguments(SDValue Chain,
                                         DebugLoc dl,
                                         SelectionDAG &DAG,
                                         SmallVectorImpl<SDValue> &InVals) {
-
   MachineFunction &MF = DAG.getMachineFunction();
   X86MachineFunctionInfo *FuncInfo = MF.getInfo<X86MachineFunctionInfo>();
 
@@ -1779,7 +1778,8 @@ X86TargetLowering::LowerCall(SDValue Chain, SDValue Callee,
 
   if (isTailCall) {
     // Check if it's really possible to do a tail call.
-    isTailCall = IsEligibleForTailCallOptimization(Callee, CallConv, isVarArg,
+    isTailCall = IsEligibleForTailCallOptimization(Callee, CallConv,
+                    isVarArg, IsStructRet, MF.getFunction()->hasStructRetAttr(),
                                                    Outs, Ins, DAG);
 
     // Sibcalls are automatically detected tailcalls which do not require
@@ -2297,6 +2297,8 @@ bool
 X86TargetLowering::IsEligibleForTailCallOptimization(SDValue Callee,
                                                      CallingConv::ID CalleeCC,
                                                      bool isVarArg,
+                                                     bool isCalleeStructRet,
+                                                     bool isCallerStructRet,
                                     const SmallVectorImpl<ISD::OutputArg> &Outs,
                                     const SmallVectorImpl<ISD::InputArg> &Ins,
                                                      SelectionDAG& DAG) const {
@@ -2316,9 +2318,36 @@ X86TargetLowering::IsEligibleForTailCallOptimization(SDValue Callee,
   // Look for obvious safe cases to perform tail call optimization that does not
   // requite ABI changes. This is what gcc calls sibcall.
 
-  // Do not tail call optimize vararg calls for now.
+  // Do not sibcall optimize vararg calls for now.
   if (isVarArg)
     return false;
+
+  // Also avoid sibcall optimization if either caller or callee uses struct
+  // return semantics.
+  if (isCalleeStructRet || isCallerStructRet)
+    return false;
+
+  // If the call result is in ST0 / ST1, it needs to be popped off the x87 stack.
+  // Therefore if it's not used by the call it is not safe to optimize this into
+  // a sibcall.
+  bool Unused = false;
+  for (unsigned i = 0, e = Ins.size(); i != e; ++i) {
+    if (!Ins[i].Used) {
+      Unused = true;
+      break;
+    }
+  }
+  if (Unused) {
+    SmallVector<CCValAssign, 16> RVLocs;
+    CCState CCInfo(CalleeCC, false, getTargetMachine(),
+                   RVLocs, *DAG.getContext());
+    CCInfo.AnalyzeCallResult(Ins, RetCC_X86);
+    for (unsigned i = 0; i != RVLocs.size(); ++i) {
+      CCValAssign &VA = RVLocs[i];
+      if (VA.getLocReg() == X86::ST0 || VA.getLocReg() == X86::ST1)
+        return false;
+    }
+  }
 
   // If the callee takes no arguments then go on to check the results of the
   // call.
