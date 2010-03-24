@@ -1,6 +1,7 @@
 SPLIT_DIR=$(top_srcdir)/unit_tests/.split
 FILES = clam-phish-exe
 
+check_unit_vg.sh: $(FILES) check_clamav
 check2_clamd.sh: $(FILES)
 check3_clamd.sh: $(FILES)
 check4_clamd.sh: $(FILES)
@@ -15,7 +16,7 @@ $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
 programs = check_clamav
-scripts = check_freshclam.sh check_sigtool.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
+scripts = check_freshclam.sh check_sigtool.sh check_unit_vg.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
 	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh
 TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
 if ENABLE_UNRAR

@@ -552,6 +552,7 @@ libllvmjit_la_SOURCES=\
 	llvm/lib/VMCore/Instructions.cpp\
 	llvm/lib/VMCore/IntrinsicInst.cpp\
 	llvm/lib/VMCore/LLVMContext.cpp\
+	llvm/lib/VMCore/LLVMContextImpl.cpp\
 	llvm/lib/VMCore/LeakDetector.cpp\
 	llvm/lib/VMCore/Metadata.cpp\
 	llvm/lib/VMCore/Module.cpp\

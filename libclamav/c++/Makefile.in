@@ -302,10 +302,10 @@ am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
 	AutoUpgrade.lo BasicBlock.lo ConstantFold.lo Constants.lo \
 	Core.lo Dominators.lo Function.lo GVMaterializer.lo Globals.lo \
 	IRBuilder.lo InlineAsm.lo Instruction.lo Instructions.lo \
-	IntrinsicInst.lo LLVMContext.lo LeakDetector.lo Metadata.lo \
-	Module.lo Pass.lo PassManager.lo PrintModulePass.lo Type.lo \
-	TypeSymbolTable.lo Use.lo Value.lo ValueSymbolTable.lo \
-	ValueTypes.lo Verifier.lo
+	IntrinsicInst.lo LLVMContext.lo LLVMContextImpl.lo \
+	LeakDetector.lo Metadata.lo Module.lo Pass.lo PassManager.lo \
+	PrintModulePass.lo Type.lo TypeSymbolTable.lo Use.lo Value.lo \
+	ValueSymbolTable.lo ValueTypes.lo Verifier.lo
 libllvmjit_la_OBJECTS = $(am_libllvmjit_la_OBJECTS)
 libllvmpowerpccodegen_la_LIBADD =
 am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
@@ -1322,6 +1322,7 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/VMCore/Instructions.cpp\
 	llvm/lib/VMCore/IntrinsicInst.cpp\
 	llvm/lib/VMCore/LLVMContext.cpp\
+	llvm/lib/VMCore/LLVMContextImpl.cpp\
 	llvm/lib/VMCore/LeakDetector.cpp\
 	llvm/lib/VMCore/Metadata.cpp\
 	llvm/lib/VMCore/Module.cpp\
@@ -1881,6 +1882,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LLLexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LLParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LLVMContext.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LLVMContextImpl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LLVMTargetMachine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LatencyPriorityQueue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LeakDetector.Plo@am__quote@
@@ -4679,6 +4681,14 @@ LLVMContext.lo: llvm/lib/VMCore/LLVMContext.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/VMCore/LLVMContext.cpp' object='LLVMContext.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o LLVMContext.lo `test -f 'llvm/lib/VMCore/LLVMContext.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/LLVMContext.cpp
+
+LLVMContextImpl.lo: llvm/lib/VMCore/LLVMContextImpl.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT LLVMContextImpl.lo -MD -MP -MF $(DEPDIR)/LLVMContextImpl.Tpo -c -o LLVMContextImpl.lo `test -f 'llvm/lib/VMCore/LLVMContextImpl.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/LLVMContextImpl.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/LLVMContextImpl.Tpo $(DEPDIR)/LLVMContextImpl.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/VMCore/LLVMContextImpl.cpp' object='LLVMContextImpl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o LLVMContextImpl.lo `test -f 'llvm/lib/VMCore/LLVMContextImpl.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/LLVMContextImpl.cpp
 
 LeakDetector.lo: llvm/lib/VMCore/LeakDetector.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT LeakDetector.lo -MD -MP -MF $(DEPDIR)/LeakDetector.Tpo -c -o LeakDetector.lo `test -f 'llvm/lib/VMCore/LeakDetector.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/LeakDetector.cpp
