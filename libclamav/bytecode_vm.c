@@ -560,7 +560,7 @@ static unsigned globaltypesize(uint16_t id)
     const struct cli_bc_type *ty;
     if (id <= 64)
 	return (id + 7)/8;
-    if (id <= 69)
+    if (id < 69)
 	return 8; /* ptr */
     ty = &cli_apicall_types[id - 69];
     switch (ty->kind) {
@@ -768,6 +768,46 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			int32_t a;
 			READ32(a, inst->u.ops.ops[0]);
 			res = cli_apicalls2[api->idx](ctx, a);
+			break;
+		    }
+		    case 3: {
+			int32_t a;
+			void *resp;
+			READ32(a, inst->u.ops.ops[0]);
+			resp = cli_apicalls3[api->idx](ctx, a);
+			res = ptr_register_glob(&ptrinfos, resp, a);
+			break;
+		    }
+		    case 4: {
+			int32_t arg2, arg3, arg4, arg5;
+			void *arg1;
+			READ32(arg2, inst->u.ops.ops[1]);
+			READP(arg1, inst->u.ops.ops[0], arg2);
+			READ32(arg3, inst->u.ops.ops[2]);
+			READ32(arg4, inst->u.ops.ops[3]);
+			READ32(arg5, inst->u.ops.ops[4]);
+			res = cli_apicalls4[api->idx](ctx, arg1, arg2, arg3, arg4, arg5);
+			break;
+		    }
+		    case 5: {
+			res = cli_apicalls5[api->idx](ctx);
+			break;
+		    }
+		    case 6: {
+			int32_t arg1, arg2;
+			void *resp;
+			READ32(arg1, inst->u.ops.ops[0]);
+			READ32(arg2, inst->u.ops.ops[1]);
+			resp = cli_apicalls6[api->idx](ctx, arg1, arg2);
+			res = ptr_register_glob(&ptrinfos, resp, arg2);
+			break;
+		    }
+		    case 7: {
+			int32_t arg1,arg2,arg3;
+			READ32(arg1, inst->u.ops.ops[0]);
+			READ32(arg2, inst->u.ops.ops[1]);
+			READ32(arg3, inst->u.ops.ops[2]);
+			res = cli_apicalls7[api->idx](ctx, arg1, arg2, arg3);
 			break;
 		    }
 		    default:

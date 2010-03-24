@@ -1669,7 +1669,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			}
 		    } else {
 			/* APIs have at most 2 parameters always */
-			if (inst->u.ops.numOps > 2) {
+			if (inst->u.ops.numOps > 5) {
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
 			    return CL_EBYTECODE;
 			}

@@ -140,8 +140,10 @@ struct cli_pe_hook_data {
   uint32_t offset;
   uint32_t ep;
   uint16_t nsections;
+  uint16_t dummy; /* align */
   struct pe_image_file_hdr file_hdr;
   struct pe_image_optional_hdr32 opt32;
+  uint32_t dummy2; /* align */
   struct pe_image_optional_hdr64 opt64;
   struct pe_image_data_dir dirs[16];
   uint32_t e_lfanew;/**< address of new exe header */
