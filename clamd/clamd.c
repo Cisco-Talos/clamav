@@ -428,7 +428,7 @@ int main(int argc, char **argv)
 	    break;
 	}
     }
-    if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
+    if((opt = optget(opts,"BytecodeTimeout"))->enabled) {
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
     }
 
