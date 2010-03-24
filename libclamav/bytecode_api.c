@@ -505,8 +505,11 @@ int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx, int32_t id)
 
 int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
 {
-    /* TODO */
-    return -1;
+    struct cli_hashset *s = get_hashset(ctx, id);
+    if (!s)
+	return -1;
+    cli_hashset_destroy(s);
+    return 0;
 }
 
 int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
@@ -650,8 +653,12 @@ int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx , int32_t id,
 
 int32_t cli_bcapi_buffer_pipe_done(struct cli_bc_ctx *ctx , int32_t id)
 {
-    /* TODO */
-    return -1;
+    struct bc_buffer *b = get_buffer(ctx, id);
+    if (!b)
+	return -1;
+    free(b->data);
+    b->data = NULL;
+    return -0;
 }
 
 int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to, int32_t windowBits)

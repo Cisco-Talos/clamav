@@ -91,12 +91,17 @@ int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilen
 /* resets bytecode state, so you can run another bytecode with same ctx */
 static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
+    unsigned i;
+
     free(ctx->opsizes);
+    ctx->opsizes = NULL;
+
     free(ctx->values);
+    ctx->values = NULL;
+
     free(ctx->operands);
     ctx->operands = NULL;
-    ctx->values = NULL;
-    ctx->opsizes = NULL;
+
     if (ctx->outfd) {
 	cli_bcapi_extract_new(ctx, -1);
 	if (ctx->outfd)
@@ -105,6 +110,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	ctx->tempfile = NULL;
 	ctx->outfd = 0;
     }
+    ctx->numParams = 0;
+    ctx->funcid = 0;
+    ctx->file_size = 0;
+    ctx->off = 0;
     ctx->written = 0;
 #if USE_MPOOL
     if (ctx->mpool) {
@@ -114,6 +123,23 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 #else
     /*TODO: implement for no-mmap case too*/
 #endif
+    for (i=0;i<ctx->ninflates;i++)
+	cli_bcapi_inflate_done(ctx, i);
+    free(ctx->inflates);
+    ctx->inflates = NULL;
+    ctx->ninflates = 0;
+
+    for (i=0;i<ctx->nbuffers;i++)
+	cli_bcapi_buffer_pipe_done(ctx, i);
+    free(ctx->buffers);
+    ctx->buffers = NULL;
+    ctx->nbuffers = 0;
+
+    for (i=0;i<ctx->nhashsets;i++)
+	cli_bcapi_hashset_done(ctx, i);
+    free(ctx->hashsets);
+    ctx->hashsets = NULL;
+    ctx->nhashsets = 0;
     return CL_SUCCESS;
 }
 

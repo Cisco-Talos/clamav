@@ -219,6 +219,15 @@ START_TEST (test_bswap)
 }
 END_TEST
 
+START_TEST (test_inflate)
+{
+    cl_init(CL_INIT_DEFAULT);
+    if (have_clamjit)
+	runtest("input/inflate.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+//    runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -235,5 +244,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_matchwithread);
     tcase_add_test(tc_cli_arith, test_pdf);
     tcase_add_test(tc_cli_arith, test_bswap);
+    tcase_add_test(tc_cli_arith, test_inflate);
     return s;
 }
