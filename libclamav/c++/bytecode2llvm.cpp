@@ -1778,7 +1778,9 @@ int bytecode_init(void)
     atexit(do_shutdown);
 
 #ifdef CL_DEBUG
-    llvm::JITEmitDebugInfo = true;
+    //disable this for now, it leaks
+    llvm::JITEmitDebugInfo = false;
+//    llvm::JITEmitDebugInfo = true;
 #else
     llvm::JITEmitDebugInfo = false;
 #endif

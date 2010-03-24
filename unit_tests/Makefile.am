@@ -1,7 +1,7 @@
 SPLIT_DIR=$(top_srcdir)/unit_tests/.split
 FILES = clam-phish-exe
 
-check_unit_vg.sh: $(FILES) check_clamav
+check_unit_vg.sh: $(FILES)
 check2_clamd.sh: $(FILES)
 check3_clamd.sh: $(FILES)
 check4_clamd.sh: $(FILES)
