@@ -1104,5 +1104,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     }
 
     cli_stack_destroy(&stack);
+    free(ptrinfos.stack_infos);
+    free(ptrinfos.glob_infos);
     return stop == CL_BREAK ? CL_SUCCESS : stop;
 }

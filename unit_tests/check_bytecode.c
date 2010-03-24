@@ -202,6 +202,14 @@ START_TEST (test_matchwithread)
 }
 END_TEST
 
+START_TEST (test_pdf)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/pdf.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/pdf.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -216,5 +224,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_lsig);
     tcase_add_test(tc_cli_arith, test_inf);
     tcase_add_test(tc_cli_arith, test_matchwithread);
+    tcase_add_test(tc_cli_arith, test_pdf);
     return s;
 }

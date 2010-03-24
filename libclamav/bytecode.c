@@ -999,6 +999,12 @@ static uint16_t get_type(struct cli_bc_func *func, operand_t op)
 	return 64;
     return func->types[op];
 }*/
+static int16_t get_optype(const struct cli_bc_func *bcfunc, operand_t op)
+{
+    if (op >= bcfunc->numArgs + bcfunc->numLocals)
+	return 0;
+    return bcfunc->types[op]&0x7fff;
+}
 
 static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char *buffer)
 {
@@ -1156,9 +1162,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		}
 	}
 	if (inst.opcode == OP_BC_STORE)
-	    inst.type = bcfunc->types[inst.u.binop[0]]&0x7fff;
+	    inst.type = get_optype(bcfunc, inst.u.binop[0]);
 	if (inst.opcode == OP_BC_COPY)
-	    inst.type = bcfunc->types[inst.u.binop[1]]&0x7fff;
+	    inst.type = get_optype(bcfunc, inst.u.binop[1]);
 	if (!ok) {
 	    cli_errmsg("Invalid instructions or operands\n");
 	    return CL_EMALFDB;
