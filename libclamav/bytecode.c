@@ -1156,7 +1156,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		}
 	}
 	if (inst.opcode == OP_BC_COPY)
-	    inst.type = bcfunc->types[inst.u.binop[0]];
+	    inst.type = bcfunc->types[inst.u.binop[0]]&0x7fff;
 	if (!ok) {
 	    cli_errmsg("Invalid instructions or operands\n");
 	    return CL_EMALFDB;
