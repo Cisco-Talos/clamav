@@ -684,6 +684,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
 
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
 	free(outbuf);
+	return CL_EMEM;
     }
     if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
 	cli_errmsg("is_extract_cab: failed to create file %s\n", tempfile);
