@@ -58,6 +58,7 @@
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/System/DataTypes.h"
 #include "llvm/System/Host.h"
+#include "llvm/System/Memory.h"
 #include "llvm/System/Mutex.h"
 #include "llvm/System/Signals.h"
 #include "llvm/System/Threading.h"
@@ -1803,6 +1804,7 @@ int bytecode_init(void)
 int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 {
     LLVMApiScopedLock scopedLock;
+    bcs->engine = NULL;
     Triple triple(sys::getHostTriple());
     if (cli_debug_flag)
 	errs() << "host triple is: " << sys::getHostTriple() << "\n";
@@ -1846,6 +1848,19 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 	/* i386 and i486 has to fallback to interpreter */
 	return 0;
     }
+    std::string ErrMsg;
+    sys::MemoryBlock B = sys::Memory::AllocateRWX(4096, NULL, &ErrMsg);
+    if (B.base() == 0) {
+	errs() << MODULE << ErrMsg << "\n";
+#ifdef __linux__
+	errs() << MODULE << "SELinux is preventing 'execmem' access\n";
+#endif
+	errs() << MODULE << "falling back to interpreter mode\n";
+	return 0;
+    } else {
+	sys::Memory::ReleaseRWX(B);
+    }
+
     bcs->engine = new(std::nothrow) cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;
