@@ -298,6 +298,15 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     }\
     TRACE_R(x)\
 }
+#define READPOP(x, p, asize) {\
+    if ((p)&0x40000000) {\
+	unsigned ptr__ = (p)&0xbfffffff;\
+	CHECK_GT(func->numBytes, ptr__);\
+	x = (void*)&values[ptr__];\
+    } else {\
+	READP(x, p, asize)\
+    }\
+}
 
 #define READOLD8(x, p) CHECK_GT(func->numBytes, p);\
     x = *(uint8_t*)&old_values[p];\
@@ -928,28 +937,28 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    case OP_BC_LOAD*5+1:
 	    {
 		uint8_t *ptr;
-		READP(ptr, inst->u.unaryop, 1);
+		READPOP(ptr, inst->u.unaryop, 1);
 		WRITE8(inst->dest, (*ptr));
 		break;
 	    }
 	    case OP_BC_LOAD*5+2:
 	    {
 		const union unaligned_16 *ptr;
-		READP(ptr, inst->u.unaryop, 2);
+		READPOP(ptr, inst->u.unaryop, 2);
 		WRITE16(inst->dest, (ptr->una_u16));
 		break;
 	    }
 	    case OP_BC_LOAD*5+3:
 	    {
 		const union unaligned_32 *ptr;
-		READP(ptr, inst->u.unaryop, 4);
+		READPOP(ptr, inst->u.unaryop, 4);
 		WRITE32(inst->dest, (ptr->una_u32));
 		break;
 	    }
 	    case OP_BC_LOAD*5+4:
 	    {
 		const union unaligned_64 *ptr;
-		READP(ptr, inst->u.unaryop, 8);
+		READPOP(ptr, inst->u.unaryop, 8);
 		WRITE64(inst->dest, (ptr->una_u64));
 		break;
 	    }
@@ -1020,47 +1029,47 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		int32_t arg3;
 		void *arg1, *arg2;
 		READ32(arg3, inst->u.three[2]);
-		READP(arg1, inst->u.three[0], arg3);
-		READP(arg2, inst->u.three[1], arg3);
+		READPOP(arg1, inst->u.three[0], arg3);
+		READPOP(arg2, inst->u.three[1], arg3);
 		WRITE32(inst->dest, memcmp(arg1, arg2, arg3));
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMCPY) {
 		int32_t arg3;
 		void *arg1, *arg2, *resp;
-		int64_t res;
+		int64_t res=0;
 
 		READ32(arg3, inst->u.three[2]);
-		READP(arg1, inst->u.three[0], arg3);
-		READP(arg2, inst->u.three[1], arg3);
+		READPOP(arg1, inst->u.three[0], arg3);
+		READPOP(arg2, inst->u.three[1], arg3);
 		memcpy(arg1, arg2, arg3);
-		READ64(res, inst->u.three[0]);
+/*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMMOVE) {
 		int32_t arg3;
 		void *arg1, *arg2, *resp;
-		int64_t res;
+		int64_t res=0;
 
 		READ32(arg3, inst->u.three[2]);
-		READP(arg1, inst->u.three[0], arg3);
-		READP(arg2, inst->u.three[1], arg3);
+		READPOP(arg1, inst->u.three[0], arg3);
+		READPOP(arg2, inst->u.three[1], arg3);
 		memmove(arg1, arg2, arg3);
-		READ64(res, inst->u.three[0]);
+/*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMSET) {
 		int32_t arg2, arg3;
 		void *arg1;
-		int64_t res;
+		int64_t res=0;
 
 		READ32(arg3, inst->u.three[2]);
-		READP(arg1, inst->u.three[0], arg3);
+		READPOP(arg1, inst->u.three[0], arg3);
 		READ32(arg2, inst->u.three[1]);
 		memset(arg1, arg2, arg3);
-		READ64(res, inst->u.three[0]);
+/*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
 	    }

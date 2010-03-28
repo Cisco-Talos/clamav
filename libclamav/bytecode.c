@@ -1529,6 +1529,13 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     }\
     val = map[o]; } while (0)
 
+#define MAPPTR(val) {\
+    if ((val < bcfunc->numValues) && bcfunc->types[val]&0x8000)\
+      val = map[val] | 0x40000000;\
+    else\
+	MAP(val);\
+}
+
 static inline int64_t ptr_compose(int32_t id, uint32_t offset)
 {
     uint64_t i = id;
@@ -1726,7 +1733,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    break;
 		}
 		case OP_BC_LOAD:
-		    MAP(inst->u.unaryop);
+		    MAPPTR(inst->u.unaryop);
 		    break;
 		case OP_BC_GEP1:
 		case OP_BC_GEPZ:
@@ -1745,10 +1752,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		case OP_BC_MEMCPY:
 		case OP_BC_MEMMOVE:
 		case OP_BC_MEMCMP:
-		    MAP(inst->u.three[0]);
-		    MAP(inst->u.three[1]);
+		    MAPPTR(inst->u.three[0]);
+		    MAPPTR(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
-		    /*TODO*/
 		    break;
 		case OP_BC_ISBIGENDIAN:
 		    /*TODO */
