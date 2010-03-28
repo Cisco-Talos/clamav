@@ -183,7 +183,7 @@ static inline void filter_set_end(struct filter *m, unsigned pos, uint16_t a)
  * add('abc'); add('bcd'); will match [ab][bc][cd] */
 int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned long len, const char *name)
 {
-	uint16_t q;
+	uint16_t q = 0;
 	uint8_t j, maxlen;
 	uint32_t best = 0xffffffff;
 	uint8_t best_pos = 0;

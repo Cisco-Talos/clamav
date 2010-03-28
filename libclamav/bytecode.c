@@ -553,7 +553,7 @@ static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
     unsigned j;
 
     ty->numElements = readNumber(buffer, off, len, ok);
-    if (!ok) {
+    if (!*ok) {
 	cli_errmsg("Error parsing type\n");
 	*ok = 0;
 	return;
