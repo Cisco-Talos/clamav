@@ -1052,8 +1052,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		    WRITE64(inst->dest, ptr_compose(stackid,
 						    inst->u.three[1]+off));
 		} else {
+		    int32_t off;
+		    READ32(off, inst->u.three[2]);
 		    READ64(ptr, inst->u.three[1]);
-		    WRITE64(inst->dest, ptr);
+		    WRITE64(inst->dest, ptr+off);
 		}
 		break;
 	    }
@@ -1151,10 +1153,12 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		    int32_t off;
 		    READ32(off, inst->u.three[2]);
 		    WRITE64(inst->dest, ptr_compose(stackid,
-						    inst->u.three[1]+off));
+						    inst->u.three[1]+off*inst->u.three[0]));
 		} else {
+		    int32_t off;
+		    READ32(off, inst->u.three[2]);
 		    READ64(ptr, inst->u.three[1]);
-		    WRITE64(inst->dest, ptr);
+		    WRITE64(inst->dest, ptr+off*inst->u.three[0]);
 		}
 		break;
 	    }
