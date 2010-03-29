@@ -524,7 +524,9 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
+#ifndef _WIN32
 	while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
+#endif
 	pathend = path + strlen(path);
 	while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
 	*pathend = '\0';
