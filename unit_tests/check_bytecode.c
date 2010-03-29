@@ -83,7 +83,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 
     ctx = cli_bytecode_context_alloc();
     /* small timeout, these bytecodes are fast! */
-    ctx->bytecode_timeout = 100;
+    ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 3000;
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
     if (infile) {
