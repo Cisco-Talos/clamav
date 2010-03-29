@@ -100,7 +100,7 @@ static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, str
     return 0;
 }
 
-#define STACK_CHUNKSIZE 32768
+#define STACK_CHUNKSIZE 65536
 
 struct stack_chunk {
     struct stack_chunk *prev;
@@ -143,7 +143,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
     }
 
     if(bytes >= STACK_CHUNKSIZE) {
-	cli_warnmsg("cli_stack_alloc: Attempt to allocate more than STACK_CHUNKSIZE bytes!\n");
+	cli_warnmsg("cli_stack_alloc: Attempt to allocate more than STACK_CHUNKSIZE bytes: %u!\n", bytes);
 	return NULL;
     }
     /* not enough room here, allocate new chunk */
@@ -800,7 +800,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			unsigned arg2;
 			/* check that arg2 is size of arg1 */
 			READ32(arg2, inst->u.ops.ops[1]);
-			READP(arg1, inst->u.ops.ops[0], arg2);
+			READPOP(arg1, inst->u.ops.ops[0], arg2);
 			res32 = cli_apicalls1[api->idx](ctx, arg1, arg2);
 			WRITE32(inst->dest, res32);
 			break;

@@ -424,15 +424,17 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     cli_dbgmsg("previous tempfile had %u bytes\n", ctx->written);
     if (!ctx->written)
 	return 0;
-    if (cli_updatelimits(ctx->ctx, ctx->written))
+    if (ctx->ctx && cli_updatelimits(ctx->ctx, ctx->written))
 	return -1;
     ctx->written = 0;
     lseek(ctx->outfd, 0, SEEK_SET);
     cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
-    res = cli_magic_scandesc(ctx->outfd, ctx->ctx);
-    if (res == CL_VIRUS)
-	ctx->found = 1;
     cctx = (cli_ctx*)ctx->ctx;
+    if (cctx) {
+	res = cli_magic_scandesc(ctx->outfd, cctx);
+	if (res == CL_VIRUS)
+	    ctx->found = 1;
+    }
     if ((cctx && cctx->engine->keeptmp) ||
 	(ftruncate(ctx->outfd, 0) == -1)) {
 

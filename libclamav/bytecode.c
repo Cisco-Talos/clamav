@@ -1743,7 +1743,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    } else
 			inst->u.ops.opsizes = NULL;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
-			MAP(inst->u.ops.ops[k]);
+			MAPPTR(inst->u.ops.ops[k]);
 			if (inst->opcode == OP_BC_CALL_DIRECT)
 			    inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
 			else

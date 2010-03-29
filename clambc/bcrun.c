@@ -316,6 +316,7 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
+	fmap_t *map = NULL;
 	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
@@ -361,7 +362,6 @@ int main(int argc, char *argv[])
 	}
 
 	if ((opt = optget(opts,"input"))->enabled) {
-	    fmap_t *map;
 	    fd = open(opt->strarg, O_RDONLY);
 	    if (fd == -1) {
 		fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
@@ -378,7 +378,6 @@ int main(int argc, char *argv[])
 		optfree(opts);
 		exit(5);
 	    }
-	    funmap(map);
 	}
 	/* for testing */
 	ctx->hooks.match_counts = deadbeefcounts;
@@ -394,6 +393,8 @@ int main(int argc, char *argv[])
 		printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
 	}
 	cli_bytecode_context_destroy(ctx);
+	if (map)
+	    funmap(map);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);
