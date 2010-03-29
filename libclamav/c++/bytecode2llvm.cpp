@@ -1861,7 +1861,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
     if (B.base() == 0) {
 	errs() << MODULE << ErrMsg << "\n";
 #ifdef __linux__
-	errs() << MODULE << "SELinux is preventing 'execmem' access\n";
+	errs() << MODULE << "SELinux is preventing 'execmem' access. Run 'setsebool -P clamd_use_jit on' to allow access\n";
 #endif
 	errs() << MODULE << "falling back to interpreter mode\n";
 	return 0;
