@@ -74,11 +74,13 @@ static inline int bcfail(const char *msg, long a, long b,
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
 #define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)(x));
 #define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
+#define TRACE_API(s, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %s, -> %u (%u); %u\n", s, dest, ty, stack)
 #else
 #define CHECK_UNREACHABLE return CL_EBYTECODE
 #define TRACE_R(x)
 #define TRACE_W(x, w, p)
 #define TRACE_EXEC(id, dest, ty, stack)
+#define TRACE_API(s, dest, ty, stack)
 #endif
 
 #define SIGNEXT(a, from) CLI_SRS(((int64_t)(a)) << (64-(from)), (64-(from)))
@@ -561,7 +563,7 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
 	info = &infos->glob_infos[ptrid];
     }
     if (LIKELY(ptroff < info->size &&
-	read_size < info->size &&
+	read_size <= info->size &&
 	ptroff + read_size <= info->size)) {
 	return info->base+ptroff;
     }
@@ -768,15 +770,17 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
 	    DEFINE_OP(OP_BC_CALL_API) {
 		const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
-		int32_t res;
+		int32_t res32;
+		int64_t res64;
 		CHECK_APIID(inst->u.ops.funcid);
-		TRACE_EXEC(-inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
+		TRACE_API(api->name, inst->dest, inst->type, stack_depth);
 	        switch (api->kind) {
 		    case 0: {
 			int32_t a, b, r;
 			READ32(a, inst->u.ops.ops[0]);
 			READ32(b, inst->u.ops.ops[1]);
-			res = cli_apicalls0[api->idx](ctx, a, b);
+			res32 = cli_apicalls0[api->idx](ctx, a, b);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    case 1: {
@@ -785,13 +789,15 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			/* check that arg2 is size of arg1 */
 			READ32(arg2, inst->u.ops.ops[1]);
 			READP(arg1, inst->u.ops.ops[0], arg2);
-			res = cli_apicalls1[api->idx](ctx, arg1, arg2);
+			res32 = cli_apicalls1[api->idx](ctx, arg1, arg2);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    case 2: {
 			int32_t a;
 			READ32(a, inst->u.ops.ops[0]);
-			res = cli_apicalls2[api->idx](ctx, a);
+			res32 = cli_apicalls2[api->idx](ctx, a);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    case 3: {
@@ -799,7 +805,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			void *resp;
 			READ32(a, inst->u.ops.ops[0]);
 			resp = cli_apicalls3[api->idx](ctx, a);
-			res = ptr_register_glob(&ptrinfos, resp, a);
+			res64 = ptr_register_glob(&ptrinfos, resp, a);
+			WRITE64(inst->dest, res64);
 			break;
 		    }
 		    case 4: {
@@ -810,11 +817,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			READ32(arg3, inst->u.ops.ops[2]);
 			READ32(arg4, inst->u.ops.ops[3]);
 			READ32(arg5, inst->u.ops.ops[4]);
-			res = cli_apicalls4[api->idx](ctx, arg1, arg2, arg3, arg4, arg5);
+			res32 = cli_apicalls4[api->idx](ctx, arg1, arg2, arg3, arg4, arg5);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    case 5: {
-			res = cli_apicalls5[api->idx](ctx);
+			res32 = cli_apicalls5[api->idx](ctx);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    case 6: {
@@ -823,7 +832,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			READ32(arg1, inst->u.ops.ops[0]);
 			READ32(arg2, inst->u.ops.ops[1]);
 			resp = cli_apicalls6[api->idx](ctx, arg1, arg2);
-			res = ptr_register_glob(&ptrinfos, resp, arg2);
+			res64 = ptr_register_glob(&ptrinfos, resp, arg2);
+			WRITE64(inst->dest, res64);
 			break;
 		    }
 		    case 7: {
@@ -831,14 +841,14 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			READ32(arg1, inst->u.ops.ops[0]);
 			READ32(arg2, inst->u.ops.ops[1]);
 			READ32(arg3, inst->u.ops.ops[2]);
-			res = cli_apicalls7[api->idx](ctx, arg1, arg2, arg3);
+			res32 = cli_apicalls7[api->idx](ctx, arg1, arg2, arg3);
+			WRITE32(inst->dest, res32);
 			break;
 		    }
 		    default:
 			cli_warnmsg("bytecode: type %u apicalls not yet implemented!\n", api->kind);
 			stop = CL_EBYTECODE;
 		}
-		WRITE32(inst->dest, res);
 		break;
 	    }
 
