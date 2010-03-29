@@ -876,6 +876,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 
+	hdr.bitset = NULL;
 	if (ctx && ctx->engine->maxscansize) {
 	  if (ctx->engine->maxscansize > ctx->scansize)
 	    scansize = ctx->engine->maxscansize - ctx->scansize;
