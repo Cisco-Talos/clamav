@@ -120,64 +120,104 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cli_bytecode_done(&bcs);
 }
 
-START_TEST (test_retmagic)
+START_TEST (test_retmagic_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_retmagic_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_arith)
+START_TEST (test_arith_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_arith_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_apicalls)
+START_TEST (test_apicalls_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls_int)
+{
     runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_apicalls2)
+START_TEST (test_apicalls2_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls2_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_div0)
+START_TEST (test_div0_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     /* must not crash on div#0 but catch it */
     runtest("input/div0.cbc", 0, CL_EBYTECODE, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_div0_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/div0.cbc", 0, CL_EBYTECODE, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_lsig)
+START_TEST (test_lsig_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/lsig.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_lsig_int)
+{
     runtest("input/lsig.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_inf)
+START_TEST (test_inf_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_inf_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_matchwithread)
+START_TEST (test_matchwithread_jit)
 {
     struct cli_exe_section sect;
     struct cli_pe_hook_data pedata;
@@ -197,31 +237,71 @@ START_TEST (test_matchwithread)
     sect.ursz = 512;
     runtest("input/matchwithread.cbc", 0, 0, 0, "../test/clam.exe", &pedata,
 	    &sect, "ClamAV-Test-File-detected-via-bytecode");
+}
+END_TEST
+
+START_TEST (test_matchwithread_int)
+{
+    struct cli_exe_section sect;
+    struct cli_pe_hook_data pedata;
+    cl_init(CL_INIT_DEFAULT);
+    memset(&pedata, 0, sizeof(pedata));
+    pedata.ep = 64;
+    pedata.opt32.ImageBase = 0x400000;
+    pedata.hdr_size = 0x400;
+    pedata.nsections = 1;
+    sect.rva = 4096;
+    sect.vsz = 4096;
+    sect.raw = 0;
+    sect.rsz = 512;
+    sect.urva = 4096;
+    sect.uvsz = 4096;
+    sect.uraw = 1;
+    sect.ursz = 512;
     runtest("input/matchwithread.cbc", 0, 0, 1, "../test/clam.exe", &pedata,
 	    &sect, "ClamAV-Test-File-detected-via-bytecode");
 }
 END_TEST
 
-START_TEST (test_pdf)
+
+START_TEST (test_pdf_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/pdf.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_pdf_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/pdf.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_bswap)
+START_TEST (test_bswap_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/bswap.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_bswap_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/bswap.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
-START_TEST (test_inflate)
+START_TEST (test_inflate_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inflate.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_inflate_int)
+{
+    cl_init(CL_INIT_DEFAULT);
     runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
@@ -231,16 +311,27 @@ Suite *test_bytecode_suite(void)
     Suite *s = suite_create("bytecode");
     TCase *tc_cli_arith = tcase_create("arithmetic");
     suite_add_tcase(s, tc_cli_arith);
-    tcase_add_test(tc_cli_arith, test_retmagic);
-    tcase_add_test(tc_cli_arith, test_arith);
-    tcase_add_test(tc_cli_arith, test_apicalls);
-    tcase_add_test(tc_cli_arith, test_apicalls2);
-    tcase_add_test(tc_cli_arith, test_div0);
-    tcase_add_test(tc_cli_arith, test_lsig);
-    tcase_add_test(tc_cli_arith, test_inf);
-    tcase_add_test(tc_cli_arith, test_matchwithread);
-    tcase_add_test(tc_cli_arith, test_pdf);
-    tcase_add_test(tc_cli_arith, test_bswap);
-    tcase_add_test(tc_cli_arith, test_inflate);
+    tcase_add_test(tc_cli_arith, test_retmagic_jit);
+    tcase_add_test(tc_cli_arith, test_arith_jit);
+    tcase_add_test(tc_cli_arith, test_apicalls_jit);
+    tcase_add_test(tc_cli_arith, test_apicalls2_jit);
+    tcase_add_test(tc_cli_arith, test_div0_jit);
+    tcase_add_test(tc_cli_arith, test_lsig_jit);
+    tcase_add_test(tc_cli_arith, test_inf_jit);
+    tcase_add_test(tc_cli_arith, test_matchwithread_jit);
+    tcase_add_test(tc_cli_arith, test_pdf_jit);
+    tcase_add_test(tc_cli_arith, test_bswap_jit);
+    tcase_add_test(tc_cli_arith, test_inflate_jit);
+    tcase_add_test(tc_cli_arith, test_retmagic_jit);
+    tcase_add_test(tc_cli_arith, test_arith_int);
+    tcase_add_test(tc_cli_arith, test_apicalls_int);
+    tcase_add_test(tc_cli_arith, test_apicalls2_int);
+    tcase_add_test(tc_cli_arith, test_div0_int);
+    tcase_add_test(tc_cli_arith, test_lsig_int);
+    tcase_add_test(tc_cli_arith, test_inf_int);
+    tcase_add_test(tc_cli_arith, test_matchwithread_int);
+    tcase_add_test(tc_cli_arith, test_pdf_int);
+    tcase_add_test(tc_cli_arith, test_bswap_int);
+    tcase_add_test(tc_cli_arith, test_inflate_int);
     return s;
 }
