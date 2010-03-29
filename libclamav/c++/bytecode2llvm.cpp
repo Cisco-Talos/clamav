@@ -982,6 +982,7 @@ public:
 			case OP_BC_COPY:
 			case OP_BC_RET:
 			case OP_BC_PTRDIFF32:
+			case OP_BC_PTRTOINT64:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -1331,6 +1332,13 @@ public:
 				Value *R = Builder.CreateSub(P1, P2);
 				R = Builder.CreateTrunc(R, Type::getInt32Ty(Context));
 				Store(inst->dest, R);
+				break;
+			    }
+			case OP_BC_PTRTOINT64:
+			    {
+				Value *P1 = convertOperand(func, inst, inst->u.unaryop);
+				P1 = Builder.CreatePtrToInt(P1, Type::getInt64Ty(Context));
+				Store(inst->dest, P1);
 				break;
 			    }
 			default:

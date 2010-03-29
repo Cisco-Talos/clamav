@@ -1542,6 +1542,25 @@ static inline int64_t ptr_compose(int32_t id, uint32_t offset)
     return (i << 32) | offset;
 }
 
+static inline int get_geptypesize(const struct cli_bc *bc, uint16_t tid)
+{
+  const struct cli_bc_type *ty;
+  if (tid >= bc->num_types+65) {
+    cli_errmsg("bytecode: typeid out of range %u >= %u\n", tid, bc->num_types);
+    return -1;
+  }
+  if (tid <= 64) {
+    cli_errmsg("bytecode: invalid type for gep (%u)\n", tid);
+    return -1;
+  }
+  ty = &bc->types[tid - 65];
+  if (ty->kind != DPointerType) {
+    cli_errmsg("bytecode: invalid gep type, must be pointer: %u\n", tid);
+    return -1;
+  }
+  return typesize(bc, ty->containedTypes[0]);
+}
+
 static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
     unsigned i, j, k;
@@ -1736,6 +1755,16 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAPPTR(inst->u.unaryop);
 		    break;
 		case OP_BC_GEP1:
+		    if (bcfunc->types[inst->u.binop[1]]&0x8000) {
+                      cli_errmsg("bytecode: gep1 of alloca is not allowed\n");
+                      return CL_EBYTECODE;
+                    }
+		    MAP(inst->u.three[1]);
+		    MAP(inst->u.three[2]);
+                    inst->u.three[0] = get_geptypesize(bc, inst->u.three[0]);
+                    if (inst->u.three[0] == -1)
+                      return CL_EBYTECODE;
+                    break;
 		case OP_BC_GEPZ:
 		    /*three[0] is the type*/
 		    if (bcfunc->types[inst->u.three[1]]&0x8000)
@@ -1756,11 +1785,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAPPTR(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
+		case OP_BC_RET_VOID:
 		case OP_BC_ISBIGENDIAN:
-		    /*TODO */
-		    break;
 		case OP_BC_ABORT:
-		    /* TODO */
+		    /* no operands */
 		    break;
 		case OP_BC_BSWAP16:
 		case OP_BC_BSWAP32:
@@ -1768,7 +1796,11 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.unaryop);
 		    break;
 		case OP_BC_PTRDIFF32:
-		    /*TODO */
+		    MAPPTR(inst->u.binop[0]);
+		    MAPPTR(inst->u.binop[1]);
+		    break;
+		case OP_BC_PTRTOINT64:
+		    MAPPTR(inst->u.unaryop);
 		    break;
 		default:
 		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);

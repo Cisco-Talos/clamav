@@ -100,7 +100,7 @@ static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, str
     return 0;
 }
 
-#define STACK_CHUNKSIZE 16384
+#define STACK_CHUNKSIZE 32768
 
 struct stack_chunk {
     struct stack_chunk *prev;
@@ -485,6 +485,18 @@ static inline int64_t ptr_compose(int32_t id, uint32_t offset)
     return (i << 32) | offset;
 }
 
+static inline int32_t ptr_diff32(int64_t ptr1, int64_t ptr2)
+{
+    int32_t ptrid1 = ptr1 >> 32;
+    int32_t ptrid2 = ptr2 >> 32;
+    if (ptrid1 != ptrid2) {
+	bcfail("difference of pointers not pointing to same object!", ptrid1, ptrid2, __FILE__, __LINE__);
+	/* invalid diff */
+	return 0x40000000;
+    }
+    return (uint32_t)ptr1 - (uint32_t)ptr2;
+}
+
 static inline int64_t ptr_register_stack(struct ptr_infos *infos,
 					 unsigned char *values,
 					 uint32_t off, uint32_t size)
@@ -643,7 +655,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    if (tv1.tv_sec > timeout.tv_sec ||
 		(tv1.tv_sec == timeout.tv_sec &&
 		 tv1.tv_usec > timeout.tv_usec)) {
-		cli_warnmsg("Bytecode run timed out in interpreter\n");
+		cli_warnmsg("Bytecode run timed out in interpreter after %u opcodes\n", pc);
 		stop = CL_ETIMEOUT;
 		break;
 	    }
@@ -948,8 +960,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    case OP_BC_COPY*5+4:
 	    {
 		uint64_t op;
-		READ32(op, BINOP(0));
-		WRITE32(BINOP(1), op);
+		READ64(op, BINOP(0));
+		WRITE64(BINOP(1), op);
 		break;
 	    }
 
@@ -1111,6 +1123,41 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		WRITE64(inst->dest, cbswap64(arg1));
 		break;
 	    }
+	    DEFINE_OP(OP_BC_PTRDIFF32) {
+		int64_t ptr1, ptr2;
+		if (BINOP(0)&0x40000000)
+		    ptr1 = ptr_compose(stackid, BINOP(0)&0xbfffffff);
+		else
+		    READ64(ptr1, BINOP(0));
+		if (BINOP(1)&0x40000000)
+		    ptr2 = ptr_compose(stackid, BINOP(1)&0xbfffffff);
+		else
+		    READ64(ptr2, BINOP(1));
+		WRITE32(inst->dest, ptr_diff32(ptr1, ptr2));
+		break;
+	    }
+	    DEFINE_OP(OP_BC_PTRTOINT64) {
+		int64_t ptr;
+		if (inst->u.unaryop&0x40000000)
+		    ptr = ptr_compose(stackid, inst->u.unaryop&0xbfffffff);
+		else
+		    READ64(ptr, BINOP(0));
+		WRITE64(inst->dest, ptr);
+		break;
+	    }
+	    DEFINE_OP(OP_BC_GEP1) {
+		int64_t ptr;
+		if (!(inst->interp_op%5)) {
+		    int32_t off;
+		    READ32(off, inst->u.three[2]);
+		    WRITE64(inst->dest, ptr_compose(stackid,
+						    inst->u.three[1]+off));
+		} else {
+		    READ64(ptr, inst->u.three[1]);
+		    WRITE64(inst->dest, ptr);
+		}
+		break;
+	    }
 	    /* TODO: implement OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN */
 	    default:
 		cli_errmsg("Opcode %u of type %u is not implemented yet!\n",
@@ -1128,8 +1175,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	gettimeofday(&tv1, NULL);
 	tv1.tv_sec -= tv0.tv_sec;
 	tv1.tv_usec -= tv0.tv_usec;
-	cli_dbgmsg("intepreter bytecode run finished in %luus\n",
-		   tv1.tv_sec*1000000 + tv1.tv_usec);
+	cli_dbgmsg("intepreter bytecode run finished in %luus, after executing %u opcodes\n",
+		   tv1.tv_sec*1000000 + tv1.tv_usec, pc);
     }
 
     cli_stack_destroy(&stack);
