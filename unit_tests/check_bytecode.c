@@ -82,8 +82,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     }
 
     ctx = cli_bytecode_context_alloc();
-    /* small timeout, these bytecodes are fast! */
-    ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 3000;
+    ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 10000;
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
     if (infile) {
@@ -311,6 +310,7 @@ Suite *test_bytecode_suite(void)
     Suite *s = suite_create("bytecode");
     TCase *tc_cli_arith = tcase_create("arithmetic");
     suite_add_tcase(s, tc_cli_arith);
+    tcase_set_timeout(tc_cli_arith, 20);
     tcase_add_test(tc_cli_arith, test_retmagic_jit);
     tcase_add_test(tc_cli_arith, test_arith_jit);
     tcase_add_test(tc_cli_arith, test_apicalls_jit);
