@@ -521,7 +521,7 @@ private:
     Module *M;
     LLVMContext &Context;
     ExecutionEngine *EE;
-    FunctionPassManager &PM;
+    PassManager &PM;
     LLVMTypeMapper *TypeMap;
 
     Function **apiFuncs;
@@ -718,7 +718,7 @@ private:
 
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, struct CommonFunctions *CF, FunctionMapTy &cFuncs,
-		ExecutionEngine *EE, FunctionPassManager &PM,
+		ExecutionEngine *EE, PassManager &PM,
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
 	PM(PM), apiFuncs(apiFuncs),apiMap(apiMap),
@@ -1386,10 +1386,15 @@ public:
 		// verification failed
 		return false;
 	    }
-	    PM.run(*F);
-	    AddStackProtect(F);
 	    delete [] Values;
 	    delete [] BB;
+	}
+
+	PM.run(*M);
+	for (unsigned j=0;j<bc->num_func;j++) {
+	    PrettyStackTraceString CrashInfo("Generate LLVM IR2");
+	    Function *F = Functions[j];
+	    AddStackProtect(F);
 	}
 	DEBUG(M->dump());
 	delete TypeMap;
@@ -1699,7 +1704,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	struct CommonFunctions CF;
 	addFunctionProtos(&CF, EE, M);
 
-	FunctionPassManager OurFPM(M);
+	PassManager OurFPM;
 	M->setDataLayout(EE->getTargetData()->getStringRepresentation());
 	M->setTargetTriple(sys::getHostTriple());
 	// Set up the optimizer pipeline.  Start with registering info about how
@@ -1708,7 +1713,6 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
 	OurFPM.add(createDeadCodeEliminationPass());
-	OurFPM.doInitialization();
 
 	//TODO: create a wrapper that calls pthread_getspecific
 	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);

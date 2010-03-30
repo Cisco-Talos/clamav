@@ -9,7 +9,7 @@ my %compdeps;
 my @codegencomponents = ('x86codegen','powerpccodegen','armcodegen');
 my @allnonsys = ('support','jit','fullcodegen',@codegencomponents);
 my @allcomponents= ('system',@allnonsys);
-my $allJIT="jit core lib/Support/SourceMgr.o lib/Analysis/PointerTracking.o lib/Transforms/Scalar/DCE.o";
+my $allJIT="jit core lib/Support/SourceMgr.o lib/Analysis/PointerTracking.o lib/Transforms/Scalar/DCE.o lib/Analysis/IPA/CallGraph.o";
 for my $component (@allcomponents) {
     $/ = " ";
     $component =~ s/^fullcodegen/codegen interpreter jit target/;

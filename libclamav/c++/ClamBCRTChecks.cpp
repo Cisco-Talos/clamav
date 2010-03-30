@@ -21,8 +21,12 @@
  */
 #define DEBUG_TYPE "clambc-rtcheck"
 #include "ClamBCModule.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/PostOrderIterator.h"
+#include "llvm/ADT/SCCIterator.h"
+#include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/Verifier.h"
+#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/LiveValues.h"
@@ -35,6 +39,7 @@
 #include "llvm/Instructions.h"
 #include "llvm/IntrinsicInst.h"
 #include "llvm/Intrinsics.h"
+#include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
@@ -52,9 +57,12 @@ using namespace llvm;
 namespace {
 
   class PtrVerifier : public FunctionPass {
+  private:
+    DenseSet<Function*> badFunctions;
+    CallGraphNode *rootNode;
   public:
     static char ID;
-    PtrVerifier() : FunctionPass((intptr_t)&ID) {}
+    PtrVerifier() : FunctionPass((intptr_t)&ID),rootNode(0) {}
 
     virtual bool runOnFunction(Function &F) {
       DEBUG(F.dump());
@@ -63,6 +71,32 @@ namespace {
       BoundsMap.clear();
       AbrtBB = 0;
       valid = true;
+
+      if (!rootNode) {
+        rootNode = getAnalysis<CallGraph>().getRoot();
+        // No recursive functions for now.
+        // In the future we may insert runtime checks for stack depth.
+        for (scc_iterator<CallGraphNode*> SCCI = scc_begin(rootNode),
+             E = scc_end(rootNode); SCCI != E; ++SCCI) {
+          const std::vector<CallGraphNode*> &nextSCC = *SCCI;
+          if (nextSCC.size() > 1 || SCCI.hasLoop()) {
+            errs() << "INVALID: Recursion detected, callgraph SCC components: ";
+            for (std::vector<CallGraphNode*>::const_iterator I = nextSCC.begin(),
+                 E = nextSCC.end(); I != E; ++I) {
+              Function *FF = (*I)->getFunction();
+              if (FF) {
+                errs() << FF->getName() << ", ";
+                badFunctions.insert(FF);
+              }
+            }
+            if (SCCI.hasLoop())
+              errs() << "(self-loop)";
+            errs() << "\n";
+          }
+          // we could also have recursion via function pointers, but we don't
+          // allow calls to unknown functions, see runOnFunction() below
+        }
+      }
 
       BasicBlock::iterator It = F.getEntryBlock().begin();
       while (isa<AllocaInst>(It) || isa<PHINode>(It)) ++It;
@@ -79,6 +113,19 @@ namespace {
         Instruction *II = &*I;
         if (isa<LoadInst>(II) || isa<StoreInst>(II) || isa<MemIntrinsic>(II))
           insns.push_back(II);
+        if (CallInst *CI = dyn_cast<CallInst>(II)) {
+          Value *V = CI->getCalledValue()->stripPointerCasts();
+          Function *F = dyn_cast<Function>(V);
+          if (!F) {
+            printLocation(errs(), CI);
+            errs() << "Could not determine call target\n";
+            valid = 0;
+            continue;
+          }
+          if (!F->isDeclaration())
+            continue;
+          insns.push_back(CI);
+        }
       }
       while (!insns.empty()) {
         Instruction *II = insns.back();
@@ -97,8 +144,46 @@ namespace {
           if (MemTransferInst *MTI = dyn_cast<MemTransferInst>(MI)) {
             valid &= validateAccess(MTI->getSource(), MI->getLength(), MI);
           }
+        } else if (CallInst *CI = dyn_cast<CallInst>(II)) {
+          Value *V = CI->getCalledValue()->stripPointerCasts();
+          Function *F = cast<Function>(V);
+          const FunctionType *FTy = F->getFunctionType();
+          if (F->getName().equals("memcmp") && FTy->getNumParams() == 3) {
+            valid &= validateAccess(CI->getOperand(1), CI->getOperand(3), CI);
+            valid &= validateAccess(CI->getOperand(2), CI->getOperand(3), CI);
+            continue;
+          }
+	  unsigned i;
+#ifdef CLAMBC_COMPILER
+	  i = 0;
+#else
+	  i = 1;// skip hidden ctx*
+#endif
+          for (;i<FTy->getNumParams();i++) {
+            if (isa<PointerType>(FTy->getParamType(i))) {
+              Value *Ptr = CI->getOperand(i+1);
+              if (i+1 >= FTy->getNumParams()) {
+                printLocation(errs(), CI);
+                errs() << "Call to external function with pointer parameter last cannot be analyzed\n";
+                errs() << *CI << "\n";
+                valid = 0;
+                break;
+              }
+              Value *Size = CI->getOperand(i+2);
+              if (!Size->getType()->isIntegerTy()) {
+                printLocation(errs(), CI);
+                errs() << "Pointer argument must be followed by integer argument representing its size\n";
+                errs() << *CI << "\n";
+                valid = 0;
+                break;
+              }
+              valid &= validateAccess(Ptr, Size, CI);
+            }
+          }
         }
       }
+      if (badFunctions.count(&F))
+        valid = 0;
 
       if (!valid) {
 	DEBUG(F.dump());
@@ -125,9 +210,12 @@ namespace {
 		BBI->replaceAllUsesWith(UndefValue::get(BBI->getType()));
 	    BB->getInstList().erase(BBI++);
 	}
-	DEBUG(F.dump());
       }
       return Changed;
+    }
+
+    virtual void releaseMemory() {
+      badFunctions.clear();
     }
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
@@ -135,6 +223,7 @@ namespace {
       AU.addRequired<DominatorTree>();
       AU.addRequired<ScalarEvolution>();
       AU.addRequired<PointerTracking>();
+      AU.addRequired<CallGraph>();
     }
 
     bool isValid() const { return valid; }
@@ -190,6 +279,18 @@ namespace {
         }
         return newPN;
       }
+      if (SelectInst *SI = dyn_cast<SelectInst>(Ptr)) {
+        BasicBlock::iterator It = SI;
+        ++It;
+        Value *TrueB = getPointerBase(SI->getTrueValue());
+        Value *FalseB = getPointerBase(SI->getFalseValue());
+        if (TrueB && FalseB) {
+          SelectInst *NewSI = SelectInst::Create(SI->getCondition(), TrueB,
+                                                 FalseB, ".select.base", &*It);
+          Changed = true;
+          return BaseMap[Ptr] = NewSI;
+        }
+      }
       if (Ptr->getType() != P8Ty) {
         if (Constant *C = dyn_cast<Constant>(Ptr))
           Ptr = ConstantExpr::getPointerCast(C, P8Ty);
@@ -206,6 +307,26 @@ namespace {
         return BoundsMap[Base];
       const Type *I64Ty =
         Type::getInt64Ty(Base->getContext());
+#ifndef CLAMBC_COMPILER
+      // first arg is hidden ctx
+      if (Argument *A = dyn_cast<Argument>(Base)) {
+	  if (A->getArgNo() == 0) {
+	      const Type *Ty = cast<PointerType>(A->getType())->getElementType();
+	      return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
+	  }
+      }
+      if (LoadInst *LI = dyn_cast<LoadInst>(Base)) {
+	  Value *V = LI->getPointerOperand()->stripPointerCasts()->getUnderlyingObject();
+	  if (Argument *A = dyn_cast<Argument>(V)) {
+	      if (A->getArgNo() == 0) {
+		  // pointers from hidden ctx are trusted to be at least the
+		  // size they say they are
+		  const Type *Ty = cast<PointerType>(LI->getType())->getElementType();
+		  return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
+	      }
+	  }
+      }
+#endif
       if (PHINode *PN = dyn_cast<PHINode>(Base)) {
         BasicBlock::iterator It = PN;
         ++It;
@@ -219,7 +340,7 @@ namespace {
           Value *B = getPointerBounds(Inc);
           if (!B) {
             good = false;
-            B = ConstantInt::get(PN->getType(), 0);
+            B = ConstantInt::get(newPN->getType(), 0);
             DEBUG(dbgs() << "bounds not found while solving phi node: " << *Inc
                   << "\n");
           }
@@ -229,6 +350,18 @@ namespace {
           newPN = 0;
         return BoundsMap[Base] = newPN;
       }
+      if (SelectInst *SI = dyn_cast<SelectInst>(Base)) {
+        BasicBlock::iterator It = SI;
+        ++It;
+        Value *TrueB = getPointerBounds(SI->getTrueValue());
+        Value *FalseB = getPointerBounds(SI->getFalseValue());
+        if (TrueB && FalseB) {
+          SelectInst *NewSI = SelectInst::Create(SI->getCondition(), TrueB,
+                                                 FalseB, ".select.bounds", &*It);
+          Changed = true;
+          return BoundsMap[Base] = NewSI;
+        }
+      }
 
       const Type *Ty;
       Value *V = PT->computeAllocationCountValue(Base, Ty);
@@ -236,20 +369,24 @@ namespace {
 	  Base = Base->stripPointerCasts();
 	  if (CallInst *CI = dyn_cast<CallInst>(Base)) {
 	      Function *F = CI->getCalledFunction();
-	      if (F && F->getName().equals("malloc") && F->getFunctionType()->getNumParams() == 2) {
-		  V = CI->getOperand(2);
-	      }
+              const FunctionType *FTy = F->getFunctionType();
+              // last operand is always size for this API call kind
+              if (F->isDeclaration() && FTy->getNumParams() > 0) {
+                if (FTy->getParamType(FTy->getNumParams()-1)->isIntegerTy())
+                  V = CI->getOperand(FTy->getNumParams());
+              }
 	  }
 	  if (!V)
 	      return BoundsMap[Base] = 0;
-      }
-      unsigned size = TD->getTypeAllocSize(Ty);
-      if (size > 1) {
-        Constant *C = cast<Constant>(V);
-        C = ConstantExpr::getMul(C,
-                                 ConstantInt::get(Type::getInt32Ty(C->getContext()),
-                                                                   size));
-        V = C;
+      } else {
+        unsigned size = TD->getTypeAllocSize(Ty);
+        if (size > 1) {
+          Constant *C = cast<Constant>(V);
+          C = ConstantExpr::getMul(C,
+                                   ConstantInt::get(Type::getInt32Ty(C->getContext()),
+                                                    size));
+          V = C;
+        }
       }
       if (V->getType() != I64Ty) {
         if (Constant *C = dyn_cast<Constant>(V))
@@ -279,14 +416,23 @@ namespace {
       BasicBlock *BB = I->getParent();
       BasicBlock::iterator It = I;
       BasicBlock *newBB = SplitBlock(BB, &*It, this);
+      PHINode *PN;
       //verifyFunction(*BB->getParent());
       if (!AbrtBB) {
         std::vector<const Type*>args;
         FunctionType* abrtTy = FunctionType::get(
           Type::getVoidTy(BB->getContext()),args,false);
+        args.push_back(Type::getInt32Ty(BB->getContext()));
+//        FunctionType* rterrTy = FunctionType::get(
+//          Type::getInt32Ty(BB->getContext()),args,false);
         Constant *func_abort =
           BB->getParent()->getParent()->getOrInsertFunction("abort", abrtTy);
+//        Constant *func_rterr =
+//          BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error", rterrTy);
         AbrtBB = BasicBlock::Create(BB->getContext(), "", BB->getParent());
+        PN = PHINode::Create(Type::getInt32Ty(BB->getContext()),"",
+                                      AbrtBB);
+//        CallInst *RtErrCall = CallInst::Create(func_rterr, PN, "", AbrtBB);
         CallInst* AbrtC = CallInst::Create(func_abort, "", AbrtBB);
         AbrtC->setCallingConv(CallingConv::C);
         AbrtC->setTailCall(true);
@@ -295,10 +441,29 @@ namespace {
         new UnreachableInst(BB->getContext(), AbrtBB);
         DT->addNewBlock(AbrtBB, BB);
         //verifyFunction(*BB->getParent());
+      } else {
+        PN = cast<PHINode>(AbrtBB->begin());
       }
+      unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
+      unsigned locationid = 0;
+      if (MDNode *Dbg = I->getMetadata(MDDbgKind)) {
+        DILocation Loc(Dbg);
+        locationid = Loc.getLineNumber() << 8;
+        unsigned col = Loc.getColumnNumber();
+        if (col > 255)
+          col = 255;
+        locationid |= col;
+//      Loc.getFilename();
+      }
+      PN->addIncoming(ConstantInt::get(Type::getInt32Ty(BB->getContext()),
+                                       locationid), BB);
+
       TerminatorInst *TI = BB->getTerminator();
       SCEVExpander expander(*SE);
-      Value *IdxV = expander.expandCodeFor(Idx, Idx->getType(), TI);
+      Value *IdxV = expander.expandCodeFor(Idx, Limit->getType(), TI);
+/*      if (isa<PointerType>(IdxV->getType())) {
+        IdxV = new PtrToIntInst(IdxV, Idx->getType(), "", TI);
+      }*/
       //verifyFunction(*BB->getParent());
       Value *LimitV = expander.expandCodeFor(Limit, Limit->getType(), TI);
       //verifyFunction(*BB->getParent());
@@ -352,6 +517,32 @@ namespace {
       }
       return false;
     }
+    static void printValue(llvm::raw_ostream &Out, llvm::Value *V) {
+      std::string DisplayName;
+      std::string Type;
+      unsigned Line;
+      std::string File;
+      std::string Dir;
+      if (!getLocationInfo(V, DisplayName, Type, Line, File, Dir)) {
+        Out << *V << "\n";
+        return;
+      }
+      Out << "'" << DisplayName << "' (" << File << ":" << Line << ")";
+    }
+
+    static void printLocation(llvm::raw_ostream &Out, llvm::Instruction *I) {
+      if (MDNode *N = I->getMetadata("dbg")) {
+        DILocation Loc(N);
+        Out << Loc.getFilename() << ":" << Loc.getLineNumber();
+        if (unsigned Col = Loc.getColumnNumber()) {
+          Out << ":" << Col;
+        }
+        Out << ": ";
+        return;
+      }
+      Out << *I << ":\n";
+    }
+
     bool validateAccess(Value *Pointer, Value *Length, Instruction *I)
     {
         // get base
@@ -361,24 +552,33 @@ namespace {
         // get bounds
         Value *Bounds = getPointerBounds(SBase);
         if (!Bounds) {
-          errs() << "No bounds for base " << *SBase << "\n";
-          errs() << " while checking access to " << *Pointer << " of length "
-            << *Length << " at " << *I << "\n";
+          printLocation(errs(), I);
+          errs() << "no bounds for base ";
+          printValue(errs(), SBase);
+          errs() << " while checking access to ";
+          printValue(errs(), Pointer);
+          errs() << " of length ";
+          printValue(errs(), Length);
+          errs() << "\n";
 
           return false;
         }
 
         if (CallInst *CI = dyn_cast<CallInst>(Base->stripPointerCasts())) {
           if (I->getParent() == CI->getParent()) {
-            errs() << "No null pointer check after function call " << *Base
-              << "\n";
-            errs() << " before use in same block at " << *I << "\n";
+            printLocation(errs(), I);
+            errs() << "no null pointer check of pointer ";
+            printValue(errs(), Base);
+            errs() << " obtained by function call";
+            errs() << " before use in same block\n";
             return false;
           }
           if (!checkCondition(CI, I)) {
-            errs() << "No null pointer check after function call " << *Base
-              << "\n";
-            errs() << " before use at " << *I << "\n";
+            printLocation(errs(), I);
+            errs() << "no null pointer check of pointer ";
+            printValue(errs(), Base);
+            errs() << " obtained by function call";
+            errs() << " before use\n";
             return false;
           }
         }

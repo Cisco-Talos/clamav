@@ -277,16 +277,16 @@ am_libllvminterpreter_la_OBJECTS = Execution.lo ExternalFunctions.lo \
 	Interpreter.lo
 libllvminterpreter_la_OBJECTS = $(am_libllvminterpreter_la_OBJECTS)
 libllvmjit_la_LIBADD =
-am_libllvmjit_la_OBJECTS = AliasAnalysis.lo BasicAliasAnalysis.lo \
-	CaptureTracking.lo DebugInfo.lo MemoryBuiltins.lo \
-	PointerTracking.lo ValueTracking.lo ELFCodeEmitter.lo \
-	ELFWriter.lo MachineBasicBlock.lo MachineFunction.lo \
-	MachineFunctionAnalysis.lo MachineFunctionPass.lo \
-	MachineInstr.lo MachineModuleInfo.lo MachineRegisterInfo.lo \
-	ObjectCodeEmitter.lo PseudoSourceValue.lo \
-	TargetInstrInfoImpl.lo ExecutionEngine.lo Intercept.lo JIT.lo \
-	JITDebugRegisterer.lo JITDwarfEmitter.lo JITEmitter.lo \
-	JITMemoryManager.lo OProfileJITEventListener.lo \
+am_libllvmjit_la_OBJECTS = CallGraph.lo AliasAnalysis.lo \
+	BasicAliasAnalysis.lo CaptureTracking.lo DebugInfo.lo \
+	MemoryBuiltins.lo PointerTracking.lo ValueTracking.lo \
+	ELFCodeEmitter.lo ELFWriter.lo MachineBasicBlock.lo \
+	MachineFunction.lo MachineFunctionAnalysis.lo \
+	MachineFunctionPass.lo MachineInstr.lo MachineModuleInfo.lo \
+	MachineRegisterInfo.lo ObjectCodeEmitter.lo \
+	PseudoSourceValue.lo TargetInstrInfoImpl.lo ExecutionEngine.lo \
+	Intercept.lo JIT.lo JITDebugRegisterer.lo JITDwarfEmitter.lo \
+	JITEmitter.lo JITMemoryManager.lo OProfileJITEventListener.lo \
 	TargetSelect.lo MCAsmInfo.lo MCContext.lo MCExpr.lo \
 	MCSection.lo MCSectionELF.lo MCSymbol.lo APFloat.lo APInt.lo \
 	Allocator.lo CommandLine.lo ConstantRange.lo Debug.lo Dwarf.lo \
@@ -499,7 +499,6 @@ llvmunittest_Support_OBJECTS = $(am_llvmunittest_Support_OBJECTS)
 llvmunittest_Support_DEPENDENCIES = libgoogletest.la \
 	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 am_llvmunittest_VMCore_OBJECTS =  \
-	llvmunittest_VMCore-CallGraph.$(OBJEXT) \
 	llvmunittest_VMCore-CallGraphSCCPass.$(OBJEXT) \
 	llvmunittest_VMCore-LoopInfo.$(OBJEXT) \
 	llvmunittest_VMCore-LoopPass.$(OBJEXT) \
@@ -1235,6 +1234,7 @@ libllvmsupport_nodups_la_SOURCES = \
 
 # End of Targets
 libllvmjit_la_SOURCES = \
+	llvm/lib/Analysis/IPA/CallGraph.cpp\
 	llvm/lib/Analysis/AliasAnalysis.cpp\
 	llvm/lib/Analysis/BasicAliasAnalysis.cpp\
 	llvm/lib/Analysis/CaptureTracking.cpp\
@@ -1527,7 +1527,6 @@ llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llv
 #-Wno-variadic-macros
 llvmunittest_VMCore_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES = \
-    llvm/lib/Analysis/IPA/CallGraph.cpp\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
     llvm/lib/Analysis/LoopInfo.cpp\
     llvm/lib/Analysis/LoopPass.cpp\
@@ -1805,6 +1804,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BranchFolding.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/BreakCriticalEdges.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CalcSpillWeights.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CallGraph.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CallingConvLower.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CaptureTracking.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CodeGenPrepare.Plo@am__quote@
@@ -2165,7 +2165,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_Support-ValueHandleTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_Support-raw_ostream_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_VMCore-CallGraph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/llvmunittest_VMCore-LoopInfo.Po@am__quote@
@@ -3986,6 +3985,14 @@ TargetIntrinsicInfo.lo: llvm/lib/Target/TargetIntrinsicInfo.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o TargetIntrinsicInfo.lo `test -f 'llvm/lib/Target/TargetIntrinsicInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetIntrinsicInfo.cpp
 
+CallGraph.lo: llvm/lib/Analysis/IPA/CallGraph.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT CallGraph.lo -MD -MP -MF $(DEPDIR)/CallGraph.Tpo -c -o CallGraph.lo `test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraph.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/CallGraph.Tpo $(DEPDIR)/CallGraph.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/IPA/CallGraph.cpp' object='CallGraph.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CallGraph.lo `test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraph.cpp
+
 AliasAnalysis.lo: llvm/lib/Analysis/AliasAnalysis.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT AliasAnalysis.lo -MD -MP -MF $(DEPDIR)/AliasAnalysis.Tpo -c -o AliasAnalysis.lo `test -f 'llvm/lib/Analysis/AliasAnalysis.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/AliasAnalysis.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/AliasAnalysis.Tpo $(DEPDIR)/AliasAnalysis.Plo
@@ -5785,22 +5792,6 @@ llvmunittest_Support-raw_ostream_test.obj: llvm/unittests/Support/raw_ostream_te
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/raw_ostream_test.cpp' object='llvmunittest_Support-raw_ostream_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-raw_ostream_test.obj `if test -f 'llvm/unittests/Support/raw_ostream_test.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/raw_ostream_test.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/raw_ostream_test.cpp'; fi`
-
-llvmunittest_VMCore-CallGraph.o: llvm/lib/Analysis/IPA/CallGraph.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraph.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraph.Tpo -c -o llvmunittest_VMCore-CallGraph.o `test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraph.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-CallGraph.Tpo $(DEPDIR)/llvmunittest_VMCore-CallGraph.Po
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/IPA/CallGraph.cpp' object='llvmunittest_VMCore-CallGraph.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraph.o `test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraph.cpp
-
-llvmunittest_VMCore-CallGraph.obj: llvm/lib/Analysis/IPA/CallGraph.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraph.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraph.Tpo -c -o llvmunittest_VMCore-CallGraph.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraph.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraph.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-CallGraph.Tpo $(DEPDIR)/llvmunittest_VMCore-CallGraph.Po
-@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/IPA/CallGraph.cpp' object='llvmunittest_VMCore-CallGraph.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraph.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraph.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraph.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraph.cpp'; fi`
 
 llvmunittest_VMCore-CallGraphSCCPass.o: llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraphSCCPass.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo -c -o llvmunittest_VMCore-CallGraphSCCPass.o `test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp

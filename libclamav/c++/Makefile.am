@@ -465,6 +465,7 @@ endif
 # End of Targets
 
 libllvmjit_la_SOURCES=\
+	llvm/lib/Analysis/IPA/CallGraph.cpp\
 	llvm/lib/Analysis/AliasAnalysis.cpp\
 	llvm/lib/Analysis/BasicAliasAnalysis.cpp\
 	llvm/lib/Analysis/CaptureTracking.cpp\
@@ -758,7 +759,6 @@ llvmunittest_VMCore_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/
 #-Wno-variadic-macros
 llvmunittest_VMCore_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES=\
-    llvm/lib/Analysis/IPA/CallGraph.cpp\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
     llvm/lib/Analysis/LoopInfo.cpp\
     llvm/lib/Analysis/LoopPass.cpp\
