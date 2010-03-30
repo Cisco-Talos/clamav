@@ -1,3 +1,8 @@
+Tue Mar 30 15:18:45 CEST 2010 (tk)
+----------------------------------
+ * freshclam: fix some issues with --submit-stats (bb#1902)
+	      Thanks to Mark Pizzolato
+
 Wed Mar 24 18:29:55 CET 2010 (tk)
 ---------------------------------
  * V 0.96rc2

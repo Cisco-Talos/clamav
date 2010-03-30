@@ -108,6 +108,7 @@ static int nonblock_connect(int sock, const struct sockaddr *addr, socklen_t add
 		switch (e) {
 		case EALREADY:
 		case EINPROGRESS:
+		case EAGAIN:
 			break; /* wait for connection */
 		case EISCONN:
 			return 0; /* connected */

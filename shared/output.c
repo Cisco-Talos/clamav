@@ -91,7 +91,7 @@ short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
 
 #define ARGLEN(args, str, len)			    \
 {						    \
-	size_t arglen = 0, i;			    \
+	size_t arglen = 1, i;			    \
 	char *pt;				    \
     va_start(args, str);			    \
     len = strlen(str);				    \

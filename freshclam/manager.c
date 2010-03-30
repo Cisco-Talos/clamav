@@ -393,14 +393,14 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     return -2;
 }
 
-static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *bread)
+static const char *readblineraw(int fd, char *buf, int bufsize, int filesize, int *bread)
 {
 	char *pt;
 	int ret, end;
 
     if(!*bread) {
 	if(bufsize < filesize)
-	    lseek(fd, -bufsize, SEEK_END);
+	    lseek(fd, 1 - bufsize, SEEK_END);
 	*bread = read(fd, buf, bufsize - 1);
 	if(!*bread || *bread == -1)
 	    return NULL;
@@ -423,7 +423,7 @@ static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *
 	    if((ret = lseek(fd, 0, SEEK_SET)) != -1)
 		ret = read(fd, buf, end);
 	} else {
-	    if((ret = lseek(fd, end - bufsize, SEEK_SET)) != -1)
+	    if((ret = lseek(fd, end - bufsize + 1, SEEK_SET)) != -1)
 		ret = read(fd, buf, bufsize - 1);
 	}
 	if(!ret || ret == -1)
@@ -442,6 +442,16 @@ static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *
 	else 
 	    return NULL;
     }
+}
+
+static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *bread)
+{
+	const char *line = readblineraw(fd, buf, bufsize, filesize, bread);
+
+    if(line)
+	cli_chomp(buf + (line - buf));
+
+    return line;
 }
 
 static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
@@ -575,7 +585,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
     }
     optfree(clamdopt);
 
-    if((fd = open("stats.dat", O_RDONLY)) != -1) {
+    if((fd = open("stats.dat", O_RDONLY|O_BINARY)) != -1) {
 	if((bread = read(fd, statsdat, sizeof(statsdat) - 1)) == -1) {
 	    logg("^SubmitDetectionStats: Can't read stats.dat\n");
 	    bread = 0;
@@ -586,7 +596,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	*statsdat = 0;
     }
 
-    if((fd = open(logfile, O_RDONLY)) == -1) {
+    if((fd = open(logfile, O_RDONLY|O_BINARY)) == -1) {
 	logg("!SubmitDetectionStats: Can't open %s for reading\n", logfile);
 	return 56;
     }
@@ -656,7 +666,6 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 
 	strncpy(buff, line, sizeof(buff));
 	buff[sizeof(buff) - 1] = 0;
-
 	if(!(pt = strstr(buff, " -> "))) {
 	    logg("*SubmitDetectionStats: Skipping detection entry logged without time\b");
 	    continue;
@@ -691,23 +700,22 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
 	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, optget(opts, "LocalIPAddress")->strarg, optget(opts, "ConnectTimeout")->numarg, NULL, 0, 0);
-	    if(sd == -1) {
+	    if(sd < 0) {
 		logg("!SubmitDetectionStats: Can't connect to server\n");
 		ret = 52;
 		break;
 	    }
 
 	    query[sizeof(query) - 1] = 0;
-	    snprintf(post, sizeof(post),
+	    if(mdprintf(sd,
 		"POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
 		"Host: stats.clamav.net\r\n%s"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"User-Agent: %s\r\n"
-		"Content-Length: %u\r\n\n"
+		"Content-Length: %u\r\n\r\n"
 		"%s",
-	    auth ? auth : "", uastr, (unsigned int) strlen(query), query);
-
-	    if(send(sd, post, strlen(post), 0) < 0) {
+		auth ? auth : "", uastr, (unsigned int) strlen(query), query) < 0)
+	    {
 		logg("!SubmitDetectionStats: Can't write to socket\n");
 		ret = 52;
 		closesocket(sd);
@@ -776,7 +784,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	free(auth);
 
     if(submitted || permfail) {
-	if((fd = open("stats.dat", O_WRONLY | O_CREAT | O_TRUNC, 0600)) == -1) {
+	if((fd = open("stats.dat", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0600)) == -1) {
 	    logg("^SubmitDetectionStats: Can't open stats.dat for writing\n");
 	} else {
 	    if((bread = write(fd, newstatsdat, sizeof(newstatsdat))) != sizeof(newstatsdat))
