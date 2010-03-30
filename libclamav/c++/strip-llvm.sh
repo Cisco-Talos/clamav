@@ -13,12 +13,13 @@ for i in llvm/bindings/ llvm/examples/ llvm/projects/ llvm/runtime/\
     llvm/test/FrontendAda/ llvm/test/FrontendC llvm/test/FrontendC++/\
     llvm/test/FrontendFortran/ llvm/test/FrontendObjC\
     llvm/test/FrontendObjC++ llvm/test/Linker/ llvm/test/LLVMC\
-    llvm/test/MC llvm/test/Transforms\
+    llvm/test/MC llvm/test/Transforms llvm/test/Transforms/InstCombine\
     llvm/test/BugPoint llvm/test/CodeGen/CPP llvm/test/CodeGen/Mips\
     llvm/test/CodeGen/Alpha llvm/test/CodeGen/PIC16 llvm/test/CodeGen/SPARC\
-    llvm/test/CodeGen/XCore llvm/test/CodeGen/MSP430\
+    llvm/test/CodeGen/XCore llvm/test/CodeGen/MSP430 llvm/test/CodeGen/MBlaze\
     llvm/test/CodeGen/CellSPU llvm/test/CodeGen/CBackend\
-    llvm/test/CodeGen/SystemZ llvm/test/CodeGen/Blackfin\
+    llvm/test/CodeGen/SystemZ llvm/test/CodeGen/Blackfin llvm/test/TableGen\
+    llvm/test/Analysis llvm/test/Assembler llvm/test/Other\
     llvm/tools/bugpoint llvm/tools/gold llvm/tools/llvm-ar\
     llvm/tools/llvm-bcanalyzer llvm/tools/llvm-db\
     llvm/tools/llvm-extract llvm/tools/llvm-ld llvm/tools/llvm-link llvm/tools/llvm-mc\
@@ -27,10 +28,9 @@ for i in llvm/bindings/ llvm/examples/ llvm/projects/ llvm/runtime/\
     llvm/tools/llvm-dis/Makefile llvm/tools/edis/ llvm/tools/llvm-shlib\
     llvm/docs
     do
-	git rm -rf $i;
+	git rm -rf $i; git rm -f $i;
 done
 # config.status needs these
 mkdir -p llvm/docs/doxygen
 touch llvm/docs/doxygen.cfg.in
 git add llvm/docs/doxygen.cfg.in
-mv ../../.git/SQUASH_MSG ../../.git/MERGE_MSG
