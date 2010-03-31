@@ -1896,6 +1896,11 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
 	  return qtm->error = CL_EFORMAT;
 	}
 
+	if (window_posn + match_length > qtm->window_size) {
+	  cli_dbgmsg("qtm_decompress: match ran over window wrap\n");
+	  return qtm->error = CL_EFORMAT;
+	}
+
 	rundest = &window[window_posn];
 	i = match_length;
 	/* does match offset wrap the window? */

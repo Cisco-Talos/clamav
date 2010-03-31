@@ -1,3 +1,7 @@
+Wed Mar 31 18:19:23 CEST 2010 (tk)
+----------------------------------
+ * libclamav/mspack.c: fix Quantum decompressor (bb#1771)
+
 Wed Mar 31 18:13:38 CEST 2010 (tk)
 ----------------------------------
  * libclamav/mspack.c: improve unpacking of malformed cabinets (bb#1826)
