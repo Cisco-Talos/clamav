@@ -1,7 +1,6 @@
 ; RUN: llvm-as %s -o %t.bc
-; RUN: lli %t.bc > /dev/null
-; ??
-; XFAIL: *
+; RXUN: lli %t.bc > /dev/null
+; FP needs libcalls, which ClamAV has disabled, disable this test
 
 define double @test(double* %DP, double %Arg) {
 	%D = load double* %DP		; <double> [#uses=1]

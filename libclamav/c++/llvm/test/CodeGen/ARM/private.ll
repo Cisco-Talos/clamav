@@ -2,7 +2,7 @@
 ;
 ; RUN: llc < %s -mtriple=arm-linux-gnueabi > %t
 ; RUN: grep .Lfoo: %t
-; RUN: egrep bl.*\.Lfoo %t
+; RUN: grep -E bl.*\.Lfoo %t
 ; RUN: grep .Lbaz: %t
 ; RUN: grep long.*\.Lbaz %t
 
