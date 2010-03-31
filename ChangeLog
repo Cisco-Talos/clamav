@@ -1,3 +1,7 @@
+Wed Mar 31 18:07:05 CEST 2010 (acab)
+------------------------------------
+  * libclamav/7z: add recovery mode to 7z ansi
+
 Tue Jan 17 11:15:57 CET 2012 (acab)
 -----------------------------------
  * misc: performance improvement for HP-UX PA-RISC - patch from 

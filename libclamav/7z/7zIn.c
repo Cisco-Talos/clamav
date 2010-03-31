@@ -1241,8 +1241,33 @@ static SRes SzArEx_Open2(
 
   p->startPosAfterHeader = startArcPos + k7zStartHeaderSize;
   
+/* aCaB - 2010-02-16 - RECOVERY MODE  
   if (CrcCalc(header + 12, 20) != GetUi32(header + 8))
-    return SZ_ERROR_CRC;
+    return SZ_ERROR_CRC; */
+  if(!GetUi32(header + 8) && !nextHeaderOffset && !nextHeaderSize && !nextHeaderCRC) {
+    int i, checkSize = 500;
+    Byte buf[500];
+    Int64 curpos=0, endpos=0, readpos;
+    RINOK(inStream->Seek(inStream, &curpos, SZ_SEEK_CUR));
+    RINOK(inStream->Seek(inStream, &endpos, SZ_SEEK_END));
+    if(endpos-curpos < 500) checkSize = endpos-curpos;
+    readpos = endpos - checkSize;
+    RINOK(inStream->Seek(inStream, &readpos, SZ_SEEK_SET));
+    RINOK(LookInStream_Read2(inStream, buf, checkSize, SZ_ERROR_ARCHIVE));
+    for (i = (int)checkSize - 2; i >= 0; i--)
+      if((buf[i] == 0x17 && buf[i + 1] == 0x6) || (buf[i] == 0x01 && buf[i + 1] == 0x04))
+	break;
+    if (i < 0)
+      return SZ_ERROR_ARCHIVE;
+    nextHeaderSize = checkSize - i;
+    nextHeaderOffset = readpos + i;
+    if(nextHeaderOffset < k7zStartHeaderSize)
+      return SZ_ERROR_INPUT_EOF;
+    nextHeaderOffset -= k7zStartHeaderSize;
+    nextHeaderCRC = CrcCalc(buf + i, (size_t)nextHeaderSize);
+    RINOK(inStream->Seek(inStream, &curpos, SZ_SEEK_SET));
+  }
+/* aCaB - 2010-02-16 - END OF RECOVERY MODE */
 
   nextHeaderSizeT = (size_t)nextHeaderSize;
   if (nextHeaderSizeT != nextHeaderSize)
