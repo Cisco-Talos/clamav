@@ -1,3 +1,7 @@
+Wed Mar 31 16:27:18 EEST 2010 (edwin)
+-------------------------------------
+ * shared/output.c: fix race condition in IDSESSION mode (bb #1838).
+
 Wed Mar 31 15:36:23 2010 +0300 (edwin)
 --------------------------------------
  * unit_tests/check_common.sh: Fix print of test log when unit test fails (bb #1838).

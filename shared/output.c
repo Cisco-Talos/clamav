@@ -60,6 +60,7 @@
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
 pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #ifdef  C_LINUX
@@ -129,7 +130,6 @@ int mdprintf(int desc, const char *str, ...)
 	int bytes, todo, ret=0;
 	size_t len;
 
-
     ARGLEN(args, str, len);
     if(len <= sizeof(buffer)) {
 	len = sizeof(buffer);
@@ -157,12 +157,21 @@ int mdprintf(int desc, const char *str, ...)
 	bytes = len - 1;
 
     todo = bytes;
+#ifdef CL_THREAD_SAFE
+    /* make sure we don't mix sends from multiple threads,
+     * important for IDSESSION */
+    pthread_mutex_lock(&mdprintf_mutex);
+#endif
     while (todo > 0) {
 	ret = send(desc, buff, bytes, 0);
 	if (ret < 0) {
 	    struct timeval tv;
 	    if (errno != EWOULDBLOCK)
 		break;
+	    /* didn't send anything yet */
+#ifdef CL_THREAD_SAFE
+	    pthread_mutex_unlock(&mdprintf_mutex);
+#endif
 	    tv.tv_sec = 0;
 	    tv.tv_usec = mprintf_send_timeout*1000;
 	    do {
@@ -171,6 +180,9 @@ int mdprintf(int desc, const char *str, ...)
 		FD_SET(desc, &wfds);
 		ret = select(desc+1, NULL, &wfds, NULL, &tv);
 	    } while (ret < 0 && errno == EINTR);
+#ifdef CL_THREAD_SAFE
+	    pthread_mutex_lock(&mdprintf_mutex);
+#endif
 	    if (!ret) {
 		/* timed out */
 		ret = -1;
@@ -181,6 +193,9 @@ int mdprintf(int desc, const char *str, ...)
 	    buff += ret;
 	}
     }
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&mdprintf_mutex);
+#endif
 
     if(len > sizeof(buffer))
 	free(abuffer);
