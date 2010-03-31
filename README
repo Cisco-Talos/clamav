@@ -28,6 +28,8 @@ significant improvements to the scan engine. The key features include:
       Universal Binaries with Mach-O files. Additionally, the PE module
       can now decompress and inspect executables packed with UPX 3.0.
 
+    - Support for DazukoFS in clamd
+
     - Performance improvements: overall performance improvements and memory
       optimizations for a better overall resource utilization experience.
 
