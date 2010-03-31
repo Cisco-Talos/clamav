@@ -1,27 +1,446 @@
+Wed Mar 31 15:36:23 2010 +0300 (edwin)
+--------------------------------------
+ * unit_tests/check_common.sh: Fix print of test log when unit test fails (bb #1838).
+
+Wed Mar 31 15:08:24 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm/lib/System/Win32/Signals.inc: Fix Ctrl-C handler on win32, thanks Sherpya!
+
+Wed Mar 31 12:30:57 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Workaround bb #1898.
+
+Wed Mar 31 11:43:28 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Pull LLVM 2.7 release branch last time.
+
+Wed Mar 31 11:03:31 2010 +0300 (edwin)
+--------------------------------------
+ * etc/clamd.conf: bb #1890.
+
+Wed Mar 31 10:53:11 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode: jsnorm api.
+
+Tue Mar 30 23:29:27 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm/configure: Do the atomic builtin tests using the C++ compiler,
+  since only C++ sources need it (bb #1904).
+
+Tue Mar 30 23:22:23 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++: Update ClamBCRTChecks.cpp from bytecode compiler:
+    Check bounds of each pointer passed to/from APIcalls,
+    forbid recursion.
+
+Tue Mar 30 18:05:10 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm/test: Remove some unused LLVM test files.
+
 Tue Mar 30 15:18:45 CEST 2010 (tk)
 ----------------------------------
  * freshclam: fix some issues with --submit-stats (bb#1902)
 	      Thanks to Mark Pizzolato
 
+Tue Mar 30 15:33:51 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Merge LLVM SVN r99883, fix double frees.
+
+Tue Mar 30 13:09:10 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Merge LLVM SVN r99881 to fix some more VNInfo leaks.
+
+Tue Mar 30 11:10:58 2010 +0300 (edwin)
+--------------------------------------
+ * unit_tests/check_bytecode.c: Increase timeout of testcase itself.
+
+Tue Mar 30 11:07:05 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Minor optimization in JIT loader.
+
+Tue Mar 30 10:42:46 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: Fix use-of-uninit memory on zeroinitializer.
+
+Tue Mar 30 00:34:49 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Update SELinux message.
+
+Tue Mar 30 00:04:00 2010 +0300 (edwin)
+--------------------------------------
+ * unit_tests/check_bytecode.c: Increase bytecode timeout for non-timeout tests.
+
+Mon Mar 29 23:48:18 2010 +0300 (edwin)
+--------------------------------------
+ * unit_tests/input/pdf.cbc: Update pdf.cbc.
+
+Mon Mar 29 23:47:59 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: More interpreter fixes, pdf.cbc seems to be running now.
+
+Mon Mar 29 22:33:20 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode_vm.c: Fix OP_BC_GEPZ/OP_BC_GEP1 in interpreter.
+
+Mon Mar 29 21:06:47 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode*,c++,clambc.h: More fixes for pdf.cbc.
+
+Mon Mar 29 12:09:07 2010 +0300 (edwin)
+--------------------------------------
+ * unit_tests/check_bytecode.c:  Separate bytecode tests into jit and interpreter.
+
+Mon Mar 29 11:38:52 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode_vm.c, unit_tests: Fix inflate.cbc for the interpreter.
+
+Sun Mar 28 23:46:41 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode_vm.c: Only show all the trace/debug messages in --enable-debug mode.
+
+Sun Mar 28 23:27:05 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode*, unit_tests: Fix bswap.cbc in interpreter mode.
+
+Sun Mar 28 20:15:48 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/bytecode*, filtering.c: Fix some possible uninitialized value uses.
+
+Sun Mar 28 13:52:29 2010 +0300 (edwin)
+--------------------------------------
+ * libclamav/c++: Fallback to interpreter mode when SELinux denies 'execmem' access. (bb #1901).
+
+Fri Mar 26 10:35:27 2010 +0200 (edwin)
+--------------------------------------
+ * Increase timeout in unit test (bb #1899).
+
+Fri Mar 26 10:35:11 2010 +0200 (edwin)
+--------------------------------------
+ * configure: Fix linking with gold (bb #1903).
+
 Wed Mar 24 18:29:55 CET 2010 (tk)
 ---------------------------------
  * V 0.96rc2
+
+Wed Mar 24 19:14:24 2010 +0200 (edwin)
+--------------------------------------
+ * clamd/clamd.c: Fix typo(thanks Tomasz).
+
+Wed Mar 24 18:34:58 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav: bytecode timeout 60s.
+
+Wed Mar 24 18:23:01 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: bb #1879, port LLVM commit r98349.
+
+Wed Mar 24 17:55:04 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: Downgrade some messages to debug.
+
+Wed Mar 24 17:37:23 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api.c,unit_tests: Fix valgrind warnings.
+
+Wed Mar 24 17:27:14 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Merge latest LLVM 2.7 release branch.
+
+Wed Mar 24 17:22:34 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp:  Disable JITDebugRegisterer, and fix unit_tests rule.
+
+Wed Mar 24 17:07:14 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*, unit_tests: Fix more leaks.
+
+Wed Mar 24 16:47:42 2010 +0200 (edwin)
+--------------------------------------
+ * win32: update win32 proj.
+
+Wed Mar 24 16:41:29 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests/check_unit_vg.sh: Fix unit test script.
+
+Wed Mar 24 16:35:40 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: port LLVM SVN r99160 correctly.
+
+Wed Mar 24 16:25:57 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests: Run check_clamav under valgrind too to actually detect the leaks.
+
+Wed Mar 24 16:08:00 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Port LLVM leakfixes from trunk.
+
+Wed Mar 24 15:51:19 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Fix memory leak. LLVM SVN r99400
+    .
+Wed Mar 24 15:27:15 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav, unit_tests: Fix bswap.
+
+Wed Mar 24 14:14:33 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav, unit_tests: Leak testcase.
+
+Wed Mar 24 12:56:27 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvmcheck.sh: bb #1896.
+
+Wed Mar 24 12:46:34 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests: Add matchwithread.cbc to unit tests.
+
+Wed Mar 24 11:29:56 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: match_with_read appears to be working!
+
+Wed Mar 24 10:51:05 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*:  OP_BC_COPY again.
+
+Wed Mar 24 10:41:11 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*,pe.h: Fix read of pedata in interpreter.
+
+Wed Mar 24 10:16:41 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: Fix OP_BC_COPY.
+
+Wed Mar 24 00:07:17 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: Fix GEPZ.
+
+Tue Mar 23 23:46:58 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: Making progress on match_with_read.
+
+Tue Mar 23 21:47:57 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*:  Interpreter fixes for accessing 'ctx'.
+
+Tue Mar 23 16:33:41 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/:  Use a watchdog thread. Also make timeout be ms instead of us.
+
+Tue Mar 23 15:54:41 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Insert timeout checks directly into the JITed code.
+
+Mon Mar 22 22:57:46 2010 +0200 (edwin)
+--------------------------------------
+ * configure: Portability fix.
+
+Mon Mar 22 18:36:03 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/mpool.c: Need to align the MPMAP field to 64-bit for Sparc.
+
+Mon Mar 22 17:31:38 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/others.h: Fix build on non-gcc.
+
+Mon Mar 22 17:28:38 2010 +0200 (edwin)
+--------------------------------------
+ * configure, libclamav, win32: New configure flag --enable-unsigned-bytecode.
+
+Mon Mar 22 17:16:07 2010 +0200 (edwin)
+--------------------------------------
+ * clamd,clamscan,libclamav,shared,unit_tests: Introduce BytecodeTimeout.
+
+Mon Mar 22 16:57:27 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Support for timeouts.
+
+Mon Mar 22 15:35:07 2010 +0200 (edwin)
+--------------------------------------
+ * clambc/bcrun.c: Don't print extra newline.
+
+Mon Mar 22 15:30:28 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Attempt to fix remaining PPC failures.
+
+Mon Mar 22 14:58:58 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: Print location of runtime error.
+
+Mon Mar 22 14:58:51 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp,shared: Fix clambc -p.
+
+Mon Mar 22 14:27:37 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: Avoid duplicate symbol on Mac OS X.
+
+Mon Mar 22 14:08:56 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/mpool.c: Fix sparc sigbus.
+
+Mon Mar 22 13:41:18 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api.c: bytecode api fixes.
+
+Mon Mar 22 13:05:20 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Fix valgrind warning.
+
+Mon Mar 22 12:53:48 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: Fix clambc.
+
+Mon Mar 22 12:47:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: Apply LLVM SVN r98508 in an attempt to fix make check fail on PPC.
+
+Mon Mar 22 11:42:27 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Merge LLVM upstream SVN r98997 from 2.7 release branch.
+
+Mon Mar 22 00:01:28 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode*,c++}: More fixes for global vars in the interpreter.
+
+Sun Mar 21 19:47:25 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: WiP fixing globals in interpreter.
+
+Sun Mar 21 15:44:15 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests/input/*.cbc: Update unit tests.
+
+Sun Mar 21 15:44:07 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Print size and location of JITed code.
+
+Sun Mar 21 12:56:05 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode*,c++/}: zlib/buffer apis.
+
+Sat Mar 20 21:18:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode*,c++/}: minimalistic zlib api.
+
+Fri Mar 19 22:20:55 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*,pe.c: More APIs.
+
+Fri Mar 19 19:59:08 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/configure: Reenable GCC 4.0.1, and 4.1.2 for JIT.
+
+Fri Mar 19 19:55:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: set numthreads to 1 in LLVM's check when running on old Python.
+
+Fri Mar 19 15:47:26 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: More API additions for PDF.
 
 Fri Mar 19 14:37:18 CET 2010 (tk)
 ---------------------------------
  * freshclam: add support for ExtraDatabase (bb#781)
 
+Fri Mar 19 13:20:59 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode*,c++/}, unit_tests/: New API for buffer fill.
+
+Wed Mar 17 19:33:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_vm.c: Switch interpreter to debug (safe) mode by default.
+
+Wed Mar 17 15:02:38 2010 +0200 (edwin)
+--------------------------------------
+ * sigtool/sigtool.c: Fix loading of bytecode.cvd in sigtool
+
 Tue Mar 16 04:11:02 CET 2010 (acab)
 -----------------------------------
  * win32: add sigtool upon request from 3rd party sigmakers
+
+Fri Mar 12 13:13:08 2010 +0200 (edwin)
+--------------------------------------
+ * clamscan, libclamav/c++, shared/: Add clamscan commandline to load bytecode in debug mode.
+
+Fri Mar 12 11:45:46 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: Fix Solaris/intel build (bb #1878).
+
+Thu Mar 11 23:43:51 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/configure: Solaris needs Solaris.h! (bb #1878).
+
+Thu Mar 11 20:36:35 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvmcheck.sh: Fix bashism (bb #1876).
 
 Wed Mar 10 20:04:46 CET 2010 (tk)
 ---------------------------------
  * V 0.96rc1
 
+Wed Mar 10 15:58:42 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/readdb.c: Only load signed bytecode by default.
+
+Wed Mar 10 14:58:18 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/scanners.c: Unit tests don't have fmap.
+
+Wed Mar 10 14:49:22 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/cache.c: Better fix for found_possibly_unwanted and caching.
+
+Wed Mar 10 14:34:32 2010 +0200 (edwin)
+--------------------------------------
+ * configure: Add version suffix when using --enable-debug.
+
+Wed Mar 10 14:30:31 2010 +0200 (edwin)
+--------------------------------------
+ * clambc,clamd, libclamav, shared: Allow "None" bytecode security setting only in --enable-debug mode.
+
+Wed Mar 10 12:20:06 2010 +0200 (edwin)
+--------------------------------------
+ * clambc/bcrun.c, libclamav/c++/ClamBCRTChecks.cpp: nullcheck.
+
+Wed Mar 10 11:44:30 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: bb #1800.
+
 Tue Mar  9 02:42:37 CET 2010 (acab)
 -----------------------------------
  * win32/platform.h: make sleep() wait seconds rather than ms (bb#1866)
+
+Sun Mar 7 19:46:23 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/{filtering.c,matcher-ac.c}: shut up filter debug messages during DB load.
+
+Sat Mar 6 21:19:48 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/c++, win32/: Enable LLVM tests if proper python and GNU make version is present.
+
+Sat Mar 6 20:17:15 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm: Merge LLVM upstream SVN r97877.
+
+Sat Mar 6 17:38:42 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: missing opcode.
+
+Sat Mar 6 16:28:08 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode.[ch]: compute global offsets.
+
+Sat Mar 6 16:00:54 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode*: prepare for reading globals from ctx
+
+Sat Mar 6 15:58:35 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: READN -> READNfrom
+
+Sat Mar 6 15:54:14 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: READ1,8,16,32,64->READN
 
 Sat Mar  6 03:58:16 CET 2010 (acab)
 -----------------------------------
@@ -44,6 +463,14 @@ Fri Mar  5 19:11:25 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix cl_cvdparse() leak (bb#1859)
 
+Fri Mar 5 19:56:43 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/scanners.c: Don't leak bitset in magicscan.
+
+Thu Mar 4 20:14:22 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/c++: FreeBSD needs -lthr not -pthread.
+
 Thu Mar  4 17:33:18 CET 2010 (tk)
 ---------------------------------
  * libclamav/matcher-bm.c: fix array check (bb#1840)
@@ -56,9 +483,54 @@ Thu Mar  4 14:41:39 CET 2010 (tk)
 ---------------------------------
  * libclamav/matcher-bm.c: only sort correct offsets (bb#1840)
 
+Mon Mar 1 19:48:11 2010 +0200 (edwin)
+-------------------------------------
+ * libclamunrar_iface/unrar_iface.c: make behavior deterministic.
+
+Mon Mar 1 19:46:58 2010 +0200 (edwin)
+-------------------------------------
+ * libclamunrar/unrar.c: Fix error path leak in unrar.
+
+Sat Feb 27 15:35:16 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/ishield.c: Fix ishield errorpath.
+
 Thu Feb 25 17:20:27 CET 2010 (tk)
 ---------------------------------
  * docs: update signatures.pdf
+
+Wed Feb 24 13:39:07 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/special.c: Tweak swizzor threshold to fix some false positives.
+
+Wed Feb 24 13:10:14 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/pe.c: Only detect swizzor in english resources.
+
+Tue Feb 23 23:53:27 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/special.c: make debug output for swizz break lines properly.
+
+Mon Feb 22 17:59:32 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests/check_matchers.c: Fix unit test: ctx.fmap can't be NULL.
+
+Mon Feb 22 17:21:05 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/matcher.c: Be consistent about matcher_run (prefiltering) calls.
+
+Mon Feb 22 17:10:18 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/matcher.c: Fix NULL dereference.
+
+Mon Feb 22 15:44:23 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/matcher.c: Don't use prefiltering for BM offset mode.
+
+Mon Feb 22 14:12:55 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode{_vm,}.c: Properly calculate numBytes for interpreter, and protect interpreter from null
+    derefs.
 
 Tue Feb 16 16:41:30 CET 2010 (tk)
 ---------------------------------
@@ -68,9 +540,65 @@ Tue Feb 16 16:27:13 CET 2010 (tk)
 ---------------------------------
  * freshclam/manager.c: handle empty cdiffs more gently
 
+Mon Feb 15 21:52:29 2010 +0200 (edwin)
+--------------------------------------
+ * clambc/bcrun.c, win32/libclamavcxx.vcproj: fix win32 build.
+
+Mon Feb 15 20:58:24 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/Makefile.{am,in}: Show version.h creation commands with V=1.
+
+Mon Feb 15 20:54:38 2010 +0200 (edwin)
+--------------------------------------
+ * build system: fix distclean with --disable-llvm.
+
+Mon Feb 15 18:34:57 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/llvm: Update to LLVM upstream SVN r96221.
+
+Mon Feb 15 17:34:41 2010 +0200 (edwin)
+--------------------------------------
+ * win32/: update win32 proj.
+
+Mon Feb 15 17:32:00 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: fix loading of bytecode into intepreter.
+
+Mon Feb 15 16:08:38 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: fix globals in interpreter.
+
+Mon Feb 15 15:01:37 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav: enable prefiltering, and add to dconf.
+
+Mon Feb 15 14:37:09 2010 +0200 (edwin)
+--------------------------------------
+ * clambc, libclamav, unit_tests: dconf for bytecode.
+
+Mon Feb 15 12:41:53 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++, unit_tests: runtime checks verifier.
+
 Sun Feb 14 12:28:52 CET 2010 (acab)
 -----------------------------------
  * libclamav: refactor checkfp logic
+
+Sat Feb 13 19:57:33 2010 +0200 (edwin)
+--------------------------------------
+ * clambc/bcrun.c, shared/optparser.c: fix clambc's printing of source code, and add separate cmdline for it.
+
+Sat Feb 13 18:21:33 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c,readdb.c: Don't fail if bytecode was skipped due to functionality level.
+
+Sat Feb 13 18:13:56 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests/input: update unit tests.
+
+Sat Feb 13 18:13:39 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/readdb.c: fix memory leak in prefiltering code.
 
 Sat Feb 13 02:55:55 CET 2010 (acab)
 -----------------------------------
@@ -80,14 +608,55 @@ Fri Feb 12 15:51:19 CET 2010 (tk)
 ---------------------------------
  * libclamav: add cl_countsigs() (bb#1473)
 
+Fri Feb 12 16:47:44 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*,pe*,unit_tests/input/*: New pointer handling rules.
+
+Wed Feb 10 17:00:30 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/scanners.c: fix init of hook_lsig_matches.
+
+Wed Feb 10 11:39:47 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/matcher*: Add the rest of the prefiltering glue code.
+
+Wed Feb 10 10:22:07 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/filtering.c, win32/: Fix win32 build (bb #1824).
+
 Tue Feb  9 20:44:11 CET 2010 (acab)
 -----------------------------------
  * clamav-milter: allow SkipAuthenticated to read names from a file
 		(bb#1684)
 
+Tue Feb 9 18:56:08 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/matcher.c: move matching code to matcher_run.
+
+Tue Feb 9 18:23:10 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/matcher-ac.c: move leaf checks inside IS_FINAL.
+
 Tue Feb  9 16:35:36 CET 2010 (acab)
 -----------------------------------
  * libclamav/scanners.c: fix gzip handler
+
+Tue Feb 9 13:40:02 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/scanners.c: Show more details about zlib when inflateinit fails.
+
+Tue Feb 9 13:21:14 2010 +0200 (edwin)
+-------------------------------------
+ * configure: fix empty output for check in configure summary.
+
+Tue Feb 9 12:01:31 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav: Prepare for prefiltering: add new files.
+
+
+Mon Feb 8 20:27:59 2010 +0200 (edwin)
+-------------------------------------
+ * unit_tests/check_common.sh: Update unit tests after Phishing.Heuristics -> Heuristics.Phishing change.
 
 Mon Feb  8 19:17:14 CET 2010 (tk)
 ---------------------------------
@@ -99,10 +668,18 @@ Mon Feb  8 13:40:06 CET 2010 (acab)
  * libclamav: drop support for type 8 signatures. disasm matching is now
 		done via bytecode
 
+Mon Feb 8 13:45:03 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/matcher*,readdb.c: Support for macros in logical subsignatures (bb #164).
+
 Mon Feb  8 10:30:03 CET 2010 (tk)
 ---------------------------------
  * freshclam, sigtool: use zlib's Z_FILTERED strategy
 		       Thanks to Edwin
+
+Sat Feb 6 17:53:17 2010 +0200 (edwin)
+-------------------------------------
+ * clambc, libclamav: print bytecode source code.
 
 Sat Feb  6 16:02:28 CET 2010 (acab)
 -----------------------------------
@@ -128,21 +705,78 @@ Wed Feb  3 01:38:50 CET 2010 (acab)
 -----------------------------------
  * win32: workaround HUP reset in poll, set stdin to binary mode
 
+Tue Feb 2 15:29:02 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav: Fix use-after-free on bytecode load/execution.
+
 Tue Feb  2 14:23:18 CET 2010 (tk)
 ---------------------------------
  * freshclam: new option Bytecode
+
+Tue Feb 2 14:03:32 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode*: s/2009/2010/
+
+Tue Feb 2 14:01:38 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Fix loading of multiple .cbc files.
+
+Tue Feb 2 13:46:37 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: fix loading from .cvd.
+
+Tue Feb 2 13:42:33 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: fix segfault on failed cbc load.
+
 
 Mon Feb  1 19:25:45 CET 2010 (tk)
 ---------------------------------
  * sigtool: add support for bytecode.cvd
 
+Mon Feb 1 14:39:37 2010 +0200 (edwin)
+-------------------------------------
+ * clamdtop/clamdtop.c: increase clamdtop timeout (bb #1732).
+
+Mon Feb 1 14:38:36 2010 +0200 (edwin)
+-------------------------------------
+ * clamd: make STATS a non-bulk command (bb #1732).
+
+Mon Feb 1 14:06:07 2010 +0200 (edwin)
+-------------------------------------
+ * clamd/thrmgr.[ch]: Don't allow bulk requests (multiscan, idsession) to fill more than 50% of the queue. (bb #1732)
+
 Sun Jan 31 17:12:48 CET 2010 (acab)
 -----------------------------------
  * win32: clamdscan added
 
+Sat Jan 30 18:31:07 2010 +0200 (edwin)
+--------------------------------------
+ * win32: fix ETIMEDOUT mismatch on win32.
+
 Sat Jan 30 04:19:29 CET 2010 (acab)
 -----------------------------------
  * win32: clamd (sort of) works
+
+Fri Jan 29 18:38:43 2010 +0200 (edwin)
+--------------------------------------
+ * clamdscan: Don't use clamdscan.map, it fails on some versions of Solaris.
+
+Fri Jan 29 14:39:02 2010 +0200 (edwin)
+--------------------------------------
+ * configure: Print feature summary after configure is finished.
+
+Fri Jan 29 12:31:11 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/others.c: Test field offset rather than size.
+
+Fri Jan 29 12:17:07 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/others.c: Add sanity check for struct packing (bb #1752).
+
+Thu Jan 28 15:23:55 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/Makefile.{am,in}: Remove -fno-rtti for now.
 
 Thu Jan 28 12:53:45 CET 2010 (tk)
 ---------------------------------
@@ -152,15 +786,99 @@ Wed Jan 27 18:33:09 CET 2010 (tk)
 ---------------------------------
  * libclamav: provide offset in cli_ac_result (bb#1799)
 
+Wed Jan 27 15:56:13 2010 +0200 (edwin)
+--------------------------------------
+ * clamd/others.c: fix distcheck warnings.
+
+Wed Jan 27 14:42:40 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: _GLIBCXX_PARALLEL is not supported: it creates threads before we fork() causing
+    deadlock.
+
+Wed Jan 27 12:07:08 2010 +0200 (edwin)
+--------------------------------------
+ * clamd, libclamav: Don't use C++ comments in C code.
+
+Wed Jan 27 11:59:51 2010 +0200 (edwin)
+--------------------------------------
+ * clamd: Fix clamd hang when number of multiscan commands == MaxThreads (bb #1770).
+
+Wed Jan 27 11:04:34 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api*: Fix duplicate const qualifier (bb #1798).
+
+Wed Jan 27 10:54:35 2010 +0200 (edwin)
+--------------------------------------
+ * clamd/others.c: Improve error message when no ancillary data is received (bb #1700).
+
+Tue Jan 26 22:11:31 2010 +0200 (edwin)
+--------------------------------------
+ * build system:: update files used by make check. add missing file.
+    Fix make distclean.
+
 Tue Jan 26 19:39:18 CET 2010 (acab)
 -----------------------------------
  * win32: automatically check and regenerate vcprojs,
 	  drop support and tblgen from llvm as these are now prebuilt and
 	  shipped
 
+Tue Jan 26 15:48:56 2010 +0200 (edwin)
+--------------------------------------
+ * win32/: modify vcproj files according to win32/update-win32.pl
+
+Tue Jan 26 15:37:14 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/configure: Perl is not required (bb #1781).
+
+Tue Jan 26 15:33:56 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: Merge LLVM upstream SVN r94539.
+    Update autogenerated files after LLVM import.
+
+Tue Jan 26 14:25:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: fix compiler warning.
+
+Tue Jan 26 12:40:18 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Support building w/o atomic builtins for i386 (bb #1781).
+
+Tue Jan 26 10:10:56 2010 +0200 (edwin)
+--------------------------------------
+ * build system: regenerate build files using automake 1.11.1
+
+Tue Jan 26 09:56:11 2010 +0200 (edwin)
+--------------------------------------
+ * build system: don't link clamdscan with -lz -ldl (bb #1474)
+
+
+Mon Jan 25 15:17:10 2010 +0200 (edwin)
+--------------------------------------
+ * win32/libclamav.def: attempt to fix win32 build.
+
+Mon Jan 25 15:15:54 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode.c: fix distcheck warning.
+
+Mon Jan 25 15:06:30 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api.c: don't return NULL here.
+
 Mon Jan 25 13:27:44 CET 2010 (tk)
 ---------------------------------
  * libclamav: handle digitally signed .info files
+
+Fri Jan 22 17:19:11 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecoed.c: fix typo.
+
+Fri Jan 22 16:50:16 2010 +0200 (edwin)
+--------------------------------------
+ * clambc, libclamav, shared/optparser.c: print bytecode metadata.
+
+Fri Jan 22 14:36:56 2010 +0200 (edwin)
+--------------------------------------
+ * clambc, clambc, etc/clamd.conf, libclamav, shared/optparser.c: BytecodeSecurity setting.
 
 Fri Jan 22 11:49:07 CET 2010 (acab)
 -----------------------------------
@@ -170,6 +888,11 @@ Thu Jan 21 23:01:34 CET 2010 (tk)
 ---------------------------------
  * sigtool: create digitally signed .info files
 
+Thu Jan 21 16:48:56 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav: bytecode ptrdiff32 opcode.
+
+
 Wed Jan 20 23:53:36 CET 2010 (acab)
 -----------------------------------
  * libclamav/pe.c: fix handling of 15h byte skew in upx-lzma (bb#1591)
@@ -178,6 +901,39 @@ Wed Jan 20 22:10:12 CET 2010 (tk)
 ---------------------------------
  * libclamav: check .info files while loading CVD/CLD
 
+Wed Jan 20 20:04:01 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav, unit_tests: Support for malloc in bytecode. Fix crash with mismatched api/flevel versions.
+
+Wed Jan 20 18:20:53 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api.c: longest asm instruction 4096->32.
+
+Wed Jan 20 18:12:10 2010 +0200 (edwin)
+--------------------------------------
+ * unit_tests/check_clamav.c: Prevent check from hanging/crashing when there is a version mismatch.
+
+Wed Jan 20 17:16:27 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode_api.c,disasm.[ch]}: disasm_x86 api.
+
+Wed Jan 20 16:59:05 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/disasm-common.h: fix struct doxygen docs.
+
+Wed Jan 20 16:19:18 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode_api*: file_find, file_byteat bytecode APIs.
+
+
+Tue Jan 19 19:58:15 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/bytecode*: Fix loading of apicall8 (disasm).
+
+Tue Jan 19 16:38:12 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav: Support PE hook bytecodes triggered by logical signature.
+
 Tue Jan 19 11:49:12 CET 2010 (acab)
 -----------------------------------
   * clamdscan/proto.c: don't stop scanning if a file is not found (bb#1760)
@@ -185,6 +941,22 @@ Tue Jan 19 11:49:12 CET 2010 (acab)
 Tue Jan 19 11:26:11 CET 2010 (acab)
 -----------------------------------
   * clamscan/manager.c: use unsigned fsize (bb#1788)
+
+Mon Jan 18 19:31:59 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode*,pe.*,clambc.h}: filesize, and pe_rawaddr API.
+
+Fri Jan 15 18:17:55 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/{bytecode,cache,pe_icons}.c: Fix some pointer dereferences, and sizeof.
+
+Fri Jan 15 15:06:33 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/pe.c: Fix UPX error handling.
+
+Fri Jan 15 10:23:25 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/mpool.[ch]: Fix bus error on Sparc.
 
 Fri Jan 15 03:02:25 CET 2010 (acab)
 -----------------------------------
@@ -198,6 +970,10 @@ Thu Jan 14 19:43:43 CET 2010 (tk)
 ---------------------------------
  * libclamav/readdb.c: fix compatibility issue with .zmd sigs (bb#1793)
 
+Tue Jan 12 16:57:22 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/readdb.c: Fix array size for parsing .ldb tokens.
+
 Tue Jan 12 14:39:55 CET 2010 (tk)
 ---------------------------------
  * libclamav: allow lsigs be anchored to specific containers (bb#1293),
@@ -208,6 +984,10 @@ Tue Jan 12 12:14:08 CET 2010 (tk)
  * libclamav/readdb.c: when some lsig's attribute is unknown ignore the
 		       entire signature and not the attribute itself
 
+Mon Jan 11 12:43:21 2010 +0200 (edwin)
+--------------------------------------
+ * libclamav/cache.c: Fix infinite loop in lookup.
+
 Fri Jan  8 15:20:10 CET 2010 (tk)
 ---------------------------------
  * libclamav: handle zmd/rmd with cdb (bb#1579)
@@ -215,6 +995,18 @@ Fri Jan  8 15:20:10 CET 2010 (tk)
 Thu Jan  7 18:22:39 CET 2010 (tk)
 ---------------------------------
  * libclamav: base code for unified container metadata matcher (bb#1579)
+
+Wed Jan 6 19:53:07 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/cache.c:  Fix hash impl when replacing values.
+
+Wed Jan 6 19:32:34 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/cache.c: a fixed size, LRU hash-based cache.
+
+Tue Jan 5 13:19:33 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/readdb.c: Fix logic.
 
 Tue Jan  5 12:04:47 CET 2010 (acab)
 -----------------------------------
@@ -224,9 +1016,25 @@ Tue Jan  5 02:08:38 CET 2010 (acab)
 -----------------------------------
  * libclamav: merge PE VersionInformation matcher
 
+Mon Jan 4 17:17:22 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/hashtab.c: The hashset's bitmap needs only capacity/32 memory, not capacity/8.
+
+Mon Jan 4 17:08:59 2010 +0200 (edwin)
+-------------------------------------
+ * libclamav/hashtab.[ch]:  add _noalloc hashset functions requested by aCaB.
+
 Mon Jan  4 15:35:16 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix error reporting for BinHex files (bb#1685)
+
+Wed Dec 30 15:08:35 2009 +0200 (edwin)
+--------------------------------------
+ * libclamav: fix bswap in JIT
+
+Wed Dec 30 12:13:40 2009 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Fix __*di3 libcalls on x86-32.
 
 Wed Dec 30 00:19:21 CET 2009 (tk)
 ---------------------------------
@@ -240,6 +1048,18 @@ Tue Dec 29 13:50:01 CET 2009 (tk)
 Mon Dec 28 23:27:40 CET 2009 (tk)
 ---------------------------------
  * sigtool/sigtool.c: properly handle anchored sigs (bb#1780)
+
+Mon Dec 28 20:53:46 2009 +0200 (edwin)
+--------------------------------------
+ * win32/LLVMsupport.vcproj: Update win32 proj.
+
+Mon Dec 28 20:18:59 2009 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Fix some warnings from clang++ bytecode2llvm.cpp.
+
+Mon Dec 28 20:08:10 2009 +0200 (edwin)
+--------------------------------------
+ * libclamav/c++: Update to LLVM upstream r92222.
 
 Tue Dec 22 09:32:33 EET 2009 (edwin)
 ------------------------------------
