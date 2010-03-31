@@ -75,6 +75,9 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_
 int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -187,7 +190,10 @@ const struct cli_apicall cli_apicalls[]={
 	{"inflate_init", 9, 0, 7},
 	{"inflate_process", 8, 13, 2},
 	{"inflate_done", 8, 14, 2},
-	{"bytecode_rt_error", 8, 15, 2}
+	{"bytecode_rt_error", 8, 15, 2},
+	{"jsnorm_init", 8, 16, 2},
+	{"jsnorm_process", 8, 17, 2},
+	{"jsnorm_done", 8, 18, 2}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -230,7 +236,10 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_buffer_pipe_done,
 	(cli_apicall_int1)cli_bcapi_inflate_process,
 	(cli_apicall_int1)cli_bcapi_inflate_done,
-	(cli_apicall_int1)cli_bcapi_bytecode_rt_error
+	(cli_apicall_int1)cli_bcapi_bytecode_rt_error,
+	(cli_apicall_int1)cli_bcapi_jsnorm_init,
+	(cli_apicall_int1)cli_bcapi_jsnorm_process,
+	(cli_apicall_int1)cli_bcapi_jsnorm_done
 };
 const cli_apicall_malloclike cli_apicalls3[] = {
 	(cli_apicall_malloclike)cli_bcapi_malloc

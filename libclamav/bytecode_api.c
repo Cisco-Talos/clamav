@@ -42,6 +42,7 @@
 #include "pe.h"
 #include "disasm.h"
 #include "scanners.h"
+#include "jsparse/js-norm.h"
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -817,3 +818,80 @@ int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx , int32_t id)
     return 0;
 }
 
+int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
+{
+    struct parser_state *state;
+    struct bc_jsnorm *b;
+    unsigned  n = ctx->njsnorms + 1;
+    if (!get_buffer(ctx, from)) {
+	cli_dbgmsg("bytecode api: jsnorm_init: invalid buffers!\n");
+	return -1;
+    }
+    state = cli_js_init();
+    if (!state)
+	return -1;
+    b = cli_realloc(ctx->jsnorms, sizeof(*ctx->jsnorms)*n);
+    if (!b) {
+	cli_js_destroy(state);
+	return -1;
+    }
+    ctx->jsnorms = b;
+    ctx->njsnorms = n;
+    b = &b[n-1];
+    b->from = from;
+    b->state = state;
+    if (!ctx->jsnormdir) {
+	cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+	ctx->jsnormdir = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
+	if (ctx->jsnormdir) {
+	    if (mkdir(ctx->jsnormdir, 0700)) {
+		cli_dbgmsg("js: can't create temp dir %s\n", ctx->jsnormdir);
+		free(ctx->jsnormdir);
+		return CL_ETMPDIR;
+	    }
+	}
+    }
+    return n-1;
+}
+
+static struct bc_jsnorm *get_jsnorm(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || id >= ctx->njsnorms || !ctx->jsnorms)
+	return NULL;
+    return &ctx->jsnorms[id];
+}
+
+int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
+{
+    unsigned avail;
+    char *in;
+    cli_ctx *cctx = ctx->ctx;
+    struct bc_jsnorm *b = get_jsnorm(ctx, id);
+    if (!b || b->from == -1 || !b->state)
+	return -1;
+
+    avail = cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+    in = cli_bcapi_buffer_pipe_read_get(ctx, b->from, avail);
+    if (!avail || !in)
+	return -1;
+    if (cctx && cli_checklimits("bytecode js api", cctx, ctx->jsnormwritten + avail, 0, 0))
+	return -1;
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail);
+    cli_js_process_buffer(b->state, in, avail);
+    return 0;
+}
+
+int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t id)
+{
+    struct bc_jsnorm *b = get_jsnorm(ctx, id);
+    if (!b || b->from == -1)
+	return -1;
+    if (ctx->ctx && cli_updatelimits(ctx->ctx, ctx->jsnormwritten))
+	return -1;
+    ctx->jsnormwritten = 0;
+    cli_js_parse_done(b->state);
+    cli_js_output(b->state, ctx->jsnormdir);
+    cli_js_destroy(b->state);
+    b->from = -1;
+    return 0;
+}

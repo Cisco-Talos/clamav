@@ -72,5 +72,8 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_
 int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t);
 
 #endif

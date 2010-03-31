@@ -132,6 +132,11 @@ struct bc_inflate {
     int8_t  needSync;
 };
 
+struct bc_jsnorm {
+    struct parser_state *state;
+    int32_t from;
+};
+
 struct cli_bc_ctx {
     uint8_t timeout;/* must be first byte in struct! */
     /* id and params of toplevel function called */
@@ -174,6 +179,10 @@ struct cli_bc_ctx {
     unsigned nbuffers;
     struct cli_hashset *hashsets;
     unsigned nhashsets;
+    struct bc_jsnorm* jsnorms;
+    unsigned njsnorms;
+    char *jsnormdir;
+    unsigned jsnormwritten;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
