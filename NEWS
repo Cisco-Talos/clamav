@@ -1,5 +1,5 @@
-0.96rc2
--------
+0.96
+----
 
 This release of ClamAV introduces new malware detection mechanisms and other
 significant improvements to the scan engine. The key features include:
