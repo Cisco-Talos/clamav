@@ -1,3 +1,7 @@
+Wed Mar 31 18:07:05 CEST 2010 (acab)
+------------------------------------
+  * libclamav/7z: add recovery mode to 7z ansi
+
 Wed Mar 31 16:27:18 EEST 2010 (edwin)
 -------------------------------------
  * shared/output.c: fix race condition in IDSESSION mode (bb #1838).
