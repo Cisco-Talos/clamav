@@ -460,7 +460,7 @@
 #define PACKAGE_URL "http://www.clamav.net/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "devel"
+#define PACKAGE_VERSION "0.96"
 
 /* scan buffer size */
 #define SCANBUFF 131072
@@ -496,7 +496,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.96rc2-34-g3d8a490"
+#define VERSION "0.96"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
