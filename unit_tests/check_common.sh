@@ -267,10 +267,16 @@ test_clamd1() {
 	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in multiscan mode!"
     fi
     if test "$NFILES" -ne "0$NINFECTED_FDPASS"; then
-	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in fdpass mode!"
+	scan_failed clamdscan-fdpass.log "clamd did not detect all testfiles correctly in fdpass mode!"
     fi
     if test "$NFILES" -ne "0$NINFECTED_MULTI_FDPASS"; then
-	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in fdpass+multiscan mode!"
+	scan_failed clamdscan-multiscan-fdpass.log "clamd did not detect all testfiles correctly in fdpass+multiscan mode!"
+    fi
+    if test "$NFILES" -ne "0$NINFECTED_STREAM"; then
+	scan_failed clamdscan-stream.log "clamd did not detect all testfiles correctly in stream mode!"
+    fi
+    if test "$NFILES" -ne "0$NINFECTED_MULTI_STREAM"; then
+	scan_failed clamdscan-multiscan-stream.log "clamd did not detect all testfiles correctly in multiscan+stream mode!"
     fi
     # Test HeuristicScanPrecedence off feature
     run_clamdscan ../clam-phish-exe
