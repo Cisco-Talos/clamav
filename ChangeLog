@@ -1,3 +1,7 @@
+Wed Mar 31 18:13:38 CEST 2010 (tk)
+----------------------------------
+ * libclamav/mspack.c: improve unpacking of malformed cabinets (bb#1826)
+
 Wed Mar 31 18:07:05 CEST 2010 (acab)
 ------------------------------------
   * libclamav/7z: add recovery mode to 7z ansi
