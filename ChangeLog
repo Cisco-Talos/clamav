@@ -1,3 +1,8 @@
+Fri Apr  2 16:19:26 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/lib/ExecutionEngine/JIT/JIT.cpp:
+ Fix the previous PowerPC workaround to not crash when not using the JIT.
+
 Fri Apr  2 13:09:54 EEST 2010 (edwin)
 ------------------------------------
  * libclamav/c++/{bytecode2llvm.cpp,llvm/lib/ExecutionEngine/JIT/JIT.cpp,
