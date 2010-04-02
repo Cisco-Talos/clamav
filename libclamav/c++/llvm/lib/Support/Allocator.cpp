@@ -83,7 +83,7 @@ void BumpPtrAllocator::Reset(size_t Size, size_t Alignment, DTorFunction DTor) {
   MemSlab *Slab = CurSlab;
   while (Slab) {
     char *End = Slab == CurSlab ? CurPtr : (char*)Slab + Slab->Size;
-    for (char *Ptr = (char*)Slab+1; Ptr < End; Ptr += Size) {
+    for (char *Ptr = (char*)(Slab+1); Ptr < End; Ptr += Size) {
 	Ptr = AlignPtr(Ptr, Alignment);
 	if (Ptr + Size <= End)
 	    DTor(Ptr);
