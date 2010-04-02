@@ -1,3 +1,9 @@
+Fri Apr  2 13:09:54 EEST 2010 (edwin)
+------------------------------------
+ * libclamav/c++/{bytecode2llvm.cpp,llvm/lib/ExecutionEngine/JIT/JIT.cpp,
+     llvm/lib/Target/PowerPC/PPCISelLowering.cpp}: Workaround LLVM JIT PowerPC relocation bug (bb #1921).
+    Based on Gary Benson's workaround for OpenJDK Shark / IcedTea.
+
 Fri Apr  2 13:07:50 EEST 2010 (edwin)
 -------------------------------------
  * unit_tests: Fix matchwithread.cbc

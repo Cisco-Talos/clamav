@@ -255,7 +255,8 @@ public:
     MutexGuard guard(Lock);
     JITs.erase(jit);
   }
-  void *getPointerToNamedFunction(const char *Name) const {
+  void *getPointerToNamedFunction(const char *Name,
+                                  bool AbortOnFailure = true) const {
     MutexGuard guard(Lock);
     assert(JITs.size() != 0 && "No Jit registered");
     //search function in every instance of JIT
@@ -267,7 +268,19 @@ public:
     }
     // The function is not available : fallback on the first created (will
     // search in symbol of the current program/library)
-    return (*JITs.begin())->getPointerToNamedFunction(Name);
+    return (*JITs.begin())->getPointerToNamedFunction(Name, AbortOnFailure);
+  }
+  void *getPointerToGlobalIfAvailable(GlobalValue *V) const {
+    MutexGuard guard(Lock);
+    assert(JITs.size() != 0 && "No Jit registered");
+    //search function in every instance of JIT
+    for (SmallPtrSet<JIT*, 1>::const_iterator Jit = JITs.begin(),
+           end = JITs.end();
+         Jit != end; ++Jit) {
+      if (void *Ptr = (*Jit)->getPointerToGlobalIfAvailable(V))
+	return Ptr;
+    }
+    return 0;
   }
 };
 ManagedStatic<JitPool> AllJits;
@@ -280,6 +293,22 @@ extern "C" {
   // resolve their addresses at runtime, and this is the way to do it.
   void *getPointerToNamedFunction(const char *Name) {
     return AllJits->getPointerToNamedFunction(Name);
+  }
+}
+
+extern "C" {
+  // getPointerToNamedFunctionOrNull - same as the above, but returns
+  // NULL instead of aborting if the function cannot be found.
+  void *getPointerToNamedFunctionOrNull(const char *Name) {
+    return AllJits->getPointerToNamedFunction(Name, false);
+  }
+}
+
+extern "C" {
+  // getPointerToGlobalIfAvailable - same as the above, but for global
+  // variables, and only for those that have been codegened already.
+  void *getPointerToGlobalIfAvailable(GlobalValue *V) {
+    return AllJits->getPointerToGlobalIfAvailable(V);
   }
 }
 
