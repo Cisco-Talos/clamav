@@ -2450,6 +2450,9 @@ void PrepareTailCall(SelectionDAG &DAG, SDValue &InFlag, SDValue &Chain,
   InFlag = Chain.getValue(1);
 }
 
+extern "C" void *getPointerToNamedFunctionOrNull(const char *Name);
+extern "C" void *getPointerToGlobalIfAvailable(GlobalValue *Value);
+
 static
 unsigned PrepareCall(SelectionDAG &DAG, SDValue &Callee, SDValue &InFlag,
                      SDValue &Chain, DebugLoc dl, int SPDiff, bool isTailCall,
@@ -2461,6 +2464,29 @@ unsigned PrepareCall(SelectionDAG &DAG, SDValue &Callee, SDValue &InFlag,
   NodeTys.push_back(MVT::Flag);    // Returns a flag for retval copy to use.
 
   unsigned CallOpc = isSVR4ABI ? PPCISD::CALL_SVR4 : PPCISD::CALL_Darwin;
+
+  // XXX Work around for http://llvm.org/bugs/show_bug.cgi?id=5201
+  // and http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=399
+  // for Shark.
+  //
+  // If the callee is an ExternalSymbol node, and the symbol can be
+  // resolved to a function pointer, then insert that pointer as a
+  // constant.  This causes the next block of code to fall into the
+  // block that emits an indirect call.  This works around
+  //
+  // This works for Shark because the only kinds of call that Shark
+  // makes that do not already fall into the indirect call block are
+  // calls to pre-existing external functions.
+  if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee)) {
+    void *FuncPtr = getPointerToNamedFunctionOrNull(S->getSymbol());
+    if (FuncPtr)
+      Callee = DAG.getConstant((uint64_t) FuncPtr, PtrVT);
+  }
+  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
+    void *FuncPtr = getPointerToGlobalIfAvailable(G->getGlobal());
+    if (FuncPtr)
+      Callee = DAG.getConstant((uint64_t) FuncPtr, PtrVT);
+  }
 
   // If the callee is a GlobalAddress/ExternalSymbol node (quite common, every
   // direct call is) turn it into a TargetGlobalAddress/TargetExternalSymbol

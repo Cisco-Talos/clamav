@@ -1428,6 +1428,7 @@ public:
 		if (verifyFunction(*F, PrintMessageAction) == 0) {
 			DEBUG(errs() << "Generating code\n");
 			// Codegen current function as executable machine code.
+			EE->getPointerToFunction(Functions[j]);
 			void *code = EE->getPointerToFunction(F);
 			DEBUG(errs() << "Code generation finished\n");
 
@@ -1472,6 +1473,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
     EE->addGlobalMapping(CF->FHandler, (void*)(intptr_t)jit_exception_handler);
     EE->InstallLazyFunctionCreator(noUnknownFunctions);
+    EE->getPointerToFunction(CF->FHandler);
 
     std::vector<const Type*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
@@ -1527,12 +1529,15 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     CF->FRealmemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					     "memset", M);
     EE->addGlobalMapping(CF->FRealmemset, (void*)(intptr_t)memset);
+    EE->getPointerToFunction(CF->FRealmemset);
     CF->FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					      "memmove", M);
     EE->addGlobalMapping(CF->FRealMemmove, (void*)(intptr_t)memmove);
+    EE->getPointerToFunction(CF->FRealMemmove);
     CF->FRealmemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					     "memcpy", M);
     EE->addGlobalMapping(CF->FRealmemcpy, (void*)(intptr_t)memcpy);
+    EE->getPointerToFunction(CF->FRealmemcpy);
 
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
@@ -1542,6 +1547,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 				 args, false);
     CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
     EE->addGlobalMapping(CF->FRealmemcmp, (void*)(intptr_t)memcmp);
+    EE->getPointerToFunction(CF->FRealmemcmp);
 }
 
 }
@@ -1755,6 +1761,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		    llvm_unreachable("invalid api type");
 	    }
 	    EE->addGlobalMapping(F, dest);
+	    EE->getPointerToFunction(F);
 	    apiFuncs[i] = F;
 	}
 
@@ -1774,6 +1781,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	Function *SFail = Function::Create(FTy, Function::ExternalLinkage,
 					      "__stack_chk_fail", M);
 	EE->addGlobalMapping(SFail, (void*)(intptr_t)jit_ssp_handler);
+        EE->getPointerToFunction(SFail);
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
