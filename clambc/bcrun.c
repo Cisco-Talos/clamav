@@ -371,6 +371,7 @@ int main(int argc, char *argv[])
 	    map = fmap(fd, 0, 0);
 	    if (!map) {
 		fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
+		exit(5);
 	    }
 	    rc = cli_bytecode_context_setfile(ctx, map);
 	    if (rc != CL_SUCCESS) {
