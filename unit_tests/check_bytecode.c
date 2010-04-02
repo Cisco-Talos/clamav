@@ -223,7 +223,7 @@ START_TEST (test_matchwithread_jit)
     cl_init(CL_INIT_DEFAULT);
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
-    pedata.opt32.ImageBase = 0x400000;
+    cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
     pedata.hdr_size = 0x400;
     pedata.nsections = 1;
     sect.rva = 4096;
@@ -246,7 +246,7 @@ START_TEST (test_matchwithread_int)
     cl_init(CL_INIT_DEFAULT);
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
-    pedata.opt32.ImageBase = 0x400000;
+    cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
     pedata.hdr_size = 0x400;
     pedata.nsections = 1;
     sect.rva = 4096;
