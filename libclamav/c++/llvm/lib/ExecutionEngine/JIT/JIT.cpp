@@ -255,6 +255,10 @@ public:
     MutexGuard guard(Lock);
     JITs.erase(jit);
   }
+  bool empty() {
+    MutexGuard guard(Lock);
+    return JITs.empty();
+  }
   void *getPointerToNamedFunction(const char *Name,
                                   bool AbortOnFailure = true) const {
     MutexGuard guard(Lock);
@@ -300,7 +304,7 @@ extern "C" {
   // getPointerToNamedFunctionOrNull - same as the above, but returns
   // NULL instead of aborting if the function cannot be found.
   void *getPointerToNamedFunctionOrNull(const char *Name) {
-    return AllJits->getPointerToNamedFunction(Name, false);
+    return !AllJits->empty() ? AllJits->getPointerToNamedFunction(Name, false) : 0;
   }
 }
 
@@ -308,7 +312,7 @@ extern "C" {
   // getPointerToGlobalIfAvailable - same as the above, but for global
   // variables, and only for those that have been codegened already.
   void *getPointerToGlobalIfAvailable(GlobalValue *V) {
-    return AllJits->getPointerToGlobalIfAvailable(V);
+    return !AllJits->empty() ? AllJits->getPointerToGlobalIfAvailable(V) : 0;
   }
 }
 
