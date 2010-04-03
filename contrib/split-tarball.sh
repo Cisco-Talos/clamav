@@ -32,15 +32,26 @@ mv libclamunrar $UNRARDIR
 cp -R m4/ $UNRARDIR
 cp -R config/ $UNRARDIR
 cp configure.in $UNRARDIR
+cp platform.h.in $UNRARDIR
 cp COPYING{,.unrar,.LGPL} $UNRARDIR
 cd ../
 tar -czf $DFSGPKG clamav-$2+dfsg/
 cd $UNRARDIR
 echo "Preparing unrar package"
+# The sed sorcery below makes sure that the AC_OUTPUT in the unrar package looks
+# like:
+# AC_OUTPUT([
+# libclamunrar_iface/Makefile
+# Makefile
+# platform.h
+# ])
+# It also removes ltdl, and renames the AC_CONFIG_SRCDIR parameter to an
+# existing file.
 sed -i '/AC_OUTPUT/,/])/ {
-/^AC_OUTPUT/p
-s/^libclamav\/Makefile/libclamunrar_iface\/Makefile/p
+/^AC_OUTPUT(\[$/p
+s/^clamscan\/Makefile/libclamunrar_iface\/Makefile/p
 /^Makefile/p
+/^platform.h/p
 /^])/p
 d
 }
