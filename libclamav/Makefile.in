@@ -2271,10 +2271,7 @@ version.h.tmp:
 	rm -f $@;\
 	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null || echo "exported")";\
 	if test "$$REVISION" = "exported"; then\
-	   REVISION="r$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
-	   if test "$$REVISION" = "rexported"; then\
 	    REVISION="";\
-	   fi;\
 	fi;\
 	if test -n "$$REVISION"; then\
 		echo "#define REPO_VERSION \"devel-$$REVISION\"" >> $@;\
