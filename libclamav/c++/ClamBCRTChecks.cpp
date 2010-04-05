@@ -65,6 +65,14 @@ namespace {
     PtrVerifier() : FunctionPass((intptr_t)&ID),rootNode(0) {}
 
     virtual bool runOnFunction(Function &F) {
+#ifndef CLAMBC_COMPILER
+      // Bytecode was already verifier and had stack protector applied.
+      // We get called again because ALL bytecode functions loaded are part of
+      // the same module.
+      if (F.hasFnAttr(Attribute::StackProtectReq))
+	  return false;
+#endif
+
       DEBUG(F.dump());
       Changed = false;
       BaseMap.clear();
