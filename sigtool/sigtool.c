@@ -103,6 +103,7 @@ static const struct dblist_s {
     { "main.sdb",   1 },    { "daily.sdb",  1 },
     { "main.zmd",   1 },    { "daily.zmd",  1 },
     { "main.rmd",   1 },    { "daily.rmd",  1 },
+    { "main.idb",   0 },    { "daily.idb",  0 },
     { "main.fp",    0 },    { "daily.fp",   0 },
     { "main.pdb",   1 },    { "daily.pdb",  1 },    { "safebrowsing.gdb", 1 },
     { "main.wdb",   0 },    { "daily.wdb",  0 },    { "safebrowsing.wdb", 0 },
