@@ -562,6 +562,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    } \
 	    if(xroot->ac_lsigtable[i]->tdb.icongrp1 || xroot->ac_lsigtable[i]->tdb.icongrp2) { \
 		if(matchicon(ctx, xroot->ac_lsigtable[i]->tdb.icongrp1, xroot->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) { \
+		    if(ctx->virname) \
+			*ctx->virname = xroot->ac_lsigtable[i]->virname; \
 		    ret = CL_VIRUS; \
 		    break; \
 		} else { \
