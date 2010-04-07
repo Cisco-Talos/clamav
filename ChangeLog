@@ -1,3 +1,7 @@
+Wed Apr  7 12:42:19 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher.c: return proper virus name in icon detector (bb#1933)
+
 Mon Apr  5 22:41:40 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/bytecode2llvm.cpp: Fix load of multiple unsigned bytecodes (bb #1924)
