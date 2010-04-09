@@ -1,5 +1,5 @@
-; RUN: llvm-as %s -o %t.bc
-; RUN: lli %t.bc > /dev/null
+; RUNX: llvm-as %s -o %t.bc
+; RUNX: lli %t.bc > /dev/null
 
 define i32 @foo(i32 %X, i32 %Y, double %A) {
 	%cond212 = fcmp une double %A, 1.000000e+00		; <i1> [#uses=1]
