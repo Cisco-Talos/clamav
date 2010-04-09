@@ -1,3 +1,7 @@
+Fri Apr  9 17:01:07 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/test: Fix make check failure on x86-32 (bb #1942)
+
 Fri May  7 15:45:55 CEST 2010 (tk)
 ----------------------------------
  * libclamav/readdb.c: add checks to enforce lsig compatibility with 0.95.x (bb#2008)
