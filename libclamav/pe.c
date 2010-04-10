@@ -2520,33 +2520,39 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 			while(st_sz > 6) {  /* enum all strings - RESUMABLE */
 			    uint32_t s_sz, s_key_sz, s_val_sz;
 
-			    s_sz = s_val_sz = cli_readint32(vptr);
-			    s_sz &= 0xffff;
-			    s_val_sz = (s_val_sz & 0xffff0000)>>15;
-			    if(s_sz > st_sz || s_sz <= 6 + 2 + 2 || s_val_sz > s_sz - 6 - 2 - 2) {
+			    s_sz = (cli_readint32(vptr) & 0xffff) + 3;
+			    s_sz &= ~3;
+			    if(s_sz > st_sz || s_sz <= 6 + 2 + 8) {
 				/* - the content is larger than the container
-				 * - there's no room for a minimal string (headers(6) + key(2) + padding(2))
+				 * - there's no room for a minimal string
 				 * - there's no room for the value */
 				st_sz = 0;
 				sfi_sz = 0;
 				break; /* force a hard fail */
 			    }
 
-			    if(!s_val_sz) {
-				/* skip unset value */
+			    /* ~wcstrlen(key) */
+			    for(s_key_sz = 6; s_key_sz+1 < s_sz; s_key_sz += 2) {
+				if(vptr[s_key_sz] || vptr[s_key_sz+1]) continue;
+				s_key_sz += 2;
+				break;
+			    }
+
+			    s_key_sz += 3;
+			    s_key_sz &= ~3;
+
+			    if(s_key_sz >= s_sz) {
+				/* key overflow */
 				vptr += s_sz;
 				st_sz -= s_sz;
 				continue;
 			    }
 
-			    /* ~wcstrlen(key) */
-			    for(s_key_sz = 0; s_key_sz < s_sz - 6 - s_val_sz; s_key_sz += 2) {
-				if(vptr[6+s_key_sz] || vptr[6+s_key_sz+1]) continue;
-				s_key_sz += 2;
-				break;
-			    }
-			    if(s_key_sz >= s_sz - 6 - s_val_sz) {
-				/* key overflow */
+			    s_val_sz = s_sz - s_key_sz;
+			    s_key_sz -= 6;
+
+			    if(s_val_sz <= 2) {
+				/* skip unset value */
 				vptr += s_sz;
 				st_sz -= s_sz;
 				continue;
@@ -2567,9 +2573,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 				/* FIXME: skip too long strings */
 				k = cli_utf16toascii(vptr + 6, s_key_sz);
 				if(k) {
-				    s_key_sz += 6 + 3;
-				    s_key_sz &= ~3;
-				    v = cli_utf16toascii(vptr + s_key_sz, s_val_sz);
+				    v = cli_utf16toascii(vptr + s_key_sz + 6, s_val_sz);
 				    if(v) {
 					s = cli_str2hex(vptr + 6, s_key_sz + s_val_sz - 6);
 					if(s) {

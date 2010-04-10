@@ -1,3 +1,7 @@
+Sat Apr 10 16:36:11 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe.c: more relaxed vinfo parser - try to mimic winxp's
+
 Wed Apr  7 16:27:42 CEST 2010 (tk)
 ----------------------------------
  * sigtool: handle .idb files
