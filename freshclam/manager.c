@@ -673,6 +673,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	*pt = 0;
 	pt += 4;
 
+	tms.tm_isdst = -1;
 	if(!strptime(buff, "%a %b  %d %H:%M:%S %Y", &tms) || (epoch = mktime(&tms)) == -1) {
 	    logg("!SubmitDetectionStats: Failed to convert date string\n");
 	    ret = 1;
