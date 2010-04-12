@@ -1,5 +1,5 @@
-The files in libclamav/llvm/llvm are from the LLVM project, original license is
-in libclamav/llvm/llvm/LICENSE.TXT:
+The files in libclamav/c++/llvm are from the LLVM project, original license is
+in libclamav/c++/llvm/LICENSE.TXT:
 
 ==============================================================================
 LLVM Release License
