@@ -333,5 +333,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_pdf_int);
     tcase_add_test(tc_cli_arith, test_bswap_int);
     tcase_add_test(tc_cli_arith, test_inflate_int);
+    tcase_add_test(tc_cli_arith, test_retmagic_int);
     return s;
 }

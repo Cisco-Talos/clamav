@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     const struct optstruct *opt;
     unsigned funcid=0, i;
     struct cli_all_bc bcs;
-    unsigned int fd = -1;
+    int fd = -1;
     unsigned tracelevel;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);

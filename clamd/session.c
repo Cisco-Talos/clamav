@@ -326,6 +326,9 @@ int command(client_conn_t *conn, int *virus)
 	    conn->scanfd = -1;
 	    cli_unlink(conn->filename);
 	    return ret;
+	default:
+	    logg("!Invalid command distpached: %d\n", conn->cmdtype);
+	    return 1;
     }
 
     scandata.type = type;
@@ -412,6 +415,10 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	    /* not a scan command, don't queue to bulk */
 	    bulk = 0;
 	    /* just dispatch the command */
+	    break;
+	default:
+	    logg("!Invalid command dispatch: %d\n", cmd);
+	    ret = -2;
 	    break;
     }
     if (!dup_conn->group)

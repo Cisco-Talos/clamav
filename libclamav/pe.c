@@ -511,7 +511,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
-	uint32_t valign, falign, hdr_size, j, offset;
+	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
 	char timestr[32];
@@ -2571,11 +2571,11 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 				char *k, *v, *s;
 
 				/* FIXME: skip too long strings */
-				k = cli_utf16toascii(vptr + 6, s_key_sz);
+				k = cli_utf16toascii((const char*)vptr + 6, s_key_sz);
 				if(k) {
-				    v = cli_utf16toascii(vptr + s_key_sz + 6, s_val_sz);
+				    v = cli_utf16toascii((const char*)vptr + s_key_sz + 6, s_val_sz);
 				    if(v) {
-					s = cli_str2hex(vptr + 6, s_key_sz + s_val_sz - 6);
+					s = cli_str2hex((const char*)vptr + 6, s_key_sz + s_val_sz - 6);
 					if(s) {
 					    cli_dbgmsg("VersionInfo (%x): '%s'='%s' - VI:%s\n", (uint32_t)(vptr - baseptr + 6), k, v, s);
 					    free(s);

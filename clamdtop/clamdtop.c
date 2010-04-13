@@ -1133,7 +1133,6 @@ static void setup_connections(int argc, char *argv[])
 	    default_colors = 1;
 	memset(&global, 0, sizeof(global));
 	if (!opts->filename || !opts->filename[0]) {
-	    char *aargv[2];
 	    const struct optstruct *opt;
 	    const char *clamd_conf = optget(opts, "config-file")->strarg;
 

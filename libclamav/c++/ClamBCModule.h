@@ -5,8 +5,6 @@ namespace llvm {
     class Pass;
 }
 namespace ClamBCModule {
-    static void stop(const char *msg, llvm::Function* F, llvm::Instruction* I) {
-	llvm::errs() << msg << "\n";
-    }
+    void stop(const char *msg, llvm::Function* F, llvm::Instruction* I);
 }
 llvm::Pass *createClamBCRTChecks();

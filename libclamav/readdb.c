@@ -1651,7 +1651,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	    ret = CL_EMEM;
 	    break;
 	}
-	new->name = (unsigned char *) cli_mpool_strdup(engine->mempool, tokens[0]);
+	new->name = cli_mpool_strdup(engine->mempool, tokens[0]);
 	if(!new->name) {
 	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;

@@ -418,7 +418,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
     return v;
 }
 
-static inline unsigned char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
+static inline char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
 {
     unsigned char *dat, *q;
     unsigned l, newoff, i;
@@ -458,13 +458,13 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
     }
     *off = newoff;
     *datalen = l;
-    return dat;
+    return (char*)dat;
 }
 
 static inline char *readString(const unsigned char *p, unsigned *off, unsigned len, char *ok)
 {
     unsigned stringlen;
-    char *str = (char*)readData(p, off, len, ok, &stringlen);
+    char *str = readData(p, off, len, ok, &stringlen);
     if (*ok && stringlen && str[stringlen-1] != '\0') {
 	str[stringlen-1] = '\0';
 	cli_errmsg("bytecode: string missing \\0 terminator: %s\n", str);
@@ -529,7 +529,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 	return CL_EMALFDB;
     }
     offset++;
-    *linelength = strtol(buffer+offset, &pos, 10);
+    *linelength = strtol((const char*)buffer+offset, &pos, 10);
     if (*pos != '\0') {
 	cli_errmsg("Invalid number: %s\n", buffer+offset);
 	return CL_EMALFDB;
@@ -548,7 +548,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
     return CL_SUCCESS;
 }
 
-static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
+static int parseLSig(struct cli_bc *bc, char *buffer)
 {
     const char *prefix;
     char *vnames, *vend = strchr(buffer, ';');
@@ -920,7 +920,7 @@ static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
 
 static int parseMD(struct cli_bc *bc, unsigned char *buffer)
 {
-    unsigned offset = 1, len = strlen(buffer);
+    unsigned offset = 1, len = strlen((const char*)buffer);
     unsigned numMD, i, b;
     char ok = 1;
     if (buffer[0] != 'D')
@@ -1345,7 +1345,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	row++;
 	switch (state) {
 	    case PARSE_BC_LSIG:
-		rc = parseLSig(bc, (unsigned char*)buffer);
+		rc = parseLSig(bc, buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
 		    free(buffer);

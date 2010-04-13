@@ -1,3 +1,8 @@
+Tue Apr 13 16:17:35 EEST 2010 (edwin)
+-------------------------------------
+ * clambc, clamd,clamdtop,libclamav,unit_tests: fix compiler warnings (bb #1872,
+					        bb #1934, bb #1935)
+
 Tue Apr 13 16:13:05 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++: allow building with gcc 3.4.6 (bb #1934).

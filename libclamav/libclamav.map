@@ -28,8 +28,6 @@ CLAMAV_PUBLIC {
     cl_statinidir;
     cl_countsigs;
     cl_strerror;
-  local:
-    *;
 };
 CLAMAV_PRIVATE {
   global:

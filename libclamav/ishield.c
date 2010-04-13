@@ -480,7 +480,6 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     int ret = CL_BREAK;
     char hash[33], *hdr;
     fmap_t *map = *ctx->fmap;
-    size_t mp_hdrsz;
 
     struct IS_HDR *h1;
     struct IS_OBJECTS *objs;

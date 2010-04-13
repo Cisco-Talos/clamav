@@ -501,7 +501,7 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
     }
 
     str = mpool_malloc(mp, (len/2) + 1);
-    if (cli_hex2str_to(hex, str, len) == -1) {
+    if (cli_hex2str_to(hex, (char*)str, len) == -1) {
 	mpool_free(mp, str);
 	return NULL;
     }

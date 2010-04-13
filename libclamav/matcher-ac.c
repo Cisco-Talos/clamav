@@ -1618,7 +1618,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			break;
 		    }
 
-		    if(!(c = cli_mpool_hex2str(root->mempool, h))) {
+		    if(!(c = (char*)cli_mpool_hex2str(root->mempool, h))) {
 			free(h);
 			error = CL_EMALFDB;
 			break;

@@ -77,7 +77,6 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     const char *virname;
     int ret;
     int type = scandata->type;
-    const struct optstruct *opt;
 
     /* detect disconnected socket, 
      * this should NOT detect half-shutdown sockets (SHUT_WR) */
