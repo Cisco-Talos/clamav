@@ -84,7 +84,7 @@ if test "$enable_llvm" = "auto"; then
     gxx_version=`${CXX} -dumpversion` ||
     AC_MSG_ERROR([Unable to get GNU C++ compiler version])
     case "${gxx_version}" in
-     [[023]].*)
+     [[02]].*|3.[[012356789]]*|3.4.[[012345789]]*)
 	AC_MSG_ERROR([C++ compiler too old (${gxx_version})])
         ;;
      4.1.[[1]]*)
@@ -152,6 +152,11 @@ fi
 AM_CONDITIONAL(BUILD_X86, [test "$build_x86" = "yes"])
 AM_CONDITIONAL(BUILD_PPC, [test "$build_ppc" = "yes"])
 AM_CONDITIONAL(BUILD_ARM, [test "$build_arm" = "yes"])
+
+AC_MSG_CHECKING([optional compiler flags])
+CXX_FLAG_CHECK(NO_VARIADIC_MACROS, [-Wno-variadic-macros])
+CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
+AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AC_OUTPUT([
     Makefile

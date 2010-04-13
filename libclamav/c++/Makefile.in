@@ -94,9 +94,10 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/check_gnu_make.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/cxx_flag_check.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -124,6 +125,10 @@ am_libgoogletest_la_OBJECTS = libgoogletest_la-gtest-death-test.lo \
 	libgoogletest_la-gtest-typed-test.lo libgoogletest_la-gtest.lo \
 	libgoogletest_la-TestMain.lo
 libgoogletest_la_OBJECTS = $(am_libgoogletest_la_OBJECTS)
+libgoogletest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 libllvmarmcodegen_la_LIBADD =
 am__libllvmarmcodegen_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/IfConversion.cpp \
@@ -472,6 +477,10 @@ am_llvmunittest_ADT_OBJECTS = llvmunittest_ADT-APFloatTest.$(OBJEXT) \
 llvmunittest_ADT_OBJECTS = $(am_llvmunittest_ADT_OBJECTS)
 llvmunittest_ADT_DEPENDENCIES = libgoogletest.la \
 	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+llvmunittest_ADT_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_llvmunittest_ExecutionEngine_OBJECTS =  \
 	llvmunittest_ExecutionEngine-IntrinsicLowering.$(OBJEXT) \
 	llvmunittest_ExecutionEngine-ExecutionEngineTest.$(OBJEXT)
@@ -480,6 +489,10 @@ llvmunittest_ExecutionEngine_OBJECTS =  \
 llvmunittest_ExecutionEngine_DEPENDENCIES = libgoogletest.la \
 	libllvminterpreter.la libllvmsupport_nodups.la \
 	$(libclamavcxx_la_LIBADD) libllvmsystem.la
+llvmunittest_ExecutionEngine_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_llvmunittest_JIT_OBJECTS =  \
 	llvmunittest_JIT-JITEventListenerTest.$(OBJEXT) \
 	llvmunittest_JIT-JITMemoryManagerTest.$(OBJEXT) \
@@ -487,6 +500,10 @@ am_llvmunittest_JIT_OBJECTS =  \
 llvmunittest_JIT_OBJECTS = $(am_llvmunittest_JIT_OBJECTS)
 llvmunittest_JIT_DEPENDENCIES = libgoogletest.la libllvmasmparser.la \
 	$(lli_LDADD)
+llvmunittest_JIT_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_llvmunittest_Support_OBJECTS =  \
 	llvmunittest_Support-AllocatorTest.$(OBJEXT) \
 	llvmunittest_Support-ConstantRangeTest.$(OBJEXT) \
@@ -498,6 +515,10 @@ am_llvmunittest_Support_OBJECTS =  \
 llvmunittest_Support_OBJECTS = $(am_llvmunittest_Support_OBJECTS)
 llvmunittest_Support_DEPENDENCIES = libgoogletest.la \
 	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+llvmunittest_Support_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_llvmunittest_VMCore_OBJECTS =  \
 	llvmunittest_VMCore-CallGraphSCCPass.$(OBJEXT) \
 	llvmunittest_VMCore-LoopInfo.$(OBJEXT) \
@@ -508,6 +529,10 @@ am_llvmunittest_VMCore_OBJECTS =  \
 llvmunittest_VMCore_OBJECTS = $(am_llvmunittest_VMCore_OBJECTS)
 llvmunittest_VMCore_DEPENDENCIES = libgoogletest.la \
 	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+llvmunittest_VMCore_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_not_OBJECTS = not-not.$(OBJEXT)
 not_OBJECTS = $(am_not_OBJECTS)
 not_DEPENDENCIES = libllvmsystem.la
@@ -839,6 +864,8 @@ MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NO_MISSING_FIELD_INITIALIZERS = @NO_MISSING_FIELD_INITIALIZERS@
+NO_VARIADIC_MACROS = @NO_VARIADIC_MACROS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -955,7 +982,8 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 			  ClamBCRTChecks.cpp\
 			  ClamBCModule.h
 
-LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
+LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
 TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
     X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
@@ -1484,6 +1512,7 @@ libllvminterpreter_la_SOURCES = \
     llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
 
 libgoogletest_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+libgoogletest_la_CXXFLAGS = $(unittest_CXXFLAGS)
 libgoogletest_la_SOURCES = \
     llvm/utils/unittest/googletest/gtest-death-test.cc\
     llvm/utils/unittest/googletest/gtest-filepath.cc\
@@ -1493,9 +1522,8 @@ libgoogletest_la_SOURCES = \
     llvm/utils/unittest/googletest/gtest.cc\
     llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
-
-#-Wno-variadic-macros
 llvmunittest_ADT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_ADT_CXXFLAGS = $(unittest_CXXFLAGS)
 llvmunittest_ADT_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_ADT_SOURCES = \
     llvm/unittests/ADT/APFloatTest.cpp\
@@ -1512,7 +1540,7 @@ llvmunittest_ADT_SOURCES = \
     llvm/unittests/ADT/TwineTest.cpp
 
 llvmunittest_Support_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_Support_CXXFLAGS = $(unittest_CXXFLAGS)
 llvmunittest_Support_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_Support_SOURCES = \
     llvm/unittests/Support/AllocatorTest.cpp\
@@ -1524,7 +1552,7 @@ llvmunittest_Support_SOURCES = \
     llvm/unittests/Support/raw_ostream_test.cpp
 
 llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_VMCore_CXXFLAGS = $(unittest_CXXFLAGS)
 llvmunittest_VMCore_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES = \
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
@@ -1535,7 +1563,7 @@ llvmunittest_VMCore_SOURCES = \
     llvm/unittests/VMCore/PassManagerTest.cpp
 
 llvmunittest_JIT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_JIT_CXXFLAGS = $(unittest_CXXFLAGS)
 llvmunittest_JIT_LDADD = libgoogletest.la libllvmasmparser.la $(lli_LDADD)
 llvmunittest_JIT_SOURCES = \
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
@@ -1543,7 +1571,7 @@ llvmunittest_JIT_SOURCES = \
     llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 
 llvmunittest_ExecutionEngine_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_ExecutionEngine_CXXFLAGS = $(unittest_CXXFLAGS)
 llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
 llvmunittest_ExecutionEngine_SOURCES = \
     llvm/lib/CodeGen/IntrinsicLowering.cpp\
@@ -1686,7 +1714,7 @@ clean-noinstLTLIBRARIES:
 libclamavcxx.la: $(libclamavcxx_la_OBJECTS) $(libclamavcxx_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libclamavcxx_la_LINK)  $(libclamavcxx_la_OBJECTS) $(libclamavcxx_la_LIBADD) $(LIBS)
 libgoogletest.la: $(libgoogletest_la_OBJECTS) $(libgoogletest_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libgoogletest_la_OBJECTS) $(libgoogletest_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libgoogletest_la_LINK)  $(libgoogletest_la_OBJECTS) $(libgoogletest_la_LIBADD) $(LIBS)
 libllvmarmcodegen.la: $(libllvmarmcodegen_la_OBJECTS) $(libllvmarmcodegen_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmarmcodegen_la_rpath) $(libllvmarmcodegen_la_OBJECTS) $(libllvmarmcodegen_la_LIBADD) $(LIBS)
 libllvmasmparser.la: $(libllvmasmparser_la_OBJECTS) $(libllvmasmparser_la_DEPENDENCIES) 
@@ -1753,19 +1781,19 @@ llvm-dis$(EXEEXT): $(llvm_dis_OBJECTS) $(llvm_dis_DEPENDENCIES)
 	$(AM_V_CXXLD)$(llvm_dis_LINK) $(llvm_dis_OBJECTS) $(llvm_dis_LDADD) $(LIBS)
 llvmunittest_ADT$(EXEEXT): $(llvmunittest_ADT_OBJECTS) $(llvmunittest_ADT_DEPENDENCIES) 
 	@rm -f llvmunittest_ADT$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(llvmunittest_ADT_OBJECTS) $(llvmunittest_ADT_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(llvmunittest_ADT_LINK) $(llvmunittest_ADT_OBJECTS) $(llvmunittest_ADT_LDADD) $(LIBS)
 llvmunittest_ExecutionEngine$(EXEEXT): $(llvmunittest_ExecutionEngine_OBJECTS) $(llvmunittest_ExecutionEngine_DEPENDENCIES) 
 	@rm -f llvmunittest_ExecutionEngine$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(llvmunittest_ExecutionEngine_OBJECTS) $(llvmunittest_ExecutionEngine_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(llvmunittest_ExecutionEngine_LINK) $(llvmunittest_ExecutionEngine_OBJECTS) $(llvmunittest_ExecutionEngine_LDADD) $(LIBS)
 llvmunittest_JIT$(EXEEXT): $(llvmunittest_JIT_OBJECTS) $(llvmunittest_JIT_DEPENDENCIES) 
 	@rm -f llvmunittest_JIT$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(llvmunittest_JIT_OBJECTS) $(llvmunittest_JIT_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(llvmunittest_JIT_LINK) $(llvmunittest_JIT_OBJECTS) $(llvmunittest_JIT_LDADD) $(LIBS)
 llvmunittest_Support$(EXEEXT): $(llvmunittest_Support_OBJECTS) $(llvmunittest_Support_DEPENDENCIES) 
 	@rm -f llvmunittest_Support$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(llvmunittest_Support_OBJECTS) $(llvmunittest_Support_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(llvmunittest_Support_LINK) $(llvmunittest_Support_OBJECTS) $(llvmunittest_Support_LDADD) $(LIBS)
 llvmunittest_VMCore$(EXEEXT): $(llvmunittest_VMCore_OBJECTS) $(llvmunittest_VMCore_DEPENDENCIES) 
 	@rm -f llvmunittest_VMCore$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(llvmunittest_VMCore_OBJECTS) $(llvmunittest_VMCore_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(llvmunittest_VMCore_LINK) $(llvmunittest_VMCore_OBJECTS) $(llvmunittest_VMCore_LDADD) $(LIBS)
 not$(EXEEXT): $(not_OBJECTS) $(not_DEPENDENCIES) 
 	@rm -f not$(EXEEXT)
 	$(AM_V_CXXLD)$(not_LINK) $(not_OBJECTS) $(not_LDADD) $(LIBS)
@@ -2474,60 +2502,60 @@ libclamavcxx_la-ClamBCRTChecks.lo: ClamBCRTChecks.cpp
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamavcxx_la-ClamBCRTChecks.lo `test -f 'ClamBCRTChecks.cpp' || echo '$(srcdir)/'`ClamBCRTChecks.cpp
 
 libgoogletest_la-gtest-death-test.lo: llvm/utils/unittest/googletest/gtest-death-test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-death-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-death-test.Tpo -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-death-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-death-test.Tpo -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest-death-test.Tpo $(DEPDIR)/libgoogletest_la-gtest-death-test.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest-death-test.cc' object='libgoogletest_la-gtest-death-test.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
 
 libgoogletest_la-gtest-filepath.lo: llvm/utils/unittest/googletest/gtest-filepath.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-filepath.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-filepath.Tpo -c -o libgoogletest_la-gtest-filepath.lo `test -f 'llvm/utils/unittest/googletest/gtest-filepath.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-filepath.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-filepath.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-filepath.Tpo -c -o libgoogletest_la-gtest-filepath.lo `test -f 'llvm/utils/unittest/googletest/gtest-filepath.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-filepath.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest-filepath.Tpo $(DEPDIR)/libgoogletest_la-gtest-filepath.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest-filepath.cc' object='libgoogletest_la-gtest-filepath.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-filepath.lo `test -f 'llvm/utils/unittest/googletest/gtest-filepath.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-filepath.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-filepath.lo `test -f 'llvm/utils/unittest/googletest/gtest-filepath.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-filepath.cc
 
 libgoogletest_la-gtest-port.lo: llvm/utils/unittest/googletest/gtest-port.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-port.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-port.Tpo -c -o libgoogletest_la-gtest-port.lo `test -f 'llvm/utils/unittest/googletest/gtest-port.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-port.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-port.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-port.Tpo -c -o libgoogletest_la-gtest-port.lo `test -f 'llvm/utils/unittest/googletest/gtest-port.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-port.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest-port.Tpo $(DEPDIR)/libgoogletest_la-gtest-port.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest-port.cc' object='libgoogletest_la-gtest-port.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-port.lo `test -f 'llvm/utils/unittest/googletest/gtest-port.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-port.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-port.lo `test -f 'llvm/utils/unittest/googletest/gtest-port.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-port.cc
 
 libgoogletest_la-gtest-test-part.lo: llvm/utils/unittest/googletest/gtest-test-part.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-test-part.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-test-part.Tpo -c -o libgoogletest_la-gtest-test-part.lo `test -f 'llvm/utils/unittest/googletest/gtest-test-part.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-test-part.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-test-part.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-test-part.Tpo -c -o libgoogletest_la-gtest-test-part.lo `test -f 'llvm/utils/unittest/googletest/gtest-test-part.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-test-part.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest-test-part.Tpo $(DEPDIR)/libgoogletest_la-gtest-test-part.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest-test-part.cc' object='libgoogletest_la-gtest-test-part.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-test-part.lo `test -f 'llvm/utils/unittest/googletest/gtest-test-part.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-test-part.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-test-part.lo `test -f 'llvm/utils/unittest/googletest/gtest-test-part.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-test-part.cc
 
 libgoogletest_la-gtest-typed-test.lo: llvm/utils/unittest/googletest/gtest-typed-test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-typed-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-typed-test.Tpo -c -o libgoogletest_la-gtest-typed-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-typed-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-typed-test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-typed-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-typed-test.Tpo -c -o libgoogletest_la-gtest-typed-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-typed-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-typed-test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest-typed-test.Tpo $(DEPDIR)/libgoogletest_la-gtest-typed-test.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest-typed-test.cc' object='libgoogletest_la-gtest-typed-test.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-typed-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-typed-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-typed-test.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest-typed-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-typed-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-typed-test.cc
 
 libgoogletest_la-gtest.lo: llvm/utils/unittest/googletest/gtest.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest.Tpo -c -o libgoogletest_la-gtest.lo `test -f 'llvm/utils/unittest/googletest/gtest.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest.Tpo -c -o libgoogletest_la-gtest.lo `test -f 'llvm/utils/unittest/googletest/gtest.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-gtest.Tpo $(DEPDIR)/libgoogletest_la-gtest.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/googletest/gtest.cc' object='libgoogletest_la-gtest.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest.lo `test -f 'llvm/utils/unittest/googletest/gtest.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-gtest.lo `test -f 'llvm/utils/unittest/googletest/gtest.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest.cc
 
 libgoogletest_la-TestMain.lo: llvm/utils/unittest/UnitTestMain/TestMain.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-TestMain.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-TestMain.Tpo -c -o libgoogletest_la-TestMain.lo `test -f 'llvm/utils/unittest/UnitTestMain/TestMain.cpp' || echo '$(srcdir)/'`llvm/utils/unittest/UnitTestMain/TestMain.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-TestMain.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-TestMain.Tpo -c -o libgoogletest_la-TestMain.lo `test -f 'llvm/utils/unittest/UnitTestMain/TestMain.cpp' || echo '$(srcdir)/'`llvm/utils/unittest/UnitTestMain/TestMain.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgoogletest_la-TestMain.Tpo $(DEPDIR)/libgoogletest_la-TestMain.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/utils/unittest/UnitTestMain/TestMain.cpp' object='libgoogletest_la-TestMain.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-TestMain.lo `test -f 'llvm/utils/unittest/UnitTestMain/TestMain.cpp' || echo '$(srcdir)/'`llvm/utils/unittest/UnitTestMain/TestMain.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -c -o libgoogletest_la-TestMain.lo `test -f 'llvm/utils/unittest/UnitTestMain/TestMain.cpp' || echo '$(srcdir)/'`llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
 libllvmarmcodegen_la-IfConversion.lo: llvm/lib/CodeGen/IfConversion.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmarmcodegen_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libllvmarmcodegen_la-IfConversion.lo -MD -MP -MF $(DEPDIR)/libllvmarmcodegen_la-IfConversion.Tpo -c -o libllvmarmcodegen_la-IfConversion.lo `test -f 'llvm/lib/CodeGen/IfConversion.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IfConversion.cpp
@@ -5410,484 +5438,484 @@ llvm_dis-llvm-dis.obj: llvm/tools/llvm-dis/llvm-dis.cpp
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvm_dis_CPPFLAGS) $(CPPFLAGS) $(llvm_dis_CXXFLAGS) $(CXXFLAGS) -c -o llvm_dis-llvm-dis.obj `if test -f 'llvm/tools/llvm-dis/llvm-dis.cpp'; then $(CYGPATH_W) 'llvm/tools/llvm-dis/llvm-dis.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/tools/llvm-dis/llvm-dis.cpp'; fi`
 
 llvmunittest_ADT-APFloatTest.o: llvm/unittests/ADT/APFloatTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APFloatTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo -c -o llvmunittest_ADT-APFloatTest.o `test -f 'llvm/unittests/ADT/APFloatTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APFloatTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APFloatTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo -c -o llvmunittest_ADT-APFloatTest.o `test -f 'llvm/unittests/ADT/APFloatTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APFloatTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo $(DEPDIR)/llvmunittest_ADT-APFloatTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/APFloatTest.cpp' object='llvmunittest_ADT-APFloatTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APFloatTest.o `test -f 'llvm/unittests/ADT/APFloatTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APFloatTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APFloatTest.o `test -f 'llvm/unittests/ADT/APFloatTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APFloatTest.cpp
 
 llvmunittest_ADT-APFloatTest.obj: llvm/unittests/ADT/APFloatTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APFloatTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo -c -o llvmunittest_ADT-APFloatTest.obj `if test -f 'llvm/unittests/ADT/APFloatTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APFloatTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APFloatTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APFloatTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo -c -o llvmunittest_ADT-APFloatTest.obj `if test -f 'llvm/unittests/ADT/APFloatTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APFloatTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APFloatTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-APFloatTest.Tpo $(DEPDIR)/llvmunittest_ADT-APFloatTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/APFloatTest.cpp' object='llvmunittest_ADT-APFloatTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APFloatTest.obj `if test -f 'llvm/unittests/ADT/APFloatTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APFloatTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APFloatTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APFloatTest.obj `if test -f 'llvm/unittests/ADT/APFloatTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APFloatTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APFloatTest.cpp'; fi`
 
 llvmunittest_ADT-APIntTest.o: llvm/unittests/ADT/APIntTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APIntTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo -c -o llvmunittest_ADT-APIntTest.o `test -f 'llvm/unittests/ADT/APIntTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APIntTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APIntTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo -c -o llvmunittest_ADT-APIntTest.o `test -f 'llvm/unittests/ADT/APIntTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APIntTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo $(DEPDIR)/llvmunittest_ADT-APIntTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/APIntTest.cpp' object='llvmunittest_ADT-APIntTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APIntTest.o `test -f 'llvm/unittests/ADT/APIntTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APIntTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APIntTest.o `test -f 'llvm/unittests/ADT/APIntTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/APIntTest.cpp
 
 llvmunittest_ADT-APIntTest.obj: llvm/unittests/ADT/APIntTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APIntTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo -c -o llvmunittest_ADT-APIntTest.obj `if test -f 'llvm/unittests/ADT/APIntTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APIntTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APIntTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-APIntTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo -c -o llvmunittest_ADT-APIntTest.obj `if test -f 'llvm/unittests/ADT/APIntTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APIntTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APIntTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-APIntTest.Tpo $(DEPDIR)/llvmunittest_ADT-APIntTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/APIntTest.cpp' object='llvmunittest_ADT-APIntTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APIntTest.obj `if test -f 'llvm/unittests/ADT/APIntTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APIntTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APIntTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-APIntTest.obj `if test -f 'llvm/unittests/ADT/APIntTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/APIntTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/APIntTest.cpp'; fi`
 
 llvmunittest_ADT-DenseMapTest.o: llvm/unittests/ADT/DenseMapTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseMapTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo -c -o llvmunittest_ADT-DenseMapTest.o `test -f 'llvm/unittests/ADT/DenseMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseMapTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseMapTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo -c -o llvmunittest_ADT-DenseMapTest.o `test -f 'llvm/unittests/ADT/DenseMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseMapTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/DenseMapTest.cpp' object='llvmunittest_ADT-DenseMapTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseMapTest.o `test -f 'llvm/unittests/ADT/DenseMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseMapTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseMapTest.o `test -f 'llvm/unittests/ADT/DenseMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseMapTest.cpp
 
 llvmunittest_ADT-DenseMapTest.obj: llvm/unittests/ADT/DenseMapTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseMapTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo -c -o llvmunittest_ADT-DenseMapTest.obj `if test -f 'llvm/unittests/ADT/DenseMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseMapTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseMapTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo -c -o llvmunittest_ADT-DenseMapTest.obj `if test -f 'llvm/unittests/ADT/DenseMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseMapTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Tpo $(DEPDIR)/llvmunittest_ADT-DenseMapTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/DenseMapTest.cpp' object='llvmunittest_ADT-DenseMapTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseMapTest.obj `if test -f 'llvm/unittests/ADT/DenseMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseMapTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseMapTest.obj `if test -f 'llvm/unittests/ADT/DenseMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseMapTest.cpp'; fi`
 
 llvmunittest_ADT-DenseSetTest.o: llvm/unittests/ADT/DenseSetTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseSetTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo -c -o llvmunittest_ADT-DenseSetTest.o `test -f 'llvm/unittests/ADT/DenseSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseSetTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseSetTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo -c -o llvmunittest_ADT-DenseSetTest.o `test -f 'llvm/unittests/ADT/DenseSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseSetTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/DenseSetTest.cpp' object='llvmunittest_ADT-DenseSetTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseSetTest.o `test -f 'llvm/unittests/ADT/DenseSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseSetTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseSetTest.o `test -f 'llvm/unittests/ADT/DenseSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/DenseSetTest.cpp
 
 llvmunittest_ADT-DenseSetTest.obj: llvm/unittests/ADT/DenseSetTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseSetTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo -c -o llvmunittest_ADT-DenseSetTest.obj `if test -f 'llvm/unittests/ADT/DenseSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseSetTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-DenseSetTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo -c -o llvmunittest_ADT-DenseSetTest.obj `if test -f 'llvm/unittests/ADT/DenseSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseSetTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Tpo $(DEPDIR)/llvmunittest_ADT-DenseSetTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/DenseSetTest.cpp' object='llvmunittest_ADT-DenseSetTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseSetTest.obj `if test -f 'llvm/unittests/ADT/DenseSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseSetTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-DenseSetTest.obj `if test -f 'llvm/unittests/ADT/DenseSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/DenseSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/DenseSetTest.cpp'; fi`
 
 llvmunittest_ADT-ImmutableSetTest.o: llvm/unittests/ADT/ImmutableSetTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-ImmutableSetTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo -c -o llvmunittest_ADT-ImmutableSetTest.o `test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/ImmutableSetTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-ImmutableSetTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo -c -o llvmunittest_ADT-ImmutableSetTest.o `test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/ImmutableSetTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/ImmutableSetTest.cpp' object='llvmunittest_ADT-ImmutableSetTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-ImmutableSetTest.o `test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/ImmutableSetTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-ImmutableSetTest.o `test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/ImmutableSetTest.cpp
 
 llvmunittest_ADT-ImmutableSetTest.obj: llvm/unittests/ADT/ImmutableSetTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-ImmutableSetTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo -c -o llvmunittest_ADT-ImmutableSetTest.obj `if test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/ImmutableSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/ImmutableSetTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-ImmutableSetTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo -c -o llvmunittest_ADT-ImmutableSetTest.obj `if test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/ImmutableSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/ImmutableSetTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Tpo $(DEPDIR)/llvmunittest_ADT-ImmutableSetTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/ImmutableSetTest.cpp' object='llvmunittest_ADT-ImmutableSetTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-ImmutableSetTest.obj `if test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/ImmutableSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/ImmutableSetTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-ImmutableSetTest.obj `if test -f 'llvm/unittests/ADT/ImmutableSetTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/ImmutableSetTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/ImmutableSetTest.cpp'; fi`
 
 llvmunittest_ADT-SmallStringTest.o: llvm/unittests/ADT/SmallStringTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallStringTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo -c -o llvmunittest_ADT-SmallStringTest.o `test -f 'llvm/unittests/ADT/SmallStringTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallStringTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallStringTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo -c -o llvmunittest_ADT-SmallStringTest.o `test -f 'llvm/unittests/ADT/SmallStringTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallStringTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SmallStringTest.cpp' object='llvmunittest_ADT-SmallStringTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallStringTest.o `test -f 'llvm/unittests/ADT/SmallStringTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallStringTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallStringTest.o `test -f 'llvm/unittests/ADT/SmallStringTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallStringTest.cpp
 
 llvmunittest_ADT-SmallStringTest.obj: llvm/unittests/ADT/SmallStringTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallStringTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo -c -o llvmunittest_ADT-SmallStringTest.obj `if test -f 'llvm/unittests/ADT/SmallStringTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallStringTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallStringTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallStringTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo -c -o llvmunittest_ADT-SmallStringTest.obj `if test -f 'llvm/unittests/ADT/SmallStringTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallStringTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallStringTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Tpo $(DEPDIR)/llvmunittest_ADT-SmallStringTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SmallStringTest.cpp' object='llvmunittest_ADT-SmallStringTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallStringTest.obj `if test -f 'llvm/unittests/ADT/SmallStringTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallStringTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallStringTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallStringTest.obj `if test -f 'llvm/unittests/ADT/SmallStringTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallStringTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallStringTest.cpp'; fi`
 
 llvmunittest_ADT-SmallVectorTest.o: llvm/unittests/ADT/SmallVectorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallVectorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo -c -o llvmunittest_ADT-SmallVectorTest.o `test -f 'llvm/unittests/ADT/SmallVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallVectorTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallVectorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo -c -o llvmunittest_ADT-SmallVectorTest.o `test -f 'llvm/unittests/ADT/SmallVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallVectorTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SmallVectorTest.cpp' object='llvmunittest_ADT-SmallVectorTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallVectorTest.o `test -f 'llvm/unittests/ADT/SmallVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallVectorTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallVectorTest.o `test -f 'llvm/unittests/ADT/SmallVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SmallVectorTest.cpp
 
 llvmunittest_ADT-SmallVectorTest.obj: llvm/unittests/ADT/SmallVectorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallVectorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo -c -o llvmunittest_ADT-SmallVectorTest.obj `if test -f 'llvm/unittests/ADT/SmallVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallVectorTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SmallVectorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo -c -o llvmunittest_ADT-SmallVectorTest.obj `if test -f 'llvm/unittests/ADT/SmallVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallVectorTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Tpo $(DEPDIR)/llvmunittest_ADT-SmallVectorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SmallVectorTest.cpp' object='llvmunittest_ADT-SmallVectorTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallVectorTest.obj `if test -f 'llvm/unittests/ADT/SmallVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallVectorTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SmallVectorTest.obj `if test -f 'llvm/unittests/ADT/SmallVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SmallVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SmallVectorTest.cpp'; fi`
 
 llvmunittest_ADT-SparseBitVectorTest.o: llvm/unittests/ADT/SparseBitVectorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SparseBitVectorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo -c -o llvmunittest_ADT-SparseBitVectorTest.o `test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SparseBitVectorTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SparseBitVectorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo -c -o llvmunittest_ADT-SparseBitVectorTest.o `test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SparseBitVectorTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SparseBitVectorTest.cpp' object='llvmunittest_ADT-SparseBitVectorTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SparseBitVectorTest.o `test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SparseBitVectorTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SparseBitVectorTest.o `test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/SparseBitVectorTest.cpp
 
 llvmunittest_ADT-SparseBitVectorTest.obj: llvm/unittests/ADT/SparseBitVectorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SparseBitVectorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo -c -o llvmunittest_ADT-SparseBitVectorTest.obj `if test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SparseBitVectorTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-SparseBitVectorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo -c -o llvmunittest_ADT-SparseBitVectorTest.obj `if test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SparseBitVectorTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Tpo $(DEPDIR)/llvmunittest_ADT-SparseBitVectorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/SparseBitVectorTest.cpp' object='llvmunittest_ADT-SparseBitVectorTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SparseBitVectorTest.obj `if test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SparseBitVectorTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-SparseBitVectorTest.obj `if test -f 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/SparseBitVectorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/SparseBitVectorTest.cpp'; fi`
 
 llvmunittest_ADT-StringMapTest.o: llvm/unittests/ADT/StringMapTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringMapTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo -c -o llvmunittest_ADT-StringMapTest.o `test -f 'llvm/unittests/ADT/StringMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringMapTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringMapTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo -c -o llvmunittest_ADT-StringMapTest.o `test -f 'llvm/unittests/ADT/StringMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringMapTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo $(DEPDIR)/llvmunittest_ADT-StringMapTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/StringMapTest.cpp' object='llvmunittest_ADT-StringMapTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringMapTest.o `test -f 'llvm/unittests/ADT/StringMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringMapTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringMapTest.o `test -f 'llvm/unittests/ADT/StringMapTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringMapTest.cpp
 
 llvmunittest_ADT-StringMapTest.obj: llvm/unittests/ADT/StringMapTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringMapTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo -c -o llvmunittest_ADT-StringMapTest.obj `if test -f 'llvm/unittests/ADT/StringMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringMapTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringMapTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo -c -o llvmunittest_ADT-StringMapTest.obj `if test -f 'llvm/unittests/ADT/StringMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringMapTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-StringMapTest.Tpo $(DEPDIR)/llvmunittest_ADT-StringMapTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/StringMapTest.cpp' object='llvmunittest_ADT-StringMapTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringMapTest.obj `if test -f 'llvm/unittests/ADT/StringMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringMapTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringMapTest.obj `if test -f 'llvm/unittests/ADT/StringMapTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringMapTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringMapTest.cpp'; fi`
 
 llvmunittest_ADT-StringRefTest.o: llvm/unittests/ADT/StringRefTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringRefTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo -c -o llvmunittest_ADT-StringRefTest.o `test -f 'llvm/unittests/ADT/StringRefTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringRefTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringRefTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo -c -o llvmunittest_ADT-StringRefTest.o `test -f 'llvm/unittests/ADT/StringRefTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringRefTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo $(DEPDIR)/llvmunittest_ADT-StringRefTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/StringRefTest.cpp' object='llvmunittest_ADT-StringRefTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringRefTest.o `test -f 'llvm/unittests/ADT/StringRefTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringRefTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringRefTest.o `test -f 'llvm/unittests/ADT/StringRefTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/StringRefTest.cpp
 
 llvmunittest_ADT-StringRefTest.obj: llvm/unittests/ADT/StringRefTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringRefTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo -c -o llvmunittest_ADT-StringRefTest.obj `if test -f 'llvm/unittests/ADT/StringRefTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringRefTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringRefTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-StringRefTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo -c -o llvmunittest_ADT-StringRefTest.obj `if test -f 'llvm/unittests/ADT/StringRefTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringRefTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringRefTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-StringRefTest.Tpo $(DEPDIR)/llvmunittest_ADT-StringRefTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/StringRefTest.cpp' object='llvmunittest_ADT-StringRefTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringRefTest.obj `if test -f 'llvm/unittests/ADT/StringRefTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringRefTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringRefTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-StringRefTest.obj `if test -f 'llvm/unittests/ADT/StringRefTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/StringRefTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/StringRefTest.cpp'; fi`
 
 llvmunittest_ADT-TripleTest.o: llvm/unittests/ADT/TripleTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TripleTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo -c -o llvmunittest_ADT-TripleTest.o `test -f 'llvm/unittests/ADT/TripleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TripleTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TripleTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo -c -o llvmunittest_ADT-TripleTest.o `test -f 'llvm/unittests/ADT/TripleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TripleTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo $(DEPDIR)/llvmunittest_ADT-TripleTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/TripleTest.cpp' object='llvmunittest_ADT-TripleTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TripleTest.o `test -f 'llvm/unittests/ADT/TripleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TripleTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TripleTest.o `test -f 'llvm/unittests/ADT/TripleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TripleTest.cpp
 
 llvmunittest_ADT-TripleTest.obj: llvm/unittests/ADT/TripleTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TripleTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo -c -o llvmunittest_ADT-TripleTest.obj `if test -f 'llvm/unittests/ADT/TripleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TripleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TripleTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TripleTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo -c -o llvmunittest_ADT-TripleTest.obj `if test -f 'llvm/unittests/ADT/TripleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TripleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TripleTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-TripleTest.Tpo $(DEPDIR)/llvmunittest_ADT-TripleTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/TripleTest.cpp' object='llvmunittest_ADT-TripleTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TripleTest.obj `if test -f 'llvm/unittests/ADT/TripleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TripleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TripleTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TripleTest.obj `if test -f 'llvm/unittests/ADT/TripleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TripleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TripleTest.cpp'; fi`
 
 llvmunittest_ADT-TwineTest.o: llvm/unittests/ADT/TwineTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TwineTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo -c -o llvmunittest_ADT-TwineTest.o `test -f 'llvm/unittests/ADT/TwineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TwineTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TwineTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo -c -o llvmunittest_ADT-TwineTest.o `test -f 'llvm/unittests/ADT/TwineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TwineTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo $(DEPDIR)/llvmunittest_ADT-TwineTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/TwineTest.cpp' object='llvmunittest_ADT-TwineTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TwineTest.o `test -f 'llvm/unittests/ADT/TwineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TwineTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TwineTest.o `test -f 'llvm/unittests/ADT/TwineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ADT/TwineTest.cpp
 
 llvmunittest_ADT-TwineTest.obj: llvm/unittests/ADT/TwineTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TwineTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo -c -o llvmunittest_ADT-TwineTest.obj `if test -f 'llvm/unittests/ADT/TwineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TwineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TwineTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ADT-TwineTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo -c -o llvmunittest_ADT-TwineTest.obj `if test -f 'llvm/unittests/ADT/TwineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TwineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TwineTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ADT-TwineTest.Tpo $(DEPDIR)/llvmunittest_ADT-TwineTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ADT/TwineTest.cpp' object='llvmunittest_ADT-TwineTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TwineTest.obj `if test -f 'llvm/unittests/ADT/TwineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TwineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TwineTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ADT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ADT-TwineTest.obj `if test -f 'llvm/unittests/ADT/TwineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ADT/TwineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ADT/TwineTest.cpp'; fi`
 
 llvmunittest_ExecutionEngine-IntrinsicLowering.o: llvm/lib/CodeGen/IntrinsicLowering.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-IntrinsicLowering.o -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.o `test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IntrinsicLowering.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-IntrinsicLowering.o -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.o `test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IntrinsicLowering.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/IntrinsicLowering.cpp' object='llvmunittest_ExecutionEngine-IntrinsicLowering.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.o `test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IntrinsicLowering.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.o `test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/IntrinsicLowering.cpp
 
 llvmunittest_ExecutionEngine-IntrinsicLowering.obj: llvm/lib/CodeGen/IntrinsicLowering.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-IntrinsicLowering.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.obj `if test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; then $(CYGPATH_W) 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/CodeGen/IntrinsicLowering.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-IntrinsicLowering.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.obj `if test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; then $(CYGPATH_W) 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/CodeGen/IntrinsicLowering.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Tpo $(DEPDIR)/llvmunittest_ExecutionEngine-IntrinsicLowering.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/CodeGen/IntrinsicLowering.cpp' object='llvmunittest_ExecutionEngine-IntrinsicLowering.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.obj `if test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; then $(CYGPATH_W) 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/CodeGen/IntrinsicLowering.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-IntrinsicLowering.obj `if test -f 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; then $(CYGPATH_W) 'llvm/lib/CodeGen/IntrinsicLowering.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/CodeGen/IntrinsicLowering.cpp'; fi`
 
 llvmunittest_ExecutionEngine-ExecutionEngineTest.o: llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-ExecutionEngineTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.o `test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-ExecutionEngineTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.o `test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' object='llvmunittest_ExecutionEngine-ExecutionEngineTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.o `test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.o `test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
 
 llvmunittest_ExecutionEngine-ExecutionEngineTest.obj: llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-ExecutionEngineTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.obj `if test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_ExecutionEngine-ExecutionEngineTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.obj `if test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Tpo $(DEPDIR)/llvmunittest_ExecutionEngine-ExecutionEngineTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp' object='llvmunittest_ExecutionEngine-ExecutionEngineTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.obj `if test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_ExecutionEngine_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_ExecutionEngine-ExecutionEngineTest.obj `if test -f 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp'; fi`
 
 llvmunittest_JIT-JITEventListenerTest.o: llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITEventListenerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo -c -o llvmunittest_JIT-JITEventListenerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITEventListenerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo -c -o llvmunittest_JIT-JITEventListenerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' object='llvmunittest_JIT-JITEventListenerTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITEventListenerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITEventListenerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
 
 llvmunittest_JIT-JITEventListenerTest.obj: llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITEventListenerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo -c -o llvmunittest_JIT-JITEventListenerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITEventListenerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo -c -o llvmunittest_JIT-JITEventListenerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITEventListenerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp' object='llvmunittest_JIT-JITEventListenerTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITEventListenerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITEventListenerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp'; fi`
 
 llvmunittest_JIT-JITMemoryManagerTest.o: llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITMemoryManagerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo -c -o llvmunittest_JIT-JITMemoryManagerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITMemoryManagerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo -c -o llvmunittest_JIT-JITMemoryManagerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' object='llvmunittest_JIT-JITMemoryManagerTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITMemoryManagerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITMemoryManagerTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
 
 llvmunittest_JIT-JITMemoryManagerTest.obj: llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITMemoryManagerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo -c -o llvmunittest_JIT-JITMemoryManagerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITMemoryManagerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo -c -o llvmunittest_JIT-JITMemoryManagerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITMemoryManagerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp' object='llvmunittest_JIT-JITMemoryManagerTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITMemoryManagerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITMemoryManagerTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp'; fi`
 
 llvmunittest_JIT-JITTest.o: llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo -c -o llvmunittest_JIT-JITTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo -c -o llvmunittest_JIT-JITTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' object='llvmunittest_JIT-JITTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITTest.o `test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' || echo '$(srcdir)/'`llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 
 llvmunittest_JIT-JITTest.obj: llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo -c -o llvmunittest_JIT-JITTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_JIT-JITTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo -c -o llvmunittest_JIT-JITTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_JIT-JITTest.Tpo $(DEPDIR)/llvmunittest_JIT-JITTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/ExecutionEngine/JIT/JITTest.cpp' object='llvmunittest_JIT-JITTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_JIT_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_JIT-JITTest.obj `if test -f 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/ExecutionEngine/JIT/JITTest.cpp'; fi`
 
 llvmunittest_Support-AllocatorTest.o: llvm/unittests/Support/AllocatorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-AllocatorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo -c -o llvmunittest_Support-AllocatorTest.o `test -f 'llvm/unittests/Support/AllocatorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/AllocatorTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-AllocatorTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo -c -o llvmunittest_Support-AllocatorTest.o `test -f 'llvm/unittests/Support/AllocatorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/AllocatorTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo $(DEPDIR)/llvmunittest_Support-AllocatorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/AllocatorTest.cpp' object='llvmunittest_Support-AllocatorTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-AllocatorTest.o `test -f 'llvm/unittests/Support/AllocatorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/AllocatorTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-AllocatorTest.o `test -f 'llvm/unittests/Support/AllocatorTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/AllocatorTest.cpp
 
 llvmunittest_Support-AllocatorTest.obj: llvm/unittests/Support/AllocatorTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-AllocatorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo -c -o llvmunittest_Support-AllocatorTest.obj `if test -f 'llvm/unittests/Support/AllocatorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/AllocatorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/AllocatorTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-AllocatorTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo -c -o llvmunittest_Support-AllocatorTest.obj `if test -f 'llvm/unittests/Support/AllocatorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/AllocatorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/AllocatorTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-AllocatorTest.Tpo $(DEPDIR)/llvmunittest_Support-AllocatorTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/AllocatorTest.cpp' object='llvmunittest_Support-AllocatorTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-AllocatorTest.obj `if test -f 'llvm/unittests/Support/AllocatorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/AllocatorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/AllocatorTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-AllocatorTest.obj `if test -f 'llvm/unittests/Support/AllocatorTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/AllocatorTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/AllocatorTest.cpp'; fi`
 
 llvmunittest_Support-ConstantRangeTest.o: llvm/unittests/Support/ConstantRangeTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ConstantRangeTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo -c -o llvmunittest_Support-ConstantRangeTest.o `test -f 'llvm/unittests/Support/ConstantRangeTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ConstantRangeTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ConstantRangeTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo -c -o llvmunittest_Support-ConstantRangeTest.o `test -f 'llvm/unittests/Support/ConstantRangeTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ConstantRangeTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/ConstantRangeTest.cpp' object='llvmunittest_Support-ConstantRangeTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ConstantRangeTest.o `test -f 'llvm/unittests/Support/ConstantRangeTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ConstantRangeTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ConstantRangeTest.o `test -f 'llvm/unittests/Support/ConstantRangeTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ConstantRangeTest.cpp
 
 llvmunittest_Support-ConstantRangeTest.obj: llvm/unittests/Support/ConstantRangeTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ConstantRangeTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo -c -o llvmunittest_Support-ConstantRangeTest.obj `if test -f 'llvm/unittests/Support/ConstantRangeTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ConstantRangeTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ConstantRangeTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ConstantRangeTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo -c -o llvmunittest_Support-ConstantRangeTest.obj `if test -f 'llvm/unittests/Support/ConstantRangeTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ConstantRangeTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ConstantRangeTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Tpo $(DEPDIR)/llvmunittest_Support-ConstantRangeTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/ConstantRangeTest.cpp' object='llvmunittest_Support-ConstantRangeTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ConstantRangeTest.obj `if test -f 'llvm/unittests/Support/ConstantRangeTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ConstantRangeTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ConstantRangeTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ConstantRangeTest.obj `if test -f 'llvm/unittests/Support/ConstantRangeTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ConstantRangeTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ConstantRangeTest.cpp'; fi`
 
 llvmunittest_Support-MathExtrasTest.o: llvm/unittests/Support/MathExtrasTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-MathExtrasTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo -c -o llvmunittest_Support-MathExtrasTest.o `test -f 'llvm/unittests/Support/MathExtrasTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/MathExtrasTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-MathExtrasTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo -c -o llvmunittest_Support-MathExtrasTest.o `test -f 'llvm/unittests/Support/MathExtrasTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/MathExtrasTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/MathExtrasTest.cpp' object='llvmunittest_Support-MathExtrasTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-MathExtrasTest.o `test -f 'llvm/unittests/Support/MathExtrasTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/MathExtrasTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-MathExtrasTest.o `test -f 'llvm/unittests/Support/MathExtrasTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/MathExtrasTest.cpp
 
 llvmunittest_Support-MathExtrasTest.obj: llvm/unittests/Support/MathExtrasTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-MathExtrasTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo -c -o llvmunittest_Support-MathExtrasTest.obj `if test -f 'llvm/unittests/Support/MathExtrasTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/MathExtrasTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/MathExtrasTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-MathExtrasTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo -c -o llvmunittest_Support-MathExtrasTest.obj `if test -f 'llvm/unittests/Support/MathExtrasTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/MathExtrasTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/MathExtrasTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Tpo $(DEPDIR)/llvmunittest_Support-MathExtrasTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/MathExtrasTest.cpp' object='llvmunittest_Support-MathExtrasTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-MathExtrasTest.obj `if test -f 'llvm/unittests/Support/MathExtrasTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/MathExtrasTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/MathExtrasTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-MathExtrasTest.obj `if test -f 'llvm/unittests/Support/MathExtrasTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/MathExtrasTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/MathExtrasTest.cpp'; fi`
 
 llvmunittest_Support-RegexTest.o: llvm/unittests/Support/RegexTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-RegexTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo -c -o llvmunittest_Support-RegexTest.o `test -f 'llvm/unittests/Support/RegexTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/RegexTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-RegexTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo -c -o llvmunittest_Support-RegexTest.o `test -f 'llvm/unittests/Support/RegexTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/RegexTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo $(DEPDIR)/llvmunittest_Support-RegexTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/RegexTest.cpp' object='llvmunittest_Support-RegexTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-RegexTest.o `test -f 'llvm/unittests/Support/RegexTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/RegexTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-RegexTest.o `test -f 'llvm/unittests/Support/RegexTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/RegexTest.cpp
 
 llvmunittest_Support-RegexTest.obj: llvm/unittests/Support/RegexTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-RegexTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo -c -o llvmunittest_Support-RegexTest.obj `if test -f 'llvm/unittests/Support/RegexTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/RegexTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/RegexTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-RegexTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo -c -o llvmunittest_Support-RegexTest.obj `if test -f 'llvm/unittests/Support/RegexTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/RegexTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/RegexTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-RegexTest.Tpo $(DEPDIR)/llvmunittest_Support-RegexTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/RegexTest.cpp' object='llvmunittest_Support-RegexTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-RegexTest.obj `if test -f 'llvm/unittests/Support/RegexTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/RegexTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/RegexTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-RegexTest.obj `if test -f 'llvm/unittests/Support/RegexTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/RegexTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/RegexTest.cpp'; fi`
 
 llvmunittest_Support-TypeBuilderTest.o: llvm/unittests/Support/TypeBuilderTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-TypeBuilderTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo -c -o llvmunittest_Support-TypeBuilderTest.o `test -f 'llvm/unittests/Support/TypeBuilderTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/TypeBuilderTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-TypeBuilderTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo -c -o llvmunittest_Support-TypeBuilderTest.o `test -f 'llvm/unittests/Support/TypeBuilderTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/TypeBuilderTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/TypeBuilderTest.cpp' object='llvmunittest_Support-TypeBuilderTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-TypeBuilderTest.o `test -f 'llvm/unittests/Support/TypeBuilderTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/TypeBuilderTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-TypeBuilderTest.o `test -f 'llvm/unittests/Support/TypeBuilderTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/TypeBuilderTest.cpp
 
 llvmunittest_Support-TypeBuilderTest.obj: llvm/unittests/Support/TypeBuilderTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-TypeBuilderTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo -c -o llvmunittest_Support-TypeBuilderTest.obj `if test -f 'llvm/unittests/Support/TypeBuilderTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/TypeBuilderTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/TypeBuilderTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-TypeBuilderTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo -c -o llvmunittest_Support-TypeBuilderTest.obj `if test -f 'llvm/unittests/Support/TypeBuilderTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/TypeBuilderTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/TypeBuilderTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Tpo $(DEPDIR)/llvmunittest_Support-TypeBuilderTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/TypeBuilderTest.cpp' object='llvmunittest_Support-TypeBuilderTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-TypeBuilderTest.obj `if test -f 'llvm/unittests/Support/TypeBuilderTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/TypeBuilderTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/TypeBuilderTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-TypeBuilderTest.obj `if test -f 'llvm/unittests/Support/TypeBuilderTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/TypeBuilderTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/TypeBuilderTest.cpp'; fi`
 
 llvmunittest_Support-ValueHandleTest.o: llvm/unittests/Support/ValueHandleTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ValueHandleTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo -c -o llvmunittest_Support-ValueHandleTest.o `test -f 'llvm/unittests/Support/ValueHandleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ValueHandleTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ValueHandleTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo -c -o llvmunittest_Support-ValueHandleTest.o `test -f 'llvm/unittests/Support/ValueHandleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ValueHandleTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/ValueHandleTest.cpp' object='llvmunittest_Support-ValueHandleTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ValueHandleTest.o `test -f 'llvm/unittests/Support/ValueHandleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ValueHandleTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ValueHandleTest.o `test -f 'llvm/unittests/Support/ValueHandleTest.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/ValueHandleTest.cpp
 
 llvmunittest_Support-ValueHandleTest.obj: llvm/unittests/Support/ValueHandleTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ValueHandleTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo -c -o llvmunittest_Support-ValueHandleTest.obj `if test -f 'llvm/unittests/Support/ValueHandleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ValueHandleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ValueHandleTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-ValueHandleTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo -c -o llvmunittest_Support-ValueHandleTest.obj `if test -f 'llvm/unittests/Support/ValueHandleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ValueHandleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ValueHandleTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Tpo $(DEPDIR)/llvmunittest_Support-ValueHandleTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/ValueHandleTest.cpp' object='llvmunittest_Support-ValueHandleTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ValueHandleTest.obj `if test -f 'llvm/unittests/Support/ValueHandleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ValueHandleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ValueHandleTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-ValueHandleTest.obj `if test -f 'llvm/unittests/Support/ValueHandleTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/ValueHandleTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/ValueHandleTest.cpp'; fi`
 
 llvmunittest_Support-raw_ostream_test.o: llvm/unittests/Support/raw_ostream_test.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-raw_ostream_test.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo -c -o llvmunittest_Support-raw_ostream_test.o `test -f 'llvm/unittests/Support/raw_ostream_test.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/raw_ostream_test.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-raw_ostream_test.o -MD -MP -MF $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo -c -o llvmunittest_Support-raw_ostream_test.o `test -f 'llvm/unittests/Support/raw_ostream_test.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/raw_ostream_test.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/raw_ostream_test.cpp' object='llvmunittest_Support-raw_ostream_test.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-raw_ostream_test.o `test -f 'llvm/unittests/Support/raw_ostream_test.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/raw_ostream_test.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-raw_ostream_test.o `test -f 'llvm/unittests/Support/raw_ostream_test.cpp' || echo '$(srcdir)/'`llvm/unittests/Support/raw_ostream_test.cpp
 
 llvmunittest_Support-raw_ostream_test.obj: llvm/unittests/Support/raw_ostream_test.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-raw_ostream_test.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo -c -o llvmunittest_Support-raw_ostream_test.obj `if test -f 'llvm/unittests/Support/raw_ostream_test.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/raw_ostream_test.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/raw_ostream_test.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_Support-raw_ostream_test.obj -MD -MP -MF $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo -c -o llvmunittest_Support-raw_ostream_test.obj `if test -f 'llvm/unittests/Support/raw_ostream_test.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/raw_ostream_test.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/raw_ostream_test.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Tpo $(DEPDIR)/llvmunittest_Support-raw_ostream_test.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/Support/raw_ostream_test.cpp' object='llvmunittest_Support-raw_ostream_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-raw_ostream_test.obj `if test -f 'llvm/unittests/Support/raw_ostream_test.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/raw_ostream_test.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/raw_ostream_test.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_Support_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_Support-raw_ostream_test.obj `if test -f 'llvm/unittests/Support/raw_ostream_test.cpp'; then $(CYGPATH_W) 'llvm/unittests/Support/raw_ostream_test.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/Support/raw_ostream_test.cpp'; fi`
 
 llvmunittest_VMCore-CallGraphSCCPass.o: llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraphSCCPass.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo -c -o llvmunittest_VMCore-CallGraphSCCPass.o `test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraphSCCPass.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo -c -o llvmunittest_VMCore-CallGraphSCCPass.o `test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' object='llvmunittest_VMCore-CallGraphSCCPass.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraphSCCPass.o `test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraphSCCPass.o `test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
 
 llvmunittest_VMCore-CallGraphSCCPass.obj: llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraphSCCPass.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo -c -o llvmunittest_VMCore-CallGraphSCCPass.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-CallGraphSCCPass.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo -c -o llvmunittest_VMCore-CallGraphSCCPass.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Tpo $(DEPDIR)/llvmunittest_VMCore-CallGraphSCCPass.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp' object='llvmunittest_VMCore-CallGraphSCCPass.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraphSCCPass.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-CallGraphSCCPass.obj `if test -f 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp'; fi`
 
 llvmunittest_VMCore-LoopInfo.o: llvm/lib/Analysis/LoopInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopInfo.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo -c -o llvmunittest_VMCore-LoopInfo.o `test -f 'llvm/lib/Analysis/LoopInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopInfo.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo -c -o llvmunittest_VMCore-LoopInfo.o `test -f 'llvm/lib/Analysis/LoopInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopInfo.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/LoopInfo.cpp' object='llvmunittest_VMCore-LoopInfo.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopInfo.o `test -f 'llvm/lib/Analysis/LoopInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopInfo.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopInfo.o `test -f 'llvm/lib/Analysis/LoopInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopInfo.cpp
 
 llvmunittest_VMCore-LoopInfo.obj: llvm/lib/Analysis/LoopInfo.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopInfo.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo -c -o llvmunittest_VMCore-LoopInfo.obj `if test -f 'llvm/lib/Analysis/LoopInfo.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopInfo.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopInfo.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo -c -o llvmunittest_VMCore-LoopInfo.obj `if test -f 'llvm/lib/Analysis/LoopInfo.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopInfo.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Tpo $(DEPDIR)/llvmunittest_VMCore-LoopInfo.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/LoopInfo.cpp' object='llvmunittest_VMCore-LoopInfo.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopInfo.obj `if test -f 'llvm/lib/Analysis/LoopInfo.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopInfo.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopInfo.obj `if test -f 'llvm/lib/Analysis/LoopInfo.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopInfo.cpp'; fi`
 
 llvmunittest_VMCore-LoopPass.o: llvm/lib/Analysis/LoopPass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopPass.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo -c -o llvmunittest_VMCore-LoopPass.o `test -f 'llvm/lib/Analysis/LoopPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopPass.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo -c -o llvmunittest_VMCore-LoopPass.o `test -f 'llvm/lib/Analysis/LoopPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopPass.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo $(DEPDIR)/llvmunittest_VMCore-LoopPass.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/LoopPass.cpp' object='llvmunittest_VMCore-LoopPass.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopPass.o `test -f 'llvm/lib/Analysis/LoopPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopPass.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopPass.o `test -f 'llvm/lib/Analysis/LoopPass.cpp' || echo '$(srcdir)/'`llvm/lib/Analysis/LoopPass.cpp
 
 llvmunittest_VMCore-LoopPass.obj: llvm/lib/Analysis/LoopPass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopPass.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo -c -o llvmunittest_VMCore-LoopPass.obj `if test -f 'llvm/lib/Analysis/LoopPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopPass.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-LoopPass.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo -c -o llvmunittest_VMCore-LoopPass.obj `if test -f 'llvm/lib/Analysis/LoopPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopPass.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-LoopPass.Tpo $(DEPDIR)/llvmunittest_VMCore-LoopPass.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Analysis/LoopPass.cpp' object='llvmunittest_VMCore-LoopPass.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopPass.obj `if test -f 'llvm/lib/Analysis/LoopPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopPass.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-LoopPass.obj `if test -f 'llvm/lib/Analysis/LoopPass.cpp'; then $(CYGPATH_W) 'llvm/lib/Analysis/LoopPass.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/lib/Analysis/LoopPass.cpp'; fi`
 
 llvmunittest_VMCore-ConstantsTest.o: llvm/unittests/VMCore/ConstantsTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-ConstantsTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo -c -o llvmunittest_VMCore-ConstantsTest.o `test -f 'llvm/unittests/VMCore/ConstantsTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/ConstantsTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-ConstantsTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo -c -o llvmunittest_VMCore-ConstantsTest.o `test -f 'llvm/unittests/VMCore/ConstantsTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/ConstantsTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/ConstantsTest.cpp' object='llvmunittest_VMCore-ConstantsTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-ConstantsTest.o `test -f 'llvm/unittests/VMCore/ConstantsTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/ConstantsTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-ConstantsTest.o `test -f 'llvm/unittests/VMCore/ConstantsTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/ConstantsTest.cpp
 
 llvmunittest_VMCore-ConstantsTest.obj: llvm/unittests/VMCore/ConstantsTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-ConstantsTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo -c -o llvmunittest_VMCore-ConstantsTest.obj `if test -f 'llvm/unittests/VMCore/ConstantsTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/ConstantsTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/ConstantsTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-ConstantsTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo -c -o llvmunittest_VMCore-ConstantsTest.obj `if test -f 'llvm/unittests/VMCore/ConstantsTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/ConstantsTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/ConstantsTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Tpo $(DEPDIR)/llvmunittest_VMCore-ConstantsTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/ConstantsTest.cpp' object='llvmunittest_VMCore-ConstantsTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-ConstantsTest.obj `if test -f 'llvm/unittests/VMCore/ConstantsTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/ConstantsTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/ConstantsTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-ConstantsTest.obj `if test -f 'llvm/unittests/VMCore/ConstantsTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/ConstantsTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/ConstantsTest.cpp'; fi`
 
 llvmunittest_VMCore-MetadataTest.o: llvm/unittests/VMCore/MetadataTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-MetadataTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo -c -o llvmunittest_VMCore-MetadataTest.o `test -f 'llvm/unittests/VMCore/MetadataTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/MetadataTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-MetadataTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo -c -o llvmunittest_VMCore-MetadataTest.o `test -f 'llvm/unittests/VMCore/MetadataTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/MetadataTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/MetadataTest.cpp' object='llvmunittest_VMCore-MetadataTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-MetadataTest.o `test -f 'llvm/unittests/VMCore/MetadataTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/MetadataTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-MetadataTest.o `test -f 'llvm/unittests/VMCore/MetadataTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/MetadataTest.cpp
 
 llvmunittest_VMCore-MetadataTest.obj: llvm/unittests/VMCore/MetadataTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-MetadataTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo -c -o llvmunittest_VMCore-MetadataTest.obj `if test -f 'llvm/unittests/VMCore/MetadataTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/MetadataTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/MetadataTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-MetadataTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo -c -o llvmunittest_VMCore-MetadataTest.obj `if test -f 'llvm/unittests/VMCore/MetadataTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/MetadataTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/MetadataTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Tpo $(DEPDIR)/llvmunittest_VMCore-MetadataTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/MetadataTest.cpp' object='llvmunittest_VMCore-MetadataTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-MetadataTest.obj `if test -f 'llvm/unittests/VMCore/MetadataTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/MetadataTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/MetadataTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-MetadataTest.obj `if test -f 'llvm/unittests/VMCore/MetadataTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/MetadataTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/MetadataTest.cpp'; fi`
 
 llvmunittest_VMCore-PassManagerTest.o: llvm/unittests/VMCore/PassManagerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-PassManagerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo -c -o llvmunittest_VMCore-PassManagerTest.o `test -f 'llvm/unittests/VMCore/PassManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/PassManagerTest.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-PassManagerTest.o -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo -c -o llvmunittest_VMCore-PassManagerTest.o `test -f 'llvm/unittests/VMCore/PassManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/PassManagerTest.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/PassManagerTest.cpp' object='llvmunittest_VMCore-PassManagerTest.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-PassManagerTest.o `test -f 'llvm/unittests/VMCore/PassManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/PassManagerTest.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-PassManagerTest.o `test -f 'llvm/unittests/VMCore/PassManagerTest.cpp' || echo '$(srcdir)/'`llvm/unittests/VMCore/PassManagerTest.cpp
 
 llvmunittest_VMCore-PassManagerTest.obj: llvm/unittests/VMCore/PassManagerTest.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-PassManagerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo -c -o llvmunittest_VMCore-PassManagerTest.obj `if test -f 'llvm/unittests/VMCore/PassManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/PassManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/PassManagerTest.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -MT llvmunittest_VMCore-PassManagerTest.obj -MD -MP -MF $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo -c -o llvmunittest_VMCore-PassManagerTest.obj `if test -f 'llvm/unittests/VMCore/PassManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/PassManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/PassManagerTest.cpp'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Tpo $(DEPDIR)/llvmunittest_VMCore-PassManagerTest.Po
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/unittests/VMCore/PassManagerTest.cpp' object='llvmunittest_VMCore-PassManagerTest.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-PassManagerTest.obj `if test -f 'llvm/unittests/VMCore/PassManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/PassManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/PassManagerTest.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(llvmunittest_VMCore_CPPFLAGS) $(CPPFLAGS) $(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) -c -o llvmunittest_VMCore-PassManagerTest.obj `if test -f 'llvm/unittests/VMCore/PassManagerTest.cpp'; then $(CYGPATH_W) 'llvm/unittests/VMCore/PassManagerTest.cpp'; else $(CYGPATH_W) '$(srcdir)/llvm/unittests/VMCore/PassManagerTest.cpp'; fi`
 
 not-not.o: llvm/utils/not/not.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(not_CPPFLAGS) $(CPPFLAGS) $(not_CXXFLAGS) $(CXXFLAGS) -MT not-not.o -MD -MP -MF $(DEPDIR)/not-not.Tpo -c -o not-not.o `test -f 'llvm/utils/not/not.cpp' || echo '$(srcdir)/'`llvm/utils/not/not.cpp
@@ -7869,10 +7897,6 @@ uninstall-am:
 
 @MAINTAINER_MODE_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
 @MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
-# Disable LLVM make check for now, there are some things to fix first:
-#   - check python version (2.4 doesn't work, needs 2.5+)
-#   - run llvm's make check after clamav's was run
-#   - have a way to run only clamav's make check and not llvm's
 @ifGNUmake@ TESTS+=llvmcheck.sh
 
 #bytecode2llvm.cpp: build-llvm

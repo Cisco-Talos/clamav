@@ -1,3 +1,7 @@
+Tue Apr 13 16:13:05 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++: allow building with gcc 3.4.6 (bb #1934).
+
 Tue Apr 13 13:12:47 EEST 2010 (edwin)
 -------------------------------------
  * unit_tests/check_common.sh: fix make check on AIX (bb #1917).
