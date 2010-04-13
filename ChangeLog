@@ -1,3 +1,7 @@
+Tue Apr 13 13:12:47 EEST 2010 (edwin)
+-------------------------------------
+ * unit_tests/check_common.sh: fix make check on AIX (bb #1917).
+
 Mon Apr 12 18:02:06 CEST 2010 (tk)
 ----------------------------------
  * freshclam/manager.c: better handle daylight saving time changes (bb#1920)
