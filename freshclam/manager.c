@@ -544,11 +544,6 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
 
 
-    if(optget(opts, "HTTPUserAgent")->enabled) {
-	logg("!SubmitDetectionStats: HTTPUserAgent must be disabled for SubmitDetectionStats to work\n");
-	return 56;
-    }
-
     if((opt = optget(opts, "DetectionStatsCountry"))->enabled) {
 	if(strlen(opt->strarg) != 2 || !isalpha(opt->strarg[0]) || !isalpha(opt->strarg[1])) {
 	    logg("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
@@ -625,7 +620,10 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	strncpy(newstatsdat, line, sizeof(newstatsdat));
     }
 
-    snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"):%s:%s", get_version(), country ? country : "", hostid ? hostid : "");
+    if((opt = optget(opts, "HTTPUserAgent"))->enabled)
+        strncpy(uastr, opt->strarg, sizeof(uastr));
+    else
+	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"):%s:%s", get_version(), country ? country : "", hostid ? hostid : "");
     uastr[sizeof(uastr) - 1] = 0;
 
     if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
@@ -710,12 +708,12 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	    query[sizeof(query) - 1] = 0;
 	    if(mdprintf(sd,
 		"POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
-		"Host: stats.clamav.net\r\n%s"
+		"Host: stats.clamav.net\r\n%s%s%s%s"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"User-Agent: %s\r\n"
 		"Content-Length: %u\r\n\r\n"
 		"%s",
-		auth ? auth : "", uastr, (unsigned int) strlen(query), query) < 0)
+		auth ? auth : "", hostid ? "X-HostID: " : "", hostid ? hostid : "", hostid ? "\r\n" : "", uastr, (unsigned int) strlen(query), query) < 0)
 	    {
 		logg("!SubmitDetectionStats: Can't write to socket\n");
 		ret = 52;

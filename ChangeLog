@@ -1,3 +1,9 @@
+Wed Apr 14 21:44:18 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: add support for X-HostID to allow custom UserAgent
+			strings in --submit-stats (bb#1905)
+			Thanks to Andreas Schulze
+
 Mon Apr 12 18:04:06 CEST 2010 (tk)
 ----------------------------------
  * freshclam/manager.c: better handle daylight saving time changes (bb#1920)
