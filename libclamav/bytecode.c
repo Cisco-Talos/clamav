@@ -178,6 +178,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 {
+    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
+	cli_unlink(ctx->tempfile);
+    }
     cli_bytecode_context_reset(ctx);
     memset(ctx, 0, sizeof(*ctx));
     return CL_SUCCESS;
@@ -1969,7 +1973,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	if (!ret) {
 	    char *tempfile;
 	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
-	    if (fd != -1) {
+	    if (fd && fd != -1) {
 		if (cctx && cctx->engine->keeptmp)
 		    cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
 			       bc->id, tempfile);
@@ -1980,10 +1984,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		ret = cli_magic_scandesc(fd, cctx);
 		if (!cctx || !cctx->engine->keeptmp)
 		    if (ftruncate(fd, 0) == -1)
-			cli_dbgmsg("ftruncate failed\n");
+			cli_dbgmsg("ftruncate failed on %d\n", fd);
 		close(fd);
 		if (!cctx || !cctx->engine->keeptmp) {
-		    if (cli_unlink(tempfile))
+		    if (tempfile && cli_unlink(tempfile))
 			ret = CL_EUNLINK;
 		}
 		free(tempfile);

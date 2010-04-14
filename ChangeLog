@@ -1,3 +1,7 @@
+Wed Apr 14 21:14:28 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: fix cli_unlink warnings (bb #1956).
+
 Tue Apr 13 16:17:35 EEST 2010 (edwin)
 -------------------------------------
  * clambc, clamd,clamdtop,libclamav,unit_tests: fix compiler warnings (bb #1872,
