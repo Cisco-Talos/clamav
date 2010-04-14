@@ -1,3 +1,9 @@
+Wed Apr 14 21:44:18 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: add support for X-HostID to allow custom UserAgent
+			strings in --submit-stats (bb#1905)
+			Thanks to Andreas Schulze
+
 Wed Apr 14 21:14:28 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: fix cli_unlink warnings (bb #1956).
