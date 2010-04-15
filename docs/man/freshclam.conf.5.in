@@ -50,6 +50,11 @@ Default: 12
 Enable logging to a specified file. Highly recommended.
 .br 
 Default: disabled.
+.TP
+\fBLogFileMaxSize SIZE\fR
+Limit the size of the log file. The logger will be automatically disabled if the file is greater than SIZE. Value of 0 disables the limit.
+.br
+Default: 1M
 .TP 
 \fBLogSyslog BOOL\fR
 Enable logging to Syslog. May be used in combination with UpdateLogFile.
