@@ -1485,8 +1485,10 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.funcid = ctx->funcid;
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
+	cli_dbgmsg("Bytecode: executing in interpeter mode\n");
 	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
     }
+    cli_dbgmsg("Bytecode: executing in JIT mode\n");
     return cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
 }
 
@@ -1860,10 +1862,12 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 
 int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 {
-    unsigned i;
+    unsigned i, interp = 0;
     int rc;
-    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS)
+    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS) {
+	cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
 	return CL_SUCCESS;
+    }
     for (i=0;i<bcs->count;i++) {
 	struct cli_bc *bc = &bcs->all_bcs[i];
 	if (bc->state == bc_interp || bc->state == bc_jit)
@@ -1873,9 +1877,12 @@ int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 	    continue;
 	}
 	rc = cli_bytecode_prepare_interpreter(bc);
+	interp++;
 	if (rc != CL_SUCCESS)
 	    return rc;
     }
+    cli_dbgmsg("Bytecode: %u bytecode prepared with JIT, "
+	       "%u prepared with interpreter\n", bcs->count-interp, interp);
     return CL_SUCCESS;
 }
 
@@ -1943,6 +1950,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
     int ret;
+    unsigned executed = 0;
 
     cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
@@ -1956,9 +1964,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	}
 	cli_bytecode_context_setfuncid(ctx, bc, 0);
 	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
+	executed++;
 	if (ret != CL_SUCCESS) {
 	    cli_warnmsg("Bytecode failed to run: %s\n", cl_strerror(ret));
-	    return CL_SUCCESS;
+	    continue;
 	}
 	if (ctx->virname) {
 	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
@@ -2003,6 +2012,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	}
 	cli_bytecode_context_reset(ctx);
     }
+    if (executed)
+	cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
+    else
+	cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
     return CL_CLEAN;
 }
 
