@@ -277,24 +277,24 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	}
     }
 
-    if(cab->flags & 0x0001) { /* preceeding cabinet */
+    if(cab->flags & 0x0001) { /* preceding cabinet */
 	/* name */
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
-	    cli_dbgmsg("CAB: Invalid name of preceeding cabinet\n");
+	    cli_dbgmsg("CAB: Invalid name of preceding cabinet\n");
 	else
-	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
+	    cli_dbgmsg("CAB: Preceding cabinet name: %s\n", pt);
 	free(pt);
 	/* info */
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
-	    cli_dbgmsg("CAB: Invalid info for preceeding cabinet\n");
+	    cli_dbgmsg("CAB: Invalid info for preceding cabinet\n");
 	else
-	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
+	    cli_dbgmsg("CAB: Preceding cabinet info: %s\n", pt);
 	free(pt);
     }
 
