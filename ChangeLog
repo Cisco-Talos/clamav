@@ -1,3 +1,7 @@
+Mon Apr 19 17:12:06 EEST 2010 (edwin)
+-------------------------------------
+ * clamconf: print information about platform and build.
+
 Thu Apr 15 20:04:16 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/configure: disable gcc 3.4.6 by default, you can still use it with --enable-llvm (bb #1935).

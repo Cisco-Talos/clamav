@@ -27,6 +27,10 @@
 #include <unistd.h>
 #endif
 #include <time.h>
+#ifdef HAVE_UNAME_SYSCALL
+#include <sys/utsname.h>
+#endif
+#include <zlib.h>
 
 #include "shared/optparser.h"
 #include "shared/misc.h"
@@ -35,6 +39,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/bytecode.h"
+#include "target.h"
 
 #ifndef _WIN32
 extern const struct clam_option *clam_options;
@@ -205,6 +210,65 @@ static void help(void)
     return;
 }
 
+static void print_platform(void)
+{
+    printf("\nPlatform information\n--------------------\n");
+#ifdef HAVE_UNAME_SYSCALL
+    struct utsname name;
+    uname(&name);
+    printf("uname: %s %s %s %s\n", name.sysname, name.release, name.version,
+	   name.machine);
+#endif
+    printf("OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"\n");
+
+#ifdef C_LINUX
+    if (!access("/usr/bin/lsb_release", X_OK)) {
+	fputs("Full OS version: ", stdout);
+	fflush(stdout);
+	system("/usr/bin/lsb_release -d -s");
+    }
+#else
+    /* e.g. Solaris */
+    if (!access("/etc/release", R_OK)) {
+	char buf[1024];
+	FILE *f = fopen("/etc/release", "r");
+	fgets(buf, sizeof(buf), f);
+	printf("Full OS version: %s", buf);
+    }
+#endif
+
+#ifdef ZLIB_VERNUM
+    printf("zlib version: %s (%s), compile flags: %02x\n",
+	   ZLIB_VERSION, zlibVersion(), zlibCompileFlags());
+#else
+    /* old zlib w/o zlibCompileFlags() */
+    printf("zlib version: %s (%s)\n",
+	   ZLIB_VERSION, zlibVersion());
+#endif
+}
+
+static void print_build(void)
+{
+    printf("\nBuild information\n-----------------\n");
+    /* Try to print information about some commonly used compilers */
+#ifdef __GNUC__
+    printf("GNU C: %s (%u.%u.%u)\n", __VERSION__, __GNUC__, __GNUC_MINOR__,
+	   __GNUC_PATCHLEVEL__);
+#endif
+#ifdef __INTEL_COMPILER
+    printf("Intel Compiler %u\n", __INTEL_COMPILER);
+#endif
+#ifdef _MSC_VER
+    printf("Microsoft Visual C++ %u\n", _MSC_VER);
+#endif
+#ifdef __SUNPRO_C
+    printf("Sun studio %u\n", __SUNPRO_C);
+#endif
+    printf("CPPFLAGS: %s\nCFLAGS: %s\nCXXFLAGS: %s\nLDFLAGS: %s\nConfigure: %s\n",
+	   BUILD_CPPFLAGS, BUILD_CFLAGS, BUILD_CXXFLAGS, BUILD_LDFLAGS,
+	   BUILD_CONFIGURE_FLAGS);
+}
+
 int main(int argc, char **argv)
 {
 	const char *dir;
@@ -328,5 +392,7 @@ int main(int argc, char **argv)
 	    }
 	}
     }
+    print_platform();
+    print_build();
     return 0;
 }

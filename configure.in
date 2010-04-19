@@ -430,6 +430,10 @@ if test "$enable_experimental" = "yes"; then
   VERSION_SUFFIX="$VERSION_SUFFIX-exp"
 fi
 
+build_configure_args=`echo "$ac_configure_args" | sed -e 's/[\"]//g'`
+AC_SUBST([BUILD_CONFIGURE_FLAGS], [$build_configure_args])
+
+AX_CHECK_UNAME_SYSCALL
 AC_CHECK_LIB([socket], [bind], [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
 AC_SEARCH_LIBS([gethostent],[nsl], [(LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl")])
 
