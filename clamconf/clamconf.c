@@ -231,6 +231,15 @@ static void print_platform(void)
 	   perror("failed to determine");
 	}
     }
+#elif defined(_WIN32)
+    {
+	/* get just some basic information, since getting the full version
+	 * is too complicated */
+	uint32_t dwVersion = GetVersion();
+	printf("Full OS version: %d.%d (%d)\n",
+	   dwVersion&0xff, (dwVersion>>8)&0xff,
+	   dwVersion<0x80000000 ? dwVersion>>16 : 0);
+    }
 #else
     /* e.g. Solaris */
     if (!access("/etc/release", R_OK)) {
