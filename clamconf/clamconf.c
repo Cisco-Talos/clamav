@@ -212,9 +212,11 @@ static void help(void)
 
 static void print_platform(void)
 {
-    printf("\nPlatform information\n--------------------\n");
 #ifdef HAVE_UNAME_SYSCALL
     struct utsname name;
+#endif
+    printf("\nPlatform information\n--------------------\n");
+#ifdef HAVE_UNAME_SYSCALL
     uname(&name);
     printf("uname: %s %s %s %s\n", name.sysname, name.release, name.version,
 	   name.machine);
@@ -225,7 +227,9 @@ static void print_platform(void)
     if (!access("/usr/bin/lsb_release", X_OK)) {
 	fputs("Full OS version: ", stdout);
 	fflush(stdout);
-	system("/usr/bin/lsb_release -d -s");
+	if (system("/usr/bin/lsb_release -d -s") == -1) {
+	   perror("failed to determine");
+	}
     }
 #else
     /* e.g. Solaris */
@@ -238,7 +242,7 @@ static void print_platform(void)
 #endif
 
 #ifdef ZLIB_VERNUM
-    printf("zlib version: %s (%s), compile flags: %02x\n",
+    printf("zlib version: %s (%s), compile flags: %02lx\n",
 	   ZLIB_VERSION, zlibVersion(), zlibCompileFlags());
 #else
     /* old zlib w/o zlibCompileFlags() */
