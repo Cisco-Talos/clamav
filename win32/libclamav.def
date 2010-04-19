@@ -94,6 +94,7 @@ EXPORTS cli_bytecode_init @44238 NONAME
 EXPORTS cli_bytecode_debug @44239 NONAME
 EXPORTS cli_bytecode_debug_printsrc @44240 NONAME
 EXPORTS cli_bytecode_printversion @44241 NONAME
+EXPORTS cli_printcxxver @44336 NONAME
 EXPORTS cli_bytecode_describe @44242 NONAME
 EXPORTS cli_malloc @44243 NONAME
 EXPORTS cli_wm_decrypt_macro @44244 NONAME

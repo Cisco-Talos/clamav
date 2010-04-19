@@ -277,6 +277,7 @@ static void print_build(void)
 #ifdef __SUNPRO_C
     printf("Sun studio %u\n", __SUNPRO_C);
 #endif
+    cli_printcxxver();
     printf("CPPFLAGS: %s\nCFLAGS: %s\nCXXFLAGS: %s\nLDFLAGS: %s\nConfigure: %s\n",
 	   BUILD_CPPFLAGS, BUILD_CFLAGS, BUILD_CXXFLAGS, BUILD_LDFLAGS,
 	   BUILD_CONFIGURE_FLAGS);

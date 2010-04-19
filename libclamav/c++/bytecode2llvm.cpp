@@ -2013,6 +2013,21 @@ void cli_bytecode_printversion()
   cl::PrintVersionMessage();
 }
 
+void cli_printcxxver()
+{
+    /* Try to print information about some commonly used compilers */
+#ifdef __GNUC__
+    printf("GNU C++: %s (%u.%u.%u)\n", __VERSION__, __GNUC__, __GNUC_MINOR__,
+	   __GNUC_PATCHLEVEL__);
+#endif
+#ifdef __INTEL_COMPILER
+    printf("Intel Compiler C++ %u\n", __INTEL_COMPILER);
+#endif
+#ifdef _MSC_VER
+    printf("Microsoft Visual C++ %u\n", _MSC_VER);
+#endif
+}
+
 namespace ClamBCModule {
 void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 {
