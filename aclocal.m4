@@ -995,6 +995,7 @@ AC_SUBST([am__untar])
 
 m4_include([m4/acinclude.m4])
 m4_include([m4/argz.m4])
+m4_include([m4/ax_check_uname_syscall.m4])
 m4_include([m4/fdpassing.m4])
 m4_include([m4/lib-ld.m4])
 m4_include([m4/lib-link.m4])
