@@ -1,3 +1,7 @@
+Thu Apr 22 22:34:52 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: downgrade warning when the kernel doesn't want a map back
+
 Thu Apr 22 18:03:30 CEST 2010 (tk)
 ----------------------------------
  * libclamav: avoid loading duplicate databases (bb#1962)

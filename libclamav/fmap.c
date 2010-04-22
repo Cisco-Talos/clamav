@@ -192,7 +192,7 @@ static void fmap_aging(fmap_t *m) {
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
 		fmap_lock;
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
-		    cli_warnmsg("fmap_aging: kernel hates you\n");
+		    cli_dbgmsg("fmap_aging: kernel hates you\n");
 		fmap_unlock;
 	    }
 	    m->paged -= avail;
