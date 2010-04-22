@@ -2280,10 +2280,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cvd")) {
-	ret = cli_cvdload(fs, engine, signo, options, 0, dbname);
+	ret = cli_cvdload(fs, engine, signo, options, 0, filename);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	ret = cli_cvdload(fs, engine, signo, options, 1, dbname);
+	ret = cli_cvdload(fs, engine, signo, options, 1, filename);
 
     } else if(cli_strbcasestr(dbname, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);

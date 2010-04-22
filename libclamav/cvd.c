@@ -554,14 +554,16 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *dbname)
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename)
 {
-	struct cl_cvd cvd;
+	struct cl_cvd cvd, dupcvd;
+	FILE *dupfs;
 	int ret;
 	time_t s_time;
 	int cfd;
 	struct cli_dbio dbio;
 	struct cli_dbinfo *dbinfo = NULL;
+	char *dupname;
 
     cli_dbgmsg("in cli_cvdload()\n");
 
@@ -569,7 +571,27 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     if((ret = cli_cvdverify(fs, &cvd, cld)))
 	return ret;
 
-    if(strstr(dbname, "daily.")) {
+    /* check for duplicate db */
+    dupname = cli_strdup(filename);
+    if(!dupname)
+	return CL_EMEM;
+    dupname[strlen(dupname) - 2] = (cld ? 'v' : 'l');
+    if(!access(dupname, R_OK) && (dupfs = fopen(dupname, "rb"))) {
+	if((ret = cli_cvdverify(dupfs, &dupcvd, !cld))) {
+	    fclose(dupfs);
+	    return ret;
+	}
+	fclose(dupfs);
+	if(dupcvd.version > cvd.version) {
+	    cli_warnmsg("Detected duplicate databases %s and %s. The %s database is older and will not be loaded, you should manually remove it from the database directory.\n", filename, dupname, filename);
+	    return CL_SUCCESS;
+	} else if(dupcvd.version == cvd.version && !cld) {
+	    cli_warnmsg("Detected duplicate databases %s and %s, please manually remove one of them\n", filename, dupname);
+	    return CL_SUCCESS;
+	}
+    }
+
+    if(strstr(filename, "daily.")) {
 	time(&s_time);
 	if(cvd.stime > s_time) {
 	    if(cvd.stime - (unsigned int ) s_time > 3600) {
