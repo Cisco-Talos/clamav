@@ -40,4 +40,6 @@ typedef	unsigned	int	in_addr_t;
 
 /* Nothing is safe in windows, not even open */
 #define safe_open open
-
+#ifndef WORDS_BIGENDIAN
+#define WORDS_BIGENDIAN 0
+#endif

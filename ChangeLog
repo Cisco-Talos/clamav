@@ -1,3 +1,7 @@
+Fri Apr 23 21:38:19 EEST 2010 (edwin)
+-------------------------------------
+ * configure: fix Apple-style universal build (bb #1988).
+
 Fri Apr  9 17:01:07 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/llvm/test: Fix make check failure on x86-32 (bb #1942)

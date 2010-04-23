@@ -108,4 +108,4 @@ int real_main(int, char**);
 #define main main(int argc, char **argv) { _setmode(_fileno(stdin), _O_BINARY); w32_glob(&argc, &argv); return real_main(argc, argv); }; int real_main
 
 #endif /* __PLATFORM_H */
-
+#define WORDS_BIGENDIAN 0
