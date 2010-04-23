@@ -12766,10 +12766,6 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
  presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
  esac
 
-if test $ac_cv_c_bigendian = no; then
-    $as_echo "#define WORDS_BIGENDIAN 0" >>confdefs.h
-
-fi
 
 LIBM=
 case $host in

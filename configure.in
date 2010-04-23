@@ -78,9 +78,6 @@ AC_C_CONST
 AC_C_INLINE
 AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
-if test $ac_cv_c_bigendian = no; then
-    m4_default([], [AC_DEFINE([WORDS_BIGENDIAN], 0)])
-fi
 
 LT_LIB_M
 

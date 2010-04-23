@@ -1,3 +1,7 @@
+Fri Apr 23 21:38:19 EEST 2010 (edwin)
+-------------------------------------
+ * configure: fix Apple-style universal build (bb #1988).
+
 Thu Apr 22 22:34:52 CEST 2010 (acab)
 ------------------------------------
  * libclamav/fmap.c: downgrade warning when the kernel doesn't want a map back
