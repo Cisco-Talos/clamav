@@ -1419,6 +1419,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     bc->id = bcs->count;/* must set after _load, since load zeroes */
     sigs++;
     if (bc->kind == BC_LOGICAL || bc->lsig) {
+        unsigned oldsigs = sigs;
 	if (!bc->lsig) {
 	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
 	    return CL_EMALFDB;
@@ -1430,6 +1431,12 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		       bc->lsig, dbname, cl_strerror(rc));
 	    return rc;
 	}
+        if (sigs != oldsigs) {
+          /* compiler ensures Engine field in lsig matches the one in bytecode,
+           * so this should never happen. */
+          cli_errmsg("Bytecode logical signature skipped, but bytecode itself not?");
+          return CL_EMALFDB;
+        }
     }
     if (bc->kind != BC_LOGICAL) {
 	if (bc->lsig) {

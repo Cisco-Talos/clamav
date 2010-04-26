@@ -34,6 +34,7 @@
 #include "bytecode_priv.h"
 #include "readdb.h"
 #include "scanners.h"
+#include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include <string.h>
 
@@ -486,19 +487,23 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
     char ok = 1;
     unsigned offset, len, flevel;
     char *pos;
+
     if (strncmp((const char*)buffer, BC_HEADER, sizeof(BC_HEADER)-1)) {
 	cli_errmsg("Missing file magic in bytecode");
 	return CL_EMALFDB;
     }
     offset = sizeof(BC_HEADER)-1;
     len = strlen((const char*)buffer);
-    flevel = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.formatlevel = readNumber(buffer, &offset, len, &ok);
     if (!ok) {
-	cli_errmsg("Unable to parse functionality level in bytecode header\n");
+	cli_errmsg("Unable to parse (format) functionality level in bytecode header\n");
 	return CL_EMALFDB;
     }
-    if (flevel != BC_FUNC_LEVEL) {
-	cli_dbgmsg("Skipping bytecode with functionality level: %u (current %u)\n", flevel, BC_FUNC_LEVEL);
+    /* we support 2 bytecode formats */
+    if (bc->metadata.formatlevel != BC_FORMAT_096 &&
+	bc->metadata.formatlevel != BC_FORMAT_LEVEL) {
+	cli_dbgmsg("Skipping bytecode with (format) functionality level: %u (current %u)\n", 
+		   bc->metadata.formatlevel, BC_FORMAT_LEVEL);
 	return CL_BREAK;
     }
     /* Optimistic parsing, check for error only at the end.*/
@@ -506,9 +511,22 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
     bc->metadata.sigmaker = readString(buffer, &offset, len, &ok);
     bc->metadata.targetExclude = readNumber(buffer, &offset, len, &ok);
     bc->kind = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.maxStack = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.minfunc = readNumber(buffer, &offset, len, &ok);
+    bc->metadata.maxfunc = readNumber(buffer, &offset, len, &ok);
+    flevel = cl_retflevel();
+    /* in 0.96 these 2 fields are unused / zero, in post 0.96 these mean
+     * min/max flevel.
+     * So 0 for min/max means no min/max
+     * Note that post 0.96 bytecode/bytecode lsig needs format 7, because
+     * 0.96 doesn't check lsig functionality level.
+     */
+    if ((bc->metadata.minfunc && bc->metadata.minfunc > flevel) ||
+        (bc->metadata.maxfunc && bc->metadata.maxfunc < flevel)) {
+      cli_dbgmsg("Skipping bytecode with (engine) functionality level %u-%u (current %u)\n",
+                 bc->metadata.minfunc, bc->metadata.maxfunc, flevel);
+      return CL_BREAK;
+    }
+    bc->metadata.maxresource = readNumber(buffer, &offset, len, &ok);
     bc->metadata.compiler = readString(buffer, &offset, len, &ok);
     bc->num_types = readNumber(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
@@ -2046,7 +2064,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     }
 
     stamp = bc->metadata.timestamp;
-    printf("Bytecode format functionality level: %u\n", BC_FUNC_LEVEL);
+    printf("Bytecode format functionality level: %u\n", bc->metadata.formatlevel);
     printf("Bytecode metadata:\n\tcompiler version: %s\n",
 	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
     printf("\tcompiled on: %s",
@@ -2070,6 +2088,9 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    printf("Unknown (type %u)", bc->kind);
 	    break;
     }
+    /* 0 means no limit */
+    printf("\tbytecode functionality level: %u - %u\n",
+	   bc->metadata.minfunc, bc->metadata.maxfunc);
     printf("\tbytecode logical signature: %s\n",
 	       bc->lsig ? bc->lsig : "<none>");
     printf("\tvirusname prefix: %s\n",

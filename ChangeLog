@@ -1,3 +1,7 @@
+Mon Apr 26 18:18:47 EEST 2010 (edwin)
+-------------------------------------
+ * bytecode: min/max functionality level support.
+
 Mon Apr 26 16:12:50 CEST 2010 (tk)
 ----------------------------------
  * libclamav/others.c: bump f-level
