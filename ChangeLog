@@ -1,3 +1,7 @@
+Mon Apr 26 16:06:56 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix handling of VI/MACRO special offsets (bb#1957)
+
 Fri Apr 23 21:38:19 EEST 2010 (edwin)
 -------------------------------------
  * configure: fix Apple-style universal build (bb #1988).

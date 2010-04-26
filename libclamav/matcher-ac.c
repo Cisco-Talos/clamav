@@ -1182,13 +1182,13 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    continue;
 			}
 			realoff = offset + bp - pt->prefix_length;
-			if(patt->offdata[0] == CLI_OFF_VERSION) {
+			if(pt->offdata[0] == CLI_OFF_VERSION) {
 			    if(!cli_hashset_contains_maybe_noalloc(&mdata->vinfo, realoff)) {
 				pt = pt->next_same;
 				continue;
 			    }
 			    cli_dbgmsg("cli_ac_scanbuff: VI match for offset %x\n", realoff);
-			} else if (patt->offdata[0] == CLI_OFF_MACRO) {
+			} else if(pt->offdata[0] == CLI_OFF_MACRO) {
 			    mdata->macro_lastmatch[patt->offdata[1]] = realoff;
 			    pt = pt->next_same;
 			    continue;
