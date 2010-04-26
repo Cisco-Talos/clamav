@@ -1,3 +1,7 @@
+Mon Apr 26 16:12:50 CEST 2010 (tk)
+----------------------------------
+ * libclamav/others.c: bump f-level
+
 Mon Apr 26 16:06:56 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher-ac.c: fix handling of VI/MACRO special offsets (bb#1957)
