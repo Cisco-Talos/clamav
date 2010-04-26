@@ -70,7 +70,12 @@ extern const uint32_t __clambc_filesize[1];
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
 
-uint32_t test1(uint32_t, uint32_t);
+/** Test api. 
+  @param a 0xf00dbeef
+  @param b 0xbeeff00d
+  @return 0x12345678 if parameters match, 0x55 otherwise
+*/
+uint32_t test1(uint32_t a, uint32_t b);
 
 /**
  * @brief Reads specified amount of bytes from the current file
@@ -81,7 +86,6 @@ uint32_t test1(uint32_t, uint32_t);
  * @return amount read.
  */
 int32_t read(uint8_t *data, int32_t size);
-
 
 enum {
     /**set file position to specified absolute position */
@@ -188,6 +192,9 @@ int32_t file_byteat(uint32_t offset);
   @return pointer to allocated memory */
 void* malloc(uint32_t size);
 
+/** Test api2.
+  * @param a 0xf00d
+  * @return 0xd00f if parameter matches, 0x5555 otherwise */
 uint32_t test2(uint32_t a);
 
 /** Gets information about the specified PE section.
@@ -206,7 +213,8 @@ int32_t get_pe_section(struct cli_exe_section *section, uint32_t num);
  *          number bytes available in buffer (starting from 0)
  * The character at the cursor will be at position 0 after this call.
  */
-int32_t fill_buffer(uint8_t* buffer, uint32_t len, uint32_t filled, uint32_t cur, uint32_t fill);
+int32_t fill_buffer(uint8_t* buffer, uint32_t len, uint32_t filled,
+                    uint32_t cursor, uint32_t fill);
 
 /**
  * Prepares for extracting a new file, if we've already extracted one it scans
@@ -224,31 +232,172 @@ int32_t extract_new(int32_t id);
   */
 int32_t read_number(uint32_t radix);
 
+/**
+  * Creates a new hashset and returns its id.
+  * @return ID for new hashset */
 int32_t hashset_new(void);
+
+/**
+  * Add a new 32-bit key to the hashset.
+  * @param hs ID of hashset (from hashset_new)
+  * @param key the key to add
+  * @return 0 on success */
 int32_t hashset_add(int32_t hs, uint32_t key);
+
+/**
+  * Remove a 32-bit key from the hashset.
+  * @param hs ID of hashset (from hashset_new)
+  * @param key the key to add
+  * @return 0 on success */
 int32_t hashset_remove(int32_t hs, uint32_t key);
+
+/**
+  * Returns whether the hashset contains the specified key.
+  * @param hs ID of hashset (from hashset_new)
+  * @param key the key to lookup
+  * @return 1 if found, 0 if not found, <0 on invalid hashset ID */
 int32_t hashset_contains(int32_t hs, uint32_t key);
+
+/**
+  * Deallocates the memory used by the specified hashset.
+  * Trying to use the hashset after this will result in an error.
+  * The hashset may not be used after this.
+  * All hashsets are automatically deallocated when bytecode
+  * finishes execution.
+  * @param id ID of hashset (from hashset_new)
+  * @return 0 on success */
 int32_t hashset_done(int32_t id);
+
+/**
+  * Returns whether the hashset is empty.
+  * @param id of hashset (from hashset_new)
+  * @return 0 on success */
 int32_t hashset_empty(int32_t id);
 
+/**
+  * Creates a new pipe with the specified buffer size
+  * @param size size of buffer
+  * @return ID of newly created buffer_pipe */
 int32_t  buffer_pipe_new(uint32_t size);
+
+/**
+  * Same as buffer_pipe_new, except the pipe's input is tied
+  * to the current file, at the specified position.
+  * @param pos starting position of pipe input in current file
+  * @return ID of newly created buffer_pipe */
 int32_t  buffer_pipe_new_fromfile(uint32_t pos);
+
+/**
+  * Returns the amount of bytes available to read.
+  * @param id ID of buffer_pipe
+  * @return amount of bytes available to read */
 uint32_t buffer_pipe_read_avail(int32_t id);
+
+/**
+  * Returns a pointer to the buffer for reading.
+  * The 'amount' parameter should be obtained by a call to
+  * buffer_pipe_read_avail().
+  * @param id ID of buffer_pipe
+  * @param amount to read
+  * @return pointer to buffer, or NULL if buffer has less than
+  specified amount */
 uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
+
+/**
+  * Updates read cursor in buffer_pipe.
+  * @param id ID of buffer_pipe
+  * @param amount amount of bytes to move read cursor
+  * @return 0 on success */
 int32_t  buffer_pipe_read_stopped(int32_t id, uint32_t amount);
+
+/**
+  * Returns the amount of bytes available for writing.
+  * @param id ID of buffer_pipe
+  * @return amount of bytes available for writing */
 uint32_t buffer_pipe_write_avail(int32_t id);
+
+/**
+  * Returns pointer to writable buffer.
+  * The 'amount' parameter should be obtained by a call to
+  * buffer_pipe_write_avail().
+  * @param id ID of buffer_pipe
+  * @param size amount of bytes to write
+  * @return pointer to write buffer, or NULL if requested amount
+  is more than what is available in the buffer */
 uint8_t *buffer_pipe_write_get(int32_t id, uint32_t size);
+
+/**
+  * Updates the write cursor in buffer_pipe.
+  * @param id ID of buffer_pipe
+  * @param amount amount of bytes to move write cursor
+  * @return 0 on success */
 int32_t  buffer_pipe_write_stopped(int32_t id, uint32_t amount);
+
+/**
+  * Deallocate memory used by buffer.
+  * After this all attempts to use this buffer will result in error.
+  * All buffer_pipes are automatically deallocated when bytecode
+  * finishes execution.
+  * @param id ID of buffer_pipe
+  * @return 0 on success */
 int32_t  buffer_pipe_done(int32_t id);
 
+/**
+  * Initializes inflate data structures for decompressing data
+  * 'from_buffer' and writing uncompressed uncompressed data 'to_buffer'.
+  * @param from_buffer ID of buffer_pipe to read compressed data from
+  * @param to_buffer ID of buffer_pipe to write decompressed data to
+  * @param windowBits (see zlib documentation)
+  * @return ID of newly created inflate data structure, <0 on failure */
 int32_t inflate_init(int32_t from_buffer, int32_t to_buffer, int32_t windowBits);
+
+/**
+  * Inflate all available data in the input buffer, and write to output buffer.
+  * Stops when the input buffer becomes empty, or write buffer becomes full.
+  * Also attempts to recover from corrupted inflate stream (via inflateSync).
+  * This function can be called repeatedly on success after filling the input
+  * buffer, and flushing the output buffer.
+  * The inflate stream is done processing when 0 bytes are available from output
+  * buffer, and input buffer is not empty.
+  * @param id ID of inflate data structure
+  * @return 0 on success, zlib error code otherwise */
 int32_t inflate_process(int32_t id);
+
+/**
+  * Deallocates inflate data structure.
+  * Using the inflate data structure after this will result in an error.
+  * All inflate data structures are automatically deallocated when bytecode
+  * finishes execution.
+  * @param id ID of inflate data structure
+  * @return 0 on success.*/
 int32_t inflate_done(int32_t id);
 
+/** 
+  * Report a runtime error at the specified locationID.
+  * @param locationid (line << 8) | (column&0xff)
+  * @return 0 */
 int32_t bytecode_rt_error(int32_t locationid);
 
+/**
+  * Initializes JS normalizer for reading 'from_buffer'.
+  * Normalized JS will be written to a single tempfile,
+  * one normalized JS per line, and automatically scanned 
+  * when the bytecode finishes execution. 
+  * @param from_buffer ID of buffer_pipe to read javascript from
+  * @return ID of JS normalizer, <0 on failure */
 int32_t jsnorm_init(int32_t from_buffer);
+
+/**
+  * Normalize all javascript from the input buffer, and write to tempfile.
+  * You can call this function repeatedly on success, if you (re)fill the input
+  * buffer.
+  * @param id ID of JS normalizer
+  * @return 0 on success, <0 on failure */
 int32_t jsnorm_process(int32_t id);
+
+/**
+  * Flushes JS normalizer.
+  * @param id ID of js normalizer to flush */
 int32_t jsnorm_done(int32_t id);
 
 #endif

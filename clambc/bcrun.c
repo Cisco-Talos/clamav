@@ -309,8 +309,12 @@ int main(int argc, char *argv[])
 	exit(4);
     }
     fclose(f);
+    if (bc->state == bc_skip) {
+	fprintf(stderr,"bytecode load skipped\n");
+	exit(0);
+    }
     if (cli_debug_flag)
-    printf("[clambc] Bytecode loaded\n");
+	printf("[clambc] Bytecode loaded\n");
     if (optget(opts, "info")->enabled) {
 	cli_bytecode_describe(bc);
     } else if (optget(opts, "printsrc")->enabled) {

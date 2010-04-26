@@ -26,12 +26,14 @@ struct bytecode_metadata {
     char *compiler;
     char *sigmaker;
     uint64_t timestamp;
-    unsigned long maxStack, maxMem;
-    unsigned long maxTime;
+    unsigned formatlevel;
+    unsigned minfunc, maxfunc;
+    unsigned maxresource;/* reserved */
     unsigned targetExclude;
 };
 
-#define BC_FUNC_LEVEL 6
+#define BC_FORMAT_096 6
+#define BC_FORMAT_LEVEL 7
 #define BC_HEADER "ClamBC"
 
 enum bc_opcode {
@@ -128,4 +130,5 @@ enum bc_global {
 };
 
 #define BC_START_TID 69
+
 #endif
