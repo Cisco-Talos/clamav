@@ -408,7 +408,7 @@ Files larger than this limit won't be scanned. Affects the input file itself as 
 Default: 25M
 .TP 
 \fBMaxRecursion NUMBER\fR
-Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR file, all files within it will also be scanned. This options specifies how deeply the process should be continued. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
+Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR file, all files within it will also be scanned. This options specifies how deeply the process should be continued. \fBWarning: setting this limit too high may result in severe damage to the system.\fR
 .br 
 Default: 16
 .TP 
