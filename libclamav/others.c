@@ -355,7 +355,11 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    engine->maxfilesize = num;
 	    break;
 	case CL_ENGINE_MAX_RECURSION:
-	    engine->maxreclevel = num;
+	    if(!num) {
+		cli_warnmsg("MaxRecursion: the value of 0 is not allowed, using default: %u\n", CLI_DEFAULT_MAXRECLEVEL);
+		engine->maxreclevel = CLI_DEFAULT_MAXRECLEVEL;
+	    } else
+		engine->maxreclevel = num;
 	    break;
 	case CL_ENGINE_MAX_FILES:
 	    engine->maxfiles = num;
