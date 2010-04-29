@@ -1,3 +1,7 @@
+Thu Apr 29 09:49:10 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/configure: Mac OS X doesn't have -pthread (bb #1995)
+
 Thu Apr 29 09:45:29 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/llvm/include/llvm/ADT/SmallVector.h: Fix crash with -ftree-vectorize/-O3(bb #1984).

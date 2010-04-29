@@ -139,6 +139,11 @@ freebsd[[45]]*)
 freebsd*)
     THREAD_LIBS="-lthr"
     ;;
+darwin*)
+    # none required
+    THREAD_LIBS=
+    ;;
+
 *)
     THREAD_LIBS="-pthread"
 esac
