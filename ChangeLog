@@ -1,3 +1,7 @@
+Fri Apr 30 12:45:47 CEST 2010 (tk)
+----------------------------------
+ * clamconf: warn about dbdir mismatch in clamd and freshclam (bb#1978)
+
 Thu Apr 29 09:49:10 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/configure: Mac OS X doesn't have -pthread (bb #1995)
