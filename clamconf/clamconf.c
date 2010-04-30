@@ -54,7 +54,8 @@ static struct _cfgfile {
 
 static const char *dbnames[] = { "main.cvd", "main.cld", "daily.cvd",
 				 "daily.cld", "safebrowsing.cvd",
-				 "safebrowsing.cld", NULL };
+				 "safebrowsing.cld", "bytecode.cvd",
+				 "bytecode.cld", NULL };
 
 static void printopts(struct optstruct *opts, int nondef)
 {
@@ -208,7 +209,7 @@ static void help(void)
 int main(int argc, char **argv)
 {
 	const char *dir;
-	char path[512], dbdir[512], *pt;
+	char path[512], dbdir[512], clamd_dbdir[512], *pt;
 	struct optstruct *opts, *toolopts;
 	const struct optstruct *opt;
 	unsigned int i, j;
@@ -262,6 +263,10 @@ int main(int argc, char **argv)
 	    opt = optget(toolopts, "DatabaseDirectory");
 	    strncpy(dbdir, opt->strarg, sizeof(dbdir));
 	    dbdir[sizeof(dbdir) - 1] = 0;
+	} else if(cfgfile[i].tool == OPT_CLAMD) {
+	    opt = optget(toolopts, "DatabaseDirectory");
+	    strncpy(clamd_dbdir, opt->strarg, sizeof(clamd_dbdir));
+	    clamd_dbdir[sizeof(clamd_dbdir) - 1] = 0;
 	}
 	optfree(toolopts);
     }
@@ -311,6 +316,8 @@ int main(int argc, char **argv)
 	dbdir[sizeof(dbdir) - 1] = 0;
     }
     printf("Database directory: %s\n", dbdir);
+    if(strcmp(dbdir, clamd_dbdir))
+	printf("WARNING: freshclam.conf and clamd.conf point to different database directories\n");
     flevel = cl_retflevel();
     for(i = 0; dbnames[i]; i++) {
 	snprintf(path, sizeof(path), "%s"PATHSEP"%s", dbdir, dbnames[i]);
