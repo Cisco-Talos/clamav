@@ -15784,6 +15784,7 @@ else
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <bzlib.h>
 
 #ifdef NOBZ2PREFIX

@@ -1,3 +1,7 @@
+Sat May  1 02:05:17 CEST 2010 (acab)
+------------------------------------
+ * m4: On solaris 8 bzlib.h uses FILE without including stdio.h (bb#1985)
+
 Fri Apr 30 12:45:47 CEST 2010 (tk)
 ----------------------------------
  * clamconf: warn about dbdir mismatch in clamd and freshclam (bb#1978)
