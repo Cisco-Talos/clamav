@@ -420,6 +420,8 @@ const struct clam_option __clam_options[] = {
 
     { "ReportHostname", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "When AddHeader is in use, this option allows to arbitrary set the reported\nhostname. This may be desirable in order to avoid leaking internal names.\nIf unset the real machine name is used.", "my.mail.server.name" },
 
+    { "VirusAction", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Execute a command when an infected message is processed.\nThe following parameters are passed to the invoked program in this order:\nvirus name, queue id, sender, destination, subject, message id, message date.\nNote: this requires MTA macroes to be available (see LogInfected below)", "/usr/local/bin/my_infected_message_handler" },
+
     { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },
 
     { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses" },

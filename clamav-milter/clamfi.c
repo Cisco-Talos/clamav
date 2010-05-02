@@ -26,13 +26,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <libmilter/mfapi.h>
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "libclamav/others.h"
 
 #include "connpool.h"
 #include "netcode.h"
@@ -54,6 +57,7 @@ static char *rejectfmt = NULL;
 
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
 char xvirushdr[255];
+char *viraction = NULL;
 enum {
     LOGINF_NONE,
     LOGINF_BASIC,
@@ -62,6 +66,7 @@ enum {
 
 #define CLAMFIBUFSZ 1424
 static const char *HDR_UNAVAIL = "UNKNOWN";
+static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
 
 struct CLAMFI {
     const char *virusname;
@@ -213,7 +218,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 
     if(!headerf) return SMFIS_CONTINUE; /* just in case */
 
-    if(loginfected == LOGINF_FULL) {
+    if(loginfected == LOGINF_FULL || viraction) {
 	if(!cf->msg_subj && !strcasecmp(headerf, "Subject"))
 	    cf->msg_subj = strdup(headerv ? headerv : "");
 	if(!cf->msg_date && !strcasecmp(headerf, "Date"))
@@ -321,7 +326,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
 	cf->virusname = NULL;
-	if(loginfected || addxvirus || rejectfmt) {
+	if(loginfected || addxvirus || rejectfmt || viraction) {
 	    char *vir;
 
 	    reply[len-7] = '\0';
@@ -339,21 +344,67 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 		    add_x_header(ctx, msg, cf->scanned_count, cf->status_count);
 		}
 
-		if(loginfected) {
+		if(loginfected || viraction) {
 		    const char *from = smfi_getsymval(ctx, "{mail_addr}");
 		    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
 
 		    if(!from) from = HDR_UNAVAIL;
 		    if(!to) to = HDR_UNAVAIL;
-		    if(loginfected == LOGINF_FULL) {
+		    if(loginfected == LOGINF_FULL || viraction) {
 			const char *id = smfi_getsymval(ctx, "{i}");
 			const char *msg_subj = makesanehdr(cf->msg_subj);
 			const char *msg_date = makesanehdr(cf->msg_date);
 			const char *msg_id = makesanehdr(cf->msg_id);
 
 			if(!id) id = HDR_UNAVAIL;
-			logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
-		    } else logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
+			
+			if(loginfected == LOGINF_FULL)
+			    logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
+
+			if(viraction) {
+			    char er[256];
+			    char *e_id = strdup(id);
+			    char *e_from = strdup(from);
+			    char *e_to = strdup(to);
+			    char *e_msg_subj = strdup(msg_subj);
+			    char *e_msg_date = strdup(msg_date);
+			    char *e_msg_id = strdup(msg_id);
+			    pid_t pid;
+
+			    pthread_mutex_lock(&virusaction_lock);
+			    pid = fork();
+			    if(!pid) {
+				char * args[9]; /* avoid element is not computable at load time warns */
+				args[0]= viraction;
+				args[1] = vir;
+				args[2] = e_id;
+				args[3] = e_from;
+				args[4] = e_to;
+				args[5] = e_msg_subj;
+				args[6] = e_msg_id;
+				args[7] = e_msg_date;
+				args[8] = NULL;
+				logg("*Executing: '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
+				if((ret = execvp(viraction, args)) < 0) {
+				    logg("!VirusEvent: exec failed: %s\n", cli_strerror(errno, er, sizeof(er)));
+				}
+				exit(ret);
+			    } else if(pid > 0) {
+				pthread_mutex_unlock(&virusaction_lock);
+				waitpid(pid, NULL, 0);
+			    } else {
+				logg("!VirusEvent: fork failed: %s\n", cli_strerror(errno, er, sizeof(er)));
+			    }
+			    free(e_id);
+			    free(e_from);
+			    free(e_to);
+			    free(e_msg_subj);
+			    free(e_msg_date);
+			    free(e_msg_id);
+			}
+		    }
+		    if(loginfected == LOGINF_BASIC)
+			logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		}
 	    }
 	}
@@ -456,6 +507,9 @@ int init_actions(struct optstruct *opts) {
 	logg("!Invalid setting %s for option LogInfected\n", opt->strarg);
 	return 1;
     }
+
+    if((opt = optget(opts, "VirusAction"))->enabled)
+	viraction = strdup(opt->strarg);
 
     if((opt = optget(opts, "OnFail"))->enabled) {
 	switch(parse_action(opt->strarg)) {

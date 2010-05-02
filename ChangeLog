@@ -1,3 +1,7 @@
+Sun May  2 19:13:29 CEST 2010 (acab)
+------------------------------------
+ * clamav-milter: add VirusAction (bb#1867)
+
 Sat May  1 02:05:17 CEST 2010 (acab)
 ------------------------------------
  * m4: On solaris 8 bzlib.h uses FILE without including stdio.h (bb#1985)
