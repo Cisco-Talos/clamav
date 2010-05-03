@@ -371,6 +371,8 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 			    char *e_msg_id = strdup(msg_id);
 			    pid_t pid;
 
+			    logg("*VirusEvent: about to execute '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
+
 			    pthread_mutex_lock(&virusaction_lock);
 			    pid = fork();
 			    if(!pid) {
@@ -384,14 +386,19 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 				args[6] = e_msg_id;
 				args[7] = e_msg_date;
 				args[8] = NULL;
-				logg("*Executing: '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
-				if((ret = execvp(viraction, args)) < 0) {
-				    logg("!VirusEvent: exec failed: %s\n", cli_strerror(errno, er, sizeof(er)));
-				}
-				exit(ret);
+				exit(execvp(viraction, args));
 			    } else if(pid > 0) {
 				pthread_mutex_unlock(&virusaction_lock);
-				waitpid(pid, NULL, 0);
+				if(waitpid(pid, &ret, 0)<0)
+				    logg("!VirusEvent: waitpid() failed: %s\n", cli_strerror(errno, er, sizeof(er)));
+				else {
+				    if(WIFEXITED(ret))
+					logg("*VirusEvent: child exited with code %d\n", WEXITSTATUS(ret));
+				    else if(WIFSIGNALED(ret))
+					logg("*VirusEvent: child killed by signal %d\n", WTERMSIG(ret));
+				    else
+					logg("*VirusEvent: child lost\n");
+				}
 			    } else {
 				logg("!VirusEvent: fork failed: %s\n", cli_strerror(errno, er, sizeof(er)));
 			    }
