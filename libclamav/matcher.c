@@ -414,22 +414,78 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     return ret;
 }
 
+int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata)
+{
+	unsigned int i, evalcnt;
+	uint64_t evalids;
+	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
+	struct cli_exe_info exeinfo;
+	fmap_t *map = *ctx->fmap;
+
+    for(i = 0; i < root->ac_lsigs; i++) {
+	evalcnt = 0;
+	evalids = 0;
+	cli_ac_chkmacro(root, acdata, i);
+	if(cli_ac_chklsig(root->ac_lsigtable[i]->logic, root->ac_lsigtable[i]->logic + strlen(root->ac_lsigtable[i]->logic), acdata->lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+	    if(root->ac_lsigtable[i]->tdb.container && root->ac_lsigtable[i]->tdb.container[0] != ctx->container_type)
+		continue;
+	    if(root->ac_lsigtable[i]->tdb.filesize && (root->ac_lsigtable[i]->tdb.filesize[0] > map->len || root->ac_lsigtable[i]->tdb.filesize[1] < map->len))
+		continue;
+
+	    if(root->ac_lsigtable[i]->tdb.ep || root->ac_lsigtable[i]->tdb.nos) {
+		einfo = NULL;
+		if(root->type == 1)
+		    einfo = cli_peheader;
+		else if(root->type == 6)
+		    einfo = cli_elfheader;
+		else if(root->type == 9)
+		    einfo = cli_machoheader;
+		if(!einfo)
+		    continue;
+		memset(&exeinfo, 0, sizeof(exeinfo));
+		if(einfo(map, &exeinfo))
+		    continue;
+		if(exeinfo.section)
+		    free(exeinfo.section);
+		if(root->ac_lsigtable[i]->tdb.ep && (root->ac_lsigtable[i]->tdb.ep[0] > exeinfo.ep || root->ac_lsigtable[i]->tdb.ep[1] < exeinfo.ep))
+		    continue;
+		if(root->ac_lsigtable[i]->tdb.nos && (root->ac_lsigtable[i]->tdb.nos[0] > exeinfo.nsections || root->ac_lsigtable[i]->tdb.nos[1] < exeinfo.nsections))
+		    continue;
+	    }
+	    if(root->ac_lsigtable[i]->tdb.icongrp1 || root->ac_lsigtable[i]->tdb.icongrp2) {
+		if(matchicon(ctx, root->ac_lsigtable[i]->tdb.icongrp1, root->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
+		    if(ctx->virname)
+			*ctx->virname = root->ac_lsigtable[i]->virname;
+		    return CL_VIRUS;
+		} else {
+		    continue;
+		}
+	    }
+	    if(!root->ac_lsigtable[i]->bc_idx) {
+		if(ctx->virname)
+		    *ctx->virname = root->ac_lsigtable[i]->virname;
+		return CL_VIRUS;
+	    }
+	    if(cli_bytecode_runlsig(ctx, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff[i], map) == CL_VIRUS) {
+		return CL_VIRUS;
+	    }
+	}
+    }
+    return CL_CLEAN;
+}
 
 int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, unsigned char *refhash)
 {
  	unsigned char *buff;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
-	unsigned int i, evalcnt, bm_offmode = 0;
+	unsigned int i, bm_offmode = 0;
 	uint32_t maxpatlen, offset = 0;
-	uint64_t evalids;
 	struct cli_ac_data gdata, tdata;
 	struct cli_bm_off toff;
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
 	struct cli_matcher *groot = NULL, *troot = NULL;
 	fmap_t *map = *ctx->fmap;
-	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
-	struct cli_exe_info exeinfo;
 
     if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");
@@ -529,62 +585,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	offset += bytes - maxpatlen;
     }
 
-#define LSIGEVAL(xroot, xdata) \
-    for(i = 0; i < xroot->ac_lsigs; i++) { \
-	evalcnt = 0; \
-	evalids = 0; \
-	cli_ac_chkmacro(xroot, &xdata, i);\
-	if(cli_ac_chklsig(xroot->ac_lsigtable[i]->logic, xroot->ac_lsigtable[i]->logic + strlen(xroot->ac_lsigtable[i]->logic), xdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) { \
-	    if(xroot->ac_lsigtable[i]->tdb.container && xroot->ac_lsigtable[i]->tdb.container[0] != ctx->container_type) \
-		continue; \
-	    if(xroot->ac_lsigtable[i]->tdb.filesize && (xroot->ac_lsigtable[i]->tdb.filesize[0] > map->len || xroot->ac_lsigtable[i]->tdb.filesize[1] < map->len)) \
-		continue; \
-	    \
-	    if(xroot->ac_lsigtable[i]->tdb.ep || xroot->ac_lsigtable[i]->tdb.nos) { \
-		einfo = NULL; \
-		if(xroot->type == 1) \
-		    einfo = cli_peheader; \
-		else if(xroot->type == 6) \
-		    einfo = cli_elfheader; \
-		else if(xroot->type == 9) \
-		    einfo = cli_machoheader; \
-		if(!einfo) \
-		    continue; \
-		memset(&exeinfo, 0, sizeof(exeinfo)); \
-		if(einfo(map, &exeinfo)) \
-		    continue; \
-		if(exeinfo.section) \
-		    free(exeinfo.section); \
-		if(xroot->ac_lsigtable[i]->tdb.ep && (xroot->ac_lsigtable[i]->tdb.ep[0] > exeinfo.ep || xroot->ac_lsigtable[i]->tdb.ep[1] < exeinfo.ep)) \
-		    continue; \
-		if(xroot->ac_lsigtable[i]->tdb.nos && (xroot->ac_lsigtable[i]->tdb.nos[0] > exeinfo.nsections || xroot->ac_lsigtable[i]->tdb.nos[1] < exeinfo.nsections)) \
-		    continue; \
-	    } \
-	    if(xroot->ac_lsigtable[i]->tdb.icongrp1 || xroot->ac_lsigtable[i]->tdb.icongrp2) { \
-		if(matchicon(ctx, xroot->ac_lsigtable[i]->tdb.icongrp1, xroot->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) { \
-		    if(ctx->virname) \
-			*ctx->virname = xroot->ac_lsigtable[i]->virname; \
-		    ret = CL_VIRUS; \
-		    break; \
-		} else { \
-		    continue; \
-		} \
-	    } \
-	    if(!xroot->ac_lsigtable[i]->bc_idx) { \
-		if(ctx->virname) \
-		    *ctx->virname = xroot->ac_lsigtable[i]->virname; \
-		ret = CL_VIRUS; \
-		break; \
-	    } \
-	    if(cli_bytecode_runlsig(ctx, &ctx->engine->bcs, xroot->ac_lsigtable[i]->bc_idx, ctx->virname, xdata.lsigcnt[i], xdata.lsigsuboff[i], map) == CL_VIRUS) { \
-		ret = CL_VIRUS; \
-		break; \
-	    } \
-	} \
-    }
-
     if(troot) {
-	LSIGEVAL(troot, tdata);
+	ret = cli_lsig_eval(ctx, troot, &tdata);
 	cli_ac_freedata(&tdata);
 	if(bm_offmode)
 	    cli_bm_freeoff(&toff);
@@ -592,7 +594,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(groot) {
 	if(ret != CL_VIRUS)
-	    LSIGEVAL(groot, gdata);
+	    ret = cli_lsig_eval(ctx, groot, &gdata);
 	cli_ac_freedata(&gdata);
     }
 
