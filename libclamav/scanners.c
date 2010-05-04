@@ -1023,7 +1023,7 @@ static int cli_scanscript(cli_ctx *ctx)
 	struct text_norm_state state;
 	char *tmpname = NULL;
 	int ofd = -1, ret;
-	const struct cli_matcher *troot = ctx->engine->root[7];
+	struct cli_matcher *troot = ctx->engine->root[7];
 	uint32_t maxpatlen = troot ? troot->maxpatlen : 0, offset = 0;
 	struct cli_matcher *groot = ctx->engine->root[0];
 	struct cli_ac_data gmdata, tmdata;
@@ -1096,13 +1096,18 @@ static int cli_scanscript(cli_ctx *ctx)
 		cli_dbgmsg("cli_scanscript: short read during normalizing\n");
 	    }
 	}
-	cli_ac_freedata(&tmdata);
-	cli_ac_freedata(&gmdata);
 	if(ctx->engine->keeptmp) {
 		free(tmpname);
 		close(ofd);
 	}
 	free(normalized);
+	if(ret != CL_VIRUS) {
+	    ret = cli_lsig_eval(ctx, troot, &tmdata);
+	    if(ret != CL_VIRUS)
+		ret = cli_lsig_eval(ctx, groot, &gmdata);
+	}
+	cli_ac_freedata(&tmdata);
+	cli_ac_freedata(&gmdata);
 
 	return ret;
 }
