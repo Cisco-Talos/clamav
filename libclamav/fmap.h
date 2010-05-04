@@ -48,6 +48,7 @@ typedef struct {
 } fmap_t;
 
 fmap_t *fmap(int fd, off_t offset, size_t len);
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty);
 void funmap(fmap_t *m);
 void *fmap_need_off(fmap_t *m, size_t at, size_t len);
 void *fmap_need_off_once(fmap_t *m, size_t at, size_t len);

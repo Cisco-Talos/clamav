@@ -92,12 +92,18 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 fmap_t *fmap(int fd, off_t offset, size_t len) {
+    int unused;
+    return fmap_check_empty(fd, offset, len, &unused);
+}
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
     unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
 
+    *empty = 0;
     if(fstat(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
@@ -108,7 +114,8 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
     }
     if(!len) len = st.st_size - offset; /* bound checked later */
     if(!len) {
-	cli_warnmsg("fmap: attempted void mapping\n");
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
 	return NULL;
     }
     if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
