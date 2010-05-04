@@ -1,3 +1,7 @@
+Tue May  4 16:47:57 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix counting of subsig matches (bb#2001)
+
 Fri Apr 30 12:45:47 CEST 2010 (tk)
 ----------------------------------
  * clamconf: warn about dbdir mismatch in clamd and freshclam (bb#1978)
