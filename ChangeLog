@@ -1,3 +1,7 @@
+Tue May  4 16:47:57 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix counting of subsig matches (bb#2001)
+
 Sun May  2 19:13:29 CEST 2010 (acab)
 ------------------------------------
  * clamav-milter: add VirusAction (bb#1867)

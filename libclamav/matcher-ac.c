@@ -1072,9 +1072,12 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
 
 static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff)
 {
+    if(realoff != CLI_OFF_NONE)
+	mdata->lsigcnt[lsigid1][lsigid2]++;
+
     if(mdata->lsigsuboff[lsigid1][lsigid2] == CLI_OFF_NONE)
 	mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
-    else if (mdata->lsigcnt[lsigid1][lsigid2] == 1) {
+    else if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
 	/* Check that the previous match had a macro match following it at the 
 	 * correct distance. This check is only done after the 1st match.*/
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
@@ -1099,18 +1102,14 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
 	    last_macroprev_match + smin > last_macro_match ||
 	    last_macroprev_match + smax < last_macro_match) {
 	    cli_dbgmsg("Canceled false lsig macro match\n");
-	    /* Previous match was false, cancel it and make this match the first
-	     * one.*/
-	    mdata->lsigcnt[lsigid1][lsigid2] = 0;
+	    /* Previous match was false - cancel it */
+	    mdata->lsigcnt[lsigid1][lsigid2]--;
 	    mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
 	} else {
 	    /* mark the macro sig itself matched */
 	    mdata->lsigcnt[lsigid1][lsigid2+1]++;
 	    mdata->lsigsuboff[lsigid1][lsigid2+1] = last_macro_match;
 	}
-    }
-    if (realoff != CLI_OFF_NONE) {
-	mdata->lsigcnt[lsigid1][lsigid2]++;
     }
 }
 
