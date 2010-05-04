@@ -35,6 +35,7 @@
 #include <sys/mman.h>
 #endif
 #endif
+#include <errno.h>
 
 #ifdef C_LINUX
 #include <pthread.h>
@@ -210,8 +211,8 @@ static void fmap_aging(fmap_t *m) {
 
 
 static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
-    size_t readsz = 0, got;
-    char *pptr = NULL;
+    size_t readsz = 0, eintr_off, got;
+    char *pptr = NULL, err[256];
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
@@ -278,12 +279,28 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		}
 	    }
 
-	    if((got=pread(m->fd, pptr, readsz, m->offset + first_page * m->pgsz)) != readsz) {
-		cli_warnmsg("pread fail: page %u pages %u map-offset %lu - asked for %lu bytes, got %lu\n", first_page, m->pages, (long unsigned int)m->offset, (long unsigned int)readsz, (long unsigned int)got);
+	    eintr_off = 0;
+	    while(readsz) {
+		got=pread(m->fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+
+		if(got < 0 && errno == EINTR)
+		    continue;
+
+		if(got > 0) {
+		    pptr += got;
+		    eintr_off += got;
+		    readsz -= got;
+		    continue;
+		}
+
+		if(got <0)
+		    cli_errmsg("fmap_readpage: pread error: %s\n", cli_strerror(errno, err, sizeof(err)));
+		else
+		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)(eintr_off + m->offset + first_page * m->pgsz), (long unsigned int)got);
 		return 1;
 	    }
+
 	    pptr = NULL;
-	    force_read = 0;
 	    readsz = 0;
 	    continue;
 	}
