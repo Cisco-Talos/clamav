@@ -1,3 +1,7 @@
+Wed May  5 21:28:04 CEST 2010 (tk)
+----------------------------------
+ * shared/output.c: workaround FreeBSD's file locking issue (bb#1918)
+
 Wed May  5 14:12:46 CEST 2010 (tk)
 ----------------------------------
  * freshclam/notify.c: fix warning message (bb#1972)
