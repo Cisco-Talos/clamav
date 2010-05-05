@@ -297,14 +297,21 @@ int logg(const char *str, ...)
 		memset(&fl, 0, sizeof(fl));
 		fl.l_type = F_WRLCK;
 		if(fcntl(fileno(logg_fp), F_SETLK, &fl) == -1) {
-#ifdef CL_THREAD_SAFE
-		    pthread_mutex_unlock(&logg_mutex);
+#ifdef EOPNOTSUPP
+		    if(errno == EOPNOTSUPP)
+			printf("WARNING: File locking not supported (NFS?)\n");
+		    else
 #endif
-		    printf("ERROR: %s is locked by another process\n", logg_file);
-		    if(len > sizeof(buffer))
-			free(abuffer);
-		    return -1;
-		}
+		    {
+#ifdef CL_THREAD_SAFE
+		        pthread_mutex_unlock(&logg_mutex);
+#endif
+		        printf("ERROR: %s is locked by another process\n", logg_file);
+		        if(len > sizeof(buffer))
+			    free(abuffer);
+		        return -1;
+		    }
+	        }
 	    }
 #endif
 	}
