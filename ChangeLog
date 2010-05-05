@@ -1,3 +1,8 @@
+Wed May  5 14:12:46 CEST 2010 (tk)
+----------------------------------
+ * freshclam/notify.c: fix warning message (bb#1972)
+		       Thanks to Gianluigi Tiesi
+
 Tue May  4 21:58:19 CEST 2010 (tk)
 ----------------------------------
  * libclamav: make lsigs working in cli_scanscript() (bb#1998)
