@@ -467,4 +467,4 @@ All options expressing a size are limited to max 4GB. Values in excess will be r
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamdscan(1), clamav-milter(8), clamscan(1), freshclam(1), sigtool(1)
+clamd(8), clamdscan(1), clamav-milter(8), freshclam(1), freshclam.conf(5)

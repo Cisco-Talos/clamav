@@ -181,5 +181,4 @@ Default: enabled
 Thomas Lamy <thomas.lamy@netwake.de>, Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-freshclam(1), clamd.conf(5), clamd(8), clamav-milter(8), clamscan(1)
-
+freshclam(1), clamd.conf(5), clamd(8), clamscan(1)

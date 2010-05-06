@@ -207,4 +207,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamdscan(1), freshclam(1)
+clamdscan(1), freshclam(1), freshclam.conf(5)

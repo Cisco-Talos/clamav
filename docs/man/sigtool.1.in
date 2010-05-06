@@ -93,4 +93,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamd(8), clamdscan(1), clamscan(1), freshclam(1), clamd.conf(5), clamav\-milter(8)
+freshclam(1), freshclam.conf(5)
