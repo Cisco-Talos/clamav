@@ -328,10 +328,8 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
     if(!len)
 	return NULL;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-	cli_dbgmsg("fmap: attempted oof need\n");
+    if(!CLI_ISCONTAINED(0, m->len, at, len))
 	return NULL;
-    }
 
     fmap_aging(m);
 
@@ -585,10 +583,9 @@ void funmap(fmap_t *m) { /* WIN32 */
 }
 
 static void *fmap_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-	cli_dbgmsg("fmap: attempted oof need\n");
+    if(!CLI_ISCONTAINED(0, m->len, at, len))
 	return NULL;
-    }
+
     if(!len)
 	return NULL;
     return (void *)((char *)m->data + at);

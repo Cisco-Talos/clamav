@@ -1,3 +1,7 @@
+Sat May  8 00:18:13 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: make oof need stfu (bb#2000)
+
 Fri May 14 11:28:52 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: handle global gep parameter correctly (bb #1955)
