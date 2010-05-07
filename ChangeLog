@@ -1,3 +1,7 @@
+Fri May  7 21:12:35 CEST 2010 (tk)
+----------------------------------
+ * clamdscan: respect ExcludePath in --fdpass mode (bb#1923)
+
 Fri Apr  9 17:01:07 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/llvm/test: Fix make check failure on x86-32 (bb #1942)

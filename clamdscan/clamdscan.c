@@ -44,6 +44,7 @@
 void help(void);
 
 extern int printinfected;
+struct optstruct *clamdopts = NULL;
 
 static void print_server_version(const struct optstruct *opt)
 {
@@ -69,6 +70,11 @@ int main(int argc, char **argv)
 	return 2;
     }
 
+    if((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+	logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+	return 2;
+    }
+
     if(optget(opts, "verbose")->enabled) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
@@ -83,11 +89,13 @@ int main(int argc, char **argv)
     if(optget(opts, "version")->enabled) {
 	print_server_version(opts);
 	optfree(opts);
+	optfree(clamdopts);
 	exit(0);
     }
 
     if(optget(opts, "help")->enabled) {
 	optfree(opts);
+	optfree(clamdopts);
     	help();
     }
 
@@ -101,6 +109,7 @@ int main(int argc, char **argv)
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
 	    optfree(opts);
+	    optfree(clamdopts);
 	    exit(2);
 	}
     } else 
@@ -110,12 +119,14 @@ int main(int argc, char **argv)
     if(optget(opts, "reload")->enabled) {
 	ret = reload_clamd_database(opts);
 	optfree(opts);
+	optfree(clamdopts);
 	logg_close();
 	exit(ret);
     }
 
     if(actsetup(opts)) {
 	optfree(opts);
+	optfree(clamdopts);
 	logg_close();
 	exit(2);
     }
@@ -134,6 +145,7 @@ int main(int argc, char **argv)
     gettimeofday(&t1, NULL);
 
     ret = client(opts, &infected, &err);
+    optfree(clamdopts);
 
     /* TODO: Implement STATUS in clamd */
     if(!optget(opts, "no-summary")->enabled) {

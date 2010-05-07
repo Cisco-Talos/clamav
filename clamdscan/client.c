@@ -73,21 +73,16 @@ unsigned long int maxstream;
 static struct sockaddr_un nixsock;
 #endif
 static struct sockaddr_in tcpsock;
-
+extern struct optstruct *clamdopts;
 
 /* Inits the communication layer
  * Returns 0 if clamd is local, non zero if clamd is remote */
 static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
-    struct optstruct *clamdopts;
     const char *clamd_conf = optget(opts, "config-file")->strarg;
     static struct sockaddr_in testsock;
 
-    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
-	return 0;
-    }
 #ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
 	memset((void *)&nixsock, 0, sizeof(nixsock));
@@ -96,24 +91,20 @@ static int isremote(const struct optstruct *opts) {
 	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
 	mainsa = (struct sockaddr *)&nixsock;
 	mainsasz = sizeof(nixsock);
-	optfree(clamdopts);
 	return 0;
     }
 #endif
-    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) {
-	optfree(clamdopts);
+    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled)
 	return 0;
-    }
+
     mainsa = (struct sockaddr *)&tcpsock;
     mainsasz = sizeof(tcpsock);
 
     if (cfg_tcpsock(clamdopts, &tcpsock, INADDR_LOOPBACK) == -1) {
 	logg("!Can't lookup clamd hostname: %s.\n", strerror(errno));
-	optfree(clamdopts);
 	mainsa = NULL;
 	return 0;
     }
-    optfree(clamdopts);
     memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
     testsock.sin_port = htons(INADDR_ANY);
     if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
@@ -226,15 +217,8 @@ int reload_clamd_database(const struct optstruct *opts)
 
 int client(const struct optstruct *opts, int *infected, int *err)
 {
-	const char *clamd_conf = optget(opts, "config-file")->strarg;
-	struct optstruct *clamdopts;
 	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
 	const char *fname;
-
-    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
-	return 2;
-    }
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
     remote = isremote(opts) | optget(opts, "stream")->enabled;
@@ -257,7 +241,6 @@ int client(const struct optstruct *opts, int *infected, int *err)
     if (optget(clamdopts, "FollowFileSymlinks")->enabled)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     flags |= CLI_FTW_TRIM_SLASHES;
-    optfree(clamdopts);
 
     if(!mainsa) {
 	logg("!Clamd is not configured properly.\n");

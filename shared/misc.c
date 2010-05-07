@@ -286,7 +286,6 @@ int daemonize(void)
 #endif
 }
 
-#ifndef CL_NOLIBCLAMAV
 int match_regex(const char *filename, const char *pattern)
 {
 	regex_t reg;
@@ -310,7 +309,6 @@ int match_regex(const char *filename, const char *pattern)
 	cli_regfree(&reg);
 	return match;
 }
-#endif
 
 int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_addr_t defaultbind)
 {

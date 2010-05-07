@@ -46,6 +46,7 @@
 #include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "proto.h"
 #include "client.h"
@@ -54,6 +55,7 @@ extern struct sockaddr *mainsa;
 extern int mainsasz;
 extern unsigned long int maxstream;
 int printinfected;
+extern struct optstruct *clamdopts;
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN" };
 
@@ -244,6 +246,23 @@ static int send_fdpass(int sockd, const char *filename) {
 }
 #endif
 
+/* 0: scan, 1: skip */
+static int chkpath(const char *path)
+{
+	const struct optstruct *opt;
+
+   if((opt = optget(clamdopts, "ExcludePath"))->enabled) {
+	while(opt) {
+	    if(match_regex(path, opt->strarg) == 1) {
+		logg("~%s: Excluded\n", path);
+		return 1;
+	    }
+	    opt = opt->nextarg;
+	}
+    }
+    return 0;
+}
+
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
@@ -253,6 +272,8 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     struct RCVLN rcv;
     struct stat sb;
 
+    if(chkpath(filename))
+	return 0;
     recvlninit(&rcv, sockd);
 
     switch(scantype) {
@@ -501,6 +522,8 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     struct SCANID *cid;
     int res;
 
+    if(chkpath(filename))
+	return 0;
     c->files++;
     switch(reason) {
     case error_stat:
