@@ -1,3 +1,7 @@
+Fri May  7 10:07:24 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/cache.c: support building without pthreads (bb #1897).
+
 Fri May  7 09:56:57 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode*: add match_offsets support.
