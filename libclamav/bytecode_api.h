@@ -52,7 +52,7 @@ enum BytecodeKind {
     _BC_LAST_HOOK
 };
 
-enum { PE_INVALID_RVA = 0xFFFFFFFF };
+static const unsignedPE_INVALID_RVA = 0xFFFFFFFF };
 
 /** LibClamAV functionality level constants */
 enum FunctionalityLevels {
