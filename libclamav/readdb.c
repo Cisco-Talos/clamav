@@ -999,7 +999,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	};
 	struct lsig_attrib *apt;
 	char *tokens[ATTRIB_TOKENS], *pt, *pt2;
-	unsigned int v1, v2, v3, i, j, tokens_count;
+	unsigned int v1, v2, v3, i, j, tokens_count, have_newext = 0;
 	uint32_t cnt, off[ATTRIB_TOKENS];
 
 
@@ -1024,6 +1024,14 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	    cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
 	    return 1;
 	}
+
+	if(!strcmp(apt->name, "Engine")) {
+	    if(i) {
+		cli_errmsg("lsigattribs: For backward compatibility the Engine attribute must be on the first position\n");
+		return -1;
+	    }
+	} else if(strcmp(apt->name, "Target"))
+	    have_newext = 1;
 
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
@@ -1141,6 +1149,10 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	}
     }
 
+    if(have_newext && (!tdb->engine || tdb->engine[0] < 51)) {
+	cli_errmsg("lsigattribs: For backward compatibility all signatures using new attributes must have the Engine attribute present and set to min_level of at least 51 (0.96)\n");
+	return -1;
+    }
     return 0;
 }
 
