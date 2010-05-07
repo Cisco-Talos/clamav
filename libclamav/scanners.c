@@ -1905,6 +1905,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
 
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(ctx->sha_collect>0) ctx->sha_collect = 0;
+#endif
+
     cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -1982,6 +1986,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(CL_EREAD);
     }
+
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(!ctx->sha_collect && type==CL_TYPE_MSEXE) ctx->sha_collect = 1;
+#endif
     lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
     ctx->hook_lsig_matches = cli_bitset_init();
@@ -2335,6 +2343,21 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     if(!ctx.fmap)
 	return CL_EMEM;
     ctx.hook_lsig_matches = cli_bitset_init();
+
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    do {
+	char link[32];
+	ssize_t linksz;
+
+	snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
+	link[sizeof(link)-1]='\0';
+	if((linksz=readlink(link, ctx.entry_filename, sizeof(ctx.entry_filename)))==-1) {
+	    cli_errmsg("failed to resolve filename for descriptor %d (%s)\n", desc, link);
+	    strcpy(ctx.entry_filename, "NO_IDEA");
+	} else
+	    ctx.entry_filename[linksz]='\0';
+    } while(0);
+#endif
 
     rc = cli_magic_scandesc(desc, &ctx);
 
