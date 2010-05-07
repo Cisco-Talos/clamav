@@ -108,6 +108,14 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     } \
 }
 
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+#define SHA_OFF do { ctx->sha_collect = -1; } while(0)
+#define SHA_RESET do { ctx->sha_collect = sha_collect; } while(0)
+#else
+#define SHA_OFF do {} while(0)
+#define SHA_RESET do {} while(0)
+#endif
+
 #define FSGCASE(NAME,FREESEC) \
     case 0: /* Unpacked and NOT rebuilt */ \
 	cli_dbgmsg(NAME": Successfully decompressed\n"); \
@@ -148,12 +156,15 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
         free(exe_sections); \
 	lseek(ndesc, 0, SEEK_SET); \
 	cli_dbgmsg("***** Scanning rebuilt PE file *****\n"); \
+	SHA_OFF; \
 	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) { \
 	    close(ndesc); \
 	    CLI_TMPUNLK(); \
 	    free(tempfile); \
+	    SHA_RESET; \
 	    return CL_VIRUS; \
 	} \
+	SHA_RESET; \
 	close(ndesc); \
 	CLI_TMPUNLK(); \
 	free(tempfile); \
@@ -519,7 +530,9 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	struct cli_bc_ctx *bc_ctx;
 	fmap_t *map;
 	struct cli_pe_hook_data pedata;
-
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+	int sha_collect = ctx->sha_collect;
+#endif
 
     if(!ctx) {
 	cli_errmsg("cli_scanpe: ctx == NULL\n");
@@ -1922,13 +1935,16 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
 	cli_dbgmsg("***** Scanning decompressed file *****\n");
+	SHA_OFF;
 	if((ret = cli_magic_scandesc(ndesc, ctx)) == CL_VIRUS) {
 	    close(ndesc);
 	    CLI_TMPUNLK();
 	    free(tempfile);
+	    SHA_RESET;
 	    return CL_VIRUS;
 	}
 
+	SHA_RESET;
 	close(ndesc);
 	CLI_TMPUNLK();
 	free(tempfile);

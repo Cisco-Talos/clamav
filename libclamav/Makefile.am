@@ -360,6 +360,10 @@ libclamav_la_SOURCES += bignum.c \
 		     bignum_class.h
 endif
 
+if BUILD_SHA1
+libclamav_la_SOURCES += sha1.c sha1.h
+endif
+
 .PHONY: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp

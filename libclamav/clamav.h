@@ -109,6 +109,8 @@ typedef enum {
 #define CL_SCAN_PARTIAL_MESSAGE         0x40000
 #define CL_SCAN_HEURISTIC_PRECEDENCE    0x80000
 
+#define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
+
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
 

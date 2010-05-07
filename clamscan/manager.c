@@ -523,6 +523,11 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "algorithmic-detection")->enabled)
 	options |= CL_SCAN_ALGORITHMIC;
 
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(optget(opts, "dev-collect-hashes")->enabled)
+	options |= CL_SCAN_INTERNAL_COLLECT_SHA;
+#endif
+
     if(optget(opts, "detect-structured")->enabled) {
 	options |= CL_SCAN_STRUCTURED;
 
