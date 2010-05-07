@@ -1294,12 +1294,12 @@ AC_LINK_IFELSE(
         return 0;
       }
     ]]),
-  AC_LANG_POP([C++])
   AC_MSG_RESULT(yes)
   AC_DEFINE(LLVM_MULTITHREADED, 1, Build multithreading support into LLVM),
   AC_MSG_RESULT(no)
   AC_DEFINE(LLVM_MULTITHREADED, 0, Build multithreading support into LLVM)
   AC_MSG_WARN([LLVM will be built thread-unsafe because atomic builtins are missing]))
+AC_LANG_POP([C++])
 
 
 dnl===-----------------------------------------------------------------------===

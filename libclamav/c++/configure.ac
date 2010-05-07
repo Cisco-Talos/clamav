@@ -115,6 +115,34 @@ if test "$enable_llvm" = "auto"; then
     esac
 fi
 
+dnl bb #1971 - doesn't work with older libstdc++ version at link/runtime
+AC_MSG_CHECKING([for working libstdc++])
+AC_LANG_PUSH([C++])
+AC_RUN_IFELSE(
+    AC_LANG_SOURCE([[
+	#include <iostream>
+	int main()
+	{
+	    // this causes an @GLIBCXX_3.4.9 symbol to be linked in -O2 mode
+	    std::cout << "test";
+	    return 0;
+    }
+    ]]),[AC_MSG_RESULT([yes])],
+    [AC_MSG_FAILURE([failed])],
+[AC_LINK_IFELSE(
+    AC_LANG_SOURCE([[
+	#include <iostream>
+	int main()
+	{
+	    // this causes an @GLIBCXX_3.4.9 symbol to be linked in -O2 mode
+	    std::cout << "test";
+	    return 0;
+	}
+    ]]), [AC_MSG_RESULT([yes])],
+    [AC_MSG_FAILURE([failed])]
+)])
+AC_LANG_POP([C++])
+
 build_x86=no
 build_ppc=no
 build_arm=no

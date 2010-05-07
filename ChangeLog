@@ -1,3 +1,7 @@
+Fri May  7 10:48:48 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/configure: add check that correct libstdc++ version is used (bb #1971)
+
 Fri May  7 10:07:24 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/cache.c: support building without pthreads (bb #1897).
