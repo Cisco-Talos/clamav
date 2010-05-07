@@ -784,6 +784,8 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 	case EXIT_ERROR:
 	    group->exit_error++;
 	    break;
+	default:
+	    break;
     }
     if (group->jobs) {
 	if (!--group->jobs) {

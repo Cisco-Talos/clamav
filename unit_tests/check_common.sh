@@ -47,7 +47,8 @@ die()
 
 # Setup test directory to avoid temporary and output file clashes
 test_start() {
-    ulimit -t 120; ulimit -d 512000; ulimit -v 512000;
+    ulimit -t 120; ulimit -d 512000;
+    ulimit -v 512000 || true;
     (cd test-$1 2>/dev/null && killclamd || true)
     rm -rf test-$1
     mkdir test-$1

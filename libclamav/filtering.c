@@ -412,7 +412,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 	int32_t best_score = -0x7fffffff;
 	unsigned best_score_i = 0;
 	unsigned best_score_len = 0;
-	struct char_spec *spec0, *spec1;
+	struct char_spec *spec0 = NULL, *spec1 = NULL;
 
 	struct choice choices[MAX_CHOICES];
 	unsigned choices_cnt = 0;
@@ -641,7 +641,8 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 	}
 
 	j  = best_score_len - 2;
-	for (k0=spec0->start;k0 <= spec0->end;k0 += spec0->step) {
+	if (spec0 && spec1) {
+	    for (k0=spec0->start;k0 <= spec0->end;k0 += spec0->step) {
 		for (k1=spec1->start;k1 <= spec1->end;k1 += spec1->step) {
 			unsigned char c0 = spec_ith_char(spec0, k0);
 			unsigned char c1 = spec_ith_char(spec1, k1);
@@ -650,6 +651,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 			}
 			filter_set_end(m, j, c0 | (c1<<8));
 		}
+	    }
 	}
 	return j+2;
 }
@@ -699,7 +701,6 @@ __hot__ int filter_search_ext(const struct filter *m, const unsigned char *data,
 	uint8_t state = ~0;
 	const uint8_t *B = m->B;
 	const uint8_t *End = m->end;
-	uint8_t shortest, longest=0;
 
 	if (len < 2) return -1;
 	/* look for first match */

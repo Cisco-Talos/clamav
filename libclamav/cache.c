@@ -33,6 +33,14 @@
 #include "cache.h"
 #include "fmap.h"
 
+#ifdef CL_THREAD_SAFE
+static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+#else
+#define pthread_mutex_lock(x) 0
+#define pthread_mutex_unlock(x)
+#define pthread_mutex_init(a, b) 0
+#define pthread_mutex_destroy(a) do { } while(0)
+#endif
 
 /* The number of root trees and the chooser function 
    Each tree is protected by a mutex against concurrent access */
@@ -158,7 +166,6 @@ static inline void lru_addtail(struct cache_set *map, struct cache_key *newkey)
     map->lru_tail = newkey;
 }
 
-static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool);
 static int cacheset_init(struct cache_set *map, mpool_t *mempool);
@@ -575,7 +582,9 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
 struct CACHE {
     struct cache_set cacheset;
+#ifdef CL_THREAD_SAFE
     pthread_mutex_t mutex;
+#endif
 };
 
 /* Allocates the trees for the engine cache */

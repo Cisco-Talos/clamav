@@ -120,15 +120,15 @@ uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
  * executing */
 uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uint32_t len)
 {
-    ctx->virname = name;
+    ctx->virname = (const char*)name;
     return 0;
 }
 
 uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res, uint32_t len)
 {
     int n;
-    const char *buf;
-    const char* next;
+    const unsigned char *buf;
+    const unsigned char* next;
     if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len)
 	return -1;
     /* 32 should be longest instr we support decoding.
@@ -262,7 +262,7 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t* name, uint
 	ctx->trace(ctx, trace_param);
     }
     if (ctx->trace_val && name)
-	ctx->trace_val(ctx, name, value);
+	ctx->trace_val(ctx, (const char*)name, value);
     return 0;
 }
 
@@ -283,7 +283,7 @@ uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t* ptr, uint32_
 uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
 {
   uint32_t ret;
-  int err = 0;
+  unsigned err = 0;
   const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
   ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
 		    ctx->file_size, pe->hdr_size);
@@ -323,7 +323,7 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
 {
     char buf[4096];
     fmap_t *map = ctx->fmap;
-    uint32_t off = ctx->off, newoff;
+    uint32_t off = ctx->off;
     int n;
 
     if (!map || len > sizeof(buf)/4 || len <= 0) {
@@ -421,7 +421,7 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
 int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 {
     cli_ctx *cctx;
-    int res;
+    int res = -1;
     cli_dbgmsg("previous tempfile had %u bytes\n", ctx->written);
     if (!ctx->written)
 	return 0;
@@ -453,7 +453,6 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 #define BUF 16
 int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 {
-    unsigned char number[16];
     unsigned i;
     char *p;
     int32_t result;
@@ -864,7 +863,7 @@ static struct bc_jsnorm *get_jsnorm(struct cli_bc_ctx *ctx, int32_t id)
 int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
 {
     unsigned avail;
-    char *in;
+    unsigned char *in;
     cli_ctx *cctx = ctx->ctx;
     struct bc_jsnorm *b = get_jsnorm(ctx, id);
     if (!b || b->from == -1 || !b->state)
@@ -877,7 +876,7 @@ int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
     if (cctx && cli_checklimits("bytecode js api", cctx, ctx->jsnormwritten + avail, 0, 0))
 	return -1;
     cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail);
-    cli_js_process_buffer(b->state, in, avail);
+    cli_js_process_buffer(b->state, (char*)in, avail);
     return 0;
 }
 

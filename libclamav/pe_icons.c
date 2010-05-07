@@ -563,6 +563,7 @@ static void lab(double r, double g, double b, double *L, double *A, double *B) {
     *B = 200.0f * (y - z);
 }
 
+#ifndef USE_FLOATS
 static void lab2(uint32_t r, uint32_t g, uint32_t b, int32_t *L, int32_t *A, int32_t *B) {
     uint32_t xx,yy,zz;
 
@@ -591,6 +592,7 @@ static void lab2(uint32_t r, uint32_t g, uint32_t b, int32_t *L, int32_t *A, int
     *A = 500/4*(xx - yy);
     *B = 200/4*(yy - zz);/* /4 to avoid overflow */
 }
+#endif
 
 static double labdiff(unsigned int rgb) {
     unsigned int r, g, b;
@@ -606,6 +608,7 @@ static double labdiff(unsigned int rgb) {
     return sqrt(pow(L1 - L2, 2.0f) + pow(A1 - A2, 2.0f) + pow(B1 - B2, 2.0f));
 }
 
+#ifndef USE_FLOATS
 static uint32_t labdiff2(unsigned int b) {
     unsigned int r2, g2, b2;
     int32_t L1, A1, B1, L2, A2, B2;
@@ -629,6 +632,7 @@ static uint32_t labdiff2(unsigned int b) {
      ld += ad + bd;
      return ((uint32_t)(sqrt(ld/1024.0)))>>17;
 }
+#endif
 
 static void makebmp(const char *step, const char *tempd, int w, int h, void *data) {
     unsigned int tmp1, tmp2, tmp3, tmp4, y;
@@ -1189,7 +1193,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     struct icomtr metrics;
     unsigned char *rawimage;
     const char *tempd;
-    uint32_t *palette = NULL, *imagedata, *imagedata2;
+    uint32_t *palette = NULL, *imagedata;
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
     unsigned int err, scalemode = 2, enginesize;

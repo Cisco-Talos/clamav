@@ -68,7 +68,8 @@ endif
 
 libclamavcxx_la_LIBADD+=libllvmcodegen.la libllvmsystem.la
 
-LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -Wno-missing-field-initializers -Wno-variadic-macros
+LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+unittest_CXXFLAGS=@NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
 
 TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
@@ -717,6 +718,7 @@ libllvminterpreter_la_SOURCES=\
     llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
 
 libgoogletest_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+libgoogletest_la_CXXFLAGS=$(unittest_CXXFLAGS)
 libgoogletest_la_SOURCES=\
     llvm/utils/unittest/googletest/gtest-death-test.cc\
     llvm/utils/unittest/googletest/gtest-filepath.cc\
@@ -726,8 +728,8 @@ libgoogletest_la_SOURCES=\
     llvm/utils/unittest/googletest/gtest.cc\
     llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
-#-Wno-variadic-macros
 llvmunittest_ADT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_ADT_CXXFLAGS=$(unittest_CXXFLAGS)
 llvmunittest_ADT_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_ADT_SOURCES=\
     llvm/unittests/ADT/APFloatTest.cpp\
@@ -744,7 +746,7 @@ llvmunittest_ADT_SOURCES=\
     llvm/unittests/ADT/TwineTest.cpp
 
 llvmunittest_Support_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_Support_CXXFLAGS=$(unittest_CXXFLAGS)
 llvmunittest_Support_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_Support_SOURCES=\
     llvm/unittests/Support/AllocatorTest.cpp\
@@ -756,7 +758,7 @@ llvmunittest_Support_SOURCES=\
     llvm/unittests/Support/raw_ostream_test.cpp
 
 llvmunittest_VMCore_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_VMCore_CXXFLAGS=$(unittest_CXXFLAGS)
 llvmunittest_VMCore_LDADD=libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_SOURCES=\
     llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
@@ -767,7 +769,7 @@ llvmunittest_VMCore_SOURCES=\
     llvm/unittests/VMCore/PassManagerTest.cpp
 
 llvmunittest_JIT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_JIT_CXXFLAGS=$(unittest_CXXFLAGS)
 llvmunittest_JIT_LDADD=libgoogletest.la libllvmasmparser.la $(lli_LDADD)
 llvmunittest_JIT_SOURCES=\
     llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
@@ -775,7 +777,7 @@ llvmunittest_JIT_SOURCES=\
     llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 
 llvmunittest_ExecutionEngine_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-#-Wno-variadic-macros
+llvmunittest_ExecutionEngine_CXXFLAGS=$(unittest_CXXFLAGS)
 llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
 llvmunittest_ExecutionEngine_SOURCES=\
     llvm/lib/CodeGen/IntrinsicLowering.cpp\
@@ -799,10 +801,6 @@ check_PROGRAMS=count not lli llc llvm-as llvm-dis llvmunittest_ADT llvmunittest_
 check_SCRIPTS=llvmcheck.sh
 TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
 TESTS=llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT
-# Disable LLVM make check for now, there are some things to fix first:
-#   - check python version (2.4 doesn't work, needs 2.5+)
-#   - run llvm's make check after clamav's was run
-#   - have a way to run only clamav's make check and not llvm's
 @ifGNUmake@ TESTS+=llvmcheck.sh
 
 libllvmasmprinter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \

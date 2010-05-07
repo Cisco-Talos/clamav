@@ -395,7 +395,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 
 #define CHECK_OP(cond, msg) if((cond)) { cli_dbgmsg(msg); stop = CL_EBYTECODE; break;}
 
-#define DEFINE_CASTOP(opc, OP) \
+#define DEFINE_SCASTOP(opc, OP) \
     case opc*5: {\
 		    uint8_t res;\
 		    int8_t sres;\
@@ -431,6 +431,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 		    WRITE64(inst->dest, res);\
 		    break;\
 		}
+#define DEFINE_CASTOP(opc, OP) DEFINE_SCASTOP(opc, OP; (void)sres)
 
 #define DEFINE_OP(opc) \
     case opc*5: /* fall-through */\
@@ -490,7 +491,7 @@ static inline int32_t ptr_diff32(int64_t ptr1, int64_t ptr2)
     int32_t ptrid1 = ptr1 >> 32;
     int32_t ptrid2 = ptr2 >> 32;
     if (ptrid1 != ptrid2) {
-	bcfail("difference of pointers not pointing to same object!", ptrid1, ptrid2, __FILE__, __LINE__);
+	(void)bcfail("difference of pointers not pointing to same object!", ptrid1, ptrid2, __FILE__, __LINE__);
 	/* invalid diff */
 	return 0x40000000;
     }
@@ -498,10 +499,9 @@ static inline int32_t ptr_diff32(int64_t ptr1, int64_t ptr2)
 }
 
 static inline int64_t ptr_register_stack(struct ptr_infos *infos,
-					 unsigned char *values,
+					 char *values,
 					 uint32_t off, uint32_t size)
 {
-    int16_t id;
     unsigned n = infos->nstacks + 1;
     struct ptr_info *sinfos = cli_realloc(infos->stack_infos,
 					  sizeof(*sinfos)*n);
@@ -510,7 +510,7 @@ static inline int64_t ptr_register_stack(struct ptr_infos *infos,
     infos->stack_infos = sinfos;
     infos->nstacks = n;
     sinfos = &sinfos[n-1];
-    sinfos->base = values + off;
+    sinfos->base = (uint8_t*)values + off;
     sinfos->size = size;
     return ptr_compose(-n, 0);
 }
@@ -556,20 +556,20 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
     int32_t ptrid = ptr >> 32;
     uint32_t ptroff = (uint32_t)ptr;
     if (UNLIKELY(!ptrid)) {
-	bcfail("nullptr", ptrid, 0, __FILE__, __LINE__);
+	(void)bcfail("nullptr", ptrid, 0, __FILE__, __LINE__);
 	return NULL;
     }
     if (ptrid < 0) {
 	ptrid = -ptrid-1;
 	if (UNLIKELY(ptrid >= infos->nstacks)) {
-	    bcfail("ptr", ptrid, infos->nstacks, __FILE__, __LINE__);
+	    (void)bcfail("ptr", ptrid, infos->nstacks, __FILE__, __LINE__);
 	    return NULL;
 	}
 	info = &infos->stack_infos[ptrid];
     } else {
 	ptrid--;
 	if (UNLIKELY(ptrid >= infos->nglobs)) {
-	    bcfail("ptr", ptrid, infos->nglobs, __FILE__, __LINE__);
+	    (void)bcfail("ptr", ptrid, infos->nglobs, __FILE__, __LINE__);
 	    return NULL;
 	}
 	info = &infos->glob_infos[ptrid];
@@ -580,9 +580,9 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
 	return info->base+ptroff;
     }
 
-    bcfail("ptr1", ptroff, info->size, __FILE__, __LINE__);
-    bcfail("ptr2", read_size, info->size, __FILE__, __LINE__);
-    bcfail("ptr3", ptroff+read_size, info->size, __FILE__, __LINE__);
+    (void)bcfail("ptr1", ptroff, info->size, __FILE__, __LINE__);
+    (void)bcfail("ptr2", read_size, info->size, __FILE__, __LINE__);
+    (void)bcfail("ptr3", ptroff+read_size, info->size, __FILE__, __LINE__);
     return NULL;
 }
 
@@ -610,8 +610,9 @@ static unsigned globaltypesize(uint16_t id)
 		    s += globaltypesize(ty->containedTypes[i]);
 		return s;
 	    }
+	default:
+	    return 0;
     }
-    return 0;
 }
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
@@ -685,7 +686,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    DEFINE_BINOP(OP_BC_OR, res = op0 | op1);
 	    DEFINE_BINOP(OP_BC_XOR, res = op0 ^ op1);
 
-	    DEFINE_CASTOP(OP_BC_SEXT,
+	    DEFINE_SCASTOP(OP_BC_SEXT,
 			  CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0ull : 0,
 				 READ8(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
 				 READ16(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
@@ -788,7 +789,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		TRACE_API(api->name, inst->dest, inst->type, stack_depth);
 	        switch (api->kind) {
 		    case 0: {
-			int32_t a, b, r;
+			int32_t a, b;
 			READ32(a, inst->u.ops.ops[0]);
 			READ32(b, inst->u.ops.ops[1]);
 			res32 = cli_apicalls0[api->idx](ctx, a, b);
@@ -1070,7 +1071,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    }
 	    DEFINE_OP(OP_BC_MEMCPY) {
 		int32_t arg3;
-		void *arg1, *arg2, *resp;
+		void *arg1, *arg2;
 		int64_t res=0;
 
 		READ32(arg3, inst->u.three[2]);
@@ -1083,7 +1084,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    }
 	    DEFINE_OP(OP_BC_MEMMOVE) {
 		int32_t arg3;
-		void *arg1, *arg2, *resp;
+		void *arg1, *arg2;
 		int64_t res=0;
 
 		READ32(arg3, inst->u.three[2]);

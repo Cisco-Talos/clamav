@@ -223,7 +223,7 @@ START_TEST (test_matchwithread_jit)
     cl_init(CL_INIT_DEFAULT);
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
-    pedata.opt32.ImageBase = 0x400000;
+    cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
     pedata.hdr_size = 0x400;
     pedata.nsections = 1;
     sect.rva = 4096;
@@ -246,7 +246,7 @@ START_TEST (test_matchwithread_int)
     cl_init(CL_INIT_DEFAULT);
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
-    pedata.opt32.ImageBase = 0x400000;
+    cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
     pedata.hdr_size = 0x400;
     pedata.nsections = 1;
     sect.rva = 4096;
@@ -333,5 +333,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_pdf_int);
     tcase_add_test(tc_cli_arith, test_bswap_int);
     tcase_add_test(tc_cli_arith, test_inflate_int);
+    tcase_add_test(tc_cli_arith, test_retmagic_int);
     return s;
 }

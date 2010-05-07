@@ -82,7 +82,6 @@ static void *clamuko_scanth(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
-	short int scan;
 	unsigned int sizelimit = 0;
 	struct stat sb;
 	dazukofs_handle_t scan_hndl;

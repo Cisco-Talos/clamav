@@ -1999,8 +1999,10 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 	return;
     }
     assert(ctx->line < lines->linev.size());
-    SMDiagnostic diag(ctx->file, ctx->line ? ctx->line : -1,
-		 ctx->col ? ctx->col-1 : -1,
+
+    int line = (int)ctx->line ? (int)ctx->line : -1;
+    int col = (int)ctx->col ? (int)ctx->col : -1;
+    SMDiagnostic diag(ctx->file, line, col,
 		 "", std::string(lines->linev[ctx->line-1], lines->linev[ctx->line]-1));
     diag.Print("[trace]", errs());
 }
@@ -2009,4 +2011,26 @@ int have_clamjit=1;
 void cli_bytecode_printversion()
 {
   cl::PrintVersionMessage();
+}
+
+void cli_printcxxver()
+{
+    /* Try to print information about some commonly used compilers */
+#ifdef __GNUC__
+    printf("GNU C++: %s (%u.%u.%u)\n", __VERSION__, __GNUC__, __GNUC_MINOR__,
+	   __GNUC_PATCHLEVEL__);
+#endif
+#ifdef __INTEL_COMPILER
+    printf("Intel Compiler C++ %u\n", __INTEL_COMPILER);
+#endif
+#ifdef _MSC_VER
+    printf("Microsoft Visual C++ %u\n", _MSC_VER);
+#endif
+}
+
+namespace ClamBCModule {
+void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
+{
+    llvm::errs() << msg << "\n";
+}
 }

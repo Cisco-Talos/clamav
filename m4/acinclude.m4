@@ -634,6 +634,7 @@ LIBS="$LIBCLAMAV_LIBS $LIBBZ2"
 AC_TRY_RUN([
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <bzlib.h>
 
 #ifdef NOBZ2PREFIX

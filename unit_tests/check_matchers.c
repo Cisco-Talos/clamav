@@ -110,11 +110,11 @@ START_TEST (test_ac_scanbuff) {
     fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
     for(i = 0; ac_testdata[i].data; i++) {
-	ret = cli_ac_scanbuff(ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+	ret = cli_ac_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
 	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
 
-	ret = cli_scanbuff(ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
+	ret = cli_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
 	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
     }
@@ -145,7 +145,7 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
-    ret = cli_bm_scanbuff("blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL);
+    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }

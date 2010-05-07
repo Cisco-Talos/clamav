@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     const struct optstruct *opt;
     unsigned funcid=0, i;
     struct cli_all_bc bcs;
-    unsigned int fd = -1;
+    int fd = -1;
     unsigned tracelevel;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
@@ -375,6 +375,7 @@ int main(int argc, char *argv[])
 	    map = fmap(fd, 0, 0);
 	    if (!map) {
 		fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
+		exit(5);
 	    }
 	    rc = cli_bytecode_context_setfile(ctx, map);
 	    if (rc != CL_SUCCESS) {
@@ -385,6 +386,7 @@ int main(int argc, char *argv[])
 	}
 	/* for testing */
 	ctx->hooks.match_counts = deadbeefcounts;
+	ctx->hooks.match_offsets = deadbeefcounts;
 	rc = cli_bytecode_run(&bcs, bc, ctx);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));

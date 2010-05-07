@@ -416,7 +416,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   char name[256];
   int last = 0;
-  int8_t *ch;
+  uint8_t *ch;
 
   if(!(ch = fmap_need_off(map, coff, SIZEOF_CH)) || CH_magic != 0x02014b50) {
       if(ch) fmap_unneed_ptr(map, ch, SIZEOF_CH);

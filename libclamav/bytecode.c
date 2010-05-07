@@ -49,6 +49,24 @@ static const uint32_t nomatch[64] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 };
+static const uint32_t nooffsets[64] = {
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE
+};
 
 static const uint16_t nokind;
 static const uint32_t nofilesize;
@@ -61,6 +79,8 @@ static void context_safe(struct cli_bc_ctx *ctx)
 	ctx->hooks.kind = &nokind;
     if (!ctx->hooks.match_counts)
 	ctx->hooks.match_counts = nomatch;
+    if (!ctx->hooks.match_offsets)
+	ctx->hooks.match_counts = nooffsets;
     if (!ctx->hooks.filesize)
 	ctx->hooks.filesize = &nofilesize;
     if (!ctx->hooks.pedata)
@@ -179,6 +199,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 {
+    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
+	cli_unlink(ctx->tempfile);
+    }
     cli_bytecode_context_reset(ctx);
     memset(ctx, 0, sizeof(*ctx));
     return CL_SUCCESS;
@@ -419,7 +443,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
     return v;
 }
 
-static inline unsigned char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
+static inline char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
 {
     unsigned char *dat, *q;
     unsigned l, newoff, i;
@@ -459,13 +483,13 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
     }
     *off = newoff;
     *datalen = l;
-    return dat;
+    return (char*)dat;
 }
 
 static inline char *readString(const unsigned char *p, unsigned *off, unsigned len, char *ok)
 {
     unsigned stringlen;
-    char *str = (char*)readData(p, off, len, ok, &stringlen);
+    char *str = readData(p, off, len, ok, &stringlen);
     if (*ok && stringlen && str[stringlen-1] != '\0') {
 	str[stringlen-1] = '\0';
 	cli_errmsg("bytecode: string missing \\0 terminator: %s\n", str);
@@ -547,7 +571,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 	return CL_EMALFDB;
     }
     offset++;
-    *linelength = strtol(buffer+offset, &pos, 10);
+    *linelength = strtol((const char*)buffer+offset, &pos, 10);
     if (*pos != '\0') {
 	cli_errmsg("Invalid number: %s\n", buffer+offset);
 	return CL_EMALFDB;
@@ -566,7 +590,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
     return CL_SUCCESS;
 }
 
-static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
+static int parseLSig(struct cli_bc *bc, char *buffer)
 {
     const char *prefix;
     char *vnames, *vend = strchr(buffer, ';');
@@ -938,7 +962,7 @@ static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
 
 static int parseMD(struct cli_bc *bc, unsigned char *buffer)
 {
-    unsigned offset = 1, len = strlen(buffer);
+    unsigned offset = 1, len = strlen((const char*)buffer);
     unsigned numMD, i, b;
     char ok = 1;
     if (buffer[0] != 'D')
@@ -1363,7 +1387,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	row++;
 	switch (state) {
 	    case PARSE_BC_LSIG:
-		rc = parseLSig(bc, (unsigned char*)buffer);
+		rc = parseLSig(bc, buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
 		    free(buffer);
@@ -1499,8 +1523,10 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.funcid = ctx->funcid;
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
+	cli_dbgmsg("Bytecode: executing in interpeter mode\n");
 	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
     }
+    cli_dbgmsg("Bytecode: executing in JIT mode\n");
     return cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
 }
 
@@ -1874,10 +1900,12 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 
 int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 {
-    unsigned i;
+    unsigned i, interp = 0;
     int rc;
-    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS)
+    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS) {
+	cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
 	return CL_SUCCESS;
+    }
     for (i=0;i<bcs->count;i++) {
 	struct cli_bc *bc = &bcs->all_bcs[i];
 	if (bc->state == bc_interp || bc->state == bc_jit)
@@ -1887,9 +1915,12 @@ int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 	    continue;
 	}
 	rc = cli_bytecode_prepare_interpreter(bc);
+	interp++;
 	if (rc != CL_SUCCESS)
 	    return rc;
     }
+    cli_dbgmsg("Bytecode: %u bytecode prepared with JIT, "
+	       "%u prepared with interpreter\n", bcs->count-interp, interp);
     return CL_SUCCESS;
 }
 
@@ -1929,6 +1960,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned b
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
+    ctx.hooks.match_offsets = lsigsuboff;
     cli_bytecode_context_setctx(&ctx, cctx);
     cli_bytecode_context_setfile(&ctx, map);
 
@@ -1957,6 +1989,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
     int ret;
+    unsigned executed = 0;
 
     cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
@@ -1970,9 +2003,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	}
 	cli_bytecode_context_setfuncid(ctx, bc, 0);
 	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
+	executed++;
 	if (ret != CL_SUCCESS) {
 	    cli_warnmsg("Bytecode failed to run: %s\n", cl_strerror(ret));
-	    return CL_SUCCESS;
+	    continue;
 	}
 	if (ctx->virname) {
 	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
@@ -1987,7 +2021,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	if (!ret) {
 	    char *tempfile;
 	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
-	    if (fd != -1) {
+	    if (fd && fd != -1) {
 		if (cctx && cctx->engine->keeptmp)
 		    cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
 			       bc->id, tempfile);
@@ -1998,10 +2032,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		ret = cli_magic_scandesc(fd, cctx);
 		if (!cctx || !cctx->engine->keeptmp)
 		    if (ftruncate(fd, 0) == -1)
-			cli_dbgmsg("ftruncate failed\n");
+			cli_dbgmsg("ftruncate failed on %d\n", fd);
 		close(fd);
 		if (!cctx || !cctx->engine->keeptmp) {
-		    if (cli_unlink(tempfile))
+		    if (tempfile && cli_unlink(tempfile))
 			ret = CL_EUNLINK;
 		}
 		free(tempfile);
@@ -2017,6 +2051,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	}
 	cli_bytecode_context_reset(ctx);
     }
+    if (executed)
+	cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
+    else
+	cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
     return CL_CLEAN;
 }
 

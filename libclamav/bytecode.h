@@ -123,6 +123,7 @@ int bytecode_init(void);
 void cli_bytecode_debug(int argc, char **argv);
 void cli_bytecode_printversion(void);
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx);
+void cli_printcxxver(void);
 
 typedef void (*bc_dbg_callback_trace)(struct cli_bc_ctx*, unsigned event);
 typedef void (*bc_dbg_callback_trace_op)(struct cli_bc_ctx*, const char *op);

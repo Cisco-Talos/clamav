@@ -115,6 +115,34 @@ if test "$enable_llvm" = "auto"; then
     esac
 fi
 
+dnl bb #1971 - doesn't work with older libstdc++ version at link/runtime
+AC_MSG_CHECKING([for working libstdc++])
+AC_LANG_PUSH([C++])
+AC_RUN_IFELSE(
+    AC_LANG_SOURCE([[
+	#include <iostream>
+	int main()
+	{
+	    // this causes an @GLIBCXX_3.4.9 symbol to be linked in -O2 mode
+	    std::cout << "test";
+	    return 0;
+    }
+    ]]),[AC_MSG_RESULT([yes])],
+    [AC_MSG_FAILURE([failed])],
+[AC_LINK_IFELSE(
+    AC_LANG_SOURCE([[
+	#include <iostream>
+	int main()
+	{
+	    // this causes an @GLIBCXX_3.4.9 symbol to be linked in -O2 mode
+	    std::cout << "test";
+	    return 0;
+	}
+    ]]), [AC_MSG_RESULT([yes])],
+    [AC_MSG_FAILURE([failed])]
+)])
+AC_LANG_POP([C++])
+
 build_x86=no
 build_ppc=no
 build_arm=no
@@ -157,6 +185,11 @@ fi
 AM_CONDITIONAL(BUILD_X86, [test "$build_x86" = "yes"])
 AM_CONDITIONAL(BUILD_PPC, [test "$build_ppc" = "yes"])
 AM_CONDITIONAL(BUILD_ARM, [test "$build_arm" = "yes"])
+
+AC_MSG_CHECKING([optional compiler flags])
+CXX_FLAG_CHECK(NO_VARIADIC_MACROS, [-Wno-variadic-macros])
+CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
+AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AC_OUTPUT([
     Makefile

@@ -380,7 +380,7 @@ static void do_phishing_test(const struct rtest *rtest)
 	hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
 	fail_unless(!!hrefs.tag, "cli_malloc");
 	hrefs.tag[0] = (unsigned char*)cli_strdup("href");
-	hrefs.contents[0] = cli_strdup(rtest->displayurl);
+	hrefs.contents[0] = (unsigned char*)cli_strdup(rtest->displayurl);
 
 	ctx.engine = engine;
 	ctx.virname = &virname;

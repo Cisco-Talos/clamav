@@ -151,7 +151,7 @@ It is recommended to have this value at least twice MaxThreads if possible.
 the following condition should hold:
 MaxThreads*MaxRecursion + MaxQueue - MaxThreads + 6 < RLIMIT_NOFILE.\fR
 RLIMIT_NOFILE is the maximum number of open file descriptors (usually 1024), set
-by \fBulimit -n\fR.
+by \fBulimit \-n\fR.
 .br
 Default: 100
 .TP 
@@ -387,8 +387,8 @@ Default: yes
 \fBArchiveBlockMax (OBSOLETE)\fR
 \fBWARNING:\fR This option is no longer accepted.
 .TP 
-\fBArchiveLimitMemoryUsage BOOL\fR
-Use slower decompression algorithm which uses less memory. This option only affects the bzip2 decompressor.
+\fBArchiveLimitMemoryUsage (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted.
 .br 
 Default: no
 .TP 

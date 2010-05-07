@@ -79,7 +79,7 @@ static void scanner_thread(void *arg)
 	sigset_t sigset;
 #endif
 	int ret;
-	unsigned virus=0, errors = 0;
+	int virus=0, errors = 0;
 
 #ifndef	_WIN32
     /* ignore all signals */
@@ -251,7 +251,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
  */
 static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term, int *oldstyle)
 {
-    unsigned char *pos;
+    char *pos;
     if (!buf->off || off >= buf->off) {
 	*len = 0;
 	return NULL;
@@ -466,9 +466,9 @@ static void *acceptloop_th(void *arg)
     return NULL;
 }
 
-static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
+static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
 {
-    const unsigned char *cmd = NULL;
+    const char *cmd = NULL;
     int rc;
     size_t cmdlen;
     char term;
@@ -1164,7 +1164,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
 		   buf->mode != MODE_WAITANCILL) {
 		client_conn_t conn;
-		const unsigned char *cmd = NULL;
+		const char *cmd = NULL;
 		int rc;
 		/* New data available to read on socket. */
 

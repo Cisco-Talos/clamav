@@ -35,6 +35,7 @@
 #include <sys/mman.h>
 #endif
 #endif
+#include <errno.h>
 
 #ifdef C_LINUX
 #include <pthread.h>
@@ -91,13 +92,15 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
    which may in turn prevent some mmap constants to be defined */
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
-fmap_t *fmap(int fd, off_t offset, size_t len) {
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
     unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
 
+    *empty = 0;
     if(fstat(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
@@ -108,7 +111,8 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
     }
     if(!len) len = st.st_size - offset; /* bound checked later */
     if(!len) {
-	cli_warnmsg("fmap: attempted void mapping\n");
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
 	return NULL;
     }
     if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
@@ -192,7 +196,7 @@ static void fmap_aging(fmap_t *m) {
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
 		fmap_lock;
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
-		    cli_warnmsg("fmap_aging: kernel hates you\n");
+		    cli_dbgmsg("fmap_aging: kernel hates you\n");
 		fmap_unlock;
 	    }
 	    m->paged -= avail;
@@ -203,8 +207,8 @@ static void fmap_aging(fmap_t *m) {
 
 
 static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
-    size_t readsz = 0, got;
-    char *pptr = NULL;
+    size_t readsz = 0, eintr_off, got;
+    char *pptr = NULL, err[256];
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
@@ -271,12 +275,28 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		}
 	    }
 
-	    if((got=pread(m->fd, pptr, readsz, m->offset + first_page * m->pgsz)) != readsz) {
-		cli_warnmsg("pread fail: page %u pages %u map-offset %lu - asked for %lu bytes, got %lu\n", first_page, m->pages, (long unsigned int)m->offset, (long unsigned int)readsz, (long unsigned int)got);
+	    eintr_off = 0;
+	    while(readsz) {
+		got=pread(m->fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+
+		if(got < 0 && errno == EINTR)
+		    continue;
+
+		if(got > 0) {
+		    pptr += got;
+		    eintr_off += got;
+		    readsz -= got;
+		    continue;
+		}
+
+		if(got <0)
+		    cli_errmsg("fmap_readpage: pread error: %s\n", cli_strerror(errno, err, sizeof(err)));
+		else
+		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)(eintr_off + m->offset + first_page * m->pgsz), (long unsigned int)got);
 		return 1;
 	    }
+
 	    pptr = NULL;
-	    force_read = 0;
 	    readsz = 0;
 	    continue;
 	}
@@ -495,13 +515,14 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
 
 /* vvvvv WIN32 STUFF BELOW vvvvv */
 
-fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
     unsigned int pages, mapsz, hdrsz;
     unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
 
+    *empty = 0;
     if(fstat(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
@@ -512,7 +533,8 @@ fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
     }
     if(!len) len = st.st_size - offset; /* bound checked later */
     if(!len) {
-	cli_warnmsg("fmap: attempted void mapping\n");
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
 	return NULL;
     }
     if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
@@ -632,6 +654,11 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
 
 
 /* vvvvv SHARED STUFF BELOW vvvvv */
+
+fmap_t *fmap(int fd, off_t offset, size_t len) {
+    int unused;
+    return fmap_check_empty(fd, offset, len, &unused);
+}
 
 int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
     char *src;

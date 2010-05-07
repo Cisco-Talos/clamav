@@ -38,7 +38,7 @@ enum mode {
 };
 
 struct fd_buf {
-    unsigned char *buffer;
+    char *buffer;
     size_t bufsize;
     size_t off;
     int fd;

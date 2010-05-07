@@ -2,6 +2,186 @@ Fri May  7 15:45:55 CEST 2010 (tk)
 ----------------------------------
  * libclamav/readdb.c: add checks to enforce lsig compatibility with 0.95.x (bb#2008)
 
+Fri May  7 16:30:50 EEST 2010 (edwin)
+-------------------------------------
+ * clamscan/manager.c: don't closedir(NULL) (bb #2010)
+
+Fri May  7 13:06:48 EEST 2010 (edwin)
+-------------------------------------
+ * configure: darwin* IS thread safe (bb #1534)
+
+Fri May  7 10:48:48 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/configure: add check that correct libstdc++ version is used (bb #1971)
+
+Fri May  7 10:07:24 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/cache.c: support building without pthreads (bb #1897).
+
+Fri May  7 09:56:57 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode*: add match_offsets support.
+
+Wed May  5 21:28:04 CEST 2010 (tk)
+----------------------------------
+ * shared/output.c: workaround FreeBSD's file locking issue (bb#1918)
+
+Wed May  5 14:12:46 CEST 2010 (tk)
+----------------------------------
+ * freshclam/notify.c: fix warning message (bb#1972)
+		       Thanks to Gianluigi Tiesi
+
+Tue May  4 21:58:19 CEST 2010 (tk)
+----------------------------------
+ * libclamav: make lsigs working in cli_scanscript() (bb#1998)
+
+Tue May  4 19:37:58 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: nicely handle EINTR
+
+Tue May  4 18:47:31 CEST 2010 (acab)
+------------------------------------
+ * libclamav: no ERROR on void mapping (bb#1968)
+
+Tue May  4 16:47:57 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix counting of subsig matches (bb#2001)
+
+Sun May  2 19:13:29 CEST 2010 (acab)
+------------------------------------
+ * clamav-milter: add VirusAction (bb#1867)
+
+Sat May  1 02:05:17 CEST 2010 (acab)
+------------------------------------
+ * m4: On solaris 8 bzlib.h uses FILE without including stdio.h (bb#1985)
+
+Fri Apr 30 12:45:47 CEST 2010 (tk)
+----------------------------------
+ * clamconf: warn about dbdir mismatch in clamd and freshclam (bb#1978)
+
+Thu Apr 29 09:49:10 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/configure: Mac OS X doesn't have -pthread (bb #1995)
+
+Thu Apr 29 09:45:29 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/include/llvm/ADT/SmallVector.h: Fix crash with -ftree-vectorize/-O3(bb #1984).
+
+Tue Apr 27 16:34:38 CEST 2010 (tk)
+----------------------------------
+ * libclamav: fix some limit settings (bb#1973)
+
+Mon Apr 26 18:18:47 EEST 2010 (edwin)
+-------------------------------------
+ * bytecode: min/max functionality level support.
+
+Mon Apr 26 16:12:50 CEST 2010 (tk)
+----------------------------------
+ * libclamav/others.c: bump f-level
+
+Mon Apr 26 16:06:56 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix handling of VI/MACRO special offsets (bb#1957)
+
+Fri Apr 23 21:38:19 EEST 2010 (edwin)
+-------------------------------------
+ * configure: fix Apple-style universal build (bb #1988).
+
+Thu Apr 22 22:34:52 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: downgrade warning when the kernel doesn't want a map back
+
+Thu Apr 22 18:03:30 CEST 2010 (tk)
+----------------------------------
+ * libclamav: avoid loading duplicate databases (bb#1962)
+
+Mon Apr 19 17:12:06 EEST 2010 (edwin)
+-------------------------------------
+ * clamconf: print information about platform and build.
+
+Thu Apr 15 20:04:16 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/configure: disable gcc 3.4.6 by default, you can still use it with --enable-llvm (bb #1935).
+
+Thu Apr 15 16:27:00 CEST 2010 (tk)
+----------------------------------
+ * docs/man/freshclam.conf.5.in: document LogFileMaxSize (bb#1960)
+
+Wed Apr 14 21:44:18 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: add support for X-HostID to allow custom UserAgent
+			strings in --submit-stats (bb#1905)
+			Thanks to Andreas Schulze
+
+Wed Apr 14 21:14:28 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: fix cli_unlink warnings (bb #1956).
+
+Tue Apr 13 16:17:35 EEST 2010 (edwin)
+-------------------------------------
+ * clambc, clamd,clamdtop,libclamav,unit_tests: fix compiler warnings (bb #1872,
+					        bb #1934, bb #1935)
+
+Tue Apr 13 16:13:05 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++: allow building with gcc 3.4.6 (bb #1934).
+
+Tue Apr 13 13:12:47 EEST 2010 (edwin)
+-------------------------------------
+ * unit_tests/check_common.sh: fix make check on AIX (bb #1917).
+
+Mon Apr 12 18:02:06 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: better handle daylight saving time changes (bb#1920)
+
+Sat Apr 10 16:36:11 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe.c: more relaxed vinfo parser - try to mimic winxp's
+
+Wed Apr  7 16:27:42 CEST 2010 (tk)
+----------------------------------
+ * sigtool: handle .idb files
+
+Wed Apr  7 12:42:19 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher.c: return proper virus name in icon detector (bb#1933)
+
+Mon Apr  5 22:41:40 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: Fix load of multiple unsigned bytecodes (bb #1924)
+
+Sat Apr  3 21:05:35 EEST 2010 (edwin)
+-------------------------------------
+ * contrib/split-tarball.sh: update to work with 0.96
+
+Sat Apr  3 20:30:39 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/Makefile.{am,in}: Fix unit test failure with non-English locale (bb #1922)
+
+Fri Apr  2 16:22:26 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/lib/Support/Allocator.cpp: Fix SpecificBumpPtrAllocator
+    destructor iteration. Thanks to Nicolas Capens.
+
+Fri Apr  2 16:19:26 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/lib/ExecutionEngine/JIT/JIT.cpp:
+ Fix the previous PowerPC workaround to not crash when not using the JIT.
+
+Fri Apr  2 13:09:54 EEST 2010 (edwin)
+------------------------------------
+ * libclamav/c++/{bytecode2llvm.cpp,llvm/lib/ExecutionEngine/JIT/JIT.cpp,
+     llvm/lib/Target/PowerPC/PPCISelLowering.cpp}: Workaround LLVM JIT PowerPC relocation bug (bb #1921).
+    Based on Gary Benson's workaround for OpenJDK Shark / IcedTea.
+
+Fri Apr  2 13:07:50 EEST 2010 (edwin)
+-------------------------------------
+ * unit_tests: Fix matchwithread.cbc
+
+Fri May  7 15:45:55 CEST 2010 (tk)
+----------------------------------
+ * libclamav/readdb.c: add checks to enforce lsig compatibility with 0.95.x (bb#2008)
+
 Wed May  5 21:28:04 CEST 2010 (tk)
 ----------------------------------
  * shared/output.c: workaround FreeBSD's file locking issue (bb#1918)
