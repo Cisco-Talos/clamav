@@ -2345,7 +2345,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.hook_lsig_matches = cli_bitset_init();
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    do {
+    if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
 	char link[32];
 	ssize_t linksz;
 

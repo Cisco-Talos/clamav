@@ -912,6 +912,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
     }
 
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(optget(opts, "DevCollectHashes")->enabled)
+	options |= CL_SCAN_INTERNAL_COLLECT_SHA;
+#endif
+
     selfchk = optget(opts, "SelfCheck")->numarg;
     if(!selfchk) {
 	logg("Self checking disabled.\n");

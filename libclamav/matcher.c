@@ -394,7 +394,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size, *ctx->virname ? *ctx->virname : "Name");
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    if(ctx->sha_collect>0) {
+    if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
         SHA1Context sha1;
         SHA256_CTX sha256;
         fmap_t *map = *ctx->fmap;

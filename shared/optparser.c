@@ -329,6 +329,10 @@ const struct clam_option __clam_options[] = {
 
     { "DevACDepth", "dev-ac-depth", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    { "DevCollectHashes", "dev-collect-hashes", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
+#endif
+
     /* Freshclam-only entries */
 
     /* FIXME: drop this entry and use LogFile */
