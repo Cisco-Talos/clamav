@@ -386,6 +386,7 @@ int main(int argc, char *argv[])
 	}
 	/* for testing */
 	ctx->hooks.match_counts = deadbeefcounts;
+	ctx->hooks.match_offsets = deadbeefcounts;
 	rc = cli_bytecode_run(&bcs, bc, ctx);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));

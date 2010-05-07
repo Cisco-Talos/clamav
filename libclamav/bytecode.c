@@ -49,6 +49,24 @@ static const uint32_t nomatch[64] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0
 };
+static const uint32_t nooffsets[64] = {
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE,
+    CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE, CLI_OFF_NONE
+};
 
 static const uint16_t nokind;
 static const uint32_t nofilesize;
@@ -61,6 +79,8 @@ static void context_safe(struct cli_bc_ctx *ctx)
 	ctx->hooks.kind = &nokind;
     if (!ctx->hooks.match_counts)
 	ctx->hooks.match_counts = nomatch;
+    if (!ctx->hooks.match_offsets)
+	ctx->hooks.match_counts = nooffsets;
     if (!ctx->hooks.filesize)
 	ctx->hooks.filesize = &nofilesize;
     if (!ctx->hooks.pedata)
@@ -1940,6 +1960,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned b
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
+    ctx.hooks.match_offsets = lsigsuboff;
     cli_bytecode_context_setctx(&ctx, cctx);
     cli_bytecode_context_setfile(&ctx, map);
 

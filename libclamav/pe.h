@@ -62,11 +62,11 @@ struct pe_image_optional_hdr32 {
     uint32_t FileAlignment;			    /**< usually 32 or 512 */
     uint16_t MajorOperatingSystemVersion;	    /**< not used */
     uint16_t MinorOperatingSystemVersion;	    /**< not used */
-    uint16_t MajorImageVersion;			    /** unreliable */
-    uint16_t MinorImageVersion;			    /** unreliable */
+    uint16_t MajorImageVersion;			    /**< unreliable */
+    uint16_t MinorImageVersion;			    /**< unreliable */
     uint16_t MajorSubsystemVersion;
     uint16_t MinorSubsystemVersion;
-    uint32_t Win32VersionValue;			    /* ? */
+    uint32_t Win32VersionValue;			    /*< ? */
     uint32_t SizeOfImage;
     uint32_t SizeOfHeaders;
     uint32_t CheckSum;				    /**< NT drivers only */
@@ -76,7 +76,7 @@ struct pe_image_optional_hdr32 {
     uint32_t SizeOfStackCommit;
     uint32_t SizeOfHeapReserve;
     uint32_t SizeOfHeapCommit;
-    uint32_t LoaderFlags;			    /* ? */
+    uint32_t LoaderFlags;			    /*< ? */
     uint32_t NumberOfRvaAndSizes;		    /**< unreliable */
     struct pe_image_data_dir DataDirectory[16];
 };
@@ -138,14 +138,14 @@ struct pe_image_section_hdr {
 /** Data for the bytecode PE hook */
 struct cli_pe_hook_data {
   uint32_t offset;
-  uint32_t ep;
-  uint16_t nsections;
+  uint32_t ep; /**< EntryPoint as file offset */
+  uint16_t nsections;/**< Number of sections */
   uint16_t dummy; /* align */
-  struct pe_image_file_hdr file_hdr;
-  struct pe_image_optional_hdr32 opt32;
+  struct pe_image_file_hdr file_hdr;/**< Header for this PE file */
+  struct pe_image_optional_hdr32 opt32; /**< 32-bit PE optional header */
   uint32_t dummy2; /* align */
-  struct pe_image_optional_hdr64 opt64;
-  struct pe_image_data_dir dirs[16];
+  struct pe_image_optional_hdr64 opt64;/**< 64-bit PE optional header */
+  struct pe_image_data_dir dirs[16]; /**< PE data directory header */
   uint32_t e_lfanew;/**< address of new exe header */
   uint32_t overlays;/**< number of overlays */
   int32_t overlays_sz;/**< size of overlays */

@@ -126,9 +126,11 @@ enum bc_global {
   GLOBAL_VIRUSNAMES,
   GLOBAL_PEDATA,
   GLOBAL_FILESIZE,
+  GLOBAL_MATCH_OFFSETS,
   _LAST_GLOBAL
 };
 
 #define BC_START_TID 69
+
 
 #endif

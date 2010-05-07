@@ -1,3 +1,7 @@
+Fri May  7 09:56:57 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode*: add match_offsets support.
+
 Wed May  5 21:28:04 CEST 2010 (tk)
 ----------------------------------
  * shared/output.c: workaround FreeBSD's file locking issue (bb#1918)

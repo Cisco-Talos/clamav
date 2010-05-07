@@ -81,6 +81,8 @@ int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
+	{"__clambc_match_offsets", GLOBAL_MATCH_OFFSETS, 76,
+	 ((char*)&((struct cli_bc_ctx*)0)->hooks.match_offsets - (char*)NULL)},
 	{"__clambc_kind", GLOBAL_KIND, 16,
 	 ((char*)&((struct cli_bc_ctx*)0)->hooks.kind - (char*)NULL)},
 	{"__clambc_match_counts", GLOBAL_MATCH_COUNTS, 76,
