@@ -232,13 +232,12 @@ void scandirs(const char *dirname, struct cl_engine *engine, const struct optstr
 		}
 	    }
 	}
+	closedir(dd);
     } else {
 	if(!printinfected)
 	    logg("~%s: Can't open directory.\n", dirname);
 	info.errors++;
     }
-
-    closedir(dd);
 }
 
 static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, int options)
