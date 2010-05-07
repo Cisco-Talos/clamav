@@ -928,8 +928,6 @@ linux*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
@@ -940,8 +938,6 @@ kfreebsd*-gnu)
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-       AC_DEFINE([_REENTRANT],1,[thread safe])
        if test "$want_clamuko" = "yes"; then
            AC_DEFINE([CLAMUKO],1,[enable clamuko])
        fi
@@ -954,8 +950,6 @@ solaris*)
 	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_SOLARIS],1,[os is solaris])
     ;;
@@ -963,8 +957,6 @@ freebsd[[45]]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
@@ -975,8 +967,6 @@ freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
@@ -987,8 +977,6 @@ dragonfly*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
 	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
@@ -1001,8 +989,6 @@ openbsd*)
 	CLAMD_LIBS="$CLAMD_LIBS -pthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_BSD],1,[os is OpenBSD])
     ;;
@@ -1010,16 +996,12 @@ bsdi*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_BSD],1,[os is BSDI BSD/OS])
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
      fi
     AC_DEFINE([C_BSD],1,[os is NetBSD])
     ;;
@@ -1046,8 +1028,6 @@ os2*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_OS2],1,[os is OS/2])
     ;;
@@ -1061,8 +1041,6 @@ hpux*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_HPUX],1,[os is hpux])
     ;;
@@ -1070,8 +1048,6 @@ aix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	AC_DEFINE([_THREAD_SAFE],1,[thread safe])
     fi
     AC_DEFINE([C_AIX],1,[os is aix])
@@ -1080,25 +1056,17 @@ aix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
 	AC_DEFINE([_POSIX_PII_SOCKET],1,[POSIX compatibility])
     fi
     AC_DEFINE([C_OSF],1,[os is osf/tru64])
     ;;
 nto-qnx*)
-     if test "$have_pthreads" = "yes"; then
-       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-       AC_DEFINE([_REENTRANT],1,[thread safe])
-     fi
     AC_DEFINE([C_QNX6],1,[os is QNX 6.x.x])
     ;;
 irix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     LIBS="$LIBS -lgen"
     AC_DEFINE([C_IRIX],1,[os is irix])
@@ -1113,8 +1081,6 @@ interix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     ;;
 gnu*)
@@ -1122,8 +1088,6 @@ gnu*)
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-       AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     ;;
 *)
@@ -1174,6 +1138,9 @@ then
     AC_CHECK_FUNCS([sched_yield pthread_yield])
     LIBS="$save_LIBS"
     AC_DEFINE([BUILD_CLAMD], 1, "build clamd")
+    dnl define these here, so we don't forget any system
+    AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+    AC_DEFINE([_REENTRANT],1,[thread safe])
 fi
 
 dnl Check for readdir_r and number of its arguments

@@ -1,3 +1,7 @@
+Fri May  7 13:06:48 EEST 2010 (edwin)
+-------------------------------------
+ * configure: darwin* IS thread safe (bb #1534)
+
 Fri May  7 10:48:48 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/configure: add check that correct libstdc++ version is used (bb #1971)

@@ -16673,12 +16673,6 @@ $as_echo "#define C_LINUX 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
 	if test "$want_clamuko" = "yes"; then
 
 $as_echo "#define CLAMUKO 1" >>confdefs.h
@@ -16693,12 +16687,6 @@ $as_echo "#define C_KFREEBSD_GNU 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
        if test "$want_clamuko" = "yes"; then
 
 $as_echo "#define CLAMUKO 1" >>confdefs.h
@@ -16713,12 +16701,6 @@ solaris*)
 	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
 
 $as_echo "#define C_SOLARIS 1" >>confdefs.h
@@ -16728,12 +16710,6 @@ freebsd[45]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
 	if test "$want_clamuko" = "yes"; then
 
 $as_echo "#define CLAMUKO 1" >>confdefs.h
@@ -16748,12 +16724,6 @@ freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
 	if test "$want_clamuko" = "yes"; then
 
 $as_echo "#define CLAMUKO 1" >>confdefs.h
@@ -16768,12 +16738,6 @@ dragonfly*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
 	if test "$want_clamuko" = "yes"; then
 
 $as_echo "#define CLAMUKO 1" >>confdefs.h
@@ -16790,12 +16754,6 @@ openbsd*)
 	CLAMD_LIBS="$CLAMD_LIBS -pthread"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -16805,12 +16763,6 @@ bsdi*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -16819,12 +16771,6 @@ $as_echo "#define C_BSD 1" >>confdefs.h
 netbsd*)
      if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
      fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -16865,12 +16811,6 @@ os2*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
 
 $as_echo "#define C_OS2 1" >>confdefs.h
@@ -16882,12 +16822,6 @@ hpux*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
 
 $as_echo "#define C_HPUX 1" >>confdefs.h
@@ -16897,12 +16831,6 @@ aix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
 
 $as_echo "#define _THREAD_SAFE 1" >>confdefs.h
 
@@ -16916,12 +16844,6 @@ $as_echo "#define C_AIX 1" >>confdefs.h
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
 
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
-
 $as_echo "#define _POSIX_PII_SOCKET 1" >>confdefs.h
 
     fi
@@ -16930,14 +16852,6 @@ $as_echo "#define C_OSF 1" >>confdefs.h
 
     ;;
 nto-qnx*)
-     if test "$have_pthreads" = "yes"; then
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
-     fi
 
 $as_echo "#define C_QNX6 1" >>confdefs.h
 
@@ -16946,12 +16860,6 @@ irix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
     LIBS="$LIBS -lgen"
 
@@ -16970,12 +16878,6 @@ $as_echo "#define C_INTERIX 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
     ;;
 gnu*)
@@ -16985,12 +16887,6 @@ $as_echo "#define C_GNU_HURD 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
     fi
     ;;
 *)
@@ -17213,6 +17109,12 @@ done
     LIBS="$save_LIBS"
 
 $as_echo "#define BUILD_CLAMD 1" >>confdefs.h
+
+
+$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
+
+
+$as_echo "#define _REENTRANT 1" >>confdefs.h
 
 fi
 
