@@ -1,3 +1,7 @@
+Sat May  8 00:18:13 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: make oof need stfu (bb#2000)
+
 Fri May  7 21:12:35 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: respect ExcludePath in --fdpass mode (bb#1923)
