@@ -60,8 +60,221 @@ static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
+enum pdf_flag {
+    BAD_PDF_VERSION=0,
+    BAD_PDF_HEADERPOS,
+    BAD_PDF_TRAILER,
+    BAD_PDF_TOOMANYOBJS
+};
+
+static int xrefCheck(const char *xref, const char *eof)
+{
+    const char *q;
+    while (xref < eof && *xref == ' ' || *xref == '\n' || *xref == '\r')
+	xref++;
+    if (xref + 4 >= eof)
+	return -1;
+    if (!memcmp(xref, "xref", 4)) {
+	cli_dbgmsg("cli_pdf: found xref\n");
+	return 0;
+    }
+    /* could be xref stream */
+    for (q=xref; q+5 < eof; q++) {
+	if (!memcmp(q,"/XRef",4)) {
+	    cli_dbgmsg("cli_pdf: found /XRef\n");
+	    return 0;
+	}
+    }
+    return -1;
+}
+
+enum objflags {
+    OBJ_STREAM=0
+};
+
+struct pdf_obj {
+    uint32_t start;
+    uint32_t id;
+    uint32_t flags;
+};
+struct pdf_struct {
+    struct pdf_obj *objs;
+    unsigned nobjs;
+    const char *map;
+    off_t size;
+    off_t offset;
+};
+
+static const char *findNextNonWSBack(const char *q, const char *start)
+{
+    while (q > start &&
+	   (*q == 0 || *q == 9 || *q == 0xa || *q == 0xc || *q == 0xd || *q == 0x20))
+    {
+	q--;
+    }
+    return q;
+}
+
+static int pdf_parseobj(struct pdf_struct *pdf)
+{
+    const char *start, *q, *q2, *eof;
+    struct pdf_obj *obj;
+    off_t bytesleft;
+    unsigned genid, objid;
+
+    pdf->nobjs++;
+    pdf->objs = cli_realloc2(pdf->objs, sizeof(*pdf->objs)*pdf->nobjs);
+    if (!pdf->objs) {
+	cli_warnmsg("cli_pdf: out of memory parsing objects (%ld)\n", pdf->nobjs);
+	return -1;
+    }
+    obj = &pdf->objs[pdf->nobjs-1];
+    start = pdf->map+pdf->offset;
+    bytesleft = pdf->size - pdf->offset;
+    q2 = cli_memstr(start, bytesleft, " obj", 4);
+    if (!q2)
+	return 0;/* no more objs */
+    bytesleft -= q2 - start;
+    q = findNextNonWSBack(q2-1, start);
+    while (q > start && isdigit(*q)) { q--; }
+    genid = atoi(q);
+    q = findNextNonWSBack(q-1,start);
+    while (q > start && isdigit(*q)) { q--; }
+    objid = atoi(q);
+    obj->id = (objid << 8) | (genid&0xff);
+    obj->start = q2+4 - pdf->map;
+    obj->flags = 0;
+    bytesleft -= 4;
+    eof = pdf->map + pdf->size;
+    q = pdf->map + obj->start;
+    while (q < eof && bytesleft > 0) {
+	q2 = pdf_nextobject(q, bytesleft);
+	if (!q2)
+	    return 0;/* no more objs */
+	bytesleft -= q2 - q;
+	if (!memcmp(q2, "stream", 6)) {
+	    obj->flags |= 1 << OBJ_STREAM;
+	    q2 += 6;
+	    bytesleft -= 6;
+	    q2 = cli_memstr(q2, bytesleft, "endstream", 9);
+	    if (!q2)
+		return 0;/* no more objs */
+	    q2 += 6;
+	    bytesleft -= q2 - q;
+	} else if (!memcmp(q2,"endobj",6)) {
+	    q2 += 6;
+	    pdf->offset = q2 - pdf->map;
+	    return 1; /* obj found and offset positioned */
+	} else {
+	    q2 = q+1;
+	}
+	q = q2;
+    }
+    return 0;/* no more objs */
+}
+
+int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
+{
+    struct pdf_struct pdf;
+    unsigned flags = 0;
+    fmap_t *map = *ctx->fmap;
+    size_t size = map->len - offset;
+    off_t versize = size > 1032 ? 1032 : size;
+    off_t map_off, bytesleft;
+    long xref;
+    const char *pdfver, *start, *eofmap, *q, *eof;
+    int rc;
+
+    cli_dbgmsg("in cli_pdf(%s)\n", dir);
+    memset(&pdf, 0, sizeof(pdf));
+
+    pdfver = start = fmap_need_off_once(map, offset, versize);
+
+    /* Check PDF version */
+    if (!pdfver) {
+	cli_errmsg("cli_pdf: mmap() failed\n");
+	return CL_EMAP;
+    }
+    /* offset is 0 when coming from filetype2 */
+    pdfver = cli_memstr(pdfver, versize, "%PDF-", 5);
+    if (!pdfver) {
+	cli_dbgmsg("cli_pdf: no PDF- header found\n");
+	return CL_SUCCESS;
+    }
+    /* Check for PDF-1.[0-9]. Although 1.7 is highest now, allow for future
+     * versions */
+    if (pdfver[5] != '1' || pdfver[6] != '.' ||
+	pdfver[7] < '1' || pdfver[7] > '9') {
+	flags |= 1 << BAD_PDF_VERSION;
+	cli_dbgmsg("cli_pdf: bad pdf version: %.8s\n", pdfver);
+    }
+    if (pdfver != start || offset) {
+	flags |= 1 << BAD_PDF_HEADERPOS;
+	cli_dbgmsg("cli_pdf: PDF header is not at position 0: %d\n",pdfver-start+offset);
+    }
+    offset += pdfver - start;
+
+    /* find trailer and xref, don't fail if not found */
+    map_off = map->len - 2048;
+    if (map_off < 0)
+	map_off = 0;
+    bytesleft = map->len - map_off;
+    eofmap = fmap_need_off_once(map, map_off, bytesleft);
+    if (!eofmap) {
+	cli_errmsg("cli_pdf: mmap() failed\n");
+	return CL_EMAP;
+    }
+    eof = eofmap + bytesleft;
+    for (q=&eofmap[bytesleft-5]; q > eofmap; q--) {
+	if (memcmp(q, "%%EOF", 5) == 0)
+	    break;
+    }
+    if (q <= eofmap) {
+	flags |= 1 << BAD_PDF_TRAILER;
+	cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
+    } else {
+	size = q - eofmap + map_off;
+	for (;q > eofmap;q--) {
+	    if (memcmp(q, "startxref", 9) == 0)
+		break;
+	}
+	if (q <= eofmap) {
+	    flags |= 1 << BAD_PDF_TRAILER;
+    	    cli_dbgmsg("cli_pdf: startxref not found\n");
+	}
+	q += 9;
+	while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
+	xref = atol(q);
+	bytesleft = map->len - offset - xref;
+	if (bytesleft > 4096)
+	    bytesleft = 4096;
+	q = fmap_need_off_once(map, offset + xref, bytesleft);
+	if (!q || xrefCheck(q, q+bytesleft) == -1) {
+	    cli_dbgmsg("cli_pdf: did not find valid xref\n");
+	    flags |= 1 << BAD_PDF_TRAILER;
+	}
+    }
+
+    pdf.size = size;
+    pdf.map = fmap_need_off_once(map, offset, size);
+    if (!pdf.map) {
+	cli_errmsg("cli_pdf: mmap() failed\n");
+	return CL_EMAP;
+    }
+    while ((rc = pdf_parseobj(&pdf)) > 0) {
+	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
+	cli_dbgmsg("found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
+    }
+    if (rc == -1)
+	flags |= 1 << BAD_PDF_TOOMANYOBJS;
+
+    if (flags)
+	cli_dbgmsg("cli_pdf: flags 0x%02x\n", flags);
+    return CL_SUCCESS;
+}
+
 int
-cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
+cli_pdfold(const char *dir, cli_ctx *ctx, off_t offset)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
