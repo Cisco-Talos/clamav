@@ -278,7 +278,11 @@ struct MP *mpool_create() {
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.u.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
   mp.u.mpm.size = sz - align_to_voidptr(sizeof(mp));
+#ifndef _WIN32
   if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+#else
+  if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
+#endif
     return NULL;
 #ifdef CL_DEBUG
   memset(mpool_p, ALLOCPOISON, sz);
@@ -298,13 +302,21 @@ void mpool_destroy(struct MP *mp) {
 #ifdef CL_DEBUG
     memset(mpm, FREEPOISON, mpmsize);
 #endif
+#ifndef _WIN32
     munmap((void *)mpm, mpmsize);
+#else
+    VirtualFree(mpm, 0, MEM_RELEASE);
+#endif
   }
   mpmsize = mp->u.mpm.size;
 #ifdef CL_DEBUG
   memset(mp, FREEPOISON, mpmsize + align_to_voidptr(sizeof(*mp)));
 #endif
+#ifndef _WIN32
   munmap((void *)mp, mpmsize + align_to_voidptr(sizeof(*mp)));
+#else
+  VirtualFree(mp, 0, MEM_RELEASE);
+#endif
   spam("Map destroyed @%p\n", mp);
 }
 
@@ -323,7 +335,11 @@ void mpool_flush(struct MP *mp) {
 #ifdef CL_DEBUG
 	    memset((char *)mpm + mused, FREEPOISON, mpm->size - mused);
 #endif
+#ifndef _WIN32
 	    munmap((char *)mpm + mused, mpm->size - mused);
+#else
+	    VirtualFree((char *)mpm + mused, mpm->size - mused, MEM_DECOMMIT);
+#endif
 	    mpm->size = mused;
 	}
 	used += mpm->size;
@@ -334,7 +350,11 @@ void mpool_flush(struct MP *mp) {
 #ifdef CL_DEBUG
 	memset((char *)mp + mused, FREEPOISON, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
 #endif
+#ifndef _WIN32
 	munmap((char *)mp + mused, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+#else
+	VirtualFree((char *)mp + mused, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused, MEM_DECOMMIT);
+#endif
 	mp->u.mpm.size = mused - align_to_voidptr(sizeof(*mp));
     }
     used += mp->u.mpm.size;
@@ -412,8 +432,12 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   i = align_to_pagesize(mp, needed + align_to_voidptr(sizeof(*mpm)));
   else
   i = align_to_pagesize(mp, MIN_FRAGSIZE);
-  
+
+#ifndef _WIN32
   if ((mpm = (struct MPMAP *)mmap(NULL, i, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
+#else
+  if (!(mpm = (struct MPMAP *)VirtualAlloc(NULL, i, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))) {
+#endif
     cli_errmsg("mpool_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)i);
     spam("failed to alloc %u bytes (%u requested)\n", i, size);
     return NULL;
