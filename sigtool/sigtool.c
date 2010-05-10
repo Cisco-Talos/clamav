@@ -1465,7 +1465,7 @@ static int comparesha(const char *dbname)
 	    break;
 	}
 	if(!(sha = sha256file(tokens[0], NULL))) {
-	    mprintf("!verifydiff: Can't generate MD5 for %s\n", buff);
+	    mprintf("!verifydiff: Can't generate SHA256 for %s\n", buff);
 	    ret = -1;
 	    break;
 	}
@@ -1522,7 +1522,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	long opos;
 
 
-    if((omd5 = cli_md5file(oldpath))) {
+    if(!access(oldpath, R_OK) && (omd5 = cli_md5file(oldpath))) {
 	if(!(nmd5 = cli_md5file(newpath))) {
 	    mprintf("!compare: Can't get MD5 checksum of %s\n", newpath);
 	    free(omd5);
