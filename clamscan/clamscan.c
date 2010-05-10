@@ -66,6 +66,9 @@ int main(int argc, char **argv)
 	struct optstruct *opts;
 	const struct optstruct *opt;
 
+    if(check_flevel())
+	exit(2);
+
 #if !defined(_WIN32) && !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);

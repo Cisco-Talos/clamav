@@ -1,3 +1,7 @@
+Mon May 10 17:00:16 CEST 2010 (tk)
+----------------------------------
+ * tools: make sure the libclamav version is high enough (bb#2013)
+
 Mon May 10 14:51:24 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix error msg (bb#2002)
