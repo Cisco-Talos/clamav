@@ -113,7 +113,7 @@ int notify(const char *cfgfile)
 	ret = getaddrinfo(addr, port, &hints, &res);
 
 	if(ret) {
-	    /* logg("^Clamd was NOT notified: Can't resolve hostname %s (%s)\n", addr ? addr : "", (ret == EAI_SYSTEM) ? strerror(errno) : gai_strerror(ret)); */
+	    logg("^Clamd was NOT notified: Can't resolve hostname %s (%s)\n", addr ? addr : "", (ret == EAI_SYSTEM) ? strerror(errno) : gai_strerror(ret));
 	    optfree(opts);
 	    return 1;
 	}

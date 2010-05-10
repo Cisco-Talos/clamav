@@ -53,6 +53,7 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define closesocket w32_closesocket
 #define getservbyname w32_getservbyname
 #define getaddrinfo w32_getaddrinfo
+#define gai_strerror w32_strerror
 #define freeaddrinfo w32_freeaddrinfo
 #define inet_ntop w32_inet_ntop
 #define gethostbyname w32_gethostbyname
@@ -64,8 +65,9 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define getpid GetCurrentProcessId
 
 #define PATH_MAX 32767
-
 #define SEARCH_LIBDIR ""
+#define WORDS_BIGENDIAN 0
+#define EAI_SYSTEM 0
 
 #ifndef MIN
 #define MIN(a, b)	(((a) < (b)) ? (a) : (b))
@@ -108,4 +110,4 @@ int real_main(int, char**);
 #define main main(int argc, char **argv) { _setmode(_fileno(stdin), _O_BINARY); w32_glob(&argc, &argv); return real_main(argc, argv); }; int real_main
 
 #endif /* __PLATFORM_H */
-#define WORDS_BIGENDIAN 0
+

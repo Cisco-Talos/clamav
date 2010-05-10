@@ -286,7 +286,9 @@ struct servent *w32_getservbyname(const char *name, const char *proto) {
 }
 
 int w32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
-    return getaddrinfo(node, service, hints, res);
+    int ret = getaddrinfo(node, service, hints, res);
+    if(ret) wsock2errno();
+    return ret;
 }
 
 void w32_freeaddrinfo(struct addrinfo *res) {

@@ -1,3 +1,7 @@
+Mon May 10 14:11:51 CEST 2010 (acab)
+------------------------------------
+ * win32: simulate gai_strerror
+
 Mon May 10 03:43:43 CEST 2010 (acab)
 ------------------------------------
  * libclamav: Use mpool in win32 (well, sort of) as the mighty crt allocator
