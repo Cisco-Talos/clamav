@@ -716,6 +716,28 @@ static int build(const struct optstruct *opts)
 		}
 	    }
 	    closedir(dd);
+	    if(!access("last.hdb", R_OK)) {
+		if(!dblist2) {
+		    mprintf("!build: dblist2 == NULL (no .cbc files?)\n");
+		    return -1;
+		}
+		lspt = dblist2;
+		while(lspt->next)
+		    lspt = lspt->next;
+		lspt->next = (struct dblist_scan *) malloc(sizeof(struct dblist_scan));
+		if(!lspt->next) {
+		    FREE_LS(dblist2);
+		    mprintf("!build: Memory allocation error\n");
+		    return -1;
+		}
+		lspt->next->name = strdup("last.hdb");
+		if(!lspt->next->name) {
+		    FREE_LS(dblist2);
+		    mprintf("!build: Memory allocation error\n");
+		    return -1;
+		}
+		entries += countlines("last.hdb");
+	    }
 	} else {
 	    for(i = 0; dblist[i].name; i++)
 		if(dblist[i].count && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK))
