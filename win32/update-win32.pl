@@ -177,7 +177,7 @@ my %CONF = (
     'SIZEOF_VOID_P' => '4',
     'STDC_HEADERS' => '1',
     'SUPPORT_IPv6' => -1,
-    'USE_MPOOL' => -1,
+    'USE_MPOOL' => 1,
     'USE_SYSLOG' => -1,
     'VERSION_SUFFIX' => '""',
     'WORDS_BIGENDIAN' => '0',
@@ -192,6 +192,8 @@ my %CONF = (
     'off_t' => -1,
     'restrict' => -1,
     'socklen_t' => -1,
+    'HAVE_UNAME_SYSCALL' => -1,
+    'HAVE__INTERNAL__SHA_COLLECT' => -1
     );
 
 
