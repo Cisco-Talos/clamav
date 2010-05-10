@@ -240,6 +240,9 @@ int main(int argc, char *argv[])
     int fd = -1;
     unsigned tracelevel;
 
+    if(check_flevel())
+	exit(1);
+
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
 	fprintf(stderr, "ERROR: Can't parse command line options\n");

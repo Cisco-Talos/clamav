@@ -170,6 +170,15 @@ void print_version(const char *dbdir)
 
     free(path);
 }
+
+int check_flevel(void)
+{
+    if(cl_retflevel() < CL_FLEVEL) {
+	fprintf(stderr, "ERROR: This tool requires libclamav with functionality level %u or higher (current f-level: %u)\n", CL_FLEVEL, cl_retflevel());
+	return 1;
+    }
+    return 0;
+}
 #endif
 
 const char *filelist(const struct optstruct *opts, int *err)

@@ -119,6 +119,9 @@ int main(int argc, char **argv)
 	struct stat sb;
 #endif
 
+    if(check_flevel())
+	exit(1);
+
 #ifndef _WIN32
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;

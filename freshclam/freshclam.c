@@ -211,6 +211,8 @@ int main(int argc, char **argv)
 	struct stat statbuf;
 	struct mirdat mdat;
 
+    if(check_flevel())
+	exit(40);
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");

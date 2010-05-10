@@ -45,6 +45,7 @@
 
 char *freshdbdir(void);
 void print_version(const char *dbdir);
+int check_flevel(void);
 const char *filelist(const struct optstruct *opts, int *err);
 int filecopy(const char *src, const char *dest);
 int daemonize(void);
