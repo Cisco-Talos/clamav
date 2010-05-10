@@ -731,6 +731,7 @@ static int build(const struct optstruct *opts)
 		    return -1;
 		}
 		lspt->next->name = strdup("last.hdb");
+		lspt->next->next = NULL;
 		if(!lspt->next->name) {
 		    FREE_LS(dblist2);
 		    mprintf("!build: Memory allocation error\n");
