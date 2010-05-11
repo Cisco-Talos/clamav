@@ -577,7 +577,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
     struct pdfname_action *act = NULL;
     unsigned j;
     for (j=0;j<sizeof(pdfname_actions)/sizeof(pdfname_actions[0]);j++) {
-	if (!strncmp(pdfname, pdfname_actions[j].pdfname, strlen(pdfname_actions[j].pdfname))) {
+	if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
 	    act = &pdfname_actions[j];
 	    break;
 	}
