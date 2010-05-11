@@ -1,3 +1,7 @@
+Tue May 11 21:33:49 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/filtering.c: fix handling of alternates and negated alternates (bb #2004)
+
 Tue May 11 15:31:40 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/readdb.c: read the entire .cbc files, fix loading of bytecode.cvd

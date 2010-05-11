@@ -439,6 +439,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 	struct choice choices[MAX_CHOICES];
 	unsigned choices_cnt = 0;
 	unsigned prefix_len = pat->prefix_length;
+	unsigned speci;
 
 	j = MIN(prefix_len + pat->length, MAXPATLEN);
 	for(i=0;i<j;i++) {
@@ -453,9 +454,19 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 		return filter_add_static(m, patc, j, pat->virname);
 	}
 	cli_perf_log_count(TRIE_ORIG_LEN, j > 8 ? 8 : j);
+	i = 0;
+	if (!prefix_len) {
+	    while ((pat->pattern[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL) {
+		/* we support only ALT_CHAR, skip the rest */
+		if (pat->special_table[altcnt]->type == 1)
+		    break;
+		altcnt++;
+		i++;
+	    }
+	}
 	/* transform AC characters into our representation */
-	for (i=0;i<j && !stop; i++) {
-		struct char_spec *spec = &chars[i];
+	for (speci=0;i<j && !stop; speci++,i++) {
+		struct char_spec *spec = &chars[speci];
 		const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
 		spec->alt = NULL;
 		spec->negative = 0;
@@ -502,8 +513,8 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 				return -1;
 		}
 	}
-	if (stop) --i;
-	j = i;
+	if (stop) --speci;
+	j = speci;
 	if (j < 2) {
 		if (stop)
 			cli_warnmsg("Don't know how to create filter for: %s\n",pat->virname);
