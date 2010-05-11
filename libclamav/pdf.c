@@ -71,6 +71,7 @@ enum pdf_flag {
     BAD_ASCIIDECODE,
     UNTERMINATED_OBJ_DICT,
     ESCAPED_COMMON_PDFNAME,
+    HEX_JAVASCRIPT
 };
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -138,7 +139,7 @@ static const char *findNextNonWSBack(const char *q, const char *start)
     return q;
 }
 
-static int find_stream_bounds(const char *start, off_t bytesleft, off_t *stream, off_t *endstream)
+static int find_stream_bounds(const char *start, off_t bytesleft, off_t bytesleft2, off_t *stream, off_t *endstream)
 {
     const char *q2, *q;
     if ((q2 = cli_memstr(start, bytesleft, "stream", 6))) {
@@ -148,11 +149,11 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t *stream,
 	if (q2[0] == '\xa')
 	    q2++;
 	*stream = q2 - start;
-	bytesleft -= q2 - start;
+	bytesleft2 -= q2 - start;
 	q = q2;
-	q2 = cli_memstr(q, bytesleft, "endstream", 9);
+	q2 = cli_memstr(q, bytesleft2, "endstream", 9);
 	if (!q2)
-	    return;/* no more objs */
+	    return 0;/* no more objs */
 	*endstream = q2 - start;
 	return 1;
     }
@@ -173,6 +174,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	return -1;
     }
     obj = &pdf->objs[pdf->nobjs-1];
+    memset(obj, 0, sizeof(*obj));
     start = pdf->map+pdf->offset;
     bytesleft = pdf->size - pdf->offset;
     q2 = cli_memstr(start, bytesleft, " obj", 4);
@@ -197,7 +199,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	if (!q2)
 	    return 0;/* no more objs */
 	bytesleft -= q2 - q;
-	if (find_stream_bounds(q-1, q2-q+1, &p_stream, &p_endstream)) {
+	if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream)) {
 	    obj->flags |= 1 << OBJ_STREAM;
 	    q2 = q-1 + p_endstream + 6;
 	    bytesleft -= q2 - q + 1;
@@ -349,30 +351,52 @@ static int find_length(struct pdf_struct *pdf,
     return length;
 }
 
+#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT))
+
+static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
+{
+    int i = obj - pdf->objs;
+    i++;
+    if (i < pdf->nobjs) {
+	return pdf->objs[i].start - obj->start - 4;
+    }
+    return pdf->size - obj->start;
+}
+
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
+    char fullname[NAME_MAX + 1];
+    int fout;
+    off_t sum = 0;
     int rc = CL_SUCCESS;
-    if (obj->flags | (1 << OBJ_STREAM)) {
+    char *ascii_decoded = NULL;
+
+    if (!(obj->flags & DUMP_MASK)) {
+	/* don't dump all streams */
+	return CL_CLEAN;
+    }
+    snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u", pdf->dir, pdf->files++);
+    fout = open(fullname,O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+    if (fout < 0) {
+	char err[128];
+	cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
+	free(ascii_decoded);
+	return CL_ETMPFILE;
+    }
+
+    do {
+    if (obj->flags & (1 << OBJ_STREAM)) {
 	const char *start = pdf->map + obj->start;
 	off_t p_stream = 0, p_endstream = 0;
 	off_t length;
 	find_stream_bounds(start, pdf->size - obj->start,
+			   pdf->size - obj->start,
 			   &p_stream, &p_endstream);
 	if (p_stream && p_endstream) {
-	    char fullname[NAME_MAX + 1];
-	    int fout;
-	    off_t sum = 0;
 	    const char *flate_in;
-	    char *ascii_decoded = NULL;
 	    long ascii_decoded_size = 0;
 	    size_t size = p_endstream - p_stream;
 
-	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) &&
-		!(obj->flags & (1 << OBJ_EMBEDDED_FILE)) &&
-		!ascii_decoded) {
-		/* only dump encoded streams */
-		return CL_CLEAN;
-	    }
 	    length = find_length(pdf, obj, start, p_stream);
 	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && !length) {
 		const char *q = start + p_endstream;
@@ -395,7 +419,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		ascii_decoded = cli_malloc(size/2 + 1);
 		if (!ascii_decoded) {
 		    cli_errmsg("Cannot allocate memory for asciidecode\n");
-		    return CL_EMEM;
+		    rc = CL_EMEM;
+		    break;
 		}
 		ascii_decoded_size = asciihexdecode(start + p_stream,
 						    length,
@@ -404,7 +429,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		ascii_decoded = cli_malloc(size*5);
 		if (!ascii_decoded) {
 		    cli_errmsg("Cannot allocate memory for asciidecode\n");
-		    return CL_EMEM;
+		    rc = CL_EMEM;
+		    break;
 		}
 		ascii_decoded_size = ascii85decode(start+p_stream,
 						   length,
@@ -413,40 +439,71 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (ascii_decoded_size < 0) {
 		pdf->flags |= 1 << BAD_ASCIIDECODE;
 		cli_dbgmsg("cli_pdf: failed to asciidecode in %u %u obj\n", obj->id>>8,obj->id&0xff);
-		free(ascii_decoded);
-		return CL_SUCCESS;
+		rc = CL_CLEAN;
+		break;
 	    }
 	    /* either direct or ascii-decoded input */
 	    if (!ascii_decoded)
 		ascii_decoded_size = length;
 	    flate_in = ascii_decoded ? ascii_decoded : start+p_stream;
 
-	    snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u", pdf->dir, pdf->files++);
-	    fout = open(fullname,O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-	    if (fout < 0) {
-		char err[128];
-		cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
-		free(ascii_decoded);
-		return CL_ETMPFILE;
-	    }
 	    if (obj->flags & (1 << OBJ_FILTER_FLATE)) {
 		rc = filter_flatedecode(pdf, obj, flate_in, ascii_decoded_size, fout, &sum);
 	    } else {
-		rc = filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum);
+		if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
+		    rc = CL_EWRITE;
 	    }
 	    cli_updatelimits(pdf->ctx, sum);
-	    /* invoke bytecode on this pdf obj with metainformation associated
+	    /* TODO: invoke bytecode on this pdf obj with metainformation associated
 	     * */
 	    cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj to %s\n", sum, obj->id>>8, obj->id&0xff, fullname);
 	    lseek(fout, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(fout, pdf->ctx);
-	    close(fout);
-	    free(ascii_decoded);
-	    if (!pdf->ctx->engine->keeptmp)
-		if (cli_unlink(fullname) && rc != CL_VIRUS)
-		    rc = CL_EUNLINK;
+	}
+    } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
+	const char *q2;
+	const char *q = pdf->map+obj->start;
+	/* TODO: get obj-endobj size */
+	off_t bytesleft = obj_size(pdf, obj);
+
+	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
+	if (!q2)
+	    break;
+	q2++;
+	bytesleft -= q2 - q;
+	q = pdf_nextobject(q2, bytesleft);
+	if (!q)
+	    break;
+	bytesleft -= q - q2;
+	if (*q == '(') {
+	    if (filter_writen(pdf, obj, fout, q+1, bytesleft-1, &sum) != (bytesleft-1)) {
+		rc = CL_EWRITE;
+		break;
+	    }
+	} else if (*q == '<') {
+	    char *decoded;
+	    q2 = memchr(q+1, '>', bytesleft);
+	    if (!q2) q2 = q + bytesleft;
+	    decoded = cli_malloc(q2 - q);
+	    if (!decoded) {
+		rc = CL_EMEM;
+		break;
+	    }
+	    cli_hex2str_to(q2, decoded, q2-q-1);
+	    decoded[q2-q-1] = '\0';
+	    cli_dbgmsg("cli_pdf: found hexadecimal encoded javascript in %u %u obj\n",
+		       obj->id>>8, obj->id&0xff);
+	    pdf->flags |= 1 << HEX_JAVASCRIPT;
+	    filter_writen(pdf, obj, fout, decoded, q2-q-1, &sum);
+	    free(decoded);
 	}
     }
+    } while (0);
+    close(fout);
+    free(ascii_decoded);
+    if (!pdf->ctx->engine->keeptmp)
+	if (cli_unlink(fullname) && rc != CL_VIRUS)
+	    rc = CL_EUNLINK;
     return rc;
 }
 
@@ -621,6 +678,27 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	pdfname[i] = '\0';
 
 	handle_pdfname(pdf, obj, pdfname, escapes, q, &objstate);
+	if (objstate == STATE_JAVASCRIPT) {
+	    const char *q2;
+	    q2 = pdf_nextobject(q, dict_length);
+	    if (q2 && isdigit(*q2)) {
+		uint32_t objid = atoi(q2) << 8;
+		while (isdigit(*q2)) q2++;
+		q2 = pdf_nextobject(q2, dict_length);
+		if (q2 && isdigit(*q2)) {
+		    objid |= atoi(q2) & 0xff;
+		    q2 = pdf_nextobject(q2, dict_length);
+		    if (*q2 == 'R') {
+			struct pdf_obj *obj2;
+			cli_dbgmsg("cli_pdf: found javascript stored in indirect object %u %u",
+				   objid >> 8, objid&0xff);
+			obj2 = find_obj(pdf, obj, objid);
+			obj2->flags |= OBJ_JAVASCRIPT;
+		    }
+		}
+	    }
+	    objstate = STATE_NONE;
+	}
     }
     cli_dbgmsg("cli_pdf: %u %u obj flags: %02x\n", obj->id>>8, obj->id&0xff, obj->flags);
 }
@@ -732,8 +810,14 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    break;
     }
 
-    if (pdf.flags)
+    if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
+	if (pdf.flags & ESCAPED_COMMON_PDFNAME) {
+	    /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
+	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
+	    rc = CL_VIRUS;
+	}
+    }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
     return rc;
