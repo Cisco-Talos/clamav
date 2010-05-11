@@ -1,7 +1,9 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2008, 2010 Sourcefire, Inc.
  *
- *  Authors: Nigel Horne
+ *  Authors: Nigel Horne, Török Edvin
+ *
+ *  Also based on Matt Olney's pdf parser in snort-nrt.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -56,11 +58,11 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 
 static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx);
 static	int	flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx);
-static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	int	asciihexdecode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
+#if 1
 enum pdf_flag {
     BAD_PDF_VERSION=0,
     BAD_PDF_HEADERPOS,
@@ -363,6 +365,7 @@ static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
     return pdf->size - obj->start;
 }
 
+static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     char fullname[NAME_MAX + 1];
@@ -823,8 +826,9 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     return rc;
 }
 
+#else
 int
-cli_pdfold(const char *dir, cli_ctx *ctx, off_t offset)
+cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
@@ -1413,6 +1417,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 	inflateEnd(&stream);
 	return CL_CLEAN;
 }
+#endif
 
 static int asciihexdecode(const char *buf, off_t len, unsigned char *output)
 {
