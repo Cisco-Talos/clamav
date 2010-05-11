@@ -360,7 +360,9 @@ static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
     int i = obj - pdf->objs;
     i++;
     if (i < pdf->nobjs) {
-	return pdf->objs[i].start - obj->start - 4;
+	int s = pdf->objs[i].start - obj->start - 4;
+	if (s > 0)
+	    return s;
     }
     return pdf->size - obj->start;
 }
@@ -468,6 +470,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	const char *q = pdf->map+obj->start;
 	/* TODO: get obj-endobj size */
 	off_t bytesleft = obj_size(pdf, obj);
+	if (bytesleft < 0)
+	    break;
 
 	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
 	if (!q2)
