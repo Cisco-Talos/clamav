@@ -1,3 +1,7 @@
+Tue May 11 11:36:21 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: New PDF parser with better javascript support (bb #1596).
+
 Mon May 10 17:00:16 CEST 2010 (tk)
 ----------------------------------
  * tools: make sure the libclamav version is high enough (bb#2013)
