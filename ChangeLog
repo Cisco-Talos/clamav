@@ -1,3 +1,7 @@
+Tue May 11 22:44:06 CEST 2010 (tk)
+----------------------------------
+ * freshclam: add new option TestDatabases
+
 Tue May 11 21:33:49 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/filtering.c: fix handling of alternates and negated alternates (bb #2004)

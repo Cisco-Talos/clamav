@@ -1467,14 +1467,15 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 {
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
-	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
+	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j, newsigs = 0;
 	int ret, ims = -1;
-	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[32], cwd[512];
+	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32], cwd[512];
 	char extradbinfo[64], *extradnsreply = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
 	unsigned int can_whitelist = 0;
 	int ctimeout, rtimeout;
+	struct cl_engine *engine;
 
 
     snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
@@ -1720,6 +1721,45 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	unlink(newfile);
 	free(newfile);
 	return 55; /* FIXME */
+    }
+
+    if(optget(opts, "TestDatabases")->enabled && strlen(newfile) > 4) {
+	if(!(engine = cl_engine_new())) {
+	    unlink(newfile);
+	    free(newfile);
+	    return 55;
+	}
+	newfile2 = strdup(newfile);
+	if(!newfile2) {
+	    unlink(newfile);
+	    free(newfile);
+	    cl_engine_free(engine);
+	    return 55;
+	}
+	newfile2[strlen(newfile2) - 4] = '.';
+	newfile2[strlen(newfile2) - 3] = 'c';
+	newfile2[strlen(newfile2) - 2] = strstr(newdb, ".cld") ? 'l' : 'v';
+	newfile2[strlen(newfile2) - 1] = 'd';
+	if(rename(newfile, newfile2) == -1) {
+	    logg("!Can't rename %s to %s: %s\n", newfile, newfile2, strerror(errno));
+	    unlink(newfile);
+	    free(newfile);
+	    free(newfile2);
+	    cl_engine_free(engine);
+	    return 57;
+	}
+	free(newfile);
+	newfile = newfile2;
+	if((ret = cl_load(newfile, engine, &newsigs, CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA)) != CL_SUCCESS) {
+	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    unlink(newfile);
+	    free(newfile);
+	    cl_engine_free(engine);
+	    return 55;
+	} else {
+	    logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
+	}
+	cl_engine_free(engine);
     }
 
 #ifdef _WIN32
