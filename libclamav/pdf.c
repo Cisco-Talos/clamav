@@ -609,7 +609,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 	}
 	obj->flags |= 1 << act->set_objflag;
     } else {
-	//auto-reset states
+	/* auto-reset states */
 	switch (*state) {
 	    case STATE_S:
 		*state = STATE_NONE;
@@ -663,7 +663,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     obj->flags |= 1 << OBJ_DICT;
     dict_length = q3 - dict;
 
-    // process pdf names
+    /*  process pdf names */
     for (q = dict;dict_length;) {
 	int escapes = 0;
 	q2 = memchr(q, '/', dict_length);
@@ -671,7 +671,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    break;
 	dict_length -= q2 - q;
 	q = q2;
-	// normalize PDF names
+	/* normalize PDF names */
 	for (i = 0;dict_length && (i < sizeof(pdfname)-1); i++) {
 	    q++;
 	    dict_length--;
@@ -805,7 +805,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	cli_errmsg("cli_pdf: mmap() failed (3)\n");
 	return CL_EMAP;
     }
-    // parse PDF and find obj offsets
+    /* parse PDF and find obj offsets */
     while ((rc = pdf_findobj(&pdf)) > 0) {
 	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
 	cli_dbgmsg("found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
@@ -814,7 +814,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (rc == -1)
 	pdf.flags |= 1 << BAD_PDF_TOOMANYOBJS;
 
-    // extract PDF objs
+    /* extract PDF objs */
     for (i=0;i<pdf.nobjs;i++) {
 	struct pdf_obj *obj = &pdf.objs[i];
 	rc = pdf_extract_obj(&pdf, obj);
