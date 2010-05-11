@@ -1378,6 +1378,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
+    char buf[4096];
     int rc;
     struct cli_all_bc *bcs = &engine->bcs;
     struct cli_bc *bc;
@@ -1419,6 +1420,10 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     }
 
     rc = cli_bytecode_load(bc, fs, dbio, security_trust);
+    /* read remainder of DB, needed because cvd.c checks that we read the entire
+     * file */
+    while (cli_dbgets(buf, sizeof(buf), fs, dbio)) {}
+
     if (rc != CL_SUCCESS) {
 	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
 	return rc;
