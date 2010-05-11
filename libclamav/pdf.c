@@ -56,7 +56,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
  *Save the file being worked on in tmp */
 #endif
 
-static	int	asciihexdecode(const char *buf, off_t len, unsigned char *output);
+static	int	asciihexdecode(const char *buf, off_t len, char *output);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
@@ -217,7 +217,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
 }
 
 static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj,
-			 int fout, const unsigned char *buf, off_t len, off_t *sum)
+			 int fout, const char *buf, off_t len, off_t *sum)
 {
     if (cli_checklimits("pdf", pdf->ctx, *sum, 0, 0))
 	return len; /* pretend it was a successful write to suppress CL_EWRITE */
@@ -226,19 +226,19 @@ static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj,
 }
 
 static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
-			      const unsigned char *buf, off_t len, int fout, off_t *sum)
+			      const char *buf, off_t len, int fout, off_t *sum)
 {
     int zstat;
     z_stream stream;
     off_t nbytes;
-    unsigned char output[BUFSIZ];
+    char output[BUFSIZ];
 
     if (len == 0)
 	return CL_CLEAN;
     memset(&stream, 0, sizeof(stream));
     stream.next_in = (Bytef *)buf;
     stream.avail_in = len;
-    stream.next_out = output;
+    stream.next_out = (Bytef *)output;
     stream.avail_out = sizeof(output);
 
     zstat = inflateInit(&stream);
@@ -260,7 +260,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 			return CL_EWRITE;
 		    }
 		    nbytes += written;
-		    stream.next_out = output;
+		    stream.next_out = (Bytef *)output;
 		    stream.avail_out = sizeof(output);
 		}
 		continue;
@@ -332,7 +332,7 @@ static int find_length(struct pdf_struct *pdf,
     start = pdf_nextobject(q, len);
     if (!start)
 	return 0;
-    len -= start - q;
+    /* len -= start - q; */
     q = start;
     length = atoi(q);
     while (isdigit(*q)) q++;
@@ -403,6 +403,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 			   pdf->size - obj->start,
 			   &p_stream, &p_endstream);
 	if (p_stream && p_endstream) {
+	    int rc2;
 	    const char *flate_in;
 	    long ascii_decoded_size = 0;
 	    size_t size = p_endstream - p_stream;
@@ -444,7 +445,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		}
 		ascii_decoded_size = ascii85decode(start+p_stream,
 						   length,
-						   ascii_decoded);
+						   (unsigned char*)ascii_decoded);
 	    }
 	    if (ascii_decoded_size < 0) {
 		pdf->flags |= 1 << BAD_ASCIIDECODE;
@@ -468,7 +469,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	     * */
 	    cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj to %s\n", sum, obj->id>>8, obj->id&0xff, fullname);
 	    lseek(fout, 0, SEEK_SET);
-	    rc = cli_magic_scandesc(fout, pdf->ctx);
+	    rc2 = cli_magic_scandesc(fout, pdf->ctx);
+	    if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
+		rc = rc2;
 	}
     } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
 	const char *q2;
@@ -582,7 +585,7 @@ static struct pdfname_action pdfname_actions[] = {
 
 static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 			   const char *pdfname, int escapes,
-			   const char *after, enum objstate *state)
+			   enum objstate *state)
 {
     struct pdfname_action *act = NULL;
     unsigned j;
@@ -615,6 +618,8 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 	switch (*state) {
 	    case STATE_S:
 		*state = STATE_NONE;
+		break;
+	    default:
 		break;
 	}
     }
@@ -690,7 +695,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	}
 	pdfname[i] = '\0';
 
-	handle_pdfname(pdf, obj, pdfname, escapes, q, &objstate);
+	handle_pdfname(pdf, obj, pdfname, escapes, &objstate);
 	if (objstate == STATE_JAVASCRIPT) {
 	    q2 = pdf_nextobject(q, dict_length);
 	    if (q2 && isdigit(*q2)) {
@@ -1431,7 +1436,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 }
 #endif
 
-static int asciihexdecode(const char *buf, off_t len, unsigned char *output)
+static int asciihexdecode(const char *buf, off_t len, char *output)
 {
     unsigned i,j;
     for (i=0,j=0;i<len;i++) {
@@ -1508,9 +1513,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 				ret += quintet;
 				for(i = 0; i < quintet - 1; i++)
 					*output++ = (unsigned char)((sum >> (24 - 8 * i)) & 0xFF);
-				quintet = 0;
 			}
-			len = 0;
 			break;
 		} else if(!isspace(byte)) {
 			cli_dbgmsg("ascii85Decode: invalid character 0x%x, len %lu\n",
