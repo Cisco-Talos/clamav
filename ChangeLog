@@ -1,3 +1,7 @@
+Tue May 11 15:31:40 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/readdb.c: read the entire .cbc files, fix loading of bytecode.cvd
+
 Tue May 11 11:36:21 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: New PDF parser with better javascript support (bb #1596).
