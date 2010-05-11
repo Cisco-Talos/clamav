@@ -96,6 +96,11 @@ With this option you can control scripted updates. It's highly recommended to ke
 .br .
 Default: enabled
 .TP 
+\fBTestDatabases BOOL\fR
+With this option enabled, freshclam will attempt to load new databases into memory to make sure they are properly handled by libclamav before replacing the old ones.
+.br .
+Default: enabled
+.TP 
 \fBCompressLocalDatabase BOOL\fR
 By default freshclam will keep the local databases (.cld) uncompressed to make their handling faster. With this option you can enable the compression; the change will take effect with the next database update.
 .br 

@@ -350,6 +350,8 @@ const struct clam_option __clam_options[] = {
 
     { "ScriptedUpdates", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option you can control scripted updates. It's highly recommended to keep them enabled.", "yes" },
 
+    { "TestDatabases", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option enabled, freshclam will attempt to load new\ndatabases into memory to make sure they are properly handled\nby libclamav before replacing the old ones.", "yes" },
+
     { "CompressLocalDatabase", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "By default freshclam will keep the local databases (.cld) uncompressed to\nmake their handling faster. With this option you can enable the compression.\nThe change will take effect with the next database update.", "" },
 
     { "ExtraDatabase", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Download additional database. This option can be used multiple times.", "dbname1\ndbname2" },

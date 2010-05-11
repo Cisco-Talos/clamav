@@ -1,3 +1,7 @@
+Tue May 11 22:44:06 CEST 2010 (tk)
+----------------------------------
+ * freshclam: add new option TestDatabases
+
 Mon May 10 17:00:16 CEST 2010 (tk)
 ----------------------------------
  * tools: make sure the libclamav version is high enough (bb#2013)
