@@ -674,7 +674,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		escapes = 1;
 		continue;
 	    }
-	    if (*q == ' ' || *q == '\r' || *q == '\n')
+	    if (*q == ' ' || *q == '\r' || *q == '\n' || *q == '/')
 		break;
 	    pdfname[i] = *q;
 	}
@@ -815,7 +815,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
-	if (pdf.flags & ESCAPED_COMMON_PDFNAME) {
+	if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
 	    /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
 	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
 	    rc = CL_VIRUS;
