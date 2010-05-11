@@ -1045,6 +1045,7 @@ static int cli_scanscript(cli_ctx *ctx)
 			cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
 			return ret;
 		}
+		cli_dbgmsg("cli_scanscript: saving normalized file to %s\n", tmpname);
 	}
 
 	if(!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
