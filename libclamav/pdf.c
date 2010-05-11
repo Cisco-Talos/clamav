@@ -56,9 +56,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
  *Save the file being worked on in tmp */
 #endif
 
-static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx);
-static	int	flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx);
 static	int	asciihexdecode(const char *buf, off_t len, unsigned char *output);
+static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
@@ -79,7 +78,7 @@ enum pdf_flag {
 static int xrefCheck(const char *xref, const char *eof)
 {
     const char *q;
-    while (xref < eof && *xref == ' ' || *xref == '\n' || *xref == '\r')
+    while (xref < eof && (*xref == ' ' || *xref == '\n' || *xref == '\r'))
 	xref++;
     if (xref + 4 >= eof)
 	return -1;
@@ -172,7 +171,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
     pdf->nobjs++;
     pdf->objs = cli_realloc2(pdf->objs, sizeof(*pdf->objs)*pdf->nobjs);
     if (!pdf->objs) {
-	cli_warnmsg("cli_pdf: out of memory parsing objects (%ld)\n", pdf->nobjs);
+	cli_warnmsg("cli_pdf: out of memory parsing objects (%u)\n", pdf->nobjs);
 	return -1;
     }
     obj = &pdf->objs[pdf->nobjs-1];
@@ -229,7 +228,7 @@ static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj,
 static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 			      const unsigned char *buf, off_t len, int fout, off_t *sum)
 {
-    int zstat, ret;
+    int zstat;
     z_stream stream;
     off_t nbytes;
     unsigned char output[BUFSIZ];
@@ -297,11 +296,14 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 static struct pdf_obj *find_obj(struct pdf_struct *pdf,
 				struct pdf_obj *obj, uint32_t objid)
 {
-    int j;
-    int i = obj - pdf->objs;
-    /* search starting at previous obj */
-    if (i > 0)
-	i--;
+    unsigned j;
+    unsigned i;
+
+    /* search starting at previous obj (if exists) */
+    if (obj != pdf->objs)
+	i = obj - pdf->objs;
+    else
+	i = 0;
     for (j=i;j<pdf->nobjs;j++) {
 	obj = &pdf->objs[j];
 	if (obj->id == objid)
@@ -361,7 +363,7 @@ static int find_length(struct pdf_struct *pdf,
 
 static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
-    int i = obj - pdf->objs;
+    unsigned i = obj - pdf->objs;
     i++;
     if (i < pdf->nobjs) {
 	int s = pdf->objs[i].start - obj->start - 4;
@@ -371,7 +373,6 @@ static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
     return pdf->size - obj->start;
 }
 
-static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     char fullname[NAME_MAX + 1];
@@ -419,7 +420,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		} else if (*q == '\r') {
 		    length--;
 		}
-		cli_dbgmsg("cli_pdf: calculated length %d\n", length);
+		cli_dbgmsg("cli_pdf: calculated length %ld\n", length);
 	    }
 	    if (!length)
 		length = size;
@@ -535,6 +536,7 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case BAD_STREAM_FILTERS:
 	    s = "duplicate stream filters";
 	    break;
+	default:
 	case BAD_PDF_VERSION:
 	case BAD_PDF_HEADERPOS:
 	case BAD_PDF_TRAILER:
@@ -690,7 +692,6 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
 	handle_pdfname(pdf, obj, pdfname, escapes, q, &objstate);
 	if (objstate == STATE_JAVASCRIPT) {
-	    const char *q2;
 	    q2 = pdf_nextobject(q, dict_length);
 	    if (q2 && isdigit(*q2)) {
 		uint32_t objid = atoi(q2) << 8;
@@ -753,7 +754,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
     if (pdfver != start || offset) {
 	pdf.flags |= 1 << BAD_PDF_HEADERPOS;
-	cli_dbgmsg("cli_pdf: PDF header is not at position 0: %d\n",pdfver-start+offset);
+	cli_dbgmsg("cli_pdf: PDF header is not at position 0: %ld\n",pdfver-start+offset);
     }
     offset += pdfver - start;
 
@@ -836,6 +837,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 }
 
 #else
+static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx);
+static	int	flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx);
 int
 cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
