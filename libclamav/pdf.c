@@ -350,6 +350,10 @@ static int find_length(struct pdf_struct *pdf,
 	    length = atoi(q);
 	}
     }
+    /* limit length */
+    if (start - pdf->map + length+5 > pdf->size) {
+	length = pdf->size - (start - pdf->map)-5;
+    }
     return length;
 }
 
@@ -421,7 +425,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		length = size;
 
 	    if (obj->flags & (1 << OBJ_FILTER_AH)) {
-		ascii_decoded = cli_malloc(size/2 + 1);
+		ascii_decoded = cli_malloc(length/2 + 1);
 		if (!ascii_decoded) {
 		    cli_errmsg("Cannot allocate memory for asciidecode\n");
 		    rc = CL_EMEM;
@@ -431,7 +435,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 						    length,
 						    ascii_decoded);
 	    } else if (obj->flags & (1 << OBJ_FILTER_A85)) {
-		ascii_decoded = cli_malloc(size*5);
+		ascii_decoded = cli_malloc(length*5);
 		if (!ascii_decoded) {
 		    cli_errmsg("Cannot allocate memory for asciidecode\n");
 		    rc = CL_EMEM;
@@ -731,7 +735,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     /* Check PDF version */
     if (!pdfver) {
-	cli_errmsg("cli_pdf: mmap() failed\n");
+	cli_errmsg("cli_pdf: mmap() failed (1)\n");
 	return CL_EMAP;
     }
     /* offset is 0 when coming from filetype2 */
@@ -760,7 +764,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     bytesleft = map->len - map_off;
     eofmap = fmap_need_off_once(map, map_off, bytesleft);
     if (!eofmap) {
-	cli_errmsg("cli_pdf: mmap() failed\n");
+	cli_errmsg("cli_pdf: mmap() failed (2)\n");
 	return CL_EMAP;
     }
     eof = eofmap + bytesleft;
@@ -793,11 +797,12 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    pdf.flags |= 1 << BAD_PDF_TRAILER;
 	}
     }
+    size -= offset;
 
     pdf.size = size;
     pdf.map = fmap_need_off_once(map, offset, size);
     if (!pdf.map) {
-	cli_errmsg("cli_pdf: mmap() failed\n");
+	cli_errmsg("cli_pdf: mmap() failed (3)\n");
 	return CL_EMAP;
     }
     // parse PDF and find obj offsets
@@ -1432,6 +1437,7 @@ static int asciihexdecode(const char *buf, off_t len, unsigned char *output)
 	if (buf[i] == '>')
 	    break;
 	cli_hex2str_to(buf+i, output+j++, 2);
+	i++;
     }
     return j;
 }
