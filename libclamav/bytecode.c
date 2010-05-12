@@ -87,10 +87,12 @@ static void context_safe(struct cli_bc_ctx *ctx)
 	ctx->hooks.pedata = &nopedata;
 }
 
+static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx);
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_calloc(1, sizeof(*ctx));
     ctx->bytecode_timeout = 60000;
+    cli_bytecode_context_reset(ctx);
     return ctx;
 }
 
@@ -194,6 +196,14 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->jsnorms = NULL;
     ctx->njsnorms = 0;
     ctx->jsnormdir = NULL;
+
+    for (i=0;i<ctx->nmaps;i++)
+	cli_bcapi_map_done(ctx, i);
+    free(ctx->maps);
+    ctx->maps = NULL;
+    ctx->nmaps = 0;
+
+    ctx->containertype = CL_TYPE_ANY;
     return CL_SUCCESS;
 }
 

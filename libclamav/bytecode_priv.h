@@ -152,6 +152,7 @@ struct cli_bc_ctx {
     uint32_t file_size;
     off_t off;
     fmap_t *fmap;
+    fmap_t *save_map;
     const char *virname;
     struct cli_bc_hooks hooks;
     const struct cli_exe_section *sections;
@@ -183,6 +184,10 @@ struct cli_bc_ctx {
     unsigned njsnorms;
     char *jsnormdir;
     unsigned jsnormwritten;
+    struct cli_map *maps;
+    unsigned nmaps;
+    unsigned containertype;
+    unsigned extracted_file_input;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
