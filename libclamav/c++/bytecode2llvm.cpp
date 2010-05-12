@@ -1295,7 +1295,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
-			    Src = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
+			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
@@ -1308,7 +1308,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
-			    Src = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
+			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
 			    CallInst *c = Builder.CreateCall3(CF->FRealmemcmp, Dst, Src, Len);
 			    c->setTailCall(true);
