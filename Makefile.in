@@ -60,6 +60,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/clamav-config.in $(srcdir)/libclamav.pc.in \
 	$(srcdir)/platform.h.in $(top_srcdir)/configure \
 	$(top_srcdir)/docs/man/clamav-milter.8.in \
+	$(top_srcdir)/docs/man/clamav-milter.conf.5.in \
 	$(top_srcdir)/docs/man/clamconf.1.in \
 	$(top_srcdir)/docs/man/clamd.8.in \
 	$(top_srcdir)/docs/man/clamd.conf.5.in \
@@ -91,10 +92,11 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = clamav-config.h
 CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
-	docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 \
-	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
-	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
-	docs/man/sigtool.1 docs/man/clamdtop.1
+	docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 \
+	docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 \
+	docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 \
+	docs/man/freshclam.conf.5 docs/man/sigtool.1 \
+	docs/man/clamdtop.1
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -411,6 +413,8 @@ libclamav.pc: $(top_builddir)/config.status $(srcdir)/libclamav.pc.in
 platform.h: $(top_builddir)/config.status $(srcdir)/platform.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamav-milter.8: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamav-milter.8.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamav-milter.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamav-milter.conf.5.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamconf.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamconf.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

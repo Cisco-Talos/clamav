@@ -33,4 +33,4 @@ Read configuration from FILE.
 aCaB <acab@clamav.net>
 .SH "SEE ALSO"
 .LP
-sendmail(8), clamd(8), clamd.conf(5)
+sendmail(8), clamav-milter.conf(5), clamd(8), clamd.conf(5)
