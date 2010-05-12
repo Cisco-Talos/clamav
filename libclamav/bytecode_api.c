@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "cltypes.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -1017,7 +1018,7 @@ uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t*
 {
     if (!s || len <= 0)
 	return -1;
-    cli_dbgmsg("bytecode debug: %.*s", s, len);
+    cli_dbgmsg("bytecode debug: %.*s", len, s);
     return 0;
 }
 
@@ -1025,8 +1026,7 @@ uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* 
 {
     if (!s || len <= 0)
 	return -1;
-    fwrite(s, 1, len, stderr);
-    return 0;
+    return fwrite(s, 1, len, stderr);
 }
 
 uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx , uint8_t* s, int32_t len)
@@ -1165,6 +1165,7 @@ int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
     if (ftype > CL_TYPE_IGNORED)
 	return -1;
     ctx->containertype = ftype;
+    return 0;
 }
 
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
