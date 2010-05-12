@@ -78,6 +78,8 @@
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
 
+extern char updtmpdir[512];
+
 #define CHDIR_ERR(x)				\
 	if(chdir(x) == -1)			\
 	    logg("!Can't chdir to %s\n", x);
@@ -1653,12 +1655,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     if(!optget(opts, "ScriptedUpdates")->enabled)
 	nodb = 1;
 
-    if(!getcwd(cwd, sizeof(cwd))) {
-	logg("!updatedb: Can't get path of current working directory\n");
-	return 50; /* FIXME */
-    }
-    newfile = cli_gentemp(cwd);
-
+    newfile = cli_gentemp(updtmpdir);
     if(nodb) {
 	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 	if(ret) {
@@ -1671,7 +1668,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     } else {
 	ret = 0;
 
-	tmpdir = cli_gentemp(".");
+	tmpdir = cli_gentemp(updtmpdir);
 	maxattempts = optget(opts, "MaxAttempts")->numarg;
 	for(i = currver + 1; i <= newver; i++) {
 	    for(j = 0; j < maxattempts; j++) {
@@ -1756,9 +1753,15 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    free(newfile);
 	    cl_engine_free(engine);
 	    return 55;
-	} else {
-	    logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
 	}
+	if((ret = cli_bytecode_prepare(&engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
+	    logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
+	    unlink(newfile);
+	    free(newfile);
+	    cl_engine_free(engine);
+	    return 55;
+	}
+	logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
 	cl_engine_free(engine);
     }
 
@@ -1816,6 +1819,17 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
+
+    pt = cli_gentemp(dbdir);
+    if(!pt)
+	return 57;
+    strncpy(updtmpdir, pt, sizeof(updtmpdir));
+    free(pt);
+    if(mkdir(updtmpdir, 0755)) {
+	logg("!Can't create temporary directory %s\n", updtmpdir);
+	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+	return 57;
+    }
 
     time(&currtime);
     logg("ClamAV update process started at %s", ctime(&currtime));
@@ -1905,6 +1919,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_rmdirs(updtmpdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1919,6 +1934,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_rmdirs(updtmpdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1947,6 +1963,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_rmdirs(updtmpdir);
 	return ret;
     } else if(ret == 0)
 	updated = 1;
@@ -1973,6 +1990,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_rmdirs(updtmpdir);
 	return ret;
     } else if(ret == 0)
 	updated = 1;
@@ -1986,6 +2004,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 		if(newver)
 		    free(newver);
 		mirman_write("mirrors.dat", &mdat);
+		cli_rmdirs(updtmpdir);
 		return ret;
 	    } else if(ret == 0)
 		updated = 1;
@@ -2035,6 +2054,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 		    free(cmd);
 		    if(newver)
 			free(newver);
+		    cli_rmdirs(updtmpdir);
 		    return 75;
 		}
 
@@ -2057,5 +2077,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
     if(newver)
 	free(newver);
 
+    cli_rmdirs(updtmpdir);
     return 0;
 }
