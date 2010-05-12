@@ -1471,7 +1471,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	const struct optstruct *opt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j, newsigs = 0;
 	int ret, ims = -1;
-	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32], cwd[512];
+	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32];
 	char extradbinfo[64], *extradnsreply = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
