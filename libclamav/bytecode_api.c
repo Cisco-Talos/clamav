@@ -602,11 +602,11 @@ uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t id)
 	    return 0;
 	return b->write_cursor - b->read_cursor;
     }
-    if (!ctx->fmap || ctx->off >= ctx->file_size)
+    if (!ctx->fmap || b->read_cursor >= ctx->file_size)
 	return 0;
-    if (ctx->off + BUFSIZ <= ctx->file_size)
+    if (b->read_cursor + BUFSIZ <= ctx->file_size)
 	return BUFSIZ;
-    return ctx->file_size - ctx->off;
+    return ctx->file_size - b->read_cursor;
 }
 
 uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
