@@ -348,6 +348,14 @@ const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char
 	return NULL;
 }
 
+void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len)
+{
+    struct cli_element *el = cli_hashtab_find(s, key, len);
+    if (!el)
+	return;
+    el->key = DELETED_KEY;
+}
+
 void cli_hashtab_clear(struct cli_hashtable *s)
 {
 	size_t i;
@@ -578,4 +586,137 @@ int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint3
     if (!hs->keys)
 	return 0;
     return cli_hashset_contains(hs, key);
+}
+
+int cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
+		  int32_t capacity)
+{
+    if (keysize <= 0 || valuesize < 0 || capacity <= 0)
+	return -CL_EARG;
+    memset(m, 0, sizeof(*m));
+    cli_hashtab_init(&m->htab, 16);
+    m->keysize = keysize;
+    m->valuesize = valuesize;
+    m->last_insert = -1;
+    m->last_find = -1;
+    return 0;
+}
+
+int  cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
+{
+    unsigned n;
+    struct cli_element *el;
+    if (m->keysize != keysize)
+	return -CL_EARG;
+    el = cli_hashtab_find(&m->htab, key, keysize);
+    if (el) {
+	m->last_insert = el->data;
+	return 0;
+    }
+    n = m->nvalues + 1;
+    if (m->valuesize) {
+	void *v;
+	v = cli_realloc(m->u.sized_values, n*m->valuesize);
+	if (!v)
+	    return -CL_EMEM;
+	m->u.sized_values = v;
+	memset((char*)m->u.sized_values + (n-1)*m->valuesize, 0, m->valuesize);
+    } else {
+	struct cli_map_value *v;
+	v = cli_realloc(m->u.unsized_values, n*sizeof(*m->u.unsized_values));
+	if (!v)
+	    return -CL_EMEM;
+	m->u.unsized_values = v;
+	memset(&m->u.unsized_values[n-1], 0, sizeof(*m->u.unsized_values));
+    }
+    m->nvalues = n;
+    if (!cli_hashtab_insert(&m->htab, key, keysize, n-1))
+	return -CL_EMEM;
+    m->last_insert = n-1;
+    return 1;
+}
+
+int  cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize)
+{
+    struct cli_element *el;
+    if (m->keysize != keysize)
+	return -CL_EARG;
+    el = cli_hashtab_find(&m->htab, key, keysize);
+    if (!el)
+	return 0;
+    if (el->data >= m->nvalues || el->data < 0)
+	return -CL_EARG;
+    if (!m->valuesize) {
+	struct cli_map_value *v = &m->u.unsized_values[el->data];
+	free(v->value);
+	v->value = NULL;
+	v->valuesize = 0;
+    } else {
+	char *v = (char*)m->u.sized_values + el->data * m->valuesize;
+	memset(v, 0, m->valuesize);
+    }
+    cli_hashtab_delete(&m->htab, key, keysize);
+    return 1;
+}
+
+int  cli_map_setvalue(struct cli_map *m, const void* value, int32_t valuesize)
+{
+    if ((m->valuesize && m->valuesize != valuesize)
+	|| m->last_insert >= m->nvalues || m->last_insert < 0)
+	return -CL_EARG;
+    if (m->valuesize) {
+	memcpy((char*)m->u.sized_values + m->last_insert * m->valuesize,
+	       value, valuesize);
+    } else {
+	struct cli_map_value *v = &m->u.unsized_values[m->last_insert];
+	if (v->value)
+	    free(v->value);
+	v->value = cli_malloc(valuesize);
+	if (!v->value)
+	    return -CL_EMEM;
+	memcpy(v->value, value, valuesize);
+	v->valuesize = valuesize;
+    }
+    return 0;
+}
+
+int  cli_map_find(struct cli_map *m, const void *key, int32_t keysize)
+{
+    struct cli_element *el;
+    if (m->keysize != keysize)
+	return -CL_EARG;
+    el = cli_hashtab_find(&m->htab, key, keysize);
+    if (!el)
+	return 0;
+    m->last_find = el->data;
+    return 1;
+}
+
+int  cli_map_getvalue_size(struct cli_map *m)
+{
+    if (m->valuesize)
+	return m->valuesize;
+    if (m->last_find < 0 || m->last_find >= m->nvalues)
+	return -CL_EARG;
+    return m->u.unsized_values[m->last_find].valuesize;
+}
+
+void* cli_map_getvalue(struct cli_map *m)
+{
+    if (m->last_find < 0 || m->last_find >= m->nvalues)
+	return NULL;
+    if (m->valuesize)
+	return (char*)m->u.sized_values + m->last_find*m->valuesize;
+    return &m->u.unsized_values[m->valuesize];
+}
+
+void cli_map_delete(struct cli_map *m)
+{
+    cli_hashtab_free(&m->htab);
+    if (!m->valuesize) {
+	unsigned i;
+	for (i=0;i<m->nvalues;i++)
+	    free(m->u.unsized_values[i].value);
+    }
+    memset(m, 0, sizeof(*m));
 }

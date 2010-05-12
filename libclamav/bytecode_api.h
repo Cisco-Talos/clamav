@@ -62,6 +62,7 @@ enum FunctionalityLevels {
 
 #ifdef __CLAMBC__
 
+/* --------------- BEGIN GLOBALS -------------------------------------------- */
 /** @brief Logical signature match counts
  *
  *  This is a low-level variable, use the Macros in bytecode_local.h instead to
@@ -82,7 +83,9 @@ extern const uint32_t __clambc_filesize[1];
 
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
+/* ---------------- END GLOBALS --------------------------------------------- */
 
+/* ---------------- BEGIN 0.96 APIs (don't touch) --------------------------- */
 /** Test api. 
   @param a 0xf00dbeef
   @param b 0xbeeff00d
@@ -413,5 +416,234 @@ int32_t jsnorm_process(int32_t id);
   * @param id ID of js normalizer to flush */
 int32_t jsnorm_done(int32_t id);
 
+/* ---------------- END 0.96 APIs (don't touch) --------------------------- */
+/* ---------------- BEGIN 0.96.1 APIs ------------------------------------- */
+
+/** --------------- math -----------------*/
+
+/**
+  *  Returns 2^26*log2(a/b)
+  * @param a input 
+  * @param b input
+  * @return 2^26*log2(a/b)
+  */
+int32_t ilog2(uint32_t a, uint32_t b);
+
+/**
+  * Returns c*a^b.
+  * @param a integer
+  * @param b integer
+  * @param c integer
+  * @return c*pow(a,b)
+  */
+int32_t ipow(int32_t a, int32_t b, int32_t c);
+
+/**
+  * Returns exp(a/b)*c
+  * @param a integer
+  * @param b integer
+  * @param c integer
+  * @return c*exp(a/b)
+  */
+int32_t iexp(int32_t a, int32_t b, int32_t c);
+
+/**
+  * Returns c*sin(a/b).
+  * @param a integer
+  * @param b integer
+  * @param c integer
+  * @return c*sin(a/b)
+  */
+int32_t isin(int32_t a, int32_t b, int32_t c);
+
+/**
+  * Returns c*cos(a/b).
+  * @param a integer
+  * @param b integer
+  * @param c integer
+  * @return c*sin(a/b)
+  */
+int32_t icos(int32_t a, int32_t b, int32_t c);
+
+/** --------------- string operations -----------------*/
+/**
+  * Return position of match, -1 otherwise.
+  * @param haystack buffer to search
+  * @param haysize size of \p haystack
+  * @param needle substring to search
+  * @param needlesize size of needle
+  * @return location of match, -1 otherwise
+  */
+int32_t memstr(const uint8_t* haystack, int32_t haysize,
+               const uint8_t* needle, int32_t needlesize);
+
+/**
+  * Returns hexadecimal characters \p hex1 and \p hex2 converted to 8-bit
+  * number.
+  * @param hex1 hexadecimal character
+  * @param hex2 hexadecimal character
+  * @return hex1 hex2 converted to 8-bit integer, -1 on error
+  */
+int32_t hex2ui(uint32_t hex1, uint32_t hex2);
+
+/**
+  * Converts string to positive number.
+  * @param str buffer
+  * @param size size of \p str
+  * @return >0 string converted to number if possible, -1 on error
+  */
+int32_t atoi(const uint8_t* str, int32_t size);
+
+/**
+  * Prints a debug message with a trailing newline,
+  * but preceded by 'LibClamAV debug'.
+  * @param str the string
+  * @param len length of \p str
+  * @return 0
+  */
+uint32_t debug_print_str_start(const uint8_t *str, uint32_t len);
+
+/**
+  * Prints a debug message with a trailing newline,
+  * and not preceded by 'LibClamAV debug'.
+  * @param str the string
+  * @param len length of \p str
+  * @return 0
+  */
+uint32_t debug_print_str_nonl(const uint8_t *str, uint32_t len);
+
+/**
+  * Returns an approximation for the entropy of \p buffer.
+  * @param buffer input buffer
+  * @param size size of buffer
+  * @return entropy estimation * 2^26
+  */
+uint32_t entropy_buffer(uint8_t* buffer, int32_t size);
+
+/* ------------------ data structures -------------------- */
+/**
+  * Creates a new map and returns its id.
+  * @param keysize size of key
+  * @param valuesize size of value, if 0 then value is allocated separately
+  * @return ID of new map */
+int32_t map_new(int32_t keysize, int32_t valuesize);
+
+/**
+  * Inserts the specified key/value pair into the map.
+  * @param id id of table
+  * @param key key
+  * @param ksize size of \p key
+  * @return 0 - if key didn't exist before
+            1 - if key existed
+            -1 - if ksize doesn't match keysize specified at table creation
+  */
+int32_t map_addkey(const uint8_t *key, int32_t ksize, int32_t id);
+
+/**
+  * Sets the value for the last inserted key with map_addkey.
+  * @param id id of table
+  * @param value value
+  * @param vsize size of \p value
+  * @return 0 - if update was successful
+           -1 - if there is no last key
+  */
+int32_t map_setvalue(const uint8_t *value, int32_t vsize, int32_t id);
+
+/**
+  * Remove an element from the map.
+  * @param id id of map
+  * @param key key
+  * @param ksize size of key
+  * @return 0 on success, key was present
+            1 if key was not present
+           -1 if ksize doesn't match keysize specified at table creation
+  */
+int32_t map_remove(const uint8_t* key, int32_t ksize, int32_t id);
+
+/**
+  * Looks up key in map. 
+  * The map remember the last looked up key (so you can retrieve the
+  * value).
+  * 
+  * @param id id of map
+  * @param key key
+  * @param ksize size of key
+  * @return 0 - if not found
+            1 - if found
+           -1 - if ksize doesn't match the size specified at table creation
+  */
+int32_t map_find(const uint8_t* key, int32_t ksize, int32_t id);
+
+/**
+  * Returns the size of value obtained during last map_find.
+  * @param id id of map.
+  * @return size of value
+  */
+int32_t map_getvaluesize(int32_t id);
+
+/**
+  * Returns the value obtained during last map_find.
+  * @param id id of map.
+  * @param size size of value (obtained from map_getvaluesize)
+  * @return value
+  */
+uint8_t* map_getvalue(int32_t id, int32_t size);
+
+/**
+  * Deallocates the memory used by the specified map.
+  * Trying to use the map after this will result in an error.
+  * All maps are automatically deallocated when the bytecode finishes
+  * execution.
+  */
+int32_t map_done(int32_t id);
+
+/** -------------- file operations --------------------- */
+/** Looks for the specified sequence of bytes in the current file, up to the
+ * specified position.
+ * @param[in] data the sequence of bytes to look for
+ * @param len length of \p data, cannot be more than 1024
+ * @return offset in the current file if match is found, -1 otherwise */
+int32_t file_find_limit(const uint8_t *data, uint32_t len, int32_t maxpos);
+
+/** ------------- engine query ------------------------ */
+/**
+  * Returns the current engine (feature) functionality level.
+  */
+uint32_t engine_functionality_level(void);
+
+/**
+  * Returns the current engine (dconf) functionality level.
+  */
+uint32_t engine_dconf_level(void);
+
+/**
+  * Returns the current engine's scan options.
+  */
+uint32_t engine_scan_options(void);
+
+/**
+  * Returns the current engine's db options.
+  */
+uint32_t engine_db_options(void);
+
+/* ---------------- scan control --------------------------- */
+/**
+  * Sets the container type for the currently extracted file.
+  * @param container container type (CL_TYPE_*)
+  * @return current setting for container (CL_TYPE_ANY default)
+  */
+int32_t extract_set_container(uint32_t container);
+
+/**
+  * Toggles the read/seek API to read from the currently extracted file, and
+  * back.
+  * @param extracted_file 1 - switch to reading from extracted file, 
+                          0 - switch back to original input
+  * @return -1 on error (if no extracted file exists)
+             0 on success
+  */
+int32_t input_switch(int32_t extracted_file);
+
+/* ---------------- END 0.96.1 APIs ------------------------------------- */
 #endif
 #endif

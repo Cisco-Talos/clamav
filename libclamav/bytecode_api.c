@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <math.h>
 #include "cltypes.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -43,6 +44,9 @@
 #include "disasm.h"
 #include "scanners.h"
 #include "jsparse/js-norm.h"
+#include "hashtab.h"
+#include "str.h"
+#include "filetypes.h"
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -321,18 +325,34 @@ static inline const char* cli_memmem(const char *haystack, unsigned hlen,
 
 int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_t len)
 {
+    fmap_t *map = ctx->fmap;
+    if (!map || len <= 0) {
+	cli_dbgmsg("bcapi_file_find preconditions not met\n");
+	return -1;
+    }
+    return cli_bcapi_file_find_limit(ctx, data, len, map->len);
+}
+
+int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx , const uint8_t* data, uint32_t len, int32_t limit)
+{
     char buf[4096];
     fmap_t *map = ctx->fmap;
     uint32_t off = ctx->off;
     int n;
 
-    if (!map || len > sizeof(buf)/4 || len <= 0) {
-	cli_dbgmsg("bcapi_file_find preconditions not met\n");
+    if (!map || len > sizeof(buf)/4 || len <= 0 || limit <= 0) {
+	cli_dbgmsg("bcapi_file_find_limit preconditions not met\n");
 	return -1;
     }
     for (;;) {
 	const char *p;
-	n = fmap_readn(map, buf, off, sizeof(buf));
+	int32_t readlen = sizeof(buf);
+	if (off + readlen > limit) {
+	    readlen = limit - off;
+	    if (readlen < 0)
+		return -1;
+	}
+	n = fmap_readn(map, buf, off, readlen);
 	if ((unsigned)n < len || n < 0)
 	    return -1;
 	p = cli_memmem(buf, n, data, len);
@@ -432,7 +452,11 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
     cctx = (cli_ctx*)ctx->ctx;
     if (cctx) {
+	cli_file_t current = cctx->container_type;
+	if (ctx->containertype != CL_TYPE_ANY)
+	    cctx->container_type = ctx->containertype;
 	res = cli_magic_scandesc(ctx->outfd, cctx);
+	cctx->container_type = current;
 	if (res == CL_VIRUS)
 	    ctx->found = 1;
     }
@@ -532,6 +556,12 @@ int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
     if (!s)
 	return -1;
     cli_hashset_destroy(s);
+    if (id == ctx->nhashsets-1) {
+	ctx->nhashsets--;
+	s = cli_realloc(ctx->hashsets, ctx->nhashsets*sizeof(*s));
+	if (s)
+	    ctx->hashsets = s;
+    }
     return 0;
 }
 
@@ -892,5 +922,272 @@ int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t id)
     cli_js_output(b->state, ctx->jsnormdir);
     cli_js_destroy(b->state);
     b->from = -1;
+    return 0;
+}
+
+int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
+{
+    double f;
+    if (!b)
+	return 0x7fffffff;
+    /* log(a/b) is -32..32, so 2^26*32=2^31 covers the entire range of int32 */
+    f = (1<<26)*log((double)a / b) / log(2);
+    return (int32_t)f;
+}
+
+int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
+{
+    if (!a && b < 0)
+	return 0x7fffffff;
+    return (int32_t)c*pow(a,b);
+}
+
+int32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
+{
+    double f;
+    if (!b)
+	return 0x7fffffff;
+    f= c*exp((double)a/b);
+    return (int32_t)f;
+}
+
+int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
+{
+    double f;
+    if (!b)
+	return 0x7fffffff;
+    f = c*sin((double)a/b);
+    return (int32_t)f;
+}
+
+int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
+{
+    double f;
+    if (!b)
+	return 0x7fffffff;
+    f = c*cos((double)a/b);
+    return (int32_t)f;
+}
+
+int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
+			 const uint8_t*n, int32_t ns)
+{
+    const uint8_t *s;
+    if (!h || !n || hs < 0 || ns < 0)
+	return -1;
+    s = cli_memstr(h, hs, n, ns);
+    if (!s)
+	return -1;
+    return s - h;
+}
+
+int32_t cli_bcapi_hex2ui(struct cli_bc_ctx *ctx, uint32_t ah, uint32_t bh)
+{
+    uint8_t result = 0;
+    unsigned char in[2];
+    in[0] = ah;
+    in[1] = bh;
+
+    if (cli_hex2str_to(in, &result, 2) == -1)
+	return -1;
+    return result;
+}
+
+int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t* str, int32_t len)
+{
+    int32_t number = 0;
+    const uint8_t *end = str + len;
+    while (isspace(*str) && str < end) str++;
+    if (str == end)
+	return -1;/* all spaces */
+    if (*str == '+') str++;
+    if (str == end)
+	return -1;/* all spaces and +*/
+    if (*str == '-')
+	return -1;/* only positive numbers */
+    if (!isdigit(*str))
+	return -1;
+    while (isdigit(*str) && str < end) {
+	number = number*10 + (*str - '0');
+    }
+    return number;
+}
+
+uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
+{
+    if (!s || len <= 0)
+	return -1;
+    cli_dbgmsg("bytecode debug: %.*s", s, len);
+    return 0;
+}
+
+uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
+{
+    if (!s || len <= 0)
+	return -1;
+    fwrite(s, 1, len, stderr);
+    return 0;
+}
+
+uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx , uint8_t* s, int32_t len)
+{
+    uint32_t probTable[256];
+    unsigned i;
+    double entropy = 0;
+    double log2 = log(2);
+
+    if (!s || len <= 0)
+	return -1;
+    memset(probTable, 0, sizeof(probTable));
+    for (i=0;i<len;i++) {
+	probTable[s[i]]++;
+    }
+    for (i=0;i<256;i++) {
+	double p;
+	if (!probTable[i])
+	    continue;
+	p = (double)probTable[i] / len;
+	entropy += -p*log(p)/log2;
+    }
+    entropy *= 1<<26;
+    return (uint32_t)entropy;
+}
+
+int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t valuesize)
+{
+    unsigned n = ctx->nmaps+1;
+    struct cli_map *s = cli_realloc(ctx->maps, sizeof(*ctx->maps)*n);
+    if (!s)
+	return -1;
+    ctx->maps = s;
+    ctx->nmaps = n;
+    s = &s[n-1];
+    cli_map_init(s, keysize, valuesize, 16);
+    return n-1;
+}
+
+static struct cli_map *get_hashtab(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || id >= ctx->nmaps || !ctx->maps)
+	return NULL;
+    return &ctx->maps[id];
+}
+
+int32_t cli_bcapi_map_addkey(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    return cli_map_addkey(s, key, keysize);
+}
+
+int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t* value, int32_t valuesize, int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    return cli_map_setvalue(s, value, valuesize);
+}
+
+int32_t cli_bcapi_map_remove(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    return cli_map_removekey(s, key, keysize);
+}
+
+int32_t cli_bcapi_map_find(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    return cli_map_find(s, key, keysize);
+}
+
+int32_t cli_bcapi_map_getvaluesize(struct cli_bc_ctx *ctx, int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    return cli_map_getvalue_size(s);
+}
+
+uint8_t* cli_bcapi_map_getvalue(struct cli_bc_ctx *ctx , int32_t id, int32_t valuesize)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return NULL;
+    if (cli_map_getvalue_size(s) != valuesize)
+	return NULL;
+    return cli_map_getvalue(s);
+}
+
+int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx , int32_t id)
+{
+    struct cli_map *s = get_hashtab(ctx, id);
+    if (!s)
+	return -1;
+    cli_map_delete(s);
+    if (id == ctx->nmaps-1) {
+	ctx->nmaps--;
+	s = cli_realloc(ctx->maps, ctx->nmaps*(sizeof(*s)));
+	if (s)
+	    ctx->maps = s;
+    }
+    return 0;
+}
+
+uint32_t cli_bcapi_engine_functionality_level(struct cli_bc_ctx *ctx)
+{
+    return cl_retflevel();
+}
+
+uint32_t cli_bcapi_engine_dconf_level(struct cli_bc_ctx *ctx)
+{
+    return CL_FLEVEL_DCONF;
+}
+
+uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
+{
+    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    return cctx->options;
+}
+
+uint32_t cli_bcapi_engine_db_options(struct cli_bc_ctx *ctx)
+{
+    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    return cctx->engine->dboptions;
+}
+
+int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
+{
+    if (ftype > CL_TYPE_IGNORED)
+	return -1;
+    ctx->containertype = ftype;
+}
+
+int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
+{
+    fmap_t *map;
+    if (ctx->extracted_file_input == extracted_file)
+	return 0;
+    if (!extracted_file) {
+	cli_dbgmsg("bytecode api: input switched back to main file\n");
+	ctx->fmap = ctx->save_map;
+	ctx->extracted_file_input = 0;
+	return 0;
+    }
+    if (ctx->outfd < 0)
+	return -1;
+    map = fmap(ctx->outfd, 0, 0);
+    if (!map) {
+	cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
+	return -1;
+    }
+    ctx->save_map = ctx->fmap;
+    cli_bytecode_context_setfile(ctx, map);
+    ctx->extracted_file_input = 1;
+    cli_dbgmsg("bytecode api: input switched to extracted file\n");
     return 0;
 }

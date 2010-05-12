@@ -1757,8 +1757,18 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		case 7:
 		    dest = (void*)(intptr_t)cli_apicalls7[api->idx];
 		    break;
+		case 8:
+		    dest = (void*)(intptr_t)cli_apicalls8[api->idx];
+		    break;
+		case 9:
+		    dest = (void*)(intptr_t)cli_apicalls9[api->idx];
+		    break;
 		default:
 		    llvm_unreachable("invalid api type");
+	    }
+	    if (!dest) {
+		std::string reason((Twine("No mapping for builtin api ")+api->name).str());
+		llvm_error_handler(0, reason);
 	    }
 	    EE->addGlobalMapping(F, dest);
 	    EE->getPointerToFunction(F);

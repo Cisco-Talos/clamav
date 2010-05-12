@@ -75,8 +75,6 @@ struct cli_hashtable {
 	STRUCT_PROFILE
 };
 
-
-
 int cli_hashtab_generate_c(const struct cli_hashtable *s,const char* name);
 struct cli_element* cli_hashtab_find(const struct cli_hashtable *s, const char* key, const size_t len);
 int cli_hashtab_init(struct cli_hashtable *s,size_t capacity);
@@ -86,6 +84,34 @@ void cli_hashtab_clear(struct cli_hashtable *s);
 void cli_hashtab_free(struct cli_hashtable *s);
 int cli_hashtab_load(FILE* in, struct cli_hashtable *s);
 int cli_hashtab_store(const struct cli_hashtable *s,FILE* out);
+
+/* a hashtable that stores the values too */
+struct cli_map_value {
+    void *value;
+    int32_t valuesize;
+};
+
+struct cli_map {
+    struct cli_hashtable htab;
+    union {
+	struct cli_map_value *unsized_values;
+	void *sized_values;
+    } u;
+    uint32_t nvalues;
+    int32_t keysize;
+    int32_t valuesize;
+    int32_t last_insert;
+    int32_t last_find;
+};
+int cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
+		  int32_t capacity);
+int  cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize);
+int  cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize);
+int  cli_map_setvalue(struct cli_map *m, const void* value, int32_t valuesize);
+int  cli_map_find(struct cli_map *m, const void *key, int32_t keysize);
+int  cli_map_getvalue_size(struct cli_map *m);
+void*  cli_map_getvalue(struct cli_map *m);
+void cli_map_delete(struct cli_map *m);
 
 /* A set of unique keys. */
 struct cli_hashset {
