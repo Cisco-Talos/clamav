@@ -61,8 +61,9 @@ static short terminate = 0;
 extern int active_children;
 
 static short foreground = 1;
+char updtmpdir[512];
 
-static void daemon_sighandler(int sig) {
+static void sighandler(int sig) {
 
     switch(sig) {
 #ifdef	SIGCHLD
@@ -90,8 +91,10 @@ static void daemon_sighandler(int sig) {
 #endif
 
 	default:
-	    terminate = 1;
-	    break;
+	    if(*updtmpdir)
+		cli_rmdirs(updtmpdir);
+	    logg("Update process interrupted\n");
+	    exit(2);
     }
 
     return;
@@ -195,7 +198,7 @@ static int download(const struct optstruct *opts, const char *datadir, const cha
 
 int main(int argc, char **argv)
 {
-	int ret = 52;
+	int ret = 52, retcl;
 	const char *dbdir, *cfgfile, *arg = NULL, *pidfile = NULL;
 	char *pt;
 	struct optstruct *opts;
@@ -213,6 +216,11 @@ int main(int argc, char **argv)
 
     if(check_flevel())
 	exit(40);
+
+    if((retcl = cl_init(CL_INIT_DEFAULT))) {
+        mprintf("!Can't initialize libclamav: %s\n", cl_strerror(retcl));
+	return 40;
+    }
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
@@ -374,13 +382,23 @@ int main(int argc, char **argv)
 	return 0;
     }
 
+    *updtmpdir = 0;
+
+#ifdef _WIN32
+    signal(SIGINT, sighandler);
+#else
+    memset(&sigact, 0, sizeof(struct sigaction));
+    sigact.sa_handler = sighandler;
+    sigaction(SIGINT, &sigact, NULL);
+#endif
     if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;
 #ifndef	_WIN32
 	    time_t now, wakeup;
 
-	memset(&sigact, 0, sizeof(struct sigaction));
-	sigact.sa_handler = daemon_sighandler;
+	sigaction(SIGTERM, &sigact, NULL);
+	sigaction(SIGHUP, &sigact, NULL);
+	sigaction(SIGCHLD, &sigact, NULL);
 #endif
 
 	checks = optget(opts, "Checks")->numarg;
@@ -421,16 +439,6 @@ int main(int argc, char **argv)
 	active_children = 0;
 
 	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
-
-#ifdef _WIN32
-	signal(SIGINT, daemon_sighandler);
-	terminate = 0;
-#else
-	sigaction(SIGTERM, &sigact, NULL);
-	sigaction(SIGHUP, &sigact, NULL);
-	sigaction(SIGINT, &sigact, NULL);
-        sigaction(SIGCHLD, &sigact, NULL);
-#endif
 
 	while(!terminate) {
 	    ret = download(opts, dbdir, cfgfile);
