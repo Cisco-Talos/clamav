@@ -258,7 +258,7 @@ void cli_dconf_print(struct cli_dconf *dconf)
 		continue;
 	} else if(!strcmp(modules[i].mname, "BYTECODE")) {
 	    if(!bytecode) {
-		cli_dbgmsg("Module BYTECODE %s\n", dconf->phishing ? "On" : "Off");
+		cli_dbgmsg("Module BYTECODE %s\n", dconf->bytecode ? "On" : "Off");
 		bytecode = 1;
 	    }
 	    if(dconf->bytecode)
