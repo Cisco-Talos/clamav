@@ -49,6 +49,8 @@
 #include "target.h"
 #include "clamav.h"
 
+#include "libclamav/others.h"
+
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
