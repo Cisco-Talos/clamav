@@ -19903,7 +19903,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -20960,6 +20960,7 @@ do
     "libclamav.pc") CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
     "platform.h") CONFIG_FILES="$CONFIG_FILES platform.h" ;;
     "docs/man/clamav-milter.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamav-milter.8" ;;
+    "docs/man/clamav-milter.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/clamav-milter.conf.5" ;;
     "docs/man/clamconf.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamconf.1" ;;
     "docs/man/clamd.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.8" ;;
     "docs/man/clamd.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.conf.5" ;;
@@ -23548,6 +23549,7 @@ do
     "libclamav.pc") CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
     "platform.h") CONFIG_FILES="$CONFIG_FILES platform.h" ;;
     "docs/man/clamav-milter.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamav-milter.8" ;;
+    "docs/man/clamav-milter.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/clamav-milter.conf.5" ;;
     "docs/man/clamconf.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamconf.1" ;;
     "docs/man/clamd.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.8" ;;
     "docs/man/clamd.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.conf.5" ;;

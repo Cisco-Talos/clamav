@@ -1,0 +1,235 @@
+.TH "clamav-milter.conf" "5" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+\fBclamav-milter.conf\fR \- Configuration file for clamav-milter
+.SH "DESCRIPTION"
+.LP 
+clamav-milter.conf contains the configuration options for clamav-milter(8).
+.SH "FILE FORMAT"
+The file consists of comments and options with arguments. Each line which starts with a hash (\fB#\fR) symbol is ignored by the parser. Options and arguments are case sensitive and of the form \fBOption Argument\fR. The arguments are of the following types:
+.TP 
+\fBBOOL\fR
+Boolean value (yes/no or true/false or 1/0).
+.TP 
+\fBSTRING\fR
+String without blank characters.
+.TP 
+\fBSIZE\fR
+Size in bytes. You can use 'M' or 'm' modifiers for megabytes and 'K' or 'k' for kilobytes.
+.TP 
+\fBNUMBER\fR
+Unsigned integer.
+.SH "MAIN OPTIONS"
+.TP 
+\fBExample\fR
+If this option is set clamav-milter will not run.
+.TP 
+\fBMilterSocket STRING\fR
+Define the interface through which we communicate with sendmail. This option is mandatory!
+.br
+Possible formats are:
+.br
+[[unix|local\]:\]/path/to/file - to specify a unix domain socket
+.br
+inet:port@[hostname|ip-address] - to specify an ipv4 socket
+.br
+inet6:port@[hostname|ip-address] - to specify an ipv6 socket
+.br 
+Default: unset
+.TP 
+\fBMilterSocketGroup STRING\fR
+Define the group ownership for the (unix) milter socket.
+.br
+Default: disabled (the primary group of the user running clamd)
+.TP 
+\fBMilterSocketMode STRING\fR
+Sets the permissions on the (unix) milter socket to the specified mode.
+.br
+Default: disabled (obey umask)
+.TP 
+\fBFixStaleSocket BOOL\fR
+Remove stale socket after unclean shutdown.
+.br
+Default: yes
+.TP
+\fBUser STRING\fR
+Run as another user (clamav-milter must be started by root for this option to work)
+.br
+Default: unset (don\'t drop privileges)
+.TP 
+\fBAllowSupplementaryGroups BOOL\fR
+Initialize supplementary group access (clamav-milter must be started by root).
+.br 
+Default: no
+.TP 
+\fBReadTimeout NUMBER\fR
+Waiting for data from clamd will timeout after this time (seconds).
+.br 
+Default: 120
+.TP 
+\fBForeground BOOL\fR
+Don\'t fork into background.
+.br 
+Default: no
+.TP 
+\fBChroot STRING\fR
+Chroot to the specified directory. Chrooting is performed just after reading the config file and before dropping privileges.
+.br
+Default: unset (don\'t chroot)
+.TP 
+\fBPidFile STRING\fR
+Save the process identifier of a clamav-milter (main thread) to a specified file.
+.br 
+Default: disabled
+.TP 
+\fBTemporaryDirectory STRING\fR
+Optional path to the global temporary directory.
+.br 
+Default: system specific (usually /tmp or /var/tmp).
+.SH "CLAMD OPTIONS"
+.TP 
+\fBClamdSocket STRING\fR
+Define the clamd socket to connect to for scanning. This option is mandatory! Syntax:
+.br
+ClamdSocket unix:path
+.br
+ClamdSocket tcp:host:port
+.br
+The first syntax specifies a local unix socket (needs an absolute path) e.g.:
+.br
+ClamdSocket unix:/var/run/clamd/clamd.socket
+.br
+The second syntax specifies a tcp local or remote tcp socket: the host can be a hostname or an ip address; the ":port" field is only required for IPv6 addresses, otherwise it defaults to 3310 e.g.:
+.br
+ClamdSocket tcp:192.168.0.1
+.br
+This option can be repeated several times with different sockets or even with the same socket: clamd servers will be selected in a round-robin fashion.
+.br
+Default: no default
+.SH "EXCLUSIONS"
+.TP 
+\fBLocalNet STRING\fR
+Messages originating from these hosts/networks will not be scanned. This option takes a host(name)/mask pair in CIRD notation and can be repeated several times. If "/mask" is omitted, a host is assumed. To specify a locally orignated, non-smtp, email use the keyword "local"
+.br
+Default: unset (scan everything regardless of the origin)
+.TP 
+\fBWhitelist STRING\fR
+This option specifies a file which contains a list of basic POSIX regular expressions. Addresses (sent to or from - see below) matching these regexes  will not be scanned.  Optionally each line can start with the string "From:" or "To:" (note: no whitespace after the colon) indicating if it is,  respectively, the sender or recipient that is to be whitelisted. If the field is missing, "To:" is assumed.  Lines starting with #, : or ! are ignored.
+.br
+Default: unset (no exclusion applied)
+.TP 
+\fBSkipAuthenticated STRING\fR
+Messages from authenticated SMTP users matching this extended POSIX regular expression (egrep-like) will not be scanned.  As an alternative, a file containing a plain (not regex) list of names (one per line) can be specified using the prefix "file:".  e.g. SkipAuthenticated file:/etc/good_guys. Note: this is the AUTH login name!
+.br
+Default: unset (no whitelisting based on SMTP auth)
+.TP 
+\fBSkipAuthenticated SIZE\fR
+Messages larger than this value won\'t be scanned. Make sure this value is lower or equal than StreamMaxLength in clamd.conf
+.br
+Default: 25M
+.SH "ACTIONS"
+The following group of options controls the delievery process under  different circumstances. The following actions are available:
+.br
+- Accept: The message is accepted for delievery
+.br
+- Reject: Immediately refuse delievery (a 5xx error is returned to the peer)
+.br
+- Defer: Return a temporary failure message (4xx) to the peer
+.br
+- Blackhole (not available for OnFail): Like Accept but the message is sent to oblivion
+.br
+- Quarantine (not available for OnFail): Like Accept but message is quarantined instead of being delivered. NOTE: In Sendmail the quarantine queue can be examined via mailq -qQ. For Postfix this causes the message to be placed on hold.
+.TP 
+\fBOnClean STRING\fR
+Action to be performed on clean messages (mostly useful for testing)
+.br
+Default: Accept
+.TP 
+\fBOnInfected STRING\fR
+Action to be performed on infected messages
+.br
+Default: Quarantine
+.TP 
+\fBOnFail STRING\fR
+Action to be performed on error conditions (this includes failure to allocate data structures, no scanners available, network timeouts, unknown scanner replies and the like)
+.br
+Default: Defer
+.TP 
+\fBRejectMsg STRING\fR
+This option allows to set a specific rejection reason for infected messages and it\'s therefore only useful together with "OnInfected Reject". The string "%v", if present, will be replaced with the virus name.
+.br
+Default: MTA specific
+.TP 
+\fBAddHeader STRING\fR
+If this option is set to "Replace" (or "Yes"), an "X-Virus-Scanned" and an "X-Virus-Status" headers will be attached to each processed message, possibly replacing existing headers.  If it is set to Add, the X-Virus headers are added possibly on top of the existing ones. Note that while "Replace" can potentially break DKIM signatures, "Add" may confuse procmail and similar filters.
+.br
+Default: no
+.TP 
+\fBReportHostname STRING\fr
+When AddHeader is in use, this option allows to arbitrary set the reported hostname. This may be desirable in order to avoid leaking internal names. If unset the real machine name is used.
+.br
+Default: disabled
+.TP 
+\fBVirusAction STRING\fr
+Execute a command (possibly searching PATH) when an infected message is found. The following parameters are passed to the invoked program in this order: virus name, queue id, sender, destination, subject, message id, message date. Note #1: this requires MTA macroes to be available (see LogInfected below). Note #2: the process is invoked in the context of clamav-milter. Note #3: clamav-milter will wait for the process to exit. Be quick or fork to avoid unnecessary delays in email delievery.
+.br
+Default: disabled
+.SH "LOGGING OPTIONS"
+.TP 
+\fBLogFile STRING\fR
+Enable logging to selected file.
+.br 
+Default: no
+.TP 
+\fBLogFileUnlock BOOL\fR
+Disable a system lock that protects against running clamd with the same configuration file multiple times.
+.br 
+Default: no
+.TP 
+\fBLogFileMaxSize SIZE\fR
+Limit the size of the log file. The logger will be automatically disabled if the file is greater than SIZE. Value of 0 disables the limit.
+.br 
+Default: 1M
+.TP 
+\fBLogTime BOOL\fR
+Log time for each message.
+.br 
+Default: no
+.TP 
+\fBLogSyslog BOOL\fR
+Use system logger (can work together with LogFile).
+.br 
+Default: no
+.TP 
+\fBLogFacility STRING\fR
+Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
+.br 
+Default: LOG_LOCAL6
+.TP 
+\fBLogVerbose BOOL\fR
+Enable verbose logging.
+.br 
+Default: no
+.TP 
+\fBLogInfected STRING\fR
+Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
+.br 
+This option allows to tune what is logged when a message is infected. Possible values are Off (the default - nothing is logged), Basic (minimal info logged), Full (verbose info logged)
+.br
+Note: For this to work properly in sendmail, make sure the msg_id, mail_addr, rcpt_addr and i macroes are available in eom. In other words add a line like: Milter.macros.eom={msg_id}, {mail_addr}, {rcpt_addr}, i to your .cf file. Alternatively use the macro: define(`confMILTER_MACROS_EOM', `{msg_id}, {mail_addr}, {rcpt_addr}, i')
+.br
+Postfix should be working fine with the default settings.
+.br
+Default: disabled
+.SH "NOTES"
+.LP 
+All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.
+.SH "FILES"
+.LP 
+@CFGDIR@/clamav-milter.conf
+.SH "AUTHOR"
+.LP 
+aCaB <acab@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamav-milter(8), clamd(8), clamd.conf(5)
