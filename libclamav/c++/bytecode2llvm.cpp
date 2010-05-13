@@ -25,6 +25,8 @@
 #include <sys/time.h>
 #endif
 #include "ClamBCModule.h"
+#include "ClamBCDiagnostics.h"
+#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/PostOrderIterator.h"
@@ -73,6 +75,7 @@
 #include <csetjmp>
 #include <new>
 #include <cerrno>
+#include <string>
 
 #include "llvm/Config/config.h"
 #if !ENABLE_THREADS
@@ -2043,4 +2046,30 @@ void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 {
     llvm::errs() << msg << "\n";
 }
+}
+
+void printValue(llvm::Value *V, bool a, bool b) {
+    std::string DisplayName;
+    std::string Type;
+    unsigned Line;
+    std::string File;
+    std::string Dir;
+    if (!getLocationInfo(V, DisplayName, Type, Line, File, Dir)) {
+	errs() << *V << "\n";
+	return;
+    }
+    errs() << "'" << DisplayName << "' (" << File << ":" << Line << ")";
+}
+
+void printLocation(llvm::Instruction *I, bool a, bool b) {
+    if (MDNode *N = I->getMetadata("dbg")) {
+	DILocation Loc(N);
+	errs() << Loc.getFilename() << ":" << Loc.getLineNumber();
+	if (unsigned Col = Loc.getColumnNumber()) {
+  	    errs() << ":" << Col;
+  	}
+  	errs() << ": ";
+  	return;
+    }
+    errs() << *I << ":\n";
 }

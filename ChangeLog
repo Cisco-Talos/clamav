@@ -1,3 +1,7 @@
+Thu May 13 12:41:24 EEST 2010 (edwin)
+------------------------------------
+ * libclamav/c++: Relax bounds checks. Was rejecting correct code.
+
 Wed May 12 19:10:39 CEST 2010 (acab)
 ------------------------------------
  * docs/man: add clamav.milter.conf.5
