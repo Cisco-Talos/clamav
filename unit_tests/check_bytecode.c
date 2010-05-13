@@ -53,6 +53,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     struct cli_all_bc bcs;
     uint64_t v;
     struct cl_engine *engine;
+    int fdin = -1;
 
     memset(&cctx, 0, sizeof(cctx));
     cctx.engine = engine = cl_engine_new();
@@ -95,7 +96,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 
     ctx->ctx = &cctx;
     if (infile) {
-	int fdin = open(infile, O_RDONLY);
+	fdin = open(infile, O_RDONLY);
 	if (fdin < 0 && errno == ENOENT)
 	    fdin = open_testfile(infile);
 	fail_unless(fdin >= 0, "failed to open infile");
@@ -129,6 +130,8 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cli_bytecode_done(&bcs);
     free(cctx.fmap);
     cl_engine_free(engine);
+    if (fdin >= 0)
+	close(fdin);
 }
 
 START_TEST (test_retmagic_jit)

@@ -351,8 +351,9 @@ const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char
 void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len)
 {
     struct cli_element *el = cli_hashtab_find(s, key, len);
-    if (!el)
+    if (!el || el->key == DELETED_KEY)
 	return;
+    free(el->key);
     el->key = DELETED_KEY;
 }
 
@@ -717,6 +718,9 @@ void cli_map_delete(struct cli_map *m)
 	unsigned i;
 	for (i=0;i<m->nvalues;i++)
 	    free(m->u.unsized_values[i].value);
+	free(m->u.unsized_values);
+    } else {
+	free(m->u.sized_values);
     }
     memset(m, 0, sizeof(*m));
 }
