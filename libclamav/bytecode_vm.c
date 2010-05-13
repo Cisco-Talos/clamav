@@ -858,6 +858,29 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			WRITE32(inst->dest, res32);
 			break;
 		    }
+		    case 8: {
+			int32_t arg2, arg4;
+			void *arg1, *arg3;
+			int32_t resp;
+			READ32(arg2, inst->u.ops.ops[1]);
+			READP(arg1, inst->u.ops.ops[0], arg2);
+			READ32(arg4, inst->u.ops.ops[3]);
+			READP(arg3, inst->u.ops.ops[0], arg4);
+			resp = cli_apicalls8[api->idx](ctx, arg1, arg2, arg3, arg4);
+			WRITE32(inst->dest, resp);
+			break;
+		    }
+		    case 9: {
+			int32_t arg2, arg3;
+			void *arg1;
+			int32_t resp;
+			READ32(arg2, inst->u.ops.ops[1]);
+			READP(arg1, inst->u.ops.ops[0], arg2);
+			READ32(arg3, inst->u.ops.ops[3]);
+			resp = cli_apicalls9[api->idx](ctx, arg1, arg2, arg3);
+			WRITE32(inst->dest, resp);
+			break;
+		    };
 		    default:
 			cli_warnmsg("bytecode: type %u apicalls not yet implemented!\n", api->kind);
 			stop = CL_EBYTECODE;
