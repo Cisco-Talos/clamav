@@ -1,3 +1,7 @@
+Thu May 13 12:41:24 EEST 2010 (edwin)
+------------------------------------
+ * libclamav/c++: Relax bounds checks. Was rejecting correct code.
+
 Tue May 11 21:33:49 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/filtering.c: fix handling of alternates and negated alternates (bb #2004)
