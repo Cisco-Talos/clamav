@@ -1,3 +1,7 @@
+Thu May 13 23:35:55 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode*, unit_tests: add new unit tests for bytecode API and fix bugs.
+
 Thu May 13 12:41:24 EEST 2010 (edwin)
 ------------------------------------
  * libclamav/c++: Relax bounds checks. Was rejecting correct code.
