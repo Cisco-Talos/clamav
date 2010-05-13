@@ -1279,8 +1279,11 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			break;
 		}
 	}
-	if (inst.opcode == OP_BC_STORE)
-	    inst.type = get_optype(bcfunc, inst.u.binop[0]);
+	if (inst.opcode == OP_BC_STORE) {
+	    int16_t t = get_optype(bcfunc, inst.u.binop[0]);
+	    if (t)
+		inst.type = t;
+	}
 	if (inst.opcode == OP_BC_COPY)
 	    inst.type = get_optype(bcfunc, inst.u.binop[1]);
 	if (!ok) {

@@ -1179,6 +1179,8 @@ public:
 			    Value *Dest = Values[inst->u.binop[1]];
 			    const PointerType *PTy = cast<PointerType>(Dest->getType());
 			    Op0 = convertOperand(func, PTy->getElementType(), inst->u.binop[0]);
+			    PTy = PointerType::getUnqual(Op0->getType());
+			    Dest = Builder.CreateBitCast(Dest, PTy);
 			    Builder.CreateStore(Op0, Dest);
 			    break;
 			}
