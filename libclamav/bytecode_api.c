@@ -542,7 +542,7 @@ int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t
 {
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
-	return 0;
+	return -1;
     return cli_hashset_contains(s, key);
 }
 
@@ -1060,7 +1060,7 @@ int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t value
 {
     unsigned n = ctx->nmaps+1;
     struct cli_map *s = cli_realloc(ctx->maps, sizeof(*ctx->maps)*n);
-    if (!s)
+    if (!s || !keysize)
 	return -1;
     ctx->maps = s;
     ctx->nmaps = n;

@@ -707,7 +707,7 @@ void* cli_map_getvalue(struct cli_map *m)
 	return NULL;
     if (m->valuesize)
 	return (char*)m->u.sized_values + m->last_find*m->valuesize;
-    return &m->u.unsized_values[m->valuesize];
+    return m->u.unsized_values[m->last_find].value;
 }
 
 void cli_map_delete(struct cli_map *m)
