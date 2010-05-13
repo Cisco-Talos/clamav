@@ -152,6 +152,7 @@ uint32_t debug_print_str(const uint8_t *str, uint32_t len);
 
 /**
  * Prints a number as a debug message.
+ * This is like \p debug_print_str_nonl!
  *
  * @param[in] a number to print
  * @return 0
@@ -533,9 +534,9 @@ int32_t map_new(int32_t keysize, int32_t valuesize);
   * @param id id of table
   * @param key key
   * @param ksize size of \p key
-  * @return 0 - if key didn't exist before
-            1 - if key existed
-            -1 - if ksize doesn't match keysize specified at table creation
+  * @return 0 - if key existed before
+            1 - if key didn't exist before
+           <0 - if ksize doesn't match keysize specified at table creation
   */
 int32_t map_addkey(const uint8_t *key, int32_t ksize, int32_t id);
 
@@ -545,7 +546,7 @@ int32_t map_addkey(const uint8_t *key, int32_t ksize, int32_t id);
   * @param value value
   * @param vsize size of \p value
   * @return 0 - if update was successful
-           -1 - if there is no last key
+           <0 - if there is no last key
   */
 int32_t map_setvalue(const uint8_t *value, int32_t vsize, int32_t id);
 
@@ -556,7 +557,7 @@ int32_t map_setvalue(const uint8_t *value, int32_t vsize, int32_t id);
   * @param ksize size of key
   * @return 0 on success, key was present
             1 if key was not present
-           -1 if ksize doesn't match keysize specified at table creation
+           <0 if ksize doesn't match keysize specified at table creation
   */
 int32_t map_remove(const uint8_t* key, int32_t ksize, int32_t id);
 
@@ -570,7 +571,7 @@ int32_t map_remove(const uint8_t* key, int32_t ksize, int32_t id);
   * @param ksize size of key
   * @return 0 - if not found
             1 - if found
-           -1 - if ksize doesn't match the size specified at table creation
+           <0 - if ksize doesn't match the size specified at table creation
   */
 int32_t map_find(const uint8_t* key, int32_t ksize, int32_t id);
 
@@ -602,6 +603,9 @@ int32_t map_done(int32_t id);
  * specified position.
  * @param[in] data the sequence of bytes to look for
  * @param len length of \p data, cannot be more than 1024
+ * @param maxpos maximum position to look for a match, 
+ * note that this is 1 byte after the end of last possible match:
+ * match_pos + \p len < \p maxpos
  * @return offset in the current file if match is found, -1 otherwise */
 int32_t file_find_limit(const uint8_t *data, uint32_t len, int32_t maxpos);
 
@@ -637,6 +641,8 @@ int32_t extract_set_container(uint32_t container);
 /**
   * Toggles the read/seek API to read from the currently extracted file, and
   * back.
+  * You must call seek after switching inputs to position the cursor to a valid
+  * position.
   * @param extracted_file 1 - switch to reading from extracted file, 
                           0 - switch back to original input
   * @return -1 on error (if no extracted file exists)
