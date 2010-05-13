@@ -30,6 +30,7 @@
 #include <string.h>
 #include <check.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/bytecode.h"
@@ -51,8 +52,11 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     struct cli_bc_ctx *ctx;
     struct cli_all_bc bcs;
     uint64_t v;
+    struct cl_engine *engine;
 
     memset(&cctx, 0, sizeof(cctx));
+    cctx.engine = engine = cl_engine_new();
+    fail_unless(!!cctx.engine, "cannot create engine");
 
     fail_unless(fd >= 0, "retmagic open failed");
     f = fdopen(fd, "r");
@@ -85,12 +89,14 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 10000;
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
+    ctx->ctx = &cctx;
     if (infile) {
 	int fdin = open(infile, O_RDONLY);
+	if (fdin < 0 && errno == ENOENT)
+	    fdin = open_testfile(infile);
 	fail_unless(fdin >= 0, "failed to open infile");
 	map = fmap(fdin, 0, 0);
 	fail_unless(!!map, "unable to fmap infile");
-	ctx->ctx = &cctx;
 	if (pedata)
 	    ctx->hooks.pedata = pedata;
 	ctx->sections = sections;
@@ -117,6 +123,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 	funmap(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
+    cl_engine_free(engine);
 }
 
 START_TEST (test_retmagic_jit)
@@ -301,7 +308,147 @@ END_TEST
 START_TEST (test_inflate_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/inflate.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_api_extract_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/api_extract_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_api_files_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/api_files_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls2_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/apicalls_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_arith_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/arith_7.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_debug_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/debug_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_inf_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_lsig_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/lsig_7.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_retmagic_7_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_testadt_jit)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/testadt_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_api_extract_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/api_extract_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_api_files_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/api_files_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls2_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_apicalls_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/apicalls_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_arith_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/arith_7.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_debug_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/debug_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_inf_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_lsig_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/lsig_7.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_retmagic_7_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+}
+END_TEST
+
+START_TEST (test_testadt_int)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/testadt_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
@@ -323,6 +470,7 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_bswap_jit);
     tcase_add_test(tc_cli_arith, test_inflate_jit);
     tcase_add_test(tc_cli_arith, test_retmagic_jit);
+
     tcase_add_test(tc_cli_arith, test_arith_int);
     tcase_add_test(tc_cli_arith, test_apicalls_int);
     tcase_add_test(tc_cli_arith, test_apicalls2_int);
@@ -334,5 +482,30 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_bswap_int);
     tcase_add_test(tc_cli_arith, test_inflate_int);
     tcase_add_test(tc_cli_arith, test_retmagic_int);
+
+    tcase_add_test(tc_cli_arith, test_api_extract_jit);
+    tcase_add_test(tc_cli_arith, test_api_files_jit);
+    tcase_add_test(tc_cli_arith, test_apicalls2_7_jit);
+    tcase_add_test(tc_cli_arith, test_apicalls_7_jit);
+    tcase_add_test(tc_cli_arith, test_apicalls_7_jit);
+    tcase_add_test(tc_cli_arith, test_arith_7_jit);
+    tcase_add_test(tc_cli_arith, test_debug_jit);
+    tcase_add_test(tc_cli_arith, test_inf_7_jit);
+    tcase_add_test(tc_cli_arith, test_lsig_7_jit);
+    tcase_add_test(tc_cli_arith, test_retmagic_7_jit);
+    tcase_add_test(tc_cli_arith, test_testadt_jit);
+
+    tcase_add_test(tc_cli_arith, test_api_extract_int);
+    tcase_add_test(tc_cli_arith, test_api_files_int);
+    tcase_add_test(tc_cli_arith, test_apicalls2_7_int);
+    tcase_add_test(tc_cli_arith, test_apicalls_7_int);
+    tcase_add_test(tc_cli_arith, test_apicalls_7_int);
+    tcase_add_test(tc_cli_arith, test_arith_7_int);
+    tcase_add_test(tc_cli_arith, test_debug_int);
+    tcase_add_test(tc_cli_arith, test_inf_7_int);
+    tcase_add_test(tc_cli_arith, test_lsig_7_int);
+    tcase_add_test(tc_cli_arith, test_retmagic_int);
+    tcase_add_test(tc_cli_arith, test_testadt_int);
+
     return s;
 }
