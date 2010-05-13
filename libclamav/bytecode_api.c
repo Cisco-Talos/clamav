@@ -1064,8 +1064,11 @@ uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx , uint8_t* s, int32_t l
 int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t valuesize)
 {
     unsigned n = ctx->nmaps+1;
-    struct cli_map *s = cli_realloc(ctx->maps, sizeof(*ctx->maps)*n);
-    if (!s || !keysize)
+    struct cli_map *s;
+    if (!keysize)
+	return -1;
+    s = cli_realloc(ctx->maps, sizeof(*ctx->maps)*n);
+    if (!s)
 	return -1;
     ctx->maps = s;
     ctx->nmaps = n;
