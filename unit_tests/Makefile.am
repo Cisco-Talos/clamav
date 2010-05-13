@@ -25,7 +25,7 @@ TESTS_ENVIRONMENT += export unrar_disabled=1;
 endif
 TESTS = $(programs) $(scripts)
 check_PROGRAMS = $(programs) check_clamd
-check_SCRIPTS = $(scripts) apitestfile
+check_SCRIPTS = $(scripts)
 
 if HAVE_LIBCHECK
 check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
