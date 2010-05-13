@@ -57,6 +57,10 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     memset(&cctx, 0, sizeof(cctx));
     cctx.engine = engine = cl_engine_new();
     fail_unless(!!cctx.engine, "cannot create engine");
+    rc = cl_engine_compile(engine);
+    fail_unless(!rc, "cannot compile engine");
+    cctx.fmap = cli_calloc(sizeof(fmap_t*), engine->maxreclevel + 2);
+    fail_unless(!!cctx.fmap, "cannot allocate fmap");
 
     fail_unless(fd >= 0, "retmagic open failed");
     f = fdopen(fd, "r");
@@ -123,6 +127,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 	funmap(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
+    free(cctx.fmap);
     cl_engine_free(engine);
 }
 

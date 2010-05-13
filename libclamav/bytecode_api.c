@@ -560,9 +560,14 @@ int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
     cli_hashset_destroy(s);
     if (id == ctx->nhashsets-1) {
 	ctx->nhashsets--;
-	s = cli_realloc(ctx->hashsets, ctx->nhashsets*sizeof(*s));
-	if (s)
-	    ctx->hashsets = s;
+	if (!ctx->nhashsets) {
+	    free(ctx->hashsets);
+	    ctx->hashsets = NULL;
+	} else {
+	    s = cli_realloc(ctx->hashsets, ctx->nhashsets*sizeof(*s));
+	    if (s)
+		ctx->hashsets = s;
+	}
     }
     return 0;
 }
@@ -1134,9 +1139,14 @@ int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx , int32_t id)
     cli_map_delete(s);
     if (id == ctx->nmaps-1) {
 	ctx->nmaps--;
-	s = cli_realloc(ctx->maps, ctx->nmaps*(sizeof(*s)));
-	if (s)
-	    ctx->maps = s;
+	if (!ctx->nmaps) {
+	    free(ctx->maps);
+	    ctx->maps = NULL;
+	} else {
+	    s = cli_realloc(ctx->maps, ctx->nmaps*(sizeof(*s)));
+	    if (s)
+		ctx->maps = s;
+	}
     }
     return 0;
 }
