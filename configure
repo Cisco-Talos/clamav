@@ -16513,10 +16513,6 @@ if test "$enable_unsignedbytecode" = "yes"; then
 
 $as_echo "#define CL_BCUNSIGNED 1" >>confdefs.h
 
-else
-
-$as_echo "#define CL_BCUNSIGNED 1" >>confdefs.h
-
 fi
 
 # Check whether --enable-no-cache was given.
