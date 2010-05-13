@@ -116,8 +116,9 @@ uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, u
 
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
 {
-    cli_dbgmsg("bytecode debug: %u\n", a);
-    return 0;
+    if (!cli_debug_flag)
+	return 0;
+    return fprintf(stderr, "%d", a);
 }
 
 /*TODO: compiler should make sure that only constants are passed here, and not
@@ -1026,6 +1027,8 @@ uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* 
 {
     if (!s || len <= 0)
 	return -1;
+    if (!cli_debug_flag)
+	return 0;
     return fwrite(s, 1, len, stderr);
 }
 

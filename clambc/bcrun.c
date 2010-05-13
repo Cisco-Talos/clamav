@@ -33,6 +33,7 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 #include "libclamav/dconf.h"
+#include "libclamav/others.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -123,7 +124,6 @@ static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
-static uint8_t cli_debug_flag=0;
 static void print_src(const char *file)
 {
   char buf[4096];
@@ -323,7 +323,11 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else {
+	cli_ctx cctx;
+	struct cl_engine engine;
 	fmap_t *map = NULL;
+	memset(&cctx, 0, sizeof(cctx));
+	memset(&engine, 0, sizeof(engine));
 	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
@@ -338,6 +342,8 @@ int main(int argc, char *argv[])
 	    fprintf(stderr,"Out of memory\n");
 	    exit(3);
 	}
+	ctx->ctx = &cctx;
+	cctx.engine = &engine;
 	memset(&dbg_state, 0, sizeof(dbg_state));
 	dbg_state.file = "<libclamav>";
 	dbg_state.line = 0;
