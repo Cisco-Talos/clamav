@@ -1,3 +1,7 @@
+Thu May 13 23:40:11 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm: Update to LLVM 2.7 release.
+
 Thu May 13 23:35:55 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode*, unit_tests: add new unit tests for bytecode API and fix bugs.
