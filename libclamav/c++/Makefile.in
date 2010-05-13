@@ -89,9 +89,9 @@ TESTS = llvmunittest_ADT$(EXEEXT) llvmunittest_Support$(EXEEXT) \
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamavcxx-config.h.in \
-	$(top_srcdir)/configure COPYING config/config.guess \
-	config/config.sub config/depcomp config/install-sh \
-	config/ltmain.sh config/missing
+	$(top_srcdir)/configure config/config.guess config/config.sub \
+	config/depcomp config/install-sh config/ltmain.sh \
+	config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/check_gnu_make.m4 \
 	$(top_srcdir)/m4/cxx_flag_check.m4 $(top_srcdir)/m4/libtool.m4 \
