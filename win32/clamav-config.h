@@ -394,6 +394,9 @@
 /* Define to 1 if you have the <termios.h> header file. */
 /* #undef HAVE_TERMIOS_H */
 
+/* Define this if uname(2) is POSIX */
+/* #undef HAVE_UNAME_SYSCALL */
+
 /* Define to 1 if you have the <unistd.h> header file. */
 /* #undef HAVE_UNISTD_H */
 
@@ -402,6 +405,9 @@
 
 /* This value is set to 1 to indicate that the system argz facility works */
 /* #undef HAVE_WORKING_ARGZ */
+
+/* For internal use only - DO NOT DEFINE */
+/* #undef HAVE__INTERNAL__SHA_COLLECT */
 
 /* "Full library version number" */
 #define LIBCLAMAV_FULLVER "6.0.4"
@@ -460,7 +466,7 @@
 #define PACKAGE_URL "http://www.clamav.net/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.96"
+#define PACKAGE_VERSION "0.96.1"
 
 /* scan buffer size */
 #define SCANBUFF 131072
@@ -490,13 +496,13 @@
 /* #undef SUPPORT_IPv6 */
 
 /* enable memory pools */
-/* #undef USE_MPOOL */
+#define USE_MPOOL 1
 
 /* use syslog */
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "0.96"
+#define VERSION "0.96.1"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
