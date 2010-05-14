@@ -351,7 +351,7 @@ END_TEST
 START_TEST (test_arith_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith_7.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
@@ -421,7 +421,7 @@ END_TEST
 START_TEST (test_arith_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith_7.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
 }
 END_TEST
 
