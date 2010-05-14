@@ -446,7 +446,7 @@ int32_t ipow(int32_t a, int32_t b, int32_t c);
   * @param c integer
   * @return c*exp(a/b)
   */
-int32_t iexp(int32_t a, int32_t b, int32_t c);
+uint32_t iexp(int32_t a, int32_t b, int32_t c);
 
 /**
   * Returns c*sin(a/b).

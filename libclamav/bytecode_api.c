@@ -939,23 +939,23 @@ int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 	return 0x7fffffff;
     /* log(a/b) is -32..32, so 2^26*32=2^31 covers the entire range of int32 */
     f = (1<<26)*log((double)a / b) / log(2);
-    return (int32_t)f;
+    return (int32_t)round(f);
 }
 
 int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
     if (!a && b < 0)
 	return 0x7fffffff;
-    return (int32_t)c*pow(a,b);
+    return (int32_t)round(c*pow(a,b));
 }
 
-int32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
+uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
     double f;
     if (!b)
 	return 0x7fffffff;
     f= c*exp((double)a/b);
-    return (int32_t)f;
+    return (uint32_t)round(f);
 }
 
 int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
@@ -964,7 +964,7 @@ int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     if (!b)
 	return 0x7fffffff;
     f = c*sin((double)a/b);
-    return (int32_t)f;
+    return (int32_t)round(f);
 }
 
 int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
@@ -973,7 +973,7 @@ int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     if (!b)
 	return 0x7fffffff;
     f = c*cos((double)a/b);
-    return (int32_t)f;
+    return (int32_t)round(f);
 }
 
 int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,

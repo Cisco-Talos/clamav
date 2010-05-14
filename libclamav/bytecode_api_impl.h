@@ -77,7 +77,7 @@ int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx , uint32_t, uint32_t);
 int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_t);
-int32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_t);
+uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_t);
 int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_t);
 int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx , int32_t, int32_t, int32_t);
 int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx , const uint8_t*, int32_t, const uint8_t*, int32_t);
