@@ -1,3 +1,7 @@
+Fri May 14 17:16:19 EEST 2010 (edwin)
+-------------------------------------
+ * unit_tests: add bytecode.cvd load test
+
 Fri May 14 11:28:52 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: handle global gep parameter correctly (bb #1955)

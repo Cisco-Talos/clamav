@@ -460,6 +460,60 @@ START_TEST (test_testadt_int)
 }
 END_TEST
 
+
+static void runload(const char *dbname, struct cl_engine* engine, unsigned signoexp)
+{
+    const char * srcdir = getenv("srcdir");
+    char *str;
+    unsigned signo = 0;
+    int rc;
+    if(!srcdir) {
+	/* when run from automake srcdir is set, but if run manually then not */
+	srcdir = SRCDIR;
+    }
+    str = cli_malloc(strlen(dbname)+strlen(srcdir)+2);
+    fail_unless(!!str, "cli_malloc");
+    sprintf(str, "%s/%s", srcdir, dbname);
+
+    rc = cl_load(str, engine, &signo, CL_DB_STDOPT);
+    fail_unless_fmt(rc == CL_SUCCESS, "failed to load %s: %s\n",
+		    dbname, cl_strerror(rc));
+    fail_unless_fmt(signo == signoexp, "different number of signatures loaded, expected %u, got %u\n",
+		    signoexp, signo);
+    free(str);
+
+    rc = cl_engine_compile(engine);
+    fail_unless_fmt(rc == CL_SUCCESS, "failed to load %s: %s\n",
+		    dbname, cl_strerror(rc));
+}
+
+START_TEST (test_load_bytecode_jit)
+{
+    struct cl_engine *engine;
+    cl_init(CL_INIT_DEFAULT);
+    engine = cl_engine_new();
+    fail_unless(!!engine, "failed to create engine\n");
+
+    runload("input/bytecode.cvd", engine, 5);
+
+    cl_engine_free(engine);
+}
+END_TEST
+
+START_TEST (test_load_bytecode_int)
+{
+    struct cl_engine *engine;
+    cl_init(CL_INIT_DEFAULT);
+    engine = cl_engine_new();
+    engine->dconf->bytecode = BYTECODE_INTERPRETER;
+    fail_unless(!!engine, "failed to create engine\n");
+
+    runload("input/bytecode.cvd", engine, 5);
+
+    cl_engine_free(engine);
+}
+END_TEST
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -514,6 +568,9 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_lsig_7_int);
     tcase_add_test(tc_cli_arith, test_retmagic_int);
     tcase_add_test(tc_cli_arith, test_testadt_int);
+
+    tcase_add_test(tc_cli_arith, test_load_bytecode_jit);
+    tcase_add_test(tc_cli_arith, test_load_bytecode_int);
 
     return s;
 }
