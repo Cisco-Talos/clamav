@@ -735,16 +735,16 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 				/* not enough space in output buffer */
 				break;
 			}
-			cli_dbgmsg(MODULE_NAME "iconv error:%s\n", cli_strerror(errno, err, sizeof(err)));
+			/*cli_dbgmsg(MODULE_NAME "iconv error:%s\n", cli_strerror(errno, err, sizeof(err)));*/
 		} else if(outleft == outleft_last) {
 			cli_dbgmsg(MODULE_NAME "iconv stall (no output)\n");
 		} else {
 			/* everything ok */
 			continue;
 		}
-		cli_dbgmsg(MODULE_NAME "resuming (inleft:%lu, outleft:%lu, inpos:%ld, %ld)\n",
+		/*cli_dbgmsg(MODULE_NAME "resuming (inleft:%lu, outleft:%lu, inpos:%ld, %ld)\n",
 					inleft, outleft, input - (char*)in_m_area->buffer,
-					out - (char*)out_m_area->buffer);
+					out - (char*)out_m_area->buffer);*/
 		/* output raw byte, and resume at next byte */
 		if(outleft < 2) break;
 		outleft -= 2;
