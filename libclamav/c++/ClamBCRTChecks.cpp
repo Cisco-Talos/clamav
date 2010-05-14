@@ -546,24 +546,38 @@ namespace {
       LHS = SE->getNoopOrZeroExtend(LHS, LTy);
       RHS = SE->getNoopOrZeroExtend(RHS, LTy);
     }
-    bool checkCondition(CallInst *CI, Instruction *I)
+    bool checkCond(Instruction *ICI, Instruction *I, bool equal)
+    {
+      for (Value::use_iterator JU=ICI->use_begin(),JUE=ICI->use_end();
+           JU != JUE; ++JU) {
+        if (BranchInst *BI = dyn_cast<BranchInst>(JU)) {
+          if (!BI->isConditional())
+            continue;
+          BasicBlock *S = BI->getSuccessor(equal);
+          if (DT->dominates(S, I->getParent()))
+            return true;
+        }
+        if (BinaryOperator *BI = dyn_cast<BinaryOperator>(JU)) {
+          if (BI->getOpcode() == Instruction::Or &&
+              checkCond(BI, I, equal))
+            return true;
+          if (BI->getOpcode() == Instruction::And &&
+              checkCond(BI, I, !equal))
+            return true;
+        }
+      }
+      return false;
+    }
+
+    bool checkCondition(Instruction *CI, Instruction *I)
     {
       for (Value::use_iterator U=CI->use_begin(),UE=CI->use_end();
            U != UE; ++U) {
         if (ICmpInst *ICI = dyn_cast<ICmpInst>(U)) {
           if (ICI->getOperand(0)->stripPointerCasts() == CI &&
               isa<ConstantPointerNull>(ICI->getOperand(1))) {
-            for (Value::use_iterator JU=ICI->use_begin(),JUE=ICI->use_end();
-                 JU != JUE; ++JU) {
-              if (BranchInst *BI = dyn_cast<BranchInst>(JU)) {
-                if (!BI->isConditional())
-                  continue;
-                BasicBlock *S = BI->getSuccessor(ICI->getPredicate() ==
-                                                 ICmpInst::ICMP_EQ);
-                if (DT->dominates(S, I->getParent()))
-                  return true;
-              }
-            }
+            if (checkCond(ICI, I, ICI->getPredicate() == ICmpInst::ICMP_EQ))
+              return true;
           }
         }
       }
