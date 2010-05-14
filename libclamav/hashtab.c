@@ -353,7 +353,7 @@ void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len
     struct cli_element *el = cli_hashtab_find(s, key, len);
     if (!el || el->key == DELETED_KEY)
 	return;
-    free(el->key);
+    free((void*)el->key);
     el->key = DELETED_KEY;
 }
 

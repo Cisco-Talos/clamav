@@ -124,6 +124,7 @@ static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
+static uint8_t debug_flag = 0;
 static void print_src(const char *file)
 {
   char buf[4096];
@@ -143,7 +144,7 @@ static void print_src(const char *file)
       }
     }
   } while (!found && (nread == sizeof(buf)));
-  if (cli_debug_flag)
+  if (debug_flag)
       printf("[clambc] Source code:");
   do {
     for (;i+1<nread;i++) {
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
 
     if (optget(opts,"debug")->enabled) {
 	cl_debug();
-	cli_debug_flag=1;
+	debug_flag=1;
     }
     rc = cl_init(CL_INIT_DEFAULT);
     if (rc != CL_SUCCESS) {
@@ -316,7 +317,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr,"bytecode load skipped\n");
 	exit(0);
     }
-    if (cli_debug_flag)
+    if (debug_flag)
 	printf("[clambc] Bytecode loaded\n");
     if (optget(opts, "info")->enabled) {
 	cli_bytecode_describe(bc);
@@ -334,7 +335,7 @@ int main(int argc, char *argv[])
 	    optfree(opts);
 	    exit(4);
 	}
-	if (cli_debug_flag)
+	if (debug_flag)
 	    printf("[clambc] Bytecode prepared\n");
 
 	ctx = cli_bytecode_context_alloc();
@@ -360,7 +361,7 @@ int main(int argc, char *argv[])
 	    funcid = atoi(opts->filename[1]);
 	}
 	cli_bytecode_context_setfuncid(ctx, bc, funcid);
-	if (cli_debug_flag)
+	if (debug_flag)
 	    printf("[clambc] Running bytecode function :%u\n", funcid);
 
 	if (opts->filename[1]) {
@@ -401,10 +402,10 @@ int main(int argc, char *argv[])
 	    fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
 	} else {
 	    uint64_t v;
-	    if (cli_debug_flag)
+	    if (debug_flag)
 		printf("[clambc] Bytecode run finished\n");
 	    v = cli_bytecode_context_getresult_int(ctx);
-	    if (cli_debug_flag)
+	    if (debug_flag)
 		printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
 	}
 	cli_bytecode_context_destroy(ctx);
@@ -417,7 +418,7 @@ int main(int argc, char *argv[])
     optfree(opts);
     if (fd != -1)
 	close(fd);
-    if (cli_debug_flag)
+    if (debug_flag)
 	printf("[clambc] Exiting\n");
     return 0;
 }
