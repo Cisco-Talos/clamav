@@ -325,10 +325,20 @@ int main(int argc, char *argv[])
         print_src(opts->filename[0]);
     } else {
 	cli_ctx cctx;
-	struct cl_engine engine;
+	struct cl_engine *engine = cl_engine_new();
 	fmap_t *map = NULL;
 	memset(&cctx, 0, sizeof(cctx));
-	memset(&engine, 0, sizeof(engine));
+	if (!engine) {
+	    fprintf(stderr,"Unable to create engine\n");
+	    optfree(opts);
+	    exit(3);
+	}
+	rc = cl_engine_compile(engine);
+	if (rc) {
+	    fprintf(stderr,"Unable to compile engine: %s\n", cl_strerror(rc));
+	    optfree(opts);
+	    exit(4);
+	}
 	rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
 	if (rc != CL_SUCCESS) {
 	    fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
@@ -344,7 +354,12 @@ int main(int argc, char *argv[])
 	    exit(3);
 	}
 	ctx->ctx = &cctx;
-	cctx.engine = &engine;
+	cctx.engine = engine;
+	cctx.fmap = cli_calloc(sizeof(fmap_t*), engine->maxreclevel+2);
+	if (!cctx.fmap) {
+	    fprintf(stderr,"Out of memory\n");
+	    exit(3);
+	}
 	memset(&dbg_state, 0, sizeof(dbg_state));
 	dbg_state.file = "<libclamav>";
 	dbg_state.line = 0;
@@ -411,6 +426,8 @@ int main(int argc, char *argv[])
 	cli_bytecode_context_destroy(ctx);
 	if (map)
 	    funmap(map);
+	cl_engine_free(engine);
+	free(cctx.fmap);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);
