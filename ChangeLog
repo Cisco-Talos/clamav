@@ -1,3 +1,7 @@
+Fri May 14 11:28:52 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: handle global gep parameter correctly (bb #1955)
+
 Thu May 13 23:40:11 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/llvm: Update to LLVM 2.7 release.
