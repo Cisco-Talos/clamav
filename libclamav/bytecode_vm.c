@@ -1149,7 +1149,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		break;
 	    }
 	    DEFINE_OP(OP_BC_BSWAP64) {
-		int32_t arg1;
+		int64_t arg1;
 		READ64(arg1, inst->u.unaryop);
 		WRITE64(inst->dest, cbswap64(arg1));
 		break;
