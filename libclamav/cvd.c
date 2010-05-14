@@ -579,17 +579,21 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     if(!access(dupname, R_OK) && (dupfs = fopen(dupname, "rb"))) {
 	if((ret = cli_cvdverify(dupfs, &dupcvd, !cld))) {
 	    fclose(dupfs);
+	    free(dupname);
 	    return ret;
 	}
 	fclose(dupfs);
 	if(dupcvd.version > cvd.version) {
 	    cli_warnmsg("Detected duplicate databases %s and %s. The %s database is older and will not be loaded, you should manually remove it from the database directory.\n", filename, dupname, filename);
+	    free(dupname);
 	    return CL_SUCCESS;
 	} else if(dupcvd.version == cvd.version && !cld) {
 	    cli_warnmsg("Detected duplicate databases %s and %s, please manually remove one of them\n", filename, dupname);
+	    free(dupname);
 	    return CL_SUCCESS;
 	}
     }
+    free(dupname);
 
     if(strstr(filename, "daily.")) {
 	time(&s_time);
