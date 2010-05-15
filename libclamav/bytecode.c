@@ -127,6 +127,7 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->operands = NULL;
 
     if (ctx->outfd) {
+	cli_ctx *cctx = ctx->ctx;
 	cli_bcapi_extract_new(ctx, -1);
 	if (ctx->outfd)
 	    close(ctx->outfd);
