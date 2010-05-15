@@ -29,6 +29,12 @@ extern "C"
 typedef unsigned short mode_t;
 #endif
 
+#ifdef _WIN64
+#define SIZEOF_VOID_P 8
+#else
+#define SIZEOF_VOID_P 4
+#endif
+
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
