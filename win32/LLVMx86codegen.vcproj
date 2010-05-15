@@ -1,33 +1,42 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
-	Keyword="Win32Proj"
+	ProjectType="Visual C++"
+	Version="9.00"
 	Name="LLVMx86codegen"
 	ProjectGUID="{28710655-9C06-4803-8752-55A99115773F}"
-	ProjectType="Visual C++"
 	RootNamespace="LLVMx86codegen"
+	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
-	Version="9,00"
 	>
 	<Platforms>
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
+		<DefaultToolFile
+			FileName="masm.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			CharacterSet="1"
-			ConfigurationType="4"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM64"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -39,17 +48,17 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				BasicRuntimeChecks="3"
-				DebugInformationFormat="3"
-				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
-				MinimalRebuild="true"
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -80,11 +89,78 @@
 			/>
 		</Configuration>
 		<Configuration
-			CharacterSet="1"
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
-			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM64"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
+				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -92,6 +168,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM64"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -103,18 +182,87 @@
 				Name="VCMIDLTool"
 			/>
 			<Tool
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
-				DebugInformationFormat="3"
-				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
-				EnableFunctionLevelLinking="false"
-				EnableIntrinsicFunctions="true"
 				Name="VCCLCompilerTool"
 				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
 				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM64"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\include&quot;;&quot;$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86&quot;;&quot;$(SolutionDir)..\libclamav\c++\&quot;;&quot;$(SolutionDir)llvmbuild\include&quot;"
+				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;CRT_NONSTDC_NO_WARNINGS;_SCl_SECURE_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="false"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4146;4503;4996;4800;4244;4624;4355;4715;4180;4345;4224;4351"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -149,26 +297,10 @@
 	</References>
 	<Files>
 		<Filter
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86AsmBackend.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\MC\TargetAsmBackend.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCCodeEmitter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCTargetExpr.cpp"
-				>
-			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\MC\MCAsmInfoCOFF.cpp"
 				>
@@ -178,7 +310,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\c++\llvm\lib\MC\TargetAsmBackend.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Target\TargetELFWriterInfo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86AsmBackend.cpp"
 				>
 			</File>
 			<File
@@ -188,6 +328,26 @@
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86COFFMachineModuleInfo.cpp"
 				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86CompilationCallback_Win64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM64"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM64"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86ELFWriterInfo.cpp"
@@ -223,6 +383,14 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCAsmInfo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCCodeEmitter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\c++\llvm\lib\Target\X86\X86MCTargetExpr.cpp"
 				>
 			</File>
 			<File

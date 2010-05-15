@@ -5,7 +5,9 @@ ClamAV for Win32
 
 To build the source code you will need:
 - Git for windows with a git "shell"
-- Microsoft Visual Studio 2008 (the express version is just fine)
+- Microsoft Visual Studio 2008: the express version builds the 32bit target
+just fine but it requires a decent amount of fiddling in order to compile
+the 64bit target; this configuration is therefore not supported.
 
 To run the binaries at least Windows 2000 is required. Microsoft Visual C++ 2008
 runtime libraries needs to be installed on the system. See:
@@ -30,8 +32,8 @@ Skip this step if you are building from an official release tarball.
 3- Compilation
 
 Open win32/ClamAV.sln in Visual Studio and build all.
-The output directory for the binaries is either /win32/Debug or /win32/Release,
-depending on the configuration you pick.
+The output directory for the binaries is either /win32/(Win32|x64)/Debug or
+/win32/(Win32|x64)/Release depending on the configuration you pick.
 
 
 4- Special notes

@@ -468,7 +468,11 @@
 #undef LLVM_ETCDIR
 
 /* Host triple we were built on */
+#ifdef _WIN64
+#define LLVM_HOSTTRIPLE "x86_64-pc-win32"
+#else
 #define LLVM_HOSTTRIPLE "i686-pc-win32"
+#endif
 
 /* Installation directory for include files */
 #undef LLVM_INCLUDEDIR

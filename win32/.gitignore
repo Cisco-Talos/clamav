@@ -4,5 +4,5 @@ build
 *.ncb
 *.suo
 *.user
-Debug/*
-Release/*
+*/Debug/*
+*/Release/*
