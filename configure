@@ -13985,7 +13985,7 @@ mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
   ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'
 else
 
@@ -14014,7 +14014,8 @@ rm -f core conftest.err conftest.$ac_objext \
 
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_mmap_anonymous" >&5

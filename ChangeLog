@@ -1,3 +1,7 @@
+Sat May 15 22:31:46 CEST 2010 (acab)
+------------------------------------
+ * fmap: check for anon maps are avail (bb#1940)
+
 Fri May 14 17:16:19 EEST 2010 (edwin)
 -------------------------------------
  * unit_tests: add bytecode.cvd load test

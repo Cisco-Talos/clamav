@@ -30,7 +30,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if HAVE_MMAP
+#ifdef ANONYMOUS_MAP
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -67,7 +67,7 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 #define UNPAGE_THRSHLD_HI 8*1024*1024
 #define READAHEAD_PAGES 8
 
-#if defined(HAVE_MMAP) && defined(C_LINUX) && defined(CL_THREAD_SAFE)
+#if defined(ANONYMOUS_MAP) && defined(C_LINUX) && defined(CL_THREAD_SAFE)
 /*
    WORKAROUND
    Relieve some stress on mmap_sem.
@@ -124,7 +124,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     hdrsz = fmap_align_to(sizeof(fmap_t) + (pages-1) * sizeof(uint32_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
     mapsz = pages * pgsz + hdrsz;
     fmap_lock;
-#if HAVE_MMAP
+#ifdef ANONYMOUS_MAP
     if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
 	m = NULL;
     } else {
@@ -133,9 +133,9 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
 	madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
 #endif /* madvise */
     }
-#else /* ! HAVE_MMAP */
+#else /* ! ANONYMOUS_MAP */
     m = (fmap_t *)cli_malloc(mapsz);
-#endif /* HAVE_MMAP */
+#endif /* ANONYMOUS_MAP */
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
 	fmap_unlock;
@@ -159,7 +159,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
 
 
 static void fmap_aging(fmap_t *m) {
-#if HAVE_MMAP
+#ifdef ANONYMOUS_MAP
     if(m->dumb) return;
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
 	unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme)/sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
@@ -410,7 +410,7 @@ void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) {
 }
 
 void funmap(fmap_t *m) {
-#if HAVE_MMAP
+#ifdef ANONYMOUS_MAP
     if(!m->dumb) {
 	size_t len = m->pages * m->pgsz + m->hdrsz;
 	fmap_lock;

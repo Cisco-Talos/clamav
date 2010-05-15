@@ -80,7 +80,7 @@ AC_DEFUN([AC_C_FUNC_MMAP_ANONYMOUS],
 [
 	AC_CACHE_CHECK([for MAP_ANON(YMOUS)], [ac_cv_c_mmap_anonymous],[
 		ac_cv_c_mmap_anonymous='no'
-		AC_COMPILE_IFELSE(
+		AC_LINK_IFELSE(
 			[AC_LANG_PROGRAM([[#include <sys/mman.h>]], [[mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);]])],
 			[ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'],
 			[
