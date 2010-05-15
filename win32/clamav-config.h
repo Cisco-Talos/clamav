@@ -23,7 +23,7 @@
 /* enable clamuko */
 /* #undef CLAMUKO */
 
-/* disable loading of unsigned bytecode */
+/* enable loading of unsigned bytecode */
 /* #undef CL_BCUNSIGNED */
 
 /* enable debugging */
@@ -487,7 +487,7 @@
 #define SIZEOF_SHORT 2
 
 /* The number of bytes in type void * */
-#define SIZEOF_VOID_P 4
+/* #undef SIZEOF_VOID_P */
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -502,7 +502,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.96-72-gc5afd1c"
+#define VERSION "devel-clamav-0.96-139-g256dc51"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
