@@ -2522,6 +2522,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 
 		    while(sfi_sz > 6) { /* enum all stringtables - RESUMABLE */
 			uint32_t st_sz = cli_readint32(vptr) & 0xffff;
+			uint8_t *next_vptr = vptr + st_sz;
+			uint32_t next_sfi_sz = sfi_sz - st_sz;
 
 			if(st_sz > sfi_sz || st_sz <= 24) {
 			    /* - the content is larger than the container
@@ -2604,8 +2606,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 			    vptr += s_sz;
 			    st_sz -= s_sz;
 			} /* enum all strings - RESUMABLE */
-			vptr += st_sz;
-			sfi_sz -= st_sz;
+			vptr = next_vptr;
+			sfi_sz = next_sfi_sz * (sfi_sz != 0);
 		    } /* enum all stringtables - RESUMABLE */
 		    break;
 		} /* look for stringfileinfo - NOT RESUMABLE */
