@@ -1,3 +1,9 @@
+Mon May 17 19:03:51 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe.c: properly resume stringtable loop (bb#2027)
+                   Note: 0.96 is NOT affected as the min VI sig has got FL=53
+			3rd parties must avoid VI sigs with FL=51
+
 Sat May 15 22:31:46 CEST 2010 (acab)
 ------------------------------------
  * fmap: check for anon maps are avail (bb#1940)
