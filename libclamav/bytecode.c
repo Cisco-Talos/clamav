@@ -127,9 +127,13 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->operands = NULL;
 
     if (ctx->outfd) {
+	cli_ctx *cctx = ctx->ctx;
 	cli_bcapi_extract_new(ctx, -1);
 	if (ctx->outfd)
 	    close(ctx->outfd);
+	if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
+	    cli_unlink(ctx->tempfile);
+	}
 	free(ctx->tempfile);
 	ctx->tempfile = NULL;
 	ctx->outfd = 0;
@@ -210,9 +214,6 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 {
     cli_ctx *cctx = (cli_ctx*)ctx->ctx;
-    if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
-	cli_unlink(ctx->tempfile);
-    }
     cli_bytecode_context_reset(ctx);
     memset(ctx, 0, sizeof(*ctx));
     return CL_SUCCESS;
