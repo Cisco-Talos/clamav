@@ -1,3 +1,7 @@
+Tue May 18 23:35:43 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix offset check (bb#2032)
+
 Tue May 18 20:20:15 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/fmap.c: fix bug introduced in clamav-0.96-51-g3e3b587.
