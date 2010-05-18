@@ -297,6 +297,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    }
 
 	    pptr = NULL;
+	    force_read = 0;
 	    readsz = 0;
 	    continue;
 	}
