@@ -1,3 +1,7 @@
+Tue May 18 20:20:15 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/fmap.c: fix bug introduced in clamav-0.96-51-g3e3b587.
+
 Mon May 17 19:03:51 CEST 2010 (acab)
 ------------------------------------
  * libclamav/pe.c: properly resume stringtable loop (bb#2027)
