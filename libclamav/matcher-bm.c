@@ -271,6 +271,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     if(offdata) {
 	if(!offdata->cnt)
 	    return CL_CLEAN;
+	if(offdata->pos == offdata->cnt)
+	    offdata->pos--;
 	for(; offdata->pos && offdata->offtab[offdata->pos] > offset; offdata->pos--);
 	if(offdata->offtab[offdata->pos] < offset)
 	    offdata->pos++;
