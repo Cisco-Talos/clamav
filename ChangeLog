@@ -1,3 +1,7 @@
+Wed May 19 00:03:19 CEST 2010 (tk)
+----------------------------------
+ * libclamav/readdb.c: properly reject .info files passed on cmdline (bb#2025)
+
 Tue May 18 23:35:43 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher-bm.c: fix offset check (bb#2032)

@@ -1620,6 +1620,11 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	int ret = CL_SUCCESS, dsig = 0;
 	SHA256_CTX ctx;
 
+
+    if(!dbio) {
+	cli_errmsg("cli_loadinfo: .info files can only be loaded from within database container files\n");
+	return CL_EMALFDB;
+    }
     sha256_init(&ctx);
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
