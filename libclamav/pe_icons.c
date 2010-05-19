@@ -1414,10 +1414,9 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    if(!(newdata = cli_malloc(newsize * newsize * sizeof(*newdata)))) {
 		return CL_SUCCESS;
 	    }
-	    memset(newdata, 0xaaccaabb, newsize * newsize * sizeof(*newdata));
 	    cli_dbgmsg("parseicon: Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
 	    for(y = 0; y<newsize; y++) {
-		unsigned int oldy = (unsigned int)((y * scaley) * width + 0.5f);
+		unsigned int oldy = (unsigned int)(y * scaley) * width;
 		for(x = 0; x<newsize; x++)
 		    newdata[y*newsize + x] = imagedata[oldy + (unsigned int)(x * scalex + 0.5f)];
 	    }
