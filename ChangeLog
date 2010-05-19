@@ -1,3 +1,7 @@
+Wed May 19 13:15:06 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: bb #2016
+
 Wed May 19 00:03:19 CEST 2010 (tk)
 ----------------------------------
  * libclamav/readdb.c: properly reject .info files passed on cmdline (bb#2025)
