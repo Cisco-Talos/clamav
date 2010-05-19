@@ -1,3 +1,7 @@
+Wed May 19 14:54:41 CEST 2010 (tk)
+----------------------------------
+ * V 0.96.1
+
 Wed May 19 12:21:02 CEST 2010 (acab)
 ------------------------------------
  * libclamav/7z/Archive/7z/7zIn.c: fix possible(?) null dereference reported
