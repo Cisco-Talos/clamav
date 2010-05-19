@@ -647,7 +647,7 @@ static SRes SzReadSubStreamsInfo(
     RINOM(*digests);
   }
 
-  for (i = 0; i < numFolders; i++)
+  for (i = 0; i < numFolders && *unpackSizes; i++)
   {
     /*
     v3.13 incorrectly worked with empty folders
