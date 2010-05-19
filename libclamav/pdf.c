@@ -1235,10 +1235,12 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 			}
 			if(ret) {
 				unsigned char *t;
+				unsigned size;
 
 				real_streamlen = ret;
 				/* free unused trailing bytes */
-				t = (unsigned char *)cli_realloc(tmpbuf,calculated_streamlen);
+				size = real_streamlen > calculated_streamlen ? real_streamlen : calculated_streamlen;
+				t = (unsigned char *)cli_realloc(tmpbuf,size);
 				if(t == NULL) {
 					free(tmpbuf);
 					close(fout);
