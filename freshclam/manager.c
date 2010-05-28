@@ -181,20 +181,24 @@ static int getclientsock(const char *localip, int prot)
     return socketfd;
 }
 
+static int qcompare(const void *a, const void *b)
+{
+    return (*(const struct addrinfo **) a)->ai_flags - (*(const struct addrinfo **) b)->ai_flags;
+}
+
 static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
 {
 	int socketfd, port, ret;
-	unsigned int ips = 0, ignored = 0;
+	unsigned int ips = 0, ignored = 0, i;
 #ifdef HAVE_GETADDRINFO
-	struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL;
+	struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL, *addrs[128];
 	char port_s[6], loadbal_ipaddr[46];
-	uint32_t loadbal = 1, minsucc = 0xffffffff, minfail = 0xffffffff;
+	uint32_t loadbal = 1, minsucc = 0xffffffff, minfail = 0xffffffff, addrnum = 0;
 	struct mirdat_ip *md;
 #else
 	struct sockaddr_in name;
 	struct hostent *host;
 	unsigned char *ia;
-	int i;
 #endif
 	char ipaddr[46];
 	const char *hostpt;
@@ -238,8 +242,16 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
 
     for(rp = res; rp; rp = rp->ai_next) {
+	rp->ai_flags = cli_rndnum(1024);
+	addrs[addrnum] = rp;
+	addrnum++;
+    }
+    qsort(addrs, addrnum, sizeof(struct addrinfo *), qcompare);
+
+    for(i = 0; i < addrnum; i++) {
 	    void *addr;
 
+	rp = addrs[i];
 	ips++;
 #ifdef SUPPORT_IPv6
 	if(rp->ai_family == AF_INET6)
@@ -261,7 +273,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		logg("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
 
 	    ignored++;
-	    if(!loadbal || rp->ai_next)
+	    if(!loadbal || i + 1 < addrnum)
 		continue;
 	}
 
@@ -277,15 +289,15 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 			loadbal_rp = rp;
 			strncpy(loadbal_ipaddr, ipaddr, sizeof(loadbal_ipaddr));
 		    }
-		    if(rp->ai_next)
+		    if(i + 1 < addrnum)
 			continue;
 		}
 	    }
 
 	    if(!loadbal_rp) {
-		if(!rp->ai_next) {
+		if(i + 1 == addrnum) {
 		    loadbal = 0;
-		    rp = res;
+		    i = 0;
 		}
 		continue;
 	    }
@@ -299,7 +311,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	if(ip)
 	    strcpy(ip, ipaddr);
 
-	if(rp != res)
+	if(rp != loadbal_rp && rp != addrs[0])
 	    logg("Trying host %s (%s)...\n", hostpt, ipaddr);
 
 	socketfd = getclientsock(localip, rp->ai_family);
@@ -317,7 +329,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    closesocket(socketfd);
 	    if(loadbal) {
 		loadbal = 0;
-		rp = res;
+		i = 0;
 	    }
 	    continue;
 	} else {
