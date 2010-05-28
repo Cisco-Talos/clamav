@@ -1,3 +1,7 @@
+Fri May 28 18:45:46 EEST 2010 (edwin)
+-------------------------------------
+ * clamd, libclamav: fix some error path leaks (bb #1990)
+
 Fri May 28 13:24:21 CEST 2010 (tk)
 ----------------------------------
  * freshclam/manager.c: randomize getaddrinfo()'s results (bb#2021)

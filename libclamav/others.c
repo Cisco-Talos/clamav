@@ -945,6 +945,10 @@ bitset_t *cli_bitset_init(void)
 	}
 	bs->length = BITSET_DEFAULT_SIZE;
 	bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
+	if (!bs->bitset) {
+	    free(bs);
+	    return NULL;
+	}
 	return bs;
 }
 

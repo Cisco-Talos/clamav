@@ -171,7 +171,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
 
-	if(ret == CL_VIRUS)
+	if(ret == CL_VIRUS || ret == CL_EMEM)
 	    return ret;
     }
 
@@ -589,26 +589,26 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	if(troot) {
 	    ret = matcher_run(troot, buff, bytes, ctx->virname, &tdata, offset, ftype, ftoffset, acmode, map, bm_offmode ? &toff : NULL);
 
-	    if(ret == CL_VIRUS) {
+	    if(ret == CL_VIRUS || ret == CL_EMEM) {
 		if(!ftonly)
 		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
 		if(bm_offmode)
 		    cli_bm_freeoff(&toff);
-		return CL_VIRUS;
+		return ret;
 	    }
 	}
 
 	if(!ftonly) {
 	    ret = matcher_run(groot, buff, bytes, ctx->virname, &gdata, offset, ftype, ftoffset, acmode, map, NULL);
-	    if(ret == CL_VIRUS) {
+	    if(ret == CL_VIRUS || ret == CL_EMEM) {
 		cli_ac_freedata(&gdata);
 		if(troot) {
 		    cli_ac_freedata(&tdata);
 		    if(bm_offmode)
 			cli_bm_freeoff(&toff);
 		}
-		return CL_VIRUS;
+		return ret;
 	    } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
 		if(ret > type)
 		    type = ret;

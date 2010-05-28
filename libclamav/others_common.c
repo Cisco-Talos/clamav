@@ -687,14 +687,24 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	err = errno;
 #endif
 	closedir(dd);
+	ret = CL_SUCCESS;
 	if (err) {
 	    char errs[128];
 	    cli_errmsg("Unable to readdir() directory %s: %s\n", dirname,
 		       cli_strerror(errno, errs, sizeof(errs)));
 	    /* report error to callback using error_stat */
 	    ret = callback(NULL, NULL, dirname, error_stat, data);
-	    if (ret != CL_SUCCESS)
+	    if (ret != CL_SUCCESS) {
+		if (entries) {
+		    for (i++;i<entries_cnt;i++) {
+			struct dirent_data *entry = &entries[i];
+			free(entry->filename);
+			free(entry->statbuf);
+		    }
+		    free(entries);
+		}
 		return ret;
+	    }
 	}
 
 	if (entries) {
@@ -712,6 +722,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    for (i++;i<entries_cnt;i++) {
 		struct dirent_data *entry = &entries[i];
 		free(entry->filename);
+		free(entry->statbuf);
 	    }
 	    free(entries);
 	}

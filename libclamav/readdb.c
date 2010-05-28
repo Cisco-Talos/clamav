@@ -1425,6 +1425,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     while (cli_dbgets(buf, sizeof(buf), fs, dbio)) {}
 
     if (rc != CL_SUCCESS) {
+	cli_bytecode_destroy(bc);
 	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
 	return rc;
     }

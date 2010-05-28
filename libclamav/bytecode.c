@@ -264,6 +264,10 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *
 	    return CL_EMEM;
 	}
 	ctx->opsizes = cli_malloc(sizeof(*ctx->opsizes)*func->numArgs);
+	if (!ctx->opsizes) {
+	    cli_errmsg("bytecode: error allocating memory for opsizes\n");
+	    return CL_EMEM;
+	}
 	for (i=0;i<func->numArgs;i++) {
 	    unsigned al = typealign(bc, func->types[i]);
 	    s = (s+al-1)&~(al-1);

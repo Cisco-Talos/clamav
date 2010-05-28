@@ -156,6 +156,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    if(cl_engine_addref(scandata->engine)) {
 		logg("!cl_engine_addref() failed\n");
 		free(filename);
+		free(client_conn);
 		return CL_EMEM;
 	    } else {
 		client_conn->engine = scandata->engine;
@@ -164,7 +165,9 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		pthread_mutex_unlock(&reload_mutex);
 		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn, 1)) {
 		    logg("!thread dispatch failed\n");
+		    cl_engine_free(scandata->engine);
 		    free(filename);
+		    free(client_conn);
 		    return CL_EMEM;
 		}
 	    }

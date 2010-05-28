@@ -1996,6 +1996,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->hook_lsig_matches = cli_bitset_init();
     if (!ctx->hook_lsig_matches) {
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
+	ctx->fmap--;
 	ret_from_magicscan(CL_EMEM);
     }
 
@@ -2343,7 +2344,10 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 2);
     if(!ctx.fmap)
 	return CL_EMEM;
-    ctx.hook_lsig_matches = cli_bitset_init();
+    if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
+	free(ctx.fmap);
+	return CL_EMEM;
+    }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
