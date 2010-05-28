@@ -241,7 +241,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	return -1;
     }
 
-    for(rp = res; rp; rp = rp->ai_next) {
+    for(rp = res; rp && addrnum < 128; rp = rp->ai_next) {
 	rp->ai_flags = cli_rndnum(1024);
 	addrs[addrnum] = rp;
 	addrnum++;
