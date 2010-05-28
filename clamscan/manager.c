@@ -414,12 +414,14 @@ int scanmanager(const struct optstruct *opts)
     }
 
     if((opt = optget(opts, "database"))->active) {
-	if((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
-	    logg("!%s\n", cl_strerror(ret));
-	    cl_engine_free(engine);
-	    return 2;
+	while(opt) {
+	    if((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
+		logg("!%s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		return 2;
+	    }
+	    opt = opt->nextarg;
 	}
-
     } else {
 	    char *dbdir = freshdbdir();
 
