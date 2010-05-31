@@ -144,7 +144,8 @@ void *cli_calloc(size_t nmemb, size_t size)
 	void *alloc;
 
 
-    if(!nmemb || !size || (nmemb*size) > CLI_MAX_ALLOCATION) {
+    if(!nmemb || !size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION
+        || (nmemb*size > CLI_MAX_ALLOCATION)) {
 	cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) nmemb*size);
 	return NULL;
     }
