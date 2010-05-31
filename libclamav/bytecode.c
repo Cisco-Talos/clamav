@@ -1059,10 +1059,14 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
 	return CL_EMALFDB;
     }
     all_locals = func->numArgs + func->numLocals;
-    func->types = cli_calloc(all_locals, sizeof(*func->types));
-    if (!func->types) {
-	cli_errmsg("Out of memory allocating function arguments\n");
-	return CL_EMEM;
+    if (!all_locals) {
+	func->types = NULL;
+    } else {
+	func->types = cli_calloc(all_locals, sizeof(*func->types));
+	if (!func->types) {
+	    cli_errmsg("Out of memory allocating function arguments\n");
+	    return CL_EMEM;
+	}
     }
     for (i=0;i<all_locals;i++) {
 	func->types[i] = readNumber(buffer, &offset, len, &ok);
@@ -1192,10 +1196,14 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		if (ok) {
 		    inst.u.ops.numOps = numOp;
 		    inst.u.ops.opsizes=NULL;
-		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
-		    if (!inst.u.ops.ops) {
-			cli_errmsg("Out of memory allocating operands\n");
-			return CL_EMEM;
+		    if (!numOp) {
+			inst.u.ops.ops = NULL;
+		    } else {
+			inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+			if (!inst.u.ops.ops) {
+			    cli_errmsg("Out of memory allocating operands\n");
+			    return CL_EMEM;
+			}
 		    }
 		    if (inst.opcode == OP_BC_CALL_DIRECT)
 			inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
@@ -1612,6 +1620,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	cli_bitset_free(bc->uses_apis);
     free(bc->lsig);
     free(bc->globalBytes);
+    memset(bc, 0, sizeof(*bc));
 }
 
 #define MAP(val) do { operand_t o = val; \
