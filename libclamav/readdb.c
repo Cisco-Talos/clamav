@@ -593,8 +593,10 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return CL_EMEM;
     
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+	    mpool_free(engine->mempool, matcher);
 	    return CL_EMEM;
+	}
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -2932,7 +2934,10 @@ int cl_engine_free(struct cl_engine *engine)
 	struct icon_matcher *iconcheck = engine->iconcheck;
 	for(i=0; i<3; i++) {
 	    if(iconcheck->icons[i]) {
-		mpool_free(engine->mempool, iconcheck->icons[i]->name);
+		for (j=0;j<iconcheck->icon_counts[i];j++) {
+		    struct icomtr* metric = iconcheck->icons[i];
+		    mpool_free(engine->mempool, metric[j].name);
+		}
 		mpool_free(engine->mempool, iconcheck->icons[i]);
 	    }
 	}

@@ -1,3 +1,7 @@
+Mon May 31 13:18:45 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/readdb.c: fix memory leak in .idb handling
+
 Fri May 28 18:45:46 EEST 2010 (edwin)
 -------------------------------------
  * clamd, libclamav: fix some error path leaks (bb #1990)
