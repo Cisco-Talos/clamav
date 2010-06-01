@@ -641,6 +641,9 @@ AC_TRY_RUN([
 #define BZ2_bzReadOpen bzReadOpen
 #define BZ2_bzReadClose bzReadClose
 #define BZ2_bzRead bzRead
+#define BZ2_bzDecompressInit bzDecompressInit
+#define BZ2_bzDecompress bzDecompress
+#define BZ2_bzDecompressEnd bzDecompressEnd
 #endif
 
 const unsigned char poc[] = {
