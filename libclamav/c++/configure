@@ -14504,7 +14504,7 @@ else
   enable_optimized=default
 fi
 
- if test "x$enable_optimized" == "xno"; then
+ if test "x$enable_optimized" = "xno"; then
   DEBUG_BUILD_TRUE=
   DEBUG_BUILD_FALSE='#'
 else

@@ -54,7 +54,7 @@ AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
 AC_ARG_ENABLE(optimized, AC_HELP_STRING([-enable-optimized],
 	      [Compile with optimizations enabled (default is YES)]),
 	      enable_optimized=$enableval, enable_optimized=default)
-AM_CONDITIONAL(DEBUG_BUILD,[test "x$enable_optimized" == "xno"])
+AM_CONDITIONAL(DEBUG_BUILD,[test "x$enable_optimized" = "xno"])
 
 dnl Set configure args for subdir
 if test "$enable_optimized" = "default"; then
