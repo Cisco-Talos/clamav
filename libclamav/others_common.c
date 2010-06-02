@@ -697,7 +697,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    ret = callback(NULL, NULL, dirname, error_stat, data);
 	    if (ret != CL_SUCCESS) {
 		if (entries) {
-		    for (i++;i<entries_cnt;i++) {
+		    for (i=0;i<entries_cnt;i++) {
 			struct dirent_data *entry = &entries[i];
 			free(entry->filename);
 			free(entry->statbuf);

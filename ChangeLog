@@ -1,3 +1,7 @@
+Wed Jun  2 10:08:00 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/others_common.c: fix typo (bb #2060).
+
 Mon May 31 16:57:31 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/{bytecode.c, others_common.c}: don't attempt to allocate 0 bytes (bb #2042).
