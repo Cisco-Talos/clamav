@@ -1,3 +1,7 @@
+Fri Jun  4 18:04:37 CEST 2010 (tk)
+----------------------------------
+ * libclamav/cvd.c: load daily.ign[2] files from CVDs (bb#2061)
+
 Wed Jun  2 10:08:00 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/others_common.c: fix typo (bb #2060).

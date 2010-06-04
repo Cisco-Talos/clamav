@@ -307,7 +307,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	else
 	    off = ftell(dbio->fs);
 
-	if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
+	if((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && (CLI_DBEXT(name) || cli_strbcasestr(name, ".ign") || cli_strbcasestr(name, ".ign2")))) {
 	    ret = cli_load(name, engine, signo, options, dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
