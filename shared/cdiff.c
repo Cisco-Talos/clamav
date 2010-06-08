@@ -64,7 +64,7 @@ struct cdiff_ctx {
     char *open_db;
     struct cdiff_node *add_start, *add_last;
     struct cdiff_node *del_start;
-    struct cdiff_node *xchg_start;
+    struct cdiff_node *xchg_start, *xchg_last;
 };
 
 struct cdiff_cmd {
@@ -324,32 +324,12 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
     new->str2 = arg2;
     new->lineno = lineno;
 
-    if(!ctx->xchg_start) {
-
+    if(!ctx->xchg_start)
 	ctx->xchg_start = new;
+    else
+	ctx->xchg_last->next = new;
 
-    } else { 
-
-	if(lineno < ctx->xchg_start->lineno) {
-	    new->next = ctx->xchg_start;
-	    ctx->xchg_start = new;
-
-	} else {
-	    pt = ctx->xchg_start;
-
-	    while(pt) {
-		last = pt;
-		if((pt->lineno < lineno) && (!pt->next || lineno < pt->next->lineno))
-		    break;
-
-		pt = pt->next;
-	    }
-
-	    new->next = last->next;
-	    last->next = new;
-	}
-    }
-
+    ctx->xchg_last = new;
     return 0;
 }
 
