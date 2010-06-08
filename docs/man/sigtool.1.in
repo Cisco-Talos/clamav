@@ -54,7 +54,10 @@ Build a CVD file. \-s, \-\-server is required.
 \fB\-\-server\fR
 ClamAV Signing Service address (for virus database maintainers only).
 .TP 
-\fB\-\-unpack FILE, \-u FILE\fR
+\fB\-\-datadir=DIR\fR
+Use DIR as the default database directory for all operations.
+.TP 
+\fB\-\-unpack=FILE, \-u FILE\fR
 Unpack FILE (CVD) to a current directory.
 .TP 
 \fB\-\-unpack\-current\fR

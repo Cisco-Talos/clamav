@@ -1,3 +1,7 @@
+Tue Jun  8 16:32:47 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: add --datadir (bb#2063)
+
 Tue Jun  8 12:47:25 CEST 2010 (tk)
 ----------------------------------
  * shared/cdiff.c: fix handling of massive XCHGs (bb#2017)

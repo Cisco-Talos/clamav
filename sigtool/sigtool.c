@@ -640,7 +640,7 @@ static int build(const struct optstruct *opts)
 	struct stat foo;
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512], patch[32], broken[32];
-	const char *dbname, *newcvd;
+	const char *dbname, *newcvd, *localdbdir = NULL;
         struct cl_engine *engine;
 	FILE *cvd, *fh;
 	gzFile *tar;
@@ -663,6 +663,9 @@ static int build(const struct optstruct *opts)
 	mprintf("!build: --server is required for --build\n");
 	return -1;
     }
+
+    if(optget(opts, "datadir")->active)
+	localdbdir = optget(opts, "datadir")->strarg;
 
     if(stat("COPYING", &foo) == -1) {
 	mprintf("!build: COPYING file not found in current working directory.\n");
@@ -768,9 +771,9 @@ static int build(const struct optstruct *opts)
 
     } else {
 	pt = freshdbdir();
-	snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cvd", pt, dbname);
+	snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cvd", localdbdir ? localdbdir : pt, dbname);
 	if(access(olddb, R_OK))
-	    snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cld", pt, dbname);
+	    snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cld", localdbdir ? localdbdir : pt, dbname);
 	free(pt);
     }
 
@@ -1086,15 +1089,18 @@ static int build(const struct optstruct *opts)
 static int unpack(const struct optstruct *opts)
 {
 	char name[512], *dbdir;
+	const char *localdbdir = NULL;
 
+    if(optget(opts, "datadir")->active)
+	localdbdir = optget(opts, "datadir")->strarg;
 
     if(optget(opts, "unpack-current")->enabled) {
 	dbdir = freshdbdir();
-	snprintf(name, sizeof(name), "%s"PATHSEP"%s.cvd", dbdir, optget(opts, "unpack-current")->strarg);
+	snprintf(name, sizeof(name), "%s"PATHSEP"%s.cvd", localdbdir ? localdbdir : dbdir, optget(opts, "unpack-current")->strarg);
 	if(access(name, R_OK)) {
-	    snprintf(name, sizeof(name), "%s"PATHSEP"%s.cld", dbdir, optget(opts, "unpack-current")->strarg);
+	    snprintf(name, sizeof(name), "%s"PATHSEP"%s.cld", localdbdir ? localdbdir : dbdir, optget(opts, "unpack-current")->strarg);
 	    if(access(name, R_OK)) {
-		mprintf("!unpack: Couldn't find %s CLD/CVD database\n", optget(opts, "unpack-current")->strarg);
+		mprintf("!unpack: Couldn't find %s CLD/CVD database in %s\n", optget(opts, "unpack-current")->strarg, localdbdir ? localdbdir : dbdir);
 		free(dbdir);
 		return -1;
 	    }
@@ -1366,7 +1372,10 @@ static int listsigs(const struct optstruct *opts, int mode)
 	char *dbdir;
 	struct stat sb;
 	regex_t reg;
+	const char *localdbdir = NULL;
 
+    if(optget(opts, "datadir")->active)
+	localdbdir = optget(opts, "datadir")->strarg;
 
     if(mode == 0) {
 	name = optget(opts, "list-sigs")->strarg;
@@ -1379,7 +1388,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	if(S_ISDIR(sb.st_mode)) {
 	    if(!strcmp(name, DATADIR)) {
 		dbdir = freshdbdir();
-		ret = listdir(dbdir, NULL);
+		ret = listdir(localdbdir ? localdbdir : dbdir, NULL);
 		free(dbdir);
 	    } else {
 		ret = listdir(name, NULL);
@@ -1395,7 +1404,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	}
 	mprintf_stdout = 1;
 	dbdir = freshdbdir();
-	ret = listdir(dbdir, &reg);
+	ret = listdir(localdbdir ? localdbdir : dbdir, &reg);
 	free(dbdir);
 	cli_regfree(&reg);
     }
@@ -2570,6 +2579,7 @@ static void help(void)
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
+    mprintf("    --datadir=DIR				Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
