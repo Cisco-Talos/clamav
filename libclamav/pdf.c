@@ -121,10 +121,10 @@ struct pdf_obj {
 struct pdf_struct {
     struct pdf_obj *objs;
     unsigned nobjs;
+    unsigned flags;
     const char *map;
     off_t size;
     off_t offset;
-    unsigned flags;
     cli_ctx *ctx;
     const char *dir;
     unsigned files;

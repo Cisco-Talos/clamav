@@ -39,8 +39,8 @@ typedef uint16_t funcid_t;
 struct cli_bc_callop {
     operand_t* ops;
     uint16_t* opsizes;
-    uint8_t numOps;
     funcid_t funcid;
+    uint8_t numOps;
 };
 
 struct branch {
@@ -59,8 +59,8 @@ typedef uint8_t interp_op_t;
 struct cli_bc_inst {
     enum bc_opcode opcode;
     uint16_t type;
-    interp_op_t interp_op;/* opcode for interpreter */
     operand_t dest;
+    interp_op_t interp_op;/* opcode for interpreter */
     union {
 	operand_t unaryop;
 	struct cli_bc_cast cast;
@@ -96,8 +96,8 @@ struct cli_bc_func {
 
 struct cli_bc_dbgnode_element {
     unsigned nodeid;
-    char *string;
     unsigned len;
+    char *string;
     uint64_t constant;
 };
 
@@ -139,6 +139,8 @@ struct bc_jsnorm {
 
 struct cli_bc_ctx {
     uint8_t timeout;/* must be first byte in struct! */
+    uint16_t funcid;
+    unsigned numParams;
     /* id and params of toplevel function called */
     const struct cli_bc *bc;
     const struct cli_bc_func *func;
@@ -147,43 +149,41 @@ struct cli_bc_ctx {
     uint16_t *opsizes;
     char *values;
     operand_t *operands;
-    uint16_t funcid;
-    unsigned numParams;
     uint32_t file_size;
+    int outfd;
     off_t off;
     fmap_t *fmap;
     fmap_t *save_map;
     const char *virname;
     struct cli_bc_hooks hooks;
     const struct cli_exe_section *sections;
-    int outfd;
     char *tempfile;
     void *ctx;
     unsigned written;
     unsigned filewritten;
     unsigned found;
+    unsigned ninflates;
     bc_dbg_callback_trace trace;
     bc_dbg_callback_trace_op trace_op;
     bc_dbg_callback_trace_val trace_val;
     bc_dbg_callback_trace_ptr trace_ptr;
-    unsigned trace_level;
     const char *directory;
     const char *file;
     const char *scope;
+    unsigned trace_level;
     uint32_t scopeid;
     unsigned line;
     unsigned col;
     mpool_t *mpool;
     struct bc_inflate* inflates;
-    unsigned ninflates;
     struct bc_buffer *buffers;
     unsigned nbuffers;
-    struct cli_hashset *hashsets;
     unsigned nhashsets;
-    struct bc_jsnorm* jsnorms;
     unsigned njsnorms;
-    char *jsnormdir;
     unsigned jsnormwritten;
+    struct cli_hashset *hashsets;
+    struct bc_jsnorm* jsnorms;
+    char *jsnormdir;
     struct cli_map *maps;
     unsigned nmaps;
     unsigned containertype;

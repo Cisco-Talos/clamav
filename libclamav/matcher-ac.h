@@ -64,10 +64,10 @@ struct cli_ac_patt {
     uint16_t parts, partno, special, special_pattern;
     struct cli_ac_special **special_table;
     struct cli_ac_patt *next, *next_same;
-    uint8_t depth;
     uint16_t rtype, type;
     uint32_t offdata[4], offset_min, offset_max;
     uint32_t boundary;
+    uint8_t depth;
 };
 
 struct cli_ac_node {

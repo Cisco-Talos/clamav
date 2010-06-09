@@ -199,8 +199,8 @@ struct stack_entry {
     struct stack_entry *prev;
     const struct cli_bc_func *func;
     operand_t ret;
-    struct cli_bc_bb *bb;
     unsigned bb_inst;
+    struct cli_bc_bb *bb;
     char *values;
 };
 

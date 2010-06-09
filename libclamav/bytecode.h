@@ -56,12 +56,12 @@ struct cli_bc {
   uint16_t *globaltys;
   size_t num_globals;
   enum bc_state state;
-  uint16_t start_tid;
   struct bitset_tag *uses_apis;
   char *lsig;
   char *vnameprefix;
   char **vnames;
   unsigned vnames_cnt;
+  uint16_t start_tid;
   struct cli_bc_dbgnode *dbgnodes;
   unsigned dbgnode_cnt;
   unsigned hook_lsig_id;
