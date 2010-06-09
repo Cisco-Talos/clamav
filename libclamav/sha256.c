@@ -249,7 +249,7 @@ SHA256Guts (SHA256_CTX *sc, const uint32_t *cbuf)
   W = buf;
 
 #ifndef SHA256_UNROLL
-#define SHA256_UNROLL 1
+#define SHA256_UNROLL 4
 #endif /* !SHA256_UNROLL */
 
 #if SHA256_UNROLL == 1
@@ -324,7 +324,6 @@ sha256_update (SHA256_CTX *sc, const void *vdata, uint32_t len)
   uint32_t bufferBytesLeft;
   uint32_t bytesToCopy;
   int needBurn = 0;
-
 #ifdef SHA256_FAST_COPY
   if (sc->bufferLength) {
     bufferBytesLeft = 64L - sc->bufferLength;

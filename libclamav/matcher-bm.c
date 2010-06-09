@@ -63,7 +63,9 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	    root->bm_reloff_num++;
     }
 
-    if(root->filter) {
+    /* bm_offmode doesn't use the prefilter for BM signatures anyway, so
+     * don't add these to the filter. */
+    if(root->filter && !root->bm_offmode) {
 	/* the bm_suffix load balancing below can shorten the sig,
 	 * we want to see the entire signature! */
 	if (filter_add_static(root->filter, pattern->pattern, pattern->length, pattern->virname) == -1) {

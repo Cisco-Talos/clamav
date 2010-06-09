@@ -1,3 +1,7 @@
+Wed Jun  9 13:38:11 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/{matcher-bm.c, sha256.c}: improve DB load time (bb #1860).
+
 Tue Jun  8 16:32:47 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: add --datadir (bb#2063)
