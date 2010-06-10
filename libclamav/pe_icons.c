@@ -1507,7 +1507,14 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 int cli_match_icon(icon_groupset *set, cli_ctx *ctx) {
     if(!ctx || !ctx->engine || !ctx->engine->iconcheck || !ctx->engine->iconcheck->group_counts[0] || !ctx->engine->iconcheck->group_counts[1])
 	return CL_CLEAN;
-    return cli_scanpe(ctx, set);
+    else {
+	unsigned int ctx_opts = ctx->options;
+	int ret;
+	ctx->options &= ~CL_SCAN_BLOCKBROKEN;
+	ret = cli_scanpe(ctx, set);
+	ctx->options = ctx_opts;
+	return ret;
+    }
 }
 
 void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx) {

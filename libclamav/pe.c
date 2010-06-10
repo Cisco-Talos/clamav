@@ -997,7 +997,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
 	    /* check MD5 section sigs */
 	    md5_sect = ctx->engine->md5_mdb;
-	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
+	    if((DCONF & PE_CONF_MD5SECT) && md5_sect && !iconset) {
 		found = 0;
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {

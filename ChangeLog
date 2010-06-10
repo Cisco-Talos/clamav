@@ -1,3 +1,7 @@
+Thu Jun 10 19:58:01 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe*: fix virusnames being hijacked by idb sigs (bb#2064)
+
 Thu Jun 10 16:06:56 CEST 2010 (tk)
 ----------------------------------
  * libclamav/str.c: fix cli_isnumber() (bb#2070)
