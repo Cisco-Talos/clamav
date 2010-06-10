@@ -456,8 +456,8 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
 
 int cli_isnumber(const char *str)
 {
-    while(*str++)
-	if(!strchr("0123456789", *str))
+    while(*str)
+	if(!strchr("0123456789", *str++))
 	    return 0;
 
     return 1;

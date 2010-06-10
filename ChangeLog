@@ -1,3 +1,7 @@
+Thu Jun 10 16:06:56 CEST 2010 (tk)
+----------------------------------
+ * libclamav/str.c: fix cli_isnumber() (bb#2070)
+
 Thu Jun 10 12:15:17 CEST 2010 (tk)
 ----------------------------------
  * sigtool: print match count and offsets in --test-sigs mode (bb#2054)
