@@ -1802,39 +1802,79 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     return ret;
 }
 
-static int matchsig(const char *sig, int fd)
+static void matchsig(const char *sig, int fd)
 {
 	struct cl_engine *engine;
+        struct cli_ac_result *acres = NULL, *res;
+	struct stat sb;
+	unsigned int matches = 0;
+	cli_ctx ctx;
 	int ret;
 
     if(!(engine = cl_engine_new())) {
 	mprintf("!matchsig: Can't create new engine\n");
-	return 0;
+	return;
     }
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
 
     if(cli_initroots(engine, 0) != CL_SUCCESS) {
 	mprintf("!matchsig: cli_initroots() failed\n");
 	cl_engine_free(engine);
-	return 0;
+	return;
     }
 
     if(cli_parse_add(engine->root[0], "test", sig, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
 	mprintf("!matchsig: Can't parse signature\n");
 	cl_engine_free(engine);
-	return 0;
+	return;
     }
 
     if(cl_engine_compile(engine) != CL_SUCCESS) {
 	mprintf("!matchsig: Can't compile engine\n");
 	cl_engine_free(engine);
-	return 0;
+	return;
     }
-
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.options = CL_SCAN_STDOPT;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = calloc(sizeof(fmap_t *), 1);
+    if(!ctx.fmap) {
+	cl_engine_free(engine);
+	return;
+    }
     lseek(fd, 0, SEEK_SET);
-    ret = cl_scandesc(fd, NULL, NULL, engine, CL_SCAN_STDOPT);
+    fstat(fd, &sb);
+    if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+	free(ctx.fmap);
+	cl_engine_free(engine);
+	return;
+    }
+    ret = cli_fmap_scandesc(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+    res = acres;
+    while(res) {
+	matches++;
+	res = res->next;
+    }
+    if(matches) {
+	mprintf("MATCH: ** YES ** (%u %s:", matches, matches > 1 ? "matches at offsets" : "match at offset");
+	res = acres;
+	while(res) {
+	    mprintf(" %u", (unsigned int) res->offset);
+	    res = res->next;
+	}
+	mprintf(")\n");
+    } else {
+	mprintf("MATCH: ** NO **\n");
+    }
+    while(acres) {
+	res = acres;
+	acres = acres->next;
+	free(res);
+    }
+    free(ctx.fmap);
     cl_engine_free(engine);
-
-    return (ret == CL_VIRUS) ? 1 : 0;
 }
 
 static char *decodehexstr(const char *hex, unsigned int *dlen)
@@ -2238,7 +2278,8 @@ static int decodesig(char *sig, int fd)
 		mprintf(" +-> DECODED SUBSIGNATURE:\n");
 		decodehex(pt ? pt : tokens[3 + i]);
 	    } else {
-		mprintf(" +-> MATCH: %s\n", matchsig(pt ? pt : tokens[3 + i], fd) ? "YES" : "** NO **");
+		mprintf(" +-> ");
+		matchsig(pt ? pt : tokens[3 + i], fd);
 	    }
 	}
     } else if(strchr(sig, ':')) { /* ndb */
@@ -2299,7 +2340,7 @@ static int decodesig(char *sig, int fd)
 	    mprintf("DECODED SIGNATURE:\n");
 	    decodehex(tokens[3]);
 	} else {
-	    mprintf("MATCH: %s\n", matchsig(tokens[3], fd) ? "YES" : "** NO **");
+	    matchsig(tokens[3], fd);
 	}
     } else if((pt = strchr(sig, '='))) {
 	*pt++ = 0;
@@ -2308,7 +2349,7 @@ static int decodesig(char *sig, int fd)
 	    mprintf("DECODED SIGNATURE:\n");
 	    decodehex(pt);
 	} else {
-	    mprintf("MATCH: %s\n", matchsig(pt, fd) ? "YES" : "** NO **");
+	    matchsig(pt, fd);
 	}
     } else {
 	mprintf("decodesig: Not supported signature format\n");
@@ -2342,11 +2383,6 @@ static int testsigs(const struct optstruct *opts)
 
     if(!opts->filename) {
 	mprintf("!--test-sigs requires two arguments\n");
-	return -1;
-    }
-
-    if(cl_init(CL_INIT_DEFAULT) != CL_SUCCESS) {
-	mprintf("!testsigs: Can't initialize libclamav: %s\n", cl_strerror(ret));
 	return -1;
     }
 
@@ -2598,12 +2634,18 @@ static void help(void)
 
 int main(int argc, char **argv)
 {
-	int ret = 1;
+	int ret;
         struct optstruct *opts;
 	struct stat sb;
 
     if(check_flevel())
 	exit(1);
+
+    if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
+	mprintf("!Can't initialize libclamav: %s\n", cl_strerror(ret));
+	return -1;
+    }
+    ret = 1;
 
     opts = optparse(NULL, argc, argv, 1, OPT_SIGTOOL, 0, NULL);
     if(!opts) {

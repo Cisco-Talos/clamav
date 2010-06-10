@@ -123,6 +123,7 @@ CLAMAV_PRIVATE {
     cli_bm_free;
     cli_initroots;
     cli_scanbuff;
+    cli_fmap_scandesc;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;

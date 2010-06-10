@@ -518,7 +518,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	  cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
 	  lseek(nsist.ofd, 0, SEEK_SET);
 	  if(nsist.fno == 1)
-	    ret=cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR);
+	    ret=cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	  else
 	    ret=cli_magic_scandesc(nsist.ofd, ctx);
 	  close(nsist.ofd);

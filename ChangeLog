@@ -1,3 +1,10 @@
+Thu Jun 10 12:15:17 CEST 2010 (tk)
+----------------------------------
+ * sigtool: print match count and offsets in --test-sigs mode (bb#2054)
+	    IMPORTANT NOTE: --test-sigs now only works against the final target file
+	    (after all processing, normalization, etc. for which the tested
+	    signature was directly created)
+
 Wed Jun  9 13:38:11 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/{matcher-bm.c, sha256.c}: improve DB load time (bb #1860).

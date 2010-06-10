@@ -147,10 +147,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	    snprintf(fullname, 1024, "%s"PATHSEP"javascript", ctx->jsnormdir);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
-		ret = cli_scandesc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
+		ret = cli_scandesc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
 		if (ret == CL_CLEAN) {
 		    lseek(fd, 0, SEEK_SET);
-		    ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR);
+		    ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
 		}
 		close(fd);
 	    }

@@ -82,7 +82,7 @@ Find and display signatures from the local database directory which match the gi
 Decode signatures read from the standard input (eg. piped from \-\-find\-sigs)
 .TP 
 \fB\-fREGEX, \-\-test\-sigs=DATABASE TARGET_FILE\fR
-Test all signatures from DATABASE against TARGET_FILE.
+Test all signatures from DATABASE against TARGET_FILE. This option will only give valid results if the target file is the final one (after unpacking, normalization, etc.) for which the signatures were created.
 .SH "EXAMPLES"
 .LP 
 .TP 

@@ -86,6 +86,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      cli_file_t ftype,
 			      struct cli_matched_type **ftoffset,
 			      unsigned int acmode,
+			      struct cli_ac_result **acres,
 			      fmap_t *map,
 			      struct cli_bm_off *offdata)
 {
@@ -132,7 +133,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 	    return ret;
     }
     PERF_LOG_TRIES(acmode, 0, length);
-    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, root, mdata, offset, ftype, ftoffset, acmode, NULL);
+    ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, NULL);
     return ret;
 }
 
@@ -166,7 +167,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, *ctx->fmap, NULL);
+	ret = matcher_run(troot, buffer, length, virname, acdata ? (acdata[0]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -178,7 +179,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, *ctx->fmap, NULL);
+    ret = matcher_run(groot, buffer, length, virname, acdata ? (acdata[1]): (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -435,13 +436,13 @@ static int matchicon(cli_ctx *ctx, const char *grp1, const char *grp2)
     return cli_match_icon(&iconset, ctx);
 }
 
-int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
+int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
 {
     int ret = CL_EMEM, empty;
     fmap_t *map = *ctx->fmap;
 
     if((*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty))) {
-	ret = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, NULL);
+	ret = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
 	map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
 	funmap(*ctx->fmap);
     }
@@ -511,7 +512,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
     return CL_CLEAN;
 }
 
-int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, unsigned char *refhash)
+int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
  	unsigned char *buff;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
@@ -587,7 +588,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
 	if(troot) {
-	    ret = matcher_run(troot, buff, bytes, ctx->virname, &tdata, offset, ftype, ftoffset, acmode, map, bm_offmode ? &toff : NULL);
+	    ret = matcher_run(troot, buff, bytes, ctx->virname, &tdata, offset, ftype, ftoffset, acmode, acres, map, bm_offmode ? &toff : NULL);
 
 	    if(ret == CL_VIRUS || ret == CL_EMEM) {
 		if(!ftonly)
@@ -600,7 +601,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	}
 
 	if(!ftonly) {
-	    ret = matcher_run(groot, buff, bytes, ctx->virname, &gdata, offset, ftype, ftoffset, acmode, map, NULL);
+	    ret = matcher_run(groot, buff, bytes, ctx->virname, &gdata, offset, ftype, ftoffset, acmode, acres, map, NULL);
 	    if(ret == CL_VIRUS || ret == CL_EMEM) {
 		cli_ac_freedata(&gdata);
 		if(troot) {
