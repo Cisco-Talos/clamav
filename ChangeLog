@@ -1,3 +1,7 @@
+Tue Jun 15 16:13:07 CEST 2010 (tk)
+----------------------------------
+ * clamd/clamd.c: be more verbose when daemonize() fails (bb#2062)
+
 Thu Jun 10 19:58:01 CEST 2010 (acab)
 ------------------------------------
  * libclamav/pe*: fix virusnames being hijacked by idb sigs (bb#2064)

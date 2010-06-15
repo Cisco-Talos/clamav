@@ -42,6 +42,7 @@
 #include <grp.h>
 #endif
 #include <signal.h>
+#include <errno.h>
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -528,7 +529,7 @@ int main(int argc, char **argv)
 	gengine = engine;
 	atexit(free_engine);
 	if(daemonize() == -1) {
-	    logg("!daemonize() failed\n");
+	    logg("!daemonize() failed: %s\n", strerror(errno));
 	    ret = 1;
 	    break;
 	}
