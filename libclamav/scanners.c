@@ -705,6 +705,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	unsigned int files = 0;
 	struct cab_archive cab;
 	struct cab_file *file;
+	unsigned int corrupted_input;
 
 
     cli_dbgmsg("in cli_scanmscab()\n");
@@ -740,10 +741,13 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	if((ret = cab_extract(file, tempname))) {
 	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
 	} else {
-	    if(file->length != file->written_size)
+	    corrupted_input = ctx->corrupted_input;
+	    if(file->length != file->written_size) {
 		cli_dbgmsg("CAB: Length from header %u but wrote %u bytes\n", (unsigned int) file->length, (unsigned int) file->written_size);
-
+		ctx->corrupted_input = 1;
+	    }
 	    ret = cli_scanfile(tempname, ctx);
+	    ctx->corrupted_input = corrupted_input;
 	}
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tempname)) {

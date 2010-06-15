@@ -1,3 +1,7 @@
+Tue Jun 15 18:07:00 CEST 2010 (tk)
+----------------------------------
+ * libclamav: avoid scanpe() warnings for corrupted files (bb#2049)
+
 Tue Jun 15 16:13:07 CEST 2010 (tk)
 ----------------------------------
  * clamd/clamd.c: be more verbose when daemonize() fails (bb#2062)

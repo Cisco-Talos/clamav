@@ -190,6 +190,8 @@ FSGSTUFF; \
 #define CLI_UNPRESULTSFSG1(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,free(sections)),EXPR,GOOD,FREEME)
 #define CLI_UNPRESULTSFSG2(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,(void)0),EXPR,GOOD,FREEME)
 
+#define DETECT_BROKEN_PE (DETECT_BROKEN && !ctx->corrupted_input)
+
 struct offset_list {
     uint32_t offset;
     struct offset_list *next;
@@ -552,7 +554,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     if(fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew)) {
 	cli_dbgmsg("Can't read new header address\n");
 	/* truncated header? */
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
@@ -682,15 +684,17 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
     nsections = EC16(file_hdr.NumberOfSections);
     if(nsections < 1 || nsections > 96) {
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
 	}
-	if(nsections)
-	    cli_warnmsg("PE file contains %d sections\n", nsections);
-	else
-	    cli_warnmsg("PE file contains no sections\n");
+	if(!ctx->corrupted_input) {
+	    if(nsections)
+		cli_warnmsg("PE file contains %d sections\n", nsections);
+	    else
+		cli_warnmsg("PE file contains no sections\n");
+	}
 	return CL_CLEAN;
     }
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
@@ -702,7 +706,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 	        *ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
@@ -713,7 +717,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     at = e_lfanew + sizeof(struct pe_image_file_hdr);
     if(fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("Can't read optional file header\n");
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 	        *ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
@@ -727,7 +731,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    /* FIXME: need to play around a bit more with xp64 */
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
-	    if(DETECT_BROKEN) {
+	    if(DETECT_BROKEN_PE) {
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
@@ -742,8 +746,9 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    either way it's a 32bit thingy
 	*/
         if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {
-	    cli_warnmsg("Incorrect magic number in optional header\n");
-	    if(DETECT_BROKEN) {
+	    if(!ctx->corrupted_input)
+		cli_warnmsg("Incorrect magic number in optional header\n");
+	    if(DETECT_BROKEN_PE) {
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
@@ -785,7 +790,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
         /* read the remaining part of the header */
         if(fmap_readn(map, &optional_hdr32 + 1, at, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't read optional file header\n");
-	    if(DETECT_BROKEN) {
+	    if(DETECT_BROKEN_PE) {
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
@@ -865,14 +870,14 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
     cli_dbgmsg("------------------------------------\n");
 
-    if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
+    if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
         cli_dbgmsg("Bad virtual alignemnt\n");
         if(ctx->virname)
 	    *ctx->virname = "Heuristics.Broken.Executable";
 	return CL_VIRUS;
     }
 
-    if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
+    if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
         cli_dbgmsg("Bad file alignemnt\n");
 	if(ctx->virname)
 	    *ctx->virname = "Heuristics.Broken.Executable";
@@ -904,7 +909,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
 	free(exe_sections);
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;
@@ -971,7 +976,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if (DETECT_BROKEN && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
+	if (DETECT_BROKEN_PE && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
 	    if(ctx->virname)
 	        *ctx->virname = "Heuristics.Broken.Executable";
@@ -985,7 +990,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	      cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
 		free(section_hdr);
 		free(exe_sections);
-		if(DETECT_BROKEN) {
+		if(DETECT_BROKEN_PE) {
 		    if(ctx->virname)
 		        *ctx->virname = "Heuristics.Broken.Executable";
 		    return CL_VIRUS;
@@ -1020,7 +1025,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    cli_dbgmsg("Found PE values with sign bit set\n");
 	    free(section_hdr);
 	    free(exe_sections);
-	    if(DETECT_BROKEN) {
+	    if(DETECT_BROKEN_PE) {
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
 		return CL_VIRUS;
@@ -1029,7 +1034,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	}
 
 	if(!i) {
-	    if (DETECT_BROKEN && exe_sections[i].urva!=hdr_size) { /* Bad first section RVA */
+	    if (DETECT_BROKEN_PE && exe_sections[i].urva!=hdr_size) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
@@ -1040,7 +1045,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 	    min = exe_sections[i].rva;
 	    max = exe_sections[i].rva + exe_sections[i].rsz;
 	} else {
-	    if (DETECT_BROKEN && exe_sections[i].urva - exe_sections[i-1].urva != exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
+	    if (DETECT_BROKEN_PE && exe_sections[i].urva - exe_sections[i-1].urva != exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
 	        cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Heuristics.Broken.Executable";
@@ -1063,7 +1068,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     if(!(ep = cli_rawaddr(vep, exe_sections, nsections, &err, fsize, hdr_size)) && err) {
 	cli_dbgmsg("EntryPoint out of file\n");
 	free(exe_sections);
-	if(DETECT_BROKEN) {
+	if(DETECT_BROKEN_PE) {
 	    if(ctx->virname)
 		*ctx->virname = "Heuristics.Broken.Executable";
 	    return CL_VIRUS;

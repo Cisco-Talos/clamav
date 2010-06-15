@@ -117,6 +117,7 @@ typedef struct cli_ctx_tag {
     unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
+    unsigned int corrupted_input;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     size_t container_size;
     struct cli_dconf *dconf;
