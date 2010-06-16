@@ -272,6 +272,9 @@ static int riff_read_chunk(int fd, int big_endian, int rec_level)
 	}
 	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
+	if(!memcmp(&chunk_id, "anih", 4) && chunk_size != 36)
+	    return 2;
+
 	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
 		return 0;
 	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
@@ -345,12 +348,7 @@ int cli_check_riff_exploit(int fd)
 	do {
 		retval = riff_read_chunk(fd, big_endian, 1);
 	} while (retval == 1);
-		
-	offset = lseek(fd, 0, SEEK_CUR);
 
-	if (offset < (int64_t)chunk_size) {
-		retval = 2;
-	}
 	return retval;
 }
 

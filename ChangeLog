@@ -1,3 +1,7 @@
+Wed Jun 16 16:52:46 CEST 2010 (tk)
+----------------------------------
+ * libclamav/special.c: avoid false MS02-002 detections for corrupted files (bb#2074)
+
 Tue Jun 15 18:07:00 CEST 2010 (tk)
 ----------------------------------
  * libclamav: avoid scanpe() warnings for corrupted files (bb#2049)
