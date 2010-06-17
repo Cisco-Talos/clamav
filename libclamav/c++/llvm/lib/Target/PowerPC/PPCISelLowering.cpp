@@ -2450,9 +2450,6 @@ void PrepareTailCall(SelectionDAG &DAG, SDValue &InFlag, SDValue &Chain,
   InFlag = Chain.getValue(1);
 }
 
-extern "C" void *getPointerToNamedFunctionOrNull(const char *Name);
-extern "C" void *getPointerToGlobalIfAvailable(GlobalValue *Value);
-
 static
 unsigned PrepareCall(SelectionDAG &DAG, SDValue &Callee, SDValue &InFlag,
                      SDValue &Chain, DebugLoc dl, int SPDiff, bool isTailCall,
@@ -2464,41 +2461,30 @@ unsigned PrepareCall(SelectionDAG &DAG, SDValue &Callee, SDValue &InFlag,
   NodeTys.push_back(MVT::Flag);    // Returns a flag for retval copy to use.
 
   unsigned CallOpc = isSVR4ABI ? PPCISD::CALL_SVR4 : PPCISD::CALL_Darwin;
-
-  // XXX Work around for http://llvm.org/bugs/show_bug.cgi?id=5201
-  // and http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=399
-  // for Shark.
-  //
-  // If the callee is an ExternalSymbol node, and the symbol can be
-  // resolved to a function pointer, then insert that pointer as a
-  // constant.  This causes the next block of code to fall into the
-  // block that emits an indirect call.  This works around
-  //
-  // This works for Shark because the only kinds of call that Shark
-  // makes that do not already fall into the indirect call block are
-  // calls to pre-existing external functions.
-  if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee)) {
-    void *FuncPtr = getPointerToNamedFunctionOrNull(S->getSymbol());
-    if (FuncPtr)
-      Callee = DAG.getConstant((uint64_t) FuncPtr, PtrVT);
-  }
-  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
-    void *FuncPtr = getPointerToGlobalIfAvailable(G->getGlobal());
-    if (FuncPtr)
-      Callee = DAG.getConstant((uint64_t) FuncPtr, PtrVT);
-  }
-
-  // If the callee is a GlobalAddress/ExternalSymbol node (quite common, every
-  // direct call is) turn it into a TargetGlobalAddress/TargetExternalSymbol
-  // node so that legalize doesn't hack it.
-  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee))
-    Callee = DAG.getTargetGlobalAddress(G->getGlobal(), Callee.getValueType());
-  else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee))
-    Callee = DAG.getTargetExternalSymbol(S->getSymbol(), Callee.getValueType());
-  else if (SDNode *Dest = isBLACompatibleAddress(Callee, DAG))
+  bool needIndirectCall = true;
+  if (SDNode *Dest = isBLACompatibleAddress(Callee, DAG)) {
     // If this is an absolute destination address, use the munged value.
     Callee = SDValue(Dest, 0);
-  else {
+    needIndirectCall = false;
+  }
+  // XXX Work around for http://llvm.org/bugs/show_bug.cgi?id=5201
+  // Use indirect calls for ALL functions calls in JIT mode, since the
+  // far-call stubs may be outside relocation limits for a BL instruction.
+  if (!DAG.getTarget().getSubtarget<PPCSubtarget>().isJITCodeModel()) {
+    // If the callee is a GlobalAddress/ExternalSymbol node (quite common, every
+    // direct call is) turn it into a TargetGlobalAddress/TargetExternalSymbol
+    // node so that legalize doesn't hack it.
+    if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
+      Callee = DAG.getTargetGlobalAddress(G->getGlobal(),
+					  Callee.getValueType());
+      needIndirectCall = false;
+    } else if (ExternalSymbolSDNode *S = dyn_cast<ExternalSymbolSDNode>(Callee)) {
+      Callee = DAG.getTargetExternalSymbol(S->getSymbol(),
+					   Callee.getValueType());
+      needIndirectCall = false;
+    }
+  }
+  if (needIndirectCall) {
     // Otherwise, this is an indirect call.  We have to use a MTCTR/BCTRL pair
     // to do the call, we can't use PPCISD::CALL.
     SDValue MTCTROps[] = {Chain, Callee, InFlag};

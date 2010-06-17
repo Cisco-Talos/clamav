@@ -1,3 +1,7 @@
+Thu Jun 17 17:11:04 EEST 2010 (edwin)
+-------------------------------------
+* libclamav/c++/llvm: apply PowerPC workaround from LLVM PR5201.
+
 Wed Jun 16 16:52:46 CEST 2010 (tk)
 ----------------------------------
  * libclamav/special.c: avoid false MS02-002 detections for corrupted files (bb#2074)
