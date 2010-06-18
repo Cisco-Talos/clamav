@@ -30,6 +30,12 @@
 #include "cltypes.h"
 #include "md5.h"
 
+struct cli_target_info {
+    off_t fsize;
+    struct cli_exe_info exeinfo;
+    int status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
+};
+
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "hashtab.h"
@@ -144,12 +150,6 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 }
 };
 
-struct cli_target_info {
-    off_t fsize;
-    struct cli_exe_info exeinfo;
-    int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
-};
-
 #define CLI_OFF_ANY         0xffffffff
 #define CLI_OFF_NONE	    0xfffffffe
 #define CLI_OFF_ABSOLUTE    1
@@ -166,7 +166,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres);
 int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);
 int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata);
-int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
+int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
 

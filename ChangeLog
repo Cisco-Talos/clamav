@@ -1,3 +1,7 @@
+Fri Jun 18 15:41:08 CEST 2010 (tk)
+----------------------------------
+ * libclamav: minimize header parsing (bb#2065)
+
 Thu Jun 17 17:11:04 EEST 2010 (edwin)
 -------------------------------------
 * libclamav/c++/llvm: apply PowerPC workaround from LLVM PR5201.
