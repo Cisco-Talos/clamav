@@ -1121,7 +1121,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_ac_patt *patt, *pt;
         uint32_t i, bp, realoff, matchend;
 	uint16_t j;
-	int32_t **offmatrix;
+	int32_t **offmatrix, swap;
 	uint8_t found;
 	int type = CL_CLEAN;
 	struct cli_ac_result *newres;
@@ -1231,7 +1231,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    if(pt->partno != 1) {
 				found = 0;
 				for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
-				    found = 1;
+				    found = j;
 				    if(pt->maxdist)
 					if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
 					    found = 0;
@@ -1243,6 +1243,16 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    if(found)
 					break;
 				}
+			    }
+
+			    if(pt->partno == 2 && found > 1) {
+				swap = offmatrix[pt->parts - 1][1];
+				offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
+				offmatrix[pt->parts - 1][found] = swap;
+
+				swap = offmatrix[0][1];
+				offmatrix[0][1] = offmatrix[0][found];
+				offmatrix[0][found] = swap;
 			    }
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
@@ -1262,7 +1272,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
 					type = pt->type;
 					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE)))  {
-					    /* FIXME: we don't know which offset of the first part is the correct one */
+					    /* FIXME: the first offset in the array is most likely the correct one but
+					     * it may happen it is not
+					     */
 					    for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[0][j] != -1; j++)
 						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx))
 						    return CL_EMEM;
@@ -1287,7 +1299,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					newres->virname = pt->virname;
 					newres->customdata = pt->customdata;
 					newres->next = *res;
-					newres->offset = realoff;
+					newres->offset = offmatrix[pt->parts - 1][1];
 					*res = newres;
 
 					pt = pt->next_same;

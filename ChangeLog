@@ -1,3 +1,7 @@
+Mon Jun 21 20:07:09 CEST 2010 (tk)
+----------------------------------
+ * libclamav: report correct offset via cli_ac_result (bb#2076)
+
 Fri Jun 18 15:41:08 CEST 2010 (tk)
 ----------------------------------
  * libclamav: minimize header parsing (bb#2065)
