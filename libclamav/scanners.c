@@ -1894,9 +1894,25 @@ static void emax_reached(cli_ctx *ctx) {
 #define LINESTR(x) #x
 #define LINESTR2(x) LINESTR(x)
 #define __AT__  " at line "LINESTR2(__LINE__)
-#define ret_from_magicscan(retcode) do {					\
-    cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);	\
-    return retcode;							\
+#define ret_from_magicscan(retcode) do {							\
+    cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);			\
+    if(ctx->engine->cb_post_scan) {								\
+	switch(ctx->engine->cb_post_scan(desc, retcode, ctx->engine->cb_post_scan_ctx)) {	\
+	case CL_BREAK:										\
+	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");			\
+	    return CL_CLEAN;									\
+	case CL_VIRUS:										\
+	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");			\
+	    if(ctx->virname)									\
+		*ctx->virname = "Detected.By.Callback";						\
+	    return CL_VIRUS;									\
+	case CL_CLEAN:										\
+	    break;										\
+	default:										\
+	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");	\
+	}											\
+    }												\
+    return retcode;										\
     } while(0)
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
@@ -1951,6 +1967,27 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_errmsg("CRITICAL: fmap() failed\n");
 	ctx->fmap--;
 	ret_from_magicscan(CL_EMEM);
+    }
+
+    if(ctx->engine->cb_pre_scan) {
+	switch(ctx->engine->cb_pre_scan(desc, ctx->engine->cb_pre_scan_ctx)) {
+	case CL_BREAK:
+	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");
+	    funmap(*ctx->fmap);
+	    ctx->fmap--;
+	    ret_from_magicscan(CL_CLEAN);
+	case CL_VIRUS:
+	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");
+	    if(ctx->virname)
+		*ctx->virname = "Detected.By.Callback";
+	    funmap(*ctx->fmap);
+	    ctx->fmap--;
+	    ret_from_magicscan(CL_VIRUS);
+	case CL_CLEAN:
+	    break;
+	default:
+	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");
+	}
     }
 
     if(cache_check(hash, ctx) == CL_CLEAN) {

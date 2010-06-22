@@ -11,6 +11,9 @@ CLAMAV_PUBLIC {
     cl_engine_get_num;
     cl_engine_set_str;
     cl_engine_get_str;
+    cl_engine_set_clcb_pre_scan;
+    cl_engine_set_clcb_post_scan;
+    cl_engine_set_clcb_sigload;
     cl_engine_settings_copy;
     cl_engine_settings_apply;
     cl_engine_settings_free;

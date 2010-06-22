@@ -247,6 +247,14 @@ struct cl_engine {
     /* Used for memory pools */
     mpool_t *mempool;
 
+    /* Callback(s) */
+    clcb_pre_scan cb_pre_scan;
+    void *cb_pre_scan_ctx;
+    clcb_post_scan cb_post_scan;
+    void *cb_post_scan_ctx;
+    clcb_sigload cb_sigload;
+    void *cb_sigload_ctx;
+
     /* Used for bytecode */
     struct cli_all_bc bcs;
     unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];

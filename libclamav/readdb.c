@@ -549,6 +549,11 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	if(engine->ignored && cli_chkign(engine->ignored, start, buffer_cpy))
 	    continue;
 
+	if(engine->cb_sigload && engine->cb_sigload("db", start, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loaddb: skipping %s due to callback\n", start);
+	    continue;
+	}
+
 	if(*pt == '=') continue;
 
 	if((ret = cli_parse_add(root, start, pt, 0, 0, "*", 0, NULL, options))) {
@@ -622,6 +627,11 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
 	    continue;
+
+	if(engine->cb_sigload && engine->cb_sigload("idb", tokens[0], engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadidb: skipping %s due to callback\n", tokens[0]);
+	    continue;
+	}
 
 	hash = (uint8_t *)tokens[3];
 	if(cli_hexnibbles((char *)hash, 124)) {
@@ -891,6 +901,11 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
 	    continue;
+
+	if(engine->cb_sigload && engine->cb_sigload("ndb", virname, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadndb: skipping %s due to callback\n", virname);
+	    continue;
+	}
 
 	if(tokens_count > 4) { /* min version */
 	    pt = tokens[4];
@@ -1194,6 +1209,11 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 
     if (chkign && cli_chkign(engine->ignored, virname, buffer_cpy))
 	return CL_SUCCESS;
+
+    if(engine->cb_sigload && engine->cb_sigload("ldb", virname, engine->cb_sigload_ctx)) {
+	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
+	return CL_SUCCESS;
+    }
 
     subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
     if(subsigs == -1) {
@@ -1894,6 +1914,11 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy))
 	    continue;
 
+	if(engine->cb_sigload && engine->cb_sigload("md5", pt, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadmd5: skipping %s due to callback\n", pt);
+	    continue;
+	}
+
 	new = (struct cli_bm_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!new) {
 	    ret = CL_EMEM;
@@ -2045,6 +2070,13 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 	}
 
+	if(engine->cb_sigload && engine->cb_sigload("md", new->virname, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadmd: skipping %s due to callback\n", new->virname);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
 	new->encrypted = strcmp(tokens[1], "*") ? atoi(tokens[1]) : 2;
 
 	if(strcmp(tokens[2], "*") && cli_regcomp(&new->name, tokens[2], REG_EXTENDED | REG_NOSUB)) {
@@ -2173,6 +2205,13 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 
 	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
+	    continue;
+	}
+
+	if(engine->cb_sigload && engine->cb_sigload("cdb", new->virname, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadcdb: skipping %s due to callback\n", new->virname);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    continue;
