@@ -511,7 +511,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 {
  	unsigned char *buff;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
-	unsigned int i, bm_offmode = 0;
+	unsigned int i = 0, bm_offmode = 0;
 	uint32_t maxpatlen, offset = 0;
 	struct cli_ac_data gdata, tdata;
 	struct cli_bm_off toff;
