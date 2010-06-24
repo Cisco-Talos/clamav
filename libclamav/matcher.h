@@ -93,6 +93,10 @@ struct cli_matcher {
     uint32_t *soff, soff_len; /* for PE section sigs */
     uint32_t bm_offmode, bm_patterns, bm_reloff_num, bm_absoff_num;
 
+    /* MD5 */
+    struct cli_md5m_patt **md5tab;
+    uint32_t md5_patterns;
+
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;
     struct cli_ac_lsig **ac_lsigtable;

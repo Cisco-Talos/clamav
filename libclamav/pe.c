@@ -54,7 +54,7 @@
 #include "mew.h"
 #include "upack.h"
 #include "matcher.h"
-#include "matcher-bm.h"
+#include "matcher-md5.h"
 #include "disasm.h"
 #include "special.h"
 #include "ishield.h"
@@ -1007,9 +1007,9 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
-			const struct cli_bm_patt *patt;
-			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, &patt, ctx->engine->md5_mdb, 0, NULL, NULL) == CL_VIRUS && patt->filesize == exe_sections[i].rsz) {
-			    if(cli_bm_scanbuff(md5_dig, 16, NULL, &patt, ctx->engine->md5_fp, 0, NULL, NULL) != CL_VIRUS || patt->filesize != fsize) {
+			const struct cli_md5m_patt *patt;
+			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_md5m_scan(md5_dig, exe_sections[i].rsz, ctx->virname, ctx->engine->md5_mdb) == CL_VIRUS) {
+			    if(cli_md5m_scan(md5_dig, fsize, NULL, ctx->engine->md5_fp) != CL_VIRUS) {
 				free(section_hdr);
 				free(exe_sections);
 				return CL_VIRUS;

@@ -115,22 +115,22 @@ LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_LLVM_FALSE@am__DEPENDENCIES_2 = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@am__DEPENDENCIES_2 = c++/libclamavcxx.la
 am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
-	matcher-bm.c matcher-bm.h matcher.c matcher.h others.c \
-	others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
-	scanners.c scanners.h textdet.c textdet.h filetypes.c \
-	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
-	mbox.h message.c message.h table.c table.h text.c text.h \
-	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
-	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
-	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
-	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
-	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	matcher-bm.c matcher-bm.h matcher-md5.c matcher-md5.h \
+	matcher.c matcher.h others.c others.h readdb.c readdb.h cvd.c \
+	cvd.h dsig.c dsig.h scanners.c scanners.h textdet.c textdet.h \
+	filetypes.c filetypes.h filetypes_int.h rtf.c rtf.h blob.c \
+	blob.h mbox.c mbox.h message.c message.h table.c table.h \
+	text.c text.h ole2_extract.c ole2_extract.h vba_extract.c \
+	vba_extract.h cltypes.h msexpand.c msexpand.h pe.c pe.h \
+	pe_icons.c pe_icons.h disasm.c disasm.h disasm-common.h \
+	disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c \
+	chmunpack.h rebuildpe.c rebuildpe.h petite.c petite.h \
+	wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
+	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
+	line.c line.h untar.c untar.h unzip.c unzip.h inflate64.c \
+	inflate64.h inffixed64.h inflate64_priv.h special.c special.h \
+	binhex.c binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c \
+	autoit.h unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
 	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
 	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
 	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
@@ -161,12 +161,12 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 @BUILD_SHA1_TRUE@am__objects_2 = libclamav_la-sha1.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
-	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
-	libclamav_la-others.lo libclamav_la-readdb.lo \
-	libclamav_la-cvd.lo libclamav_la-dsig.lo \
-	libclamav_la-scanners.lo libclamav_la-textdet.lo \
-	libclamav_la-filetypes.lo libclamav_la-rtf.lo \
-	libclamav_la-blob.lo libclamav_la-mbox.lo \
+	libclamav_la-matcher-bm.lo libclamav_la-matcher-md5.lo \
+	libclamav_la-matcher.lo libclamav_la-others.lo \
+	libclamav_la-readdb.lo libclamav_la-cvd.lo \
+	libclamav_la-dsig.lo libclamav_la-scanners.lo \
+	libclamav_la-textdet.lo libclamav_la-filetypes.lo \
+	libclamav_la-rtf.lo libclamav_la-blob.lo libclamav_la-mbox.lo \
 	libclamav_la-message.lo libclamav_la-table.lo \
 	libclamav_la-text.lo libclamav_la-ole2_extract.lo \
 	libclamav_la-vba_extract.lo libclamav_la-msexpand.lo \
@@ -617,21 +617,22 @@ libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
-	matcher-bm.h matcher.c matcher.h others.c others.h readdb.c \
-	readdb.h cvd.c cvd.h dsig.c dsig.h scanners.c scanners.h \
-	textdet.c textdet.h filetypes.c filetypes.h filetypes_int.h \
-	rtf.c rtf.h blob.c blob.h mbox.c mbox.h message.c message.h \
-	table.c table.h text.c text.h ole2_extract.c ole2_extract.h \
-	vba_extract.c vba_extract.h cltypes.h msexpand.c msexpand.h \
-	pe.c pe.h pe_icons.c pe_icons.h disasm.c disasm.h \
-	disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h \
-	chmunpack.c chmunpack.h rebuildpe.c rebuildpe.h petite.c \
-	petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
-	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
-	line.c line.h untar.c untar.h unzip.c unzip.h inflate64.c \
-	inflate64.h inffixed64.h inflate64_priv.h special.c special.h \
-	binhex.c binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c \
-	autoit.h unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	matcher-bm.h matcher-md5.c matcher-md5.h matcher.c matcher.h \
+	others.c others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
+	scanners.c scanners.h textdet.c textdet.h filetypes.c \
+	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
+	mbox.h message.c message.h table.c table.h text.c text.h \
+	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
+	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
+	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
+	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
+	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
+	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
+	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
+	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
+	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
+	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
+	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
 	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
 	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
 	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
@@ -830,6 +831,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-macho.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-ac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-bm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-message.Plo@am__quote@
@@ -926,6 +928,14 @@ libclamav_la-matcher-bm.lo: matcher-bm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='matcher-bm.c' object='libclamav_la-matcher-bm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-bm.lo `test -f 'matcher-bm.c' || echo '$(srcdir)/'`matcher-bm.c
+
+libclamav_la-matcher-md5.lo: matcher-md5.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher-md5.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher-md5.Tpo -c -o libclamav_la-matcher-md5.lo `test -f 'matcher-md5.c' || echo '$(srcdir)/'`matcher-md5.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-matcher-md5.Tpo $(DEPDIR)/libclamav_la-matcher-md5.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='matcher-md5.c' object='libclamav_la-matcher-md5.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-md5.lo `test -f 'matcher-md5.c' || echo '$(srcdir)/'`matcher-md5.c
 
 libclamav_la-matcher.lo: matcher.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher.Tpo -c -o libclamav_la-matcher.lo `test -f 'matcher.c' || echo '$(srcdir)/'`matcher.c
