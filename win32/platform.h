@@ -59,6 +59,9 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define closesocket w32_closesocket
 #define getservbyname w32_getservbyname
 #define getaddrinfo w32_getaddrinfo
+#ifdef gai_strerror
+#undef gai_strerror
+#endif
 #define gai_strerror w32_strerror
 #define freeaddrinfo w32_freeaddrinfo
 #define inet_ntop w32_inet_ntop
