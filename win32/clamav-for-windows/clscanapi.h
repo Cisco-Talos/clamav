@@ -74,6 +74,11 @@ Engine/API Requirements:
 #define CLAM_SCAN_FULL 0x0
 #define CLAM_SCAN_LIGHT  0x1
 
+#define CLAM_OPTION_SCAN_ARCHIVE	0x00000001
+#define CLAM_OPTION_SCAN_PACKED		0x00000002
+#define CLAM_OPTION_SCAN_EMAIL		0x00000004
+#define CLAM_OPTION_SCAN_DEEP		0x00000008
+
 #define CLAMAPI_DISINFECT_ONLY 0x10
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // An example structure that external module should fill. This can be used by Immunet interface either during callback
