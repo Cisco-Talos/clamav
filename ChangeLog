@@ -1,3 +1,7 @@
+Mon Jun 28 18:42:48 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: drop compatibility limit
+
 Thu Jun 24 20:04:02 CEST 2010 (tk)
 ----------------------------------
  * libclamav: reduce memory usage for MD5 sigs (bb#2057)

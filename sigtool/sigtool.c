@@ -71,12 +71,6 @@
 
 #define MAX_DEL_LOOKAHEAD   200
 
-/*
- * Force backward compatibility with the cdiff interpreter of clamav < 0.95
- */
-#define COMPATIBILITY_LIMIT 980
-
-
 static const struct dblist_s {
     const char *name;
     unsigned int count;
@@ -1639,15 +1633,6 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 		fprintf(diff, "ADD %s\n", nbuff);
 	    }
 	}
-#ifdef COMPATIBILITY_LIMIT
-       if(!cli_strbcasestr(newpath, ".cbc") && strlen(nbuff) > COMPATIBILITY_LIMIT) {
-	   mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
-           if(old)
-               fclose(old);
-	   fclose(new);
-           return -1;
-       }
-#endif
     }
     fclose(new);
 
