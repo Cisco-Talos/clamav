@@ -28,6 +28,7 @@
 #include "readdb.h"
 #include "matcher.h"
 #include "filtering.h"
+#include "hashtab.h"
 #include <zlib.h> /* for gzFile */
 
 #include "mpool.h"

@@ -77,6 +77,7 @@
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
+#include "libclamav/regex_list.h"
 
 extern char updtmpdir[512];
 
@@ -1774,6 +1775,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    return 55;
 	}
 	logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
+	if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
+	    cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
 	cl_engine_free(engine);
     }
 

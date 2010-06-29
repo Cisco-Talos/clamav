@@ -97,6 +97,7 @@ CLAMAV_PRIVATE {
     regex_list_add_pattern;
     cli_build_regex_list;
     regex_list_match;
+    cli_hashset_destroy;
     phishing_init;
     init_domainlist;
     init_whitelist;

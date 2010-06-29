@@ -1,3 +1,7 @@
+Tue Jun 29 13:51:06 CEST 2010 (tk)
+----------------------------------
+ * freshclam: fix memleak when testing safebrowsing.cvd (bb#2091)
+
 Tue Jun 29 12:08:42 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/mpool.c: reduce memory waste due to alignment (~14% improvement).
