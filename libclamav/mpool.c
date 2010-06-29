@@ -456,6 +456,7 @@ static inline unsigned int alignof(unsigned int size)
 	case 0:
 	    return 8;
 	case 2:
+	case 6:
 	    return 2;
 	case 4:
 	    return 4;
@@ -647,7 +648,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     struct FRAG *fold = f;
     mp->avail[sbits] = f->u.next.ptr;
     /* we always have enough space for this, align_increase ensured that */
-    f = (struct FRAG*)alignto((unsigned long)f, align);
+    f = (struct FRAG*)(alignto((unsigned long)f + FRAG_OVERHEAD, align)-FRAG_OVERHEAD);
     f->u.a.sbits = sbits;
     f->u.a.padding = (char*)f - (char*)fold;
 #ifdef CL_DEBUG
