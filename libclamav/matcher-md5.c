@@ -62,10 +62,12 @@ int cli_md5m_addpatt(struct cli_matcher *root, struct cli_md5m_patt *patt)
 
 int cli_md5m_init(struct cli_matcher *root)
 {
+#ifdef USE_MPOOL
     if(!root->mempool) {
 	cli_errmsg("cli_md5m_init: mempool must be initialized\n");
 	return CL_EMEM;
     }
+#endif
 
     if(!(root->md5tab = (struct cli_md5m_patt **) mpool_calloc(root->mempool, HASH(255, 255, 255) + 1, sizeof(struct cli_md5m_patt *)))) {
 	mpool_free(root->mempool, root->bm_shift);
