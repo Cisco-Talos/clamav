@@ -340,6 +340,10 @@ union unaligned_16 {
 	int16_t una_s16;
 } __attribute__((packed));
 
+struct unaligned_ptr {
+    void *ptr;
+} __attribute__((packed));
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif

@@ -44,15 +44,16 @@
 #include "str.h"
 #include "readdb.h"
 
+/*#define CL_DEBUG*/
 #ifdef CL_DEBUG
 #include <assert.h>
-#define MPOOLMAGIC 0x5adeada5
+#define MPOOLMAGIC 0xadde
 #define ALLOCPOISON 0x5a
 #define FREEPOISON 0xde
 #endif
 
-/* #define DEBUGMPOOL */
-/* #define EXIT_ON_FLUSH */
+/*#define DEBUGMPOOL
+#define EXIT_ON_FLUSH*/
 #ifdef DEBUGMPOOL
 #define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
@@ -237,23 +238,23 @@ struct MP {
   } u;
 };
 
+/* alignment of fake handled in the code! */
+struct alloced {
+    uint8_t padding;
+    uint8_t sbits;
+    uint8_t fake;
+};
+
 struct FRAG {
 #ifdef CL_DEBUG
-  unsigned int magic;
+  uint16_t magic;
 #endif
   union {
-    struct FRAG *next;
-    unsigned int sbits;
-    int64_t dummy_align;
-    /* needed to align to 64-bit on sparc, since pointers are 32-bit only,
-     * yet we need 64-bit alignment for struct containing int64 members */
+      struct alloced a;
+      struct unaligned_ptr next;
   } u;
-  void *fake;
 };
-#define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
-
-#define align_to_voidptr(size) (((size) / MAX(sizeof(void *), 8) + ((size) % MAX(sizeof(void *), 8) != 0)) * MAX(sizeof(void *), 8))
-#define mpool_roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
+#define FRAG_OVERHEAD (offsetof(struct FRAG, u.a.fake))
 
 static unsigned int align_to_pagesize(struct MP *mp, unsigned int size) {
   return (size / mp->psize + (size % mp->psize != 0)) * mp->psize;
@@ -265,9 +266,40 @@ static unsigned int to_bits(unsigned int size) {
     if(fragsz[i] >= size) return i;
   return FRAGSBITS;
 }
+
 static unsigned int from_bits(unsigned int bits) {
   if (bits >= FRAGSBITS) return 0;
   return fragsz[bits];
+}
+
+static inline unsigned int alignof(unsigned int size)
+{
+    /* conservative estimate of alignment.
+     * A struct that needs alignment of 'align' is padded by the compiler
+     * so that sizeof(struct)%align == 0 
+     * (otherwise you wouldn't be able to use it in an array)
+     * Also align = 2^n.
+     * Largest alignment we need is 8 bytes (ptr/int64), since we don't use long
+     * double or __aligned attribute.
+     * This conservatively estimates that size 32 needs alignment of 8 (even if it might only
+     * need an alignment of 4).
+     */
+    switch (size%8) {
+	case 0:
+	    return 8;
+	case 2:
+	    return 2;
+	case 4:
+	    return 4;
+	default:
+	    return 1;
+    }
+}
+
+static inline size_t alignto(size_t p, size_t size)
+{
+    /* size is power of 2 */
+    return (p+size-1)&(~(size-1));
 }
 
 struct MP *mpool_create() {
@@ -276,14 +308,22 @@ struct MP *mpool_create() {
   memset(&mp, 0, sizeof(mp));
   mp.psize = cli_getpagesize();
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
-  mp.u.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
-  mp.u.mpm.size = sz - align_to_voidptr(sizeof(mp));
+  mp.u.mpm.usize = sizeof(struct MPMAP);
+  mp.u.mpm.size = sz - sizeof(mp);
 #ifndef _WIN32
   if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
 #else
   if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
 #endif
     return NULL;
+  if (FRAGSBITS > 255) {
+      cli_errmsg("At most 255 frags possible!\n");
+      return NULL;
+  }
+  if (fragsz[0] < sizeof(void*)) {
+      cli_errmsg("fragsz[0] too small!\n");
+      return NULL;
+  }
 #ifdef CL_DEBUG
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
@@ -310,10 +350,10 @@ void mpool_destroy(struct MP *mp) {
   }
   mpmsize = mp->u.mpm.size;
 #ifdef CL_DEBUG
-  memset(mp, FREEPOISON, mpmsize + align_to_voidptr(sizeof(*mp)));
+  memset(mp, FREEPOISON, mpmsize + sizeof(*mp));
 #endif
 #ifndef _WIN32
-  munmap((void *)mp, mpmsize + align_to_voidptr(sizeof(*mp)));
+  munmap((void *)mp, mpmsize + sizeof(*mp));
 #else
   VirtualFree(mp, 0, MEM_RELEASE);
 #endif
@@ -345,17 +385,17 @@ void mpool_flush(struct MP *mp) {
 	used += mpm->size;
     }
 
-    mused = align_to_pagesize(mp, mp->u.mpm.usize + align_to_voidptr(sizeof(*mp)));
-    if (mused < mp->u.mpm.size + align_to_voidptr(sizeof(*mp))) {
+    mused = align_to_pagesize(mp, mp->u.mpm.usize + sizeof(*mp));
+    if (mused < mp->u.mpm.size + sizeof(*mp)) {
 #ifdef CL_DEBUG
-	memset((char *)mp + mused, FREEPOISON, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+	memset((char *)mp + mused, FREEPOISON, mp->u.mpm.size + sizeof(*mp) - mused);
 #endif
 #ifndef _WIN32
-	munmap((char *)mp + mused, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+	munmap((char *)mp + mused, mp->u.mpm.size + sizeof(*mp) - mused);
 #else
-	VirtualFree((char *)mp + mused, mp->u.mpm.size + align_to_voidptr(sizeof(*mp)) - mused, MEM_DECOMMIT);
+	VirtualFree((char *)mp + mused, mp->u.mpm.size + sizeof(*mp) - mused, MEM_DECOMMIT);
 #endif
-	mp->u.mpm.size = mused - align_to_voidptr(sizeof(*mp));
+	mp->u.mpm.size = mused - sizeof(*mp);
     }
     used += mp->u.mpm.size;
     spam("Map flushed @%p, in use: %lu\n", mp, used);
@@ -382,8 +422,48 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
   return 0;
 }
 
+static inline unsigned align_increase(unsigned size, unsigned a)
+{
+    /* we must pad with at most a-1 bytes to align start of struct */
+    return size + a - 1;
+}
+
+static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned align, const char *dbg)
+{
+    /* We could always align the size to maxalign (8), however that wastes
+     * space.
+     * So just align the start of each allocation as needed, and then see in
+     * which sbits bin we fit into.
+     * Since we are no longer allocating in multiple of 8, we must always
+     * align the start of each allocation!
+     *| end of previous allocation | padding | FRAG_OVERHEAD | ptr_aligned |*/
+    unsigned p = mpm->usize + FRAG_OVERHEAD;
+    unsigned p_aligned = alignto(p, align);
+    struct FRAG *f = (struct FRAG*)((char*)mpm + p_aligned - FRAG_OVERHEAD);
+    unsigned realneed = p_aligned + size - mpm->usize;
+    unsigned sbits = to_bits(realneed);
+    unsigned needed = from_bits(sbits);
+#ifdef CL_DEBUG
+    assert(p_aligned + size <= mpm->size);
+#endif
+    f->u.a.sbits = sbits;
+    f->u.a.padding = p_aligned - p;
+
+    mpm->usize += needed;
+#ifdef CL_DEBUG
+    assert(mpm->usize <= mpm->size);
+#endif
+    spam("malloc @%p size %u (%s) origsize %u overhead %u\n", f, realneed, dbg, size, needed - size);
+#ifdef CL_DEBUG
+    f->magic = MPOOLMAGIC;
+    memset(&f->u.a.fake, ALLOCPOISON, size);
+#endif
+    return &f->u.a.fake;
+}
+
 void *mpool_malloc(struct MP *mp, size_t size) {
-  unsigned int i, needed = align_to_voidptr(size + FRAG_OVERHEAD);
+  unsigned align = alignof(size);
+  unsigned int i, needed = align_increase(size+FRAG_OVERHEAD, align);
   const unsigned int sbits = to_bits(needed);
   struct FRAG *f = NULL;
   struct MPMAP *mpm = &mp->u.mpm;
@@ -396,14 +476,18 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 
   /* Case 1: We have a free'd frag */
   if((f = mp->avail[sbits])) {
-    spam("malloc @%p size %u (freed)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
-    mp->avail[sbits] = f->u.next;
-    f->u.sbits = sbits;
+    struct FRAG *fold = f;
+    mp->avail[sbits] = f->u.next.ptr;
+    /* we always have enough space for this, align_increase ensured that */
+    f = (struct FRAG*)alignto((unsigned long)f, align);
+    f->u.a.sbits = sbits;
+    f->u.a.padding = (char*)f - (char*)fold;
 #ifdef CL_DEBUG
-      f->magic = MPOOLMAGIC;
-      memset(&f->fake, ALLOCPOISON, size);
+    f->magic = MPOOLMAGIC;
+    memset(&f->u.a.fake, ALLOCPOISON, size);
 #endif
-    return &f->fake;
+    spam("malloc @%p size %u (freed) origsize %u overhead %u\n", f, f->u.a.padding + FRAG_OVERHEAD + size, size, needed - size);
+    return &f->u.a.fake;
   }
 
   if (!(needed = from_bits(sbits))) {
@@ -413,23 +497,14 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 
   /* Case 2: We have nuff room available for this frag already */
   while(mpm) {
-    if(mpm->size - mpm->usize >= needed) {
-      f = (struct FRAG *)((char *)mpm + mpm->usize);
-      spam("malloc @%p size %u (hole)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
-      mpm->usize += needed;
-      f->u.sbits = sbits;
-#ifdef CL_DEBUG
-      f->magic = MPOOLMAGIC;
-      memset(&f->fake, ALLOCPOISON, size);
-#endif
-      return &f->fake;
-    }
+    if(mpm->size - mpm->usize >= needed)
+	return allocate_aligned(mpm, size, align, "hole");
     mpm = mpm->next;
   }
 
   /* Case 3: We allocate more */
-  if (needed + align_to_voidptr(sizeof(*mpm)) > MIN_FRAGSIZE)
-  i = align_to_pagesize(mp, needed + align_to_voidptr(sizeof(*mpm)));
+  if (needed + sizeof(*mpm) > MIN_FRAGSIZE)
+  i = align_to_pagesize(mp, needed + sizeof(*mpm));
   else
   i = align_to_pagesize(mp, MIN_FRAGSIZE);
 
@@ -446,16 +521,18 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   memset(mpm, ALLOCPOISON, i);
 #endif
   mpm->size = i;
-  mpm->usize = needed + align_to_voidptr(sizeof(*mpm));
+  mpm->usize = sizeof(*mpm);
   mpm->next = mp->u.mpm.next;
   mp->u.mpm.next = mpm;
-  f = (struct FRAG *)((char *)mpm + align_to_voidptr(sizeof(*mpm)));
-  spam("malloc @%p size %u (new map)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
-  f->u.sbits = sbits;
+  return allocate_aligned(mpm, size, align, "new map");
+}
+
+static void *allocbase_fromfrag(struct FRAG *f)
+{
 #ifdef CL_DEBUG
-  f->magic = MPOOLMAGIC;
+    assert(f->u.a.padding < 8);
 #endif
-  return &f->fake;
+    return (char*)f - f->u.a.padding;
 }
 
 void mpool_free(struct MP *mp, void *ptr) {
@@ -465,13 +542,17 @@ void mpool_free(struct MP *mp, void *ptr) {
 
 #ifdef CL_DEBUG
   assert(f->magic == MPOOLMAGIC && "Attempt to mpool_free a pointer we did not allocate!");
-  memset(ptr, FREEPOISON, from_bits(f->u.sbits) - FRAG_OVERHEAD);
 #endif
 
-  sbits = f->u.sbits;
-  f->u.next = mp->avail[sbits];
-  mp->avail[sbits] = f;
   spam("free @%p\n", f);
+  sbits = f->u.a.sbits;
+  f = allocbase_fromfrag(f);
+#ifdef CL_DEBUG
+  memset(f, FREEPOISON, from_bits(sbits));
+#endif
+
+  f->u.next.ptr = mp->avail[sbits];
+  mp->avail[sbits] = f;
 }
 
 void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
@@ -490,14 +571,14 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   void *new_ptr;
   if (!ptr) return mpool_malloc(mp, size);
 
-  if(!size || !(csize = from_bits(f->u.sbits))) {
+  if(!size || !(csize = from_bits(f->u.a.sbits))) {
     cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
   }
-  csize -= FRAG_OVERHEAD;
-  if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size)) {
+  csize -= FRAG_OVERHEAD + f->u.a.padding;
+  if (csize >= size && (!f->u.a.sbits || from_bits(f->u.a.sbits-1)-FRAG_OVERHEAD-f->u.a.padding < size)) {
     spam("free @%p\n", f);
-    spam("malloc @%p size %u (self)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
+    spam("malloc @%p size %u (self) origsize %u overhead %u\n", f, size + FRAG_OVERHEAD + f->u.a.padding, size, csize-size+FRAG_OVERHEAD+f->u.a.padding);
     return ptr;
   }
   if (!(new_ptr = mpool_malloc(mp, size)))
