@@ -755,7 +755,7 @@ static void output_memstats(struct stats *stats)
 
 		if (stats->mem > 0)
 		    snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
-			     stats->lheapu/1024, stats->lmmapu/1024, stats->lreleasable/1024);
+			     stats->lheapu/1000, stats->lmmapu/1000, stats->lreleasable/1000);
 		else
 		    snprintf(buf, sizeof(buf), "heap   N/A mmap   N/A unused  N/A");
 		mvwprintw(mem_window, 1, 1, "Mem:  ");
@@ -764,14 +764,14 @@ static void output_memstats(struct stats *stats)
 		mvwprintw(mem_window, 2, 1, "Libc: ");
 		if (stats->mem > 0)
 		    snprintf(buf, sizeof(buf),"used %4luM free %4luM total %4luM",
-			     stats->ltotalu/1024, stats->ltotalf/1024, (stats->ltotalu+stats->ltotalf)/1024);
+			     stats->ltotalu/1000, stats->ltotalf/1000, (stats->ltotalu+stats->ltotalf)/1000);
 		else
 		    snprintf(buf, sizeof(buf), "used   N/A free   N/A total   N/A");
 		print_colored(mem_window, buf);
 
 		mvwprintw(mem_window, 3, 1, "Pool: ");
 		snprintf(buf, sizeof(buf), "count %4u used %4luM total %4luM",
-			stats->pools_cnt, stats->lpoolu/1024, stats->lpoolt/1024);
+			stats->pools_cnt, stats->lpoolu/1000, stats->lpoolt/1000);
 		print_colored(mem_window, buf);
 
 		totalmem = stats->lheapu + stats->lmmapu + stats->lpoolt;

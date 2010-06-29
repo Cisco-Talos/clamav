@@ -1,3 +1,7 @@
+Tue Jun 29 12:05:59 EEST 2010 (edwin)
+-------------------------------------
+ * clamdtop/clamdtop.c: fix display of sizes (off by 1000/1024).
+
 Mon Jun 28 18:42:48 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: drop compatibility limit
