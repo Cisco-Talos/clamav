@@ -1,3 +1,7 @@
+Thu Jul  1 18:22:58 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher.c: fix counting of logical subsigs matched at boundaries (bb#2053)
+
 Tue Jun 29 13:51:06 CEST 2010 (tk)
 ----------------------------------
  * freshclam: fix memleak when testing safebrowsing.cvd (bb#2091)

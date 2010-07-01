@@ -1062,15 +1062,19 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
 
 static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff)
 {
-    if(realoff != CLI_OFF_NONE)
-	mdata->lsigcnt[lsigid1][lsigid2]++;
+	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
 
-    if(mdata->lsigsuboff[lsigid1][lsigid2] == CLI_OFF_NONE)
-	mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
-    else if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
+    if(realoff != CLI_OFF_NONE) {
+	if(mdata->lsigsuboff[lsigid1][lsigid2] != CLI_OFF_NONE && realoff <= mdata->lsigsuboff[lsigid1][lsigid2])
+	    return;
+	mdata->lsigcnt[lsigid1][lsigid2]++;
+	if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
+	    mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
+    }
+
+    if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
 	/* Check that the previous match had a macro match following it at the 
 	 * correct distance. This check is only done after the 1st match.*/
-	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
 	const struct cli_ac_patt *macropt;
 	uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
 	if (!tdb->macro_ptids)
@@ -1287,7 +1291,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				} else { /* !pt->type */
 				    if(pt->lsigid[0]) {
-					lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff);
+					lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1]);
 					pt = pt->next_same;
 					continue;
 				    }
