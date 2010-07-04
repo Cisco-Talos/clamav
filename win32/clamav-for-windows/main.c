@@ -21,17 +21,66 @@
 #include "clamav-config.h"
 #endif
 
+#include "clamav.h"
+#include "shared/output.h"
 #include "interface.h"
+
+EXTERN_C IMAGE_DOS_HEADER __ImageBase; /* Reloc safe! */
+
+BOOL init() {
+    char whereami[PATH_MAX], *slash;
+    int ret;
+
+    ret = GetModuleFileName((HINSTANCE)&__ImageBase, whereami, sizeof(whereami) -1);
+    if(!ret || ret == sizeof(whereami) -1)
+	return FALSE;
+
+    whereami[sizeof(whereami)-1] = '\0';
+    slash = strrchr(whereami, '\\');
+    if(!slash)
+	return FALSE;
+
+    slash++;
+    *slash='\0';
+    SetDllDirectory(whereami);
+    __try {
+	ret = cl_init(CL_INIT_DEFAULT);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) { ret = 1; }
+
+    SetDllDirectory(NULL);
+    if(ret)
+	return FALSE;
+
+    strncpy(slash, "clamav.log", sizeof(whereami) - (slash - whereami));
+    whereami[sizeof(whereami)-1] = '\0';
+    logg_verbose = 1;
+    logg_nowarn = 0;
+    logg_lock = 0;
+    logg_time = 1;
+    logg_size = -1;
+    logg_file = strdup(whereami);
+    if(!logg_file)
+	return FALSE;
+    if(logg("ClamAV core initialized\n"))
+	return FALSE;
+
+    ret = interface_setup();
+    logg("ClamAV module %s\n", ret == TRUE ? "initialized" : "failed! Aborting...");
+    return ret;
+}
+
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-	    return interface_setup();
+	    return init();
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
+	    break;
 	case DLL_PROCESS_DETACH:
-		break;
+	    logg("ClamAV module shutting down\n");
 	}
 	return TRUE;
 }

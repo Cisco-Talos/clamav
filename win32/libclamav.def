@@ -118,6 +118,7 @@ EXPORTS cli_hex2str @44262 NONAME
 EXPORTS cli_hex2ui @44263 NONAME
 EXPORTS mpool_getstats @44264 NONAME
 EXPORTS cli_fmap_scandesc @44340
+EXPORTS cli_hashset_destroy @44341
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44265 NONAME

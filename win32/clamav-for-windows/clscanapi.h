@@ -17,159 +17,156 @@
  * USA
  */
 
-// Template for 3rd party engines to integrate with Immunet
-// TODO: Replace <MOD> with engine specific name
-/*
-Engine/API Requirements:
+#ifndef _CLSCANAPI_H
+#define _CLSCANAPI_H
 
- R1) Ability to invoke scans
 
-		- with callbacks where callback is invoked several times (even during scanning a single PE file). The scan engine could invoke callbacks during the following states:
-			- state 1: after unpacking (if packed)
-			- state 2: after emulation (if emulation is supported)
-			- state 3: after scan is complete
-			- state 4: after requested action is performed (only in case of infection)
-			For archive, installers, compound files the callback should be invoked for each file. Each file may cause the callback to be invoked more than once.
+/**************************************************************************************
+                                   CLAMAPI interface
+***************************************************************************************/
 
-		- without callbacks, it should be possible to retrieve additional information about file that was scanned
-			i) infections found after the scan (ex: using MOD_SCAN_INFO_LIST)
-			ii) Unpacked file (in case the original file was packed)
-		  There probably will be some settings to limit large memory usage in this case. For example, if a large archive file with 1000 infected files
-		  is scanned, it may be unrealistic to return information for all the files. Probably MAX_INFECTION_COUNT setting will exist to limit passing
-		  back such information
-
-  R2) The callbacks should be asynchronous (i.e. a separate thread with same engine instance should be able to scan a file without waiting
-	  even when the first file callback has not returned
-	  Use case: Typically, in callback it is expected to make connection to the cloud before taking action. Since, the cloud query can take few ms, it
-	  should be possible for another thread with same engine instance to scan a separate file without any interference.
-
-  R3) The disinfection/delete should be supported asynchronously. The engine should be able to perform state 1 to state 3 in sequence and state 4 
-	  could be performed at a later stage.
-	  Use case: In case of system scans, drive scans there is a good chance that more than one infection is found. Instead of asking user each time
-	  a list can be generated in the end giving the user the choice to take action. If the user chooses to disinfect/delete the disinfection action
-	  should happen without performing any additional scan.
-		  
-  R4) The definitions should ideally not consume more than 30MB in memory
-
-  R5) The scan engine should ideally not consume more than 50ms for scanning individual files in most cases
-*/
-#ifndef _CLAM_SCAN_API_H
-#define _CLAM_SCAN_API_H
-
+/* CLAMAPI declspec */
+#ifdef CLAMAV_EXPORTS
 #define CLAMAPI __declspec(dllexport)
+#else
+#define CLAMAPI __declspec(dllimport)
+#endif
 
+/* CLAMAPI calling convention. Please do not touch */
 #ifndef CALL_CONVENTION
 #define CALL_CONVENTION __cdecl
 #endif
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: define constants like type of malware, type of object, error code etc here
 
-#define CLAMAPI_SUCCESS	0
-#define CLAMAPI_FAILURE	1
+/* CLAMAPI - return codes */
+/* Always check for the return value of CLAMAPI's 
+ * Possible values are:
+ * - return_value == CLAMAPI_SUCCESS: API succeded
+ * - return_value != CLAMAPI_SUCCESS: API failed (call ClamGetErrorMsg(return_value) to retrieve the error message)
+ */
+#define CLAMAPI_SUCCESS 0
 
-#define CLAMAPI_OBJECT_TYPE_FILE 1
 
-#define CLAM_OPTION_SCAN_MODE 0x0
-#define CLAM_SCAN_FULL 0x0
-#define CLAM_SCAN_LIGHT  0x1
+/* CLAMAPI SCAN OPTIONS */
+/* List of options settable via Scan_SetOption and retrievable via Scan_GetOption (see below)
+ * All the options have a corresponding unsigned int value (0 = option disabled / non 0 = option enabled)
+ */
+enum CLAM_SCAN_OPTIONS {
+    CLAM_OPTION_SCAN_ARCHIVE,	/* Enable/disable scanning of archive files (zip, arj, rar, cab, etc.) */
+    CLAM_OPTION_SCAN_MAIL,	/* Enable/disable scanning of archive mail files (mbox, eml) */
+    CLAM_OPTION_SCAN_OLE2,	/* Enable/disable scanning of OLE2 files (mostly msi and doc) */
+    CLAM_OPTION_SCAN_HTML,	/* Enable/disable scanning of html files */
+    CLAM_OPTION_SCAN_PE,	/* Enable/disable scanning of archive PE (aka windows) executables */
+    CLAM_OPTION_SCAN_ALGORITHMIC, /* Enable/disable scanning for certain viruses and exploits */
+    CLAM_OPTION_SCAN_ELF,	/* Enable/disable scanning of archive ELF (aka linux) executables */ /* FIXME: is this needed */
+    CLAM_OPTION_SCAN_PDF	/* Enable/disable scanning of Adobe PDF files */
+};
+/* NOTE: by default (i.e. before calling Scan_SetOption) ALL the options are ENABLED! */
 
-#define CLAM_OPTION_SCAN_ARCHIVE	0x00000001
-#define CLAM_OPTION_SCAN_PACKED		0x00000002
-#define CLAM_OPTION_SCAN_EMAIL		0x00000004
-#define CLAM_OPTION_SCAN_DEEP		0x00000008
 
-#define CLAMAPI_DISINFECT_ONLY 0x10
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// An example structure that external module should fill. This can be used by Immunet interface either during callback
-// or once the scan API function has completed
-// TODO: Add any fields as required
+/* CLAMAPI SCAN PHASES */
+/* Define the scan phase to which the returned results refer to */
+typedef enum _CLAM_SCAN_PHASE {
+    SCAN_PHASE_PRESCAN,	 /* Right before ClamAV starts scanning the current file - in scan callback mode only */
+    SCAN_PHASE_POSTSCAN, /* After ClamAV has scanned the current file - in scan callback mode only */
+    SCAN_PHASE_FINAL	 /* Upon returning from ScanObject */
+} CLAM_SCAN_PHASE;
 
-typedef struct _CLAM_SCAN_INFO
-{
-	// size of this structure
-	int cbSize;
 
-	// Based on this type, pObject field is interpreted
-	// ex: stream in a compound object, file in an archive, embedded file in installer etc
-	int objectType;
+/* CLAMAPI SCAN RESULT VALUES */
+/* Value returned by ScanObject */
+#define CLAM_CLEAN 0
+#define CLAM_INFECTED 1
 
-	// archive flags. In case the file being scanned is archive file set the flags accordingly
-	int archiveFlags;
+/* CLAMAPI RESULT DEFINITIONS */
+/* The CLAM_SCAN_INFO structure is used:
+ * - to return scan results
+ * - to pass progress data and results to the scan callback
+ */
+typedef struct _CLAM_SCAN_INFO {
+    /** The size of this structure: to be set to sizeof(CLAM_SCAN_INFO) **/
+    /* Presence: ALWAYS */
+    int cbSize;
 
-	// compressionFlags flags. In case the file being scanned is packed set the flags accordingly
-	int compressionFlags;
+    /** The phase to which the results refer to **/
+    /* Presence: ALWAYS */
+    CLAM_SCAN_PHASE scanPhase;
 
-	// installerFlags flags. In case the file being scanned is an installer (MSI, NSIS etc) set the flags accordingly
-	int installerFlags;
+    /** Error condition **/
+    /* Possible values: CLAMAPI_SUCCESS if no error; call ClamGetErrorMsg(errorCode)
+     * to retrieve the error message */
+    /* Presence: ALWAYS */
+    int errorCode;
 
-	// path to the file being scanned (C:\test.zip)
-	const wchar_t *pObjectPath;
+    /** The type of threat (e.g. "Adware", "Trojan", etc.) **/
+    /* For clean files this is set to NULL */
+    /* Presence: SCAN_PHASE_POSTSCAN, SCAN_PHASE_FINAL */
+    const wchar_t *pThreatType;
 
-	// path of inner file relative to file being scanned
-	// valid only for certain object types (ex: installers, compound objects, archive files etc
-	const wchar_t *pInnerObjectPath;
+    /** The name of threat (i.e. virus name) **/
+    /* For clean files this is set to NULL */
+    /* Presence: SCAN_PHASE_POSTSCAN, SCAN_PHASE_FINAL */
+    const wchar_t *pThreatName;
 
-	// a state machine kind of variable
-	// If a callback is registered, it can be called during any one of the following states
-	// unpack complete -> emulation complete -> scan complete -> action result complete
-	int scanStatus;
+    /** The handle of the file being processed **/
+    /* Note #1: the handle MUST NOT BE CLOSED by the callback
+     * Note #2: the handle has got GENERIC_READ	access
+     * Note #3: the file pointer is guaranteed to be set at the begin of
+     *          the file and its position needs not to be reset
+     * Note #4: the file may already be mapped into memory, entirely or just partially */
+    /* Presence: SCAN_PHASE_PRESCAN, SCAN_PHASE_POSTSCAN */
+    HANDLE object;
+    
+    /** The path of inner file relative to file being scanned **/
+    /* This applies only to archive for which internal names can be retrieved and is NULL otherwise */
+    /* Presence: ALWAYS */
+    const wchar_t *pInnerObjectPath;
 
-	// status code corresponding to scanStatus
-	int errorCode;
+} CLAM_SCAN_INFO, *PCLAM_SCAN_INFO;
+/* NOTE: all the objects within the above structure are guaranteed to be available and
+ *       valid until the callback returns (SCAN_PHASE_PRESCAN and SCAN_PHASE_POSTSCAN) or
+ *       Scan_DeleteScanInfo is called (SCAN_PHASE_FINAL) */
 
-	// interpretation could depend on objectType. Maybe just base pointer to file loaded in memory.
-	// Can this work for all cases?
-	void *pObject;
 
-	// size of object
-	unsigned long objectLength;
-
-	// type of threat (adware, malware etc)
-	int threatType;
-
-	// threatname
-	const wchar_t *pThreatName;
-}CLAM_SCAN_INFO, *PCLAM_SCAN_INFO;
-
-// list of CLAM_SCAN_INFO items
-// Typical use: If no callback is registered and an archive file is scanned, this list corresponds to each infected file found
+/* List of CLAM_SCAN_INFO items */
+/* Typical use: If no callback is registered and an archive file is scanned, this list corresponds to each infected file found */
 typedef struct _CLAM_SCAN_INFO_LIST
 {
-	// number of CLAM_SCAN_INFO structures present
-	int cbCount;
+    /* Number of CLAM_SCAN_INFO structures present */
+    int cbCount;
 
-	// pointer to first CLAM_SCAN_INFO structure
-	PCLAM_SCAN_INFO pInfoList;
-}CLAM_SCAN_INFO_LIST, *PCLAM_SCAN_INFO_LIST;
+    /* Pointer to first CLAM_SCAN_INFO structure */
+    PCLAM_SCAN_INFO pInfoList;
+} CLAM_SCAN_INFO_LIST, *PCLAM_SCAN_INFO_LIST;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Callback prototypes
+
+
+/**************************************************************************************
+                                  CLAMAPI scan callback
+***************************************************************************************/
+
+/* SCAN CALLBACK ACTIONS */
+/* The following actions can be requested by the scan callback */
+typedef enum _CLAM_ACTION {
+    CLAM_ACTION_CONTINUE, /* Keep on scanning */
+    CLAM_ACTION_SKIP,     /* Skip the current file */
+    CLAM_ACTION_ABORT     /* Early terminate the scan process */
+} CLAM_ACTION;
 
 /*
- * MANDATORY SUPPORT
- * callback that can be registered to be invoked by the scan engine
+ * Callback that can be registered to be invoked by the scan engine on each inner file.
  * Parameters: 
  * INPUT @param pObjectInfo : all relevant information of the file being scanned
  * OUTPUT @param scanAction : action to be taken as determined by callback
  * INPUT @param context : any context to be passed to scan callback
  */
-typedef void (CALL_CONVENTION *CLAM_SCAN_CALLBACK)(const CLAM_SCAN_INFO *pObjectInfo, int *scanAction, void *context);
+typedef void (CALL_CONVENTION *CLAM_SCAN_CALLBACK)(const CLAM_SCAN_INFO *pObjectInfo, CLAM_ACTION *scanAction, void *context);
 
-/*
- * OPTIONAL SUPPORT
- * callback that can be registered to be invoked by the scan engine
- * Parameters: 
- * INPUT @param objectType : object type
- * INPUT @param pObjectName : name of object (typically filename)
- * INPUT @param pPassword : input buffer to hold password
- * INPUT/OUTPUT @param pPasswordLen : on input consists of length of password buffer. The callback fills this with actual length.
- * INPUT @param context : any context to be passed to scan callback
- */
-typedef void (CALL_CONVENTION *CLAM_PASSWORD_CALLBACK)(int objectType, const wchar_t *pObjectName, wchar_t *pPassword, int *pPasswordLen, void *context);
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Function prototypes
+
+/**************************************************************************************
+                                    CLAMAPI functions
+***************************************************************************************/
 
 #ifdef __cplusplus
 extern "C" {
@@ -184,9 +181,10 @@ extern "C" {
  * Load scan engine defs
  * Parameters: 
  * INPUT @param pEnginesFolder : path where defs are located
+ * INPUT @param pTempRoot : path in which temporary files must be created
  * INPUT @param pLicenseKey : license key blob
  */
-int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pLicenseKey);
+int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey);
 
 /*
  * MANDATORY SUPPORT
@@ -214,11 +212,6 @@ int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner);
 /*
  * MANDATORY SUPPORT
  * Set callback that is invoked when file is being scanned
- * The callback can be invoked multiple times while scanning a file
- *	- state 1: after unpacking (if packed)
- *	- state 2: after emulation (if emulation is supported)
- *	- state 3: after scan is complete
- *	- state 4: after requested action is performed (only in case of infection)
  * For archive, installers, compound files the callback should be invoked for each file. Each file can cause the callback to be invoked more than once.
  * INPUT @param pScanner : opaque object
  * INPUT @param pfnCallback : callback function
@@ -227,53 +220,24 @@ int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner);
 int CLAMAPI Scan_SetScanCallback(CClamAVScanner *pScanner, CLAM_SCAN_CALLBACK pfnCallback, void *pContext);
 
 /*
- * OPTIONAL SUPPORT. Required only if password callbacks are supported
- * Set callback that is invoked if the file to be scanned requires password input
- * INPUT @param pScanner : opaque object
- * INPUT @param pfnCallback : callback function
- * INPUT @param pContext : context to be passed to callback function
- */
-int CLAMAPI Scan_SetPasswordCallback(CClamAVScanner *pScanner, CLAM_PASSWORD_CALLBACK pfnCallback, void *pContext);
-
-/*
  * MANDATORY SUPPORT
  * Scan object using path
  * INPUT @param pScanner : opaque object
  * INPUT @param pObjectPath : path to object
- * INPUT @param objectType : object type
- * INPUT @param action : attempt cleanup (default action is taken if this is not set and no callback is registered)
- * INPUT @param impersonatePID : impersonate the process (incase file is not accessible to current thread)
- * OUTPUT @param pScanStatus : indicates status of scan
- * OUTPUT @param pInfoList : list containing additional information about file that was scanned
+ * OUTPUT @param pScanStatus : indicates status of scan (CLAM_CLEAN or CLAM_INFECTED)
+ * OUTPUT @param pInfoList : list containing additional information about file that was scanned (ONLY valid in *pScanStatus == CLAM_INFECTED)
  */
-int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath, int objectType, int action, int impersonatePID, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
+int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
 
 /*
  * MANDATORY SUPPORT
  * Scan object using object handle
  * INPUT @param pScanner : opaque object
- * INPUT @param pObject : handle to object
- * INPUT @param objectType : object type
- * INPUT @param action : attempt cleanup (default action is taken if this is not set and no callback is registered)
- * INPUT @param impersonatePID : impersonate the process (incase file is not accessible to current thread)
+ * INPUT @param object : handle to object
  * OUTPUT @param pScanStatus : indicates status of scan
- * OUTPUT @param pInfoList : list containing additional information about file that was scanned
+ * OUTPUT @param pInfoList : list containing additional information about file that was scanned (ONLY valid in *pScanStatus == CLAM_INFECTED)
  */
-int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, const void *pObject, int objectType, int action, int impersonatePID, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
-
-/*
- * OPTIONAL SUPPORT
- * Scan object in memory
- * INPUT @param pScanner : opaque object
- * INPUT @param pObject : handle to object
- * INPUT @param objectSize : size of object in memory
- * INPUT @param objectType : object type
- * INPUT @param action : attempt cleanup (default action is taken if this is not set and no callback is registered)
- * INPUT @param impersonatePID : impersonate the process (incase file is not accessible to current thread)
- * OUTPUT @param pScanStatus : indicates status of scan
- * OUTPUT @param pInfoList : list containing additional information about file that was scanned
- */
-int CLAMAPI Scan_ScanObjectInMemory(CClamAVScanner *pScanner, const void *pObject, unsigned int objectSize, int objectType, int action, int impersonatePID, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
+int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
 
 /*
  * MANDATORY SUPPORT
@@ -304,10 +268,15 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
  */
 int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, unsigned long inputLength);
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* 
+ * Convert a ClamAV error code into a string
+ * INPUT @param errorCode
+ * NOTE: the returned string is not to be freed!
+ */
+const wchar_t *ClamGetErrorMsg(int errorCode);
 
 #ifdef __cplusplus
 }; /* extern "C" */
 #endif
 
-#endif /* _CLAM_SCAN_API_H */
+#endif /* _CLSCANAPI_H */
