@@ -750,7 +750,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	    ctx->corrupted_input = corrupted_input;
 	}
 	if(!ctx->engine->keeptmp) {
-	    if (cli_unlink(tempname)) {
+	    if (!access(tempname, R_OK) && cli_unlink(tempname)) {
 	    	free(tempname);
 		ret = CL_EUNLINK;
 		break;

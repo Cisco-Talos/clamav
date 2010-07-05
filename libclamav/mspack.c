@@ -1961,7 +1961,7 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
 
   } /* while (more bytes needed) */
 
-  if (out_bytes) {
+  if (out_bytes > 0) {
     i = (int) out_bytes;
     if (qtm->wflag && (ret = mspack_write(qtm->ofd, qtm->o_ptr, i, qtm->file)) != CL_SUCCESS) {
       return qtm->error = ret;

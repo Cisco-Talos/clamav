@@ -290,7 +290,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	j = vba_read_project_strings(fd, FALSE);
 	if(!i && !j) {
 		close(fd);
-		cli_warnmsg("vba_readdir: Unable to guess VBA type\n");
+		cli_dbgmsg("vba_readdir: Unable to guess VBA type\n");
 		return NULL;
 	}
 	if (i > j) {

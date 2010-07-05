@@ -1,3 +1,7 @@
+Mon Jul  5 17:30:11 CEST 2010 (tk)
+----------------------------------
+ * libclamav: fix some error messages (bb#2083)
+
 Thu Jul  1 18:22:58 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher.c: fix counting of logical subsigs matched at boundaries (bb#2053)
