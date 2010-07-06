@@ -66,6 +66,11 @@ Enable verbose logging.
 .br 
 Default: no
 .TP 
+\fBExtendedDetectionInfo BOOL\fR
+Provide additional information about the infected file, such as its size and hash, together with the virus name. It's recommended to enable this option along with SubmitDetectionStats in freshclam.conf.
+.br 
+Default: no
+.TP 
 \fBPidFile STRING\fR
 Save the process identifier of a listening daemon (main thread) to a specified file.
 .br 

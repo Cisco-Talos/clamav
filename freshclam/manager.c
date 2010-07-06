@@ -582,6 +582,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 
     if(!(opt = optget(clamdopt, "LogFile"))->enabled) {
 	logg("!SubmitDetectionStats: LogFile needs to be enabled in %s\n", clamdcfg);
+	logg("SubmitDetectionStats: Please consider enabling ExtendedDetectionInfo\n");
 	optfree(clamdopt);
 	return 56;
     }

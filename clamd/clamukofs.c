@@ -32,6 +32,7 @@
 #include <pthread.h>
 
 #include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -82,14 +83,14 @@ static void *clamuko_scanth(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
-	unsigned int sizelimit = 0;
+	unsigned int sizelimit = 0, virsize;
 	struct stat sb;
 	dazukofs_handle_t scan_hndl;
 	struct dazukofs_access acc;
 	const char *groupname = "ClamAV";
-	int skip_scan = 0;
+	int skip_scan = 0, extinfo;
 	const char *virname;
-	char filename[4096];
+	char filename[4096], virhash[33];
 
     /* ignore all signals */
     sigfillset(&sigset);
@@ -130,6 +131,8 @@ static void *clamuko_scanth(void *arg)
     else
 	logg("Clamuko: File size limit disabled.\n");
 
+    extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+
     while(1) {
 	if(dazukofs_get_access(scan_hndl, &acc)) {
 	    if(!shutdown_hndl)
@@ -152,10 +155,13 @@ static void *clamuko_scanth(void *arg)
 	    acc.deny = 0;
 	    /* reset skip flag */
 	    skip_scan = 0;
-	} else if(cl_scandesc(acc.fd, &virname, NULL, tharg->engine,
+	} else if(cli_scandesc_stats(acc.fd, &virname, virhash, &virsize, NULL, tharg->engine,
 			      tharg->options) == CL_VIRUS) {
 	    dazukofs_get_filename(&acc, filename, sizeof(filename));
-	    logg("Clamuko: %s: %s FOUND\n", filename, virname);
+	    if(extinfo && virsize)
+		logg("Clamuko: %s: %s(%s:%u) FOUND\n", filename, virname, virhash, virsize);
+	    else
+		logg("Clamuko: %s: %s FOUND\n", filename, virname);
 	    /* we can not perform any special action because it will
 	     * trigger DazukoFS recursively */
 	    acc.deny = 1;

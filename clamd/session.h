@@ -92,6 +92,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands command, cons
 
 int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status);
 int conn_reply_single(const client_conn_t *conn, const char *path, const char *status);
+int conn_reply_virus(const client_conn_t *conn, const char *file, const char *virname, const char *virhash, unsigned int virsize);
 int conn_reply_error(const client_conn_t *conn, const char *msg);
 int conn_reply_errno(const client_conn_t *conn, const char *path, const char *msg);
 #endif

@@ -2368,7 +2368,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 }
 
-int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
+int cli_scandesc_stats(int desc, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
     cli_ctx ctx;
     int rc;
@@ -2376,6 +2376,11 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.virname = virname;
+    if(virsize) {
+	*virsize = 0;
+	ctx.virsize = virsize;
+	ctx.virhash = virhash;
+    }
     ctx.scanned = scanned;
     ctx.options = scanoptions;
     ctx.found_possibly_unwanted = 0;
@@ -2412,6 +2417,11 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
     	rc = CL_VIRUS;
     return rc;
+}
+
+int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
+{
+    return cli_scandesc_stats(desc, virname, NULL, NULL, scanned, engine, scanoptions);
 }
 
 int cli_found_possibly_unwanted(cli_ctx* ctx)
@@ -2458,6 +2468,19 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 	return CL_EOPEN;
 
     ret = cl_scandesc(fd, virname, scanned, engine, scanoptions);
+    close(fd);
+
+    return ret;
+}
+
+int cli_scanfile_stats(const char *filename, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
+{
+	int fd, ret;
+
+    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
+	return CL_EOPEN;
+
+    ret = cli_scandesc_stats(fd, virname, virhash, virsize, scanned, engine, scanoptions);
     close(fd);
 
     return ret;

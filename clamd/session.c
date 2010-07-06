@@ -154,6 +154,22 @@ int conn_reply(const client_conn_t *conn, const char *path,
     return mdprintf(conn->sd, "%s %s%c", msg, status, conn->term);
 }
 
+int conn_reply_virus(const client_conn_t *conn, const char *file,
+	       const char *virname, const char *virhash, unsigned int virsize)
+{
+    if (conn->id) {
+	if (virsize)
+	    return mdprintf(conn->sd, "%u: %s: %s(%s:%u) FOUND%c", conn->id, file,
+			virname, virhash, virsize, conn->term);
+	return mdprintf(conn->sd, "%u: %s: %s FOUND%c", conn->id, file, virname,
+	    conn->term);
+    }
+    if (virsize)
+	return mdprintf(conn->sd, "%s: %s(%s:%u) FOUND%c", file, virname, virhash,
+	    virsize, conn->term);
+    return mdprintf(conn->sd, "%s: %s FOUND%c", file, virname, conn->term);
+}
+
 int conn_reply_error(const client_conn_t *conn, const char *msg)
 {
     return conn_reply(conn, NULL, msg, "ERROR");

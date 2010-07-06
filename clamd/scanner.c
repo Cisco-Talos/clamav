@@ -51,6 +51,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "libclamav/scanners.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -77,6 +78,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     const char *virname;
     int ret;
     int type = scandata->type;
+    char virhash[33];
+    unsigned int virsize;
 
     /* detect disconnected socket, 
      * this should NOT detect half-shutdown sockets (SHUT_WR) */
@@ -193,7 +196,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     thrmgr_setactivetask(filename,
 			 type == TYPE_MULTISCAN ? "MULTISCANFILE" : NULL);
-    ret = cl_scanfile(filename, &virname, &scandata->scanned, scandata->engine, scandata->options);
+    ret = cli_scanfile_stats(filename, &virname, virhash, &virsize, &scandata->scanned, scandata->engine, scandata->options);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
@@ -204,11 +207,16 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1) {
+	if(!optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
+	    virsize = 0;
+	if (conn_reply_virus(scandata->conn, filename, virname, virhash, virsize) == -1) {
 	    free(filename);
 	    return CL_ETIMEOUT;
 	}
-	logg("~%s: %s FOUND\n", filename, virname);
+	if(virsize)
+	    logg("~%s: %s(%s:%u) FOUND\n", filename, virname, virhash, virsize);
+	else
+	    logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
@@ -271,7 +279,8 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	int ret;
 	const char *virname;
 	struct stat statbuf;
-	char fdstr[32];
+	char fdstr[32], virhash[33];
+	unsigned int virsize;
 
 	if (stream)
 	    strncpy(fdstr, "stream", sizeof(fdstr));
@@ -285,7 +294,7 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	}
 
 	thrmgr_setactivetask(fdstr, NULL);
-	ret = cl_scandesc(fd, &virname, scanned, engine, options);
+	ret = cli_scandesc_stats(fd, &virname, virhash, &virsize, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
 
 	if (thrmgr_group_need_terminate(conn->group)) {
@@ -294,9 +303,14 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	}
 
 	if(ret == CL_VIRUS) {
-		if (conn_reply(conn, fdstr, virname, "FOUND") == -1)
+		if(!optget(opts, "ExtendedDetectionInfo")->enabled)
+		    virsize = 0;
+		if (conn_reply_virus(conn, fdstr, virname, virhash, virsize) == -1)
 		    ret = CL_ETIMEOUT;
-		logg("%s: %s FOUND\n", fdstr, virname);
+		if(virsize)
+		    logg("%s: %s(%s:%u) FOUND\n", fdstr, virname, virhash, virsize);
+		else
+		    logg("%s: %s FOUND\n", fdstr, virname);
 		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
 		if (conn_reply(conn, fdstr, cl_strerror(ret), "ERROR") == -1)
@@ -315,12 +329,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, firsttimeout, timeout, btread;
-	unsigned int port = 0, portscan, min_port, max_port;
+	unsigned int port = 0, portscan, min_port, max_port, virsize;
 	unsigned long int quota = 0, maxsize = 0;
 	short bound = 0;
 	const char *virname;
 	char buff[FILEBUFF];
-	char peer_addr[32];
+	char peer_addr[32], virhash[33];
 	struct sockaddr_in server;
 	struct sockaddr_in peer;
 	socklen_t addrlen;
@@ -448,7 +462,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if(retval == 1) {
 	lseek(tmpd, 0, SEEK_SET);
 	thrmgr_setactivetask(peer_addr, NULL);
-	ret = cl_scandesc(tmpd, &virname, scanned, engine, options);
+	ret = cli_scandesc_stats(tmpd, &virname, virhash, &virsize, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
     } else {
     	ret = -1;
@@ -462,8 +476,13 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     closesocket(sockfd);
 
     if(ret == CL_VIRUS) {
-	mdprintf(odesc, "stream: %s FOUND%c", virname, term);
-	logg("stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
+	if(optget(opts, "ExtendedDetectionInfo")->enabled && virsize) {
+	    mdprintf(odesc, "stream: %s(%s:%u) FOUND%c", virname, virhash, virsize, term);
+	    logg("stream(%s@%u): %s(%s:%u) FOUND\n", peer_addr, port, virname, virhash, virsize);
+	} else {
+	    mdprintf(odesc, "stream: %s FOUND%c", virname, term);
+	    logg("stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
+	}
 	virusaction("stream", virname, opts);
     } else if(ret != CL_CLEAN) {
     	if(retval == 1) {

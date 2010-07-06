@@ -128,6 +128,8 @@ CLAMAV_PRIVATE {
     cli_initroots;
     cli_scanbuff;
     cli_fmap_scandesc;
+    cli_scandesc_stats;
+    cli_scanfile_stats;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;

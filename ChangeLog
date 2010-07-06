@@ -1,3 +1,7 @@
+Tue Jul  6 19:19:39 CEST 2010 (tk)
+----------------------------------
+ * clamd: add ExtendedDetectionInfo (bb#1228, #1626)
+
 Mon Jul  5 17:30:11 CEST 2010 (tk)
 ----------------------------------
  * libclamav: fix some error messages (bb#2083)

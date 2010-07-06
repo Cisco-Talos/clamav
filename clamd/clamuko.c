@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -73,8 +74,10 @@ static void *clamukolegacyth(void *arg)
 	unsigned long mask = 0;
 	const struct optstruct *pt;
 	short int scan;
-	int sizelimit = 0;
+	int sizelimit = 0, extinfo;
 	struct stat sb;
+	char virhash[33];
+	unsigned int virsize;
 
 
     clamuko_scanning = 0;
@@ -166,6 +169,8 @@ static void *clamukolegacyth(void *arg)
     else
 	logg("Clamuko: File size limit disabled.\n");
 
+    extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+
     while(1) {
 
 	if(dazukoGetAccess(&acc) == 0) {
@@ -180,8 +185,11 @@ static void *clamukolegacyth(void *arg)
 		}
 	    }
 
-	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->engine, tharg->options) == CL_VIRUS) {
-		logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
+	    if(scan && cli_scanfile_stats(acc->filename, &virname, virhash, &virsize, NULL, tharg->engine, tharg->options) == CL_VIRUS) {
+		if(extinfo && virsize)
+		    logg("Clamuko: %s: %s(%s:%u) FOUND\n", acc->filename, virname, virhash, virsize);
+		else
+		    logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
 		virusaction(acc->filename, virname, tharg->opts);
 		acc->deny = 1;
 	    } else
