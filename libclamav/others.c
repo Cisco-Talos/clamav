@@ -1009,14 +1009,12 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
 
-void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback, void *context) {
+void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback) {
     engine->cb_pre_scan = callback;
-    engine->cb_pre_scan_ctx = callback ? context : NULL;
 }
 
-void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback, void *context) {
+void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback) {
     engine->cb_post_scan = callback;
-    engine->cb_post_scan_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context) {

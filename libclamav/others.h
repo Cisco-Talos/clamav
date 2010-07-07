@@ -125,6 +125,7 @@ typedef struct cli_ctx_tag {
     struct cli_dconf *dconf;
     fmap_t **fmap;
     bitset_t* hook_lsig_matches;
+    void *cb_ctx;
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     char entry_filename[2048];
     int sha_collect;
@@ -251,9 +252,7 @@ struct cl_engine {
 
     /* Callback(s) */
     clcb_pre_scan cb_pre_scan;
-    void *cb_pre_scan_ctx;
     clcb_post_scan cb_post_scan;
-    void *cb_post_scan_ctx;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
 

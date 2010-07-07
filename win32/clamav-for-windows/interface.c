@@ -3,6 +3,9 @@
 // check scan funcs
 // after scan returns and ret!=CL_VIRUS pInfoList NULL or unchanged?
 // changed set option value to 0 or non 0
+// restore file position
+// cb context per instance or per scanobj ??
+// optional shit to really be OPTIONAL!
 
 /*
  * Copyright (C) 2010 Sourcefire, Inc.
@@ -48,6 +51,9 @@ unsigned int engine_refcnt;
 
 #define lock_engine()(WaitForSingleObject(engine_mutex, INFINITE) == WAIT_FAILED)
 #define unlock_engine() do {ReleaseMutex(engine_mutex);} while(0)
+
+cl_error_t prescan_cb(int fd, void *context);
+cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
 
 BOOL interface_setup(void) {
     if(!(engine_mutex = CreateMutex(NULL, FALSE, NULL)))
@@ -127,6 +133,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	unlock_engine();
 	FAIL(CL_EMEM, "Not enough memory for a new engine");
     }
+    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
     if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pTempRoot, -1, tmpdir, sizeof(tmpdir), NULL, &cant_convert) || cant_convert) {
 	free_engine_and_unlock();
 	FAIL(CL_EARG, "Can't translate pTempRoot");
@@ -216,8 +223,11 @@ int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
 
 int CLAMAPI Scan_SetScanCallback(CClamAVScanner *pScanner, CLAM_SCAN_CALLBACK pfnCallback, void *pContext) {
     instance *inst = (instance *)pScanner;
+    InterlockedIncrement(&inst->refcnt);
     inst->scancb = pfnCallback;
     inst->scancb_ctx = pContext;
+    InterlockedDecrement(&inst->refcnt);
+    
     WIN();
 }
 
@@ -327,11 +337,17 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
     return res;
 }
 
+struct scan_ctx {
+    int entryfd;
+    instance *inst;
+};
+
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
     instance *inst = (instance *)pScanner;
     HANDLE duphdl, self;
     char *virname;
     int fd, res;
+    struct scan_ctx sctx;
 
     InterlockedIncrement(&inst->refcnt);
 
@@ -347,7 +363,9 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	FAIL(CL_EOPEN, "Open handle failed");
     }
 
-    res = cl_scandesc(fd, &virname, NULL, engine, inst->scanopts);
+    sctx.entryfd = fd;
+    sctx.inst = inst;
+    res = cl_scandesc_callback(fd, &virname, NULL, engine, inst->scanopts, &sctx);
     InterlockedDecrement(&inst->refcnt);
     close(fd);
 
@@ -385,3 +403,68 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
+cl_error_t prescan_cb(int fd, void *context) {
+    struct scan_ctx *sctx = (struct scan_ctx *)context;
+    instance *inst = sctx->inst;
+    CLAM_SCAN_INFO si;
+    CLAM_ACTION act;
+
+    logg("in prescan cb with %d %p\n", fd, context);
+    si.cbSize = sizeof(si);
+    si.flags = 0;
+    si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_INITIAL : SCAN_PHASE_PRESCAN;
+    si.errorCode = CLAMAPI_SUCCESS;
+    si.pThreatType = NULL;
+    si.pThreatName = NULL;
+    si.object = (HANDLE)_get_osfhandle(fd);
+    si.pInnerObjectPath = NULL;
+    inst->scancb(&si, &act, inst->scancb_ctx);
+    switch(act) {
+	case CLAM_ACTION_SKIP:
+	    logg("prescan cb result: SKIP\n");
+	    return CL_BREAK;
+	case CLAM_ACTION_ABORT:
+	    logg("prescan cb result: ABORT\n");
+	    return CL_VIRUS;
+	default:
+	    logg("prescan cb returned bogus value\n");
+	case CLAM_ACTION_CONTINUE:
+	    logg("prescan cb result: CONTINUE\n");
+	    return CL_CLEAN;
+    }
+}
+
+cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
+    struct scan_ctx *sctx = (struct scan_ctx *)context;
+    instance *inst = sctx->inst;
+    CLAM_SCAN_INFO si;
+    CLAM_ACTION act;
+
+    logg("in prostscan cb with %d %d %s %p\n", fd, result, virname, context);
+    si.cbSize = sizeof(si);
+    si.flags = 0;
+    si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_FINAL : SCAN_PHASE_POSTSCAN;
+    si.errorCode = CLAMAPI_SUCCESS;
+    si.pThreatType = NULL;
+    si.pThreatName = (result == CL_VIRUS) ? L"Fixme" : NULL; /* FIXME */
+    si.object = (HANDLE)_get_osfhandle(fd);
+    si.pInnerObjectPath = NULL;
+    inst->scancb(&si, &act, inst->scancb_ctx);
+    switch(act) {
+	case CLAM_ACTION_SKIP:
+	    logg("postscan cb result: SKIP\n");
+	    return CL_BREAK;
+	case CLAM_ACTION_ABORT:
+	    logg("postscan cb result: ABORT\n");
+	    return CL_VIRUS;
+	default:
+	    logg("postscan cb returned bogus value\n");
+	case CLAM_ACTION_CONTINUE:
+	    logg("prescan cb result: CONTINUE\n");
+	    return CL_CLEAN;
+    }
+}
+
+CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode) {
+    return L"w00t!"; /* FIXME */
+}

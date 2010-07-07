@@ -25,16 +25,13 @@
                                    CLAMAPI interface
 ***************************************************************************************/
 
-/* CLAMAPI declspec */
-#ifdef CLAMAV_EXPORTS
-#define CLAMAPI __declspec(dllexport)
-#else
-#define CLAMAPI __declspec(dllimport)
-#endif
-
 /* CLAMAPI calling convention. Please do not touch */
 #ifndef CALL_CONVENTION
 #define CALL_CONVENTION __cdecl
+#endif
+
+#ifndef CLAMAPI
+#define CLAMAPI
 #endif
 
 
@@ -42,7 +39,7 @@
 /* Always check for the return value of CLAMAPI's 
  * Possible values are:
  * - return_value == CLAMAPI_SUCCESS: API succeded
- * - return_value != CLAMAPI_SUCCESS: API failed (call ClamGetErrorMsg(return_value) to retrieve the error message)
+ * - return_value != CLAMAPI_SUCCESS: API failed (call Scan_GetErrorMsg(return_value) to retrieve the error message)
  */
 #define CLAMAPI_SUCCESS 0
 
@@ -67,9 +64,10 @@ enum CLAM_SCAN_OPTIONS {
 /* CLAMAPI SCAN PHASES */
 /* Define the scan phase to which the returned results refer to */
 typedef enum _CLAM_SCAN_PHASE {
+    SCAN_PHASE_INITIAL,	 /* ight before ClamAV starts scanning the entry (outer) file - in scan callback mode only */
     SCAN_PHASE_PRESCAN,	 /* Right before ClamAV starts scanning the current file - in scan callback mode only */
     SCAN_PHASE_POSTSCAN, /* After ClamAV has scanned the current file - in scan callback mode only */
-    SCAN_PHASE_FINAL	 /* Upon returning from ScanObject */
+    SCAN_PHASE_FINAL	 /* After ClamAV has scanned the entry (outer) file (callback) and upon returning from ScanObject */
 } CLAM_SCAN_PHASE;
 
 
@@ -88,12 +86,15 @@ typedef struct _CLAM_SCAN_INFO {
     /* Presence: ALWAYS */
     int cbSize;
 
+    /** A single field that can store information regarding packers, installers, compound objects etc **/
+    int flags;
+
     /** The phase to which the results refer to **/
     /* Presence: ALWAYS */
     CLAM_SCAN_PHASE scanPhase;
 
     /** Error condition **/
-    /* Possible values: CLAMAPI_SUCCESS if no error; call ClamGetErrorMsg(errorCode)
+    /* Possible values: CLAMAPI_SUCCESS if no error; call Scan_GetErrorMsg(errorCode)
      * to retrieve the error message */
     /* Presence: ALWAYS */
     int errorCode;
@@ -273,7 +274,7 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
  * INPUT @param errorCode
  * NOTE: the returned string is not to be freed!
  */
-const wchar_t *ClamGetErrorMsg(int errorCode);
+CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
 
 #ifdef __cplusplus
 }; /* extern "C" */

@@ -32,6 +32,9 @@ EXPORTS cl_statchkdir @24
 EXPORTS cl_statfree @25
 EXPORTS cl_statinidir @26
 EXPORTS cl_strerror @27
+EXPORTS cl_engine_set_clcb_pre_scan @28
+EXPORTS cl_engine_set_clcb_post_scan @29
+EXPORTS cl_scandesc_callback @30
 
 
 ; path variables

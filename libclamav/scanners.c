@@ -1897,7 +1897,7 @@ static void emax_reached(cli_ctx *ctx) {
 #define ret_from_magicscan(retcode) do {							\
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);			\
     if(ctx->engine->cb_post_scan) {								\
-	switch(ctx->engine->cb_post_scan(desc, retcode, ctx->engine->cb_post_scan_ctx)) {	\
+	switch(ctx->engine->cb_post_scan(desc, retcode, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {		\
 	case CL_BREAK:										\
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");			\
 	    return CL_CLEAN;									\
@@ -1970,7 +1970,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 
     if(ctx->engine->cb_pre_scan) {
-	switch(ctx->engine->cb_pre_scan(desc, ctx->engine->cb_pre_scan_ctx)) {
+	switch(ctx->engine->cb_pre_scan(desc, ctx->cb_ctx)) {
 	case CL_BREAK:
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");
 	    funmap(*ctx->fmap);
@@ -2422,6 +2422,54 @@ int cli_scandesc_stats(int desc, const char **virname, char *virhash, unsigned i
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
     return cli_scandesc_stats(desc, virname, NULL, NULL, scanned, engine, scanoptions);
+}
+
+
+int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
+{
+    cli_ctx ctx;
+    int rc;
+
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.virname = virname;
+    ctx.scanned = scanned;
+    ctx.options = scanoptions;
+    ctx.found_possibly_unwanted = 0;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.container_size = 0;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.cb_ctx = context;
+    ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 2);
+    if(!ctx.fmap)
+	return CL_EMEM;
+    if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
+	free(ctx.fmap);
+	return CL_EMEM;
+    }
+
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
+	char link[32];
+	ssize_t linksz;
+
+	snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
+	link[sizeof(link)-1]='\0';
+	if((linksz=readlink(link, ctx.entry_filename, sizeof(ctx.entry_filename)))==-1) {
+	    cli_errmsg("failed to resolve filename for descriptor %d (%s)\n", desc, link);
+	    strcpy(ctx.entry_filename, "NO_IDEA");
+	} else
+	    ctx.entry_filename[linksz]='\0';
+    } while(0);
+#endif
+
+    rc = cli_magic_scandesc(desc, &ctx);
+
+    cli_bitset_free(ctx.hook_lsig_matches);
+    free(ctx.fmap);
+    if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
+    	rc = CL_VIRUS;
+    return rc;
 }
 
 int cli_found_possibly_unwanted(cli_ctx* ctx)

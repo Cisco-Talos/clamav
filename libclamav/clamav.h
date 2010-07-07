@@ -188,14 +188,15 @@ CL_CLEAN = File is scanned
 CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
 CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
 */
-extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback, void *context);
+extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback);
 
 
-typedef cl_error_t (*clcb_post_scan)(int fd, int result, void *context);
+typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, void *context);
 /* POST-SCAN
 Input:
 fd      = File descriptor which is was scanned
 result  = The scan result for the file
+virname = Virus name if infected
 context = Opaque application provided data
 
 Output:
@@ -203,7 +204,7 @@ CL_CLEAN = Scan result is not overridden
 CL_BREAK = Whitelisted by callback - scan result is set to CL_CLEAN
 CL_VIRUS = Blacklisted by callback - scan result is set to CL_VIRUS
 */
-extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback, void *context);
+extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
 
 typedef int (*clcb_sigload)(const char *type, const char *name, void *context);
@@ -241,6 +242,7 @@ struct cl_cvd {		    /* field no. */
 
 /* file scanning */
 extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
+extern int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
 
 extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
 
