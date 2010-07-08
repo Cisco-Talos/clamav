@@ -1,12 +1,3 @@
-//TODO:
-// unify refcounting
-// check scan funcs
-// after scan returns and ret!=CL_VIRUS pInfoList NULL or unchanged?
-// changed set option value to 0 or non 0
-// restore file position
-// cb context per instance or per scanobj ??
-// optional shit to really be OPTIONAL!
-
 /*
  * Copyright (C) 2010 Sourcefire, Inc.
  * Authors: aCaB <acab@clamav.net>
@@ -40,34 +31,147 @@
 #define WIN() do { logg("%s completed successfully\n", __FUNCTION__); return CLAMAPI_SUCCESS; } while(0)
 #define INFN() do { logg("in %s\n", __FUNCTION__); } while(0)
 
-HANDLE engine_event; /* refcount = 0 event */
+HANDLE engine_event; /* engine unused event */
 
 HANDLE engine_mutex;
 /* protects the following items */
 struct cl_engine *engine = NULL;
 struct cl_stat dbstat;
 char dbdir[PATH_MAX];
-unsigned int engine_refcnt;
 /* end of protected items */
+
+typedef struct {
+    CLAM_SCAN_CALLBACK scancb;
+    void *scancb_ctx;
+    unsigned int scanopts;
+} instance;
+
+struct {
+    instance *inst;
+    unsigned int refcnt;
+} *instances = NULL;
+unsigned int ninsts_total = 0;
+unsigned int ninsts_avail = 0;
+HANDLE instance_mutex;
 
 #define lock_engine()(WaitForSingleObject(engine_mutex, INFINITE) == WAIT_FAILED)
 #define unlock_engine() do {ReleaseMutex(engine_mutex);} while(0)
 
+#define lock_instances()(WaitForSingleObject(instance_mutex, INFINITE) == WAIT_FAILED)
+#define unlock_instances() do {ReleaseMutex(instance_mutex);} while(0)
+
 cl_error_t prescan_cb(int fd, void *context);
 cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
+
+static int add_instance(instance *inst) {
+    unsigned int i;
+
+    INFN();
+    if(lock_instances()) {
+	logg("add_instance: failed to lock instances\n");
+	return 1;
+    }
+    if(!ninsts_avail) {
+	void *freeme, *new_instances = calloc(ninsts_total + 256, sizeof(*instances));
+	if(!new_instances) {
+	    unlock_instances();
+	    logg("add_instance: failed to grow instances\n");
+	    return 1;
+	}
+	freeme = instances;
+	if(instances && ninsts_total)
+	    memcpy(new_instances, instances, ninsts_total * sizeof(*instances));
+	ninsts_total += 256;
+	ninsts_avail += 256;
+	instances = new_instances;
+	if(freeme)
+	    free(freeme);
+	logg("add_instance: instances grown to %u\n", ninsts_total);
+    }
+    for(i=0; i<ninsts_total; i++) {
+	if(instances[i].inst)
+	    continue;
+	instances[i].inst = inst;
+	instances[i].refcnt = 0;
+	ninsts_avail--;
+	unlock_instances();
+	ResetEvent(engine_event);
+	return 0;
+    }
+    logg("add_instances: you should not be reading this\n");
+    unlock_instances();
+    return 1;
+}
+
+static int del_instance(instance *inst) {
+    unsigned int i;
+
+    INFN();
+    if(lock_instances()) {
+	logg("del_instance: failed to lock instances\n");
+	return 1;
+    }
+    for(i=0; i<ninsts_total; i++) {
+	if(instances[i].inst != inst)
+	    continue;
+	if(instances[i].refcnt) {
+	    logg("del_instance: attempted to free instance with %d active scanners\n", instances[i].refcnt);
+	    unlock_instances();
+	    return 1;
+	}
+	instances[i].inst = NULL;
+	instances[i].refcnt = 0;
+	ninsts_avail++;
+	if(ninsts_avail == ninsts_total)
+	    ResetEvent(engine_event);
+	unlock_instances();
+	return 0;
+    }
+    logg("del_instances: instance not found\n");
+    unlock_instances();
+    return 1;
+}
+
+/* To be called with the instances locked */
+static int is_instance(instance *inst) {
+    unsigned int i;
+    INFN();
+    for(i=0; i<ninsts_total; i++)
+	if(instances[i].inst == inst)
+	    return 1;
+    logg("FAILED INSTANCE %p\n", inst);
+    return 0;
+}
 
 BOOL interface_setup(void) {
     if(!(engine_mutex = CreateMutex(NULL, FALSE, NULL)))
 	return FALSE;
-    if(!(engine_event = CreateEvent(NULL, TRUE, TRUE, NULL)))
+    if(!(engine_event = CreateEvent(NULL, TRUE, TRUE, NULL))) {
+	CloseHandle(engine_mutex);
 	return FALSE;
+    }
+    if(!(instance_mutex = CreateMutex(NULL, FALSE, NULL))) {
+	CloseHandle(engine_mutex);
+	CloseHandle(engine_event);
+	return FALSE;
+    }
     return TRUE;
 }
 
+static int sigload_callback(const char *type, const char *name, void *context) {
+    if(!strncmp(name, "Exploit.PDF", 11) || !strncmp(name, "DOS.", 4) || !strcmp(type, "db")) /* FIXME */
+	return 1;
+    return 0;
+}
+
+/* Must be called with engine_mutex locked ! */
 static int load_db(void) {
     int ret;
+    unsigned int signo = 0;
     INFN();
-    if((ret = cl_load(dbdir, engine, NULL, CL_DB_STDOPT)) != CL_SUCCESS) {
+
+    cl_engine_set_clcb_sigload(engine, sigload_callback, NULL);
+    if((ret = cl_load(dbdir, engine, &signo, CL_DB_STDOPT & ~CL_DB_PHISHING & ~CL_DB_PHISHING_URLS & CL_DB_OFFICIAL_ONLY)) != CL_SUCCESS) {
 	engine = NULL;
 	FAIL(ret, "Failed to load database: %s", cl_strerror(ret));
     }
@@ -78,7 +182,7 @@ static int load_db(void) {
 	FAIL(ret, "Failed to compile engine: %s", cl_strerror(ret));
     }
 
-    engine_refcnt = 0;
+    logg("load_db: loaded %d signatures\n", signo);
     memset(&dbstat, 0, sizeof(dbstat));
     cl_statinidir(dbdir, &dbstat);
     WIN();
@@ -89,26 +193,33 @@ DWORD WINAPI reload(void *param) {
     while(1) {
 	Sleep(1000*60);
 	if(WaitForSingleObject(engine_event, INFINITE) == WAIT_FAILED) {
-	    logg("Failed to wait on reload event");
+	    logg("reload: failed to wait on reload event");
 	    continue;
 	}
 	while(1) {
 	    if(lock_engine()) {
-		logg("Failed to lock engine");
+		logg("reload: failed to lock engine");
 		break;
 	    }
 	    if(!engine || !cl_statchkdir(&dbstat)) {
 		unlock_engine();
 		break;
 	    }
-	    if(engine_refcnt) {
+	    if(lock_instances()) {
 		unlock_engine();
-		Sleep(0);
+		logg("reload: failed to lock instances\n");
+		break;
+	    }
+	    if(ninsts_avail != ninsts_total) {
+		unlock_engine();
+		unlock_instances();
+		Sleep(5000);
 		continue;
 	    }
 	    cl_engine_free(engine);
 	    load_db();
 	    unlock_engine();
+	    unlock_instances();
 	    break;
 	}
     }
@@ -125,13 +236,18 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     BOOL cant_convert;
     int ret;
 
-    INFN();
+    logg("In Scan_Initialize(pEnginesFolder = %S, pTempRoot = %S)\n", pEnginesFolder, pTempRoot);
+    if(!pEnginesFolder)
+	FAIL(CL_ENULLARG, "pEnginesFolder is NULL");
+    if(!pTempRoot)
+	FAIL(CL_ENULLARG, "pTempRoot is NULL");
     if(lock_engine())
-	FAIL(CL_EMEM, "Engine mutex fail");
+	FAIL(CL_EMEM, "failed to lock engine");
     if(engine) {
 	unlock_engine();
 	FAIL(CL_EARG, "Already initialized");
     }
+
     if(!(engine = cl_engine_new())) {
 	unlock_engine();
 	FAIL(CL_EMEM, "Not enough memory for a new engine");
@@ -150,9 +266,9 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	free_engine_and_unlock();
 	FAIL(CL_EARG, "Can't translate pEnginesFolder");
     }
-    logg("Scan_Initialize(%s)\n", dbdir);
     ret = load_db();
     unlock_engine();
+    logg("Scan_Initialize: returning %d\n", ret);
     return ret;
 }
 
@@ -165,31 +281,33 @@ int CLAMAPI Scan_Uninitialize(void) {
  //   logg("%x", rett);
     INFN();
     if(lock_engine())
-	FAIL(CL_EMEM, "Engine mutex fail");
+	FAIL(CL_EMEM, "failed to lock engine");
     if(!engine) {
 	unlock_engine();
-	FAIL(CL_EARG, "Attempted to uninit a NULL engine");
+	FAIL(CL_EARG, "attempted to uninit a NULL engine");
     }
-    if(engine_refcnt) {
-	volatile unsigned int refs = engine_refcnt;
+   if(lock_instances()) {
 	unlock_engine();
-	FAIL(CL_EARG, "Attempted to uninit the engine with %u active instances", engine_refcnt);
+	FAIL(CL_EMEM, "failed to lock instances");
     }
+    if(ninsts_avail != ninsts_total) {
+	volatile unsigned int refcnt = ninsts_total - ninsts_avail;
+	unlock_instances();
+	unlock_engine();
+	FAIL(CL_EARG, "Attempted to uninit the engine with %u active instances", refcnt);
+    }
+    unlock_instances();
     free_engine_and_unlock();
     WIN();
 }
 
-typedef struct {
-    CLAM_SCAN_CALLBACK scancb;
-    void *scancb_ctx;
-    void *callback2;
-    LONG refcnt;
-    unsigned int scanopts;
-} instance;
-
 int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
-    instance *inst = calloc(1, sizeof(*inst));
+    instance *inst;
+
     INFN();
+    if(!ppScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    inst = calloc(1, sizeof(*inst));
     if(!inst)
 	FAIL(CL_EMEM, "CreateInstance: OOM");
     if(lock_engine()) {
@@ -201,50 +319,66 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 	unlock_engine();
 	FAIL(CL_ENULLARG, "Create instance called with no engine");
     }
-    engine_refcnt++;
-    ResetEvent(engine_event);
+    if(add_instance(inst)) {
+	free(inst);
+	unlock_engine();
+	FAIL(CL_EMEM, "add_instance failed");
+    }
     unlock_engine();
     inst->scanopts = CL_SCAN_STDOPT;
     *ppScanner = (CClamAVScanner *)inst;
+    logg("NEW INSTANCE %p\n", inst);
     WIN();
 }
 
 int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
-    instance *inst = (instance *)pScanner;
-    volatile LONG refcnt = InterlockedCompareExchange(&inst->refcnt, 0, 0);
     INFN();
-    if(refcnt)
-	FAIL(CL_EARG, "Attemped to destroy an instance with active scanners");
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(del_instance((instance *)pScanner))
+	FAIL(CL_EMEM, "del_instance failed");
     free(pScanner);
-    if(lock_engine())
-	FAIL(CL_EMEM, "Failed to lock engine");
-    if(!engine) {
-	unlock_engine();
-	FAIL(CL_ENULLARG, "Destroy instance called with no engine");
-    }
-    if(!--engine_refcnt)
-	SetEvent(engine_event);
-    unlock_engine();
+    logg("DEL INSTANCE %p\n", pScanner);
     WIN();
 }
 
 int CLAMAPI Scan_SetScanCallback(CClamAVScanner *pScanner, CLAM_SCAN_CALLBACK pfnCallback, void *pContext) {
-    instance *inst = (instance *)pScanner;
+    instance *inst;
+
     INFN();
-    InterlockedIncrement(&inst->refcnt);
-    inst->scancb = pfnCallback;
-    inst->scancb_ctx = pContext;
-    InterlockedDecrement(&inst->refcnt);
-    
-    WIN();
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(lock_instances())
+	FAIL(CL_EMEM, "failed to lock instances");
+
+    inst = (instance *)pScanner;
+    if(is_instance(inst)) {
+	inst->scancb = pfnCallback;
+	inst->scancb_ctx = pContext;
+	unlock_instances();
+	WIN();
+    }
+    unlock_instances();
+    FAIL(CL_EARG, "invalid instance %p", inst);
 }
 
 int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, unsigned long inputLength) {
-    instance *inst = (instance *)pScanner;
+    instance *inst;
     unsigned int whichopt, newval;
     
     INFN();
-    InterlockedIncrement(&inst->refcnt);
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(!value)
+	FAIL(CL_ENULLARG, "NULL value");
+    if(lock_instances())
+	FAIL(CL_EMEM, "failed to lock instances");
+
+    inst = (instance *)pScanner;
+    if(!is_instance(inst)) {
+	unlock_instances();
+	FAIL(CL_EARG, "invalid instance %p", inst);
+    }
     switch(option) {
 	case CLAM_OPTION_SCAN_ARCHIVE:
 	    whichopt = CL_SCAN_ARCHIVE;
@@ -271,8 +405,8 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    whichopt = CL_SCAN_ELF;
 	    break;
 	default:
-	    InterlockedDecrement(&inst->refcnt);
-	    FAIL(CL_EARG, "Unsupported set option: %d", option);
+	    unlock_instances();
+	    FAIL(CL_EARG, "Unsupported option: %d", option);
     }
 
     newval = *(unsigned int *)value;
@@ -280,16 +414,27 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
 	inst->scanopts &= ~whichopt;
     else
 	inst->scanopts |= whichopt;
-    InterlockedDecrement(&inst->refcnt);
+    unlock_instances();
     WIN();
 }
 
 int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, unsigned long inputLength, unsigned long *outLength) {
-    instance *inst = (instance *)pScanner;
+    instance *inst;
     unsigned int whichopt;
 
     INFN();
-    InterlockedIncrement(&inst->refcnt);
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(!value || !inputLength)
+	FAIL(CL_ENULLARG, "NULL value");
+    if(lock_instances())
+	FAIL(CL_EMEM, "failed to lock instances");
+
+    inst = (instance *)pScanner;
+    if(!is_instance(inst)) {
+	unlock_instances();
+	FAIL(CL_EARG, "invalid instance %p", inst);
+    }
     switch(option) {
 	case CLAM_OPTION_SCAN_ARCHIVE:
 	    whichopt = CL_SCAN_ARCHIVE;
@@ -316,12 +461,12 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    whichopt = CL_SCAN_ELF;
 	    break;
 	default:
-	    InterlockedDecrement(&inst->refcnt);
-	    FAIL(CL_EARG, "Unsupported set option: %d", option);
+	    unlock_instances();
+	    FAIL(CL_EARG, "Unsupported option: %d", option);
     }
 
     *(unsigned int *)value = (inst->scanopts & whichopt) != 0;
-    InterlockedDecrement(&inst->refcnt);
+    unlock_instances();
     WIN();
 }
 
@@ -333,17 +478,12 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
     instance *inst = (instance *)pScanner;
 
     INFN();
-    InterlockedIncrement(&inst->refcnt);
-
-    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE) {
-	InterlockedDecrement(&inst->refcnt);
+    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE)
 	FAIL(CL_EOPEN, "open() failed");
-    }
 
     res = Scan_ScanObjectByHandle(pScanner, fhdl, pScanStatus, pInfoList);
 
     CloseHandle(fhdl);
-    InterlockedDecrement(&inst->refcnt);
     return res;
 }
 
@@ -353,56 +493,82 @@ struct scan_ctx {
 };
 
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
-    instance *inst = (instance *)pScanner;
+    instance *inst;
     HANDLE duphdl, self;
     char *virname;
     int fd, res;
+    unsigned int i;
     struct scan_ctx sctx;
 
     INFN();
-    InterlockedIncrement(&inst->refcnt);
+
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(!pScanStatus)
+	FAIL(CL_ENULLARG, "NULL pScanStatus");
+ //   if(!pInfoList)
+	//FAIL(CL_ENULLARG, "NULL pInfoList");
 
     self = GetCurrentProcess();
-    if(!DuplicateHandle(self, object, self, &duphdl, GENERIC_READ, FALSE, 0)) {
-	InterlockedDecrement(&inst->refcnt);
+    if(!DuplicateHandle(self, object, self, &duphdl, GENERIC_READ, FALSE, 0))
 	FAIL(CL_EDUP, "Duplicate handle failed");
-    }
 
     if((fd = _open_osfhandle((intptr_t)duphdl, _O_RDONLY)) == -1) {
-	InterlockedDecrement(&inst->refcnt);
 	CloseHandle(duphdl);
 	FAIL(CL_EOPEN, "Open handle failed");
     }
 
+    if(lock_instances()) {
+	close(fd);
+	FAIL(CL_EMEM, "failed to lock instances");
+    }
+    inst = (instance *)pScanner;
+    for(i=0; i<ninsts_total; i++) {
+	if(instances[i].inst == inst)
+	    break;
+    }
+    if(i == ninsts_total) {
+	unlock_instances();
+	close(fd);
+	FAIL(CL_EARG, "invalid instance %p", inst);
+    }
+    instances[i].refcnt++;
+    unlock_instances();
+
     sctx.entryfd = fd;
     sctx.inst = inst;
     res = cl_scandesc_callback(fd, &virname, NULL, engine, inst->scanopts, &sctx);
-    InterlockedDecrement(&inst->refcnt);
     close(fd);
 
+    if(lock_instances())
+	FAIL(CL_EMEM, "failed to lock instances");
+    instances[i].refcnt--;
+    unlock_instances();
+
     if(res == CL_VIRUS) {
-	CLAM_SCAN_INFO_LIST *infolist = calloc(1, sizeof(CLAM_SCAN_INFO_LIST) + sizeof(CLAM_SCAN_INFO) + MAX_VIRNAME_LEN);
-	PCLAM_SCAN_INFO scaninfo;
-	wchar_t *wvirname;
+	if(pInfoList) {
+	    CLAM_SCAN_INFO_LIST *infolist = calloc(1, sizeof(CLAM_SCAN_INFO_LIST) + sizeof(CLAM_SCAN_INFO) + MAX_VIRNAME_LEN * 2);
+	    PCLAM_SCAN_INFO scaninfo;
+	    wchar_t *wvirname;
 
-        if(!infolist)
-	    FAIL(CL_EMEM, "ScanByHandle: OOM");
-
-	scaninfo = (PCLAM_SCAN_INFO)(infolist + 1);
-	infolist->cbCount = 1;
-	scaninfo->cbSize = sizeof(*scaninfo);
-	scaninfo->scanPhase = SCAN_PHASE_FINAL;
-	scaninfo->errorCode = CLAMAPI_SUCCESS;
-	scaninfo->pThreatType = L"FIXME";
-	wvirname = (wchar_t *)(scaninfo + 1);
-	scaninfo->pThreatName = wvirname;
-	if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
-	    scaninfo->pThreatName = L"INFECTED";
-	logg("FOUND: %s\n", virname);
-	*pInfoList = infolist;
+	    if(!infolist)
+		FAIL(CL_EMEM, "ScanByHandle: OOM");
+	    scaninfo = (PCLAM_SCAN_INFO)(infolist + 1);
+	    infolist->cbCount = 1;
+	    scaninfo->cbSize = sizeof(*scaninfo);
+	    scaninfo->scanPhase = SCAN_PHASE_FINAL;
+	    scaninfo->errorCode = CLAMAPI_SUCCESS;
+	    scaninfo->pThreatType = L"FIXME";
+	    wvirname = (wchar_t *)(scaninfo + 1);
+	    scaninfo->pThreatName = wvirname;
+	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
+		scaninfo->pThreatName = L"INFECTED";
+	    logg("FOUND: %s\n", virname);
+	    *pInfoList = infolist;
+	}
 	*pScanStatus = CLAM_INFECTED;
     } else {
-        *pInfoList = NULL;
+        if(pInfoList) *pInfoList = NULL;
 	*pScanStatus = CLAM_CLEAN;
     }
     WIN();
@@ -411,6 +577,21 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 
 int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST pInfoList) {
     INFN();
+    if(!pScanner)
+	FAIL(CL_ENULLARG, "NULL pScanner");
+    if(!pInfoList)
+	FAIL(CL_ENULLARG, "NULL pInfoList");
+    /* FIXME checking this is pointelss as the infolist is independent from pscanner */
+ //   if(lock_instances())
+	//FAIL(CL_EMEM, "failed to lock instances");
+
+ //   inst = (instance *)pScanner;
+ //   if(!is_instance(inst)) {
+	//unlock_instances();
+	//FAIL(CL_EARG, "invalid instance");
+ //   }
+ //   unlock_instances();
+
     free(pInfoList);
     WIN();
 }
@@ -420,6 +601,8 @@ cl_error_t prescan_cb(int fd, void *context) {
     instance *inst = sctx->inst;
     CLAM_SCAN_INFO si;
     CLAM_ACTION act;
+    HANDLE fdhdl;
+    LONG lo = 0, hi = 0, hi2 = 0;
 
     logg("in prescan cb with %d %p\n", fd, context);
     si.cbSize = sizeof(si);
@@ -428,9 +611,13 @@ cl_error_t prescan_cb(int fd, void *context) {
     si.errorCode = CLAMAPI_SUCCESS;
     si.pThreatType = NULL;
     si.pThreatName = NULL;
-    si.object = (HANDLE)_get_osfhandle(fd);
+    fdhdl = si.object = (HANDLE)_get_osfhandle(fd);
     si.pInnerObjectPath = NULL;
+
+    lo = SetFilePointer(fdhdl, 0, &hi, FILE_CURRENT);
+    SetFilePointer(fdhdl, 0, &hi2, FILE_BEGIN);
     inst->scancb(&si, &act, inst->scancb_ctx);
+    SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     return CL_CLEAN; /* FIXME: remove me */
     switch(act) {
 	case CLAM_ACTION_SKIP:
@@ -452,6 +639,8 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     instance *inst = sctx->inst;
     CLAM_SCAN_INFO si;
     CLAM_ACTION act;
+    HANDLE fdhdl;
+    LONG lo = 0, hi = 0, hi2 = 0;
 
     logg("in postscan cb with %d %d %s %p\n", fd, result, virname, context);
     si.cbSize = sizeof(si);
@@ -460,9 +649,12 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     si.errorCode = CLAMAPI_SUCCESS;
     si.pThreatType = NULL;
     si.pThreatName = (result == CL_VIRUS) ? L"Fixme" : NULL; /* FIXME */
-    si.object = (HANDLE)_get_osfhandle(fd);
+    fdhdl = si.object = (HANDLE)_get_osfhandle(fd);
     si.pInnerObjectPath = NULL;
+    lo = SetFilePointer(fdhdl, 0, &hi, FILE_CURRENT);
+    SetFilePointer(fdhdl, 0, &hi2, FILE_BEGIN);
     inst->scancb(&si, &act, inst->scancb_ctx);
+    SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     switch(act) {
 	case CLAM_ACTION_SKIP:
 	    logg("postscan cb result: SKIP\n");

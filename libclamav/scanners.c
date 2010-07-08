@@ -1897,7 +1897,7 @@ static void emax_reached(cli_ctx *ctx) {
 #define ret_from_magicscan(retcode) do {							\
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);			\
     if(ctx->engine->cb_post_scan) {								\
-	switch(ctx->engine->cb_post_scan(desc, retcode, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {		\
+	switch(ctx->engine->cb_post_scan(desc, retcode, retcode == CL_VIRUS && ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {		\
 	case CL_BREAK:										\
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");			\
 	    return CL_CLEAN;									\
