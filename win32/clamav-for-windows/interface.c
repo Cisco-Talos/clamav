@@ -31,6 +31,9 @@
 #define WIN() do { logg("%s completed successfully\n", __FUNCTION__); return CLAMAPI_SUCCESS; } while(0)
 #define INFN() do { logg("in %s\n", __FUNCTION__); } while(0)
 
+#define MAX_VIRNAME_LEN 1024
+
+
 HANDLE engine_event; /* engine unused event */
 
 HANDLE engine_mutex;
@@ -62,6 +65,20 @@ HANDLE instance_mutex;
 
 cl_error_t prescan_cb(int fd, void *context);
 cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
+
+static wchar_t *threat_type(const char *virname) {
+    if(!virname)
+	return NULL;
+    if(!strncmp(virname, "Trojan", 6))
+	return L"Trojan";
+    if(!strncmp(virname, "Worm", 4))
+	return L"Worm";
+    if(!strncmp(virname, "Exploit", 7))
+	return L"Exploit";
+    if(!strncmp(virname, "Adware", 6))
+	return L"Adware";
+    return L"Malware";
+}
 
 static int add_instance(instance *inst) {
     unsigned int i;
@@ -470,8 +487,6 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
     WIN();
 }
 
-#define MAX_VIRNAME_LEN 1024
-
 int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
     HANDLE fhdl;
     int res;
@@ -558,7 +573,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	    scaninfo->cbSize = sizeof(*scaninfo);
 	    scaninfo->scanPhase = SCAN_PHASE_FINAL;
 	    scaninfo->errorCode = CLAMAPI_SUCCESS;
-	    scaninfo->pThreatType = L"FIXME";
+	    scaninfo->pThreatType = threat_type(virname);
 	    wvirname = (wchar_t *)(scaninfo + 1);
 	    scaninfo->pThreatName = wvirname;
 	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
@@ -618,7 +633,6 @@ cl_error_t prescan_cb(int fd, void *context) {
     SetFilePointer(fdhdl, 0, &hi2, FILE_BEGIN);
     inst->scancb(&si, &act, inst->scancb_ctx);
     SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
-    return CL_CLEAN; /* FIXME: remove me */
     switch(act) {
 	case CLAM_ACTION_SKIP:
 	    logg("prescan cb result: SKIP\n");
@@ -640,6 +654,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     CLAM_SCAN_INFO si;
     CLAM_ACTION act;
     HANDLE fdhdl;
+    wchar_t wvirname[MAX_VIRNAME_LEN];
     LONG lo = 0, hi = 0, hi2 = 0;
 
     logg("in postscan cb with %d %d %s %p\n", fd, result, virname, context);
@@ -647,8 +662,14 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     si.flags = 0;
     si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_FINAL : SCAN_PHASE_POSTSCAN;
     si.errorCode = CLAMAPI_SUCCESS;
-    si.pThreatType = NULL;
-    si.pThreatName = (result == CL_VIRUS) ? L"Fixme" : NULL; /* FIXME */
+    if(result == CL_VIRUS) {
+	if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
+	    si.pThreatName = wvirname;
+	else
+	    si.pThreatName = L"INFECTED";
+    } else
+	    si.pThreatName = NULL;
+    si.pThreatType = threat_type(virname);
     fdhdl = si.object = (HANDLE)_get_osfhandle(fd);
     si.pInnerObjectPath = NULL;
     lo = SetFilePointer(fdhdl, 0, &hi, FILE_CURRENT);
