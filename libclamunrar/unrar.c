@@ -759,6 +759,7 @@ static int read_vm_code(unpack_data_t *unpack_data, int fd)
 	for (i=0 ; i < length ; i++) {
 		if (unpack_data->in_addr >= unpack_data->read_top-1 &&
 				!rar_unp_read_buf(fd, unpack_data) && i<length-1) {
+			free(vmcode);
 			return FALSE;
 		}
 		vmcode[i] = rar_getbits(unpack_data) >> 8;
@@ -1103,8 +1104,10 @@ int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 		if(retval == FALSE) {
 		    rarvm_free(&unpack_data->rarvm_data);
 		    retval = rar_unpack20(fd, solid, unpack_data);
-		    if(retval == FALSE)
+		    if(retval == FALSE) {
+			rarvm_free(&unpack_data->rarvm_data);
 			retval = rar_unpack15(fd, solid, unpack_data);
+		    }
 		}
 		break;
 	}

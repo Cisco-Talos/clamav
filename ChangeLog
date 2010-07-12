@@ -1,3 +1,8 @@
+Mon Jul 12 12:27:44 CEST 2010 (tk)
+----------------------------------
+ * libclamunrar/unrar.c: fix error path memory leaks (bb#2100)
+			 Thanks to Martin Olsen
+
 Tue Jul  6 19:19:39 CEST 2010 (tk)
 ----------------------------------
  * clamd: add ExtendedDetectionInfo (bb#1228, #1626)
