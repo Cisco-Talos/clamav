@@ -1,3 +1,7 @@
+Fri Jul 16 11:11:27 CEST 2010 (tk)
+----------------------------------
+ * freshclam: remove empty temporary directories on EXIT_n (bb#2116)
+
 Mon Jul 12 12:27:44 CEST 2010 (tk)
 ----------------------------------
  * libclamunrar/unrar.c: fix error path memory leaks (bb#2100)
