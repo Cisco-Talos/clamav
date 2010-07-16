@@ -339,6 +339,14 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\clamav-for-windows\iface_errors.c"
+				>
+			</File>
+			<File
+				RelativePath=".\clamav-for-windows\iface_errors.h"
+				>
+			</File>
+			<File
 				RelativePath=".\clamav-for-windows\interface.c"
 				>
 			</File>

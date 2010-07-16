@@ -728,7 +728,3 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	    return CL_CLEAN;
     }
 }
-
-CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode) {
-    return L"w00t!"; /* FIXME */
-}

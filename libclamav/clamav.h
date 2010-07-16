@@ -66,7 +66,11 @@ typedef enum {
     CL_EMAXSIZE,
     CL_EMAXFILES,
     CL_EFORMAT,
-    CL_EBYTECODE
+    CL_EBYTECODE,
+
+
+    /* no error codes below this line please */
+    CL_ELAST_ERROR
 } cl_error_t;
 
 /* db options */

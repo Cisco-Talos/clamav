@@ -24,6 +24,7 @@
 #include "clamav.h"
 #include "shared/output.h"
 #include "interface.h"
+#include "iface_errors.h"
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase; /* Reloc safe! */
 
@@ -65,6 +66,10 @@ BOOL init() {
     if(logg("ClamAV core initialized\n"))
 	return FALSE;
 
+    if(init_errors()) {
+	logg("!Failed to initialize errors\n");
+	return FALSE;
+    }
     ret = interface_setup();
     logg("ClamAV module %s\n", ret == TRUE ? "initialized" : "failed! Aborting...");
     return ret;
