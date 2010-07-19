@@ -1,3 +1,8 @@
+Mon Jul 19 18:48:08 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: add support for creating cdiffs with arbitrary
+		      long lines (bb#2014)
+
 Fri Jul 16 11:11:27 CEST 2010 (tk)
 ----------------------------------
  * freshclam: remove empty temporary directories on EXIT_n (bb#2116)

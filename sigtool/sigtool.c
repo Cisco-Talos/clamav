@@ -1540,13 +1540,41 @@ static int rundiff(const struct optstruct *opts)
     return ret;
 }
 
+static int maxlinelen(const char *file)
+{
+	int fd, bytes, n = 0, nmax = 0, i;
+	char buff[512];
+
+    if((fd = open(file, O_RDONLY)) == -1) {
+	mprintf("!maxlinelen: Can't open file %s\n", file);
+	return -1;
+    }
+
+    while((bytes = read(fd, buff, 512)) > 0) {
+	for(i = 0; i < bytes; i++, ++n) {
+	    if(buff[i] == '\n') {
+		if(n > nmax)
+		    nmax = n;
+		n = 0;
+	    }
+	}
+    }
+
+    if(bytes == -1) {
+	mprintf("!maxlinelen: Can't open file %s\n", file);
+	return -1;
+    }
+
+    return nmax;
+}
+
 static int compare(const char *oldpath, const char *newpath, FILE *diff)
 {
 	FILE *old, *new;
-	char obuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], nbuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], tbuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], *pt, *omd5, *nmd5;
+	char *obuff, *nbuff, *tbuff, *pt, *omd5, *nmd5;
 	unsigned int oline = 0, tline, found, i;
+	int l1, l2;
 	long opos;
-
 
     if(!access(oldpath, R_OK) && (omd5 = cli_md5file(oldpath))) {
 	if(!(nmd5 = cli_md5file(newpath))) {
@@ -1563,28 +1591,62 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	free(nmd5);
     }
 
+    l1 = maxlinelen(oldpath);
+    l2 = maxlinelen(newpath);
+    if(l1 == -1 || l2 == -1)
+	return -1;
+    l1 = MAX(l1, l2) + 1;
+
+    obuff = malloc(l1);
+    if(!obuff) {
+	mprintf("!compare: Can't allocate memory for 'obuff'\n");
+	return -1;
+    }
+    nbuff = malloc(l1);
+    if(!nbuff) {
+	mprintf("!compare: Can't allocate memory for 'nbuff'\n");
+	free(obuff);
+	return -1;
+    }
+    tbuff = malloc(l1);
+    if(!tbuff) {
+	mprintf("!compare: Can't allocate memory for 'tbuff'\n");
+	free(obuff);
+	free(nbuff);
+	return -1;
+    }
+
+    if(l1 > CLI_DEFAULT_LSIG_BUFSIZE)
+	fprintf(diff, "#LSIZE %u\n", l1 + 32);
+
     fprintf(diff, "OPEN %s\n", newpath);
 
     if(!(new = fopen(newpath, "r"))) {
 	mprintf("!compare: Can't open file %s for reading\n", newpath);
+	free(obuff);
+	free(nbuff);
+	free(tbuff);
 	return -1;
     }
     old = fopen(oldpath, "r");
 
-    while(fgets(nbuff, sizeof(nbuff), new)) {
+    while(fgets(nbuff, l1, new)) {
 	i = strlen(nbuff);
 	if(i >= 2 && (nbuff[i - 1] == '\r' || (nbuff[i - 1] == '\n' && nbuff[i - 2] == '\r'))) {
 	    mprintf("!compare: New %s file contains lines terminated with CRLF or CR\n", newpath);
 	    if(old)
 		fclose(old);
 	    fclose(new);
+	    free(obuff);
+	    free(nbuff);
+	    free(tbuff);
 	    return -1;
 	}
 	cli_chomp(nbuff);
 	if(!old) {
 	    fprintf(diff, "ADD %s\n", nbuff);
 	} else {
-	    if(fgets(obuff, sizeof(obuff), old)) {
+	    if(fgets(obuff, l1, old)) {
 		oline++;
 		cli_chomp(obuff);
 		if(!strcmp(nbuff, obuff)) {
@@ -1593,7 +1655,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 		    tline = 0;
 		    found = 0;
 		    opos = ftell(old);
-		    while(fgets(tbuff, sizeof(tbuff), old)) {
+		    while(fgets(tbuff, l1, old)) {
 			tline++;
 			cli_chomp(tbuff);
 
@@ -1615,7 +1677,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 			    if((pt = strchr(tbuff, ' ')))
 				*pt = 0;
 			    fprintf(diff, "DEL %u %s\n", oline + i, tbuff);
-			    if(!fgets(tbuff, sizeof(tbuff), old))
+			    if(!fgets(tbuff, l1, old))
 				break;
 			}
 			oline += tline;
@@ -1637,7 +1699,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     fclose(new);
 
     if(old) {
-	while(fgets(obuff, sizeof(obuff), old)) {
+	while(fgets(obuff, l1, old)) {
 	    oline++;
 	    obuff[16] = 0;
 	    if((pt = strchr(obuff, ' ')))
@@ -1648,6 +1710,9 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     }
 
     fprintf(diff, "CLOSE\n");
+    free(obuff);
+    free(nbuff);
+    free(tbuff);
     return 0;
 }
 
