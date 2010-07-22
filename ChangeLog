@@ -1,3 +1,9 @@
+Thu Jul 22 22:32:08 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to intepreter if
+ needed (bb #2092).
+ * libclamav/bytecode.c: selfcheck on startup (bb #2092).
+
 Thu Jul 22 16:36:32 CEST 2010 (tk)
 ----------------------------------
  * libclamav/mspack.c: fix write error

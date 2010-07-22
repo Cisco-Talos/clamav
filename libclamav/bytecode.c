@@ -1927,10 +1927,182 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     return CL_SUCCESS;
 }
 
+static int add_selfcheck(struct cli_all_bc *bcs)
+{
+    struct cli_bc_func *func;
+    struct cli_bc_inst *inst;
+    struct cli_bc *bc;
+
+    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
+    if (!bcs->all_bcs) {
+	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
+	return CL_EMEM;
+    }
+    bc = &bcs->all_bcs[bcs->count++];
+    memset(bc, 0, sizeof(*bc));
+
+    bc->trusted = 1;
+    bc->num_globals = 1;
+    bc->globals = cli_calloc(1, sizeof(*bc->globals));
+    if (!bc->globals) {
+	cli_errmsg("Failed to allocate memory for globals\n");
+	return CL_EMEM;
+    }
+    bc->globals[0] = cli_calloc(1, sizeof(*bc->globals[0]));
+    if (!bc->globals[0]) {
+	cli_errmsg("Failed to allocate memory for globals\n");
+	return CL_EMEM;
+    }
+    bc->globaltys = cli_calloc(1, sizeof(*bc->globaltys));
+    if (!bc->globaltys) {
+	cli_errmsg("Failed to allocate memory for globaltypes\n");
+	return CL_EMEM;
+    }
+    bc->globaltys[0] = 32;
+    *bc->globals[0] = 0;
+    bc->id = ~0;
+    bc->kind = 0;
+    bc->num_types = 5;
+    bc->num_func = 1;
+    bc->funcs = cli_calloc(1, sizeof(*bc->funcs));
+    if (!bc->funcs) {
+	cli_errmsg("Failed to allocate memory for func\n");
+	return CL_EMEM;
+    }
+    func = bc->funcs;
+    func->numInsts = 2;
+    func->numLocals = 1;
+    func->numValues = 1;
+    func->numConstants = 1;
+    func->numBB = 1;
+    func->returnType = 32;
+    func->types = cli_calloc(1, sizeof(*func->types));
+    if (!func->types) {
+	cli_errmsg("Failed to allocate memory for types\n");
+	return CL_EMEM;
+    }
+    func->types[0] = 32;
+    func->BB = cli_calloc(1, sizeof(*func->BB));
+    if (!func->BB) {
+	cli_errmsg("Failed to allocate memory for BB\n");
+	return CL_EMEM;
+    }
+    func->allinsts = cli_calloc(2, sizeof(*func->allinsts));
+    if (!func->allinsts) {
+	cli_errmsg("Failed to allocate memory for insts\n");
+	return CL_EMEM;
+    }
+    func->BB->numInsts = 2;
+    func->BB->insts = func->allinsts;
+    func->constants = cli_calloc(1, sizeof(*func->constants));
+    if (!func->constants) {
+	cli_errmsg("Failed to allocate memory for constants\n");
+	return CL_EMEM;
+    }
+    func->constants[0] = 0xf00d;
+    inst = func->allinsts;
+
+    inst->opcode = OP_BC_CALL_API;
+    inst->u.ops.numOps = 1;
+    inst->u.ops.opsizes = NULL;
+    inst->u.ops.ops = cli_calloc(1, sizeof(*inst->u.ops.ops));
+    if (!inst->u.ops.ops) {
+	cli_errmsg("Failed to allocate memory for instructions\n");
+	return CL_EMEM;
+    }
+    inst->u.ops.ops[0] = 1;
+    inst->u.ops.funcid = 18; /* test2 */
+    inst->dest = 0;
+    inst->type = 32;
+    inst->interp_op = inst->opcode* 5 + 3;
+
+    inst = &func->allinsts[1];
+    inst->opcode = OP_BC_RET;
+    inst->type = 32;
+    inst->u.unaryop = 0;
+    inst->interp_op = inst->opcode* 5;
+
+    bc->state = bc_loaded;
+    return 0;
+}
+
+static int run_selfcheck(struct cli_all_bc *bcs)
+{
+    struct cli_bc_ctx *ctx;
+    struct cli_bc *bc = &bcs->all_bcs[bcs->count-1];
+    int rc;
+    if (bc->state != bc_jit && bc->state != bc_interp) {
+	cli_errmsg("Failed to prepare selfcheck bytecode\n");
+	return CL_EBYTECODE;
+    }
+    ctx = cli_bytecode_context_alloc();
+    if (!ctx) {
+	cli_errmsg("Failed to allocate bytecode context\n");
+	return CL_EMEM;
+    }
+    cli_bytecode_context_setfuncid(ctx, bc, 0);
+
+    cli_dbgmsg("bytecode self test running\n");
+    rc = cli_bytecode_run(bcs, bc, ctx);
+    cli_bytecode_context_destroy(ctx);
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("bytecode self test failed: %s\n",
+		   cl_strerror(rc));
+    } else {
+	cli_dbgmsg("bytecode self test succeeded\n");
+    }
+    return rc;
+}
+
+static int selfcheck(int jit, struct cli_bcengine *engine)
+{
+    struct cli_all_bc bcs;
+    int rc;
+
+    memset(&bcs, 0, sizeof(bcs));
+    bcs.all_bcs = NULL;
+    bcs.count = 0;
+    bcs.engine = engine;
+    rc = add_selfcheck(&bcs);
+    if (rc == CL_SUCCESS) {
+	if (jit) {
+	    if (!bcs.engine) {
+		cli_dbgmsg("bytecode: JIT disabled\n");
+		rc = CL_BREAK;/* no JIT - not fatal */
+	    } else {
+		rc = cli_bytecode_prepare_jit(&bcs);
+	    }
+	} else {
+	    rc = cli_bytecode_prepare_interpreter(bcs.all_bcs);
+	}
+	if (rc == CL_SUCCESS)
+	    rc = run_selfcheck(&bcs);
+	if (rc == CL_BREAK)
+	    rc = CL_SUCCESS;
+    }
+    cli_bytecode_destroy(bcs.all_bcs);
+    free(bcs.all_bcs);
+    cli_bytecode_done_jit(&bcs, 1);
+    if (rc != CL_SUCCESS) {
+	cli_errmsg("Bytecode: failed to run selfcheck in %s mode: %s\n",
+		   jit ? "JIT" : "interpreter", cl_strerror(rc));
+    }
+    return rc;
+}
+
 int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
 {
     unsigned i, interp = 0;
-    int rc;
+    int rc1, rc2, rc;
+
+    /* run both selfchecks */
+    rc1 = selfcheck(0, bcs->engine);
+    rc2 = selfcheck(1, bcs->engine);
+    if (rc1)
+	return rc1;
+    if (rc2)
+	return rc2;
+
     if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS) {
 	cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
 	return CL_SUCCESS;
@@ -1961,7 +2133,7 @@ int cli_bytecode_init(struct cli_all_bc *allbc, unsigned dconfmask)
 
 int cli_bytecode_done(struct cli_all_bc *allbc)
 {
-    return cli_bytecode_done_jit(allbc);
+    return cli_bytecode_done_jit(allbc, 0);
 }
 
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)

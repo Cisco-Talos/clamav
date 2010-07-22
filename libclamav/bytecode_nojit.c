@@ -53,7 +53,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *allbc, unsigned dconfmask)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_done_jit(struct cli_all_bc *allbc)
+int cli_bytecode_done_jit(struct cli_all_bc *allbc, int partial)
 {
     return CL_SUCCESS;
 }

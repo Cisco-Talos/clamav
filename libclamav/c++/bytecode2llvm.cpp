@@ -1821,7 +1821,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	}
 	delete [] apiFuncs;
     }
-    return -1;
+    return CL_SUCCESS;
   } catch (std::bad_alloc &badalloc) {
       errs() << MODULE << badalloc.what() << "\n";
       return CL_EMEM;
@@ -1914,6 +1914,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 	bcs->engine = 0;
 	DEBUG(errs() << "i[34]86 detected, falling back to interpreter (JIT needs pentium or better\n");
 	/* i386 and i486 has to fallback to interpreter */
+	have_clamjit=0;
 	return 0;
     }
     std::string ErrMsg;
@@ -1921,12 +1922,35 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
     if (B.base() == 0) {
 	errs() << MODULE << ErrMsg << "\n";
 #ifdef __linux__
-	errs() << MODULE << "SELinux is preventing 'execmem' access. Run 'setsebool -P clamd_use_jit on' to allow access\n";
+	errs() << MODULE << "SELinux or PaX is preventing 'execmem' access."
+	    << "Run 'setsebool -P clamd_use_jit on' or 'paxctl -m <executable>' to allow access\n";
 #endif
 	errs() << MODULE << "falling back to interpreter mode\n";
+	have_clamjit=0;
 	return 0;
     } else {
 	sys::Memory::ReleaseRWX(B);
+#ifdef __linux__
+	FILE *f = fopen("/proc/self/status", "r");
+	if (f) {
+	    char line[128];
+	    while (fgets(line, sizeof(line), f)) {
+		if (!memcmp(line, "PaX:", 4)) {
+		    if (cli_debug_flag) {
+			errs() << "bytecode JIT: PaX found: " << line;
+		    }
+		    if (!strchr(line,'m')) {
+			errs() << MODULE << "PaX is preventing MPROTECT, use 'paxctl -m <executable>' to allow\n";
+			errs() << MODULE << "falling back to interpreter mode\n";
+			fclose(f);
+			have_clamjit=0;
+			return 0;
+		    }
+		}
+	    }
+	    fclose(f);
+	}
+#endif
     }
 
     bcs->engine = new(std::nothrow) cli_bcengine;
@@ -1937,7 +1961,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
     return 0;
 }
 
-int cli_bytecode_done_jit(struct cli_all_bc *bcs)
+int cli_bytecode_done_jit(struct cli_all_bc *bcs, int partial)
 {
     LLVMApiScopedLock scopedLock;
     if (bcs->engine) {
@@ -1945,10 +1969,14 @@ int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 	    if (bcs->engine->Listener)
 		bcs->engine->EE->UnregisterJITEventListener(bcs->engine->Listener);
 	    delete bcs->engine->EE;
+	    bcs->engine->EE = 0;
 	}
 	delete bcs->engine->Listener;
-	delete bcs->engine;
-	bcs->engine = 0;
+	bcs->engine->Listener = 0;
+	if (!partial) {
+	    delete bcs->engine;
+	    bcs->engine = 0;
+	}
     }
     return 0;
 }
