@@ -1947,6 +1947,8 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
       if (window_posn == qtm->window_size) {
 	/* flush all currently stored data */
 	i = (qtm->o_end - qtm->o_ptr);
+	if(i <= 0)
+	    break;
 	if (qtm->wflag && (ret = mspack_write(qtm->ofd, qtm->o_ptr, i, qtm->file)) != CL_SUCCESS) {
 	  return qtm->error = ret;
 	}

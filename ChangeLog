@@ -1,3 +1,7 @@
+Thu Jul 22 16:36:32 CEST 2010 (tk)
+----------------------------------
+ * libclamav/mspack.c: fix write error
+
 Wed Jul 21 18:54:13 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix build problem (bb#2133)
