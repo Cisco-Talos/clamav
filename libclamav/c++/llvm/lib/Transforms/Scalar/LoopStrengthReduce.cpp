@@ -2817,7 +2817,7 @@ Value *LSRInstance::Expand(const LSRFixup &LF,
       }
       if (IDom == Inst->getParent() &&
           (!BetterPos || DT.dominates(BetterPos, Inst)))
-        BetterPos = next(BasicBlock::iterator(Inst));
+        BetterPos = llvm::next(BasicBlock::iterator(Inst));
     }
     if (!AllDominate)
       break;

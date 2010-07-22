@@ -146,14 +146,14 @@ bool LowerInvoke::doInitialization(Module &M) {
 
 // VisualStudio defines setjmp as _setjmp via #include <csetjmp> / <setjmp.h>,
 // so it looks like Intrinsic::_setjmp
-#if defined(_MSC_VER) && defined(setjmp)
+#if defined(_MSC_VER) && _MSC_VER < 1600 && defined(setjmp)
 #define setjmp_undefined_for_visual_studio
 #undef setjmp
 #endif
 
     SetJmpFn = Intrinsic::getDeclaration(&M, Intrinsic::setjmp);
 
-#if defined(_MSC_VER) && defined(setjmp_undefined_for_visual_studio)
+#if defined(_MSC_VER) && _MSC_VER < 1600 && defined(setjmp_undefined_for_visual_studio)
 // let's return it to _setjmp state in case anyone ever needs it after this
 // point under VisualStudio
 #define setjmp _setjmp
