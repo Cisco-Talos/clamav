@@ -1,3 +1,7 @@
+Wed Jul 21 18:54:13 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: fix build problem (bb#2133)
+
 Mon Jul 19 18:48:08 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: add support for creating cdiffs with arbitrary

@@ -1561,7 +1561,7 @@ static int maxlinelen(const char *file)
     }
 
     if(bytes == -1) {
-	mprintf("!maxlinelen: Can't open file %s\n", file);
+	mprintf("!maxlinelen: Can't read file %s\n", file);
 	return -1;
     }
 
@@ -1573,7 +1573,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	FILE *old, *new;
 	char *obuff, *nbuff, *tbuff, *pt, *omd5, *nmd5;
 	unsigned int oline = 0, tline, found, i;
-	int l1, l2;
+	int l1 = 0, l2;
 	long opos;
 
     if(!access(oldpath, R_OK) && (omd5 = cli_md5file(oldpath))) {
@@ -1589,9 +1589,9 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	}
 	free(omd5);
 	free(nmd5);
+	l1 = maxlinelen(oldpath);
     }
 
-    l1 = maxlinelen(oldpath);
     l2 = maxlinelen(newpath);
     if(l1 == -1 || l2 == -1)
 	return -1;
