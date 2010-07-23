@@ -526,6 +526,7 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
 	sinfos = cli_realloc(infos->glob_infos, sizeof(*sinfos)*n);
 	if (!sinfos)
 	    return 0;
+        memset(sinfos + infos->nglobs, 0, (n - infos->nglobs)*sizeof(*sinfos));
 	infos->glob_infos = sinfos;
 	infos->nglobs = n;
     }

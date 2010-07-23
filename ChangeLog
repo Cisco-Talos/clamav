@@ -1,3 +1,7 @@
+Fri Jul 23 22:32:18 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: fix use of uninitialized value (bb #2140).
+
 Thu Jul 22 22:32:08 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to intepreter if
