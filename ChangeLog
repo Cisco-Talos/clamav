@@ -1,3 +1,7 @@
+Sat Jul 24 17:43:16 CEST 2010 (acab)
+------------------------------------
+ * win32: upgrade project files to vs10
+
 Fri Jul 23 22:32:18 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode_vm.c: fix use of uninitialized value (bb #2140).

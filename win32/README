@@ -5,14 +5,11 @@ ClamAV for Win32
 
 To build the source code you will need:
 - Git for windows with a git "shell"
-- Microsoft Visual Studio 2008: the express version builds the 32bit target
+- Microsoft Visual Studio 2010: the express version builds the 32bit target
 just fine but it requires a decent amount of fiddling in order to compile
 the 64bit target; this configuration is therefore not supported.
 
-To run the binaries at least Windows 2000 is required. Microsoft Visual C++ 2008
-runtime libraries needs to be installed on the system. See:
-http://www.microsoft.com/downloads/details.aspx?familyid=9b2da534-3e03-4391-8a4d-074b9f2bc1bf&displaylang=en
-
+To run the binaries at least Windows 2000 is required.
 
 1- Getting the code
 

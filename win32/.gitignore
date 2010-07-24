@@ -4,6 +4,8 @@ build
 *.ncb
 *.suo
 *.sdf
+*.opensdf
 *.user
 */Debug/*
 */Release/*
+ipch
