@@ -38,14 +38,14 @@ int init_errors(void) {
 	return 1;
     }
     for(i=0; i<CL_ELAST_ERROR; i++) {
-	char *cerr = cl_strerror(i);
+	const char *cerr = cl_strerror(i);
 	wchar_t *werr;
 	int len;
 
 	if(!cerr)
 	    continue;
 	len = strlen(cerr)+1;
-	werr = malloc(len * sizeof(wchar_t));
+	werr = (wchar_t *)malloc(len * sizeof(wchar_t));
 	if(!werr) {
 	    free_errors();
 	    logg("init_errors: failed to allocate string buffer, aborting\n");

@@ -200,55 +200,55 @@ my %CONF = (
 ### PROJECT FILES ###
 # - makefile: path to Makefile.am from the root of the repo
 # - sections: section of Makefile.am to parse (without _SOURCES or _la_SOURCES)
-# - output: path to the output vcproj file
-# - makefile_only: *optional* regex to allow exclusion of certain files from the vcproj (use double escapes)
-# - vcproj_only: *optional* regex to allow inclusion of certain files into the vcproj (use double escapes)
+# - output: path to the output vcxproj file
+# - makefile_only: *optional* regex to allow exclusion of certain files from the vcxproj (use double escapes)
+# - vcxproj_only: *optional* regex to allow inclusion of certain files into the vcxproj (use double escapes)
 
 my @PROJECTS = (
     # LIBCLAMAV #
-    {makefile => 'libclamav', sections => ['libclamav', 'libclamav_internal_utils'], output => 'win32/libclamav.vcproj', vcproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
+    {makefile => 'libclamav', sections => ['libclamav', 'libclamav_internal_utils'], output => 'win32/libclamav.vcxproj', vcxproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
 
     # LIBCLAMUNRAR_IFACE #
-    {makefile => 'libclamav', sections => ['libclamunrar_iface'], output => 'win32/libclamunrar_iface.vcproj', vcproj_only => 'compat\\\\'},
+    {makefile => 'libclamav', sections => ['libclamunrar_iface'], output => 'win32/libclamunrar_iface.vcxproj', vcxproj_only => 'compat\\\\'},
 
     # LIBCLAMUNRAR #
-    {makefile => 'libclamav', sections => ['libclamunrar'], output => 'win32/libclamunrar.vcproj'},
+    {makefile => 'libclamav', sections => ['libclamunrar'], output => 'win32/libclamunrar.vcxproj'},
 
     # LIBCLAMAVCXX #
-    {makefile => 'libclamav/c++', sections => ['libclamavcxx'], output => 'win32/libclamavcxx.vcproj'},
+    {makefile => 'libclamav/c++', sections => ['libclamavcxx'], output => 'win32/libclamavcxx.vcxproj'},
 
     # CLAMSCAN #
-    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
+    {makefile => 'clamscan', sections => ['clamscan'], output => 'win32/clamscan.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # CLAMDSCAN #
-    {makefile => 'clamdscan', sections => ['clamdscan'], output => 'win32/clamdscan.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
+    {makefile => 'clamdscan', sections => ['clamdscan'], output => 'win32/clamdscan.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # CLAMD #
-    {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$'},
+    {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$'},
 
     # FRESHCLAM #
-    {makefile => 'freshclam', sections => ['freshclam'], output => 'win32/freshclam.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcproj_only => 'compat\\\\'},
+    {makefile => 'freshclam', sections => ['freshclam'], output => 'win32/freshclam.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$', vcxproj_only => 'compat\\\\'},
 
     # CLAMCONF #
-    {makefile => 'clamconf', sections => ['clamconf'], output => 'win32/clamconf.vcproj', makefile_only => '(optparser\\.c$|getopt\\.c)$'},
+    {makefile => 'clamconf', sections => ['clamconf'], output => 'win32/clamconf.vcxproj', makefile_only => '(optparser\\.c$|getopt\\.c)$'},
 
     # CLAMBC #
-    {makefile => 'clambc', sections => ['clambc'], output => 'win32/clambc.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
+    {makefile => 'clambc', sections => ['clambc'], output => 'win32/clambc.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # LLVMsystem #
-    {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcproj'},
+    {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcxproj'},
 
     # LLVMcodgen #
-    {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcproj'},
+    {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcxproj'},
 
     # LLVMx86codgen #
-    {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcproj'},
+    {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcxproj'},
 
     # LLVMjit #
-    {makefile => 'libclamav/c++', sections => ['libllvmjit'], output => 'win32/LLVMjit.vcproj'},
+    {makefile => 'libclamav/c++', sections => ['libllvmjit'], output => 'win32/LLVMjit.vcxproj'},
 
     # sigtool #
-    {makefile => 'sigtool', sections => ['sigtool'], output => 'win32/sigtool.vcproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
+    {makefile => 'sigtool', sections => ['sigtool'], output => 'win32/sigtool.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     );
 
@@ -264,41 +264,9 @@ my %files;
 my $exclude;
 my $do_patch = 0;
 
-sub ugly_print {
-    no warnings 'recursion';
-    my ($t, $fh) = @_;
-    return unless $t;
-    my $haveatt = 0;
-
-    print $fh "\t" x $t->level;
-    print $fh "<".$t->gi;
-    if(scalar keys %{$t->atts}) {
-	print $fh "\n";
-	foreach (sort keys %{$t->atts}) {
-	    print $fh "\t" x ($t->level + 1);
-	    print $fh $_.'="'.$t->atts->{$_}."\"\n";
-	}
-	$haveatt = 1;
-    }
-
-    my $is_stupid_tag = $t->gi =~ /^(File|ToolFiles|References|Globals|Filter)$/;
-    if($haveatt) {
-	print $fh "\t" x $t->level;
-	print $fh "\t" if $t->children || $is_stupid_tag;
-    }
-    print $fh "/" unless $t->children || $is_stupid_tag;
-    print $fh ">\n";
-    ugly_print($t->first_child, $fh);
-    if($t->children || $is_stupid_tag) {
-	print $fh "\t" x $t->level;
-	print $fh "</".$t->gi.">\n";
-    }
-    ugly_print($t->next_sibling, $fh);
-}
-
 sub file {
     my ($twig, $file) = @_;
-    my $fname = $file->{'att'}->{'RelativePath'};
+    my $fname = $file->{'att'}->{'Include'};
     return unless $fname =~ /^.*\.c(pp)?$/;
     return if defined($exclude) && $fname =~ /$exclude/;
     $file->delete unless !$do_patch || exists $ref_files{$fname};
@@ -355,7 +323,7 @@ foreach (@PROJECTS) {
     %files = ();
     %ref_files = ();
     my $got = 0;
-    $exclude = $proj{'vcproj_only'};
+    $exclude = $proj{'vcxproj_only'};
     print "Parsing $proj{'output'}...\n";
     open IN, "$proj{'makefile'}/Makefile.am" or die "Cannot open $proj{'makefile'}/Makefile.am\n";
     while(<IN>) {
@@ -384,39 +352,37 @@ foreach (@PROJECTS) {
     }
     close IN;
 
-    my $xml = XML::Twig->new( keep_encoding => 1, twig_handlers => { File => \&file } );
+    my $xml = XML::Twig->new( keep_encoding => 1, twig_handlers => { 'ItemGroup/ClCompile' => \&file }, pretty_print => 'record' );
     $xml->parsefile("$BASE_DIR/$proj{'output'}");
 
-    my @missing_in_vcproj = grep ! exists $files{$_}, keys %ref_files;
+    my @missing_in_vcxproj = grep ! exists $files{$_}, keys %ref_files;
     my @missing_in_makefile = grep ! exists $ref_files{$_}, keys %files;
 
     if($do_patch) {
-	if($#missing_in_vcproj >=0) {
-	    my $filter;
-	    die("Cannot locate a proper filter in $proj{'output'}\n") unless $xml->root->first_child('Files') && $xml->root->first_child('Files')->first_child('Filter');
-	    foreach ($xml->root->first_child('Files')->children('Filter')) {
-		next unless $_->att('Name') =~ /^Source Files$/i;
-		$filter = $_;
-		last;
+	if($#missing_in_vcxproj >=0) {
+	    my $group = $xml->root;
+	    while($group = $group->next_elt('ItemGroup')) {
+		last if $group->has_child('ClCompile');
 	    }
-	    $filter = $xml->root->first_child('Files')->first_child('Filter') unless defined($filter);
-	    foreach (@missing_in_vcproj) {
-		my $addfile = $xml->root->new('File');
-		$addfile->set_att('RelativePath' => $_);
-		$addfile->paste($filter);
-		warn "Warning: File $_ not in $proj{'output'}: added!\n" foreach @missing_in_vcproj;
+	    if(!defined($group)) {
+		$group = $xml->root('ItemGroup');
+		$group->paste($xml->root);
+	    }
+	    foreach (@missing_in_vcxproj) {
+		my $addfile = $xml->root->new('ClCompile');
+		$addfile->set_att('Include' => $_);
+		$addfile->paste($group);
+		warn "Warning: File $_ not in $proj{'output'}: added!\n" foreach @missing_in_vcxproj;
 	    }
 	}
 	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am: deleted!\n" foreach @missing_in_makefile;
 	my ($fh, $filename) = tempfile();
-	print $fh "<?xml version=\"1.0\" encoding=\"Windows-1252\"?>\n";
-	ugly_print($xml->root, $fh);
-	close $fh;
+	$xml->print($fh);
 	move($filename, "$proj{'output'}");
-	print "Regenerated $proj{'output'} (".($#missing_in_vcproj + $#missing_in_makefile + 2)." changes)\n";
+	print "Regenerated $proj{'output'} (".($#missing_in_vcxproj + $#missing_in_makefile + 2)." changes)\n";
     } else {
-	warn "Warning: File $_ not in $proj{'output'}\n" foreach @missing_in_vcproj;
+	warn "Warning: File $_ not in $proj{'output'}\n" foreach @missing_in_vcxproj;
 	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am\n" foreach @missing_in_makefile;
-	print "Parsed $proj{'output'} (".($#missing_in_vcproj + $#missing_in_makefile + 2)." warnings)\n";
+	print "Parsed $proj{'output'} (".($#missing_in_vcxproj + $#missing_in_makefile + 2)." warnings)\n";
     }
 }

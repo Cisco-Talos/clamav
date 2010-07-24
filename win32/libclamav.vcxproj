@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{09D341E9-7372-46E9-B0D7-CAAF77984190}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>libclamav</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="libclamav.def"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\libclamav.rc"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libclamav\regex_list.c"/>
+    <ClCompile Include="..\libclamav\rtf.c"/>
+    <ClCompile Include="..\libclamav\regex_suffix.c"/>
+    <ClCompile Include="..\libclamav\readdb.c"/>
+    <ClCompile Include="..\libclamav\scanners.c"/>
+    <ClCompile Include="..\libclamav\qsort.c"/>
+    <ClCompile Include="..\libclamav\rebuildpe.c"/>
+    <ClCompile Include="..\libclamav\7z.c"/>
+    <ClCompile Include="..\libclamav\7z\7zBuf.c"/>
+    <ClCompile Include="..\libclamav\7z\7zCrc.c"/>
+    <ClCompile Include="..\libclamav\7z\7zFile.c"/>
+    <ClCompile Include="..\libclamav\7z\7zStream.c"/>
+    <ClCompile Include="..\libclamav\7z\Archive\7z\7zDecode.c"/>
+    <ClCompile Include="..\libclamav\7z\Archive\7z\7zExtract.c"/>
+    <ClCompile Include="..\libclamav\7z\Archive\7z\7zHeader.c"/>
+    <ClCompile Include="..\libclamav\7z\Archive\7z\7zIn.c"/>
+    <ClCompile Include="..\libclamav\7z\Archive\7z\7zItem.c"/>
+    <ClCompile Include="..\libclamav\7z\Bcj2.c"/>
+    <ClCompile Include="..\libclamav\7z\Bra.c"/>
+    <ClCompile Include="..\libclamav\7z\Bra86.c"/>
+    <ClCompile Include="..\libclamav\7z\LzmaDec.c"/>
+    <ClCompile Include="..\libclamav\aspack.c"/>
+    <ClCompile Include="..\libclamav\autoit.c"/>
+    <ClCompile Include="..\libclamav\bignum.c"/>
+    <ClCompile Include="..\libclamav\binhex.c"/>
+    <ClCompile Include="..\libclamav\blob.c"/>
+    <ClCompile Include="..\libclamav\bytecode.c"/>
+    <ClCompile Include="..\libclamav\bytecode_api.c"/>
+    <ClCompile Include="..\libclamav\bytecode_api_decl.c"/>
+    <ClCompile Include="..\libclamav\bytecode_vm.c"/>
+    <ClCompile Include="..\libclamav\cab.c"/>
+    <ClCompile Include="..\libclamav\cache.c"/>
+    <ClCompile Include="..\libclamav\chmunpack.c"/>
+    <ClCompile Include="..\libclamav\cpio.c"/>
+    <ClCompile Include="..\libclamav\cvd.c"/>
+    <ClCompile Include="..\libclamav\dconf.c"/>
+    <ClCompile Include="..\libclamav\disasm.c"/>
+    <ClCompile Include="..\libclamav\dlp.c"/>
+    <ClCompile Include="..\libclamav\dsig.c"/>
+    <ClCompile Include="..\libclamav\elf.c"/>
+    <ClCompile Include="..\libclamav\entconv.c"/>
+    <ClCompile Include="..\libclamav\explode.c"/>
+    <ClCompile Include="..\libclamav\filetypes.c"/>
+    <ClCompile Include="..\libclamav\filtering.c"/>
+    <ClCompile Include="..\libclamav\fmap.c"/>
+    <ClCompile Include="..\libclamav\fsg.c"/>
+    <ClCompile Include="..\libclamav\hashtab.c"/>
+    <ClCompile Include="..\libclamav\htmlnorm.c"/>
+    <ClCompile Include="..\libclamav\inflate64.c"/>
+    <ClCompile Include="..\libclamav\ishield.c"/>
+    <ClCompile Include="..\libclamav\is_tar.c"/>
+    <ClCompile Include="..\libclamav\jsparse\js-norm.c"/>
+    <ClCompile Include="..\libclamav\line.c"/>
+    <ClCompile Include="..\libclamav\lzma_iface.c"/>
+    <ClCompile Include="..\libclamav\macho.c"/>
+    <ClCompile Include="..\libclamav\matcher-ac.c"/>
+    <ClCompile Include="..\libclamav\matcher-bm.c"/>
+    <ClCompile Include="..\libclamav\matcher-md5.c"/>
+    <ClCompile Include="..\libclamav\matcher.c"/>
+    <ClCompile Include="..\libclamav\mbox.c"/>
+    <ClCompile Include="..\libclamav\md5.c"/>
+    <ClCompile Include="..\libclamav\message.c"/>
+    <ClCompile Include="..\libclamav\mew.c"/>
+    <ClCompile Include="..\libclamav\mpool.c"/>
+    <ClCompile Include="..\libclamav\msexpand.c"/>
+    <ClCompile Include="..\libclamav\mspack.c"/>
+    <ClCompile Include="..\libclamav\nsis\bzlib.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\nsis\infblock.c"/>
+    <ClCompile Include="..\libclamav\nsis\nulsft.c"/>
+    <ClCompile Include="..\libclamav\ole2_extract.c"/>
+    <ClCompile Include="..\libclamav\others.c"/>
+    <ClCompile Include="..\libclamav\others_common.c"/>
+    <ClCompile Include="..\libclamav\packlibs.c"/>
+    <ClCompile Include="..\libclamav\pdf.c"/>
+    <ClCompile Include="..\libclamav\pe.c"/>
+    <ClCompile Include="..\libclamav\perflogging.c"/>
+    <ClCompile Include="..\libclamav\petite.c"/>
+    <ClCompile Include="..\libclamav\pe_icons.c"/>
+    <ClCompile Include="..\libclamav\phishcheck.c"/>
+    <ClCompile Include="..\libclamav\phish_domaincheck_db.c"/>
+    <ClCompile Include="..\libclamav\phish_whitelist.c"/>
+    <ClCompile Include="..\libclamav\regex\regcomp.c"/>
+    <ClCompile Include="..\libclamav\regex\regerror.c"/>
+    <ClCompile Include="..\libclamav\regex\regexec.c"/>
+    <ClCompile Include="..\libclamav\regex\regfree.c"/>
+    <ClCompile Include="..\libclamav\regex\strlcpy.c"/>
+    <ClCompile Include="..\libclamav\sha256.c"/>
+    <ClCompile Include="..\libclamav\sis.c"/>
+    <ClCompile Include="..\libclamav\special.c"/>
+    <ClCompile Include="..\libclamav\spin.c"/>
+    <ClCompile Include="..\libclamav\str.c"/>
+    <ClCompile Include="..\libclamav\table.c"/>
+    <ClCompile Include="..\libclamav\text.c"/>
+    <ClCompile Include="..\libclamav\textdet.c"/>
+    <ClCompile Include="..\libclamav\textnorm.c"/>
+    <ClCompile Include="..\libclamav\tnef.c"/>
+    <ClCompile Include="..\libclamav\unarj.c"/>
+    <ClCompile Include="..\libclamav\uniq.c"/>
+    <ClCompile Include="..\libclamav\unsp.c"/>
+    <ClCompile Include="..\libclamav\untar.c"/>
+    <ClCompile Include="..\libclamav\unzip.c"/>
+    <ClCompile Include="..\libclamav\upack.c"/>
+    <ClCompile Include="..\libclamav\upx.c"/>
+    <ClCompile Include="..\libclamav\uuencode.c"/>
+    <ClCompile Include="..\libclamav\vba_extract.c"/>
+    <ClCompile Include="..\libclamav\version.c"/>
+    <ClCompile Include="..\libclamav\wwunpack.c"/>
+    <ClCompile Include="..\libclamav\yc.c"/>
+    <ClCompile Include="..\shared\getopt.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
+    <ClCompile Include="3rdparty\bzip2\blocksort.c"/>
+    <ClCompile Include="3rdparty\bzip2\bzlib.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="3rdparty\bzip2\compress.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="3rdparty\bzip2\crctable.c"/>
+    <ClCompile Include="3rdparty\bzip2\decompress.c"/>
+    <ClCompile Include="3rdparty\bzip2\huffman.c"/>
+    <ClCompile Include="3rdparty\bzip2\randtable.c"/>
+    <ClCompile Include="3rdparty\pthreads\pthread.c"/>
+    <ClCompile Include="3rdparty\zlib\adler32.c"/>
+    <ClCompile Include="3rdparty\zlib\compress.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="3rdparty\zlib\crc32.c"/>
+    <ClCompile Include="3rdparty\zlib\deflate.c"/>
+    <ClCompile Include="3rdparty\zlib\gzio.c"/>
+    <ClCompile Include="3rdparty\zlib\inffast.c"/>
+    <ClCompile Include="3rdparty\zlib\inflate.c"/>
+    <ClCompile Include="3rdparty\zlib\inftrees.c"/>
+    <ClCompile Include="3rdparty\zlib\trees.c"/>
+    <ClCompile Include="3rdparty\zlib\uncompr.c"/>
+    <ClCompile Include="3rdparty\zlib\zutil.c"/>
+    <ClCompile Include="compat\dirent.c"/>
+    <ClCompile Include="compat\gettimeofday.c"/>
+    <ClCompile Include="compat\glob.c"/>
+    <ClCompile Include="compat\libclamav_main.c"/>
+    <ClCompile Include="compat\libgen.c"/>
+    <ClCompile Include="compat\ltdl.c"/>
+    <ClCompile Include="compat\net.c"/>
+    <ClCompile Include="compat\random.c"/>
+    <ClCompile Include="compat\snprintf.c"/>
+    <ClCompile Include="compat\w32_errno.c"/>
+    <ClCompile Include="compat\w32_stat.c"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libclamavcxx.vcxproj">
+      <Project>{3ae8051d-a188-4b11-95a4-14b8f0c290cb}</Project>
+    </ProjectReference>
+    <ProjectReference Include="LLVMcodegen.vcxproj">
+      <Project>{40088299-8c66-4565-a3bd-9dbf5e1a1681}</Project>
+    </ProjectReference>
+    <ProjectReference Include="LLVMjit.vcxproj">
+      <Project>{c73ee171-635e-44ae-bed5-6d3ea981a0f3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="LLVMsystem.vcxproj">
+      <Project>{47b564c4-adca-44dc-8bc9-e87fd18b19c5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="LLVMx86codegen.vcxproj">
+      <Project>{81f5e6f8-6d82-4384-9202-66da2bae54a1}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

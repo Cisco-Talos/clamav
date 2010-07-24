@@ -3,6 +3,7 @@
 build
 *.ncb
 *.suo
+*.sdf
 *.user
 */Debug/*
 */Release/*
