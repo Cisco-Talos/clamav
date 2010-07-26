@@ -177,6 +177,9 @@ static const struct rtest {
 		      3 - blacklisted if 2nd db is loaded,
 		      4 - invalid regex*/
 } rtests[] = {
+        {NULL,"http://fake.example.com", "http://foo@key.com/", 0},
+	{NULL,"http://fake.example.com", "foo.example.com@key.com", 0},
+	{NULL,"http://fake.example.com", "foo@key.com", 2},
 	{NULL,"http://fake.example.com","&#61;&#61;&#61;&#61;&#61;key.com",0},
 	{NULL,"http://key.com","&#61;&#61;&#61;&#61;&#61;key.com",2},
 	{NULL," http://key.com","&#61;&#61;&#61;&#61;&#61;key.com",2},

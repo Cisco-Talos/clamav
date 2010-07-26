@@ -1000,6 +1000,7 @@ static int isURL(char* URL, int accept_anyproto)
 {
 	char *last_tld_end = NULL, *q;
 	const char *start = NULL, *p, *end;
+	int has_proto = 0;
 	if(!URL)
 		return 0;
 
@@ -1035,6 +1036,7 @@ static int isURL(char* URL, int accept_anyproto)
 				start++;
 			} else
 			    start++;
+			has_proto = 1;
 		}
 		else
 			start = URL; /* scheme invalid */
@@ -1044,6 +1046,16 @@ static int isURL(char* URL, int accept_anyproto)
 	end = strchr(p, '/');
 	if (!end)
 		end = p + strlen(p);
+
+	if (!has_proto && (q = memchr(p, '@', end-p))) {
+	    /* don't phishcheck if displayed URL is email, but do phishcheck if
+	     * foo.TLD@host is used */
+	    const char *q2 = q-1;
+	    while (q2 > p && *q2 != '.') q2--;
+	    if (q2 == p || !in_tld_set(q2+1, q-q2-1))
+		return 0;
+	}
+
 	do {
 		q = strchr(p, '.');
 		if (q > end)
