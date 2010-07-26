@@ -1923,7 +1923,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 	errs() << MODULE << ErrMsg << "\n";
 #ifdef __linux__
 	errs() << MODULE << "SELinux or PaX is preventing 'execmem' access."
-	    << "Run 'setsebool -P clamd_use_jit on' or 'paxctl -m <executable>' to allow access\n";
+	    << "Run 'setsebool -P clamd_use_jit on' or 'paxctl -cm <executable>' to allow access\n";
 #endif
 	errs() << MODULE << "falling back to interpreter mode\n";
 	have_clamjit=0;
@@ -1940,7 +1940,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 			errs() << "bytecode JIT: PaX found: " << line;
 		    }
 		    if (!strchr(line,'m')) {
-			errs() << MODULE << "PaX is preventing MPROTECT, use 'paxctl -m <executable>' to allow\n";
+			errs() << MODULE << "PaX is preventing MPROTECT, use 'paxctl -cm <executable>' to allow\n";
 			errs() << MODULE << "falling back to interpreter mode\n";
 			fclose(f);
 			have_clamjit=0;
