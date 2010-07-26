@@ -238,6 +238,16 @@ int command(client_conn_t *conn, int *virus)
 	    break;
 	case COMMAND_MULTISCAN: {
 	    int multiscan, max, alive;
+	    struct stat sb;
+
+	    /* use MULTISCAN only for directories (bb #1869) */
+	    if (stat(conn->filename, &sb) == 0 &&
+		!S_ISDIR(sb.st_mode)) {
+		thrmgr_setactivetask(NULL, "CONTSCAN");
+		type = TYPE_CONTSCAN;
+		break;
+	    }
+
 	    pthread_mutex_lock(&conn->thrpool->pool_mutex);
 	    multiscan = conn->thrpool->thr_multiscan;
 	    max = conn->thrpool->thr_max;

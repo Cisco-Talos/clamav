@@ -1,3 +1,7 @@
+Mon Jul 26 12:55:20 EEST 2010 (edwin)
+------------------------------------
+ * clamd/session.c: treat MULTISCAN as CONTSCAN on non-directories (bb #1869).
+
 Sat Jul 24 17:43:16 CEST 2010 (acab)
 ------------------------------------
  * win32: upgrade project files to vs10
