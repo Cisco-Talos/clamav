@@ -1,3 +1,8 @@
+Tue Jul 27 14:16:59 CEST 2010 (acab)
+------------------------------------
+ * clamav-milter: noisily fallback on default value if MaxFileSize is set
+		  to 0 (bb#2081)
+
 Mon Jul 26 13:16:07 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/phishcheck.c: don't phishcheck email addresses (bb #2067)

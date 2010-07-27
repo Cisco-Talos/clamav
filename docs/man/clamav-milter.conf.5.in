@@ -123,7 +123,7 @@ Messages from authenticated SMTP users matching this extended POSIX regular expr
 .br
 Default: unset (no whitelisting based on SMTP auth)
 .TP 
-\fBSkipAuthenticated SIZE\fR
+\fBMaxFileSize SIZE\fR
 Messages larger than this value won\'t be scanned. Make sure this value is lower or equal than StreamMaxLength in clamd.conf
 .br
 Default: 25M

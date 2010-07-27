@@ -39,6 +39,7 @@
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
+#include "libclamav/default.h"
 
 #include "connpool.h"
 #include "netcode.h"
@@ -351,6 +352,10 @@ int main(int argc, char **argv) {
     }
 
     maxfilesize = optget(opts, "MaxFileSize")->numarg;
+    if(!maxfilesize) {
+	logg("^Invalid MaxFileSize, using default (%d)\n", CLI_DEFAULT_MAXFILESIZE);
+	maxfilesize = CLI_DEFAULT_MAXFILESIZE;
+    }
     readtimeout = optget(opts, "ReadTimeout")->numarg;
 
     cpool_init(opts);
