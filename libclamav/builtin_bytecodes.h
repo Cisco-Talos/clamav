@@ -24,45 +24,83 @@
 #define BUILTIN_BYTECODES_H
 
 /* bytecode run on startup with interpreter to determine if JIT/bytecode should
- * be disabled.
+ * be disabled. It also runs a minimal self-check.
  * There can only be one such bytecode, if there is none this is used as
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafhgjmdaeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcdcmbgfcchc`cdf`cafgc``bgbaap`clamcoincidencejb:1378\n"
+static const char* builtin_bc_startup = "ClamBCafhcgmjaeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcdcmbgfcchc`cdf`cafgc``bkbaap`clamcoincidencejb:1378\n"
 "\n"
-"Teddaaahdabahdacahdadahdaeahdafahdagahebffebidebefebdfebcfebbfebedebafeb`feboeebadcbgab`bb`bb`bb`bb`bb`bb`bbnebnebnebnebnebnebneahahahahahahahahahebgeebneaacb`bbadb`baacb`bbheb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
-"Ebjdadafbje|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbke|b`agfefdgoeefnffgifbgofnfmfefnfdg``bidble|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdble|aodfifcgafbflfefoejfifdgoeifff``\n"
-"G`bha`@`b`aAa`bffBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`befBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bdfBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bcfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bbfBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`bafBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`b`fBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`boeBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`\n"
-"A`b`bLbecb`b`bgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`Fbodbia\n"
-"Bb`bababbbhdaaClnadbadacdbbheaaBdadahadgbacaaaeeaahad@aTaaaeb`aaa\n"
-"BbadafdbbheaaB`adahaggbafaaaheaahagAaaTaaahabae\n"
-"BbieaidbbheaaAidbadajdbbieai@db`bakkbajAn`Addaaaleab`bak@db`b`bbAad`Taaaladac\n"
-"Bb`bamkbajAo`Addaaaneab`bam@db`b``aanb`b`bb``Tbaad\n"
-"Bb`baobb`aob`bb`aabcbjdAm`@daoTbaae\n"
-"BbadbaadbbheaaBeadahbbagbbaab`bbca`abbab`bbdak`bcaAadaabeaeab`bbda@dTaabeaafal\n"
-"Bb`bbfaabcbjdB`a`@dAadbadbgadbbheaaBbadahbhagbbgaaabiaeaahbhaAjaTaabiaagb`a\n"
-"Bahbjagbbaab`bbka`abjab`bblak`bkaAbdaabmaeab`bbla@dTaabmaaiah\n"
-"Bb`bbnaabcbjdBaa`@dAadTbab`a\n"
-"Bb`bboak`bkaAhdaab`beab`bboa@dTaab`bakaj\n"
-"Bb`bbababcbjdBba`@dAadTbab`a\n"
-"Bb`bbbbabcbjdBca`@dAadTbab`a\n"
-"BbadbcbdbbheaaBbadahbdbgbbcbaabebeaahbdbAjaTaabebanam\n"
-"BbadbfbdbbheaaBaadahbgbgbbfbaabhbeaahbgbAfaTaabhbanb`a\n"
-"Bb`bbibk`bcaB`adaabjbeab`bbib@dTaabjbb`aao\n"
-"Bb`bbkbabcbjdBba`@dAadTbab`a\n"
-"Bb`bblbabcbidBda`@d@daabmbnab`bblbAadTaabmbbdabaa\n"
-"Baabnbnab`bblbAbdTaabnbbcabba\n"
-"Baabobeab`bblbAbdTaabobbgabha\n"
-"Baab`ceab`bblbAadTaab`cbfabha\n"
-"Baabaceab`bblb@dTaabacbeabha\n"
-"Bb`bbbcabbafBea`@dTcab`b@d\n"
-"Bb`bbccabbafBfa`@dTcab`b@d\n"
-"Bb`bbdcabbafBga`@dTcab`b@d\n"
-"BTcab`b@dE\n"
+"Teddaaahdabahdacahdadahdaeahdafahdagahebjfebidebifebhfebgfebffebedebefebdfebcfebadcbgab`bb`bb`bb`bb`bb`bb`bbbfbbfbbfbbfbbfbbfbbfahahahahahahahahahebgeebbfaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bbheb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
+"Ebjdaibcdbke|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbke|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agble|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcable|afdgefcgdgbc``afbme|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbne|b`agfefdgoeefnffgifbgofnfmfefnfdg``aaboe|afdgefcgdgac``bidb`f|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdb`f|aodfifcgafbflfefoejfifdgoeifff``\n"
+"G`bha`@`b`aAa`bjfBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`bifBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bhfBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bgfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bffBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`befBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`bdfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`bcfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`\n"
+"A`b`bLbbhb`bab`babgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`b`b`Fbakbjb\n"
+"Bb`bacabbbhdabClnadbadaddbbheabBdadahaegbadaaafeaahae@aTaaafb`aaa\n"
+"BbadagdbbheabB`adahahgbagaaaieaahahAaaTaaaiabae\n"
+"BbieajdbbheabAidbadakdbbieaj@db`balkbakAn`Addaaameab`bal@db`b`bbAadaaTaaamadac\n"
+"Bb`bankbakAo`Addaaaoeab`ban@db`baa`aaob`b`bbaaaaTbaad\n"
+"Bb`bb`abbaab`ab`bbaaabcbjdAm`@db`aTbaae\n"
+"BbadbbadbbheabBeadahbcagbbbab`bbda`abcab`bbeak`bdaAadaabfaeab`bbea@dTaabfaafal\n"
+"Bb`bbgaabcbjdB`a`@dAadbadbhadbbheabBbadahbiagbbhaaabjaeaahbiaAjaTaabjaagb`a\n"
+"Bahbkagbbbab`bbla`abkab`bbmak`blaAbdaabnaeab`bbma@dTaabnaaiah\n"
+"Bb`bboaabcbjdBaa`@dAadTbab`a\n"
+"Bb`bb`bk`blaAhdaababeab`bb`b@dTaababakaj\n"
+"Bb`bbbbabcbjdBba`@dAadTbab`a\n"
+"Bb`bbcbabcbjdBca`@dAadTbab`a\n"
+"BbadbdbdbbheabBbadahbebgbbdbaabfbeaahbebAjaTaabfbanam\n"
+"BbadbgbdbbheabBaadahbhbgbbgbaabibeaahbhbAfaTaabibanb`a\n"
+"Bb`bbjbk`bdaB`adaabkbeab`bbjb@dTaabkbb`aao\n"
+"Bb`bblbabcbjdBba`@dAadTbab`a\n"
+"Bb`bbmbabcbidBda`@d@daabnbnab`bbmbAadTaabnbbdabaa\n"
+"Baabobnab`bbmbAbdTaabobbcabba\n"
+"Baab`ceab`bbmbAbdTaab`cbgabha\n"
+"Baabaceab`bbmbAadTaabacbfabha\n"
+"Baabbceab`bbmb@dTaabbcbeabha\n"
+"Bb`bbccabbafBea`@dTbabha\n"
+"Bb`bbdcabbafBfa`@dTbabha\n"
+"Bb`bbecabbafBga`@dTbabha\n"
+"Bahbfcgbadaabgceaahbfc@aTaabgcbjabia\n"
+"BbcdbhcdbbheabAddb`bbicgbbhcaabjceab`bbic@db`b`bbEamjnmd`Taabjcbibbja\n"
+"BbcdbkcdbbheabAfdb`bblcgbbkcbcdbmcdbbheabAedb`bbncgbbmcaabociab`bblcbncb`b`bbEbmjnmd`Taabocbibbka\n"
+"Bb`bb`dab`bbdaabadeab`bbncb`db`b`bbEcmjnmd`Taabadblabib\n"
+"Bb`bbbdgbbkcb`bbcdab`bcdaabddeab`bbbdbcdb`b`bbEdmjnmd`Taabddbmabib\n"
+"BbadbeddbbheabAndahbfdgbbedb`bbgd`abfdaabhdlbb`bbid`abhdaabjdeab`bbgdbidb`b`bbEemjnmd`Taabjdbnabib\n"
+"BbadbkddbbheabBaadahbldgbbkdb`bbmd`abldb`bbndh`bmdBhadbadboddbbheabB`adahb`egbbodb`bbae`ab`eb`bbbeh`baeBdadbadbcedbbheabBcadahbdegbbceb`bbee`abdeb`bbfeh`beeB`adb`bbgegbbmcb`bbheh`bgeAhdb`bbiegbbkcb`bbjel`bbebndb`bbkel`bjebheb`bblel`bkebieb`bbmel`blebfeb`bbneh`bgdBladbadboedbbheabAodahb`fgbboeb`bbaf`ab`fb`bbbfh`bafBhadbcdbcfdbbheabAddb`bbdfgbbcfb`bbefl`bdfbneb`bbffl`befbbfbadbgfdbbheabBeadahbhfgbbgfb`bbif`abhfb`bbjfh`bifBhadbcdbkfdbbheabAcdb`bblfgbbkfb`bbmfl`bjfblfbcdbnfdbbheab@db`bbofgbbnfaab`geab`bbmebofTaab`gb`bboa\n"
+"Bb`bbagabaagbmeTcab`bEfmjnmd\n"
+"BbcdbbgdbbheabAadb`bbcggbbbgaabdgeab`bbffbcgTaabdgbbbbab\n"
+"Bb`bbegabaagbffTcab`bEgmjnmd\n"
+"BbcdbfgdbbheabAbdb`bbgggbbfgaabhgeab`bbmfbggTaabhgbdbbcb\n"
+"Bb`bbigabaagbmfTcab`bEhmjnmd\n"
+"Bb`bbjgabbaaHonnkm``odHm``oonnkdaabkgeab`bbjgHhgfedcbadTaabkgbfbbeb\n"
+"Bb`bblgabaagbjgTcab`bEimjnmd\n"
+"Bb`bbmgababcaDm``odaabngeab`bbmgDo``mdTaabngbhbbgb\n"
+"Bb`bbogabaagbmgTcab`bF`amjnmd\n"
+"Bb`bb`hoabhdFaamjnmdHnejkjgjmdTcab`bb`h\n"
+"Bb`bbahbb`bahTcab`bbahE\n"
 ;
 /* source-code for builtin_bc_startup: */
 #if 0
+/*
+ *  ClamAV bytecode startup checks and self-check.
+ *
+ *  Copyright (C) 2010 Sourcefire, Inc.
+ *
+ *  Authors: Török Edvin
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
 const uint16_t __clambc_kind = BC_STARTUP;
 int entrypoint()
 {
@@ -125,7 +163,77 @@ int entrypoint()
     debug("startup: bytecode disabled");
     break;
   }
-  return 0;
+
+  /* check that the OS information is consistent */
+  /* JIT == C++ code compiled */
+  if (env.has_jit_compiled && !env.cpp_version) {
+    return 0xdead1;
+  }
+  if (env.dconf_level < env.functionality_level) {
+    return 0xdead2;
+  }
+  if (env.functionality_level != engine_functionality_level()) {
+    return 0xdead3;
+  }
+  if (env.dconf_level != engine_dconf_level()) {
+    return 0xdead4;
+  }
+  if (env.big_endian != __is_bigendian()) {
+    return 0xdead5;
+  }
+
+  uint32_t a = (env.os_category << 24) | (env.arch << 20) |
+    (env.compiler <<  16) | (env.functionality_level << 8) |
+    (env.dconf_level);
+  uint32_t b = (env.big_endian << 28) | (env.sizeof_ptr << 24) |
+    env.cpp_version;
+  uint32_t c = (env.os_features << 24) | env.c_version;
+  if (a != env.platform_id_a) {
+    debug_print_uint(a);
+    return 0xdead6;
+  }
+  if (b != env.platform_id_b) {
+    debug_print_uint(b);
+    return 0xdead7;
+  }
+  if (c != env.platform_id_c) {
+    debug_print_uint(c);
+    return 0xdead8;
+  }
+  c = test1(0xf00dbeef, 0xbeeff00d);
+  if (c != 0x12345678) {
+    debug_print_uint(c);
+    return 0xdead9;
+  }
+  c = test2(0xf00d);
+  if (c != 0xd00f) {
+    debug_print_uint(c);
+    return 0xdead10;
+  }
+
+  /* check endianness and bswap */
+  char buf[16] = {
+    0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+  };
+  char buf2[16];
+  uint32_t x;
+  memset(&buf2, 0, sizeof(buf2));
+  if (cli_readint16(&buf) != 0x100)
+    return 0xdead11;
+  x = cli_readint32(&buf);
+  if (x != 0x03020100)
+    return 0xdead12;
+  x = __builtin_bswap32(x);
+  if (x != 0x00010203)
+    return 0xdead13;
+  cli_writeint32(&buf2, 0x12345678);
+  if (cli_readint32(&buf2) != 0x12345678)
+    return 0xdead14;
+  if (buf2[0] != 0x78)
+    return 0xdead15;
+
+  /* magic number to tell libclamav that selftest succeeded */
+  return 0xda7aba5e;
 }
 
 

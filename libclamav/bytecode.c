@@ -2297,8 +2297,10 @@ int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsig
     } else {
 	cli_dbgmsg("Bytecode: disable status is %d\n", ctx->bytecode_disable_status);
 	rc = cli_bytecode_context_getresult_int(ctx);
-	if (rc) {
-	    cli_warnmsg("Bytecode: selftest failed with code %d. Please report to http://bugs.clamav.net\n",
+	/* check magic number, don't use 0 here because it is too easy for a
+	 * buggy bytecode to return 0 */
+	if (rc != 0xda7aba5e) {
+	    cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to http://bugs.clamav.net\n",
 			rc);
 	    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
 		return CL_EBYTECODE_TESTFAIL;
