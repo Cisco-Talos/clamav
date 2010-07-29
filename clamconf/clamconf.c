@@ -262,18 +262,18 @@ static void print_build(struct cli_environment *env)
     const char *version = NULL;
     printf("\nBuild information\n-----------------\n");
     /* Try to print information about some commonly used compilers */
+#ifdef __GNUC__
+	version = __VERSION__;
+#endif
     switch (env->compiler) {
 	case compiler_gnuc:
 	    name = "GNU C";
-	    version = __VERSION__;
 	    break;
 	case compiler_clang:
 	    name = "Clang";
-	    version = __VERSION__;
 	    break;
 	case compiler_llvm:
 	    name = "LLVM-GCC";
-	    version = __VERSION__;
 	    break;
 	case compiler_intel:
 	    name = "Intel Compiler";

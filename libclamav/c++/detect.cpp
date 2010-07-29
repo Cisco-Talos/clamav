@@ -55,7 +55,7 @@ void cli_detect_env_jit(struct cli_environment *env)
     std::string cpu = sys::getHostCPUName();
     INIT_STRFIELD(env->cpu, cpu.c_str());
 
-    if (env->big_endian != sys::isBigEndianHost()) {
+    if (env->big_endian != (int)sys::isBigEndianHost()) {
 	warn_assumptions("host endianness", env->big_endian, sys::isBigEndianHost());
 	env->big_endian = sys::isBigEndianHost();
     }

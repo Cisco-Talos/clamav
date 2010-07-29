@@ -125,6 +125,7 @@ EXPORTS cli_fmap_scandesc @44340
 EXPORTS cli_hashset_destroy @44341
 EXPORTS cli_scandesc_stats @44342
 EXPORTS cli_scanfile_stats @44343
+EXPORTS cli_detect_environment @44344 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44265 NONAME

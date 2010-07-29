@@ -1264,7 +1264,7 @@ int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, u
 {
     char *endl, *endr;
     unsigned i = 0, j = 0;
-    unsigned long li, ri;
+    unsigned long li=0, ri=0;
     do {
 	while (i < lhs_len && j < rhs_len && lhs[i] == rhs[j] &&
 	       !isdigit(lhs[i]) && !isdigit(rhs[j])) {

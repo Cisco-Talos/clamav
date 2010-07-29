@@ -280,18 +280,19 @@ void cli_detect_environment(struct cli_environment *env)
     {
 	OSVERSIONINFOEX info;
 	info.dwOSVersionInfoSize = sizeof(info);
-	if (GetVersionEx(&info) == 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+	if (GetVersionEx(&info) != 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
 	    if (info.wProductType == VER_NT_WORKSTATION)
 		INIT_STRFIELD(env->sysname, "Microsoft Windows");
 	    else
 		INIT_STRFIELD(env->sysname, "Microsoft Windows Server");
-	    snprintf(env->release, sizeof(env->release), "%d.%d SP%d.%d",
+	    snprintf((char*)env->release, sizeof(env->release), "%d.%d SP%d.%d",
 		     info.dwMajorVersion, info.dwMinorVersion,
 		     info.wServicePackMajor, info.wServicePackMinor);
-	    snprintf(env->version, sizeof(env->version),"Build %d",
+	    snprintf((char*)env->version, sizeof(env->version),"Build %d",
 		     info.dwBuildNumber);
 	}
     }
+    
 #endif
     if (!env->sysname[0]) {
 	INIT_STRFIELD(env->sysname, TARGET_OS_TYPE);
