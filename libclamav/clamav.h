@@ -66,8 +66,8 @@ typedef enum {
     CL_EMAXSIZE,
     CL_EMAXFILES,
     CL_EFORMAT,
-    CL_EBYTECODE,
-
+    CL_EBYTECODE,/* may be reported in testmode */
+    CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
 
     /* no error codes below this line please */
     CL_ELAST_ERROR
@@ -147,14 +147,24 @@ enum cl_engine_field {
     CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
     CL_ENGINE_TMPDIR,		    /* (char *) */
     CL_ENGINE_KEEPTMP,		    /* uint32_t */
-    CL_ENGINE_BYTECODE_SECURITY,     /* uint32_t */
-    CL_ENGINE_BYTECODE_TIMEOUT       /* uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY,    /* uint32_t */
+    CL_ENGINE_BYTECODE_TIMEOUT,     /* uint32_t */
+    CL_ENGINE_BYTECODE_MODE         /* uint32_t */
 };
 
 enum bytecode_security {
     CL_BYTECODE_TRUST_ALL=0, /* insecure, debug setting */
     CL_BYTECODE_TRUST_SIGNED, /* default */
     CL_BYTECODE_TRUST_NOTHING /* paranoid setting */
+};
+
+enum bytecode_mode {
+    CL_BYTECODE_MODE_AUTO=0, /* JIT if possible, fallback to interpreter */
+    CL_BYTECODE_MODE_JIT, /* force JIT */
+    CL_BYTECODE_MODE_INTERPRETER, /* force interpreter */
+    CL_BYTECODE_MODE_TEST, /* both JIT and interpreter, compare results,
+			      all failures are fatal */
+    CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);

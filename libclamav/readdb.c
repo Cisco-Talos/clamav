@@ -2636,8 +2636,8 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	if((ret = phishing_init(engine)))
 	    return ret;
 
-    if((dboptions & CL_DB_BYTECODE) && !engine->bcs.engine && (engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
-	if((ret = cli_bytecode_init(&engine->bcs, engine->dconf->bytecode)))
+    if((dboptions & CL_DB_BYTECODE) && !engine->bcs.inited) {
+	if((ret = cli_bytecode_init(&engine->bcs)))
 	    return ret;
     } else {
 	cli_dbgmsg("Bytecode engine disabled\n");
@@ -3078,7 +3078,7 @@ int cl_engine_compile(struct cl_engine *engine)
     mpool_flush(engine->mempool);
 
     /* Compile bytecode */
-    if((ret = cli_bytecode_prepare(&engine->bcs, engine->dconf->bytecode))) {
+    if((ret = cli_bytecode_prepare(engine, &engine->bcs, engine->dconf->bytecode))) {
 	cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
 	return ret;
     }

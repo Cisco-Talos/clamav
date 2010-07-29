@@ -25,6 +25,7 @@
 #include "clambc.h"
 #include <stdio.h>
 #include "fmap.h"
+#include "bytecode_detect.h"
 
 struct cli_dbio;
 struct cli_bc_ctx;
@@ -41,7 +42,8 @@ enum bc_state {
     bc_skip,
     bc_loaded,
     bc_jit,
-    bc_interp
+    bc_interp,
+    bc_disabled
 };
 
 struct cli_bc {
@@ -74,6 +76,8 @@ struct cli_all_bc {
     struct cli_bc *all_bcs;
     unsigned count;
     struct cli_bcengine *engine;
+    struct cli_environment env;
+    int    inited;
 };
 
 struct cli_pe_hook_data;
@@ -100,9 +104,9 @@ extern int have_clamjit;
 #ifdef __cplusplus
 }
 #endif
-int cli_bytecode_init(struct cli_all_bc *allbc, unsigned dconfmask);
+int cli_bytecode_init(struct cli_all_bc *allbc);
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int security);
-int cli_bytecode_prepare(struct cli_all_bc *allbc, unsigned dconfmask);
+int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *allbc, unsigned dconfmask);
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);

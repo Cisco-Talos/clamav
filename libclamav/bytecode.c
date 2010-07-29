@@ -2090,7 +2090,7 @@ static int selfcheck(int jit, struct cli_bcengine *engine)
     return rc;
 }
 
-int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
+int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
 {
     unsigned i, interp = 0;
     int rc1, rc2, rc;
@@ -2125,10 +2125,15 @@ int cli_bytecode_prepare(struct cli_all_bc *bcs, unsigned dconfmask)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_init(struct cli_all_bc *allbc, unsigned dconfmask)
+int cli_bytecode_init(struct cli_all_bc *allbc)
 {
+    int ret;
     memset(allbc, 0, sizeof(*allbc));
-    return cli_bytecode_init_jit(allbc, dconfmask);
+    ret = cli_bytecode_init_jit(allbc, 0/*XXX*/);
+    cli_dbgmsg("Bytecode initialized in %s mode\n",
+	       allbc->engine ? "JIT" : "interpreter");
+    allbc->inited = 1;
+    return ret;
 }
 
 int cli_bytecode_done(struct cli_all_bc *allbc)

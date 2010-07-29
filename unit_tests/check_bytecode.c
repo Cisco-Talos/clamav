@@ -70,7 +70,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cl_debug();
 
     if (!nojit) {
-	rc = cli_bytecode_init(&bcs, BYTECODE_ENGINE_MASK);
+	rc = cli_bytecode_init(&bcs);
 	fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
     } else {
 	bcs.engine = NULL;
@@ -83,7 +83,10 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
-    rc = cli_bytecode_prepare(&bcs, BYTECODE_ENGINE_MASK);
+    if (testmode)
+	engine->bytecode_mode = CL_BYTECODE_MODE_TEST;
+
+    rc = cli_bytecode_prepare(engine, &bcs, BYTECODE_ENGINE_MASK);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
     if (have_clamjit && !nojit && nojit != -1) {

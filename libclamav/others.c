@@ -248,6 +248,8 @@ const char *cl_strerror(int clerror)
 	    return "CL_EFORMAT: Bad format or broken data";
 	case CL_EBYTECODE:
 	    return "CL_EBYTECODE: error during bytecode execution";
+	case CL_EBYTECODE_TESTFAIL:
+	    return "CL_EBYTECODE_TESTFAIL: failure in bytecode testmode";
 	default:
 	    return "Unknown error code";
     }
@@ -301,6 +303,7 @@ struct cl_engine *cl_engine_new(void)
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     /* 5 seconds timeout */
     new->bytecode_timeout = 60000;
+    new->bytecode_mode = CL_BYTECODE_MODE_AUTO;
     new->refcount = 1;
     new->ac_only = 0;
     new->ac_mindepth = CLI_DEFAULT_AC_MINDEPTH;
@@ -394,10 +397,24 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 		return CL_EARG;
 	    }
 #endif
+	    if (engine->dboptions & CL_DB_COMPILED) {
+		cli_errmsg("cl_engine_set_num: CL_ENGINE_BYTECODE_SECURITY cannot be set after engine was compiled\n");
+		return CL_EARG;
+	    }
 	    engine->bytecode_security = num;
 	    break;
 	case CL_ENGINE_BYTECODE_TIMEOUT:
 	    engine->bytecode_timeout = num;
+	    break;
+	case CL_ENGINE_BYTECODE_MODE:
+	    if (engine->dboptions & CL_DB_COMPILED) {
+		cli_errmsg("cl_engine_set_num: CL_ENGINE_BYTECODE_MODE cannot be set after engine was compiled\n");
+		return CL_EARG;
+	    }
+	    if (num == CL_BYTECODE_MODE_OFF) {
+		cli_errmsg("cl_engine_set_num: CL_BYTECODE_MODE_OFF is not settable, use dboptions to turn off!\n");
+	    }
+	    engine->bytecode_mode = num;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
@@ -446,6 +463,12 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->ac_maxdepth;
 	case CL_ENGINE_KEEPTMP:
 	    return engine->keeptmp;
+	case CL_ENGINE_BYTECODE_SECURITY:
+	    return engine->bytecode_security;
+	case CL_ENGINE_BYTECODE_TIMEOUT:
+	    return engine->bytecode_timeout;
+	case CL_ENGINE_BYTECODE_MODE:
+	    return engine->bytecode_mode;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)

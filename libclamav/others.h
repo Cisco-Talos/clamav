@@ -263,6 +263,7 @@ struct cl_engine {
     unsigned hook_lsig_ids;
     enum bytecode_security bytecode_security;
     uint32_t bytecode_timeout;
+    enum bytecode_mode bytecode_mode;
 };
 
 struct cl_settings {
