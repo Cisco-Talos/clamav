@@ -1800,7 +1800,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
-	    if (bc->state == bc_skip)
+	    if (bc->state == bc_skip || bc->state == bc_interp)
 		continue;
 	    LLVMCodegen Codegen(bc, M, &CF, bcs->engine->compiledFunctions, EE,
 				OurFPM, apiFuncs, apiMap);
@@ -1872,87 +1872,6 @@ int bytecode_init(void)
 int cli_bytecode_init_jit(struct cli_all_bc *bcs, unsigned dconfmask)
 {
     LLVMApiScopedLock scopedLock;
-    bcs->engine = NULL;
-    Triple triple(sys::getHostTriple());
-    if (cli_debug_flag)
-	errs() << "host triple is: " << sys::getHostTriple() << "\n";
-    enum Triple::ArchType arch = triple.getArch();
-    switch (arch) {
-	case Triple::arm:
-	    if (!(dconfmask & BYTECODE_JIT_ARM)) {
-		if (cli_debug_flag)
-		    errs() << "host triple is: " << sys::getHostTriple() << "\n";
-		return 0;
-	    }
-	    break;
-	case Triple::ppc:
-	case Triple::ppc64:
-	    if (!(dconfmask & BYTECODE_JIT_PPC)) {
-		if (cli_debug_flag)
-		    errs() << "JIT disabled for ppc\n";
-		return 0;
-	    }
-	    break;
-	case Triple::x86:
-	case Triple::x86_64:
-	    if (!(dconfmask & BYTECODE_JIT_X86)) {
-		if (cli_debug_flag)
-		    errs() << "JIT disabled for x86\n";
-		return 0;
-	    }
-	    break;
-	default:
-	    errs() << "Not supported architecture for " << triple.str() << "\n";
-	    return CL_EBYTECODE;
-    }
-
-    std::string cpu = sys::getHostCPUName();
-    if (cli_debug_flag)
-	errs() << "host cpu is: " << cpu << "\n";
-    if (!cpu.compare("i386") ||
-	!cpu.compare("i486")) {
-	bcs->engine = 0;
-	DEBUG(errs() << "i[34]86 detected, falling back to interpreter (JIT needs pentium or better\n");
-	/* i386 and i486 has to fallback to interpreter */
-	have_clamjit=0;
-	return 0;
-    }
-    std::string ErrMsg;
-    sys::MemoryBlock B = sys::Memory::AllocateRWX(4096, NULL, &ErrMsg);
-    if (B.base() == 0) {
-	errs() << MODULE << ErrMsg << "\n";
-#ifdef __linux__
-	errs() << MODULE << "SELinux or PaX is preventing 'execmem' access."
-	    << "Run 'setsebool -P clamd_use_jit on' or 'paxctl -cm <executable>' to allow access\n";
-#endif
-	errs() << MODULE << "falling back to interpreter mode\n";
-	have_clamjit=0;
-	return 0;
-    } else {
-	sys::Memory::ReleaseRWX(B);
-#ifdef __linux__
-	FILE *f = fopen("/proc/self/status", "r");
-	if (f) {
-	    char line[128];
-	    while (fgets(line, sizeof(line), f)) {
-		if (!memcmp(line, "PaX:", 4)) {
-		    if (cli_debug_flag) {
-			errs() << "bytecode JIT: PaX found: " << line;
-		    }
-		    if (!strchr(line,'m')) {
-			errs() << MODULE << "PaX is preventing MPROTECT, use 'paxctl -cm <executable>' to allow\n";
-			errs() << MODULE << "falling back to interpreter mode\n";
-			fclose(f);
-			have_clamjit=0;
-			return 0;
-		    }
-		}
-	    }
-	    fclose(f);
-	}
-#endif
-    }
-
     bcs->engine = new(std::nothrow) cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;

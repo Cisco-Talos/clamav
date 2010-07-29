@@ -78,3 +78,7 @@ void cli_printcxxver()
 {
     /* Empty */
 }
+void cli_detect_env_jit(struct cli_environment *env)
+{
+    /* Empty */
+}
