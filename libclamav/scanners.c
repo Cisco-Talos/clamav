@@ -1782,7 +1782,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    ctx->container_type = CL_TYPE_AUTOIT;
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanautoit(map->fd, ctx, fpt->offset + 23);
+			    nret = cli_scanautoit(ctx, fpt->offset + 23);
 			}
 			break;
 
@@ -2100,7 +2100,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    ctx->container_type = CL_TYPE_AUTOIT;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
-		ret = cli_scanautoit(desc, ctx, 23);
+		ret = cli_scanautoit(ctx, 23);
 	    break;
 
 	case CL_TYPE_MSSZDD:

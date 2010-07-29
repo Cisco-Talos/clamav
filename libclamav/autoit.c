@@ -38,6 +38,7 @@
 #include "others.h"
 #include "scanners.h"
 #include "autoit.h"
+#include "fmap.h"
 
 
 /* FIXME: use unicode detection and normalization from edwin */
@@ -175,116 +176,117 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 *********************/
 
 
-static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
+static int ea05(cli_ctx *ctx, uint8_t *base, char *tmpd) {
   uint8_t b[300], comp;
-  uint8_t *buf = b;
   uint32_t s, m4sum=0;
   int i, ret;
   unsigned int files=0;
   char tempfile[1024];
   struct UNP UNP;
+  fmap_t *map = *ctx->fmap;
 
-  if (cli_readn(desc, buf, 16)!=16)
+  if(!fmap_need_ptr_once(map, base, 16))
     return CL_CLEAN;
 
   for (i=0; i<16; i++)
-    m4sum += buf[i];
+    m4sum += *base++;
 
   while((ret=cli_checklimits("autoit", ctx, 0, 0, 0))==CL_CLEAN) {
-    buf = b;
-    if (cli_readn(desc, buf, 8)!=8)
+    if(!fmap_need_ptr_once(map, base, 8))
       return CL_CLEAN;
 
     /*     MT_decrypt(buf,4,0x16fa);  waste of time */
-    if((uint32_t)cli_readint32((char *)buf) != 0xceb06dff) {
+    if((uint32_t)cli_readint32(base) != 0xceb06dff) {
       cli_dbgmsg("autoit: no FILE magic found, extraction complete\n");
       return CL_CLEAN;
     }
 
-    s = cli_readint32((char *)buf+4) ^ 0x29bc;
+    s = cli_readint32(base+4) ^ 0x29bc;
     if ((int32_t)s<0)
       return CL_CLEAN; /* the original code wouldn't seek back here */
+    base += 8;
     if(cli_debug_flag && s<sizeof(b)) {
-      if (cli_readn(desc, buf, s)!=(int)s)
+      if (!fmap_need_ptr_once(map, base, s))
 	return CL_CLEAN;
-      buf[s]='\0';
-      MT_decrypt(buf,s,s+0xa25e);
-      cli_dbgmsg("autoit: magic string '%s'\n", buf);
-    } else {
-      lseek(desc, s, SEEK_CUR);
+      memcpy(b, base, s);
+      MT_decrypt(b,s,s+0xa25e);
+      b[s]='\0';
+      cli_dbgmsg("autoit: magic string '%s'\n", b);
     }
+    base += s;
 
-    if (cli_readn(desc, buf, 4)!=4)
+    if (!fmap_need_ptr_once(map, base, 4))
       return CL_CLEAN;
-    s = cli_readint32((char *)buf) ^ 0x29ac;
+    s = cli_readint32(base) ^ 0x29ac;
     if ((int32_t)s<0)
       return CL_CLEAN; /* the original code wouldn't seek back here */
+    base += 4;
     if (cli_debug_flag && s<sizeof(b)) {
-      if (cli_readn(desc, buf, s)!=(int)s)
+      if (!fmap_need_ptr_once(map, base, s))
 	return CL_CLEAN;
-      MT_decrypt(buf,s,s+0xf25e);
-      buf[s]='\0';
-      cli_dbgmsg("autoit: original filename '%s'\n", buf);
-    } else {
-      lseek(desc, s, SEEK_CUR);
+      memcpy(b, base, s);
+      MT_decrypt(b,s,s+0xf25e);
+      b[s]='\0';
+      cli_dbgmsg("autoit: original filename '%s'\n", b);
     }
+    base += s;
 
-    if (cli_readn(desc, buf, 13)!=13)
+    if (!fmap_need_ptr_once(map, base, 13))
       return CL_CLEAN;
-    comp = *buf;
-    UNP.csize = cli_readint32((char *)buf+1) ^ 0x45aa;
+    comp = *base;
+    UNP.csize = cli_readint32(base+1) ^ 0x45aa;
     if ((int32_t)UNP.csize<0) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
       return CL_CLEAN;
     }
-
-    lseek(desc, 16, SEEK_CUR);
 
     if(!UNP.csize) {
       cli_dbgmsg("autoit: skipping empty file\n");
       continue;
     }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
-    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
+    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(base+5) ^ 0x45aa);
+    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(base+9) ^ 0xc3d2);
 
-    
+    base += 13 + 16;
+
     if(cli_checklimits("autoit", ctx, UNP.csize, 0, 0)!=CL_CLEAN) {
-      lseek(desc, UNP.csize, SEEK_CUR);
+      base += UNP.csize;
       continue;
     }
 
-    if (!(buf = cli_malloc(UNP.csize)))
+    if (!(UNP.inputbuf = cli_malloc(UNP.csize)))
       return CL_EMEM;
-    if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
+    if (!fmap_need_ptr_once(map, base, UNP.csize)) {
       cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
-      free(buf);
+      free(UNP.inputbuf);
       return CL_CLEAN;
     }
-    MT_decrypt(buf,UNP.csize,0x22af+m4sum);
+    memcpy(UNP.inputbuf, base, UNP.csize);
+    base += UNP.csize;
+    MT_decrypt(UNP.inputbuf,UNP.csize,0x22af+m4sum);
 
     if (comp == 1) {
       cli_dbgmsg("autoit: file is compressed\n");
-      if (cli_readint32((char *)buf)!=0x35304145) {
+      if (cli_readint32(UNP.inputbuf)!=0x35304145) {
 	cli_dbgmsg("autoit: bad magic or unsupported version\n");
-	free(buf);
+	free(UNP.inputbuf);
 	continue;
       }
 
-      if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
+      if(!(UNP.usize = be32_to_host(*(uint32_t *)(UNP.inputbuf+4))))
 	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
       if(cli_checklimits("autoit", ctx, UNP.usize, 0, 0)!=CL_CLEAN) {
-	free(buf);
+	free(UNP.inputbuf);
 	continue;
       }
 
       if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
-	free(buf);
+	free(UNP.inputbuf);
 	return CL_EMEM;
       }
       cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-      UNP.inputbuf = buf;
       UNP.cur_output = 0;
       UNP.cur_input = 8;
       UNP.bitmap.full = 0;
@@ -328,7 +330,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 	}
       }
 
-      free(buf);
+      free(UNP.inputbuf);
       /* Sometimes the autoit exe is in turn packed/lamed with a runtime compressor and similar shit.
        * However, since the autoit script doesn't compress a second time very well, chances are we're
        * still able to match the headers and unpack something (see sample 0811129)
@@ -340,7 +342,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
-      UNP.outputbuf = buf;
+      UNP.outputbuf = UNP.inputbuf;
       UNP.usize = UNP.csize;
     }
 
@@ -469,9 +471,8 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
  autoit3 EA06 handler 
 *********************/
 
-static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
+static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
   uint8_t b[600], comp, script;
-  uint8_t *buf;
   uint32_t s;
   int i, ret;
   unsigned int files=0;
@@ -479,113 +480,118 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
   const char prefixes[] = { '\0', '\0', '@', '$', '\0', '.', '"', '#' };
   const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
+  fmap_t *map = *ctx->fmap;
+
 
   /* Useless due to a bug in CRC calculation - LMAO!!1 */
   /*   if (cli_readn(desc, buf, 24)!=24) */
   /*     return CL_CLEAN; */
   /*   LAME_decrypt(buf, 0x10, 0x99f2); */
   /*   buf+=0x10; */
-  lseek(desc, 16, SEEK_CUR);   /* for now we just skip the garbage */
+  base += 16;   /* for now we just skip the garbage */
 
   while((ret=cli_checklimits("cli_autoit", ctx, 0, 0, 0))==CL_CLEAN) {
-    buf = b;
-    if (cli_readn(desc, buf, 8)!=8)
+    if(!fmap_need_ptr_once(map, base, 8))
       return CL_CLEAN;
     /*     LAME_decrypt(buf, 4, 0x18ee); waste of time */
-    if(cli_readint32((char *)buf) != 0x52ca436b) {
+    if(cli_readint32(base) != 0x52ca436b) {
       cli_dbgmsg("autoit: no FILE magic found, giving up\n");
       return CL_CLEAN;
     }
 
     script = 0;
 
-    s = cli_readint32((char *)buf+4) ^ 0xadbc;
+    s = cli_readint32(base+4) ^ 0xadbc;
     if ((int32_t)(s*2)<0)
       return CL_CLEAN; /* the original code wouldn't seek back here */
-    if(s<300) {
-      if (cli_readn(desc, buf, s*2)!=(int)s*2)
+    base += 8;
+    if(s < sizeof(b) / 2) {
+      if(!fmap_need_ptr_once(map, base, s*2))
 	return CL_CLEAN;
-      LAME_decrypt(buf,s*2,s+0xb33f);
-      u2a(buf,s*2);
-      cli_dbgmsg("autoit: magic string '%s'\n", buf);
-      if (s==19 && !memcmp(">>>AUTOIT SCRIPT<<<", buf, 19))
+      memcpy(b, base, s*2);
+      LAME_decrypt(b,s*2,s+0xb33f);
+      u2a(b,s*2);
+      cli_dbgmsg("autoit: magic string '%s'\n", b);
+      if (s==19 && !memcmp(">>>AUTOIT SCRIPT<<<", b, 19))
 	script = 1;
     } else {
       cli_dbgmsg("autoit: magic string too long to print\n");
-      lseek(desc, s*2, SEEK_CUR);
     }
+    base += s*2;
 
-    if (cli_readn(desc, buf, 4)!=4)
+    if (!fmap_need_ptr_once(map, base, 4))
       return CL_CLEAN;
-    s = cli_readint32((char *)buf) ^ 0xf820;
+    s = cli_readint32(base) ^ 0xf820;
     if ((int32_t)(s*2)<0)
       return CL_CLEAN; /* the original code wouldn't seek back here */
-    if(cli_debug_flag && s<300) {
-      if (cli_readn(desc, buf, s*2)!=(int)s*2)
+    base += 4;
+    if(cli_debug_flag && s<sizeof(b) / 2) {
+      if(!fmap_need_ptr_once(map, base, s*2))
 	return CL_CLEAN;
-      LAME_decrypt(buf,s*2,s+0xf479);
-      buf[s*2]='\0'; buf[s*2+1]='\0';
-      u2a(buf,s*2);
-      cli_dbgmsg("autoit: original filename '%s'\n", buf);
-    } else {
-      lseek(desc, s*2, SEEK_CUR);
+      memcpy(b, base, s*2);
+      LAME_decrypt(b,s*2,s+0xf479);
+      b[s*2]='\0'; b[s*2+1]='\0';
+      u2a(b,s*2);
+      cli_dbgmsg("autoit: original filename '%s'\n", b);
     }
+    base += s*2;
 
-    if (cli_readn(desc, buf, 13)!=13)
+    if(!fmap_need_ptr_once(map, base, 13))
       return CL_CLEAN;
-    comp = *buf;
-    UNP.csize = cli_readint32((char *)buf+1) ^ 0x87bc;
+    comp = *base;
+    UNP.csize = cli_readint32(base+1) ^ 0x87bc;
     if ((int32_t)UNP.csize<0) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
       return CL_CLEAN;
     }
-
-    lseek(desc, 16, SEEK_CUR);
 
     if(!UNP.csize) {
       cli_dbgmsg("autoit: skipping empty file\n");
       continue;
     }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
-    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
+    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(base+5) ^ 0x87bc);
+    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(base+9) ^ 0xa685);
+
+    base += 13 + 16;
 
     if(cli_checklimits("autoit", ctx, UNP.csize, 0, 0)!=CL_CLEAN) {
-      lseek(desc, UNP.csize, SEEK_CUR);
+      base += UNP.csize;
       continue;
     }
 
     files++;
-    if (!(buf = cli_malloc(UNP.csize)))
+    if (!(UNP.inputbuf = cli_malloc(UNP.csize)))
       return CL_EMEM;
-    if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
+    if (!fmap_need_ptr_once(map, base, UNP.csize)) {
       cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
-      free(buf);
+      free(UNP.inputbuf);
       return CL_CLEAN;
     }
-    LAME_decrypt(buf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
+    memcpy(UNP.inputbuf, base, UNP.csize);
+    base += UNP.csize;
+    LAME_decrypt(UNP.inputbuf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
 
     if (comp == 1) {
       cli_dbgmsg("autoit: file is compressed\n");
-      if (cli_readint32((char *)buf)!=0x36304145) {
+      if (cli_readint32(UNP.inputbuf)!=0x36304145) {
 	cli_dbgmsg("autoit: bad magic or unsupported version\n");
-	free(buf);
+	free(UNP.inputbuf);
 	continue;
       }
 
-      if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
+      if(!(UNP.usize = be32_to_host(*(uint32_t *)(UNP.inputbuf+4))))
 	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
       if(cli_checklimits("autoit", ctx, UNP.usize, 0, 0)!=CL_CLEAN) {
-	free(buf);
+	free(UNP.inputbuf);
 	continue;
       }
       if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
-	free(buf);
+	free(UNP.inputbuf);
 	return CL_EMEM;
       }
       cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-      UNP.inputbuf = buf;
       UNP.cur_output = 0;
       UNP.cur_input = 8;
       UNP.bitmap.full = 0;
@@ -629,12 +635,12 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	}
       }
 
-      free(buf);
+      free(UNP.inputbuf);
       if (UNP.error) 
 	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
-      UNP.outputbuf = buf;
+      UNP.outputbuf = UNP.inputbuf;
       UNP.usize = UNP.csize;
     }
 
@@ -644,6 +650,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       continue;
     }
 
+    uint8_t *buf;
     if (script) {
       UNP.csize = UNP.usize;
       if (!(buf = cli_malloc(UNP.csize))) {
@@ -897,16 +904,16 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
    autoit3 wrapper 
 *********************/
 
-int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
-  uint8_t version;
+int cli_scanautoit(cli_ctx *ctx, off_t offset) {
+  uint8_t *version;
   int r;
   char *tmpd;
-
-  lseek(desc, offset, SEEK_SET);
-  if (cli_readn(desc, &version, 1)!=1)
-    return CL_EREAD;
+  fmap_t *map = *ctx->fmap;
 
   cli_dbgmsg("in scanautoit()\n");
+
+  if(!(version = fmap_need_off_once(map, offset, sizeof(*version))))
+    return CL_EREAD;
 
   if (!(tmpd = cli_gentemp(ctx->engine->tmpdir)))    
     return CL_ETMPDIR;
@@ -918,13 +925,13 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   if (ctx->engine->keeptmp)
     cli_dbgmsg("autoit: Extracting files to %s\n", tmpd);
 
-  switch(version) {
+  switch(*version) {
   case 0x35:
-    r = ea05(desc, ctx, tmpd);
+    r = ea05(ctx, version + 1, tmpd);
     break;
   case 0x36:
 #ifdef FPU_WORDS_BIGENDIAN
-    r = ea06(desc, ctx, tmpd);
+    r = ea06(ctx, version + 1, tmpd);
 #else
     cli_dbgmsg("autoit: EA06 support not available\n");
     r = CL_CLEAN;
