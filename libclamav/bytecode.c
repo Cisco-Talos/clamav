@@ -32,6 +32,7 @@
 #include "pe.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
+#include "bytecode_detect.h"
 #include "readdb.h"
 #include "scanners.h"
 #include "bytecode_api.h"
@@ -1722,7 +1723,7 @@ static int calc_gepz(struct cli_bc *bc, struct cli_bc_func *func, uint16_t tid, 
 	return 0;
     gepoff = &func->constants[op - func->numValues];
     if (*gepoff >= ty->numElements) {
-	cli_errmsg("bytecode: gep offset out of range: %d >= %d\n",*gepoff, ty->numElements);
+	cli_errmsg("bytecode: gep offset out of range: %d >= %d\n",(uint32_t)*gepoff, ty->numElements);
 	return -1;
     }
     for (i=0;i<*gepoff;i++) {
@@ -2540,7 +2541,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     printf("Bytecode metadata:\n\tcompiler version: %s\n",
 	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
     printf("\tcompiled on: (%d) %s",
-	   stamp,
+	   (uint32_t)stamp,
 	   cli_ctime(&stamp, buf, sizeof(buf)));
     printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
     /*TODO: parse and display arch name, also take it into account when

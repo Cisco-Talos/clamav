@@ -216,7 +216,7 @@ static void print_platform(struct cli_environment *env)
 {
     printf("\nPlatform information\n--------------------\n");
     printf("uname: %s %s %s %s\n",
-	   env->sysname, env->release, env->release, env->version, env->machine);
+	   env->sysname, env->release, env->version, env->machine);
 
     printf("OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"\n");
 
@@ -248,8 +248,8 @@ static void print_platform(struct cli_environment *env)
 #endif
     if (env->triple[0])
     printf("Triple: %s\n", env->triple);
-    if (env->cpu[0]);
-    printf("CPU: %s, %s\n", env->cpu, env->big_endian ? "Big-endian" : "Little-endian");
+    if (env->cpu[0])
+	printf("CPU: %s, %s\n", env->cpu, env->big_endian ? "Big-endian" : "Little-endian");
     printf("platform id: 0x%08x%08x%08x\n",
 	   env->platform_id_a,
 	   env->platform_id_b,

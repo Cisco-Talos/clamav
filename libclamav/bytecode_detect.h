@@ -152,5 +152,5 @@ struct cli_environment {
 #endif
 
 void cli_detect_env_jit(struct cli_environment *env);
-void cli_detect_env(struct cli_environment *env);
+void cli_detect_environment(struct cli_environment *env);
 #endif
