@@ -404,6 +404,18 @@ int scanmanager(const struct optstruct *opts)
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, CL_BYTECODE_TRUST_ALL);
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
+    if((opt = optget(opts,"bytecode-mode"))->enabled) {
+	enum bytecode_mode mode;
+	if (!strcmp(opt->strarg, "ForceJIT"))
+	    mode = CL_BYTECODE_MODE_JIT;
+	else if(!strcmp(opt->strarg, "ForceInterpreter"))
+	    mode = CL_BYTECODE_MODE_INTERPRETER;
+	else if(!strcmp(opt->strarg, "Test"))
+	    mode = CL_BYTECODE_MODE_TEST;
+	else
+	    mode = CL_BYTECODE_MODE_AUTO;
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
+    }
 
     if((opt = optget(opts, "tempdir"))->enabled) {
 	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
