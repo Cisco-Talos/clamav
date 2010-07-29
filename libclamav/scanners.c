@@ -1107,9 +1107,9 @@ static int cli_scanscript(cli_ctx *ctx)
 	}
 	free(normalized);
 	if(ret != CL_VIRUS) {
-	    ret = cli_lsig_eval(ctx, troot, &tmdata);
+	    ret = cli_lsig_eval(ctx, troot, &tmdata, NULL);
 	    if(ret != CL_VIRUS)
-		ret = cli_lsig_eval(ctx, groot, &gmdata);
+		ret = cli_lsig_eval(ctx, groot, &gmdata, NULL);
 	}
 	cli_ac_freedata(&tmdata);
 	cli_ac_freedata(&gmdata);
