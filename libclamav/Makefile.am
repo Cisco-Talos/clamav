@@ -357,7 +357,8 @@ libclamav_la_SOURCES = \
 	cache.c \
 	cache.h \
 	bytecode_detect.c \
-	bytecode_detect.h
+	bytecode_detect.h\
+	builtin_bytecodes.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

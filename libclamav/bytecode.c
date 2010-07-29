@@ -36,6 +36,7 @@
 #include "scanners.h"
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
+#include "builtin_bytecodes.h"
 #include <string.h>
 
 /* dummy values */
@@ -2230,7 +2231,7 @@ int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsig
 	cli_errmsg("Bytecode: failed to allocate bytecode context\n");
 	return CL_EMEM;
     }
-    rc = run_builtin_or_loaded(bcs, BC_STARTUP, "", ctx, "BC_STARTUP");
+    rc = run_builtin_or_loaded(bcs, BC_STARTUP, builtin_bc_startup, ctx, "BC_STARTUP");
     if (rc != CL_SUCCESS) {
 	cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to http://bugs.clamav.net\n");
 	ctx->bytecode_disable_status = 2;

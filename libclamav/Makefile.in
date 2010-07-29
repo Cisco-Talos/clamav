@@ -157,8 +157,8 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	clambc.h cpio.c cpio.h macho.c macho.h ishield.c ishield.h \
 	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
 	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
-	cache.h bytecode_detect.c bytecode_detect.h bignum.c \
-	bignum_class.h sha1.c sha1.h
+	cache.h bytecode_detect.c bytecode_detect.h \
+	builtin_bytecodes.h bignum.c bignum_class.h sha1.c sha1.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 @BUILD_SHA1_TRUE@am__objects_2 = libclamav_la-sha1.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
@@ -661,8 +661,8 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	clambc.h cpio.c cpio.h macho.c macho.h ishield.c ishield.h \
 	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
 	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
-	cache.h bytecode_detect.c bytecode_detect.h $(am__append_7) \
-	$(am__append_8)
+	cache.h bytecode_detect.c bytecode_detect.h \
+	builtin_bytecodes.h $(am__append_7) $(am__append_8)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
