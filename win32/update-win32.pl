@@ -378,6 +378,7 @@ foreach (@PROJECTS) {
 	warn "Warning: File $_ not in $proj{'makefile'}/Makefile.am: deleted!\n" foreach @missing_in_makefile;
 	my ($fh, $filename) = tempfile();
 	$xml->print($fh);
+	close $fh;
 	move($filename, "$proj{'output'}");
 	print "Regenerated $proj{'output'} (".($#missing_in_vcxproj + $#missing_in_makefile + 2)." changes)\n";
     } else {
