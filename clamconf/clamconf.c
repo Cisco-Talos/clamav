@@ -39,6 +39,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/bytecode.h"
+#include "libclamav/bytecode_detect.h"
 #include "target.h"
 
 #ifndef _WIN32
@@ -211,17 +212,12 @@ static void help(void)
     return;
 }
 
-static void print_platform(void)
+static void print_platform(struct cli_environment *env)
 {
-#ifdef HAVE_UNAME_SYSCALL
-    struct utsname name;
-#endif
     printf("\nPlatform information\n--------------------\n");
-#ifdef HAVE_UNAME_SYSCALL
-    uname(&name);
-    printf("uname: %s %s %s %s\n", name.sysname, name.release, name.version,
-	   name.machine);
-#endif
+    printf("uname: %s %s %s %s\n",
+	   env->sysname, env->release, env->release, env->version, env->machine);
+
     printf("OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"\n");
 
 #ifdef C_LINUX
@@ -231,15 +227,6 @@ static void print_platform(void)
 	if (system("/usr/bin/lsb_release -d -s") == -1) {
 	   perror("failed to determine");
 	}
-    }
-#elif defined(_WIN32)
-    {
-	/* get just some basic information, since getting the full version
-	 * is too complicated */
-	uint32_t dwVersion = GetVersion();
-	printf("Full OS version: %d.%d (%d)\n",
-	   dwVersion&0xff, (dwVersion>>8)&0xff,
-	   dwVersion<0x80000000 ? dwVersion>>16 : 0);
     }
 #else
     /* e.g. Solaris */
@@ -259,31 +246,64 @@ static void print_platform(void)
     printf("zlib version: %s (%s)\n",
 	   ZLIB_VERSION, zlibVersion());
 #endif
+    if (env->triple[0])
+    printf("Triple: %s\n", env->triple);
+    if (env->cpu[0]);
+    printf("CPU: %s, %s\n", env->cpu, env->big_endian ? "Big-endian" : "Little-endian");
+    printf("platform id: 0x%08x%08x%08x\n",
+	   env->platform_id_a,
+	   env->platform_id_b,
+	   env->platform_id_c);
 }
 
-static void print_build(void)
+static void print_build(struct cli_environment *env)
 {
+    const char *name;
+    const char *version = NULL;
     printf("\nBuild information\n-----------------\n");
     /* Try to print information about some commonly used compilers */
-#ifdef __GNUC__
-    printf("GNU C: %s (%u.%u.%u)\n", __VERSION__, __GNUC__, __GNUC_MINOR__,
-	   __GNUC_PATCHLEVEL__);
-#endif
-#ifdef __INTEL_COMPILER
-    printf("Intel Compiler %u\n", __INTEL_COMPILER);
-#endif
-#ifdef _MSC_VER
-    printf("Microsoft Visual C++ %u\n", _MSC_VER);
-#endif
-#ifdef __SUNPRO_C
-    printf("Sun studio %u\n", __SUNPRO_C);
-#endif
+    switch (env->compiler) {
+	case compiler_gnuc:
+	    name = "GNU C";
+	    version = __VERSION__;
+	    break;
+	case compiler_clang:
+	    name = "Clang";
+	    version = __VERSION__;
+	    break;
+	case compiler_llvm:
+	    name = "LLVM-GCC";
+	    version = __VERSION__;
+	    break;
+	case compiler_intel:
+	    name = "Intel Compiler";
+	    break;
+	case compiler_msc:
+	    name = "Microsoft Visual C++";
+	    break;
+	case compiler_sun:
+	    name = "Sun studio";
+	    break;
+	default:
+	    name = NULL;
+    }
+    if (name)
+	printf("%s: %s%s(%u.%u.%u)\n", name,
+	       version ? version : "",
+	       version ? " " : "",
+	       env->c_version >> 16,
+		   (env->c_version >> 8)&0xff,
+		   (env->c_version)&0xff);
     cli_printcxxver();
 #if defined(BUILD_CPPFLAGS) && defined(BUILD_CFLAGS) && defined(BUILD_CXXFLAGS) && defined(BUILD_LDFLAGS) && defined(BUILD_CONFIGURE_FLAGS)
     printf("CPPFLAGS: %s\nCFLAGS: %s\nCXXFLAGS: %s\nLDFLAGS: %s\nConfigure: %s\n",
 	   BUILD_CPPFLAGS, BUILD_CFLAGS, BUILD_CXXFLAGS, BUILD_LDFLAGS,
 	   BUILD_CONFIGURE_FLAGS);
 #endif
+    printf("sizeof(void*) = %d\n", env->sizeof_ptr);
+    printf("Engine flevel: %d, dconf: %d\n",
+	   env->functionality_level,
+	   env->dconf_level);
 }
 
 int main(int argc, char **argv)
@@ -295,6 +315,7 @@ int main(int argc, char **argv)
 	unsigned int i, j;
 	struct cl_cvd *cvd;
 	unsigned int flevel;
+	struct cli_environment env;
 
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
@@ -415,7 +436,8 @@ int main(int argc, char **argv)
 	    }
 	}
     }
-    print_platform();
-    print_build();
+    cli_detect_environment(&env);
+    print_platform(&env);
+    print_build(&env);
     return 0;
 }
