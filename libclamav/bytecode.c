@@ -1699,9 +1699,42 @@ static inline int get_geptypesize(const struct cli_bc *bc, uint16_t tid)
   return typesize(bc, ty->containedTypes[0]);
 }
 
+static int calc_gepz(struct cli_bc *bc, struct cli_bc_func *func, uint16_t tid, operand_t op)
+{
+    unsigned off = 0, i;
+    uint64_t *gepoff;
+    const struct cli_bc_type *ty;
+    if (tid >= bc->num_types + 65) {
+	cli_errmsg("bytecode: typeid out of range %u >= %u\n", tid, bc->num_types);
+	return -1;
+    }
+    if (tid <= 65) {
+	cli_errmsg("bytecode: invalid type for gep (%u)\n", tid);
+	return -1;
+    }
+    ty = &bc->types[tid - 65];
+    if (ty->kind != DPointerType || ty->containedTypes[0] < 65) {
+	cli_errmsg("bytecode: invalid gep type, must be pointer to nonint: %u\n", tid);
+	return -1;
+    }
+    ty = &bc->types[ty->containedTypes[0] - 65];
+    if (ty->kind != DStructType && ty->kind != DPackedStructType)
+	return 0;
+    gepoff = &func->constants[op - func->numValues];
+    if (*gepoff >= ty->numElements) {
+	cli_errmsg("bytecode: gep offset out of range: %d >= %d\n",*gepoff, ty->numElements);
+	return -1;
+    }
+    for (i=0;i<*gepoff;i++) {
+	off += typesize(bc, ty->containedTypes[i]);
+    }
+    *gepoff = off;
+    return 1;
+}
+
 static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
-    unsigned i, j, k;
+    unsigned i, j, k, rc;
     uint64_t *gmap;
     unsigned bcglobalid = cli_apicall_maxglobal - _FIRST_GLOBAL+2;
     bc->numGlobalBytes = 0;
@@ -1795,6 +1828,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    map[j] = bcfunc->numBytes;
 	    /* printf("%d -> %d, %u\n", j, map[j], typesize(bc, ty)); */
 	    bcfunc->numBytes += typesize(bc, ty);
+	    /* TODO: don't allow size 0, it is always a bug! */
 	}
 	bcfunc->numBytes = (bcfunc->numBytes + 7)&~7;
 	for (j=0;j<bcfunc->numConstants;j++) {
@@ -1912,11 +1946,13 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    else
 			inst->interp_op = 5*(inst->interp_op/5)+3;
 		    MAP(inst->u.three[1]);
+		    if (calc_gepz(bc, bcfunc, inst->u.three[0], inst->u.three[2]) == -1)
+			return CL_EBYTECODE;
 		    MAP(inst->u.three[2]);
 		    break;
-		case OP_BC_GEPN:
-		    /*TODO */
-		    break;
+/*		case OP_BC_GEPN:
+		    *TODO 
+		    break;*/
 		case OP_BC_MEMSET:
 		case OP_BC_MEMCPY:
 		case OP_BC_MEMMOVE:
@@ -1943,7 +1979,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAPPTR(inst->u.unaryop);
 		    break;
 		default:
-		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);
+		    cli_warnmsg("Bytecode: unhandled opcode: %d\n", inst->opcode);
 		    return CL_EBYTECODE;
 	    }
 	}
