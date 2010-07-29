@@ -41,7 +41,8 @@
 
 static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 		    const char *infile, struct cli_pe_hook_data *pedata,
-		    struct cli_exe_section *sections, const char *expectedvirname)
+		    struct cli_exe_section *sections, const char *expectedvirname,
+		    int testmode)
 {
     fmap_t *map = NULL;
     int rc;
@@ -140,55 +141,55 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 START_TEST (test_retmagic_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_retmagic_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_arith_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_arith_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls_int)
 {
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls2_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls2_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
@@ -196,41 +197,41 @@ START_TEST (test_div0_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     /* must not crash on div#0 but catch it */
-    runtest("input/div0.cbc", 0, CL_EBYTECODE, 0, NULL, NULL, NULL, NULL);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_div0_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/div0.cbc", 0, CL_EBYTECODE, 1, NULL, NULL, NULL, NULL);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_lsig_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/lsig.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/lsig.cbc", 0, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_lsig_int)
 {
-    runtest("input/lsig.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/lsig.cbc", 0, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inf_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inf_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL);
+    runtest("input/inf.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
@@ -253,7 +254,7 @@ START_TEST (test_matchwithread_jit)
     sect.uraw = 1;
     sect.ursz = 512;
     runtest("input/matchwithread.cbc", 0, 0, 0, "../test/clam.exe", &pedata,
-	    &sect, "ClamAV-Test-File-detected-via-bytecode");
+	    &sect, "ClamAV-Test-File-detected-via-bytecode", 0);
 }
 END_TEST
 
@@ -276,7 +277,7 @@ START_TEST (test_matchwithread_int)
     sect.uraw = 1;
     sect.ursz = 512;
     runtest("input/matchwithread.cbc", 0, 0, 1, "../test/clam.exe", &pedata,
-	    &sect, "ClamAV-Test-File-detected-via-bytecode");
+	    &sect, "ClamAV-Test-File-detected-via-bytecode", 0);
 }
 END_TEST
 
@@ -284,182 +285,182 @@ END_TEST
 START_TEST (test_pdf_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/pdf.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/pdf.cbc", 0, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_pdf_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/pdf.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/pdf.cbc", 0, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_bswap_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/bswap.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/bswap.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_bswap_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/bswap.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/bswap.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inflate_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/inflate.cbc", 0xbeef, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inflate_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inflate.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/inflate.cbc", 0xbeef, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_api_extract_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/api_extract_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL);
+    runtest("input/api_extract_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_api_files_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/api_files_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL);
+    runtest("input/api_files_7.cbc", 0xf00d, 0, 0, "input/apitestfile", NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls2_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_arith_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_debug_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/debug_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/debug_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inf_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL);
+    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_lsig_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/lsig_7.cbc", 0, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/lsig_7.cbc", 0, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_retmagic_7_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL);
+    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_testadt_jit)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/testadt_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL);
+    runtest("input/testadt_7.cbc", 0xf00d, 0, 0, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_api_extract_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/api_extract_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL);
+    runtest("input/api_extract_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_api_files_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/api_files_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL);
+    runtest("input/api_files_7.cbc", 0xf00d, 0, 1, "input/apitestfile", NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls2_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls2_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_apicalls_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/apicalls_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/apicalls_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_arith_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/arith_7.cbc", 0xd55555dd, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_debug_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/debug_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/debug_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_inf_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL);
+    runtest("input/inf_7.cbc", 0, CL_ETIMEOUT, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_lsig_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/lsig_7.cbc", 0, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/lsig_7.cbc", 0, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_retmagic_7_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL);
+    runtest("input/retmagic_7.cbc", 0x1234f00d, CL_SUCCESS, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
 START_TEST (test_testadt_int)
 {
     cl_init(CL_INIT_DEFAULT);
-    runtest("input/testadt_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL);
+    runtest("input/testadt_7.cbc", 0xf00d, 0, 1, NULL, NULL, NULL, NULL, 0);
 }
 END_TEST
 
