@@ -432,6 +432,18 @@ int main(int argc, char **argv)
 	    break;
 	}
     }
+    if((opt = optget(opts,"BytecodeMode"))->enabled) {
+	enum bytecode_mode mode;
+	if (!strcmp(opt->strarg, "ForceJIT"))
+	    mode = CL_BYTECODE_MODE_JIT;
+	else if(!strcmp(opt->strarg, "ForceInterpreter"))
+	    mode = CL_BYTECODE_MODE_INTERPRETER;
+	else if(!strcmp(opt->strarg, "Test"))
+	    mode = CL_BYTECODE_MODE_TEST;
+	else
+	    mode = CL_BYTECODE_MODE_AUTO;
+	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
+    }
     if((opt = optget(opts,"BytecodeTimeout"))->enabled) {
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
     }
