@@ -472,7 +472,7 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 *********************/
 
 static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
-  uint8_t b[600], comp, script;
+  uint8_t b[600], comp, script, *buf;
   uint32_t s;
   int i, ret;
   unsigned int files=0;
@@ -650,7 +650,6 @@ static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
       continue;
     }
 
-    uint8_t *buf;
     if (script) {
       UNP.csize = UNP.usize;
       if (!(buf = cli_malloc(UNP.csize))) {
