@@ -1629,12 +1629,13 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-static int cli_scanembpe(int desc, cli_ctx *ctx)
+static int cli_scanembpe(cli_ctx *ctx, off_t offset)
 {
 	int fd, bytes, ret = CL_CLEAN;
-	unsigned long int size = 0;
-	char buff[512];
+	unsigned long int size = 0, todo;
+	char *buff;
 	char *tmpname;
+	fmap_t *map = *ctx->fmap;
 
     tmpname = cli_gentemp(ctx->engine->tmpdir);
     if(!tmpname)
@@ -1646,10 +1647,27 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	return CL_ECREAT;
     }
 
-    while((bytes = read(desc, buff, sizeof(buff))) > 0) {
-	size += bytes;
+    todo = map->len - offset;
+    while(1) {
+	bytes = MIN(todo, map->pgsz);
+	if(!bytes)
+	    break;
 
-	if(cli_checklimits("cli_scanembpe", ctx, size + sizeof(buff), 0, 0)!=CL_CLEAN)
+	if(!(buff = fmap_need_off_once(map, offset + size, bytes))) {
+	    close(fd);
+	    if(!ctx->engine->keeptmp) {
+		if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    return CL_EUNLINK;
+		}
+	    }
+	    free(tmpname);
+	    return CL_EREAD;
+	}
+	size += bytes;
+	todo -= bytes;
+
+	if(cli_checklimits("cli_scanembpe", ctx, size, 0, 0)!=CL_CLEAN)
 	    break;
 
 	if(cli_writen(fd, buff, bytes) != bytes) {
@@ -1661,7 +1679,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 		    return CL_EUNLINK;
 		}
 	    }
-	    free(tmpname);	
+	    free(tmpname);
 	    return CL_EWRITE;
 	}
     }
@@ -1812,14 +1830,12 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
 			    peinfo.offset = fpt->offset;
-			    lseek(map->fd, fpt->offset, SEEK_SET);
 			    if(cli_peheader(map, &peinfo) == 0) {
 				cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int) fpt->offset);
 				if(peinfo.section)
 				    free(peinfo.section);
 
-				lseek(map->fd, fpt->offset, SEEK_SET);
-				nret = cli_scanembpe(map->fd, ctx);
+				nret = cli_scanembpe(ctx, fpt->offset);
 				break_loop = 1; /* we can stop here and other
 						 * embedded executables will
 						 * be found recursively
