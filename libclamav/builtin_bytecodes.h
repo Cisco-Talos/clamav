@@ -29,12 +29,12 @@
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafhcgmjaeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcdcmbgfcchc`cdf`cafgc``bkbaap`clamcoincidencejb:1378\n"
+static const char* builtin_bc_startup = "ClamBCafhegnjaeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcdcmbgfcchc`cdf`cafgc``bkbaap`clamcoincidencejb:1378\n"
 "\n"
 "Teddaaahdabahdacahdadahdaeahdafahdagahebjfebidebifebhfebgfebffebedebefebdfebcfebadcbgab`bb`bb`bb`bb`bb`bb`bbbfbbfbbfbbfbbfbbfbbfahahahahahahahahahebgeebbfaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bbheb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
 "Ebjdaibcdbke|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbke|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agble|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcable|afdgefcgdgbc``afbme|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbne|b`agfefdgoeefnffgifbgofnfmfefnfdg``aaboe|afdgefcgdgac``bidb`f|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdb`f|aodfifcgafbflfefoejfifdgoeifff``\n"
 "G`bha`@`b`aAa`bjfBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`bifBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bhfBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bgfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bffBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`befBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`bdfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`bcfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`\n"
-"A`b`bLbbhb`bab`babgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`b`b`Fbakbjb\n"
+"A`b`bLbbhb`bab`b`bgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`b`b`Fbakbjb\n"
 "Bb`bacabbbhdabClnadbadaddbbheabBdadahaegbadaaafeaahae@aTaaafb`aaa\n"
 "BbadagdbbheabB`adahahgbagaaaieaahahAaaTaaaiabae\n"
 "BbieajdbbheabAidbadakdbbieaj@db`balkbakAn`Addaaameab`bal@db`b`bbAadaaTaaamadac\n"
@@ -80,27 +80,6 @@ static const char* builtin_bc_startup = "ClamBCafhcgmjaeld|afefdfggifnf```aa```|
 ;
 /* source-code for builtin_bc_startup: */
 #if 0
-/*
- *  ClamAV bytecode startup checks and self-check.
- *
- *  Copyright (C) 2010 Sourcefire, Inc.
- *
- *  Authors: Török Edvin
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- *  MA 02110-1301, USA.
- */
 const uint16_t __clambc_kind = BC_STARTUP;
 int entrypoint()
 {
