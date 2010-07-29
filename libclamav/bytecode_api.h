@@ -44,6 +44,7 @@ struct DISASM_RESULT;
 enum BytecodeKind {
     /** generic bytecode, not tied a specific hook */
     BC_GENERIC=0,
+    BC_STARTUP=1,
     _BC_START_HOOKS=256,
     /** triggered by a logical signature */
     BC_LOGICAL=256,

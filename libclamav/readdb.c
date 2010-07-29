@@ -1407,6 +1407,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     struct cli_bc *bc;
     unsigned sigs = 0;
     unsigned security_trust = 0;
+    unsigned i;
 
 
     /* TODO: virusname have a common prefix, and whitelist by that */
@@ -1497,6 +1498,20 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    }
 	    engine->hooks[hook][cnt-1] = bcs->count-1;
 	} else switch (bc->kind) {
+	    case BC_STARTUP:
+		for (i=0;i<bcs->count-1;i++)
+		    if (bcs->all_bcs[i].kind == BC_STARTUP) {
+			struct cli_bc *bc0 = &bcs->all_bcs[i];
+			cli_errmsg("Can only load 1 BC_STARTUP bytecode, attempted to load 2nd!\n");
+			cli_warnmsg("Previous BC_STARTUP: %d %d by %s\n",
+				    bc0->id, bc0->metadata.timestamp,
+				    bc0->metadata.sigmaker ? bc0->metadata.sigmaker : "N/A");
+			cli_warnmsg("Conflicting BC_STARTUP: %d %d by %s\n",
+				    bc->id, bc->metadata.timestamp,
+				    bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
+			return CL_EMALFDB;
+		    }
+		break;
 	    default:
 		cli_errmsg("Bytecode: unhandled bytecode kind %u\n", bc->kind);
 		return CL_EMALFDB;

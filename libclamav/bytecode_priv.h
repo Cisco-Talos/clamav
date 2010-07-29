@@ -188,6 +188,8 @@ struct cli_bc_ctx {
     unsigned nmaps;
     unsigned containertype;
     unsigned extracted_file_input;
+    const struct cli_environment *env;
+    unsigned bytecode_disable_status;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

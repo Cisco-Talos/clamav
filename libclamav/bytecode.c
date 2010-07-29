@@ -1532,6 +1532,11 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
 	return CL_EARG;
     }
+    if (bc->state == bc_disabled) {
+	cli_dbgmsg("bytecode triggered but running bytecodes is disabled\n");
+	return CL_SUCCESS;
+    }
+    ctx->env = &bcs->env;
     context_safe(ctx);
     if (bc->state == bc_interp) {
 	memset(&func, 0, sizeof(func));
@@ -2090,38 +2095,220 @@ static int selfcheck(int jit, struct cli_bcengine *engine)
     return rc;
 }
 
+static int set_mode(struct cl_engine *engine, enum bytecode_mode mode)
+{
+    if (engine->bytecode_mode == mode)
+	return 0;
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_OFF) {
+	cli_errmsg("bytecode: already turned off, can't turn it on again!\n");
+	return -1;
+    }
+    cli_dbgmsg("Bytecode: mode changed to %d\n", mode);
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST) {
+	cli_errmsg("bytecode: in test mode but JIT/bytecode is about to be disabled: %d\n", mode);
+	engine->bytecode_mode = mode;
+	return -1;
+    }
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_JIT) {
+	cli_errmsg("bytecode: in JIT mode but JIT is about to be disabled: %d\n", mode);
+	engine->bytecode_mode = mode;
+	return -1;
+    }
+    engine->bytecode_mode = mode;
+    return 0;
+}
+
+/* runs the first bytecode of the specified kind, or the builtin one if no
+ * bytecode of that kind is loaded */
+static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const char* builtin_cbc, struct cli_bc_ctx *ctx, const char *desc)
+{
+    unsigned i, builtin = 0, rc = 0;
+    struct cli_bc *bc = NULL;
+
+    for (i=0;i<bcs->count;i++) {
+	bc = &bcs->all_bcs[i];
+	if (bc->kind == kind)
+	    break;
+    }
+    if (i == bcs->count)
+	bc = NULL;
+    if (!bc) {
+	/* no loaded bytecode found, load the builtin one! */
+	struct cli_dbio dbio;
+	bc = cli_calloc(1, sizeof(*bc));
+	if (!bc) {
+	    cli_errmsg("Out of memory allocating bytecode\n");
+	    return CL_EMEM;
+	}
+	builtin = 1;
+
+	memset(&dbio, 0, sizeof(dbio));
+	dbio.usebuf = 1;
+	dbio.bufpt = dbio.buf = (char*)builtin_cbc;
+	dbio.bufsize = strlen(builtin_cbc)+1;
+	if (!dbio.bufsize || dbio.bufpt[dbio.bufsize-2] != '\n') {
+	    cli_errmsg("Invalid builtin bytecode: missing terminator\n");
+	    free(bc);
+	    return CL_EMALFDB;
+	}
+
+	rc = cli_bytecode_load(bc, NULL, &dbio, 1);
+	if (rc) {
+	    cli_errmsg("Failed to load builtin %s bytecode\n", desc);
+	    free(bc);
+	    return rc;
+	}
+    }
+    rc = cli_bytecode_prepare_interpreter(bc);
+    if (rc) {
+	cli_errmsg("Failed to prepare %s %s bytecode for interpreter: %s\n",
+		   builtin ? "builtin" : "loaded", desc, cl_strerror(rc));
+    }
+    if (bc->state != bc_interp) {
+	cli_errmsg("Failed to prepare %s %s bytecode for interpreter\n",
+		   builtin ? "builtin" : "loaded", desc);
+	rc = CL_EMALFDB;
+    }
+    if (!rc) {
+	cli_bytecode_context_setfuncid(ctx, bc, 0);
+	cli_dbgmsg("Bytecode: %s running (%s)\n", desc,
+		   builtin ? "builtin" : "loaded");
+	rc = cli_bytecode_run(bcs, bc, ctx);
+    }
+    if (rc) {
+	cli_errmsg("Failed to execute %s %s bytecode: %s\n",builtin ? "builtin":"loaded",
+		   desc, cl_strerror(rc));
+    }
+    if (builtin) {
+	cli_bytecode_destroy(bc);
+	free(bc);
+    }
+    return rc;
+}
+
 int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
 {
-    unsigned i, interp = 0;
+    unsigned i, interp = 0, jitok = 0, jitcount=0;
     int rc1, rc2, rc;
+    struct cli_bc_ctx *ctx;
 
-    /* run both selfchecks */
-    rc1 = selfcheck(0, bcs->engine);
-    rc2 = selfcheck(1, bcs->engine);
-    if (rc1)
-	return rc1;
-    if (rc2)
-	return rc2;
+    cli_detect_environment(&bcs->env);
+    switch (bcs->env.arch) {
+	case arch_i386:
+	case arch_x86_64:
+	    if (!(dconfmask & BYTECODE_JIT_X86)) {
+		cli_dbgmsg("Bytecode: disabled on X86 via DCONF\n");
+		if (set_mode(engine, CL_BYTECODE_MODE_INTERPRETER) == -1)
+		    return CL_EBYTECODE_TESTFAIL;
+	    }
+	    break;
+	case arch_ppc32:
+	case arch_ppc64:
+	    if (!(dconfmask & BYTECODE_JIT_PPC)) {
+		cli_dbgmsg("Bytecode: disabled on PPC via DCONF\n");
+		if (set_mode(engine, CL_BYTECODE_MODE_INTERPRETER) == -1)
+		    return CL_EBYTECODE_TESTFAIL;
+	    }
+	    break;
+	case arch_arm:
+	    if (!(dconfmask & BYTECODE_JIT_ARM)) {
+		cli_dbgmsg("Bytecode: disabled on ARM via DCONF\n");
+		if (set_mode(engine, CL_BYTECODE_MODE_INTERPRETER) == -1)
+		    return CL_EBYTECODE_TESTFAIL;
+	    }
+	    break;
+	default:
+	    cli_dbgmsg("Bytecode: JIT not supported on this architecture, falling back\n");
+	    if (set_mode(engine, CL_BYTECODE_MODE_INTERPRETER) == -1)
+		return CL_EBYTECODE_TESTFAIL;
+	    break;
+    }
+    cli_dbgmsg("Bytecode: mode is %d\n", engine->bytecode_mode);
 
-    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS) {
-	cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
+    ctx = cli_bytecode_context_alloc();
+    if (!ctx) {
+	cli_errmsg("Bytecode: failed to allocate bytecode context\n");
+	return CL_EMEM;
+    }
+    rc = run_builtin_or_loaded(bcs, BC_STARTUP, "", ctx, "BC_STARTUP");
+    if (rc != CL_SUCCESS) {
+	cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to http://bugs.clamav.net\n");
+	ctx->bytecode_disable_status = 2;
+    } else {
+	cli_dbgmsg("Bytecode: disable status is %d\n", ctx->bytecode_disable_status);
+	rc = cli_bytecode_context_getresult_int(ctx);
+	if (rc) {
+	    cli_warnmsg("Bytecode: selftest failed with code %d. Please report to http://bugs.clamav.net\n",
+			rc);
+	    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+		return CL_EBYTECODE_TESTFAIL;
+	}
+    }
+    switch (ctx->bytecode_disable_status) {
+	case 1:
+	    if (set_mode(engine, CL_BYTECODE_MODE_INTERPRETER) == -1)
+		return CL_EBYTECODE_TESTFAIL;
+	    break;
+	case 2:
+	    if (set_mode(engine, CL_BYTECODE_MODE_OFF) == -1)
+		return CL_EBYTECODE_TESTFAIL;
+	    break;
+	default:
+	    break;
+    }
+    cli_bytecode_context_destroy(ctx);
+
+    if (engine->bytecode_mode != CL_BYTECODE_MODE_INTERPRETER &&
+	engine->bytecode_mode != CL_BYTECODE_MODE_OFF) {
+	rc = cli_bytecode_prepare_jit(bcs);
+	if (rc == CL_SUCCESS) {
+	    jitok = 1;
+	    cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
+	    if (engine->bytecode_mode != CL_BYTECODE_MODE_TEST)
+		return CL_SUCCESS;
+	}
+	if (engine->bytecode_mode == CL_BYTECODE_MODE_JIT) {
+	    cli_errmsg("Bytecode: JIT required, but not all bytecodes could be prepared with JIT\n");
+	    return CL_EMALFDB;
+	}
+    } else {
+	cli_bytecode_done_jit(bcs, 0);
+    }
+
+    if (!(dconfmask & BYTECODE_INTERPRETER)) {
+	cli_dbgmsg("Bytecode: needs interpreter, but interpreter is disabled\n");
+	if (set_mode(engine, CL_BYTECODE_MODE_OFF) == -1)
+	    return CL_EBYTECODE_TESTFAIL;
+    }
+
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_OFF) {
+	for (i=0;i<bcs->count;i++)
+	    bcs->all_bcs[i].state = bc_disabled;
+	cli_dbgmsg("Bytecode: ALL bytecodes disabled\n");
 	return CL_SUCCESS;
     }
+
     for (i=0;i<bcs->count;i++) {
 	struct cli_bc *bc = &bcs->all_bcs[i];
-	if (bc->state == bc_interp || bc->state == bc_jit)
+	if (bc->state == bc_jit) {
+	    jitcount++;
 	    continue;
-	if (!(dconfmask & BYTECODE_INTERPRETER)) {
-	    cli_warnmsg("Bytecode needs interpreter, but interpreter is disabled\n");
+	}
+	if (bc->state == bc_interp) {
+	    interp++;
 	    continue;
 	}
 	rc = cli_bytecode_prepare_interpreter(bc);
-	interp++;
-	if (rc != CL_SUCCESS)
+	if (rc != CL_SUCCESS) {
+	    bc->state = bc_disabled;
+	    cli_warnmsg("Bytecode: %d failed to prepare for interpreter mode\n", bc->id);
 	    return rc;
+	}
+	interp++;
     }
     cli_dbgmsg("Bytecode: %u bytecode prepared with JIT, "
-	       "%u prepared with interpreter\n", bcs->count-interp, interp);
+	       "%u prepared with interpreter, %u failed\n", jitcount, interp,
+	       bcs->count - jitcount - interp);
     return CL_SUCCESS;
 }
 
@@ -2294,7 +2481,8 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     printf("Bytecode format functionality level: %u\n", bc->metadata.formatlevel);
     printf("Bytecode metadata:\n\tcompiler version: %s\n",
 	   bc->metadata.compiler ? bc->metadata.compiler : "N/A");
-    printf("\tcompiled on: %s",
+    printf("\tcompiled on: (%d) %s",
+	   stamp,
 	   cli_ctime(&stamp, buf, sizeof(buf)));
     printf("\tcompiled by: %s\n", bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
     /*TODO: parse and display arch name, also take it into account when
@@ -2304,6 +2492,9 @@ void cli_bytecode_describe(const struct cli_bc *bc)
     switch (bc->kind) {
 	case BC_GENERIC:
 	    puts("generic, not loadable by clamscan/clamd");
+	    break;
+	case BC_STARTUP:
+	    puts("run on startup (unique)");
 	    break;
 	case BC_LOGICAL:
 	    puts("logical only");
