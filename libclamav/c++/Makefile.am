@@ -47,7 +47,8 @@ libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 			  ClamBCRTChecks.cpp\
 			  ClamBCModule.h\
-			  ClamBCDiagnostics.h
+			  ClamBCDiagnostics.h\
+			  detect.cpp
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmx86codegen.la

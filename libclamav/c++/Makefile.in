@@ -108,7 +108,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo \
-	libclamavcxx_la-ClamBCRTChecks.lo
+	libclamavcxx_la-ClamBCRTChecks.lo libclamavcxx_la-detect.lo
 libclamavcxx_la_OBJECTS = $(am_libclamavcxx_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -981,7 +981,8 @@ libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 			  ClamBCRTChecks.cpp\
 			  ClamBCModule.h\
-			  ClamBCDiagnostics.h
+			  ClamBCDiagnostics.h\
+			  detect.cpp
 
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
@@ -2085,6 +2086,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/count-count.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-ClamBCRTChecks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-bytecode2llvm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamavcxx_la-detect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-TestMain.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-gtest-death-test.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgoogletest_la-gtest-filepath.Plo@am__quote@
@@ -2501,6 +2503,14 @@ libclamavcxx_la-ClamBCRTChecks.lo: ClamBCRTChecks.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ClamBCRTChecks.cpp' object='libclamavcxx_la-ClamBCRTChecks.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamavcxx_la-ClamBCRTChecks.lo `test -f 'ClamBCRTChecks.cpp' || echo '$(srcdir)/'`ClamBCRTChecks.cpp
+
+libclamavcxx_la-detect.lo: detect.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -MT libclamavcxx_la-detect.lo -MD -MP -MF $(DEPDIR)/libclamavcxx_la-detect.Tpo -c -o libclamavcxx_la-detect.lo `test -f 'detect.cpp' || echo '$(srcdir)/'`detect.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamavcxx_la-detect.Tpo $(DEPDIR)/libclamavcxx_la-detect.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='detect.cpp' object='libclamavcxx_la-detect.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamavcxx_la-detect.lo `test -f 'detect.cpp' || echo '$(srcdir)/'`detect.cpp
 
 libgoogletest_la-gtest-death-test.lo: llvm/utils/unittest/googletest/gtest-death-test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgoogletest_la_CPPFLAGS) $(CPPFLAGS) $(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) -MT libgoogletest_la-gtest-death-test.lo -MD -MP -MF $(DEPDIR)/libgoogletest_la-gtest-death-test.Tpo -c -o libgoogletest_la-gtest-death-test.lo `test -f 'llvm/utils/unittest/googletest/gtest-death-test.cc' || echo '$(srcdir)/'`llvm/utils/unittest/googletest/gtest-death-test.cc
