@@ -1215,3 +1215,110 @@ int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
     cli_dbgmsg("bytecode api: input switched to extracted file\n");
     return 0;
 }
+
+uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environment* env, uint32_t len)
+{
+    if (len > sizeof(*env)) {
+	cli_dbgmsg("cli_bcapi_get_environment len %d > %d\n", len, sizeof(*env));
+	return -1;
+    }
+    memcpy(env, ctx->env, len);
+    return 0;
+}
+
+uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
+{
+    if (ctx->bc->kind != BC_STARTUP) {
+	cli_dbgmsg("Bytecode must be BC_STARTUP to call disable_bytecode_if\n");
+	return -1;
+    }
+    if (!cond)
+	return ctx->bytecode_disable_status;
+    if (*reason == '^')
+	cli_warnmsg("Bytecode: disabling completely because %s\n", reason+1);
+    else
+	cli_dbgmsg("Bytecode: disabling completely because %s\n", reason);
+    ctx->bytecode_disable_status = 2;
+    return ctx->bytecode_disable_status;
+}
+
+uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
+{
+    if (ctx->bc->kind != BC_STARTUP) {
+	cli_dbgmsg("Bytecode must be BC_STARTUP to call disable_jit_if\n");
+	return -1;
+    }
+    if (!cond)
+	return ctx->bytecode_disable_status;
+    if (*reason == '^')
+	cli_warnmsg("Bytecode: disabling JIT because %s\n", reason+1);
+    else
+	cli_dbgmsg("Bytecode: disabling JIT because %s\n", reason);
+    if (ctx->bytecode_disable_status != 2) /* no reenabling */
+	ctx->bytecode_disable_status = 1;
+    return ctx->bytecode_disable_status;
+}
+
+int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, uint32_t lhs_len, 
+				  const uint8_t* rhs, uint32_t rhs_len)
+{
+    char *endl, *endr;
+    unsigned i = 0, j = 0;
+    unsigned long li, ri;
+    do {
+	while (i < lhs_len && j < rhs_len && lhs[i] == rhs[j] &&
+	       !isdigit(lhs[i]) && !isdigit(rhs[j])) {
+	    i++; j++;
+	}
+	if (i == lhs_len && j == rhs_len)
+	    return 0;
+	if (i == lhs_len)
+	    return -1;
+	if (j == rhs_len)
+	    return 1;
+	if (!isdigit(lhs[i]) || !isdigit(rhs[j]))
+	    return lhs[i] < rhs[j] ? -1 : 1;
+	while (isdigit(lhs[i]) && i < lhs_len)
+	    li = 10*li + (lhs[i] - '0');
+	while (isdigit(rhs[j]) && j < rhs_len)
+	    ri = 10*ri + (rhs[j] - '0');
+	if (li < ri)
+	    return -1;
+	if (li > ri)
+	    return 1;
+    } while (1);
+}
+
+static int check_bits(uint32_t query, uint32_t value, uint8_t shift, uint8_t mask)
+{
+    uint8_t q = (query >> shift)&mask;
+    uint8_t v = (value >> shift)&mask;
+    /* q == mask -> ANY */
+    if (q == v || q == mask)
+	return 1;
+    return 0;
+}
+
+uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t a, uint32_t b , uint32_t c)
+{
+    unsigned ret =
+	check_bits(a, ctx->env->platform_id_a, 24, 0xff) &&
+	check_bits(a, ctx->env->platform_id_a, 20, 0xf) &&
+	check_bits(a, ctx->env->platform_id_a, 16, 0xf) &&
+	check_bits(a, ctx->env->platform_id_a, 8, 0xff) &&
+	check_bits(a, ctx->env->platform_id_a, 0, 0xff) &&
+	check_bits(b, ctx->env->platform_id_b, 28, 0xf) &&
+	check_bits(b, ctx->env->platform_id_b, 24, 0xf) &&
+	check_bits(b, ctx->env->platform_id_b, 16, 0xff) &&
+	check_bits(b, ctx->env->platform_id_b, 8, 0xff) &&
+	check_bits(b, ctx->env->platform_id_b, 0, 0xff) &&
+	check_bits(c, ctx->env->platform_id_c, 24, 0xff) &&
+	check_bits(c, ctx->env->platform_id_c, 16, 0xff) &&
+	check_bits(c, ctx->env->platform_id_c, 8, 0xff) &&
+	check_bits(c, ctx->env->platform_id_c, 0, 0xff);
+    if (ret) {
+	cli_dbgmsg("check_platform(0x%08x,0x%08x,0x%08x) = match\n",a,b,c);
+    }
+    return ret;
+}
+

@@ -33,6 +33,7 @@
 #include "bytecode_execs.h"
 #include "bytecode_pe.h"
 #include "bytecode_disasm.h"
+#include "bytecode_detect.h"
 #endif
 
 #ifndef __CLAMBC__
@@ -85,7 +86,6 @@ extern const uint32_t __clambc_filesize[1];
 /** Kind of the bytecode */
 const uint16_t __clambc_kind;
 /* ---------------- END GLOBALS --------------------------------------------- */
-
 /* ---------------- BEGIN 0.96 APIs (don't touch) --------------------------- */
 /** Test api. 
   @param a 0xf00dbeef
@@ -652,5 +652,52 @@ int32_t extract_set_container(uint32_t container);
 int32_t input_switch(int32_t extracted_file);
 
 /* ---------------- END 0.96.1 APIs ------------------------------------- */
+/* ---------------- BEGIN 0.96.2 APIs ----------------------------------- */
+
+uint32_t get_environment(struct cli_environment *env, uint32_t len);
+/** Disables the bytecode completely if condition is true.
+  Can only be called from the BC_STARTUP bytecode.
+  @param reason - why the bytecode had to be disabled
+  @param len - length of reason
+  @param cond - condition
+  @return 0 - auto mode
+          1 - JIT disabled
+          2 - fully disabled
+  */
+uint32_t disable_bytecode_if(const int8_t *reason, uint32_t len, uint32_t cond);
+
+/** Disables the JIT completely if condition is true.
+  Can only be called from the BC_STARTUP bytecode.
+  @param reason - why the JIT had to be disabled
+  @param len - length of reason
+  @param cond - condition
+  @return 0 - auto mode
+          1 - JIT disabled
+          2 - fully disabled
+  */
+uint32_t disable_jit_if(const int8_t* reason, uint32_t len, uint32_t cond);
+
+/** Compares two version numbers.
+  * @param[in] lhs - left hand side of comparison
+    @param lhs_len - length of \p lhs
+    @param[in] rhs - right hand side of comparison
+    @param rhs_len - length of \p rhs
+    @return -1 - lhs < rhs
+            0 - lhs == rhs
+            1 - lhs > rhs */
+int32_t version_compare(const uint8_t* lhs, uint32_t lhs_len,
+                    const uint8_t* rhs, uint32_t rhs_len);
+
+/** Disables the JIT if the platform id matches.
+  * 0xff can be used instead of a field to mark ANY.
+  * @param a -  os_category << 24 | arch << 20 | compiler << 16 | flevel << 8 | dconf
+    @param b -  big_endian << 28 | sizeof_ptr << 24 | cpp_version
+    @param c -  os_features << 24 | c_version
+    @return 0 - no match
+            1 - match */
+uint32_t check_platform(uint32_t a, uint32_t b, uint32_t c);
+
+
+/* ---------------- END 0.96.2 APIs   ----------------------------------- */
 #endif
 #endif

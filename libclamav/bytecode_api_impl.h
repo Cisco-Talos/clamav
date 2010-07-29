@@ -30,6 +30,7 @@
 #define BYTECODE_API_IMPL_H
 
 struct cli_bc_bctx;
+struct cli_environment;
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx , uint32_t, uint32_t);
 int32_t cli_bcapi_read(struct cli_bc_ctx *ctx , uint8_t*, int32_t);
 int32_t cli_bcapi_write(struct cli_bc_ctx *ctx , uint8_t*, int32_t);
@@ -101,5 +102,10 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx );
 uint32_t cli_bcapi_engine_db_options(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx , uint32_t);
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t);
+uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environment*, uint32_t);
+uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
+uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
+int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t, const uint8_t*, uint32_t);
+uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t, uint32_t, uint32_t);
 
 #endif

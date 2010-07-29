@@ -104,6 +104,11 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx );
 uint32_t cli_bcapi_engine_db_options(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx , uint32_t);
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t);
+uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environment*, uint32_t);
+uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
+uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
+int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t, const uint8_t*, uint32_t);
+uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t, uint32_t, uint32_t);
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -128,25 +133,29 @@ static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16
 static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
-static uint16_t cli_tmp8[]={32, 32};
-static uint16_t cli_tmp9[]={32};
+static uint16_t cli_tmp8[]={32, 32, 32, 32};
+static uint16_t cli_tmp9[]={32, 65, 32, 65, 32};
 static uint16_t cli_tmp10[]={32, 65, 32, 32};
-static uint16_t cli_tmp11[]={65, 32, 32};
-static uint16_t cli_tmp12[]={32, 32, 32};
-static uint16_t cli_tmp13[]={32, 65, 32};
-static uint16_t cli_tmp14[]={32, 65, 32, 65, 32};
-static uint16_t cli_tmp15[]={32, 32, 32, 32};
-static uint16_t cli_tmp16[]={32, 65, 32, 32, 32, 32};
-static uint16_t cli_tmp17[]={32, 87, 32};
-static uint16_t cli_tmp18[]={88};
-static uint16_t cli_tmp19[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
-static uint16_t cli_tmp20[]={65, 32};
+static uint16_t cli_tmp11[]={32, 81, 32};
+static uint16_t cli_tmp12[]={82};
+static uint16_t cli_tmp13[]={32, 32, 32, 32, 32, 32, 32, 83, 83, 83, 83, 83, 83, 83, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+static uint16_t cli_tmp14[]={8};
+static uint16_t cli_tmp15[]={32, 32};
+static uint16_t cli_tmp16[]={32};
+static uint16_t cli_tmp17[]={65, 32, 32};
+static uint16_t cli_tmp18[]={32, 32, 32};
+static uint16_t cli_tmp19[]={32, 65, 32};
+static uint16_t cli_tmp20[]={32, 65, 32, 32, 32, 32};
 static uint16_t cli_tmp21[]={32, 91, 32};
 static uint16_t cli_tmp22[]={92};
-static uint16_t cli_tmp23[]={16, 8, 8, 8, 94, 93};
-static uint16_t cli_tmp24[]={8};
-static uint16_t cli_tmp25[]={95};
-static uint16_t cli_tmp26[]={8};
+static uint16_t cli_tmp23[]={32, 32, 32, 32, 32, 32, 32, 32, 32};
+static uint16_t cli_tmp24[]={65, 32};
+static uint16_t cli_tmp25[]={32, 95, 32};
+static uint16_t cli_tmp26[]={96};
+static uint16_t cli_tmp27[]={16, 8, 8, 8, 98, 97};
+static uint16_t cli_tmp28[]={8};
+static uint16_t cli_tmp29[]={99};
+static uint16_t cli_tmp30[]={8};
 
 const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp0, 13, 0, 0},
@@ -157,101 +166,110 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp5, 8, 0, 0},
 	{DArrayType, cli_tmp6, 1, 0, 0},
 	{DArrayType, cli_tmp7, 64, 0, 0},
-	{DFunctionType, cli_tmp8, 2, 0, 0},
-	{DFunctionType, cli_tmp9, 1, 0, 0},
+	{DFunctionType, cli_tmp8, 4, 0, 0},
+	{DFunctionType, cli_tmp9, 5, 0, 0},
 	{DFunctionType, cli_tmp10, 4, 0, 0},
 	{DFunctionType, cli_tmp11, 3, 0, 0},
-	{DFunctionType, cli_tmp12, 3, 0, 0},
-	{DFunctionType, cli_tmp13, 3, 0, 0},
-	{DFunctionType, cli_tmp14, 5, 0, 0},
-	{DFunctionType, cli_tmp15, 4, 0, 0},
-	{DFunctionType, cli_tmp16, 6, 0, 0},
+	{DPointerType, cli_tmp12, 1, 0, 0},
+	{DStructType, cli_tmp13, 23, 0, 0},
+	{DArrayType, cli_tmp14, 65, 0, 0},
+	{DFunctionType, cli_tmp15, 2, 0, 0},
+	{DFunctionType, cli_tmp16, 1, 0, 0},
 	{DFunctionType, cli_tmp17, 3, 0, 0},
-	{DPointerType, cli_tmp18, 1, 0, 0},
-	{DStructType, cli_tmp19, 9, 0, 0},
-	{DFunctionType, cli_tmp20, 2, 0, 0},
+	{DFunctionType, cli_tmp18, 3, 0, 0},
+	{DFunctionType, cli_tmp19, 3, 0, 0},
+	{DFunctionType, cli_tmp20, 6, 0, 0},
 	{DFunctionType, cli_tmp21, 3, 0, 0},
 	{DPointerType, cli_tmp22, 1, 0, 0},
-	{DStructType, cli_tmp23, 6, 0, 0},
-	{DArrayType, cli_tmp24, 29, 0, 0},
-	{DArrayType, cli_tmp25, 3, 0, 0},
-	{DArrayType, cli_tmp26, 10, 0, 0}
+	{DStructType, cli_tmp23, 9, 0, 0},
+	{DFunctionType, cli_tmp24, 2, 0, 0},
+	{DFunctionType, cli_tmp25, 3, 0, 0},
+	{DPointerType, cli_tmp26, 1, 0, 0},
+	{DStructType, cli_tmp27, 6, 0, 0},
+	{DArrayType, cli_tmp28, 29, 0, 0},
+	{DArrayType, cli_tmp29, 3, 0, 0},
+	{DArrayType, cli_tmp30, 10, 0, 0}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"test1", 12, 0, 0},
-	{"read", 13, 0, 1},
-	{"write", 13, 1, 1},
-	{"seek", 12, 1, 0},
-	{"setvirusname", 13, 2, 1},
-	{"debug_print_str", 13, 3, 1},
-	{"debug_print_uint", 8, 0, 2},
-	{"disasm_x86", 21, 4, 1},
-	{"trace_directory", 13, 5, 1},
-	{"trace_scope", 13, 6, 1},
-	{"trace_source", 13, 7, 1},
-	{"trace_op", 13, 8, 1},
-	{"trace_value", 13, 9, 1},
-	{"trace_ptr", 13, 10, 1},
-	{"pe_rawaddr", 8, 1, 2},
-	{"file_find", 13, 11, 1},
-	{"file_byteat", 8, 2, 2},
-	{"malloc", 20, 0, 3},
-	{"test2", 8, 3, 2},
-	{"get_pe_section", 17, 12, 1},
-	{"fill_buffer", 16, 0, 4},
-	{"extract_new", 8, 4, 2},
-	{"read_number", 8, 5, 2},
-	{"hashset_new", 9, 0, 5},
-	{"hashset_add", 12, 2, 0},
-	{"hashset_remove", 12, 3, 0},
-	{"hashset_contains", 12, 4, 0},
-	{"hashset_done", 8, 6, 2},
-	{"hashset_empty", 8, 7, 2},
-	{"buffer_pipe_new", 8, 8, 2},
-	{"buffer_pipe_new_fromfile", 8, 9, 2},
-	{"buffer_pipe_read_avail", 8, 10, 2},
-	{"buffer_pipe_read_get", 11, 0, 6},
-	{"buffer_pipe_read_stopped", 12, 5, 0},
-	{"buffer_pipe_write_avail", 8, 11, 2},
-	{"buffer_pipe_write_get", 11, 1, 6},
-	{"buffer_pipe_write_stopped", 12, 6, 0},
-	{"buffer_pipe_done", 8, 12, 2},
-	{"inflate_init", 15, 0, 7},
-	{"inflate_process", 8, 13, 2},
-	{"inflate_done", 8, 14, 2},
-	{"bytecode_rt_error", 8, 15, 2},
-	{"jsnorm_init", 8, 16, 2},
-	{"jsnorm_process", 8, 17, 2},
-	{"jsnorm_done", 8, 18, 2},
-	{"ilog2", 12, 7, 0},
-	{"ipow", 15, 1, 7},
-	{"iexp", 15, 2, 7},
-	{"isin", 15, 3, 7},
-	{"icos", 15, 4, 7},
-	{"memstr", 14, 0, 8},
-	{"hex2ui", 12, 8, 0},
-	{"atoi", 13, 13, 1},
-	{"debug_print_str_start", 13, 14, 1},
-	{"debug_print_str_nonl", 13, 15, 1},
-	{"entropy_buffer", 13, 16, 1},
-	{"map_new", 12, 9, 0},
+	{"test1", 18, 0, 0},
+	{"read", 19, 0, 1},
+	{"write", 19, 1, 1},
+	{"seek", 18, 1, 0},
+	{"setvirusname", 19, 2, 1},
+	{"debug_print_str", 19, 3, 1},
+	{"debug_print_uint", 15, 0, 2},
+	{"disasm_x86", 25, 4, 1},
+	{"trace_directory", 19, 5, 1},
+	{"trace_scope", 19, 6, 1},
+	{"trace_source", 19, 7, 1},
+	{"trace_op", 19, 8, 1},
+	{"trace_value", 19, 9, 1},
+	{"trace_ptr", 19, 10, 1},
+	{"pe_rawaddr", 15, 1, 2},
+	{"file_find", 19, 11, 1},
+	{"file_byteat", 15, 2, 2},
+	{"malloc", 24, 0, 3},
+	{"test2", 15, 3, 2},
+	{"get_pe_section", 21, 12, 1},
+	{"fill_buffer", 20, 0, 4},
+	{"extract_new", 15, 4, 2},
+	{"read_number", 15, 5, 2},
+	{"hashset_new", 16, 0, 5},
+	{"hashset_add", 18, 2, 0},
+	{"hashset_remove", 18, 3, 0},
+	{"hashset_contains", 18, 4, 0},
+	{"hashset_done", 15, 6, 2},
+	{"hashset_empty", 15, 7, 2},
+	{"buffer_pipe_new", 15, 8, 2},
+	{"buffer_pipe_new_fromfile", 15, 9, 2},
+	{"buffer_pipe_read_avail", 15, 10, 2},
+	{"buffer_pipe_read_get", 17, 0, 6},
+	{"buffer_pipe_read_stopped", 18, 5, 0},
+	{"buffer_pipe_write_avail", 15, 11, 2},
+	{"buffer_pipe_write_get", 17, 1, 6},
+	{"buffer_pipe_write_stopped", 18, 6, 0},
+	{"buffer_pipe_done", 15, 12, 2},
+	{"inflate_init", 8, 0, 7},
+	{"inflate_process", 15, 13, 2},
+	{"inflate_done", 15, 14, 2},
+	{"bytecode_rt_error", 15, 15, 2},
+	{"jsnorm_init", 15, 16, 2},
+	{"jsnorm_process", 15, 17, 2},
+	{"jsnorm_done", 15, 18, 2},
+	{"ilog2", 18, 7, 0},
+	{"ipow", 8, 1, 7},
+	{"iexp", 8, 2, 7},
+	{"isin", 8, 3, 7},
+	{"icos", 8, 4, 7},
+	{"memstr", 9, 0, 8},
+	{"hex2ui", 18, 8, 0},
+	{"atoi", 19, 13, 1},
+	{"debug_print_str_start", 19, 14, 1},
+	{"debug_print_str_nonl", 19, 15, 1},
+	{"entropy_buffer", 19, 16, 1},
+	{"map_new", 18, 9, 0},
 	{"map_addkey", 10, 0, 9},
 	{"map_setvalue", 10, 1, 9},
 	{"map_remove", 10, 2, 9},
 	{"map_find", 10, 3, 9},
-	{"map_getvaluesize", 8, 19, 2},
-	{"map_getvalue", 11, 2, 6},
-	{"map_done", 8, 20, 2},
+	{"map_getvaluesize", 15, 19, 2},
+	{"map_getvalue", 17, 2, 6},
+	{"map_done", 15, 20, 2},
 	{"file_find_limit", 10, 4, 9},
-	{"engine_functionality_level", 9, 1, 5},
-	{"engine_dconf_level", 9, 2, 5},
-	{"engine_scan_options", 9, 3, 5},
-	{"engine_db_options", 9, 4, 5},
-	{"extract_set_container", 8, 21, 2},
-	{"input_switch", 8, 22, 2}
+	{"engine_functionality_level", 16, 1, 5},
+	{"engine_dconf_level", 16, 2, 5},
+	{"engine_scan_options", 16, 3, 5},
+	{"engine_db_options", 16, 4, 5},
+	{"extract_set_container", 15, 21, 2},
+	{"input_switch", 15, 22, 2},
+	{"get_environment", 11, 17, 1},
+	{"disable_bytecode_if", 10, 5, 9},
+	{"disable_jit_if", 10, 6, 9},
+	{"version_compare", 9, 1, 8},
+	{"check_platform", 8, 5, 7}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -283,7 +301,8 @@ const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_atoi,
 	(cli_apicall_pointer)cli_bcapi_debug_print_str_start,
 	(cli_apicall_pointer)cli_bcapi_debug_print_str_nonl,
-	(cli_apicall_pointer)cli_bcapi_entropy_buffer
+	(cli_apicall_pointer)cli_bcapi_entropy_buffer,
+	(cli_apicall_pointer)cli_bcapi_get_environment
 };
 const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_debug_print_uint,
@@ -333,16 +352,20 @@ const cli_apicall_int3 cli_apicalls7[] = {
 	(cli_apicall_int3)cli_bcapi_ipow,
 	(cli_apicall_int3)cli_bcapi_iexp,
 	(cli_apicall_int3)cli_bcapi_isin,
-	(cli_apicall_int3)cli_bcapi_icos
+	(cli_apicall_int3)cli_bcapi_icos,
+	(cli_apicall_int3)cli_bcapi_check_platform
 };
 const cli_apicall_2bufs cli_apicalls8[] = {
-	(cli_apicall_2bufs)cli_bcapi_memstr
+	(cli_apicall_2bufs)cli_bcapi_memstr,
+	(cli_apicall_2bufs)cli_bcapi_version_compare
 };
 const cli_apicall_ptrbufid cli_apicalls9[] = {
 	(cli_apicall_ptrbufid)cli_bcapi_map_addkey,
 	(cli_apicall_ptrbufid)cli_bcapi_map_setvalue,
 	(cli_apicall_ptrbufid)cli_bcapi_map_remove,
 	(cli_apicall_ptrbufid)cli_bcapi_map_find,
-	(cli_apicall_ptrbufid)cli_bcapi_file_find_limit
+	(cli_apicall_ptrbufid)cli_bcapi_file_find_limit,
+	(cli_apicall_ptrbufid)cli_bcapi_disable_bytecode_if,
+	(cli_apicall_ptrbufid)cli_bcapi_disable_jit_if
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);
