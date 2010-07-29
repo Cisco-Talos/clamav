@@ -1703,7 +1703,7 @@ static inline int get_geptypesize(const struct cli_bc *bc, uint16_t tid)
 static int calc_gepz(struct cli_bc *bc, struct cli_bc_func *func, uint16_t tid, operand_t op)
 {
     unsigned off = 0, i;
-    uint64_t *gepoff;
+    uint32_t *gepoff;
     const struct cli_bc_type *ty;
     if (tid >= bc->num_types + 65) {
 	cli_errmsg("bytecode: typeid out of range %u >= %u\n", tid, bc->num_types);
@@ -1721,7 +1721,7 @@ static int calc_gepz(struct cli_bc *bc, struct cli_bc_func *func, uint16_t tid, 
     ty = &bc->types[ty->containedTypes[0] - 65];
     if (ty->kind != DStructType && ty->kind != DPackedStructType)
 	return 0;
-    gepoff = &func->constants[op - func->numValues];
+    gepoff = (uint32_t*)&func->constants[op - func->numValues];
     if (*gepoff >= ty->numElements) {
 	cli_errmsg("bytecode: gep offset out of range: %d >= %d\n",(uint32_t)*gepoff, ty->numElements);
 	return -1;
