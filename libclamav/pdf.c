@@ -691,7 +691,7 @@ static struct pdfname_action pdfname_actions[] = {
     {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION}
 };
 
-#define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
+#define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
 
 static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 			   const char *pdfname, int escapes,
@@ -978,7 +978,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
 
     if (pdf.flags & (1 << ENCRYPTED_PDF))
-	pdf.flags &= ~ (1 << BAD_FLATESTART);
+	pdf.flags &= ~ (1 << BAD_FLATESTART) | (1 << BAD_STREAMSTART);
 
     if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
@@ -990,7 +990,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #if 0
 	if (pdf.flags &
 	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
-	    (1<<BAD_FLATE) | (1<<BAD_STREAMSTART)|(1<<BAD_ASCIIDECODE)|
+	    (1<<BAD_FLATE) | (1<<BAD_ASCIIDECODE)|
 	    (1<<UNTERMINATED_OBJ_DICT) | (1<<UNKNOWN_FILTER))) {
 	    rc = CL_EUNPACK;
 	}
