@@ -697,13 +697,13 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	pt2 = &pt[strlen(pt) - 6];
 	*pt2 = 0;
 
-	if(!(pt2 = strrchr(pt, ':'))) {
+	if(!(pt2 = strrchr(pt, ' ')) || pt2[-1] != ':') {
 	    logg("!SubmitDetectionStats: Incorrect format of the log file (1)\n");
 	    ret = 1;
 	    break;
 	}
-	*pt2 = 0;
-	pt2 += 2;
+	pt2[-1] = 0;
+	pt2++;
 
 	if((pt = strrchr(pt, *PATHSEP)))
 	    *pt++ = 0;
