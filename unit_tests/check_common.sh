@@ -191,7 +191,7 @@ EOF
     grep "clam_IScab_ext.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test3 failed"
     grep "clam_IScab_int.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test4 failed"
     NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
-    if test "x$NINFECTED" -ne x4; then
+    if test "x$NINFECTED" != x4; then
 	scan_failed clamscan4.log "clamscan has detected spurious icons or whitlisting was not applier properly"
     fi
     test_end $1

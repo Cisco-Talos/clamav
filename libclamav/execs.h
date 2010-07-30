@@ -50,12 +50,12 @@ struct cli_exe_info {
     uint32_t ep;
     /** Number of sections*/
     uint16_t nsections;
+    /** Hashset for versioninfo matching */
+    struct cli_hashset *vinfo;
     /** Resrources RVA - PE ONLY */
     uint32_t res_addr;
     /** Address size - PE ONLY */
     uint32_t hdr_size;
-    /** Hashset for versioninfo matching */
-    struct cli_hashset *vinfo;
 };
 
 #endif
