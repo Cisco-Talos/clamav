@@ -948,7 +948,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
 	    rc = CL_VIRUS;
 	}
-#if 1
+#if 0
 	if (pdf.flags &
 	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
 	    (1<<BAD_FLATE) | (1<<BAD_STREAMSTART)|(1<<BAD_ASCIIDECODE)|
