@@ -1,3 +1,9 @@
+Fri Jul 30 15:51:06 CEST 2010 (acab)
+------------------------------------
+ * libclamav, unit_tests: use cached PE metadata when matching icons (better fix for 
+	      bb#2064, partially reverts d932a6d)
+	      add some unit tests for ign2, ldb, idb
+
 Fri Jul 30 15:15:35 CEST 2010 (tk)
 ----------------------------------
  * freshclam: fix parsing of extended log entries

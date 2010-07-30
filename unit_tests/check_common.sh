@@ -171,6 +171,29 @@ EOF
 
     grep "phish-test-ssl: Heuristics.Phishing.Email.SSL-Spoof FOUND" clamscan3.log >/dev/null || die "phish-test1 failed";
     grep "phish-test-cloak: Heuristics.Phishing.Email.Cloaked.Null FOUND" clamscan3.log >/dev/null || die "phish-test2 failed";
+
+    cat <<EOF >test-db/test.ign2
+ClamAV-Test-File
+EOF
+    cat <<EOF >test-db/test.idb
+EA0X-32x32x8:ea0x-grp1:ea0x-grp2:2046f030a42a07153f4120a0031600007000005e1617ef0000d21100cb090674150f880313970b0e7716116d01136216022500002f0a173700081a004a0e
+IScab-16x16x8:iscab-grp1:iscab-grp2:107b3000168306015c20a0105b07060be0a0b11c050bea0706cb0a0bbb060b6f00017c06018301068109086b03046705081b000a270a002a000039002b17
+EOF
+    cat <<EOF >test-db/test.ldb
+ClamAV-Test-Icon-EA0X;Engine:52-1000,Target:1,IconGroup1:ea0x-grp1,IconGroup2:*;(0);0:4d5a
+ClamAV-Test-Icon-IScab;Engine:52-1000,Target:1,IconGroup2:iscab-grp2;(0);0:4d5a
+EOF
+    if test_run 1 $CLAMSCAN --quiet -dtest-db $TESTFILES --log=clamscan4.log; then
+	scan_failed clamscan4.log "clamscan didn't detect icons correctly"
+    fi
+    grep "clam.ea05.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test1 failed"
+    grep "clam.ea06.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test2 failed"
+    grep "clam_IScab_ext.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test3 failed"
+    grep "clam_IScab_int.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test4 failed"
+    NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
+    if test "x$NINFECTED" -ne x4; then
+	scan_failed clamscan4.log "clamscan has detected spurious icons or whitlisting was not applier properly"
+    fi
     test_end $1
 }
 

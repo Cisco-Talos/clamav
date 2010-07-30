@@ -429,15 +429,24 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     return CL_VIRUS;
 }
 
-static int matchicon(cli_ctx *ctx, const char *grp1, const char *grp2)
+static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
 {
 	icon_groupset iconset;
+
+    if(!ctx ||
+       !ctx->engine ||
+       !ctx->engine->iconcheck ||
+       !ctx->engine->iconcheck->group_counts[0] ||
+       !ctx->engine->iconcheck->group_counts[1] ||
+       !exeinfo->res_addr
+    ) return CL_CLEAN;
 
     cli_icongroupset_init(&iconset);
     cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);
     cli_icongroupset_add(grp2 ? grp2 : "*", &iconset, 1, ctx);
-    return cli_match_icon(&iconset, ctx);
+    return cli_scanicon(&iconset, exeinfo->res_addr, ctx, exeinfo->section, exeinfo->nsections, exeinfo->hdr_size);
 }
+
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
 {
@@ -483,7 +492,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 	    if(root->ac_lsigtable[i]->tdb.icongrp1 || root->ac_lsigtable[i]->tdb.icongrp2) {
 		if(!target_info || target_info->status != 1)
 		    continue;
-		if(matchicon(ctx, root->ac_lsigtable[i]->tdb.icongrp1, root->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
+		if(matchicon(ctx, &target_info->exeinfo, root->ac_lsigtable[i]->tdb.icongrp1, root->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
 		    if(ctx->virname)
 			*ctx->virname = root->ac_lsigtable[i]->virname;
 		    return CL_VIRUS;

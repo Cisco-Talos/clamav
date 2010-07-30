@@ -58,7 +58,6 @@
 #include "disasm.h"
 #include "special.h"
 #include "ishield.h"
-#include "pe_icons.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -501,7 +500,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     fmap_unneed_ptr(map, oentry, entries*8);
 }
 
-int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
+int cli_scanpe(cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -1002,7 +1001,7 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
 
 	    /* check MD5 section sigs */
 	    md5_sect = ctx->engine->md5_mdb;
-	    if((DCONF & PE_CONF_MD5SECT) && md5_sect && !iconset) {
+	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
 		found = 0;
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
@@ -1077,15 +1076,6 @@ int cli_scanpe(cli_ctx *ctx, icon_groupset *iconset)
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
-
-    if(iconset){
-	if(!dll && dirs[2].Size && cli_scanicon(iconset, EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size) == CL_VIRUS) {
-	    free(exe_sections);
-	    return CL_VIRUS;
-	}
-	free(exe_sections);
-	return CL_CLEAN;
-    }
 
     if(pe_plus) { /* Do not continue for PE32+ files */
 	free(exe_sections);
@@ -2383,7 +2373,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
     falign = (pe_plus)?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment);
 
-    hdr_size = PESALIGN(hdr_size, valign);
+    peinfo->hdr_size = hdr_size = PESALIGN(hdr_size, valign);
 
     peinfo->section = (struct cli_exe_section *) cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
 
@@ -2446,6 +2436,11 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	peinfo->section = NULL;
 	return -1;
     }
+
+    if(EC16(file_hdr.Characteristics) & 0x2000 || !dirs[2].Size)
+	peinfo->res_addr = 0;
+    else
+	peinfo->res_addr = EC32(dirs[2].VirtualAddress);
 
     while(dirs[2].Size && peinfo->vinfo) {
 	struct vinfo_list vlist;

@@ -152,7 +152,7 @@ struct cli_pe_hook_data {
   uint32_t hdr_size;/**< internally needed by rawaddr */
 };
 
-int cli_scanpe(cli_ctx *ctx, icon_groupset *set);
+int cli_scanpe(cli_ctx *ctx);
 
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 
