@@ -1,3 +1,7 @@
+Fri Jul 30 14:20:50 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: improve extraction of PDF objects (bb #1596, #1994, #2029).
+
 Thu Jul 29 16:56:00 CEST 2010 (acab)
 ------------------------------------
  * libclamav/matcher.c: make cli_lsig_eval use cached executable metadata rather

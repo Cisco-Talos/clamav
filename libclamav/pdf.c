@@ -69,10 +69,15 @@ enum pdf_flag {
     BAD_PDF_TOOMANYOBJS,
     BAD_STREAM_FILTERS,
     BAD_FLATE,
+    BAD_STREAMSTART,
     BAD_ASCIIDECODE,
+    BAD_INDOBJ,
     UNTERMINATED_OBJ_DICT,
     ESCAPED_COMMON_PDFNAME,
-    HEX_JAVASCRIPT
+    HEX_JAVASCRIPT,
+    UNKNOWN_FILTER,
+    HAS_OPENACTION,
+    BAD_STREAMLEN
 };
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -110,7 +115,9 @@ enum objflags {
     OBJ_FILTER_DCT,
     OBJ_FILTER_JPX,
     OBJ_FILTER_CRYPT,
-    OBJ_JAVASCRIPT
+    OBJ_JAVASCRIPT,
+    OBJ_OPENACTION,
+    OBJ_HASFILTERS
 };
 
 struct pdf_obj {
@@ -225,6 +232,63 @@ static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj,
     return cli_writen(fout, buf, len);
 }
 
+static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag)
+{
+    const char *s= "";
+    pdf->flags |= 1 << flag;
+    if (!cli_debug_flag)
+	return;
+    switch (flag) {
+	case UNTERMINATED_OBJ_DICT:
+	    s = "dictionary not terminated";
+	    break;
+	case ESCAPED_COMMON_PDFNAME:
+	    /* like /JavaScript */
+	    s = "escaped common pdfname";
+	    break;
+	case BAD_STREAM_FILTERS:
+	    s = "duplicate stream filters";
+	    break;
+	case BAD_PDF_VERSION:
+	    s = "bad pdf version";
+	    break;
+	case BAD_PDF_HEADERPOS:
+	    s = "bad pdf header position";
+	    break;
+	case BAD_PDF_TRAILER:
+	    s = "bad pdf trailer";
+	    break;
+	case BAD_PDF_TOOMANYOBJS:
+	    s = "too many pdf objs";
+	    break;
+	case BAD_FLATE:
+	    s = "bad deflate stream";
+	    break;
+	case BAD_STREAMSTART:
+	    s = "bad stream start";
+	    break;
+	case UNKNOWN_FILTER:
+	    s = "unknown filter used";
+	    break;
+	case BAD_ASCIIDECODE:
+	    s = "bad ASCII decode";
+	    break;
+	case HEX_JAVASCRIPT:
+	    s = "hex javascript";
+	    break;
+	case BAD_INDOBJ:
+	    s = "referencing nonexistent obj";
+	    break;
+	case HAS_OPENACTION:
+	    s = "has /OpenAction";
+	    break;
+	case BAD_STREAMLEN:
+	    s = "bad /Length, too small";
+	    break;
+    }
+    cli_dbgmsg("cli_pdf: %s in object %u %u\n", s, obj->id>>8, obj->id&0xff);
+}
+
 static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 			      const char *buf, off_t len, int fout, off_t *sum)
 {
@@ -235,6 +299,19 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 
     if (len == 0)
 	return CL_CLEAN;
+
+    if (*buf == '\r') {
+	buf++;
+	len--;
+	pdfobj_flag(pdf, obj, BAD_STREAMSTART);
+	/* PDF spec says stream is followed by \r\n or \n, but not \r alone.
+	 * Sample 0015315109, it has \r followed by zlib header.
+	 * Flag pdf as suspicious, and attempt to extract by skipping the \r.
+	 */
+	if (!len)
+	    return CL_CLEAN;
+    }
+
     memset(&stream, 0, sizeof(stream));
     stream.next_in = (Bytef *)buf;
     stream.avail_in = len;
@@ -274,7 +351,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		else
 		    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
 			       (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
-		pdf->flags |= 1 << BAD_FLATE;
+		pdfobj_flag(pdf, obj, BAD_FLATE);
 		inflateEnd(&stream);
 		return CL_CLEAN;
 	}
@@ -359,18 +436,32 @@ static int find_length(struct pdf_struct *pdf,
     return length;
 }
 
-#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT))
+#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION))
 
-static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj)
+static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj, int binary)
 {
     unsigned i = obj - pdf->objs;
     i++;
     if (i < pdf->nobjs) {
 	int s = pdf->objs[i].start - obj->start - 4;
-	if (s > 0)
+	if (s > 0) {
+	    if (!binary) {
+		const char *p = pdf->map + obj->start;
+		const char *q = p + s;
+		while (q > p && (isspace(*q) || isdigit(*q)))
+		       q--;
+		if (q > p+5 && !memcmp(q-5,"endobj",6))
+		    q -= 6;
+		q = findNextNonWSBack(q, p);
+		q++;
+		return q - p;
+	    }
 	    return s;
+	}
     }
-    return pdf->size - obj->start;
+    if (binary)
+	return pdf->size - obj->start;
+    return pdf->offset - obj->start - 6;
 }
 
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
@@ -381,7 +472,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     int rc = CL_SUCCESS;
     char *ascii_decoded = NULL;
 
-    if (!(obj->flags & DUMP_MASK)) {
+    if ((!(obj->flags & (1 << OBJ_STREAM)) ||
+	(obj->flags & (1 << OBJ_HASFILTERS)))
+	&& !(obj->flags & DUMP_MASK)) {
 	/* don't dump all streams */
 	return CL_CLEAN;
     }
@@ -407,8 +500,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    const char *flate_in;
 	    long ascii_decoded_size = 0;
 	    size_t size = p_endstream - p_stream;
+	    off_t orig_length;
 
-	    length = find_length(pdf, obj, start, p_stream);
+	    orig_length = length = find_length(pdf, obj, start, p_stream);
 	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && !length) {
 		const char *q = start + p_endstream;
 		length = size;
@@ -422,7 +516,15 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		    length--;
 		}
 		cli_dbgmsg("cli_pdf: calculated length %ld\n", length);
+	    } else {
+		if (size > length+2) {
+		    cli_dbgmsg("cli_pdf: calculated length %ld < %ld\n",
+			       length, size);
+		    length = size;
+		}
 	    }
+	    if (orig_length && size > orig_length + 20)
+		pdfobj_flag(pdf, obj, BAD_STREAMLEN);
 	    if (!length)
 		length = size;
 
@@ -448,7 +550,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 						   (unsigned char*)ascii_decoded);
 	    }
 	    if (ascii_decoded_size < 0) {
-		pdf->flags |= 1 << BAD_ASCIIDECODE;
+		pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 		cli_dbgmsg("cli_pdf: failed to asciidecode in %u %u obj\n", obj->id>>8,obj->id&0xff);
 		rc = CL_CLEAN;
 		break;
@@ -467,7 +569,6 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    cli_updatelimits(pdf->ctx, sum);
 	    /* TODO: invoke bytecode on this pdf obj with metainformation associated
 	     * */
-	    cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj to %s\n", sum, obj->id>>8, obj->id&0xff, fullname);
 	    lseek(fout, 0, SEEK_SET);
 	    rc2 = cli_magic_scandesc(fout, pdf->ctx);
 	    if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
@@ -477,19 +578,25 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	const char *q2;
 	const char *q = pdf->map+obj->start;
 	/* TODO: get obj-endobj size */
-	off_t bytesleft = obj_size(pdf, obj);
+	off_t bytesleft = obj_size(pdf, obj, 0);
 	if (bytesleft < 0)
 	    break;
 
 	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
 	if (!q2)
 	    break;
-	q2++;
 	bytesleft -= q2 - q;
+	do {
+	q2++;
+	bytesleft--;
 	q = pdf_nextobject(q2, bytesleft);
 	if (!q)
 	    break;
 	bytesleft -= q - q2;
+	q2 = q;
+	} while (*q == '/');
+	if (!q)
+	    break;
 	if (*q == '(') {
 	    if (filter_writen(pdf, obj, fout, q+1, bytesleft-1, &sum) != (bytesleft-1)) {
 		rc = CL_EWRITE;
@@ -508,12 +615,17 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    decoded[q2-q-1] = '\0';
 	    cli_dbgmsg("cli_pdf: found hexadecimal encoded javascript in %u %u obj\n",
 		       obj->id>>8, obj->id&0xff);
-	    pdf->flags |= 1 << HEX_JAVASCRIPT;
+	    pdfobj_flag(pdf, obj, HEX_JAVASCRIPT);
 	    filter_writen(pdf, obj, fout, decoded, q2-q-1, &sum);
 	    free(decoded);
 	}
+    } else {
+	off_t bytesleft = obj_size(pdf, obj, 0);
+	if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft,&sum) != bytesleft)
+	    rc = CL_EWRITE;
     }
     } while (0);
+    cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj to %s\n", sum, obj->id>>8, obj->id&0xff, fullname);
     close(fout);
     free(ascii_decoded);
     if (!pdf->ctx->engine->keeptmp)
@@ -522,38 +634,12 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     return rc;
 }
 
-static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag)
-{
-    const char *s;
-    pdf->flags |= 1 << flag;
-    if (!cli_debug_flag)
-	return;
-    switch (flag) {
-	case UNTERMINATED_OBJ_DICT:
-	    s = "dictionary not terminated";
-	    break;
-	case ESCAPED_COMMON_PDFNAME:
-	    /* like /JavaScript */
-	    s = "escaped common pdfname";
-	    break;
-	case BAD_STREAM_FILTERS:
-	    s = "duplicate stream filters";
-	    break;
-	default:
-	case BAD_PDF_VERSION:
-	case BAD_PDF_HEADERPOS:
-	case BAD_PDF_TRAILER:
-	case BAD_PDF_TOOMANYOBJS:
-	    return;
-    }
-    cli_dbgmsg("cli_pdf: %s in object %u %u\n", s, obj->id>>8, obj->id&0xff);
-}
-
 enum objstate {
     STATE_NONE,
     STATE_S,
     STATE_FILTER,
     STATE_JAVASCRIPT,
+    STATE_OPENACTION,
     STATE_ANY /* for actions table below */
 };
 
@@ -576,12 +662,15 @@ static struct pdfname_action pdfname_actions[] = {
     {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
     {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER},
     {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE},
-    {"Filter", OBJ_DICT, STATE_ANY, STATE_FILTER},
+    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER},
     {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT},
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE},
     {"S", OBJ_DICT, STATE_NONE, STATE_S},
-    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE}
+    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE},
+    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION}
 };
+
+#define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
 
 static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 			   const char *pdfname, int escapes,
@@ -595,8 +684,14 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 	    break;
 	}
     }
-    if (!act)
+    if (!act) {
+	if (*state == STATE_FILTER &&
+	    !(obj->flags & KNOWN_FILTERS)) {
+	    cli_dbgmsg("cli_pdf: unknown filter %s\n", pdfname);
+	    pdfobj_flag(pdf, obj, UNKNOWN_FILTER);
+	}
 	return;
+    }
     if (escapes) {
 	/* if a commonly used PDF name is escaped that is certainly
 	   suspicious. */
@@ -696,7 +791,10 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	pdfname[i] = '\0';
 
 	handle_pdfname(pdf, obj, pdfname, escapes, &objstate);
-	if (objstate == STATE_JAVASCRIPT) {
+	if (objstate == STATE_JAVASCRIPT ||
+	    objstate == STATE_OPENACTION) {
+	    if (objstate == STATE_OPENACTION)
+		pdfobj_flag(pdf, obj, HAS_OPENACTION);
 	    q2 = pdf_nextobject(q, dict_length);
 	    if (q2 && isdigit(*q2)) {
 		uint32_t objid = atoi(q2) << 8;
@@ -707,10 +805,18 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		    q2 = pdf_nextobject(q2, dict_length);
 		    if (*q2 == 'R') {
 			struct pdf_obj *obj2;
-			cli_dbgmsg("cli_pdf: found javascript stored in indirect object %u %u",
+			cli_dbgmsg("cli_pdf: found %s stored in indirect object %u %u\n",
+				   pdfname,
 				   objid >> 8, objid&0xff);
 			obj2 = find_obj(pdf, obj, objid);
-			obj2->flags |= OBJ_JAVASCRIPT;
+			if (obj2) {
+			    enum objflags flag = objstate == STATE_JAVASCRIPT ?
+				OBJ_JAVASCRIPT : OBJ_OPENACTION;
+			    obj2->flags |= 1 << flag;
+			    obj->flags &= ~(1 << flag);
+			} else {
+			    pdfobj_flag(pdf, obj, BAD_INDOBJ);
+			}
 		    }
 		}
 	    }
@@ -815,10 +921,17 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     while ((rc = pdf_findobj(&pdf)) > 0) {
 	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
 	cli_dbgmsg("found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
-	pdf_parseobj(&pdf, obj);
     }
+    if (pdf.nobjs)
+	pdf.nobjs--;
     if (rc == -1)
 	pdf.flags |= 1 << BAD_PDF_TOOMANYOBJS;
+
+    /* must parse after finding all objs, so we can flag indirect objects */
+    for (i=0;i<pdf.nobjs;i++) {
+	struct pdf_obj *obj = &pdf.objs[i];
+	pdf_parseobj(&pdf, obj);
+    }
 
     /* extract PDF objs */
     for (i=0;i<pdf.nobjs;i++) {
@@ -835,6 +948,14 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
 	    rc = CL_VIRUS;
 	}
+#if 1
+	if (pdf.flags &
+	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
+	    (1<<BAD_FLATE) | (1<<BAD_STREAMSTART)|(1<<BAD_ASCIIDECODE)|
+	    (1<<UNTERMINATED_OBJ_DICT) | (1<<UNKNOWN_FILTER))) {
+	    rc = CL_EUNPACK;
+	}
+#endif
     }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
@@ -1579,6 +1700,8 @@ pdf_nextobject(const char *ptr, size_t len)
 				len--;
 				break;
 			case '/':	/* Start of a name object */
+				return ptr;
+			case '(': /* start of JS */
 				return ptr;
 			default:
 				if(!inobject)
