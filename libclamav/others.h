@@ -76,7 +76,7 @@ extern uint8_t cli_debug_flag;
   ((bb_size) > 0 && (sb_size) >= 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
    && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) >= (bb) && (sb) < ((bb) + (bb_size)))
 
-#define CLI_MAX_ALLOCATION 184549376
+#define CLI_MAX_ALLOCATION (182*1024*1024)
 
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>	/* for NAME_MAX */
