@@ -69,6 +69,7 @@ enum pdf_flag {
     BAD_PDF_TOOMANYOBJS,
     BAD_STREAM_FILTERS,
     BAD_FLATE,
+    BAD_FLATESTART,
     BAD_STREAMSTART,
     BAD_ASCIIDECODE,
     BAD_INDOBJ,
@@ -77,7 +78,8 @@ enum pdf_flag {
     HEX_JAVASCRIPT,
     UNKNOWN_FILTER,
     HAS_OPENACTION,
-    BAD_STREAMLEN
+    BAD_STREAMLEN,
+    ENCRYPTED_PDF
 };
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -117,7 +119,8 @@ enum objflags {
     OBJ_FILTER_CRYPT,
     OBJ_JAVASCRIPT,
     OBJ_OPENACTION,
-    OBJ_HASFILTERS
+    OBJ_HASFILTERS,
+    OBJ_SIGNED
 };
 
 struct pdf_obj {
@@ -264,6 +267,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case BAD_FLATE:
 	    s = "bad deflate stream";
 	    break;
+	case BAD_FLATESTART:
+	    s = "bad deflate stream start";
+	    break;
 	case BAD_STREAMSTART:
 	    s = "bad stream start";
 	    break;
@@ -285,8 +291,11 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case BAD_STREAMLEN:
 	    s = "bad /Length, too small";
 	    break;
+	case ENCRYPTED_PDF:
+	    s = "PDF is encrypted";
+	    break;
     }
-    cli_dbgmsg("cli_pdf: %s in object %u %u\n", s, obj->id>>8, obj->id&0xff);
+    cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
 }
 
 static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
@@ -351,8 +360,18 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		else
 		    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
 			       (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
-		pdfobj_flag(pdf, obj, BAD_FLATE);
+		/* mark stream as bad only if not encrypted */
 		inflateEnd(&stream);
+		if (!nbytes) {
+		    cli_dbgmsg("cli_pdf: dumping raw stream (probably encrypted)\n");
+		    if (filter_writen(pdf, obj, fout, buf, len, sum) != len) {
+			cli_errmsg("cli_pdf: failed to write output file\n");
+			return CL_EWRITE;
+		    }
+		    pdfobj_flag(pdf, obj, BAD_FLATESTART);
+		} else {
+		    pdfobj_flag(pdf, obj, BAD_FLATE);
+		}
 		return CL_CLEAN;
 	}
 	break;
@@ -662,6 +681,8 @@ static struct pdfname_action pdfname_actions[] = {
     {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
     {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER},
     {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE},
+    {"Standard", OBJ_FILTER_CRYPT, STATE_FILTER, STATE_FILTER},
+    {"Sig",    OBJ_SIGNED, STATE_NONE, STATE_NONE},
     {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER},
     {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT},
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE},
@@ -686,6 +707,9 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
     }
     if (!act) {
 	if (*state == STATE_FILTER &&
+	    !(obj->flags & (1 << OBJ_SIGNED)) &&
+	    /* these are digital signature objects, filter doesn't matter,
+	     * we don't need them anyway */
 	    !(obj->flags & KNOWN_FILTERS)) {
 	    cli_dbgmsg("cli_pdf: unknown filter %s\n", pdfname);
 	    pdfobj_flag(pdf, obj, UNKNOWN_FILTER);
@@ -784,7 +808,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		escapes = 1;
 		continue;
 	    }
-	    if (*q == ' ' || *q == '\r' || *q == '\n' || *q == '/')
+	    if (*q == ' ' || *q == '\r' || *q == '\n' || *q == '/' || *q == '>' || *q == ']')
 		break;
 	    pdfname[i] = *q;
 	}
@@ -888,6 +912,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	pdf.flags |= 1 << BAD_PDF_TRAILER;
 	cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
     } else {
+	const char *t;
 	size = q - eofmap + map_off;
 	for (;q > eofmap;q--) {
 	    if (memcmp(q, "startxref", 9) == 0)
@@ -896,17 +921,28 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	if (q <= eofmap) {
 	    pdf.flags |= 1 << BAD_PDF_TRAILER;
 	    cli_dbgmsg("cli_pdf: startxref not found\n");
-	}
-	q += 9;
-	while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
-	xref = atol(q);
-	bytesleft = map->len - offset - xref;
-	if (bytesleft > 4096)
-	    bytesleft = 4096;
-	q = fmap_need_off_once(map, offset + xref, bytesleft);
-	if (!q || xrefCheck(q, q+bytesleft) == -1) {
-	    cli_dbgmsg("cli_pdf: did not find valid xref\n");
-	    pdf.flags |= 1 << BAD_PDF_TRAILER;
+	} else {
+	    for (t=q;t > eofmap; t--) {
+		if (memcmp(t,"trailer",7) == 0)
+		    break;
+	    }
+	    if (t > eofmap) {
+		if (cli_memstr(t, q-t, "/Encrypt", 8)) {
+		    pdf.flags |= 1 << ENCRYPTED_PDF;
+		    cli_dbgmsg("cli_pdf: encrypted pdf found, stream will probably fail to decompress!\n");
+		}
+	    }
+	    q += 9;
+	    while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
+	    xref = atol(q);
+	    bytesleft = map->len - offset - xref;
+	    if (bytesleft > 4096)
+		bytesleft = 4096;
+	    q = fmap_need_off_once(map, offset + xref, bytesleft);
+	    if (!q || xrefCheck(q, q+bytesleft) == -1) {
+		cli_dbgmsg("cli_pdf: did not find valid xref\n");
+		pdf.flags |= 1 << BAD_PDF_TRAILER;
+	    }
 	}
     }
     size -= offset;
@@ -940,6 +976,9 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	if (rc != CL_SUCCESS)
 	    break;
     }
+
+    if (pdf.flags & (1 << ENCRYPTED_PDF))
+	pdf.flags &= ~ (1 << BAD_FLATESTART);
 
     if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
