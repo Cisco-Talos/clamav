@@ -79,7 +79,8 @@ enum pdf_flag {
     UNKNOWN_FILTER,
     HAS_OPENACTION,
     BAD_STREAMLEN,
-    ENCRYPTED_PDF
+    ENCRYPTED_PDF,
+    LINEARIZED_PDF /* not bad, just as flag */
 };
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -117,6 +118,7 @@ enum objflags {
     OBJ_FILTER_DCT,
     OBJ_FILTER_JPX,
     OBJ_FILTER_CRYPT,
+    OBJ_FILTER_UNKNOWN,
     OBJ_JAVASCRIPT,
     OBJ_OPENACTION,
     OBJ_HASFILTERS,
@@ -659,6 +661,7 @@ enum objstate {
     STATE_FILTER,
     STATE_JAVASCRIPT,
     STATE_OPENACTION,
+    STATE_LINEARIZED,
     STATE_ANY /* for actions table below */
 };
 
@@ -682,7 +685,9 @@ static struct pdfname_action pdfname_actions[] = {
     {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER},
     {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE},
     {"Standard", OBJ_FILTER_CRYPT, STATE_FILTER, STATE_FILTER},
-    {"Sig",    OBJ_SIGNED, STATE_NONE, STATE_NONE},
+    {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE},
+    {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
+    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED},
     {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER},
     {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT},
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE},
@@ -712,7 +717,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 	     * we don't need them anyway */
 	    !(obj->flags & KNOWN_FILTERS)) {
 	    cli_dbgmsg("cli_pdf: unknown filter %s\n", pdfname);
-	    pdfobj_flag(pdf, obj, UNKNOWN_FILTER);
+	    obj->flags |= 1 << OBJ_FILTER_UNKNOWN;
 	}
 	return;
     }
@@ -815,6 +820,10 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	pdfname[i] = '\0';
 
 	handle_pdfname(pdf, obj, pdfname, escapes, &objstate);
+	if (objstate == STATE_LINEARIZED) {
+	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
+	    objstate = STATE_NONE;
+	}
 	if (objstate == STATE_JAVASCRIPT ||
 	    objstate == STATE_OPENACTION) {
 	    if (objstate == STATE_OPENACTION)
@@ -847,6 +856,10 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    objstate = STATE_NONE;
 	}
     }
+    if (obj->flags & ((1 << OBJ_SIGNED) | KNOWN_FILTERS))
+	obj->flags &= ~(1 << OBJ_FILTER_UNKNOWN);
+    if (obj->flags & (1 << OBJ_FILTER_UNKNOWN))
+	pdfobj_flag(pdf, obj, UNKNOWN_FILTER);
     cli_dbgmsg("cli_pdf: %u %u obj flags: %02x\n", obj->id>>8, obj->id&0xff, obj->flags);
 }
 
@@ -978,7 +991,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
 
     if (pdf.flags & (1 << ENCRYPTED_PDF))
-	pdf.flags &= ~ (1 << BAD_FLATESTART) | (1 << BAD_STREAMSTART);
+	pdf.flags &= ~ ((1 << BAD_FLATESTART) | (1 << BAD_STREAMSTART) |
+	    (1 << BAD_ASCIIDECODE));
 
     if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
@@ -988,6 +1002,9 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    rc = CL_VIRUS;
 	}
 #if 0
+	/* TODO: find both trailers, and /Encrypt settings */
+	if (pdf.flags & (1 << LINEARIZED_PDF))
+	    pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
 	if (pdf.flags &
 	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
 	    (1<<BAD_FLATE) | (1<<BAD_ASCIIDECODE)|
