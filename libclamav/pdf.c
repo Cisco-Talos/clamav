@@ -523,8 +523,11 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    size_t size = p_endstream - p_stream;
 	    off_t orig_length;
 
-	    orig_length = length = find_length(pdf, obj, start, p_stream);
-	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && !length) {
+	    length = find_length(pdf, obj, start, p_stream);
+	    if (length < 0)
+		length = 0;
+	    orig_length = length;
+	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && length <= 0) {
 		const char *q = start + p_endstream;
 		length = size;
 		q--;
@@ -536,6 +539,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		} else if (*q == '\r') {
 		    length--;
 		}
+		if (length < 0)
+		    length = 0;
 		cli_dbgmsg("cli_pdf: calculated length %ld\n", length);
 	    } else {
 		if (size > length+2) {
