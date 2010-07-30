@@ -222,6 +222,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	    return 1; /* obj found and offset positioned */
 	} else {
 	    q2++;
+	    bytesleft--;
 	}
 	q = q2;
     }
@@ -295,6 +296,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	    break;
 	case ENCRYPTED_PDF:
 	    s = "PDF is encrypted";
+	    break;
+	case LINEARIZED_PDF:
+	    s = "linearized PDF";
 	    break;
     }
     cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
@@ -587,6 +591,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    flate_in = ascii_decoded ? ascii_decoded : start+p_stream;
 
 	    if (obj->flags & (1 << OBJ_FILTER_FLATE)) {
+		cli_dbgmsg("cli_pdf: deflate len %d (orig %d)\n", ascii_decoded_size, orig_length);
 		rc = filter_flatedecode(pdf, obj, flate_in, ascii_decoded_size, fout, &sum);
 	    } else {
 		if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
@@ -1630,12 +1635,13 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 static int asciihexdecode(const char *buf, off_t len, char *output)
 {
     unsigned i,j;
-    for (i=0,j=0;i<len;i++) {
+    for (i=0,j=0;i+1<len;i++) {
 	if (buf[i] == ' ')
 	    continue;
 	if (buf[i] == '>')
 	    break;
-	cli_hex2str_to(buf+i, output+j++, 2);
+	if (cli_hex2str_to(buf+i, output+j++, 2) == -1)
+	    j--;
 	i++;
     }
     return j;
