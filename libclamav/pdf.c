@@ -77,6 +77,7 @@ enum pdf_flag {
     ESCAPED_COMMON_PDFNAME,
     HEX_JAVASCRIPT,
     UNKNOWN_FILTER,
+    MANY_FILTERS,
     HAS_OPENACTION,
     BAD_STREAMLEN,
     ENCRYPTED_PDF,
@@ -122,7 +123,9 @@ enum objflags {
     OBJ_JAVASCRIPT,
     OBJ_OPENACTION,
     OBJ_HASFILTERS,
-    OBJ_SIGNED
+    OBJ_SIGNED,
+    OBJ_IMAGE,
+    OBJ_TRUNCATED
 };
 
 struct pdf_obj {
@@ -166,7 +169,7 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
 	q = q2;
 	q2 = cli_memstr(q, bytesleft2, "endstream", 9);
 	if (!q2)
-	    return 0;/* no more objs */
+	    q2 = q + bytesleft2-9; /* till EOF */
 	*endstream = q2 - start;
 	return 1;
     }
@@ -210,12 +213,17 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	off_t p_stream, p_endstream;
 	q2 = pdf_nextobject(q, bytesleft);
 	if (!q2)
-	    return 0;/* no more objs */
+	    q2 = pdf->map + pdf->size;
 	bytesleft -= q2 - q;
 	if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream)) {
 	    obj->flags |= 1 << OBJ_STREAM;
-	    q2 = q-1 + p_endstream + 6;
+	    q2 = q-1 + p_endstream + 9;
 	    bytesleft -= q2 - q + 1;
+	    if (bytesleft < 0) {
+		obj->flags |= 1 << OBJ_TRUNCATED;
+		pdf->offset = pdf->size;
+		return 1;/* truncated */
+	    }
 	} else if ((q3 = cli_memstr(q-1, q2-q+1, "endobj", 6))) {
 	    q2 = q3 + 6;
 	    pdf->offset = q2 - pdf->map;
@@ -226,7 +234,9 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	}
 	q = q2;
     }
-    return 0;/* no more objs */
+    obj->flags |= 1 << OBJ_TRUNCATED;
+    pdf->offset = pdf->size;
+    return 1;/* truncated */
 }
 
 static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj,
@@ -299,6 +309,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	    break;
 	case LINEARIZED_PDF:
 	    s = "linearized PDF";
+	    break;
+	case MANY_FILTERS:
+	    s = "more than 2 filters per obj";
 	    break;
     }
     cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
@@ -497,12 +510,19 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     int rc = CL_SUCCESS;
     char *ascii_decoded = NULL;
 
+    /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) ||
 	(obj->flags & (1 << OBJ_HASFILTERS)))
 	&& !(obj->flags & DUMP_MASK)) {
 	/* don't dump all streams */
 	return CL_CLEAN;
     }
+#if 1
+    if (obj->flags & (1 << OBJ_IMAGE)) {
+	/* don't dump / scan images */
+	return CL_CLEAN;
+    }
+#endif
     snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u", pdf->dir, pdf->files++);
     fout = open(fullname,O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
     if (fout < 0) {
@@ -531,6 +551,11 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (length < 0)
 		length = 0;
 	    orig_length = length;
+	    if (length > pdf->size || obj->start + p_stream + length > pdf->size) {
+		cli_dbgmsg("cli_pdf: length out of file: %ld + %ld > %ld\n",
+			   p_stream, length, pdf->size);
+		length = pdf->size - (obj->start + p_stream);
+	    }
 	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && length <= 0) {
 		const char *q = start + p_endstream;
 		length = size;
@@ -553,8 +578,11 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		    length = size;
 		}
 	    }
-	    if (orig_length && size > orig_length + 20)
+	    if (orig_length && size > orig_length + 20) {
+		cli_dbgmsg("cli_pdf: orig length: %ld, length: %ld, size: %ld\n",
+			   orig_length, length, size);
 		pdfobj_flag(pdf, obj, BAD_STREAMLEN);
+	    }
 	    if (!length)
 		length = size;
 
@@ -580,10 +608,14 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 						   (unsigned char*)ascii_decoded);
 	    }
 	    if (ascii_decoded_size < 0) {
-		pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
+		/* don't flag for images or truncated objs*/
+		if (!(obj->flags &
+		      ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
+		    pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 		cli_dbgmsg("cli_pdf: failed to asciidecode in %u %u obj\n", obj->id>>8,obj->id&0xff);
-		rc = CL_CLEAN;
-		break;
+		free(ascii_decoded);
+		ascii_decoded = NULL;
+		/* attempt to directly flatedecode it */
 	    }
 	    /* either direct or ascii-decoded input */
 	    if (!ascii_decoded)
@@ -591,7 +623,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    flate_in = ascii_decoded ? ascii_decoded : start+p_stream;
 
 	    if (obj->flags & (1 << OBJ_FILTER_FLATE)) {
-		cli_dbgmsg("cli_pdf: deflate len %d (orig %d)\n", ascii_decoded_size, orig_length);
+		cli_dbgmsg("cli_pdf: deflate len %ld (orig %ld)\n", ascii_decoded_size, (long)orig_length);
 		rc = filter_flatedecode(pdf, obj, flate_in, ascii_decoded_size, fout, &sum);
 	    } else {
 		if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
@@ -686,10 +718,11 @@ static struct pdfname_action pdfname_actions[] = {
     {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER},
     {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER},
     {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER},
-    {"AHx", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER},
+    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER},
     {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE},
     {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER},
     {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER},
+    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE},
     {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER},
     {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER},
     {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER},
@@ -704,6 +737,7 @@ static struct pdfname_action pdfname_actions[] = {
     {"Standard", OBJ_FILTER_CRYPT, STATE_FILTER, STATE_FILTER},
     {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE},
     {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
+    {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
     {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED},
     {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER},
     {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT},
@@ -751,6 +785,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 	if (*state == STATE_FILTER &&
 	    act->set_objflag !=OBJ_DICT &&
 	    (obj->flags & (1 << act->set_objflag))) {
+	    cli_dbgmsg("cli_pdf: duplicate stream filter %s\n", pdfname);
 	    pdfobj_flag(pdf, obj, BAD_STREAM_FILTERS);
 	}
 	obj->flags |= 1 << act->set_objflag;
@@ -774,8 +809,8 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     const char *q = obj->start + pdf->map;
     const char *dict, *start;
     off_t dict_length;
-    off_t bytesleft = pdf->offset - obj->start;
-    unsigned i;
+    off_t bytesleft = obj_size(pdf, obj, 1);
+    unsigned i, filters=0;
     enum objstate objstate = STATE_NONE;
 
     if (bytesleft < 0)
@@ -795,7 +830,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     } while (!q3 || q3[1] != '<');
     dict = q3+2;
     q = dict;
-    bytesleft = pdf->offset - obj->start - (q3 - start);
+    bytesleft = obj_size(pdf, obj, 1) - (q3 - start);
     /* find end of dictionary */
     do {
 	q2 = pdf_nextobject(q, bytesleft);
@@ -830,7 +865,8 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		escapes = 1;
 		continue;
 	    }
-	    if (*q == ' ' || *q == '\r' || *q == '\n' || *q == '/' || *q == '>' || *q == ']')
+	    if (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n' ||
+		*q == '/' || *q == '>' || *q == ']')
 		break;
 	    pdfname[i] = *q;
 	}
@@ -872,6 +908,18 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    }
 	    objstate = STATE_NONE;
 	}
+    }
+    for (i=0;i<sizeof(pdfname_actions)/sizeof(pdfname_actions[0]);i++) {
+	const struct pdfname_action *act = &pdfname_actions[i];
+	if ((obj->flags & (1 << act->set_objflag)) &&
+	    act->from_state == STATE_FILTER &&
+	    act->to_state == STATE_FILTER &&
+	    act->set_objflag != OBJ_FILTER_CRYPT) {
+	    filters++;
+	}
+    }
+    if (filters > 2) { /* more than 2 non-crypt filters */
+	pdfobj_flag(pdf, obj, MANY_FILTERS);
     }
     if (obj->flags & ((1 << OBJ_SIGNED) | KNOWN_FILTERS))
 	obj->flags &= ~(1 << OBJ_FILTER_UNKNOWN);
@@ -1013,14 +1061,11 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     if (pdf.flags) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
-	if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
-	    /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
-	    rc = CL_VIRUS;
-	}
 #if 0
 	/* TODO: find both trailers, and /Encrypt settings */
 	if (pdf.flags & (1 << LINEARIZED_PDF))
+	    pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
+	if (pdf.flags & (1 << MANY_FILTERS))
 	    pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
 	if (pdf.flags &
 	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
@@ -1029,6 +1074,11 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    rc = CL_EUNPACK;
 	}
 #endif
+	if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
+	    /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
+	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
+	    rc = CL_VIRUS;
+	}
     }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
@@ -1640,8 +1690,11 @@ static int asciihexdecode(const char *buf, off_t len, char *output)
 	    continue;
 	if (buf[i] == '>')
 	    break;
-	if (cli_hex2str_to(buf+i, output+j++, 2) == -1)
-	    j--;
+	if (cli_hex2str_to(buf+i, output+j++, 2) == -1) {
+	    if (len - i < 4)
+		continue;
+	    return -1;
+	}
 	i++;
     }
     return j;
