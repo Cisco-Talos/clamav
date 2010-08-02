@@ -2400,11 +2400,15 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
     return 0;
 }
 
-int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned bc_idx, const char **virname, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map)
+int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
+			 const struct cli_all_bc *bcs, unsigned bc_idx,
+			 const char **virname, const uint32_t* lsigcnt,
+			 const uint32_t *lsigsuboff, fmap_t *map)
 {
     int ret;
     struct cli_bc_ctx ctx;
     const struct cli_bc *bc = &bcs->all_bcs[bc_idx-1];
+    struct cli_pe_hook_data pehookdata;
 
     if (bc->hook_lsig_id) {
 	cli_dbgmsg("hook lsig id %d matched (bc %d)\n", bc->hook_lsig_id, bc->id);
@@ -2420,6 +2424,16 @@ int cli_bytecode_runlsig(cli_ctx *cctx, const struct cli_all_bc *bcs, unsigned b
     ctx.hooks.match_offsets = lsigsuboff;
     cli_bytecode_context_setctx(&ctx, cctx);
     cli_bytecode_context_setfile(&ctx, map);
+    if (tinfo && tinfo->status == 1) {
+	ctx.sections = tinfo->exeinfo.section;
+	memset(&pehookdata, 0, sizeof(pehookdata));
+	pehookdata.offset = tinfo->exeinfo.offset;
+	pehookdata.ep = tinfo->exeinfo.ep;
+	pehookdata.nsections = tinfo->exeinfo.nsections;
+	pehookdata.hdr_size = tinfo->exeinfo.hdr_size;
+	ctx.hooks.pedata = &pehookdata;
+	ctx.resaddr = tinfo->exeinfo.res_addr;
+    }
 
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);

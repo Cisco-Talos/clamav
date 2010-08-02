@@ -165,6 +165,7 @@ struct cli_bc_ctx {
     unsigned pdf_phase;
     int32_t pdf_dumpedid;
     const struct cli_exe_section *sections;
+    uint32_t resaddr;
     char *tempfile;
     void *ctx;
     unsigned written;
