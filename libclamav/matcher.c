@@ -470,7 +470,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
 	info.res_addr = 0;
     else
 	info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
-    info.section = ctx->sections;
+    info.section = (struct cli_exe_section*)ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size = ctx->hooks.pedata->hdr_size;
     return matchicon(ctx->ctx, &info, group1, group2);

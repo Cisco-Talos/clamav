@@ -29,12 +29,12 @@
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafhegnjaeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcdcmbgfcchc`cdf`cafgc``bkbaap`clamcoincidencejb:1378\n"
+static const char* builtin_bc_startup = "ClamBCafhabenfeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcgcmbgfcfefdcecdcccbc``bkbaap`clamcoincidencejb:1378\n"
 "\n"
 "Teddaaahdabahdacahdadahdaeahdafahdagahebjfebidebifebhfebgfebffebedebefebdfebcfebadcbgab`bb`bb`bb`bb`bb`bb`bbbfbbfbbfbbfbbfbbfbbfahahahahahahahahahebgeebbfaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bbheb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
 "Ebjdaibcdbke|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbke|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agble|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcable|afdgefcgdgbc``afbme|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbne|b`agfefdgoeefnffgifbgofnfmfefnfdg``aaboe|afdgefcgdgac``bidb`f|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdb`f|aodfifcgafbflfefoejfifdgoeifff``\n"
 "G`bha`@`b`aAa`bjfBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`bifBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bhfBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bgfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bffBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`befBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`bdfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`bcfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`\n"
-"A`b`bLbbhb`bab`b`bgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`b`b`Fbakbjb\n"
+"A`b`bLbahb`bab`babgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`Fb`kbib\n"
 "Bb`bacabbbhdabClnadbadaddbbheabBdadahaegbadaaafeaahae@aTaaafb`aaa\n"
 "BbadagdbbheabB`adahahgbagaaaieaahahAaaTaaaiabae\n"
 "BbieajdbbheabAidbadakdbbieaj@db`balkbakAn`Addaaameab`bal@db`b`bbAadaaTaaamadac\n"
@@ -60,11 +60,11 @@ static const char* builtin_bc_startup = "ClamBCafhegnjaeld|afefdfggifnf```aa```|
 "Bb`bbdcabbafBfa`@dTbabha\n"
 "Bb`bbecabbafBga`@dTbabha\n"
 "Bahbfcgbadaabgceaahbfc@aTaabgcbjabia\n"
-"BbcdbhcdbbheabAddb`bbicgbbhcaabjceab`bbic@db`b`bbEamjnmd`Taabjcbibbja\n"
-"BbcdbkcdbbheabAfdb`bblcgbbkcbcdbmcdbbheabAedb`bbncgbbmcaabociab`bblcbncb`b`bbEbmjnmd`Taabocbibbka\n"
-"Bb`bb`dab`bbdaabadeab`bbncb`db`b`bbEcmjnmd`Taabadblabib\n"
-"Bb`bbbdgbbkcb`bbcdab`bcdaabddeab`bbbdbcdb`b`bbEdmjnmd`Taabddbmabib\n"
-"BbadbeddbbheabAndahbfdgbbedb`bbgd`abfdaabhdlbb`bbid`abhdaabjdeab`bbgdbidb`b`bbEemjnmd`Taabjdbnabib\n"
+"BbcdbhcdbbheabAddb`bbicgbbhcaabjceab`bbic@db`b`bbEamjnmd`Taabjcbhbbja\n"
+"BbcdbkcdbbheabAfdb`bblcgbbkcbcdbmcdbbheabAedb`bbncgbbmcaabociab`bblcbncb`b`bbEbmjnmd`Taabocbhbbka\n"
+"Bb`bb`dab`bbdaabadeab`bbncb`db`b`bbEcmjnmd`Taabadblabhb\n"
+"Bb`bbbdgbbkcb`bbcdab`bcdaabddeab`bbbdbcdb`b`bbEdmjnmd`Taabddbmabhb\n"
+"BbadbeddbbheabAndahbfdgbbedb`bbgd`abfdaabhdlbb`bbid`abhdaabjdeab`bbgdbidb`b`bbEemjnmd`Taabjdbnabhb\n"
 "BbadbkddbbheabBaadahbldgbbkdb`bbmd`abldb`bbndh`bmdBhadbadboddbbheabB`adahb`egbbodb`bbae`ab`eb`bbbeh`baeBdadbadbcedbbheabBcadahbdegbbceb`bbee`abdeb`bbfeh`beeB`adb`bbgegbbmcb`bbheh`bgeAhdb`bbiegbbkcb`bbjel`bbebndb`bbkel`bjebheb`bblel`bkebieb`bbmel`blebfeb`bbneh`bgdBladbadboedbbheabAodahb`fgbboeb`bbaf`ab`fb`bbbfh`bafBhadbcdbcfdbbheabAddb`bbdfgbbcfb`bbefl`bdfbneb`bbffl`befbbfbadbgfdbbheabBeadahbhfgbbgfb`bbif`abhfb`bbjfh`bifBhadbcdbkfdbbheabAcdb`bblfgbbkfb`bbmfl`bjfblfbcdbnfdbbheab@db`bbofgbbnfaab`geab`bbmebofTaab`gb`bboa\n"
 "Bb`bbagabaagbmeTcab`bEfmjnmd\n"
 "BbcdbbgdbbheabAadb`bbcggbbbgaabdgeab`bbffbcgTaabdgbbbbab\n"
@@ -73,10 +73,9 @@ static const char* builtin_bc_startup = "ClamBCafhegnjaeld|afefdfggifnf```aa```|
 "Bb`bbigabaagbmfTcab`bEhmjnmd\n"
 "Bb`bbjgabbaaHonnkm``odHm``oonnkdaabkgeab`bbjgHhgfedcbadTaabkgbfbbeb\n"
 "Bb`bblgabaagbjgTcab`bEimjnmd\n"
-"Bb`bbmgababcaDm``odaabngeab`bbmgDo``mdTaabngbhbbgb\n"
+"Bb`bbmgababcaDm``odaabngeab`bbmgDo``mdb`b`bbHnejkjgjmd`Taabngbhbbgb\n"
 "Bb`bbogabaagbmgTcab`bF`amjnmd\n"
-"Bb`bb`hoabhdFaamjnmdHnejkjgjmdTcab`bb`h\n"
-"Bb`bbahbb`bahTcab`bbahE\n"
+"Bb`bb`hbb`b`hTcab`bb`hE\n"
 ;
 /* source-code for builtin_bc_startup: */
 #if 0
@@ -189,27 +188,6 @@ int entrypoint()
     debug_print_uint(c);
     return 0xdead10;
   }
-
-  /* check endianness and bswap */
-  char buf[16] = {
-    0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-  };
-  char buf2[16];
-  uint32_t x;
-  memset(&buf2, 0, sizeof(buf2));
-  if (cli_readint16(&buf) != 0x100)
-    return 0xdead11;
-  x = cli_readint32(&buf);
-  if (x != 0x03020100)
-    return 0xdead12;
-  x = __builtin_bswap32(x);
-  if (x != 0x00010203)
-    return 0xdead13;
-  cli_writeint32(&buf2, 0x12345678);
-  if (cli_readint32(&buf2) != 0x12345678)
-    return 0xdead14;
-  if (buf2[0] != 0x78)
-    return 0xdead15;
 
   /* magic number to tell libclamav that selftest succeeded */
   return 0xda7aba5e;
