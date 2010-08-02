@@ -215,7 +215,6 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 {
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
     cli_bytecode_context_reset(ctx);
     memset(ctx, 0, sizeof(*ctx));
     return CL_SUCCESS;
@@ -1736,7 +1735,7 @@ static int calc_gepz(struct cli_bc *bc, struct cli_bc_func *func, uint16_t tid, 
 
 static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 {
-    unsigned i, j, k, rc;
+    unsigned i, j, k;
     uint64_t *gmap;
     unsigned bcglobalid = cli_apicall_maxglobal - _FIRST_GLOBAL+2;
     bc->numGlobalBytes = 0;
@@ -2249,7 +2248,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
 int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
 {
     unsigned i, interp = 0, jitok = 0, jitcount=0;
-    int rc1, rc2, rc;
+    int rc;
     struct cli_bc_ctx *ctx;
 
     cli_detect_environment(&bcs->env);

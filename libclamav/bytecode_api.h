@@ -51,6 +51,8 @@ enum BytecodeKind {
     BC_LOGICAL=256,
     /** a PE unpacker */
     BC_PE_UNPACKER,
+    /* PDF hook */
+    BC_PDF,
     _BC_LAST_HOOK
 };
 
@@ -59,7 +61,63 @@ static const unsigned  PE_INVALID_RVA = 0xFFFFFFFF ;
 /** LibClamAV functionality level constants */
 enum FunctionalityLevels {
     FUNC_LEVEL_096 = 51,
-    FUNC_LEVEL_096_dev
+    FUNC_LEVEL_096_dev,
+    FUNC_LEVEL_096_1,
+    FUNC_LEVEL_096_1_dev,
+    FUNC_LEVEL_096_2
+};
+
+enum pdf_phase {
+    PDF_PHASE_NONE /* not a PDF */,
+    PDF_PHASE_PARSED, /* after parsing a PDF, object flags can be set etc. */
+    PDF_PHASE_POSTDUMP, /* after an obj was dumped and scanned */
+    PDF_PHASE_END /* after the pdf scan finished */
+};
+
+enum pdf_flag {
+    BAD_PDF_VERSION=0,
+    BAD_PDF_HEADERPOS,
+    BAD_PDF_TRAILER,
+    BAD_PDF_TOOMANYOBJS,
+    BAD_STREAM_FILTERS,
+    BAD_FLATE,
+    BAD_FLATESTART,
+    BAD_STREAMSTART,
+    BAD_ASCIIDECODE,
+    BAD_INDOBJ,
+    UNTERMINATED_OBJ_DICT,
+    ESCAPED_COMMON_PDFNAME,
+    HEX_JAVASCRIPT,
+    UNKNOWN_FILTER,
+    MANY_FILTERS,
+    HAS_OPENACTION,
+    BAD_STREAMLEN,
+    ENCRYPTED_PDF,
+    LINEARIZED_PDF /* not bad, just as flag */
+};
+
+enum pdf_objflags {
+    OBJ_STREAM=0,
+    OBJ_DICT,
+    OBJ_EMBEDDED_FILE,
+    OBJ_FILTER_AH,
+    OBJ_FILTER_A85,
+    OBJ_FILTER_FLATE,
+    OBJ_FILTER_LZW,
+    OBJ_FILTER_RL,
+    OBJ_FILTER_FAX,
+    OBJ_FILTER_JBIG2,
+    OBJ_FILTER_DCT,
+    OBJ_FILTER_JPX,
+    OBJ_FILTER_CRYPT,
+    OBJ_FILTER_UNKNOWN,
+    OBJ_JAVASCRIPT,
+    OBJ_OPENACTION,
+    OBJ_HASFILTERS,
+    OBJ_SIGNED,
+    OBJ_IMAGE,
+    OBJ_TRUNCATED,
+    OBJ_FORCEDUMP
 };
 
 #ifdef __CLAMBC__
@@ -697,7 +755,80 @@ int32_t version_compare(const uint8_t* lhs, uint32_t lhs_len,
             1 - match */
 uint32_t check_platform(uint32_t a, uint32_t b, uint32_t c);
 
+/** Return number of pdf objects 
+ * @return -1 - if not called from PDF hook
+          >=0 - number of PDF objects
+*/
+int32_t pdf_get_obj_num(void);
 
+/** Return the flags for the entire PDF (as set so far).
+  * @return -1 - if not called from PDF hook
+           >=0 - pdf flags */
+int32_t pdf_get_flags(void);
+
+/** Sets the flags for the entire PDF.
+  * It is recommended that you retrieve old flags, and just add new ones.
+  * @param flags - flags to set */
+int32_t pdf_set_flags(int32_t flags);
+
+/** Lookup pdf object with specified id.
+  * @param id - pdf id (objnumber << 8 | generationid)
+    @return -1 - if object id doesn't exist
+           >=0 - object index
+  */
+int32_t pdf_lookupobj(uint32_t id);
+
+/** Return the size of the specified PDF obj.
+  * @param objnum - object index (from 0), not object id!
+  * @return 0 - if not called from PDF hook, or invalid objnum
+          >=0 - size of object */
+uint32_t pdf_getobjsize(int32_t objidx);
+
+/** Return the undecoded object.
+  Meant only for reading, write modifies the fmap buffer, so avoid!
+  @param objidx - object index (from 0), not object id!
+  @param amount - size returned by pdf_getobjsize (or smaller)
+  @return NULL - invalid objidx/amount
+          pointer - pointer to original object */
+uint8_t *pdf_getobj(int32_t objidx, uint32_t amount);
+
+/* Return the object id for the specified object index.
+   @param objidx - object index (from 0)
+   @return -1 - object index invalid
+          >=0 - object id (obj id << 8 | generation id)
+*/
+int32_t pdf_getobjid(int32_t objidx);
+
+/* Return the object flags for the specified object index.
+   @param objidx - object index (from 0)
+   @return -1 - object index invalid
+          >=0 - object flags
+*/
+int32_t pdf_getobjflags(int32_t objidx);
+
+/* Sets the object flags for the specified object index.
+   This can be used to force dumping of a certain obj, by setting the
+   OBJ_FORCEDUMP flag for example.
+   @param objidx - object index (from 0)
+   @return -1 - object index invalid
+          >=0 - flags set
+*/
+int32_t pdf_setobjflags(int32_t objidx, int32_t flags);
+
+/* Return the object's offset in the PDF.
+   @param objidx - object index (from 0)
+   @return -1 - object index invalid
+          >=0 - offset
+*/
+int32_t pdf_get_offset(int32_t objidx);
+
+/** Return an 'enum pdf_phase'.
+  * Identifies at which phase this bytecode was called */
+int32_t pdf_get_phase(void);
+
+/** Return the currently dumped obj id.
+  Valid only in PDF_PHASE_POSTDUMP */
+int32_t pdf_get_dumpedobjid(void);
 /* ---------------- END 0.96.2 APIs   ----------------------------------- */
 #endif
 #endif

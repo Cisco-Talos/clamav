@@ -42,6 +42,7 @@
 #include "bytecode_api_impl.h"
 #include "others.h"
 #include "pe.h"
+#include "pdf.h"
 #include "disasm.h"
 #include "scanners.h"
 #include "jsparse/js-norm.h"
@@ -989,7 +990,7 @@ int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
     const uint8_t *s;
     if (!h || !n || hs < 0 || ns < 0)
 	return -1;
-    s = cli_memstr(h, hs, n, ns);
+    s = (const uint8_t*) cli_memstr((const char*)h, hs, (const char*)n, ns);
     if (!s)
 	return -1;
     return s - h;
@@ -997,12 +998,12 @@ int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
 
 int32_t cli_bcapi_hex2ui(struct cli_bc_ctx *ctx, uint32_t ah, uint32_t bh)
 {
-    uint8_t result = 0;
+    char result = 0;
     unsigned char in[2];
     in[0] = ah;
     in[1] = bh;
 
-    if (cli_hex2str_to(in, &result, 2) == -1)
+    if (cli_hex2str_to((const char*)in, &result, 2) == -1)
 	return -1;
     return result;
 }
@@ -1262,7 +1263,6 @@ uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason,
 int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, uint32_t lhs_len, 
 				  const uint8_t* rhs, uint32_t rhs_len)
 {
-    char *endl, *endr;
     unsigned i = 0, j = 0;
     unsigned long li=0, ri=0;
     do {
@@ -1322,3 +1322,121 @@ uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t a, uint32_t 
     return ret;
 }
 
+int cli_bytecode_context_setpdf(struct cli_bc_ctx *ctx, unsigned phase,
+				unsigned nobjs,
+				struct pdf_obj *objs, uint32_t *pdf_flags,
+				uint32_t pdfsize, uint32_t pdfstartoff)
+{
+    ctx->pdf_nobjs = nobjs;
+    ctx->pdf_objs = objs;
+    ctx->pdf_flags = pdf_flags;
+    ctx->pdf_size = pdfsize;
+    ctx->pdf_startoff = pdfstartoff;
+    ctx->pdf_phase = phase;
+    return 0;
+}
+
+int32_t cli_bcapi_pdf_get_obj_num(struct cli_bc_ctx *ctx)
+{
+    if (!ctx->pdf_phase)
+	return -1;
+    return ctx->pdf_nobjs;
+}
+
+int32_t cli_bcapi_pdf_get_flags(struct cli_bc_ctx *ctx)
+{
+    if (!ctx->pdf_phase)
+	return -1;
+    return *ctx->pdf_flags;
+}
+
+int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx , int32_t flags)
+{
+    if (!ctx->pdf_phase)
+	return -1;
+    cli_dbgmsg("cli_pdf: bytecode set_flags %08x -> %08x\n",
+	       *ctx->pdf_flags,
+	       flags);
+    *ctx->pdf_flags = flags;
+    return 0;
+}
+
+int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t objid)
+{
+    unsigned i;
+    if (!ctx->pdf_phase)
+	return -1;
+    for (i=0;i<ctx->pdf_nobjs;i++) {
+	if (ctx->pdf_objs[i].id == objid)
+	    return i;
+    }
+    return -1;
+}
+
+uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t objidx)
+{
+    if (!ctx->pdf_phase ||
+	objidx >= ctx->pdf_nobjs ||
+	ctx->pdf_phase == PDF_PHASE_POSTDUMP /* map is obj itself, no access to pdf anymore */
+       )
+	return 0;
+    if (objidx + 1 == ctx->pdf_nobjs)
+	return ctx->pdf_size - ctx->pdf_objs[objidx].start;
+    return ctx->pdf_objs[objidx+1].start - ctx->pdf_objs[objidx].start - 4;
+}
+
+uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uint32_t amount)
+{
+    uint32_t size = cli_bcapi_pdf_getobjsize(ctx, objidx);
+    if (amount > size)
+	return NULL;
+    return fmap_need_off(ctx->fmap, ctx->pdf_objs[objidx].start, amount);
+}
+
+int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
+{
+    if (!ctx->pdf_phase ||
+	objidx >= ctx->pdf_nobjs)
+	return -1;
+    return ctx->pdf_objs[objidx].id;
+}
+
+int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
+{
+    if (!ctx->pdf_phase ||
+	objidx >= ctx->pdf_nobjs)
+	return -1;
+    return ctx->pdf_objs[objidx].flags;
+}
+
+int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32_t flags)
+{
+    if (!ctx->pdf_phase ||
+	objidx >= ctx->pdf_nobjs)
+	return -1;
+    cli_dbgmsg("cli_pdf: bytecode setobjflags %08x -> %08x\n",
+	       ctx->pdf_objs[objidx].flags,
+	       flags);
+    ctx->pdf_objs[objidx].flags = flags;
+    return 0;
+}
+
+int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t objidx)
+{
+    if (!ctx->pdf_phase ||
+	objidx >= ctx->pdf_nobjs)
+	return -1;
+    return ctx->pdf_startoff + ctx->pdf_objs[objidx].start;
+}
+
+int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx)
+{
+    return ctx->pdf_phase;
+}
+
+int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx)
+{
+    if (ctx->pdf_phase != PDF_PHASE_POSTDUMP)
+	return -1;
+    return ctx->pdf_dumpedid;
+}

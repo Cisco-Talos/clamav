@@ -2265,6 +2265,7 @@ int cli_scanpe(cli_ctx *ctx)
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
     switch (ret) {
 	case CL_VIRUS:
+	    cli_bytecode_context_destroy(bc_ctx);
 	    return CL_VIRUS;
 	case CL_SUCCESS:
 	    ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);

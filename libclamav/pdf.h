@@ -21,6 +21,11 @@
 #define __PDF_H
 
 #include "others.h"
+struct pdf_obj {
+    uint32_t start;
+    uint32_t id;
+    uint32_t flags;
+};
 
 int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
 

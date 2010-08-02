@@ -107,5 +107,17 @@ uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t*, u
 uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
 int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t, const uint8_t*, uint32_t);
 uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t, uint32_t, uint32_t);
+int32_t cli_bcapi_pdf_get_obj_num(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_get_flags(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t);
+uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t);
+uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t, int32_t);
+int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
 
 #endif

@@ -109,6 +109,18 @@ uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t*, u
 uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t*, uint32_t, uint32_t);
 int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t, const uint8_t*, uint32_t);
 uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t, uint32_t, uint32_t);
+int32_t cli_bcapi_pdf_get_obj_num(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_get_flags(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t);
+uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t);
+uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t, uint32_t);
+int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t, int32_t);
+int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -133,17 +145,17 @@ static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16
 static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
-static uint16_t cli_tmp8[]={32, 32, 32, 32};
-static uint16_t cli_tmp9[]={32, 65, 32, 65, 32};
-static uint16_t cli_tmp10[]={32, 65, 32, 32};
-static uint16_t cli_tmp11[]={32, 81, 32};
-static uint16_t cli_tmp12[]={82};
-static uint16_t cli_tmp13[]={32, 32, 32, 32, 32, 32, 32, 83, 83, 83, 83, 83, 83, 83, 8, 8, 8, 8, 8, 8, 8, 8, 8};
-static uint16_t cli_tmp14[]={8};
-static uint16_t cli_tmp15[]={32, 32};
-static uint16_t cli_tmp16[]={32};
-static uint16_t cli_tmp17[]={65, 32, 32};
-static uint16_t cli_tmp18[]={32, 32, 32};
+static uint16_t cli_tmp8[]={32};
+static uint16_t cli_tmp9[]={32, 32};
+static uint16_t cli_tmp10[]={32, 32, 32};
+static uint16_t cli_tmp11[]={65, 32, 32};
+static uint16_t cli_tmp12[]={32, 32, 32, 32};
+static uint16_t cli_tmp13[]={32, 65, 32, 65, 32};
+static uint16_t cli_tmp14[]={32, 65, 32, 32};
+static uint16_t cli_tmp15[]={32, 85, 32};
+static uint16_t cli_tmp16[]={86};
+static uint16_t cli_tmp17[]={32, 32, 32, 32, 32, 32, 32, 87, 87, 87, 87, 87, 87, 87, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+static uint16_t cli_tmp18[]={8};
 static uint16_t cli_tmp19[]={32, 65, 32};
 static uint16_t cli_tmp20[]={32, 65, 32, 32, 32, 32};
 static uint16_t cli_tmp21[]={32, 91, 32};
@@ -166,17 +178,17 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp5, 8, 0, 0},
 	{DArrayType, cli_tmp6, 1, 0, 0},
 	{DArrayType, cli_tmp7, 64, 0, 0},
-	{DFunctionType, cli_tmp8, 4, 0, 0},
-	{DFunctionType, cli_tmp9, 5, 0, 0},
-	{DFunctionType, cli_tmp10, 4, 0, 0},
+	{DFunctionType, cli_tmp8, 1, 0, 0},
+	{DFunctionType, cli_tmp9, 2, 0, 0},
+	{DFunctionType, cli_tmp10, 3, 0, 0},
 	{DFunctionType, cli_tmp11, 3, 0, 0},
-	{DPointerType, cli_tmp12, 1, 0, 0},
-	{DStructType, cli_tmp13, 23, 0, 0},
-	{DArrayType, cli_tmp14, 65, 0, 0},
-	{DFunctionType, cli_tmp15, 2, 0, 0},
-	{DFunctionType, cli_tmp16, 1, 0, 0},
-	{DFunctionType, cli_tmp17, 3, 0, 0},
-	{DFunctionType, cli_tmp18, 3, 0, 0},
+	{DFunctionType, cli_tmp12, 4, 0, 0},
+	{DFunctionType, cli_tmp13, 5, 0, 0},
+	{DFunctionType, cli_tmp14, 4, 0, 0},
+	{DFunctionType, cli_tmp15, 3, 0, 0},
+	{DPointerType, cli_tmp16, 1, 0, 0},
+	{DStructType, cli_tmp17, 23, 0, 0},
+	{DArrayType, cli_tmp18, 65, 0, 0},
 	{DFunctionType, cli_tmp19, 3, 0, 0},
 	{DFunctionType, cli_tmp20, 6, 0, 0},
 	{DFunctionType, cli_tmp21, 3, 0, 0},
@@ -194,13 +206,13 @@ const struct cli_bc_type cli_apicall_types[]={
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"test1", 18, 0, 0},
+	{"test1", 10, 0, 0},
 	{"read", 19, 0, 1},
 	{"write", 19, 1, 1},
-	{"seek", 18, 1, 0},
+	{"seek", 10, 1, 0},
 	{"setvirusname", 19, 2, 1},
 	{"debug_print_str", 19, 3, 1},
-	{"debug_print_uint", 15, 0, 2},
+	{"debug_print_uint", 9, 0, 2},
 	{"disasm_x86", 25, 4, 1},
 	{"trace_directory", 19, 5, 1},
 	{"trace_scope", 19, 6, 1},
@@ -208,68 +220,80 @@ const struct cli_apicall cli_apicalls[]={
 	{"trace_op", 19, 8, 1},
 	{"trace_value", 19, 9, 1},
 	{"trace_ptr", 19, 10, 1},
-	{"pe_rawaddr", 15, 1, 2},
+	{"pe_rawaddr", 9, 1, 2},
 	{"file_find", 19, 11, 1},
-	{"file_byteat", 15, 2, 2},
+	{"file_byteat", 9, 2, 2},
 	{"malloc", 24, 0, 3},
-	{"test2", 15, 3, 2},
+	{"test2", 9, 3, 2},
 	{"get_pe_section", 21, 12, 1},
 	{"fill_buffer", 20, 0, 4},
-	{"extract_new", 15, 4, 2},
-	{"read_number", 15, 5, 2},
-	{"hashset_new", 16, 0, 5},
-	{"hashset_add", 18, 2, 0},
-	{"hashset_remove", 18, 3, 0},
-	{"hashset_contains", 18, 4, 0},
-	{"hashset_done", 15, 6, 2},
-	{"hashset_empty", 15, 7, 2},
-	{"buffer_pipe_new", 15, 8, 2},
-	{"buffer_pipe_new_fromfile", 15, 9, 2},
-	{"buffer_pipe_read_avail", 15, 10, 2},
-	{"buffer_pipe_read_get", 17, 0, 6},
-	{"buffer_pipe_read_stopped", 18, 5, 0},
-	{"buffer_pipe_write_avail", 15, 11, 2},
-	{"buffer_pipe_write_get", 17, 1, 6},
-	{"buffer_pipe_write_stopped", 18, 6, 0},
-	{"buffer_pipe_done", 15, 12, 2},
-	{"inflate_init", 8, 0, 7},
-	{"inflate_process", 15, 13, 2},
-	{"inflate_done", 15, 14, 2},
-	{"bytecode_rt_error", 15, 15, 2},
-	{"jsnorm_init", 15, 16, 2},
-	{"jsnorm_process", 15, 17, 2},
-	{"jsnorm_done", 15, 18, 2},
-	{"ilog2", 18, 7, 0},
-	{"ipow", 8, 1, 7},
-	{"iexp", 8, 2, 7},
-	{"isin", 8, 3, 7},
-	{"icos", 8, 4, 7},
-	{"memstr", 9, 0, 8},
-	{"hex2ui", 18, 8, 0},
+	{"extract_new", 9, 4, 2},
+	{"read_number", 9, 5, 2},
+	{"hashset_new", 8, 0, 5},
+	{"hashset_add", 10, 2, 0},
+	{"hashset_remove", 10, 3, 0},
+	{"hashset_contains", 10, 4, 0},
+	{"hashset_done", 9, 6, 2},
+	{"hashset_empty", 9, 7, 2},
+	{"buffer_pipe_new", 9, 8, 2},
+	{"buffer_pipe_new_fromfile", 9, 9, 2},
+	{"buffer_pipe_read_avail", 9, 10, 2},
+	{"buffer_pipe_read_get", 11, 0, 6},
+	{"buffer_pipe_read_stopped", 10, 5, 0},
+	{"buffer_pipe_write_avail", 9, 11, 2},
+	{"buffer_pipe_write_get", 11, 1, 6},
+	{"buffer_pipe_write_stopped", 10, 6, 0},
+	{"buffer_pipe_done", 9, 12, 2},
+	{"inflate_init", 12, 0, 7},
+	{"inflate_process", 9, 13, 2},
+	{"inflate_done", 9, 14, 2},
+	{"bytecode_rt_error", 9, 15, 2},
+	{"jsnorm_init", 9, 16, 2},
+	{"jsnorm_process", 9, 17, 2},
+	{"jsnorm_done", 9, 18, 2},
+	{"ilog2", 10, 7, 0},
+	{"ipow", 12, 1, 7},
+	{"iexp", 12, 2, 7},
+	{"isin", 12, 3, 7},
+	{"icos", 12, 4, 7},
+	{"memstr", 13, 0, 8},
+	{"hex2ui", 10, 8, 0},
 	{"atoi", 19, 13, 1},
 	{"debug_print_str_start", 19, 14, 1},
 	{"debug_print_str_nonl", 19, 15, 1},
 	{"entropy_buffer", 19, 16, 1},
-	{"map_new", 18, 9, 0},
-	{"map_addkey", 10, 0, 9},
-	{"map_setvalue", 10, 1, 9},
-	{"map_remove", 10, 2, 9},
-	{"map_find", 10, 3, 9},
-	{"map_getvaluesize", 15, 19, 2},
-	{"map_getvalue", 17, 2, 6},
-	{"map_done", 15, 20, 2},
-	{"file_find_limit", 10, 4, 9},
-	{"engine_functionality_level", 16, 1, 5},
-	{"engine_dconf_level", 16, 2, 5},
-	{"engine_scan_options", 16, 3, 5},
-	{"engine_db_options", 16, 4, 5},
-	{"extract_set_container", 15, 21, 2},
-	{"input_switch", 15, 22, 2},
-	{"get_environment", 11, 17, 1},
-	{"disable_bytecode_if", 10, 5, 9},
-	{"disable_jit_if", 10, 6, 9},
-	{"version_compare", 9, 1, 8},
-	{"check_platform", 8, 5, 7}
+	{"map_new", 10, 9, 0},
+	{"map_addkey", 14, 0, 9},
+	{"map_setvalue", 14, 1, 9},
+	{"map_remove", 14, 2, 9},
+	{"map_find", 14, 3, 9},
+	{"map_getvaluesize", 9, 19, 2},
+	{"map_getvalue", 11, 2, 6},
+	{"map_done", 9, 20, 2},
+	{"file_find_limit", 14, 4, 9},
+	{"engine_functionality_level", 8, 1, 5},
+	{"engine_dconf_level", 8, 2, 5},
+	{"engine_scan_options", 8, 3, 5},
+	{"engine_db_options", 8, 4, 5},
+	{"extract_set_container", 9, 21, 2},
+	{"input_switch", 9, 22, 2},
+	{"get_environment", 15, 17, 1},
+	{"disable_bytecode_if", 14, 5, 9},
+	{"disable_jit_if", 14, 6, 9},
+	{"version_compare", 13, 1, 8},
+	{"check_platform", 12, 5, 7},
+	{"pdf_get_obj_num", 8, 5, 5},
+	{"pdf_get_flags", 8, 6, 5},
+	{"pdf_set_flags", 9, 23, 2},
+	{"pdf_lookupobj", 9, 24, 2},
+	{"pdf_getobjsize", 9, 25, 2},
+	{"pdf_getobj", 11, 3, 6},
+	{"pdf_getobjid", 9, 26, 2},
+	{"pdf_getobjflags", 9, 27, 2},
+	{"pdf_setobjflags", 10, 10, 0},
+	{"pdf_get_offset", 9, 28, 2},
+	{"pdf_get_phase", 8, 7, 5},
+	{"pdf_get_dumpedobjid", 8, 8, 5}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -282,7 +306,8 @@ const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_buffer_pipe_write_stopped,
 	(cli_apicall_int2)cli_bcapi_ilog2,
 	(cli_apicall_int2)cli_bcapi_hex2ui,
-	(cli_apicall_int2)cli_bcapi_map_new
+	(cli_apicall_int2)cli_bcapi_map_new,
+	(cli_apicall_int2)cli_bcapi_pdf_setobjflags
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_read,
@@ -327,7 +352,13 @@ const cli_apicall_int1 cli_apicalls2[] = {
 	(cli_apicall_int1)cli_bcapi_map_getvaluesize,
 	(cli_apicall_int1)cli_bcapi_map_done,
 	(cli_apicall_int1)cli_bcapi_extract_set_container,
-	(cli_apicall_int1)cli_bcapi_input_switch
+	(cli_apicall_int1)cli_bcapi_input_switch,
+	(cli_apicall_int1)cli_bcapi_pdf_set_flags,
+	(cli_apicall_int1)cli_bcapi_pdf_lookupobj,
+	(cli_apicall_int1)cli_bcapi_pdf_getobjsize,
+	(cli_apicall_int1)cli_bcapi_pdf_getobjid,
+	(cli_apicall_int1)cli_bcapi_pdf_getobjflags,
+	(cli_apicall_int1)cli_bcapi_pdf_get_offset
 };
 const cli_apicall_malloclike cli_apicalls3[] = {
 	(cli_apicall_malloclike)cli_bcapi_malloc
@@ -340,12 +371,17 @@ const cli_apicall_allocobj cli_apicalls5[] = {
 	(cli_apicall_allocobj)cli_bcapi_engine_functionality_level,
 	(cli_apicall_allocobj)cli_bcapi_engine_dconf_level,
 	(cli_apicall_allocobj)cli_bcapi_engine_scan_options,
-	(cli_apicall_allocobj)cli_bcapi_engine_db_options
+	(cli_apicall_allocobj)cli_bcapi_engine_db_options,
+	(cli_apicall_allocobj)cli_bcapi_pdf_get_obj_num,
+	(cli_apicall_allocobj)cli_bcapi_pdf_get_flags,
+	(cli_apicall_allocobj)cli_bcapi_pdf_get_phase,
+	(cli_apicall_allocobj)cli_bcapi_pdf_get_dumpedobjid
 };
 const cli_apicall_bufget cli_apicalls6[] = {
 	(cli_apicall_bufget)cli_bcapi_buffer_pipe_read_get,
 	(cli_apicall_bufget)cli_bcapi_buffer_pipe_write_get,
-	(cli_apicall_bufget)cli_bcapi_map_getvalue
+	(cli_apicall_bufget)cli_bcapi_map_getvalue,
+	(cli_apicall_bufget)cli_bcapi_pdf_getobj
 };
 const cli_apicall_int3 cli_apicalls7[] = {
 	(cli_apicall_int3)cli_bcapi_inflate_init,
