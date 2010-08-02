@@ -142,6 +142,7 @@ START_TEST (test_retmagic_jit)
 {
     cl_init(CL_INIT_DEFAULT);
     runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 0);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0, NULL, NULL, NULL, NULL, 1);
 }
 END_TEST
 
