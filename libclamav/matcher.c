@@ -452,8 +452,11 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_t grp1len,
 			    const uint8_t* grp2, int32_t grp2len)
 {
-    struct cli_exe_info info;
+    int ret;
     char group1[128], group2[128];
+    const char *oldvirname;
+    struct cli_exe_info info;
+
     if (ctx->bc->kind != BC_PE_UNPACKER) {
 	cli_dbgmsg("bytecode: matchicon only works with PE files\n");
 	return -1;
@@ -461,10 +464,12 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
     if (grp1len > sizeof(group1)-1 ||
 	grp2len > sizeof(group2)-1)
 	return -1;
+    oldvirname = ctx->ctx->virname;
     memcpy(group1, grp1, grp1len);
     memcpy(group2, grp2, grp2len);
     group1[grp1len] = 0;
     group2[grp1len] = 0;
+    memset(&info, 0, sizeof(info));
     if(le16_to_host(ctx->hooks.pedata->file_hdr.Characteristics) & 0x2000 ||
        !ctx->hooks.pedata->dirs[2].Size)
 	info.res_addr = 0;
@@ -473,7 +478,9 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
     info.section = (struct cli_exe_section*)ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size = ctx->hooks.pedata->hdr_size;
-    return matchicon(ctx->ctx, &info, group1, group2);
+    ret = matchicon(ctx->ctx, &info, group1, group2);
+    ctx->ctx->virname = oldvirname;
+    return ret;
 }
 
 
