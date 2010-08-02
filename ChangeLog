@@ -1,3 +1,8 @@
+Mon Aug  2 16:08:04 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: don't call cli_bytecode_prepare() when Bytecode is
+			disabled in freshclam.conf (bb#2149)
+
 Mon Aug  2 15:37:19 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher: make icon sigs work with bytecode (bb#2137)
