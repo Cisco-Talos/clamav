@@ -30,6 +30,7 @@
 
 
 #define EC32(x) le32_to_host(x)
+#define EC16(x) le16_to_host(x)
 #define USE_FLOATS
 #ifdef USE_FLOATS
 #define LABDIFF(x) labdiff(x)
@@ -111,8 +112,8 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
 		    while(icnt && gsz >= 14) {
 			dir = (struct icondir *)grp;
-			cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, dir->depth, dir->id, dir->planes, dir->palcnt, dir->rsvd, dir->sz);
-			findres(3, dir->id, resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
+			cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
+			findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
 			grp += 14;
 			gsz -= 14;
 		    }
@@ -1230,7 +1231,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    
     width = EC32(bmphdr.w);
     height = EC32(bmphdr.h) / 2;
-    depth = EC32(bmphdr.depth);
+    depth = EC16(bmphdr.depth);
     if(width > 256 || height > 256 || width < 16 || height < 16) {
 	cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
 	return CL_SUCCESS;
@@ -1306,7 +1307,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 		    have = 8;
 		}
 		have -= depth;
-		imagedata[(height - 1 - y) * width + x] = palette[(c >> have) & ((1<<depth)-1)];
+		imagedata[(height - 1 - y) * width + x] = EC32(palette[(c >> have) & ((1<<depth)-1)]);
 	    }
 	    break;
 	}
