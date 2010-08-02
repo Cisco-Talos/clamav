@@ -2416,6 +2416,9 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 	 * executed, so that it has all the info for the hook */
 	if (cctx->hook_lsig_matches)
 	    cli_bitset_set(cctx->hook_lsig_matches, bc->hook_lsig_id-1);
+	/* save match counts */
+	memcpy(&ctx.lsigcnt, lsigcnt, 64*4);
+	memcpy(&ctx.lsigoff, lsigsuboff, 64*4);
 	return CL_SUCCESS;
     }
     memset(&ctx, 0, sizeof(ctx));
@@ -2464,6 +2467,9 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 
     cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
+    /* restore match counts */
+    ctx->hooks.match_counts = ctx->lsigcnt;
+    ctx->hooks.match_offsets = ctx->lsigoff;
     for (i=0;i < hooks_cnt;i++) {
 	const struct cli_bc *bc = &engine->bcs.all_bcs[hooks[i]];
 	if (bc->lsig) {
