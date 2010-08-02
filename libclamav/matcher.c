@@ -464,7 +464,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
     if (grp1len > sizeof(group1)-1 ||
 	grp2len > sizeof(group2)-1)
 	return -1;
-    oldvirname = ctx->ctx->virname;
+    oldvirname = ((cli_ctx*)ctx->ctx)->virname;
     memcpy(group1, grp1, grp1len);
     memcpy(group2, grp2, grp2len);
     group1[grp1len] = 0;
@@ -479,7 +479,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size = ctx->hooks.pedata->hdr_size;
     ret = matchicon(ctx->ctx, &info, group1, group2);
-    ctx->ctx->virname = oldvirname;
+    ((cli_ctx*)ctx->ctx)->virname = oldvirname;
     return ret;
 }
 
