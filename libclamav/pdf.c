@@ -1074,10 +1074,12 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    rc = CL_EUNPACK;
 	}
 #endif
-	if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
-	    /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-	    *ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
-	    rc = CL_VIRUS;
+	if (ctx->options & CL_SCAN_ALGORITHMIC) {
+	    if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
+		/* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
+		*ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
+		rc = CL_VIRUS;
+	    }
 	}
     }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
