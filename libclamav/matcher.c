@@ -51,6 +51,8 @@
 #include "regex/regex.h"
 #include "filtering.h"
 #include "perflogging.h"
+#include "bytecode_priv.h"
+#include "bytecode_api_impl.h"
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
 #include "sha256.h"
@@ -445,6 +447,33 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
     cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);
     cli_icongroupset_add(grp2 ? grp2 : "*", &iconset, 1, ctx);
     return cli_scanicon(&iconset, exeinfo->res_addr, ctx, exeinfo->section, exeinfo->nsections, exeinfo->hdr_size);
+}
+
+int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_t grp1len,
+			    const uint8_t* grp2, int32_t grp2len)
+{
+    struct cli_exe_info info;
+    char group1[128], group2[128];
+    if (ctx->bc->kind != BC_PE_UNPACKER) {
+	cli_dbgmsg("bytecode: matchicon only works with PE files\n");
+	return -1;
+    }
+    if (grp1len > sizeof(group1)-1 ||
+	grp2len > sizeof(group2)-1)
+	return -1;
+    memcpy(group1, grp1, grp1len);
+    memcpy(group2, grp2, grp2len);
+    group1[grp1len] = 0;
+    group2[grp1len] = 0;
+    if(le16_to_host(ctx->hooks.pedata->file_hdr.Characteristics) & 0x2000 ||
+       !ctx->hooks.pedata->dirs[2].Size)
+	info.res_addr = 0;
+    else
+	info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
+    info.section = ctx->sections;
+    info.nsections = ctx->hooks.pedata->nsections;
+    info.hdr_size = ctx->hooks.pedata->hdr_size;
+    return matchicon(ctx->ctx, &info, group1, group2);
 }
 
 

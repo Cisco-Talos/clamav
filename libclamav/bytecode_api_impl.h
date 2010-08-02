@@ -119,5 +119,6 @@ int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t, int32_t);
 int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t*, int32_t, const uint8_t*, int32_t);
 
 #endif

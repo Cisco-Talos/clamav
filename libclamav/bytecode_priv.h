@@ -156,6 +156,7 @@ struct cli_bc_ctx {
     fmap_t *save_map;
     const char *virname;
     struct cli_bc_hooks hooks;
+    struct cli_exe_info exeinfo;
     uint32_t pdf_nobjs;
     struct pdf_obj *pdf_objs;
     uint32_t* pdf_flags;

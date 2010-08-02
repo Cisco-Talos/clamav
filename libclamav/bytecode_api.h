@@ -829,6 +829,17 @@ int32_t pdf_get_phase(void);
 /** Return the currently dumped obj id.
   Valid only in PDF_PHASE_POSTDUMP */
 int32_t pdf_get_dumpedobjid(void);
+
+/** Attempts to match current executable's icon against the specified icon
+ * groups.
+ * @param[in] group1 - same as GROUP1 in LDB signatures
+ * @param group1_len - length of \p group1
+ * @param[in] group2 - same as GROUP2 in LDB signatures
+ * @param group2_len - length of \p group2
+ */
+
+int32_t matchicon(const uint8_t* group1, int32_t group1_len,
+                  const uint8_t* group2, int32_t group2_len);
 /* ---------------- END 0.96.2 APIs   ----------------------------------- */
 #endif
 #endif
