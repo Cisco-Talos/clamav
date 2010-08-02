@@ -1,3 +1,7 @@
+Mon Aug  2 15:37:19 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher: make icon sigs work with bytecode (bb#2137)
+
 Fri Jul 30 17:46:14 CEST 2010 (acab)
 ------------------------------------
  * libclamav/others.h: bump CLI_MAX_ALLOCATION by 5 MB (needed by lzma - bb#2124)

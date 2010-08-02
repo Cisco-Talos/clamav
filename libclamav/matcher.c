@@ -493,12 +493,15 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 		if(!target_info || target_info->status != 1)
 		    continue;
 		if(matchicon(ctx, &target_info->exeinfo, root->ac_lsigtable[i]->tdb.icongrp1, root->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
-		    if(ctx->virname)
-			*ctx->virname = root->ac_lsigtable[i]->virname;
-		    return CL_VIRUS;
-		} else {
-		    continue;
+		    if(!root->ac_lsigtable[i]->bc_idx) {
+			if(ctx->virname)
+			    *ctx->virname = root->ac_lsigtable[i]->virname;
+			return CL_VIRUS;
+		    } else if(cli_bytecode_runlsig(ctx, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff[i], map) == CL_VIRUS) {
+			return CL_VIRUS;
+		    }
 		}
+		continue;
 	    }
 	    if(!root->ac_lsigtable[i]->bc_idx) {
 		if(ctx->virname)
