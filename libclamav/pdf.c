@@ -832,7 +832,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     } while (!q3 || q3[1] != '<');
     dict = q3+2;
     q = dict;
-    bytesleft = obj_size(pdf, obj, 1) - (q3 - start);
+    bytesleft = obj_size(pdf, obj, 1) - (q - start);
     /* find end of dictionary */
     do {
 	q2 = pdf_nextobject(q, bytesleft);
