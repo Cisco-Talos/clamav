@@ -124,6 +124,13 @@ struct cli_bcengine {
 extern "C" uint8_t cli_debug_flag;
 namespace {
 
+#ifdef LLVM28
+#define llvm_report_error(x) report_fatal_error(x)
+#define llvm_install_error_handler(x) install_fatal_error_handler(x)
+#define DwarfExceptionHandling JITExceptionHandling
+#define SetCurrentDebugLocation(x) SetCurrentDebugLocation(DebugLoc::getFromDILocation(x))
+#endif
+
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
 
 void do_shutdown() {
@@ -518,7 +525,7 @@ public:
 };
 char RuntimeLimits::ID;
 
-class VISIBILITY_HIDDEN LLVMCodegen {
+class LLVMCodegen {
 private:
     const struct cli_bc *bc;
     Module *M;
@@ -1965,9 +1972,12 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 
     int line = (int)ctx->line ? (int)ctx->line : -1;
     int col = (int)ctx->col ? (int)ctx->col : -1;
+#ifndef LLVM28
+    //TODO: print this ourselves, instead of using SMDiagnostic
     SMDiagnostic diag(ctx->file, line, col,
 		 "", std::string(lines->linev[ctx->line-1], lines->linev[ctx->line]-1));
     diag.Print("[trace]", errs());
+#endif
 }
 
 int have_clamjit=1;
