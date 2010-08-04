@@ -157,9 +157,11 @@ namespace {
           Value *V = CI->getCalledValue()->stripPointerCasts();
           Function *F = cast<Function>(V);
           const FunctionType *FTy = F->getFunctionType();
+	  CallSite CS(CI);
+
           if (F->getName().equals("memcmp") && FTy->getNumParams() == 3) {
-            valid &= validateAccess(CI->getOperand(1), CI->getOperand(3), CI);
-            valid &= validateAccess(CI->getOperand(2), CI->getOperand(3), CI);
+            valid &= validateAccess(CS.getArgument(0), CS.getArgument(2), CI);
+            valid &= validateAccess(CS.getArgument(1), CS.getArgument(2), CI);
             continue;
           }
 	  unsigned i;
@@ -170,7 +172,7 @@ namespace {
 #endif
           for (;i<FTy->getNumParams();i++) {
             if (isa<PointerType>(FTy->getParamType(i))) {
-              Value *Ptr = CI->getOperand(i+1);
+              Value *Ptr = CS.getArgument(i);
               if (i+1 >= FTy->getNumParams()) {
                 printLocation(CI, false);
                 errs() << "Call to external function with pointer parameter last cannot be analyzed\n";
@@ -178,7 +180,7 @@ namespace {
                 valid = 0;
                 break;
               }
-              Value *Size = CI->getOperand(i+2);
+              Value *Size = CS.getArgument(i+1);
               if (!Size->getType()->isIntegerTy()) {
                 printLocation(CI, false);
                 errs() << "Pointer argument must be followed by integer argument representing its size\n";
@@ -381,8 +383,9 @@ namespace {
               const FunctionType *FTy = F->getFunctionType();
               // last operand is always size for this API call kind
               if (F->isDeclaration() && FTy->getNumParams() > 0) {
+		CallSite CS(CI);
                 if (FTy->getParamType(FTy->getNumParams()-1)->isIntegerTy())
-                  V = CI->getOperand(FTy->getNumParams());
+                  V = CS.getArgument(FTy->getNumParams()-1);
               }
 	  }
 	  if (!V)
