@@ -38,6 +38,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/Verifier.h"
+#include "llvm/AutoUpgrade.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -132,6 +133,14 @@ namespace {
 #endif
 
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
+
+static void UpgradeCall(CallInst *&C, Function *Intr)
+{
+    Function *New;
+    if (!UpgradeIntrinsicFunction(Intr, New) || New == Intr)
+	return;
+    UpgradeIntrinsicCall(C, New);
+}
 
 void do_shutdown() {
     llvm_shutdown();
@@ -1288,6 +1297,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemset);
 			    break;
 			}
 			case OP_BC_MEMCPY:
@@ -1301,6 +1311,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemcpy);
 			    break;
 			}
 			case OP_BC_MEMMOVE:
@@ -1314,6 +1325,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemmove);
 			    break;
 			}
 			case OP_BC_MEMCMP:
