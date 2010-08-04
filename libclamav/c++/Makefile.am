@@ -18,25 +18,28 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # keep it like this while I'm testing LLVM
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
-AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../ $(LLVM_INCLUDES) $(LLVM_DEFS)
+AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../
+
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS=-I m4
-if DEBUG_BUILD
-LLVM_CONFIG=llvm/Debug/bin/llvm-config
-else
-LLVM_CONFIG=llvm/Release/bin/llvm-config
-endif
 
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
+			  ClamBCRTChecks.cpp\
+			  ClamBCModule.h\
+			  ClamBCDiagnostics.h\
+			  detect.cpp
+if BUILD_EXTERNAL_LLVM
 #$(LLVM_CONFIG): build-llvm
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-#libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) `$(LLVM_CONFIG) --cppflags`
-#libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-#libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
-#libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
-#libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
+libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28
+libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
+libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
+noinst_LTLIBRARIES = libclamavcxx.la
 
+else
+AM_CPPFLAGS += $(LLVM_INCLUDES) $(LLVM_DEFS)
 noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 		     libllvmcodegen.la libllvmjit.la
 lli_LDADD=libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la
@@ -44,11 +47,8 @@ libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
-			  ClamBCRTChecks.cpp\
-			  ClamBCModule.h\
-			  ClamBCDiagnostics.h\
-			  detect.cpp
+
+
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmx86codegen.la
 libclamavcxx_la_DEPENDENCIES+=libllvmx86codegen.la
@@ -916,6 +916,7 @@ libllvmsystem_la_SOURCES += llvm/config.status
 $(top_builddir)/llvm/config.status: llvm/configure
 	(cd llvm; ./config.status --recheck; ./config.status)
 
+endif
 # rm configure generated files
 dist-hook:
 	make -C llvm dist-hook
