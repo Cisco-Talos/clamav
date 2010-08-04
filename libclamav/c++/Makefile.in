@@ -51,40 +51,47 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_X86_TRUE@am__append_1 = libllvmx86codegen.la
-@BUILD_X86_TRUE@am__append_2 = libllvmx86codegen.la
-@BUILD_X86_TRUE@am__append_3 = libllvmx86codegen.la
-@BUILD_X86_TRUE@am__append_4 = libllvmx86codegen.la
-@BUILD_PPC_TRUE@am__append_5 = libllvmpowerpccodegen.la
-@BUILD_PPC_TRUE@am__append_6 = libllvmpowerpccodegen.la
-@BUILD_PPC_TRUE@am__append_7 = libllvmpowerpccodegen.la
-@BUILD_PPC_TRUE@am__append_8 = libllvmpowerpccodegen.la
-@BUILD_ARM_TRUE@am__append_9 = libllvmarmcodegen.la
-@BUILD_ARM_TRUE@am__append_10 = libllvmarmcodegen.la
-@BUILD_ARM_TRUE@am__append_11 = libllvmarmcodegen.la
-@BUILD_ARM_TRUE@am__append_12 = libllvmarmcodegen.la
-@MAINTAINER_MODE_TRUE@am__append_13 = $(TBLGENFILES)
-@MAINTAINER_MODE_TRUE@noinst_PROGRAMS = tblgen$(EXEEXT)
-check_PROGRAMS = count$(EXEEXT) not$(EXEEXT) lli$(EXEEXT) llc$(EXEEXT) \
-	llvm-as$(EXEEXT) llvm-dis$(EXEEXT) llvmunittest_ADT$(EXEEXT) \
-	llvmunittest_Support$(EXEEXT) llvmunittest_VMCore$(EXEEXT) \
-	llvmunittest_ExecutionEngine$(EXEEXT) \
-	llvmunittest_JIT$(EXEEXT) FileCheck$(EXEEXT)
-TESTS = llvmunittest_ADT$(EXEEXT) llvmunittest_Support$(EXEEXT) \
-	llvmunittest_VMCore$(EXEEXT) \
-	llvmunittest_ExecutionEngine$(EXEEXT) \
-	llvmunittest_JIT$(EXEEXT)
-@BUILD_X86_TRUE@am__append_14 = llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
-@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp\
-@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86IntelInstPrinter.cpp\
-@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
-@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86MCInstLower.cpp\
-@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am__append_1 = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_2 = libllvmx86codegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_3 = libllvmx86codegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_4 = libllvmx86codegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_5 = libllvmx86codegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_6 = libllvmpowerpccodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_7 = libllvmpowerpccodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_8 = libllvmpowerpccodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_9 = libllvmpowerpccodegen.la
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__append_10 = libllvmarmcodegen.la
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__append_11 = libllvmarmcodegen.la
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__append_12 = libllvmarmcodegen.la
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__append_13 = libllvmarmcodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@am__append_14 = $(TBLGENFILES)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@noinst_PROGRAMS = tblgen$(EXEEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@check_PROGRAMS = count$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	not$(EXEEXT) lli$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llc$(EXEEXT) llvm-as$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm-dis$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ExecutionEngine$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_JIT$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	FileCheck$(EXEEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@TESTS = llvmunittest_ADT$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ExecutionEngine$(EXEEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_JIT$(EXEEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_15 = llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86IntelInstPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@    llvm/lib/Target/X86/AsmPrinter/X86MCInstLower.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp
 
-@BUILD_PPC_TRUE@am__append_15 = llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
-@BUILD_ARM_TRUE@am__append_16 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
-@BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp\
-@BUILD_ARM_TRUE@    llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_16 = llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__append_17 = llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
 
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -117,18 +124,30 @@ libclamavcxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libclamavcxx_la_CXXFLAGS) $(CXXFLAGS) \
 	$(libclamavcxx_la_LDFLAGS) $(LDFLAGS) -o $@
+@BUILD_EXTERNAL_LLVM_FALSE@am_libclamavcxx_la_rpath =
+@BUILD_EXTERNAL_LLVM_TRUE@am_libclamavcxx_la_rpath =
 libgoogletest_la_LIBADD =
-am_libgoogletest_la_OBJECTS = libgoogletest_la-gtest-death-test.lo \
-	libgoogletest_la-gtest-filepath.lo \
-	libgoogletest_la-gtest-port.lo \
-	libgoogletest_la-gtest-test-part.lo \
-	libgoogletest_la-gtest-typed-test.lo libgoogletest_la-gtest.lo \
-	libgoogletest_la-TestMain.lo
+am__libgoogletest_la_SOURCES_DIST =  \
+	llvm/utils/unittest/googletest/gtest-death-test.cc \
+	llvm/utils/unittest/googletest/gtest-filepath.cc \
+	llvm/utils/unittest/googletest/gtest-port.cc \
+	llvm/utils/unittest/googletest/gtest-test-part.cc \
+	llvm/utils/unittest/googletest/gtest-typed-test.cc \
+	llvm/utils/unittest/googletest/gtest.cc \
+	llvm/utils/unittest/UnitTestMain/TestMain.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libgoogletest_la_OBJECTS = libgoogletest_la-gtest-death-test.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-gtest-filepath.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-gtest-port.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-gtest-test-part.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-gtest-typed-test.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-gtest.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest_la-TestMain.lo
 libgoogletest_la_OBJECTS = $(am_libgoogletest_la_OBJECTS)
 libgoogletest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libgoogletest_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@BUILD_EXTERNAL_LLVM_FALSE@am_libgoogletest_la_rpath =
 libllvmarmcodegen_la_LIBADD =
 am__libllvmarmcodegen_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/IfConversion.cpp \
@@ -156,37 +175,40 @@ am__libllvmarmcodegen_la_SOURCES_DIST =  \
 	llvm/lib/Target/ARM/Thumb2InstrInfo.cpp \
 	llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp \
 	llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
-@BUILD_ARM_TRUE@am_libllvmarmcodegen_la_OBJECTS =  \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-IfConversion.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMBaseInstrInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMBaseRegisterInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMCodeEmitter.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMConstantIslandPass.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMConstantPoolValue.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMExpandPseudoInsts.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMISelDAGToDAG.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMISelLowering.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMInstrInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMJITInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMLoadStoreOptimizer.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMMCAsmInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMRegisterInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMSubtarget.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMTargetMachine.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-NEONMoveFix.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-NEONPreAllocPass.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-ARMTargetInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb1InstrInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb1RegisterInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb2ITBlockPass.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb2InstrInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb2RegisterInfo.lo \
-@BUILD_ARM_TRUE@	libllvmarmcodegen_la-Thumb2SizeReduction.lo
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmarmcodegen_la_OBJECTS = libllvmarmcodegen_la-IfConversion.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMBaseInstrInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMBaseRegisterInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMCodeEmitter.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMConstantIslandPass.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMConstantPoolValue.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMExpandPseudoInsts.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMISelDAGToDAG.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMISelLowering.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMInstrInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMJITInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMLoadStoreOptimizer.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMMCAsmInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMRegisterInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMSubtarget.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMTargetMachine.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-NEONMoveFix.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-NEONPreAllocPass.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-ARMTargetInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb1InstrInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb1RegisterInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb2ITBlockPass.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb2InstrInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb2RegisterInfo.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmarmcodegen_la-Thumb2SizeReduction.lo
 libllvmarmcodegen_la_OBJECTS = $(am_libllvmarmcodegen_la_OBJECTS)
-@BUILD_ARM_TRUE@am_libllvmarmcodegen_la_rpath =
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmarmcodegen_la_rpath =
 libllvmasmparser_la_LIBADD =
-am_libllvmasmparser_la_OBJECTS = LLLexer.lo LLParser.lo Parser.lo
+am__libllvmasmparser_la_SOURCES_DIST = llvm/lib/AsmParser/LLLexer.cpp \
+	llvm/lib/AsmParser/LLParser.cpp llvm/lib/AsmParser/Parser.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmasmparser_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	LLLexer.lo LLParser.lo Parser.lo
 libllvmasmparser_la_OBJECTS = $(am_libllvmasmparser_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmasmparser_la_rpath =
 libllvmasmprinter_la_LIBADD =
 am__libllvmasmprinter_la_SOURCES_DIST =  \
 	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
@@ -201,117 +223,430 @@ am__libllvmasmprinter_la_SOURCES_DIST =  \
 	llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp \
 	llvm/lib/Target/ARM/AsmPrinter/ARMInstPrinter.cpp \
 	llvm/lib/Target/ARM/AsmPrinter/ARMMCInstLower.cpp
-@BUILD_X86_TRUE@am__objects_1 = libllvmasmprinter_la-X86AsmPrinter.lo \
-@BUILD_X86_TRUE@	libllvmasmprinter_la-X86ATTInstPrinter.lo \
-@BUILD_X86_TRUE@	libllvmasmprinter_la-X86IntelInstPrinter.lo \
-@BUILD_X86_TRUE@	libllvmasmprinter_la-X86AsmPrinter.lo \
-@BUILD_X86_TRUE@	libllvmasmprinter_la-X86MCInstLower.lo \
-@BUILD_X86_TRUE@	libllvmasmprinter_la-X86COFFMachineModuleInfo.lo
-@BUILD_PPC_TRUE@am__objects_2 = libllvmasmprinter_la-PPCAsmPrinter.lo
-@BUILD_ARM_TRUE@am__objects_3 = libllvmasmprinter_la-ARMAsmPrinter.lo \
-@BUILD_ARM_TRUE@	libllvmasmprinter_la-ARMInstPrinter.lo \
-@BUILD_ARM_TRUE@	libllvmasmprinter_la-ARMMCInstLower.lo
-am_libllvmasmprinter_la_OBJECTS =  \
-	libllvmasmprinter_la-OcamlGCPrinter.lo \
-	libllvmasmprinter_la-ELFCodeEmitter.lo \
-	libllvmasmprinter_la-ELFWriter.lo $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3)
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__objects_1 = libllvmasmprinter_la-X86AsmPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmasmprinter_la-X86ATTInstPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmasmprinter_la-X86IntelInstPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmasmprinter_la-X86AsmPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmasmprinter_la-X86MCInstLower.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmasmprinter_la-X86COFFMachineModuleInfo.lo
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__objects_2 = libllvmasmprinter_la-PPCAsmPrinter.lo
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@am__objects_3 = libllvmasmprinter_la-ARMAsmPrinter.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmprinter_la-ARMInstPrinter.lo \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmprinter_la-ARMMCInstLower.lo
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmasmprinter_la_OBJECTS = libllvmasmprinter_la-OcamlGCPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmprinter_la-ELFCodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmprinter_la-ELFWriter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__objects_1) $(am__objects_2) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__objects_3)
 libllvmasmprinter_la_OBJECTS = $(am_libllvmasmprinter_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmasmprinter_la_rpath =
 libllvmbitreader_la_LIBADD =
-am_libllvmbitreader_la_OBJECTS = BitReader.lo BitcodeReader.lo
+am__libllvmbitreader_la_SOURCES_DIST =  \
+	llvm/lib/Bitcode/Reader/BitReader.cpp \
+	llvm/lib/Bitcode/Reader/BitcodeReader.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmbitreader_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	BitReader.lo BitcodeReader.lo
 libllvmbitreader_la_OBJECTS = $(am_libllvmbitreader_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmbitreader_la_rpath =
 libllvmbitwriter_la_LIBADD =
-am_libllvmbitwriter_la_OBJECTS = BitWriter.lo BitcodeWriter.lo \
-	BitcodeWriterPass.lo ValueEnumerator.lo
+am__libllvmbitwriter_la_SOURCES_DIST =  \
+	llvm/lib/Bitcode/Writer/BitWriter.cpp \
+	llvm/lib/Bitcode/Writer/BitcodeWriter.cpp \
+	llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp \
+	llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmbitwriter_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	BitWriter.lo BitcodeWriter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	BitcodeWriterPass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ValueEnumerator.lo
 libllvmbitwriter_la_OBJECTS = $(am_libllvmbitwriter_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmbitwriter_la_rpath =
 libllvmcodegen_la_LIBADD =
-am_libllvmcodegen_la_OBJECTS = AliasSetTracker.lo ConstantFolding.lo \
-	IVUsers.lo InstructionSimplify.lo LoopInfo.lo LoopPass.lo \
-	MemoryDependenceAnalysis.lo PHITransAddr.lo ProfileInfo.lo \
-	ScalarEvolution.lo ScalarEvolutionExpander.lo \
-	AggressiveAntiDepBreaker.lo AsmPrinter.lo DIE.lo DwarfDebug.lo \
-	DwarfException.lo DwarfLabel.lo DwarfPrinter.lo DwarfWriter.lo \
-	BranchFolding.lo CalcSpillWeights.lo CodePlacementOpt.lo \
-	CriticalAntiDepBreaker.lo DeadMachineInstructionElim.lo \
-	DwarfEHPrepare.lo ExactHazardRecognizer.lo GCMetadata.lo \
-	GCStrategy.lo LLVMTargetMachine.lo LatencyPriorityQueue.lo \
-	LiveInterval.lo LiveIntervalAnalysis.lo LiveStackAnalysis.lo \
-	LiveVariables.lo LowerSubregs.lo MachineCSE.lo \
-	MachineDominators.lo MachineLICM.lo MachineLoopInfo.lo \
-	MachineModuleInfoImpls.lo MachinePassRegistry.lo \
-	MachineSSAUpdater.lo MachineSink.lo MachineVerifier.lo \
-	OptimizeExts.lo OptimizePHIs.lo PHIElimination.lo Passes.lo \
-	PostRASchedulerList.lo PreAllocSplitting.lo \
-	ProcessImplicitDefs.lo PrologEpilogInserter.lo \
-	RegAllocLinearScan.lo RegisterCoalescer.lo \
-	RegisterScavenging.lo ScheduleDAG.lo ScheduleDAGEmit.lo \
-	ScheduleDAGInstrs.lo ScheduleDAGPrinter.lo CallingConvLower.lo \
-	DAGCombiner.lo FastISel.lo FunctionLoweringInfo.lo \
-	InstrEmitter.lo LegalizeDAG.lo LegalizeFloatTypes.lo \
-	LegalizeIntegerTypes.lo LegalizeTypes.lo \
-	LegalizeTypesGeneric.lo LegalizeVectorOps.lo \
-	LegalizeVectorTypes.lo ScheduleDAGFast.lo ScheduleDAGList.lo \
-	ScheduleDAGRRList.lo ScheduleDAGSDNodes.lo SelectionDAG.lo \
-	SelectionDAGBuilder.lo SelectionDAGISel.lo \
-	SelectionDAGPrinter.lo TargetLowering.lo ShrinkWrapping.lo \
-	SimpleRegisterCoalescing.lo SjLjEHPrepare.lo SlotIndexes.lo \
-	Spiller.lo StackProtector.lo StackSlotColoring.lo \
-	StrongPHIElimination.lo TailDuplication.lo \
-	TargetLoweringObjectFileImpl.lo TwoAddressInstructionPass.lo \
-	UnreachableBlockElim.lo VirtRegMap.lo VirtRegRewriter.lo \
-	MCAsmInfoDarwin.lo MCAsmStreamer.lo MCAssembler.lo MCInst.lo \
-	MCMachOStreamer.lo MCNullStreamer.lo MCSectionMachO.lo \
-	MCStreamer.lo TargetFrameInfo.lo TargetSubtarget.lo \
-	CodeGenPrepare.lo GEPSplitter.lo GVN.lo LoopStrengthReduce.lo \
-	AddrModeMatcher.lo BasicBlockUtils.lo BreakCriticalEdges.lo \
-	DemoteRegToStack.lo LCSSA.lo Local.lo LoopSimplify.lo \
-	LowerInvoke.lo LowerSwitch.lo Mem2Reg.lo \
-	PromoteMemoryToRegister.lo SSAUpdater.lo SimplifyCFG.lo \
-	UnifyFunctionExitNodes.lo
+am__libllvmcodegen_la_SOURCES_DIST =  \
+	llvm/lib/Analysis/AliasSetTracker.cpp \
+	llvm/lib/Analysis/ConstantFolding.cpp \
+	llvm/lib/Analysis/IVUsers.cpp \
+	llvm/lib/Analysis/InstructionSimplify.cpp \
+	llvm/lib/Analysis/LoopInfo.cpp llvm/lib/Analysis/LoopPass.cpp \
+	llvm/lib/Analysis/MemoryDependenceAnalysis.cpp \
+	llvm/lib/Analysis/PHITransAddr.cpp \
+	llvm/lib/Analysis/ProfileInfo.cpp \
+	llvm/lib/Analysis/ScalarEvolution.cpp \
+	llvm/lib/Analysis/ScalarEvolutionExpander.cpp \
+	llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp \
+	llvm/lib/CodeGen/AsmPrinter/AsmPrinter.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DIE.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DwarfException.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DwarfLabel.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DwarfPrinter.cpp \
+	llvm/lib/CodeGen/AsmPrinter/DwarfWriter.cpp \
+	llvm/lib/CodeGen/BranchFolding.cpp \
+	llvm/lib/CodeGen/CalcSpillWeights.cpp \
+	llvm/lib/CodeGen/CodePlacementOpt.cpp \
+	llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp \
+	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp \
+	llvm/lib/CodeGen/DwarfEHPrepare.cpp \
+	llvm/lib/CodeGen/ExactHazardRecognizer.cpp \
+	llvm/lib/CodeGen/GCMetadata.cpp \
+	llvm/lib/CodeGen/GCStrategy.cpp \
+	llvm/lib/CodeGen/LLVMTargetMachine.cpp \
+	llvm/lib/CodeGen/LatencyPriorityQueue.cpp \
+	llvm/lib/CodeGen/LiveInterval.cpp \
+	llvm/lib/CodeGen/LiveIntervalAnalysis.cpp \
+	llvm/lib/CodeGen/LiveStackAnalysis.cpp \
+	llvm/lib/CodeGen/LiveVariables.cpp \
+	llvm/lib/CodeGen/LowerSubregs.cpp \
+	llvm/lib/CodeGen/MachineCSE.cpp \
+	llvm/lib/CodeGen/MachineDominators.cpp \
+	llvm/lib/CodeGen/MachineLICM.cpp \
+	llvm/lib/CodeGen/MachineLoopInfo.cpp \
+	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp \
+	llvm/lib/CodeGen/MachinePassRegistry.cpp \
+	llvm/lib/CodeGen/MachineSSAUpdater.cpp \
+	llvm/lib/CodeGen/MachineSink.cpp \
+	llvm/lib/CodeGen/MachineVerifier.cpp \
+	llvm/lib/CodeGen/OptimizeExts.cpp \
+	llvm/lib/CodeGen/OptimizePHIs.cpp \
+	llvm/lib/CodeGen/PHIElimination.cpp \
+	llvm/lib/CodeGen/Passes.cpp \
+	llvm/lib/CodeGen/PostRASchedulerList.cpp \
+	llvm/lib/CodeGen/PreAllocSplitting.cpp \
+	llvm/lib/CodeGen/ProcessImplicitDefs.cpp \
+	llvm/lib/CodeGen/PrologEpilogInserter.cpp \
+	llvm/lib/CodeGen/RegAllocLinearScan.cpp \
+	llvm/lib/CodeGen/RegisterCoalescer.cpp \
+	llvm/lib/CodeGen/RegisterScavenging.cpp \
+	llvm/lib/CodeGen/ScheduleDAG.cpp \
+	llvm/lib/CodeGen/ScheduleDAGEmit.cpp \
+	llvm/lib/CodeGen/ScheduleDAGInstrs.cpp \
+	llvm/lib/CodeGen/ScheduleDAGPrinter.cpp \
+	llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp \
+	llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp \
+	llvm/lib/CodeGen/SelectionDAG/FastISel.cpp \
+	llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp \
+	llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeTypes.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeTypesGeneric.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorOps.cpp \
+	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorTypes.cpp \
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGFast.cpp \
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp \
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp \
+	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp \
+	llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp \
+	llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp \
+	llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp \
+	llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp \
+	llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp \
+	llvm/lib/CodeGen/ShrinkWrapping.cpp \
+	llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp \
+	llvm/lib/CodeGen/SjLjEHPrepare.cpp \
+	llvm/lib/CodeGen/SlotIndexes.cpp llvm/lib/CodeGen/Spiller.cpp \
+	llvm/lib/CodeGen/StackProtector.cpp \
+	llvm/lib/CodeGen/StackSlotColoring.cpp \
+	llvm/lib/CodeGen/StrongPHIElimination.cpp \
+	llvm/lib/CodeGen/TailDuplication.cpp \
+	llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp \
+	llvm/lib/CodeGen/TwoAddressInstructionPass.cpp \
+	llvm/lib/CodeGen/UnreachableBlockElim.cpp \
+	llvm/lib/CodeGen/VirtRegMap.cpp \
+	llvm/lib/CodeGen/VirtRegRewriter.cpp \
+	llvm/lib/MC/MCAsmInfoDarwin.cpp llvm/lib/MC/MCAsmStreamer.cpp \
+	llvm/lib/MC/MCAssembler.cpp llvm/lib/MC/MCInst.cpp \
+	llvm/lib/MC/MCMachOStreamer.cpp llvm/lib/MC/MCNullStreamer.cpp \
+	llvm/lib/MC/MCSectionMachO.cpp llvm/lib/MC/MCStreamer.cpp \
+	llvm/lib/Target/TargetFrameInfo.cpp \
+	llvm/lib/Target/TargetSubtarget.cpp \
+	llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp \
+	llvm/lib/Transforms/Scalar/GEPSplitter.cpp \
+	llvm/lib/Transforms/Scalar/GVN.cpp \
+	llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp \
+	llvm/lib/Transforms/Utils/AddrModeMatcher.cpp \
+	llvm/lib/Transforms/Utils/BasicBlockUtils.cpp \
+	llvm/lib/Transforms/Utils/BreakCriticalEdges.cpp \
+	llvm/lib/Transforms/Utils/DemoteRegToStack.cpp \
+	llvm/lib/Transforms/Utils/LCSSA.cpp \
+	llvm/lib/Transforms/Utils/Local.cpp \
+	llvm/lib/Transforms/Utils/LoopSimplify.cpp \
+	llvm/lib/Transforms/Utils/LowerInvoke.cpp \
+	llvm/lib/Transforms/Utils/LowerSwitch.cpp \
+	llvm/lib/Transforms/Utils/Mem2Reg.cpp \
+	llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp \
+	llvm/lib/Transforms/Utils/SSAUpdater.cpp \
+	llvm/lib/Transforms/Utils/SimplifyCFG.cpp \
+	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmcodegen_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	AliasSetTracker.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ConstantFolding.lo IVUsers.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	InstructionSimplify.lo LoopInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LoopPass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MemoryDependenceAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PHITransAddr.lo ProfileInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScalarEvolution.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScalarEvolutionExpander.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AggressiveAntiDepBreaker.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AsmPrinter.lo DIE.lo DwarfDebug.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DwarfException.lo DwarfLabel.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DwarfPrinter.lo DwarfWriter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	BranchFolding.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CalcSpillWeights.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CodePlacementOpt.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CriticalAntiDepBreaker.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DeadMachineInstructionElim.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DwarfEHPrepare.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ExactHazardRecognizer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	GCMetadata.lo GCStrategy.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LLVMTargetMachine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LatencyPriorityQueue.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LiveInterval.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LiveIntervalAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LiveStackAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LiveVariables.lo LowerSubregs.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineCSE.lo MachineDominators.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineLICM.lo MachineLoopInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineModuleInfoImpls.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachinePassRegistry.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineSSAUpdater.lo MachineSink.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineVerifier.lo OptimizeExts.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	OptimizePHIs.lo PHIElimination.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Passes.lo PostRASchedulerList.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PreAllocSplitting.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ProcessImplicitDefs.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PrologEpilogInserter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	RegAllocLinearScan.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	RegisterCoalescer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	RegisterScavenging.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAG.lo ScheduleDAGEmit.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGInstrs.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CallingConvLower.lo DAGCombiner.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	FastISel.lo FunctionLoweringInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	InstrEmitter.lo LegalizeDAG.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeFloatTypes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeIntegerTypes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeTypes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeTypesGeneric.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeVectorOps.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LegalizeVectorTypes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGFast.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGList.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGRRList.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ScheduleDAGSDNodes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SelectionDAG.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SelectionDAGBuilder.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SelectionDAGISel.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SelectionDAGPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetLowering.lo ShrinkWrapping.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SimpleRegisterCoalescing.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SjLjEHPrepare.lo SlotIndexes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Spiller.lo StackProtector.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StackSlotColoring.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StrongPHIElimination.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TailDuplication.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetLoweringObjectFileImpl.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TwoAddressInstructionPass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	UnreachableBlockElim.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	VirtRegMap.lo VirtRegRewriter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCAsmInfoDarwin.lo MCAsmStreamer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCAssembler.lo MCInst.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCMachOStreamer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCNullStreamer.lo MCSectionMachO.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCStreamer.lo TargetFrameInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetSubtarget.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CodeGenPrepare.lo GEPSplitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	GVN.lo LoopStrengthReduce.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AddrModeMatcher.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	BasicBlockUtils.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	BreakCriticalEdges.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DemoteRegToStack.lo LCSSA.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Local.lo LoopSimplify.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LowerInvoke.lo LowerSwitch.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Mem2Reg.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PromoteMemoryToRegister.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SSAUpdater.lo SimplifyCFG.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	UnifyFunctionExitNodes.lo
 libllvmcodegen_la_OBJECTS = $(am_libllvmcodegen_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmcodegen_la_rpath =
 libllvmfullcodegen_la_LIBADD =
-am_libllvmfullcodegen_la_OBJECTS = GCMetadataPrinter.lo \
-	IfConversion.lo IntrinsicLowering.lo OcamlGC.lo \
-	RegAllocLocal.lo RegAllocPBQP.lo ShadowStackGC.lo Execution.lo \
-	ExternalFunctions.lo Interpreter.lo Target.lo \
-	TargetAsmLexer.lo TargetELFWriterInfo.lo \
-	TargetIntrinsicInfo.lo
+am__libllvmfullcodegen_la_SOURCES_DIST =  \
+	llvm/lib/CodeGen/GCMetadataPrinter.cpp \
+	llvm/lib/CodeGen/IfConversion.cpp \
+	llvm/lib/CodeGen/IntrinsicLowering.cpp \
+	llvm/lib/CodeGen/OcamlGC.cpp \
+	llvm/lib/CodeGen/RegAllocLocal.cpp \
+	llvm/lib/CodeGen/RegAllocPBQP.cpp \
+	llvm/lib/CodeGen/ShadowStackGC.cpp \
+	llvm/lib/ExecutionEngine/Interpreter/Execution.cpp \
+	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp \
+	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp \
+	llvm/lib/Target/Target.cpp llvm/lib/Target/TargetAsmLexer.cpp \
+	llvm/lib/Target/TargetELFWriterInfo.cpp \
+	llvm/lib/Target/TargetIntrinsicInfo.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmfullcodegen_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	GCMetadataPrinter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	IfConversion.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	IntrinsicLowering.lo OcamlGC.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	RegAllocLocal.lo RegAllocPBQP.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ShadowStackGC.lo Execution.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ExternalFunctions.lo Interpreter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Target.lo TargetAsmLexer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetELFWriterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetIntrinsicInfo.lo
 libllvmfullcodegen_la_OBJECTS = $(am_libllvmfullcodegen_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmfullcodegen_la_rpath =
 libllvminterpreter_la_LIBADD =
-am_libllvminterpreter_la_OBJECTS = Execution.lo ExternalFunctions.lo \
-	Interpreter.lo
+am__libllvminterpreter_la_SOURCES_DIST =  \
+	llvm/lib/ExecutionEngine/Interpreter/Execution.cpp \
+	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp \
+	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvminterpreter_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	Execution.lo ExternalFunctions.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Interpreter.lo
 libllvminterpreter_la_OBJECTS = $(am_libllvminterpreter_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvminterpreter_la_rpath =
 libllvmjit_la_LIBADD =
-am_libllvmjit_la_OBJECTS = CallGraph.lo AliasAnalysis.lo \
-	BasicAliasAnalysis.lo CaptureTracking.lo DebugInfo.lo \
-	MemoryBuiltins.lo PointerTracking.lo ValueTracking.lo \
-	ELFCodeEmitter.lo ELFWriter.lo MachineBasicBlock.lo \
-	MachineFunction.lo MachineFunctionAnalysis.lo \
-	MachineFunctionPass.lo MachineInstr.lo MachineModuleInfo.lo \
-	MachineRegisterInfo.lo ObjectCodeEmitter.lo \
-	PseudoSourceValue.lo TargetInstrInfoImpl.lo ExecutionEngine.lo \
-	Intercept.lo JIT.lo JITDebugRegisterer.lo JITDwarfEmitter.lo \
-	JITEmitter.lo JITMemoryManager.lo OProfileJITEventListener.lo \
-	TargetSelect.lo MCAsmInfo.lo MCContext.lo MCExpr.lo \
-	MCSection.lo MCSectionELF.lo MCSymbol.lo APFloat.lo APInt.lo \
-	Allocator.lo CommandLine.lo ConstantRange.lo Debug.lo Dwarf.lo \
-	ErrorHandling.lo FoldingSet.lo FormattedStream.lo \
-	GraphWriter.lo ManagedStatic.lo MemoryBuffer.lo \
-	PrettyStackTrace.lo SmallPtrSet.lo SmallVector.lo SourceMgr.lo \
-	Statistic.lo StringExtras.lo StringMap.lo StringPool.lo \
-	StringRef.lo TargetRegistry.lo Timer.lo Triple.lo Twine.lo \
-	circular_raw_ostream.lo raw_ostream.lo Mangler.lo \
-	SubtargetFeature.lo TargetData.lo TargetInstrInfo.lo \
-	TargetLoweringObjectFile.lo TargetMachine.lo \
-	TargetRegisterInfo.lo DCE.lo AsmWriter.lo Attributes.lo \
-	AutoUpgrade.lo BasicBlock.lo ConstantFold.lo Constants.lo \
-	Core.lo Dominators.lo Function.lo GVMaterializer.lo Globals.lo \
-	IRBuilder.lo InlineAsm.lo Instruction.lo Instructions.lo \
-	IntrinsicInst.lo LLVMContext.lo LLVMContextImpl.lo \
-	LeakDetector.lo Metadata.lo Module.lo Pass.lo PassManager.lo \
-	PrintModulePass.lo Type.lo TypeSymbolTable.lo Use.lo Value.lo \
-	ValueSymbolTable.lo ValueTypes.lo Verifier.lo
+am__libllvmjit_la_SOURCES_DIST = llvm/lib/Analysis/IPA/CallGraph.cpp \
+	llvm/lib/Analysis/AliasAnalysis.cpp \
+	llvm/lib/Analysis/BasicAliasAnalysis.cpp \
+	llvm/lib/Analysis/CaptureTracking.cpp \
+	llvm/lib/Analysis/DebugInfo.cpp \
+	llvm/lib/Analysis/MemoryBuiltins.cpp \
+	llvm/lib/Analysis/PointerTracking.cpp \
+	llvm/lib/Analysis/ValueTracking.cpp \
+	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
+	llvm/lib/CodeGen/ELFWriter.cpp \
+	llvm/lib/CodeGen/MachineBasicBlock.cpp \
+	llvm/lib/CodeGen/MachineFunction.cpp \
+	llvm/lib/CodeGen/MachineFunctionAnalysis.cpp \
+	llvm/lib/CodeGen/MachineFunctionPass.cpp \
+	llvm/lib/CodeGen/MachineInstr.cpp \
+	llvm/lib/CodeGen/MachineModuleInfo.cpp \
+	llvm/lib/CodeGen/MachineRegisterInfo.cpp \
+	llvm/lib/CodeGen/ObjectCodeEmitter.cpp \
+	llvm/lib/CodeGen/PseudoSourceValue.cpp \
+	llvm/lib/CodeGen/TargetInstrInfoImpl.cpp \
+	llvm/lib/ExecutionEngine/ExecutionEngine.cpp \
+	llvm/lib/ExecutionEngine/JIT/Intercept.cpp \
+	llvm/lib/ExecutionEngine/JIT/JIT.cpp \
+	llvm/lib/ExecutionEngine/JIT/JITDebugRegisterer.cpp \
+	llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp \
+	llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp \
+	llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp \
+	llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp \
+	llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp \
+	llvm/lib/MC/MCAsmInfo.cpp llvm/lib/MC/MCContext.cpp \
+	llvm/lib/MC/MCExpr.cpp llvm/lib/MC/MCSection.cpp \
+	llvm/lib/MC/MCSectionELF.cpp llvm/lib/MC/MCSymbol.cpp \
+	llvm/lib/Support/APFloat.cpp llvm/lib/Support/APInt.cpp \
+	llvm/lib/Support/Allocator.cpp \
+	llvm/lib/Support/CommandLine.cpp \
+	llvm/lib/Support/ConstantRange.cpp llvm/lib/Support/Debug.cpp \
+	llvm/lib/Support/Dwarf.cpp llvm/lib/Support/ErrorHandling.cpp \
+	llvm/lib/Support/FoldingSet.cpp \
+	llvm/lib/Support/FormattedStream.cpp \
+	llvm/lib/Support/GraphWriter.cpp \
+	llvm/lib/Support/ManagedStatic.cpp \
+	llvm/lib/Support/MemoryBuffer.cpp \
+	llvm/lib/Support/PrettyStackTrace.cpp \
+	llvm/lib/Support/SmallPtrSet.cpp \
+	llvm/lib/Support/SmallVector.cpp \
+	llvm/lib/Support/SourceMgr.cpp llvm/lib/Support/Statistic.cpp \
+	llvm/lib/Support/StringExtras.cpp \
+	llvm/lib/Support/StringMap.cpp llvm/lib/Support/StringPool.cpp \
+	llvm/lib/Support/StringRef.cpp \
+	llvm/lib/Support/TargetRegistry.cpp llvm/lib/Support/Timer.cpp \
+	llvm/lib/Support/Triple.cpp llvm/lib/Support/Twine.cpp \
+	llvm/lib/Support/circular_raw_ostream.cpp \
+	llvm/lib/Support/raw_ostream.cpp llvm/lib/Target/Mangler.cpp \
+	llvm/lib/Target/SubtargetFeature.cpp \
+	llvm/lib/Target/TargetData.cpp \
+	llvm/lib/Target/TargetInstrInfo.cpp \
+	llvm/lib/Target/TargetLoweringObjectFile.cpp \
+	llvm/lib/Target/TargetMachine.cpp \
+	llvm/lib/Target/TargetRegisterInfo.cpp \
+	llvm/lib/Transforms/Scalar/DCE.cpp \
+	llvm/lib/VMCore/AsmWriter.cpp llvm/lib/VMCore/Attributes.cpp \
+	llvm/lib/VMCore/AutoUpgrade.cpp llvm/lib/VMCore/BasicBlock.cpp \
+	llvm/lib/VMCore/ConstantFold.cpp llvm/lib/VMCore/Constants.cpp \
+	llvm/lib/VMCore/Core.cpp llvm/lib/VMCore/Dominators.cpp \
+	llvm/lib/VMCore/Function.cpp \
+	llvm/lib/VMCore/GVMaterializer.cpp llvm/lib/VMCore/Globals.cpp \
+	llvm/lib/VMCore/IRBuilder.cpp llvm/lib/VMCore/InlineAsm.cpp \
+	llvm/lib/VMCore/Instruction.cpp \
+	llvm/lib/VMCore/Instructions.cpp \
+	llvm/lib/VMCore/IntrinsicInst.cpp \
+	llvm/lib/VMCore/LLVMContext.cpp \
+	llvm/lib/VMCore/LLVMContextImpl.cpp \
+	llvm/lib/VMCore/LeakDetector.cpp llvm/lib/VMCore/Metadata.cpp \
+	llvm/lib/VMCore/Module.cpp llvm/lib/VMCore/Pass.cpp \
+	llvm/lib/VMCore/PassManager.cpp \
+	llvm/lib/VMCore/PrintModulePass.cpp llvm/lib/VMCore/Type.cpp \
+	llvm/lib/VMCore/TypeSymbolTable.cpp llvm/lib/VMCore/Use.cpp \
+	llvm/lib/VMCore/Value.cpp llvm/lib/VMCore/ValueSymbolTable.cpp \
+	llvm/lib/VMCore/ValueTypes.cpp llvm/lib/VMCore/Verifier.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmjit_la_OBJECTS = CallGraph.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AliasAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	BasicAliasAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CaptureTracking.lo DebugInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MemoryBuiltins.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PointerTracking.lo ValueTracking.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ELFCodeEmitter.lo ELFWriter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineBasicBlock.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineFunction.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineFunctionAnalysis.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineFunctionPass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineInstr.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineModuleInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MachineRegisterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ObjectCodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PseudoSourceValue.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetInstrInfoImpl.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ExecutionEngine.lo Intercept.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	JIT.lo JITDebugRegisterer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	JITDwarfEmitter.lo JITEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	JITMemoryManager.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	OProfileJITEventListener.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetSelect.lo MCAsmInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCContext.lo MCExpr.lo MCSection.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MCSectionELF.lo MCSymbol.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	APFloat.lo APInt.lo Allocator.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CommandLine.lo ConstantRange.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Debug.lo Dwarf.lo ErrorHandling.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	FoldingSet.lo FormattedStream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	GraphWriter.lo ManagedStatic.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MemoryBuffer.lo PrettyStackTrace.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SmallPtrSet.lo SmallVector.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SourceMgr.lo Statistic.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StringExtras.lo StringMap.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StringPool.lo StringRef.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetRegistry.lo Timer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Triple.lo Twine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	circular_raw_ostream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	raw_ostream.lo Mangler.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SubtargetFeature.lo TargetData.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetInstrInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetLoweringObjectFile.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetMachine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TargetRegisterInfo.lo DCE.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AsmWriter.lo Attributes.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	AutoUpgrade.lo BasicBlock.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ConstantFold.lo Constants.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Core.lo Dominators.lo Function.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	GVMaterializer.lo Globals.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	IRBuilder.lo InlineAsm.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Instruction.lo Instructions.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	IntrinsicInst.lo LLVMContext.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	LLVMContextImpl.lo LeakDetector.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Metadata.lo Module.lo Pass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PassManager.lo PrintModulePass.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Type.lo TypeSymbolTable.lo Use.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Value.lo ValueSymbolTable.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ValueTypes.lo Verifier.lo
 libllvmjit_la_OBJECTS = $(am_libllvmjit_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmjit_la_rpath =
 libllvmpowerpccodegen_la_LIBADD =
 am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp \
@@ -327,55 +662,126 @@ am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
 	llvm/lib/Target/PowerPC/PPCSubtarget.cpp \
 	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp \
 	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
-@BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_OBJECTS =  \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCBranchSelector.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCCodeEmitter.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCHazardRecognizers.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCISelDAGToDAG.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCISelLowering.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCInstrInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCJITInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCMCAsmInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCPredicates.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCRegisterInfo.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCSubtarget.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCTargetMachine.lo \
-@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_OBJECTS = libllvmpowerpccodegen_la-PPCBranchSelector.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCCodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCHazardRecognizers.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCISelDAGToDAG.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCISelLowering.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCInstrInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCJITInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCMCAsmInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCPredicates.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCRegisterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCSubtarget.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PPCTargetMachine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	libllvmpowerpccodegen_la-PowerPCTargetInfo.lo
 libllvmpowerpccodegen_la_OBJECTS =  \
 	$(am_libllvmpowerpccodegen_la_OBJECTS)
-@BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_rpath =
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am_libllvmpowerpccodegen_la_rpath =
 libllvmsupport_la_LIBADD =
-am_libllvmsupport_la_OBJECTS = APFloat.lo APInt.lo APSInt.lo \
-	Allocator.lo CommandLine.lo ConstantRange.lo Debug.lo \
-	DeltaAlgorithm.lo Dwarf.lo ErrorHandling.lo FileUtilities.lo \
-	FoldingSet.lo FormattedStream.lo GraphWriter.lo IsInf.lo \
-	IsNAN.lo ManagedStatic.lo MemoryBuffer.lo MemoryObject.lo \
-	PluginLoader.lo PrettyStackTrace.lo Regex.lo \
-	SlowOperationInformer.lo SmallPtrSet.lo SmallVector.lo \
-	SourceMgr.lo Statistic.lo StringExtras.lo StringMap.lo \
-	StringPool.lo StringRef.lo SystemUtils.lo TargetRegistry.lo \
-	Timer.lo Triple.lo Twine.lo circular_raw_ostream.lo \
-	raw_os_ostream.lo raw_ostream.lo regcomp.lo regerror.lo \
-	regexec.lo regfree.lo regstrlcpy.lo
+am__libllvmsupport_la_SOURCES_DIST = llvm/lib/Support/APFloat.cpp \
+	llvm/lib/Support/APInt.cpp llvm/lib/Support/APSInt.cpp \
+	llvm/lib/Support/Allocator.cpp \
+	llvm/lib/Support/CommandLine.cpp \
+	llvm/lib/Support/ConstantRange.cpp llvm/lib/Support/Debug.cpp \
+	llvm/lib/Support/DeltaAlgorithm.cpp llvm/lib/Support/Dwarf.cpp \
+	llvm/lib/Support/ErrorHandling.cpp \
+	llvm/lib/Support/FileUtilities.cpp \
+	llvm/lib/Support/FoldingSet.cpp \
+	llvm/lib/Support/FormattedStream.cpp \
+	llvm/lib/Support/GraphWriter.cpp llvm/lib/Support/IsInf.cpp \
+	llvm/lib/Support/IsNAN.cpp llvm/lib/Support/ManagedStatic.cpp \
+	llvm/lib/Support/MemoryBuffer.cpp \
+	llvm/lib/Support/MemoryObject.cpp \
+	llvm/lib/Support/PluginLoader.cpp \
+	llvm/lib/Support/PrettyStackTrace.cpp \
+	llvm/lib/Support/Regex.cpp \
+	llvm/lib/Support/SlowOperationInformer.cpp \
+	llvm/lib/Support/SmallPtrSet.cpp \
+	llvm/lib/Support/SmallVector.cpp \
+	llvm/lib/Support/SourceMgr.cpp llvm/lib/Support/Statistic.cpp \
+	llvm/lib/Support/StringExtras.cpp \
+	llvm/lib/Support/StringMap.cpp llvm/lib/Support/StringPool.cpp \
+	llvm/lib/Support/StringRef.cpp \
+	llvm/lib/Support/SystemUtils.cpp \
+	llvm/lib/Support/TargetRegistry.cpp llvm/lib/Support/Timer.cpp \
+	llvm/lib/Support/Triple.cpp llvm/lib/Support/Twine.cpp \
+	llvm/lib/Support/circular_raw_ostream.cpp \
+	llvm/lib/Support/raw_os_ostream.cpp \
+	llvm/lib/Support/raw_ostream.cpp llvm/lib/Support/regcomp.c \
+	llvm/lib/Support/regerror.c llvm/lib/Support/regexec.c \
+	llvm/lib/Support/regfree.c llvm/lib/Support/regstrlcpy.c
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsupport_la_OBJECTS = APFloat.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	APInt.lo APSInt.lo Allocator.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	CommandLine.lo ConstantRange.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Debug.lo DeltaAlgorithm.lo Dwarf.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ErrorHandling.lo FileUtilities.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	FoldingSet.lo FormattedStream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	GraphWriter.lo IsInf.lo IsNAN.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ManagedStatic.lo MemoryBuffer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MemoryObject.lo PluginLoader.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	PrettyStackTrace.lo Regex.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SlowOperationInformer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SmallPtrSet.lo SmallVector.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SourceMgr.lo Statistic.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StringExtras.lo StringMap.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	StringPool.lo StringRef.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SystemUtils.lo TargetRegistry.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Timer.lo Triple.lo Twine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	circular_raw_ostream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	raw_os_ostream.lo raw_ostream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	regcomp.lo regerror.lo regexec.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	regfree.lo regstrlcpy.lo
 libllvmsupport_la_OBJECTS = $(am_libllvmsupport_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsupport_la_rpath =
 libllvmsupport_nodups_la_LIBADD =
-am_libllvmsupport_nodups_la_OBJECTS = APSInt.lo DeltaAlgorithm.lo \
-	FileUtilities.lo IsInf.lo IsNAN.lo MemoryObject.lo \
-	PluginLoader.lo Regex.lo SlowOperationInformer.lo \
-	SystemUtils.lo raw_os_ostream.lo regcomp.lo regerror.lo \
-	regexec.lo regfree.lo regstrlcpy.lo
+am__libllvmsupport_nodups_la_SOURCES_DIST =  \
+	llvm/lib/Support/APSInt.cpp \
+	llvm/lib/Support/DeltaAlgorithm.cpp \
+	llvm/lib/Support/FileUtilities.cpp llvm/lib/Support/IsInf.cpp \
+	llvm/lib/Support/IsNAN.cpp llvm/lib/Support/MemoryObject.cpp \
+	llvm/lib/Support/PluginLoader.cpp llvm/lib/Support/Regex.cpp \
+	llvm/lib/Support/SlowOperationInformer.cpp \
+	llvm/lib/Support/SystemUtils.cpp \
+	llvm/lib/Support/raw_os_ostream.cpp llvm/lib/Support/regcomp.c \
+	llvm/lib/Support/regerror.c llvm/lib/Support/regexec.c \
+	llvm/lib/Support/regfree.c llvm/lib/Support/regstrlcpy.c
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsupport_nodups_la_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	APSInt.lo DeltaAlgorithm.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	FileUtilities.lo IsInf.lo IsNAN.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	MemoryObject.lo PluginLoader.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Regex.lo SlowOperationInformer.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	SystemUtils.lo raw_os_ostream.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	regcomp.lo regerror.lo regexec.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	regfree.lo regstrlcpy.lo
 libllvmsupport_nodups_la_OBJECTS =  \
 	$(am_libllvmsupport_nodups_la_OBJECTS)
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsupport_nodups_la_rpath =
 libllvmsystem_la_DEPENDENCIES =
-am_libllvmsystem_la_OBJECTS = Alarm.lo Atomic.lo Disassembler.lo \
-	DynamicLibrary.lo Errno.lo Host.lo IncludeFile.lo Memory.lo \
-	Mutex.lo Path.lo Process.lo Program.lo RWMutex.lo Signals.lo \
-	ThreadLocal.lo Threading.lo TimeValue.lo
+am__libllvmsystem_la_SOURCES_DIST = llvm/lib/System/Alarm.cpp \
+	llvm/lib/System/Atomic.cpp llvm/lib/System/Disassembler.cpp \
+	llvm/lib/System/DynamicLibrary.cpp llvm/lib/System/Errno.cpp \
+	llvm/lib/System/Host.cpp llvm/lib/System/IncludeFile.cpp \
+	llvm/lib/System/Memory.cpp llvm/lib/System/Mutex.cpp \
+	llvm/lib/System/Path.cpp llvm/lib/System/Process.cpp \
+	llvm/lib/System/Program.cpp llvm/lib/System/RWMutex.cpp \
+	llvm/lib/System/Signals.cpp llvm/lib/System/ThreadLocal.cpp \
+	llvm/lib/System/Threading.cpp llvm/lib/System/TimeValue.cpp \
+	llvm/config.status
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsystem_la_OBJECTS = Alarm.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Atomic.lo Disassembler.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	DynamicLibrary.lo Errno.lo Host.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	IncludeFile.lo Memory.lo Mutex.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	Path.lo Process.lo Program.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	RWMutex.lo Signals.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	ThreadLocal.lo Threading.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@	TimeValue.lo
 libllvmsystem_la_OBJECTS = $(am_libllvmsystem_la_OBJECTS)
 libllvmsystem_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(AM_CXXFLAGS) $(CXXFLAGS) $(libllvmsystem_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@BUILD_EXTERNAL_LLVM_FALSE@am_libllvmsystem_la_rpath =
 libllvmx86codegen_la_LIBADD =
 am__libllvmx86codegen_la_SOURCES_DIST = llvm/lib/MC/MCAsmInfoCOFF.cpp \
 	llvm/lib/MC/MCCodeEmitter.cpp llvm/lib/MC/TargetAsmBackend.cpp \
@@ -399,143 +805,206 @@ am__libllvmx86codegen_la_SOURCES_DIST = llvm/lib/MC/MCAsmInfoCOFF.cpp \
 	llvm/lib/Target/X86/X86Subtarget.cpp \
 	llvm/lib/Target/X86/X86TargetMachine.cpp \
 	llvm/lib/Target/X86/X86TargetObjectFile.cpp
-@BUILD_X86_TRUE@am_libllvmx86codegen_la_OBJECTS =  \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-MCAsmInfoCOFF.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-MCCodeEmitter.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-TargetAsmBackend.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-TargetELFWriterInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86AsmBackend.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86COFFMachineModuleInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86CodeEmitter.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ELFWriterInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FastISel.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FloatingPoint.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FloatingPointRegKill.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ISelDAGToDAG.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ISelLowering.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86InstrInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86JITInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCAsmInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCCodeEmitter.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCTargetExpr.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86RegisterInfo.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86Subtarget.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetMachine.lo \
-@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetObjectFile.lo
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am_libllvmx86codegen_la_OBJECTS = libllvmx86codegen_la-MCAsmInfoCOFF.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-MCCodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-TargetAsmBackend.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-TargetELFWriterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86AsmBackend.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86COFFMachineModuleInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86CodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ELFWriterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FastISel.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FloatingPoint.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86FloatingPointRegKill.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ISelDAGToDAG.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86ISelLowering.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86InstrInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86JITInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCAsmInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCCodeEmitter.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86MCTargetExpr.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86RegisterInfo.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86Subtarget.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetMachine.lo \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	libllvmx86codegen_la-X86TargetObjectFile.lo
 libllvmx86codegen_la_OBJECTS = $(am_libllvmx86codegen_la_OBJECTS)
-@BUILD_X86_TRUE@am_libllvmx86codegen_la_rpath =
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am_libllvmx86codegen_la_rpath =
 PROGRAMS = $(noinst_PROGRAMS)
-am_FileCheck_OBJECTS = FileCheck-FileCheck.$(OBJEXT)
+am__FileCheck_SOURCES_DIST = llvm/utils/FileCheck/FileCheck.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_FileCheck_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	FileCheck-FileCheck.$(OBJEXT)
 FileCheck_OBJECTS = $(am_FileCheck_OBJECTS)
-FileCheck_DEPENDENCIES = libllvmsupport.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@FileCheck_DEPENDENCIES = libllvmsupport.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la
 FileCheck_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(FileCheck_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_count_OBJECTS = count-count.$(OBJEXT)
+am__count_SOURCES_DIST = llvm/utils/count/count.c
+@BUILD_EXTERNAL_LLVM_FALSE@am_count_OBJECTS = count-count.$(OBJEXT)
 count_OBJECTS = $(am_count_OBJECTS)
-count_DEPENDENCIES = libllvmsystem.la
-am_llc_OBJECTS = llc-MCInstPrinter.$(OBJEXT) llc-llc.$(OBJEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@count_DEPENDENCIES = libllvmsystem.la
+am__llc_SOURCES_DIST = llvm/lib/MC/MCInstPrinter.cpp \
+	llvm/tools/llc/llc.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llc_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	llc-MCInstPrinter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llc-llc.$(OBJEXT)
 llc_OBJECTS = $(am_llc_OBJECTS)
-llc_DEPENDENCIES = libllvmbitreader.la libllvmasmprinter.la \
-	libllvmasmparser.la $(lli_LDADD)
+@BUILD_EXTERNAL_LLVM_FALSE@llc_DEPENDENCIES = libllvmbitreader.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmprinter.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmparser.la $(lli_LDADD)
 llc_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llc_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_lli_OBJECTS = lli.$(OBJEXT)
+am__lli_SOURCES_DIST = llvm/tools/lli/lli.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_lli_OBJECTS = lli.$(OBJEXT)
 lli_OBJECTS = $(am_lli_OBJECTS)
-lli_DEPENDENCIES = libllvmbitreader.la libllvmfullcodegen.la \
-	libllvmjit.la $(am__append_3) $(am__append_7) $(am__append_11) \
-	libllvmfullcodegen.la libllvmcodegen.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-am_llvm_as_OBJECTS = llvm_as-llvm-as.$(OBJEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@lli_DEPENDENCIES = libllvmbitreader.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmfullcodegen.la libllvmjit.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_4) $(am__append_8) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_12) \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmfullcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
+am__llvm_as_SOURCES_DIST = llvm/tools/llvm-as/llvm-as.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvm_as_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm_as-llvm-as.$(OBJEXT)
 llvm_as_OBJECTS = $(am_llvm_as_OBJECTS)
-llvm_as_DEPENDENCIES = libllvmasmparser.la libllvmbitwriter.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_as_DEPENDENCIES = libllvmasmparser.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmbitwriter.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
 llvm_as_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_as_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_llvm_dis_OBJECTS = llvm_dis-llvm-dis.$(OBJEXT)
+am__llvm_dis_SOURCES_DIST = llvm/tools/llvm-dis/llvm-dis.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvm_dis_OBJECTS =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm_dis-llvm-dis.$(OBJEXT)
 llvm_dis_OBJECTS = $(am_llvm_dis_OBJECTS)
-llvm_dis_DEPENDENCIES = libllvmasmparser.la libllvmbitreader.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_dis_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmparser.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmbitreader.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
 llvm_dis_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(llvm_dis_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_llvmunittest_ADT_OBJECTS = llvmunittest_ADT-APFloatTest.$(OBJEXT) \
-	llvmunittest_ADT-APIntTest.$(OBJEXT) \
-	llvmunittest_ADT-DenseMapTest.$(OBJEXT) \
-	llvmunittest_ADT-DenseSetTest.$(OBJEXT) \
-	llvmunittest_ADT-ImmutableSetTest.$(OBJEXT) \
-	llvmunittest_ADT-SmallStringTest.$(OBJEXT) \
-	llvmunittest_ADT-SmallVectorTest.$(OBJEXT) \
-	llvmunittest_ADT-SparseBitVectorTest.$(OBJEXT) \
-	llvmunittest_ADT-StringMapTest.$(OBJEXT) \
-	llvmunittest_ADT-StringRefTest.$(OBJEXT) \
-	llvmunittest_ADT-TripleTest.$(OBJEXT) \
-	llvmunittest_ADT-TwineTest.$(OBJEXT)
+am__llvmunittest_ADT_SOURCES_DIST =  \
+	llvm/unittests/ADT/APFloatTest.cpp \
+	llvm/unittests/ADT/APIntTest.cpp \
+	llvm/unittests/ADT/DenseMapTest.cpp \
+	llvm/unittests/ADT/DenseSetTest.cpp \
+	llvm/unittests/ADT/ImmutableSetTest.cpp \
+	llvm/unittests/ADT/SmallStringTest.cpp \
+	llvm/unittests/ADT/SmallVectorTest.cpp \
+	llvm/unittests/ADT/SparseBitVectorTest.cpp \
+	llvm/unittests/ADT/StringMapTest.cpp \
+	llvm/unittests/ADT/StringRefTest.cpp \
+	llvm/unittests/ADT/TripleTest.cpp \
+	llvm/unittests/ADT/TwineTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvmunittest_ADT_OBJECTS = llvmunittest_ADT-APFloatTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-APIntTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-DenseMapTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-DenseSetTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-ImmutableSetTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-SmallStringTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-SmallVectorTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-SparseBitVectorTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-StringMapTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-StringRefTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-TripleTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ADT-TwineTest.$(OBJEXT)
 llvmunittest_ADT_OBJECTS = $(am_llvmunittest_ADT_OBJECTS)
-llvmunittest_ADT_DEPENDENCIES = libgoogletest.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ADT_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
 llvmunittest_ADT_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(llvmunittest_ADT_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_llvmunittest_ExecutionEngine_OBJECTS =  \
-	llvmunittest_ExecutionEngine-IntrinsicLowering.$(OBJEXT) \
-	llvmunittest_ExecutionEngine-ExecutionEngineTest.$(OBJEXT)
+am__llvmunittest_ExecutionEngine_SOURCES_DIST =  \
+	llvm/lib/CodeGen/IntrinsicLowering.cpp \
+	llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvmunittest_ExecutionEngine_OBJECTS = llvmunittest_ExecutionEngine-IntrinsicLowering.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_ExecutionEngine-ExecutionEngineTest.$(OBJEXT)
 llvmunittest_ExecutionEngine_OBJECTS =  \
 	$(am_llvmunittest_ExecutionEngine_OBJECTS)
-llvmunittest_ExecutionEngine_DEPENDENCIES = libgoogletest.la \
-	libllvminterpreter.la libllvmsupport_nodups.la \
-	$(libclamavcxx_la_LIBADD) libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ExecutionEngine_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvminterpreter.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(libclamavcxx_la_LIBADD) \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la
 llvmunittest_ExecutionEngine_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(llvmunittest_ExecutionEngine_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_llvmunittest_JIT_OBJECTS =  \
-	llvmunittest_JIT-JITEventListenerTest.$(OBJEXT) \
-	llvmunittest_JIT-JITMemoryManagerTest.$(OBJEXT) \
-	llvmunittest_JIT-JITTest.$(OBJEXT)
+am__llvmunittest_JIT_SOURCES_DIST =  \
+	llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp \
+	llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp \
+	llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvmunittest_JIT_OBJECTS = llvmunittest_JIT-JITEventListenerTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_JIT-JITMemoryManagerTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_JIT-JITTest.$(OBJEXT)
 llvmunittest_JIT_OBJECTS = $(am_llvmunittest_JIT_OBJECTS)
-llvmunittest_JIT_DEPENDENCIES = libgoogletest.la libllvmasmparser.la \
-	$(lli_LDADD)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_JIT_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmasmparser.la $(lli_LDADD)
 llvmunittest_JIT_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(llvmunittest_JIT_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_llvmunittest_Support_OBJECTS =  \
-	llvmunittest_Support-AllocatorTest.$(OBJEXT) \
-	llvmunittest_Support-ConstantRangeTest.$(OBJEXT) \
-	llvmunittest_Support-MathExtrasTest.$(OBJEXT) \
-	llvmunittest_Support-RegexTest.$(OBJEXT) \
-	llvmunittest_Support-TypeBuilderTest.$(OBJEXT) \
-	llvmunittest_Support-ValueHandleTest.$(OBJEXT) \
-	llvmunittest_Support-raw_ostream_test.$(OBJEXT)
+am__llvmunittest_Support_SOURCES_DIST =  \
+	llvm/unittests/Support/AllocatorTest.cpp \
+	llvm/unittests/Support/ConstantRangeTest.cpp \
+	llvm/unittests/Support/MathExtrasTest.cpp \
+	llvm/unittests/Support/RegexTest.cpp \
+	llvm/unittests/Support/TypeBuilderTest.cpp \
+	llvm/unittests/Support/ValueHandleTest.cpp \
+	llvm/unittests/Support/raw_ostream_test.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvmunittest_Support_OBJECTS = llvmunittest_Support-AllocatorTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-ConstantRangeTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-MathExtrasTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-RegexTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-TypeBuilderTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-ValueHandleTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_Support-raw_ostream_test.$(OBJEXT)
 llvmunittest_Support_OBJECTS = $(am_llvmunittest_Support_OBJECTS)
-llvmunittest_Support_DEPENDENCIES = libgoogletest.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_Support_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
 llvmunittest_Support_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(llvmunittest_Support_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_llvmunittest_VMCore_OBJECTS =  \
-	llvmunittest_VMCore-CallGraphSCCPass.$(OBJEXT) \
-	llvmunittest_VMCore-LoopInfo.$(OBJEXT) \
-	llvmunittest_VMCore-LoopPass.$(OBJEXT) \
-	llvmunittest_VMCore-ConstantsTest.$(OBJEXT) \
-	llvmunittest_VMCore-MetadataTest.$(OBJEXT) \
-	llvmunittest_VMCore-PassManagerTest.$(OBJEXT)
+am__llvmunittest_VMCore_SOURCES_DIST =  \
+	llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp \
+	llvm/lib/Analysis/LoopInfo.cpp llvm/lib/Analysis/LoopPass.cpp \
+	llvm/unittests/VMCore/ConstantsTest.cpp \
+	llvm/unittests/VMCore/MetadataTest.cpp \
+	llvm/unittests/VMCore/PassManagerTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_llvmunittest_VMCore_OBJECTS = llvmunittest_VMCore-CallGraphSCCPass.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore-LoopInfo.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore-LoopPass.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore-ConstantsTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore-MetadataTest.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvmunittest_VMCore-PassManagerTest.$(OBJEXT)
 llvmunittest_VMCore_OBJECTS = $(am_llvmunittest_VMCore_OBJECTS)
-llvmunittest_VMCore_DEPENDENCIES = libgoogletest.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_VMCore_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libgoogletest.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
 llvmunittest_VMCore_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(llvmunittest_VMCore_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_not_OBJECTS = not-not.$(OBJEXT)
+am__not_SOURCES_DIST = llvm/utils/not/not.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@am_not_OBJECTS = not-not.$(OBJEXT)
 not_OBJECTS = $(am_not_OBJECTS)
-not_DEPENDENCIES = libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@not_DEPENDENCIES = libllvmsystem.la
 not_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(not_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -611,100 +1080,99 @@ am__tblgen_SOURCES_DIST = llvm/utils/TableGen/AsmMatcherEmitter.cpp \
 	llvm/lib/Support/raw_ostream.cpp llvm/lib/Support/regcomp.c \
 	llvm/lib/Support/regerror.c llvm/lib/Support/regexec.c \
 	llvm/lib/Support/regfree.c llvm/lib/Support/regstrlcpy.c
-@MAINTAINER_MODE_TRUE@am_tblgen_OBJECTS =  \
-@MAINTAINER_MODE_TRUE@	tblgen-AsmMatcherEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-AsmWriterEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-AsmWriterInst.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CallingConvEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-ClangDiagnosticsEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CodeEmitterGen.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CodeGenDAGPatterns.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CodeGenInstruction.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CodeGenTarget.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DAGISelEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcher.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherGen.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherOpt.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DisassemblerEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-EDEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-FastISelEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-InstrEnumEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-InstrInfoEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-IntrinsicEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-LLVMCConfigurationEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-OptParserEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Record.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-RegisterInfoEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SubtargetEmitter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TGLexer.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TGParser.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TGValueTypes.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TableGen.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-X86DisassemblerTables.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-X86RecognizableInstr.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Alarm.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Atomic.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Disassembler.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DynamicLibrary.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Errno.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Host.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-IncludeFile.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Memory.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Mutex.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Path.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Process.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Program.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-RWMutex.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Signals.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-ThreadLocal.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Threading.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TimeValue.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-APFloat.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-APInt.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-APSInt.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Allocator.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-CommandLine.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-ConstantRange.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Debug.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-DeltaAlgorithm.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Dwarf.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-ErrorHandling.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-FileUtilities.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-FoldingSet.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-FormattedStream.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-GraphWriter.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-IsInf.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-IsNAN.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-ManagedStatic.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-MemoryBuffer.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-MemoryObject.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-PluginLoader.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-PrettyStackTrace.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Regex.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SlowOperationInformer.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SmallPtrSet.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SmallVector.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SourceMgr.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Statistic.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-StringExtras.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-StringMap.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-StringPool.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-StringRef.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-SystemUtils.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-TargetRegistry.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Timer.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Triple.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-Twine.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-circular_raw_ostream.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-raw_os_ostream.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-raw_ostream.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-regcomp.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-regerror.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-regexec.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-regfree.$(OBJEXT) \
-@MAINTAINER_MODE_TRUE@	tblgen-regstrlcpy.$(OBJEXT)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@am_tblgen_OBJECTS = tblgen-AsmMatcherEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-AsmWriterEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-AsmWriterInst.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CallingConvEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-ClangDiagnosticsEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CodeEmitterGen.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CodeGenDAGPatterns.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CodeGenInstruction.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CodeGenTarget.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DAGISelEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcher.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherGen.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DAGISelMatcherOpt.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DisassemblerEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-EDEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-FastISelEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-InstrEnumEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-InstrInfoEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-IntrinsicEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-LLVMCConfigurationEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-OptParserEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Record.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-RegisterInfoEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SubtargetEmitter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TGLexer.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TGParser.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TGValueTypes.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TableGen.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TableGenBackend.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-X86DisassemblerTables.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-X86RecognizableInstr.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Alarm.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Atomic.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Disassembler.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DynamicLibrary.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Errno.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Host.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-IncludeFile.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Memory.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Mutex.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Path.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Process.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Program.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-RWMutex.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Signals.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-ThreadLocal.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Threading.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TimeValue.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-APFloat.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-APInt.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-APSInt.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Allocator.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-CommandLine.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-ConstantRange.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Debug.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-DeltaAlgorithm.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Dwarf.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-ErrorHandling.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-FileUtilities.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-FoldingSet.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-FormattedStream.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-GraphWriter.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-IsInf.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-IsNAN.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-ManagedStatic.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-MemoryBuffer.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-MemoryObject.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-PluginLoader.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-PrettyStackTrace.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Regex.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SlowOperationInformer.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SmallPtrSet.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SmallVector.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SourceMgr.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Statistic.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-StringExtras.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-StringMap.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-StringPool.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-StringRef.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-SystemUtils.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-TargetRegistry.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Timer.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Triple.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-Twine.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-circular_raw_ostream.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-raw_os_ostream.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-raw_ostream.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-regcomp.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-regerror.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-regexec.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-regfree.$(OBJEXT) \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	tblgen-regstrlcpy.$(OBJEXT)
 tblgen_OBJECTS = $(am_tblgen_OBJECTS)
 tblgen_LDADD = $(LDADD)
 tblgen_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -769,25 +1237,31 @@ SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
 	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
 	$(llvmunittest_VMCore_SOURCES) $(not_SOURCES) \
 	$(tblgen_SOURCES)
-DIST_SOURCES = $(libclamavcxx_la_SOURCES) $(libgoogletest_la_SOURCES) \
+DIST_SOURCES = $(libclamavcxx_la_SOURCES) \
+	$(am__libgoogletest_la_SOURCES_DIST) \
 	$(am__libllvmarmcodegen_la_SOURCES_DIST) \
-	$(libllvmasmparser_la_SOURCES) \
+	$(am__libllvmasmparser_la_SOURCES_DIST) \
 	$(am__libllvmasmprinter_la_SOURCES_DIST) \
-	$(libllvmbitreader_la_SOURCES) $(libllvmbitwriter_la_SOURCES) \
-	$(libllvmcodegen_la_SOURCES) $(libllvmfullcodegen_la_SOURCES) \
-	$(libllvminterpreter_la_SOURCES) $(libllvmjit_la_SOURCES) \
+	$(am__libllvmbitreader_la_SOURCES_DIST) \
+	$(am__libllvmbitwriter_la_SOURCES_DIST) \
+	$(am__libllvmcodegen_la_SOURCES_DIST) \
+	$(am__libllvmfullcodegen_la_SOURCES_DIST) \
+	$(am__libllvminterpreter_la_SOURCES_DIST) \
+	$(am__libllvmjit_la_SOURCES_DIST) \
 	$(am__libllvmpowerpccodegen_la_SOURCES_DIST) \
-	$(libllvmsupport_la_SOURCES) \
-	$(libllvmsupport_nodups_la_SOURCES) \
-	$(libllvmsystem_la_SOURCES) \
-	$(am__libllvmx86codegen_la_SOURCES_DIST) $(FileCheck_SOURCES) \
-	$(count_SOURCES) $(llc_SOURCES) $(lli_SOURCES) \
-	$(llvm_as_SOURCES) $(llvm_dis_SOURCES) \
-	$(llvmunittest_ADT_SOURCES) \
-	$(llvmunittest_ExecutionEngine_SOURCES) \
-	$(llvmunittest_JIT_SOURCES) $(llvmunittest_Support_SOURCES) \
-	$(llvmunittest_VMCore_SOURCES) $(not_SOURCES) \
-	$(am__tblgen_SOURCES_DIST)
+	$(am__libllvmsupport_la_SOURCES_DIST) \
+	$(am__libllvmsupport_nodups_la_SOURCES_DIST) \
+	$(am__libllvmsystem_la_SOURCES_DIST) \
+	$(am__libllvmx86codegen_la_SOURCES_DIST) \
+	$(am__FileCheck_SOURCES_DIST) $(am__count_SOURCES_DIST) \
+	$(am__llc_SOURCES_DIST) $(am__lli_SOURCES_DIST) \
+	$(am__llvm_as_SOURCES_DIST) $(am__llvm_dis_SOURCES_DIST) \
+	$(am__llvmunittest_ADT_SOURCES_DIST) \
+	$(am__llvmunittest_ExecutionEngine_SOURCES_DIST) \
+	$(am__llvmunittest_JIT_SOURCES_DIST) \
+	$(am__llvmunittest_Support_SOURCES_DIST) \
+	$(am__llvmunittest_VMCore_SOURCES_DIST) \
+	$(am__not_SOURCES_DIST) $(am__tblgen_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 # If stdout is a non-dumb tty, use colors.  If test -t is not supported,
@@ -857,6 +1331,10 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
+LLVMCONFIG_CXXFLAGS = @LLVMCONFIG_CXXFLAGS@
+LLVMCONFIG_LDFLAGS = @LLVMCONFIG_LDFLAGS@
+LLVMCONFIG_LIBFILES = @LLVMCONFIG_LIBFILES@
+LLVMCONFIG_LIBS = @LLVMCONFIG_LIBS@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
@@ -949,695 +1427,715 @@ LLVM_INCLUDES = -I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # keep it like this while I'm testing LLVM
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
-AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../ $(LLVM_INCLUDES) $(LLVM_DEFS)
+AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. \
+	-I$(top_builddir)/../../ $(am__append_1)
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS = -I m4
-@DEBUG_BUILD_FALSE@LLVM_CONFIG = llvm/Release/bin/llvm-config
-@DEBUG_BUILD_TRUE@LLVM_CONFIG = llvm/Debug/bin/llvm-config
-
-#$(LLVM_CONFIG): build-llvm
-# we know this will be built with GNU make, so its safe to use GNU make specific
-# $(shell ...)
-#LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-#libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) `$(LLVM_CONFIG) --cppflags`
-#libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-#libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
-#libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
-#libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la \
-	libllvmcodegen.la libllvmjit.la $(am__append_4) \
-	$(am__append_8) $(am__append_12)
-lli_LDADD = libllvmbitreader.la libllvmfullcodegen.la libllvmjit.la \
-	$(am__append_3) $(am__append_7) $(am__append_11) \
-	libllvmfullcodegen.la libllvmcodegen.la \
-	libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-libclamavcxx_la_LIBADD = libllvmjit.la $(am__append_1) $(am__append_5) \
-	$(am__append_9) libllvmcodegen.la libllvmsystem.la
-libclamavcxx_la_DEPENDENCIES = libllvmjit.la libllvmcodegen.la \
-	libllvmsystem.la $(am__append_2) $(am__append_6) \
-	$(am__append_10)
-libclamavcxx_la_LDFLAGS = -no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 			  ClamBCRTChecks.cpp\
 			  ClamBCModule.h\
 			  ClamBCDiagnostics.h\
 			  detect.cpp
 
-LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
-unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
-TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
-    X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
-    X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
-    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
-    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
+#$(LLVM_CONFIG): build-llvm
+# we know this will be built with GNU make, so its safe to use GNU make specific
+# $(shell ...)
+#LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LDFLAGS = -no-undefined
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la $(am__append_3) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_7) $(am__append_11)
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES =  \
+@BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ \
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_3) $(am__append_7) \
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_11)
+@BUILD_EXTERNAL_LLVM_FALSE@noinst_LTLIBRARIES = libclamavcxx.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la libllvmcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la $(am__append_5) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_9) $(am__append_13)
+@BUILD_EXTERNAL_LLVM_TRUE@noinst_LTLIBRARIES = libclamavcxx.la \
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_5) $(am__append_9) \
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_13)
+@BUILD_EXTERNAL_LLVM_FALSE@lli_LDADD = libllvmbitreader.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmfullcodegen.la libllvmjit.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_4) $(am__append_8) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_12) \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmfullcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsupport_nodups.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LIBADD = libllvmjit.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_2) $(am__append_6) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_10) libllvmcodegen.la \
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+@BUILD_EXTERNAL_LLVM_FALSE@unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
+@BUILD_EXTERNAL_LLVM_FALSE@TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
+@BUILD_EXTERNAL_LLVM_FALSE@    X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
+@BUILD_EXTERNAL_LLVM_FALSE@    X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
+@BUILD_EXTERNAL_LLVM_FALSE@    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
+@BUILD_EXTERNAL_LLVM_FALSE@    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
 
 
 # Rule to rerun LLVM's configure if it changed, before building anything else
 # LLVM
-BUILT_SOURCES = $(am__append_13) llvm/config.status
-EXTRA_DIST = $(top_srcdir)/llvm llvmcheck.sh $(TBLGENFILES)
-libllvmsystem_la_LDFLAGS = @THREAD_LIBS@
-libllvmsystem_la_LIBADD = 
-libllvmsystem_la_SOURCES = llvm/lib/System/Alarm.cpp \
-	llvm/lib/System/Atomic.cpp llvm/lib/System/Disassembler.cpp \
-	llvm/lib/System/DynamicLibrary.cpp llvm/lib/System/Errno.cpp \
-	llvm/lib/System/Host.cpp llvm/lib/System/IncludeFile.cpp \
-	llvm/lib/System/Memory.cpp llvm/lib/System/Mutex.cpp \
-	llvm/lib/System/Path.cpp llvm/lib/System/Process.cpp \
-	llvm/lib/System/Program.cpp llvm/lib/System/RWMutex.cpp \
-	llvm/lib/System/Signals.cpp llvm/lib/System/ThreadLocal.cpp \
-	llvm/lib/System/Threading.cpp llvm/lib/System/TimeValue.cpp \
-	llvm/config.status
+@BUILD_EXTERNAL_LLVM_FALSE@BUILT_SOURCES = $(am__append_14) \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/config.status
+@BUILD_EXTERNAL_LLVM_FALSE@EXTRA_DIST = $(top_srcdir)/llvm llvmcheck.sh $(TBLGENFILES)
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmsystem_la_LDFLAGS = @THREAD_LIBS@
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmsystem_la_LIBADD = 
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmsystem_la_SOURCES =  \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Alarm.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Atomic.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Disassembler.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/DynamicLibrary.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Errno.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Host.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/IncludeFile.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Memory.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Mutex.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Path.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Process.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Program.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/RWMutex.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Signals.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/ThreadLocal.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/Threading.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/System/TimeValue.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/config.status
 
 # support is split into 2:
 # a full llvmsupport, and another that contains only objs
 # that aren't already contained in llvmjit
-libllvmsupport_la_SOURCES = \
-	llvm/lib/Support/APFloat.cpp\
-	llvm/lib/Support/APInt.cpp\
-	llvm/lib/Support/APSInt.cpp\
-	llvm/lib/Support/Allocator.cpp\
-	llvm/lib/Support/CommandLine.cpp\
-	llvm/lib/Support/ConstantRange.cpp\
-	llvm/lib/Support/Debug.cpp\
-	llvm/lib/Support/DeltaAlgorithm.cpp\
-	llvm/lib/Support/Dwarf.cpp\
-	llvm/lib/Support/ErrorHandling.cpp\
-	llvm/lib/Support/FileUtilities.cpp\
-	llvm/lib/Support/FoldingSet.cpp\
-	llvm/lib/Support/FormattedStream.cpp\
-	llvm/lib/Support/GraphWriter.cpp\
-	llvm/lib/Support/IsInf.cpp\
-	llvm/lib/Support/IsNAN.cpp\
-	llvm/lib/Support/ManagedStatic.cpp\
-	llvm/lib/Support/MemoryBuffer.cpp\
-	llvm/lib/Support/MemoryObject.cpp\
-	llvm/lib/Support/PluginLoader.cpp\
-	llvm/lib/Support/PrettyStackTrace.cpp\
-	llvm/lib/Support/Regex.cpp\
-	llvm/lib/Support/SlowOperationInformer.cpp\
-	llvm/lib/Support/SmallPtrSet.cpp\
-	llvm/lib/Support/SmallVector.cpp\
-	llvm/lib/Support/SourceMgr.cpp\
-	llvm/lib/Support/Statistic.cpp\
-	llvm/lib/Support/StringExtras.cpp\
-	llvm/lib/Support/StringMap.cpp\
-	llvm/lib/Support/StringPool.cpp\
-	llvm/lib/Support/StringRef.cpp\
-	llvm/lib/Support/SystemUtils.cpp\
-	llvm/lib/Support/TargetRegistry.cpp\
-	llvm/lib/Support/Timer.cpp\
-	llvm/lib/Support/Triple.cpp\
-	llvm/lib/Support/Twine.cpp\
-	llvm/lib/Support/circular_raw_ostream.cpp\
-	llvm/lib/Support/raw_os_ostream.cpp\
-	llvm/lib/Support/raw_ostream.cpp\
-	llvm/lib/Support/regcomp.c\
-	llvm/lib/Support/regerror.c\
-	llvm/lib/Support/regexec.c\
-	llvm/lib/Support/regfree.c\
-	llvm/lib/Support/regstrlcpy.c
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmsupport_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APFloat.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APSInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Allocator.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/CommandLine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ConstantRange.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Debug.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/DeltaAlgorithm.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Dwarf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ErrorHandling.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FileUtilities.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FoldingSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FormattedStream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/GraphWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/IsInf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/IsNAN.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ManagedStatic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/MemoryBuffer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/MemoryObject.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/PluginLoader.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/PrettyStackTrace.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Regex.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SlowOperationInformer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SmallPtrSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SmallVector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SourceMgr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Statistic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringExtras.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringMap.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringPool.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringRef.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SystemUtils.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/TargetRegistry.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Timer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Triple.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Twine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/circular_raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/raw_os_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regcomp.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regerror.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regexec.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regfree.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regstrlcpy.c
 
-libllvmsupport_nodups_la_SOURCES = \
-	llvm/lib/Support/APSInt.cpp\
-	llvm/lib/Support/DeltaAlgorithm.cpp\
-	llvm/lib/Support/FileUtilities.cpp\
-	llvm/lib/Support/IsInf.cpp\
-	llvm/lib/Support/IsNAN.cpp\
-	llvm/lib/Support/MemoryObject.cpp\
-	llvm/lib/Support/PluginLoader.cpp\
-	llvm/lib/Support/Regex.cpp\
-	llvm/lib/Support/SlowOperationInformer.cpp\
-	llvm/lib/Support/SystemUtils.cpp\
-	llvm/lib/Support/raw_os_ostream.cpp\
-	llvm/lib/Support/regcomp.c\
-	llvm/lib/Support/regerror.c\
-	llvm/lib/Support/regexec.c\
-	llvm/lib/Support/regfree.c\
-	llvm/lib/Support/regstrlcpy.c
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmsupport_nodups_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APSInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/DeltaAlgorithm.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FileUtilities.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/IsInf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/IsNAN.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/MemoryObject.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/PluginLoader.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Regex.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SlowOperationInformer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SystemUtils.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/raw_os_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regcomp.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regerror.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regexec.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regfree.c\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/regstrlcpy.c
 
-@MAINTAINER_MODE_TRUE@tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
-@MAINTAINER_MODE_TRUE@tblgen_CFLAGS = 
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@tblgen_CFLAGS = 
 #TODO: if VERSIONSCRIPT
-@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = @THREAD_LIBS@ -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@tblgen_LDFLAGS = @THREAD_LIBS@ -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
 # tblgen needs rtti (for now), and we build everything else with -fno-rtti
 # since tblgen is only a maintainer-mode tool, build these files twice (once for
 # libllvmsupport.la -fno-rtti, and once here, with defaults (rtti)).
-@MAINTAINER_MODE_TRUE@tblgen_SOURCES = \
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmMatcherEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterInst.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CallingConvEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeEmitterGen.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenInstruction.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenTarget.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcher.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherGen.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherOpt.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DisassemblerEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/EDEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/FastISelEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrEnumEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrInfoEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/IntrinsicEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/OptParserEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/Record.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/RegisterInfoEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/SubtargetEmitter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGLexer.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGParser.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGValueTypes.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGen.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86DisassemblerTables.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86RecognizableInstr.cpp \
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Alarm.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Atomic.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Disassembler.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/DynamicLibrary.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Errno.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Host.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/IncludeFile.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Memory.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Mutex.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Path.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Process.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Program.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/RWMutex.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Signals.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/ThreadLocal.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/Threading.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/System/TimeValue.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APFloat.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APInt.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APSInt.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Allocator.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/CommandLine.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ConstantRange.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Debug.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/DeltaAlgorithm.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Dwarf.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ErrorHandling.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FileUtilities.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FoldingSet.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FormattedStream.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/GraphWriter.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsInf.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsNAN.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ManagedStatic.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryBuffer.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryObject.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PluginLoader.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PrettyStackTrace.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Regex.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SlowOperationInformer.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallPtrSet.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallVector.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SourceMgr.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Statistic.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringExtras.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringMap.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringPool.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringRef.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SystemUtils.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/TargetRegistry.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Timer.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Triple.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Twine.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/circular_raw_ostream.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_os_ostream.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_ostream.cpp\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regcomp.c\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regerror.c\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regexec.c\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regfree.c\
-@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regstrlcpy.c
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@tblgen_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmMatcherEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/AsmWriterInst.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CallingConvEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/ClangDiagnosticsEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeEmitterGen.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenDAGPatterns.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenInstruction.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/CodeGenTarget.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcher.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherGen.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DAGISelMatcherOpt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/DisassemblerEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/EDEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/FastISelEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrEnumEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/InstrInfoEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/IntrinsicEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/LLVMCConfigurationEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/OptParserEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/Record.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/RegisterInfoEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/SubtargetEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGLexer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGParser.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TGValueTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGen.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/TableGenBackend.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86DisassemblerTables.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/utils/TableGen/X86RecognizableInstr.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Alarm.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Atomic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Disassembler.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/DynamicLibrary.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Errno.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Host.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/IncludeFile.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Memory.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Mutex.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Path.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Process.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Program.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/RWMutex.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Signals.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/ThreadLocal.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/Threading.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/System/TimeValue.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APFloat.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/APSInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Allocator.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/CommandLine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ConstantRange.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Debug.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/DeltaAlgorithm.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Dwarf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ErrorHandling.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FileUtilities.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FoldingSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/FormattedStream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/GraphWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsInf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/IsNAN.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/ManagedStatic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryBuffer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/MemoryObject.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PluginLoader.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/PrettyStackTrace.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Regex.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SlowOperationInformer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallPtrSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SmallVector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SourceMgr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Statistic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringExtras.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringMap.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringPool.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/StringRef.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/SystemUtils.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/TargetRegistry.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Timer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Triple.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/Twine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/circular_raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_os_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regcomp.c\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regerror.c\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regexec.c\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regfree.c\
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@  llvm/lib/Support/regstrlcpy.c
 
-@MAINTAINER_MODE_TRUE@TBLGEN = $(top_builddir)/tblgen
-@MAINTAINER_MODE_TRUE@TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
-@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target -omit-comments
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN = $(top_builddir)/tblgen
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target -omit-comments
 
 # X86 Target
-@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
 
 # PPC Target
-@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_PPC = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_PPC = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
 
 # ARM Target
-@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_ARM = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
-@BUILD_X86_TRUE@libllvmx86codegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
-@BUILD_X86_TRUE@libllvmx86codegen_la_SOURCES = \
-@BUILD_X86_TRUE@	llvm/lib/MC/MCAsmInfoCOFF.cpp\
-@BUILD_X86_TRUE@	llvm/lib/MC/MCCodeEmitter.cpp\
-@BUILD_X86_TRUE@	llvm/lib/MC/TargetAsmBackend.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/TargetELFWriterInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86AsmBackend.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86CodeEmitter.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FastISel.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FloatingPoint.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ISelLowering.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86InstrInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86JITInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCAsmInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCCodeEmitter.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCTargetExpr.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86RegisterInfo.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86Subtarget.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetMachine.cpp\
-@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetObjectFile.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@TBLGEN_FLAGS_ARM = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@libllvmx86codegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@libllvmx86codegen_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/MC/MCAsmInfoCOFF.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/MC/MCCodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/MC/TargetAsmBackend.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/TargetELFWriterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86AsmBackend.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86COFFMachineModuleInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86CodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FastISel.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FloatingPoint.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86ISelLowering.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86InstrInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86JITInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCAsmInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCCodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86MCTargetExpr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86RegisterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86Subtarget.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetMachine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@	llvm/lib/Target/X86/X86TargetObjectFile.cpp
 
-@BUILD_PPC_TRUE@libllvmpowerpccodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
-@BUILD_PPC_TRUE@libllvmpowerpccodegen_la_SOURCES = \
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCISelLowering.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
-@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@libllvmpowerpccodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@libllvmpowerpccodegen_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCISelLowering.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCPredicates.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
 
-@BUILD_ARM_TRUE@libllvmarmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
-@BUILD_ARM_TRUE@libllvmarmcodegen_la_SOURCES = \
-@BUILD_ARM_TRUE@	llvm/lib/CodeGen/IfConversion.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMCodeEmitter.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMConstantIslandPass.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMConstantPoolValue.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMISelLowering.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMInstrInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMJITInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMMCAsmInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMRegisterInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMSubtarget.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/ARMTargetMachine.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/NEONMoveFix.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/NEONPreAllocPass.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb1InstrInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb2InstrInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp\
-@BUILD_ARM_TRUE@	llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@libllvmarmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@libllvmarmcodegen_la_SOURCES = \
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/IfConversion.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMCodeEmitter.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMConstantIslandPass.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMConstantPoolValue.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMExpandPseudoInsts.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMISelLowering.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMInstrInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMJITInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMMCAsmInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMRegisterInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMSubtarget.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/ARMTargetMachine.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/NEONMoveFix.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/NEONPreAllocPass.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb1InstrInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb2InstrInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp\
+@BUILD_ARM_TRUE@@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
 
 
 # End of Targets
-libllvmjit_la_SOURCES = \
-	llvm/lib/Analysis/IPA/CallGraph.cpp\
-	llvm/lib/Analysis/AliasAnalysis.cpp\
-	llvm/lib/Analysis/BasicAliasAnalysis.cpp\
-	llvm/lib/Analysis/CaptureTracking.cpp\
-	llvm/lib/Analysis/DebugInfo.cpp\
-	llvm/lib/Analysis/MemoryBuiltins.cpp\
-	llvm/lib/Analysis/PointerTracking.cpp\
-	llvm/lib/Analysis/ValueTracking.cpp\
-	llvm/lib/CodeGen/ELFCodeEmitter.cpp\
-	llvm/lib/CodeGen/ELFWriter.cpp\
-	llvm/lib/CodeGen/MachineBasicBlock.cpp\
-	llvm/lib/CodeGen/MachineFunction.cpp\
-	llvm/lib/CodeGen/MachineFunctionAnalysis.cpp\
-	llvm/lib/CodeGen/MachineFunctionPass.cpp\
-	llvm/lib/CodeGen/MachineInstr.cpp\
-	llvm/lib/CodeGen/MachineModuleInfo.cpp\
-	llvm/lib/CodeGen/MachineRegisterInfo.cpp\
-	llvm/lib/CodeGen/ObjectCodeEmitter.cpp\
-	llvm/lib/CodeGen/PseudoSourceValue.cpp\
-	llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
-	llvm/lib/ExecutionEngine/ExecutionEngine.cpp\
-	llvm/lib/ExecutionEngine/JIT/Intercept.cpp\
-	llvm/lib/ExecutionEngine/JIT/JIT.cpp\
-	llvm/lib/ExecutionEngine/JIT/JITDebugRegisterer.cpp\
-	llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp\
-	llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
-	llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
-	llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
-	llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp\
-	llvm/lib/MC/MCAsmInfo.cpp\
-	llvm/lib/MC/MCContext.cpp\
-	llvm/lib/MC/MCExpr.cpp\
-	llvm/lib/MC/MCSection.cpp\
-	llvm/lib/MC/MCSectionELF.cpp\
-	llvm/lib/MC/MCSymbol.cpp\
-	llvm/lib/Support/APFloat.cpp\
-	llvm/lib/Support/APInt.cpp\
-	llvm/lib/Support/Allocator.cpp\
-	llvm/lib/Support/CommandLine.cpp\
-	llvm/lib/Support/ConstantRange.cpp\
-	llvm/lib/Support/Debug.cpp\
-	llvm/lib/Support/Dwarf.cpp\
-	llvm/lib/Support/ErrorHandling.cpp\
-	llvm/lib/Support/FoldingSet.cpp\
-	llvm/lib/Support/FormattedStream.cpp\
-	llvm/lib/Support/GraphWriter.cpp\
-	llvm/lib/Support/ManagedStatic.cpp\
-	llvm/lib/Support/MemoryBuffer.cpp\
-	llvm/lib/Support/PrettyStackTrace.cpp\
-	llvm/lib/Support/SmallPtrSet.cpp\
-	llvm/lib/Support/SmallVector.cpp\
-	llvm/lib/Support/SourceMgr.cpp\
-	llvm/lib/Support/Statistic.cpp\
-	llvm/lib/Support/StringExtras.cpp\
-	llvm/lib/Support/StringMap.cpp\
-	llvm/lib/Support/StringPool.cpp\
-	llvm/lib/Support/StringRef.cpp\
-	llvm/lib/Support/TargetRegistry.cpp\
-	llvm/lib/Support/Timer.cpp\
-	llvm/lib/Support/Triple.cpp\
-	llvm/lib/Support/Twine.cpp\
-	llvm/lib/Support/circular_raw_ostream.cpp\
-	llvm/lib/Support/raw_ostream.cpp\
-	llvm/lib/Target/Mangler.cpp\
-	llvm/lib/Target/SubtargetFeature.cpp\
-	llvm/lib/Target/TargetData.cpp\
-	llvm/lib/Target/TargetInstrInfo.cpp\
-	llvm/lib/Target/TargetLoweringObjectFile.cpp\
-	llvm/lib/Target/TargetMachine.cpp\
-	llvm/lib/Target/TargetRegisterInfo.cpp\
-	llvm/lib/Transforms/Scalar/DCE.cpp\
-	llvm/lib/VMCore/AsmWriter.cpp\
-	llvm/lib/VMCore/Attributes.cpp\
-	llvm/lib/VMCore/AutoUpgrade.cpp\
-	llvm/lib/VMCore/BasicBlock.cpp\
-	llvm/lib/VMCore/ConstantFold.cpp\
-	llvm/lib/VMCore/Constants.cpp\
-	llvm/lib/VMCore/Core.cpp\
-	llvm/lib/VMCore/Dominators.cpp\
-	llvm/lib/VMCore/Function.cpp\
-	llvm/lib/VMCore/GVMaterializer.cpp\
-	llvm/lib/VMCore/Globals.cpp\
-	llvm/lib/VMCore/IRBuilder.cpp\
-	llvm/lib/VMCore/InlineAsm.cpp\
-	llvm/lib/VMCore/Instruction.cpp\
-	llvm/lib/VMCore/Instructions.cpp\
-	llvm/lib/VMCore/IntrinsicInst.cpp\
-	llvm/lib/VMCore/LLVMContext.cpp\
-	llvm/lib/VMCore/LLVMContextImpl.cpp\
-	llvm/lib/VMCore/LeakDetector.cpp\
-	llvm/lib/VMCore/Metadata.cpp\
-	llvm/lib/VMCore/Module.cpp\
-	llvm/lib/VMCore/Pass.cpp\
-	llvm/lib/VMCore/PassManager.cpp\
-	llvm/lib/VMCore/PrintModulePass.cpp\
-	llvm/lib/VMCore/Type.cpp\
-	llvm/lib/VMCore/TypeSymbolTable.cpp\
-	llvm/lib/VMCore/Use.cpp\
-	llvm/lib/VMCore/Value.cpp\
-	llvm/lib/VMCore/ValueSymbolTable.cpp\
-	llvm/lib/VMCore/ValueTypes.cpp\
-	llvm/lib/VMCore/Verifier.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmjit_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/IPA/CallGraph.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/AliasAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/BasicAliasAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/CaptureTracking.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/DebugInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/MemoryBuiltins.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/PointerTracking.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/ValueTracking.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ELFCodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ELFWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineBasicBlock.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineFunction.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineFunctionAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineFunctionPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineInstr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineModuleInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineRegisterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ObjectCodeEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/PseudoSourceValue.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/TargetInstrInfoImpl.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/ExecutionEngine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/Intercept.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/JIT.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/JITDebugRegisterer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCAsmInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCContext.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCExpr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCSection.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCSectionELF.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCSymbol.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APFloat.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/APInt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Allocator.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/CommandLine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ConstantRange.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Debug.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Dwarf.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ErrorHandling.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FoldingSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/FormattedStream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/GraphWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/ManagedStatic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/MemoryBuffer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/PrettyStackTrace.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SmallPtrSet.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SmallVector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/SourceMgr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Statistic.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringExtras.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringMap.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringPool.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/StringRef.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/TargetRegistry.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Timer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Triple.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/Twine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/circular_raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Support/raw_ostream.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/Mangler.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/SubtargetFeature.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetData.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetInstrInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetLoweringObjectFile.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetMachine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetRegisterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Scalar/DCE.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/AsmWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Attributes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/AutoUpgrade.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/BasicBlock.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/ConstantFold.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Constants.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Core.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Dominators.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Function.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/GVMaterializer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Globals.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/IRBuilder.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/InlineAsm.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Instruction.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Instructions.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/IntrinsicInst.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/LLVMContext.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/LLVMContextImpl.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/LeakDetector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Metadata.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Module.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Pass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/PassManager.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/PrintModulePass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Type.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/TypeSymbolTable.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Use.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Value.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/ValueSymbolTable.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/ValueTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/VMCore/Verifier.cpp
 
-libllvmcodegen_la_SOURCES = \
-	llvm/lib/Analysis/AliasSetTracker.cpp\
-	llvm/lib/Analysis/ConstantFolding.cpp\
-	llvm/lib/Analysis/IVUsers.cpp\
-	llvm/lib/Analysis/InstructionSimplify.cpp\
-	llvm/lib/Analysis/LoopInfo.cpp\
-	llvm/lib/Analysis/LoopPass.cpp\
-	llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
-	llvm/lib/Analysis/PHITransAddr.cpp\
-	llvm/lib/Analysis/ProfileInfo.cpp\
-	llvm/lib/Analysis/ScalarEvolution.cpp\
-	llvm/lib/Analysis/ScalarEvolutionExpander.cpp\
-	llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp\
-	llvm/lib/CodeGen/AsmPrinter/AsmPrinter.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DIE.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DwarfException.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DwarfLabel.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DwarfPrinter.cpp\
-	llvm/lib/CodeGen/AsmPrinter/DwarfWriter.cpp\
-	llvm/lib/CodeGen/BranchFolding.cpp\
-	llvm/lib/CodeGen/CalcSpillWeights.cpp\
-	llvm/lib/CodeGen/CodePlacementOpt.cpp\
-	llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
-	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
-	llvm/lib/CodeGen/DwarfEHPrepare.cpp\
-	llvm/lib/CodeGen/ExactHazardRecognizer.cpp\
-	llvm/lib/CodeGen/GCMetadata.cpp\
-	llvm/lib/CodeGen/GCStrategy.cpp\
-	llvm/lib/CodeGen/LLVMTargetMachine.cpp\
-	llvm/lib/CodeGen/LatencyPriorityQueue.cpp\
-	llvm/lib/CodeGen/LiveInterval.cpp\
-	llvm/lib/CodeGen/LiveIntervalAnalysis.cpp\
-	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
-	llvm/lib/CodeGen/LiveVariables.cpp\
-	llvm/lib/CodeGen/LowerSubregs.cpp\
-	llvm/lib/CodeGen/MachineCSE.cpp\
-	llvm/lib/CodeGen/MachineDominators.cpp\
-	llvm/lib/CodeGen/MachineLICM.cpp\
-	llvm/lib/CodeGen/MachineLoopInfo.cpp\
-	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
-	llvm/lib/CodeGen/MachinePassRegistry.cpp\
-	llvm/lib/CodeGen/MachineSSAUpdater.cpp\
-	llvm/lib/CodeGen/MachineSink.cpp\
-	llvm/lib/CodeGen/MachineVerifier.cpp\
-	llvm/lib/CodeGen/OptimizeExts.cpp\
-	llvm/lib/CodeGen/OptimizePHIs.cpp\
-	llvm/lib/CodeGen/PHIElimination.cpp\
-	llvm/lib/CodeGen/Passes.cpp\
-	llvm/lib/CodeGen/PostRASchedulerList.cpp\
-	llvm/lib/CodeGen/PreAllocSplitting.cpp\
-	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
-	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
-	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
-	llvm/lib/CodeGen/RegisterCoalescer.cpp\
-	llvm/lib/CodeGen/RegisterScavenging.cpp\
-	llvm/lib/CodeGen/ScheduleDAG.cpp\
-	llvm/lib/CodeGen/ScheduleDAGEmit.cpp\
-	llvm/lib/CodeGen/ScheduleDAGInstrs.cpp\
-	llvm/lib/CodeGen/ScheduleDAGPrinter.cpp\
-	llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
-	llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
-	llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
-	llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp\
-	llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeTypes.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeTypesGeneric.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorOps.cpp\
-	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorTypes.cpp\
-	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGFast.cpp\
-	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp\
-	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp\
-	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp\
-	llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp\
-	llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp\
-	llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp\
-	llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp\
-	llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp\
-	llvm/lib/CodeGen/ShrinkWrapping.cpp\
-	llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp\
-	llvm/lib/CodeGen/SjLjEHPrepare.cpp\
-	llvm/lib/CodeGen/SlotIndexes.cpp\
-	llvm/lib/CodeGen/Spiller.cpp\
-	llvm/lib/CodeGen/StackProtector.cpp\
-	llvm/lib/CodeGen/StackSlotColoring.cpp\
-	llvm/lib/CodeGen/StrongPHIElimination.cpp\
-	llvm/lib/CodeGen/TailDuplication.cpp\
-	llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp\
-	llvm/lib/CodeGen/TwoAddressInstructionPass.cpp\
-	llvm/lib/CodeGen/UnreachableBlockElim.cpp\
-	llvm/lib/CodeGen/VirtRegMap.cpp\
-	llvm/lib/CodeGen/VirtRegRewriter.cpp\
-	llvm/lib/MC/MCAsmInfoDarwin.cpp\
-	llvm/lib/MC/MCAsmStreamer.cpp\
-	llvm/lib/MC/MCAssembler.cpp\
-	llvm/lib/MC/MCInst.cpp\
-	llvm/lib/MC/MCMachOStreamer.cpp\
-	llvm/lib/MC/MCNullStreamer.cpp\
-	llvm/lib/MC/MCSectionMachO.cpp\
-	llvm/lib/MC/MCStreamer.cpp\
-	llvm/lib/Target/TargetFrameInfo.cpp\
-	llvm/lib/Target/TargetSubtarget.cpp\
-	llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
-	llvm/lib/Transforms/Scalar/GEPSplitter.cpp\
-	llvm/lib/Transforms/Scalar/GVN.cpp\
-	llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
-	llvm/lib/Transforms/Utils/AddrModeMatcher.cpp\
-	llvm/lib/Transforms/Utils/BasicBlockUtils.cpp\
-	llvm/lib/Transforms/Utils/BreakCriticalEdges.cpp\
-	llvm/lib/Transforms/Utils/DemoteRegToStack.cpp\
-	llvm/lib/Transforms/Utils/LCSSA.cpp\
-	llvm/lib/Transforms/Utils/Local.cpp\
-	llvm/lib/Transforms/Utils/LoopSimplify.cpp\
-	llvm/lib/Transforms/Utils/LowerInvoke.cpp\
-	llvm/lib/Transforms/Utils/LowerSwitch.cpp\
-	llvm/lib/Transforms/Utils/Mem2Reg.cpp\
-	llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp\
-	llvm/lib/Transforms/Utils/SSAUpdater.cpp\
-	llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
-	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmcodegen_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/AliasSetTracker.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/ConstantFolding.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/IVUsers.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/InstructionSimplify.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/LoopInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/LoopPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/PHITransAddr.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/ProfileInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/ScalarEvolution.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Analysis/ScalarEvolutionExpander.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AggressiveAntiDepBreaker.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/AsmPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DIE.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DwarfException.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DwarfLabel.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DwarfPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/AsmPrinter/DwarfWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/BranchFolding.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/CalcSpillWeights.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/CodePlacementOpt.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/CriticalAntiDepBreaker.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/DeadMachineInstructionElim.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/DwarfEHPrepare.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ExactHazardRecognizer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/GCMetadata.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/GCStrategy.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LLVMTargetMachine.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LatencyPriorityQueue.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LiveInterval.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LiveIntervalAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LiveStackAnalysis.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LiveVariables.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/LowerSubregs.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineCSE.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineDominators.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineLICM.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineLoopInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineModuleInfoImpls.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachinePassRegistry.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineSSAUpdater.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineSink.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/MachineVerifier.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/OptimizeExts.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/OptimizePHIs.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/PHIElimination.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/Passes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/PostRASchedulerList.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/PreAllocSplitting.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ProcessImplicitDefs.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/PrologEpilogInserter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/RegAllocLinearScan.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/RegisterCoalescer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/RegisterScavenging.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ScheduleDAG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ScheduleDAGEmit.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ScheduleDAGInstrs.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ScheduleDAGPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/FastISel.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/FunctionLoweringInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/InstrEmitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeDAG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeFloatTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeIntegerTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeTypesGeneric.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorOps.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/LegalizeVectorTypes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGFast.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGList.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/ScheduleDAGSDNodes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/SelectionDAG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/SelectionDAGPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SelectionDAG/TargetLowering.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ShrinkWrapping.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SimpleRegisterCoalescing.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SjLjEHPrepare.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/SlotIndexes.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/Spiller.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/StackProtector.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/StackSlotColoring.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/StrongPHIElimination.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/TailDuplication.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/TargetLoweringObjectFileImpl.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/TwoAddressInstructionPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/UnreachableBlockElim.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/VirtRegMap.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/VirtRegRewriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCAsmInfoDarwin.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCAsmStreamer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCAssembler.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCInst.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCMachOStreamer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCNullStreamer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCSectionMachO.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/MC/MCStreamer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetFrameInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetSubtarget.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Scalar/GEPSplitter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Scalar/GVN.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/AddrModeMatcher.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/BasicBlockUtils.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/BreakCriticalEdges.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/DemoteRegToStack.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/LCSSA.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/Local.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/LoopSimplify.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/LowerInvoke.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/LowerSwitch.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/Mem2Reg.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/PromoteMemoryToRegister.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/SSAUpdater.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/SimplifyCFG.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Transforms/Utils/UnifyFunctionExitNodes.cpp
 
 
 # Used only by make check
-libllvmbitreader_la_SOURCES = \
- llvm/lib/Bitcode/Reader/BitReader.cpp\
- llvm/lib/Bitcode/Reader/BitcodeReader.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmbitreader_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Reader/BitReader.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Reader/BitcodeReader.cpp
 
-libllvmbitwriter_la_SOURCES = \
- llvm/lib/Bitcode/Writer/BitWriter.cpp\
- llvm/lib/Bitcode/Writer/BitcodeWriter.cpp\
- llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp\
- llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmbitwriter_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Writer/BitWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Writer/BitcodeWriter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
 
-libllvmasmparser_la_SOURCES = \
- llvm/lib/AsmParser/LLLexer.cpp\
- llvm/lib/AsmParser/LLParser.cpp\
- llvm/lib/AsmParser/Parser.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmasmparser_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/AsmParser/LLLexer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/AsmParser/LLParser.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@ llvm/lib/AsmParser/Parser.cpp
 
-libllvminterpreter_la_SOURCES = \
-    llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
-    llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
-    llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvminterpreter_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
 
-libgoogletest_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-libgoogletest_la_CXXFLAGS = $(unittest_CXXFLAGS)
-libgoogletest_la_SOURCES = \
-    llvm/utils/unittest/googletest/gtest-death-test.cc\
-    llvm/utils/unittest/googletest/gtest-filepath.cc\
-    llvm/utils/unittest/googletest/gtest-port.cc\
-    llvm/utils/unittest/googletest/gtest-test-part.cc\
-    llvm/utils/unittest/googletest/gtest-typed-test.cc\
-    llvm/utils/unittest/googletest/gtest.cc\
-    llvm/utils/unittest/UnitTestMain/TestMain.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libgoogletest_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@libgoogletest_la_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@libgoogletest_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest-death-test.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest-filepath.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest-port.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest-test-part.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest-typed-test.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/googletest/gtest.cc\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/utils/unittest/UnitTestMain/TestMain.cpp
 
-llvmunittest_ADT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ADT_CXXFLAGS = $(unittest_CXXFLAGS)
-llvmunittest_ADT_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-llvmunittest_ADT_SOURCES = \
-    llvm/unittests/ADT/APFloatTest.cpp\
-    llvm/unittests/ADT/APIntTest.cpp\
-    llvm/unittests/ADT/DenseMapTest.cpp\
-    llvm/unittests/ADT/DenseSetTest.cpp\
-    llvm/unittests/ADT/ImmutableSetTest.cpp\
-    llvm/unittests/ADT/SmallStringTest.cpp\
-    llvm/unittests/ADT/SmallVectorTest.cpp\
-    llvm/unittests/ADT/SparseBitVectorTest.cpp\
-    llvm/unittests/ADT/StringMapTest.cpp\
-    llvm/unittests/ADT/StringRefTest.cpp\
-    llvm/unittests/ADT/TripleTest.cpp\
-    llvm/unittests/ADT/TwineTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ADT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ADT_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ADT_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ADT_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/APFloatTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/APIntTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/DenseMapTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/DenseSetTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/ImmutableSetTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/SmallStringTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/SmallVectorTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/SparseBitVectorTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/StringMapTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/StringRefTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/TripleTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ADT/TwineTest.cpp
 
-llvmunittest_Support_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_Support_CXXFLAGS = $(unittest_CXXFLAGS)
-llvmunittest_Support_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-llvmunittest_Support_SOURCES = \
-    llvm/unittests/Support/AllocatorTest.cpp\
-    llvm/unittests/Support/ConstantRangeTest.cpp\
-    llvm/unittests/Support/MathExtrasTest.cpp\
-    llvm/unittests/Support/RegexTest.cpp\
-    llvm/unittests/Support/TypeBuilderTest.cpp\
-    llvm/unittests/Support/ValueHandleTest.cpp\
-    llvm/unittests/Support/raw_ostream_test.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_Support_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_Support_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_Support_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_Support_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/AllocatorTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/ConstantRangeTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/MathExtrasTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/RegexTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/TypeBuilderTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/ValueHandleTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/Support/raw_ostream_test.cpp
 
-llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_VMCore_CXXFLAGS = $(unittest_CXXFLAGS)
-llvmunittest_VMCore_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-llvmunittest_VMCore_SOURCES = \
-    llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
-    llvm/lib/Analysis/LoopInfo.cpp\
-    llvm/lib/Analysis/LoopPass.cpp\
-    llvm/unittests/VMCore/ConstantsTest.cpp\
-    llvm/unittests/VMCore/MetadataTest.cpp\
-    llvm/unittests/VMCore/PassManagerTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_VMCore_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_VMCore_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_VMCore_LDADD = libgoogletest.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_VMCore_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/Analysis/LoopInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/Analysis/LoopPass.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/VMCore/ConstantsTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/VMCore/MetadataTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/VMCore/PassManagerTest.cpp
 
-llvmunittest_JIT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_JIT_CXXFLAGS = $(unittest_CXXFLAGS)
-llvmunittest_JIT_LDADD = libgoogletest.la libllvmasmparser.la $(lli_LDADD)
-llvmunittest_JIT_SOURCES = \
-    llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
-    llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
-    llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_JIT_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_JIT_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_JIT_LDADD = libgoogletest.la libllvmasmparser.la $(lli_LDADD)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_JIT_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
 
-llvmunittest_ExecutionEngine_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
-llvmunittest_ExecutionEngine_CXXFLAGS = $(unittest_CXXFLAGS)
-llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
-llvmunittest_ExecutionEngine_SOURCES = \
-    llvm/lib/CodeGen/IntrinsicLowering.cpp\
-    llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ExecutionEngine_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ExecutionEngine_CXXFLAGS = $(unittest_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ExecutionEngine_LDADD = libgoogletest.la libllvminterpreter.la libllvmsupport_nodups.la $(libclamavcxx_la_LIBADD) libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvmunittest_ExecutionEngine_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/CodeGen/IntrinsicLowering.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
 
-count_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-count_SOURCES = llvm/utils/count/count.c
-count_LDADD = libllvmsystem.la
-not_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-not_CXXFLAGS = $(LLVM_CXXFLAGS)
-not_SOURCES = llvm/utils/not/not.cpp
-not_LDADD = libllvmsystem.la
-FileCheck_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
-FileCheck_LDADD = libllvmsupport.la libllvmsystem.la
-FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
-check_LTLIBRARIES = libllvmbitreader.la libllvmsupport_nodups.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
-check_SCRIPTS = llvmcheck.sh
-TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
-libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
-			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM
+@BUILD_EXTERNAL_LLVM_FALSE@count_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@count_SOURCES = llvm/utils/count/count.c
+@BUILD_EXTERNAL_LLVM_FALSE@count_LDADD = libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@not_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@not_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@not_SOURCES = llvm/utils/not/not.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@not_LDADD = libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@FileCheck_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@FileCheck_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@FileCheck_LDADD = libllvmsupport.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@FileCheck_SOURCES = llvm/utils/FileCheck/FileCheck.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@check_LTLIBRARIES = libllvmbitreader.la libllvmsupport_nodups.la libllvmsupport.la libllvmfullcodegen.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+@BUILD_EXTERNAL_LLVM_FALSE@check_SCRIPTS = llvmcheck.sh
+@BUILD_EXTERNAL_LLVM_FALSE@TESTS_ENVIRONMENT = export GMAKE=@GMAKE@;
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmasmprinter_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
+@BUILD_EXTERNAL_LLVM_FALSE@			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM
 
-libllvmasmprinter_la_SOURCES =  \
-	llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
-	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
-	llvm/lib/CodeGen/ELFWriter.cpp $(am__append_14) \
-	$(am__append_15) $(am__append_16)
-libllvmfullcodegen_la_SOURCES = \
-	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
-	llvm/lib/CodeGen/IfConversion.cpp\
-	llvm/lib/CodeGen/IntrinsicLowering.cpp\
-	llvm/lib/CodeGen/OcamlGC.cpp\
-	llvm/lib/CodeGen/RegAllocLocal.cpp\
-	llvm/lib/CodeGen/RegAllocPBQP.cpp\
-	llvm/lib/CodeGen/ShadowStackGC.cpp\
-	llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
-	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
-	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp\
-	llvm/lib/Target/Target.cpp\
-	llvm/lib/Target/TargetAsmLexer.cpp\
-	llvm/lib/Target/TargetELFWriterInfo.cpp\
-	llvm/lib/Target/TargetIntrinsicInfo.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmasmprinter_la_SOURCES = llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ELFCodeEmitter.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ELFWriter.cpp \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_15) $(am__append_16) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_17)
+@BUILD_EXTERNAL_LLVM_FALSE@libllvmfullcodegen_la_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/GCMetadataPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/IfConversion.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/IntrinsicLowering.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/OcamlGC.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/RegAllocLocal.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/RegAllocPBQP.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/CodeGen/ShadowStackGC.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/Target.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetAsmLexer.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetELFWriterInfo.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@	llvm/lib/Target/TargetIntrinsicInfo.cpp
 
-lli_SOURCES = \
-    llvm/tools/lli/lli.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@lli_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/tools/lli/lli.cpp
 
-llc_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-llc_CXXFLAGS = $(LLVM_CXXFLAGS)
-llc_LDADD = libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
-llc_SOURCES = \
-    llvm/lib/MC/MCInstPrinter.cpp\
-    llvm/tools/llc/llc.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llc_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@llc_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llc_LDADD = libllvmbitreader.la libllvmasmprinter.la libllvmasmparser.la $(lli_LDADD)
+@BUILD_EXTERNAL_LLVM_FALSE@llc_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/lib/MC/MCInstPrinter.cpp\
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/tools/llc/llc.cpp
 
-llvm_as_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-llvm_as_CXXFLAGS = $(LLVM_CXXFLAGS)
-llvm_as_LDADD = libllvmasmparser.la libllvmbitwriter.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-llvm_as_SOURCES = \
-    llvm/tools/llvm-as/llvm-as.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_as_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_as_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_as_LDADD = libllvmasmparser.la libllvmbitwriter.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_as_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/tools/llvm-as/llvm-as.cpp
 
-llvm_dis_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
-llvm_dis_CXXFLAGS = $(LLVM_CXXFLAGS)
-llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
-llvm_dis_SOURCES = \
-    llvm/tools/llvm-dis/llvm-dis.cpp
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_dis_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_dis_CXXFLAGS = $(LLVM_CXXFLAGS)
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_dis_LDADD = libllvmasmparser.la libllvmbitreader.la libllvmsupport_nodups.la libllvmjit.la libllvmsystem.la
+@BUILD_EXTERNAL_LLVM_FALSE@llvm_dis_SOURCES = \
+@BUILD_EXTERNAL_LLVM_FALSE@    llvm/tools/llvm-dis/llvm-dis.cpp
 
 all: $(BUILT_SOURCES) clamavcxx-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -1714,35 +2212,35 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libclamavcxx.la: $(libclamavcxx_la_OBJECTS) $(libclamavcxx_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libclamavcxx_la_LINK)  $(libclamavcxx_la_OBJECTS) $(libclamavcxx_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libclamavcxx_la_LINK) $(am_libclamavcxx_la_rpath) $(libclamavcxx_la_OBJECTS) $(libclamavcxx_la_LIBADD) $(LIBS)
 libgoogletest.la: $(libgoogletest_la_OBJECTS) $(libgoogletest_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libgoogletest_la_LINK)  $(libgoogletest_la_OBJECTS) $(libgoogletest_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libgoogletest_la_LINK) $(am_libgoogletest_la_rpath) $(libgoogletest_la_OBJECTS) $(libgoogletest_la_LIBADD) $(LIBS)
 libllvmarmcodegen.la: $(libllvmarmcodegen_la_OBJECTS) $(libllvmarmcodegen_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmarmcodegen_la_rpath) $(libllvmarmcodegen_la_OBJECTS) $(libllvmarmcodegen_la_LIBADD) $(LIBS)
 libllvmasmparser.la: $(libllvmasmparser_la_OBJECTS) $(libllvmasmparser_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmasmparser_la_OBJECTS) $(libllvmasmparser_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmasmparser_la_rpath) $(libllvmasmparser_la_OBJECTS) $(libllvmasmparser_la_LIBADD) $(LIBS)
 libllvmasmprinter.la: $(libllvmasmprinter_la_OBJECTS) $(libllvmasmprinter_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmasmprinter_la_OBJECTS) $(libllvmasmprinter_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmasmprinter_la_rpath) $(libllvmasmprinter_la_OBJECTS) $(libllvmasmprinter_la_LIBADD) $(LIBS)
 libllvmbitreader.la: $(libllvmbitreader_la_OBJECTS) $(libllvmbitreader_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmbitreader_la_OBJECTS) $(libllvmbitreader_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmbitreader_la_rpath) $(libllvmbitreader_la_OBJECTS) $(libllvmbitreader_la_LIBADD) $(LIBS)
 libllvmbitwriter.la: $(libllvmbitwriter_la_OBJECTS) $(libllvmbitwriter_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmbitwriter_la_OBJECTS) $(libllvmbitwriter_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmbitwriter_la_rpath) $(libllvmbitwriter_la_OBJECTS) $(libllvmbitwriter_la_LIBADD) $(LIBS)
 libllvmcodegen.la: $(libllvmcodegen_la_OBJECTS) $(libllvmcodegen_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmcodegen_la_OBJECTS) $(libllvmcodegen_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmcodegen_la_rpath) $(libllvmcodegen_la_OBJECTS) $(libllvmcodegen_la_LIBADD) $(LIBS)
 libllvmfullcodegen.la: $(libllvmfullcodegen_la_OBJECTS) $(libllvmfullcodegen_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmfullcodegen_la_OBJECTS) $(libllvmfullcodegen_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmfullcodegen_la_rpath) $(libllvmfullcodegen_la_OBJECTS) $(libllvmfullcodegen_la_LIBADD) $(LIBS)
 libllvminterpreter.la: $(libllvminterpreter_la_OBJECTS) $(libllvminterpreter_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvminterpreter_la_OBJECTS) $(libllvminterpreter_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvminterpreter_la_rpath) $(libllvminterpreter_la_OBJECTS) $(libllvminterpreter_la_LIBADD) $(LIBS)
 libllvmjit.la: $(libllvmjit_la_OBJECTS) $(libllvmjit_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmjit_la_OBJECTS) $(libllvmjit_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmjit_la_rpath) $(libllvmjit_la_OBJECTS) $(libllvmjit_la_LIBADD) $(LIBS)
 libllvmpowerpccodegen.la: $(libllvmpowerpccodegen_la_OBJECTS) $(libllvmpowerpccodegen_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmpowerpccodegen_la_rpath) $(libllvmpowerpccodegen_la_OBJECTS) $(libllvmpowerpccodegen_la_LIBADD) $(LIBS)
 libllvmsupport.la: $(libllvmsupport_la_OBJECTS) $(libllvmsupport_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmsupport_la_OBJECTS) $(libllvmsupport_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmsupport_la_rpath) $(libllvmsupport_la_OBJECTS) $(libllvmsupport_la_LIBADD) $(LIBS)
 libllvmsupport_nodups.la: $(libllvmsupport_nodups_la_OBJECTS) $(libllvmsupport_nodups_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK)  $(libllvmsupport_nodups_la_OBJECTS) $(libllvmsupport_nodups_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmsupport_nodups_la_rpath) $(libllvmsupport_nodups_la_OBJECTS) $(libllvmsupport_nodups_la_LIBADD) $(LIBS)
 libllvmsystem.la: $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libllvmsystem_la_LINK)  $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libllvmsystem_la_LINK) $(am_libllvmsystem_la_rpath) $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_LIBADD) $(LIBS)
 libllvmx86codegen.la: $(libllvmx86codegen_la_OBJECTS) $(libllvmx86codegen_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libllvmx86codegen_la_rpath) $(libllvmx86codegen_la_OBJECTS) $(libllvmx86codegen_la_LIBADD) $(LIBS)
 
@@ -7714,6 +8212,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+@BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 clean: clean-am
 
 clean-am: clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
@@ -7810,144 +8310,144 @@ uninstall-am:
 	tags uninstall uninstall-am
 
 
-@MAINTAINER_MODE_TRUE@llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
-@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -asmwriternum=1 -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -asmwriternum=1 -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-matcher -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-matcher -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-dag-isel -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-dag-isel -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-fast-isel -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-fast-isel -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-callingconv -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-callingconv -o $@ $<
 
-@MAINTAINER_MODE_TRUE@X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
-@MAINTAINER_MODE_TRUE@PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenRegisterNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenRegisterNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenAsmWriter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-asm-writer -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenAsmWriter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-asm-writer -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenCodeEmitter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-emitter -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenCodeEmitter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-emitter -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenInstrInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenInstrInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenDAGISel.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-dag-isel -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenDAGISel.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-dag-isel -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-callingconv -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-callingconv -o $@ $<
 
-@MAINTAINER_MODE_TRUE@PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
-@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc-header -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc-header -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenRegisterNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenRegisterNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenRegisterInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenInstrNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-enums -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenInstrNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-enums -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenInstrInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-desc -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenInstrInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-desc -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenCodeEmitter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-emitter -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenCodeEmitter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-emitter -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenAsmWriter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-asm-writer -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenAsmWriter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-asm-writer -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenDAGISel.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-dag-isel -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenDAGISel.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-dag-isel -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-callingconv -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-callingconv -o $@ $<
 
-@MAINTAINER_MODE_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
-@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
-@ifGNUmake@ TESTS+=llvmcheck.sh
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
+@BUILD_EXTERNAL_LLVM_FALSE@@ifGNUmake@ TESTS+=llvmcheck.sh
 
 #bytecode2llvm.cpp: build-llvm
 
-build-llvm:
-	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 libs-only
+@BUILD_EXTERNAL_LLVM_FALSE@build-llvm:
+@BUILD_EXTERNAL_LLVM_FALSE@	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 libs-only
 
-build-llvm-for-check:
-	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 tools-only
+@BUILD_EXTERNAL_LLVM_FALSE@build-llvm-for-check:
+@BUILD_EXTERNAL_LLVM_FALSE@	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 tools-only
 
 # Don't use make -C here, otherwise there's a racecondition between distclean
 # and clean (distclean removes all Makefiles in llvm/)
-clean-local:
-	rm -rf `find llvm/test -name Output -type d -print`
-	rm -rf llvm/Release llvm/Debug
-@MAINTAINER_MODE_TRUE@	rm -f *.inc
-@MAINTAINER_MODE_TRUE@	rm -f llvm/include/llvm/Intrinsics.gen
-	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
+@BUILD_EXTERNAL_LLVM_FALSE@clean-local:
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -rf `find llvm/test -name Output -type d -print`
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -rf llvm/Release llvm/Debug
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	rm -f *.inc
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	rm -f llvm/include/llvm/Intrinsics.gen
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
 
-distclean-local:
-	rm -f llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
-	rm -f llvm/test/lit.site.cfg llvm/config.status
-	rm -f llvm/mklib llvm/tools/llvmc/llvm-config.in
-	rm -f llvm/Makefile.config llvm/config.log
-	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
-	rm -f llvm/include/llvm/Config/Disassemblers.def
-	rm -f llvm/include/llvm/System/DataTypes.h llvm/include/llvm/Config/Targets.def
-	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
-	rm -f llvm/include/llvm/Config/AsmParsers.def
-	if test $(abs_srcdir) != $(abs_builddir); then\
-	    rm -f llvm/Makefile llvm/lib/Makefile llvm/test/Makefile\
-	    llvm/test/Makefile.tests llvm/tools/Makefile llvm/utils/Makefile\
-	    llvm/Makefile.common llvm/unittests/Makefile;\
-	fi
+@BUILD_EXTERNAL_LLVM_FALSE@distclean-local:
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/test/lit.site.cfg llvm/config.status
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/mklib llvm/tools/llvmc/llvm-config.in
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/Makefile.config llvm/config.log
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/Config/Disassemblers.def
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/System/DataTypes.h llvm/include/llvm/Config/Targets.def
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/Config/AsmParsers.def
+@BUILD_EXTERNAL_LLVM_FALSE@	if test $(abs_srcdir) != $(abs_builddir); then\
+@BUILD_EXTERNAL_LLVM_FALSE@	    rm -f llvm/Makefile llvm/lib/Makefile llvm/test/Makefile\
+@BUILD_EXTERNAL_LLVM_FALSE@	    llvm/test/Makefile.tests llvm/tools/Makefile llvm/utils/Makefile\
+@BUILD_EXTERNAL_LLVM_FALSE@	    llvm/Makefile.common llvm/unittests/Makefile;\
+@BUILD_EXTERNAL_LLVM_FALSE@	fi
 
-check-llvm: build-llvm-for-check
-	+$(GMAKE) -C llvm check
-	+$(GMAKE) -C llvm unittests
-$(top_builddir)/llvm/config.status: llvm/configure
-	(cd llvm; ./config.status --recheck; ./config.status)
+@BUILD_EXTERNAL_LLVM_FALSE@check-llvm: build-llvm-for-check
+@BUILD_EXTERNAL_LLVM_FALSE@	+$(GMAKE) -C llvm check
+@BUILD_EXTERNAL_LLVM_FALSE@	+$(GMAKE) -C llvm unittests
+@BUILD_EXTERNAL_LLVM_FALSE@$(top_builddir)/llvm/config.status: llvm/configure
+@BUILD_EXTERNAL_LLVM_FALSE@	(cd llvm; ./config.status --recheck; ./config.status)
 
 # rm configure generated files
 dist-hook:
