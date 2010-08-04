@@ -819,11 +819,12 @@ public:
 	    StoreInst *SI = 0;
 	    for (Value::use_iterator I=VI->use_begin(),
 		 E=VI->use_end(); I != E; ++I) {
-		if (StoreInst *S = dyn_cast<StoreInst>(I)) {
+		Value *I_V = *I;
+		if (StoreInst *S = dyn_cast<StoreInst>(I_V)) {
 		    if (SI)
 			return V;
 		    SI = S;
-		} else if (!isa<LoadInst>(I))
+		} else if (!isa<LoadInst>(I_V))
 		    return V;
 	    }
 	    V = SI->getOperand(0);
