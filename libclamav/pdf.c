@@ -307,11 +307,11 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 
     nbytes = 0;
     while(stream.avail_in) {
+	int written;
 	zstat = inflate(&stream, Z_NO_FLUSH);	/* zlib */
 	switch(zstat) {
 	    case Z_OK:
 		if(stream.avail_out == 0) {
-		    int written;
 		    if ((written=filter_writen(pdf, obj, fout, output, sizeof(output), sum))!=sizeof(output)) {
 			cli_errmsg("cli_pdf: failed to write output file\n");
 			inflateEnd(&stream);
@@ -325,6 +325,16 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 	    case Z_STREAM_END:
 		break;
 	    default:
+		written = sizeof(output) - stream.avail_out;
+		if (filter_writen(pdf, obj, fout, output, written, sum)!=written) {
+		    cli_errmsg("cli_pdf: failed to write output file\n");
+		    inflateEnd(&stream);
+		    return CL_EWRITE;
+		}
+		nbytes += written;
+		stream.next_out = (Bytef *)output;
+		stream.avail_out = sizeof(output);
+
 		if(stream.msg)
 		    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
 			       (unsigned long)nbytes,
