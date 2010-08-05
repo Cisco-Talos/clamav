@@ -32,6 +32,10 @@ Open win32/ClamAV.sln in Visual Studio and build all.
 The output directory for the binaries is either /win32/(Win32|x64)/Debug or
 /win32/(Win32|x64)/Release depending on the configuration you pick.
 
+Note: at the time of writing Batch Build is broken in VS10:
+https://connect.microsoft.com/VisualStudio/feedback/details/556158
+Use MSBuild instead
+
 
 4- Special notes
 

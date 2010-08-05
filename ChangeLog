@@ -1,3 +1,7 @@
+Thu Aug  5 11:58:56 CEST 2010 (acab)
+------------------------------------
+ * win32: fix libclamav's triple and fix GetVersion (bb#2152 and bb#2153)
+
 Mon Aug  2 23:05:50 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: save lsig counts/offsets (bb #2055).

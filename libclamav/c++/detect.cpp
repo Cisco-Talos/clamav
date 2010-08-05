@@ -35,7 +35,7 @@ using namespace llvm;
 
 static void warn_assumptions(const char *msg, int a, int b)
 {
-    errs() << "LibClamAV Warning: libclamav and llvm make inconsistent"
+    errs() << "LibClamAV Warning: libclamav and llvm make inconsistent "
 	<< "assumptions about " << msg << ": " <<
 	a << " and " << b << "."
 	<< "Please report to http://bugs.clamav.net\n";

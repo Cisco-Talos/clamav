@@ -280,7 +280,7 @@ void cli_detect_environment(struct cli_environment *env)
     {
 	OSVERSIONINFOEX info;
 	info.dwOSVersionInfoSize = sizeof(info);
-	if (GetVersionEx(&info) != 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+	if (GetVersionEx((OSVERSIONINFO *)&info) != 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
 	    if (info.wProductType == VER_NT_WORKSTATION)
 		INIT_STRFIELD(env->sysname, "Microsoft Windows");
 	    else
