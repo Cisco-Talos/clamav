@@ -323,7 +323,6 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		}
 		continue;
 	    case Z_STREAM_END:
-		break;
 	    default:
 		written = sizeof(output) - stream.avail_out;
 		if (filter_writen(pdf, obj, fout, output, written, sum)!=written) {
@@ -334,6 +333,8 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		nbytes += written;
 		stream.next_out = (Bytef *)output;
 		stream.avail_out = sizeof(output);
+		if (zstat == Z_STREAM_END)
+		    break;
 
 		if(stream.msg)
 		    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
