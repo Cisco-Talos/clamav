@@ -1079,7 +1079,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
 		/* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
 		*ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
-		rc = CL_VIRUS;
+		ctx->found_possibly_unwanted = 1;
 	    }
 	}
 #if 0
