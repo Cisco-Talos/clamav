@@ -438,7 +438,7 @@ static int find_length(struct pdf_struct *pdf,
     return length;
 }
 
-#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION))
+#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION))
 
 static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj, int binary)
 {
@@ -516,12 +516,11 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	/* don't dump all streams */
 	dump = 0;
     }
-#if 1
-    if (obj->flags & (1 << OBJ_IMAGE)) {
-	/* don't dump / scan images */
+    if ((obj->flags & (1 << OBJ_IMAGE)) &&
+	!(obj->flags & (1 << OBJ_FILTER_DCT))) {
+	/* don't dump / scan non-JPG images */
 	dump = 0;
     }
-#endif
     if (obj->flags & (1 << OBJ_FORCEDUMP)) {
 	/* bytecode can force dump by setting this flag */
 	dump = 1;
