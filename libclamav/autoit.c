@@ -242,6 +242,7 @@ static int ea05(cli_ctx *ctx, uint8_t *base, char *tmpd) {
 
     if(!UNP.csize) {
       cli_dbgmsg("autoit: skipping empty file\n");
+      base += 13 + 16;
       continue;
     }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
@@ -547,6 +548,7 @@ static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
 
     if(!UNP.csize) {
       cli_dbgmsg("autoit: skipping empty file\n");
+      base += 13 + 16;
       continue;
     }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);

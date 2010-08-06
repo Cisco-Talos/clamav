@@ -1,3 +1,8 @@
+Fri Aug  6 13:47:18 CEST 2010 (acab)
+------------------------------------
+ * libclamav/autoit.c: properly resume from empty files
+		       regression introduced in ac867aad (bb#2171)
+
 Fri Aug  6 11:37:14 CEST 2010 (tk)
 ----------------------------------
  * libclamav/elf.c: fix zero mem alloc warning (bb#2173)
