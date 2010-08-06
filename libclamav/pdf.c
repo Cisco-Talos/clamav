@@ -879,7 +879,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		continue;
 	    }
 	    if (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n' ||
-		*q == '/' || *q == '>' || *q == ']')
+		*q == '/' || *q == '>' || *q == ']' || *q == '[' || *q == '<')
 		break;
 	    pdfname[i] = *q;
 	}
