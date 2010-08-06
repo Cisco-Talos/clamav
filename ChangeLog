@@ -1,3 +1,7 @@
+Fri Aug  6 11:37:14 CEST 2010 (tk)
+----------------------------------
+ * libclamav/elf.c: fix zero mem alloc warning (bb#2173)
+
 Thu Aug  5 11:58:56 CEST 2010 (acab)
 ------------------------------------
  * win32: fix libclamav's triple and fix GetVersion (bb#2152 and bb#2153)

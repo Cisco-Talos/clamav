@@ -66,8 +66,8 @@ static uint32_t cli_rawaddr(uint32_t vaddr, struct elf_program_hdr32 *ph, uint16
 int cli_scanelf(cli_ctx *ctx)
 {
 	struct elf_file_hdr32 file_hdr;
-	struct elf_section_hdr32 *section_hdr;
-	struct elf_program_hdr32 *program_hdr;
+	struct elf_section_hdr32 *section_hdr = NULL;
+	struct elf_program_hdr32 *program_hdr = NULL;
 	uint16_t shnum, phnum, shentsize, phentsize;
 	uint32_t entry, fentry, shoff, phoff, i;
 	uint8_t conv = 0, err;
@@ -237,13 +237,14 @@ int cli_scanelf(cli_ctx *ctx)
 	phoff = EC32(file_hdr.e_phoff, conv);
 	cli_dbgmsg("ELF: Program header table offset: %d\n", phoff);
 
-	program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
-	if(!program_hdr) {
-	    cli_errmsg("ELF: Can't allocate memory for program headers\n");
-	    return CL_EMEM;
+	if(phnum) {
+	    program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
+	    if(!program_hdr) {
+		cli_errmsg("ELF: Can't allocate memory for program headers\n");
+		return CL_EMEM;
+	    }
+	    cli_dbgmsg("------------------------------------\n");
 	}
-
-	cli_dbgmsg("------------------------------------\n");
 
 	for(i = 0; i < phnum; i++) {
 	    err = 0;
@@ -333,13 +334,14 @@ int cli_scanelf(cli_ctx *ctx)
     shoff = EC32(file_hdr.e_shoff, conv);
     cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
 
-    section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
-    if(!section_hdr) {
-	cli_errmsg("ELF: Can't allocate memory for section headers\n");
-	return CL_EMEM;
+    if(shnum) {
+	section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
+	if(!section_hdr) {
+	    cli_errmsg("ELF: Can't allocate memory for section headers\n");
+	    return CL_EMEM;
+	}
+	cli_dbgmsg("------------------------------------\n");
     }
-
-    cli_dbgmsg("------------------------------------\n");
 
     for(i = 0; i < shnum; i++) {
 	err = 0;
@@ -458,8 +460,8 @@ int cli_scanelf(cli_ctx *ctx)
 int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 {
 	struct elf_file_hdr32 file_hdr;
-	struct elf_section_hdr32 *section_hdr;
-	struct elf_program_hdr32 *program_hdr;
+	struct elf_section_hdr32 *section_hdr = NULL;
+	struct elf_program_hdr32 *program_hdr = NULL;
 	uint16_t shnum, phnum, shentsize, phentsize, i;
 	uint32_t entry, fentry = 0, shoff, phoff;
 	uint8_t conv = 0, err;
@@ -602,12 +604,14 @@ int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 	return -1;
     }
 
-    section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
-    if(!section_hdr) {
-	cli_errmsg("ELF: Can't allocate memory for section headers\n");
-	free(elfinfo->section);
-	elfinfo->section = NULL;
-	return -1;
+    if(shnum) {
+	section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
+	if(!section_hdr) {
+	    cli_errmsg("ELF: Can't allocate memory for section headers\n");
+	    free(elfinfo->section);
+	    elfinfo->section = NULL;
+	    return -1;
+	}
     }
 
     for(i = 0; i < shnum; i++) {
