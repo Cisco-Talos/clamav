@@ -273,6 +273,7 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 			      const char *buf, off_t len, int fout, off_t *sum)
 {
+    int skipped = 0;
     int zstat;
     z_stream stream;
     off_t nbytes;
@@ -325,6 +326,29 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 	    case Z_STREAM_END:
 	    default:
 		written = sizeof(output) - stream.avail_out;
+		if (!written && !nbytes && !skipped) {
+		    /* skip till EOL, and try inflating from there, sometimes
+		     * PDFs contain extra whitespace */
+		    const char *q = pdf_nextlinestart(buf, len);
+		    if (q) {
+			skipped = 1;
+			buf = q;
+			inflateEnd(&stream);
+			len -= q - buf;
+			stream.next_in = (Bytef *)buf;
+			stream.avail_in = len;
+			stream.next_out = (Bytef *)output;
+			stream.avail_out = sizeof(output);
+			zstat = inflateInit(&stream);
+			if(zstat != Z_OK) {
+			    cli_warnmsg("cli_pdf: inflateInit failed\n");
+			    return CL_EMEM;
+			}
+			pdfobj_flag(pdf, obj, BAD_FLATESTART);
+			continue;
+		    }
+		}
+
 		if (filter_writen(pdf, obj, fout, output, written, sum)!=written) {
 		    cli_errmsg("cli_pdf: failed to write output file\n");
 		    inflateEnd(&stream);
