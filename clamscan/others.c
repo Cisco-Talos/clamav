@@ -74,7 +74,6 @@ int fileinfo(const char *filename, short i)
 }
 
 #ifdef _WIN32
-#error make win32 fail
 /* FIXME: Handle users correctly */
 int checkaccess(const char *path, const char *username, int mode)
 {
