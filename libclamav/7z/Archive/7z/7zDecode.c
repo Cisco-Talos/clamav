@@ -170,7 +170,10 @@ SRes SzDecode2(const UInt64 *packSizes, const CSzFolder *folder,
           outSizeCur = (SizeT)unpackSize;
           if (outSizeCur != unpackSize)
             return SZ_ERROR_MEM;
-          temp = (Byte *)IAlloc_Alloc(allocMain, outSizeCur);
+	  if (outSizeCur)
+	      temp = (Byte *)IAlloc_Alloc(allocMain, outSizeCur);
+	  else
+	      temp = 0;
           if (temp == 0 && outSizeCur != 0)
             return SZ_ERROR_MEM;
           outBufCur = tempBuf[1 - ci] = temp;

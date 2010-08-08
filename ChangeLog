@@ -1,3 +1,7 @@
+Sun Aug  8 15:59:41 CEST 2010 (acab)
+------------------------------------
+ * libclamav/7z/Archive/7z/7zDecode.c: shut up a warning (bb#2172)
+
 Fri Aug  6 13:47:18 CEST 2010 (acab)
 ------------------------------------
  * libclamav/autoit.c: properly resume from empty files
