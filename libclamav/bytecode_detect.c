@@ -95,7 +95,7 @@ static int detect_PaX(void)
 	}
     }
     fclose(f);
-    return 0;
+    return pax;
 }
 
 static int detect_SELinux(void)

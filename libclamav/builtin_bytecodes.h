@@ -29,7 +29,7 @@
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafhabenfeld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcgcmbgfcfefdcecdcccbc``bkbaap`clamcoincidencejb:1378\n"
+static const char* builtin_bc_startup = "ClamBCafheaie`fld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcicmbgfhcachcgcbchccf``bkbaap`clamcoincidencejb:1378\n"
 "\n"
 "Teddaaahdabahdacahdadahdaeahdafahdagahebjfebidebifebhfebgfebffebedebefebdfebcfebadcbgab`bb`bb`bb`bb`bb`bb`bbbfbbfbbfbbfbbfbbfbbfahahahahahahahahahebgeebbfaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bbheb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
 "Ebjdaibcdbke|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbke|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agble|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcable|afdgefcgdgbc``afbme|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbne|b`agfefdgoeefnffgifbgofnfmfefnfdg``aaboe|afdgefcgdgac``bidb`f|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdb`f|aodfifcgafbflfefoejfifdgoeifff``\n"
@@ -41,14 +41,14 @@ static const char* builtin_bc_startup = "ClamBCafhabenfeld|afefdfggifnf```aa```|
 "Bb`bankbakAo`Addaaaoeab`ban@db`baa`aaob`b`bbaaaaTbaad\n"
 "Bb`bb`abbaab`ab`bbaaabcbjdAm`@db`aTbaae\n"
 "BbadbbadbbheabBeadahbcagbbbab`bbda`abcab`bbeak`bdaAadaabfaeab`bbea@dTaabfaafal\n"
-"Bb`bbgaabcbjdB`a`@dAadbadbhadbbheabBbadahbiagbbhaaabjaeaahbiaAjaTaabjaagb`a\n"
+"Bb`bbgaabcbjdB`a`@dAadbadbhadbbheabBaadahbiagbbhaaabjaeaahbiaAjaTaabjaagb`a\n"
 "Bahbkagbbbab`bbla`abkab`bbmak`blaAbdaabnaeab`bbma@dTaabnaaiah\n"
 "Bb`bboaabcbjdBaa`@dAadTbab`a\n"
 "Bb`bb`bk`blaAhdaababeab`bb`b@dTaababakaj\n"
 "Bb`bbbbabcbjdBba`@dAadTbab`a\n"
 "Bb`bbcbabcbjdBca`@dAadTbab`a\n"
-"BbadbdbdbbheabBbadahbebgbbdbaabfbeaahbebAjaTaabfbanam\n"
-"BbadbgbdbbheabBaadahbhbgbbgbaabibeaahbhbAfaTaabibanb`a\n"
+"BbadbdbdbbheabBaadahbebgbbdbaabfbeaahbebAjaTaabfbanam\n"
+"BbadbgbdbbheabBbadahbhbgbbgbaabibeaahbhbAfaTaabibanb`a\n"
 "Bb`bbjbk`bdaB`adaabkbeab`bbjb@dTaabkbb`aao\n"
 "Bb`bblbabcbjdBba`@dAadTbab`a\n"
 "Bb`bbmbabcbidBda`@d@daabnbnab`bbmbAadTaabnbbdabaa\n"
@@ -105,7 +105,7 @@ int entrypoint()
     /* RWX checks */
     if (!(env.os_features & (1 << feature_map_rwx))) {
       disable_jit_if("RWX mapping denied.", 0, 1);
-      if (env.os == os_linux) {
+      if (env.os_category == os_linux) {
         if (env.os_features & (1 << feature_selinux))
           /* all SELinux versions deny RWX mapping when policy says so */
           disable_jit_if("^SELinux is preventing 'execmem' access.\n"
@@ -120,7 +120,7 @@ int entrypoint()
             "Please report to http://bugs.clamav.net\n", 0, 1);
       }
     } else {
-      if ((env.os == os_linux || env.os_category == llvm_os_Linux) &&
+      if ((env.os_category == os_linux || env.os == llvm_os_Linux) &&
           (env.os_features & (1 << feature_pax_mprotect))) {
         /* older versions of PaX allow RWX mapping but silently degrade it to RW
          * mapping and kill the program if it tries to execute. */
