@@ -1,3 +1,7 @@
+Mon Aug  9 19:46:58 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/detect.cpp: Mac OS X can run 64-bit apps on 32-bit kernel (bb #2153).
+
 Mon Aug  9 16:49:44 CEST 2010 (tk)
 ----------------------------------
  * libclamav/others.h: bump f-level
