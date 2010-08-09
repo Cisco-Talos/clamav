@@ -1,3 +1,7 @@
+Mon Aug  9 13:02:26 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: improve offset handling (bb#2170)
+
 Sun Aug  8 15:59:41 CEST 2010 (acab)
 ------------------------------------
  * libclamav/7z/Archive/7z/7zDecode.c: shut up a warning (bb#2172)

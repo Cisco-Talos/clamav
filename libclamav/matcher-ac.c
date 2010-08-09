@@ -1125,7 +1125,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_ac_patt *patt, *pt;
         uint32_t i, bp, realoff, matchend;
 	uint16_t j;
-	int32_t **offmatrix, swap;
+	int32_t **offmatrix;
 	uint8_t found;
 	int type = CL_CLEAN;
 	struct cli_ac_result *newres;
@@ -1216,17 +1216,17 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    return CL_EMEM;
 				}
 
-				mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
+				mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
 				if(!mdata->offmatrix[pt->sigid - 1][0]) {
 				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
 				    free(mdata->offmatrix[pt->sigid - 1]);
 				    mdata->offmatrix[pt->sigid - 1] = NULL;
 				    return CL_EMEM;
 				}
-				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
+				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
 				mdata->offmatrix[pt->sigid - 1][0][0] = 0;
 				for(j = 1; j < pt->parts; j++) {
-				    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 1);
+				    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 2);
 				    mdata->offmatrix[pt->sigid - 1][j][0] = 0;
 				}
 			    }
@@ -1234,7 +1234,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 			    if(pt->partno != 1) {
 				found = 0;
-				for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
+				for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != -1; j++) {
 				    found = j;
 				    if(pt->maxdist)
 					if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
@@ -1249,18 +1249,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				}
 			    }
 
-			    if(pt->partno == 2 && found > 1) {
-				swap = offmatrix[pt->parts - 1][1];
-				offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
-				offmatrix[pt->parts - 1][found] = swap;
-
-				swap = offmatrix[0][1];
+			    if(pt->partno == 2 && found > 1)
 				offmatrix[0][1] = offmatrix[0][found];
-				offmatrix[0][found] = swap;
-			    }
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
-				offmatrix[pt->partno - 1][0] %= CLI_DEFAULT_AC_TRACKLEN;
+				if(offmatrix[pt->partno - 1][0] == CLI_DEFAULT_AC_TRACKLEN + 1)
+				    offmatrix[pt->partno - 1][0] = 1;
 				offmatrix[pt->partno - 1][0]++;
 				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = offset + matchend;
 
@@ -1279,12 +1273,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					    /* FIXME: the first offset in the array is most likely the correct one but
 					     * it may happen it is not
 					     */
-					    for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[0][j] != -1; j++)
+					    for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != -1; j++)
 						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx))
 						    return CL_EMEM;
 					}
 
-					memset(offmatrix[0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
+					memset(offmatrix[0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
 					for(j = 0; j < pt->parts; j++)
 					    offmatrix[j][0] = 0;
 				    }
