@@ -102,7 +102,7 @@ void cli_detect_env_jit(struct cli_environment *env)
 	    earch = arch_x86_64;
 	    if (env->arch != earch) {
 		/* bb #2153 */
-		if (env->os_category != os_darwin || env->arch != arch_x86)
+		if (env->os_category != os_darwin || env->arch != arch_i386)
 		    conflicts = true;
 	    }
 	    break;
