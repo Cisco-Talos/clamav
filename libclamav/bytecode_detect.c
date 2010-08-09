@@ -107,7 +107,7 @@ static int detect_SELinux(void)
     if (!f)
 	return 0;
     while (fgets(line, sizeof(line), f)) {
-	if (strstr(line, " selinuxfs\n")) {
+	if (strstr(line, "selinuxfs\n")) {
 	    selinux = 1;
 	    break;
 	}
