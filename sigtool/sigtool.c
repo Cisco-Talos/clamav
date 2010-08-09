@@ -1373,6 +1373,8 @@ static int listsigs(const struct optstruct *opts, int mode)
 
     if(mode == 0) {
 	name = optget(opts, "list-sigs")->strarg;
+	if(access(name, R_OK) && localdbdir)
+	    name = localdbdir;
 	if(stat(name, &sb) == -1) {
 	    mprintf("--list-sigs: Can't get status of %s\n", name);
 	    return -1;
