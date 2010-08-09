@@ -1,3 +1,7 @@
+Mon Aug  9 16:49:44 CEST 2010 (tk)
+----------------------------------
+ * libclamav/others.h: bump f-level
+
 Mon Aug  9 13:21:31 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix handling of --datadir (bb#2180)
