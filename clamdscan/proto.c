@@ -312,6 +312,13 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
 	    char *colon = strrchr(bol, ':');
+	    if(colon && colon[1] != ' ') {
+		char *colon2;
+		*colon = 0;
+		colon2 = strrchr(bol, ':');
+		*colon = ':';
+		colon = colon2;
+	    }
 	    if(!colon) {
 		logg("Failed to parse reply\n");
 		return -1;

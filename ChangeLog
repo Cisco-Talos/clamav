@@ -1,3 +1,7 @@
+Tue Aug 10 14:01:27 CEST 2010 (tk)
+----------------------------------
+ * clamdscan: fix parsing of virus names in extended mode and --stream (bb#2184)
+
 Mon Aug  9 19:46:58 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/detect.cpp: Mac OS X can run 64-bit apps on 32-bit kernel (bb #2153).
