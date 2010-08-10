@@ -329,6 +329,7 @@ const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char
 			}
 			else if(element->key == DELETED_KEY) {
 				deleted_element = element;
+				element->key = NULL;
 			}
 			else if(len == element->len && strncmp(key, element->key, len)==0) {
 				PROFILE_DATA_UPDATE(s, tries);
