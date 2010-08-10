@@ -124,6 +124,8 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
 	if (!q2)
 	    q2 = q + bytesleft2-9; /* till EOF */
 	*endstream = q2 - start;
+	if (*endstream < *stream)
+	    *endstream = *stream;
 	return 1;
     }
     return 0;
