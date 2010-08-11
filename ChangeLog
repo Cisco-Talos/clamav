@@ -1,3 +1,7 @@
+Wed Aug 11 12:32:37 CEST 2010 (acab)
+------------------------------------
+ * libclamav: fix callback_sigload
+
 Tue Aug 10 14:01:27 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: fix parsing of virus names in extended mode and --stream (bb#2184)

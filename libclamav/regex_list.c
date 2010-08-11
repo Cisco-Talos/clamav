@@ -385,7 +385,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio, uint8_t dconf_prefiltering)
+int load_regex_matcher(struct cl_engine *engine,struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio, uint8_t dconf_prefiltering)
 {
 	int rc,line=0,entry=0;
 	char buffer[FILEBUFF];
@@ -440,6 +440,11 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 
 		if(functionality_level_check(buffer))
 			continue;
+
+		if(engine->cb_sigload && engine->cb_sigload("phishing", buffer, engine->cb_sigload_ctx)) {
+			cli_dbgmsg("load_regex_matcher: skipping %s due to callback\n", buffer);
+			continue;
+		}
 
 		entry++;
 		pattern = strchr(buffer,':');
