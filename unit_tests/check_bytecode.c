@@ -87,7 +87,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     if (testmode)
 	engine->bytecode_mode = CL_BYTECODE_MODE_TEST;
 
-    rc = cli_bytecode_prepare(engine, &bcs, BYTECODE_ENGINE_MASK);
+    rc = cli_bytecode_prepare2(engine, &bcs, BYTECODE_ENGINE_MASK);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
     if (have_clamjit && !nojit && nojit != -1) {

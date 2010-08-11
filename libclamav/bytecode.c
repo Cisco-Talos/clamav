@@ -2248,7 +2248,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
     return rc;
 }
 
-int cli_bytecode_prepare(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
+int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
 {
     unsigned i, interp = 0, jitok = 0, jitcount=0;
     int rc;

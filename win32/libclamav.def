@@ -92,7 +92,7 @@ EXPORTS cli_bytecode_context_setparam_int @44232 NONAME
 EXPORTS cli_bytecode_context_setfuncid @44233 NONAME
 EXPORTS cli_bytecode_context_set_trace @44234 NONAME
 EXPORTS cli_bytecode_context_alloc @44235 NONAME
-EXPORTS cli_bytecode_prepare @44236 NONAME
+EXPORTS cli_bytecode_prepare2 @44236 NONAME
 EXPORTS cli_bytecode_load @44237 NONAME
 EXPORTS cli_bytecode_init @44238 NONAME
 EXPORTS cli_bytecode_debug @44239 NONAME

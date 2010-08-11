@@ -1768,7 +1768,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    cl_engine_free(engine);
 	    return 55;
 	}
-	if(optget(opts, "Bytecode")->enabled && (ret = cli_bytecode_prepare(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
+	if(optget(opts, "Bytecode")->enabled && (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
 	    logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
 	    unlink(newfile);
 	    free(newfile);

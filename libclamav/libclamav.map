@@ -157,7 +157,7 @@ CLAMAV_PRIVATE {
     have_rar;
     have_clamjit;
     cli_bytecode_load;
-    cli_bytecode_prepare;
+    cli_bytecode_prepare2;
     cli_bytecode_run;
     cli_bytecode_destroy;
     cli_bytecode_context_alloc;

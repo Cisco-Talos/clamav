@@ -3107,7 +3107,7 @@ int cl_engine_compile(struct cl_engine *engine)
     mpool_flush(engine->mempool);
 
     /* Compile bytecode */
-    if((ret = cli_bytecode_prepare(engine, &engine->bcs, engine->dconf->bytecode))) {
+    if((ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode))) {
 	cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
 	return ret;
     }
