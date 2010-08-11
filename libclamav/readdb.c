@@ -903,7 +903,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
 	    continue;
 
-	if(!sdb && engine->cb_sigload && engine->cb_sigload("ndb", virname, engine->cb_sigload_ctx)) {
+	if(engine->cb_sigload && engine->cb_sigload("ndb", virname, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loadndb: skipping %s due to callback\n", virname);
 	    continue;
 	}
@@ -1213,7 +1213,6 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 
     if(engine->cb_sigload && engine->cb_sigload("ldb", virname, engine->cb_sigload_ctx)) {
 	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
-	(*sigs)--;
 	return CL_SUCCESS;
     }
 
@@ -1418,12 +1417,6 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
 	return CL_SUCCESS;
     }
-
-    if(engine->cb_sigload && engine->cb_sigload("cbc", dbname, engine->cb_sigload_ctx)) {
-	cli_dbgmsg("cli_loadcbc: skipping %s due to callback\n", dbname);
-	return CL_SUCCESS;
-    }
-
 #ifndef CL_BCUNSIGNED
     if (!(options & CL_DB_SIGNED)) {
 	cli_warnmsg("Only loading signed bytecode, skipping load of unsigned bytecode!\n");
@@ -1938,16 +1931,9 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy))
 	    continue;
 
-	if(engine->cb_sigload) {
-	    const char *dot = strchr(dbname, '.');
-	    if(!dot)
-		dot = dbname;
-	    else
-		dot++;
-	    if(engine->cb_sigload(dot, pt, engine->cb_sigload_ctx)) {
-		cli_dbgmsg("cli_loadmd5: skipping %s due to callback\n", pt);
-	        continue;
-	    }
+	if(engine->cb_sigload && engine->cb_sigload("md5", pt, engine->cb_sigload_ctx)) {
+	    cli_dbgmsg("cli_loadmd5: skipping %s due to callback\n", pt);
+	    continue;
 	}
 
 	new = (struct cli_md5m_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_md5m_patt));
