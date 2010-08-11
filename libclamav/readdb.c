@@ -830,7 +830,7 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 	}
     }
 
-    if((ret = load_regex_matcher(engine, engine->whitelist_matcher, fs, NULL, options, 1, dbio, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
+    if((ret = load_regex_matcher(engine->whitelist_matcher, fs, NULL, options, 1, dbio, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
 	return ret;
     }
 
@@ -851,7 +851,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
     }
 
-    if((ret = load_regex_matcher(engine, engine->domainlist_matcher, fs, signo, options, 0, dbio, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
+    if((ret = load_regex_matcher(engine->domainlist_matcher, fs, signo, options, 0, dbio, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
 	return ret;
     }
 
