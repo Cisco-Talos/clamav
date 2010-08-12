@@ -134,7 +134,12 @@ void cli_detect_env_jit(struct cli_environment *env)
 	CASE_OS(OpenBSD, os_bsd);
 	CASE_OS(Psp, os_unknown);
 	CASE_OS(Solaris, os_solaris);
-	CASE_OS(Win32, os_win32);
+	case Triple::Win32:
+	     env->os = llvm_os_Win32;
+	     if (env->os_category != os_win32 &&
+		 env->os_category != os_win64)
+		 warn_assumptions("Operating System", env->os_category, Triple::Win32);
+	     break;
 	CASE_OS(Haiku, os_unknown);
     }
 
