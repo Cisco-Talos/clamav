@@ -10,6 +10,10 @@ Wed Aug 11 13:39:11 EEST 2010 (edwin)
 -------------------------------------
  * freshclam: uses private symbol which changed proto, change name to prevent crash (bb #2187)
 
+Wed Aug 11 12:32:37 CEST 2010 (acab)
+------------------------------------
+ * libclamav: fix callback_sigload
+
 Tue Aug 10 14:01:27 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: fix parsing of virus names in extended mode and --stream (bb#2184)
