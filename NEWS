@@ -1,8 +1,9 @@
-0.96.1
+0.96.2
 ------
 
-This is a bugfix release, please refer to the ChangeLog for the complete
-list of changes.
+ClamAV 0.96.2 brings a new PDF parser, performance and memory improvements,
+and a number of bugfixes and minor enhancements. This upgrade is recommended
+for all users.
 
 --
 The ClamAV team (http://www.clamav.net/team)
