@@ -231,6 +231,10 @@ context = Opaque application provided data
 Output:
 0     = Load the current signature
 Non 0 = Skip the current signature
+
+WARNING: Some signatures (notably ldb, cbc) can be dependent upon other signatures.
+         Failure to preserve dependency chains will result in database loading failure.
+         It is the implementor's responsibility to guarantee consistency.
 */
 extern void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context);
 
