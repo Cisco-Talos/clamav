@@ -184,8 +184,9 @@ extern "C" {
  * INPUT @param pEnginesFolder : path where defs are located
  * INPUT @param pTempRoot : path in which temporary files must be created
  * INPUT @param pLicenseKey : license key blob
+ * INPUT @param bLoadMinDefs : load minimal defs
  */
-int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey);
+int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey, BOOL bLoadMinDefs);
 
 /*
  * MANDATORY SUPPORT

@@ -57,6 +57,8 @@ unsigned int ninsts_total = 0;
 unsigned int ninsts_avail = 0;
 HANDLE instance_mutex;
 
+BOOL minimal_definitions = FALSE;
+
 #define lock_engine()(WaitForSingleObject(engine_mutex, INFINITE) == WAIT_FAILED)
 #define unlock_engine() do {ReleaseMutex(engine_mutex);} while(0)
 
@@ -176,7 +178,7 @@ BOOL interface_setup(void) {
 }
 
 static int sigload_callback(const char *type, const char *name, void *context) {
-    if(!strncmp(name, "Exploit.PDF", 11) || !strncmp(name, "DOS.", 4) || !strcmp(type, "db")) /* FIXME */
+    if(minimal_definitions && strcmp(type, "fp"))
 	return 1;
     return 0;
 }
@@ -249,7 +251,7 @@ static void free_engine_and_unlock(void) {
     unlock_engine();
 }
 
-int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey) {
+int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey, BOOL bLoadMinDefs) {
     char tmpdir[PATH_MAX];
     BOOL cant_convert;
     int ret;
@@ -272,6 +274,11 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     }
     cl_engine_set_clcb_pre_scan(engine, prescan_cb);
     cl_engine_set_clcb_post_scan(engine, postscan_cb);
+    
+    minimal_definitions = bLoadMinDefs;
+    if(bLoadMinDefs)
+	logg("!MINIMAL DEFINITIONS MODE ON!");
+
     if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pTempRoot, -1, tmpdir, sizeof(tmpdir), NULL, &cant_convert) || cant_convert) {
 	free_engine_and_unlock();
 	FAIL(CL_EARG, "Can't translate pTempRoot");
