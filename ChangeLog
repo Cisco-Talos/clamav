@@ -1,3 +1,7 @@
+Thu Aug 12 13:18:24 CEST 2010 (tk)
+----------------------------------
+ * contrib: add safe_clamd from Luca (bb#2026)
+
 Wed Aug 11 13:39:11 EEST 2010 (edwin)
 -------------------------------------
  * freshclam: uses private symbol which changed proto, change name to prevent crash (bb #2187)
