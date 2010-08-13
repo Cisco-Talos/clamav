@@ -1,3 +1,7 @@
+Fri Aug 13 13:57:04 EEST 2010 (edwin)
+--------------------------------------
+ * libclamav/bytecode_detect.c: prevent fclose(NULL) on SELinux (bb #2200)
+
 Thu Aug 12 18:49:37 CEST 2010 (tk)
 ----------------------------------
  * V 0.96.2

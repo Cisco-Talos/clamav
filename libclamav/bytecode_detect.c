@@ -109,9 +109,11 @@ static int detect_SELinux(void)
 	f = fopen("/selinux/enforce", "r");
         if (!f && errno == EACCES)
 		return 2;
-	if (fscanf(f, "%d", &enforce) == 1)
+	if (f) {
+	    if (fscanf(f, "%d", &enforce) == 1)
 		selinux = 2;
-	fclose(f);
+	    fclose(f);
+	}
 	return selinux;
     }
     while (fgets(line, sizeof(line), f)) {
@@ -130,8 +132,8 @@ static int detect_SELinux(void)
 	    selinux = 2;
 	if (enforce == -1)
 	    selinux = 0;
+	fclose(f);
     }
-    fclose(f);
     return selinux;
 }
 
