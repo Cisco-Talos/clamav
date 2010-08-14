@@ -187,6 +187,7 @@ void cli_detect_environment(struct cli_environment *env)
     /* -- Detect arch -- */
     CHECK_ARCH(i386);
     else CHECK_ARCH(x86_64);
+    else if (!strcmp(TARGET_ARCH_TYPE,"amd64")) env->arch = arch_x86_64;
     else if (!strcmp(TARGET_ARCH_TYPE,"ppc")) env->arch = arch_ppc32;/* llvm will fix ppc64 */
     else CHECK_ARCH(arm);
     else CHECK_ARCH(sparc);

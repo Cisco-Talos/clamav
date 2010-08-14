@@ -1,3 +1,7 @@
+Sat Aug 14 15:18:03 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode_detect.c: fix warning on FreeBSD (bb #2201).
+
 Fri Aug 13 13:57:04 EEST 2010 (edwin)
 --------------------------------------
  * libclamav/bytecode_detect.c: prevent fclose(NULL) on SELinux (bb #2200)
