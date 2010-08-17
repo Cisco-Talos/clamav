@@ -1276,8 +1276,9 @@ static int listdb(const char *filename, const regex_t *regex)
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    if(regex) {
+		cli_chomp(buffer);
 		if(!cli_regexec(regex, buffer, 0, NULL, 0))
-		    mprintf("%s", buffer);
+		    mprintf("%s\n", buffer);
 		continue;
 	    }
 	    line++;
@@ -1301,13 +1302,13 @@ static int listdb(const char *filename, const regex_t *regex)
     } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    cli_chomp(buffer);
 	    if(regex) {
 		if(!cli_regexec(regex, buffer, 0, NULL, 0))
-		    mprintf("%s", buffer);
+		    mprintf("%s\n", buffer);
 		continue;
 	    }
 	    line++;
-	    cli_chomp(buffer);
 	    start = cli_strtok(buffer, 2, ":");
 
 	    if(!start) {
@@ -1327,13 +1328,13 @@ static int listdb(const char *filename, const regex_t *regex)
     } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    cli_chomp(buffer);
 	    if(regex) {
 		if(!cli_regexec(regex, buffer, 0, NULL, 0))
-		    mprintf("%s", buffer);
+		    mprintf("%s\n", buffer);
 		continue;
 	    }
 	    line++;
-	    cli_chomp(buffer);
 
 	    if(cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu"))
 		start = cli_strtok(buffer, 0, ";");

@@ -1,3 +1,7 @@
+Tue Aug 17 13:10:00 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: fix EOL matching in --find-sigs (bb#2164)
+
 Sat Aug 14 16:29:32 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/llvm/test: XFAIL a test that fails on i686-apple-darwin8 (bb #2206).
