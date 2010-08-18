@@ -1,3 +1,7 @@
+Wed Aug 18 11:01:10 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/detect.cpp: don't warn on x86_64 vs i386 mismatches (bb #2214).
+
 Tue Aug 17 13:10:00 CEST 2010 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix EOL matching in --find-sigs (bb#2164)
