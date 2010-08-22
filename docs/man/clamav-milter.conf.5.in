@@ -138,7 +138,7 @@ The following group of options controls the delievery process under  different c
 .br
 - Blackhole (not available for OnFail): Like Accept but the message is sent to oblivion
 .br
-- Quarantine (not available for OnFail): Like Accept but message is quarantined instead of being delivered. NOTE: In Sendmail the quarantine queue can be examined via mailq -qQ. For Postfix this causes the message to be placed on hold.
+- Quarantine (not available for OnFail): Like Accept but message is quarantined instead of being delivered. NOTE: In Sendmail the quarantine queue can be examined via mailq \-qQ. For Postfix this causes the message to be placed on hold.
 .TP 
 \fBOnClean STRING\fR
 Action to be performed on clean messages (mostly useful for testing)
