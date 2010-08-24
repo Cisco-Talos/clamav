@@ -1931,10 +1931,10 @@ static void emax_reached(cli_ctx *ctx) {
     return retcode;										\
     } while(0)
 
-int cli_magic_scandesc(int desc, cli_ctx *ctx)
+static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 {
 	int ret = CL_CLEAN;
-	cli_file_t type, dettype = 0;
+	cli_file_t dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
 	cli_file_t current_container_type = ctx->container_type;
@@ -2036,7 +2036,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	ret_from_magicscan(ret);
     }
 
-    type = cli_filetype2(*ctx->fmap, ctx->engine); /* FIXMEFMAP: port to fmap */
+    if(type == CL_TYPE_ANY)
+	type = cli_filetype2(*ctx->fmap, ctx->engine); /* FIXMEFMAP: port to fmap */
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	funmap(*ctx->fmap);
@@ -2382,6 +2383,16 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	default:
 	    ret_from_magicscan(ret);
     }
+}
+
+int cli_magic_scandesc(int desc, cli_ctx *ctx)
+{
+    return magic_scandesc(desc, ctx, CL_TYPE_ANY);
+}
+
+int cli_magic_scandesc_type(int desc, cli_ctx *ctx, cli_file_t type)
+{
+    return magic_scandesc(desc, ctx, type);
 }
 
 int cli_scandesc_stats(int desc, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)

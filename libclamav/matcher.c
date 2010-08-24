@@ -42,6 +42,7 @@
 #include "elf.h"
 #include "execs.h"
 #include "special.h"
+#include "scanners.h"
 #include "str.h"
 #include "cltypes.h"
 #include "default.h"
@@ -529,6 +530,12 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 		    continue;
 		if(root->ac_lsigtable[i]->tdb.nos && (root->ac_lsigtable[i]->tdb.nos[0] > target_info->exeinfo.nsections || root->ac_lsigtable[i]->tdb.nos[1] < target_info->exeinfo.nsections))
 		    continue;
+	    }
+
+	    if(root->ac_lsigtable[i]->tdb.handlertype) {
+		if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS)
+		    return CL_VIRUS;
+		continue;
 	    }
 
 	    if(root->ac_lsigtable[i]->tdb.icongrp1 || root->ac_lsigtable[i]->tdb.icongrp2) {

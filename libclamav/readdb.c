@@ -990,7 +990,7 @@ struct lsig_attrib {
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
 	struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS	8
+#define ATTRIB_TOKENS	9
 	    { "Target",		    CLI_TDB_UINT,	(void **) &tdb->target	    },
 	    { "Engine",		    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
 
@@ -1002,6 +1002,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	    { "IconGroup2",	    CLI_TDB_STR,	(void **) &tdb->icongrp2    },
 
 	    { "Container",	    CLI_TDB_FTYPE,	(void **) &tdb->container   },
+	    { "HandlerType",	    CLI_TDB_FTYPE,	(void **) &tdb->handlertype },
 /*
 	    { "SectOff",    CLI_TDB_RANGE2,	(void **) &tdb->sectoff	    },
 	    { "SectRVA",    CLI_TDB_RANGE2,	(void **) &tdb->sectrva	    },

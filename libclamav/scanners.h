@@ -23,8 +23,10 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "filetypes.h"
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx);
+int cli_magic_scandesc_type(int desc, cli_ctx *ctx, cli_file_t type);
 int cli_found_possibly_unwanted(cli_ctx* ctx);
 int cli_scandesc_stats(int desc, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
 int cli_scanfile_stats(const char *filename, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
