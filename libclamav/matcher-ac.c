@@ -1232,8 +1232,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    }
 			    offmatrix = mdata->offmatrix[pt->sigid - 1];
 
+			    found = 0;
 			    if(pt->partno != 1) {
-				found = 0;
 				for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != -1; j++) {
 				    found = j;
 				    if(pt->maxdist)

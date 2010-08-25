@@ -381,8 +381,6 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	char md5[33];
 	unsigned int i;
 	const char *virname;
-	const struct cli_md5m_patt *patt = NULL;
-
 
     if(ctx->engine->md5_fp && cli_md5m_scan(digest, size, &virname, ctx->engine->md5_fp) == CL_VIRUS) {
 	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
@@ -462,8 +460,8 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
 	cli_dbgmsg("bytecode: matchicon only works with PE files\n");
 	return -1;
     }
-    if (grp1len > sizeof(group1)-1 ||
-	grp2len > sizeof(group2)-1)
+    if ((size_t) grp1len > sizeof(group1)-1 ||
+	(size_t) grp2len > sizeof(group2)-1)
 	return -1;
     oldvirname = ((cli_ctx*)ctx->ctx)->virname;
     ((cli_ctx*)ctx->ctx)->virname = NULL;
@@ -711,7 +709,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	return CL_VIRUS;
 
     if(!ftonly && ctx->engine->md5_hdb) {
-	    const struct cli_md5m_patt *patt;
 	if(!refhash) {
 	    cli_md5_final(digest, &md5ctx);
 	    refhash = digest;

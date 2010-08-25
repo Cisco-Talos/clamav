@@ -1735,17 +1735,6 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
     if(ret >= CL_TYPENO) {
 	ctx->recursion++;
-
-/*
-	if(type == CL_TYPE_TEXT_ASCII) {
-	    lseek(desc, 0, SEEK_SET);
-
-	    nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
-	    if(nret == CL_VIRUS)
-		cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
-	}
-*/
-
 	if(nret != CL_VIRUS) {
 	    lastzip = lastrar = 0xdeadbeef;
 	    fpt = ftoffset;
