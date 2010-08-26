@@ -62,6 +62,8 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 
 #include "mpool.h"
 
+#undef CL_DEBUG /* bb#2222 */
+
 #define MIN_FRAGSIZE 262144
 
 #if SIZEOF_VOID_P==8

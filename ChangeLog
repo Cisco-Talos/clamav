@@ -1,3 +1,7 @@
+Thu Aug 26 14:06:55 CEST 2010 (tk)
+----------------------------------
+ * libclamav/mpool.c: permanently disable debug mode (bb#2222)
+
 Tue Aug 24 12:27:16 CEST 2010 (tk)
 ----------------------------------
  * libclamav: allow logical sigs to be used as file type sigs (bb#2228)
