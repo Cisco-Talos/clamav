@@ -309,7 +309,10 @@
     </ClCompile>
     <ClCompile Include="3rdparty\zlib\crc32.c"/>
     <ClCompile Include="3rdparty\zlib\deflate.c"/>
-    <ClCompile Include="3rdparty\zlib\gzio.c"/>
+    <ClCompile Include="3rdparty\zlib\gzclose.c"/>
+    <ClCompile Include="3rdparty\zlib\gzlib.c"/>
+    <ClCompile Include="3rdparty\zlib\gzread.c"/>
+    <ClCompile Include="3rdparty\zlib\gzwrite.c"/>
     <ClCompile Include="3rdparty\zlib\inffast.c"/>
     <ClCompile Include="3rdparty\zlib\inflate.c"/>
     <ClCompile Include="3rdparty\zlib\inftrees.c"/>
