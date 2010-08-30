@@ -1,3 +1,8 @@
+Tue Aug 31 01:39:11 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe_icons.c: support special case where icon is encoded as 32bpp but it really
+			 carries alpha as a mask... well go figure. (bb#2221)
+
 Thu Aug 26 14:06:55 CEST 2010 (tk)
 ----------------------------------
  * libclamav/mpool.c: permanently disable debug mode (bb#2222)

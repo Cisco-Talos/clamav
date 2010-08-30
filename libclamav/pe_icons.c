@@ -47,7 +47,7 @@ struct GICONS {
 static int groupicon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct GICONS *gicons = ptr;
     type = type; lang = lang;
-    cli_dbgmsg("groupicon_cb: got group %u\n", name);
+    cli_dbgmsg("groupicon_cb: got group %x\n", name);
     if(!gicons->cnt || gicons->lastg == name) {
 	gicons->rvas[gicons->cnt] = rva;
 	gicons->cnt++;
@@ -66,7 +66,7 @@ struct ICONS {
 static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICONS *icons = ptr;
     type = type; lang = lang;
-    cli_dbgmsg("icon_cb: got icon %u\n", name);
+    cli_dbgmsg("icon_cb: got icon %x\n", name);
     if(icons->cnt > 100) 
 	return 1;
     icons->rvas[icons->cnt] = rva;
@@ -103,7 +103,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 		    uint32_t sz;
 		    uint16_t id;
 		} *dir;
-		
+
 		grp = fmap_need_off_once(map, cli_rawaddr(cli_readint32(grp), exe_sections, nsections, &err, map->len, hdr_size), gsz);
 		if(grp && !err) {
 		    icnt = cli_readint32(grp+2) >> 16;
@@ -1201,6 +1201,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     fmap_t *map;
     uint32_t icoff;
     struct icon_matcher *matcher;
+    unsigned int special_32_is_32 = 0;
 
     if(!ctx || !ctx->engine || !(matcher=ctx->engine->iconcheck))
 	return CL_SUCCESS;
@@ -1228,7 +1229,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 
     /* seek to the end of v4/v5 header */
     icoff += EC32(bmphdr.sz);
-	    
+
     width = EC32(bmphdr.w);
     height = EC32(bmphdr.h) / 2;
     depth = EC16(bmphdr.depth);
@@ -1333,7 +1334,9 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	    break;
 	case 32:
 	    for(x=0; x<width; x++) {
-		imagedata[(height - 1 - y) * width + x] = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16) | (rawimage[x_off + 3] << 24);
+		unsigned int a = rawimage[x_off + 3] << 24;
+		imagedata[(height - 1 - y) * width + x] = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16) | a;
+		special_32_is_32 |= a;
 		x_off+=4;
 	    }
 	    break;
@@ -1343,10 +1346,23 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     if(palette) fmap_unneed_ptr(map, palette, (1<<depth) * sizeof(int));
     makebmp("0-noalpha", tempd, width, height, imagedata);
 
+    if(depth == 32 && !special_32_is_32) { /* Sometimes it really is 24. Exploited live - see sample 0013839101 */
+	andlinesz = 4*(width / 32) + 4*(width % 32 != 0);
+	if(!(rawimage = fmap_need_off_once(map, icoff + height * scanlinesz, height * andlinesz))) {
+	    /* Likely a broken sample - 32bit icon with 24bit data and a broken mask:
+	       i could really break out here but i've got the full image, so i'm just forcing full alpha */
+	    for(y=0; y<height; y++)
+		for(x=0; x<width; x++)
+		    imagedata[y * width + x] |= 0xff000000;
+	    special_32_is_32 = 0;
+	    cli_dbgmsg("parseicon: found a broken and stupid icon\n");
+	} else cli_dbgmsg("parseicon: found a stupid icon\n");
+    } else rawimage += height * scanlinesz;
+
     /* Set alpha on or off based on the mask */
-    if(depth & 0x1f) {
+    if((depth & 0x1f) || !special_32_is_32) {
 	for(y=0; y<height; y++) {
-	    unsigned int x_off = height * scanlinesz + y * andlinesz;
+	    unsigned int x_off = y * andlinesz;
 	    unsigned int have = 0;
 	    unsigned char c;
 	    for(x=0; x<width; x++) {
