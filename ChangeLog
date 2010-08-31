@@ -1,3 +1,8 @@
+Tue Aug 31 11:13:44 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/regex/regexec.c: fix regex when sizeof(void*) != sizeof(long) (bb #2232).
+ Thanks to Martin Olsen <martypal2005*gmail.com>
+
 Tue Aug 31 10:53:06 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: improve handling of pdf objects (bb #2216).
