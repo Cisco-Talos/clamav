@@ -1,3 +1,7 @@
+Tue Aug 31 16:11:30 CEST 2010 (tk)
+----------------------------------
+ * freshclam/freshclam.c: fix handling of relative paths with --datadir (bb#2240)
+
 Tue Aug 31 15:10:29 EEST 2010 (edwin)
 -------------------------------------
  * clamd/clamd.c: limit RLIMIT_DATA to 2GB on 32-bit processes (bb #1941).

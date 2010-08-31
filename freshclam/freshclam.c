@@ -201,8 +201,8 @@ static int download(const struct optstruct *opts, const char *datadir, const cha
 int main(int argc, char **argv)
 {
 	int ret = 52, retcl;
-	const char *dbdir, *cfgfile, *arg = NULL, *pidfile = NULL;
-	char *pt;
+	const char *cfgfile, *arg = NULL, *pidfile = NULL;
+	char *pt, dbdir[512];
 	struct optstruct *opts;
 	const struct optstruct *opt;
 #ifndef	_WIN32
@@ -245,10 +245,8 @@ int main(int argc, char **argv)
     }
     free(pt);
 
-    dbdir = optget(opts, "DatabaseDirectory")->strarg;
-
     if(optget(opts, "version")->enabled) {
-	print_version(dbdir);
+	print_version(optget(opts, "DatabaseDirectory")->strarg);
 	optfree(opts);
 	return 0;
     }
@@ -364,12 +362,18 @@ int main(int argc, char **argv)
 #endif
 
     /* change the current working directory */
-    if(chdir(dbdir)) {
-	logg("Can't change dir to %s\n", dbdir);
+    if(chdir(optget(opts, "DatabaseDirectory")->strarg)) {
+	logg("!Can't change dir to %s\n", optget(opts, "DatabaseDirectory")->strarg);
 	optfree(opts);
 	return 50;
-    } else
+    } else {
+	if(!getcwd(dbdir, sizeof(dbdir))) {
+	    logg("!getcwd() failed\n");
+	    optfree(opts);
+	    return 50;
+	}
 	logg("*Current working dir is %s\n", dbdir);
+    }
 
 
     if(optget(opts, "list-mirrors")->enabled) {
