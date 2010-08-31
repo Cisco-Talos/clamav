@@ -1,3 +1,7 @@
+Tue Aug 31 15:10:29 EEST 2010 (edwin)
+-------------------------------------
+ * clamd/clamd.c: limit RLIMIT_DATA to 2GB on 32-bit processes (bb #1941).
+
 Tue Aug 31 11:13:44 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/regex/regexec.c: fix regex when sizeof(void*) != sizeof(long) (bb #2232).
