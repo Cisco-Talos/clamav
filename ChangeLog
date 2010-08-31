@@ -1,3 +1,7 @@
+Tue Aug 31 10:53:06 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: improve handling of pdf objects (bb #2216).
+
 Tue Aug 31 01:39:11 CEST 2010 (acab)
 ------------------------------------
  * libclamav/pe_icons.c: support special case where icon is encoded as 32bpp but it really

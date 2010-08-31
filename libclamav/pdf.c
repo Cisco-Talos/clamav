@@ -148,10 +148,22 @@ static int pdf_findobj(struct pdf_struct *pdf)
     memset(obj, 0, sizeof(*obj));
     start = pdf->map+pdf->offset;
     bytesleft = pdf->size - pdf->offset;
-    q2 = cli_memstr(start, bytesleft, " obj", 4);
-    if (!q2)
-	return 0;/* no more objs */
-    bytesleft -= q2 - start;
+    while (bytesleft > 0) {
+	q2 = cli_memstr(start, bytesleft, "obj", 3);
+	if (!q2)
+	    return 0;/* no more objs */
+	q2--;
+	bytesleft -= q2 - start;
+	if (*q2 != 0 && *q2 != 9 && *q2 != 0xa && *q2 != 0xc && *q2 != 0xd && *q2 != 0x20) {
+	    start = q2+4;
+	    bytesleft -= 4;
+	    continue;
+	}
+	break;
+    }
+    if (bytesleft <= 0)
+	return 0;
+
     q = findNextNonWSBack(q2-1, start);
     while (q > start && isdigit(*q)) { q--; }
     genid = atoi(q);
