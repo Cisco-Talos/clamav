@@ -808,9 +808,12 @@ public:
 	    // Have an alloca -> some instruction uses its address otherwise
 	    // mem2reg would have converted it to an SSA register.
 	    // Enable stack protector for this function.
-	    F->addFnAttr(Attribute::StackProtect);
 	    F->addFnAttr(Attribute::StackProtectReq);
 	}
+	// always add stackprotect attribute (bb #2239), so we know this
+	// function was verified. If there is no alloca it won't actually add
+	// stack protector in emitted code so this won't slow down the app.
+	F->addFnAttr(Attribute::StackProtect);
     }
 
     Value *GEPOperand(Value *V) {
@@ -1993,6 +1996,8 @@ void cli_printcxxver()
 namespace ClamBCModule {
 void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 {
+    if (F && F->hasName())
+	llvm::errs() << "in function " << F->getName() << ": ";
     llvm::errs() << msg << "\n";
 }
 }

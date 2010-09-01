@@ -1,3 +1,7 @@
+Wed Sep  1 10:03:26 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/{bytecode2llvm,ClamBCRTChecks}.cpp: avoid false 'Verification error' messages (bb #2239)
+
 Tue Aug 31 16:11:30 CEST 2010 (tk)
 ----------------------------------
  * freshclam/freshclam.c: fix handling of relative paths with --datadir (bb#2240)

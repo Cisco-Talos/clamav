@@ -70,7 +70,7 @@ namespace {
       // Bytecode was already verifier and had stack protector applied.
       // We get called again because ALL bytecode functions loaded are part of
       // the same module.
-      if (F.hasFnAttr(Attribute::StackProtectReq))
+      if (F.hasFnAttr(Attribute::StackProtect))
 	  return false;
 #endif
 
@@ -196,7 +196,7 @@ namespace {
 
       if (!valid) {
 	DEBUG(F.dump());
-        ClamBCModule::stop("Verification found errors!", &F);	
+        ClamBCModule::stop("Verification found errors!", &F);
 	// replace function with call to abort
         std::vector<const Type*>args;
         FunctionType* abrtTy = FunctionType::get(
