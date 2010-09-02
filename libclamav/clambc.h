@@ -131,6 +131,4 @@ enum bc_global {
 };
 
 #define BC_START_TID 69
-
-
 #endif

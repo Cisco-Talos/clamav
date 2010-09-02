@@ -470,7 +470,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
     group1[grp1len] = 0;
     group2[grp2len] = 0;
     memset(&info, 0, sizeof(info));
-    if (ctx->bc->kind == BC_PE_UNPACKER) {
+    if (ctx->bc->kind == BC_PE_UNPACKER || ctx->bc->kind == BC_PE_ALL) {
 	if(le16_to_host(ctx->hooks.pedata->file_hdr.Characteristics) & 0x2000 ||
 	   !ctx->hooks.pedata->dirs[2].Size)
 	    info.res_addr = 0;

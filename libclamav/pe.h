@@ -28,7 +28,8 @@
 #include "fmap.h"
 #include "bcfeatures.h"
 /** @file */
-/** Header for this PE file */
+/** Header for this PE file
+  \group_pe */
 struct pe_image_file_hdr {
     uint32_t Magic;  /**< PE magic header: PE\\0\\0 */
     uint16_t Machine;/**< CPU this executable runs on, see libclamav/pe.c for possible values */
@@ -40,13 +41,15 @@ struct pe_image_file_hdr {
     uint16_t Characteristics;
 };
 
-/** PE data directory header */
+/** PE data directory header
+  \group_pe */
 struct pe_image_data_dir {
     uint32_t VirtualAddress;
     uint32_t Size;
 };
 
-/** 32-bit PE optional header */
+/** 32-bit PE optional header
+  \group_pe */
 struct pe_image_optional_hdr32 {
     uint16_t Magic;
     uint8_t  MajorLinkerVersion;		    /**< unreliable */
@@ -81,7 +84,8 @@ struct pe_image_optional_hdr32 {
     struct pe_image_data_dir DataDirectory[16];
 };
 
-/** PE 64-bit optional header */
+/** PE 64-bit optional header
+  \group_pe */
 struct pe_image_optional_hdr64 {
     uint16_t Magic;
     uint8_t  MajorLinkerVersion;		    /**< unreliable */
@@ -115,7 +119,8 @@ struct pe_image_optional_hdr64 {
     struct pe_image_data_dir DataDirectory[16];
 };
 
-/** PE section header */
+/** PE section header
+  \group_pe */
 struct pe_image_section_hdr {
     uint8_t Name[8];			    /**< may not end with NULL */
     /*
@@ -135,7 +140,8 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-/** Data for the bytecode PE hook */
+/** Data for the bytecode PE hook
+  \group_pe */
 struct cli_pe_hook_data {
   uint32_t offset;
   uint32_t ep; /**< EntryPoint as file offset */
