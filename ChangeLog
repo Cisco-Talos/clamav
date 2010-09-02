@@ -1,3 +1,7 @@
+Thu Sep  2 21:21:58 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: fix hung clamd on FreeBSD (bb #2235)
+
 Thu Sep  2 15:38:22 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pe.c: add BC_PE_ALL hook (bb #2237)
