@@ -1,3 +1,7 @@
+Thu Sep  2 15:38:22 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pe.c: add BC_PE_ALL hook (bb #2237)
+
 Wed Sep  1 10:03:26 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/{bytecode2llvm,ClamBCRTChecks}.cpp: avoid false 'Verification error' messages (bb #2239)

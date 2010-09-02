@@ -1109,6 +1109,34 @@ int cli_scanpe(cli_ctx *ctx)
 	}
     }
 
+    pedata.nsections = nsections;
+    pedata.ep = ep;
+    pedata.offset = 0;
+    memcpy(&pedata.file_hdr, &file_hdr, sizeof(file_hdr));
+    memcpy(&pedata.opt32, &pe_opt.opt32, sizeof(pe_opt.opt32));
+    memcpy(&pedata.opt64, &pe_opt.opt64, sizeof(pe_opt.opt64));
+    memcpy(&pedata.dirs, dirs, sizeof(pedata.dirs));
+    pedata.e_lfanew = e_lfanew;
+    pedata.overlays = overlays;
+    pedata.overlays_sz = fsize - overlays;
+    pedata.hdr_size = hdr_size;
+
+    /* Bytecode BC_PE_ALL hook */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+	cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+	return CL_EMEM;
+    }
+    cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_ALL, ctx->virname);
+    if (ret == CL_VIRUS) {
+	free(exe_sections);
+	cli_bytecode_context_destroy(bc_ctx);
+	return CL_VIRUS;
+    }
+    cli_bytecode_context_destroy(bc_ctx);
+
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
@@ -2243,28 +2271,18 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* to be continued ... */
 
-    /* Bytecode */
+    /* Bytecode BC_PE_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {
 	cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
 	return CL_EMEM;
     }
-    pedata.nsections = nsections;
-    pedata.ep = ep;
-    pedata.offset = 0;
-    memcpy(&pedata.file_hdr, &file_hdr, sizeof(file_hdr));
-    memcpy(&pedata.opt32, &pe_opt.opt32, sizeof(pe_opt.opt32));
-    memcpy(&pedata.opt64, &pe_opt.opt64, sizeof(pe_opt.opt64));
-    memcpy(&pedata.dirs, dirs, sizeof(pedata.dirs));
-    pedata.e_lfanew = e_lfanew;
-    pedata.overlays = overlays;
-    pedata.overlays_sz = fsize - overlays;
-    pedata.hdr_size = hdr_size;
     cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
     cli_bytecode_context_setctx(bc_ctx, ctx);
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_UNPACKER, map, ctx->virname);
     switch (ret) {
 	case CL_VIRUS:
+	    free(exe_sections);
 	    cli_bytecode_context_destroy(bc_ctx);
 	    return CL_VIRUS;
 	case CL_SUCCESS:
