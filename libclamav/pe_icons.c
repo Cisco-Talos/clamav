@@ -1350,11 +1350,12 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	andlinesz = 4*(width / 32) + 4*(width % 32 != 0);
 	if(!(rawimage = fmap_need_off_once(map, icoff + height * scanlinesz, height * andlinesz))) {
 	    /* Likely a broken sample - 32bit icon with 24bit data and a broken mask:
-	       i could really break out here but i've got the full image, so i'm just forcing full alpha */
+	       i could really break out here but i've got the full image, so i'm just forcing full alpha
+	       Found in samples: 0008777448, 0009116157, 0009116157 */
 	    for(y=0; y<height; y++)
 		for(x=0; x<width; x++)
 		    imagedata[y * width + x] |= 0xff000000;
-	    special_32_is_32 = 0;
+	    special_32_is_32 = 1;
 	    cli_dbgmsg("parseicon: found a broken and stupid icon\n");
 	} else cli_dbgmsg("parseicon: found a stupid icon\n");
     } else rawimage += height * scanlinesz;
