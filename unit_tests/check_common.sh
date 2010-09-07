@@ -194,6 +194,20 @@ EOF
     if test "x$NINFECTED" != x4; then
 	scan_failed clamscan4.log "clamscan has detected spurious icons or whitlisting was not applier properly"
     fi
+
+cat <<EOF >test-db/test.ldb
+Clam-VI-Test:Target;Engine:52-255,Target:1;(0&1);VI:43006f006d00700061006e0079004e0061006d0065000000000063006f006d00700061006e007900;VI:500072006f0064007500630074004e0061006d0065000000000063006c0061006d00
+EOF
+    if test_run 1 $CLAMSCAN --quiet -dtest-db/test.ldb $TESTFILES --log=clamscan5.log; then
+	scan_failed clamscan5.log "clamscan didn't detect VI correctly"
+    fi
+    grep "clam_ISmsi_ext.exe: Clam-VI-Test:Target.UNOFFICIAL FOUND" clamscan5.log || die "VI-test1 failed"
+    grep "clam_ISmsi_int.exe: Clam-VI-Test:Target.UNOFFICIAL FOUND" clamscan5.log || die "VI-test2 failed"
+    NINFECTED=`grep "Infected files" clamscan5.log | cut -f2 -d: | sed -e 's/ //g'`
+    if test "x$NINFECTED" != x2; then
+	scan_failed clamscan4.log "clamscan has detected spurious VI's"
+    fi
+
     test_end $1
 }
 

@@ -1,3 +1,7 @@
+Wed Sep  8 00:00:18 CEST 2010 (acab)
+------------------------------------
+ * unit_tests: add VI unit tests
+
 Tue Sep  7 16:55:43 CEST 2010 (tk)
 ----------------------------------
  * libclamav: versioninfo hashset was not properly cached (bb#2065)
