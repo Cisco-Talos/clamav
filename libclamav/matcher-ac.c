@@ -888,8 +888,6 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	return CL_ENULLARG;
     }
 
-    cli_hashset_init_noalloc(&data->vinfo);
-
     data->reloffsigs = reloffsigs;
     if(reloffsigs) {
 	data->offset = (uint32_t *) cli_malloc(reloffsigs * 2 * sizeof(uint32_t));
@@ -980,7 +978,8 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, cons
 	unsigned int i;
 	struct cli_ac_patt *patt;
 
-    /* info.exeinfo.vinfo = &data->vinfo; */
+    if(info)
+	data->vinfo = &info->exeinfo.vinfo;
 
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
@@ -1000,8 +999,6 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, cons
 void cli_ac_freedata(struct cli_ac_data *data)
 {
 	uint32_t i;
-
-    cli_hashset_destroy(&data->vinfo);
 
     if(data && data->partsigs) {
 	for(i = 0; i < data->partsigs; i++) {
@@ -1176,7 +1173,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			}
 			realoff = offset + bp - pt->prefix_length;
 			if(pt->offdata[0] == CLI_OFF_VERSION) {
-			    if(!cli_hashset_contains_maybe_noalloc(&mdata->vinfo, realoff)) {
+			    if(!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
 				pt = pt->next_same;
 				continue;
 			    }

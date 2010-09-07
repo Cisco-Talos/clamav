@@ -1,3 +1,7 @@
+Tue Sep  7 16:55:43 CEST 2010 (tk)
+----------------------------------
+ * libclamav: versioninfo hashset was not properly cached (bb#2065)
+
 Thu Sep  2 21:21:58 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++/bytecode2llvm.cpp: fix hung clamd on FreeBSD (bb #2235)

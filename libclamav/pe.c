@@ -2461,7 +2461,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
     else
 	peinfo->res_addr = EC32(dirs[2].VirtualAddress);
 
-    while(dirs[2].Size && peinfo->vinfo) {
+    while(dirs[2].Size) {
 	struct vinfo_list vlist;
 	uint8_t *vptr, *baseptr;
     	uint32_t rva, res_sz;
@@ -2470,7 +2470,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	memset(&vlist, 0, sizeof(vlist));
     	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo_cb, &vlist);
 	if(!vlist.count) break; /* No version_information */
-	if(cli_hashset_init(peinfo->vinfo, 32, 80)) {
+	if(cli_hashset_init(&peinfo->vinfo, 32, 80)) {
 	    cli_errmsg("cli_peheader: Unable to init vinfo hashset\n");
 	    free(section_hdr);
 	    free(peinfo->section);
@@ -2595,9 +2595,9 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 				continue;
 			    }
 
-			    if(cli_hashset_addkey(peinfo->vinfo, (uint32_t)(vptr - baseptr + 6))) {
+			    if(cli_hashset_addkey(&peinfo->vinfo, (uint32_t)(vptr - baseptr + 6))) {
 				cli_errmsg("cli_peheader: Unable to add rva to vinfo hashset\n");
-				cli_hashset_destroy(peinfo->vinfo);
+				cli_hashset_destroy(&peinfo->vinfo);
 				free(section_hdr);
 				free(peinfo->section);
 				peinfo->section = NULL;

@@ -41,7 +41,7 @@ struct cli_ac_data {
     uint32_t *offset;
     uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */
-    struct cli_hashset vinfo;
+    struct cli_hashset *vinfo;
 };
 
 struct cli_ac_special {
