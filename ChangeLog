@@ -1,3 +1,7 @@
+Thu Sep  9 12:30:34 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: properly skip bytecodes with long lines.
+
 Wed Sep  8 00:00:18 CEST 2010 (acab)
 ------------------------------------
  * unit_tests: add VI unit tests

@@ -1392,7 +1392,8 @@ enum parse_state {
     PARSE_BC_LSIG,
     PARSE_MD_OPT_HEADER,
     PARSE_FUNC_HEADER,
-    PARSE_BB
+    PARSE_BB,
+    PARSE_SKIP
 };
 
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int trust)
@@ -1417,9 +1418,16 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     }
     cli_chomp(firstbuf);
     rc = parseHeader(bc, (unsigned char*)firstbuf, &linelength);
+    state = PARSE_BC_LSIG;
     if (rc == CL_BREAK) {
+	const char *len = strchr(firstbuf, ':');
 	bc->state = bc_skip;
-	return CL_SUCCESS;
+	if (!linelength) {
+	    linelength = len ? atoi(len+1) : 4096;
+	}
+	cli_dbgmsg("line: %d\n", linelength);
+	state = PARSE_SKIP;
+	rc = CL_SUCCESS;
     }
     if (rc != CL_SUCCESS) {
 	cli_errmsg("Error at bytecode line %u\n", row);
@@ -1430,7 +1438,6 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	cli_errmsg("Out of memory allocating line of length %u\n", linelength);
 	return CL_EMEM;
     }
-    state = PARSE_BC_LSIG;
     while (cli_dbgets(buffer, linelength, f, dbio) && !end) {
 	cli_chomp(buffer);
 	row++;
@@ -1439,8 +1446,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		rc = parseLSig(bc, buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
-		    free(buffer);
-		    return CL_SUCCESS;
+		    state = PARSE_SKIP;
+		    continue;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
@@ -1462,8 +1469,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		rc = parseApis(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
-		    free(buffer);
-		    return CL_SUCCESS;
+		    state = PARSE_SKIP;
+		    continue;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
@@ -1476,8 +1483,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		rc = parseGlobals(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
-		    free(buffer);
-		    return CL_SUCCESS;
+		    state = PARSE_SKIP;
+		    continue;
 		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
@@ -1530,6 +1537,14 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 		    state = PARSE_FUNC_HEADER;
 		    current_func++;
 		}
+		break;
+	    case PARSE_SKIP:
+		/* stop at S (source code), readdb.c knows how to skip this one
+		 * */
+		if (buffer[0] == 'S')
+		    end = 1;
+		/* noop parse, but we need to use dbgets with dynamic buffer,
+		 * otherwise we get 'Line too long for provided buffer' */
 		break;
 	}
     }
