@@ -196,6 +196,11 @@ static int64_t rtlib_sra_i64(int64_t a, int32_t b)
     return CLI_SRS(a, b);//CLI_./..
 }
 
+static void rtlib_bzero(void *s, size_t n)
+{
+    memset(s, 0, n);
+}
+
 // Resolve integer libcalls, but nothing else.
 static void* noUnknownFunctions(const std::string& name) {
     void *addr =
@@ -208,6 +213,7 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("__ashrdi3", (void*)(intptr_t)rtlib_sra_i64)
 	.Case("__ashldi3", (void*)(intptr_t)rtlib_shl_i64)
 	.Case("__lshrdi3", (void*)(intptr_t)rtlib_srl_i64)
+	.Case("__bzero", (void*)(intptr_t)rtlib_bzero)
 	.Case("memmove", (void*)(intptr_t)memmove)
 	.Case("memcpy", (void*)(intptr_t)memcpy)
 	.Case("memset", (void*)(intptr_t)memset)

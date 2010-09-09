@@ -3,6 +3,10 @@ Fri Sep 10 10:52:45 CEST 2010 (acab)
  * clamav-milter/netcode.c: fix error path fd leak when connection succeeds
 			    but ping fails (bb#2259)
 
+Thu Sep  9 22:07:13 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: fix __bzero call on darwin 10.
+
 Thu Sep  9 12:30:34 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: properly skip bytecodes with long lines.
