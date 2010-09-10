@@ -130,7 +130,6 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 
     if (ctx->outfd) {
 	cli_ctx *cctx = ctx->ctx;
-	cli_bcapi_extract_new(ctx, -1);
 	if (ctx->outfd)
 	    close(ctx->outfd);
 	if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
@@ -1560,6 +1559,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
+    int ret;
     struct cli_bc_inst inst;
     struct cli_bc_func func;
     if (!ctx || !ctx->bc || !ctx->func)
@@ -1593,10 +1593,16 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
 	cli_dbgmsg("Bytecode: executing in interpeter mode\n");
-	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+	ret = cli_vm_execute(ctx->bc, ctx, &func, &inst);
+    } else {
+	cli_dbgmsg("Bytecode: executing in JIT mode\n");
+	ret = cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
     }
-    cli_dbgmsg("Bytecode: executing in JIT mode\n");
-    return cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
+    /* need to be called here to catch any extracted but not yet scanned files
+     */
+    if (ctx->outfd)
+	cli_bcapi_extract_new(ctx, -1);
+    return ret;
 }
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
@@ -2463,11 +2469,16 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 	return CL_SUCCESS;
     }
     if (ctx.virname) {
+	int rc;
 	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
 	if (virname)
 	    *virname = ctx.virname;
+	if (!strncmp(*virname, "BC.Heuristics", 13))
+	    rc = cli_found_possibly_unwanted(cctx);
+	else
+	    rc = CL_VIRUS;
 	cli_bytecode_context_clear(&ctx);
-	return CL_VIRUS;
+	return rc;
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
     cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
@@ -2481,7 +2492,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
     int ret;
-    unsigned executed = 0;
+    unsigned executed = 0, breakflag = 0;
 
     cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
@@ -2513,6 +2524,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	ret = cli_bytecode_context_getresult_int(ctx);
 	/* TODO: use prefix here */
 	cli_dbgmsg("Bytecode %u returned %u\n", bc->id, ret);
+	if (ret == 0xcea5e) {
+	    cli_dbgmsg("Bytecode set BREAK flag in hook!\n");
+	    breakflag = 1;
+	}
 	if (!ret) {
 	    char *tempfile;
 	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
@@ -2550,7 +2565,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
     else
 	cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
-    return CL_CLEAN;
+    return breakflag ? CL_BREAK : CL_CLEAN;
 }
 
 int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data, const struct cli_exe_section *sections)

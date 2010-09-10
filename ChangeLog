@@ -1,3 +1,7 @@
+Fri Sep 10 22:10:33 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c, pe.c, bytecode*: Fix bytecode virusname reporting (bb #2255)
+
 Fri Sep 10 10:52:45 CEST 2010 (acab)
 ------------------------------------
  * clamav-milter/netcode.c: fix error path fd leak when connection succeeds

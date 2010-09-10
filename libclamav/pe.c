@@ -1130,10 +1130,10 @@ int cli_scanpe(cli_ctx *ctx)
     cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
     cli_bytecode_context_setctx(bc_ctx, ctx);
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_ALL, map, ctx->virname);
-    if (ret == CL_VIRUS) {
+    if (ret == CL_VIRUS || ret == CL_BREAK) {
 	free(exe_sections);
 	cli_bytecode_context_destroy(bc_ctx);
-	return CL_VIRUS;
+	return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
     }
     cli_bytecode_context_destroy(bc_ctx);
 

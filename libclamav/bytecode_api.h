@@ -77,7 +77,8 @@ enum pdf_phase {
     PDF_PHASE_NONE /* not a PDF */,
     PDF_PHASE_PARSED, /* after parsing a PDF, object flags can be set etc. */
     PDF_PHASE_POSTDUMP, /* after an obj was dumped and scanned */
-    PDF_PHASE_END /* after the pdf scan finished */
+    PDF_PHASE_END, /* after the pdf scan finished */
+    PDF_PHASE_PRE /* before pdf is parsed at all */
 };
 
 /** PDF flags */

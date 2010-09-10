@@ -460,8 +460,11 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 	    cctx->container_type = ctx->containertype;
 	res = cli_magic_scandesc(ctx->outfd, cctx);
 	cctx->container_type = current;
-	if (res == CL_VIRUS)
+	if (res == CL_VIRUS) {
+	    if (cctx->virname)
+		ctx->virname = *cctx->virname;
 	    ctx->found = 1;
+	}
     }
     if ((cctx && cctx->engine->keeptmp) ||
 	(ftruncate(ctx->outfd, 0) == -1)) {

@@ -1082,6 +1082,11 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	cli_errmsg("cli_pdf: mmap() failed (3)\n");
 	return CL_EMAP;
     }
+    rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1, -1);
+    if (rc) {
+	cli_dbgmsg("cli_pdf: returning %d\n", rc);
+	return rc;
+    }
     /* parse PDF and find obj offsets */
     while ((rc = pdf_findobj(&pdf)) > 0) {
 	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
