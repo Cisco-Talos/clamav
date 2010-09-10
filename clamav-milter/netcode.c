@@ -293,12 +293,16 @@ void nc_ping_entry(struct CP_ENTRY *cpe) {
     int s = nc_connect_entry(cpe);
     char *reply;
 
-    if(s>=0 && !nc_send(s, "nPING\n", 6) && (reply = nc_recv(s))) {
-	cpe->dead = strcmp(reply, "PONG\n")!=0;
-	free(reply);
+    if(s>=0) {
+	if(!nc_send(s, "nPING\n", 6) && (reply = nc_recv(s))) {
+	    cpe->dead = strcmp(reply, "PONG\n")!=0;
+	    free(reply);
+	    close(s);
+	    return;
+	}
 	close(s);
-    } else cpe->dead = 1;
-    return;
+    }
+    cpe->dead = 1;
 }
 
 
