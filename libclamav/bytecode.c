@@ -1424,6 +1424,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	if (!linelength) {
 	    linelength = len ? atoi(len+1) : 4096;
 	}
+	if (linelength < 4096)
+	    linelength = 4096;
 	cli_dbgmsg("line: %d\n", linelength);
 	state = PARSE_SKIP;
 	rc = CL_SUCCESS;
