@@ -908,6 +908,10 @@ public:
 					   BytecodeID+"f"+Twine(j), M);
 	    Functions[j]->setDoesNotThrow();
 	    Functions[j]->setCallingConv(CallingConv::Fast);
+#ifdef C_LINUX
+	    /* bb #2270, this should really be fixed either by LLVM or GCC.*/
+	    Functions[j]->addFnAttr(Attribute::constructStackAlignmentFromInt(16));
+#endif
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
 	PM.add(createDeadCodeEliminationPass());

@@ -1,3 +1,7 @@
+Wed Sep 15 13:19:12 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: workaround crash due to gcc stack alignment requirements (bb #2270)
+
 Fri Sep 10 22:10:33 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c, pe.c, bytecode*: Fix bytecode virusname reporting (bb #2255)
