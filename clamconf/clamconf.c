@@ -31,6 +31,9 @@
 #include <sys/utsname.h>
 #endif
 #include <zlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include "shared/optparser.h"
 #include "shared/misc.h"
@@ -38,6 +41,7 @@
 #include "libclamav/str.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "libclamav/readdb.h"
 #include "libclamav/bytecode.h"
 #include "libclamav/bytecode_detect.h"
 #include "target.h"
@@ -57,11 +61,6 @@ static struct _cfgfile {
     { "clamav-milter.conf", OPT_MILTER	    },
     { NULL,		    0		    }
 };
-
-static const char *dbnames[] = { "main.cvd", "main.cld", "daily.cvd",
-				 "daily.cld", "safebrowsing.cvd",
-				 "safebrowsing.cld", "bytecode.cvd",
-				 "bytecode.cld", NULL };
 
 static void printopts(struct optstruct *opts, int nondef)
 {
@@ -306,6 +305,56 @@ static void print_build(struct cli_environment *env)
 	   env->dconf_level);
 }
 
+static void print_dbs(const char *dir)
+{
+	DIR *dd;
+	struct dirent *dent;
+	char *dbfile;
+	unsigned int flevel = cl_retflevel(), cnt, sigs = 0;
+	struct cl_cvd *cvd;
+
+    if((dd = opendir(dir)) == NULL) {
+        printf("print_dbs: Can't open directory %s\n", dir);
+        return;
+    }
+
+    while((dent = readdir(dd))) {
+	if(dent->d_ino) {
+	    if(CLI_DBEXT(dent->d_name)) {
+		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dir) + 2);
+		if(!dbfile) {
+		    printf("print_dbs: Can't allocate memory for dbfile\n");
+		    return;
+		}
+		sprintf(dbfile, "%s"PATHSEP"%s", dir, dent->d_name);
+		if(cli_strbcasestr(dbfile, ".cvd") || cli_strbcasestr(dbfile, ".cld")) {
+		    cvd = cl_cvdhead(dbfile);
+		    if(!cvd) {
+			printf("%s: Can't get information about the database\n", dbfile);
+		    } else {
+			const time_t t = cvd->stime;
+			printf("%s: version %u, sigs: %u, built on %s", dent->d_name, cvd->version, cvd->sigs, ctime(&t));
+			sigs += cvd->sigs;
+			if(cvd->fl > flevel)
+			    printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dent->d_name, cvd->fl, flevel);
+			cl_cvdfree(cvd);
+		    }
+		} else if(cli_strbcasestr(dbfile, ".cbc")) {
+		    printf("[3rd Party] %s: bytecode\n", dent->d_name);
+		    sigs++;
+		} else {
+		    cnt = countlines(dbfile);
+		    printf("[3rd Party] %s: %u sig%c\n", dent->d_name, cnt, cnt > 1 ? 's' : ' ');
+		    sigs += cnt;
+		}
+		free(dbfile);
+	    }
+	}
+    }
+    closedir(dd);
+    printf("Total number of signatures: %u\n", sigs);
+}
+
 int main(int argc, char **argv)
 {
 	const char *dir;
@@ -313,8 +362,6 @@ int main(int argc, char **argv)
 	struct optstruct *opts, *toolopts;
 	const struct optstruct *opt;
 	unsigned int i, j;
-	struct cl_cvd *cvd;
-	unsigned int flevel;
 	struct cli_environment env;
 
 
@@ -416,26 +463,13 @@ int main(int argc, char **argv)
 	}
 	dbdir[sizeof(dbdir) - 1] = 0;
     }
+
+    printf("\nDatabase information\n--------------------\n");
     printf("Database directory: %s\n", dbdir);
     if(strcmp(dbdir, clamd_dbdir))
 	printf("WARNING: freshclam.conf and clamd.conf point to different database directories\n");
-    flevel = cl_retflevel();
-    for(i = 0; dbnames[i]; i++) {
-	snprintf(path, sizeof(path), "%s"PATHSEP"%s", dbdir, dbnames[i]);
-	path[511] = 0;
-	if(!access(path, R_OK)) {
-	    cvd = cl_cvdhead(path);
-	    if(!cvd) {
-		printf("%s: Can't get information about the database\n", dbnames[i]);
-	    } else {
-		const time_t t = cvd->stime;
-		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime(&t));
-		if(cvd->fl > flevel)
-		    printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dbnames[i], cvd->fl, flevel);
-		cl_cvdfree(cvd);
-	    }
-	}
-    }
+    print_dbs(dbdir);
+
     cli_detect_environment(&env);
     print_platform(&env);
     print_build(&env);

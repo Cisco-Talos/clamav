@@ -348,3 +348,23 @@ int cli_is_abspath(const char *path) {
     return *path == '/';
 #endif
 }
+
+unsigned int countlines(const char *filename)
+{
+	FILE *fh;
+	char buff[1024];
+	unsigned int lines = 0;
+
+
+    if((fh = fopen(filename, "r")) == NULL)
+	return 0;
+
+    while(fgets(buff, sizeof(buff), fh)) {
+	if(buff[0] == '#') continue;
+	lines++;
+    }
+
+    fclose(fh);
+    return lines;
+}
+

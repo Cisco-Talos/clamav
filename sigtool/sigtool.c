@@ -263,25 +263,6 @@ static int utf16decode(const struct optstruct *opts)
     return 0;
 }
 
-static unsigned int countlines(const char *filename)
-{
-	FILE *fh;
-	char buff[1024];
-	unsigned int lines = 0;
-
-
-    if((fh = fopen(filename, "r")) == NULL)
-	return 0;
-
-    while(fgets(buff, sizeof(buff), fh)) {
-	if(buff[0] == '#') continue;
-	lines++;
-    }
-
-    fclose(fh);
-    return lines;
-}
-
 static char *getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
 {
 	char buff[512], cmd[128], pass[30], *pt;
