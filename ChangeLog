@@ -1,3 +1,7 @@
+Mon Sep 20 17:09:37 CEST 2010 (tk)
+----------------------------------
+ * V 0.96.3
+
 Mon Sep 20 14:16:59 CEST 2010 (acab)
 ------------------------------------
  * libclamav/nsis/bzlib.cld sys: port upstream fixes for CVE-2010-0405,
