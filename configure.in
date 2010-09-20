@@ -571,6 +571,7 @@ AC_ARG_ENABLE([bzip2],
 [  --disable-bzip2	  disable bzip2 support],
 want_bzip2=$enableval, want_bzip2="yes")
 
+bzip_check="ok"
 if test "$want_bzip2" = "yes"
 then
     AC_LIB_LINKFLAGS([bz2])
@@ -592,6 +593,7 @@ then
 		AC_MSG_WARN([****** bzip2 libraries are affected by the CVE-2008-1372 bug])
 		AC_MSG_WARN([****** We strongly suggest you to update to bzip2 1.0.5.])
 		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+		bzip_check="bugged (CVE-2008-1372)"
 	fi
 	if test "$ac_cv_c_cve_2008_1372" = "linkfailed"; then
 		dnl This shouldn't happen
@@ -600,9 +602,37 @@ then
 		AC_MSG_WARN([****** You may be affected by CVE-2008-1372 bug, but I need to be able to link a testcase to verify])
 		AC_MSG_WARN([****** It is recommended to fix your build environment so that we can run the testcase!])
 		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+		bzip_check="link failed (CVE-2008-1372)"
 	fi
 
 	case "$ac_cv_c_cve_2008_1372" in
+	ok|bugged|linkfailed)
+		;;
+	*)
+		HAVE_LIBBZ2=no
+		;;
+	esac
+    fi
+
+    if test "$HAVE_LIBBZ2" = "yes"; then
+	AC_C_CVE_2010_0405
+	if test "$ac_cv_c_cve_2010_0405" = "bugged"; then
+		AC_MSG_WARN([****** bzip2 libraries are affected by the CVE-2010-0405 bug])
+		AC_MSG_WARN([****** We strongly suggest you to update bzip2])
+		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+		bzip_check="bugged (CVE-2010-0405)"
+	fi
+	if test "$ac_cv_c_cve_2010_0405" = "linkfailed"; then
+		dnl This shouldn't happen
+		dnl We failed to link but libtool may still be able to link, so don't disable bzip2 just yet
+		AC_MSG_WARN([****** Unable to link bzip2 testcase])
+		AC_MSG_WARN([****** You may be affected by CVE-2010-0405 bug, but I need to be able to link a testcase to verify])
+		AC_MSG_WARN([****** It is recommended to fix your build environment so that we can run the testcase!])
+		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+		bzip_check="link failed (CVE-2010-0405)"
+	fi
+
+	case "$ac_cv_c_cve_2010_0405" in
 	ok|bugged|linkfailed)
 		LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2"
 		AC_DEFINE([HAVE_BZLIB_H],1,[have bzip2])
@@ -1665,7 +1695,7 @@ CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
 CL_MSG_STATUS([autoit_ea06 ],[$have_autoitea06],[])
-CL_MSG_STATUS([bzip2       ],[$ac_cv_c_cve_2008_1372],[$want_bzip2])
+CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
 
@@ -1680,11 +1710,12 @@ if test "x$gcc_check" != "xyes"; then
 ])
 fi
 
-if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" ; then
+if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" || test "x$bzip_check" != "xok" ; then
 AC_MSG_WARN([
 ****** WARNING:
-****** You are either cross compiling to a different host or
-****** you have manually disabled important configure checks.
+****** You are cross compiling to a different host or you are
+****** linking to bugged system libraries or you have manually
+****** disabled important configure checks.
 ****** Please be aware that this build may be badly broken.
 ****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
 ])

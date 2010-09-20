@@ -1,3 +1,8 @@
+Mon Sep 20 14:16:59 CEST 2010 (acab)
+------------------------------------
+ * libclamav/nsis/bzlib.cld sys: port upstream fixes for CVE-2010-0405,
+				 check for buggy bzip2 (bb#2230, bb#2231)
+
 Mon Sep 20 14:50:34 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: Add missing boundscheck to pdf code (bb #2226)
