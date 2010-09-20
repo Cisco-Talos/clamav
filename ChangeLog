@@ -1,3 +1,7 @@
+Mon Sep 20 14:50:34 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: Add missing boundscheck to pdf code (bb #2226)
+
 Thu Sep 16 14:37:15 CEST 2010 (tk)
 ----------------------------------
  * clamconf: print information about 3rd party databases

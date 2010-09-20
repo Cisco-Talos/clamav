@@ -119,6 +119,8 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
 	    q2++;
 	*stream = q2 - start;
 	bytesleft2 -= q2 - start;
+	if (bytesleft2 < 0)
+	    return 0;
 	q = q2;
 	q2 = cli_memstr(q, bytesleft2, "endstream", 9);
 	if (!q2)
