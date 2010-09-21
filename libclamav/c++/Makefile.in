@@ -303,14 +303,16 @@ am_libllvmjit_la_OBJECTS = CallGraph.lo AliasAnalysis.lo \
 	circular_raw_ostream.lo raw_ostream.lo Mangler.lo \
 	SubtargetFeature.lo TargetData.lo TargetInstrInfo.lo \
 	TargetLoweringObjectFile.lo TargetMachine.lo \
-	TargetRegisterInfo.lo DCE.lo AsmWriter.lo Attributes.lo \
-	AutoUpgrade.lo BasicBlock.lo ConstantFold.lo Constants.lo \
-	Core.lo Dominators.lo Function.lo GVMaterializer.lo Globals.lo \
-	IRBuilder.lo InlineAsm.lo Instruction.lo Instructions.lo \
-	IntrinsicInst.lo LLVMContext.lo LLVMContextImpl.lo \
-	LeakDetector.lo Metadata.lo Module.lo Pass.lo PassManager.lo \
-	PrintModulePass.lo Type.lo TypeSymbolTable.lo Use.lo Value.lo \
-	ValueSymbolTable.lo ValueTypes.lo Verifier.lo
+	TargetRegisterInfo.lo ADCE.lo DCE.lo SCCP.lo \
+	SimplifyCFGPass.lo ConstantMerge.lo GlobalOpt.lo GlobalDCE.lo \
+	AsmWriter.lo Attributes.lo AutoUpgrade.lo BasicBlock.lo \
+	ConstantFold.lo Constants.lo Core.lo Dominators.lo Function.lo \
+	GVMaterializer.lo Globals.lo IRBuilder.lo InlineAsm.lo \
+	Instruction.lo Instructions.lo IntrinsicInst.lo LLVMContext.lo \
+	LLVMContextImpl.lo LeakDetector.lo Metadata.lo Module.lo \
+	Pass.lo PassManager.lo PrintModulePass.lo Type.lo \
+	TypeSymbolTable.lo Use.lo Value.lo ValueSymbolTable.lo \
+	ValueTypes.lo Verifier.lo
 libllvmjit_la_OBJECTS = $(am_libllvmjit_la_OBJECTS)
 libllvmpowerpccodegen_la_LIBADD =
 am__libllvmpowerpccodegen_la_SOURCES_DIST =  \
@@ -1334,7 +1336,13 @@ libllvmjit_la_SOURCES = \
 	llvm/lib/Target/TargetLoweringObjectFile.cpp\
 	llvm/lib/Target/TargetMachine.cpp\
 	llvm/lib/Target/TargetRegisterInfo.cpp\
+	llvm/lib/Transforms/Scalar/ADCE.cpp\
 	llvm/lib/Transforms/Scalar/DCE.cpp\
+	llvm/lib/Transforms/Scalar/SCCP.cpp\
+	llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp\
+	llvm/lib/Transforms/IPO/ConstantMerge.cpp\
+	llvm/lib/Transforms/IPO/GlobalOpt.cpp\
+	llvm/lib/Transforms/IPO/GlobalDCE.cpp\
 	llvm/lib/VMCore/AsmWriter.cpp\
 	llvm/lib/VMCore/Attributes.cpp\
 	llvm/lib/VMCore/AutoUpgrade.cpp\
@@ -1809,6 +1817,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ADCE.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/APFloat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/APInt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/APSInt.Plo@am__quote@
@@ -1842,6 +1851,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CommandLine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConstantFold.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConstantFolding.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConstantMerge.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConstantRange.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Constants.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Core.Plo@am__quote@
@@ -1885,6 +1895,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GEPSplitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GVMaterializer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GVN.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GlobalDCE.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GlobalOpt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Globals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/GraphWriter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Host.Plo@am__quote@
@@ -2008,6 +2020,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Regex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RegisterCoalescer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RegisterScavenging.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SCCP.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SSAUpdater.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ScalarEvolution.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ScalarEvolutionExpander.Plo@am__quote@
@@ -2028,6 +2041,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Signals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SimpleRegisterCoalescing.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SimplifyCFG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SimplifyCFGPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SjLjEHPrepare.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SlotIndexes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SlowOperationInformer.Plo@am__quote@
@@ -4584,6 +4598,14 @@ TargetRegisterInfo.lo: llvm/lib/Target/TargetRegisterInfo.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o TargetRegisterInfo.lo `test -f 'llvm/lib/Target/TargetRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetRegisterInfo.cpp
 
+ADCE.lo: llvm/lib/Transforms/Scalar/ADCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ADCE.lo -MD -MP -MF $(DEPDIR)/ADCE.Tpo -c -o ADCE.lo `test -f 'llvm/lib/Transforms/Scalar/ADCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/ADCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ADCE.Tpo $(DEPDIR)/ADCE.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/ADCE.cpp' object='ADCE.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ADCE.lo `test -f 'llvm/lib/Transforms/Scalar/ADCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/ADCE.cpp
+
 DCE.lo: llvm/lib/Transforms/Scalar/DCE.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT DCE.lo -MD -MP -MF $(DEPDIR)/DCE.Tpo -c -o DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/DCE.Tpo $(DEPDIR)/DCE.Plo
@@ -4591,6 +4613,46 @@ DCE.lo: llvm/lib/Transforms/Scalar/DCE.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/DCE.cpp' object='DCE.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o DCE.lo `test -f 'llvm/lib/Transforms/Scalar/DCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/DCE.cpp
+
+SCCP.lo: llvm/lib/Transforms/Scalar/SCCP.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SCCP.lo -MD -MP -MF $(DEPDIR)/SCCP.Tpo -c -o SCCP.lo `test -f 'llvm/lib/Transforms/Scalar/SCCP.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SCCP.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SCCP.Tpo $(DEPDIR)/SCCP.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/SCCP.cpp' object='SCCP.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SCCP.lo `test -f 'llvm/lib/Transforms/Scalar/SCCP.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SCCP.cpp
+
+SimplifyCFGPass.lo: llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT SimplifyCFGPass.lo -MD -MP -MF $(DEPDIR)/SimplifyCFGPass.Tpo -c -o SimplifyCFGPass.lo `test -f 'llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/SimplifyCFGPass.Tpo $(DEPDIR)/SimplifyCFGPass.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' object='SimplifyCFGPass.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o SimplifyCFGPass.lo `test -f 'llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
+
+ConstantMerge.lo: llvm/lib/Transforms/IPO/ConstantMerge.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ConstantMerge.lo -MD -MP -MF $(DEPDIR)/ConstantMerge.Tpo -c -o ConstantMerge.lo `test -f 'llvm/lib/Transforms/IPO/ConstantMerge.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/ConstantMerge.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ConstantMerge.Tpo $(DEPDIR)/ConstantMerge.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/IPO/ConstantMerge.cpp' object='ConstantMerge.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ConstantMerge.lo `test -f 'llvm/lib/Transforms/IPO/ConstantMerge.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/ConstantMerge.cpp
+
+GlobalOpt.lo: llvm/lib/Transforms/IPO/GlobalOpt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT GlobalOpt.lo -MD -MP -MF $(DEPDIR)/GlobalOpt.Tpo -c -o GlobalOpt.lo `test -f 'llvm/lib/Transforms/IPO/GlobalOpt.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/GlobalOpt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/GlobalOpt.Tpo $(DEPDIR)/GlobalOpt.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/IPO/GlobalOpt.cpp' object='GlobalOpt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o GlobalOpt.lo `test -f 'llvm/lib/Transforms/IPO/GlobalOpt.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/GlobalOpt.cpp
+
+GlobalDCE.lo: llvm/lib/Transforms/IPO/GlobalDCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT GlobalDCE.lo -MD -MP -MF $(DEPDIR)/GlobalDCE.Tpo -c -o GlobalDCE.lo `test -f 'llvm/lib/Transforms/IPO/GlobalDCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/GlobalDCE.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/GlobalDCE.Tpo $(DEPDIR)/GlobalDCE.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/IPO/GlobalDCE.cpp' object='GlobalDCE.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o GlobalDCE.lo `test -f 'llvm/lib/Transforms/IPO/GlobalDCE.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/IPO/GlobalDCE.cpp
 
 AsmWriter.lo: llvm/lib/VMCore/AsmWriter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT AsmWriter.lo -MD -MP -MF $(DEPDIR)/AsmWriter.Tpo -c -o AsmWriter.lo `test -f 'llvm/lib/VMCore/AsmWriter.cpp' || echo '$(srcdir)/'`llvm/lib/VMCore/AsmWriter.cpp

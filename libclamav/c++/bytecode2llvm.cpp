@@ -63,12 +63,14 @@
 #include "llvm/System/Memory.h"
 #include "llvm/System/Mutex.h"
 #include "llvm/System/Signals.h"
+#include "llvm/Support/Timer.h"
 #include "llvm/System/Threading.h"
 #include "llvm/Target/TargetSelect.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/TargetFolder.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/System/ThreadLocal.h"
 #include <cstdlib>
@@ -76,6 +78,9 @@
 #include <new>
 #include <cerrno>
 #include <string>
+
+//#define TIMING
+#undef TIMING
 
 #include "llvm/Config/config.h"
 #if !ENABLE_THREADS
@@ -266,8 +271,12 @@ private:
 	llvm_unreachable("getStatic");
     }
 public:
+    Timer pmTimer;
+    Timer irgenTimer;
+
     LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
-		   unsigned count, const Type *Hidden=0) : Context(Context), numTypes(count)
+		   unsigned count, const Type *Hidden=0) : Context(Context), numTypes(count),
+    pmTimer("Function passes"),irgenTimer("IR generation")
     {
 	TypeMap.reserve(count);
 	// During recursive type construction pointers to Type* may be
@@ -524,13 +533,90 @@ public:
 };
 char RuntimeLimits::ID;
 
+// SimplifyCFG, ADCE, etc. won't remove a br i1 false ... they turn it into
+// select i1 false ... which instcombine would simplify but we don't run
+// instcombine.
+class BrSimplifier : public FunctionPass {
+public:
+    static char ID;
+    BrSimplifier() : FunctionPass(&ID) {}
+
+    virtual bool runOnFunction(Function &F) {
+	bool Changed = false;
+	for (Function::iterator I=F.begin(),E=F.end(); I != E; ++I) {
+	    if (BranchInst *BI = dyn_cast<BranchInst>(I->getTerminator())) {
+		if (BI->isUnconditional())
+		    continue;
+		Value *V = BI->getCondition();
+		if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+		    BasicBlock *Other;
+		    if (CI->isOne()) {
+			BranchInst::Create(BI->getSuccessor(0), &*I);
+			Other = BI->getSuccessor(1);
+		    } else {
+			BranchInst::Create(BI->getSuccessor(1), &*I);
+			Other = BI->getSuccessor(0);
+		    }
+		    Other->removePredecessor(&*I);
+		    BI->eraseFromParent();
+		    Changed = true;
+		}
+	    }
+	    for (BasicBlock::iterator J=I->begin(),JE=I->end();
+		 J != JE;) {
+		SelectInst *SI = dyn_cast<SelectInst>(J);
+		++J;
+		if (!SI)
+		    continue;
+		ConstantInt *CI = dyn_cast<ConstantInt>(SI->getCondition());
+		if (!CI)
+		    continue;
+		if (CI->isOne())
+		    SI->replaceAllUsesWith(SI->getTrueValue());
+		else
+		    SI->replaceAllUsesWith(SI->getFalseValue());
+		SI->eraseFromParent();
+		Changed = true;
+	    }
+	}
+
+	return Changed;
+    }
+};
+char BrSimplifier::ID;
+/*
+class SimpleGlobalDCE : public ModulePass {
+    ExecutionEngine *EE;
+public:
+    static char ID;
+    SimpleGlobalDCE(ExecutionEngine *EE) : ModulePass(&ID), EE(EE) {}
+
+    virtual bool runOnModule(Module &M) {
+	bool Changed = false;
+	std::vector<GlobalValue*> toErase;
+	for (Module::global_iterator I = M.global_begin(), E = M.global_end(); I != E; ++I) {
+	    GlobalValue *GV = &*I;
+	    if (GV->use_empty() && !EE->getPointerToGlobalIfAvailable(GV))
+		toErase.push_back(GV);
+	}
+	for (std::vector<GlobalValue*>::iterator I=toErase.begin(), E=toErase.end();
+	     I != E; ++I) {
+	    (*I)->eraseFromParent();
+	    Changed = true;
+	}
+
+	return Changed;
+    }
+};
+char SimpleGlobalDCE::ID;
+*/
 class VISIBILITY_HIDDEN LLVMCodegen {
 private:
     const struct cli_bc *bc;
     Module *M;
     LLVMContext &Context;
     ExecutionEngine *EE;
-    PassManager &PM;
+    FunctionPassManager &PM, &PMUnsigned;
     LLVMTypeMapper *TypeMap;
 
     Function **apiFuncs;
@@ -724,13 +810,12 @@ private:
 	return 0;
     }
 
-
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, struct CommonFunctions *CF, FunctionMapTy &cFuncs,
-		ExecutionEngine *EE, PassManager &PM,
+		ExecutionEngine *EE, FunctionPassManager &PM, FunctionPassManager &PMUnsigned,
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
-	PM(PM), apiFuncs(apiFuncs),apiMap(apiMap),
+	PM(PM),PMUnsigned(PMUnsigned), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
 	Folder(EE->getTargetData()), Builder(Context, Folder), CF(CF) {
 
@@ -849,7 +934,11 @@ public:
 	return V;
     }
 
-    bool generate() {
+   Function* generate() {
+        PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
+#ifdef TIMING
+	apiMap.irgenTimer.startTimer();
+#endif
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 	for (unsigned i=0;i<bc->dbgnode_cnt;i++) {
 	    mdnodes.push_back(convertMDNode(i));
@@ -893,7 +982,6 @@ public:
 	}
 	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {
-	    PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
 	    // Create LLVM IR Function
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    std::vector<const Type*> argTypes;
@@ -908,16 +996,13 @@ public:
 					   BytecodeID+"f"+Twine(j), M);
 	    Functions[j]->setDoesNotThrow();
 	    Functions[j]->setCallingConv(CallingConv::Fast);
+	    Functions[j]->setLinkage(GlobalValue::InternalLinkage);
 #ifdef C_LINUX
 	    /* bb #2270, this should really be fixed either by LLVM or GCC.*/
 	    Functions[j]->addFnAttr(Attribute::constructStackAlignmentFromInt(16));
 #endif
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
-	PM.add(createDeadCodeEliminationPass());
-	if (!bc->trusted)
-	    PM.add(createClamBCRTChecks());
-	PM.add(new RuntimeLimits());
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -1137,7 +1222,7 @@ public:
 			    BasicBlock *False = BB[inst->u.branch.br_false];
 			    if (Cond->getType() != Type::getInt1Ty(Context)) {
 				errs() << MODULE << "type mismatch in condition\n";
-				return false;
+				return 0;
 			    }
 			    Builder.CreateCondBr(Cond, True, False);
 			    break;
@@ -1235,7 +1320,7 @@ public:
 			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Op = GEPOperand(Op);
 			    if (!createGEP(inst->dest, V, &Op, &Op+1))
-				return false;
+				return 0;
 			    break;
 			}
 			case OP_BC_GEPZ:
@@ -1247,7 +1332,7 @@ public:
 			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Ops[1] = GEPOperand(Ops[1]);
 			    if (!createGEP(inst->dest, V, Ops, Ops+2))
-				return false;
+				return 0;
 			    break;
 			}
 			case OP_BC_GEPN:
@@ -1262,7 +1347,7 @@ public:
 				Idxs.push_back(Op);
 			    }
 			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
-				return false;
+				return 0;
 			    break;
 			}
 			case OP_BC_STORE:
@@ -1393,7 +1478,7 @@ public:
 			default:
 			    errs() << MODULE << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
-			    return false;
+			    return 0;
 		    }
 		}
 	    }
@@ -1402,60 +1487,77 @@ public:
 		errs() << MODULE << "Verification failed\n";
 		F->dump();
 		// verification failed
-		return false;
+		return 0;
 	    }
 	    delete [] Values;
 	    delete [] BB;
+#ifdef TIMING
+	    apiMap.irgenTimer.stopTimer();
+	    apiMap.pmTimer.startTimer();
+#endif
+	    if (bc->trusted) {
+		PM.doInitialization();
+		PM.run(*F);
+		PM.doFinalization();
+	    }
+	    else {
+		PMUnsigned.doInitialization();
+		PMUnsigned.run(*F);
+		PMUnsigned.doFinalization();
+	    }
+#ifdef TIMING
+	    apiMap.pmTimer.stopTimer();
+	    apiMap.irgenTimer.startTimer();
+#endif
 	}
 
-	PM.run(*M);
 	for (unsigned j=0;j<bc->num_func;j++) {
-	    PrettyStackTraceString CrashInfo("Generate LLVM IR2");
 	    Function *F = Functions[j];
 	    AddStackProtect(F);
 	}
-	DEBUG(M->dump());
 	delete TypeMap;
 	std::vector<const Type*> args;
 	args.clear();
 	args.push_back(HiddenCtx);
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
 						   args, false);
-	for (unsigned j=0;j<bc->num_func;j++) {
-	    const struct cli_bc_func *func = &bc->funcs[j];
-	    PrettyStackTraceString CrashInfo2("Native machine codegen");
 
-	    // If prototype matches, add to callable functions
-	    if (Functions[j]->getFunctionType() == Callable) {
-		// All functions have the Fast calling convention, however
-		// entrypoint can only be C, emit wrapper
-		Function *F = Function::Create(Functions[j]->getFunctionType(),
-					       Function::ExternalLinkage,
-					       Functions[j]->getName()+"_wrap", M);
-		F->setDoesNotThrow();
-		BasicBlock *BB = BasicBlock::Create(Context, "", F);
-		std::vector<Value*> args;
-		for (Function::arg_iterator J=F->arg_begin(),
-		     JE=F->arg_end(); J != JE; ++JE) {
-		    args.push_back(&*J);
-		}
-		CallInst *CI = CallInst::Create(Functions[j], args.begin(), args.end(), "", BB);
-		CI->setCallingConv(CallingConv::Fast);
-		ReturnInst::Create(Context, CI, BB);
+	// If prototype matches, add to callable functions
+	if (Functions[0]->getFunctionType() != Callable) {
+	    errs() << "Wrong prototype for function 0 in bytecode " << bc->id << "\n";
+	    return 0;
+	}
+	// All functions have the Fast calling convention, however
+	// entrypoint can only be C, emit wrapper
+	Function *F = Function::Create(Functions[0]->getFunctionType(),
+				       Function::ExternalLinkage,
+				       Functions[0]->getName()+"_wrap", M);
+	F->setDoesNotThrow();
+	BasicBlock *BB = BasicBlock::Create(Context, "", F);
+	std::vector<Value*> Args;
+	for (Function::arg_iterator J=F->arg_begin(),
+	     JE=F->arg_end(); J != JE; ++JE) {
+	    Args.push_back(&*J);
+	}
+	CallInst *CI = CallInst::Create(Functions[0], Args.begin(), Args.end(), "", BB);
+	CI->setCallingConv(CallingConv::Fast);
+	ReturnInst::Create(Context, CI, BB);
 
-		if (verifyFunction(*F, PrintMessageAction) == 0) {
-			DEBUG(errs() << "Generating code\n");
+	delete [] Functions;
+	if (verifyFunction(*F, PrintMessageAction))
+	    return 0;
+
+/*			DEBUG(errs() << "Generating code\n");
 			// Codegen current function as executable machine code.
 			EE->getPointerToFunction(Functions[j]);
 			void *code = EE->getPointerToFunction(F);
-			DEBUG(errs() << "Code generation finished\n");
+			DEBUG(errs() << "Code generation finished\n");*/
 
-			compiledFunctions[func] = code;
-		}
-	  }
-	}
-	delete [] Functions;
-	return true;
+//		compiledFunctions[func] = code;
+#ifdef TIMING
+	apiMap.irgenTimer.stopTimer();
+#endif
+	return F;
     }
 };
 
@@ -1690,6 +1792,17 @@ static void setGuard(unsigned char* guardbuf)
     cli_md5_final(guardbuf, &ctx);
 }
 
+static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
+{
+    // Set up the optimizer pipeline.  Start with registering info about how
+    // the target lays out data structures.
+    FPM.add(new TargetData(*TD));
+    // Promote allocas to registers.
+    FPM.add(createPromoteMemoryToRegisterPass());
+    FPM.add(new BrSimplifier());
+    FPM.add(createDeadCodeEliminationPass());
+}
+
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
   if (!bcs->engine)
@@ -1734,15 +1847,12 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	struct CommonFunctions CF;
 	addFunctionProtos(&CF, EE, M);
 
-	PassManager OurFPM;
+	FunctionPassManager OurFPM(M), OurFPMUnsigned(M);
 	M->setDataLayout(EE->getTargetData()->getStringRepresentation());
 	M->setTargetTriple(sys::getHostTriple());
-	// Set up the optimizer pipeline.  Start with registering info about how
-	// the target lays out data structures.
-	OurFPM.add(new TargetData(*EE->getTargetData()));
-	// Promote allocas to registers.
-	OurFPM.add(createPromoteMemoryToRegisterPass());
-	OurFPM.add(createDeadCodeEliminationPass());
+
+	addFPasses(OurFPM, true, EE->getTargetData());
+	addFPasses(OurFPMUnsigned, false, EE->getTargetData());
 
 	//TODO: create a wrapper that calls pthread_getspecific
 	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
@@ -1803,7 +1913,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(M->getContext()),
 						    false);
 	GlobalVariable *Guard = new GlobalVariable(*M, PointerType::getUnqual(Type::getInt8Ty(M->getContext())),
-						    true, GlobalValue::ExternalLinkage, 0, "__stack_chk_guard"); 
+						    true, GlobalValue::ExternalLinkage, 0, "__stack_chk_guard");
 	unsigned plus = 0;
 	if (2*sizeof(void*) <= 16 && cli_rndnum(2)==2) {
 	    plus = sizeof(void*);
@@ -1817,28 +1927,73 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	EE->addGlobalMapping(SFail, (void*)(intptr_t)jit_ssp_handler);
         EE->getPointerToFunction(SFail);
 
+	llvm::Function **Functions = new Function*[bcs->count];
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
 	    if (bc->state == bc_skip || bc->state == bc_interp)
 		continue;
 	    LLVMCodegen Codegen(bc, M, &CF, bcs->engine->compiledFunctions, EE,
-				OurFPM, apiFuncs, apiMap);
-	    if (!Codegen.generate()) {
+				OurFPM, OurFPMUnsigned, apiFuncs, apiMap);
+	    Function *F = Codegen.generate();
+	    if (!F) {
 		errs() << MODULE << "JIT codegen failed\n";
 		return CL_EBYTECODE;
 	    }
+	    Functions[i] = F;
+	}
+	delete [] apiFuncs;
+
+	bool has_untrusted = false;
+
+	for (unsigned i=0;i<bcs->count;i++) {
+	    if (!bcs->all_bcs[i].trusted) {
+		has_untrusted = true;
+		break;
+	    }
+	}
+	PassManager PM;
+	PM.add(new TargetData(*EE->getTargetData()));
+	// TODO: only run this on the untrusted bytecodes, not all of them...
+	if (has_untrusted)
+	    PM.add(createClamBCRTChecks());
+	PM.add(createCFGSimplificationPass());
+	PM.add(createSCCPPass());
+	PM.add(createGlobalOptimizerPass());
+	PM.add(createConstantMergePass());
+	PM.add(new RuntimeLimits());
+	Timer pmTimer2("Transform passes");
+#ifdef TIMING
+	pmTimer2.startTimer();
+#endif
+	PM.run(*M);
+#ifdef TIMING
+	pmTimer2.stopTimer();
+#endif
+	DEBUG(M->dump());
+
+	{
+	    PrettyStackTraceString CrashInfo2("Native machine codegen");
+	    Timer codegenTimer("Native codegen");
+#ifdef TIMING
+	    codegenTimer.startTimer();
+#endif
+	    // compile all functions now, not lazily!
+	    for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
+		Function *Fn = &*I;
+		if (!Fn->isDeclaration())
+		    EE->getPointerToFunction(Fn);
+	    }
+#ifdef TIMING
+	    codegenTimer.stopTimer();
+#endif
 	}
 
 	for (unsigned i=0;i<bcs->count;i++) {
+	    const struct cli_bc_func *func = &bcs->all_bcs[i].funcs[0];
+	    bcs->engine->compiledFunctions[func] = EE->getPointerToFunction(Functions[i]);
 	    bcs->all_bcs[i].state = bc_jit;
 	}
-	// compile all functions now, not lazily!
-	for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
-	    Function *Fn = &*I;
-	    if (!Fn->isDeclaration())
-		EE->getPointerToFunction(Fn);
-	}
-	delete [] apiFuncs;
+	delete [] Functions;
     }
     return CL_SUCCESS;
   } catch (std::bad_alloc &badalloc) {
