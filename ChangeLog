@@ -1,3 +1,8 @@
+Tue Sep 21 16:13:27 CEST 2010 (tk)
+----------------------------------
+ * shared/cdiff.c, sigtool/sigtool.c: fix error path double frees
+				      (bb#2280, bb#2281)
+
 Mon Sep 20 17:09:37 CEST 2010 (tk)
 ----------------------------------
  * V 0.96.3

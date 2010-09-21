@@ -683,7 +683,6 @@ static int build(const struct optstruct *opts)
 			lspt->name = strdup(dent->d_name);
 			if(!lspt->name) {
 			    FREE_LS(dblist2);
-			    free(lspt);
 			    mprintf("!build: Memory allocation error\n");
 			    return -1;
 			}
