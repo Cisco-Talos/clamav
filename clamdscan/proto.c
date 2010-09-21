@@ -285,7 +285,10 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	return -1;
     }
     sprintf(bol, "z%s %s", scancmd[scantype], filename);
-    if(sendln(sockd, bol, len)) return -1;
+    if(sendln(sockd, bol, len)) {
+	free(bol);
+	return -1;
+    }
     free(bol);
     break;
 
