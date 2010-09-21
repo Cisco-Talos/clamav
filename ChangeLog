@@ -1,3 +1,7 @@
+Tue Sep 21 16:32:22 CEST 2010 (tk)
+----------------------------------
+ * sigtool/sigtool.c: don't use of sizeof() for malloc'ed buffer (bb#2283)
+
 Tue Sep 21 16:19:41 CEST 2010 (tk)
 ----------------------------------
  * clamdscan/proto.c: fix error path memleak (bb#2282)

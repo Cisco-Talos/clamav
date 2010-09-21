@@ -1662,10 +1662,10 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 		    fseek(old, opos, SEEK_SET);
 
 		    if(found) {
-			strncpy(tbuff, obuff, sizeof(tbuff));
-			tbuff[sizeof(tbuff)-1]='\0';
+			strncpy(tbuff, obuff, l1);
+			tbuff[l1-1]='\0';
 			for(i = 0; i < tline; i++) {
-			    tbuff[16] = 0;
+			    tbuff[MIN(16, l1-1)] = 0;
 			    if((pt = strchr(tbuff, ' ')))
 				*pt = 0;
 			    fprintf(diff, "DEL %u %s\n", oline + i, tbuff);
@@ -1675,7 +1675,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 			oline += tline;
 
 		    } else {
-			obuff[16] = 0;
+			obuff[MIN(16, l1-1)] = 0;
 			if((pt = strchr(obuff, ' ')))
 			    *pt = 0;
 			fprintf(diff, "XCHG %u %s %s\n", oline, obuff, nbuff);
@@ -1693,7 +1693,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     if(old) {
 	while(fgets(obuff, l1, old)) {
 	    oline++;
-	    obuff[16] = 0;
+	    obuff[MIN(16, l1-1)] = 0;
 	    if((pt = strchr(obuff, ' ')))
 		*pt = 0;
 	    fprintf(diff, "DEL %u %s\n", oline, obuff);
