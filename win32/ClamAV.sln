@@ -66,6 +66,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamunrar_iface", "libcl
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamav-for-windows", "clamav-for-windows.vcxproj", "{127CBFE6-B8AE-4422-AFFB-61F80A7C8D18}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freshclamwrap", "freshclamwrap.vcxproj", "{366C2DCE-777A-43EE-96DC-C530E67E7B32}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -198,6 +200,10 @@ Global
 		{127CBFE6-B8AE-4422-AFFB-61F80A7C8D18}.Debug|x64.ActiveCfg = Debug|x64
 		{127CBFE6-B8AE-4422-AFFB-61F80A7C8D18}.Release|Win32.ActiveCfg = Release|Win32
 		{127CBFE6-B8AE-4422-AFFB-61F80A7C8D18}.Release|x64.ActiveCfg = Release|x64
+		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Debug|Win32.ActiveCfg = Debug|Win32
+		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Debug|x64.ActiveCfg = Debug|Win32
+		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Release|Win32.ActiveCfg = Release|Win32
+		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
