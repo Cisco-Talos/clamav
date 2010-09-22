@@ -24,6 +24,12 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineFunction.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSymbol.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\ConstantMerge.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\GlobalDCE.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\GlobalOpt.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\ADCE.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SCCP.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyCFGPass.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\IRBuilder.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\Triple.cpp"/>
