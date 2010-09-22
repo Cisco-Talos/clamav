@@ -668,8 +668,13 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   return alloc;
 }
 
+/* #define EXPAND_PUA */
 char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official) {
   char *newname, *pt;
+#ifdef EXPAND_PUA
+  char buf[1024];
+#endif
+
   if(!virname)
     return NULL;
 
@@ -682,6 +687,13 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
     return NULL;
   }
 
+#ifdef EXPAND_PUA
+    if(!strncmp(virname, "PUA.", 4)) {
+	snprintf(buf, sizeof(buf), "Possibly-Unwanted-Application(www.clamav.net/support/pua).%s", virname + 4);
+	buf[sizeof(buf)-1] = '\0';
+	virname = buf;
+    }
+#endif
   if(official)
     return cli_mpool_strdup(mp, virname);
 
