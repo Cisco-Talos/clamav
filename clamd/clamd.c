@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 	logg("#Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
 #endif
 
-#ifdef RLIMIT_DATA
+#if defined(RLIMIT_DATA) && defined(C_BSD)
     if (getrlimit(RLIMIT_DATA, &rlim) == 0) {
        /* bb #1941.
         * On 32-bit FreeBSD if you set ulimit -d to >2GB then mmap() will fail
