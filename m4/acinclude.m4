@@ -713,6 +713,9 @@ AC_TRY_RUN([
 #include <stdlib.h>
 #include <stdio.h>
 #include <bzlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef NOBZ2PREFIX
 #define BZ2_bzReadOpen bzReadOpen
@@ -754,6 +757,9 @@ int main (int argc, char **argv) {
         bz.avail_in = poc_len;
         bz.next_out = buf;
         bz.avail_out = sizeof(buf);
+
+	alarm(10);
+
         if(BZ2_bzDecompressInit(&bz, 0, 0)!=BZ_OK)
                 return 1;
 
