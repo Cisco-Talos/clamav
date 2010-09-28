@@ -107,6 +107,7 @@ test_run_check() {
 test_end() {
     killclamd
     cd ..
+    test -f test-$1/valgrind.log && mv -f test-$1/valgrind.log valgrind$1.log
     rm -rf test-$1
 }
 
@@ -137,10 +138,11 @@ init_helgrind() {
 }
 
 end_valgrind() {
-    NRUNS=`grep -a "ERROR SUMMARY" valgrind.log | wc -l`
-    if test $NRUNS -ne `grep -a "ERROR SUMMARY: 0 errors" valgrind.log | wc -l` || 
-	test `grep -a "FATAL:" valgrind.log|wc -l` -ne 0; then
-	cat valgrind.log
+    VLOG=valgrind$1.log
+    NRUNS=`grep -a "ERROR SUMMARY" $VLOG | wc -l`
+    if test $NRUNS -ne `grep -a "ERROR SUMMARY: 0 errors" $VLOG | wc -l` || 
+	test `grep -a "FATAL:" $VLOG|wc -l` -ne 0; then
+	cat $VLOG
 	die "Valgrind tests failed"
     fi
 }

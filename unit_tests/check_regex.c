@@ -365,7 +365,7 @@ static void do_phishing_test(const struct rtest *rtest)
 {
 	char *realurl;
 	cli_ctx ctx;
-	const char *virname;
+	const char *virname = NULL;
 	tag_arguments_t hrefs;
 	int rc;
 
@@ -417,8 +417,9 @@ static void do_phishing_test(const struct rtest *rtest)
 				fail_unless_fmt(ctx.found_possibly_unwanted,
 					"this should be blacklisted, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
-				fail_unless_fmt(!strstr((const char*)ctx.virname,"Blacklisted"),
-						"should be blacklisted, but is: %s\n", ctx.virname);
+				if (*ctx.virname)
+				    fail_unless_fmt(!strstr((const char*)*ctx.virname,"Blacklisted"),
+						    "should be blacklisted, but is: %s\n", ctx.virname);
 			}
 			break;
 	}
