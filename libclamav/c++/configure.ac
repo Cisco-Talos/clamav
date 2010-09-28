@@ -58,13 +58,17 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn"; then
+    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn" -a "$llvmver" != "2.8rc"; then
 	AC_MSG_ERROR([LLVM 2.8 or 2.8svn required, but "$llvmver" found])
     fi
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
-    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen`])
-    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen`])
+    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
+    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+    AC_MSG_NOTICE([Using external LLVM])
+    AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
+    AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
+    AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
     ;;
   esac
 ])
@@ -98,9 +102,7 @@ if test "$enable_alltargets" = "yes"; then
 else
     new_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
 fi
-echo "$new_args"
 ac_configure_args=`echo $new_args | sed -e 's/-Werror //g'`
-echo "$ac_configure_args"
 
 if test "$enable_llvm" = "auto"; then
     dnl Do some sanity checks, and don't automatically build on platforms

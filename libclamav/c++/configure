@@ -14513,17 +14513,25 @@ if test "${with_system_llvm+set}" = set; then :
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn"; then
+    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn" -a "$llvmver" != "2.8rc"; then
 	as_fn_error $? "LLVM 2.8 or 2.8svn required, but \"$llvmver\" found" "$LINENO" 5
     fi
     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
 
     LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
 
-    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen`
+    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
 
-    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen`
+    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
+$as_echo "$as_me: Using external LLVM" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
+$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
+$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
+$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
     ;;
   esac
 
@@ -14578,9 +14586,7 @@ if test "$enable_alltargets" = "yes"; then
 else
     new_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
 fi
-echo "$new_args"
 ac_configure_args=`echo $new_args | sed -e 's/-Werror //g'`
-echo "$ac_configure_args"
 
 if test "$enable_llvm" = "auto"; then
                 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for supported C++ compiler version" >&5

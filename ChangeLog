@@ -1,3 +1,7 @@
+Tue Sep 28 16:25:03 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/c++: allow building with external LLVM 2.8rc2.
+
 Tue Sep 28 13:05:53 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/bytecode.c: fix memory leak in runlsig (bb #2291)
