@@ -150,9 +150,11 @@ namespace {
           Value *V = CI->getCalledValue()->stripPointerCasts();
           Function *F = cast<Function>(V);
           const FunctionType *FTy = F->getFunctionType();
+	  CallSite CS(CI);
+
           if (F->getName().equals("memcmp") && FTy->getNumParams() == 3) {
-            valid &= validateAccess(CI->getOperand(1), CI->getOperand(3), CI);
-            valid &= validateAccess(CI->getOperand(2), CI->getOperand(3), CI);
+            valid &= validateAccess(CS.getArgument(0), CS.getArgument(2), CI);
+            valid &= validateAccess(CS.getArgument(1), CS.getArgument(2), CI);
             continue;
           }
 	  unsigned i;
@@ -163,7 +165,7 @@ namespace {
 #endif
           for (;i<FTy->getNumParams();i++) {
             if (isa<PointerType>(FTy->getParamType(i))) {
-              Value *Ptr = CI->getOperand(i+1);
+              Value *Ptr = CS.getArgument(i);
               if (i+1 >= FTy->getNumParams()) {
                 printLocation(CI, false);
                 errs() << "Call to external function with pointer parameter last cannot be analyzed\n";
@@ -171,7 +173,7 @@ namespace {
                 valid = 0;
                 break;
               }
-              Value *Size = CI->getOperand(i+2);
+              Value *Size = CS.getArgument(i+1);
               if (!Size->getType()->isIntegerTy()) {
                 printLocation(CI, false);
                 errs() << "Pointer argument must be followed by integer argument representing its size\n";
@@ -374,8 +376,9 @@ namespace {
               const FunctionType *FTy = F->getFunctionType();
               // last operand is always size for this API call kind
               if (F->isDeclaration() && FTy->getNumParams() > 0) {
+		CallSite CS(CI);
                 if (FTy->getParamType(FTy->getNumParams()-1)->isIntegerTy())
-                  V = CI->getOperand(FTy->getNumParams());
+                  V = CS.getArgument(FTy->getNumParams()-1);
               }
 	  }
 	  if (!V)
@@ -543,14 +546,15 @@ namespace {
     {
       for (Value::use_iterator JU=ICI->use_begin(),JUE=ICI->use_end();
            JU != JUE; ++JU) {
-        if (BranchInst *BI = dyn_cast<BranchInst>(JU)) {
+	Value *JU_V = *JU;
+        if (BranchInst *BI = dyn_cast<BranchInst>(JU_V)) {
           if (!BI->isConditional())
             continue;
           BasicBlock *S = BI->getSuccessor(equal);
           if (DT->dominates(S, I->getParent()))
             return true;
         }
-        if (BinaryOperator *BI = dyn_cast<BinaryOperator>(JU)) {
+        if (BinaryOperator *BI = dyn_cast<BinaryOperator>(JU_V)) {
           if (BI->getOpcode() == Instruction::Or &&
               checkCond(BI, I, equal))
             return true;
@@ -566,7 +570,8 @@ namespace {
     {
       for (Value::use_iterator U=CI->use_begin(),UE=CI->use_end();
            U != UE; ++U) {
-        if (ICmpInst *ICI = dyn_cast<ICmpInst>(U)) {
+	Value *U_V = *U;
+        if (ICmpInst *ICI = dyn_cast<ICmpInst>(U_V)) {
           if (ICI->getOperand(0)->stripPointerCasts() == CI &&
               isa<ConstantPointerNull>(ICI->getOperand(1))) {
             if (checkCond(ICI, I, ICI->getPredicate() == ICmpInst::ICMP_EQ))

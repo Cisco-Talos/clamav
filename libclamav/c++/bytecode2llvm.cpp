@@ -38,6 +38,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/Verifier.h"
+#include "llvm/AutoUpgrade.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -129,7 +130,22 @@ struct cli_bcengine {
 extern "C" uint8_t cli_debug_flag;
 namespace {
 
+#ifdef LLVM28
+#define llvm_report_error(x) report_fatal_error(x)
+#define llvm_install_error_handler(x) install_fatal_error_handler(x)
+#define DwarfExceptionHandling JITExceptionHandling
+#define SetCurrentDebugLocation(x) SetCurrentDebugLocation(DebugLoc::getFromDILocation(x))
+#endif
+
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
+
+static void UpgradeCall(CallInst *&C, Function *Intr)
+{
+    Function *New;
+    if (!UpgradeIntrinsicFunction(Intr, New) || New == Intr)
+	return;
+    UpgradeIntrinsicCall(C, New);
+}
 
 void do_shutdown() {
     llvm_shutdown();
@@ -560,7 +576,6 @@ public:
 };
 char RuntimeLimits::ID;
 
-// SimplifyCFG, ADCE, etc. won't remove a br i1 false ... they turn it into
 // select i1 false ... which instcombine would simplify but we don't run
 // instcombine.
 class BrSimplifier : public FunctionPass {
@@ -637,7 +652,7 @@ public:
 };
 char SimpleGlobalDCE::ID;
 */
-class VISIBILITY_HIDDEN LLVMCodegen {
+class LLVMCodegen {
 private:
     const struct cli_bc *bc;
     Module *M;
@@ -940,11 +955,12 @@ public:
 	    StoreInst *SI = 0;
 	    for (Value::use_iterator I=VI->use_begin(),
 		 E=VI->use_end(); I != E; ++I) {
-		if (StoreInst *S = dyn_cast<StoreInst>(I)) {
+		Value *I_V = *I;
+		if (StoreInst *S = dyn_cast<StoreInst>(I_V)) {
 		    if (SI)
 			return V;
 		    SI = S;
-		} else if (!isa<LoadInst>(I))
+		} else if (!isa<LoadInst>(I_V))
 		    return V;
 	    }
 	    V = SI->getOperand(0);
@@ -1403,6 +1419,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemset);
 			    break;
 			}
 			case OP_BC_MEMCPY:
@@ -1416,6 +1433,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemcpy);
 			    break;
 			}
 			case OP_BC_MEMMOVE:
@@ -1429,6 +1447,7 @@ public:
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
+			    UpgradeCall(c, CF->FMemmove);
 			    break;
 			}
 			case OP_BC_MEMCMP:
@@ -2149,9 +2168,12 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 
     int line = (int)ctx->line ? (int)ctx->line : -1;
     int col = (int)ctx->col ? (int)ctx->col : -1;
+#ifndef LLVM28
+    //TODO: print this ourselves, instead of using SMDiagnostic
     SMDiagnostic diag(ctx->file, line, col,
 		 "", std::string(lines->linev[ctx->line-1], lines->linev[ctx->line]-1));
     diag.Print("[trace]", errs());
+#endif
 }
 
 int have_clamjit=1;
