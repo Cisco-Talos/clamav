@@ -135,6 +135,9 @@ namespace {
 #define llvm_install_error_handler(x) install_fatal_error_handler(x)
 #define DwarfExceptionHandling JITExceptionHandling
 #define SetCurrentDebugLocation(x) SetCurrentDebugLocation(DebugLoc::getFromDILocation(x))
+#define DEFINEPASS(passname) passname() : FunctionPass(ID)
+#else
+#define DEFINEPASS(passname) passname() : FunctionPass(&ID)
 #endif
 
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
@@ -437,8 +440,7 @@ class RuntimeLimits : public FunctionPass {
 
 public:
     static char ID;
-    RuntimeLimits() : FunctionPass(ID) {}
-
+    DEFINEPASS(RuntimeLimits) {}
 
     virtual bool runOnFunction(Function &F) {
 	BBSetTy BackedgeTargets;
@@ -581,7 +583,7 @@ char RuntimeLimits::ID;
 class BrSimplifier : public FunctionPass {
 public:
     static char ID;
-    BrSimplifier() : FunctionPass(ID) {}
+    DEFINEPASS(BrSimplifier) {}
 
     virtual bool runOnFunction(Function &F) {
 	bool Changed = false;
