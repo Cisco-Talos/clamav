@@ -370,7 +370,7 @@ SPLIT_DIR = $(top_srcdir)/unit_tests/.split
 FILES = clam-phish-exe
 programs = check_clamav
 scripts = check_freshclam.sh check_sigtool.sh check_unit_vg.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
-	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh
+	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh check9_clamscan_vg.sh
 
 TESTS_ENVIRONMENT = export abs_srcdir=$(abs_srcdir) AWK=$(AWK); \
 	$(am__append_1)
@@ -914,6 +914,8 @@ check7_clamd_hg.sh.log: check7_clamd_hg.sh
 	@p='check7_clamd_hg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 check8_clamd_hg.sh.log: check8_clamd_hg.sh
 	@p='check8_clamd_hg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
+check9_clamscan_vg.sh.log: check9_clamscan_vg.sh
+	@p='check9_clamscan_vg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 .test.log:
 	@p='$<'; $(am__check_pre) $(TEST_LOG_COMPILE) "$$tst" $(am__check_post)
 @am__EXEEXT_TRUE@.test$(EXEEXT).log:

@@ -1,3 +1,7 @@
+Tue Sep 28 13:01:19 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/scanners.c: fix VI memory leak (bb #2291)
+
 Tue Sep 28 12:42:01 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: fix mmap failed(2) on 32-bit FreeBSD (bb #2300).

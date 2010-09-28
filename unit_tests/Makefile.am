@@ -17,7 +17,7 @@ $(FILES) :
 
 programs = check_clamav
 scripts = check_freshclam.sh check_sigtool.sh check_unit_vg.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
-	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh
+	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh check9_clamscan_vg.sh
 TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
 if ENABLE_UNRAR
 else

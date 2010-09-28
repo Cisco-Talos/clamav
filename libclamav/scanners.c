@@ -1823,6 +1823,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 				cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int) fpt->offset);
 				if(peinfo.section)
 				    free(peinfo.section);
+				cli_hashset_destroy(&peinfo.vinfo);
 
 				nret = cli_scanembpe(ctx, fpt->offset);
 				break_loop = 1; /* we can stop here and other
