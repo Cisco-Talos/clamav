@@ -54,6 +54,11 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Support/Debug.h"
 
+#ifdef LLVM28
+#define DEFINEPASS(passname) passname() : FunctionPass(ID)
+#else
+#define DEFINEPASS(passname) passname() : FunctionPass(&ID)
+#endif
 using namespace llvm;
 namespace {
 
@@ -63,10 +68,10 @@ namespace {
     CallGraphNode *rootNode;
   public:
     static char ID;
-    PtrVerifier() : FunctionPass(ID),rootNode(0) {}
+    DEFINEPASS(PtrVerifier), rootNode(0) {}
 
     virtual bool runOnFunction(Function &F) {
-      errs() << "Running on " << F.getName() << "\n";
+      DEBUG(errs() << "Running on " << F.getName() << "\n");
       DEBUG(F.dump());
       Changed = false;
       BaseMap.clear();
