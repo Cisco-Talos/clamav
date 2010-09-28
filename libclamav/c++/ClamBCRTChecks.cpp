@@ -63,7 +63,7 @@ namespace {
     CallGraphNode *rootNode;
   public:
     static char ID;
-    PtrVerifier() : FunctionPass((intptr_t)&ID),rootNode(0) {}
+    PtrVerifier() : FunctionPass(ID),rootNode(0) {}
 
     virtual bool runOnFunction(Function &F) {
       errs() << "Running on " << F.getName() << "\n";

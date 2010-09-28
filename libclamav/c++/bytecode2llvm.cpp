@@ -437,7 +437,7 @@ class RuntimeLimits : public FunctionPass {
 
 public:
     static char ID;
-    RuntimeLimits() : FunctionPass(&ID) {}
+    RuntimeLimits() : FunctionPass(ID) {}
 
 
     virtual bool runOnFunction(Function &F) {
@@ -581,7 +581,7 @@ char RuntimeLimits::ID;
 class BrSimplifier : public FunctionPass {
 public:
     static char ID;
-    BrSimplifier() : FunctionPass(&ID) {}
+    BrSimplifier() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F) {
 	bool Changed = false;
