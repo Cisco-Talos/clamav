@@ -1482,7 +1482,7 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 @BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_10) libllvmcodegen.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la
 @BUILD_EXTERNAL_LLVM_FALSE@LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
-@BUILD_EXTERNAL_LLVM_FALSE@unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
+@BUILD_EXTERNAL_LLVM_FALSE@unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@ -DGTEST_HAS_TR1_TUPLE=0
 @BUILD_EXTERNAL_LLVM_FALSE@TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
 @BUILD_EXTERNAL_LLVM_FALSE@    X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
 @BUILD_EXTERNAL_LLVM_FALSE@    X86GenSubtarget.inc PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\

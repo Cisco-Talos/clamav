@@ -71,7 +71,7 @@ endif
 libclamavcxx_la_LIBADD+=libllvmcodegen.la libllvmsystem.la
 
 LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
-unittest_CXXFLAGS=@NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@
+unittest_CXXFLAGS=@NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@ -DGTEST_HAS_TR1_TUPLE=0
 
 TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
     X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
