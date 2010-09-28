@@ -2461,6 +2461,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 	/* save match counts */
 	memcpy(&ctx.lsigcnt, lsigcnt, 64*4);
 	memcpy(&ctx.lsigoff, lsigsuboff, 64*4);
+	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
 
@@ -2468,6 +2469,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
 	cli_warnmsg("Bytcode failed to run: %s\n", cl_strerror(ret));
+	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
     if (ctx.virname) {

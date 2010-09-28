@@ -1,3 +1,7 @@
+Tue Sep 28 13:05:53 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c: fix memory leak in runlsig (bb #2291)
+
 Tue Sep 28 13:01:19 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/scanners.c: fix VI memory leak (bb #2291)
