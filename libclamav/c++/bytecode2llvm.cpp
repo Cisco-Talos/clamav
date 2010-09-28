@@ -247,6 +247,33 @@ public:
     }
 };
 
+class TimerWrapper {
+private:
+    Timer *t;
+public:
+    TimerWrapper(const std::string &name) {
+	t = 0;
+#ifdef TIMING
+	t = new Timer(name);
+#endif
+    }
+    ~TimerWrapper()
+    {
+	if (t)
+	    delete t;
+    }
+    void startTimer()
+    {
+	if (t)
+	    t->startTimer();
+    }
+    void stopTimer()
+    {
+	if (t)
+	    t->stopTimer();
+    }
+};
+
 class LLVMTypeMapper {
 private:
     std::vector<PATypeHolder> TypeMap;
@@ -271,8 +298,8 @@ private:
 	llvm_unreachable("getStatic");
     }
 public:
-    Timer pmTimer;
-    Timer irgenTimer;
+    TimerWrapper pmTimer;
+    TimerWrapper irgenTimer;
 
     LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
 		   unsigned count, const Type *Hidden=0) : Context(Context), numTypes(count),
@@ -936,9 +963,7 @@ public:
 
    Function* generate() {
         PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
-#ifdef TIMING
 	apiMap.irgenTimer.startTimer();
-#endif
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 	for (unsigned i=0;i<bc->dbgnode_cnt;i++) {
 	    mdnodes.push_back(convertMDNode(i));
@@ -1491,10 +1516,8 @@ public:
 	    }
 	    delete [] Values;
 	    delete [] BB;
-#ifdef TIMING
 	    apiMap.irgenTimer.stopTimer();
 	    apiMap.pmTimer.startTimer();
-#endif
 	    if (bc->trusted) {
 		PM.doInitialization();
 		PM.run(*F);
@@ -1505,10 +1528,8 @@ public:
 		PMUnsigned.run(*F);
 		PMUnsigned.doFinalization();
 	    }
-#ifdef TIMING
 	    apiMap.pmTimer.stopTimer();
 	    apiMap.irgenTimer.startTimer();
-#endif
 	}
 
 	for (unsigned j=0;j<bc->num_func;j++) {
@@ -1554,9 +1575,7 @@ public:
 			DEBUG(errs() << "Code generation finished\n");*/
 
 //		compiledFunctions[func] = code;
-#ifdef TIMING
 	apiMap.irgenTimer.stopTimer();
-#endif
 	return F;
     }
 };
@@ -1961,31 +1980,23 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	PM.add(createGlobalOptimizerPass());
 	PM.add(createConstantMergePass());
 	PM.add(new RuntimeLimits());
-	Timer pmTimer2("Transform passes");
-#ifdef TIMING
+	TimerWrapper pmTimer2("Transform passes");
 	pmTimer2.startTimer();
-#endif
 	PM.run(*M);
-#ifdef TIMING
 	pmTimer2.stopTimer();
-#endif
 	DEBUG(M->dump());
 
 	{
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");
-	    Timer codegenTimer("Native codegen");
-#ifdef TIMING
+	    TimerWrapper codegenTimer("Native codegen");
 	    codegenTimer.startTimer();
-#endif
 	    // compile all functions now, not lazily!
 	    for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
 		Function *Fn = &*I;
 		if (!Fn->isDeclaration())
 		    EE->getPointerToFunction(Fn);
 	    }
-#ifdef TIMING
 	    codegenTimer.stopTimer();
-#endif
 	}
 
 	for (unsigned i=0;i<bcs->count;i++) {
