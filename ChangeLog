@@ -1,3 +1,7 @@
+Tue Sep 28 12:42:01 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: fix mmap failed(2) on 32-bit FreeBSD (bb #2300).
+
 Thu Sep 23 17:59:26 CEST 2010 (acab)
 ------------------------------------
  * m4/acinclude: add alarm(10) to the CVE-2010-0405 check so we don't

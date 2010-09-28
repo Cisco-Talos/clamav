@@ -1024,7 +1024,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     offset += pdfver - start;
 
     /* find trailer and xref, don't fail if not found */
-    map_off = map->len - 2048;
+    map_off = (off_t)map->len - 2048;
     if (map_off < 0)
 	map_off = 0;
     bytesleft = map->len - map_off;
