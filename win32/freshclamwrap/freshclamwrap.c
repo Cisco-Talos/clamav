@@ -20,6 +20,7 @@
 #include <windows.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "clupdate.h"
 #include "flog.h"
@@ -52,8 +53,14 @@ static char *my_fgets(struct my_f *f) {
 		f->next -= cur - f->buf;
 		cur = f->buf;
 	    }
-	    if(!ReadFile(f->h, f->next, sizeof(f->buf) - 1 - (f->next - f->buf), &f->len, NULL))
-		return NULL;
+	    if(!ReadFile(f->h, f->next, sizeof(f->buf) - 1 - (f->next - f->buf), &f->len, NULL)) {
+		DWORD er = GetLastError();
+		if(er != ERROR_BROKEN_PIPE) {
+		    flog("ERROR: ReadFile failed (%u)", er);
+		    return NULL;
+		}
+		f->len = 0;
+	    }
 	    if(!f->len) {
 		*f->next = '\0';
 		return cur != f->next ? cur : NULL;
@@ -70,8 +77,10 @@ static char *my_fgets(struct my_f *f) {
     }
 }
 
+PROCESS_INFORMATION pinfo;
+HANDLE updpipe;
 
-static void send_pipe(HANDLE pipe, AV_UPD_STATUS *updstatus, int state, int fail) {
+static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
     DWORD got;
 
 const char *phases[] = {
@@ -86,19 +95,22 @@ const char *phases[] = {
     "UPD_INSTALL_BEGIN",
     "UPD_INSTALL_COMPLETE",
     "UPD_FILE_BEGIN",
-    "UPD_FILE_COMPLETE"
+    "UPD_FILE_COMPLETE",
+    "UPD_FILE_PROGRESS",
     };
 
-    flog("SEND: state: %s - status: %s", (unsigned int)state < sizeof(phases) / sizeof(*phases) ? phases[state] : "INVALID", fail ? "fail" : "success");
+    flog("SEND: state: %s - status: %s - file: %S - pct: %u%%",
+	(unsigned int)state < sizeof(phases) / sizeof(*phases) ? phases[state] : "INVALID",
+	fail ? "fail" : "success", updstatus->fileName, updstatus->percentDownloaded);
     updstatus->state = state;
     updstatus->status = fail;
-    if(!WriteFile(pipe, updstatus, sizeof(*updstatus), &got, NULL))
+    if(!WriteFile(updpipe, updstatus, sizeof(*updstatus), &got, NULL))
 	flog("WARNING: cannot write to pipe");
 }
 
 #define SENDFAIL_AND_QUIT(phase)	    \
     do {				    \
-	send_pipe(updpipe, &st, (phase), 1);\
+	send_pipe(&st, (phase), 1);\
 	CloseHandle(updpipe);		    \
 	flog_close();		    \
 	return 1;			    \
@@ -106,24 +118,43 @@ const char *phases[] = {
 
 #define SENDOK(phase)			    \
     do {				    \
-	send_pipe(updpipe, &st, (phase), 0);\
+	send_pipe(&st, (phase), 0);\
     } while(0)
 
 enum fresh_states {
     FRESH_PRE,
     FRESH_IDLE,
-    FRESH_DOWN
+    FRESH_DOWN,
+    FRESH_RELOAD
 };
 
 const char *fstates[] = {
     "FRESH_PRE",
     "FRESH_IDLE",
-    "FRESH_DOWN"
+    "FRESH_DOWN",
+    "FRESH_RELOAD"
 };
 
 static void log_state(enum fresh_states s) {
-    flog("state is now: %s", (s < FRESH_PRE || s > FRESH_DOWN) ? "INVALID" : fstates[s]);
+    flog("state is now: %s", (s < FRESH_PRE || s > FRESH_RELOAD) ? "INVALID" : fstates[s]);
 }
+
+
+DWORD WINAPI watch_stop(LPVOID x) {
+    AV_UPD_STATUS st;
+    DWORD got;
+
+    while(1) {
+	//if(!ReadFile(updpipe, &st, sizeof(st), &got, NULL))
+	//    return 0;
+	//if(st.state == UPD_STOP)
+	//    break;
+	//flog("watch_stop: received bogus message %d", st.state);
+    }
+
+    return 0;
+}
+
 
 #define FRESH_PRE_START_S "ClamAV update process started at "
 #define FRESH_DOWN_S "Downloading "
@@ -132,18 +163,17 @@ static void log_state(enum fresh_states s) {
 #define FRESH_DONE_S "Database updated "
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
-    HANDLE cld_r, cld_w2, cld_w, updpipe;
-    PROCESS_INFORMATION pinfo;
+    HANDLE cld_r, cld_w2, cld_w;
     STARTUPINFO sinfo;
     enum fresh_states fstate = FRESH_PRE;
-    AV_UPD_STATUS st = {UPD_CHECK, 0, 100, 0, 3};
+    AV_UPD_STATUS st = {UPD_CHECK, 0, 0, 0, L""};
     DWORD dw;
     struct my_f spam;
     char buf[4096], command[8192], *ptr;
     int updated_files = 0;
     wchar_t *cmdl = GetCommandLineW();
 
-//    DebugBreak();
+    DebugBreak();
 
     /* Locate myself */
     dw = GetModuleFileName(NULL, buf, sizeof(buf));
@@ -211,6 +241,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     CloseHandle(cld_w2);
 
     flog("Executing '%s'", command);
+
+    /* Create STOP watcher */
+    CreateThread(NULL, 0, watch_stop, NULL, 0, &dw);
+
     log_state(fstate);
     /* Spam parsing */
     while(1) {
@@ -221,28 +255,64 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    break;
 	if(!strncmp(buf, "WARNING: ", 9))
 	    continue;
+
 	if(fstate == FRESH_PRE && !strncmp(buf, FRESH_PRE_START_S, sizeof(FRESH_PRE_START_S)-1)) {
 	    SENDOK(UPD_CHECK);
 	    fstate = FRESH_IDLE;
 	    log_state(fstate);
 	    continue;
 	}
-	if(fstate == FRESH_IDLE) {
-	    if(!strncmp(buf, FRESH_DOWN_S, sizeof(FRESH_DOWN_S)-1)) {
-		if(!updated_files) {
-		    SENDOK(UPD_NEWER_FOUND);
-		    SENDOK(UPD_DOWNLOAD_BEGIN);
-		}
-		updated_files++;
+
+	if((fstate == FRESH_IDLE || fstate == FRESH_DOWN) && !strncmp(buf, FRESH_DOWN_S, sizeof(FRESH_DOWN_S)-1)) {
+	    unsigned int pct;
+	    unsigned char *partname = buf + 12, *partend, *pctend;
+	    wchar_t nuname[AV_UPD_FILE_NAME_MAX];
+
+	     GenerateConsoleCtrlEvent(CTRL_C_EVENT, pinfo.dwProcessId);
+	    if(!updated_files) {
+		SENDOK(UPD_NEWER_FOUND);
+		SENDOK(UPD_DOWNLOAD_BEGIN);
+	    }
+	    updated_files++;
+	    partend = strchr(partname, '.');
+	    if(!partend)
+		break;
+	    *partend = '\0';
+	    partend = strchr(partend + 1, '[');
+	    if(!partend)
+		break;
+	    partend++;
+	    pct = strtol(partend, &pctend, 10);
+	    if(pctend == partend || *pctend != '%')
+		break;
+	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, partname, -1, nuname, sizeof(nuname)))
+		break;
+	    if(fstate == FRESH_DOWN && wcscmp(nuname, st.fileName)) {
+		st.percentDownloaded = 100;
+		SENDOK(UPD_FILE_COMPLETE);
+		fstate = FRESH_IDLE;
+		log_state(fstate);
+	    }
+	    if(fstate == FRESH_IDLE) {
+		wcscpy(st.fileName, nuname);
+		st.percentDownloaded = 0;
 		SENDOK(UPD_FILE_BEGIN);
 		fstate = FRESH_DOWN;
 		log_state(fstate);
-		continue;
 	    }
+	    st.percentDownloaded = pct;
+	    SENDOK(UPD_FILE_PROGRESS);
+	    continue;
+	}
+
+	if(fstate == FRESH_IDLE) {
 	    if(strstr(buf, FRESH_UPTODATE_S))
 		continue;
-	    if(!strncmp(buf, FRESH_DONE_S, sizeof(FRESH_DONE_S) - 1))
+	    if(!strncmp(buf, FRESH_DONE_S, sizeof(FRESH_DONE_S) - 1)) {
+		fstate = FRESH_RELOAD;
+		log_state(fstate);
 		continue;
+	    }
 	}
 	if(fstate == FRESH_DOWN) {
 	    if(strstr(buf, FRESH_UPDATED_S)) {
@@ -265,11 +335,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     CloseHandle(pinfo.hProcess);
     if(dw) {
-	flog("ERROR: freshclam exitted with %u\n", dw);
+	flog("ERROR: freshclam exit code %u", dw);
 	SENDFAIL_AND_QUIT(st.state);
     }
-    if(fstate != FRESH_IDLE) {
-	flog("ERROR: freshclam exited with %u\n", dw);
+    if((updated_files && fstate != FRESH_RELOAD) || (!updated_files && fstate != FRESH_IDLE)) {
+	flog("ERROR: log parse failure. Freshclam exit value: %u", dw);
 	SENDFAIL_AND_QUIT(st.state);
     }
 
