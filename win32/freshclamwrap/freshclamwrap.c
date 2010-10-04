@@ -144,13 +144,13 @@ DWORD WINAPI watch_stop(LPVOID x) {
     AV_UPD_STATUS st;
     DWORD got;
 
-    while(1) {
+    //while(1) {
 	//if(!ReadFile(updpipe, &st, sizeof(st), &got, NULL))
 	//    return 0;
 	//if(st.state == UPD_STOP)
 	//    break;
 	//flog("watch_stop: received bogus message %d", st.state);
-    }
+    //}
 
     return 0;
 }
@@ -158,6 +158,7 @@ DWORD WINAPI watch_stop(LPVOID x) {
 
 #define FRESH_PRE_START_S "ClamAV update process started at "
 #define FRESH_DOWN_S "Downloading "
+#define FRESH_DOWN_FAIL_S "ERROR: Verification: Can't verify database integrity"
 #define FRESH_UPDATED_S " updated (version: "
 #define FRESH_UPTODATE_S " is up to date "
 #define FRESH_DONE_S "Database updated "
@@ -173,7 +174,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int updated_files = 0;
     wchar_t *cmdl = GetCommandLineW();
 
-    DebugBreak();
+    //DebugBreak();
 
     /* Locate myself */
     dw = GetModuleFileName(NULL, buf, sizeof(buf));
@@ -253,8 +254,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	flog("GOT: %s", buf);
 	if(!buf)
 	    break;
-	if(!strncmp(buf, "WARNING: ", 9))
-	    continue;
 
 	if(fstate == FRESH_PRE && !strncmp(buf, FRESH_PRE_START_S, sizeof(FRESH_PRE_START_S)-1)) {
 	    SENDOK(UPD_CHECK);
@@ -315,6 +314,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    }
 	}
 	if(fstate == FRESH_DOWN) {
+	    if(!strcmp(buf, FRESH_DOWN_FAIL_S)) {
+		flog("sigcheck fucked up");
+#if 0
+		// FIXME: ask prashant
+		send_pipe(&st, UPD_FILE_COMPLETE, 1);
+#else
+		SENDOK(UPD_FILE_COMPLETE);
+#endif
+		fstate = FRESH_IDLE;
+		log_state(fstate);
+		continue;
+	    }
 	    if(strstr(buf, FRESH_UPDATED_S)) {
 		SENDOK(UPD_FILE_COMPLETE);
 		fstate = FRESH_IDLE;
@@ -324,7 +335,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    if(strlen(buf) > sizeof(FRESH_DOWN_S)-1 && strstr(buf, FRESH_DOWN_S)) 
 		continue;
 	}
-	break;
     }
     CloseHandle(cld_r);
     WaitForSingleObject(pinfo.hProcess, 30*1000);

@@ -735,3 +735,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	    return CL_CLEAN;
     }
 }
+
+CLAMAPI void Scan_ReloadDatabase(void) {
+    logg("Reloading db (FIXME: NOT REALLY)");
+}

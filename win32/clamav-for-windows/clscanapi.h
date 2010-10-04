@@ -277,6 +277,11 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
  */
 CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
 
+/*
+ * Reload the virus database
+ */
+CLAMAPI void Scan_ReloadDatabase(void);
+
 #ifdef __cplusplus
 }; /* extern "C" */
 #endif
