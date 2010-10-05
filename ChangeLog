@@ -1,3 +1,7 @@
+Tue Oct  5 17:03:43 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: Fix crash on 64-bit Solaris Intel (bb #2314).
+
 Tue Sep 28 16:25:03 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/c++: allow building with external LLVM 2.8rc2.
