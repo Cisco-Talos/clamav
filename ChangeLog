@@ -1,3 +1,7 @@
+Tue Oct  5 18:14:59 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: Fix 'Unknown error code ERROR'(bb #2296).
+
 Tue Oct  5 17:03:43 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: Fix crash on 64-bit Solaris Intel (bb #2314).
