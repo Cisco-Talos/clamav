@@ -79,10 +79,46 @@ static char *my_fgets(struct my_f *f) {
 
 PROCESS_INFORMATION pinfo;
 HANDLE updpipe, write_event;
+char datadir[4096];
 
-void kill_freshclam(void) {
+static void cleanup(char *path) {
+    WIN32_FIND_DATA wfd;
+    char delme[4096];
+    HANDLE findh;
+
+    if(!path)
+	_snprintf(delme, sizeof(delme), "%s\\clamav-????????????????????????????????", datadir);
+    else
+	_snprintf(delme, sizeof(delme), "%s\\*.*", path);
+    delme[sizeof(delme) - 1] = '\0';
+    findh = FindFirstFile(delme, &wfd);
+    if(findh == INVALID_HANDLE_VALUE)
+	return;
+    do {
+	if(wfd.cFileName[0] == '.' && (!wfd.cFileName[1] || (wfd.cFileName[1] == '.' && !wfd.cFileName[2])))
+	    continue;
+	if(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	    if(!path)
+		_snprintf(delme, sizeof(delme), "%s\\%s", datadir, wfd.cFileName);
+	    else
+		_snprintf(delme, sizeof(delme), "%s\\%s", path, wfd.cFileName);
+	    flog("recursing %s", delme);
+	    cleanup(delme);
+	    RemoveDirectory(delme);
+	} else if(path) {
+	    _snprintf(delme, sizeof(delme), "%s\\%s", path, wfd.cFileName);
+	    flog("deleting %s", delme);
+	    SetFileAttributes(delme, FILE_ATTRIBUTE_NORMAL);
+	    DeleteFile(delme);
+	}
+    } while(FindNextFile(findh, &wfd));
+    FindClose(findh);
+}
+
+
+static void kill_freshclam(void) {
     TerminateProcess(pinfo.hProcess, 1337);
-    // FIXME: do cleanup
+    WaitForSingleObject(pinfo.hProcess, 30*1000);
 }
 
 static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
@@ -123,6 +159,7 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
     do {				    \
 	send_pipe(&st, (phase), 1);\
 	CloseHandle(updpipe);		    \
+	cleanup(NULL);                 \
 	flog_close();		    \
 	return 1;			    \
     } while(0)
@@ -177,6 +214,7 @@ DWORD WINAPI watch_stop(LPVOID x) {
     }
     flog("STOP event received, killing freshclam");
     kill_freshclam();
+    cleanup(NULL);
     return 0;
 }
 
@@ -195,27 +233,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     AV_UPD_STATUS st = {UPD_CHECK, 0, 0, 0, L""};
     DWORD dw;
     struct my_f spam;
-    char buf[4096], command[8192], *ptr;
+    char command[8192], *ptr;
     int updated_files = 0;
     wchar_t *cmdl = GetCommandLineW();
 
     //DebugBreak();
 
     /* Locate myself */
-    dw = GetModuleFileName(NULL, buf, sizeof(buf));
-    if(!dw || dw >= sizeof(buf)-2)
+    dw = GetModuleFileName(NULL, datadir, sizeof(datadir));
+    if(!dw || dw >= sizeof(datadir)-2)
 	return 1;
-    ptr = strrchr(buf, '\\');
+    ptr = strrchr(datadir, '\\');
     if(!ptr)
 	return 1;
     *ptr = '\0';
 
     /* Log file */
-    _snprintf(command, sizeof(command)-1, "%s\\update.log", buf);
+    _snprintf(command, sizeof(command)-1, "%s\\update.log", datadir);
     command[sizeof(command)-1] = '\0';
     flog_open(command);
 
-    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"", buf, buf);
+    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"", datadir, datadir);
     command[sizeof(command)-1] = '\0';
 
     /* Connect to master */
@@ -257,7 +295,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     sinfo.hStdOutput = cld_w2;
     sinfo.hStdError = cld_w2;
     sinfo.dwFlags = STARTF_FORCEOFFFEEDBACK|STARTF_USESTDHANDLES;
-    if(!CreateProcess(NULL, command, NULL, NULL, TRUE, DETACHED_PROCESS, NULL, buf, &sinfo, &pinfo)) {
+    if(!CreateProcess(NULL, command, NULL, NULL, TRUE, DETACHED_PROCESS, NULL, datadir, &sinfo, &pinfo)) {
 	CloseHandle(cld_w2);
 	CloseHandle(cld_r);
 	flog("ERROR: failed to execute '%s'", command);
@@ -384,7 +422,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
     CloseHandle(pinfo.hProcess);
     if(dw) {
-	flog("ERROR: freshclam exit code %u", dw);
+	if(dw == STILL_ACTIVE) {
+	    flog("ERROR: freshclam didn't exit, killing...", dw);
+	    kill_freshclam();
+	} else
+	    flog("ERROR: freshclam exit code %u", dw);
 	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(st.state);
     }
