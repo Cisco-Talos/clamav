@@ -78,34 +78,45 @@ static char *my_fgets(struct my_f *f) {
 }
 
 PROCESS_INFORMATION pinfo;
-HANDLE updpipe;
+HANDLE updpipe, write_event;
+
+void kill_freshclam(void) {
+    TerminateProcess(pinfo.hProcess, 1337);
+    // FIXME: do cleanup
+}
 
 static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
     DWORD got;
-
-const char *phases[] = {
-    "UPD_CHECK",
-    "UPD_NEWER_FOUND",
-    "UPD_NONE",
-    "UPD_DOWNLOAD_BEGIN",
-    "UPD_DOWNLOAD_COMPLETE",
-    "UPD_PAUSE",
-    "UPD_ABORT",
-    "UPD_DONE",
-    "UPD_INSTALL_BEGIN",
-    "UPD_INSTALL_COMPLETE",
-    "UPD_FILE_BEGIN",
-    "UPD_FILE_COMPLETE",
-    "UPD_FILE_PROGRESS",
+    const char *phases[] = {
+	"UPD_CHECK",
+	"UPD_NEWER_FOUND",
+	"UPD_NONE",
+	"UPD_DOWNLOAD_BEGIN",
+	"UPD_DOWNLOAD_COMPLETE",
+	"UPD_PAUSE",
+	"UPD_ABORT",
+	"UPD_DONE",
+	"UPD_INSTALL_BEGIN",
+	"UPD_INSTALL_COMPLETE",
+	"UPD_FILE_BEGIN",
+	"UPD_FILE_COMPLETE",
+	"UPD_FILE_PROGRESS",
     };
+    OVERLAPPED o;
 
+    memset(&o, 0, sizeof(o)); /* kb110148 */
+    o.hEvent = write_event;
     flog("SEND: state: %s - status: %s - file: %S - pct: %u%%",
 	(unsigned int)state < sizeof(phases) / sizeof(*phases) ? phases[state] : "INVALID",
 	fail ? "fail" : "success", updstatus->fileName, updstatus->percentDownloaded);
     updstatus->state = state;
     updstatus->status = fail;
-    if(!WriteFile(updpipe, updstatus, sizeof(*updstatus), &got, NULL))
-	flog("WARNING: cannot write to pipe");
+    if(!WriteFile(updpipe, updstatus, sizeof(*updstatus), NULL, &o)) {
+	if(GetLastError() != ERROR_IO_PENDING)
+	    flog("WARNING: cannot write to pipe");
+	else if(!GetOverlappedResult(updpipe, &o, &got, TRUE))
+	    flog("WARNING: write to pipe failed");
+    }
 }
 
 #define SENDFAIL_AND_QUIT(phase)	    \
@@ -143,15 +154,29 @@ static void log_state(enum fresh_states s) {
 DWORD WINAPI watch_stop(LPVOID x) {
     AV_UPD_STATUS st;
     DWORD got;
+    OVERLAPPED o;
+    HANDLE read_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-    //while(1) {
-	//if(!ReadFile(updpipe, &st, sizeof(st), &got, NULL))
-	//    return 0;
-	//if(st.state == UPD_STOP)
-	//    break;
-	//flog("watch_stop: received bogus message %d", st.state);
-    //}
+    if(!read_event) {
+	flog("watch_stop: failed to create pipe read event");
+	return 0;
+    }
 
+    memset(&o, 0, sizeof(o));
+    o.hEvent = read_event;
+    while(1) {
+	if(!ReadFile(updpipe, &st, sizeof(st), NULL, NULL)) {
+	    if(GetLastError() != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE)) {
+		flog("watch_stop: failed to read pipe");
+		return 0;
+	    }
+	}
+	if(st.state == UPD_STOP)
+	    break;
+	flog("watch_stop: received bogus message %d", st.state);
+    }
+    flog("STOP event received, killing freshclam");
+    kill_freshclam();
     return 0;
 }
 
@@ -194,7 +219,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     command[sizeof(command)-1] = '\0';
 
     /* Connect to master */
-    updpipe = CreateFile("\\\\.\\pipe\\IMMUNET_AVUPDATE", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    updpipe = CreateFile("\\\\.\\pipe\\IMMUNET_AVUPDATE", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if(updpipe == INVALID_HANDLE_VALUE) {
 	flog("ERROR: failed to connect pipe");
 	flog_close();
@@ -244,7 +269,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     flog("Executing '%s'", command);
 
     /* Create STOP watcher */
-    CreateThread(NULL, 0, watch_stop, NULL, 0, &dw);
+    if(!(write_event = CreateEvent(NULL, TRUE, FALSE, NULL))) {
+	flog("ERROR: failed to create write event");
+	CloseHandle(cld_r);
+	CloseHandle(pinfo.hProcess);
+	SENDFAIL_AND_QUIT(UPD_CHECK);
+    }
+
+    if(!CreateThread(NULL, 0, watch_stop, NULL, 0, &dw)) {
+	flog("ERROR: failed to create watch_stop thread");
+	CloseHandle(cld_r);
+	CloseHandle(pinfo.hProcess);
+	CloseHandle(write_event);
+	SENDFAIL_AND_QUIT(UPD_CHECK);
+    }
 
     log_state(fstate);
     /* Spam parsing */
@@ -341,15 +379,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if(!GetExitCodeProcess(pinfo.hProcess, &dw)) {
 	CloseHandle(pinfo.hProcess);
 	flog("ERROR: failed to retrieve freshclam return code");
+	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(st.state);
     }
     CloseHandle(pinfo.hProcess);
     if(dw) {
 	flog("ERROR: freshclam exit code %u", dw);
+	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(st.state);
     }
     if((updated_files && fstate != FRESH_RELOAD) || (!updated_files && fstate != FRESH_IDLE)) {
 	flog("ERROR: log parse failure. Freshclam exit value: %u", dw);
+	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(st.state);
     }
 
@@ -362,5 +403,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     } else
 	SENDOK(UPD_NONE);
     flog_close();
+    CloseHandle(write_event);
     return 0;
 }
