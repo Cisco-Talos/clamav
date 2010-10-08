@@ -1,3 +1,7 @@
+Fri Oct  8 15:22:22 CEST 2010 (tk)
+----------------------------------
+ * libclamav/elf.c: shutdown error message (bb#2318)
+
 Fri Oct  8 14:23:24 CEST 2010 (tk)
 ----------------------------------
  * libclamav/readdb.c: fix handling of Engine attrib (bb#2297)

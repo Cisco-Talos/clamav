@@ -596,6 +596,9 @@ int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 	return -1;
     }
 
+    if(!shnum)
+	return 0;
+
     shoff = EC32(file_hdr.e_shoff, conv);
 
     elfinfo->section = (struct cli_exe_section *) cli_calloc(elfinfo->nsections, sizeof(struct cli_exe_section));
