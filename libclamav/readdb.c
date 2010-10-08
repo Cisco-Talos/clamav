@@ -1256,6 +1256,19 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	return CL_EMALFDB;
     }
 
+    if(tdb.engine) {
+	if(tdb.engine[0] > cl_retflevel()) {
+	    cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
+	    FREE_TDB(tdb);
+	    (*sigs)--;
+	    return CL_SUCCESS;
+	} else if(tdb.engine[1] < cl_retflevel()) {
+	    FREE_TDB(tdb);
+	    (*sigs)--;
+	    return CL_SUCCESS;
+	}
+    }
+
     if(!tdb.target) {
 	cli_errmsg("cli_loadldb: No target specified in TDB\n");
 	FREE_TDB(tdb);
@@ -1336,19 +1349,6 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	    if (!tdb.macro_ptids)
 		return CL_EMEM;
 	    tdb.macro_ptids[i-1] = root->ac_patterns-1;
-	}
-
-	if(tdb.engine) {
-	    if(tdb.engine[0] > cl_retflevel()) {
-		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
-		FREE_TDB(tdb);
-		(*sigs)--;
-		return CL_SUCCESS;
-	    } else if(tdb.engine[1] < cl_retflevel()) {
-		FREE_TDB(tdb);
-		(*sigs)--;
-		return CL_SUCCESS;
-	    }
 	}
     }
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
