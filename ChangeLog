@@ -1,3 +1,7 @@
+Mon Oct 11 13:49:29 CEST 2010 (tk)
+----------------------------------
+ * clamdscan: fix parsing of virus names in extended mode (bb#2311)
+
 Fri Oct  8 15:38:56 CEST 2010 (tk)
 ----------------------------------
  * clamscan/manager.c: return errors for stdin scan failures (bb#2317)
