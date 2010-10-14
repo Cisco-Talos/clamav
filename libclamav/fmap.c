@@ -207,7 +207,7 @@ static void fmap_aging(fmap_t *m) {
 
 
 static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
-    size_t readsz = 0, eintr_off, got;
+    size_t readsz = 0, eintr_off;
     char *pptr = NULL, err[256];
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
@@ -277,6 +277,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 	    eintr_off = 0;
 	    while(readsz) {
+		ssize_t got;
 		got=pread(m->fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
 
 		if(got < 0 && errno == EINTR)

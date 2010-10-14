@@ -1,3 +1,7 @@
+Thu Oct 14 16:14:01 CEST 2010 (acab)
+------------------------------------
+ * libclamav/fmap.c: properly check for pread errors (bb#2306)
+
 Thu Oct 14 16:06:06 CEST 2010 (acab)
 ------------------------------------
  * clamd: properly terminate zSTATS (bb#2286)
