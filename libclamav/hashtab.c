@@ -441,6 +441,7 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	hs->mask = initial_capacity - 1;
 	hs->count=0;
 	hs->keys = cli_malloc(initial_capacity * sizeof(*hs->keys));
+	hs->mempool = NULL;
 	if(!hs->keys) {
 		return CL_EMEM;
 	}
@@ -452,11 +453,40 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	return 0;
 }
 
+int cli_hashset_init_pool(struct cli_hashset* hs, size_t initial_capacity, uint8_t load_factor, mpool_t *mempool) {
+	if(load_factor < 50 || load_factor > 99) {
+		cli_dbgmsg(MODULE_NAME "Invalid load factor: %u, using default of 80%%\n", load_factor);
+		load_factor = 80;
+	}
+	initial_capacity = nearest_power(initial_capacity);
+	hs->limit = initial_capacity * load_factor / 100;
+	hs->capacity = initial_capacity;
+	hs->mask = initial_capacity - 1;
+	hs->count=0;
+	hs->mempool = mempool;
+	hs->keys = mpool_malloc(mempool, initial_capacity * sizeof(*hs->keys));
+	if(!hs->keys) {
+		return CL_EMEM;
+	}
+	hs->bitmap = mpool_calloc(mempool, initial_capacity >> 5, sizeof(*hs->bitmap));
+	if(!hs->bitmap) {
+		mpool_free(mempool, hs->keys);
+		return CL_EMEM;
+	}
+	return 0;
+}
+
+
 void cli_hashset_destroy(struct cli_hashset* hs)
 {
 	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
-	free(hs->keys);
-	free(hs->bitmap);
+	if(hs->mempool) {
+		mpool_free(hs->mempool, hs->keys);
+		mpool_free(hs->mempool, hs->bitmap);
+	} else {
+	    free(hs->keys);
+	    free(hs->bitmap);
+	}
 	hs->keys = hs->bitmap = NULL;
 	hs->capacity = 0;
 }
@@ -509,9 +539,13 @@ static int cli_hashset_grow(struct cli_hashset *hs)
 	 * will hash to different locations. */
 	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %u, capacity: %u\n", hs->count, hs->capacity);
 	/* create a bigger hashset */
-	if((rc = cli_hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity)) < 0) {
+
+	if(hs->mempool)
+		rc = cli_hashset_init_pool(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity, hs->mempool);
+	else
+		rc = cli_hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity);
+	if(rc < 0)
 		return rc;
-	}
 	/* and copy keys */
 	for(i=0;i < hs->capacity;i++) {
 		if(BITMAP_CONTAINS(hs->bitmap, i)) {

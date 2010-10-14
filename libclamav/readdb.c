@@ -1995,7 +1995,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(mode == MD5_MDB) { /* section MD5 */
 	    if(!db->md5_sizes_hs.capacity) {
-		    cli_hashset_init(&db->md5_sizes_hs, 65536, 80);
+		cli_hashset_init_pool(&db->md5_sizes_hs, 65536, 80, engine->mempool);
 	    }
 	    cli_hashset_addkey(&db->md5_sizes_hs, new->filesize);
 	}

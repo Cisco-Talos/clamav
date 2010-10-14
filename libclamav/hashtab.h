@@ -26,6 +26,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include "cltypes.h"
+#include "mpool.h"
 typedef long cli_element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */
@@ -117,6 +118,7 @@ void cli_map_delete(struct cli_map *m);
 struct cli_hashset {
 	uint32_t* keys;
 	uint32_t* bitmap;
+	mpool_t* mempool;
 	uint32_t capacity;
 	uint32_t mask;
 	uint32_t count;
@@ -124,6 +126,7 @@ struct cli_hashset {
 };
 
 int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t load_factor);
+int cli_hashset_init_pool(struct cli_hashset* hs, size_t initial_capacity, uint8_t load_factor, mpool_t *mempool);
 int cli_hashset_addkey(struct cli_hashset* hs, const uint32_t key);
 int cli_hashset_removekey(struct cli_hashset* hs, const uint32_t key);
 int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key);
