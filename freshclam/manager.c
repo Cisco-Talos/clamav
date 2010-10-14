@@ -182,10 +182,12 @@ static int getclientsock(const char *localip, int prot)
     return socketfd;
 }
 
+#ifdef HAVE_GETADDRINFO
 static int qcompare(const void *a, const void *b)
 {
     return (*(const struct addrinfo **) a)->ai_flags - (*(const struct addrinfo **) b)->ai_flags;
 }
+#endif
 
 static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
 {

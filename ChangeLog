@@ -1,3 +1,7 @@
+Thu Oct 14 15:36:06 CEST 2010 (acab)
+------------------------------------
+ * freshclam: undefine qcompare if HAVE_GETADDRINFO is unset (bb#2289)
+
 Mon Oct 11 13:49:29 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: fix parsing of virus names in extended mode (bb#2311)
