@@ -105,7 +105,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
 int thrmgr_group_need_terminate(jobgroup_t *group);
 void thrmgr_group_terminate(jobgroup_t *group);
 jobgroup_t *thrmgr_group_new(void);
-int thrmgr_printstats(int outfd);
+int thrmgr_printstats(int outfd, char term);
 void thrmgr_setactivetask(const char *filename, const char* command);
 void thrmgr_setactiveengine(const struct cl_engine *engine);
 

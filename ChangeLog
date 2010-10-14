@@ -1,3 +1,7 @@
+Thu Oct 14 16:06:06 CEST 2010 (acab)
+------------------------------------
+ * clamd: properly terminate zSTATS (bb#2286)
+
 Thu Oct 14 15:36:06 CEST 2010 (acab)
 ------------------------------------
  * freshclam: undefine qcompare if HAVE_GETADDRINFO is unset (bb#2289)

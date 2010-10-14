@@ -186,7 +186,7 @@ static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
 		 (unsigned)queue->item_count);
 }
 
-int thrmgr_printstats(int f)
+int thrmgr_printstats(int f, char term)
 {
 	struct threadpool_list *l;
 	unsigned cnt, pool_cnt = 0;
@@ -301,7 +301,7 @@ int thrmgr_printstats(int f)
 		mdprintf(f,"MEMSTATS: heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %.3fM pools_total %.3fM\n",
 			 pool_cnt, pool_used/(1024*1024.0), pool_total/(1024*1024.0));
 	}
-	mdprintf(f,"END\n");
+	mdprintf(f,"END%c", term);
 	pthread_mutex_unlock(&pools_lock);
 	return 0;
 }

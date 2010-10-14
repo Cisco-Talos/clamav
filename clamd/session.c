@@ -319,7 +319,7 @@ int command(client_conn_t *conn, int *virus)
 	    thrmgr_setactivetask(NULL, "STATS");
 	    if (conn->group)
 		mdprintf(desc, "%u: ", conn->id);
-	    thrmgr_printstats(desc);
+	    thrmgr_printstats(desc, conn->term);
 	    return 0;
 	case COMMAND_STREAM:
 	    thrmgr_setactivetask(NULL, "STREAM");
