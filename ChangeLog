@@ -1,3 +1,7 @@
+Fri Oct 15 16:13:27 CEST 2010 (tk)
+----------------------------------
+ * freshclam/manager.c: don't mix IPv4 and IPv6 addresses while randomizing (bb#2319)
+
 Thu Oct 14 19:43:09 CEST 2010 (acab)
 ------------------------------------
  * libclamav: add pool based hastabs so we don't frag on md5 sizes (bb#2185)

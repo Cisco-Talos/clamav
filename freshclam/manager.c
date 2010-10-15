@@ -197,6 +197,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL, *addrs[128];
 	char port_s[6], loadbal_ipaddr[46];
 	uint32_t loadbal = 1, minsucc = 0xffffffff, minfail = 0xffffffff, addrnum = 0;
+	int ipv4start = -1, ipv4end = -1;
 	struct mirdat_ip *md;
 #else
 	struct sockaddr_in name;
@@ -247,11 +248,20 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     for(rp = res; rp && addrnum < 128; rp = rp->ai_next) {
 	rp->ai_flags = cli_rndnum(1024);
 	addrs[addrnum] = rp;
+	if(rp->ai_family == AF_INET) {
+	    if(ipv4start == -1)
+		ipv4start = addrnum;
+	} else if(ipv4end == -1 && ipv4start != -1) {
+	    ipv4end = addrnum - 1;
+	}
+	if(!rp->ai_next && ipv4end == -1)
+	    ipv4end = addrnum;
 	addrnum++;
     }
-    qsort(addrs, addrnum, sizeof(struct addrinfo *), qcompare);
+    if(ipv4end != -1 && ipv4start != -1 && ipv4end - ipv4start + 1 > 1)
+	qsort(&addrs[ipv4start], ipv4end - ipv4start + 1, sizeof(struct addrinfo *), qcompare);
 
-    for(i = 0; i < addrnum; i++) {
+    for(i = 0; i < addrnum; ) {
 	    void *addr;
 
 	rp = addrs[i];
@@ -276,8 +286,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		logg("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
 
 	    ignored++;
-	    if(!loadbal || i + 1 < addrnum)
+	    if(!loadbal || i + 1 < addrnum) {
+		i++;
 		continue;
+	    }
 	}
 
 	if(mdat && loadbal) {
@@ -292,8 +304,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 			loadbal_rp = rp;
 			strncpy(loadbal_ipaddr, ipaddr, sizeof(loadbal_ipaddr));
 		    }
-		    if(i + 1 < addrnum)
+		    if(i + 1 < addrnum) {
+			i++;
 			continue;
+		    }
 		}
 	    }
 
@@ -308,6 +322,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    strncpy(ipaddr, loadbal_ipaddr, sizeof(ipaddr));
 
 	} else if(loadbal_rp == rp) {
+	    i++;
 	    continue;
 	}
 
@@ -346,6 +361,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    freeaddrinfo(res);
 	    return socketfd;
 	}
+	i++;
     }
     freeaddrinfo(res);
 
