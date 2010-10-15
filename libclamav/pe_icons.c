@@ -771,7 +771,7 @@ static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *
 static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, const char *tempd) {
     unsigned int x, y, xk, yk, i, j, *tmp;
     unsigned int ksize = side / 4, bwonly = 0;
-    unsigned int edge_avg[6], edge_x[6], edge_y[6], noedge_avg[6], noedge_x[6], noedge_y[6];
+    unsigned int edge_avg[6], edge_x[6]={0,0,0,0,0,0}, edge_y[6]={0,0,0,0,0,0}, noedge_avg[6], noedge_x[6]={0,0,0,0,0,0}, noedge_y[6]={0,0,0,0,0,0};
     double *sobel;
 
     if(!(tmp = cli_malloc(side*side*4*2)))

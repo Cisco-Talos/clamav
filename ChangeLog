@@ -1,3 +1,7 @@
+Fri Oct 15 17:48:00 CEST 2010 (acab)
+------------------------------------
+ * libclamav/pe_icons.c: make sure all ref points are initted (bb#2291)
+
 Fri Oct 15 16:13:27 CEST 2010 (tk)
 ----------------------------------
  * freshclam/manager.c: don't mix IPv4 and IPv6 addresses while randomizing (bb#2319)
