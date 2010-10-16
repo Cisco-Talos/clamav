@@ -320,6 +320,12 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 	}
 	unlink(unlinkme);
 	free(unlinkme);
+	if(nc_send(*main, "nFILDES\n", 8)) {
+	    logg("!FD scan request failed\n");
+	    close(*alt);
+	    close(*main);
+	    return 1;
+	}
     } else {
 	if(nc_send(*main, "nINSTREAM\n", 10)) {
 	    logg("!Failed to communicate with clamd\n");

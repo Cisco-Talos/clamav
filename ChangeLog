@@ -1,3 +1,7 @@
+Sat Oct 16 18:23:17 CEST 2010 (acab)
+------------------------------------
+ * clamav-milter: send FILDES early (bb#2321)
+
 Fri Oct 15 17:48:00 CEST 2010 (acab)
 ------------------------------------
  * libclamav/pe_icons.c: make sure all ref points are initted (bb#2291)

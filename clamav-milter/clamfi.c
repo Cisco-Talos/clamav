@@ -284,12 +284,6 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     }
 
     if(cf->local) {
-	if(nc_send(cf->main, "nFILDES\n", 8)) {
-	    logg("!FD scan request failed\n");
-	    nullify(ctx, cf, CF_ALT);
-	    return FailAction;
-	}
-
 	lseek(cf->alt, 0, SEEK_SET);
 
 	if(nc_sendmsg(cf->main, cf->alt) == -1) {
