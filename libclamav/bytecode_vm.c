@@ -32,10 +32,11 @@
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
+#include "bytecode_api_impl.h"
+#include "disasm-common.h"
 
 /* Enable this to catch more bugs in the RC phase */
 #define CL_BYTECODE_SAFE
-
 
 #ifdef CL_BYTECODE_SAFE
 /* These checks will also be done by the bytecode verifier, but for
@@ -70,12 +71,14 @@ static inline int bcfail(const char *msg, long a, long b,
 #endif
 #ifdef CL_DEBUG
 #define CHECK_UNREACHABLE do { cli_dbgmsg("bytecode: unreachable executed!\n"); return CL_EBYTECODE; } while(0)
+#define TRACE_PTR(ptr, s) cli_dbgmsg("bytecode trace: ptr %llx, +%x\n", ptr, s);
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
 #define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)(x));
 #define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
 #define TRACE_API(s, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %s, -> %u (%u); %u\n", s, dest, ty, stack)
 #else
 #define CHECK_UNREACHABLE return CL_EBYTECODE
+#define TRACE_PTR(ptr, s)
 #define TRACE_R(x)
 #define TRACE_W(x, w, p)
 #define TRACE_EXEC(id, dest, ty, stack)
@@ -317,6 +320,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     if ((p)&0x40000000) {\
 	unsigned ptr__ = (p)&0xbfffffff;\
 	CHECK_GT(func->numBytes, ptr__);\
+	TRACE_PTR(ptr__, asize);\
 	x = (void*)&values[ptr__];\
     } else {\
 	READP(x, p, asize)\
@@ -562,6 +566,7 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
     struct ptr_info *info;
     int32_t ptrid = ptr >> 32;
     uint32_t ptroff = (uint32_t)ptr;
+    TRACE_PTR(ptr, read_size);
     if (UNLIKELY(!ptrid)) {
 	(void)bcfail("nullptr", ptrid, 0, __FILE__, __LINE__);
 	return NULL;
@@ -621,6 +626,15 @@ static unsigned globaltypesize(uint16_t id)
 	    return 0;
     }
 }
+
+/* TODO: fix the APIs too */
+static struct {
+    cli_apicall_pointer api;
+    uint32_t override_size;
+} apisize_override[] = {
+    {(void*)cli_bcapi_disasm_x86, sizeof(struct DISASM_RESULT)},
+    {(void*)cli_bcapi_get_pe_section, sizeof(struct cli_exe_section)},
+};
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
@@ -804,11 +818,19 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			break;
 		    }
 		    case 1: {
+			unsigned i;
 			void* arg1;
-			unsigned arg2;
-			/* check that arg2 is size of arg1 */
+			unsigned arg2, arg1size;
 			READ32(arg2, inst->u.ops.ops[1]);
-			READPOP(arg1, inst->u.ops.ops[0], arg2);
+			/* check that arg2 is size of arg1 */
+			arg1size = arg2;
+			for (i=0;i<sizeof(apisize_override)/sizeof(apisize_override[0]);i++) {
+			    if (cli_apicalls1[api->idx] == apisize_override[i].api) {
+				arg1size = apisize_override[i].override_size;
+				break;
+			    }
+			}
+			READPOP(arg1, inst->u.ops.ops[0], arg1size);
 			res32 = cli_apicalls1[api->idx](ctx, arg1, arg2);
 			WRITE32(inst->dest, res32);
 			break;
@@ -833,6 +855,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			int32_t arg2, arg3, arg4, arg5;
 			void *arg1;
 			READ32(arg2, inst->u.ops.ops[1]);
+			/* check that arg2 is size of arg1 */
 			READP(arg1, inst->u.ops.ops[0], arg2);
 			READ32(arg3, inst->u.ops.ops[2]);
 			READ32(arg4, inst->u.ops.ops[3]);
@@ -870,6 +893,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			void *arg1, *arg3;
 			int32_t resp;
 			READ32(arg2, inst->u.ops.ops[1]);
+			/* check that arg2 is size of arg1 */
 			READP(arg1, inst->u.ops.ops[0], arg2);
 			READ32(arg4, inst->u.ops.ops[3]);
 			READP(arg3, inst->u.ops.ops[0], arg4);
@@ -882,6 +906,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			void *arg1;
 			int32_t resp;
 			READ32(arg2, inst->u.ops.ops[1]);
+			/* check that arg2 is size of arg1 */
 			READP(arg1, inst->u.ops.ops[0], arg2);
 			READ32(arg3, inst->u.ops.ops[2]);
 			resp = cli_apicalls9[api->idx](ctx, arg1, arg2, arg3);
