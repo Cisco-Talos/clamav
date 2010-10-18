@@ -605,6 +605,9 @@ fi
 if ${GREP-grep} elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
 	ac_cv_c_fpu_bigendian=no
 fi
+if test "$ac_cv_c_bigendian" = "universal"; then
+        ac_cv_c_fpu_bigendian=universal
+fi
 ])
 fi
 
@@ -617,6 +620,10 @@ case $ac_cv_c_fpu_bigendian in
 		;;
 	no)
 		AC_DEFINE([FPU_WORDS_BIGENDIAN], 0, [FPU byte ordering is little endian])
+                have_autoitea06="yes"
+		;;
+	universal)
+	        AC_DEFINE([FPU_WORDS_BIGENDIAN], [WORDS_BIGENDIAN], [FPU byte ordering matches CPU])
                 have_autoitea06="yes"
 		;;
 	*)

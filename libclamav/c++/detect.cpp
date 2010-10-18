@@ -116,8 +116,10 @@ void cli_detect_env_jit(struct cli_environment *env)
 	    earch = arch_unknown;
 	    break;
     }
+#ifndef AC_APPLE_UNIVERSAL_BUILD
     if (conflicts)
 	warn_assumptions("CPU architecture", env->arch, earch);
+#endif
     if (earch != arch_unknown)
 	env->arch = earch;
 

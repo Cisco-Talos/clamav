@@ -2064,7 +2064,11 @@ int bytecode_init(void)
 
     // If we have a native target, initialize it to ensure it is linked in and
     // usable by the JIT.
+#ifndef AC_APPLE_UNIVERSAL_BUILD
     InitializeNativeTarget();
+#else
+    InitializeAllTargets();
+#endif
 
     if (!llvm_is_multithreaded()) {
 	//TODO:cli_dbgmsg

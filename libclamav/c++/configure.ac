@@ -25,6 +25,7 @@ AM_SILENT_RULES([yes])
 
 cxxset=${CXXFLAGS+set}
 AC_PROG_CXX
+AC_C_BIGENDIAN
 
 if test "$cxxset" != set; then
 # don't use the default -O2 -g because -g bloats the C++ binaries too much
@@ -209,6 +210,10 @@ if test "$enable_alltargets" = "yes"; then
 	build_x86=yes
 	build_ppc=yes
 	build_arm=yes
+fi
+if test "$ac_cv_c_bigendian" = "universal"; then
+    build_x86 = yes
+    build_ppc = yes
 fi
 AM_CONDITIONAL(BUILD_X86, [test "$build_x86" = "yes"])
 AM_CONDITIONAL(BUILD_PPC, [test "$build_ppc" = "yes"])
