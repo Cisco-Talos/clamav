@@ -165,7 +165,7 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     }
     ctx->numParams = 0;
     ctx->funcid = 0;
-    ctx->file_size = 0;
+    /* don't touch fmap, file_size, and hooks, sections, ctx, timeout, pdf* */
     ctx->off = 0;
     ctx->written = 0;
     ctx->jsnormwritten = 0;
