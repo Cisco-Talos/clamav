@@ -468,6 +468,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 		    stop = CL_BREAK;\
 		    continue;\
 		}\
+		stackid = ptr_register_stack(&ptrinfos, values, 0, func->numBytes)>>32;\
 		inst = &bb->insts[bb_inst];\
 		break;\
 	    }
