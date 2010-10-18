@@ -1844,7 +1844,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     return ret;
 }
 
-static void matchsig(const char *sig, int fd)
+static void matchsig(const char *sig, const char *offset, int fd)
 {
 	struct cl_engine *engine;
         struct cli_ac_result *acres = NULL, *res;
@@ -1900,7 +1900,8 @@ static void matchsig(const char *sig, int fd)
 	res = res->next;
     }
     if(matches) {
-	mprintf("MATCH: ** YES ** (%u %s:", matches, matches > 1 ? "matches at offsets" : "match at offset");
+	/* TODO: check offsets automatically */
+	mprintf("MATCH: ** YES%s ** (%u %s:", offset ? "/CHECK OFFSET" : "",  matches, matches > 1 ? "matches at offsets" : "match at offset");
 	res = acres;
 	while(res) {
 	    mprintf(" %u", (unsigned int) res->offset);
@@ -2329,7 +2330,7 @@ static int decodesig(char *sig, int fd)
 		decodehex(pt ? pt : tokens[3 + i]);
 	    } else {
 		mprintf(" +-> ");
-		matchsig(pt ? pt : tokens[3 + i], fd);
+		matchsig(pt ? pt : tokens[3 + i], pt ? tokens[3 + i] : NULL, fd);
 	    }
 	}
     } else if(strchr(sig, ':')) { /* ndb */
@@ -2390,7 +2391,7 @@ static int decodesig(char *sig, int fd)
 	    mprintf("DECODED SIGNATURE:\n");
 	    decodehex(tokens[3]);
 	} else {
-	    matchsig(tokens[3], fd);
+	    matchsig(tokens[3], strcmp(tokens[2], "*") ? tokens[2] : NULL, fd);
 	}
     } else if((pt = strchr(sig, '='))) {
 	*pt++ = 0;
@@ -2399,7 +2400,7 @@ static int decodesig(char *sig, int fd)
 	    mprintf("DECODED SIGNATURE:\n");
 	    decodehex(pt);
 	} else {
-	    matchsig(pt, fd);
+	    matchsig(pt, NULL, fd);
 	}
     } else {
 	mprintf("decodesig: Not supported signature format\n");
