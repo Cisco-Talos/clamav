@@ -84,13 +84,13 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
-    if (testmode)
+    if (testmode && have_clamjit)
 	engine->bytecode_mode = CL_BYTECODE_MODE_TEST;
 
     rc = cli_bytecode_prepare2(engine, &bcs, BYTECODE_ENGINE_MASK);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
-    if (have_clamjit && !nojit && nojit != -1) {
+    if (have_clamjit && !nojit && nojit != -1 && !testmode) {
 	fail_unless(bc.state == bc_jit, "preparing for JIT failed");
     }
 
@@ -536,7 +536,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_pdf_jit);
     tcase_add_test(tc_cli_arith, test_bswap_jit);
     tcase_add_test(tc_cli_arith, test_inflate_jit);
-    tcase_add_test(tc_cli_arith, test_retmagic_jit);
 
     tcase_add_test(tc_cli_arith, test_arith_int);
     tcase_add_test(tc_cli_arith, test_apicalls_int);
