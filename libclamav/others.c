@@ -67,6 +67,7 @@
 #include "default.h"
 #include "scanners.h"
 #include "bytecode.h"
+#include "bytecode_api_impl.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
