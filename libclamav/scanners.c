@@ -1636,6 +1636,7 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
 	char *buff;
 	char *tmpname;
 	fmap_t *map = *ctx->fmap;
+	unsigned int corrupted_input;
 
     tmpname = cli_gentemp(ctx->engine->tmpdir);
     if(!tmpname)
@@ -1686,7 +1687,11 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
 
     ctx->recursion++;
     lseek(fd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
+    corrupted_input = ctx->corrupted_input;
+    ctx->corrupted_input = 1;
+    ret = cli_magic_scandesc(fd, ctx);
+    ctx->corrupted_input = corrupted_input;
+    if(ret == CL_VIRUS) {
 	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
 	close(fd);
 	if(!ctx->engine->keeptmp) {
