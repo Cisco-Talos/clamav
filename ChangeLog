@@ -1,3 +1,7 @@
+Mon Oct 18 11:10:14 CEST 2010 (tk)
+----------------------------------
+ * libclamav/others.h: bump f-level
+
 Mon Oct 18 11:27:16 EEST 2010 (edwin)
 -------------------------------------
  * configure: fix bytecode and autoit for Apple-style universal builds (bb #2030)
