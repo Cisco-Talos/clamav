@@ -225,6 +225,8 @@ struct cli_bc_ctx {
     const struct cli_environment *env;
     unsigned bytecode_disable_status;
     cli_events_t *bc_events;
+    int on_jit;
+    int no_diff;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
