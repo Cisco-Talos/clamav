@@ -1,3 +1,7 @@
+Mon Oct 18 11:27:16 EEST 2010 (edwin)
+-------------------------------------
+ * configure: fix bytecode and autoit for Apple-style universal builds (bb #2030)
+
 Mon Oct 18 10:46:25 EEST 2010 (edwin)
 -------------------------------------
  * libclamav: test mode for bytecode (bb #2101)
