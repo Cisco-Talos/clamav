@@ -1,3 +1,7 @@
+Mon Oct 18 13:46:59 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/builtin_bytecodes.h: disable JIT on CPUs without CMOV (bb #2327).
+
 Mon Oct 18 12:52:25 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: keep parsing after %%EOF (bb #2264).
