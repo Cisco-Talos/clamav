@@ -896,7 +896,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 			/* check that arg2 is size of arg1 */
 			READP(arg1, inst->u.ops.ops[0], arg2);
 			READ32(arg4, inst->u.ops.ops[3]);
-			READP(arg3, inst->u.ops.ops[0], arg4);
+			READP(arg3, inst->u.ops.ops[2], arg4);
 			resp = cli_apicalls8[api->idx](ctx, arg1, arg2, arg3, arg4);
 			WRITE32(inst->dest, resp);
 			break;
