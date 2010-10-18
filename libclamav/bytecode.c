@@ -779,6 +779,13 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		return CL_EMALFDB;
 	}
     }
+    for (i=(BC_START_TID - 65);i<bc->num_types-1;i++) {
+	struct cli_bc_type *ty = &bc->types[i];
+	if (ty->kind == DArrayType) {
+	    ty->size = ty->numElements*typesize(bc, ty->containedTypes[0]);
+	    ty->align = typealign(bc, ty->containedTypes[0]);
+	}
+    }
     return CL_SUCCESS;
 }
 
@@ -1959,6 +1966,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
 	    align = typealign(bc, ty);
+	    assert(typesize(bc, ty));
 	    assert(align);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;
