@@ -50,6 +50,12 @@
 #include "str.h"
 #include "filetypes.h"
 
+#define EV ctx->bc_events
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define  API_MISUSE() cli_event_error_str(EV, "API misuse @" TOSTRING(__LINE__ ))
+
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
@@ -63,18 +69,24 @@ uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
 int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 {
     int n;
-    if (!ctx->fmap)
+    if (!ctx->fmap) {
+	API_MISUSE();
 	return -1;
+    }
     if (size < 0 || size > CLI_MAX_ALLOCATION) {
 	cli_warnmsg("bytecode: negative read size: %d\n", size);
+	API_MISUSE();
 	return -1;
     }
-/*    cli_dbgmsg("read data at %d\n", ctx->off);*/
     n = fmap_readn(ctx->fmap, data, ctx->off, size);
     if (n <= 0) {
-	cli_dbgmsg("bcapi_read: fmap_readn failed\n");
+	cli_dbgmsg("bcapi_read: fmap_readn failed (requested %d)\n", size);
+	cli_event_count(EV, BCEV_READ_ERR);
 	return n;
     }
+    cli_event_int(EV, BCEV_OFFSET, ctx->off);
+    cli_event_fastdata(EV, BCEV_READ, data, size);
+    //cli_event_data(EV, BCEV_READ, data, n);
     ctx->off += n;
     return n;
 }
@@ -84,6 +96,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
     off_t off;
     if (!ctx->fmap) {
 	cli_dbgmsg("bcapi_seek: no fmap\n");
+	API_MISUSE();
 	return -1;
     }
     switch (whence) {
@@ -97,6 +110,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 	    off = ctx->file_size + pos;
 	    break;
 	default:
+	    API_MISUSE();
 	    cli_dbgmsg("bcapi_seek: invalid whence value\n");
 	    return -1;
     }
@@ -105,18 +119,21 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 		   off, ctx->file_size);
 	return -1;
     }
+    cli_event_int(EV, BCEV_OFFSET, off);
     ctx->off = off;
     return off;
 }
 
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, uint32_t len)
 {
+    cli_event_fastdata(EV, BCEV_DBG_STR, str, strlen(str));
     cli_dbgmsg("bytecode debug: %s\n", str);
     return 0;
 }
 
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
 {
+    cli_event_int(EV, BCEV_DBG_INT, a);
     if (!cli_debug_flag)
 	return 0;
     return fprintf(stderr, "%d", a);
@@ -136,8 +153,10 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     int n;
     const unsigned char *buf;
     const unsigned char* next;
-    if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len)
+    if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len) {
+	API_MISUSE();
 	return -1;
+    }
     /* 32 should be longest instr we support decoding.
      * When we'll support mmx/sse instructions this should be updated! */
     n = MIN(32, ctx->fmap->len - ctx->off);
@@ -145,6 +164,7 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     next = cli_disasm_one(buf, n, res, 0);
     if (!next) {
 	cli_dbgmsg("bcapi_disasm: failed\n");
+	cli_event_count(EV, BCEV_DISASM_FAIL);
 	return -1;
     }
     return ctx->off + next - buf;
@@ -156,33 +176,42 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
  * override the limit if we need it in a special situation */
 int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
 {
+    char err[128];
     int32_t res;
+
     cli_ctx *cctx = (cli_ctx*)ctx->ctx;
     if (len < 0) {
 	cli_warnmsg("Bytecode API: called with negative length!\n");
+	API_MISUSE();
 	return -1;
     }
     if (!ctx->outfd) {
 	ctx->tempfile = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
 	if (!ctx->tempfile) {
 	    cli_dbgmsg("Bytecode API: Unable to allocate memory for tempfile\n");
+	    cli_event_error_oom(EV, 0);
 	    return -1;
 	}
 	ctx->outfd = open(ctx->tempfile, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 	if (ctx->outfd == -1) {
 	    ctx->outfd = 0;
-	    cli_warnmsg("Bytecode API: Can't create file %s\n", ctx->tempfile);
+	    cli_warnmsg("Bytecode API: Can't create file %s: %s\n", ctx->tempfile, cli_strerror(errno, err, sizeof(err)));
+	    cli_event_error_str(EV, "cli_bcapi_write: Can't create temporary file");
 	    free(ctx->tempfile);
 	    return -1;
 	}
 	cli_dbgmsg("bytecode opened new tempfile: %s\n", ctx->tempfile);
     }
+
+    cli_event_fastdata(ctx->bc_events, BCEV_WRITE, data, len);
     if (cli_checklimits("bytecode api", cctx, ctx->written + len, 0, 0))
 	return -1;
     res = cli_writen(ctx->outfd, data, len);
     if (res > 0) ctx->written += res;
-    if (res == -1)
-	cli_dbgmsg("Bytecode API: write failed: %d\n", errno);
+    if (res == -1) {
+	cli_warnmsg("Bytecode API: write failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+	cli_event_error_str(EV, "cli_bcapi_write: write failed");
+    }
     return res;
 }
 
@@ -306,8 +335,9 @@ static inline const char* cli_memmem(const char *haystack, unsigned hlen,
 {
     const char *p;
     unsigned char c;
-    if (!needle || !haystack)
+    if (!needle || !haystack) {
 	return NULL;
+    }
     c = *needle++;
     if (nlen == 1)
 	return memchr(haystack, c, hlen);
@@ -331,6 +361,7 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
     fmap_t *map = ctx->fmap;
     if (!map || len <= 0) {
 	cli_dbgmsg("bcapi_file_find preconditions not met\n");
+	API_MISUSE();
 	return -1;
     }
     return cli_bcapi_file_find_limit(ctx, data, len, map->len);
@@ -345,8 +376,12 @@ int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx , const uint8_t* data, 
 
     if (!map || len > sizeof(buf)/4 || len <= 0 || limit <= 0) {
 	cli_dbgmsg("bcapi_file_find_limit preconditions not met\n");
+	API_MISUSE();
 	return -1;
     }
+
+    cli_event_int(EV, BCEV_OFFSET, off);
+    cli_event_fastdata(EV, BCEV_FIND, data, len);
     for (;;) {
 	const char *p;
 	int32_t readlen = sizeof(buf);
@@ -373,6 +408,7 @@ int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off)
 	cli_dbgmsg("bcapi_file_byteat: no fmap\n");
 	return -1;
     }
+    cli_event_int(EV, BCEV_OFFSET, off);
     if (fmap_readn(ctx->fmap, &c, off, 1) != 1) {
 	cli_dbgmsg("bcapi_file_byteat: fmap_readn failed at %u\n", off);
 	return -1;
@@ -382,20 +418,25 @@ int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off)
 
 uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
 {
+    void *v;
 #if USE_MPOOL
     if (!ctx->mpool) {
 	ctx->mpool = mpool_create();
 	if (!ctx->mpool) {
 	    cli_dbgmsg("bytecode: mpool_create failed!\n");
+	    cli_event_error_oom(EV, 0);
 	    return NULL;
 	}
     }
-    return mpool_malloc(ctx->mpool, size);
+    v = mpool_malloc(ctx->mpool, size);
 #else
     /* TODO: implement using a list of pointers we allocated! */
     cli_errmsg("cli_bcapi_malloc not implemented for systems without mmap yet!\n");
-    return cli_malloc(size);
+    v = cli_malloc(size);
 #endif
+    if (!v)
+	cli_event_error_oom(EV, size);
+    return v;
 }
 
 int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section* section, uint32_t num)
@@ -414,16 +455,19 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
     int32_t res, remaining, tofill;
     if (!buf || !buflen || buflen > CLI_MAX_ALLOCATION || filled > buflen) {
 	cli_dbgmsg("fill_buffer1\n");
+	API_MISUSE();
 	return -1;
     }
     if (ctx->off >= ctx->file_size) {
 	cli_dbgmsg("fill_buffer2\n");
+	API_MISUSE();
 	return 0;
     }
     remaining = filled - pos;
     if (remaining) {
 	if (!CLI_ISCONTAINED(buf, buflen, buf+pos, remaining)) {
 	    cli_dbgmsg("fill_buffer3\n");
+	    API_MISUSE();
 	    return -1;
 	}
 	memmove(buf, buf+pos, remaining);
@@ -431,11 +475,13 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
     tofill = buflen - remaining;
     if (!CLI_ISCONTAINED(buf, buflen, buf+remaining, tofill)) {
 	cli_dbgmsg("fill_buffer4\n");
+	API_MISUSE();
 	return -1;
     }
     res = cli_bcapi_read(ctx, buf+remaining, tofill);
     if (res <= 0) {
 	cli_dbgmsg("fill_buffer5\n");
+	API_MISUSE();
 	return res;
     }
     return remaining + res;
@@ -445,6 +491,8 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 {
     cli_ctx *cctx;
     int res = -1;
+
+    cli_event_count(EV, BCEV_EXTRACTED);
     cli_dbgmsg("previous tempfile had %u bytes\n", ctx->written);
     if (!ctx->written)
 	return 0;
@@ -489,6 +537,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 
     if ((radix != 10 && radix != 16) || !ctx->fmap)
 	return -1;
+    cli_event_int(EV, BCEV_OFFSET, ctx->off);
     while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
 	for (i=0;i<BUF;i++) {
 	    if (p[i] >= '0' && p[i] <= '9') {
@@ -510,8 +559,10 @@ int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
 {
     unsigned  n = ctx->nhashsets+1;
     struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets)*n);
-    if (!s)
+    if (!s) {
+	cli_event_error_oom(EV, 0);
 	return -1;
+    }
     ctx->hashsets = s;
     ctx->nhashsets = n;
     s = &s[n-1];
@@ -521,8 +572,10 @@ int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
 
 static struct cli_hashset *get_hashset(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (id < 0 || id >= ctx->nhashsets || !ctx->hashsets)
+    if (id < 0 || id >= ctx->nhashsets || !ctx->hashsets) {
+	API_MISUSE();
 	return NULL;
+    }
     return &ctx->hashsets[id];
 }
 
@@ -991,8 +1044,12 @@ int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
 			 const uint8_t*n, int32_t ns)
 {
     const uint8_t *s;
-    if (!h || !n || hs < 0 || ns < 0)
+    if (!h || !n || hs < 0 || ns < 0) {
+	API_MISUSE();
 	return -1;
+    }
+    cli_event_fastdata(EV, BCEV_MEM_1, h, hs);
+    cli_event_fastdata(EV, BCEV_MEM_2, n, ns);
     s = (const uint8_t*) cli_memstr((const char*)h, hs, (const char*)n, ns);
     if (!s)
 	return -1;
@@ -1035,6 +1092,7 @@ uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t*
 {
     if (!s || len <= 0)
 	return -1;
+    cli_event_fastdata(EV, BCEV_DBG_STR, s, len);
     cli_dbgmsg("bytecode debug: %.*s", len, s);
     return 0;
 }
