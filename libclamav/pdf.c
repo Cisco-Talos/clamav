@@ -911,14 +911,16 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    q++;
 	    dict_length--;
 	    if (*q == '#') {
-		cli_hex2str_to(q+1, pdfname+i, 2);
+		if (cli_hex2str_to(q+1, pdfname+i, 2) == -1)
+		    break;
 		q += 2;
 		dict_length -= 2;
 		escapes = 1;
 		continue;
 	    }
 	    if (*q == ' ' || *q == '\t' || *q == '\r' || *q == '\n' ||
-		*q == '/' || *q == '>' || *q == ']' || *q == '[' || *q == '<')
+		*q == '/' || *q == '>' || *q == ']' || *q == '[' || *q == '<'
+		|| *q == '(')
 		break;
 	    pdfname[i] = *q;
 	}
