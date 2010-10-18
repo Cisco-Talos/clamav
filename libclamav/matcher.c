@@ -532,8 +532,12 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 	    }
 
 	    if(root->ac_lsigtable[i]->tdb.handlertype) {
-		if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS)
+		ctx->recursion++;
+		if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
+		    ctx->recursion--;
 		    return CL_VIRUS;
+		}
+		ctx->recursion--;
 		continue;
 	    }
 

@@ -1,3 +1,7 @@
+Mon Oct 18 15:52:47 CEST 2010 (tk)
+----------------------------------
+ * libclamav/matcher.c: fix stack smash with HandlerType (bb#2298)
+
 Mon Oct 18 11:30:01 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: fix name parsing in normal mode (bb#2328)
