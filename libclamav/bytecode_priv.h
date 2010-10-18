@@ -31,6 +31,7 @@
 #include "fmap.h"
 #include "mpool.h"
 #include "hashtab.h"
+#include "events.h"
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -137,6 +138,28 @@ struct bc_jsnorm {
     int32_t from;
 };
 
+enum bc_events {
+    BCEV_VIRUSNAME,
+    BCEV_EXEC_RETURNVALUE,
+    BCEV_WRITE,
+    BCEV_OFFSET,
+    BCEV_READ,
+    BCEV_DBG_STR,
+    BCEV_DBG_INT,
+    BCEV_MEM_1,
+    BCEV_MEM_2,
+    BCEV_FIND,
+    BCEV_EXTRACTED,
+    BCEV_EXEC_TIME,
+    /* API failures (that are not serious), count must be 0 for testmode */
+    BCEV_API_WARN_BEGIN,
+    BCEV_READ_ERR,
+    BCEV_DISASM_FAIL,
+    BCEV_API_WARN_END,
+    /* real errors (write failure) are reported via cli_event_error_str */
+    BCEV_LASTEVENT
+};
+
 struct cli_bc_ctx {
     uint8_t timeout;/* must be first byte in struct! */
     uint16_t funcid;
@@ -201,6 +224,7 @@ struct cli_bc_ctx {
     unsigned extracted_file_input;
     const struct cli_environment *env;
     unsigned bytecode_disable_status;
+    cli_events_t *bc_events;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

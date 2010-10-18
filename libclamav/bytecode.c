@@ -1559,11 +1559,52 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     return CL_SUCCESS;
 }
 
+static struct {
+    enum bc_events id;
+    const char *name;
+    enum ev_type type;
+    enum multiple_handling multiple;
+} bc_events[] = {
+    {BCEV_VIRUSNAME, "virusname", ev_string, multiple_last},
+    {BCEV_EXEC_RETURNVALUE, "returnvalue", ev_int, multiple_last},
+    {BCEV_WRITE, "bcapi_write", ev_data_fast, multiple_sum},
+    {BCEV_OFFSET, "read offset", ev_int, multiple_sum},
+    {BCEV_READ, "read data", ev_data_fast, multiple_sum},
+    //{BCEV_READ, "read data", ev_data, multiple_concat},
+    {BCEV_DBG_STR, "debug message", ev_data_fast, multiple_sum},
+    {BCEV_DBG_INT, "debug int", ev_int, multiple_sum},
+    {BCEV_MEM_1, "memmem 1", ev_data_fast, multiple_sum},
+    {BCEV_MEM_2, "memmem 2", ev_data_fast, multiple_sum},
+    {BCEV_FIND, "find", ev_data_fast, multiple_sum},
+    {BCEV_EXTRACTED, "extracted files", ev_int, multiple_sum},
+    {BCEV_READ_ERR, "read errors", ev_int, multiple_sum},
+    {BCEV_DISASM_FAIL, "disasm fails", ev_int, multiple_sum},
+    {BCEV_EXEC_TIME, "bytecode execute", ev_time, multiple_sum}
+};
+
+static int register_events(cli_events_t *ev)
+{
+    unsigned i;
+    for (i=0;i<sizeof(bc_events)/sizeof(bc_events[0]);i++) {
+	if (cli_event_define(ev, bc_events[i].id, bc_events[i].name, bc_events[i].type,
+			     bc_events[i].multiple) == -1)
+	    return -1;
+    }
+    return 0;
+}
+
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     int ret;
     struct cli_bc_inst inst;
     struct cli_bc_func func;
+    cli_events_t *jit_ev = NULL, *interp_ev = NULL;
+
+    int test_mode = 0;
+    cli_ctx *cctx =(cli_ctx*)ctx->ctx;
+    if (cctx && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+	test_mode = 1;
+
     if (!ctx || !ctx->bc || !ctx->func)
 	return CL_ENULLARG;
     if (ctx->numParams && (!ctx->values || !ctx->operands))
@@ -1578,7 +1619,18 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
     }
     ctx->env = &bcs->env;
     context_safe(ctx);
-    if (bc->state == bc_interp) {
+    if (test_mode) {
+	jit_ev = cli_events_new(BCEV_LASTEVENT);
+	interp_ev = cli_events_new(BCEV_LASTEVENT);
+	if (!jit_ev || !interp_ev)
+	    return CL_EMEM;
+	if (register_events(jit_ev) == -1 ||
+	    register_events(interp_ev) == -1) {
+	    return CL_EBYTECODE_TESTFAIL;
+	}
+    }
+    if (bc->state == bc_interp || test_mode) {
+	ctx->bc_events = interp_ev;
 	memset(&func, 0, sizeof(func));
 	func.numInsts = 1;
 	func.numValues = 1;
@@ -1594,16 +1646,76 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.funcid = ctx->funcid;
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
-	cli_dbgmsg("Bytecode: executing in interpeter mode\n");
+	cli_dbgmsg("Bytecode %u: executing in interpeter mode\n", bc->id);
+
+	cli_event_time_start(interp_ev, BCEV_EXEC_TIME);
 	ret = cli_vm_execute(ctx->bc, ctx, &func, &inst);
-    } else {
-	cli_dbgmsg("Bytecode: executing in JIT mode\n");
-	ret = cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
+	cli_event_time_stop(interp_ev, BCEV_EXEC_TIME);
+
+	cli_event_int(interp_ev, BCEV_EXEC_RETURNVALUE, ret);
+	cli_event_string(interp_ev, BCEV_VIRUSNAME, ctx->virname);
+
+	/* need to be called here to catch any extracted but not yet scanned files
+	*/
+	if (ctx->outfd)
+	    cli_bcapi_extract_new(ctx, -1);
     }
-    /* need to be called here to catch any extracted but not yet scanned files
-     */
-    if (ctx->outfd)
-	cli_bcapi_extract_new(ctx, -1);
+    if (bc->state == bc_jit || test_mode) {
+	if (test_mode) {
+	    ctx->off = 0;
+	}
+	ctx->bc_events = jit_ev;
+	cli_dbgmsg("Bytecode %u: executing in JIT mode\n", bc->id);
+
+	cli_event_time_start(jit_ev, BCEV_EXEC_TIME);
+	ret = cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
+	cli_event_time_stop(jit_ev, BCEV_EXEC_TIME);
+
+	cli_event_int(jit_ev, BCEV_EXEC_RETURNVALUE, ret);
+	cli_event_string(jit_ev, BCEV_VIRUSNAME, ctx->virname);
+
+	/* need to be called here to catch any extracted but not yet scanned files
+	*/
+	if (ctx->outfd)
+	    cli_bcapi_extract_new(ctx, -1);
+    }
+
+    if (test_mode) {
+	unsigned interp_errors = cli_event_errors(interp_ev);
+	unsigned jit_errors = cli_event_errors(jit_ev);
+	unsigned interp_warns = 0, jit_warns = 0;
+	int ok = 1;
+	enum bc_events evid;
+
+	if (interp_errors || jit_errors) {
+	    cli_infomsg(cctx, "bytecode %d encountered %u JIT and %u interpreter errors\n",
+			bc->id, interp_errors, jit_errors);
+	    ok = 0;
+	}
+	if (cli_event_diff_all(interp_ev, jit_ev, NULL)) {
+	    cli_infomsg(cctx, "bytecode %d execution different with JIT and interpreter, see --debug for details\n",
+			bc->id);
+	    ok = 0;
+	}
+	for (evid=BCEV_API_WARN_BEGIN+1;evid < BCEV_API_WARN_END;evid++) {
+	    union ev_val v;
+	    uint32_t count = 0;
+	    cli_event_get(interp_ev, evid, &v, &count);
+	    interp_warns += count;
+	    count = 0;
+	    cli_event_get(jit_ev, evid, &v, &count);
+	    jit_warns += count;
+	}
+	if (interp_warns || jit_warns) {
+	    cli_infomsg(cctx, "bytecode %d encountered %u JIT and %u interpreter warnings\n",
+			bc->id, interp_warns, jit_warns);
+	    ok = 0;
+	}
+	/*cli_event_debug(jit_ev, BCEV_EXEC_TIME);
+	cli_event_debug(interp_ev, BCEV_EXEC_TIME);*/
+	if (!ok)
+	    return CL_EBYTECODE_TESTFAIL;
+    }
     return ret;
 }
 
@@ -2361,6 +2473,10 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	    cli_errmsg("Bytecode: JIT required, but not all bytecodes could be prepared with JIT\n");
 	    return CL_EMALFDB;
 	}
+	if (rc && engine->bytecode_mode == CL_BYTECODE_MODE_TEST) {
+	    cli_errmsg("Bytecode: Test mode, but not all bytecodes could be prepared with JIT\n");
+	    return CL_EBYTECODE_TESTFAIL;
+	}
     } else {
 	cli_bytecode_done_jit(bcs, 0);
     }
@@ -2382,7 +2498,8 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	struct cli_bc *bc = &bcs->all_bcs[i];
 	if (bc->state == bc_jit) {
 	    jitcount++;
-	    continue;
+	    if (engine->bytecode_mode != CL_BYTECODE_MODE_TEST)
+		continue;
 	}
 	if (bc->state == bc_interp) {
 	    interp++;
@@ -2397,8 +2514,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	interp++;
     }
     cli_dbgmsg("Bytecode: %u bytecode prepared with JIT, "
-	       "%u prepared with interpreter, %u failed\n", jitcount, interp,
-	       bcs->count - jitcount - interp);
+	       "%u prepared with interpreter, %u total\n", jitcount, interp, bcs->count);
     return CL_SUCCESS;
 }
 
@@ -2468,7 +2584,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
-	cli_warnmsg("Bytcode failed to run: %s\n", cl_strerror(ret));
+	cli_warnmsg("Bytcode %u failed to run: %s\n", bc->id, cl_strerror(ret));
 	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
@@ -2496,11 +2612,11 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
     int ret;
-    unsigned executed = 0, breakflag = 0;
+    unsigned executed = 0, breakflag = 0, errorflag = 0;
 
-    cli_bytecode_context_setfile(ctx, map);
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
     /* restore match counts */
+    cli_bytecode_context_setfile(ctx, map);
     ctx->hooks.match_counts = ctx->lsigcnt;
     ctx->hooks.match_offsets = ctx->lsigoff;
     for (i=0;i < hooks_cnt;i++) {
@@ -2515,7 +2631,8 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
 	executed++;
 	if (ret != CL_SUCCESS) {
-	    cli_warnmsg("Bytecode failed to run: %s\n", cl_strerror(ret));
+	    cli_warnmsg("Bytecode %u failed to run: %s\n", bc->id, cl_strerror(ret));
+	    errorflag = 1;
 	    continue;
 	}
 	if (ctx->virname) {
@@ -2569,6 +2686,8 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
     else
 	cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
+    if (errorflag && cctx && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+	return CL_EBYTECODE_TESTFAIL;
     return breakflag ? CL_BREAK : CL_CLEAN;
 }
 

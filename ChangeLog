@@ -1,3 +1,7 @@
+Mon Oct 18 10:46:25 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav: test mode for bytecode (bb #2101)
+
 Sat Oct 16 18:23:17 CEST 2010 (acab)
 ------------------------------------
  * clamav-milter: send FILDES early (bb#2321)
