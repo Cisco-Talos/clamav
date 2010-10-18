@@ -1340,9 +1340,9 @@ int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, u
 	if (!isdigit(lhs[i]) || !isdigit(rhs[j]))
 	    return lhs[i] < rhs[j] ? -1 : 1;
 	while (isdigit(lhs[i]) && i < lhs_len)
-	    li = 10*li + (lhs[i] - '0');
+	    li = 10*li + (lhs[i++] - '0');
 	while (isdigit(rhs[j]) && j < rhs_len)
-	    ri = 10*ri + (rhs[j] - '0');
+	    ri = 10*ri + (rhs[j++] - '0');
 	if (li < ri)
 	    return -1;
 	if (li > ri)

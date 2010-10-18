@@ -237,6 +237,8 @@ static void print_platform(struct cli_environment *env)
     }
 #endif
 
+    if (strcmp(ZLIB_VERSION, zlibVersion()))
+	printf("WARNING: zlib version mismatch: %s (%s)\n", ZLIB_VERSION, zlibVersion());
 #ifdef ZLIB_VERNUM
     printf("zlib version: %s (%s), compile flags: %02lx\n",
 	   ZLIB_VERSION, zlibVersion(), zlibCompileFlags());

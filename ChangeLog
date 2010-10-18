@@ -1,3 +1,7 @@
+Mon Oct 18 14:16:11 EEST 2010 (edwin)
+-------------------------------------
+ * clamconf/clamconf.c, libclamav/others.c: warn about zlib version mismatches (bb #2072)
+
 Mon Oct 18 13:55:17 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/pdf.c: bb #2295
