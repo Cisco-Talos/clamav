@@ -327,6 +327,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 		logg("Failed to parse reply\n");
 		return -1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
+		*(eol - 7) = 0;
 		*printok = 0;
 		infected++;
 		if(filename) {
