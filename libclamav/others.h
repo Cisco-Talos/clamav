@@ -427,6 +427,14 @@ void cli_errmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
 void cli_errmsg(const char *str, ...);
 #endif
 
+#ifdef __GNUC__
+void cli_infomsg(const cli_ctx* ctx, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#else
+void cli_infomsg(const cli_ctx* ctx, const char *fmt, ...);
+#endif
+
+void cli_logg_setup(const cli_ctx* ctx);
+
 /* tell compiler about branches that are very rarely taken,
  * such as debug paths, and error paths */
 #if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)

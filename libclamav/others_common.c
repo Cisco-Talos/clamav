@@ -105,6 +105,11 @@ void cli_dbgmsg_internal(const char *str, ...)
     MSGCODE("LibClamAV debug: ");
 }
 
+void cli_infomsg(const cli_ctx *ctx, const char *str, ...)
+{
+    MSGCODE("LibClamAV info: ");
+}
+
 int cli_matchregex(const char *str, const char *regex)
 {
 	regex_t reg;
