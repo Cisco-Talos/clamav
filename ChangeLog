@@ -1,3 +1,7 @@
+Mon Oct 18 13:55:17 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: bb #2295
+
 Mon Oct 18 13:46:59 EEST 2010 (edwin)
 -------------------------------------
  * libclamav/builtin_bytecodes.h: disable JIT on CPUs without CMOV (bb #2327).
