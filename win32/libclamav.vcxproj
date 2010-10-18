@@ -166,6 +166,7 @@
     <ResourceCompile Include="res\libclamav.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\events.c"/>
     <ClCompile Include="..\libclamav\bytecode_detect.c"/>
     <ClCompile Include="..\libclamav\regex_list.c"/>
     <ClCompile Include="..\libclamav\rtf.c"/>

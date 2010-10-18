@@ -158,7 +158,8 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
 	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
 	cache.h bytecode_detect.c bytecode_detect.h \
-	builtin_bytecodes.h bignum.c bignum_class.h sha1.c sha1.h
+	builtin_bytecodes.h events.c events.h bignum.c bignum_class.h \
+	sha1.c sha1.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 @BUILD_SHA1_TRUE@am__objects_2 = libclamav_la-sha1.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
@@ -210,7 +211,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-macho.lo libclamav_la-ishield.lo \
 	libclamav_la-bytecode_api.lo libclamav_la-bytecode_api_decl.lo \
 	libclamav_la-cache.lo libclamav_la-bytecode_detect.lo \
-	$(am__objects_1) $(am__objects_2)
+	libclamav_la-events.lo $(am__objects_1) $(am__objects_2)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -662,7 +663,8 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
 	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
 	cache.h bytecode_detect.c bytecode_detect.h \
-	builtin_bytecodes.h $(am__append_7) $(am__append_8)
+	builtin_bytecodes.h events.c events.h $(am__append_7) \
+	$(am__append_8)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -818,6 +820,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-elf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-entconv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-events.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-explode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filetypes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filtering.Plo@am__quote@
@@ -1708,6 +1711,14 @@ libclamav_la-bytecode_detect.lo: bytecode_detect.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bytecode_detect.c' object='libclamav_la-bytecode_detect.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-bytecode_detect.lo `test -f 'bytecode_detect.c' || echo '$(srcdir)/'`bytecode_detect.c
+
+libclamav_la-events.lo: events.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-events.lo -MD -MP -MF $(DEPDIR)/libclamav_la-events.Tpo -c -o libclamav_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-events.Tpo $(DEPDIR)/libclamav_la-events.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='events.c' object='libclamav_la-events.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
 
 libclamav_la-bignum.lo: bignum.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c
