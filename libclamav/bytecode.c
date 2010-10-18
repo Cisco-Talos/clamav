@@ -1602,7 +1602,7 @@ static int register_events(cli_events_t *ev)
 
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
-    int ret;
+    int ret = CL_SUCCESS;
     struct cli_bc_inst inst;
     struct cli_bc_func func;
     cli_events_t *jit_ev = NULL, *interp_ev = NULL;
@@ -1966,7 +1966,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
 	    align = typealign(bc, ty);
-	    assert(typesize(bc, ty));
+	    assert(!ty || typesize(bc, ty));
 	    assert(align);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;

@@ -24,6 +24,9 @@
 #include "7z/7zCrc.h"
 #include "str.h"
 #include <string.h>
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
 
 struct cli_event {
     const char *name;
@@ -69,6 +72,8 @@ void cli_events_free(cli_events_t *ev)
 
 void cli_event_error_oom(cli_events_t *ctx, uint32_t amount)
 {
+    if (!ctx)
+	return;
     ctx->oom_total += amount;
     ctx->oom_count++;
     /* amount == 0 means error already reported, just incremenet count */
@@ -253,7 +258,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
 		void *v_data = cli_realloc2(ev->u.v_data, ev->count + len);
 		if (v_data) {
 		    ev->u.v_data = v_data;
-		    memcpy(v_data + ev->count, data, len);
+		    memcpy((char*)v_data + ev->count, data, len);
 		    ev->count += len;
 		} else {
 		    cli_event_error_oom(ctx, ev->count + len);
@@ -294,10 +299,9 @@ void cli_event_get(cli_events_t* ctx, unsigned id, union ev_val *val, uint32_t *
 
 static inline void ev_debug(enum ev_type type, union ev_val *val, uint32_t count)
 {
-    unsigned i;
     switch (type) {
 	case ev_string:
-	    cli_dbgmsg("\t(%u): %s\n", count, val->v_string, count);
+	    cli_dbgmsg("\t(%u): %s\n", count, val->v_string);
 	    break;
 	case ev_data:
 	{
@@ -333,6 +337,8 @@ static inline const char *evtype(enum ev_type type)
 	    return "ev_data_int";
 	case ev_time:
 	    return "ev_time";
+	default:
+	    return "";
     }
 }
 
@@ -442,5 +448,7 @@ int cli_event_diff_all(cli_events_t *ctx1, cli_events_t *ctx2, compare_filter_t 
 
 int cli_event_errors(cli_events_t *ctx)
 {
+    if (!ctx)
+	return 0;
     return ctx->errors.count + ctx->oom_count;
 }
