@@ -1213,6 +1213,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	cli_dbgmsg("intepreter bytecode run finished in %luus, after executing %u opcodes\n",
 		   tv1.tv_sec*1000000 + tv1.tv_usec, pc);
     }
+    if (stop == CL_EBYTECODE) {
+	cli_event_error_str(ctx->bc_events, "interpreter finished with error\n");
+	cli_dbgmsg("intepreter finished with error\n");
+    }
 
     cli_stack_destroy(&stack);
     free(ptrinfos.stack_infos);
