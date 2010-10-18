@@ -899,7 +899,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     dict_length = q3 - dict;
 
     /*  process pdf names */
-    for (q = dict;dict_length;) {
+    for (q = dict;dict_length > 0;) {
 	int escapes = 0;
 	q2 = memchr(q, '/', dict_length);
 	if (!q2)
@@ -907,7 +907,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	dict_length -= q2 - q;
 	q = q2;
 	/* normalize PDF names */
-	for (i = 0;dict_length && (i < sizeof(pdfname)-1); i++) {
+	for (i = 0;dict_length > 0 && (i < sizeof(pdfname)-1); i++) {
 	    q++;
 	    dict_length--;
 	    if (*q == '#') {
@@ -929,8 +929,8 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
 	}
-	if (objstate == STATE_JAVASCRIPT ||
-	    objstate == STATE_OPENACTION) {
+	if (dict_length > 0 && (objstate == STATE_JAVASCRIPT ||
+	    objstate == STATE_OPENACTION)) {
 	    if (objstate == STATE_OPENACTION)
 		pdfobj_flag(pdf, obj, HAS_OPENACTION);
 	    q2 = pdf_nextobject(q, dict_length);
@@ -941,7 +941,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		if (q2 && isdigit(*q2)) {
 		    objid |= atoi(q2) & 0xff;
 		    q2 = pdf_nextobject(q2, dict_length);
-		    if (*q2 == 'R') {
+		    if (q2 && *q2 == 'R') {
 			struct pdf_obj *obj2;
 			cli_dbgmsg("cli_pdf: found %s stored in indirect object %u %u\n",
 				   pdfname,
@@ -1043,7 +1043,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
     } else {
 	const char *t;
-	size = q - eofmap + map_off;
+	/*size = q - eofmap + map_off;*/
 	q -= 9;
 	for (;q > eofmap;q--) {
 	    if (memcmp(q, "startxref", 9) == 0)

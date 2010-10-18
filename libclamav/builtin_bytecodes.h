@@ -29,53 +29,64 @@
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafheaie`fld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacdcicmbgfhcachcgcbchccf``bkbaap`clamcoincidencejb:1378\n"
+static const char* builtin_bc_startup = "ClamBCafhmknalkld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacgcgcmbgfbffcbficbfbfac``bgcaap`clamcoincidencejb:4096\n"
 "\n"
-"Teddaaahdabahdacahdadahdaeahdafahdagahebjfebidebifebhfebgfebffebedebefebdfebcfebadcbgab`bb`bb`bb`bb`bb`bb`bbbfbbfbbfbbfbbfbbfbbfahahahahahahahahahebgeebbfaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bbheb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdbnbah\n"
-"Ebjdaibcdbke|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbke|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agble|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcable|afdgefcgdgbc``afbme|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbne|b`agfefdgoeefnffgifbgofnfmfefnfdg``aaboe|afdgefcgdgac``bidb`f|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdb`f|aodfifcgafbflfefoejfifdgoeifff``\n"
-"G`bha`@`b`aAa`bjfBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`bifBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bhfBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bgfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bffBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`befBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`bdfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`bcfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`\n"
-"A`b`bLbahb`bab`babgeab`b`bad`ah`aa`bad`ah`aa`bie`bad`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`Fb`kbib\n"
-"Bb`bacabbbhdabClnadbadaddbbheabBdadahaegbadaaafeaahae@aTaaafb`aaa\n"
-"BbadagdbbheabB`adahahgbagaaaieaahahAaaTaaaiabae\n"
-"BbieajdbbheabAidbadakdbbieaj@db`balkbakAn`Addaaameab`bal@db`b`bbAadaaTaaamadac\n"
-"Bb`bankbakAo`Addaaaoeab`ban@db`baa`aaob`b`bbaaaaTbaad\n"
-"Bb`bb`abbaab`ab`bbaaabcbjdAm`@db`aTbaae\n"
-"BbadbbadbbheabBeadahbcagbbbab`bbda`abcab`bbeak`bdaAadaabfaeab`bbea@dTaabfaafal\n"
-"Bb`bbgaabcbjdB`a`@dAadbadbhadbbheabBaadahbiagbbhaaabjaeaahbiaAjaTaabjaagb`a\n"
-"Bahbkagbbbab`bbla`abkab`bbmak`blaAbdaabnaeab`bbma@dTaabnaaiah\n"
-"Bb`bboaabcbjdBaa`@dAadTbab`a\n"
-"Bb`bb`bk`blaAhdaababeab`bb`b@dTaababakaj\n"
-"Bb`bbbbabcbjdBba`@dAadTbab`a\n"
-"Bb`bbcbabcbjdBca`@dAadTbab`a\n"
-"BbadbdbdbbheabBaadahbebgbbdbaabfbeaahbebAjaTaabfbanam\n"
-"BbadbgbdbbheabBbadahbhbgbbgbaabibeaahbhbAfaTaabibanb`a\n"
-"Bb`bbjbk`bdaB`adaabkbeab`bbjb@dTaabkbb`aao\n"
-"Bb`bblbabcbjdBba`@dAadTbab`a\n"
-"Bb`bbmbabcbidBda`@d@daabnbnab`bbmbAadTaabnbbdabaa\n"
-"Baabobnab`bbmbAbdTaabobbcabba\n"
-"Baab`ceab`bbmbAbdTaab`cbgabha\n"
-"Baabaceab`bbmbAadTaabacbfabha\n"
-"Baabbceab`bbmb@dTaabbcbeabha\n"
-"Bb`bbccabbafBea`@dTbabha\n"
-"Bb`bbdcabbafBfa`@dTbabha\n"
-"Bb`bbecabbafBga`@dTbabha\n"
-"Bahbfcgbadaabgceaahbfc@aTaabgcbjabia\n"
-"BbcdbhcdbbheabAddb`bbicgbbhcaabjceab`bbic@db`b`bbEamjnmd`Taabjcbhbbja\n"
-"BbcdbkcdbbheabAfdb`bblcgbbkcbcdbmcdbbheabAedb`bbncgbbmcaabociab`bblcbncb`b`bbEbmjnmd`Taabocbhbbka\n"
-"Bb`bb`dab`bbdaabadeab`bbncb`db`b`bbEcmjnmd`Taabadblabhb\n"
-"Bb`bbbdgbbkcb`bbcdab`bcdaabddeab`bbbdbcdb`b`bbEdmjnmd`Taabddbmabhb\n"
-"BbadbeddbbheabAndahbfdgbbedb`bbgd`abfdaabhdlbb`bbid`abhdaabjdeab`bbgdbidb`b`bbEemjnmd`Taabjdbnabhb\n"
-"BbadbkddbbheabBaadahbldgbbkdb`bbmd`abldb`bbndh`bmdBhadbadboddbbheabB`adahb`egbbodb`bbae`ab`eb`bbbeh`baeBdadbadbcedbbheabBcadahbdegbbceb`bbee`abdeb`bbfeh`beeB`adb`bbgegbbmcb`bbheh`bgeAhdb`bbiegbbkcb`bbjel`bbebndb`bbkel`bjebheb`bblel`bkebieb`bbmel`blebfeb`bbneh`bgdBladbadboedbbheabAodahb`fgbboeb`bbaf`ab`fb`bbbfh`bafBhadbcdbcfdbbheabAddb`bbdfgbbcfb`bbefl`bdfbneb`bbffl`befbbfbadbgfdbbheabBeadahbhfgbbgfb`bbif`abhfb`bbjfh`bifBhadbcdbkfdbbheabAcdb`bblfgbbkfb`bbmfl`bjfblfbcdbnfdbbheab@db`bbofgbbnfaab`geab`bbmebofTaab`gb`bboa\n"
-"Bb`bbagabaagbmeTcab`bEfmjnmd\n"
-"BbcdbbgdbbheabAadb`bbcggbbbgaabdgeab`bbffbcgTaabdgbbbbab\n"
-"Bb`bbegabaagbffTcab`bEgmjnmd\n"
-"BbcdbfgdbbheabAbdb`bbgggbbfgaabhgeab`bbmfbggTaabhgbdbbcb\n"
-"Bb`bbigabaagbmfTcab`bEhmjnmd\n"
-"Bb`bbjgabbaaHonnkm``odHm``oonnkdaabkgeab`bbjgHhgfedcbadTaabkgbfbbeb\n"
-"Bb`bblgabaagbjgTcab`bEimjnmd\n"
-"Bb`bbmgababcaDm``odaabngeab`bbmgDo``mdb`b`bbHnejkjgjmd`Taabngbhbbgb\n"
-"Bb`bbogabaagbmgTcab`bF`amjnmd\n"
-"Bb`bb`hbb`b`hTcab`bb`hE\n"
+"Teddaaahdabahdacahdadahdaeahdafahdagahebfgebidebegebdgebgdebkdebcgebbgebageb`gebofebnfebmfebedeblfebkfebjfebadcbgab`bb`bb`bb`bb`bb`bb`bbifbifbifbifbifbifbifahahahahahahahahahebneebifaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bboeb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdaiahdakahdamahdahahdbgcahdbnbah\n"
+"Ebjdaibcdbbf|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbbf|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agbcf|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcabcf|afdgefcgdgbc``afbdf|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbef|b`agfefdgoeefnffgifbgofnfmfefnfdg``aabff|afdgefcgdgac``bidbgf|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdbgf|aodfifcgafbflfefoejfifdgoeifff``\n"
+"G`b`c`@`b`aAa`bfgBifBkeBccBdcBmeBhcBfcB`bBdfBefBdgBefBcfBdgBefBdfBlbB`bBjdBidBdeB`bBnfBefBefBdfBcgB`bB`gBefBnfBdgBifBegBmfB`bBofBbgB`bBbfBefBdgBdgBefBbg@`bidBifBccBhcBfc@`bidBifBdcBhcBfc@`begBcdB`eBeeB`bBdfBofBefBcgBnfBgbBdgB`bBcgBegB`gB`gBofBbgBdgB`bBcdBmdBodBfeBlbB`bBggBofBegBlfBdfB`bBnfBefBefBdfB`bBldBldBfeBmdB`bBbcBnbBhcB`bBdgBofB`bBggBofBbgBkfBab@`bidBifBecBhcBfc@`bdgB`gBefBnfBdgBifBegBmf@`bidBifBfcBhcBfc@`bgdBkfBfc@`bidBkfBfcBmbBbc@`bidBkfBfcBmbBcc@`bkdBafBdgBhfBlfBofBnf@`bcgBafBdgBhfBlfBofBnfBmbBdgBbfBifBbgBdf@`bbgBggBifBnfBcfBhfBifB`gBmbBcfBfc@`bagBggBifBnfBcfBhfBifB`gBbc@`bgdBcfBcc@`b`gBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfBnb@`bofBneBceBedBldBifBnfBegBhgB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBefBhgBefBcfBmfBefBmfBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bB`bBgbBcgBefBdgBcgBefBbfBofBofBlfB`bBmbB`eB`bBcfBlfBafBmfBdfBoeBegBcgBefBoeBjfBifBdgB`bBofBnfBgbBnb@`bnfBneB`eBafBheB`bBifBcgB`bB`gBbgBefBfgBefBnfBdgBifBnfBgfB`bBgbBmfB`gBbgBofBdgBefBcfBdgBgbB`bBafBcfBcfBefBcgBcgBnbAjBbeBegBnfB`bBgbB`gBafBhgBcfBdgBlfB`bBmbBcfBmfB`bBlcBefBhgBefBcfBegBdgBafBbfBlfBefBncBgb@`bmfBneBbeBgeBheB`bBmfBafB`gB`gBifBnfBgfB`bBdfBefBnfBifBefBdfB`bBffBofBbgB`bBegBnfBkfBnfBofBggBnfB`bBbgBefBafBcgBofBnfBnbB`eBlfBefBafBcgBefB`bBbgBefB`gBofBbgBdgB`bBdgBofB`bBhfBdgBdgB`gBjcBobBobBbfBegBgfBcgBnbBcfBlfBafBmfBafBfgBnbBnfBefBdgAj@`bed@`blfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBifBnfB`bBafBegBdgBofB`bBmfBofBdfBef@`bkfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBefBhgBefBcfBegBdgBifBofBnfB`bBggBifBdgBhfB`bBifBnfBdgBefBbgB`gBbgBefBdgBefBbgB`bBofBnfBlfBig@`bjfBcgBdgBafBbgBdgBegB`gBjcB`bBbfBigBdgBefBcfBofBdfBefB`bBdfBifBcgBafBbfBlfBefBdf@`bad@Ab`bad@Ac`bad@Ad`bad@Ae`bad@Af`bad@Ag`bad@Ah`bad@Ai`bad@Aj`bad@Ak`bad@Al`bad@Am`bad@An`bad@Ao`bad@B`a`bad@Baa`bad@Bba`bad@Bca`bad@Bda`bad@Bea`bad@Bfa`bad@Bga`bad@Bha`\n"
+"A`b`bLbjib`bab`bab`babneab`b`bad`ah`aa`bad`ah`aa`b`f`bad`b`b`aa`b`b`aa`b`b`b`b`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`Fbombdc\n"
+"Bb`badabbbhdacClnadbadaedbboeacBdadahafgbaeaaageaahaf@aTaaagbkaaa\n"
+"BbadahdbboeacB`adahaigbahaaajeaahaiAaaTaaajabb`a\n"
+"Bb`fakdbboeacAidbadaldbb`fak@db`bamkbalBja`Addaaaneab`bam@db`b`bbAadabTaaanadac\n"
+"Bb`baokbalBka`Addaab`aeab`bao@db`bab`ab`ab`b`bbababTbaad\n"
+"Bb`bbaabbabbaab`bbbaabcbjdBia`@dbaab`bbcakbalBma`Addaabdaeab`bbca@db`b`bbAadaaTaabdaaoae\n"
+"Bb`bbeakbalBna`Agdaabfaeab`bbea@db`b`bbAadaaTaabfaaoaf\n"
+"Bb`bbgakbalBoa`Addaabhaeab`bbga@db`b`bbAadaaTaabhaaoag\n"
+"Bb`bbiakbalB`b`Abdaabjaeab`bbia@db`b`bbAadaaTaabjaaoah\n"
+"Bb`bbkakbalBab`Addaablaeab`bbka@db`b`bbAadaaTaablaaoai\n"
+"Bb`bbmakbalBbb`Addaabnaeab`bbma@db`b`bbAadaaTaabnaaoaj\n"
+"Bb`bboakbalBcb`Afdaab`beab`bboa@db`b`bbAadaaTaab`baoak\n"
+"Bb`bbabkbalBdb`Aldaabbbeab`bbab@db`b`bbAadaaTaabbbaoal\n"
+"Bb`bbcbkbalBeb`Ajdaabdbeab`bbcb@db`b`bbAadaaTaabdbaoam\n"
+"Bb`bbebkbalBfb`Ahdaabfbeab`bbeb@db`b`bbAadaaTaabfbaoan\n"
+"Bb`bbgbkbalBgb`Abdaabhbeab`bbgb@db`baa`abhbb`b`bbaaaaTbaao\n"
+"Bb`bbibbbaabibb`bbjbabcbjdBla`@dbibTbab`a\n"
+"BbadbkbdbboeacBeadahblbgbbkbb`bbmb`ablbb`bbnbk`bmbAadaabobeab`bbnb@dTaabobbaabga\n"
+"Bb`bb`cabcbjdBhb`@dAadbadbacdbboeacBaadahbbcgbbacaabcceaahbbcAjaTaabccbbabka\n"
+"Bahbdcgbbkbb`bbec`abdcb`bbfck`becAbdaabgceab`bbfc@dTaabgcbdabca\n"
+"Bb`bbhcabcbjdBib`@dAadTbabka\n"
+"Bb`bbick`becAhdaabjceab`bbic@dTaabjcbfabea\n"
+"Bb`bbkcabcbjdBjb`@dAadTbabka\n"
+"Bb`bblcabcbjdBkb`@dAadTbabka\n"
+"BbadbmcdbboeacBaadahbncgbbmcaaboceaahbncAjaTaabocbiabha\n"
+"Bbadb`ddbboeacBbadahbadgbb`daabbdeaahbadAfaTaabbdbiabka\n"
+"Bb`bbcdk`bmbB`adaabddeab`bbcd@dTaabddbkabja\n"
+"Bb`bbedabcbjdBjb`@dAadTbabka\n"
+"Bb`bbfdabcbidBlb`@d@daabgdnab`bbfdAadTaabgdboabla\n"
+"Baabhdnab`bbfdAbdTaabhdbnabma\n"
+"Baabideab`bbfdAbdTaabidbbbbcb\n"
+"Baabjdeab`bbfdAadTaabjdbabbcb\n"
+"Baabkdeab`bbfd@dTaabkdb`bbcb\n"
+"Bb`bbldabbafBmb`@dTbabcb\n"
+"Bb`bbmdabbafBnb`@dTbabcb\n"
+"Bb`bbndabbafBob`@dTbabcb\n"
+"Bahbodgbaeaab`eeaahbod@aTaab`ebebbdb\n"
+"BbcdbaedbboeacAddb`bbbegbbaeaabceeab`bbbe@db`b`bbEamjnmd`Taabcebccbeb\n"
+"BbcdbdedbboeacAfdb`bbeegbbdebcdbfedbboeacAedb`bbgegbbfeaabheiab`bbeebgeb`b`bbEbmjnmd`Taabhebccbfb\n"
+"Bb`bbieab`bbdaabjeeab`bbgebieb`b`bbEcmjnmd`Taabjebgbbcc\n"
+"Bb`bbkegbbdeb`bbleab`bcdaabmeeab`bbkebleb`b`bbEdmjnmd`Taabmebhbbcc\n"
+"BbadbnedbboeacAndahboegbbneb`bb`f`aboeaabaflbb`bbbf`abafaabcfeab`bb`fbbfb`b`bbEemjnmd`Taabcfbibbcc\n"
+"BbadbdfdbboeacBaadahbefgbbdfb`bbff`abefb`bbgfh`bffBhadbadbhfdbboeacB`adahbifgbbhfb`bbjf`abifb`bbkfh`bjfBdadbadblfdbboeacBcadahbmfgbblfb`bbnf`abmfb`bbofh`bnfB`adb`bb`ggbbfeb`bbagh`b`gAhdb`bbbggbbdeb`bbcgl`bkfbgfb`bbdgl`bcgbagb`bbegl`bdgbbgb`bbfgl`begbofb`bbggh`b`fBladbadbhgdbboeacAodahbiggbbhgb`bbjg`abigb`bbkgh`bjgBhadbcdblgdbboeacAddb`bbmggbblgb`bbngl`bmgbggb`bbogl`bngbkgbadb`hdbboeacBeadahbahgbb`hb`bbbh`abahb`bbchh`bbhBhadbcdbdhdbboeacAcdb`bbehgbbdhb`bbfhl`bchbehbcdbghdbboeac@db`bbhhgbbghaabiheab`bbfgbhhTaabihbkbbjb\n"
+"Bb`bbjhabaagbfgTcab`bEfmjnmd\n"
+"BbcdbkhdbboeacAadb`bblhgbbkhaabmheab`bbogblhTaabmhbmbblb\n"
+"Bb`bbnhabaagbogTcab`bEgmjnmd\n"
+"BbcdbohdbboeacAbdb`bb`igbbohaabaieab`bbfhb`iTaabaibobbnb\n"
+"Bb`bbbiabaagbfhTcab`bEhmjnmd\n"
+"Bb`bbciabbaaHonnkm``odHm``oonnkdaabdieab`bbciHhgfedcbadTaabdibacb`c\n"
+"Bb`bbeiabaagbciTcab`bEimjnmd\n"
+"Bb`bbfiababcaDm``odaabgieab`bbfiDo``mdb`b`bbHnejkjgjmd`Taabgibccbbc\n"
+"Bb`bbhiabaagbfiTcab`bF`amjnmd\n"
+"Bb`bbiibb`biiTcab`bbiiE\n"
 ;
 /* source-code for builtin_bc_startup: */
 #if 0
@@ -97,6 +108,21 @@ int entrypoint()
       disable_jit_if("i[34]86 detected, JIT needs pentium or better",0,
                      !memcmp(env.cpu,"i386",4) ||
                      !memcmp(env.cpu,"i486",4));
+      /* FIXME: update embedded LLVM to 2.8 which correctly skips CMOV if CPU
+       * doesn't support it.
+       * For now disable JIT on CPUs without cmov */
+      disable_jit_if("CPU doesn't support CMOV, would need LLVM 2.8 to work!",0,
+		     !memcmp(env.cpu,"i586",4) ||
+		     !memcmp(env.cpu,"pentium",7) ||
+		     !memcmp(env.cpu,"i686",4) ||
+		     !memcmp(env.cpu,"k6",2) ||
+		     !memcmp(env.cpu,"k6-2",4) ||
+		     !memcmp(env.cpu,"k6-3",4) ||
+		     !memcmp(env.cpu,"athlon",6) ||
+		     !memcmp(env.cpu,"athlon-tbird",12) ||
+		     !memcmp(env.cpu,"winchip-c6",10) ||
+		     !memcmp(env.cpu,"winchip2",8) ||
+		     !memcmp(env.cpu,"c3",2));
       break;
     default:
       break;

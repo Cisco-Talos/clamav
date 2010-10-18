@@ -2022,6 +2022,8 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc_func *func = &bcs->all_bcs[i].funcs[0];
+	    if (bcs->all_bcs[i].state == bc_interp)
+		continue; /* probably BC_STARTUP */
 	    bcs->engine->compiledFunctions[func] = EE->getPointerToFunction(Functions[i]);
 	    bcs->all_bcs[i].state = bc_jit;
 	}

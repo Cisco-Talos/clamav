@@ -122,6 +122,7 @@ int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t*, int32_t, const uint8_t*, int32_t);
+int32_t cli_bcapi_running_on_jit(struct cli_bc_ctx *ctx );
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -146,8 +147,8 @@ static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16
 static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
-static uint16_t cli_tmp8[]={32, 65, 32, 65, 32};
-static uint16_t cli_tmp9[]={32};
+static uint16_t cli_tmp8[]={32};
+static uint16_t cli_tmp9[]={32, 65, 32, 65, 32};
 static uint16_t cli_tmp10[]={32, 32};
 static uint16_t cli_tmp11[]={32, 32, 32};
 static uint16_t cli_tmp12[]={65, 32, 32};
@@ -179,8 +180,8 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DStructType, cli_tmp5, 8, 0, 0},
 	{DArrayType, cli_tmp6, 1, 0, 0},
 	{DArrayType, cli_tmp7, 64, 0, 0},
-	{DFunctionType, cli_tmp8, 5, 0, 0},
-	{DFunctionType, cli_tmp9, 1, 0, 0},
+	{DFunctionType, cli_tmp8, 1, 0, 0},
+	{DFunctionType, cli_tmp9, 5, 0, 0},
 	{DFunctionType, cli_tmp10, 2, 0, 0},
 	{DFunctionType, cli_tmp11, 3, 0, 0},
 	{DFunctionType, cli_tmp12, 3, 0, 0},
@@ -230,7 +231,7 @@ const struct cli_apicall cli_apicalls[]={
 	{"fill_buffer", 20, 0, 4},
 	{"extract_new", 10, 4, 2},
 	{"read_number", 10, 5, 2},
-	{"hashset_new", 9, 0, 5},
+	{"hashset_new", 8, 0, 5},
 	{"hashset_add", 11, 2, 0},
 	{"hashset_remove", 11, 3, 0},
 	{"hashset_contains", 11, 4, 0},
@@ -257,7 +258,7 @@ const struct cli_apicall cli_apicalls[]={
 	{"iexp", 13, 2, 7},
 	{"isin", 13, 3, 7},
 	{"icos", 13, 4, 7},
-	{"memstr", 8, 0, 8},
+	{"memstr", 9, 0, 8},
 	{"hex2ui", 11, 8, 0},
 	{"atoi", 19, 13, 1},
 	{"debug_print_str_start", 19, 14, 1},
@@ -272,19 +273,19 @@ const struct cli_apicall cli_apicalls[]={
 	{"map_getvalue", 12, 2, 6},
 	{"map_done", 10, 20, 2},
 	{"file_find_limit", 14, 4, 9},
-	{"engine_functionality_level", 9, 1, 5},
-	{"engine_dconf_level", 9, 2, 5},
-	{"engine_scan_options", 9, 3, 5},
-	{"engine_db_options", 9, 4, 5},
+	{"engine_functionality_level", 8, 1, 5},
+	{"engine_dconf_level", 8, 2, 5},
+	{"engine_scan_options", 8, 3, 5},
+	{"engine_db_options", 8, 4, 5},
 	{"extract_set_container", 10, 21, 2},
 	{"input_switch", 10, 22, 2},
 	{"get_environment", 15, 17, 1},
 	{"disable_bytecode_if", 14, 5, 9},
 	{"disable_jit_if", 14, 6, 9},
-	{"version_compare", 8, 1, 8},
+	{"version_compare", 9, 1, 8},
 	{"check_platform", 13, 5, 7},
-	{"pdf_get_obj_num", 9, 5, 5},
-	{"pdf_get_flags", 9, 6, 5},
+	{"pdf_get_obj_num", 8, 5, 5},
+	{"pdf_get_flags", 8, 6, 5},
 	{"pdf_set_flags", 10, 23, 2},
 	{"pdf_lookupobj", 10, 24, 2},
 	{"pdf_getobjsize", 10, 25, 2},
@@ -293,9 +294,10 @@ const struct cli_apicall cli_apicalls[]={
 	{"pdf_getobjflags", 10, 27, 2},
 	{"pdf_setobjflags", 11, 10, 0},
 	{"pdf_get_offset", 10, 28, 2},
-	{"pdf_get_phase", 9, 7, 5},
-	{"pdf_get_dumpedobjid", 9, 8, 5},
-	{"matchicon", 8, 2, 8}
+	{"pdf_get_phase", 8, 7, 5},
+	{"pdf_get_dumpedobjid", 8, 8, 5},
+	{"matchicon", 9, 2, 8},
+	{"running_on_jit", 8, 9, 5}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -377,7 +379,8 @@ const cli_apicall_allocobj cli_apicalls5[] = {
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_obj_num,
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_flags,
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_phase,
-	(cli_apicall_allocobj)cli_bcapi_pdf_get_dumpedobjid
+	(cli_apicall_allocobj)cli_bcapi_pdf_get_dumpedobjid,
+	(cli_apicall_allocobj)cli_bcapi_running_on_jit
 };
 const cli_apicall_bufget cli_apicalls6[] = {
 	(cli_apicall_bufget)cli_bcapi_buffer_pipe_read_get,

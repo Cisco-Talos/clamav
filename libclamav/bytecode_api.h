@@ -977,5 +977,11 @@ int32_t pdf_get_dumpedobjid(void);
 int32_t matchicon(const uint8_t* group1, int32_t group1_len,
                   const uint8_t* group2, int32_t group2_len);
 /* ---------------- END 0.96.2 APIs   ----------------------------------- */
+/* ----------------- BEGIN 0.96.4 APIs ---------------------------------- */
+/* Returns whether running on JIT. As side-effect it disables
+ * interp / JIT comparisons in test mode (errors are still checked) */
+int32_t running_on_jit(void);
+
+/* ----------------- END 0.96.4 APIs ---------------------------------- */
 #endif
 #endif

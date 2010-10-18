@@ -1,6 +1,28 @@
+<<<<<<< HEAD
 Mon Oct 18 15:52:47 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher.c: fix stack smash with HandlerType (bb#2298)
+=======
+Mon Oct 18 13:23:42 CEST 2010 (acab)
+------------------------------------
+ * libclamav/scanners.c: mark embpes as unreliable (bb#2307)
+
+Mon Oct 18 14:16:11 EEST 2010 (edwin)
+-------------------------------------
+ * clamconf/clamconf.c, libclamav/others.c: warn about zlib version mismatches (bb #2072)
+
+Mon Oct 18 13:55:17 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: bb #2295
+
+Mon Oct 18 13:46:59 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/builtin_bytecodes.h: disable JIT on CPUs without CMOV (bb #2327).
+
+Mon Oct 18 12:52:25 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: keep parsing after %%EOF (bb #2264).
+>>>>>>> 110731e7842dfbfbb73a89c5f773a8e09a76cbb7
 
 Mon Oct 18 11:30:01 CEST 2010 (tk)
 ----------------------------------
