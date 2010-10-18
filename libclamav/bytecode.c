@@ -1629,10 +1629,15 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
     if (test_mode) {
 	jit_ev = cli_events_new(BCEV_LASTEVENT);
 	interp_ev = cli_events_new(BCEV_LASTEVENT);
-	if (!jit_ev || !interp_ev)
+	if (!jit_ev || !interp_ev) {
+	    cli_events_free(jit_ev);
+	    cli_events_free(interp_ev);
 	    return CL_EMEM;
+	}
 	if (register_events(jit_ev) == -1 ||
 	    register_events(interp_ev) == -1) {
+	    cli_events_free(jit_ev);
+	    cli_events_free(interp_ev);
 	    return CL_EBYTECODE_TESTFAIL;
 	}
     }
@@ -1723,9 +1728,14 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	}
 	/*cli_event_debug(jit_ev, BCEV_EXEC_TIME);
 	cli_event_debug(interp_ev, BCEV_EXEC_TIME);*/
-	if (!ok)
+	if (!ok) {
+	    cli_events_free(jit_ev);
+	    cli_events_free(interp_ev);
 	    return CL_EBYTECODE_TESTFAIL;
+	}
     }
+    cli_events_free(jit_ev);
+    cli_events_free(interp_ev);
     return ret;
 }
 
