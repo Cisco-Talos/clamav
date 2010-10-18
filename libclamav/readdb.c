@@ -1468,6 +1468,8 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return CL_SUCCESS;
     }
     bc->id = bcs->count;/* must set after _load, since load zeroes */
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+	cli_infomsg(NULL, "bytecode %u -> %s\n", bc->id, dbname);
     sigs++;
     if (bc->kind == BC_LOGICAL || bc->lsig) {
         unsigned oldsigs = sigs;
