@@ -1043,7 +1043,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
     } else {
 	const char *t;
-	size = q - eofmap + map_off;
+	/*size = q - eofmap + map_off;*/
 	q -= 9;
 	for (;q > eofmap;q--) {
 	    if (memcmp(q, "startxref", 9) == 0)

@@ -1,3 +1,7 @@
+Mon Oct 18 12:52:25 EEST 2010 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: keep parsing after %%EOF (bb #2264).
+
 Mon Oct 18 11:30:01 CEST 2010 (tk)
 ----------------------------------
  * clamdscan: fix name parsing in normal mode (bb#2328)
