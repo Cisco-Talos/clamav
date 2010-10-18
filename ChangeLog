@@ -1,3 +1,7 @@
+Mon Oct 18 20:01:46 CEST 2010 (tk)
+----------------------------------
+ * clamd: be more verbose about config errors (bb#2252)
+
 Mon Oct 18 15:52:47 CEST 2010 (tk)
 ----------------------------------
  * libclamav/matcher.c: fix stack smash with HandlerType (bb#2298)

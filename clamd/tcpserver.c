@@ -54,6 +54,7 @@ int tcpserver(const struct optstruct *opts)
     int true = 1;
 
     if (cfg_tcpsock(opts, &server, INADDR_ANY) == -1) {
+	logg("!TCP: Couldn't configure socket, check your configuration\n");
 	return -1;
     }
 

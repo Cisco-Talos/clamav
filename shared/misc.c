@@ -324,6 +324,9 @@ int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_ad
     struct hostent *he;
     const struct optstruct *opt = optget(opts, "TCPSocket");
 
+    if(opt->numarg > 65535)
+	return -1;
+
     memset(tcpsock, 0, sizeof(*tcpsock));
     tcpsock->sin_family = AF_INET;
     tcpsock->sin_port = htons(opt->numarg);
