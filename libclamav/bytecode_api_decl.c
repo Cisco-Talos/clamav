@@ -123,6 +123,7 @@ int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t*, int32_t, const uint8_t*, int32_t);
 int32_t cli_bcapi_running_on_jit(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx );
 
 const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals BEGIN */
@@ -297,7 +298,8 @@ const struct cli_apicall cli_apicalls[]={
 	{"pdf_get_phase", 8, 7, 5},
 	{"pdf_get_dumpedobjid", 8, 8, 5},
 	{"matchicon", 9, 2, 8},
-	{"running_on_jit", 8, 9, 5}
+	{"running_on_jit", 8, 9, 5},
+	{"get_file_reliability", 8, 10, 5}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
@@ -380,7 +382,8 @@ const cli_apicall_allocobj cli_apicalls5[] = {
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_flags,
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_phase,
 	(cli_apicall_allocobj)cli_bcapi_pdf_get_dumpedobjid,
-	(cli_apicall_allocobj)cli_bcapi_running_on_jit
+	(cli_apicall_allocobj)cli_bcapi_running_on_jit,
+	(cli_apicall_allocobj)cli_bcapi_get_file_reliability
 };
 const cli_apicall_bufget cli_apicalls6[] = {
 	(cli_apicall_bufget)cli_bcapi_buffer_pipe_read_get,

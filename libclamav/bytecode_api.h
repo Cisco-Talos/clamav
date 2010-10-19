@@ -982,6 +982,14 @@ int32_t matchicon(const uint8_t* group1, int32_t group1_len,
  * interp / JIT comparisons in test mode (errors are still checked) */
 int32_t running_on_jit(void);
 
+/* Get file reliability flag, higher value means less reliable 
+ * 0 - normal
+ * 1 - embedded PE
+ * 2 - unpacker created file (not impl. yet)
+ *
+ * when >0 import tables and such are not reliable */
+int32_t get_file_reliability(void);
+
 /* ----------------- END 0.96.4 APIs ---------------------------------- */
 #endif
 #endif
