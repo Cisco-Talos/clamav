@@ -212,9 +212,13 @@ if test "$enable_alltargets" = "yes"; then
 	build_arm=yes
 fi
 if test "$ac_cv_c_bigendian" = "universal"; then
-    build_x86 = yes
-    build_ppc = yes
+    AC_MSG_NOTICE([Universal build detected])
+    build_x86=yes
+    build_ppc=yes
 fi
+AC_MSG_NOTICE([Building X86 backend: $build_x86])
+AC_MSG_NOTICE([Building PPC backend: $build_ppc])
+AC_MSG_NOTICE([Building ARM backend: $build_arm])
 AM_CONDITIONAL(BUILD_X86, [test "$build_x86" = "yes"])
 AM_CONDITIONAL(BUILD_PPC, [test "$build_ppc" = "yes"])
 AM_CONDITIONAL(BUILD_ARM, [test "$build_arm" = "yes"])

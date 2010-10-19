@@ -14958,9 +14958,17 @@ if test "$enable_alltargets" = "yes"; then
 	build_arm=yes
 fi
 if test "$ac_cv_c_bigendian" = "universal"; then
-    build_x86 = yes
-    build_ppc = yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Universal build detected" >&5
+$as_echo "$as_me: Universal build detected" >&6;}
+    build_x86=yes
+    build_ppc=yes
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Building X86 backend: $build_x86" >&5
+$as_echo "$as_me: Building X86 backend: $build_x86" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Building PPC backend: $build_ppc" >&5
+$as_echo "$as_me: Building PPC backend: $build_ppc" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Building ARM backend: $build_arm" >&5
+$as_echo "$as_me: Building ARM backend: $build_arm" >&6;}
  if test "$build_x86" = "yes"; then
   BUILD_X86_TRUE=
   BUILD_X86_FALSE='#'
