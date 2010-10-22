@@ -40,6 +40,7 @@ HANDLE engine_mutex;
 /* protects the following items */
 struct cl_engine *engine = NULL;
 char dbdir[PATH_MAX];
+char tmpdir[PATH_MAX];
 /* end of protected items */
 
 typedef struct {
@@ -112,8 +113,8 @@ static int add_instance(instance *inst) {
 	instances[i].inst = inst;
 	instances[i].refcnt = 0;
 	ninsts_avail--;
+	logg("add_instance: now %u/%u instances available\n", ninsts_avail, ninsts_total);
 	unlock_instances();
-	ResetEvent(reload_event);
 	return 0;
     }
     logg("!add_instances: you should not be reading this\n");
@@ -140,8 +141,7 @@ static int del_instance(instance *inst) {
 	instances[i].inst = NULL;
 	instances[i].refcnt = 0;
 	ninsts_avail++;
-	if(ninsts_avail == ninsts_total)
-	    SetEvent(reload_event);
+	logg("del_instance: %u / %u instances now available\n", ninsts_avail, ninsts_total);
 	unlock_instances();
 	return 0;
     }
@@ -210,7 +210,6 @@ static void free_engine_and_unlock(void) {
 }
 
 int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempRoot, const wchar_t *pLicenseKey, BOOL bLoadMinDefs) {
-    char tmpdir[PATH_MAX];
     BOOL cant_convert;
     int ret;
 
@@ -235,7 +234,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     
     minimal_definitions = bLoadMinDefs;
     if(bLoadMinDefs)
-	logg("!MINIMAL DEFINITIONS MODE ON!");
+	logg("!MINIMAL DEFINITIONS MODE ON!\n");
 
     if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pTempRoot, -1, tmpdir, sizeof(tmpdir), NULL, &cant_convert) || cant_convert) {
 	free_engine_and_unlock();
@@ -522,6 +521,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	FAIL(CL_EARG, "invalid instance %p", inst);
     }
     instances[i].refcnt++;
+    ResetEvent(reload_event);
     unlock_instances();
 
     sctx.entryfd = fd;
@@ -536,6 +536,8 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     if(lock_instances())
 	FAIL(CL_EMEM, "failed to lock instances for instance %p", pScanner);
     instances[i].refcnt--;
+    if(!instances[i].refcnt)
+	SetEvent(reload_event);
     unlock_instances();
 
     if(res == CL_VIRUS) {
@@ -697,52 +699,78 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 CLAMAPI void Scan_ReloadDatabase(void) {
     if(InterlockedIncrement(&reload_waiters)==1) {
 	int reload_ok = 0;
-	logg("Scan_ReloadDatabase: Database reload requested received, waiting for idle state");
+	logg("Scan_ReloadDatabase: Database reload requested received, waiting for idle state\n");
 	while(1) {
+	    unsigned int i;
+	    int ret;
 	    if(WaitForSingleObject(reload_event, INFINITE) == WAIT_FAILED) {
-		logg("!Scan_ReloadDatabase: failed to wait on reload event");
+		logg("!Scan_ReloadDatabase: failed to wait on reload event\n");
 		continue;
 	    }
-	    logg("Scan_ReloadDatabase: Now idle, acquiring engine lock");
+	    logg("Scan_ReloadDatabase: Now idle, acquiring engine lock\n");
     	    if(lock_engine()) {
-		logg("!Scan_ReloadDatabase: failed to lock engine");
+		logg("!Scan_ReloadDatabase: failed to lock engine\n");
 		break;
 	    }
 	    if(lock_engine()) {
-		logg("!Scan_ReloadDatabase: failed to lock engine");
+		logg("!Scan_ReloadDatabase: failed to lock engine\n");
 		break;
 	    }
 	    if(!engine) {
-		logg("!Scan_ReloadDatabase: engine is NULL");
+		logg("!Scan_ReloadDatabase: engine is NULL\n");
 		unlock_engine();
 		break;
 	    }
-	    logg("Scan_ReloadDatabase: Engine locked, acquiring instance lock");
+	    logg("Scan_ReloadDatabase: Engine locked, acquiring instance lock\n");
 	    if(lock_instances()) {
-		logg("!Scan_ReloadDatabase: failed to lock instances");
+		logg("!Scan_ReloadDatabase: failed to lock instances\n");
 		unlock_engine();
 		break;
 	    }
-	    if(ninsts_avail != ninsts_total) {
-		logg("!Scan_ReloadDatabase: Instances locked with %u slots available out of %u", ninsts_avail, ninsts_total);
-		unlock_engine();
+            for(i=0; i<ninsts_total; i++) {
+		if(instances[i].inst && instances[i].refcnt)
+		    break;
+	    }
+	    if(i!=ninsts_total) {
+		logg("Scan_ScanObjectByHandle: some instances are still in use\n");
+		ResetEvent(reload_event);
 		unlock_instances();
+		unlock_engine();
 		continue;
 	    }
-	    logg("Scan_ReloadDatabase: Destroying old engine");
+	    logg("Scan_ReloadDatabase: Destroying old engine\n");
 	    cl_engine_free(engine);
-	    logg("Scan_ReloadDatabase: Loading new engine");
+	    logg("Scan_ReloadDatabase: Loading new engine\n");
+
+	    // NEW STUFF //
+	    if(!(engine = cl_engine_new())) {
+		unlock_engine();
+		logg("!Scan_ReloadDatabase: Not enough memory for a new engine\n");
+		unlock_instances();
+		unlock_engine();
+		break;
+	    }
+	    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
+	    cl_engine_set_clcb_post_scan(engine, postscan_cb);
+    
+	    if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, tmpdir))) {
+		unlock_instances();
+		free_engine_and_unlock();
+		logg("!Scan_ReloadDatabase: Failed to set engine tempdir: %s\n", cl_strerror(ret));
+		break;
+	    }
+
 	    load_db(); /* FIXME: FIAL? */
-	    unlock_engine();
 	    unlock_instances();
+	    unlock_engine();
 	    reload_ok = 1;
 	    break;
 	}
 	if(reload_ok)
-	    logg("Scan_ReloadDatabase: Database successfully reloaded");
+	    logg("Scan_ReloadDatabase: Database successfully reloaded\n");
 	else
-	    logg("!Scan_ReloadDatabase: Database reload failed");
+	    logg("!Scan_ReloadDatabase: Database reload failed\n");
     } else
-	logg("^Database reload requested received while reload is pending");
+	logg("^Database reload requested received while reload is pending\n");
     InterlockedDecrement(&reload_waiters);
 }
