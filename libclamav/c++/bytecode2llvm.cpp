@@ -1970,8 +1970,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	llvm::Function **Functions = new Function*[bcs->count];
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
-	    if (bc->state == bc_skip || bc->state == bc_interp)
+	    if (bc->state == bc_skip || bc->state == bc_interp) {
+		Functions[i] = 0;
 		continue;
+	    }
 	    LLVMCodegen Codegen(bc, M, &CF, bcs->engine->compiledFunctions, EE,
 				OurFPM, OurFPMUnsigned, apiFuncs, apiMap);
 	    Function *F = Codegen.generate();
@@ -2022,8 +2024,8 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc_func *func = &bcs->all_bcs[i].funcs[0];
-	    if (bcs->all_bcs[i].state == bc_interp)
-		continue; /* probably BC_STARTUP */
+	    if (!Functions[i])
+		continue;// not JITed
 	    bcs->engine->compiledFunctions[func] = EE->getPointerToFunction(Functions[i]);
 	    bcs->all_bcs[i].state = bc_jit;
 	}
