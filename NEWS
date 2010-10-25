@@ -1,9 +1,7 @@
-0.96.3
+0.96.4
 ------
 
-This release fixes problems with the PDF parser and the internal bzip2
-library. A complete list of changes is available in the Changelog file.
+ClamAV 0.96.4 is a bugfix release recommended for all users.
 
 --
 The ClamAV team (http://www.clamav.net/team)
-

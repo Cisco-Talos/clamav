@@ -2,6 +2,15 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.96.4
+------
+
+ClamAV 0.96.4 is a bugfix release recommended for all users.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
 0.96.3
 ------
 
@@ -10,7 +19,6 @@ library. A complete list of changes is available in the Changelog file.
 
 --
 The ClamAV team (http://www.clamav.net/team)
-
 
 0.96.2
 ------
