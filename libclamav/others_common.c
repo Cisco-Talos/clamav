@@ -340,7 +340,7 @@ int cli_filecopy(const char *src, const char *dest)
 {
 
 #ifdef _WIN32
-    return (!CopyFileA(src, dest, 0));
+    return !CopyFileA(src, dest, 0) ? 0 : -1;
 #else
 	char *buffer;
 	int s, d, bytes;
