@@ -2005,7 +2005,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	return 57;
     }
     free(newfile);
-    logg("%s updated (custom database)\n", dbname);
+    logg("%s updated (version: custom database)\n", dbname);
 
     /* FIXME *signo += current->sigs; */
     return 0;
