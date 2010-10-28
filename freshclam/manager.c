@@ -1066,7 +1066,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	free(authorization);
 
     memset(ipaddr, 0, sizeof(ipaddr));
-    if(ip[0]) /* use ip to connect */
+    if(ip && ip[0]) /* use ip to connect */
 	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
     else
 	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
@@ -1077,7 +1077,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	logg("*Trying to download http://%s/%s (IP: %s)\n", hostname, srcfile, ipaddr);
     }
 
-    if(!ip[0])
+    if(ip && !ip[0])
 	strcpy(ip, ipaddr);
 
     if(send(sd, cmd, strlen(cmd), 0) < 0) {
@@ -1097,7 +1097,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
 #endif
 	    logg("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror(errno));
-	    mirman_update(mdat->currip, mdat->af, mdat, 1);
+	    if(mdat)
+		mirman_update(mdat->currip, mdat->af, mdat, 1);
 	    closesocket(sd);
 	    return 52;
 	}
@@ -1115,7 +1116,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     /* check whether the resource actually existed or not */
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("^getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
-	mirman_update(mdat->currip, mdat->af, mdat, 2);
+	if(mdat)
+	    mirman_update(mdat->currip, mdat->af, mdat, 2);
 	closesocket(sd);
 	return 58;
     }
@@ -1123,7 +1125,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("%cgetfile: Unknown response from remote server (IP: %s)\n", logerr ? '!' : '^', ipaddr);
-	mirman_update(mdat->currip, mdat->af, mdat, 1);
+	if(mdat)
+	    mirman_update(mdat->currip, mdat->af, mdat, 1);
 	closesocket(sd);
 	return 58;
     }
@@ -1187,7 +1190,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
     if(bread == -1) {
 	logg("%cgetfile: Download interrupted: %s (IP: %s)\n", logerr ? '!' : '^', strerror(errno), ipaddr);
-	mirman_update(mdat->currip, mdat->af, mdat, 2);
+	if(mdat)
+	    mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return 52;
     }
 
@@ -1199,7 +1203,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     else
         logg("Downloading %s [*]\n", srcfile);
 
-    mirman_update(mdat->currip, mdat->af, mdat, 0);
+    if(mdat)
+	mirman_update(mdat->currip, mdat->af, mdat, 0);
     return 0;
 }
 
@@ -1842,6 +1847,170 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     return 0;
 }
 
+static int updatecustomdb(const char *url, int *signo, const struct optstruct *opts, char *localip, int logerr)
+{
+	const struct optstruct *opt;
+	unsigned int port = 0, newsigs = 0;
+	int ret;
+	char *pt, *host, urlcpy[256], *newfile = NULL, *newfile2, newdb[32];
+	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL, *rpath, *dbname;
+	int ctimeout, rtimeout;
+	struct cl_engine *engine;
+
+
+    if(!strncasecmp(url, "http://", 7)) {
+	strncpy(urlcpy, url, sizeof(urlcpy));
+	host = &urlcpy[7];
+	if(!(pt = strchr(host, '/'))) {
+	    logg("!DatabaseCustomURL: Incorrect URL\n");
+	    return 70;
+	}
+	*pt = 0;
+	rpath = &url[pt - urlcpy];
+	dbname = strrchr(url, '/') + 1;
+	if(!dbname || strlen(dbname) < 4) {
+	    logg("DatabaseCustomURL: Incorrect URL\n");
+	    return 70;
+	}
+
+	/* Initialize proxy settings */
+	if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
+	    proxy = opt->strarg;
+	    if(strncasecmp(proxy, "http://", 7) == 0)
+		proxy += 7;
+
+	    if((opt = optget(opts, "HTTPProxyUsername"))->enabled) {
+		user = opt->strarg;
+		if((opt = optget(opts, "HTTPProxyPassword"))->enabled) {
+		    pass = opt->strarg;
+		} else {
+		    logg("HTTPProxyUsername requires HTTPProxyPassword\n");
+		    return 56;
+		}
+	    }
+	    if((opt = optget(opts, "HTTPProxyPort"))->enabled)
+		port = opt->numarg;
+	    logg("Connecting via %s\n", proxy);
+	}
+
+	if((opt = optget(opts, "HTTPUserAgent"))->enabled)
+	    uas = opt->strarg;
+
+	ctimeout = optget(opts, "ConnectTimeout")->numarg;
+	rtimeout = optget(opts, "ReceiveTimeout")->numarg;
+
+	newfile = cli_gentemp(updtmpdir);
+	if((ret = getfile(rpath, newfile, host, NULL, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, NULL, logerr, 0))) {
+	    logg("%cCan't download %s from %s\n", logerr ? '!' : '^', dbname, host);
+	    unlink(newfile);
+	    free(newfile);
+	    return ret;
+	}
+
+	/* FIXME: add IMS support
+	if(!nodb && (current->version >= newver)) {
+	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+
+	    *signo += current->sigs;
+	    cl_cvdfree(current);
+	    return 1;
+	}
+	*/
+
+    } else if(!strncasecmp(url, "file://", 7)) {
+	rpath = &url[7];
+#ifdef _WIN32
+	dbname = strrchr(rpath, '\\');
+#else
+	dbname = strrchr(rpath, '/');
+#endif
+	if(!dbname || strlen(dbname++) < 5) {
+	    logg("DatabaseCustomURL: Incorrect URL\n");
+	    return 70;
+	}
+
+	newfile = cli_gentemp(updtmpdir);
+	if(!newfile)
+	    return 70;
+
+	/* FIXME: preserve file permissions, calculate % */
+	logg("Downloading %s [  0%%]\r", dbname);
+	if(cli_filecopy(rpath, newfile) == -1) {
+	    logg("DatabaseCustomURL: Can't copy file %s into database directory\n", rpath);
+	    free(newfile);
+	    return 70;
+	}
+	logg("Downloading %s [100%%]\n", dbname);
+    } else {
+	logg("!DatabaseCustomURL: Not supported protocol\n");
+	return 70;
+    }
+
+    if(optget(opts, "TestDatabases")->enabled && strlen(newfile) > 4) {
+	newfile2 = malloc(strlen(newfile) + strlen(dbname) + 1);
+	if(!newfile2) {
+	    unlink(newfile);
+	    free(newfile);
+	    return 55;
+	}
+	sprintf(newfile2, "%s%s", newfile, dbname);
+	newfile2[strlen(newfile) + strlen(dbname)] = 0;
+	if(rename(newfile, newfile2) == -1) {
+	    logg("!Can't rename %s to %s: %s\n", newfile, newfile2, strerror(errno));
+	    unlink(newfile);
+	    free(newfile);
+	    free(newfile2);
+	    return 57;
+	}
+	free(newfile);
+	newfile = newfile2;
+	if(!(engine = cl_engine_new())) {
+	    unlink(newfile);
+	    free(newfile);
+	    return 55;
+	}
+	if((ret = cl_load(newfile, engine, &newsigs, CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA)) != CL_SUCCESS) {
+	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    unlink(newfile);
+	    free(newfile);
+	    cl_engine_free(engine);
+	    return 55;
+	}
+	if(optget(opts, "Bytecode")->enabled && (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
+	    logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
+	    unlink(newfile);
+	    free(newfile);
+	    cl_engine_free(engine);
+	    return 55;
+	}
+	logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
+	if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
+	    cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
+	cl_engine_free(engine);
+    }
+
+#ifdef _WIN32
+    if(!access(dbname, R_OK) && unlink(dbname)) {
+	logg("!Can't unlink %s. Please fix the problem manually and try again.\n", newdb);
+	unlink(newfile);
+	free(newfile);
+	return 53;
+    }
+#endif
+
+    if(rename(newfile, dbname) == -1) {
+	logg("!Can't rename %s to %s: %s\n", newfile, dbname, strerror(errno));
+	unlink(newfile);
+	free(newfile);
+	return 57;
+    }
+    free(newfile);
+    logg("%s updated (custom database)\n", dbname);
+
+    /* FIXME *signo += current->sigs; */
+    return 0;
+}
+
 int downloadmanager(const struct optstruct *opts, const char *hostname, const char *dbdir, int logerr)
 {
 	time_t currtime;
@@ -2046,11 +2215,20 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	}
     }
 
+    /* custom dbs */
+    if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
+	while(opt) {
+	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
+		updated = 1;
+	    opt = opt->nextarg;
+	}
+    }
+
     mirman_write("mirrors.dat", &mdat);
     cli_rmdirs(updtmpdir);
 
     if(updated) {
-	if(optget(opts, "HTTPProxyServer")->enabled) {
+	if(optget(opts, "HTTPProxyServer")->enabled || !ipaddr[0]) {
 	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
 	} else {
 	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);

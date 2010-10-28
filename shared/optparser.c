@@ -360,6 +360,8 @@ const struct clam_option __clam_options[] = {
 
     { "ExtraDatabase", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Download additional database. This option can be used multiple times.", "dbname1\ndbname2" },
 
+    { "DatabaseCustomURL", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "With this option you can provide custom sources (http:// or file://) for database files.\nThis option can be used multiple times.", "http://myserver.com/mysigs.ndb\nfile:///mnt/nfs/local.hdb" },
+
     { "HTTPProxyServer", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If you're behind a proxy, please enter its address here.", "your-proxy" },
 
     { "HTTPProxyPort", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_FRESHCLAM, "HTTP proxy's port", "8080" },
