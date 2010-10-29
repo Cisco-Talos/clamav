@@ -63,6 +63,7 @@ class GUIFrame : public wxFrame
 		
 		wxStaticText* m_staticText6;
 		wxComboBox* m_mirror;
+		wxCheckBox* m_bytecode;
 		wxListBox* m_urls;
 		wxButton* m_custom_add;
 		wxButton* m_custom_remove;
@@ -84,6 +85,7 @@ class GUIFrame : public wxFrame
 		virtual void m_proxyOnCheckBox( wxCommandEvent& event ) = 0;
 		virtual void m_proxyauthOnCheckBox( wxCommandEvent& event ) = 0;
 		virtual void m_proxy_autodetOnButtonClick( wxCommandEvent& event ) = 0;
+		virtual void m_bytecodeOnCheckBox( wxCommandEvent& event ) = 0;
 		virtual void m_custom_addOnButtonClick( wxCommandEvent& event ) = 0;
 		virtual void m_custom_removeOnButtonClick( wxCommandEvent& event ) = 0;
 		virtual void m_save_settingsOnButtonClick( wxCommandEvent& event ) = 0;

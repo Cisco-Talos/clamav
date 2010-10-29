@@ -35,6 +35,7 @@ class ConfigEditor
 	void RegisterText(const wxString& name, wxString *variable, wxTextCtrl *control, const wxString &hint = wxEmptyString);
 	void RegisterText(const wxString& name, wxString *variable, wxComboBox *control, const wxString &hint = wxEmptyString);
 	void RegisterInt(const wxString& name, int *variable, wxSpinCtrl *control);
+	void RegisterBool(const wxString& name, bool *variable, wxCheckBox *control); 
 	void RegisterList(const wxString &name, wxControlWithItems *control);
 	void RegisterStatic(const wxString &name, const wxString &value);
 

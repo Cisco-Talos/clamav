@@ -39,6 +39,7 @@ class SigUIFrame: public GUIFrame
 	wxString      val_proxy_username;
 	wxString      val_proxy_password;
 	wxString      val_mirror;
+	bool          val_bytecode;
 	wxProcess     *m_siginst_process;
 
         virtual void OnClose(wxCloseEvent& event);
@@ -55,6 +56,7 @@ class SigUIFrame: public GUIFrame
 	virtual void m_local_removeOnButtonClick( wxCommandEvent& event );
 	virtual void m_installOnButtonClick( wxCommandEvent& event );
 	virtual void m_deleteOnButtonClick( wxCommandEvent& event );
+	virtual void m_bytecodeOnCheckBox( wxCommandEvent& event );
 	virtual void GUIFrameOnIdle( wxIdleEvent& event );
 	void tabsOnNotebookPageChanged( wxNotebookEvent& event );
 	void OnTerminateInstall(wxProcessEvent &event);

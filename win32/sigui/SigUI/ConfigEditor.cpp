@@ -184,6 +184,13 @@ void ConfigEditor::RegisterInt(const wxString& name, int *variable, wxSpinCtrl *
     Register(name, any, control);
 }
 
+void ConfigEditor::RegisterBool(const wxString& name, bool *variable, wxCheckBox *control)
+{
+    control->SetValidator(wxGenericValidator(variable));
+    wxAny any = variable;
+    Register(name, any, control);
+}
+
 void ConfigEditor::RegisterList(const wxString &name, wxControlWithItems *control)
 {
     wxAny any = control;
@@ -202,6 +209,8 @@ void ConfigEditor::Load(void)
 	    long v_long = 0;
 	    value.ToLong(&v_long);
 	    *any.As<int*>() = v_long;
+	} else if (any.CheckType<bool*>()) {
+	    *any.As<bool*>() = value != "No";
 	} else if (any.CheckType<wxControlWithItems*>()) {
 	    wxControlWithItems *c = any.As<wxControlWithItems*>();
 	    while (!value.empty()) {
@@ -238,6 +247,10 @@ bool ConfigEditor::Save(bool checkOnly)
 	else if (any.CheckType<int*>()) {
 	    wxString s;
 	    s << *any.As<int*>();
+	    Add(key, s, !enabled);
+	} else if (any.CheckType<bool*>()) {
+	    bool e = *any.As<bool*>();
+	    wxString s = e ? "Yes" : "No";
 	    Add(key, s, !enabled);
 	} else if (any.CheckType<wxControlWithItems*>()) {
 	    wxControlWithItems *c = any.As<wxControlWithItems*>();

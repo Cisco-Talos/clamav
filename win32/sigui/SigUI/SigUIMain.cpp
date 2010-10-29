@@ -389,7 +389,7 @@ static wxString GetConfigFile()
 }
 
 SigUIFrame::SigUIFrame(wxFrame *frame)
-    : GUIFrame(frame)
+    : GUIFrame(frame), val_bytecode(true)
 {
     #ifdef _WIN32
     SetIcon(wxIcon(wxT("clam")));
@@ -411,6 +411,7 @@ SigUIFrame::SigUIFrame(wxFrame *frame)
     editor->RegisterText("HTTPProxyPassword", &val_proxy_password, m_proxy_password);
     editor->RegisterText("DatabaseMirror", &val_mirror, m_mirror, "db.COUNTRYCODE.clamav.net");
     editor->RegisterStatic("DatabaseMirror", "database.clamav.net");
+    editor->RegisterBool("Bytecode", &val_bytecode, m_bytecode);
     editor->RegisterList("DatabaseCustomURL", m_urls);
 
     HostnameValidator mirrorValidator(&val_mirror);
@@ -810,4 +811,17 @@ void SigUIFrame::m_deleteOnButtonClick( wxCommandEvent& WXUNUSED(event) )
     }
 
     wxWakeUpIdle();
+}
+
+void SigUIFrame::m_bytecodeOnCheckBox( wxCommandEvent& WXUNUSED(event) )
+{
+    bool enable = m_bytecode->IsChecked();
+    if (!enable) {
+	int answer = wxMessageBox(_("It is NOT recommended to disable bytecode.\n"
+				    "Are you sure you want to disable it?"),
+				  _("Disabling important signature database"),
+				  wxYES_NO | wxCANCEL | wxNO_DEFAULT | wxICON_QUESTION, this);
+	if (answer != wxYES)
+	    m_bytecode->SetValue(true);
+    }
 }

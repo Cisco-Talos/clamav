@@ -168,6 +168,10 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	
 	fgSizer1->Add( m_mirror, 1, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
 	
+	m_bytecode = new wxCheckBox( m_panel_updater, wxID_ANY, _("Official bytecode signatures"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_bytecode->SetValue(true); 
+	fgSizer1->Add( m_bytecode, 0, wxALL, 5 );
+	
 	sbSizer2->Add( fgSizer1, 0, wxEXPAND, 5 );
 	
 	wxStaticBoxSizer* sbSizer3;
@@ -296,6 +300,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_proxy->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_proxyOnCheckBox ), NULL, this );
 	m_proxyauth->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_proxyauthOnCheckBox ), NULL, this );
 	m_proxy_autodet->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_proxy_autodetOnButtonClick ), NULL, this );
+	m_bytecode->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_bytecodeOnCheckBox ), NULL, this );
 	m_custom_add->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_custom_addOnButtonClick ), NULL, this );
 	m_custom_remove->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_custom_removeOnButtonClick ), NULL, this );
 	m_save_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_save_settingsOnButtonClick ), NULL, this );
@@ -315,6 +320,7 @@ GUIFrame::~GUIFrame()
 	m_proxy->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_proxyOnCheckBox ), NULL, this );
 	m_proxyauth->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_proxyauthOnCheckBox ), NULL, this );
 	m_proxy_autodet->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_proxy_autodetOnButtonClick ), NULL, this );
+	m_bytecode->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( GUIFrame::m_bytecodeOnCheckBox ), NULL, this );
 	m_custom_add->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_custom_addOnButtonClick ), NULL, this );
 	m_custom_remove->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_custom_removeOnButtonClick ), NULL, this );
 	m_save_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( GUIFrame::m_save_settingsOnButtonClick ), NULL, this );
