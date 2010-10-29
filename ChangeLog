@@ -1,3 +1,7 @@
+Fri Oct 29 22:26:55 CEST 2010 (acab)
+------------------------------------
+ * clamav-for-windows: displace clamav-for-windows to a separate solution and directory
+
 Fri Oct 29 19:03:31 CEST 2010 (tk)
 ----------------------------------
  * clamd: add new option OLE2BlockMacros (requested by Mike)
