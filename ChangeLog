@@ -1,3 +1,8 @@
+Fri Oct 29 17:55:10 CEST 2010 (tk)
+----------------------------------
+ * freshclam: DatabaseCustomURL: add support for If-Modified-Since
+	      and signature counter
+
 Thu Oct 28 16:23:47 CEST 2010 (tk)
 ----------------------------------
  * freshclam: add initial support for DatabaseCustomURL

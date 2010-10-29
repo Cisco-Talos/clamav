@@ -1016,14 +1016,14 @@ static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile,
     return cvd;
 }
 
-static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const char *ims)
 {
 	char cmd[512], uastr[128], buffer[FILEBUFF], *ch;
 	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
 	    percentage = 0, sd;
 	unsigned int i;
 	char *remotename = NULL, *authorization = NULL, *headerline, ipaddr[46];
-	const char *rotation = "|/-\\";
+	const char *rotation = "|/-\\", *fname;
 
 
     if(proxy) {
@@ -1043,6 +1043,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	}
     }
 
+    if(ims)
+	logg("*If-Modified-Since: %s\n", ims);
+
     if(uas)
 	strncpy(uastr, uas, sizeof(uastr));
     else
@@ -1057,7 +1060,8 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	"Cache-Control: no-cache\r\n"
 #endif
 	"Connection: close\r\n"
-	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", uastr);
+	"%s%s%s"
+	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", uastr, ims ? "If-Modified-Since: " : "", ims ? ims : "", ims ? "\r\n": "");
 
     if(remotename)
 	free(remotename);
@@ -1122,6 +1126,14 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	return 58;
     }
 
+    /* If-Modified-Since */
+    if(strstr(buffer, "HTTP/1.1 304") || strstr(buffer, "HTTP/1.0 304")) { 
+	if(mdat)
+	    mirman_update(mdat->currip, mdat->af, mdat, 0);
+	closesocket(sd);
+	return 1;
+    }
+
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("%cgetfile: Unknown response from remote server (IP: %s)\n", logerr ? '!' : '^', ipaddr);
@@ -1157,6 +1169,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	return 57;
     }
 
+    if((fname = strrchr(srcfile, '/')))
+	fname++;
+    else
+	fname = srcfile;
+
 #ifdef SO_ERROR
     while((bread = wait_recv(sd, buffer, FILEBUFF, 0, rtimeout)) > 0) {
 #else
@@ -1176,9 +1193,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
         if(!mprintf_quiet) {
             if(totalsize > 0) {
-                mprintf("Downloading %s [%3i%%]\r", srcfile, percentage);
+                mprintf("Downloading %s [%3i%%]\r", fname, percentage);
             } else {
-                mprintf("Downloading %s [%c]\r", srcfile, rotation[rot]);
+                mprintf("Downloading %s [%c]\r", fname, rotation[rot]);
                 rot++;
                 rot %= 4;
             }
@@ -1199,9 +1216,9 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	return 53;
 
     if(totalsize > 0)
-        logg("Downloading %s [%i%%]\n", srcfile, percentage);
+        logg("Downloading %s [100%%]\n", fname);
     else
-        logg("Downloading %s [*]\n", srcfile);
+        logg("Downloading %s [*]\n", fname);
 
     if(mdat)
 	mirman_update(mdat->currip, mdat->af, mdat, 0);
@@ -1215,7 +1232,7 @@ static int getcvd(const char *cvdfile, const char *newfile, const char *hostname
 
 
     logg("*Retrieving http://%s/%s\n", hostname, cvdfile);
-    if((ret = getfile(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist))) {
+    if((ret = getfile(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL))) {
         logg("%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, hostname);
         unlink(newfile);
         return ret;
@@ -1298,7 +1315,7 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", dbname, version);
 
     logg("*Retrieving http://%s/%s\n", hostname, patch);
-    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist))) {
+    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL))) {
 	if(ret == 53)
 	    logg("Empty script %s, need to download entire database\n", patch);
 	else
@@ -1850,13 +1867,14 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 static int updatecustomdb(const char *url, int *signo, const struct optstruct *opts, char *localip, int logerr)
 {
 	const struct optstruct *opt;
-	unsigned int port = 0, newsigs = 0;
+	unsigned int port = 0, newsigs = 0, sigs = 0;
 	int ret;
-	char *pt, *host, urlcpy[256], *newfile = NULL, *newfile2, newdb[32];
+	char *pt, *host, urlcpy[256], *newfile = NULL, mtime[36], *newfile2;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL, *rpath, *dbname;
 	int ctimeout, rtimeout;
 	struct cl_engine *engine;
-
+	struct stat sb;
+	struct cl_cvd *cvd;
 
     if(!strncasecmp(url, "http://", 7)) {
 	strncpy(urlcpy, url, sizeof(urlcpy));
@@ -1899,23 +1917,23 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	ctimeout = optget(opts, "ConnectTimeout")->numarg;
 	rtimeout = optget(opts, "ReceiveTimeout")->numarg;
 
+	*mtime = 0;
+	if(stat(dbname, &sb) != -1)
+	    Rfc2822DateTime(mtime, sb.st_mtime);
+
 	newfile = cli_gentemp(updtmpdir);
-	if((ret = getfile(rpath, newfile, host, NULL, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, NULL, logerr, 0))) {
+	ret = getfile(rpath, newfile, host, NULL, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, NULL, logerr, 0, *mtime ? mtime : NULL);
+	if(ret == 1) {
+	    logg("%s is up to date (version: custom database)\n", dbname);
+	    unlink(newfile);
+	    free(newfile);
+	    return 1;
+	} else if(ret > 1) {
 	    logg("%cCan't download %s from %s\n", logerr ? '!' : '^', dbname, host);
 	    unlink(newfile);
 	    free(newfile);
 	    return ret;
 	}
-
-	/* FIXME: add IMS support
-	if(!nodb && (current->version >= newver)) {
-	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
-
-	    *signo += current->sigs;
-	    cl_cvdfree(current);
-	    return 1;
-	}
-	*/
 
     } else if(!strncasecmp(url, "file://", 7)) {
 	rpath = &url[7];
@@ -1983,7 +2001,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	    cl_engine_free(engine);
 	    return 55;
 	}
-	logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
+	logg("*Properly loaded %u signatures from new (custom) %s\n", newsigs, dbname);
 	if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
 	    cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
 	cl_engine_free(engine);
@@ -1991,7 +2009,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 
 #ifdef _WIN32
     if(!access(dbname, R_OK) && unlink(dbname)) {
-	logg("!Can't unlink %s. Please fix the problem manually and try again.\n", newdb);
+	logg("!Can't unlink %s. Please fix the problem manually and try again.\n", dbname);
 	unlink(newfile);
 	free(newfile);
 	return 53;
@@ -2005,9 +2023,20 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	return 57;
     }
     free(newfile);
-    logg("%s updated (version: custom database)\n", dbname);
 
-    /* FIXME *signo += current->sigs; */
+    if(cli_strbcasestr(dbname, ".cld") || cli_strbcasestr(dbname, ".cvd")) {
+	if((cvd = cl_cvdhead(dbname))) {
+	    sigs = cvd->sigs;
+	    cl_cvdfree(cvd);
+	}
+    } else if(cli_strbcasestr(dbname, ".cbc")) {
+	sigs = 1;
+    } else {
+	sigs = countlines(dbname);
+    }
+
+    logg("%s updated (version: custom database, sigs: %u)\n", dbname, sigs);
+    *signo += sigs;
     return 0;
 }
 
