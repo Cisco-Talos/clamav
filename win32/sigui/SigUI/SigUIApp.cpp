@@ -31,11 +31,16 @@ static const wxCmdLineEntryDesc g_cmdLineDesc [] =
 {
     {wxCMD_LINE_SWITCH, "i", "install", "install databases specified on stdin", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_SWITCH, "v", "verbose", "verbose log messages", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
+    {wxCMD_LINE_SWITCH, "w", "write-conf", "copy&validate stdin to freshclam.conf", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_NONE, NULL, NULL, NULL, wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL}
 };
 
 int SigUIApp::OnRun()
 {
+    if (conf_mode) {
+	return SigUICopy::writeFreshclamConf() ? 0 : 101;
+    }
+
     if (install_mode) {
         SigUICopy Copy;
         return Copy.installDBs() ? 0 : 100;
@@ -53,7 +58,7 @@ bool SigUIApp::OnInit()
 	wxLog::SetVerbose();
     }
 
-    if (install_mode)
+    if (install_mode || conf_mode)
         return true;
 
     //(*AppInitialize
@@ -73,6 +78,7 @@ bool SigUIApp::OnCmdLineParsed(wxCmdLineParser& parser)
 {
     install_mode = parser.Found(wxT("i"));
     verbose_mode = parser.Found(wxT("v"));
+    conf_mode = parser.Found(wxT("w"));
 
     return true;
 }

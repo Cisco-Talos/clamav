@@ -34,6 +34,7 @@ class SigUIApp : public wxApp
     private:
 	bool install_mode;
 	bool verbose_mode;
+	bool conf_mode;
 };
 
 #endif // SIGUIAPP_H

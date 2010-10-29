@@ -217,7 +217,7 @@ bool SigUICopy::copySignatures(const wxString &staging)
     progress->Pulse(_("Copying databases to temporary directory"));
     progress->Fit();
     max = 0;
-    while (!in_stdin.Eof()) {
+    while (!in_stdin.Eof() && in_stdin.IsOk()) {
 	progress->Pulse();
 	if (canceled())
 	    return false;
@@ -392,3 +392,66 @@ bool SigUICopy::installDB(const wxString& staging, const wxString &dest)
     // TODO: on failure delete all that we moved!
     return OK;
 }
+
+bool SigUICopy::writeFreshclamConf()
+{
+    wxFile fileTemp;
+    wxString tempname = wxFileName::CreateTempFileName(GetExecPath(), &fileTemp);
+    if (tempname.IsEmpty()) {
+	wxLogError(_("Cannot create temporary file!"));
+	return false;
+    }
+    wxLogVerbose(_("Reading config file from stdin"));
+
+    char buffer[1024];
+    long n;
+    while (1) {
+	n = read(0, buffer, sizeof(buffer));
+	if (n < 0) {
+	    if (errno == EBADF) {
+		wxLogError(_("No input provided! Use SigUI -w </path/to/freshclam.conf"));
+		return false;
+	    }
+	    wxLogError(_("read() failed: %d"), errno);
+	    return false;
+	}
+	if (n == 0)
+	    break;
+	if (fileTemp.Write(buffer, n) != (size_t)n) {
+	    wxLogError(_("failed to write"));
+	    return false;
+	}
+    }
+    fileTemp.Close();
+
+    // freshclam -V --config-file validates the config file and prints version!
+    wxString cmd;
+    cmd << "\"" << GetExecPath() << "freshclam.exe\" -V --config-file=\""
+	<< tempname << "\"";
+
+    wxLogVerbose(_("Validating config file with freshclam: %s"), tempname);
+
+    wxArrayString output;
+    wxArrayString errors;
+    if (wxExecute(cmd, output, errors, wxEXEC_BLOCK) != 0) {
+	wxLogVerbose(_("Config file is not valid: %s"), tempname);
+	for (unsigned i=0;i<errors.GetCount();i++)
+	    wxLogError(_("freshclam: %s"), errors[i]);
+	wxLogError(_("Configuration file provided is not valid!"));
+	wxRemoveFile(tempname);
+	return false;
+    }
+    wxLogVerbose(_("Config file is valid: %s"), tempname);
+
+    wxString conf = GetExecPath() + "freshclam.conf";
+
+    wxRemoveFile(conf);
+    wxRenameFile(tempname, conf);
+
+    if (!wxRemoveFile(tempname))
+	return false;
+    wxLogVerbose(_("Config file updated"));
+    return true;
+}
+
+

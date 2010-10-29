@@ -30,6 +30,7 @@ class SigUICopy
     public:
 	        SigUICopy();
 		bool installDBs(void);
+		static bool writeFreshclamConf(void);
 		static bool validate_dbname(const wxString &name, bool all = false);
     private:
 		jmp_buf env;
