@@ -28,7 +28,7 @@
 #include <wx/dir.h>
 #include <wx/evtloop.h>
 
-#include "clamav.h"
+#include "../../../libclamav/clamav.h"
 #include "installdb.h"
 
 static wxString GetExecPath()
