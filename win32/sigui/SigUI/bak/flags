@@ -1,0 +1,2 @@
+  $ ./configure --host=i586-mingw32msvc --build=x86_64-linux --without-libtiff --without-opengl --disable-shared CFLAGS=-Os CXXFLAGS=-Os --disable-threads --without-expat --disable-fswatcher --enable-no_exceptions --enable-no_rtti --disable-stc --without-libjpeg --without-libpng --without-regex --without-zlib --disable-html --disable-media --disable-xrc --disable-aui --disable-propgrid --disable-ribbon --disable-stc
+

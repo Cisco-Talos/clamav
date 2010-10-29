@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<makefile>
+
+    <include file="../build/bakefiles/config.bkl"/>
+
+    <template id="sub">
+        <dependency-of>all</dependency-of>
+    </template>
+
+    <subproject id="emulator" template="sub">
+        <dir>emulator/src</dir>
+        <installable>no</installable>
+    </subproject>
+
+    <subproject id="execmon" template="sub">
+        <dir>execmon</dir>
+        <installable>yes</installable>
+    </subproject>
+
+    <subproject id="helpview" template="sub">
+        <dir>helpview/src</dir>
+        <installable>no</installable>
+    </subproject>
+
+    <subproject id="hhp2cached" template="sub">
+        <dir>hhp2cached</dir>
+        <installable>no</installable>
+    </subproject>
+
+    <subproject id="ifacecheck" template="sub">
+        <dir>ifacecheck/src</dir>
+        <installable>yes</installable>
+    </subproject>
+
+    <subproject id="screenshotgen" template="sub">
+        <dir>screenshotgen/src</dir>
+        <installable>yes</installable>
+    </subproject>
+
+    <subproject id="wxrc" template="sub">
+        <dir>wxrc</dir>
+        <installable>yes</installable>
+    </subproject>
+
+</makefile>

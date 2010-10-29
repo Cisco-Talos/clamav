@@ -1,0 +1,6991 @@
+# translation of wxstd-hi.po to हिन्दी (Hindi)
+# This file is distributed under the same license as the wxWidgets package.
+# Copyright (C) 2008 wxWidgets development team
+# प्रियंक बोल्या (Priyank Bolia) <priyank.bolia@gmail.com>, 2008.
+# धनञ्जय शर्मा (Dhananjaya Sharma) <dysxhi@yahoo.co.in>, 2004.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: wxstd-hi\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-04-24 09:56+0200\n"
+"PO-Revision-Date: 2008-07-28 23:09+0530\n"
+"Last-Translator: Priyank Bolia <priyank.bolia@gmail.com>\n"
+"Language-Team: हिन्दी (Hindi) <dysxhi@yahoo.co.in>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"plural-forms: nplurals=2; plural=n > 1\n"
+"X-Poedit-Language: Hindi\n"
+"X-Poedit-Country: INDIA\n"
+
+#: ../src/common/debugrpt.cpp:575
+#, c-format
+msgid "\t%s: %s\n"
+msgstr "\t%s: %s\n"
+
+#: ../src/common/debugrpt.cpp:578
+msgid ""
+"\n"
+"Please send this report to the program maintainer, thank you!\n"
+msgstr ""
+"\n"
+"आपका धन्यवाद, कृपया इस विवरण को प्रोग्राम संरक्षक को भेजे।\n"
+
+#: ../src/richtext/richtextstyledlg.cpp:202
+#: ../src/richtext/richtextstyledlg.cpp:214
+#: ../src/palmos/utils.cpp:216
+msgid " "
+msgstr " "
+
+#: ../src/generic/dbgrptg.cpp:322
+msgid "              Thank you and we're sorry for the inconvenience!\n"
+msgstr "              आपका धन्यवाद, कृपया असुविधा के लिए क्षमा करें।\n"
+
+#: ../src/common/log.cpp:246
+#, c-format
+msgid " (error %ld: %s)"
+msgstr "(त्रुटि %ld: %s)"
+
+#: ../src/common/docview.cpp:1432
+msgid " - "
+msgstr " - "
+
+#: ../src/common/strconv.cpp:3063
+#: ../src/common/strconv.cpp:3071
+msgid " Couldn't create the UnicodeConverter"
+msgstr "यूनिकोड रूपांन्तरक का निर्माण नहीं किया जा सका"
+
+#: ../src/richtext/richtextprint.cpp:549
+#: ../src/html/htmprint.cpp:579
+msgid " Preview"
+msgstr " पूर्वालोकन"
+
+#: ../src/msw/aboutdlg.cpp:52
+msgid " Version "
+msgstr "संस्मरण"
+
+#: ../src/common/fontcmn.cpp:619
+msgid " bold"
+msgstr "गहरा"
+
+#: ../src/common/fontcmn.cpp:635
+msgid " italic"
+msgstr "तिरछा"
+
+#: ../src/common/fontcmn.cpp:615
+msgid " light"
+msgstr "हल्का"
+
+#: ../src/common/paper.cpp:119
+msgid "#10 Envelope, 4 1/8 x 9 1/2 in"
+msgstr "#१० लिफ़ाफ़ा, ४ १/८ x 9 1/2 इंच"
+
+#: ../src/common/paper.cpp:120
+msgid "#11 Envelope, 4 1/2 x 10 3/8 in"
+msgstr "#११ लिफ़ाफ़ा, ४ १/२ x १० ३/८ इंच"
+
+#: ../src/common/paper.cpp:121
+msgid "#12 Envelope, 4 3/4 x 11 in"
+msgstr "#१२ लिफ़ाफ़ा, ४ ३/४ x ११ इंच"
+
+#: ../src/common/paper.cpp:122
+msgid "#14 Envelope, 5 x 11 1/2 in"
+msgstr "#१४ लिफ़ाफ़ा, ५ x ११ 1/2 इंच"
+
+#: ../src/common/paper.cpp:118
+msgid "#9 Envelope, 3 7/8 x 8 7/8 in"
+msgstr "#९ लिफ़ाफ़ा, ३ ७/८ x ८ ७/८ इंच"
+
+#: ../contrib/src/deprecated/resource.cpp:1808
+#: ../contrib/src/deprecated/resource.cpp:1938
+#: ../contrib/src/deprecated/resource.cpp:3036
+#, c-format
+msgid "#define %s must be an integer."
+msgstr "#परिभाषा %s पूर्ण संख्या होना चाहिए।"
+
+#: ../src/common/filename.cpp:2377
+#, c-format
+msgid "%.*f GB"
+msgstr "%.*f जीबी"
+
+#: ../src/common/filename.cpp:2375
+#, c-format
+msgid "%.*f MB"
+msgstr "%.*f मेगाबाइट"
+
+#: ../src/common/filename.cpp:2379
+#, c-format
+msgid "%.*f TB"
+msgstr "%.*f टीबी"
+
+#: ../src/common/filename.cpp:2373
+#, c-format
+msgid "%.*f kB"
+msgstr "%.*f किलोबाईट"
+
+#: ../src/html/helpwnd.cpp:1045
+#: ../src/html/helpwnd.cpp:1047
+#: ../src/html/helpwnd.cpp:1679
+#: ../src/html/helpwnd.cpp:1717
+#, c-format
+msgid "%i of %i"
+msgstr "%i का %i"
+
+#: ../src/generic/filedlgg.cpp:360
+#, c-format
+msgid "%ld byte"
+msgid_plural "%ld bytes"
+msgstr[0] "%ld बाईट"
+msgstr[1] "%ld बाईट्स"
+
+#: ../src/common/cmdline.cpp:870
+#, c-format
+msgid "%s (or %s)"
+msgstr "%s (या %s)"
+
+#: ../src/common/filename.cpp:2371
+#, c-format
+msgid "%s B"
+msgstr "%s बाईट"
+
+#: ../src/generic/logg.cpp:265
+#, c-format
+msgid "%s Error"
+msgstr "%s त्रुटि"
+
+#: ../src/generic/logg.cpp:273
+#, c-format
+msgid "%s Information"
+msgstr "%s सूचना"
+
+#: ../src/generic/logg.cpp:269
+#, c-format
+msgid "%s Warning"
+msgstr "%s चेतावनी"
+
+#: ../src/common/tarstrm.cpp:1307
+#, c-format
+msgid "%s did not fit the tar header for entry '%s'"
+msgstr ""
+
+#: ../src/common/fldlgcmn.cpp:94
+#, c-format
+msgid "%s files (%s)|%s"
+msgstr "%s फ़ाइलें (%s)|%s"
+
+#: ../src/common/msgout.cpp:217
+#, c-format
+msgid "%s message"
+msgstr "%s संदेश"
+
+#: ../contrib/src/deprecated/resource.cpp:2400
+#, c-format
+msgid "%s not a bitmap resource specification."
+msgstr "%s बिट्मैप संसाधन विशिष्टता नहीं हें।"
+
+#: ../contrib/src/deprecated/resource.cpp:2554
+#, c-format
+msgid "%s not an icon resource specification."
+msgstr "%s आइकॉन संसाधन विशिष्टता नहीं हें।"
+
+#: ../contrib/src/deprecated/resource.cpp:1901
+#: ../contrib/src/deprecated/resource.cpp:2030
+#: ../contrib/src/deprecated/resource.cpp:3133
+#, c-format
+msgid "%s: ill-formed resource file syntax."
+msgstr "%s: संसाधन फ़ाइल वाक्यविन्यास गलत हें।"
+
+#: ../src/common/stockitem.cpp:110
+msgid "&About"
+msgstr "के बारे में (&A)..."
+
+#: ../src/html/helpfrm.cpp:123
+#: ../src/html/helpfrm.cpp:125
+msgid "&About..."
+msgstr "के बारे में (&A)..."
+
+#: ../src/common/stockitem.cpp:160
+msgid "&Actual Size"
+msgstr "वास्तविक आकार (&A)"
+
+#: ../src/richtext/richtextindentspage.cpp:296
+msgid "&After a paragraph:"
+msgstr "अनुच्छेद के बाद में (&A):"
+
+#: ../src/richtext/richtextliststylepage.cpp:318
+#: ../src/richtext/richtextindentspage.cpp:138
+msgid "&Alignment"
+msgstr "पंक्तिबद्ध करें (&A)"
+
+#: ../src/common/stockitem.cpp:112
+msgid "&Apply"
+msgstr "लागु करें (&A)"
+
+#: ../src/richtext/richtextstyledlg.cpp:237
+msgid "&Apply Style"
+msgstr "शैली लागु करें (&A)"
+
+#: ../src/msw/mdi.cpp:175
+msgid "&Arrange Icons"
+msgstr "आइकॉनों को व्यवस्थित करें (&A)"
+
+#: ../src/common/stockitem.cpp:124
+msgid "&Back"
+msgstr "पीछे (&B)"
+
+#: ../src/richtext/richtextstylepage.cpp:112
+msgid "&Based on:"
+msgstr "पर आधारित (&B):"
+
+#: ../src/richtext/richtextindentspage.cpp:284
+msgid "&Before a paragraph:"
+msgstr "अनुच्छेद के पहले (&B):"
+
+#: ../src/common/stockitem.cpp:113
+msgid "&Bold"
+msgstr "गहरा"
+
+#: ../src/richtext/richtextliststylepage.cpp:209
+#: ../src/richtext/richtextbulletspage.cpp:157
+msgid "&Bullet style:"
+msgstr "बुल्लेट शैली (&B):"
+
+#: ../src/common/stockitem.cpp:114
+#: ../src/generic/fontdlgg.cpp:377
+#: ../src/generic/fontdlgg.cpp:396
+#: ../src/generic/wizard.cpp:460
+#: ../src/mac/carbon/fontdlg.cpp:525
+msgid "&Cancel"
+msgstr "निरस्त करें (&C)"
+
+#: ../src/msw/mdi.cpp:171
+msgid "&Cascade"
+msgstr "कास्केड करें (&C)"
+
+#: ../src/richtext/richtextsymboldlg.cpp:438
+msgid "&Character code:"
+msgstr "संप्रतीक कूट (&C):"
+
+#: ../src/common/stockitem.cpp:115
+msgid "&Clear"
+msgstr "साफ़ करें (&C)"
+
+#: ../src/common/prntbase.cpp:1102
+#: ../src/common/stockitem.cpp:116
+#: ../src/html/helpfrm.cpp:120
+#: ../src/generic/logg.cpp:515
+msgid "&Close"
+msgstr "बन्द करे (&C)"
+
+#: ../src/richtext/richtextfontpage.cpp:213
+msgid "&Colour:"
+msgstr "रंग (&C):"
+
+#: ../src/common/stockitem.cpp:117
+#: ../src/richtext/richtextctrl.cpp:2582
+#: ../src/msw/textctrl.cpp:2304
+#: ../src/mac/carbon/textctrl.cpp:1043
+msgid "&Copy"
+msgstr "प्रतिलिपि बनाएँ (&C)"
+
+#: ../src/generic/hyperlink.cpp:160
+msgid "&Copy URL"
+msgstr "URL की प्रतिलिपि बनाएँ (&C)"
+
+#: ../src/generic/dbgrptg.cpp:330
+msgid "&Debug report preview:"
+msgstr "दोषमार्जन विवरण पूर्वालोकन (&D):"
+
+#: ../src/common/stockitem.cpp:119
+#: ../src/richtext/richtextctrl.cpp:2584
+#: ../src/richtext/richtexttabspage.cpp:141
+#: ../src/msw/textctrl.cpp:2306
+#: ../src/mac/carbon/textctrl.cpp:1045
+msgid "&Delete"
+msgstr "मिटाएँं (&D)"
+
+#: ../src/richtext/richtextstyledlg.cpp:255
+msgid "&Delete Style..."
+msgstr "शैली हटाएँ (&D)..."
+
+#: ../src/generic/logg.cpp:723
+msgid "&Details"
+msgstr "विवरण (&D)"
+
+#: ../src/common/stockitem.cpp:125
+msgid "&Down"
+msgstr "नीचे (&D)"
+
+#: ../src/common/stockitem.cpp:120
+msgid "&Edit"
+msgstr "संपादन (&E)"
+
+#: ../src/richtext/richtextstyledlg.cpp:249
+msgid "&Edit Style..."
+msgstr "शैली संपादन (&E)..."
+
+#: ../src/common/stockitem.cpp:122
+#: ../src/html/helpfrm.cpp:127
+msgid "&File"
+msgstr "फ़ाइल (&F)"
+
+#: ../src/common/stockitem.cpp:121
+msgid "&Find"
+msgstr "खोजें (&F)"
+
+#: ../src/generic/wizard.cpp:655
+msgid "&Finish"
+msgstr "समाप्त करें (&F)"
+
+#: ../src/generic/fontdlgg.cpp:278
+msgid "&Font family:"
+msgstr "फ़ॉन्ट वंश:"
+
+#: ../src/richtext/richtextliststylepage.cpp:193
+msgid "&Font for Level..."
+msgstr "स्तर के लिए फ़ॉन्ट (&F)..."
+
+#: ../src/richtext/richtextsymboldlg.cpp:399
+#: ../src/richtext/richtextfontpage.cpp:134
+msgid "&Font:"
+msgstr "फ़ॉन्ट: (&F)"
+
+#: ../src/common/stockitem.cpp:126
+msgid "&Forward"
+msgstr "आगे (&F)"
+
+#: ../src/richtext/richtextsymboldlg.cpp:450
+msgid "&From:"
+msgstr "से (&F):"
+
+#: ../src/common/prntbase.cpp:1148
+msgid "&Goto..."
+msgstr "जाएँ (&G)..."
+
+#: ../src/common/stockitem.cpp:128
+#: ../src/html/helpfrm.cpp:128
+#: ../src/generic/wizard.cpp:456
+#: ../src/generic/wizard.cpp:463
+msgid "&Help"
+msgstr "सहायता (&H)"
+
+#: ../src/common/stockitem.cpp:129
+msgid "&Home"
+msgstr "गृह (&H)"
+
+#: ../src/richtext/richtextliststylepage.cpp:371
+#: ../src/richtext/richtextindentspage.cpp:194
+msgid "&Indentation (tenths of a mm)"
+msgstr "इंडेंटेशन (मिलीमीटर का दसवाँ भाग) (&I):"
+
+#: ../src/richtext/richtextliststylepage.cpp:355
+#: ../src/richtext/richtextindentspage.cpp:177
+msgid "&Indeterminate"
+msgstr "अनिश्चित (&I)"
+
+#: ../src/common/stockitem.cpp:131
+msgid "&Index"
+msgstr "अनुक्रमणिका (&I)"
+
+#: ../src/common/stockitem.cpp:132
+msgid "&Italic"
+msgstr "तिरछा"
+
+#: ../src/richtext/richtextliststylepage.cpp:341
+#: ../src/richtext/richtextindentspage.cpp:163
+msgid "&Justified"
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:327
+#: ../src/richtext/richtextindentspage.cpp:149
+msgid "&Left"
+msgstr "बायें (&L)"
+
+#: ../src/richtext/richtextliststylepage.cpp:380
+#: ../src/richtext/richtextindentspage.cpp:205
+msgid "&Left:"
+msgstr "बायें: (&L)"
+
+#: ../src/richtext/richtextliststylepage.cpp:182
+msgid "&List level:"
+msgstr "सूची स्तर (&L):"
+
+#: ../src/generic/logg.cpp:516
+msgid "&Log"
+msgstr "लॉग (&L)"
+
+#: ../src/univ/themes/win32.cpp:3734
+msgid "&Move"
+msgstr "इधर-उधर ले जाएँ (&M)"
+
+#: ../src/common/stockitem.cpp:137
+#: ../src/richtext/richtexttabspage.cpp:135
+msgid "&New"
+msgstr "नया (&N)"
+
+#: ../src/aui/tabmdi.cpp:108
+#: ../src/generic/mdig.cpp:118
+#: ../src/msw/mdi.cpp:176
+msgid "&Next"
+msgstr "अगला (&N)"
+
+#: ../src/generic/wizard.cpp:459
+#: ../src/generic/wizard.cpp:655
+msgid "&Next >"
+msgstr "अगला (&N) >"
+
+#: ../src/generic/tipdlg.cpp:274
+msgid "&Next Tip"
+msgstr "अगला संकेत (&N)"
+
+#: ../src/richtext/richtextstylepage.cpp:122
+msgid "&Next style:"
+msgstr "अगली शैली (&N):"
+
+#: ../src/common/stockitem.cpp:138
+msgid "&No"
+msgstr "नहीं (&N)"
+
+#: ../src/generic/dbgrptg.cpp:352
+msgid "&Notes:"
+msgstr "टिप्पणी (&N)"
+
+#: ../src/richtext/richtextbulletspage.cpp:262
+msgid "&Number:"
+msgstr "अंक (&N):"
+
+#: ../src/common/stockitem.cpp:139
+#: ../src/generic/fontdlgg.cpp:382
+#: ../src/generic/fontdlgg.cpp:389
+#: ../src/mac/carbon/fontdlg.cpp:531
+msgid "&OK"
+msgstr "ठीक (&O)"
+
+#: ../src/common/stockitem.cpp:140
+msgid "&Open"
+msgstr "खोलें (&O)..."
+
+#: ../src/html/helpfrm.cpp:118
+msgid "&Open..."
+msgstr "खोलें (&O)..."
+
+#: ../src/richtext/richtextindentspage.cpp:241
+msgid "&Outline level:"
+msgstr "रूपरेखा स्तर (&O):"
+
+#: ../src/common/stockitem.cpp:141
+#: ../src/richtext/richtextctrl.cpp:2583
+#: ../src/msw/textctrl.cpp:2305
+#: ../src/mac/carbon/textctrl.cpp:1044
+msgid "&Paste"
+msgstr "चिपकाएँ (&P)"
+
+#: ../src/generic/fontdlgg.cpp:329
+msgid "&Point size:"
+msgstr "फ़ॉन्ट आकार (&P):"
+
+#: ../src/richtext/richtexttabspage.cpp:113
+msgid "&Position (tenths of a mm):"
+msgstr "स्थिति (मिलीमीटर का दसवाँ भाग) (&P):"
+
+#: ../src/common/stockitem.cpp:142
+msgid "&Preferences"
+msgstr "प्राथमिकता (&P)"
+
+#: ../src/aui/tabmdi.cpp:109
+#: ../src/generic/mdig.cpp:119
+#: ../src/msw/mdi.cpp:177
+msgid "&Previous"
+msgstr "पिछला (&P)"
+
+#: ../src/common/stockitem.cpp:143
+msgid "&Print"
+msgstr "मुद्रण (&P)"
+
+#: ../src/common/prntbase.cpp:1107
+msgid "&Print..."
+msgstr "मुद्रण (&P)..."
+
+#: ../src/common/stockitem.cpp:145
+msgid "&Properties"
+msgstr "गुणधर्म (&P)"
+
+#: ../src/common/stockitem.cpp:146
+msgid "&Quit"
+msgstr "छोड़ दे (&Q)"
+
+#: ../src/common/cmdproc.cpp:288
+#: ../src/common/cmdproc.cpp:295
+#: ../src/common/stockitem.cpp:147
+#: ../src/richtext/richtextctrl.cpp:2579
+#: ../src/msw/textctrl.cpp:2301
+#: ../src/mac/carbon/textctrl.cpp:1040
+msgid "&Redo"
+msgstr "पुनःकरें (&R)"
+
+#: ../src/common/cmdproc.cpp:284
+#: ../src/common/cmdproc.cpp:304
+msgid "&Redo "
+msgstr "पुनःकरें (&R)"
+
+#: ../src/richtext/richtextstyledlg.cpp:243
+msgid "&Rename Style..."
+msgstr "शैली का पुनःनामकरण (&R)..."
+
+#: ../src/generic/fdrepdlg.cpp:178
+msgid "&Replace"
+msgstr "बदलें (&R)"
+
+#: ../src/richtext/richtextstyledlg.cpp:273
+msgid "&Restart numbering"
+msgstr "पुनः प्रारम्भन संख्यांकन (&R)"
+
+#: ../src/univ/themes/win32.cpp:3733
+msgid "&Restore"
+msgstr "पुनःस्थापित करें (&R)"
+
+#: ../src/richtext/richtextliststylepage.cpp:334
+#: ../src/richtext/richtextindentspage.cpp:156
+msgid "&Right"
+msgstr "दायें (&R)"
+
+#: ../src/richtext/richtextliststylepage.cpp:402
+#: ../src/richtext/richtextindentspage.cpp:229
+msgid "&Right:"
+msgstr "दायें (&R):"
+
+#: ../src/common/stockitem.cpp:151
+msgid "&Save"
+msgstr "सुरक्षित करें (&S)"
+
+#: ../src/generic/logg.cpp:511
+msgid "&Save..."
+msgstr "सुरक्षित करें (&S)"
+
+#: ../src/generic/tipdlg.cpp:268
+msgid "&Show tips at startup"
+msgstr "संकेतो को शुरूवात में दिखाएँ (&S)"
+
+#: ../src/univ/themes/win32.cpp:3736
+msgid "&Size"
+msgstr "आकार (&S)"
+
+#: ../src/richtext/richtextfontpage.cpp:152
+msgid "&Size:"
+msgstr "आकार: (&S)"
+
+#: ../src/richtext/richtextliststylepage.cpp:422
+#: ../src/richtext/richtextindentspage.cpp:272
+msgid "&Spacing (tenths of a mm)"
+msgstr "अन्तराल (मिलीमीटर का दसवाँ भाग) (&S)"
+
+#: ../src/common/stockitem.cpp:154
+msgid "&Stop"
+msgstr "रोक दें (&S)"
+
+#: ../src/richtext/richtextfontpage.cpp:225
+msgid "&Strikethrough"
+msgstr "स्ट्राइक थुःरु (S)"
+
+#: ../src/richtext/richtextstylepage.cpp:103
+#: ../src/generic/fontdlgg.cpp:289
+msgid "&Style:"
+msgstr "शैली: (&S)"
+
+#: ../src/richtext/richtextstyledlg.cpp:190
+msgid "&Styles:"
+msgstr "शैलियाँ (&S):"
+
+#: ../src/richtext/richtextsymboldlg.cpp:412
+msgid "&Subset:"
+msgstr "उप समुच्चय (&S):"
+
+#: ../src/richtext/richtextliststylepage.cpp:267
+#: ../src/richtext/richtextbulletspage.cpp:217
+msgid "&Symbol:"
+msgstr "चिह्न: (&S)"
+
+#: ../src/common/stockitem.cpp:156
+#: ../src/generic/fontdlgg.cpp:351
+msgid "&Underline"
+msgstr "रेखांकित (&U)"
+
+#: ../src/richtext/richtextfontpage.cpp:200
+msgid "&Underlining:"
+msgstr "रेखांकन (&U):"
+
+#: ../src/common/cmdproc.cpp:266
+#: ../src/common/stockitem.cpp:157
+#: ../src/richtext/richtextctrl.cpp:2578
+#: ../src/msw/textctrl.cpp:2300
+#: ../src/mac/carbon/textctrl.cpp:1039
+msgid "&Undo"
+msgstr "पहिले जैसा करें (&U)"
+
+#: ../src/common/cmdproc.cpp:260
+msgid "&Undo "
+msgstr "पहिले जैसा करें (&U) "
+
+#: ../src/common/stockitem.cpp:158
+msgid "&Unindent"
+msgstr "अन-इंडेंट (&U)"
+
+#: ../src/common/stockitem.cpp:127
+msgid "&Up"
+msgstr "ऊपर (&U)"
+
+#: ../src/generic/fontdlgg.cpp:300
+msgid "&Weight:"
+msgstr "भार (&W):"
+
+#: ../src/aui/tabmdi.cpp:300
+#: ../src/aui/tabmdi.cpp:316
+#: ../src/aui/tabmdi.cpp:318
+#: ../src/generic/mdig.cpp:298
+#: ../src/generic/mdig.cpp:314
+#: ../src/generic/mdig.cpp:318
+#: ../src/msw/mdi.cpp:1436
+#: ../src/msw/mdi.cpp:1443
+#: ../src/msw/mdi.cpp:1473
+msgid "&Window"
+msgstr "खिड़की (&W)"
+
+#: ../src/common/stockitem.cpp:159
+msgid "&Yes"
+msgstr "हाँ (&Y)"
+
+#: ../src/common/config.cpp:469
+#: ../src/msw/regconf.cpp:253
+#, c-format
+msgid "'%s' has extra '..', ignored."
+msgstr "'%s' में अतिरिक्त '..' है, ध्यान नहीं दिया गया।"
+
+#: ../src/common/valtext.cpp:128
+#: ../src/common/valtext.cpp:158
+#: ../src/common/valtext.cpp:164
+#, c-format
+msgid "'%s' is invalid"
+msgstr "'%s' अवैध है"
+
+#: ../src/common/cmdline.cpp:786
+#, c-format
+msgid "'%s' is not a correct numeric value for option '%s'."
+msgstr "'%s' एक सही सांख्यानिक मूल्य '%s' विकल्प के लिए नहीं है।"
+
+#: ../src/common/intl.cpp:1202
+#, c-format
+msgid "'%s' is not a valid message catalog."
+msgstr "'%s' एक वैध संदेश सूचीपत्र नहीं है।"
+
+#: ../src/common/textbuf.cpp:245
+#, c-format
+msgid "'%s' is probably a binary buffer."
+msgstr "'%s' सम्भवता एक बायनरी बफ़र है।"
+
+#: ../src/common/valtext.cpp:153
+#, c-format
+msgid "'%s' should be numeric."
+msgstr "'%s' को एक संख्या होना चाहिए।"
+
+#: ../src/common/valtext.cpp:135
+#, c-format
+msgid "'%s' should only contain ASCII characters."
+msgstr "'%s' में सिर्फ़ आस्की अक्षरों को ही सम्मिलित होना चाहिए।"
+
+#: ../src/common/valtext.cpp:141
+#, c-format
+msgid "'%s' should only contain alphabetic characters."
+msgstr "'%s' में सिर्फ़ आल्फ़ाबेटिक अक्षरों को ही सम्मिलित होना चाहिए।"
+
+#: ../src/common/valtext.cpp:147
+#, c-format
+msgid "'%s' should only contain alphabetic or numeric characters."
+msgstr "'%s' में सिर्फ़ आल्फ़ाबेटिक या न्यूमेरिक अक्षरों को ही सम्मिलित होना चाहिए।"
+
+#: ../src/richtext/richtextliststylepage.cpp:228
+#: ../src/richtext/richtextbulletspage.cpp:177
+msgid "(*)"
+msgstr "(*)"
+
+#: ../src/html/helpwnd.cpp:980
+msgid "(Help)"
+msgstr "(सहायता)"
+
+#: ../src/richtext/richtextliststylepage.cpp:483
+#: ../src/richtext/richtextbulletspage.cpp:281
+msgid "(None)"
+msgstr "(कुछ नहीं)"
+
+#: ../src/richtext/richtextsymboldlg.cpp:524
+msgid "(Normal text)"
+msgstr "(सामान्य पाठ)"
+
+#: ../src/html/helpwnd.cpp:412
+#: ../src/html/helpwnd.cpp:1116
+#: ../src/html/helpwnd.cpp:1744
+msgid "(bookmarks)"
+msgstr "(बुकमार्क)"
+
+#: ../src/richtext/richtextformatdlg.cpp:627
+msgid "(none)"
+msgstr "(कोई नाम नहीं)"
+
+#: ../src/richtext/richtextliststylepage.cpp:494
+#: ../src/richtext/richtextbulletspage.cpp:292
+msgid "*"
+msgstr "*"
+
+#: ../src/richtext/richtextliststylepage.cpp:235
+#: ../src/richtext/richtextbulletspage.cpp:184
+msgid "*)"
+msgstr "*)"
+
+#: ../src/richtext/richtextliststylepage.cpp:497
+#: ../src/richtext/richtextbulletspage.cpp:295
+msgid "+"
+msgstr "+"
+
+#: ../contrib/src/deprecated/resource.cpp:1840
+#: ../contrib/src/deprecated/resource.cpp:1970
+#: ../contrib/src/deprecated/resource.cpp:3072
+msgid ""
+", expected static, #include or #define\n"
+"while parsing resource."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:495
+#: ../src/richtext/richtextbulletspage.cpp:293
+msgid "-"
+msgstr "-"
+
+#: ../src/richtext/richtextindentspage.cpp:246
+msgid "1"
+msgstr "१"
+
+#: ../src/richtext/richtextliststylepage.cpp:460
+#: ../src/richtext/richtextindentspage.cpp:315
+msgid "1.5"
+msgstr "१.५"
+
+#: ../src/common/paper.cpp:142
+msgid "10 x 11 in"
+msgstr "१२ x १४ इंच"
+
+#: ../src/common/paper.cpp:115
+msgid "10 x 14 in"
+msgstr "१० x १४ इंच"
+
+#: ../src/common/paper.cpp:116
+msgid "11 x 17 in"
+msgstr "११ x १७ इंच"
+
+#: ../src/common/paper.cpp:186
+msgid "12 x 11 in"
+msgstr "१२ x ११ इंच"
+
+#: ../src/common/paper.cpp:143
+msgid "15 x 11 in"
+msgstr "१५ x ११ इंच"
+
+#: ../src/richtext/richtextliststylepage.cpp:461
+#: ../src/richtext/richtextindentspage.cpp:247
+#: ../src/richtext/richtextindentspage.cpp:316
+msgid "2"
+msgstr "२"
+
+#: ../src/richtext/richtextindentspage.cpp:248
+msgid "3"
+msgstr "३"
+
+#: ../src/richtext/richtextindentspage.cpp:249
+msgid "4"
+msgstr "४"
+
+#: ../src/richtext/richtextindentspage.cpp:250
+msgid "5"
+msgstr "५"
+
+#: ../src/richtext/richtextindentspage.cpp:251
+msgid "6"
+msgstr "६"
+
+#: ../src/common/paper.cpp:134
+msgid "6 3/4 Envelope, 3 5/8 x 6 1/2 in"
+msgstr "६ ३/४ लिफ़ाफ़ा, ३ ५/८ x ६ १/२ इंच"
+
+#: ../src/richtext/richtextindentspage.cpp:252
+msgid "7"
+msgstr "७"
+
+#: ../src/richtext/richtextindentspage.cpp:253
+msgid "8"
+msgstr "८"
+
+#: ../src/richtext/richtextindentspage.cpp:254
+msgid "9"
+msgstr "९"
+
+#: ../src/common/paper.cpp:141
+msgid "9 x 11 in"
+msgstr "९ x ११ इंच"
+
+#: ../src/html/htmprint.cpp:303
+msgid ": file does not exist!"
+msgstr ": फ़ाइल विद्यमान नहीं है! "
+
+#: ../src/common/fontmap.cpp:197
+msgid ": unknown charset"
+msgstr ": अज्ञात शब्दसमुच्चय"
+
+#: ../src/common/fontmap.cpp:411
+msgid ": unknown encoding"
+msgstr ": अज्ञात एन्कोडिंग"
+
+#: ../src/generic/wizard.cpp:465
+msgid "< &Back"
+msgstr "< पीछे (&B)"
+
+#: ../src/common/prntbase.cpp:1130
+msgid "<<"
+msgstr "<<"
+
+#: ../src/mac/carbon/fontdlg.cpp:545
+#: ../src/mac/carbon/fontdlg.cpp:752
+#: ../src/mac/carbon/fontdlg.cpp:772
+msgid "<Any Decorative>"
+msgstr "<कोई साज-सजावट>"
+
+#: ../src/mac/carbon/fontdlg.cpp:546
+#: ../src/mac/carbon/fontdlg.cpp:754
+#: ../src/mac/carbon/fontdlg.cpp:774
+msgid "<Any Modern>"
+msgstr "<कोई आधुनिक>"
+
+#: ../src/mac/carbon/fontdlg.cpp:544
+#: ../src/mac/carbon/fontdlg.cpp:750
+#: ../src/mac/carbon/fontdlg.cpp:770
+msgid "<Any Roman>"
+msgstr "<कोई रोमन>"
+
+#: ../src/mac/carbon/fontdlg.cpp:547
+#: ../src/mac/carbon/fontdlg.cpp:756
+#: ../src/mac/carbon/fontdlg.cpp:776
+msgid "<Any Script>"
+msgstr "<कोई लिपि>"
+
+#: ../src/mac/carbon/fontdlg.cpp:548
+#: ../src/mac/carbon/fontdlg.cpp:761
+#: ../src/mac/carbon/fontdlg.cpp:780
+msgid "<Any Swiss>"
+msgstr "<कोई स्वीस>"
+
+#: ../src/mac/carbon/fontdlg.cpp:549
+#: ../src/mac/carbon/fontdlg.cpp:758
+#: ../src/mac/carbon/fontdlg.cpp:778
+msgid "<Any Teletype>"
+msgstr "<कोई टेलीटाइप>"
+
+#: ../src/mac/carbon/fontdlg.cpp:543
+msgid "<Any>"
+msgstr "<कोई भी>"
+
+#: ../src/generic/filedlgg.cpp:331
+#: ../src/generic/filedlgg.cpp:354
+msgid "<DIR>"
+msgstr "<निर्देशिका> (<DIR>"
+
+#: ../src/generic/filedlgg.cpp:335
+#: ../src/generic/filedlgg.cpp:358
+msgid "<DRIVE>"
+msgstr "<ड्राइव>"
+
+#: ../src/generic/filedlgg.cpp:333
+#: ../src/generic/filedlgg.cpp:356
+msgid "<LINK>"
+msgstr "<कड़ी>"
+
+#: ../src/html/helpwnd.cpp:1272
+msgid "<b><i>Bold italic face.</i></b><br>"
+msgstr "<b><i>गहरा इटैलिक फ़ेस।</i></b><br>"
+
+#: ../src/html/helpwnd.cpp:1276
+msgid "<b><i>bold italic <u>underlined</u></i></b><br>"
+msgstr "<b><i>गहरा इटैलिक <u>रेखांकित</u></i></b><br>"
+
+#: ../src/html/helpwnd.cpp:1271
+msgid "<b>Bold face.</b> "
+msgstr "<b>गहरा फ़ेस।</b> "
+
+#: ../src/html/helpwnd.cpp:1270
+msgid "<i>Italic face.</i> "
+msgstr "<i>इटैलिक फ़ेस।</i> "
+
+#: ../src/richtext/richtextliststylepage.cpp:496
+#: ../src/richtext/richtextbulletspage.cpp:294
+msgid ">"
+msgstr ">"
+
+#: ../src/common/prntbase.cpp:1136
+msgid ">>"
+msgstr ">>"
+
+#: ../src/common/prntbase.cpp:1142
+msgid ">>|"
+msgstr ">>।"
+
+#: ../src/generic/dbgrptg.cpp:314
+msgid "A debug report has been generated in the directory\n"
+msgstr "एक दोषमार्जन विवरण इस निर्देशिका में बन गया हें\n"
+
+#: ../src/common/debugrpt.cpp:565
+msgid "A debug report has been generated. It can be found in"
+msgstr "एक दोषमार्जन विवरण बन गया हें। ये इस निर्देशिका में पाया जा सकता हें: "
+
+#: ../src/common/xtixml.cpp:406
+msgid "A non empty collection must consist of 'element' nodes"
+msgstr "एक भरे हुए संग्रह को 'तत्व' नोडो से मिलकर बना होना चाहिए"
+
+#: ../src/richtext/richtextliststylepage.cpp:303
+#: ../src/richtext/richtextliststylepage.cpp:305
+#: ../src/richtext/richtextbulletspage.cpp:255
+#: ../src/richtext/richtextbulletspage.cpp:257
+msgid "A standard bullet name."
+msgstr "एक मानक बुल्लेट का नाम।"
+
+#: ../src/common/paper.cpp:161
+msgid "A2 420 x 594 mm"
+msgstr "ऐ२ 420 x 594 मिलीमीटर"
+
+#: ../src/common/paper.cpp:158
+#, fuzzy
+msgid "A3 Extra 322 x 445 mm"
+msgstr "सी३ लिफ़ाफ़ा, ३२४ x ४५८ मिलीमीटर"
+
+#: ../src/common/paper.cpp:163
+#, fuzzy
+msgid "A3 Extra Transverse 322 x 445 mm"
+msgstr "सी३ लिफ़ाफ़ा, ३२४ x ४५८ मिलीमीटर"
+
+#: ../src/common/paper.cpp:172
+#, fuzzy
+msgid "A3 Rotated 420 x 297 mm"
+msgstr "ऐ४ पत्र २१० x २९७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:162
+#, fuzzy
+msgid "A3 Transverse 297 x 420 mm"
+msgstr "ऐ३ पत्र २९७ x ४२० मिलीमीटर"
+
+#: ../src/common/paper.cpp:108
+msgid "A3 sheet, 297 x 420 mm"
+msgstr "ऐ३ पत्र २९७ x ४२० मिलीमीटर"
+
+#: ../src/common/paper.cpp:148
+msgid "A4 Extra 9.27 x 12.69 in"
+msgstr ""
+
+#: ../src/common/paper.cpp:155
+#, fuzzy
+msgid "A4 Plus 210 x 330 mm"
+msgstr "ऐ४ पत्र २१० x २९७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:173
+#, fuzzy
+msgid "A4 Rotated 297 x 210 mm"
+msgstr "ऐ३ पत्र २९७ x ४२० मिलीमीटर"
+
+#: ../src/common/paper.cpp:150
+#, fuzzy
+msgid "A4 Transverse 210 x 297 mm"
+msgstr "ऐ४ पत्र २१० x २९७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:99
+msgid "A4 sheet, 210 x 297 mm"
+msgstr "ऐ४ पत्र २१० x २९७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:109
+msgid "A4 small sheet, 210 x 297 mm"
+msgstr "ऐ४ लघु पत्र २१० x  २९७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:159
+#, fuzzy
+msgid "A5 Extra 174 x 235 mm"
+msgstr "ऐ५ पत्र १४८ x २१० मिलीमीटर"
+
+#: ../src/common/paper.cpp:174
+msgid "A5 Rotated 210 x 148 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:156
+#, fuzzy
+msgid "A5 Transverse 148 x 210 mm"
+msgstr "ऐ५ पत्र १४८ x २१० मिलीमीटर"
+
+#: ../src/common/paper.cpp:110
+msgid "A5 sheet, 148 x 210 mm"
+msgstr "ऐ५ पत्र १४८ x २१० मिलीमीटर"
+
+#: ../src/common/paper.cpp:166
+msgid "A6 105 x 148 mm"
+msgstr "ऐ६ 105 x 148 मिलीमीटर"
+
+#: ../src/common/paper.cpp:179
+#, fuzzy
+msgid "A6 Rotated 148 x 105 mm"
+msgstr "ऐ५ पत्र १४८ x २१० मिलीमीटर"
+
+#: ../src/richtext/richtextformatdlg.cpp:416
+#: ../src/generic/fontdlgg.cpp:87
+#: ../src/mac/carbon/fontdlg.cpp:276
+msgid "ABCDEFGabcdefg12345"
+msgstr "ABCDEFGabcdefg12345"
+
+#: ../src/common/menucmn.cpp:94
+msgid "ADD"
+msgstr "ADD"
+
+#: ../src/common/ftp.cpp:381
+#: ../src/richtext/richtextsymboldlg.cpp:457
+#: ../src/richtext/richtextsymboldlg.cpp:459
+#: ../src/richtext/richtextsymboldlg.cpp:460
+msgid "ASCII"
+msgstr "आस्की (ASCII)"
+
+#: ../src/generic/aboutdlgg.cpp:106
+#: ../src/msw/aboutdlg.cpp:61
+msgid "About "
+msgstr "के बारे में"
+
+#: ../src/common/stockitem.cpp:111
+msgid "Add"
+msgstr "जोड़ें"
+
+#: ../src/html/helpwnd.cpp:425
+msgid "Add current page to bookmarks"
+msgstr "वर्तमान पृष्ट को बुकमार्कों में जोड़ें"
+
+#: ../src/generic/colrdlgg.cpp:291
+msgid "Add to custom colours"
+msgstr "ऐच्छिक रंगों में जोड़ें"
+
+#: ../include/wx/xti.h:898
+msgid "AddToPropertyCollection called on a generic accessor"
+msgstr "AddToPropertyCollection को एक सामान्य ऐसेसर पर कॉल किया गया"
+
+#: ../include/wx/xti.h:845
+msgid "AddToPropertyCollection called w/o valid adder"
+msgstr "AddToPropertyCollection को बिना वैध ऐडर के कॉल किया गया"
+
+#: ../src/html/helpctrl.cpp:139
+#, c-format
+msgid "Adding book %s"
+msgstr "%s बुक को जोड़ा जा रहा है"
+
+#: ../src/richtext/richtextliststylepage.cpp:442
+msgid "After a paragraph:"
+msgstr "अनुच्छेद के बाद में:"
+
+#: ../src/common/stockitem.cpp:135
+msgid "Align Left"
+msgstr "बायें पंक्तिबद्ध करें"
+
+#: ../src/common/stockitem.cpp:136
+msgid "Align Right"
+msgstr "दायें पंक्तिबद्ध करें"
+
+#: ../src/generic/prntdlgg.cpp:214
+msgid "All"
+msgstr "सभी"
+
+#: ../src/common/fldlgcmn.cpp:77
+#, c-format
+msgid "All files (%s)|%s"
+msgstr "सभी फ़ाइलें (%s)|%s"
+
+#: ../include/wx/defs.h:2334
+msgid "All files (*)|*"
+msgstr "सभी फ़ाइलें (*)|*"
+
+#: ../src/html/helpwnd.cpp:1554
+msgid "All files (*.*)|*"
+msgstr "सभी फ़ाइलें (*.*)|*"
+
+#: ../include/wx/defs.h:2331
+msgid "All files (*.*)|*.*"
+msgstr "सभी फ़ाइलें (*.*)|*.*"
+
+#: ../src/richtext/richtextstyles.cpp:848
+msgid "All styles"
+msgstr "सभी शैलियाँ"
+
+#: ../src/common/xtistrm.cpp:381
+msgid "Already Registered Object passed to SetObjectClassInfo"
+msgstr "SetObjectClassInfo को पहिले से पंजीकॄत ऑब्जेक्ट पास कर दिये गये है"
+
+#: ../src/unix/dialup.cpp:356
+msgid "Already dialling ISP."
+msgstr "आईएसपी को पहिले से डायल किया जा रहा है।"
+
+#: ../src/common/menucmn.cpp:314
+msgid "Alt-"
+msgstr "Alt-"
+
+#: ../src/common/debugrpt.cpp:568
+msgid "And includes the following files:\n"
+msgstr "और नीचे दी गयी फ़ाइलें सम्मिलित हें:\n"
+
+#: ../src/generic/animateg.cpp:163
+#, c-format
+msgid "Animation file is not of type %ld."
+msgstr "सजीवन आकृति फ़ाइल %ld प्रकार की नहीं है।"
+
+#: ../src/generic/logg.cpp:1169
+#, c-format
+msgid "Append log to file '%s' (choosing [No] will overwrite it)?"
+msgstr "लॉग को '%s' फ़ाइल के अंत में जोड़ें ([नहीं] का चयन करने से इस पर मिटाकर लिख दिया जायेगा)?"
+
+#: ../src/richtext/richtextliststylepage.cpp:484
+#: ../src/richtext/richtextbulletspage.cpp:282
+msgid "Arabic"
+msgstr "अरबी"
+
+#: ../src/common/fmapbase.cpp:111
+msgid "Arabic (ISO-8859-6)"
+msgstr "अरबी (आईसो-८८५९-६)"
+
+#: ../src/html/chm.cpp:564
+msgid "Archive doesnt contain #SYSTEM file"
+msgstr "लेखागार में #SYSTEM फ़ाइल समाविष्ट नहीं हें"
+
+#: ../src/generic/aboutdlgg.cpp:150
+msgid "Artists"
+msgstr "कलाकार"
+
+#: ../src/generic/filedlgg.cpp:515
+msgid "Attributes"
+msgstr "विशेषतायें"
+
+#: ../src/richtext/richtextliststylepage.cpp:293
+#: ../src/richtext/richtextbulletspage.cpp:243
+#: ../src/richtext/richtextbulletspage.cpp:245
+msgid "Available fonts."
+msgstr "उपलब्ध फ़ॉन्ट"
+
+#: ../src/common/paper.cpp:139
+#, fuzzy
+msgid "B4 (ISO) 250 x 353 mm"
+msgstr "बी४ पत्र, २५० x ३५४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:175
+msgid "B4 (JIS) Rotated 364 x 257 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:129
+msgid "B4 Envelope, 250 x 353 mm"
+msgstr "बी४ लिफ़ाफ़ा, २५० x ३५३ मिलीमीटर"
+
+#: ../src/common/paper.cpp:111
+msgid "B4 sheet, 250 x 354 mm"
+msgstr "बी४ पत्र, २५० x ३५४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:160
+msgid "B5 (ISO) Extra 201 x 276 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:176
+msgid "B5 (JIS) Rotated 257 x 182 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:157
+#, fuzzy
+msgid "B5 (JIS) Transverse 182 x 257 mm"
+msgstr "बी५ पत्र, १८२ x २५७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:130
+msgid "B5 Envelope, 176 x 250 mm"
+msgstr "बी५ लिफ़ाफ़ा, १७६ x 250 मिलीमीटर"
+
+#: ../src/common/paper.cpp:112
+msgid "B5 sheet, 182 x 257 millimeter"
+msgstr "बी५ पत्र, १८२ x २५७ मिलीमीटर"
+
+#: ../src/common/paper.cpp:184
+msgid "B6 (JIS) 128 x 182 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:185
+msgid "B6 (JIS) Rotated 182 x 128 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:131
+msgid "B6 Envelope, 176 x 125 mm"
+msgstr "बी६ लिफ़ाफ़ा, १७६ x १२५ मिलीमीटर"
+
+#: ../src/common/menucmn.cpp:67
+msgid "BACK"
+msgstr "BACK"
+
+#: ../src/common/fmapbase.cpp:152
+msgid "BIG5"
+msgstr "BIG5"
+
+#: ../src/common/imagbmp.cpp:474
+#: ../src/common/imagbmp.cpp:490
+msgid "BMP: Couldn't allocate memory."
+msgstr "बीएमपी: स्मॄति का आवंटन नहीं हो सका।"
+
+#: ../src/common/imagbmp.cpp:91
+msgid "BMP: Couldn't save invalid image."
+msgstr "बीएमपी: अवैध आकॄति को सुरक्षित नहीं किया जा सका।"
+
+#: ../src/common/imagbmp.cpp:295
+msgid "BMP: Couldn't write RGB color map."
+msgstr "बीएमपी: आरजीबी रंग मानचित्र को नहीं लिखा जा सका।"
+
+#: ../src/common/imagbmp.cpp:428
+msgid "BMP: Couldn't write data."
+msgstr "बीएमपी: सूचना को नहीं लिखा जा सका।"
+
+#: ../src/common/imagbmp.cpp:200
+msgid "BMP: Couldn't write the file (Bitmap) header."
+msgstr "बीएमपी: इस फ़ाइल के (बिट्मैप) शीर्षक को नहीं लिखा जा सका।"
+
+#: ../src/common/imagbmp.cpp:221
+msgid "BMP: Couldn't write the file (BitmapInfo) header."
+msgstr "बीएमपी: इस फ़ाइल के (बिट्मैपइन्फ़ो) शीर्षक को नहीं लिखा जा सका।"
+
+#: ../src/common/imagbmp.cpp:125
+msgid "BMP: wxImage doesn't have own wxPalette."
+msgstr "बीएमपी: डब्लूएक्सइमेज के पास स्वंम का डब्लूएक्सपैलेट नहीं है।"
+
+#: ../src/mac/carbon/fontdlg.cpp:343
+msgid "Background colour"
+msgstr "पृष्टभूमि रंग"
+
+#: ../src/common/fmapbase.cpp:118
+msgid "Baltic (ISO-8859-13)"
+msgstr "बाल्टिक (आईसो-८८५९-१३)"
+
+#: ../src/common/fmapbase.cpp:109
+msgid "Baltic (old) (ISO-8859-4)"
+msgstr "बाल्टिक (प्राचीन) (आईसो-८८५९-४)"
+
+#: ../src/richtext/richtextliststylepage.cpp:431
+msgid "Before a paragraph:"
+msgstr "अनुच्छेद के पहले:"
+
+#: ../src/richtext/richtextliststylepage.cpp:491
+#: ../src/richtext/richtextbulletspage.cpp:289
+msgid "Bitmap"
+msgstr "बिट्मैप"
+
+#: ../contrib/src/deprecated/resource.cpp:2534
+#, c-format
+msgid "Bitmap resource specification %s not found."
+msgstr "बिट्मैप संसाधन विशिष्टता '%s' नहीं मिली।"
+
+#: ../src/richtext/richtextfontpage.cpp:269
+#: ../src/richtext/richtextfontpage.cpp:340
+#: ../src/richtext/richtextfontpage.cpp:592
+#: ../src/generic/fontdlgg.cpp:240
+#: ../src/mac/carbon/fontdlg.cpp:477
+msgid "Bold"
+msgstr "गहरा"
+
+#: ../src/generic/prntdlgg.cpp:891
+msgid "Bottom margin (mm):"
+msgstr "तल मार्जिन (मिलीमीटर):"
+
+#: ../src/richtext/richtextliststylepage.cpp:244
+#: ../src/richtext/richtextbulletspage.cpp:193
+msgid "Bullet &Alignment:"
+msgstr "बुल्लेट सरेखण (&A):"
+
+#: ../src/richtext/richtextliststylepage.cpp:308
+msgid "Bullet style"
+msgstr "बुल्लेट शैली"
+
+#: ../src/richtext/richtextformatdlg.cpp:293
+msgid "Bullets"
+msgstr "बुल्लेतो"
+
+#: ../src/common/paper.cpp:100
+msgid "C sheet, 17 x 22 in"
+msgstr "सी पत्र, १७ x २२ इंच"
+
+#: ../src/generic/logg.cpp:513
+msgid "C&lear"
+msgstr "साफ़ करें (&l)"
+
+#: ../src/generic/fontdlgg.cpp:313
+msgid "C&olour:"
+msgstr "रंग (&o):"
+
+#: ../src/common/paper.cpp:125
+msgid "C3 Envelope, 324 x 458 mm"
+msgstr "सी३ लिफ़ाफ़ा, ३२४ x ४५८ मिलीमीटर"
+
+#: ../src/common/paper.cpp:126
+msgid "C4 Envelope, 229 x 324 mm"
+msgstr "सी४ लिफ़ाफ़ा, २२९ x ३२४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:124
+msgid "C5 Envelope, 162 x 229 mm"
+msgstr "सी५ लिफ़ाफ़ा, १६२ x २२९ मिलीमीटर"
+
+#: ../src/common/paper.cpp:127
+msgid "C6 Envelope, 114 x 162 mm"
+msgstr "सी६ लिफ़ाफ़ा, ११४ x १६२ मिलीमीटर"
+
+#: ../src/common/paper.cpp:128
+msgid "C65 Envelope, 114 x 229 mm"
+msgstr "सी६५ लिफ़ाफ़ा, ११४ x 229 मिलीमीटर"
+
+#: ../src/common/menucmn.cpp:84
+msgid "CANCEL"
+msgstr "CANCEL"
+
+#: ../src/common/menucmn.cpp:88
+msgid "CAPITAL"
+msgstr "CAPITAL"
+
+#: ../src/html/chm.cpp:797
+#: ../src/html/chm.cpp:856
+msgid "CHM handler currently supports only local files!"
+msgstr "सीएचएम हैन्डलर वर्तमान में सिर्फ़ स्थानीय फ़ाइलों को ही समर्थन देता है!"
+
+#: ../src/common/menucmn.cpp:85
+msgid "CLEAR"
+msgstr "CLEAR"
+
+#: ../src/common/menucmn.cpp:129
+msgid "COMMAND"
+msgstr "COMMAND"
+
+#: ../src/richtext/richtextfontpage.cpp:232
+msgid "Ca&pitals"
+msgstr "बड़े अक्षर (&P)"
+
+#: ../src/os2/thread.cpp:116
+msgid "Can not create mutex."
+msgstr "म्यूटेक्स का निर्माण नहीं किया जा सकता है।"
+
+#: ../src/common/filefn.cpp:1383
+#, c-format
+msgid "Can not enumerate files '%s'"
+msgstr "'%s' फ़ाइलों की परिगणना नहीं की जा सकती है"
+
+#: ../src/unix/dir.cpp:228
+#: ../src/msw/dir.cpp:201
+#, c-format
+msgid "Can not enumerate files in directory '%s'"
+msgstr "'%s' निर्देशिका में फ़ाइलों की परिगणना नहीं की जा सकती है"
+
+#: ../src/os2/thread.cpp:516
+#, c-format
+msgid "Can not resume thread %lu"
+msgstr "%lu थ्रेड को समान-बिन्दु से पुनः आरम्भ नहीं किया जा सकता है"
+
+#: ../src/msw/thread.cpp:889
+#: ../src/mac/classic/thread.cpp:487
+#, c-format
+msgid "Can not resume thread %x"
+msgstr "%x थ्रेड को समान-बिन्दु से पुनः आरम्भ नहीं किया जा सकता है"
+
+#: ../src/msw/thread.cpp:525
+msgid "Can not start thread: error writing TLS."
+msgstr "थ्रेड को आरम्भ नहीं किया जा सकता है: टीएलएस लेखन में त्रुटि"
+
+#: ../src/os2/thread.cpp:502
+#, c-format
+msgid "Can not suspend thread %lu"
+msgstr "%lu थ्रेड को अधर में नहीं छोड़ा जा सकता है"
+
+#: ../src/msw/thread.cpp:874
+#: ../src/mac/classic/thread.cpp:460
+#, c-format
+msgid "Can not suspend thread %x"
+msgstr "%x थ्रेड को अधर में नहीं छोड़ा जा सकता है"
+
+#: ../src/msw/thread.cpp:793
+msgid "Can not wait for thread termination"
+msgstr "थ्रेड समाप्ति की प्रतीक्षा नहीं की जा सकती है"
+
+#: ../src/common/cmdproc.cpp:262
+msgid "Can't &Undo "
+msgstr "पहिले जैसा नहीं किया जा सकता है (&U)"
+
+#: ../src/common/image.cpp:2643
+#, c-format
+msgid "Can't check image format of file '%s': file does not exist."
+msgstr "'%s' फ़ाइल के आकृति प्रारूप की जाँच नहीं की जा सकती है: फ़ाइल विद्यमान नहीं है।"
+
+#: ../src/msw/registry.cpp:448
+#, c-format
+msgid "Can't close registry key '%s'"
+msgstr "'%s' रजिस्ट्री कुँजी को बन्द नहीं किया जा सकता है"
+
+#: ../src/msw/registry.cpp:524
+#, c-format
+msgid "Can't copy values of unsupported type %d."
+msgstr "%d असमर्थित प्रकार के मूल्यों की प्रतिलिपि नहीं बनायी जा सकती है।"
+
+#: ../src/msw/registry.cpp:429
+#, c-format
+msgid "Can't create registry key '%s'"
+msgstr "'%s' रजिस्ट्री कुँजी का निर्माण नहीं किया जा सकता है"
+
+#: ../src/os2/thread.cpp:483
+#: ../src/msw/thread.cpp:651
+#: ../src/mac/classic/thread.cpp:435
+#: ../src/mac/carbon/mpthread.cpp:906
+msgid "Can't create thread"
+msgstr "थ्रेड का निर्माण नहीं किया जा सकता है"
+
+#: ../src/msw/window.cpp:3605
+#, c-format
+msgid "Can't create window of class %s"
+msgstr "%s वर्ग की खिड़की का निर्माण नहीं किया जा सकता है"
+
+#: ../src/msw/registry.cpp:700
+#, c-format
+msgid "Can't delete key '%s'"
+msgstr "'%s' कुँजी को हटाया नहीं जा सकता है"
+
+#: ../src/os2/iniconf.cpp:466
+#: ../src/msw/iniconf.cpp:435
+#, c-format
+msgid "Can't delete the INI file '%s'"
+msgstr " '%s' आईएनआई फ़ाइल को हटाया नहीं जा सकता है"
+
+#: ../src/msw/registry.cpp:728
+#, c-format
+msgid "Can't delete value '%s' from key '%s'"
+msgstr "'%s' मूल्य को '%s' कुँजी से हटाया नहीं जा सकता है"
+
+#: ../src/msw/registry.cpp:1080
+#, c-format
+msgid "Can't enumerate subkeys of key '%s'"
+msgstr "'%s' कुँजी की उपकुँजियों की परिगणना नहीं की जा सकती है"
+
+#: ../src/msw/registry.cpp:1035
+#, c-format
+msgid "Can't enumerate values of key '%s'"
+msgstr "'%s' कुँजी के मूल्यों की परिगणना नहीं की जा सकती है"
+
+#: ../src/msw/registry.cpp:1297
+#, c-format
+msgid "Can't export value of unsupported type %d."
+msgstr "%d असमर्थित प्रकार के मूल्यों की प्रतिलिपि नहीं बनायी जा सकती है।"
+
+#: ../src/common/ffile.cpp:238
+#, c-format
+msgid "Can't find current position in file '%s'"
+msgstr " '%s' फ़ाइल में वर्तमान स्थिति नहीं खोजी जा सकती है"
+
+#: ../src/msw/registry.cpp:357
+#, c-format
+msgid "Can't get info about registry key '%s'"
+msgstr "'%s' पंजीकरण कुँजी के बारे में सूचना प्राप्त नहीं की जा सकती है"
+
+#: ../src/common/zstream.cpp:330
+msgid "Can't initialize zlib deflate stream."
+msgstr "जेडलिब् डीफ़्लेट धारा का आरम्भीकरण नहीं किया जा सकता है।"
+
+#: ../src/common/zstream.cpp:176
+msgid "Can't initialize zlib inflate stream."
+msgstr "जेडलिब् इनफ़्लेट धारा का आरम्भीकरण नहीं किया जा सकता है।"
+
+#: ../src/common/image.cpp:2035
+#: ../src/common/image.cpp:2057
+#, c-format
+msgid "Can't load image from file '%s': file does not exist."
+msgstr "'%s' फ़ाइल से आकॄति को नहीं लाया जा सकता है: फ़ाइल विद्यमान नहीं है।"
+
+#: ../src/msw/registry.cpp:393
+#, c-format
+msgid "Can't open registry key '%s'"
+msgstr "'%s' पंजीकरण कुँजी को खोला नहीं जा सकता है"
+
+#: ../src/common/zstream.cpp:246
+#, c-format
+msgid "Can't read from inflate stream: %s"
+msgstr "इनफ़्लेट धारा से पढ़ा नहीं जा सकता है: %s"
+
+#: ../src/common/zstream.cpp:239
+msgid "Can't read inflate stream: unexpected EOF in underlying stream."
+msgstr "इनफ़्लेट धारा को पढ़ा नहीं जा सकता है: नीचेवाली स्ट्रीम में आकस्मिक फ़ाइल का अंत।"
+
+#: ../src/msw/registry.cpp:968
+#, c-format
+msgid "Can't read value of '%s'"
+msgstr "'%s' के मूल्य को पढ़ा नहीं जा सकता है"
+
+#: ../src/msw/registry.cpp:801
+#: ../src/msw/registry.cpp:831
+#: ../src/msw/registry.cpp:891
+#, c-format
+msgid "Can't read value of key '%s'"
+msgstr "'%s' कुँजी के मूल्य को पढ़ा नहीं जा सकता है"
+
+#: ../src/common/image.cpp:2078
+#, c-format
+msgid "Can't save image to file '%s': unknown extension."
+msgstr "आकॄति को '%s' फ़ाइले में सुरक्षित नहीं किया जा सकता है: अज्ञात उपनाम।"
+
+#: ../src/generic/logg.cpp:575
+#: ../src/generic/logg.cpp:1026
+msgid "Can't save log contents to file."
+msgstr "लॉग विषयवस्तुओं को फ़ाइल में सुरक्षित नहीं किया जा सकता है। "
+
+#: ../src/os2/thread.cpp:466
+#: ../src/msw/thread.cpp:607
+msgid "Can't set thread priority"
+msgstr "थ्रेड की वरीयता की स्थापना नहीं की जा सकती है"
+
+#: ../src/msw/registry.cpp:818
+#: ../src/msw/registry.cpp:860
+#: ../src/msw/registry.cpp:984
+#, c-format
+msgid "Can't set value of '%s'"
+msgstr "'%s' के मूल्य की स्थापना नहीं की जा सकती है"
+
+#: ../src/common/zstream.cpp:414
+#, c-format
+msgid "Can't write to deflate stream: %s"
+msgstr "डीफ़्लेट धारा पर लिखा नहीं जा सकता है: %s"
+
+#: ../src/richtext/richtextstyledlg.cpp:289
+#: ../src/gtk1/fontdlg.cpp:145
+#: ../src/generic/dirdlgg.cpp:105
+#: ../src/motif/msgdlg.cpp:203
+#: ../src/mac/carbon/msgdlg.cpp:68
+#: ../contrib/src/deprecated/proplist.cpp:514
+msgid "Cancel"
+msgstr "निरस्त"
+
+#: ../src/xrc/xmlres.cpp:1268
+#: ../src/xrc/xmlres.cpp:1316
+msgid "Cannot convert dialog units: dialog unknown."
+msgstr "संवाद इकाइयों को बदला नहीं जा सकता है: अज्ञात संवाद।"
+
+#: ../src/common/strconv.cpp:3482
+#, c-format
+msgid "Cannot convert from the charset '%s'!"
+msgstr "'%s' शब्दसमुच्चय से बदला नहीं जा सकता है!"
+
+#: ../src/msw/dialup.cpp:547
+#, c-format
+msgid "Cannot find active dialup connection: %s"
+msgstr "सक्रिय डायल-अप कनेक्शन को खोजा नहीं जा सका: %s"
+
+#: ../src/xrc/xmlres.cpp:347
+#, c-format
+msgid "Cannot find container for unknown control '%s'."
+msgstr "'%s' अज्ञात नियंत्रण के लिए संग्रहक को खोजा नहीं जा सका।"
+
+#: ../src/xrc/xmlres.cpp:1351
+#, c-format
+msgid "Cannot find font node '%s'."
+msgstr "'%s' फ़ॉन्ट नोड को खोजा नहीं जा सका।"
+
+#: ../src/msw/dialup.cpp:858
+msgid "Cannot find the location of address book file"
+msgstr "पता पुस्तिका फ़ाइल के स्थान को नहीं खोजा जा सका"
+
+#: ../src/unix/threadpsx.cpp:1128
+#, c-format
+msgid "Cannot get priority range for scheduling policy %d."
+msgstr "%d नीति की समय-सारणी के लिए वरीयता सीमा को नहीं प्राप्त किया जा सका"
+
+#: ../src/unix/utilsunx.cpp:809
+msgid "Cannot get the hostname"
+msgstr "होस्टनाम को प्राप्त नहीं किया जा सका"
+
+#: ../src/unix/utilsunx.cpp:845
+msgid "Cannot get the official hostname"
+msgstr "अधिकारिक होस्टनाम को प्राप्त नहीं किया जा सका"
+
+#: ../src/msw/dialup.cpp:952
+msgid "Cannot hang up - no active dialup connection."
+msgstr "संबंध-विच्छेद नहीं किया जा सका - कोई सक्रिय डायल-अप कनेक्शन नहीं।"
+
+#: ../include/wx/msw/ole/oleutils.h:46
+msgid "Cannot initialize OLE"
+msgstr "ओएलई का आरम्भीकरण नहीं किया जा सकता है"
+
+#: ../src/mgl/app.cpp:283
+msgid "Cannot initialize SciTech MGL!"
+msgstr "SciTech MGL का आरम्भीकरण नहीं किया जा सकता है!"
+
+#: ../src/mgl/window.cpp:547
+msgid "Cannot initialize display."
+msgstr "प्रदर्शन का आरम्भीकरण नहीं किया जा सकता है।"
+
+#: ../src/msw/volume.cpp:600
+#, c-format
+msgid "Cannot load icon from '%s'."
+msgstr "'%s' से आइकॉन को लाया नहीं जा सकता है।"
+
+#: ../src/xrc/xmlres.cpp:478
+#, c-format
+msgid "Cannot load resources from file '%s'."
+msgstr "'%s' फ़ाइल से स्रोत संसाधनों को नहीं लाया जा सकता है।"
+
+#: ../src/html/htmlfilt.cpp:158
+#, c-format
+msgid "Cannot open HTML document: %s"
+msgstr "एचटीएमएल प्रलेख को नहीं खोला जा सका: %s"
+
+#: ../src/html/helpdata.cpp:665
+#, c-format
+msgid "Cannot open HTML help book: %s"
+msgstr "एचटीएमएल सहायता प्रलेख को नहीं खोला जा सका: %s"
+
+#: ../src/html/helpdata.cpp:305
+#, c-format
+msgid "Cannot open contents file: %s"
+msgstr "विषयवस्तु फ़ाइल को नहीं खोला जा सका: %s"
+
+#: ../src/xrc/xmlres.cpp:442
+#, c-format
+msgid "Cannot open file '%s'."
+msgstr "'%s' फ़ाइल को खोला नहीं जा सकता है।"
+
+#: ../src/generic/dcpsg.cpp:1583
+msgid "Cannot open file for PostScript printing!"
+msgstr "पोस्टस्क्रिप्ट मुद्रण के लिए फ़ाइल को खोला नहीं जा सका!"
+
+#: ../src/html/helpdata.cpp:319
+#, c-format
+msgid "Cannot open index file: %s"
+msgstr "इंडेक्स फ़ाइल को खोला नहीं जा सका: %s"
+
+#: ../src/common/intl.cpp:1258
+#, c-format
+msgid "Cannot parse Plural-Forms:'%s'"
+msgstr "प्ल्यूलर-फ़ार्मों का पदभंजन नहीं किया जा सका:'%s'"
+
+#: ../src/xrc/xmlres.cpp:1252
+#, c-format
+msgid "Cannot parse coordinates from '%s'."
+msgstr "'%s' से दिशा-निर्देशों का पदभंजन नहीं किया जा सकता है।"
+
+#: ../src/xrc/xmlres.cpp:1300
+#, c-format
+msgid "Cannot parse dimension from '%s'."
+msgstr "'%s' से आयामों का पदभंजन नहीं किया जा सकता है।"
+
+#: ../src/html/helpwnd.cpp:1538
+msgid "Cannot print empty page."
+msgstr "खाली पृष्ट को मुद्रित नहीं किया जा सकता है।"
+
+#: ../src/msw/volume.cpp:158
+#: ../src/msw/volume.cpp:490
+#, c-format
+msgid "Cannot read typename from '%s'!"
+msgstr "'%s' से टाइपनाम को पढ़ा नहीं जा सका!"
+
+#: ../src/unix/threadpsx.cpp:1109
+msgid "Cannot retrieve thread scheduling policy."
+msgstr "थ्रेड समय-सारणी नीति को प्राप्त नहीं किया जा सकता है।"
+
+#: ../src/unix/threadpsx.cpp:732
+msgid "Cannot start thread: error writing TLS"
+msgstr "थ्रेड को आरम्भ नहीं किया जा सका: टीएलएस लेखन में त्रुटि"
+
+#: ../src/mac/carbon/mpthread.cpp:972
+msgid "Cannot wait for thread termination."
+msgstr "थ्रेड समाप्ति की प्रतीक्षा नहीं की जा सकती है।"
+
+#: ../src/mac/carbon/mpthread.cpp:888
+msgid "Cant create the thread event queue"
+msgstr "थ्रेड घटना कतार का निर्माण नहीं किया जा सकता है"
+
+#: ../src/html/helpwnd.cpp:532
+msgid "Case sensitive"
+msgstr "छोटा-बड़ा संवेदी"
+
+#: ../src/common/fmapbase.cpp:119
+msgid "Celtic (ISO-8859-14)"
+msgstr "सेल्टिक (आईसो-८८५९-१४)"
+
+#: ../src/richtext/richtextliststylepage.cpp:348
+#: ../src/richtext/richtextindentspage.cpp:170
+msgid "Cen&tred"
+msgstr "केन्द्रित करें (&T)"
+
+#: ../src/common/stockitem.cpp:133
+msgid "Centered"
+msgstr "केन्द्रित करें"
+
+#: ../src/common/fmapbase.cpp:107
+msgid "Central European (ISO-8859-2)"
+msgstr "केन्द्रीय यूरोपियन (आईसो-८८५९-२)"
+
+#: ../src/richtext/richtextliststylepage.cpp:249
+#: ../src/richtext/richtextbulletspage.cpp:198
+msgid "Centre"
+msgstr "केन्द्रित करें"
+
+#: ../src/richtext/richtextliststylepage.cpp:350
+#: ../src/richtext/richtextliststylepage.cpp:352
+#: ../src/richtext/richtextindentspage.cpp:172
+#: ../src/richtext/richtextindentspage.cpp:174
+msgid "Centre text."
+msgstr "पाठ को केन्द्रित करें।"
+
+#: ../src/richtext/richtextliststylepage.cpp:279
+#: ../src/richtext/richtextbulletspage.cpp:230
+msgid "Ch&oose..."
+msgstr "चयन करें (&O)..."
+
+#: ../src/richtext/richtextbuffer.cpp:2808
+msgid "Change List Style"
+msgstr "सूची शैली बदले"
+
+#: ../src/richtext/richtextbuffer.cpp:1773
+msgid "Change Style"
+msgstr "शैली बदले"
+
+#: ../src/richtext/richtextstyles.cpp:850
+msgid "Character styles"
+msgstr "संप्रतीक शैलियाँ"
+
+#: ../src/richtext/richtextliststylepage.cpp:223
+#: ../src/richtext/richtextliststylepage.cpp:225
+#: ../src/richtext/richtextbulletspage.cpp:172
+#: ../src/richtext/richtextbulletspage.cpp:174
+msgid "Check to add a period after the bullet."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:237
+#: ../src/richtext/richtextliststylepage.cpp:239
+#: ../src/richtext/richtextbulletspage.cpp:186
+#: ../src/richtext/richtextbulletspage.cpp:188
+msgid "Check to add a right parenthesis."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:230
+#: ../src/richtext/richtextliststylepage.cpp:232
+#: ../src/richtext/richtextbulletspage.cpp:179
+#: ../src/richtext/richtextbulletspage.cpp:181
+msgid "Check to enclose the bullet in parentheses."
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:479
+#: ../src/mac/carbon/fontdlg.cpp:481
+msgid "Check to make the font bold."
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:486
+#: ../src/mac/carbon/fontdlg.cpp:488
+msgid "Check to make the font italic."
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:495
+#: ../src/mac/carbon/fontdlg.cpp:497
+msgid "Check to make the font underlined."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:275
+#: ../src/richtext/richtextstyledlg.cpp:277
+msgid "Check to restart numbering."
+msgstr "संख्यांकन पुनः प्रारम्भन करने के लिए चेक करें।"
+
+#: ../src/richtext/richtextfontpage.cpp:227
+#: ../src/richtext/richtextfontpage.cpp:229
+msgid "Check to show a line through the text."
+msgstr ""
+
+#: ../src/richtext/richtextfontpage.cpp:234
+#: ../src/richtext/richtextfontpage.cpp:236
+msgid "Check to show the text in capitals."
+msgstr ""
+
+#: ../src/richtext/richtextfontpage.cpp:248
+#: ../src/richtext/richtextfontpage.cpp:250
+msgid "Check to show the text in subscript."
+msgstr ""
+
+#: ../src/richtext/richtextfontpage.cpp:241
+#: ../src/richtext/richtextfontpage.cpp:243
+msgid "Check to show the text in superscript."
+msgstr ""
+
+#: ../src/msw/dialup.cpp:793
+msgid "Choose ISP to dial"
+msgstr "डायल करने के लिए आईएसपी का चयन करें"
+
+#: ../src/gtk/colordlg.cpp:41
+#: ../src/generic/colrdlgg.cpp:144
+#: ../src/palmos/colordlg.cpp:74
+msgid "Choose colour"
+msgstr "रंग का चयन करें"
+
+#: ../src/gtk/fontdlg.cpp:107
+#: ../src/gtk1/fontdlg.cpp:126
+msgid "Choose font"
+msgstr "फ़ॉन्ट का चयन करें"
+
+#: ../src/common/module.cpp:78
+#, c-format
+msgid "Circular dependency involving module \"%s\" detected."
+msgstr ""
+
+#: ../src/aui/tabmdi.cpp:105
+#: ../src/generic/mdig.cpp:115
+msgid "Cl&ose"
+msgstr "समाप्त करें (&o)"
+
+#: ../src/generic/logg.cpp:513
+msgid "Clear the log contents"
+msgstr "लॉग विषय-वस्तुओं को साफ़ करें"
+
+#: ../src/richtext/richtextstyledlg.cpp:238
+#: ../src/richtext/richtextstyledlg.cpp:240
+msgid "Click to apply the selected style."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:280
+#: ../src/richtext/richtextliststylepage.cpp:282
+#: ../src/richtext/richtextbulletspage.cpp:231
+#: ../src/richtext/richtextbulletspage.cpp:233
+msgid "Click to browse for a symbol."
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:526
+#: ../src/mac/carbon/fontdlg.cpp:528
+msgid "Click to cancel changes to the font."
+msgstr ""
+
+#: ../src/generic/fontdlgg.cpp:379
+#: ../src/generic/fontdlgg.cpp:398
+msgid "Click to cancel the font selection."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:290
+#: ../src/richtext/richtextstyledlg.cpp:292
+msgid "Click to cancel this window."
+msgstr "इस खिड़की को निरस्त करने के लिए क्लिक करें।"
+
+#: ../src/mac/carbon/fontdlg.cpp:507
+#: ../src/mac/carbon/fontdlg.cpp:509
+msgid "Click to change the font colour."
+msgstr ""
+
+#: ../src/richtext/richtextfontpage.cpp:217
+#: ../src/richtext/richtextfontpage.cpp:219
+msgid "Click to change the text colour."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:194
+#: ../src/richtext/richtextliststylepage.cpp:196
+msgid "Click to choose the font for this level."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:265
+#: ../src/richtext/richtextstyledlg.cpp:267
+msgid "Click to close this window."
+msgstr "इस खिड़की को बंद करने के लिए क्लिक करें।"
+
+#: ../src/mac/carbon/fontdlg.cpp:533
+#: ../src/mac/carbon/fontdlg.cpp:535
+msgid "Click to confirm changes to the font."
+msgstr ""
+
+#: ../src/generic/fontdlgg.cpp:384
+#: ../src/generic/fontdlgg.cpp:386
+#: ../src/generic/fontdlgg.cpp:391
+#: ../src/generic/fontdlgg.cpp:393
+msgid "Click to confirm the font selection."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:284
+#: ../src/richtext/richtextstyledlg.cpp:286
+msgid "Click to confirm your selection."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:218
+#: ../src/richtext/richtextstyledlg.cpp:220
+msgid "Click to create a new character style."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:230
+#: ../src/richtext/richtextstyledlg.cpp:232
+msgid "Click to create a new list style."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:224
+#: ../src/richtext/richtextstyledlg.cpp:226
+msgid "Click to create a new paragraph style."
+msgstr ""
+
+#: ../src/richtext/richtexttabspage.cpp:136
+#: ../src/richtext/richtexttabspage.cpp:138
+msgid "Click to create a new tab position."
+msgstr ""
+
+#: ../src/richtext/richtexttabspage.cpp:148
+#: ../src/richtext/richtexttabspage.cpp:150
+msgid "Click to delete all tab positions."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:256
+#: ../src/richtext/richtextstyledlg.cpp:258
+msgid "Click to delete the selected style."
+msgstr ""
+
+#: ../src/richtext/richtexttabspage.cpp:142
+#: ../src/richtext/richtexttabspage.cpp:144
+msgid "Click to delete the selected tab position."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:250
+#: ../src/richtext/richtextstyledlg.cpp:252
+msgid "Click to edit the selected style."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:244
+#: ../src/richtext/richtextstyledlg.cpp:246
+msgid "Click to rename the selected style."
+msgstr ""
+
+#: ../src/richtext/richtextstyledlg.cpp:263
+#: ../src/richtext/richtextsymboldlg.cpp:481
+#: ../src/richtext/richtextsymboldlg.cpp:495
+#: ../src/html/helpdlg.cpp:91
+#: ../src/generic/dbgrptg.cpp:93
+#: ../src/generic/progdlgg.cpp:652
+#: ../src/generic/progdlgg.cpp:657
+#: ../contrib/src/deprecated/proplist.cpp:509
+msgid "Close"
+msgstr "समाप्त"
+
+#: ../src/univ/themes/win32.cpp:3742
+msgid "Close\tAlt-F4"
+msgstr "समाप्त\tAlt-F4"
+
+#: ../src/aui/tabmdi.cpp:106
+#: ../src/generic/mdig.cpp:116
+msgid "Close All"
+msgstr "सभी समाप्त"
+
+#: ../src/common/stockitem.cpp:211
+msgid "Close current document"
+msgstr "वर्तमान प्रलेख बंद करें"
+
+#: ../src/generic/logg.cpp:515
+msgid "Close this window"
+msgstr "इस खिड़की को बन्द करें"
+
+#: ../src/richtext/richtextsymboldlg.cpp:482
+#: ../src/richtext/richtextsymboldlg.cpp:484
+#: ../src/richtext/richtextsymboldlg.cpp:496
+#: ../src/richtext/richtextsymboldlg.cpp:498
+msgid "Closes the dialog without inserting a symbol."
+msgstr ""
+
+#: ../src/richtext/richtextformatdlg.cpp:517
+msgid "Colour"
+msgstr "रंग"
+
+#: ../src/mac/carbon/fontdlg.cpp:503
+msgid "Colour:"
+msgstr "रंग:"
+
+#: ../src/common/init.cpp:189
+#, c-format
+msgid "Command line argument %d couldn't be converted to Unicode and will be ignored."
+msgstr ""
+
+#: ../src/html/helpwnd.cpp:1552
+msgid "Compressed HTML Help file (*.chm)|*.chm|"
+msgstr "संकुचित एचटीएमएल सहायता फ़ाइल (*.chm)|*.chm|"
+
+#: ../src/generic/dirctrlg.cpp:606
+msgid "Computer"
+msgstr "कम्प्यूटर"
+
+#: ../src/common/fileconf.cpp:1003
+#, c-format
+msgid "Config entry name cannot start with '%c'."
+msgstr "संरचना प्रविष्टी नाम '%c' से आरम्भ नहीं हो सकता है।"
+
+#: ../src/gtk/filedlg.cpp:61
+#: ../src/generic/filedlgg.cpp:1470
+msgid "Confirm"
+msgstr "संपुष्टी दें"
+
+#: ../src/msw/mimetype.cpp:705
+msgid "Confirm registry update"
+msgstr "रजिस्ट्री अपडेट के लिए संपुष्टी दें"
+
+#: ../src/html/htmlwin.cpp:517
+msgid "Connecting..."
+msgstr "जुड़ा जा रहा है..."
+
+#: ../src/html/helpwnd.cpp:468
+msgid "Contents"
+msgstr "विषय-वस्तु"
+
+#: ../src/common/strconv.cpp:1732
+#, c-format
+msgid "Conversion to charset '%s' doesn't work."
+msgstr "'%s' शब्दसमुच्चय में रूपांतरण ने कार्य नहीं किया।"
+
+#: ../src/html/htmlwin.cpp:941
+#, c-format
+msgid "Copied to clipboard:\"%s\""
+msgstr "क्लिपबोर्ड में प्रतिलिपि बनायी गयी:\"%s\""
+
+#: ../src/generic/prntdlgg.cpp:247
+msgid "Copies:"
+msgstr "प्रतिलिपियां:"
+
+#: ../src/common/stockitem.cpp:203
+msgid "Copy selection"
+msgstr "चयन की प्रतिलिपि बनाएँ"
+
+#: ../src/html/chm.cpp:703
+#, c-format
+msgid "Could not create temporary file '%s'"
+msgstr "'%s' अस्थायी फ़ाइल का निर्माण नहीं हो सका"
+
+#: ../src/html/chm.cpp:274
+#, c-format
+msgid "Could not extract %s into %s: %s"
+msgstr "%s का %s में निष्कर्षण नहीं किया जा सका: %s"
+
+#: ../contrib/src/deprecated/resource.cpp:1830
+#: ../contrib/src/deprecated/resource.cpp:1960
+#, fuzzy, c-format
+msgid "Could not find resource include file %s."
+msgstr "'%s' फ़ाइल का स्थान नहीं खोजा जा सका।"
+
+#: ../src/generic/tabg.cpp:1049
+msgid "Could not find tab for id"
+msgstr "आईडी के लिए टैब को नहीं पाया जा सका"
+
+#: ../src/html/chm.cpp:445
+#, c-format
+msgid "Could not locate file '%s'."
+msgstr "'%s' फ़ाइल का स्थान नहीं खोजा जा सका।"
+
+#: ../contrib/src/deprecated/resource.cpp:829
+#, c-format
+msgid ""
+"Could not resolve control class or id '%s'. Use (non-zero) integer instead\n"
+" or provide #define (see manual for caveats)"
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:1278
+#, c-format
+msgid ""
+"Could not resolve menu id '%s'. Use (non-zero) integer instead\n"
+"or provide #define (see manual for caveats)"
+msgstr ""
+
+#: ../src/common/prntbase.cpp:1521
+msgid "Could not start document preview."
+msgstr "प्रलेख पूर्वालोकन को आरम्भ नहीं किया जा सका।"
+
+#: ../src/gtk/gnome/gprint.cpp:893
+#: ../src/generic/printps.cpp:181
+#: ../src/msw/printwin.cpp:230
+msgid "Could not start printing."
+msgstr "मुद्रण को आरम्भ नहीं किया जा सका।"
+
+#: ../src/common/wincmn.cpp:1555
+msgid "Could not transfer data to window"
+msgstr "डाटा को खिड़की पर स्थानान्तरित किया जा सका"
+
+#: ../src/mac/carbon/mpthread.cpp:222
+#: ../src/mac/carbon/mpthread.cpp:301
+msgid "Could not unlock mutex"
+msgstr "म्यूटेक्स को छोड़ा नहीं जा सका"
+
+#: ../src/os2/thread.cpp:149
+msgid "Couldn't acquire a mutex lock"
+msgstr "एक म्यूटेक्स लॉक को नहीं पाया नहीं जा सका"
+
+#: ../src/msw/dragimag.cpp:156
+#: ../src/msw/dragimag.cpp:195
+#: ../src/msw/imaglist.cpp:147
+#: ../src/msw/imaglist.cpp:165
+#: ../src/msw/imaglist.cpp:177
+msgid "Couldn't add an image to the image list."
+msgstr "आकॄतियों की सूची में एक आकॄति को जोड़ा नहीं जा सका।"
+
+#: ../src/os2/timer.cpp:144
+#: ../src/msw/timer.cpp:101
+msgid "Couldn't create a timer"
+msgstr "एक समय-सचेतक का निर्माण नहीं किया जा सका"
+
+#: ../src/mgl/cursor.cpp:132
+#: ../src/mgl/cursor.cpp:163
+msgid "Couldn't create cursor."
+msgstr "कर्सर का निर्माण नहीं किया जा सका।"
+
+#: ../src/mac/carbon/overlay.cpp:125
+#, fuzzy
+msgid "Couldn't create the overlay window"
+msgstr "एक समय-सचेतक का निर्माण नहीं किया जा सका"
+
+#: ../src/mac/carbon/overlay.cpp:161
+#, fuzzy
+msgid "Couldn't end the context on the overlay window"
+msgstr "वर्तमान थ्रेड सूचक को प्राप्त नहीं किया जा सका"
+
+#: ../src/common/dynlib.cpp:199
+#, c-format
+msgid "Couldn't find symbol '%s' in a dynamic library"
+msgstr "एक गतिक लेखागार में '%s' चिह्न को नहीं खोजा जा सका"
+
+#: ../src/msw/thread.cpp:915
+#: ../src/mac/classic/thread.cpp:517
+msgid "Couldn't get the current thread pointer"
+msgstr "वर्तमान थ्रेड सूचक को प्राप्त नहीं किया जा सका"
+
+#: ../src/mac/carbon/overlay.cpp:132
+#, fuzzy
+msgid "Couldn't init the context on the overlay window"
+msgstr "वर्तमान थ्रेड सूचक को प्राप्त नहीं किया जा सका"
+
+#: ../src/common/imagpng.cpp:621
+msgid "Couldn't load a PNG image - file is corrupted or not enough memory."
+msgstr "एक पीएनजी आकॄति को लोड नहीं किया जा सका - या तो फ़ाइल निकृष्ट है या फ़िर आवश्यक स्मॄति का अभाव है।"
+
+#: ../src/unix/sound.cpp:471
+#, c-format
+msgid "Couldn't load sound data from '%s'."
+msgstr "'%s' से ध्वनि डाटा को लोड नहीं किया जा सका।"
+
+#: ../src/unix/sound_sdl.cpp:228
+#, c-format
+msgid "Couldn't open audio: %s"
+msgstr "आडियो को नहीं खोला जा सका: %s"
+
+#: ../src/msw/ole/dataobj.cpp:144
+#, c-format
+msgid "Couldn't register clipboard format '%s'."
+msgstr "'%s' क्लिपबोर्ड प्रारूप को पंजीकृत नहीं किया जा सका।"
+
+#: ../src/os2/thread.cpp:166
+msgid "Couldn't release a mutex"
+msgstr "एक म्यूटेक्स को छोड़ा नहीं जा सका"
+
+#: ../src/msw/listctrl.cpp:727
+#, c-format
+msgid "Couldn't retrieve information about list control item %d."
+msgstr "%d सूची नियंत्रण आयट्म के बारे में सूचना प्राप्त नहीं की जा सकी।"
+
+#: ../src/common/imagpng.cpp:670
+#: ../src/common/imagpng.cpp:679
+#: ../src/common/imagpng.cpp:687
+msgid "Couldn't save PNG image."
+msgstr "पीएनजी आकॄति को सुरक्षित नहीं किया जा सका।"
+
+#: ../src/msw/thread.cpp:668
+#: ../src/mac/classic/thread.cpp:775
+msgid "Couldn't terminate thread"
+msgstr "थ्रेड को समाप्त नहीं किया जा सका"
+
+#: ../src/common/xtistrm.cpp:157
+msgid "Create Parameter not found in declared RTTI Parameters"
+msgstr "घोषित आरटीटीआई पैरामीटरों में निर्माण पैरामीटर नहीं मिला"
+
+#: ../src/generic/dirdlgg.cpp:315
+msgid "Create directory"
+msgstr "निर्देशिका का निर्माण करें"
+
+#: ../src/generic/dirdlgg.cpp:129
+#: ../src/generic/filedlgg.cpp:1090
+msgid "Create new directory"
+msgstr "नयी निर्देशिका का निर्माण करें"
+
+#: ../src/common/menucmn.cpp:316
+msgid "Ctrl-"
+msgstr "Ctrl-"
+
+#: ../src/common/stockitem.cpp:118
+#: ../src/richtext/richtextctrl.cpp:2581
+#: ../src/msw/textctrl.cpp:2303
+#: ../src/mac/carbon/textctrl.cpp:1042
+msgid "Cu&t"
+msgstr "काटें (&t)"
+
+#: ../src/generic/filedlgg.cpp:1101
+msgid "Current directory:"
+msgstr "वर्तमान निर्देशिका:"
+
+#: ../src/common/stockitem.cpp:204
+msgid "Cut selection"
+msgstr "चयन काटें"
+
+#: ../src/common/fmapbase.cpp:110
+msgid "Cyrillic (ISO-8859-5)"
+msgstr "सायरिलिक (आईसो-८८५९-५)"
+
+#: ../src/common/paper.cpp:101
+msgid "D sheet, 22 x 34 in"
+msgstr "डी पत्र, २२ x 34 इंच"
+
+#: ../src/msw/dde.cpp:627
+msgid "DDE poke request failed"
+msgstr "डीडीई पोक निवेदन असफ़ल रहा"
+
+#: ../src/common/menucmn.cpp:97
+msgid "DECIMAL"
+msgstr "DECIMAL"
+
+#: ../src/common/menucmn.cpp:65
+msgid "DEL"
+msgstr "DEL"
+
+#: ../src/common/menucmn.cpp:66
+msgid "DELETE"
+msgstr "DELETE"
+
+#: ../src/common/imagbmp.cpp:918
+msgid "DIB Header: Encoding doesn't match bitdepth."
+msgstr "डीआईबी शीर्ष: एन्कोडिंग बिटगहराई से मेल नहीं खाती है।"
+
+#: ../src/common/imagbmp.cpp:880
+msgid "DIB Header: Image height > 32767 pixels for file."
+msgstr "डीआईबी शीर्ष: फ़ाइल के लिए आकॄति की ऊचाँई > ३२७६७ पिक्सेल।"
+
+#: ../src/common/imagbmp.cpp:874
+msgid "DIB Header: Image width > 32767 pixels for file."
+msgstr "डीआईबी शीर्ष: फ़ाइल के लिए आकॄति की चौड़ाई > ३२७६७ पिक्सेल।"
+
+#: ../src/common/imagbmp.cpp:894
+msgid "DIB Header: Unknown bitdepth in file."
+msgstr "डीआईबी शीर्ष: फ़ाइल में अज्ञात बिट्गहराई।"
+
+#: ../src/common/imagbmp.cpp:904
+msgid "DIB Header: Unknown encoding in file."
+msgstr "डीआईबी शीर्ष: फ़ाइल में अज्ञात एन्कोडिंग।"
+
+#: ../src/common/menucmn.cpp:98
+msgid "DIVIDE"
+msgstr "DIVIDE"
+
+#: ../src/common/paper.cpp:123
+msgid "DL Envelope, 110 x 220 mm"
+msgstr "डीएल लिफ़ाफ़ा, ११० x २२० मिलीमीटर"
+
+#: ../src/common/menucmn.cpp:77
+msgid "DOWN"
+msgstr "DOWN"
+
+#: ../src/generic/dbgrptg.cpp:296
+#, c-format
+msgid "Debug report \"%s\""
+msgstr "दोषमार्जन विवरण \"%s\""
+
+#: ../src/common/debugrpt.cpp:209
+msgid "Debug report couldn't be created."
+msgstr "दोषमार्जन विवरण नहीं बनाया जा सका।"
+
+#: ../src/common/debugrpt.cpp:545
+msgid "Debug report generation has failed."
+msgstr "दोषमार्जन विवरण बनाने में असफ़ल।"
+
+#: ../src/generic/fontdlgg.cpp:230
+msgid "Decorative"
+msgstr "साज-सजावट"
+
+#: ../src/common/fmapbase.cpp:661
+msgid "Default encoding"
+msgstr "डिफ़ाल्ट एन्कोडिंग"
+
+#: ../src/generic/prntdlgg.cpp:508
+msgid "Default printer"
+msgstr "डिफ़ाल्ट मुद्रक"
+
+#: ../src/richtext/richtextbuffer.cpp:5478
+msgid "Delete"
+msgstr "मिटाएँं"
+
+#: ../src/richtext/richtexttabspage.cpp:147
+msgid "Delete A&ll"
+msgstr "सभी मिटाएँ (&L)"
+
+#: ../src/richtext/richtextstyledlg.cpp:734
+msgid "Delete Style"
+msgstr "शैली हटाएँ"
+
+#: ../src/richtext/richtextctrl.cpp:625
+#: ../src/richtext/richtextctrl.cpp:661
+msgid "Delete Text"
+msgstr "पाठ मिटाएँ"
+
+#: ../contrib/src/gizmos/editlbox.cpp:156
+msgid "Delete item"
+msgstr "आयट्म को हटाएँ"
+
+#: ../src/common/stockitem.cpp:205
+msgid "Delete selection"
+msgstr "चयन मिटाएँ"
+
+#: ../src/richtext/richtextstyledlg.cpp:734
+#, c-format
+msgid "Delete style %s?"
+msgstr "शैली हटाएँ %s?"
+
+#: ../src/unix/snglinst.cpp:296
+#, c-format
+msgid "Deleted stale lock file '%s'."
+msgstr "हटायी जा चुकी स्टेल लॉक फ़ाइल '%s'।"
+
+#: ../src/common/module.cpp:124
+#, c-format
+msgid "Dependency \"%s\" of module \"%s\" doesn't exist."
+msgstr ""
+
+#: ../src/generic/dirctrlg.cpp:672
+msgid "Desktop"
+msgstr "डेस्कटॉप"
+
+#: ../src/generic/aboutdlgg.cpp:71
+msgid "Developed by "
+msgstr "द्वारा विकसित"
+
+#: ../src/generic/aboutdlgg.cpp:142
+msgid "Developers"
+msgstr "विकासक"
+
+#: ../src/msw/dialup.cpp:396
+msgid "Dial up functions are unavailable because the remote access service (RAS) is not installed on this machine. Please install it."
+msgstr "डायल-अप क्रियाऐं अनुपलब्ध है क्योंकि इस मशीन पर सुदूर पहुँच सेवा (आरऐएस)संसाधित नहीं है। कॄपया इसे संसाधित करें।"
+
+#: ../src/generic/tipdlg.cpp:228
+msgid "Did you know..."
+msgstr "क्या आप जानते है..."
+
+#: ../src/dfb/wrapdfb.cpp:59
+#, c-format
+msgid "DirectFB error %d occured."
+msgstr ""
+
+#: ../src/motif/filedlg.cpp:216
+msgid "Directories"
+msgstr "निर्देशिकाओं"
+
+#: ../src/common/filefn.cpp:1257
+#, c-format
+msgid "Directory '%s' couldn't be created"
+msgstr "'%s' निर्देशिका का निर्माण नहीं किया जा सकता था"
+
+#: ../src/mgl/dirmgl.cpp:211
+#, c-format
+msgid "Directory '%s' doesn't exist!"
+msgstr "'%s' निर्देशिका विद्यमान नहीं है!"
+
+#: ../src/generic/dirdlgg.cpp:231
+msgid "Directory does not exist"
+msgstr "निर्देशिका विद्यमान नहीं है"
+
+#: ../src/generic/filedlgg.cpp:1448
+msgid "Directory doesn't exist."
+msgstr "निर्देशिका विद्यमान नहीं है।"
+
+#: ../src/html/helpwnd.cpp:498
+msgid "Display all index items that contain given substring. Search is case insensitive."
+msgstr "सभी इंडेक्स आयट्मों को दिखाएँ जिनमें दी गयी उपश्रेणी शामिल हो।खोज छोटा-बड़ा संवेदी है।"
+
+#: ../src/html/helpwnd.cpp:695
+msgid "Display options dialog"
+msgstr "विकल्पों का संवाद दिखाएँ"
+
+#: ../src/html/helpwnd.cpp:325
+msgid "Displays help as you browse the books on the left."
+msgstr "सहायता दिखाएँ जब आप सरसरी नजर से बायें में किताबें देखे।"
+
+#: ../src/msw/mimetype.cpp:698
+msgid ""
+"Do you want to overwrite the command used to %s files with extension \"%s\" ?\n"
+"Current value is \n"
+"%s, \n"
+"New value is \n"
+"%s %1"
+msgstr ""
+"%s फ़ाइलों, जो कि \"%s उपनामों वाली है, के लिए उपयोग में लाये जाने वाले इस निर्देश को बदल कर लिखना चाहते है\" ?\n"
+"वर्तमान वैल्यू निम्न है \n"
+"%s, \n"
+"नयी वैल्यू निम्न है \n"
+"%s %1"
+
+#: ../src/common/docview.cpp:462
+#, c-format
+msgid "Do you want to save changes to document %s?"
+msgstr "क्या आप %s प्रलेख पर परिवर्तनों को सुरक्षित करना चाहते है?"
+
+#: ../src/generic/aboutdlgg.cpp:74
+msgid "Documentation by "
+msgstr "द्वारा प्रलेखन"
+
+#: ../src/generic/aboutdlgg.cpp:146
+msgid "Documentation writers"
+msgstr "प्रलेख लेखक"
+
+#: ../src/common/sizer.cpp:2095
+msgid "Don't Save"
+msgstr "सुरक्षित न करें"
+
+#: ../src/html/htmlwin.cpp:583
+#: ../src/msw/frame.cpp:195
+msgid "Done"
+msgstr "किया गया"
+
+#: ../src/generic/progdlgg.cpp:418
+msgid "Done."
+msgstr "किया गया।"
+
+#: ../src/common/paper.cpp:178
+msgid "Double Japanese Postcard Rotated 148 x 200 mm"
+msgstr ""
+
+#: ../src/common/xtixml.cpp:268
+#, c-format
+msgid "Doubly used id : %d"
+msgstr "दोहरी उपयोग में लायी गयी पहचानसंख्या : %d"
+
+#: ../src/generic/fdrepdlg.cpp:151
+msgid "Down"
+msgstr "नीचे"
+
+#: ../src/common/paper.cpp:102
+msgid "E sheet, 34 x 44 in"
+msgstr "ई पत्र, ३४ x ४४ इंच"
+
+#: ../src/common/menucmn.cpp:79
+msgid "END"
+msgstr "END"
+
+#: ../src/common/menucmn.cpp:70
+msgid "ENTER"
+msgstr "ENTER"
+
+#: ../src/common/menucmn.cpp:82
+msgid "ESC"
+msgstr "ESC"
+
+#: ../src/common/menucmn.cpp:83
+msgid "ESCAPE"
+msgstr "ESCAPE"
+
+#: ../src/common/menucmn.cpp:91
+msgid "EXECUTE"
+msgstr "EXECUTE"
+
+#: ../contrib/src/gizmos/editlbox.cpp:154
+msgid "Edit item"
+msgstr "आयट्म को संपादित करें"
+
+#: ../src/generic/progdlgg.cpp:190
+msgid "Elapsed time : "
+msgstr "बीता हुआ समय : "
+
+#: ../src/richtext/richtextstyledlg.cpp:568
+msgid "Enter a character style name"
+msgstr "एक संप्रतीक सूची का नाम बताएँ"
+
+#: ../src/richtext/richtextstyledlg.cpp:770
+msgid "Enter a list style name"
+msgstr "एक सूची शैली का नाम बताएँ"
+
+#: ../src/richtext/richtextstyledlg.cpp:843
+msgid "Enter a new style name"
+msgstr "एक नयी शैली का नाम बताएँ"
+
+#: ../src/common/prntbase.cpp:1073
+#, c-format
+msgid "Enter a page number between %d and %d:"
+msgstr "%d से %d के मध्य में एक पृष्ट संख्या बताएँ:"
+
+#: ../src/richtext/richtextstyledlg.cpp:616
+msgid "Enter a paragraph style name"
+msgstr "एक अनुच्छेद शैली का नाम बताएँ"
+
+#: ../src/generic/dbgrptg.cpp:170
+#, c-format
+msgid "Enter command to open file \"%s\":"
+msgstr "फ़ाइल \"%s\" को खोलने के लिए निर्देश बताएँ:"
+
+#: ../src/generic/helpext.cpp:462
+msgid "Entries found"
+msgstr "प्रविष्टियां मिली"
+
+#: ../src/common/paper.cpp:144
+#, fuzzy
+msgid "Envelope Invite 220 x 220 mm"
+msgstr "डीएल लिफ़ाफ़ा, ११० x २२० मिलीमीटर"
+
+#: ../src/common/config.cpp:420
+#, c-format
+msgid "Environment variables expansion failed: missing '%c' at position %u in '%s'."
+msgstr "वातावरण चरों का विस्तार असफ़ल रहा: '%c' विलुप्त %u स्थान पर '%s' में।"
+
+#: ../src/gtk/filedlg.cpp:73
+#: ../src/gtk1/fontdlg.cpp:75
+#: ../src/generic/dirdlgg.cpp:350
+#: ../src/generic/filedlgg.cpp:712
+#: ../src/generic/filedlgg.cpp:830
+#: ../src/generic/filedlgg.cpp:844
+#: ../src/generic/filedlgg.cpp:862
+#: ../src/generic/filedlgg.cpp:1420
+#: ../src/generic/filedlgg.cpp:1448
+#: ../src/generic/filedlgg.cpp:1476
+#: ../src/generic/dirctrlg.cpp:708
+#: ../src/generic/dirctrlg.cpp:726
+#: ../src/generic/dirctrlg.cpp:737
+msgid "Error"
+msgstr "त्रुटि"
+
+#: ../src/generic/dirdlgg.cpp:249
+msgid "Error creating directory"
+msgstr "निर्देशिका निर्माण में त्रुटि"
+
+#: ../src/common/imagbmp.cpp:927
+msgid "Error in reading image DIB."
+msgstr "आकॄति डीआईबी को पढ़ने में त्रुटि।"
+
+#: ../src/common/fileconf.cpp:511
+msgid "Error reading config options."
+msgstr "संरचना के विकल्पों को पढ़नें में त्रुटि।"
+
+#: ../src/common/fileconf.cpp:1093
+msgid "Error saving user configuration data."
+msgstr "प्रयोक्ता की संरचना के विकल्पों को सुरक्षित करने में त्रुटि।"
+
+#: ../src/mac/carbon/mpthread.cpp:477
+msgid "Error while waiting on semaphore"
+msgstr ""
+
+#: ../src/common/log.cpp:468
+msgid "Error: "
+msgstr "त्रुटि: "
+
+#: ../src/common/fmapbase.cpp:108
+msgid "Esperanto (ISO-8859-3)"
+msgstr "ऐस्पेरान्तो (आईसो-८८५९-३)"
+
+#: ../src/generic/progdlgg.cpp:198
+msgid "Estimated time : "
+msgstr "अनुमानित समय : "
+
+#: ../src/generic/dbgrptg.cpp:230
+msgid "Executable files (*.exe)|*.exe|All files (*.*)|*.*||"
+msgstr "निष्पाद्य फ़ाइलें (*.exe)|*.exe|सभी फ़ाइलें (*.*)|*.*||"
+
+#: ../src/msw/utilsexc.cpp:765
+#, c-format
+msgid "Execution of command '%s' failed"
+msgstr "'%s' निर्देश का निष्पादन असफ़ल रहा"
+
+#: ../src/os2/utilsexc.cpp:163
+#, c-format
+msgid "Execution of command '%s' failed with error: %ul"
+msgstr "'%s' निर्देश का निष्पादन त्रुटि के साथ असफ़ल रहा: %ul"
+
+#: ../src/common/paper.cpp:107
+msgid "Executive, 7 1/4 x 10 1/2 in"
+msgstr "कार्यकारी, ७ १/४ x १० १/२ इंच"
+
+#: ../contrib/src/deprecated/resource.cpp:1869
+#: ../contrib/src/deprecated/resource.cpp:1999
+#: ../contrib/src/deprecated/resource.cpp:3101
+msgid "Expected '*' while parsing resource."
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:1886
+#: ../contrib/src/deprecated/resource.cpp:2015
+#: ../contrib/src/deprecated/resource.cpp:3118
+msgid "Expected '=' while parsing resource."
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:1855
+#: ../contrib/src/deprecated/resource.cpp:1985
+#: ../contrib/src/deprecated/resource.cpp:3087
+msgid "Expected 'char' while parsing resource."
+msgstr ""
+
+#: ../src/msw/registry.cpp:1149
+#, c-format
+msgid "Exporting registry key: file \"%s\" already exists and won't be overwritten."
+msgstr ""
+
+#: ../src/common/fmapbase.cpp:150
+msgid "Extended Unix Codepage for Japanese (EUC-JP)"
+msgstr "जापानी (ईयूसी-जेपी) के लिए विस्तॄत यूनिक्स कूटपृष्ट"
+
+#: ../src/html/chm.cpp:710
+#, c-format
+msgid "Extraction of '%s' into '%s' failed."
+msgstr "'%s' का निष्कर्षण '%s' में असफ़ल रहा।"
+
+#: ../src/common/menucmn.cpp:251
+#: ../src/common/menucmn.cpp:323
+msgid "F"
+msgstr "F"
+
+#: ../src/msw/dialup.cpp:887
+#, c-format
+msgid "Failed to %s dialup connection: %s"
+msgstr "%s डायल-अप कनेक्शन के लिए असफ़ल: %s"
+
+#: ../src/unix/snglinst.cpp:270
+msgid "Failed to access lock file."
+msgstr "लॉक फ़ाइल तक पहुँच में असफ़ल।"
+
+#: ../src/msw/dib.cpp:563
+#, c-format
+msgid "Failed to allocated %luKb of memory for bitmap data."
+msgstr "बिट्मैप डाटा के लिए %lu केबी स्मृति का आवंटन करने में असफ़ल।"
+
+#: ../src/unix/displayx11.cpp:234
+msgid "Failed to change video mode"
+msgstr "विडियो विधा को परिवर्तित करने में असफ़ल"
+
+#: ../src/common/debugrpt.cpp:243
+#, c-format
+msgid "Failed to clean up debug report directory \"%s\""
+msgstr "दोषमार्जन विवरण निर्देशिका \"%s\" को साफ करने में असफ़ल।"
+
+#: ../src/common/filename.cpp:190
+msgid "Failed to close file handle"
+msgstr "फ़ाइल हैन्डल को बन्द करने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:335
+#, c-format
+msgid "Failed to close lock file '%s'"
+msgstr "'%s' लॉक फ़ाइल को बन्द करने में असफ़ल"
+
+#: ../src/msw/clipbrd.cpp:113
+msgid "Failed to close the clipboard."
+msgstr "क्लिपबोर्ड को बन्द करने में असफ़ल।"
+
+#: ../src/x11/utils.cpp:254
+#, c-format
+msgid "Failed to close the display \"%s\""
+msgstr "डिस्प्ले \"%s\" को बन्द करने में असफ़ल।"
+
+#: ../src/msw/dialup.cpp:827
+msgid "Failed to connect: missing username/password."
+msgstr "कनेक्ट करने में असफ़ल: विलुप्त उपयोगकर्तानाम/कूटशब्द।"
+
+#: ../src/msw/dialup.cpp:773
+msgid "Failed to connect: no ISP to dial."
+msgstr "कनेक्ट करने में असफ़ल: डायल करने के लिए कोई आईएसपी नहीं।"
+
+#: ../src/common/textfile.cpp:177
+#, c-format
+msgid "Failed to convert file \"%s\" to Unicode."
+msgstr "फ़ाइल  \"%s\" को यूनिकोड में बदलने में असफ़ल।"
+
+#: ../src/msw/registry.cpp:632
+#, c-format
+msgid "Failed to copy registry value '%s'"
+msgstr "'%s' रजिस्ट्री वैल्यू की प्रतिलिपि बनाने में असफ़ल"
+
+#: ../src/msw/registry.cpp:641
+#, c-format
+msgid "Failed to copy the contents of registry key '%s' to '%s'."
+msgstr "'%s' रजिस्ट्री कुँजी के विषयवस्तुओं को प्रतिलिपि '%s' पर बनाने में असफ़ल।"
+
+#: ../src/common/filefn.cpp:1072
+#, c-format
+msgid "Failed to copy the file '%s' to '%s'"
+msgstr "'%s' फ़ाइल की '%s' पर प्रतिलिपि बनाने में असफ़ल"
+
+#: ../src/msw/registry.cpp:619
+#, c-format
+msgid "Failed to copy the registry subkey '%s' to '%s'."
+msgstr "'%s' रजिस्ट्री कुँजी की प्रतिलिपि '%s' करने में असफ़ल।"
+
+#: ../src/msw/dde.cpp:984
+msgid "Failed to create DDE string"
+msgstr "डीडीई श्रेणी का निर्माण करने में असफ़ल"
+
+#: ../src/msw/mdi.cpp:463
+msgid "Failed to create MDI parent frame."
+msgstr "एमडीआई मूल खाके का निर्माण करने में असफ़ल।"
+
+#: ../src/msw/statbr95.cpp:111
+msgid "Failed to create a status bar."
+msgstr "एक स्थिति पट्टी का निर्माण करने में असफ़ल।"
+
+#: ../src/common/filename.cpp:852
+msgid "Failed to create a temporary file name"
+msgstr "एक अस्थायी फ़ाइल नाम का निर्माण करने में असफ़ल"
+
+#: ../src/msw/utilsexc.cpp:225
+msgid "Failed to create an anonymous pipe"
+msgstr "एक अज्ञात पाइप का निर्माण करने में असफ़ल"
+
+#: ../src/msw/dde.cpp:442
+#, c-format
+msgid "Failed to create connection to server '%s' on topic '%s'"
+msgstr "'%s' सर्वर से '%s' विषय पर कनेक्शन जोड़ने में असफ़ल"
+
+#: ../src/msw/cursor.cpp:213
+msgid "Failed to create cursor."
+msgstr "कर्सर का निर्माण करने में असफ़ल।"
+
+#: ../src/common/debugrpt.cpp:208
+#, c-format
+msgid "Failed to create directory \"%s\""
+msgstr "\"%s\" निर्देशिका का निर्माण करने में असफ़ल।"
+
+#: ../src/generic/dirdlgg.cpp:247
+#, c-format
+msgid ""
+"Failed to create directory '%s'\n"
+"(Do you have the required permissions?)"
+msgstr ""
+"'%s' निर्देशिका का निर्माण करने में असफ़ल\n"
+"(क्या आपके पास आवश्यक अनुमतियां है?)"
+
+#: ../src/msw/mimetype.cpp:189
+#, c-format
+msgid "Failed to create registry entry for '%s' files."
+msgstr "'%s' फ़ाइलों के लिए रजिस्ट्री प्रविष्टी का निर्माण करने में असफ़ल।"
+
+#: ../src/msw/fdrepdlg.cpp:475
+#, c-format
+msgid "Failed to create the standard find/replace dialog (error code %d)"
+msgstr "मानक खोज/बदलाव संवाद का निर्माण करने में असफ़ल (त्रुटि कूट %d)"
+
+#: ../src/html/winpars.cpp:798
+#, c-format
+msgid "Failed to display HTML document in %s encoding"
+msgstr "एचटीएमएल प्रलेख को %s एन्कोडिंग में दिखाने में असफ़ल"
+
+#: ../src/msw/clipbrd.cpp:125
+#: ../src/mac/classic/clipbrd.cpp:187
+msgid "Failed to empty the clipboard."
+msgstr "क्लिपबोर्ड को खाली करने में असफ़ल।"
+
+#: ../src/unix/displayx11.cpp:211
+msgid "Failed to enumerate video modes"
+msgstr "विडियो विधाओं की परिगणना करने में असफ़ल"
+
+#: ../src/msw/dde.cpp:646
+msgid "Failed to establish an advise loop with DDE server"
+msgstr "डीडीई सर्वर के साथ एक परामर्श लूप को स्थापित करने में असफ़ल"
+
+#: ../src/msw/dialup.cpp:659
+#, c-format
+msgid "Failed to establish dialup connection: %s"
+msgstr "डायल-अप कनेक्शन को स्थापित करने में असफ़ल: %s"
+
+#: ../src/unix/utilsunx.cpp:509
+#: ../src/unix/utilsunx.cpp:525
+#, c-format
+msgid "Failed to execute '%s'\n"
+msgstr "'%s' का निष्पादन करने में असफ़ल\n"
+
+#: ../src/common/debugrpt.cpp:672
+msgid "Failed to execute curl, please install it in PATH."
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:2499
+#, c-format
+msgid ""
+"Failed to find XBM resource %s.\n"
+"Forgot to use wxResourceLoadBitmapData?"
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:2653
+#, c-format
+msgid ""
+"Failed to find XBM resource %s.\n"
+"Forgot to use wxResourceLoadIconData?"
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:2514
+#, c-format
+msgid ""
+"Failed to find XPM resource %s.\n"
+"Forgot to use wxResourceLoadBitmapData?"
+msgstr ""
+
+#: ../src/common/regex.cpp:425
+#: ../src/common/regex.cpp:473
+#, fuzzy, c-format
+msgid "Failed to find match for regular expression: %s"
+msgstr "'%s' को सामान्य व्यंजक में मिलाने में असफ़ल: %s"
+
+#: ../src/msw/dialup.cpp:725
+#, c-format
+msgid "Failed to get ISP names: %s"
+msgstr "आईएसपी नामों को प्राप्त करने में असफ़ल: %s"
+
+#: ../src/mac/classic/clipbrd.cpp:136
+msgid "Failed to get clipboard data."
+msgstr "क्लिपबोर्ड डाटा को प्राप्त करने में असफ़ल।"
+
+#: ../src/msw/clipbrd.cpp:731
+msgid "Failed to get data from the clipboard"
+msgstr "क्लिपबोर्ड से डाटा प्राप्त करने में असफ़ल"
+
+#: ../src/common/stopwatch.cpp:231
+msgid "Failed to get the local system time"
+msgstr "स्थानीय तंत्र समय प्राप्त करने में असफ़ल"
+
+#: ../src/common/filefn.cpp:1516
+msgid "Failed to get the working directory"
+msgstr "कार्यशील निर्देशिका को प्राप्त करने में असफ़ल"
+
+#: ../src/univ/theme.cpp:114
+msgid "Failed to initialize GUI: no built-in themes found."
+msgstr "जीयूआई का आरम्भीकरण करने में असफ़ल: कोई अंत-निर्मित थीमें नहीं मिली।"
+
+#: ../src/msw/helpchm.cpp:64
+msgid "Failed to initialize MS HTML Help."
+msgstr "एमएस एचटीएमएल सहायता का आरम्भीकरण करने में असफ़ल।"
+
+#: ../src/msw/glcanvas.cpp:653
+msgid "Failed to initialize OpenGL"
+msgstr "ओपनजीएल का आरम्भीकरण करने में असफ़ल।"
+
+#: ../src/gtk/textctrl.cpp:1072
+#, fuzzy
+msgid "Failed to insert text in the control."
+msgstr "कार्यशील निर्देशिका को प्राप्त करने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:242
+#, c-format
+msgid "Failed to inspect the lock file '%s'"
+msgstr "लॉक फ़ाइल '%s' को निरीक्षण करने में असफ़ल"
+
+#: ../src/unix/threadpsx.cpp:910
+msgid "Failed to join a thread, potential memory leak detected - please restart the program"
+msgstr "एक थ्रेड में शामिल होने में असफ़ल, अत्याधिक स्मॄति रिसाव पाया गया -कॄपया इस कार्यक्रम को पुनः आरम्भ करें"
+
+#: ../src/msw/utils.cpp:725
+#, c-format
+msgid "Failed to kill process %d"
+msgstr "%d प्रोसेस को खत्म करने में असफ़ल"
+
+#: ../src/common/iconbndl.cpp:66
+#, c-format
+msgid "Failed to load image %d from file '%s'."
+msgstr "%d आकॄति को '%s' फ़ाइल से लोड करने में असफ़ल।"
+
+#: ../src/msw/enhmeta.cpp:80
+#, fuzzy, c-format
+msgid "Failed to load metafile from file \"%s\"."
+msgstr "%d आकॄति को '%s' फ़ाइल से लोड करने में असफ़ल।"
+
+#: ../src/msw/volume.cpp:310
+msgid "Failed to load mpr.dll."
+msgstr "mpr.dll को लोड करने में असफ़ल।"
+
+#: ../src/common/dynlib.cpp:133
+#, c-format
+msgid "Failed to load shared library '%s'"
+msgstr "'%s' साझा लायबरी को लोड करने में असफ़ल"
+
+#: ../src/common/dynlib.cpp:115
+#, c-format
+msgid "Failed to load shared library '%s' Error '%s'"
+msgstr "'%s' साझा लायबरी को लोड करने में असफ़ल त्रुटि '%s'"
+
+#: ../src/unix/snglinst.cpp:199
+#, c-format
+msgid "Failed to lock the lock file '%s'"
+msgstr "'%s' फ़ाइल को लॉक करने में असफ़ल"
+
+#: ../src/common/filename.cpp:2208
+#, c-format
+msgid "Failed to modify file times for '%s'"
+msgstr " '%s' के लिए फ़ाइल टाइम्स को परिवर्तित करने में असफ़ल"
+
+#: ../src/common/filename.cpp:178
+#, c-format
+msgid "Failed to open '%s' for %s"
+msgstr "'%s' को %s के लिए खोलने में असफ़ल"
+
+#: ../src/html/chm.cpp:142
+#, c-format
+msgid "Failed to open CHM archive '%s'."
+msgstr "'%s' सीएचएम लेखागार को खोलने में असफ़ल।"
+
+#: ../src/x11/utils.cpp:273
+#, c-format
+msgid "Failed to open display \"%s\"."
+msgstr "प्रदर्श युक्ति \"%s\" को खोलने में असफ़ल।"
+
+#: ../src/common/filename.cpp:887
+msgid "Failed to open temporary file."
+msgstr "अस्थायी फ़ाइल को खोलने में असफ़ल।"
+
+#: ../src/msw/clipbrd.cpp:93
+msgid "Failed to open the clipboard."
+msgstr "क्लिपबोर्ड को खोलने में असफ़ल।"
+
+#: ../src/msw/clipbrd.cpp:634
+msgid "Failed to put data on the clipboard"
+msgstr "क्लिपबोर्ड पर डाटा डालने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:279
+msgid "Failed to read PID from lock file."
+msgstr "लॉक फ़ाइल से पीआईडी को पढ़ने में असफ़ल।"
+
+#: ../src/common/fileconf.cpp:522
+msgid "Failed to read config options."
+msgstr "संरचना के विकल्पों को पढ़नें में त्रुटि।"
+
+#: ../src/unix/utilsunx.cpp:599
+msgid "Failed to redirect child process input/output"
+msgstr "बाल प्रोसेस इनपुट/आउटपुट को दिशानिर्देश देने में असफ़ल"
+
+#: ../src/msw/utilsexc.cpp:651
+msgid "Failed to redirect the child process IO"
+msgstr "बाल प्रोसेस आईओ को दिशानिर्देश देने में असफ़ल"
+
+#: ../src/msw/dde.cpp:292
+#, c-format
+msgid "Failed to register DDE server '%s'"
+msgstr "'%s' डीडीई सर्वर को पंजीकॄत करने में असफ़ल"
+
+#: ../src/msw/glcanvas.cpp:331
+#, fuzzy
+msgid "Failed to register OpenGL window class."
+msgstr "ओपनजीएल का आरम्भीकरण करने में असफ़ल।"
+
+#: ../src/common/fontmap.cpp:243
+#, c-format
+msgid "Failed to remember the encoding for the charset '%s'."
+msgstr "'%s' शब्दसमुच्चय के लिए एन्कोडिंग को याद रखने में असफ़ल।"
+
+#: ../src/common/debugrpt.cpp:226
+#, c-format
+msgid "Failed to remove debug report file \"%s\""
+msgstr "दोषमार्जन विवरण फ़ाइल \"%s\" को हटाने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:323
+#, c-format
+msgid "Failed to remove lock file '%s'"
+msgstr "'%s' लॉक फ़ाइल को हटाने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:289
+#, c-format
+msgid "Failed to remove stale lock file '%s'."
+msgstr "'%s' स्टेल लॉक फ़ाइल को हटाने में असफ़ल।"
+
+#: ../src/msw/registry.cpp:470
+#, c-format
+msgid "Failed to rename registry value '%s' to '%s'."
+msgstr "'%s' रजिस्ट्री वैल्यू को नाम बदल कर '%s' करने में असफ़ल।"
+
+#: ../src/common/filefn.cpp:1175
+#, c-format
+msgid "Failed to rename the file '%s' to '%s' because the destination file already exists."
+msgstr ""
+
+#: ../src/msw/registry.cpp:574
+#, c-format
+msgid "Failed to rename the registry key '%s' to '%s'."
+msgstr "'%s' रजिस्ट्री कुँजी को नाम बदल कर '%s' करने में असफ़ल।"
+
+#: ../src/msw/clipbrd.cpp:497
+msgid "Failed to retrieve data from the clipboard."
+msgstr "क्लिपबोर्ड से डाटा को पुनःप्राप्त करने में असफ़ल।"
+
+#: ../src/common/filename.cpp:2311
+#, c-format
+msgid "Failed to retrieve file times for '%s'"
+msgstr "'%s' के लिए फ़ाइल टाइम्स को पुनःप्राप्त करने में असफ़ल"
+
+#: ../src/msw/dialup.cpp:492
+msgid "Failed to retrieve text of RAS error message"
+msgstr "आरऐएस त्रुटि संदेश के पाठ को पुनःप्राप्त करने में असफ़ल"
+
+#: ../src/msw/clipbrd.cpp:768
+msgid "Failed to retrieve the supported clipboard formats"
+msgstr "मैट्स के लिए समर्थित क्लिपबोर्ड को पुनःप्राप्त करने में असफ़ल"
+
+#: ../src/msw/dib.cpp:341
+#, c-format
+msgid "Failed to save the bitmap image to file \"%s\"."
+msgstr "बिट्मैप आकॄति को \"%s\" फ़ाइल पर सुरक्षित करने में असफ़ल।"
+
+#: ../src/msw/dde.cpp:692
+msgid "Failed to send DDE advise notification"
+msgstr "डीडीई परामर्श घोषणा को प्रेषित करने में असफ़ल"
+
+#: ../src/common/ftp.cpp:380
+#, c-format
+msgid "Failed to set FTP transfer mode to %s."
+msgstr "एफ़टीपी स्थानान्तरण विधा को %s पर स्थापित करने में असफ़ल।"
+
+#: ../src/msw/clipbrd.cpp:373
+msgid "Failed to set clipboard data."
+msgstr "क्लिपबोर्ड डाटा को स्थापित करने में असफ़ल।"
+
+#: ../src/unix/snglinst.cpp:182
+#, fuzzy, c-format
+msgid "Failed to set permissions on lock file '%s'"
+msgstr "'%s' फ़ाइल के लिए अनुमतियों को स्थापित करना असम्भव"
+
+#: ../src/common/file.cpp:516
+msgid "Failed to set temporary file permissions"
+msgstr "अस्थायी फ़ाइल अनुमतियों को स्थापित करने में असफ़ल"
+
+#: ../src/gtk/textctrl.cpp:1015
+#, fuzzy
+msgid "Failed to set text in the text control."
+msgstr "यूटीसी तंत्र समय प्राप्त करने में असफ़ल।"
+
+#: ../src/unix/threadpsx.cpp:1253
+#: ../src/unix/threadpsx.cpp:1263
+#, c-format
+msgid "Failed to set thread priority %d."
+msgstr "%d थ्रेड वरीयता को स्थापित करने में असफ़ल।"
+
+#: ../src/common/fs_mem.cpp:266
+#, c-format
+msgid "Failed to store image '%s' to memory VFS!"
+msgstr "'%s' आकॄति को वीएफ़एस स्मॄति में सुरक्षित करने में असफ़ल!"
+
+#: ../src/unix/threadpsx.cpp:1436
+#: ../src/mac/carbon/mpthread.cpp:1268
+msgid "Failed to terminate a thread."
+msgstr "एक थ्रेड को समाप्त करने में असफ़ल।"
+
+#: ../src/msw/dde.cpp:665
+msgid "Failed to terminate the advise loop with DDE server"
+msgstr "डीडीई सर्वर के साथ परामर्श लूप को समाप्त करने में असफ़ल"
+
+#: ../src/msw/dialup.cpp:962
+#, c-format
+msgid "Failed to terminate the dialup connection: %s"
+msgstr "डायल-अप कनेक्शन को समाप्त करने में असफ़ल: %s"
+
+#: ../src/common/filename.cpp:2223
+#, c-format
+msgid "Failed to touch the file '%s'"
+msgstr "'%s' फ़ाइल को छूने में असफ़ल"
+
+#: ../src/unix/snglinst.cpp:329
+#, c-format
+msgid "Failed to unlock lock file '%s'"
+msgstr "'%s' लॉक फ़ाइल को अन-लॉक करने में असफ़ल"
+
+#: ../src/msw/dde.cpp:313
+#, c-format
+msgid "Failed to unregister DDE server '%s'"
+msgstr "'%s' डीडीई सर्वर को अपंजीकॄत करने में असफ़ल"
+
+#: ../src/common/fileconf.cpp:1066
+msgid "Failed to update user configuration file."
+msgstr "उपयोगकर्ता संरचना फ़ाइल को अपडेट करने में असफ़ल।"
+
+#: ../src/common/debugrpt.cpp:685
+#, c-format
+msgid "Failed to upload the debug report (error code %d)."
+msgstr "दोषमार्जन विवरण को अपलोड करने में असफ़ल (त्रुटि कूट %d)।"
+
+#: ../src/unix/snglinst.cpp:169
+#, c-format
+msgid "Failed to write to lock file '%s'"
+msgstr "'%s' लॉक फ़ाइल पर लिखने में असफ़ल"
+
+#: ../src/generic/logg.cpp:400
+msgid "Fatal error"
+msgstr "घातक त्रुटि"
+
+#: ../src/common/log.cpp:457
+msgid "Fatal error: "
+msgstr "घातक त्रुटि: "
+
+#: ../src/msw/wince/filedlgwce.cpp:119
+msgid "File"
+msgstr "फ़ाइल"
+
+#: ../src/mgl/bitmap.cpp:414
+#, c-format
+msgid "File %s does not exist."
+msgstr " %s फ़ाइल विद्यमान नहीं है।"
+
+#: ../src/gtk/filedlg.cpp:58
+#: ../src/generic/filedlgg.cpp:1468
+#, c-format
+msgid "File '%s' already exists, do you really want to overwrite it?"
+msgstr "'%s' फ़ाइल पहिले से विद्यमान है, क्या आप वास्तव में इसके ऊपर फ़िर से लिखना चाहते है?"
+
+#: ../src/os2/filedlg.cpp:312
+#, c-format
+msgid ""
+"File '%s' already exists.\n"
+"Do you want to replace it?"
+msgstr ""
+"'%s' फ़ाइल पहिले से विद्यमान है।\n"
+"क्या आप इसे बदलना चाहते है?"
+
+#: ../src/common/textcmn.cpp:218
+#: ../src/richtext/richtextctrl.cpp:1887
+msgid "File couldn't be loaded."
+msgstr "फ़ाइल को लोड नहीं किया जा सका।"
+
+#: ../src/common/docview.cpp:569
+#: ../src/common/docview.cpp:1609
+msgid "File error"
+msgstr "फ़ाइल त्रुटि"
+
+#: ../src/generic/filedlgg.cpp:844
+#: ../src/generic/dirctrlg.cpp:726
+msgid "File name exists already."
+msgstr "फ़ाइल नाम पहिले से विद्यमान है।"
+
+#: ../src/motif/filedlg.cpp:217
+msgid "Files"
+msgstr "फ़ाइलें"
+
+#: ../src/common/filefn.cpp:1821
+#, c-format
+msgid "Files (%s)"
+msgstr "फ़ाइलें (%s)"
+
+#: ../src/motif/filedlg.cpp:215
+msgid "Filter"
+msgstr "फ़िल्टर"
+
+#: ../src/html/helpwnd.cpp:486
+msgid "Find"
+msgstr "खोज"
+
+#: ../src/html/helpwnd.cpp:1215
+msgid "Fixed font:"
+msgstr "नियत फ़ॉन्ट:"
+
+#: ../src/html/helpwnd.cpp:1275
+msgid "Fixed size face.<br> <b>bold</b> <i>italic</i> "
+msgstr "नियत आकार फ़ेस<br> <b>गहरा</b> <i>इटैलिक</i> "
+
+#: ../src/common/paper.cpp:113
+msgid "Folio, 8 1/2 x 13 in"
+msgstr "फ़ोलियो, ८ १/२ x १३ इंच"
+
+#: ../src/richtext/richtextformatdlg.cpp:275
+#: ../src/mac/carbon/fontdlg.cpp:410
+msgid "Font"
+msgstr "फ़ॉन्ट"
+
+#: ../src/richtext/richtextfontpage.cpp:187
+msgid "Font &weight:"
+msgstr "फ़ॉन्ट भार (&W):"
+
+#: ../src/html/helpwnd.cpp:1216
+msgid "Font size:"
+msgstr "फ़ॉन्ट आकार:"
+
+#: ../src/richtext/richtextfontpage.cpp:174
+msgid "Font st&yle:"
+msgstr "फ़ॉन्ट शैली: (&Y)"
+
+#: ../src/mac/carbon/fontdlg.cpp:452
+msgid "Font:"
+msgstr "फ़ॉन्ट:"
+
+#: ../src/dfb/fontmgr.cpp:167
+#, c-format
+msgid "Fonts index file %s disappeared while loading fonts."
+msgstr ""
+
+#: ../src/unix/utilsunx.cpp:546
+msgid "Fork failed"
+msgstr "फ़ार्क असफ़ल रहा"
+
+#: ../src/common/xtixml.cpp:232
+msgid "Forward hrefs are not supported"
+msgstr "अग्र एचरेफ़्स समर्थित नहीं है"
+
+#: ../contrib/src/deprecated/resource.cpp:1838
+#: ../contrib/src/deprecated/resource.cpp:1968
+#: ../contrib/src/deprecated/resource.cpp:3070
+msgid "Found "
+msgstr "मिली"
+
+#: ../src/html/helpwnd.cpp:891
+#, c-format
+msgid "Found %i matches"
+msgstr "%i मेल मिलें"
+
+#: ../src/generic/prntdlgg.cpp:238
+msgid "From:"
+msgstr "प्रेषणकर्ता:"
+
+#: ../src/common/fmapbase.cpp:154
+msgid "GB-2312"
+msgstr "GB-2312"
+
+#: ../src/common/imaggif.cpp:80
+msgid "GIF: Invalid gif index."
+msgstr "जीआईएफ़: अवैध जीआईएफ़ इंडेक्स।"
+
+#: ../src/common/imaggif.cpp:70
+msgid "GIF: data stream seems to be truncated."
+msgstr "जीआईएफ़:  डाटा धारा सम्भवता टूटी-फ़ूटी लगती है।"
+
+#: ../src/common/imaggif.cpp:54
+msgid "GIF: error in GIF image format."
+msgstr "जीआईएफ़: जीआईएफ़ आकॄति प्रारूप में त्रुटि।"
+
+#: ../src/common/imaggif.cpp:57
+msgid "GIF: not enough memory."
+msgstr "जीआईएफ़: आवश्यकतानुसार स्मॄति अनुपलब्ध"
+
+#: ../src/common/imaggif.cpp:60
+msgid "GIF: unknown error!!!"
+msgstr "जीआईएफ़: अज्ञात त्रुटि!!!"
+
+#: ../src/univ/themes/gtk.cpp:527
+msgid "GTK+ theme"
+msgstr "जीटीके+ थीम"
+
+#: ../src/common/prntbase.cpp:238
+msgid "Generic PostScript"
+msgstr "सामान्य पोस्टस्क्रिप्ट"
+
+#: ../src/common/paper.cpp:137
+msgid "German Legal Fanfold, 8 1/2 x 13 in"
+msgstr "जर्मन लीगल फ़ैनफ़ोल्ड, ८ १/२ x १३ इंच"
+
+#: ../src/common/paper.cpp:136
+msgid "German Std Fanfold, 8 1/2 x 12 in"
+msgstr "जर्मन मानक फ़ैनफ़ोल्ड, ८ १/२ x १२ इंच"
+
+#: ../include/wx/xti.h:841
+msgid "GetProperty called w/o valid getter"
+msgstr "GetProperty को बिना किसी वैध गेटर के बुलाया गया"
+
+#: ../include/wx/xti.h:902
+msgid "GetPropertyCollection called on a generic accessor"
+msgstr "GetPropertyCollection ने एक सामान्य ऐसेसर को बुलाया"
+
+#: ../include/wx/xti.h:849
+msgid "GetPropertyCollection called w/o valid collection getter"
+msgstr "GetPropertyCollection को बिना किसी वैध कलेक्शन गेटर के बुलाया गया"
+
+#: ../src/html/helpwnd.cpp:661
+msgid "Go back"
+msgstr "पीछे जाएँ"
+
+#: ../src/html/helpwnd.cpp:664
+msgid "Go forward"
+msgstr "आगे जाएँ"
+
+#: ../src/html/helpwnd.cpp:669
+msgid "Go one level up in document hierarchy"
+msgstr "प्रलेख पदानुक्रम में एक स्तर ऊपर जाएँ"
+
+#: ../src/generic/dirdlgg.cpp:134
+#: ../src/generic/filedlgg.cpp:1080
+msgid "Go to home directory"
+msgstr "गॄह निर्देशिका पर जाएँ"
+
+#: ../src/generic/filedlgg.cpp:1072
+msgid "Go to parent directory"
+msgstr "मूल निर्देशिका पर जाएँ"
+
+#: ../src/common/prntbase.cpp:1078
+msgid "Goto Page"
+msgstr "पृष्ट पर जाएँ"
+
+#: ../src/generic/aboutdlgg.cpp:77
+msgid "Graphics art by "
+msgstr "आलेख कला के द्वारा"
+
+#: ../src/common/fmapbase.cpp:112
+msgid "Greek (ISO-8859-7)"
+msgstr "ग्रीक (आईओ-८८५९-७)"
+
+#: ../src/common/zstream.cpp:149
+#: ../src/common/zstream.cpp:302
+msgid "Gzip not supported by this version of zlib"
+msgstr ""
+
+#: ../src/common/menucmn.cpp:93
+msgid "HELP"
+msgstr "HELP"
+
+#: ../src/common/menucmn.cpp:78
+msgid "HOME"
+msgstr "HOME"
+
+#: ../src/html/helpwnd.cpp:1550
+msgid "HTML Help Project (*.hhp)|*.hhp|"
+msgstr "एचटीएमएल सहायता परियोजना (*.hhp)|*.hhp|"
+
+#: ../src/html/htmlwin.cpp:630
+#, c-format
+msgid "HTML anchor %s does not exist."
+msgstr "%s एचटीएमएल एंकर विद्यमान नहीं है।"
+
+#: ../src/html/helpwnd.cpp:1548
+msgid "HTML files (*.html;*.htm)|*.html;*.htm|"
+msgstr "एचटीएमएल फ़ाइलें (*.html;*.htm)|*.html;*.htm|"
+
+#: ../src/html/htmprint.cpp:379
+msgid "HTML pagination algorithm generated more than the allowed maximum number of pages and it can't continue any longer!"
+msgstr ""
+
+#: ../src/common/fmapbase.cpp:113
+msgid "Hebrew (ISO-8859-8)"
+msgstr "हिब्रू (आईसो-८८५९-८)"
+
+#: ../src/html/helpdlg.cpp:67
+#: ../src/html/helpfrm.cpp:97
+#: ../contrib/src/deprecated/proplist.cpp:519
+msgid "Help"
+msgstr "सहायता"
+
+#: ../src/html/helpwnd.cpp:1209
+msgid "Help Browser Options"
+msgstr "सहायता ब्राउजर के विकल्प"
+
+#: ../src/generic/helpext.cpp:461
+#: ../src/generic/helpext.cpp:462
+msgid "Help Index"
+msgstr "सहायता इंडेक्स"
+
+#: ../src/html/helpwnd.cpp:1536
+msgid "Help Printing"
+msgstr "सहायता मुद्रण"
+
+#: ../src/html/helpwnd.cpp:820
+msgid "Help Topics"
+msgstr "सहायता विषयवस्तु"
+
+#: ../src/html/helpwnd.cpp:1549
+msgid "Help books (*.htb)|*.htb|Help books (*.zip)|*.zip|"
+msgstr "सहायता पुस्तकें (*.htb)|*.htb|सहायता पुस्तकें (*.zip)|*.zip|"
+
+#: ../src/generic/helpext.cpp:274
+#, c-format
+msgid "Help directory \"%s\" not found."
+msgstr "सहायता निर्देशिका \"%s\" नहीं मिली।"
+
+#: ../src/generic/helpext.cpp:282
+#, c-format
+msgid "Help file \"%s\" not found."
+msgstr "सहायता फ़ाइल \"%s\" नहीं मिली।"
+
+#: ../src/html/helpctrl.cpp:51
+#, c-format
+msgid "Help: %s"
+msgstr "सहायता: %s"
+
+#: ../src/generic/dirdlgg.cpp:96
+msgid "Home"
+msgstr "गृह"
+
+#: ../src/generic/dirctrlg.cpp:670
+msgid "Home directory"
+msgstr "गृह निर्देशिका"
+
+#: ../include/wx/filefn.h:141
+msgid "I64"
+msgstr "I64"
+
+#: ../src/common/imagbmp.cpp:940
+msgid "ICO: Error in reading mask DIB."
+msgstr "आईसीओ: मास्क डीआईबी को पढ़ने में त्रुटि।"
+
+#: ../src/common/imagbmp.cpp:1045
+#: ../src/common/imagbmp.cpp:1104
+#: ../src/common/imagbmp.cpp:1113
+#: ../src/common/imagbmp.cpp:1124
+#: ../src/common/imagbmp.cpp:1168
+#: ../src/common/imagbmp.cpp:1178
+#: ../src/common/imagbmp.cpp:1187
+msgid "ICO: Error writing the image file!"
+msgstr "आईसीओ: आकॄति फ़ाइल को लिखने में त्रुटि!"
+
+#: ../src/common/imagbmp.cpp:1013
+msgid "ICO: Image too tall for an icon."
+msgstr "आईसीओ: आकॄति एक आईकॉन के लिए बहुत बड़ी है।"
+
+#: ../src/common/imagbmp.cpp:1019
+msgid "ICO: Image too wide for an icon."
+msgstr "आईसीओ: आकॄति एक आईकॉन के लिए बहुत चौड़ी है।"
+
+#: ../src/common/imagbmp.cpp:1252
+msgid "ICO: Invalid icon index."
+msgstr "ICO: अवैध आईकॉन इंडेक्स।"
+
+#: ../src/common/imagiff.cpp:766
+msgid "IFF: data stream seems to be truncated."
+msgstr "आईएफ़एफ़: डाटा धारा लगता है कि टूट गई है।"
+
+#: ../src/common/imagiff.cpp:750
+msgid "IFF: error in IFF image format."
+msgstr "आईएफ़एफ़: आईएफ़एफ़ आकॄति प्रारूप में त्रुटि।"
+
+#: ../src/common/imagiff.cpp:753
+msgid "IFF: not enough memory."
+msgstr "आईएफ़एफ़: आवश्यकतानुसार स्मॄति का अभाव।"
+
+#: ../src/common/imagiff.cpp:756
+msgid "IFF: unknown error!!!"
+msgstr "आईएफ़एफ़: अज्ञात त्रुटि!!!"
+
+#: ../src/common/menucmn.cpp:68
+msgid "INS"
+msgstr "INS"
+
+#: ../src/common/menucmn.cpp:69
+msgid "INSERT"
+msgstr "INSERT"
+
+#: ../contrib/src/deprecated/resource.cpp:2683
+#: ../contrib/src/deprecated/resource.cpp:2694
+#, c-format
+msgid "Icon resource specification %s not found."
+msgstr "आइकॉन संसाधन विशिष्टता '%s' नहीं मिली।"
+
+#: ../src/generic/dbgrptg.cpp:354
+msgid ""
+"If you have any additional information pertaining to this bug\n"
+"report, please enter it here and it will be joined to it:"
+msgstr ""
+
+#: ../src/generic/dbgrptg.cpp:320
+msgid ""
+"If you wish to suppress this debug report completely, please choose the \"Cancel\" button,\n"
+"but be warned that it may hinder improving the program, so if\n"
+"at all possible please do continue with the report generation.\n"
+msgstr ""
+"अगर आप इस दोषमार्जन विवरण को पूरी तरह से छिपा देना चाहते हें तो, कृपया \"निरस्त\" बटन चुने,\n"
+"लेकिन ध्यान रखे, यह इस प्रोग्राम को उत्कृष्ट बनाने में बाधा पहुँचायेंगी,\n"
+"इसलिए जब तक हो सके कृपया विवरण निर्माण जारी रखे।\n"
+
+#: ../src/msw/registry.cpp:1313
+#, c-format
+msgid "Ignoring value \"%s\" of the key \"%s\"."
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:266
+msgid "Ill-formed resource file syntax."
+msgstr "संसाधन फ़ाइल वाक्यविन्यास गलत हें।"
+
+#: ../src/common/xtistrm.cpp:256
+msgid "Illegal Object Class (Non-wxEvtHandler) as Event Source"
+msgstr "घटना स्रोत की भांति अवैध ऑबजेक्ट वर्ग (Non-wxEvtHandler)"
+
+#: ../include/wx/xti.h:1668
+msgid "Illegal Parameter Count for ConstructObject Method"
+msgstr "ConstructObject विधि के लिए अवैध पैरामीटर गणक"
+
+#: ../include/wx/xti.h:1742
+msgid "Illegal Parameter Count for Create Method"
+msgstr "निर्माण विधि के लिए अवैध पैरामीटर गणक"
+
+#: ../src/generic/filedlgg.cpp:830
+#: ../src/generic/dirctrlg.cpp:708
+msgid "Illegal directory name."
+msgstr "अवैध निर्देशिका नाम।"
+
+#: ../src/generic/filedlgg.cpp:1420
+msgid "Illegal file specification."
+msgstr "अवैध फ़ाइल विशिष्टता"
+
+#: ../src/common/image.cpp:1847
+msgid "Image and mask have different sizes."
+msgstr "आकृति और मास्क के आकार भिन्न है।"
+
+#: ../src/common/image.cpp:2195
+#: ../src/common/image.cpp:2235
+#, c-format
+msgid "Image file is not of type %ld."
+msgstr "आकृति फ़ाइल %ld प्रकार की नहीं है।"
+
+#: ../src/common/image.cpp:2259
+#, c-format
+msgid "Image file is not of type %s."
+msgstr "आकृति फ़ाइल %s प्रकार की नहीं है।"
+
+#: ../src/msw/textctrl.cpp:430
+msgid "Impossible to create a rich edit control, using simple text control instead. Please reinstall riched32.dll"
+msgstr "एक रिच ऐडीट कन्ट्रोल का निर्माण असम्भव है, इसके बज़ाय सामान्य पाठ कन्ट्रोल का उपयोग किया जा रहा है। कृपया riched32.dll को पुनः संसाधित करें"
+
+#: ../src/unix/utilsunx.cpp:435
+msgid "Impossible to get child process input"
+msgstr "बाल प्रोसेस इनपुट का प्राप्त करना असम्भव"
+
+#: ../src/common/filefn.cpp:1091
+#, c-format
+msgid "Impossible to get permissions for file '%s'"
+msgstr "'%s' फ़ाइले के लिए अनुमतियों को प्राप्त करना असम्भव"
+
+#: ../src/common/filefn.cpp:1105
+#, c-format
+msgid "Impossible to overwrite the file '%s'"
+msgstr "'%s' फ़ाइल को पुनः आरम्भ से लिखना असम्भव"
+
+#: ../src/common/filefn.cpp:1149
+#, c-format
+msgid "Impossible to set permissions for the file '%s'"
+msgstr "'%s' फ़ाइल के लिए अनुमतियों को स्थापित करना असम्भव"
+
+#: ../src/common/stockitem.cpp:130
+msgid "Indent"
+msgstr "जगह छोड़ कर लिखें"
+
+#: ../src/richtext/richtextformatdlg.cpp:281
+msgid "Indents && Spacing"
+msgstr ""
+
+#: ../src/html/helpwnd.cpp:511
+msgid "Index"
+msgstr "इंडेक्स"
+
+#: ../src/common/fmapbase.cpp:117
+msgid "Indian (ISO-8859-12)"
+msgstr "भारतीय (आईसो-८८५९-१२)"
+
+#: ../src/common/init.cpp:248
+msgid "Initialization failed in post init, aborting."
+msgstr ""
+
+#: ../src/richtext/richtextsymboldlg.cpp:474
+#: ../src/richtext/richtextsymboldlg.cpp:501
+msgid "Insert"
+msgstr "डाले"
+
+#: ../src/richtext/richtextbuffer.cpp:5379
+#: ../src/richtext/richtextbuffer.cpp:6172
+msgid "Insert Image"
+msgstr "आकृति डाले"
+
+#: ../src/richtext/richtextbuffer.cpp:5241
+#: ../src/richtext/richtextbuffer.cpp:5275
+#: ../src/richtext/richtextbuffer.cpp:5313
+#: ../src/richtext/richtextctrl.cpp:586
+#: ../src/richtext/richtextctrl.cpp:853
+msgid "Insert Text"
+msgstr "पाठ डाले"
+
+#: ../src/richtext/richtextsymboldlg.cpp:476
+#: ../src/richtext/richtextsymboldlg.cpp:478
+#: ../src/richtext/richtextsymboldlg.cpp:503
+#: ../src/richtext/richtextsymboldlg.cpp:505
+msgid "Inserts the chosen symbol."
+msgstr "चुना हुआ चिह्न डाल दे।"
+
+#: ../src/common/xtistrm.cpp:700
+msgid "Internal error, illegal wxCustomTypeInfo"
+msgstr "आंतरिक त्रुटि, अवैध wxCustomTypeInfo"
+
+#: ../src/common/imagtiff.cpp:256
+msgid "Invalid TIFF image index."
+msgstr "अवैध टीआईएफ़एफ़ आकॄति इंडेक्स।"
+
+#: ../src/xrc/xmlres.cpp:485
+#, c-format
+msgid "Invalid XRC resource '%s': doesn't have root node 'resource'."
+msgstr "अवैध एक्सआरसी स्रोत-साधन '%s': रूट नोड 'resource' नहीं रखता है।"
+
+#: ../src/common/appcmn.cpp:290
+#, fuzzy, c-format
+msgid "Invalid display mode specification '%s'."
+msgstr "अवैध जयामिति विशिष्टतायें '%s'"
+
+#: ../src/x11/app.cpp:127
+#, c-format
+msgid "Invalid geometry specification '%s'"
+msgstr "अवैध जयामिति विशिष्टतायें '%s'"
+
+#: ../src/unix/snglinst.cpp:307
+#, c-format
+msgid "Invalid lock file '%s'."
+msgstr "'%s' अवैध लॉक फ़ाइल।"
+
+#: ../src/common/xtistrm.cpp:361
+#: ../src/common/xtistrm.cpp:376
+msgid "Invalid or Null Object ID passed to GetObjectClassInfo"
+msgstr "GetObjectClassInfo को अवैध या रिक्त ऑबजेक्ट आईडी दी गयी"
+
+#: ../src/common/xtistrm.cpp:391
+msgid "Invalid or Null Object ID passed to HasObjectClassInfo"
+msgstr "HasObjectClassInfo को अवैध या रिक्त ऑबजेक्ट आईडी दी गयी"
+
+#: ../src/common/regex.cpp:304
+#, c-format
+msgid "Invalid regular expression '%s': %s"
+msgstr "'%s' अवैध सामान्य व्यंजक: %s"
+
+#: ../src/richtext/richtextfontpage.cpp:266
+#: ../src/richtext/richtextfontpage.cpp:324
+#: ../src/richtext/richtextfontpage.cpp:581
+#: ../src/generic/fontdlgg.cpp:236
+#: ../src/mac/carbon/fontdlg.cpp:484
+msgid "Italic"
+msgstr "इटैलिक"
+
+#: ../src/common/paper.cpp:132
+msgid "Italy Envelope, 110 x 230 mm"
+msgstr "इटली लिफ़ाफ़ा, ११० x २३० मिलीमीटर"
+
+#: ../src/common/imagjpeg.cpp:250
+msgid "JPEG: Couldn't load - file is probably corrupted."
+msgstr "जेपीईजी: लोड नहीं किया जा सका - सम्भवता फ़ाइल निकॄष्ट है।"
+
+#: ../src/common/imagjpeg.cpp:393
+msgid "JPEG: Couldn't save image."
+msgstr "जेपीईजी: आकॄति को सुरक्षित नहीं किया जा सका।"
+
+#: ../src/common/paper.cpp:165
+msgid "Japanese Double Postcard 200 x 148 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:169
+msgid "Japanese Envelope Chou #3"
+msgstr ""
+
+#: ../src/common/paper.cpp:182
+msgid "Japanese Envelope Chou #3 Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:170
+msgid "Japanese Envelope Chou #4"
+msgstr ""
+
+#: ../src/common/paper.cpp:183
+msgid "Japanese Envelope Chou #4 Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:167
+msgid "Japanese Envelope Kaku #2"
+msgstr ""
+
+#: ../src/common/paper.cpp:180
+msgid "Japanese Envelope Kaku #2 Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:168
+msgid "Japanese Envelope Kaku #3"
+msgstr ""
+
+#: ../src/common/paper.cpp:181
+msgid "Japanese Envelope Kaku #3 Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:187
+msgid "Japanese Envelope You #4"
+msgstr ""
+
+#: ../src/common/paper.cpp:188
+msgid "Japanese Envelope You #4 Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:140
+msgid "Japanese Postcard 100 x 148 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:177
+msgid "Japanese Postcard Rotated 148 x 100 mm"
+msgstr ""
+
+#: ../src/common/stockitem.cpp:134
+msgid "Justified"
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:343
+#: ../src/richtext/richtextliststylepage.cpp:345
+#: ../src/richtext/richtextindentspage.cpp:165
+#: ../src/richtext/richtextindentspage.cpp:167
+msgid "Justify text left and right."
+msgstr ""
+
+#: ../src/common/fmapbase.cpp:121
+msgid "KOI8-R"
+msgstr "केओआई८-आर"
+
+#: ../src/common/fmapbase.cpp:122
+msgid "KOI8-U"
+msgstr "केओआई८-यू"
+
+#: ../src/common/menucmn.cpp:267
+#: ../src/common/menucmn.cpp:325
+msgid "KP_"
+msgstr "KP_"
+
+#: ../src/common/menucmn.cpp:121
+msgid "KP_ADD"
+msgstr "KP_ADD"
+
+#: ../src/common/menucmn.cpp:116
+msgid "KP_BEGIN"
+msgstr "KP_BEGIN"
+
+#: ../src/common/menucmn.cpp:124
+msgid "KP_DECIMAL"
+msgstr "KP_DECIMAL"
+
+#: ../src/common/menucmn.cpp:118
+msgid "KP_DELETE"
+msgstr "KP_DELETE"
+
+#: ../src/common/menucmn.cpp:125
+msgid "KP_DIVIDE"
+msgstr "KP_DIVIDE"
+
+#: ../src/common/menucmn.cpp:110
+msgid "KP_DOWN"
+msgstr "KP_DOWN"
+
+#: ../src/common/menucmn.cpp:115
+msgid "KP_END"
+msgstr "KP_END"
+
+#: ../src/common/menucmn.cpp:105
+msgid "KP_ENTER"
+msgstr "KP_ENTER"
+
+#: ../src/common/menucmn.cpp:119
+msgid "KP_EQUAL"
+msgstr "KP_EQUAL"
+
+#: ../src/common/menucmn.cpp:106
+msgid "KP_HOME"
+msgstr "KP_HOME"
+
+#: ../src/common/menucmn.cpp:117
+msgid "KP_INSERT"
+msgstr "KP_INSERT"
+
+#: ../src/common/menucmn.cpp:107
+msgid "KP_LEFT"
+msgstr "KP_LEFT"
+
+#: ../src/common/menucmn.cpp:120
+msgid "KP_MULTIPLY"
+msgstr "KP_MULTIPLY"
+
+#: ../src/common/menucmn.cpp:113
+msgid "KP_NEXT"
+msgstr "KP_NEXT"
+
+#: ../src/common/menucmn.cpp:114
+msgid "KP_PAGEDOWN"
+msgstr "KP_PAGEDOWN"
+
+#: ../src/common/menucmn.cpp:112
+msgid "KP_PAGEUP"
+msgstr "KP_PAGEUP"
+
+#: ../src/common/menucmn.cpp:111
+msgid "KP_PRIOR"
+msgstr "KP_PRIOR"
+
+#: ../src/common/menucmn.cpp:109
+msgid "KP_RIGHT"
+msgstr "KP_RIGHT"
+
+#: ../src/common/menucmn.cpp:122
+msgid "KP_SEPARATOR"
+msgstr "KP_SEPARATOR"
+
+#: ../src/common/menucmn.cpp:103
+msgid "KP_SPACE"
+msgstr "KP_SPACE"
+
+#: ../src/common/menucmn.cpp:123
+msgid "KP_SUBTRACT"
+msgstr "KP_SUBTRACT"
+
+#: ../src/common/menucmn.cpp:104
+msgid "KP_TAB"
+msgstr "KP_TAB"
+
+#: ../src/common/menucmn.cpp:108
+msgid "KP_UP"
+msgstr "KP_UP"
+
+#: ../src/richtext/richtextindentspage.cpp:307
+msgid "L&ine spacing:"
+msgstr "पंक्ति अन्तराल (&I):"
+
+#: ../src/common/menucmn.cpp:74
+msgid "LEFT"
+msgstr "LEFT"
+
+#: ../src/generic/prntdlgg.cpp:611
+#: ../src/generic/prntdlgg.cpp:866
+msgid "Landscape"
+msgstr "लैडस्केप"
+
+#: ../src/common/paper.cpp:105
+msgid "Ledger, 17 x 11 in"
+msgstr "लेजर, १७ x ११ इंच"
+
+#: ../src/richtext/richtextliststylepage.cpp:248
+#: ../src/richtext/richtextliststylepage.cpp:251
+#: ../src/richtext/richtextliststylepage.cpp:252
+#: ../src/richtext/richtextbulletspage.cpp:197
+#: ../src/richtext/richtextbulletspage.cpp:200
+#: ../src/richtext/richtextbulletspage.cpp:201
+msgid "Left"
+msgstr "बायें"
+
+#: ../src/richtext/richtextliststylepage.cpp:391
+#: ../src/richtext/richtextindentspage.cpp:217
+msgid "Left (&first line):"
+msgstr "बायें (पहली पंक्ति) (&F):"
+
+#: ../src/generic/prntdlgg.cpp:878
+msgid "Left margin (mm):"
+msgstr "बायाँ हाशिया (मिलीमीटर):"
+
+#: ../src/richtext/richtextliststylepage.cpp:329
+#: ../src/richtext/richtextliststylepage.cpp:331
+#: ../src/richtext/richtextindentspage.cpp:151
+#: ../src/richtext/richtextindentspage.cpp:153
+msgid "Left-align text."
+msgstr "पाठ को बायें पंक्तिबद्ध करें।"
+
+#: ../src/common/paper.cpp:146
+#, fuzzy
+msgid "Legal Extra 9 1/2 x 15 in"
+msgstr "लीगल, ८ १/२ x १४ इंच"
+
+#: ../src/common/paper.cpp:98
+msgid "Legal, 8 1/2 x 14 in"
+msgstr "लीगल, ८ १/२ x १४ इंच"
+
+#: ../src/common/paper.cpp:145
+#, fuzzy
+msgid "Letter Extra 9 1/2 x 12 in"
+msgstr "लेटर, ८ १/२ x ११ इंच"
+
+#: ../src/common/paper.cpp:151
+msgid "Letter Extra Transverse 9.275 x 12 in"
+msgstr ""
+
+#: ../src/common/paper.cpp:154
+#, fuzzy
+msgid "Letter Plus 8 1/2 x 12.69 in"
+msgstr "लेटर, ८ १/२ x ११ इंच"
+
+#: ../src/common/paper.cpp:171
+#, fuzzy
+msgid "Letter Rotated 11 x 8 1/2 in"
+msgstr "लेटर, ८ १/२ x ११ इंच"
+
+#: ../src/common/paper.cpp:103
+msgid "Letter Small, 8 1/2 x 11 in"
+msgstr "लेटर छोटा, ८ १/२ x ११ इंच"
+
+#: ../src/common/paper.cpp:149
+#, fuzzy
+msgid "Letter Transverse 8 1/2 x 11 in"
+msgstr "लेटर, ८ १/२ x ११ इंच"
+
+#: ../src/common/paper.cpp:97
+msgid "Letter, 8 1/2 x 11 in"
+msgstr "लेटर, ८ १/२ x ११ इंच"
+
+#: ../src/generic/aboutdlgg.cpp:139
+msgid "License"
+msgstr "लाइसेंस"
+
+#: ../src/generic/fontdlgg.cpp:239
+msgid "Light"
+msgstr "हल्का"
+
+#: ../src/generic/helpext.cpp:301
+#, c-format
+msgid "Line %lu of map file \"%s\" has invalid syntax, skipped."
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:453
+msgid "Line spacing:"
+msgstr "पंक्ति अन्तराल:"
+
+#: ../src/html/chm.cpp:820
+msgid "Link contained '//', converted to absolute link."
+msgstr "कड़ी में '//' शामिल है, निरपेक्ष कड़ी में बदल दिया गया।"
+
+#: ../src/richtext/richtextformatdlg.cpp:300
+msgid "List Style"
+msgstr "सूची शैली"
+
+#: ../src/richtext/richtextstyles.cpp:851
+msgid "List styles"
+msgstr "सूची शैलियाँ"
+
+#: ../src/richtext/richtextfontpage.cpp:163
+#: ../src/richtext/richtextfontpage.cpp:165
+msgid "Lists font sizes in points."
+msgstr "फ़ॉन्ट का आकार बिंदुओं में दिखाएँ।"
+
+#: ../src/richtext/richtextfontpage.cpp:144
+#: ../src/richtext/richtextfontpage.cpp:146
+msgid "Lists the available fonts."
+msgstr "उपलब्ध फ़ॉन्ट की सूची दिखाएँ।"
+
+#: ../src/common/fldlgcmn.cpp:283
+#, c-format
+msgid "Load %s file"
+msgstr "%s फ़ाइल को लोड करें"
+
+#: ../src/html/htmlwin.cpp:548
+msgid "Loading : "
+msgstr "लोड किया जा रहा है : "
+
+#: ../src/unix/snglinst.cpp:247
+#, fuzzy, c-format
+msgid "Lock file '%s' has incorrect owner."
+msgstr "साउन्ड फ़ाइल '%s' एक असमर्थित प्रारूप में है।"
+
+#: ../src/unix/snglinst.cpp:252
+#, c-format
+msgid "Lock file '%s' has incorrect permissions."
+msgstr "लॉक फ़ाइल '%s' पे गलत अनुमतियाँ हें।"
+
+#: ../src/generic/logg.cpp:578
+#, c-format
+msgid "Log saved to the file '%s'."
+msgstr "लॉग को '%s' पर सुरक्षित किया गया।"
+
+#: ../include/wx/xti.h:497
+#: ../include/wx/xti.h:501
+msgid "Long Conversions not supported"
+msgstr "लंबे रूपान्तरण समर्थित नहीं है"
+
+#: ../src/richtext/richtextliststylepage.cpp:486
+#: ../src/richtext/richtextbulletspage.cpp:284
+msgid "Lower case letters"
+msgstr "छोटे आकार के अक्षर"
+
+#: ../src/richtext/richtextliststylepage.cpp:488
+#: ../src/richtext/richtextbulletspage.cpp:286
+msgid "Lower case roman numerals"
+msgstr ""
+
+#: ../src/gtk/mdi.cpp:470
+#: ../src/gtk1/mdi.cpp:462
+msgid "MDI child"
+msgstr "एमडीआई चाइल्ड"
+
+#: ../src/common/menucmn.cpp:86
+msgid "MENU"
+msgstr "MENU"
+
+#: ../src/msw/helpchm.cpp:57
+msgid "MS HTML Help functions are unavailable because the MS HTML Help library is not installed on this machine. Please install it."
+msgstr "एमएस एचटीएमएल सहायता क्रियाऐं अनुपलब्ध है क्योंकि एमएस एचटीएमएल सहायता लायबरी इस मशीन परसंसाधित नहीं है। कॄपया इसे संसाधित करें।"
+
+#: ../src/univ/themes/win32.cpp:3740
+msgid "Ma&ximize"
+msgstr "बड़ा करें (&x)"
+
+#: ../src/generic/fdrepdlg.cpp:146
+msgid "Match case"
+msgstr "बड़ा-छोटा का मिलान करें"
+
+#: ../src/common/fs_mem.cpp:178
+#, c-format
+msgid "Memory VFS already contains file '%s'!"
+msgstr "स्मृति वीएफ़एस में पहिले से '%s' फ़ाइल शामिल है!"
+
+#: ../src/msw/frame.cpp:415
+msgid "Menu"
+msgstr "विकल्प सूची"
+
+#: ../src/univ/themes/metal.cpp:169
+msgid "Metal theme"
+msgstr "मेटल थीम"
+
+#: ../src/univ/themes/win32.cpp:3738
+msgid "Mi&nimize"
+msgstr "छोटा करें (&n)"
+
+#: ../src/mgl/app.cpp:162
+#, c-format
+msgid "Mode %ix%i-%i not available."
+msgstr "%ix%i-%i विधा उपलब्ध नहीं।"
+
+#: ../src/generic/fontdlgg.cpp:231
+msgid "Modern"
+msgstr "आधुनिक"
+
+#: ../src/generic/filedlgg.cpp:509
+msgid "Modified"
+msgstr "परिवर्तित"
+
+#: ../src/common/module.cpp:133
+#, c-format
+msgid "Module \"%s\" initialization failed"
+msgstr ""
+
+#: ../src/common/paper.cpp:133
+msgid "Monarch Envelope, 3 7/8 x 7 1/2 in"
+msgstr "मोनार्च लिफ़ाफ़ा, ३ ७/८ x ७ १/२ इंच"
+
+#: ../contrib/src/gizmos/editlbox.cpp:158
+msgid "Move down"
+msgstr "नीचे लाएँ"
+
+#: ../contrib/src/gizmos/editlbox.cpp:157
+msgid "Move up"
+msgstr "ऊपर लाएँ"
+
+#: ../src/common/menucmn.cpp:99
+msgid "NUM_LOCK"
+msgstr "NUM_LOCK"
+
+#: ../src/generic/filedlgg.cpp:506
+msgid "Name"
+msgstr "नाम"
+
+#: ../src/richtext/richtextstyledlg.cpp:217
+msgid "New &Character Style..."
+msgstr "नयी संप्रतीक शैली (&C)..."
+
+#: ../src/richtext/richtextstyledlg.cpp:229
+msgid "New &List Style..."
+msgstr "नयी सूची शैली (&L)..."
+
+#: ../src/richtext/richtextstyledlg.cpp:223
+msgid "New &Paragraph Style..."
+msgstr "नयी अनुच्छेद शैली (&P)..."
+
+#: ../src/richtext/richtextstyledlg.cpp:568
+#: ../src/richtext/richtextstyledlg.cpp:573
+#: ../src/richtext/richtextstyledlg.cpp:616
+#: ../src/richtext/richtextstyledlg.cpp:621
+#: ../src/richtext/richtextstyledlg.cpp:770
+#: ../src/richtext/richtextstyledlg.cpp:775
+#: ../src/richtext/richtextstyledlg.cpp:843
+#: ../src/richtext/richtextstyledlg.cpp:851
+msgid "New Style"
+msgstr "नयी शैली"
+
+#: ../src/generic/dirdlgg.cpp:100
+msgid "New directory"
+msgstr "नयी निर्देशिका"
+
+#: ../contrib/src/gizmos/editlbox.cpp:155
+msgid "New item"
+msgstr "नया आयट्म"
+
+#: ../src/generic/dirdlgg.cpp:324
+#: ../src/generic/dirdlgg.cpp:334
+#: ../src/generic/filedlgg.cpp:688
+#: ../src/generic/filedlgg.cpp:697
+msgid "NewName"
+msgstr "नयानाम"
+
+#: ../src/generic/tipdlg.cpp:303
+msgid "Next"
+msgstr "अगला"
+
+#: ../src/html/helpwnd.cpp:675
+msgid "Next page"
+msgstr "अगला पृष्ट"
+
+#: ../src/motif/msgdlg.cpp:203
+#: ../src/mac/classic/msgdlg.cpp:59
+#: ../src/mac/classic/msgdlg.cpp:143
+#: ../src/mac/carbon/msgdlg.cpp:65
+#: ../src/mac/carbon/msgdlg.cpp:120
+msgid "No"
+msgstr "नहीं"
+
+#: ../contrib/src/deprecated/resource.cpp:2505
+#: ../contrib/src/deprecated/resource.cpp:2659
+msgid "No XBM facility available!"
+msgstr ""
+
+#: ../contrib/src/deprecated/resource.cpp:2677
+msgid "No XPM icon facility available!"
+msgstr ""
+
+#: ../src/generic/animateg.cpp:156
+#, c-format
+msgid "No animation handler for type %ld defined."
+msgstr "%ld प्रकार के लिए कोई सजीवन आकृति हैन्डलर परिभाषित नहीं।"
+
+#: ../src/generic/helpext.cpp:452
+msgid "No entries found."
+msgstr "कोई प्रविष्टियां नहीं मिली।"
+
+#: ../src/common/fontmap.cpp:419
+#, c-format
+msgid ""
+"No font for displaying text in encoding '%s' found,\n"
+"but an alternative encoding '%s' is available.\n"
+"Do you want to use this encoding (otherwise you will have to choose another one)?"
+msgstr ""
+"'%s' एन्कोडिंग में पाठ को दिखाने के लिए कोई फ़ॉन्ट नहीं मिला,\n"
+"परन्तु एक वैकल्पिक एन्कोडिंग '%s' उपलब्ध है।\n"
+"क्या आप इस एन्कोडिंग को उपयोग करना चाहते है (अन्यथा आपकोएक अन्य का चयन करना पड़ेगा)?"
+
+#: ../src/common/fontmap.cpp:424
+#, c-format
+msgid ""
+"No font for displaying text in encoding '%s' found.\n"
+"Would you like to select a font to be used for this encoding\n"
+"(otherwise the text in this encoding will not be shown correctly)?"
+msgstr ""
+"'%s' एन्कोडिंग में पाठ को दिखाने के लिए कोई फ़ॉन्ट नहीं मिला,\n"
+"क्या आप इस एन्कोडिंग के लिए एक फ़ॉन्ट का चयन करना चाहेगें\n"
+"(अन्यथा यह पाठ इस एन्कोडिंग में भली-भांति नहीं दिखेगा)?"
+
+#: ../src/dfb/fontmgr.cpp:156
+#, c-format
+msgid "No fonts found in %s."
+msgstr "कोई फ़ॉन्ट %s में नहीं मिले।"
+
+#: ../src/xrc/xmlres.cpp:715
+#, c-format
+msgid "No handler found for XML node '%s', class '%s'!"
+msgstr "एक्सएमएल नोड'%s', वर्ग '%s' के लिए कोई हैन्डलर नहीं मिला!"
+
+#: ../src/generic/animateg.cpp:144
+msgid "No handler found for animation type."
+msgstr "सजीवन आकृति प्रकार के लिए कोई हैन्डलर नहीं मिला।"
+
+#: ../src/common/image.cpp:2177
+#: ../src/common/image.cpp:2220
+msgid "No handler found for image type."
+msgstr "आकृति प्रकार के लिए कोई हैन्डलर नहीं मिला।"
+
+#: ../src/common/image.cpp:2273
+#, c-format
+msgid "No image handler for type %d defined."
+msgstr "%d प्रकार के लिए कोई आकृति हैन्डलर परिभाषित नहीं।"
+
+#: ../src/common/image.cpp:2185
+#: ../src/common/image.cpp:2228
+#, c-format
+msgid "No image handler for type %ld defined."
+msgstr "%ld प्रकार के लिए कोई आकृति हैन्डलर परिभाषित नहीं।"
+
+#: ../src/common/image.cpp:2252
+#: ../src/common/image.cpp:2288
+#, c-format
+msgid "No image handler for type %s defined."
+msgstr "%s प्रकार के लिए कोई आकृति हैन्डलर परिभाषित नहीं।"
+
+#: ../src/html/helpwnd.cpp:874
+msgid "No matching page found yet"
+msgstr "कोई मिलता-जुलता पृष्ट अभी तक नहीं मिला"
+
+#: ../src/unix/sound.cpp:82
+msgid "No sound"
+msgstr "कोई ध्वनि नहीं"
+
+#: ../src/common/image.cpp:1855
+#: ../src/common/image.cpp:1896
+#, fuzzy
+msgid "No unused colour in image being masked."
+msgstr "आकृति में कोई बिना उपयोग किया हुआ रंग छुपाया गया"
+
+#: ../src/common/image.cpp:2701
+msgid "No unused colour in image."
+msgstr "आकृति में कोई बिना उपयोग किया हुआ रंग नहीं हें।"
+
+#: ../src/generic/helpext.cpp:309
+#, c-format
+msgid "No valid mappings found in the file \"%s\"."
+msgstr ""
+
+#: ../src/common/fmapbase.cpp:115
+msgid "Nordic (ISO-8859-10)"
+msgstr "नोर्डिक (आईसो-८८५९-१०)"
+
+#: ../src/richtext/richtextindentspage.cpp:245
+#: ../src/richtext/richtextindentspage.cpp:255
+#: ../src/richtext/richtextindentspage.cpp:256
+#: ../src/generic/fontdlgg.cpp:235
+#: ../src/generic/fontdlgg.cpp:238
+msgid "Normal"
+msgstr "सामान्य"
+
+#: ../src/html/helpwnd.cpp:1269
+msgid "Normal face<br>and <u>underlined</u>. "
+msgstr "सामान्य फ़ेस<br>और <u>रेखांकित</u>। "
+
+#: ../src/html/helpwnd.cpp:1214
+msgid "Normal font:"
+msgstr "सामान्य फ़ॉन्ट: "
+
+#: ../src/richtext/richtextfontpage.cpp:271
+msgid "Not underlined"
+msgstr "रेखांकन नहीं"
+
+#: ../src/common/paper.cpp:117
+msgid "Note, 8 1/2 x 11 in"
+msgstr "नोट, ८ १/२ x ११ इंच"
+
+#: ../src/richtext/richtextliststylepage.cpp:489
+#: ../src/richtext/richtextbulletspage.cpp:287
+msgid "Numbered outline"
+msgstr "संख्यांकित रूपरेखा"
+
+#: ../src/richtext/richtextstyledlg.cpp:282
+#: ../src/gtk1/fontdlg.cpp:139
+#: ../src/msw/dialog.cpp:180
+#: ../src/mac/carbon/msgdlg.cpp:67
+#: ../contrib/src/deprecated/proplist.cpp:502
+msgid "OK"
+msgstr "ठीक"
+
+#: ../src/common/xtixml.cpp:260
+msgid "Objects must have an id attribute"
+msgstr "ऑबजेक्टों के पास एक पहचान-संख्या विशेषता होनी चाहिए"
+
+#: ../src/common/docview.cpp:1282
+#: ../src/common/docview.cpp:1632
+msgid "Open File"
+msgstr "फ़ाइल खोलें"
+
+#: ../src/html/helpwnd.cpp:683
+#: ../src/html/helpwnd.cpp:1555
+msgid "Open HTML document"
+msgstr "एचटीएमएल प्रलेख को खोलें"
+
+#: ../src/generic/dbgrptg.cpp:159
+#, c-format
+msgid "Open file \"%s\""
+msgstr "फ़ाइल खोलें \"%s\""
+
+#: ../src/generic/dirdlgg.cpp:350
+#: ../src/generic/filedlgg.cpp:712
+#: ../src/generic/filedlgg.cpp:862
+#: ../src/generic/dirctrlg.cpp:737
+msgid "Operation not permitted."
+msgstr "संक्रिया को अनुमति नहीं है।"
+
+#: ../src/common/cmdline.cpp:716
+#, c-format
+msgid "Option '%s' requires a value, '=' expected."
+msgstr "'%s' विकल्प को एक वैल्यू की आवश्यकता है, '=' की आशा की जाती है।"
+
+#: ../src/common/cmdline.cpp:737
+#, c-format
+msgid "Option '%s' requires a value."
+msgstr "'%s' विकल्प को एक वैल्यू की आवश्यकता है।"
+
+#: ../src/common/cmdline.cpp:802
+#, c-format
+msgid "Option '%s': '%s' cannot be converted to a date."
+msgstr "विकल्प '%s': '%s' को एक तिथि में नहीं बदला जा सका।"
+
+#: ../src/generic/prntdlgg.cpp:616
+#: ../src/generic/dirdlgg.cpp:185
+msgid "Options"
+msgstr "विकल्प"
+
+#: ../src/generic/prntdlgg.cpp:613
+#: ../src/generic/prntdlgg.cpp:867
+msgid "Orientation"
+msgstr "अभिविन्यास"
+
+#: ../src/common/menucmn.cpp:102
+msgid "PAGEDOWN"
+msgstr "PAGEDOWN"
+
+#: ../src/common/menucmn.cpp:101
+msgid "PAGEUP"
+msgstr "PAGEUP"
+
+#: ../src/common/menucmn.cpp:87
+msgid "PAUSE"
+msgstr "PAUSE"
+
+#: ../src/common/imagpcx.cpp:456
+#: ../src/common/imagpcx.cpp:479
+msgid "PCX: couldn't allocate memory"
+msgstr "पीसीएक्स: स्मृति का आवंटन नहीं किया जा सका"
+
+#: ../src/common/imagpcx.cpp:455
+msgid "PCX: image format unsupported"
+msgstr "पीसीएक्स: आकृति प्रारूप असमर्थित है"
+
+#: ../src/common/imagpcx.cpp:478
+msgid "PCX: invalid image"
+msgstr "पीसीएक्स: अवैध आकृति"
+
+#: ../src/common/imagpcx.cpp:442
+msgid "PCX: this is not a PCX file."
+msgstr "पीसीएक्स: यह एक पीसीएक्स फ़ाइल नहीं है।"
+
+#: ../src/common/imagpcx.cpp:458
+#: ../src/common/imagpcx.cpp:480
+msgid "PCX: unknown error !!!"
+msgstr "पीसीएक्स: अज्ञात त्रुटि !!!"
+
+#: ../src/common/imagpcx.cpp:457
+msgid "PCX: version number too low"
+msgstr "पीसीएक्स: संस्मरण संख्या अति निम्न है"
+
+#: ../src/common/menucmn.cpp:73
+msgid "PGDN"
+msgstr "PGDN"
+
+#: ../src/common/menucmn.cpp:72
+msgid "PGUP"
+msgstr "PGUP"
+
+#: ../src/common/imagpnm.cpp:88
+msgid "PNM: Couldn't allocate memory."
+msgstr "पीएनएम: स्मृति का आवंटन नहीं किया जा सका।"
+
+#: ../src/common/imagpnm.cpp:72
+msgid "PNM: File format is not recognized."
+msgstr "पीएनएम: फ़ाइल प्रारूप को पहचाना नहीं जा सका।"
+
+#: ../src/common/imagpnm.cpp:106
+#: ../src/common/imagpnm.cpp:125
+#: ../src/common/imagpnm.cpp:144
+msgid "PNM: File seems truncated."
+msgstr "पीएनएम: फ़ाइल लगता है टूट गई है।"
+
+#: ../src/common/paper.cpp:189
+msgid "PRC 16K 146 x 215 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:202
+msgid "PRC 16K Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:190
+msgid "PRC 32K 97 x 151 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:203
+msgid "PRC 32K Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:191
+msgid "PRC 32K(Big) 97 x 151 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:204
+msgid "PRC 32K(Big) Rotated"
+msgstr ""
+
+#: ../src/common/paper.cpp:192
+msgid "PRC Envelope #1 102 x 165 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #1 102 x 165 मिलीमीटर"
+
+#: ../src/common/paper.cpp:205
+#, fuzzy
+msgid "PRC Envelope #1 Rotated 165 x 102 mm"
+msgstr "सी६ लिफ़ाफ़ा, ११४ x १६२ मिलीमीटर"
+
+#: ../src/common/paper.cpp:201
+msgid "PRC Envelope #10 324 x 458 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #10 324 x 458 मिलीमीटर"
+
+#: ../src/common/paper.cpp:214
+#, fuzzy
+msgid "PRC Envelope #10 Rotated 458 x 324 mm"
+msgstr "सी४ लिफ़ाफ़ा, २२९ x ३२४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:193
+msgid "PRC Envelope #2 102 x 176 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #2 102 x 176 मिलीमीटर"
+
+#: ../src/common/paper.cpp:206
+#, fuzzy
+msgid "PRC Envelope #2 Rotated 176 x 102 mm"
+msgstr "बी६ लिफ़ाफ़ा, १७६ x १२५ मिलीमीटर"
+
+#: ../src/common/paper.cpp:194
+msgid "PRC Envelope #3 125 x 176 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #3 125 x 176 मिलीमीटर"
+
+#: ../src/common/paper.cpp:207
+#, fuzzy
+msgid "PRC Envelope #3 Rotated 176 x 125 mm"
+msgstr "बी६ लिफ़ाफ़ा, १७६ x १२५ मिलीमीटर"
+
+#: ../src/common/paper.cpp:195
+msgid "PRC Envelope #4 110 x 208 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #4 110 x 208 मिलीमीटर"
+
+#: ../src/common/paper.cpp:208
+#, fuzzy
+msgid "PRC Envelope #4 Rotated 208 x 110 mm"
+msgstr "सी६ लिफ़ाफ़ा, ११४ x १६२ मिलीमीटर"
+
+#: ../src/common/paper.cpp:196
+msgid "PRC Envelope #5 110 x 220 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #5 110 x 220 मिलीमीटर"
+
+#: ../src/common/paper.cpp:209
+#, fuzzy
+msgid "PRC Envelope #5 Rotated 220 x 110 mm"
+msgstr "सी४ लिफ़ाफ़ा, २२९ x ३२४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:197
+msgid "PRC Envelope #6 120 x 230 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #6 120 x 230 मिलीमीटर"
+
+#: ../src/common/paper.cpp:210
+#, fuzzy
+msgid "PRC Envelope #6 Rotated 230 x 120 mm"
+msgstr "सी५ लिफ़ाफ़ा, १६२ x २२९ मिलीमीटर"
+
+#: ../src/common/paper.cpp:198
+msgid "PRC Envelope #7 160 x 230 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #7 160 x 230 मिलीमीटर"
+
+#: ../src/common/paper.cpp:211
+#, fuzzy
+msgid "PRC Envelope #7 Rotated 230 x 160 mm"
+msgstr "सी६ लिफ़ाफ़ा, ११४ x १६२ मिलीमीटर"
+
+#: ../src/common/paper.cpp:199
+msgid "PRC Envelope #8 120 x 309 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #8 120 x 309 मिलीमीटर"
+
+#: ../src/common/paper.cpp:212
+#, fuzzy
+msgid "PRC Envelope #8 Rotated 309 x 120 mm"
+msgstr "सी४ लिफ़ाफ़ा, २२९ x ३२४ मिलीमीटर"
+
+#: ../src/common/paper.cpp:200
+msgid "PRC Envelope #9 229 x 324 mm"
+msgstr "पीआरसी  लिफ़ाफ़ा #9 229 x 324 मिलीमीटर"
+
+#: ../src/common/paper.cpp:213
+#, fuzzy
+msgid "PRC Envelope #9 Rotated 324 x 229 mm"
+msgstr "सी५ लिफ़ाफ़ा, १६२ x २२९ मिलीमीटर"
+
+#: ../src/common/menucmn.cpp:90
+msgid "PRINT"
+msgstr "PRINT"
+
+#: ../src/common/prntbase.cpp:1543
+#, c-format
+msgid "Page %d"
+msgstr "पृष्ट %d"
+
+#: ../src/common/prntbase.cpp:1541
+#, c-format
+msgid "Page %d of %d"
+msgstr "पृष्ट %d / %d"
+
+#: ../src/generic/prntdlgg.cpp:826
+msgid "Page Setup"
+msgstr "पॄष्ट स्थापना"
+
+#: ../src/common/prntbase.cpp:461
+#: ../src/gtk/gnome/gprint.cpp:678
+msgid "Page setup"
+msgstr "पॄष्ट स्थापना"
+
+#: ../src/generic/prntdlgg.cpp:215
+msgid "Pages"
+msgstr "अनेक पृष्ट"
+
+#: ../src/generic/prntdlgg.cpp:799
+#: ../src/generic/prntdlgg.cpp:853
+#: ../src/generic/prntdlgg.cpp:1055
+msgid "Paper Size"
+msgstr "पृष्ट आकार"
+
+#: ../src/generic/prntdlgg.cpp:600
+#: ../src/generic/prntdlgg.cpp:840
+#: ../src/generic/prntdlgg.cpp:1050
+msgid "Paper size"
+msgstr "पृष्ट आकार"
+
+#: ../src/richtext/richtextstyles.cpp:849
+msgid "Paragraph styles"
+msgstr "अनुच्छेद शैलियाँ"
+
+#: ../src/common/xtistrm.cpp:421
+msgid "Passing a already registered object to SetObject"
+msgstr "SetObject को एक पहिले से पंजीकॄत ऑबजेक्ट को दिया जा रहा है"
+
+#: ../src/common/xtistrm.cpp:639
+msgid "Passing a already registered object to SetObjectName"
+msgstr "SetObjectName को एक पहिले से पंजीकॄत ऑबजेक्ट को दिया जा रहा है"
+
+#: ../src/common/xtistrm.cpp:432
+#: ../src/common/xtistrm.cpp:652
+msgid "Passing an unkown object to GetObject"
+msgstr "GetObject को एक अज्ञात ऑबजेक्ट को दिया जा रहा है"
+
+#: ../src/richtext/richtextctrl.cpp:2220
+msgid "Paste"
+msgstr "चिपकाएँ"
+
+#: ../src/common/stockitem.cpp:207
+msgid "Paste selection"
+msgstr "चयन चिपकाएँ"
+
+#: ../src/richtext/richtextliststylepage.cpp:221
+#: ../src/richtext/richtextbulletspage.cpp:170
+msgid "Peri&od"
+msgstr "पूर्णविराम (&O)"
+
+#: ../src/generic/filedlgg.cpp:512
+msgid "Permissions"
+msgstr "अनुमतियां"
+
+#: ../include/wx/unix/pipe.h:47
+msgid "Pipe creation failed"
+msgstr "पाइप का निर्माण असफ़ल रहा"
+
+#: ../src/gtk1/fontdlg.cpp:75
+msgid "Please choose a valid font."
+msgstr "कॄपया एक वैध फ़ॉन्ट का चयन करें।"
+
+#: ../src/gtk/filedlg.cpp:72
+#: ../src/generic/filedlgg.cpp:1476
+msgid "Please choose an existing file."
+msgstr "कॄपया एक विद्यमान फ़ाइल का चयन करें।"
+
+#: ../src/html/helpwnd.cpp:819
+msgid "Please choose the page to display:"
+msgstr "कॄपया एक विद्यमान फ़ाइल का चयन करें:"
+
+#: ../src/msw/dialup.cpp:794
+msgid "Please choose which ISP do you want to connect to"
+msgstr "कॄपया उस आईएसपी का चयन करें जिससे आप जुड़ना चाहते है"
+
+#: ../src/msw/listctrl.cpp:421
+#, c-format
+msgid ""
+"Please install a newer version of comctl32.dll\n"
+"(at least version 4.70 is required but you have %d.%02d)\n"
+"or this program won't operate correctly."
+msgstr ""
+"कॄपया comctl32.dll का एक नये संस्मरण का संसाधन करें\n"
+"(कम-से-कम ४।७० संस्मरण की आवश्यकता है परन्तु आपके पास %d.%02d है)\n"
+"अन्यथा यह कार्यक्रम भली-भांति नहीं चलेगा।"
+
+#: ../src/common/prntbase.cpp:323
+msgid "Please wait while printing\n"
+msgstr "कॄपया प्रतीक्षा करें जबतक कि प्रिंटींग हो रही है\n"
+
+#: ../src/generic/prntdlgg.cpp:610
+#: ../src/generic/prntdlgg.cpp:865
+msgid "Portrait"
+msgstr "पोर्ट्रेट"
+
+#: ../src/generic/prntdlgg.cpp:298
+msgid "PostScript file"
+msgstr "पोस्टस्क्रिप्ट फ़ाइल"
+
+#: ../src/html/helpwnd.cpp:1231
+#: ../src/generic/fontdlgg.cpp:362
+#: ../src/mac/carbon/fontdlg.cpp:513
+msgid "Preview:"
+msgstr "पूर्वालोकन:"
+
+#: ../src/html/helpwnd.cpp:672
+msgid "Previous page"
+msgstr "पिछला पॄष्ट"
+
+#: ../src/common/prntbase.cpp:403
+#: ../src/gtk/gnome/gprint.cpp:509
+#: ../src/gtk/gnome/gprint.cpp:521
+#: ../src/generic/prntdlgg.cpp:143
+#: ../src/generic/prntdlgg.cpp:156
+msgid "Print"
+msgstr "मुद्रण"
+
+#: ../src/common/docview.cpp:1045
+msgid "Print Preview"
+msgstr "मुद्रण पूर्वालोकन"
+
+#: ../src/common/prntbase.cpp:1495
+#: ../src/common/prntbase.cpp:1521
+msgid "Print Preview Failure"
+msgstr "मुद्रण पूर्वालोकन असफ़लता"
+
+#: ../src/generic/prntdlgg.cpp:223
+msgid "Print Range"
+msgstr "मुद्रण सीमा"
+
+#: ../src/generic/prntdlgg.cpp:447
+msgid "Print Setup"
+msgstr "मुद्रण स्थापना"
+
+#: ../src/generic/prntdlgg.cpp:619
+msgid "Print in colour"
+msgstr "मुद्रण रंगों में"
+
+#: ../src/common/stockitem.cpp:144
+msgid "Print previe&w"
+msgstr "मुद्रण पूर्वालोकन (&w)"
+
+#: ../src/gtk/gnome/gprint.cpp:915
+msgid "Print preview"
+msgstr "मुद्रण पूर्वालोकन"
+
+#: ../src/generic/prntdlgg.cpp:628
+msgid "Print spooling"
+msgstr "मुद्रण स्पूलिंग"
+
+#: ../src/html/helpwnd.cpp:689
+msgid "Print this page"
+msgstr "इस पृष्ट को मुद्रित करें"
+
+#: ../src/generic/prntdlgg.cpp:184
+msgid "Print to File"
+msgstr "फ़ाइल पर मुद्रित करें"
+
+#: ../src/generic/prntdlgg.cpp:491
+msgid "Printer"
+msgstr "मुद्रक"
+
+#: ../src/generic/prntdlgg.cpp:631
+msgid "Printer command:"
+msgstr "प्रिंटर निर्देश:"
+
+#: ../src/generic/prntdlgg.cpp:179
+msgid "Printer options"
+msgstr "प्रिंटर के विकल्प"
+
+#: ../src/generic/prntdlgg.cpp:643
+msgid "Printer options:"
+msgstr "प्रिंटर के विकल्प:"
+
+#: ../src/generic/prntdlgg.cpp:914
+msgid "Printer..."
+msgstr "प्रिंटर..."
+
+#: ../src/generic/prntdlgg.cpp:195
+msgid "Printer:"
+msgstr "प्रिंटर:"
+
+#: ../src/common/prntbase.cpp:320
+#: ../src/common/prntbase.cpp:541
+msgid "Printing "
+msgstr "मुद्रण हो रहा है "
+
+#: ../src/common/prntbase.cpp:337
+msgid "Printing Error"
+msgstr "मुद्रण त्रुटि"
+
+#: ../src/generic/printps.cpp:204
+#, c-format
+msgid "Printing page %d..."
+msgstr "%d पृष्ट को मुद्रित किया जा रहा है..."
+
+#: ../src/generic/printps.cpp:164
+msgid "Printing..."
+msgstr "मुद्रण किया जा रहा है..."
+
+#: ../src/common/debugrpt.cpp:552
+#, c-format
+msgid "Processing debug report has failed, leaving the files in \"%s\" directory."
+msgstr "दोषमार्जन विवरण संसाधित करने में असफ़ल, फ़ाइलों को \"%s\" निर्देशिका में ही छोड़ा जा रहा हें।"
+
+#: ../src/common/log.cpp:458
+msgid "Program aborted."
+msgstr "कार्यक्रम निरस्त हो गया।"
+
+#: ../src/common/paper.cpp:114
+msgid "Quarto, 215 x 275 mm"
+msgstr "क्वार्टो, २१५ x २७५ मिलीमीटर"
+
+#: ../src/generic/logg.cpp:1171
+msgid "Question"
+msgstr "प्रश्न"
+
+#: ../src/common/stockitem.cpp:208
+msgid "Quit this program"
+msgstr "प्रोग्राम बंद करें"
+
+#: ../src/common/menucmn.cpp:71
+msgid "RETURN"
+msgstr "RETURN"
+
+#: ../src/common/menucmn.cpp:75
+msgid "RIGHT"
+msgstr "RIGHT"
+
+#: ../src/common/ffile.cpp:125
+#: ../src/common/ffile.cpp:144
+#, c-format
+msgid "Read error on file '%s'"
+msgstr "'%s' फ़ाइल पर पठन त्रुटि"
+
+#: ../src/common/prntbase.cpp:252
+msgid "Ready"
+msgstr "तैयार"
+
+#: ../src/common/stockitem.cpp:209
+msgid "Redo last action"
+msgstr "पिछला कार्य फिर से करें"
+
+#: ../src/xrc/xmlres.cpp:681
+#, c-format
+msgid "Referenced object node with ref=\"%s\" not found!"
+msgstr "संदर्भित ऑबजेक्ट नोड ref=\"%s\" के साथ नहीं मिला!"
+
+#: ../src/common/stockitem.cpp:148
+msgid "Refresh"
+msgstr "ताज़ा करें"
+
+#: ../src/msw/registry.cpp:566
+#, c-format
+msgid "Registry key '%s' already exists."
+msgstr "'%s' रजिस्ट्री कुँजी पहिले से विद्यमान है।"
+
+#: ../src/msw/registry.cpp:535
+#, c-format
+msgid "Registry key '%s' does not exist, cannot rename it."
+msgstr "'%s' रजिस्ट्री कुँजी विद्यमान नहीं है, इसका नाम नहीं बदला जा सकता है।"
+
+#: ../src/msw/registry.cpp:667
+#, c-format
+msgid ""
+"Registry key '%s' is needed for normal system operation,\n"
+"deleting it will leave your system in unusable state:\n"
+"operation aborted."
+msgstr ""
+"सामान्य तंत्र संक्रिया के लिए, '%s' रजिस्ट्री कुँजी की आवश्यकता है,\n"
+"इसको हटाने से आपका तंत्र कार्य ना करने की अवस्था में रह जायेगा:\n"
+"संक्रिया को निरस्त किया गया।"
+
+#: ../src/msw/registry.cpp:462
+#, c-format
+msgid "Registry value '%s' already exists."
+msgstr "'%s' रजिस्ट्री वैल्यू पहिले से विद्यमान है।"
+
+#: ../src/richtext/richtextfontpage.cpp:265
+#: ../src/richtext/richtextfontpage.cpp:268
+msgid "Regular"
+msgstr "नियमित"
+
+#: ../src/generic/helpext.cpp:461
+msgid "Relevant entries:"
+msgstr "संबंधित प्रविष्टियां:"
+
+#: ../src/generic/progdlgg.cpp:206
+msgid "Remaining time : "
+msgstr "शेष समय : "
+
+#: ../src/common/stockitem.cpp:149
+msgid "Remove"
+msgstr "निकाल दें"
+
+#: ../src/html/helpwnd.cpp:426
+msgid "Remove current page from bookmarks"
+msgstr "बुकमार्कों से वर्तमान पृष्ट को हटाएँ"
+
+#: ../src/common/rendcmn.cpp:196
+#, c-format
+msgid "Renderer \"%s\" has incompatible version %d.%d and couldn't be loaded."
+msgstr "\"%s\" रेन्डर्र का %d.%d संस्मरण असुसंगत है और लोड नहीं किया जा सका।"
+
+#: ../src/richtext/richtextbuffer.cpp:2970
+msgid "Renumber List"
+msgstr "सूची पुनः संख्यांकन करें"
+
+#: ../src/common/stockitem.cpp:123
+msgid "Rep&lace"
+msgstr "बदलें (&l)"
+
+#: ../src/richtext/richtextctrl.cpp:2361
+msgid "Replace"
+msgstr "बदलें"
+
+#: ../src/generic/fdrepdlg.cpp:181
+msgid "Replace &all"
+msgstr "सभी को बदलें (&a)"
+
+#: ../src/common/stockitem.cpp:206
+msgid "Replace selection"
+msgstr "चयन बदलें"
+
+#: ../src/generic/fdrepdlg.cpp:123
+msgid "Replace with:"
+msgstr "से बदलें:"
+
+#: ../src/xrc/xmlres.cpp:504
+msgid "Resource files must have same version number!"
+msgstr "स्रोतसाधन फ़ाइल को समान संस्मरण संख्या वाला होना चाहिए!"
+
+#: ../src/common/stockitem.cpp:150
+msgid "Revert to Saved"
+msgstr "संरक्षित पर लौटे"
+
+#: ../src/richtext/richtextliststylepage.cpp:250
+#: ../src/richtext/richtextbulletspage.cpp:199
+msgid "Right"
+msgstr "दायें"
+
+#: ../src/generic/prntdlgg.cpp:890
+msgid "Right margin (mm):"
+msgstr "दायाँ हाशिया (मिलीमीटर):"
+
+#: ../src/richtext/richtextliststylepage.cpp:336
+#: ../src/richtext/richtextliststylepage.cpp:338
+#: ../src/richtext/richtextindentspage.cpp:158
+#: ../src/richtext/richtextindentspage.cpp:160
+msgid "Right-align text."
+msgstr "पाठ को दायें पंक्तिबद्ध करें।"
+
+#: ../src/generic/fontdlgg.cpp:229
+msgid "Roman"
+msgstr "रोमन"
+
+#: ../src/richtext/richtextliststylepage.cpp:298
+#: ../src/richtext/richtextbulletspage.cpp:250
+msgid "S&tandard bullet name:"
+msgstr "मानक बुल्लेट नाम (&T):"
+
+#: ../src/common/menucmn.cpp:100
+msgid "SCROLL_LOCK"
+msgstr "SCROLL_LOCK"
+
+#: ../src/common/menucmn.cpp:89
+msgid "SELECT"
+msgstr "SELECT"
+
+#: ../src/common/menucmn.cpp:95
+msgid "SEPARATOR"
+msgstr "SEPARATOR"
+
+#: ../src/common/fmapbase.cpp:153
+msgid "SHIFT-JIS"
+msgstr "SHIFT-JIS"
+
+#: ../src/common/menucmn.cpp:92
+msgid "SNAPSHOT"
+msgstr "SNAPSHOT"
+
+#: ../src/common/menucmn.cpp:80
+msgid "SPACE"
+msgstr "SPACE"
+
+#: ../src/common/menucmn.cpp:270
+#: ../src/common/menucmn.cpp:327
+msgid "SPECIAL"
+msgstr "SPECIAL"
+
+#: ../src/common/menucmn.cpp:96
+msgid "SUBTRACT"
+msgstr "SUBTRACT"
+
+#: ../src/common/sizer.cpp:2093
+msgid "Save"
+msgstr "सुरक्षित करें"
+
+#: ../src/common/fldlgcmn.cpp:285
+#, c-format
+msgid "Save %s file"
+msgstr "%s फ़ाइल को सुरक्षित करें"
+
+#: ../src/common/stockitem.cpp:152
+msgid "Save &As..."
+msgstr "इस जैसा सुरक्षित करें (&A)..."
+
+#: ../src/common/docview.cpp:303
+msgid "Save as"
+msgstr "जैसा सुरक्षित करें"
+
+#: ../src/common/stockitem.cpp:212
+msgid "Save current document"
+msgstr "वर्तमान प्रलेख को सुरक्षित करें"
+
+#: ../src/common/stockitem.cpp:213
+msgid "Save current document with a different filename"
+msgstr "वर्तमान प्रलेख को अलग नाम से सुरक्षित करें"
+
+#: ../src/generic/logg.cpp:511
+msgid "Save log contents to file"
+msgstr "लॉग विषयवस्तुओं को फ़ाइल पर सुरक्षित करें"
+
+#: ../src/generic/fontdlgg.cpp:232
+msgid "Script"
+msgstr "लिपि"
+
+#: ../src/html/helpwnd.cpp:534
+#: ../src/html/helpwnd.cpp:549
+#: ../src/generic/srchctlg.cpp:340
+msgid "Search"
+msgstr "खोजें"
+
+#: ../src/html/helpwnd.cpp:536
+msgid "Search contents of help book(s) for all occurences of the text you typed above"
+msgstr "सहायक पुस्तक(पुस्तकों) के विषयवस्तु में आपके द्वारा बताया हुआ उपरोक्त पाठ  जितनी बार आया हो खोजें "
+
+#: ../src/generic/fdrepdlg.cpp:159
+msgid "Search direction"
+msgstr "खोज की दिशा"
+
+#: ../src/generic/fdrepdlg.cpp:111
+msgid "Search for:"
+msgstr "के लिए खोज: "
+
+#: ../src/html/helpwnd.cpp:1063
+msgid "Search in all books"
+msgstr "सभी पुस्तकों में खोजें"
+
+#: ../src/html/helpwnd.cpp:873
+msgid "Searching..."
+msgstr "खोजा जा रहा है..."
+
+#: ../src/generic/dirctrlg.cpp:608
+msgid "Sections"
+msgstr "विभाग"
+
+#: ../src/common/ffile.cpp:222
+#, c-format
+msgid "Seek error on file '%s'"
+msgstr "'%s' फ़ाइल पर खोज त्रुटि"
+
+#: ../src/common/ffile.cpp:212
+#, c-format
+msgid "Seek error on file '%s' (large files not supported by stdio)"
+msgstr ""
+
+#: ../src/richtext/richtextctrl.cpp:2586
+#: ../src/msw/textctrl.cpp:2308
+#: ../src/mac/carbon/textctrl.cpp:1047
+msgid "Select &All"
+msgstr "सभी का चयन (&A)"
+
+#: ../src/common/docview.cpp:1712
+msgid "Select a document template"
+msgstr "एक प्रलेख टेम्पलेट का चयन करें"
+
+#: ../src/common/docview.cpp:1789
+msgid "Select a document view"
+msgstr "एक प्रलेख व्यू का चयन करें"
+
+#: ../src/common/docview.cpp:1592
+msgid "Select a file"
+msgstr "एक फ़ाइल का चयन करें"
+
+#: ../src/common/stockitem.cpp:153
+msgid "Select all"
+msgstr "सभी का चयन"
+
+#: ../src/richtext/richtextfontpage.cpp:192
+#: ../src/richtext/richtextfontpage.cpp:194
+msgid "Select regular or bold."
+msgstr "चुने नियमित या गहरा।"
+
+#: ../src/richtext/richtextfontpage.cpp:179
+#: ../src/richtext/richtextfontpage.cpp:181
+msgid "Select regular or italic style."
+msgstr "चुने नियमित या तिरछी शैली।"
+
+#: ../src/richtext/richtextfontpage.cpp:205
+#: ../src/richtext/richtextfontpage.cpp:207
+msgid "Select underlining or no underlining."
+msgstr ""
+
+#: ../src/motif/filedlg.cpp:217
+msgid "Selection"
+msgstr "चयन"
+
+#: ../src/richtext/richtextliststylepage.cpp:186
+#: ../src/richtext/richtextliststylepage.cpp:188
+msgid "Selects the list level to edit."
+msgstr ""
+
+#: ../src/common/cmdline.cpp:755
+#, c-format
+msgid "Separator expected after the option '%s'."
+msgstr "'%s' के बाद एक पृथककारी चिह्न की आशा की जाती है।"
+
+#: ../include/wx/xti.h:837
+msgid "SetProperty called w/o valid setter"
+msgstr "SetProperty को बिना किसी वैध सेटर के बुलाया गया"
+
+#: ../src/generic/prntdlgg.cpp:187
+msgid "Setup..."
+msgstr "स्थापना..."
+
+#: ../src/msw/dialup.cpp:568
+msgid "Several active dialup connections found, choosing one randomly."
+msgstr "अनेकों सक्रिय डायल-अप कनेक्श मिलें, बेतरतीब से एक का चयन किया जा रहा है।"
+
+#: ../src/common/menucmn.cpp:318
+msgid "Shift-"
+msgstr "Shift-"
+
+#: ../src/generic/dirdlgg.cpp:168
+msgid "Show &hidden directories"
+msgstr "छुपी हुई निर्देशिकाओं को दिखाएँ (&H)"
+
+#: ../src/generic/filedlgg.cpp:1159
+msgid "Show &hidden files"
+msgstr "छुपी हुई फ़ाइलों को दिखाएँ (&H)"
+
+#: ../src/common/stockitem.cpp:202
+msgid "Show about dialog"
+msgstr "प्रोग्राम के बारे में वाला संवाद दिखाएँ"
+
+#: ../src/html/helpwnd.cpp:488
+msgid "Show all"
+msgstr "सभी को दिखाएँ"
+
+#: ../src/html/helpwnd.cpp:499
+msgid "Show all items in index"
+msgstr "इंडेक्स में सभी आयट्मों को दिखाएँ"
+
+#: ../src/generic/dirdlgg.cpp:103
+msgid "Show hidden directories"
+msgstr "छुपी हुई निर्देशिकाओं को दिखाएँ"
+
+#: ../src/html/helpwnd.cpp:656
+msgid "Show/hide navigation panel"
+msgstr "नैवीगेशन पैनल को दिखाएँ/छुपाएँ"
+
+#: ../src/richtext/richtextsymboldlg.cpp:420
+#: ../src/richtext/richtextsymboldlg.cpp:422
+msgid "Shows a Unicode subset."
+msgstr "एक यूनिकोड उप समुच्चय दिखाएँ।"
+
+#: ../src/richtext/richtextliststylepage.cpp:474
+#: ../src/richtext/richtextliststylepage.cpp:476
+#: ../src/richtext/richtextbulletspage.cpp:274
+#: ../src/richtext/richtextbulletspage.cpp:276
+msgid "Shows a preview of the bullet settings."
+msgstr ""
+
+#: ../src/richtext/richtextfontpage.cpp:256
+#: ../src/richtext/richtextfontpage.cpp:258
+msgid "Shows a preview of the font settings."
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:517
+#: ../src/mac/carbon/fontdlg.cpp:519
+msgid "Shows a preview of the font."
+msgstr "फ़ॉन्ट का पूर्वालोकन दिखाएँ।"
+
+#: ../src/richtext/richtextindentspage.cpp:327
+#: ../src/richtext/richtextindentspage.cpp:329
+msgid "Shows a preview of the paragraph settings."
+msgstr ""
+
+#: ../src/generic/fontdlgg.cpp:367
+#: ../src/generic/fontdlgg.cpp:369
+msgid "Shows the font preview."
+msgstr "फ़ॉन्ट का पूर्वालोकन दिखाएँ।"
+
+#: ../src/univ/themes/mono.cpp:509
+msgid "Simple monochrome theme"
+msgstr ""
+
+#: ../src/richtext/richtextliststylepage.cpp:459
+#: ../src/richtext/richtextliststylepage.cpp:462
+#: ../src/richtext/richtextliststylepage.cpp:463
+#: ../src/richtext/richtextindentspage.cpp:314
+#: ../src/richtext/richtextindentspage.cpp:317
+#: ../src/richtext/richtextindentspage.cpp:318
+msgid "Single"
+msgstr "अकेला"
+
+#: ../src/generic/filedlgg.cpp:507
+msgid "Size"
+msgstr "आकार"
+
+#: ../src/mac/carbon/fontdlg.cpp:462
+msgid "Size:"
+msgstr "आकार:"
+
+#: ../src/generic/progdlgg.cpp:218
+#: ../src/generic/progdlgg.cpp:236
+#: ../src/generic/progdlgg.cpp:621
+msgid "Skip"
+msgstr "छोड़ दे"
+
+#: ../src/generic/fontdlgg.cpp:237
+msgid "Slant"
+msgstr "स्लॉट"
+
+#: ../src/common/docview.cpp:579
+msgid "Sorry, could not open this file for saving."
+msgstr "क्षमा करें, इस फ़ाइल को सुरक्षित करने के लिए खोला नहीं जा सका।"
+
+#: ../src/common/docview.cpp:615
+#: ../src/common/docview.cpp:1611
+msgid "Sorry, could not open this file."
+msgstr "क्षमा करें, इस फ़ाइल को खोला नहीं जा सका।"
+
+#: ../src/common/docview.cpp:586
+msgid "Sorry, could not save this file."
+msgstr "क्षमा करें, इस फ़ाइल को सुरक्षित नहीं किया जा सका।"
+
+#: ../contrib/src/fl/controlbar.cpp:384
+msgid "Sorry, docking is not supported for ports other than wxMSW, wxMac and wxGTK"
+msgstr "क्षमा करें, डॉकीन सिर्फ wxMSW, wxMac और wxGTK के लिए समर्थित हें।"
+
+#: ../src/common/prntbase.cpp:1495
+msgid "Sorry, not enough memory to create a preview."
+msgstr "क्षमा करें, एक पूर्वालोकन को निर्माण करने के लिए आवश्यकतानुसार स्मॄति नहीं है।"
+
+#: ../src/common/docview.cpp:1041
+msgid "Sorry, print preview needs a printer to be installed."
+msgstr "क्षमा करें, मुद्रण पूर्वालोकन को एक प्रिंटर को संसाधित करने की आवश्यकता है।"
+
+#: ../src/richtext/richtextstyledlg.cpp:573
+#: ../src/richtext/richtextstyledlg.cpp:621
+#: ../src/richtext/richtextstyledlg.cpp:775
+#: ../src/richtext/richtextstyledlg.cpp:851
+msgid "Sorry, that name is taken. Please choose another."
+msgstr "क्षमा करें, यह नाम चुना जा चुका हें। कृपया कोई दूसरा नाम चुने।"
+
+#: ../src/common/docview.cpp:1281
+#: ../src/common/docview.cpp:1631
+msgid "Sorry, the format for this file is unknown."
+msgstr "क्षमा करें, इस फ़ाइल का प्रारूप अज्ञात है।"
+
+#: ../src/unix/sound.cpp:493
+msgid "Sound data are in unsupported format."
+msgstr "साउन्ड डाटा एक असमर्थित प्रारूप में है।"
+
+#: ../src/unix/sound.cpp:478
+#, c-format
+msgid "Sound file '%s' is in unsupported format."
+msgstr "साउन्ड फ़ाइल '%s' एक असमर्थित प्रारूप में है।"
+
+#: ../src/richtext/richtextliststylepage.cpp:469
+msgid "Spacing"
+msgstr "अन्तराल"
+
+#: ../src/richtext/richtextliststylepage.cpp:492
+#: ../src/richtext/richtextbulletspage.cpp:290
+msgid "Standard"
+msgstr "मानक"
+
+#: ../src/common/paper.cpp:106
+msgid "Statement, 5 1/2 x 8 1/2 in"
+msgstr "स्टेटमेन्ट, ५ १/२ x ८ १/२ इंच"
+
+#: ../src/generic/prntdlgg.cpp:203
+msgid "Status:"
+msgstr "अवस्था:"
+
+#: ../src/generic/logg.cpp:628
+msgid "Status: "
+msgstr "अवस्था:"
+
+#: ../src/common/xtistrm.cpp:249
+msgid "Streaming delegates for not already streamed objects not yet supported"
+msgstr "स्ट्रीमिंग डेलीगेटों को पहिले से धाराप्रवाहित ऑबजेक्टों के लिए अभी समर्थन प्राप्त नहीं है"
+
+#: ../src/msw/colour.cpp:35
+#, c-format
+msgid "String To Colour : Incorrect colour specification : %s"
+msgstr "स्ट्रींग से रंग : अमान्य रंग विशिष्टतायें : %s"
+
+#: ../include/wx/xti.h:424
+#: ../include/wx/xti.h:428
+msgid "String conversions not supported"
+msgstr "श्रेणीयों का रूपांतरण समर्थित नहीं है"
+
+#: ../src/richtext/richtextformatdlg.cpp:269
+msgid "Style"
+msgstr "शैली"
+
+#: ../include/wx/richtext/richtextstyledlg.h:45
+msgid "Style Organiser"
+msgstr ""
+
+#: ../src/mac/carbon/fontdlg.cpp:471
+msgid "Style:"
+msgstr "शैली:"
+
+#: ../src/xrc/xmlres.cpp:788
+#, c-format
+msgid "Subclass '%s' not found for resource '%s', not subclassing!"
+msgstr "'%s' उपवर्ग '%s' स्रोत संसाधन के लिए नहीं मिला, उपवर्गीकरण नहीं किया जा रहा है!"
+
+#: ../src/richtext/richtextfontpage.cpp:246
+#, fuzzy
+msgid "Subscrip&t"
+msgstr "लिपि"
+
+#: ../src/richtext/richtextfontpage.cpp:239
+#, fuzzy
+msgid "Supe&rscript"
+msgstr "लिपि"
+
+#: ../src/common/paper.cpp:152
+msgid "SuperA/SuperA/A4 227 x 356 mm"
+msgstr ""
+
+#: ../src/common/paper.cpp:153
+msgid "SuperB/SuperB/A3 305 x 487 mm"
+msgstr ""
+
+#: ../src/generic/fontdlgg.cpp:233
+msgid "Swiss"
+msgstr "स्वीस"
+
+#: ../src/richtext/richtextliststylepage.cpp:490
+#: ../src/richtext/richtextbulletspage.cpp:288
+msgid "Symbol"
+msgstr "चिह्न"
+
+#: ../src/richtext/richtextliststylepage.cpp:287
+#: ../src/richtext/richtextbulletspage.cpp:238
+msgid "Symbol &font:"
+msgstr "चिह्न फ़ॉन्ट: (&F)"
+
+#: ../include/wx/richtext/richtextsymboldlg.h:46
+msgid "Symbols"
+msgstr "प्रतीकों"
+
+#: ../src/common/menucmn.cpp:81
+msgid "TAB"
+msgstr "TAB"
+
+#: ../src/common/imagtiff.cpp:194
+msgid "TIFF library error."
+msgstr "टीआईएफ़एफ़ लेखागार त्रुटि।"
+
+#: ../src/common/imagtiff.cpp:178
+msgid "TIFF library warning."
+msgstr "टीआईएफ़एफ़ लेखागार चेतावनी।"
+
+#: ../src/common/imagtiff.cpp:285
+#: ../src/common/imagtiff.cpp:296
+#: ../src/common/imagtiff.cpp:436
+msgid "TIFF: Couldn't allocate memory."
+msgstr "टीआईएफ़एफ़: स्मॄति का आवंटन महीं किया जा सका।"
+
+#: ../src/common/imagtiff.cpp:248
+msgid "TIFF: Error loading image."
+msgstr "टीआईएफ़एफ़: आकॄति को लोड करने में त्रुटि।"
+
+#: ../src/common/imagtiff.cpp:310
+msgid "TIFF: Error reading image."
+msgstr "टीआईएफ़एफ़: आकॄति को पढ़ने में त्रुटि।"
+
+#: ../src/common/imagtiff.cpp:378
+msgid "TIFF: Error saving image."
+msgstr "टीआईएफ़एफ़: आकॄति को सुरक्षित करने में त्रुटि।"
+
+#: ../src/common/imagtiff.cpp:482
+msgid "TIFF: Error writing image."
+msgstr "टीआईएफ़एफ़: आकॄति को लिखने में त्रुटि।"
+
+#: ../src/common/paper.cpp:147
+#, fuzzy
+msgid "Tabloid Extra 11.69 x 18 in"
+msgstr "टैब्लायड, ११ x १७ इंच"
+
+#: ../src/common/paper.cpp:104
+msgid "Tabloid, 11 x 17 in"
+msgstr "टैब्लायड, ११ x १७ इंच"
+
+#: ../src/richtext/richtextformatdlg.cpp:287
+msgid "Tabs"
+msgstr "टेब्स"
+
+#: ../src/generic/fontdlgg.cpp:234
+msgid "Teletype"
+msgstr "टेलीटाइप"
+
+#: ../src/common/docview.cpp:1713
+msgid "Templates"
+msgstr "टेम्पलेट्स"
+
+#: ../src/common/fmapbase.cpp:116
+msgid "Thai (ISO-8859-11)"
+msgstr "थाई (आईसो-८८५९-११)"
+
+#: ../src/common/ftp.cpp:704
+msgid "The FTP server doesn't support passive mode."
+msgstr "यह एफ़टीपी सर्वर निश्चेष्ट विधा का समर्थन नहीं करता है।"
+
+#: ../src/common/ftp.cpp:692
+msgid "The FTP server doesn't support the PORT command."
+msgstr "यह एफ़टीपी सर्वर पोर्ट समादेश को समर्थन नहीं करता है।"
+
+#: ../src/richtext/richtextliststylepage.cpp:214
+#: ../src/richtext/richtextliststylepage.cpp:216
+#: ../src/richtext/richtextbulletspage.cpp:162
+#: ../src/richtext/richtextbulletspage.cpp:164
+msgid "The available bullet styles."
+msgstr "उपलब्ध बुल्लेट शैलियाँ।"
+
+#: ../src/richtext/richtextstyledlg.cpp:194
+#: ../src/richtext/richtextstyledlg.cpp:196
+msgid "The available styles."
+msgstr "उपलब्ध शैलियाँ।"
+
+#: ../src/richtext/richtextliststylepage.cpp:253
+#: ../src/richtext/richtextliststylepage.cpp:255
+#: ../src/richtext/richtextliststylepage.cpp:274
+#: ../src/richtext/richtextliststylepage.cpp:276
+#: ../src/richtext/richtextbulletspage.cpp:202
+#: ../src/richtext/richtextbulletspage.cpp:204
+#: ../src/richtext/richtextbulletspage.cpp:225
+#: ../src/richtext/richtextbulletspage.cpp:227
+msgid "The bullet character."
+msgstr "बुल्लेट संप्रतीक।"
+
+#: ../src/richtext/richtextsymboldlg.cpp:442
+#: ../src/richtext/richtextsymboldlg.cpp:444
+msgid "The character code."
+msgstr "का संप्रतीक कूट।"
+
+#: ../src/common/fontmap.cpp:201
+#, c-format
+msgid ""
+"The charset '%s' is unknown. You may select\n"
+"another charset to replace it with or choose\n"
+"[Cancel] if it cannot be replaced"
+msgstr ""
+"यह '%s' शब्दसमुच्चय अज्ञात है। इसे बदलने के लिए\n"
+"आपको अन्य शब्दसमुच्चय का चयन या यदि यह बदला\n"
+"नहीं जा सकता है, तो [निरस्त] का चयन करना चाहिए"
+
+#: ../src/msw/ole/dataobj.cpp:161
+#, c-format
+msgid "The clipboard format '%d' doesn't exist."
+msgstr "क्लिपबोर्ड प्रारूप '%d' विद्यमान नहीं है।"
+
+#: ../src/richtext/richtextstylepage.cpp:127
+#: ../src/richtext/richtextstylepage.cpp:129
+msgid "The default style for the next paragraph."
+msgstr "अगले अनुच्छेद के लिए डिफ़ाल्ट शैली।"
+
+#: ../src/generic/dirdlgg.cpp:229
+#, c-format
+msgid ""
+"The directory '%s' does not exist\n"
+"Create it now?"
+msgstr ""
+"'%s' यह निर्देशिका विद्यमान नहीं है\n"
+"अभी इसका निर्माण किया जाएँ?"
+
+#: ../src/common/docview.cpp:1980
+#, c-format
+msgid ""
+"The file '%s' couldn't be opened.\n"
+"It has been removed from the most recently used files list."
+msgstr ""
+"'%s' फ़ाइल को खोला नहीं जा सका।\n"
+"इसे हाल ही में उपयोग में लायी गयी हुई फ़ाइलों की सूची में से हटा दिया गया है।"
+
+#: ../src/common/docview.cpp:1990
+#, c-format
+msgid ""
+"The file '%s' doesn't exist and couldn't be opened.\n"
+"It has been removed from the most recently used files list."
+msgstr ""
+"'%s' यह निर्देशिका विद्यमान नहीं है और इसे खोला नहीं जा सका।\n"
+"इसे हाल ही में उपयोग में लायी गयी हुई फ़ाइलों की सूची में से हटा दिया गया है।"
+
+#: ../src/richtext/richtextliststylepage.cpp:397
+#: ../src/richtext/richtextliststylepage.cpp:399
+#: ../src/richtext/richtextindentspage.cpp:224
+#: ../src/richtext/richtextindentspage.cpp:226
+msgid "The first line indent."
+msgstr "पहली पंक्ति का इंडेंट।"
+
+#: ../src/generic/fontdlgg.cpp:321
+#: ../src/generic/fontdlgg.cpp:323
+msgid "The font colour."
+msgstr "फ़ॉन्ट का रंग"
+
+#: ../src/generic/fontdlgg.cpp:282
+#: ../src/generic/fontdlgg.cpp:284
+msgid "The font family."
+msgstr "फ़ॉन्ट का वंश"
+
+#: ../src/richtext/richtextsymboldlg.cpp:404
+#: ../src/richtext/richtextsymboldlg.cpp:406
+msgid "The font from which to take the symbol."
+msgstr ""
+
+#: ../src/generic/fontdlgg.cpp:334
+#: ../src/generic/fontdlgg.cpp:336
+#: ../src/generic/fontdlgg.cpp:341
+#: ../src/generic/fontdlgg.cpp:343
+msgid "The font point size."
+msgstr "फ़ॉन्ट बिन्दु का आकार।"
+
+#: ../src/mac/carbon/fontdlg.cpp:466
+#: ../src/mac/carbon/fontdlg.cpp:468
+msgid "The font size in points."
+msgstr "फ़ॉन्ट का आकार बिंदुओं में।"
+
+#: ../src/generic/fontdlgg.cpp:293
+#: ../src/generic/fontdlgg.cpp:295
+msgid "The font style."
+msgstr "फ़ॉन्ट की शैली"
+
+#: ../src/generic/fontdlgg.cpp:304
+#: ../src/generic/fontdlgg.cpp:306
+msgid "The font weight."
+msgstr "फ़ॉन्ट का भार"
+
+#: ../src/richtext/richtextliststylepage.cpp:386
+#: ../src/richtext/richtextliststylepage.cpp:388
+#: ../src/richtext/richtextindentspage.cpp:212
+#: ../src/richtext/richtextindentspage.cpp:214
+msgid "The left indent."
+msgstr "बायें इंडेंट।"
+
+#: ../src/richtext/richtextliststylepage.cpp:464
+#: ../src/richtext/richtextliststylepage.cpp:466
+#: ../src/richtext/richtextindentspage.cpp:319
+#: ../src/richtext/richtextindentspage.cpp:321
+msgid "The line spacing."
+msgstr "पंक्ति का अन्तराल।"
+
+#: ../src/richtext/richtextbulletspage.cpp:266
+#: ../src/richtext/richtextbulletspage.cpp:268
+msgid "The list item number."
+msgstr "सूची की पद संख्या।"
+
+#: ../src/richtext/richtextindentspage.cpp:257
+#: ../src/richtext/richtextindentspage.cpp:259
+msgid "The outline level."
+msgstr "रूपरेखा का स्तर।"
+
+#: ../src/common/filename.cpp:1254
+#, c-format
+msgid "The path '%s' contains too many \"..\"!"
+msgstr "इस पथ '%s' में बहुत सारे \"..\" सम्मिलित है!"
+
+#: ../src/common/log.cpp:307
+#, c-format
+msgid "The previous message repeated once."
+msgid_plural "The previous message repeated %lu times."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ../src/richtext/richtextsymboldlg.cpp:461
+#: ../src/richtext/richtextsymboldlg.cpp:463
+msgid "The range to show."
+msgstr ""
+
+#: ../src/generic/dbgrptg.cpp:318
+msgid ""
+"The report contains the files listed below. If any of these files contain private information,\n"
+"please uncheck them and they will be removed from the report.\n"
+msgstr ""
+"नीचे दी गयी फ़ाइलें इस विवरण में सम्मिलित हें। अगर इन में से किसी भी फ़ाइल में व्यक्तिगत जानकारी हें तो,\n"
+"कृपया उन्हें अन्चेक कर दे और वे इस विवरण से हटा दी जायेंगी।\n"
+
+#: ../src/common/cmdline.cpp:903
+#, c-format
+msgid "The required parameter '%s' was not specified."
+msgstr "आवश्यक पैरामीटर '%s' को निर्दिष्ट नहीं किया गया था।"
+
+#: ../src/richtext/richtextliststylepage.cpp:408
+#: ../src/richtext/richtextliststylepage.cpp:410
+#: ../src/richtext/richtextindentspage.cpp:236
+#: ../src/richtext/richtextindentspage.cpp:238
+msgid "The right indent."
+msgstr "दायें इंडेंट।"
+
+#: ../src/richtext/richtextliststylepage.cpp:448
+#: ../src/richtext/richtextliststylepage.cpp:450
+#: ../src/richtext/richtextindentspage.cpp:304
+msgid "The spacing after the paragraph."
+msgstr "अनुच्छेद के बाद का अन्तराल।"
+
+#: ../src/richtext/richtextliststylepage.cpp:437
+#: ../src/richtext/richtextliststylepage.cpp:439
+#: ../src/richtext/richtextindentspage.cpp:291
+#: ../src/richtext/richtextindentspage.cpp:293
+msgid "The spacing before the paragraph."
+msgstr "अनुच्छेद के पहले का अन्तराल।"
+
+#: ../src/richtext/richtextstylepage.cpp:107
+#: ../src/richtext/richtextstylepage.cpp:109
+msgid "The style name."
+msgstr "शैली का नाम।"
+
+#: ../src/richtext/richtextstylepage.cpp:117
+#: ../src/richtext/richtextstylepage.cpp:119
+msgid "The style on which this style is based."
+msgstr "वो शैली जिस पर ये शैली आधारित हें।"
+
+#: ../src/richtext/richtextstyledlg.cpp:206
+#: ../src/richtext/richtextstyledlg.cpp:208
+msgid "The style preview."
+msgstr "शैली का पूर्वालोकन।"
+
+#: ../src/richtext/richtexttabspage.cpp:117
+#: ../src/richtext/richtexttabspage.cpp:119
+msgid "The tab position."
+msgstr "टैब की स्थिति।"
+
+#: ../src/richtext/richtexttabspage.cpp:123
+msgid "The tab positions."
+msgstr "टैब की स्थितियाँ।"
+
+#: ../src/common/textcmn.cpp:254
+#: ../src/richtext/richtextctrl.cpp:1904
+msgid "The text couldn't be saved."
+msgstr "इस पाठ को सुरक्षित किया जा सका।"
+
+#: ../src/common/cmdline.cpp:881
+#, c-format
+msgid "The value for the option '%s' must be specified."
+msgstr "'%s' विकल्प के लिए इस मूल्य को निर्दिष्ट करना अनिवार्य है।"
+
+#: ../src/msw/dialup.cpp:456
+#, c-format
+msgid "The version of remote access service (RAS) installed on this machine is tooold, please upgrade (the following required function is missing: %s)."
+msgstr "इस मशीन पर संसाधित सुदूर पहुँच सेवा (आरऐएस) का यह संस्मरण अति प्राचीन है, कृपया इसे अपग्रेड करें(निम्न आवश्यक चलन विलुप्त है:  %s)।"
+
+#: ../src/richtext/richtextprint.cpp:575
+#: ../src/html/htmprint.cpp:610
+msgid "There was a problem during page setup: you may need to set a default printer."
+msgstr "पॄष्ट स्थापना के दौरान एक समस्या थी: आपको एक डिफ़ाल्ट प्रिंटर को स्थापित करने की आवश्यकता है।"
+
+#: ../src/msw/datectrl.cpp:110
+msgid "This system doesn't support date picker control, please upgrade your version of comctl32.dll"
+msgstr ""
+
+#: ../src/msw/thread.cpp:1268
+msgid "Thread module initialization failed: can not store value in thread local storage"
+msgstr "थ्रेड माड्यूल आरम्भीकरण असफ़ल रहा: स्थानीय थ्रेड में मूल्य को सुरक्षित नहीं किया जा सका "
+
+#: ../src/unix/threadpsx.cpp:1618
+msgid "Thread module initialization failed: failed to create thread key"
+msgstr "थ्रेड माड्यूल आरम्भीकरण असफ़ल रहा: थ्रेड कुँजी का निर्माण नहीं किया जा सका"
+
+#: ../src/msw/thread.cpp:1256
+msgid "Thread module initialization failed: impossible to allocate index in thread local storage"
+msgstr "थ्रेड माड्यूल आरम्भीकरण असफ़ल रहा: स्थानीय थ्रेड भंडार में इंडेक्स का आवंटन असम्भव"
+
+#: ../src/unix/threadpsx.cpp:1136
+msgid "Thread priority setting is ignored."
+msgstr "थ्रेड वरीयता समायोजना पर ध्यान नहीं दिया गया।"
+
+#: ../src/msw/mdi.cpp:172
+msgid "Tile &Horizontally"
+msgstr "क्षैतिज रूप से टाइल (&H)"
+
+#: ../src/msw/mdi.cpp:173
+msgid "Tile &Vertically"
+msgstr "खड़े रूप से टाइल (&V)"
+
+#: ../src/common/ftp.cpp:631
+#, fuzzy
+msgid "Timeout while waiting for FTP server to connect, try passive mode."
+msgstr "यह एफ़टीपी सर्वर निश्चेष्ट विधा का समर्थन नहीं करता है।"
+
+#: ../src/os2/timer.cpp:130
+#: ../src/msw/timer.cpp:111
+msgid "Timer creation failed."
+msgstr "समयसंचेतक का निर्माण असफ़ल रहा।"
+
+#: ../src/generic/tipdlg.cpp:218
+msgid "Tip of the Day"
+msgstr "आज का संकेत"
+
+#: ../src/generic/tipdlg.cpp:153
+msgid "Tips not available, sorry!"
+msgstr "संकेत उपलब्ध नहीं हैं, क्षमा करें!"
+
+#: ../src/generic/prntdlgg.cpp:242
+msgid "To:"
+msgstr "प्राप्तकर्ता:"
+
+#: ../src/richtext/richtextbuffer.cpp:5608
+msgid "Too many EndStyle calls!"
+msgstr ""
+
+#: ../src/common/imagpng.cpp:294
+msgid "Too many colours in PNG, the image may be slightly blurred."
+msgstr "पीएनजी में बहुत सारे रंग, यह आकॄति थोड़ी सी धूमल हो सकती है।"
+
+#: ../src/generic/prntdlgg.cpp:879
+msgid "Top margin (mm):"
+msgstr "ऊपरी हाशिया (मिलीमीटर):"
+
+#: ../src/generic/aboutdlgg.cpp:80
+msgid "Translations by "
+msgstr "द्वारा अनुवाद"
+
+#: ../src/generic/aboutdlgg.cpp:154
+msgid "Translators"
+msgstr "अनुवादक"
+
+#: ../src/common/fs_mem.cpp:230
+#, c-format
+msgid "Trying to remove file '%s' from memory VFS, but it is not loaded!"
+msgstr "वीएफ़एस स्मॄति से  '%s' फ़ाइल को हटाने का प्रयास किया जा रहा है, परन्तु यह लोड नहीं है!"
+
+#: ../src/common/sckaddr.cpp:144
+#: ../src/common/sckaddr.cpp:247
+msgid "Trying to solve a NULL hostname: giving up"
+msgstr "एक रिक्त होस्टनाम को बूझने का प्रयास किया जा रहा है: छोड़ रहा हूँ"
+
+#: ../src/common/fmapbase.cpp:114
+msgid "Turkish (ISO-8859-9)"
+msgstr "टर्क्रिश (आईओ-८८५९-९)"
+
+#: ../src/generic/filedlgg.cpp:508
+msgid "Type"
+msgstr "प्रकार"
+
+#: ../src/richtext/richtextfontpage.cpp:138
+#: ../src/richtext/richtextfontpage.cpp:140
+msgid "Type a font name."
+msgstr "फ़ॉन्ट का नाम टाइप करें"
+
+#: ../src/richtext/richtextfontpage.cpp:156
+#: ../src/richtext/richtextfontpage.cpp:158
+msgid "Type a size in points."
+msgstr "आकार बिंदुओं में टाइप करें।"
+
+#: ../src/common/xtixml.cpp:348
+#: ../src/common/xtixml.cpp:495
+#: ../src/common/xtistrm.cpp:277
+msgid "Type must have enum - long conversion"
+msgstr "प्रकार के पास ईनम - लंबा रूपांतरण अवश्य होना चाहिए"
+
+#: ../src/common/menucmn.cpp:76
+msgid "UP"
+msgstr "UP"
+
+#: ../src/common/paper.cpp:135
+msgid "US Std Fanfold, 14 7/8 x 11 in"
+msgstr "यूएस सामान्य फ़ैनफ़ोल्ड, १४ ७/८ x ११ इंच"
+
+#: ../src/common/fmapbase.cpp:151
+msgid "US-ASCII"
+msgstr "यू स-आस्की (ASCII)"
+
+#: ../src/common/strconv.cpp:2771
+#: ../src/common/strconv.cpp:2775
+msgid "Unable to create TextEncodingConverter"
+msgstr ""
+
+#: ../src/html/htmlwin.cpp:534
+#, c-format
+msgid "Unable to open requested HTML document: %s"
+msgstr "निवेदित एचटीएमएल प्रलेख को खोलने में असमर्थ: %s"
+
+#: ../src/unix/sound.cpp:369
+msgid "Unable to play sound asynchronously."
+msgstr "ध्वनि को अतुल्यकालिक रूप से चलाने में असमर्थ।"
+
+#: ../src/common/stockitem.cpp:155
+msgid "Undelete"
+msgstr "अविलोप"
+
+#: ../src/richtext/richtextfontpage.cpp:272
+#: ../src/richtext/richtextfontpage.cpp:356
+#: ../src/richtext/richtextfontpage.cpp:603
+#: ../src/mac/carbon/fontdlg.cpp:493
+msgid "Underlined"
+msgstr "रेखांकित"
+
+#: ../src/common/stockitem.cpp:210
+msgid "Undo last action"
+msgstr "पिछला कार्य रद्द करें"
+
+#: ../src/common/cmdline.cpp:691
+#, c-format
+msgid "Unexpected characters following option '%s'."
+msgstr "विकल्प के पश्चात अप्रत्याशित संप्रतीक '%s'।"
+
+#: ../contrib/src/deprecated/resource.cpp:1848
+#: ../contrib/src/deprecated/resource.cpp:1862
+#: ../contrib/src/deprecated/resource.cpp:1879
+#: ../contrib/src/deprecated/resource.cpp:1893
+#: ../contrib/src/deprecated/resource.cpp:1978
+#: ../contrib/src/deprecated/resource.cpp:1992
+#: ../contrib/src/deprecated/resource.cpp:2008
+#: ../contrib/src/deprecated/resource.cpp:2022
+#: ../contrib/src/deprecated/resource.cpp:3080
+#: ../contrib/src/deprecated/resource.cpp:3094
+#: ../contrib/src/deprecated/resource.cpp:3111
+#: ../contrib/src/deprecated/resource.cpp:3125
+msgid "Unexpected end of file while parsing resource."
+msgstr "अनपेक्षित फ़ाइल अंत, संसाधन पदच्छेदन के समय"
+
+#: ../src/common/cmdline.cpp:844
+#, c-format
+msgid "Unexpected parameter '%s'"
+msgstr "अप्रत्याशित पैरामीटर '%s'"
+
+#: ../src/richtext/richtextsymboldlg.cpp:458
+msgid "Unicode"
+msgstr "यूनिकोड"
+
+#: ../src/common/fmapbase.cpp:140
+#: ../src/common/fmapbase.cpp:146
+msgid "Unicode 16 bit (UTF-16)"
+msgstr "यूनीकोड १६ बिट् (यूटीएफ़-१६)"
+
+#: ../src/common/fmapbase.cpp:145
+msgid "Unicode 16 bit Big Endian (UTF-16BE)"
+msgstr "यूनीकोड १६ बिट् बड़ा इंडीयन (यूटीएफ़-१६बीई)"
+
+#: ../src/common/fmapbase.cpp:141
+msgid "Unicode 16 bit Little Endian (UTF-16LE)"
+msgstr "यूनीकोड १६ बिट् छोटा इंडीयन (यूटीएफ़-१६एलई)"
+
+#: ../src/common/fmapbase.cpp:142
+#: ../src/common/fmapbase.cpp:148
+msgid "Unicode 32 bit (UTF-32)"
+msgstr "यूनीकोड ३२ बिट् (यूटीएफ़-३२)"
+
+#: ../src/common/fmapbase.cpp:147
+msgid "Unicode 32 bit Big Endian (UTF-32BE)"
+msgstr "यूनीकोड ३२ बिट् बड़ा इंडीयन (यूटीएफ़-३२बीई)"
+
+#: ../src/common/fmapbase.cpp:143
+msgid "Unicode 32 bit Little Endian (UTF-32LE)"
+msgstr "यूनीकोड ३२ बिट् छोटा इंडीयन (यूटीएफ़-३२एलई)"
+
+#: ../src/common/fmapbase.cpp:137
+msgid "Unicode 7 bit (UTF-7)"
+msgstr "यूनीकोड ७ बिट् (यूटीएफ़-७)"
+
+#: ../src/common/fmapbase.cpp:138
+msgid "Unicode 8 bit (UTF-8)"
+msgstr "यूनीकोड ८ बिट् (यूटीएफ़-८)"
+
+#: ../src/generic/progdlgg.cpp:607
+msgid "Unknown"
+msgstr "अज्ञात"
+
+#: ../src/msw/dde.cpp:1088
+#, c-format
+msgid "Unknown DDE error %08x"
+msgstr "अज्ञात डीडीई त्रुटि %08x"
+
+#: ../src/common/xtistrm.cpp:366
+msgid "Unknown Object passed to GetObjectClassInfo"
+msgstr "GetObjectClassInfo को अज्ञात ऑबजेक्ट दिया किया गया"
+
+#: ../src/unix/dlunix.cpp:339
+msgid "Unknown dynamic library error"
+msgstr "अज्ञात गतिक लेखागार दोष"
+
+#: ../src/common/fmapbase.cpp:675
+#, c-format
+msgid "Unknown encoding (%d)"
+msgstr "अज्ञात एन्कोडिंग (%d)"
+
+#: ../src/common/cmdline.cpp:598
+#, c-format
+msgid "Unknown long option '%s'"
+msgstr "अज्ञात लंबा विकल्प '%s'"
+
+#: ../src/common/cmdline.cpp:608
+#: ../src/common/cmdline.cpp:630
+#, c-format
+msgid "Unknown option '%s'"
+msgstr "अज्ञात विकल्प '%s'"
+
+#: ../src/xrc/xmlres.cpp:865
+msgid "Unknown style flag "
+msgstr "अज्ञात शैली ध्वज "
+
+#: ../src/common/xtixml.cpp:321
+#, c-format
+msgid "Unkown Property %s"
+msgstr "अज्ञात विशेषतायें %s"
+
+#: ../src/common/mimecmn.cpp:214
+#, c-format
+msgid "Unmatched '{' in an entry for mime type %s."
+msgstr "माइम प्रकार %s के लिए एक प्रविष्टी में बेमेल '{' ।"
+
+#: ../src/common/cmdproc.cpp:257
+#: ../src/common/cmdproc.cpp:283
+#: ../src/common/cmdproc.cpp:303
+msgid "Unnamed command"
+msgstr "बेनाम निर्देश"
+
+#: ../contrib/src/deprecated/resource.cpp:2377
+#, c-format
+msgid "Unrecognized style %s while parsing resource."
+msgstr ""
+
+#: ../src/msw/clipbrd.cpp:267
+#: ../src/msw/clipbrd.cpp:439
+#: ../src/mac/classic/clipbrd.cpp:66
+msgid "Unsupported clipboard format."
+msgstr "असमर्थित क्लिपबोर्ड प्रारूप।"
+
+#: ../src/common/appcmn.cpp:273
+#, c-format
+msgid "Unsupported theme '%s'."
+msgstr "असमर्थित थीम '%s' ।"
+
+#: ../src/generic/fdrepdlg.cpp:151
+msgid "Up"
+msgstr "ऊपर"
+
+#: ../src/richtext/richtextliststylepage.cpp:485
+#: ../src/richtext/richtextbulletspage.cpp:283
+msgid "Upper case letters"
+msgstr "बड़े आकार के अक्षर"
+
+#: ../src/richtext/richtextliststylepage.cpp:487
+#: ../src/richtext/richtextbulletspage.cpp:285
+msgid "Upper case roman numerals"
+msgstr ""
+
+#: ../src/common/cmdline.cpp:975
+#, c-format
+msgid "Usage: %s"
+msgstr "उपयोगिता: %s"
+
+#: ../src/richtext/richtextliststylepage.cpp:357
+#: ../src/richtext/richtextliststylepage.cpp:359
+#: ../src/richtext/richtextindentspage.cpp:179
+#: ../src/richtext/richtextindentspage.cpp:181
+msgid "Use the current alignment setting."
+msgstr "वर्तमान सरेखण समायोजना को प्रयोग करें।"
+
+#: ../src/common/valtext.cpp:177
+msgid "Validation conflict"
+msgstr "सत्यापन टकराव"
+
+#: ../src/mac/carbon/aboutdlg.cpp:73
+#, c-format
+msgid "Version %s"
+msgstr "संस्मरण %s"
+
+#: ../contrib/src/mmedia/vidbase.cpp:62
+msgid "Video Output"
+msgstr "विडियो आउटपुट"
+
+#: ../src/generic/filedlgg.cpp:1063
+msgid "View files as a detailed view"
+msgstr "फ़ाइलों को एक विस्तॄत अवलोकन की भांति देखें"
+
+#: ../src/generic/filedlgg.cpp:1056
+msgid "View files as a list view"
+msgstr "फ़ाइलों को एक अवलोकन सूची की भांति देखें"
+
+#: ../src/common/docview.cpp:1790
+msgid "Views"
+msgstr "अवलोकन"
+
+#: ../src/common/menucmn.cpp:126
+msgid "WINDOWS_LEFT"
+msgstr "WINDOWS_LEFT"
+
+#: ../src/common/menucmn.cpp:128
+msgid "WINDOWS_MENU"
+msgstr "WINDOWS_MENU"
+
+#: ../src/common/menucmn.cpp:127
+msgid "WINDOWS_RIGHT"
+msgstr "WINDOWS_RIGHT"
+
+#: ../src/unix/baseunix.cpp:78
+msgid "Waiting for subprocess termination failed"
+msgstr "उपप्रक्रिया के समाप्त होने की प्रतीक्षा असफ़ल रही"
+
+#: ../src/common/docview.cpp:459
+#: ../src/html/htmprint.cpp:380
+msgid "Warning"
+msgstr "चेतावनी"
+
+#: ../src/common/log.cpp:472
+msgid "Warning: "
+msgstr "चेतावनी: "
+
+#: ../src/html/htmlpars.cpp:385
+msgid "Warning: attempt to remove HTML tag handler from empty stack."
+msgstr "चेतावनी: खाली स्टैक से एचटीएमएल टैग हैन्डलर को हटाने का प्रयास ।"
+
+#: ../src/common/fmapbase.cpp:106
+msgid "Western European (ISO-8859-1)"
+msgstr "वेस्टर्न यूरोपियन (आईसो-८८५९-१)"
+
+#: ../src/common/fmapbase.cpp:120
+msgid "Western European with Euro (ISO-8859-15)"
+msgstr "वेस्टर्न यूरोपियन यूरो सहित (आईसो-८८५९-१५)"
+
+#: ../src/generic/fontdlgg.cpp:353
+#: ../src/generic/fontdlgg.cpp:355
+msgid "Whether the font is underlined."
+msgstr ""
+
+#: ../src/generic/fdrepdlg.cpp:143
+msgid "Whole word"
+msgstr "पूर्ण शब्द"
+
+#: ../src/html/helpwnd.cpp:533
+msgid "Whole words only"
+msgstr "सिर्फ़ पूर्ण शब्द "
+
+#: ../src/univ/themes/win32.cpp:1058
+msgid "Win32 theme"
+msgstr "विन३२ थीम"
+
+#: ../src/msw/utils.cpp:1080
+msgid "Win32s on Windows 3.1"
+msgstr "विण्डो ३.१ पर विन३२एस"
+
+#: ../src/msw/utils.cpp:1129
+#, c-format
+msgid "Windows 2000 (build %lu"
+msgstr "विण्डो २000 (निर्माण %lu"
+
+#: ../src/msw/utils.cpp:1094
+msgid "Windows 95"
+msgstr "विण्डो 95"
+
+#: ../src/msw/utils.cpp:1090
+msgid "Windows 95 OSR2"
+msgstr "विण्डो 95 OSR2"
+
+#: ../src/msw/utils.cpp:1105
+msgid "Windows 98"
+msgstr "विण्डो 98"
+
+#: ../src/msw/utils.cpp:1101
+msgid "Windows 98 SE"
+msgstr "विण्डो 98 एस ई"
+
+#: ../src/msw/utils.cpp:1112
+#, c-format
+msgid "Windows 9x (%d.%d)"
+msgstr "विण्डो 9x (%d.%d)"
+
+#: ../src/common/fmapbase.cpp:134
+msgid "Windows Arabic (CP 1256)"
+msgstr "विण्डो अरबी (सीपी १२५६)"
+
+#: ../src/common/fmapbase.cpp:135
+msgid "Windows Baltic (CP 1257)"
+msgstr "विण्डो बाल्टिक (सीपी १२५७)"
+
+#: ../src/msw/utils.cpp:1074
+#, c-format
+msgid "Windows CE (%d.%d)"
+msgstr "विण्डो CE (%d.%d)"
+
+#: ../src/common/fmapbase.cpp:128
+msgid "Windows Central European (CP 1250)"
+msgstr "विण्डो सेन्ट्रल यूरोपियन (सीपी १२५०)"
+
+#: ../src/common/fmapbase.cpp:125
+msgid "Windows Chinese Simplified (CP 936)"
+msgstr "विण्डो चीनी सरलीकॄत (सीपी ९३६)"
+
+#: ../src/common/fmapbase.cpp:127
+msgid "Windows Chinese Traditional (CP 950)"
+msgstr "विण्डो चीनी पारम्परिक (सीपी ९५०)"
+
+#: ../src/common/fmapbase.cpp:129
+msgid "Windows Cyrillic (CP 1251)"
+msgstr "विण्डो सायरिलिक (सीपी १२५१)"
+
+#: ../src/common/fmapbase.cpp:131
+msgid "Windows Greek (CP 1253)"
+msgstr "विण्डो ग्रीक (सीपी १२५३)"
+
+#: ../src/common/fmapbase.cpp:133
+msgid "Windows Hebrew (CP 1255)"
+msgstr "विण्डो हिब्रू (सीपी १२५५)"
+
+#: ../src/common/fmapbase.cpp:124
+msgid "Windows Japanese (CP 932)"
+msgstr "विण्डो जापानी (सीपी ९३२)"
+
+#: ../src/common/fmapbase.cpp:126
+msgid "Windows Korean (CP 949)"
+msgstr "विण्डो कोरियन (सीपी ९४९)"
+
+#: ../src/msw/utils.cpp:1109
+msgid "Windows ME"
+msgstr "विण्डो एम ई"
+
+#: ../src/msw/utils.cpp:1144
+#, c-format
+msgid "Windows NT %lu.%lu (build %lu"
+msgstr "विण्डो एन टी %lu.%lu (निर्माण %lu"
+
+#: ../src/msw/utils.cpp:1137
+#, c-format
+msgid "Windows Server 2003 (build %lu"
+msgstr "विण्डो सर्वर २00३ (निर्माण %lu"
+
+#: ../src/common/fmapbase.cpp:123
+msgid "Windows Thai (CP 874)"
+msgstr "विण्डो थाई (सीपी १२५७)"
+
+#: ../src/common/fmapbase.cpp:132
+msgid "Windows Turkish (CP 1254)"
+msgstr "विण्डो टर्किस (सीपी १२५४)"
+
+#: ../src/common/fmapbase.cpp:130
+msgid "Windows Western European (CP 1252)"
+msgstr "विण्डो वेस्टर्न यूरोपियन (सीपी १२५२)"
+
+#: ../src/msw/utils.cpp:1133
+#, c-format
+msgid "Windows XP (build %lu"
+msgstr "विण्डो एक्स पी (निर्माण %lu"
+
+#: ../src/common/fmapbase.cpp:136
+msgid "Windows/DOS OEM (CP 437)"
+msgstr "विण्डो/डास ओईएम (सीपी ४३७)"
+
+#: ../src/common/ffile.cpp:158
+#, c-format
+msgid "Write error on file '%s'"
+msgstr "'%s' फ़ाइल पर लेखन त्रुटि"
+
+#: ../src/xml/xml.cpp:713
+#, c-format
+msgid "XML parsing error: '%s' at line %d"
+msgstr "एक्सएम एल पदभंजन त्रुटि: '%s' %d पंक्ति पर"
+
+#: ../src/common/xpmdecod.cpp:794
+msgid "XPM: Malformed pixel data!"
+msgstr "एक्सपीएम: गलत रूप से निर्मित पीक्सेल डाटा!"
+
+#: ../src/common/xpmdecod.cpp:709
+#, c-format
+msgid "XPM: incorrect colour description in line %d"
+msgstr "एक्सपीएम: पंक्ति %d में गलत रूप से निर्मित रंग परिभाषा"
+
+#: ../src/common/xpmdecod.cpp:682
+msgid "XPM: incorrect header format!"
+msgstr "एक्सपीएम: गलत शीर्ष प्रारूप!"
+
+#: ../src/common/xpmdecod.cpp:720
+#: ../src/common/xpmdecod.cpp:729
+#, c-format
+msgid "XPM: malformed colour definition '%s' at line %d!"
+msgstr "एक्सपीएम: विकृत रंग परिभाषा '%s' पंक्ति %d में!"
+
+#: ../src/common/xpmdecod.cpp:781
+#, c-format
+msgid "XPM: truncated image data at line %d!"
+msgstr ""
+
+#: ../src/xrc/xmlres.cpp:606
+#, c-format
+msgid "XRC resource '%s' (class '%s') not found!"
+msgstr "एक्सआरसी स्रोत संसाधन '%s' (वर्ग '%s') नहीं मिला!"
+
+#: ../src/xrc/xmlres.cpp:1152
+#: ../src/xrc/xmlres.cpp:1164
+#, fuzzy, c-format
+msgid "XRC resource: Cannot create animation from '%s'."
+msgstr "एक्सआरसी स्रोत संसाधन: '%s' से बिट्मैप का निर्माण किया जा सका।"
+
+#: ../src/xrc/xmlres.cpp:1120
+#: ../src/xrc/xmlres.cpp:1132
+#, c-format
+msgid "XRC resource: Cannot create bitmap from '%s'."
+msgstr "एक्सआरसी स्रोत संसाधन: '%s' से बिट्मैप का निर्माण किया जा सका।"
+
+#: ../src/xrc/xmlres.cpp:1078
+#, c-format
+msgid "XRC resource: Incorrect colour specification '%s' for property '%s'."
+msgstr "एक्सआरसी स्रोतसाधन: गलत रंग विशिष्टता '%s' गुणधर्म '%s' के लिए।"
+
+#: ../src/motif/msgdlg.cpp:203
+#: ../src/mac/classic/msgdlg.cpp:60
+#: ../src/mac/classic/msgdlg.cpp:142
+#: ../src/mac/carbon/msgdlg.cpp:66
+#: ../src/mac/carbon/msgdlg.cpp:121
+msgid "Yes"
+msgstr "हाँ"
+
+#: ../src/mac/carbon/overlay.cpp:150
+msgid "You cannot Clear an overlay that is not inited"
+msgstr ""
+
+#: ../src/dfb/overlay.cpp:55
+#: ../src/mac/carbon/overlay.cpp:110
+msgid "You cannot Init an overlay twice"
+msgstr ""
+
+#: ../src/generic/dirdlgg.cpp:314
+msgid "You cannot add a new directory to this section."
+msgstr "आप इस भाग में एक नयी निर्देशिका को जोड़ नहीं सकते है।"
+
+#: ../src/common/stockitem.cpp:162
+msgid "Zoom &In"
+msgstr "बड़ा करें (&I)"
+
+#: ../src/common/stockitem.cpp:163
+msgid "Zoom &Out"
+msgstr "छोटा करें (&O)"
+
+#: ../src/common/stockitem.cpp:161
+msgid "Zoom to &Fit"
+msgstr "अनुरूप आकार करें (&F)"
+
+#: ../src/common/docview.cpp:2164
+msgid "[EMPTY]"
+msgstr "[रिक्त]"
+
+#: ../src/msw/dde.cpp:1055
+msgid "a DDEML application has created a prolonged race condition."
+msgstr "एक डीडीईएमएल कार्यक्रम ने एक बहुत लंबी रेस दशा का निर्माण कर दिया है।"
+
+#: ../src/msw/dde.cpp:1043
+msgid ""
+"a DDEML function was called without first calling the DdeInitialize function,\n"
+"or an invalid instance identifier\n"
+"was passed to a DDEML function."
+msgstr ""
+"एक डीडीईएमएल संक्रिया को बिना डीडीईआरम्भीकरण संक्रिया को पुकारे हुएपुकारा गया है,\n"
+"या फ़िर एक डीडीईएमएल संक्रिया को एक अवैध दॄष्टांत आइडेन्टीफ़ायरदिया गया है।"
+
+#: ../src/msw/dde.cpp:1061
+msgid "a client's attempt to establish a conversation has failed."
+msgstr "एक ग्राहक का एक संवाद स्थापित करने का प्रयास असफ़ल रहा।"
+
+#: ../src/msw/dde.cpp:1058
+msgid "a memory allocation failed."
+msgstr "एक स्मृति आवंटन असफ़ल रहा।"
+
+#: ../src/msw/dde.cpp:1052
+msgid "a parameter failed to be validated by the DDEML."
+msgstr "डीडीईएमएल द्वारा एक पैरामीटर का सत्यापन करना असफ़ल रहा।"
+
+#: ../src/msw/dde.cpp:1034
+msgid "a request for a synchronous advise transaction has timed out."
+msgstr "एक तुल्यकालिक परामर्श कार्यसंपादन हेतु एक निवेदन की समय-सीमा समाप्त हो चुकी है।"
+
+#: ../src/msw/dde.cpp:1040
+msgid "a request for a synchronous data transaction has timed out."
+msgstr "एक तुल्यकालिक डाटा कार्यसंपादन हेतु एक निवेदन की समय-सीमा समाप्त हो चुकी है।"
+
+#: ../src/msw/dde.cpp:1049
+msgid "a request for a synchronous execute transaction has timed out."
+msgstr "एक तुल्यकालिक निष्पादन कार्यसंपादन हेतु एक निवेदन की समय-सीमा समाप्त हो चुकी है।"
+
+#: ../src/msw/dde.cpp:1067
+msgid "a request for a synchronous poke transaction has timed out."
+msgstr "एक तुल्यकालिक पोक कार्यसंपादन हेतु एक निवेदन की समय-सीमा समाप्त हो चुकी है।"
+
+#: ../src/msw/dde.cpp:1082
+msgid "a request to end an advise transaction has timed out."
+msgstr "एक परामर्श कार्यसंपादन को समाप्त करने हेतु एक निवेदन की समय-सीमा समाप्त हो चुकी है।"
+
+#: ../src/msw/dde.cpp:1076
+msgid ""
+"a server-side transaction was attempted on a conversation\n"
+"that was terminated by the client, or the server\n"
+"terminated before completing a transaction."
+msgstr ""
+"एक संवाद पर जिसे या तो एक ग्राहक द्वारा अचानक समाप्त कर दिया गया था\n"
+"या फ़िर सर्वर ने एक कार्यसंपादन के खत्म होने के पहिले अचानक समाप्त कर दिया  था,\n"
+"एक सर्वर की तरफ़ से एक कार्यसंपादन का प्रयास किया गया था।"
+
+#: ../src/msw/dde.cpp:1064
+msgid "a transaction failed."
+msgstr "एक कार्यसंपादन असफ़ल रहा।"
+
+#: ../src/common/menucmn.cpp:199
+msgid "alt"
+msgstr "alt"
+
+#: ../src/msw/dde.cpp:1046
+msgid ""
+"an application initialized as APPCLASS_MONITOR has\n"
+"attempted to perform a DDE transaction,\n"
+"or an application initialized as APPCMD_CLIENTONLY has \n"
+"attempted to perform server transactions."
+msgstr ""
+"एक कार्यक्रम जिसका आरम्भीकरण APPCLASS_MONITOR की भांति किया गया था, \n"
+"ने एक डीडीई कार्यसंपादन का प्रयास किया,\n"
+"या एक कार्यक्रम जिसका आरम्भीकरण APPCMD_CLIENTONLY की भांति किया गया था, \n"
+"सर्वर कार्यसंपादनों को करने का प्रयास कर चुका है।"
+
+#: ../src/msw/dde.cpp:1070
+msgid "an internal call to the PostMessage function has failed. "
+msgstr "PostMessage चलन को एक आंतरिक कॉल असफ़ल रही। "
+
+#: ../src/msw/dde.cpp:1079
+msgid "an internal error has occurred in the DDEML."
+msgstr "डीडीईएमएल में एक आंतरिक त्रुटि उत्पन्न हो गयी है।"
+
+#: ../src/msw/dde.cpp:1085
+msgid ""
+"an invalid transaction identifier was passed to a DDEML function.\n"
+"Once the application has returned from an XTYP_XACT_COMPLETE callback,\n"
+"the transaction identifier for that callback is no longer valid."
+msgstr ""
+"एक डीडीईएमएल फ़लन को एक अमान्य कार्य संपादन पहचानकर्ता दिया गया था।\n"
+"जब यह कार्यक्रम एक XTYP_XACT_COMPLETE कॉलबैक से वापस आ चुका होगा,\n"
+"इस कॉलबैक के लिए यह कार्य संपादन पहचानकर्ता मान्य नहीं रह जायेगा।"
+
+#: ../src/common/zipstrm.cpp:1272
+msgid "assuming this is a multi-part zip concatenated"
+msgstr ""
+
+#: ../src/common/fileconf.cpp:1893
+#, c-format
+msgid "attempt to change immutable key '%s' ignored."
+msgstr "निर्विकल्प कुँजी '%s' को परिवर्तित करने के प्रयास पर ध्यान नहीं दिया गया। "
+
+#: ../src/html/chm.cpp:330
+msgid "bad arguments to library function"
+msgstr "लायबरी फ़लन को निकॄष्ट आरग्य़ूमेन्ट"
+
+#: ../src/html/chm.cpp:342
+msgid "bad signature"
+msgstr "खराब हस्ताक्षर"
+
+#: ../src/common/zipstrm.cpp:1712
+msgid "bad zipfile offset to entry"
+msgstr ""
+
+#: ../src/common/ftp.cpp:381
+msgid "binary"
+msgstr "बायनरी"
+
+#: ../src/common/fontcmn.cpp:696
+msgid "bold"
+msgstr "गहरा"
+
+#: ../src/os2/iniconf.cpp:458
+msgid "buffer is too small for Windows directory."
+msgstr ""
+
+#: ../src/common/ffile.cpp:91
+#, c-format
+msgid "can't close file '%s'"
+msgstr "'%s' फ़ाइल को बन्द नहीं किया जा सकता है"
+
+#: ../src/common/file.cpp:278
+#, c-format
+msgid "can't close file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d को बन्द नहीं किया जा सकता है"
+
+#: ../src/common/file.cpp:544
+#, c-format
+msgid "can't commit changes to file '%s'"
+msgstr "'%s' फ़ाइल पर परिवर्तनों को प्रतिबद्धित नहीं किया जा सकता है"
+
+#: ../src/common/file.cpp:212
+#, c-format
+msgid "can't create file '%s'"
+msgstr "'%s' फ़ाइल का निर्माण किया जा सकता है"
+
+#: ../src/common/fileconf.cpp:1204
+#, c-format
+msgid "can't delete user configuration file '%s'"
+msgstr "'%s' उपयोगकर्ता संरचना फ़ाइल को मिटाय नहीं जा सकता है"
+
+#: ../src/common/file.cpp:450
+#, c-format
+msgid "can't determine if the end of file is reached on descriptor %d"
+msgstr "निश्चय नहीं किया जा सकता है कि %d विवरणकर्ता पर फ़ाइल की समाप्ति पहुँच गयी है"
+
+#: ../src/msdos/utilsdos.cpp:299
+#: ../src/msdos/utilsdos.cpp:458
+#, c-format
+msgid "can't execute '%s'"
+msgstr "'%s' का निष्पादन करने में असफ़ल"
+
+#: ../src/common/zipstrm.cpp:1487
+msgid "can't find central directory in zip"
+msgstr "केन्द्र निर्देशिका को जीज़िप में खोजा नहीं जा सका"
+
+#: ../src/common/file.cpp:420
+#, c-format
+msgid "can't find length of file on file descriptor %d"
+msgstr "%d फ़ाइल विवरणकर्ता पर फ़ाइल की लंबाई को पाया नहीं जा सकता है"
+
+#: ../src/msw/utils.cpp:394
+msgid "can't find user's HOME, using current directory."
+msgstr "वर्तमान निर्देशिका का उपयोग करके, उपयोगकर्ता के गॄह (HOME) को पाया नहीं जा सकता है।"
+
+#: ../src/common/file.cpp:336
+#, c-format
+msgid "can't flush file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d को फ़्लैश नहीं किया जा सकता है"
+
+#: ../src/common/file.cpp:392
+#: ../src/msw/wince/filefnwce.cpp:199
+#, c-format
+msgid "can't get seek position on file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d पर स्थिति को खोजा नहीं जा सकता है"
+
+#: ../src/common/fontmap.cpp:323
+msgid "can't load any font, aborting"
+msgstr "किसी फ़ॉन्ट को लोड नहीं किया जा सकता है, निरस्त किया जा रहा है"
+
+#: ../src/common/file.cpp:264
+#: ../src/common/ffile.cpp:75
+#, c-format
+msgid "can't open file '%s'"
+msgstr "'%s' फ़ाइल को खोला नहीं जा सकता है"
+
+#: ../src/common/fileconf.cpp:404
+#, c-format
+msgid "can't open global configuration file '%s'."
+msgstr "विश्वव्यापी संरचना फ़ाइल '%s' को खोला नहीं जा सकता है।"
+
+#: ../src/common/fileconf.cpp:419
+#, c-format
+msgid "can't open user configuration file '%s'."
+msgstr "उपयोगकर्ता संरचना फ़ाइल '%s' को खोला नहीं जा सकता है।"
+
+#: ../src/common/fileconf.cpp:1046
+msgid "can't open user configuration file."
+msgstr "विश्वव्यापी संरचना फ़ाइल को खोला नहीं जा सकता है।"
+
+#: ../src/common/zipstrm.cpp:528
+msgid "can't re-initialize zlib deflate stream"
+msgstr "जेडलिब् डीफ़्लेट धारा का आरम्भीकरण नहीं किया जा सकता है"
+
+#: ../src/common/zipstrm.cpp:553
+msgid "can't re-initialize zlib inflate stream"
+msgstr "जेडलिब् इनफ़्लेट धारा का आरम्भीकरण नहीं किया जा सकता है"
+
+#: ../src/common/file.cpp:302
+#, c-format
+msgid "can't read from file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d से पढ़ा नहीं जा सकता है"
+
+#: ../src/common/file.cpp:539
+#, c-format
+msgid "can't remove file '%s'"
+msgstr "'%s' फ़ाइल को हटाया नहीं जा सकता है"
+
+#: ../src/common/file.cpp:555
+#, c-format
+msgid "can't remove temporary file '%s'"
+msgstr "'%s' अस्थायी फ़ाइल को हटाया नहीं जा सकता है"
+
+#: ../src/common/file.cpp:378
+#: ../src/msw/wince/filefnwce.cpp:185
+#, c-format
+msgid "can't seek on file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d पर खोज नहीं की जा सकती है"
+
+#: ../src/common/textfile.cpp:279
+#, c-format
+msgid "can't write buffer '%s' to disk."
+msgstr "'%s' बफ़र को डिस्क पर नहीं लिखा जा सकता है।"
+
+#: ../src/common/file.cpp:318
+#, c-format
+msgid "can't write to file descriptor %d"
+msgstr "फ़ाइल विवरणकर्ता %d पर लिखा नहीं जा सकता है"
+
+#: ../src/common/fileconf.cpp:1060
+msgid "can't write user configuration file."
+msgstr "उपयोगकर्ता संरचना फ़ाइल को लिखा नहीं जा सकता है।"
+
+#: ../src/common/intl.cpp:1160
+#, c-format
+msgid "catalog file for domain '%s' not found."
+msgstr "'%s' डोमेन के लिए सूचीपत्र फ़ाइल नहीं मिली।"
+
+#: ../src/html/chm.cpp:346
+msgid "checksum error"
+msgstr "चेकसम त्रुटि"
+
+#: ../src/common/tarstrm.cpp:816
+msgid "checksum failure reading tar header block"
+msgstr ""
+
+#: ../src/html/chm.cpp:348
+msgid "compression error"
+msgstr "संकुचन त्रुटि"
+
+#: ../src/common/regex.cpp:235
+msgid "conversion to 8-bit encoding failed"
+msgstr ""
+
+#: ../src/common/menucmn.cpp:197
+msgid "ctrl"
+msgstr "ctrl"
+
+#: ../src/common/cmdline.cpp:1115
+msgid "date"
+msgstr "तिथि"
+
+#: ../src/html/chm.cpp:350
+msgid "decompression error"
+msgstr "फ़ैलाव त्रुटि"
+
+#: ../src/common/fmapbase.cpp:685
+msgid "default"
+msgstr "डिफ़ाल्ट"
+
+#: ../src/common/xtistrm.cpp:839
+msgid "delegate has no type info"
+msgstr "डेलीगेट के पास कोई प्रकार सूचना नहीं है"
+
+#: ../src/common/debugrpt.cpp:530
+msgid "dump of the process state (binary)"
+msgstr ""
+
+#: ../src/common/datetime.cpp:4030
+msgid "eighteenth"
+msgstr "अठारहवाँ"
+
+#: ../src/common/datetime.cpp:4020
+msgid "eighth"
+msgstr "आठवाँ"
+
+#: ../src/common/datetime.cpp:4023
+msgid "eleventh"
+msgstr "ग्यारहवाँ"
+
+#: ../src/common/strconv.cpp:3488
+#, c-format
+msgid "encoding %i"
+msgstr "encoding %i"
+
+#: ../src/common/fileconf.cpp:1879
+#, c-format
+msgid "entry '%s' appears more than once in group '%s'"
+msgstr "'%s' प्रविष्टी '%s' समूह में एक से अधिक बार आयी है"
+
+#: ../src/html/chm.cpp:344
+msgid "error in data format"
+msgstr "डाटा प्रारूप में त्रुटि"
+
+#: ../src/msdos/utilsdos.cpp:399
+#, c-format
+msgid "error opening '%s'"
+msgstr "'%s' खोलने में त्रुटि"
+
+#: ../src/html/chm.cpp:332
+msgid "error opening file"
+msgstr "फ़ाइल खोलने में त्रुटि"
+
+#: ../src/common/zipstrm.cpp:1573
+msgid "error reading zip central directory"
+msgstr "जीज़िप केन्द्र निर्देशिका को पढ़नें में त्रुटि"
+
+#: ../src/common/zipstrm.cpp:1664
+msgid "error reading zip local header"
+msgstr "जीज़िप स्थानीय शीर्ष को पढ़नें में त्रुटि"
+
+#: ../src/common/zipstrm.cpp:2383
+#, c-format
+msgid "error writing zip entry '%s': bad crc or length"
+msgstr "जीज़िप प्रविष्टी '%s' के लेखन में त्रुटि: निकृष्ट सीआरसी या गलत लंबाई"
+
+#: ../src/msw/dialup.cpp:888
+msgid "establish"
+msgstr "स्थापित"
+
+#: ../src/common/ffile.cpp:172
+#, c-format
+msgid "failed to flush the file '%s'"
+msgstr "'%s' फ़ाइल को फ़्लैश करने में असफ़लता"
+
+#: ../src/common/datetime.cpp:4027
+msgid "fifteenth"
+msgstr "पन्द्रहवाँ"
+
+#: ../src/common/datetime.cpp:4017
+msgid "fifth"
+msgstr "पाँचवाँ"
+
+#: ../src/common/fileconf.cpp:673
+#, c-format
+msgid "file '%s', line %d: '%s' ignored after group header."
+msgstr "फ़ाइल '%s', पंक्ति %d: समूह शीर्ष के उपरान्त '%s' पर ध्यान नहीं दिया गया।"
+
+#: ../src/common/fileconf.cpp:702
+#, c-format
+msgid "file '%s', line %d: '=' expected."
+msgstr "फ़ाइल '%s', पंक्ति %d: '=' की आशा की जाती है।"
+
+#: ../src/common/fileconf.cpp:725
+#, c-format
+msgid "file '%s', line %d: key '%s' was first found at line %d."
+msgstr "फ़ाइल '%s', पंक्ति %d: '%s' कुँजी को सर्वप्रथम %d पंक्ति पर पाया गया था।"
+
+#: ../src/common/fileconf.cpp:715
+#, c-format
+msgid "file '%s', line %d: value for immutable key '%s' ignored."
+msgstr "फ़ाइल '%s', पंक्ति %d: निर्विकल्प कुँजी '%s' के लिए मूल्य पर ध्यान नहीं दिया गया।"
+
+#: ../src/common/fileconf.cpp:637
+#, c-format
+msgid "file '%s': unexpected character %c at line %d."
+msgstr "फ़ाइल '%s': अप्रत्याशित %c शब्द %d पंक्ति पर।"
+
+#: ../src/richtext/richtextbuffer.cpp:5995
+msgid "files"
+msgstr "फ़ाइलें"
+
+#: ../src/common/datetime.cpp:4013
+msgid "first"
+msgstr "प्रथम"
+
+#: ../src/html/helpwnd.cpp:1258
+msgid "font size"
+msgstr "फ़ॉन्ट आकार"
+
+#: ../src/common/datetime.cpp:4026
+msgid "fourteenth"
+msgstr "चौदहवाँ"
+
+#: ../src/common/datetime.cpp:4016
+msgid "fourth"
+msgstr "चौथा"
+
+#: ../src/common/appbase.cpp:354
+msgid "generate verbose log messages"
+msgstr "वर्णनात्मक लॉग संदेशो का जनन करें"
+
+#: ../src/richtext/richtextbuffer.cpp:8665
+#: ../src/richtext/richtextbuffer.cpp:8705
+#: ../src/richtext/richtextbuffer.cpp:8776
+msgid "image"
+msgstr "आकृति"
+
+#: ../src/common/tarstrm.cpp:793
+msgid "incomplete header block in tar"
+msgstr ""
+
+#: ../src/common/xtixml.cpp:476
+msgid "incorrect event handler string, missing dot"
+msgstr "गलत घटना हैन्डलर स्ट्रीनिंग, विलुप्त डॉट"
+
+#: ../src/common/tarstrm.cpp:1369
+msgid "incorrect size given for tar entry"
+msgstr ""
+
+#: ../src/msw/dialup.cpp:888
+msgid "initiate"
+msgstr "शुरू करें"
+
+#: ../src/common/tarstrm.cpp:989
+msgid "invalid data in extended tar header"
+msgstr ""
+
+#: ../src/common/file.cpp:452
+msgid "invalid eof() return value."
+msgstr "eof()  की रीटर्न वैल्यू अवैध।"
+
+#: ../src/generic/logg.cpp:1185
+msgid "invalid message box return value"
+msgstr "अवैध संदेश बॉक्स रीटर्न वैल्यू"
+
+#: ../src/common/zipstrm.cpp:1444
+msgid "invalid zip file"
+msgstr "अवैध जीज़िप फ़ाइल"
+
+#: ../src/common/fontcmn.cpp:701
+msgid "italic"
+msgstr "तिरछा"
+
+#: ../src/common/fontcmn.cpp:691
+msgid "light"
+msgstr "हल्का"
+
+#: ../src/common/intl.cpp:1580
+#, c-format
+msgid "locale '%s' can not be set."
+msgstr "'%s' लोकेल को स्थापित नहीं किया जा सका।"
+
+#: ../src/common/intl.cpp:1151
+#, c-format
+msgid "looking for catalog '%s' in path '%s'."
+msgstr "'%s' सूचीपत्र के लिए '%s' पथ में देखा जा रहा है।"
+
+#: ../src/common/datetime.cpp:4182
+msgid "midnight"
+msgstr "अर्धरात्रि"
+
+#: ../src/common/datetime.cpp:4031
+msgid "nineteenth"
+msgstr "उन्नीसवाँ"
+
+#: ../src/common/datetime.cpp:4021
+msgid "ninth"
+msgstr "नौवाँ"
+
+#: ../src/msw/dde.cpp:1030
+msgid "no DDE error."
+msgstr "कोई डीडीई नहीं त्रुटि।"
+
+#: ../src/html/chm.cpp:328
+msgid "no error"
+msgstr "कोई त्रुटि नहीं"
+
+#: ../src/html/helpdata.cpp:655
+msgid "noname"
+msgstr "कोईनामनहीं"
+
+#: ../src/common/datetime.cpp:4181
+msgid "noon"
+msgstr "दोपहर"
+
+#: ../src/common/cmdline.cpp:1111
+msgid "num"
+msgstr "num"
+
+#: ../src/common/xtixml.cpp:255
+msgid "objects cannot have XML Text Nodes"
+msgstr "एक्सएमएल पाठ नोडो को ऑबजेक्ट नहीं रख सकते है"
+
+#: ../src/html/chm.cpp:340
+msgid "out of memory"
+msgstr "स्मॄति समाप्त"
+
+#: ../src/common/debugrpt.cpp:506
+msgid "process context description"
+msgstr "प्रक्रम संदर्भ वर्णन"
+
+#: ../src/html/chm.cpp:334
+msgid "read error"
+msgstr "पठन त्रुटि"
+
+#: ../src/common/filename.cpp:180
+msgid "reading"
+msgstr "पढ़ा जा रहा है"
+
+#: ../src/common/zipstrm.cpp:1876
+#, c-format
+msgid "reading zip stream (entry %s): bad crc"
+msgstr "जीज़िप धारा को पढ़ा जा रहा है (प्रविष्टी %s): निकृष्ट सीआरसी"
+
+#: ../src/common/zipstrm.cpp:1873
+#, c-format
+msgid "reading zip stream (entry %s): bad length"
+msgstr "जीज़िप धारा को पढ़ा जा रहा है (प्रविष्टी  %s): गलत लंबाई"
+
+#: ../src/msw/dde.cpp:1073
+msgid "reentrancy problem."
+msgstr "पुनःअन्दर आने की समस्या।"
+
+#: ../src/common/datetime.cpp:4014
+msgid "second"
+msgstr "सेकन्ड"
+
+#: ../src/html/chm.cpp:338
+msgid "seek error"
+msgstr "खोज त्रुटि"
+
+#: ../src/common/datetime.cpp:4029
+msgid "seventeenth"
+msgstr "सत्रहवाँ"
+
+#: ../src/common/datetime.cpp:4019
+msgid "seventh"
+msgstr "सातवाँ"
+
+#: ../src/common/menucmn.cpp:201
+msgid "shift"
+msgstr "shift"
+
+#: ../src/common/appbase.cpp:344
+msgid "show this help message"
+msgstr "इस सहायता संदेश को दिखाएँ"
+
+#: ../src/common/datetime.cpp:4028
+msgid "sixteenth"
+msgstr "सोलहवाँ"
+
+#: ../src/common/datetime.cpp:4018
+msgid "sixth"
+msgstr "छठवाँ"
+
+#: ../src/common/appcmn.cpp:244
+msgid "specify display mode to use (e.g. 640x480-16)"
+msgstr "उपयोगार्थ अवलोकन विधा को निर्दिष्ट करें (उदाहरण हेतु ६४०x४८०-१६)"
+
+#: ../src/common/appcmn.cpp:230
+msgid "specify the theme to use"
+msgstr "उपयोगार्थ थीम को निर्दिष्ट करें"
+
+#: ../src/common/zipstrm.cpp:1779
+msgid "stored file length not in Zip header"
+msgstr "सुरक्षित फ़ाइल की लंबाई जीज़िप शीर्ष में नहीं है"
+
+#: ../src/common/cmdline.cpp:1107
+msgid "str"
+msgstr "str"
+
+#: ../src/common/tarstrm.cpp:999
+#: ../src/common/tarstrm.cpp:1021
+#: ../src/common/tarstrm.cpp:1490
+#: ../src/common/tarstrm.cpp:1512
+msgid "tar entry not open"
+msgstr ""
+
+#: ../src/common/datetime.cpp:4022
+msgid "tenth"
+msgstr "दसवाँ"
+
+#: ../src/msw/dde.cpp:1037
+msgid "the response to the transaction caused the DDE_FBUSY bit to be set."
+msgstr "इस कार्य संपादन को दिये हुए उत्तर ने DDE_FBUSY बिट् को स्थापित कर दिया।"
+
+#: ../src/common/datetime.cpp:4015
+msgid "third"
+msgstr "तीसरा"
+
+#: ../src/common/datetime.cpp:4025
+msgid "thirteenth"
+msgstr "तेरहवाँ"
+
+#: ../src/common/imagtiff.cpp:174
+#: ../src/common/imagtiff.cpp:190
+#, c-format
+msgid "tiff module: %s"
+msgstr "टिफ़्फ़ माड्यूल: %s"
+
+#: ../src/common/datetime.cpp:3838
+msgid "today"
+msgstr "आज"
+
+#: ../src/common/datetime.cpp:3840
+msgid "tomorrow"
+msgstr "कल"
+
+#: ../src/gtk/aboutdlg.cpp:153
+msgid "translator-credits"
+msgstr "अनुवाद श्रेय"
+
+#: ../src/common/datetime.cpp:4024
+msgid "twelfth"
+msgstr "बारहवाँ"
+
+#: ../src/common/datetime.cpp:4032
+msgid "twentieth"
+msgstr "बीसवाँ"
+
+#: ../src/common/fontcmn.cpp:602
+#: ../src/common/fontcmn.cpp:687
+msgid "underlined"
+msgstr "रेखांकित"
+
+#: ../src/common/fileconf.cpp:2006
+#, c-format
+msgid "unexpected \" at position %d in '%s'."
+msgstr "अप्रत्याशित \" %d पर '%s' में ।"
+
+#: ../src/common/tarstrm.cpp:1040
+msgid "unexpected end of file"
+msgstr "अनपेक्षित फ़ाइल अंत"
+
+#: ../src/common/tarstrm.cpp:369
+#: ../src/common/tarstrm.cpp:392
+#: ../src/common/tarstrm.cpp:423
+#: ../src/generic/progdlgg.cpp:301
+msgid "unknown"
+msgstr "अज्ञात"
+
+#: ../src/common/xtixml.cpp:249
+#, c-format
+msgid "unknown class %s"
+msgstr "अज्ञात वर्ग %s"
+
+#: ../src/common/regex.cpp:257
+#: ../src/html/chm.cpp:352
+msgid "unknown error"
+msgstr "अज्ञात त्रुटि"
+
+#: ../src/msw/dialup.cpp:495
+#, c-format
+msgid "unknown error (error code %08x)."
+msgstr "अज्ञात त्रुटि (त्रुटि कूट %08x)।"
+
+#: ../src/common/textbuf.cpp:229
+msgid "unknown line terminator"
+msgstr "अज्ञात पंक्ति टर्मिनेटर"
+
+#: ../src/common/file.cpp:360
+#: ../src/msw/wince/filefnwce.cpp:167
+msgid "unknown seek origin"
+msgstr "अज्ञात खोज मूल"
+
+#: ../src/common/fmapbase.cpp:699
+#, c-format
+msgid "unknown-%d"
+msgstr "अज्ञात-%d"
+
+#: ../src/common/docview.cpp:428
+msgid "unnamed"
+msgstr "बिनानामदियाहुआ"
+
+#: ../src/common/docview.cpp:1414
+#, c-format
+msgid "unnamed%d"
+msgstr "बिनानामदियाहुआ %d"
+
+#: ../src/common/zipstrm.cpp:1793
+#: ../src/common/zipstrm.cpp:2174
+msgid "unsupported Zip compression method"
+msgstr "असमर्थित जीज़िप संकुचन विधि"
+
+#: ../src/common/intl.cpp:1166
+#, c-format
+msgid "using catalog '%s' from '%s'."
+msgstr "'%s' से '%s' तक सूचीपत्र का उपयोग किया जा रहा है।"
+
+#: ../src/html/chm.cpp:336
+msgid "write error"
+msgstr "लेखन त्रुटि"
+
+#: ../src/common/filename.cpp:180
+msgid "writing"
+msgstr "लिखा जा रहा है"
+
+#: ../src/common/stopwatch.cpp:289
+msgid "wxGetTimeOfDay failed."
+msgstr "wxGetTimeOfDay असफ़ल रहा।"
+
+#: ../include/wx/richtext/richtextbulletspage.h:34
+msgid "wxRichTextBulletsPage"
+msgstr "wxRichTextBulletsPage"
+
+#: ../include/wx/richtext/richtextindentspage.h:37
+#: ../include/wx/richtext/richtextfontpage.h:38
+#: ../include/wx/richtext/richtexttabspage.h:35
+msgid "wxRichTextFontPage"
+msgstr "wxRichTextFontPage"
+
+#: ../include/wx/richtext/richtextliststylepage.h:31
+msgid "wxRichTextListStylePage"
+msgstr "wxRichTextListStylePage"
+
+#: ../include/wx/richtext/richtextstylepage.h:21
+msgid "wxRichTextStylePage"
+msgstr "wxRichTextStylePage"
+
+#: ../src/common/socket.cpp:412
+#: ../src/common/socket.cpp:466
+msgid "wxSocket: invalid signature in ReadMsg."
+msgstr "wxSocket: ReadMsg में अवैध हस्ताक्षर।"
+
+#: ../src/common/socket.cpp:993
+msgid "wxSocket: unknown event!."
+msgstr "wxSocket: अज्ञात घटना!"
+
+#: ../src/motif/app.cpp:273
+#, c-format
+msgid "wxWidgets could not open display for '%s': exiting."
+msgstr "wxWidgets '%s' के लिए अवलोकन को खोल नहीं पाया: बाहर निकल रहा है।"
+
+#: ../src/x11/app.cpp:170
+msgid "wxWidgets could not open display. Exiting."
+msgstr "wxWidgets के लिए अवलोकन को खोल नहीं पाया: बाहर निकल रहा है।"
+
+#: ../src/richtext/richtextsymboldlg.cpp:433
+msgid "xxxx"
+msgstr "xxxx"
+
+#: ../src/common/datetime.cpp:3839
+msgid "yesterday"
+msgstr "बीताहुआकल"
+
+#: ../src/common/zstream.cpp:245
+#: ../src/common/zstream.cpp:413
+#, c-format
+msgid "zlib error %d"
+msgstr "ज़ेडलिब त्रुटि  %d"
+
+#: ../src/common/prntbase.cpp:1124
+msgid "|<<"
+msgstr "।<<"
+
+#: ../src/richtext/richtextliststylepage.cpp:498
+#: ../src/richtext/richtextbulletspage.cpp:296
+msgid "~"
+msgstr "~"
+
+#, fuzzy
+#~ msgid "Help : %s"
+#~ msgstr "सहायता: %s"
+
+#, fuzzy
+#~ msgid "Search!"
+#~ msgstr "खोजें"
+#~ msgid "."
+#~ msgstr "."
+#~ msgid ".."
+#~ msgstr ".."
+#~ msgid "Cannot open URL '%s'"
+#~ msgstr "'%s' यूआरएल को नहीं खोला जा सका"
+#~ msgid "Error "
+#~ msgstr "त्रुटि "
+#~ msgid "Failed to create directory %s/.gnome."
+#~ msgstr "%s/.gnome निर्देशिका का निर्माण करने में असफ़ल।"
+#~ msgid "Failed to create directory %s/mime-info."
+#~ msgstr "%s/mime-info निर्देशिका का निर्माण करने में असफ़ल।"
+#~ msgid "Mailcap file %s, line %d: incomplete entry ignored."
+#~ msgstr "मेलकैप फ़ाइल %s, लाइन %d: अधूरी प्रविष्टी पर ध्यान नहीं दिया गया।"
+#~ msgid "Mime.types file %s, line %d: unterminated quoted string."
+#~ msgstr "माइम.टाइप्स फ़ाइल %s, लाइन %d: असमाप्त क्वोट श्रेणी।"
+#~ msgid "Unknown field in file %s, line %d: '%s'."
+#~ msgstr "%s फ़ाइल में %d पंक्ति पर अज्ञात प्रविष्टी: '%s'।"
+#~ msgid "bold "
+#~ msgstr "गहरा "
+#~ msgid "can't query for GUI plugins name in console applications"
+#~ msgstr "कन्सोल ऐप्लीकेशनो में जीयूआई प्लग-इनों के नाम के लिए पूछा नहीं जा सकता है"
+#~ msgid "light "
+#~ msgstr "हल्का "
+#~ msgid "underlined "
+#~ msgstr "रेखांकित "
+
+#, fuzzy
+#~ msgid "unsupported zip archive"
+#~ msgstr "जीज़िप शीर्ष में असमर्थित ध्वज"
+
+#, fuzzy
+#~ msgid ""
+#~ "Failed to get stack backtrace:\n"
+#~ "%s"
+#~ msgstr "आईएसपी नामों को प्राप्त करने में असफ़ल: %s"
+#~ msgid "Loading Grey Ascii PNM image is not yet implemented."
+#~ msgstr ""
+#~ "ग्रे आस्की पीएनएम आकृति का लोड किया जाना अभी तक क्रियान्वित नहीं किया गया है।"
+#~ msgid "Loading Grey Raw PNM image is not yet implemented."
+#~ msgstr "ग्रे रॉ पीएनएम आकृति का लोड किया जाना अभी तक क्रियान्वित नहीं किया गया है।"
+
+#, fuzzy
+#~ msgid "Cannot wait on thread to exit."
+#~ msgstr "थ्रेड समाप्ति की प्रतीक्षा नहीं की जा सकती है"
+#~ msgid "Could not load Rich Edit DLL '%s'"
+#~ msgstr "'%s' रिच ऐडिट डीएलएल को नहीं लोड किया जा सका"
+#~ msgid "ZIP handler currently supports only local files!"
+#~ msgstr "ज़िप हैन्डलर वर्तमान में सिर्फ़ स्थानीय फ़ाइलों को ही समर्थित करता है!"
+
+#, fuzzy
+#~ msgid ""
+#~ "can't seek on file descriptor %d, large files support is not enabled."
+#~ msgstr "फ़ाइल विवरणकर्ता %d पर खोज नहीं की जा सकती है"
+#~ msgid "More..."
+#~ msgstr "और अधिक..."
+#~ msgid "Setup"
+#~ msgstr "स्थापना"
+#~ msgid "/#SYSTEM"
+#~ msgstr "/#SYSTEM"
+#~ msgid "Backward"
+#~ msgstr "पीछे की ओर"
+#~ msgid "GetUnusedColour:: No Unused Color in image "
+#~ msgstr "GetUnusedColour:: आकॄति में कोई बिनाउपयोग का रंग नहीं "
+#~ msgid ""
+#~ "Can't create list control window, check that comctl32.dll is installed."
+#~ msgstr ""
+#~ "सूची नियंत्रण खिड़की का निर्माण नहीं किया जा सकता है, जाँच करें कि comctl32.dll "
+#~ "संसाधित है।"
+#~ msgid "Can't delete value of key '%s'"
+#~ msgstr "'%s' कुँजी के मूल्य को हटाया नहीं जा सकता है"
+#~ msgid "gmtime() failed"
+#~ msgstr "gmtime() असफ़ल रहा"
+#~ msgid "mktime() failed"
+#~ msgstr "mktime() असफ़ल रहा"
+#~ msgid "Invalid display mode । '%s'."
+#~ msgstr "अवैध अवलोकन विधा । '%s' ।"
+

@@ -1,0 +1,9 @@
+#define CxxRules()					@@\
+							@@\
+CxxSuffixRules()		
+
+#define CxxSuffixRules()				@@\
+.SUFFIX: .C .o						@@\
+.C.o:							@@\
+	$(CXX) $(CFLAGS) $(EXTRA_FLAGS) -c $<
+

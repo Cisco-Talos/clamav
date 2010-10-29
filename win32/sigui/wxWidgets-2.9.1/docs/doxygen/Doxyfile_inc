@@ -1,0 +1,474 @@
+#############################################################################
+## Name:        Doxyfile_inc
+## Purpose:     Main configuration file for the wxWidgets manual
+## Author:      Francesco Montorsi
+## RCS-ID:      $Id$
+## Licence:     wxWindows licence
+#############################################################################
+
+#---------------------------------------------------------------------------
+# Project Options
+#---------------------------------------------------------------------------
+
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = wxWidgets
+PROJECT_NUMBER         = 2.9.1
+OUTPUT_DIRECTORY       = out
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = English
+BRIEF_MEMBER_DESC      = YES
+REPEAT_BRIEF           = YES
+ABBREVIATE_BRIEF       =
+ALWAYS_DETAILED_SEC    = YES
+INLINE_INHERITED_MEMB  = NO
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = "$(WXWIDGETS)/"
+STRIP_FROM_INC_PATH    = "$(WXWIDGETS)/include/" \
+                         "$(WXWIDGETS)/interface/"
+SHORT_NAMES            = NO
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+MULTILINE_CPP_IS_BRIEF = NO
+INHERIT_DOCS           = YES
+SEPARATE_MEMBER_PAGES  = NO
+TAB_SIZE               = 4
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_OUTPUT_VHDL   = NO
+BUILTIN_STL_SUPPORT    = NO
+CPP_CLI_SUPPORT        = NO
+SIP_SUPPORT            = NO
+IDL_PROPERTY_SUPPORT   = NO
+DISTRIBUTE_GROUP_DOC   = YES
+SUBGROUPING            = YES
+TYPEDEF_HIDES_STRUCT   = NO
+SYMBOL_CACHE_SIZE      = 0
+
+# This is the most important part of the wxWidgets Doxyfile; aliases allow
+# us to keep the headers readable and "implement" wxWidgets-specific commands:
+
+#---------------------------------------------------------------------------
+# Aliases - for use when documenting C++ classes
+#---------------------------------------------------------------------------
+
+# aliases to be used by classes which emit wxEvents (e.g. wxWindow, wxTextCtrl, etc):
+ALIASES = beginEventEmissionTable="\n<h2>Events emitted by this class</h2><p>Event macros for events emitted by this class:</p><div>"
+ALIASES += beginEventEmissionTable{1}="\n<h2>Events emitted by this class</h2><p>The following event handler macros redirect the events to member function handlers '<b>func</b>' with prototypes like: <div class='eventHandler'><span>void&nbsp;handlerFuncName(\1&&nbsp;event)</span></div></p>Event macros for events emitted by this class:<div>"
+ALIASES += beginEventEmissionTable{2}="\n<h2>Events emitted by this class</h2><p>The following event handler macros redirect the events to member function handlers '<b>func</b>' with prototypes like: <div class='eventHandler'><span>void&nbsp;handlerFuncName(\1&&nbsp;event)</span> or <span>void&nbsp;handlerFuncName(\2&&nbsp;event)</span></div></p>Event macros for events emitted by this class:<div>"
+
+# aliases to be used in wxEvent-derived classes:
+ALIASES += beginEventTable{1}="\n<h2>Events using this class</h2><p>The following event handler macros redirect the events to member function handlers '<b>func</b>' with prototypes like: <div class='eventHandler'><span>void&nbsp;handlerFuncName(\1&&nbsp;event)</span></div></p>Event macros:<div>"
+ALIASES += beginEventTable{2}="\n<h2>Events using this class</h2><p>The following event handler macros redirect the events to member function handlers '<b>func</b>' with prototypes like: <div class='eventHandler'><span>void&nbsp;handlerFuncName(\1&&nbsp;event)</span> or <span>void&nbsp;handlerFuncName(\2&&nbsp;event)</span></div></p>Event macros:<div>"
+
+# common event aliases:
+ALIASES += event{1}="</div>\li <span class='event'>\1</span>:<div class='eventDesc'>"
+ALIASES += event{2}="</div>\li <span class='event'>\1, \2</span>:<div class='eventDesc'>"
+ALIASES += event{3}="</div>\li <span class='event'>\1, \2, \3</span>:<div class='eventDesc'>"
+ALIASES += event{4}="</div>\li <span class='event'>\1, \2, \3, \4</span>:<div class='eventDesc'>"
+ALIASES += endEventTable="</div>\n"
+
+# style aliases
+ALIASES += beginStyleTable="\n<h2>Styles</h2><p>This class supports the following styles:</p><div>"
+ALIASES += style{1}="</div>\li <span class='style'>\1</span>:<div class='styleDesc'>"
+ALIASES += endStyleTable="</div>\n"
+
+# extra style aliases
+ALIASES += beginExtraStyleTable="\n<hr><h2>Extra styles</h2><p>This class supports the following extra styles:</p><div>"
+ALIASES += endExtraStyleTable="</div>\n"
+
+# flag aliases
+ALIASES += beginFlagTable="<div>"
+ALIASES += flag{1}="</div>\li <span class='flag'>\1</span>:<div class='flagDesc'>"
+ALIASES += endFlagTable="</div>\n"
+
+# creates appearance section: this should be used for all main GUI controls
+ALIASES += appearance{1}="\htmlonly <br><div><span class='appearance'>Appearance:</span><br><table class='appearance'><tr><td><img src='wxmsw/\1' alt='wxMSW appearance' class='appearance'/></td><td><img src='wxgtk/\1' alt='wxGTK appearance' class='appearance'/></td><td><img src='wxmac/\1' alt='wxMac appearance' class='appearance'/></td></tr><tr><td>wxMSW appearance</td><td>wxGTK appearance</td><td>wxMac appearance</td></tr></table></div> \endhtmlonly"
+
+# aliases for the creation of "named member groups"
+# USAGE: the first argument must not contain spaces and be a unique identifier 
+#        of the member group for the class being documented;
+#        the second argument is the member group name and can contain spaces
+#        See wxString as an usage example.
+# NOTE: no warnings are given for wrong member group names so be careful and check
+#       the doxygen output to verify that there are no typos
+ALIASES += member_group_name{2}="<a name='\1'></a> \name \2"
+ALIASES += ref_member_group{2}="<a href='#\1' class='el'>\2</a>"
+
+
+#---------------------------------------------------------------------------
+# Aliases - for use when documenting any C++ entity
+#---------------------------------------------------------------------------
+
+# aliases for additional wx-specific infos
+ALIASES += category{1}="\ingroup group_class_\1 \n<div><span class='category'>Category:</span>&nbsp;&nbsp;<span class='category_text'>\ref group_class_\1</span></div>"
+ALIASES += category{2}="\ingroup group_class_\1 group_class_\2 \n<div><span class='category'>Category:</span>&nbsp;&nbsp;<span class='category_text'>\ref group_class_\1, \ref group_class_\2</span></div>"
+ALIASES += category{3}="\ingroup group_class_\1 group_class_\2 group_class_\3 \n<div><span class='category'>Category:</span>&nbsp;&nbsp;<span class='category_text'>\ref group_class_\1, \ref group_class_\2, \ref group_class_\3</span></div>"
+ALIASES += library{1}="<h2></h2><div><span class='lib'>Library:</span>&nbsp;&nbsp;<span class='lib_text'>\ref page_libs_\1</span></div>"
+ALIASES += nolibrary="<h2></h2><div><span class='lib'>Library:</span>&nbsp;&nbsp;<span class='lib_text'>None; this class implementation is entirely header-based.</span></div>"
+ALIASES += stdobjects="<span class='stdobj'>Predefined objects/pointers:</span>"
+
+# native implementation infos:
+ALIASES += nativeimpl{1}="<div><span class='impl'>Implementations:</span>&nbsp;&nbsp;native under \ref page_port_\1 port; a generic implementation is used elsewhere.</div>"
+ALIASES += nativeimpl{2}="<div><span class='impl'>Implementations:</span>&nbsp;&nbsp;native under \ref page_port_\1, \ref page_port_\2 ports; a generic implementation is used elsewhere.</div>"
+ALIASES += nativeimpl{3}="<div><span class='impl'>Implementations:</span>&nbsp;&nbsp;native under \ref page_port_\1, \ref page_port_\2, \ref page_port_\3 ports; a generic implementation is used elsewhere.</div>"
+ALIASES += nativeimpl{4}="<div><span class='impl'>Implementations:</span>&nbsp;&nbsp;native under \ref page_port_\1, \ref page_port_\2, \ref page_port_\3, \ref page_port_\4 ports; a generic implementation is used elsewhere.</div>"
+
+# onlyfor infos:
+# NOTE: we need to be able to retrieve these infos also from the XML output, thus
+#       we use the \xmlonly and \endxmlonly commands to include custom XML tags
+ALIASES += onlyfor{1}="<div><span class='avail'>Availability:</span>&nbsp;&nbsp;only available for the \ref page_port_\1 port.</div>       \xmlonly <onlyfor>\1</onlyfor> \endxmlonly"
+ALIASES += onlyfor{2}="<div><span class='avail'>Availability:</span>&nbsp;&nbsp;only available for the \ref page_port_\1, \ref page_port_\2 ports.</div>       \xmlonly <onlyfor>\1,\2</onlyfor> \endxmlonly"
+ALIASES += onlyfor{3}="<div><span class='avail'>Availability:</span>&nbsp;&nbsp;only available for the \ref page_port_\1, \ref page_port_\2, \ref page_port_\3 ports.</div>       \xmlonly <onlyfor>\1,\2,\3</onlyfor> \endxmlonly"
+ALIASES += onlyfor{4}="<div><span class='avail'>Availability:</span>&nbsp;&nbsp;only available for the \ref page_port_\1, \ref page_port_\2, \ref page_port_\3, \ref page_port_\4 ports.</div>       \xmlonly <onlyfor>\1,\2,\3,\4</onlyfor> \endxmlonly"
+
+# Use this in grouped global functions, and macros since they
+# wouldn't otherwise indicate what header they are defined in.
+ALIASES += header{1}="Include file:\n \verbatim #include <\1> \endverbatim"
+
+# some formatting aliases
+ALIASES += true="<span class='literal'>true</span>"
+ALIASES += false="<span class='literal'>false</span>"
+ALIASES += NULL="<span class='literal'>NULL</span>"
+ALIASES += NUL="<span class='literal'>NUL</span>"
+
+# NOTE: these are important as you can't write in the docs
+#       just #ifdef since the # character is used by Doxygen
+#       for explicit linking; use the following aliases instead!
+#       However to avoid overwriting e.g. \if Doxygen command the _
+#       character is postfixed
+ALIASES += ifdef_="<span class='literal'>\#ifdef</span>"
+ALIASES += ifndef_="<span class='literal'>\#ifndef</span>"
+ALIASES += if_="<span class='literal'>\#if</span>"
+ALIASES += endif_="<span class='literal'>\#endif</span>"
+
+# table aliases for 2 and 3 column tables
+ALIASES += beginTable="<table class='doctable' border='1' cellspacing='0' cellpadding='3'>"
+ALIASES += beginInvisibleTable="<table class='doctable' border='0' cellspacing='0' cellpadding='4'>"
+ALIASES += row2col{2}="<tr><td>\1</td> <td>\2</td></tr>"
+ALIASES += row2col{3}="<tr><td>\1</td> <td>\2,\3</td></tr>"
+ALIASES += row2col{4}="<tr><td>\1</td> <td>\2,\3,\4</td></tr>"
+ALIASES += row2col{5}="<tr><td>\1</td> <td>\2,\3,\4,\5</td></tr>"
+ALIASES += row2col{6}="<tr><td>\1</td> <td>\2,\3,\4,\5,\6</td></tr>"
+ALIASES += row2col{7}="<tr><td>\1</td> <td>\2,\3,\4,\5,\6,\7</td></tr>"
+ALIASES += row2col{8}="<tr><td>\1</td> <td>\2,\3,\4,\5,\6,\7,\8</td></tr>"
+ALIASES += row2col{9}="<tr><td>\1</td> <td>\2,\3,\4,\5,\6,\7,\8,\9</td></tr>"
+ALIASES += row2col{10}="<tr><td>\1</td> <td>\2,\3,\4,\5,\6,\7,\8,\9,\10</td></tr>"
+ALIASES += row3col{3}="<tr><td>\1</td> <td>\2</td> <td>\3</td></tr>"
+ALIASES += row3col{4}="<tr><td>\1</td> <td>\2</td> <td>\3,\4</td></tr>"
+ALIASES += row3col{5}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5</td></tr>"
+ALIASES += row3col{6}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5,\6</td></tr>"
+ALIASES += row3col{7}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5,\6,\7</td></tr>"
+ALIASES += row3col{8}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5,\6,\7,\8</td></tr>"
+ALIASES += row3col{9}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5,\6,\7,\8,\9</td></tr>"
+ALIASES += row3col{10}="<tr><td>\1</td> <td>\2</td> <td>\3,\4,\5,\6,\7,\8,\9,\10</td></tr>"
+ALIASES += hdr3col{3}="<tr><th>\1</th> <th>\2</th> <th>\3</th></tr>"
+ALIASES += endTable="</table>"
+
+# definition list aliases
+# a definition list currently is rendered as 2-column table but it may use as
+# well the <dl>, <dt> and <dd> HTML tags in future.
+# In any case a definition list differs from a table because of its semantic
+# nature and because it is always the association of a "title" with a "description"
+# (in contrast a table may have more than 2 columns of data)...
+ALIASES += beginDefList="<table class='doclist' border='1' cellspacing='0'>"
+ALIASES += itemdef{2}="<tr><td><span class='itemdef'>\1</span></td> <td>\2</td></tr>"
+ALIASES += itemdef{3}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3</td></tr>"
+ALIASES += itemdef{4}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4</td></tr>"
+ALIASES += itemdef{5}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5</td></tr>"
+ALIASES += itemdef{6}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5,\6</td></tr>"
+ALIASES += itemdef{7}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5,\6,\7</td></tr>"
+ALIASES += itemdef{8}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5,\6,\7,\8</td></tr>"
+ALIASES += itemdef{9}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5,\6,\7,\8,\9</td></tr>"
+ALIASES += itemdef{10}="<tr><td><span class='itemdef'>\1</span></td> <td>\2,\3,\4,\5,\6,\7,\8,\9,\10</td></tr>"
+ALIASES += endDefList="</table>"
+ALIASES += stock{3}="<tr><td><span class='itemdef'>\1</span></td> <td> @image html gtk-\2.png\n</td><td>\3</td></tr>"
+
+#---------------------------------------------------------------------------
+# Aliases - for use when documenting wxPerl/wxPython-specific parts
+#---------------------------------------------------------------------------
+
+# See ENABLED_SECTIONS configuration key for more info about these:
+ALIASES += beginWxPerlOnly="\if WXPERL_MANUAL <b>wxPerl Note:</b> "
+ALIASES += endWxPerlOnly="\endif"
+ALIASES += beginWxPythonOnly="\if WXPYTHON_MANUAL <b>wxPython Note:</b> "
+ALIASES += endWxPythonOnly="\endif"
+
+# This is to get around a bug in Doxygen that prevents use of '{' or '}'
+# inside of any aliased command in parameters.
+ALIASES += leftCurly="{"
+ALIASES += rightCurly="}"
+
+#---------------------------------------------------------------------------
+# Aliases - for use when documenting samples
+#---------------------------------------------------------------------------
+
+# For indicating a sample location
+ALIASES += sampledir{1}="@e Location: @c samples/\1 subdirectory of your wxWidgets installation or http://svn.wxwidgets.org/viewvc/wx/wxWidgets/trunk/\1"
+
+# For refering to the corresponding sample in a class document or a overview
+# Usually placed in the queue of @see
+ALIASES += sample{1}="\ref page_samples_\1"
+
+# For generating a general description for a sample
+# \1 could be a class or an overview or a descriptive sentence
+# Shall be replaced by manual written description soon
+ALIASES += sampleabout{1}="This sample demonstrates \1."
+
+# For indicating the necessary condition of a sample or a class
+# \1 is the wxUSE_XXX macro
+ALIASES += buildwith{1}="<b>Build Note:</b> You may need to build the wxWidgets library with <tt>\1</tt> being set to 1 to be able to make it work, please read comments in @c <wx/setup_inc.h> for more info."
+ALIASES += buildwith{2}="<b>Build Note:</b> You may need to build the wxWidgets library with <tt>\1</tt> and <tt>\2</tt> being set to 1 to be able to make it work, please read comments in @c <wx/setup_inc.h> for more info."
+
+#---------------------------------------------------------------------------
+# Build Options
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = NO
+EXTRACT_ANON_NSPACES   = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+HIDE_FRIEND_COMPOUNDS  = NO
+HIDE_IN_BODY_DOCS      = NO
+INTERNAL_DOCS          = NO
+CASE_SENSE_NAMES       = NO
+HIDE_SCOPE_NAMES       = NO
+SHOW_INCLUDE_FILES     = YES
+INLINE_INFO            = YES
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = NO  # Don't set to YES, it renders our named groups out of order.
+SORT_GROUP_NAMES       = YES
+SORT_BY_SCOPE_NAME     = NO
+GENERATE_TODOLIST      = YES
+GENERATE_TESTLIST      = YES
+GENERATE_BUGLIST       = YES
+GENERATE_DEPRECATEDLIST= YES
+
+# can contain WXPERL_MANUAL, WXPYTHON_MANUAL keywords
+ENABLED_SECTIONS       = WXPERL_MANUAL WXPYTHON_MANUAL
+
+MAX_INITIALIZER_LINES  = 30
+SHOW_USED_FILES        = NO
+SHOW_DIRECTORIES       = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = NO
+FILE_VERSION_FILTER    =
+LAYOUT_FILE            = DoxygenLayout.xml
+
+#---------------------------------------------------------------------------
+# Warning and Progress Message Options
+#---------------------------------------------------------------------------
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text   "
+WARN_LOGFILE           = doxygen.log
+
+#---------------------------------------------------------------------------
+# Input File Options
+#---------------------------------------------------------------------------
+
+INPUT                  = ./mainpages ./groups ./overviews ../../interface
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          = *.h *.txt
+RECURSIVE              = YES
+EXCLUDE                =
+EXCLUDE_SYMLINKS       = NO
+EXCLUDE_PATTERNS       =
+EXCLUDE_SYMBOLS        =
+EXAMPLE_PATH           = ../
+EXAMPLE_PATTERNS       = *
+EXAMPLE_RECURSIVE      = NO
+IMAGE_PATH             = images
+INPUT_FILTER           =
+FILTER_PATTERNS        =
+FILTER_SOURCE_FILES    = NO
+
+#---------------------------------------------------------------------------
+# Source Browsing Options
+#---------------------------------------------------------------------------
+
+SOURCE_BROWSER         = NO
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = NO
+REFERENCES_RELATION    = NO
+REFERENCES_LINK_SOURCE = YES
+USE_HTAGS              = NO
+VERBATIM_HEADERS       = NO
+
+#---------------------------------------------------------------------------
+# Alphabetical Class Index Options
+#---------------------------------------------------------------------------
+
+ALPHABETICAL_INDEX     = YES
+COLS_IN_ALPHA_INDEX    = 5
+IGNORE_PREFIX          = wx
+
+#---------------------------------------------------------------------------
+# configuration options related to the HTML output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = NO # Only change in format output configs
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            = htmlheader.inc
+HTML_FOOTER            = htmlfooter.inc
+HTML_STYLESHEET        =
+HTML_ALIGN_MEMBERS     = YES
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_DOCSET        = NO # Only change in format output configs
+DOCSET_FEEDNAME        = "wxWidgets"
+DOCSET_BUNDLE_ID       = org.wxwidgets.doxygen
+GENERATE_HTMLHELP      = NO # Only change in format output configs
+CHM_FILE               = ..\wx.chm # NOTE: Windows style separator needed
+HHC_LOCATION           = hhc.exe # Don't modify, see Doxyfile_chm for info
+GENERATE_CHI           = NO
+BINARY_TOC             = NO
+TOC_EXPAND             = NO
+GENERATE_QHP           = NO
+QCH_FILE               =
+QHP_NAMESPACE          = org.wxwidgets.doxygen
+QHP_VIRTUAL_FOLDER     = doc
+QHG_LOCATION           =
+DISABLE_INDEX          = NO
+ENUM_VALUES_PER_LINE   = 1
+GENERATE_TREEVIEW      = NONE
+TREEVIEW_WIDTH         = 250
+FORMULA_FONTSIZE       = 10
+
+#---------------------------------------------------------------------------
+# LaTeX Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = NO # Only change in format output configs
+LATEX_OUTPUT           = latex
+LATEX_CMD_NAME         = latex
+MAKEINDEX_CMD_NAME     = makeindex
+COMPACT_LATEX          = NO
+PAPER_TYPE             = a4wide
+EXTRA_PACKAGES         =
+LATEX_HEADER           = latexdocstart.inc
+PDF_HYPERLINKS         = YES
+USE_PDFLATEX           = YES
+LATEX_BATCHMODE        = YES
+LATEX_HIDE_INDICES     = NO
+
+#---------------------------------------------------------------------------
+# RTF Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_RTF           = NO # Only change in format output configs
+RTF_OUTPUT             = rtf
+COMPACT_RTF            = NO
+RTF_HYPERLINKS         = NO
+RTF_STYLESHEET_FILE    =
+RTF_EXTENSIONS_FILE    =
+
+#---------------------------------------------------------------------------
+# Man Page Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_MAN           = NO # Only change in format output configs
+MAN_OUTPUT             = man
+MAN_EXTENSION          = .3
+MAN_LINKS              = NO
+
+#---------------------------------------------------------------------------
+# XML Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_XML           = NO # Only change in format output configs
+XML_OUTPUT             = xml
+XML_SCHEMA             =
+XML_DTD                =
+XML_PROGRAMLISTING     = NO
+
+#---------------------------------------------------------------------------
+# AutoGen Definitions Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_AUTOGEN_DEF   = NO # Only change in format output configs
+
+#---------------------------------------------------------------------------
+# Perl Module Output Options
+#---------------------------------------------------------------------------
+
+GENERATE_PERLMOD       = NO # Only change in format output configs
+PERLMOD_LATEX          = YES
+PERLMOD_PRETTY         = YES
+PERLMOD_MAKEVAR_PREFIX =
+
+#---------------------------------------------------------------------------
+# Preprocessor Options
+#---------------------------------------------------------------------------
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           =
+INCLUDE_FILE_PATTERNS  =
+PREDEFINED             =
+EXPAND_AS_DEFINED      =
+SKIP_FUNCTION_MACROS   = YES
+
+#---------------------------------------------------------------------------
+# Additions Related to External References
+#---------------------------------------------------------------------------
+
+TAGFILES               =
+GENERATE_TAGFILE       =
+ALLEXTERNALS           = NO
+EXTERNAL_GROUPS        = YES
+PERL_PATH              = /usr/bin/perl
+
+#---------------------------------------------------------------------------
+# dot Tool Options
+#---------------------------------------------------------------------------
+
+CLASS_DIAGRAMS         = YES
+MSCGEN_PATH            =
+HIDE_UNDOC_RELATIONS   = YES
+HAVE_DOT               = YES
+DOT_FONTNAME           = FreeSans
+DOT_FONTSIZE           = 10
+DOT_FONTPATH           =
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
+UML_LOOK               = NO
+TEMPLATE_RELATIONS     = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = NO
+DIRECTORY_GRAPH        = NO
+DOT_IMAGE_FORMAT       = png
+DOTFILE_DIRS           =
+DOT_GRAPH_MAX_NODES    = 50
+MAX_DOT_GRAPH_DEPTH    = 1000
+DOT_TRANSPARENT        = NO
+DOT_MULTI_TARGETS      = NO
+GENERATE_LEGEND        = YES
+DOT_CLEANUP            = YES
+
+# instead of setting a value for DOT_PATH it's easier and more portable to
+# put your dot utility in the PATH; if you are on a Unix system this is usually
+# done automatically; if you're on Windows you'll need to install GraphViz tools
+# and then manually add it to the PATH environment variable
+DOT_PATH               =
+
+#---------------------------------------------------------------------------
+# Search Engine Options
+#---------------------------------------------------------------------------
+
+SEARCHENGINE           = NO
+

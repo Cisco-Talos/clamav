@@ -1,0 +1,84 @@
+----------------------------------------------------
+Build instructions for LIBTIFF - CodeWarrior (6.1):
+----------------------------------------------------
+
+Note: there is a bug in CW earlier than 6.1 which will generate
+16-bit offset link errors for any projects using libtiff; you must
+download the CodeWarrior 6.1 patch located at:
+
+  ftp://ftp.metrowerks.com/pub/updates/metro-patches-61.hqx
+
+unpack the archive, insert the files and recompile the libraries
+using the AppleScript provided.
+
+
+1. Make sure that the directory containing these files is under
+   the "contrib" directory of the tiff folder; otherwise, some
+   access path preferences will need to be updated.
+
+2. The instructions below are for the 68k platform build. 
+    A similar script can be put together for the PPC version,
+    or you can just directly convert the projects. Be sure to
+   use the native libraries as well. NOTE: if anyone cooks  
+  up an equivalent script for PPC, send it to me and I'll include
+  it with the rest of the package.
+
+3.   Open the file Makefile.script with an AppleScript Editor
+   and change the PATHNAME variable to point to your
+   top-level TIFF directory
+
+4. Run the Script. It will do the following things:
+ 
+   4a. Prompt you for the current location of the CodeWarrior 68K
+   program.
+
+   4b. Create the source file "tif_fax3sm.c":
+
+        i) Build the project CW project mkg3states.cw. It will
+     produce a small program called mkg3states. Only a
+     68k version is provided, since you only have to run
+     this code once, and it only takes a few seconds.
+     
+        ii) Run the built mkg3states program: 
+        
+    The program will temporarily take over ALL of the CPU, so
+    don't panic. After a few seconds it will produce a file called
+    "tif_fax3sm.c".
+
+  4c. Build the library project libtiff-68K.mw, producing library
+   called libtiff-68K.
+
+  4d. Build program project tiffinfo.mw; it will produce a
+   program called tiffinfo, which can dump the tiff tags of
+   a named file. Passing in no arguments will dump a help file
+   for the program. It is unix-flavored, but hey, it works.
+
+5  When the script finishes, you will have a usable libtiff-68K
+   library, a passable "tiffinfo" program, and the projects used
+   to build them. Note that to get tiffinfo to work I have put 
+   an include file in the project that redefines main(), and
+   then have a mac_main.c program that calls ccommand() first
+   and passes that to the actual main code. A real mac app,
+   of course, would never use this stuff at all...
+
+ . The tiffinfo.mw project may be used as a template to build
+   most of the other libtiff tools, or your own code. When
+   modifying a copy of the project, you will most likely need
+   to update the "Access Paths" directory if it is moved out of
+   the contrib folder.
+   
+6. If you are going to create a project from scratch, be sure
+   to set up the preferences with 
+   
+      4-byte ints
+      8-byte doubles
+      Far Code/Far Data
+      Large Linking model
+      
+   and everything should work fine. If the console-style error
+   reports bother you, you can always override the error and
+   warning mechanism with TIFFSetErrorHandler to do something
+   more Mac-like.
+
+Questions, comments to Niles Ritter (ndr@tazboy.jpl.nasa.gov).
+

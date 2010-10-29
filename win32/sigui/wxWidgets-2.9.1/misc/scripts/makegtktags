@@ -1,0 +1,4 @@
+#!/bin/sh
+. `dirname $0`/makeunixtags.sh
+
+create_tags gtk

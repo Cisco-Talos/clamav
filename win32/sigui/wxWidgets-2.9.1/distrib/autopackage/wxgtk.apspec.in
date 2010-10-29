@@ -1,0 +1,93 @@
+# -*-shell-script-*-
+
+#
+# NOTE1:
+#  This apspec provides wxGTK locales and compiled libraries only;
+#  it does not provide headers nor wx-config since this package is not
+#  targeted to developers but rather end-users of wx-based applications.
+#  Also, making a -devel autopackage wouldn't be very useful given the
+#  big number of possible configurations for building wxWidgets...
+#
+# NOTE2:
+#  This wxGTK autopackage contains wx libraries built in
+#  Unicode, shared, multilib, release mode.
+#  This is because:
+#  1) UNICODE is better than ansi
+#  2) Autopackages of a library only have sense when shipping with SHARED libraries
+#  3) MULTILIB builds of wxWidgets are the default and suggested build mode
+#  4) Released applications should use RELEASE builds of wxWidgets not debug ones!
+#
+
+
+[Meta]
+RootName: @wxwidgets.org/wxgtk:$SOFTWAREVERSION
+DisplayName: wxGTK port of wxWidgets
+ShortName: wxgtk
+Maintainer: Francesco Montorsi <frm@users.sourceforge.net>
+Packager: Francesco Montorsi <frm@users.sourceforge.net>
+Summary: Library for cross-platform GUI programming (gtk2-unicode-release port)
+URL: http://www.wxwidgets.org/
+Licence: wxWindows licence
+SoftwareVersion: @PACKAGE_VERSION@
+PackageVersion: 1
+AutopackageTarget: 1.2
+Type: Library
+Revision: 1
+Compression: bzip2
+PackageFileName: $SHORTNAME-$SOFTWAREVERSION-$PACKAGEVERSION.x86.package
+
+# The interface of this port is majorminor.release; for more info about the interface version
+# look at the wxGTK skeleton.
+# NOTE: there *must* be no dot between the major and minor digits.
+InterfaceVersion: `getMajor $SOFTWAREVERSION``getMinor $SOFTWAREVERSION`.`getMicro $SOFTWAREVERSION`
+
+
+[BuildPrepare]
+export APBUILD_STATIC="tiff expat"
+export APBUILD_BOGUS_DEPS="Xi Xrandr Xcursor Xrender Xinerama"  # not really needed
+
+# For info why we give --enable-unicode --enable-shared --disable-debug options see note2 at beginning
+# of this file.
+# The --disable-dependency-tracking --disable-precomp-headers are because these things confuse apgcc.
+# The --with-libtiff=builtin --with-expat=builtin are because we want wxWidgets not to use the system's
+# version of these libraries: tiff has recently broken its ABI and must be linked statically, expat is
+# not always available.
+prepareBuild --enable-unicode --enable-shared --disable-debug --with-gtk --disable-dependency-tracking --disable-precomp-headers --with-opengl --with-gtk --with-libtiff=builtin --with-expat=builtin
+
+[BuildUnprepare]
+unprepareBuild
+
+
+[Imports]
+
+# remove stuff useless to final binary users: headers, wxwin.m4 and bakefile presets
+rm -rf include share/aclocal share/bakefile
+
+# this imports also some symlink which won't be used...
+# anyway symlinks give no problems since they won't be installed so it's not necessary
+# to complicate this section to exclude them...
+bash
+echo '*' | import
+
+
+[Prepare]
+# GTK+2 is the only requirement
+require @gtk.org/gtk 2.0
+
+
+[Install]
+# install wxrc-$SOFTWAREVERSION and its symbolic link
+installExe bin/wxrc*
+
+# install shared libraries (not symlinks - they are recreated by installLib!)
+installLib lib/*.so.*.*.*
+
+# install wx's things which goes in lib\ but are not libraries
+copyFiles lib/wx/* "$PREFIX/lib/wx"
+
+# install locales
+installLocale share/locale
+
+
+[Uninstall]
+uninstallFromLog

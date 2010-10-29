@@ -1,0 +1,42 @@
+----------------------------------------------------------------------------
+NB: This is the old wxCocoa port, you almost certainly want to read
+    docs/osx/install.txt for instructions about building wxOSX/Cocoa instead.
+----------------------------------------------------------------------------
+
+wxCocoa is still a work in progress.
+
+To compile it, you will need Apple's Developer Tools.  However, please
+note that any work to make it suitable for GNUstep (which will require
+a GCC release with Objective-C++) will be much appreciated.
+
+Some users also report success with Metrowerks CodeWarrior IDE and I've even
+on occasion used the command-line MW compilers (see docs/metrowerks) with
+configure instead of GCC and Apple's LD.
+
+Like most UNIX ports, the standard configure/make method works.  You should
+be able to build the library as static or shared.  I usually build static.
+
+On my system I have the following:
+
+Checked out CVS source is in:
+/Users/dfe/devel/wxHEADcommit/wxWidgets
+Debug build directory is:
+/Users/dfe/devel/wxHEADcommit/BUILD_COCOAd
+
+From the debug build directory:
+$ ../wxWidgets/configure --with-cocoa --enable-debug --disable-shared
+$ make
+$ cd samples/minimal
+$ make
+$ ./minimal.app/Contents/MacOS/minimal
+
+Like wxMac applications, wxCocoa applications are "bundled".  For development
+purposes all this means is that an executable named "foo" needs to be
+inside a "foo.app/Contents/MacOS" directory.  For deployment you will need
+an appropriate Info.plist and PkgInfo inside the foo.app/Contents directory.
+
+wxCocoa (and Cocoa in general) has no need for Mac OS resources.  It
+certainly has no need for resource forks as no Mach-O applications should
+_ever_ have resource forks (note: Bakefile violates this right now).
+Please see the wxWiki and/or discuss this with wx-users before shipping
+any wxCocoa apps if you are new to the OS X platform.

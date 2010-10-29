@@ -1,0 +1,12 @@
+
+22th June '99: wxWINE 2.1 snapshot 7 released
+
+The numbering is just in sync with the wxGTK numbering as this
+is actually the first ever release of wxWINE.
+
+This snapshot just demonstrates that the complete build environment
+for wxWINE is in place and that all that has to be done to get
+wxWINE running is to make WINE work as Win32. No joke intended.
+
+  Robert Roebling
+  

@@ -1,0 +1,31 @@
+                   Working with the wxWidgets release system
+                   =========================================
+
+Process Overview:
+- run build/tools/create-archive.py --compression=all /path/to/output/dir
+- upload release to sf.net
+- update wxwidgets.org
+- promote release on software download sites
+
+
+Currently our release system uses a Python 2.x script to generate releases.
+The script requires Unix utilities such as tar, zip and unix2dos and thus must
+be run either on Unix or using Cygwin on Windows. To generate a release, simply
+run the following command:
+
+build/tools/create-archive.py --compression=all /path/to/output/dir
+
+This will produce zip, gzip and bzip archives of the tree (without
+"compression" argument only .gz is made). Note that this commands produces huge
+amounts of output so redirecting it to a file is recommended.
+
+To add a prefix to the release, such as RC1, the SVN revision, or a date, just
+pass --postfix="postfix" to the script. More info on the options and their
+possible values can be found by calling `create-archive.py --help`.
+
+IMPORTANT NOTE: You *must* run this script from a clean source tree, that is,
+          with no junk files in it or modifications. This is because the
+          release should be a pristine copy of the tree as of the time of
+          release. If you have legitimate modifications in the tree that need
+          to be in the release, commit them first.
+

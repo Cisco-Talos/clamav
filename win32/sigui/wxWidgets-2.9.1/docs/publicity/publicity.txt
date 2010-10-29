@@ -1,0 +1,150 @@
+Publicity notes and ideas
+=========================
+
+Release announcments can be made to the following
+newsgroups.
+
+Microsoft:
+
+comp.os.ms-windows.programmer.misc
+comp.os.ms-windows.programmer.tools
+comp.os.ms-windows.programmer.tools.mfc
+comp.os.ms-windows.programmer.tools.misc
+comp.os.ms-windows.programmer.win32
+comp.windows.ms.programmer
+microsoft.public.win32.programmer.tools
+microsoft.public.win32.programmer.ui
+microsoft.public.win32.programmer.3rdparty
+microsoft.public.win32.programmer.wince
+microsoft.public.pocketpc.developer
+microsoft.public.smartphone.developer
+
+Non-Microsoft:
+
+comp.programming
+comp.os.linux.development.apps
+comp.os.linux.announce
+comp.sys.mac.programmer.tools
+comp.software-eng
+comp.lang.c++
+
+borland.public.cppbuilder.thirdpartytools (newsgroups.borland.com)
+
+comp.windows.x
+comp.windows.x.announce
+comp.windows.x.motif
+
+Note: submissions to comp.os.linux.announce must be
+sent to cola@stump.algebra.com, with short descr
+of software and location. See http://stump.algebra.com/~cola/
+NO CROSSPOSTING when sending to this address.
+
+Pack plenty information into the subject. 
+Don't write a subject like "Foo version 1.1 released". Many
+people will not know what Foo is, so the subject won't help them
+select articles. Instead, say "Foo 1.1 - copy files more
+efficiently than cp". There is no need to say that the article
+is an announcement, so don't write a subject like "ANNOUNCEMENT:
+Foo version 1.1 released". 
+
+News and links sites:
+-----------------------
+
+slashdot.org, freshmeat.net, http://lwn.net/
+
+Many of these links will be out of date now:
+
+www.Linuxberg.com
+www.visual-developer.com (Visual Developer Magazine, editor:
+  Jeff Duntemann <jeffd@coriolis.com>)
+http://www.hal9k.com/cug/index.htm (C/C++ user group)
+www.program.com
+www.graphtech.com/vcgroup.html (VC++ user group)
+www.motifzone.com
+fsw.com
+landru.unx.com/DD/advisor/index.shtml (X advisor journal)
+landru.unx.com/DD/solutions/index.html (Cross Platform
+Solutions magazine)
+www.cs.cmu.edu:8001/afs/cs.cmu.edu/user/bam/www/toolnames.html
+  (Brad Myers' Tool List)
+http://sal.kachinatech.com/index.shtml: SAL (Scientific Applications on Linux)
+   is a collection of information and links to software that will be of interest
+   to scientists and engineers.
+
+MacDev developers list
+
+To submit a posting to MacDev-1, mailto:press_releases@mactech.com.  To
+subscribe to MacDev-1, send mail to listserv@listmail.xplain.com with
+the SUBJECT line reading "SUBSCRIBE MACDEV-1".  To unsubscribe, the
+SUBJECT line should read "UNSUBSCRIBE MACDEV-1".
+
+ct-Newsticker : mailto:presse@ct.heise.de
+
+List of sites and addresses from tn0013.txt:
+
+a) FreshMeat:
+   - http://freshmeat.net/projects/wxwindowsgtk/
+   - username and password are "wxgtk" for logging in
+   - hit "new release" at the top
+   - follow the step by step
+
+b) wx-announce mailing list: mailto:wx-announce@lists.wxwidgets.org
+
+   [where is the announcement text? TODO]
+
+c) update www.wxwidgets.org
+
+d) GNOME (very effective, stays on front page for days):
+    - http://www.gnome.org/applist
+    - Search for wxWidgets
+    - Update the version number
+    - Ignore the error message
+
+e) MacNN:
+   - http://www.macnn.com
+   - Contact or Contribute or something
+   - email news@macnn.com <news@macnn.com>
+
+f) MacRumors:
+   - http://www.macrumors.com
+   - Contact or Contribute or something
+
+g) Apple Developer Connection:
+    mailto: adcnews@apple.com
+
+h) LinuxDevices.com:
+    Interesting for wxUniversal.
+
+
+Shareware sites
+----------------
+
+We could put a demo (e.g. widgets) on:
+
+winfiles.com
+tucows.com
+upload.com (zdnet)
+simtel.net
+shareware.com
+
+among others.
+
+Linux distributors:
+--------------------
+
+Red Hat, SuSE, Debian, etc.
+
+PC Magazines:
+--------------
+
+CD-ROM distributions for PC Plus, PCW
+
+Organisations:
+--------------
+
+http://www.egovos.org/ The Center of Open Source & Government 
+(Submitted to their directory, 2003-04-25)
+
+http://www.opensector.org/
+(nothing submitted yet)
+

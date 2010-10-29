@@ -1,0 +1,40 @@
+                 All about wxWidgets Version Numbers
+                 ===================================
+
+1. Where to update the version numbers:
+
+   There are several places in the wxWidgets source tree that
+   define the version number for the library.  When updating the
+   version number all of these files must be edited:
+
+   configure.in
+   *.spec
+   build/bakefiles/version.bkl {C:R:A}
+   build/osx/wxvers.xcconfig
+   docs/changes.txt
+   docs/doxygen/Doxyfile_inc (PROJECT_NUMBER)
+   docs/doxygen/latexdocstart.inc
+   docs/doxygen/mainpages/manual.h (just date)
+   docs/msw/install.txt {major release only}
+   include/wx/version.h
+   include/wx/osx/config_xcode.h
+   samples/Info.plist
+   samples/docview/Info.plist
+   samples/minimal/borland_ide.cpp {major release only}
+
+   The script misc/scripts/inc_release can be used for incrementing
+   the release field of the version, i.e. changing 2.8.x to 2.8.x+1.
+
+2. When to update the version numbers:
+
+   [ To be written... ]
+
+   See tn0020.txt for now.
+
+
+
+
+=== EOF ===
+
+Version: $Id$
+

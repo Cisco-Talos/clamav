@@ -1,0 +1,123 @@
+                    How to write unit tests for wxWidgets
+                    =====================================
+
+ Unit tests for wxWidgets are written using small cppunit framework. To compile
+(but not to run) them you need to have it installed. Hence the first part of
+this note explains how to do it while the second one explains how to write the
+test.
+
+I. CppUnit Installation
+-----------------------
+
+1. Get it from http://www.sourceforge.net/projects/cppunit
+   (latest version as of the time of this writing is 1.8.0)
+
+2. Build the library:
+ a) Under Windows using VC++ (both versions 6 and 7 work):
+    - build everything in CppUnitLibraries.dsw work space
+    - add include and lib subdirectories of the directory
+      where you installed cppunit to the compiler search path
+      using "Tools|Options" menu in VC IDEA
+
+ b) Under Unix: run configure && make && make install as usual
+
+
+II. Writing tests with CppUnit
+------------------------------
+
+1. Create a new directory tests/foo
+
+2. Write a cpp file for the test copying, if you want,
+   from one of the existing tests. The things to look for:
+ a) #include "wx/cppunit.h" instead of directly including CppUnit headers
+ b) don't put too many things in one test case nor in one method of a test
+    case as it makes understanding what exactly failed harder later
+ c) 'register' your tests as follows so that the test program will find and
+    execute them:
+
+    // register in the unnamed registry so that these tests are run by default
+    CPPUNIT_TEST_SUITE_REGISTRATION(MBConvTestCase);
+
+    // also include in it's own registry so that these tests can be run alone
+    CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(MBConvTestCase, "MBConvTestCase");
+
+   Read CppUnit documentation for more.
+
+3. add a '<sources>' tag for your source file to tests/test.bkl
+
+
+III. Running the tests
+----------------------
+
+1. Regenerate the make/project files from test.bkl using bakefile_gen, e.g.:
+        cd build/bakefiles
+        bakefile_gen -b ../../tests/test.bkl
+   and if you're on a unix system re-run configure.
+
+2. Build the test program using one of the make/project files in the tests
+   subdirectory.
+
+3. Run the test program with no arguments to run the default set of tests
+   (which are all those registered with CPPUNIT_TEST_SUITE_REGISTRATION).
+   Or to list the test suites without running them:
+      test -l
+
+4. Tests that have been registered under a name using
+   CPPUNIT_TEST_SUITE_NAMED_REGISTRATION can also be run separately. For
+   example:
+      test MBConvTestCase
+   or to list the tests:
+      test -L MBConvTestCase
+
+5. Fault navigation.
+   VC++ users can run the programs as a post build step (Projects/Settings/
+   Post-build step) to see the test results in an IDE window. This allows
+   errors to be jumped to in the same way as for compiler errors, for
+   example by pressing F4 or highlighting the error and pressing return.
+   
+   Similarly for makefile users: makefiles can be modified to execute the
+   test programs as a final step. Then you can navigate to any errors in the
+   same way as for compiler errors, if your editor supports that.
+
+   Another alternative is to run the tests manually, redirecting the output
+   to a file. Then use your editor to jump to any failures. Using Vim, for
+   example, ':cf test.log' would take you to the first error in test.log, and
+   ':cn' to the next.
+
+   If you would like to set a breakpoint on a failing test using a debugger,
+   put the breakpoint on the function 'CppUnit::Asserter::fail()'. This will
+   stop on each failing test.
+
+
+IV. Notes
+---------
+
+1. You can register your tests (or a subset of them) just under a name, and not
+   in the unnamed registry if you don't want them to be executed by default.
+
+2. If you are going to register your tests both in the unnamed registry
+   and under a name, then use the name that the tests have in the 'test -l'
+   listing.
+
+3. Tests which fail can be temporarily registered under "fixme" while the
+   problems they expose are fixed, instead of the unnamed registry. That
+   way they can easily be run, but they do not make regression testing with
+   the default suite more difficult. E.g.:
+
+    // register in the unnamed registry so that these tests are run by default
+    //CPPUNIT_TEST_SUITE_REGISTRATION(wxRegExTestCase);
+    CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(wxRegExTestCase, "fixme");
+
+    // also include in it's own registry so that these tests can be run alone
+    CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(wxRegExTestCase, "wxRegExTestCase");
+
+4. Tests which take a long time to execute can be registered under "advanced"
+   instead of the unnamed registry. The default suite should execute reasonably
+   quickly. To run the default and advanced tests together:
+    test "" advanced
+
+
+=== EOF ===
+
+Author:  VZ & MW
+Version: $Id$

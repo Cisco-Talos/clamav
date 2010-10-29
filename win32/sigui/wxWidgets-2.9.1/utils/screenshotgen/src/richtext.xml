@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+  <paragraphlayout textcolor="#000000" fontsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="serif" alignment="1" parspacingafter="10" parspacingbefore="0" linespacing="10">
+    <paragraph fontweight="92" alignment="2" parspacingafter="20" parspacingbefore="0">
+      <text fontsize="14" fontweight="92">wxRichTextCtrl</text>
+      <text fontsize="14"></text>
+    </paragraph>
+    <paragraph parspacingafter="20" parspacingbefore="0">
+      <text fontsize="14">"What can you do with this control?"</text>
+      <image imagetype="15">
+        <data>89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7AF40000000473424954080808087C0864880000013A494441545885ED57D116C2200845D787EDD3F763450FC622075E3477D643BC5483EEBD03454C292F74A5DD46FEC48F3BD7CF525ED2A90234291FE889527AFB7BC424540221B6487DD0B8908CC899FBC8894A3CB35DAADACC0C8CBCB54FF0FA74B2E1666006B9E0B4B271102069B72C818A223F1480C8997D12E4F7B2D05C8435B800D524C8DF12B10BF0DE5E836B20F43B5A0E98010DDEB306A28B385482332D13B5179F361413C5D0EBE03732F01780ACB7C3F5C467A2725044B6D8B41875308507924D0110D9FD4162D62868548074B6CD10A28985BC6F7851F300EA0722C2B308F97009883E7BBC16B22A7F0F7979564D44D1AED8DBF72D7222631B467684908ECC8B50C02E6468CAB771BCB72FFEC6581E2D47931C8CE6CD4E28E518E98411F2121BBC1BE29B91FA3EF36684C48C907E2D60A65D7E1C3F01DF3DAE9FE1B576060000000049454E44AE426082</data>
+      </image>
+      <text>" You can change "</text>
+      <text textcolor="#FF0000">"text foreground colour "</text>
+      <text>"and "</text>
+      <text textcolor="#0000FF" bgcolor="#00FF00">"text background colour."</text>
+      <text>" Naturally you can make things "</text>
+      <text fontweight="92">"bold, "</text>
+      <text fontstyle="93">"italic "</text>
+      <text fontunderlined="1">or underlined.</text>
+      <text fontsize="14">" Different font sizes on the same line is allowed, too."</text>
+    </paragraph>
+  </paragraphlayout>
+</richtext>

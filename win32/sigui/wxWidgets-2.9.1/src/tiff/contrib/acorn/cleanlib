@@ -1,0 +1,5 @@
+IfThere LibTIFF:o.* THEN Wipe LibTIFF:o.* ~CFR~V
+IfThere LibTIFF:c.tif_fax3sm THEN Delete LibTIFF:c.tif_fax3sm
+IfThere LibTIFF:mkg3states THEN Delete LibTIFF:mkg3states
+IfThere LibTIFF:h.version THEN Delete LibTIFF:h.version
+IfThere LibTIFF:mkversion THEN Delete LibTIFF:mkversion

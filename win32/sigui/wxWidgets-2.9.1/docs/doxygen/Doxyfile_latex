@@ -1,0 +1,16 @@
+#############################################################################
+## Name:        Doxyfile.latex
+## Purpose:     Doxygen configuration file for generating Latex only
+## Author:      Stefan Csomor
+## RCS-ID:      $Id$
+## Licence:     wxWindows licence
+#############################################################################
+
+@INCLUDE = Doxyfile_inc
+
+#---------------------------------------------------------------------------
+# Generation switches
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = YES
+

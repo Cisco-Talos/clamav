@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<PALMOS_RESOURCE_FILE>
+
+	<APP_VERSION_RESOURCE RESOURCE_ID="1000">
+		<TEXT> "1.0" </TEXT>
+	</APP_VERSION_RESOURCE>
+
+</PALMOS_RESOURCE_FILE>

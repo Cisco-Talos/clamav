@@ -1,0 +1,3 @@
+emulator ICON "emulator.ico"
+#include "wx/msw/wx.rc"
+

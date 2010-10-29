@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# Name:      check_unused_headers
+# Purpose:   checks all wxWidgets headers looking for headers not referenced anywhere
+# Usage:     run with --verbose for verbose output
+# Copyright: (c) 2007 Francesco Montorsi
+# Version:   $Id$
+# Licence:   wxWindows licence
+################################################################################
+
+
+
+if [[ "$1" = "-v" || "$1" = "--verbose" ]]; then
+    verbose=yes
+else
+    verbose=no
+fi
+
+
+me=$(basename $0)
+path=${0%%/$me}        # path from which the script has been launched
+current=$(pwd)
+
+# the path where this script resides:
+scriptPath=$current/$path
+
+# other interesting wx paths
+headerPath="$scriptPath/../../include"
+srcPath="$scriptPath/../../src"
+
+# get list of wx source and header filenames
+# NOTE: these list won't contain the .svn backup copies of the real sources/headers
+# NOTE2: we keep the size of these lists small avoiding to include the prefixes 
+#        like e.g. ../../include so to not incurr in OS limits when passing
+#        them as arguments of commands
+cd $headerPath
+headerList=`find wx -name "*.h"`
+cd $srcPath
+srcList=`find . -name "*.cpp"`
+
+
+unusedHeaders=0
+
+function checkIfHeaderIsUsed
+{
+    local headerToCheck="$1"
+    local found=no
+
+    if [[ $verbose = yes ]]; then
+        echo -n "checking if header: $headerToCheck is used... "
+    fi
+
+    # find the first occurrence of this header in wx sources and headers:
+    cd $headerPath
+    grep -m 1 "$headerToCheck" $headerList >/dev/null 2>&1
+    if [[ $? = 0 ]]; then found=yes; fi
+
+    cd $srcPath
+    grep -m 1 "$headerToCheck" $srcList >/dev/null 2>&1
+    if [[ $? = 0 ]]; then found=yes; fi
+
+    if [[ $found = no ]]; then
+
+        if [[ $verbose = yes ]]; then
+            echo "no, it's not!"
+        fi
+
+        # this header is not used anywhere...
+        echo "WARNING: unused header $headerToCheck"
+        ((( unusedHeaders++ )))
+    else
+        if [[ $verbose = yes ]]; then
+            echo "yes, it is"
+        fi
+    fi
+}
+
+echo " This script will look for unused wxWidgets headers"
+echo " Note that some headers maybe not referenced by wxWidgets sources/headers but still"
+echo " be useful for user applications; others instead are simply old and forgotten."
+echo
+
+for header in $headerList; do
+    checkIfHeaderIsUsed $header
+done
+
+if [[ $unusedHeaders -gt 0 ]]; then
+    echo " => WARNING: found $unusedHeaders unused headers!"
+else
+    echo " => All headers are referenced in either wxWidgets sources or in other headers"
+fi

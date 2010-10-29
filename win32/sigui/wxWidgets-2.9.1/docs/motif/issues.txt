@@ -1,0 +1,35 @@
+Outstanding issues
+------------------
+
+Last updated 19/3/2000.
+
+See also: todo.txt.
+
+- wxTextCtrl doesn't work as a stream buffer in Linux/gcc.
+
+- No wxToolTip (but see wxToolBar for a way of implementing it).
+
+- Need a way of specifying default settings for colour/font/etc.
+
+- More optimisation could be done to reduce X server traffic, etc.
+
+- Should scrollbars take on the background colour? Not right for
+  e.g. wxScrolledWindows, so maybe have wxSystemSettings value for
+  scrollbar colour, and/or ability to set scrollbar colour independently.
+
+- wxFrame can accept events, but apps cannot draw into it for
+  Workaround: use an embedded wxWindow.
+
+- The background of a window sometimes isn't restored when changing
+  notebook pages (see sashtest, mdi examples). The notebook background
+  colour shows through. A resize, or scroll, restores the correct
+  background colour.
+
+- In Life! sample, text above slider isn't legible.
+
+- samples/html/helpview and samples/help demonstrate that sometimes,
+  XPM images can't be loaded, perhaps only in 256-colour mode. This
+  will now cause an assert rather than an X error. But we need to
+  either cure the XPM loading problem, or provide alternative toolbar
+  buttons (for HelpView) and icons (for places where icons are used e.g.
+  in the log dialog).

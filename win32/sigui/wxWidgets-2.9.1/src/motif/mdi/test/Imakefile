@@ -1,0 +1,25 @@
+#include "../config/MDI.tmpl"
+
+SRCS =      MDItest.C
+
+OBJS =      MDItest.o
+
+STD_INCLUDES = -I/usr/include
+
+INCLUDES =  -I../lib
+
+DEPLIBS =   ../lib/libXsw.a
+
+#if defined(SunArchitecture)
+   SYSLIBS = -lgen
+#endif
+
+LOCAL_LIBRARIES = ../lib/libXsw.a
+SYSTEM_LIBRARIES = -lXm -lXt -lX11 $(SYSLIBS)
+
+PROGRAM =   MDItest
+
+AllTarget($(PROGRAM))
+NormalProgramTarget($(PROGRAM),$(OBJS),$(DEPLIBS),$(LOCAL_LIBRARIES),$(SYSTEM_LIBRARIES))
+DependTarget()
+CxxRules()

@@ -1,0 +1,62 @@
+\documentclass[a4paper]{report}
+\usepackage{verbatim}
+\usepackage{a4wide}
+\usepackage{makeidx}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{textcomp}
+\usepackage{alltt}
+\usepackage{palatino}
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex]{graphicx}
+\usepackage{epstopdf}
+\usepackage[pdftex,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue,
+            unicode
+           ]{hyperref}
+\else
+\usepackage{graphicx}
+\usepackage[ps2pdf,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue,
+            unicode
+           ]{hyperref}
+\usepackage{pspicture}
+\fi
+\usepackage[utf8]{inputenc}
+\usepackage{doxygen}
+\usepackage{epstopdf}
+\usepackage{palatino}
+\setlength{\headheight}{15pt}
+\sloppy
+\parskip=10pt
+\parindent=0pt
+\makeindex
+\setcounter{tocdepth}{1}
+\renewcommand{\footrulewidth}{0.4pt}
+\begin{document}
+\begin{titlepage}
+\vspace*{3cm}
+\begin{center}
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics{../../images/main_wxlogo.pdf} 
+\end{center}
+\end{figure}
+\vspace*{2cm}
+{\large Version 2.9.1 }\\
+\vspace*{1cm}
+{Generated on \today}\\
+\end{center}
+\end{titlepage}
+\pagestyle{fancyplain}
+\clearemptydoublepage
+\pagenumbering{roman}
+\tableofcontents
+\clearemptydoublepage
+\pagenumbering{arabic}

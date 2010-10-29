@@ -1,0 +1,21 @@
+#include "../config/MDI.tmpl"
+
+SRCS =      XsComponent.C XsMDICanvas.C XsMDIWindow.C XsMotifWindow.C \
+            XsMoveOutline.C XsOutline.C XsResizeOutline.C
+
+HEADERS =   XsComponent.h XsMDICanvas.h XsMDIWindow.h XsMotifWindow.h \
+            sMoveOutline.h XsOutline.h XsResizeOutline.h
+
+OBJS =      XsComponent.o XsMDICanvas.o XsMDIWindow.o XsMotifWindow.o \
+            XsMoveOutline.o XsOutline.o XsResizeOutline.o
+
+STD_INCLUDES = -I/usr/include
+
+INCLUDES =  -I.
+
+LIBXSW =    Xsw
+
+NormalLibraryObjectRule()
+NormalLibraryTarget($(LIBXSW),$(OBJS))
+DependTarget()
+CxxRules()

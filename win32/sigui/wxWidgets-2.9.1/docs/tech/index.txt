@@ -1,0 +1,29 @@
+		All wxWidgets technical notes at a glance
+		=========================================
+
+tn0001.txt   How to add a new sample
+tn0002.txt   wxWidgets translator guide
+tn0003.txt   Adding wxWidgets class documentation
+tn0004.htm   *** REMOVED *** (obsoleted by Bakefile changes)
+tn0005.txt   Adding a wxWidgets contribution
+tn0006.txt   *** REMOVED *** (obsoleted by tn0013.txt)
+tn0007.txt   *** REMOVED *** (obsoleted by Bakefile changes)
+tn0008.htm   *** REMOVED *** (included in the manual now)
+tn0009.htm   Creating and converting icons
+tn0010.htm   *** REMOVED *** (obsoleted by Bakefile changes)
+tn0011.txt   All about version numbers
+tn0012.txt   wxWidgets platform, toolkit and library names
+tn0013.txt   *** REMOVED *** (obsoleted by tn0022.txt)
+tn0014.txt   *** REMOVED *** (included in the manual now)
+tn0015.txt   How to add new bitmaps to wxWidgets UI elements
+tn0016.txt   How to add new files and libraries to wxWidgets build system (Bakefile)
+tn0017.txt   How to write unit tests for wxWidgets classes
+tn0018.txt   How to add a new font encoding/charset to wxWidgets
+tn0019.txt   Special notes about writing wxMSW code
+tn0020.txt   Binary compatibility and wxWidgets
+tn0021.txt   How to add a new wxUSE_XXX preprocessor constant
+tn0022.txt   Working with the wxWidgets release system
+tn0023.txt   Adding a new app/screenshot to the wxWidgets.org front page
+tn0024.txt   How to add a new XRC handler
+
+Version: $Id$

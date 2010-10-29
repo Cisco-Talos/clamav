@@ -1,0 +1,9 @@
+#include "config/MDI.tmpl"
+
+#define IHaveSubdirs
+#define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
+
+SUBDIRS = lib test
+
+MakeSubdirs($(SUBDIRS))
+DependSubdirs($(SUBDIRS))

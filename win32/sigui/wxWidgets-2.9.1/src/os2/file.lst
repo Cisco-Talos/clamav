@@ -1,0 +1,39 @@
+List of files yet to be implemented.  As you finish a file, delete it from the list.
+
+  ..\os2\$D\dcprint.obj \
+  ..\os2\$D\dnd.obj \
+  ..\os2\$D\helpwin.obj \
+  ..\os2\$D\joystick.obj \
+  ..\os2\$D\metafile.obj \
+  ..\os2\$D\print.obj \
+  ..\os2\$D\taskbar.obj \
+  ..\os2\$D\wave.obj \
+
+
+List of things that still need doing, include the above files.  Some are more difficult than others.
+
+DND is a needed component of the tree control.  
+
+The tree control is a component of the list and dirctrl's. These are, in turn, components of the dirdlgg.
+
+DDE isn't used much anymore as an IPC protocol, but if OS/2 needs DDE, it should be straight forward.  
+
+Printing is an untouched area, but should not be too difficult to finish.  
+
+Not sure what good a taskbar control is but the other ports have one.  
+
+The wave file is for OS/2 to be able to simply play back a .wav file.  I have not touched
+multimedia as of yet.
+
+There is a problem with TIFF right now for some reason.
+
+The color sliders in the color dialog do not seem to display correctly.
+
+Dialogs are generally not resizable, but in wxOS2, resizing a dialog leaves the title bar un-resized.
+
+Static bitmap controls need some work as they are non-wx standard, requiring a resource.  Probably need
+a "roll-our-own" control that is a simple window with an icon or bitmap drawn directly in it.
+
+
+
+

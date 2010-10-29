@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<!-- $Id$ -->
+
+<makefile>
+
+    <include file="../../../build/bakefiles/common_samples.bkl"/>
+
+    <exe id="helpview" template="wx_util" template_append="wx_append">
+        <if cond="FORMAT=='autoconf'">
+            <wx-mac-app-bundle/>
+            <ldflags>$(SAMPLES_RPATH_FLAG)</ldflags>
+        </if>
+        <sources>
+            helpview.cpp
+        </sources>
+        <win32-res>helpview.rc</win32-res>
+        <wx-lib>html</wx-lib>
+        <wx-lib>core</wx-lib>
+        <wx-lib>net</wx-lib>
+        <wx-lib>base</wx-lib>
+        <install-to>$(BINDIR)</install-to>
+    </exe>
+    
+    <wx-data id="data">
+        <files>
+            test.zip
+        </files>
+    </wx-data>
+
+</makefile>

@@ -1,0 +1,35 @@
+           Adding a new app/screenshot to the wxWidgets.org front page
+                    =====================================
+                    
+To add a new app/screenshot to the front page, you first will need to have the 
+following:
+
+1. The application Name
+2. A URL for the application
+3. A series of screenshots for the app
+
+Each screenshot should have a 300 pixel width. A height around 225 pixels is 
+preferred, but it's more important to keep the aspect ratio of the screenshot.
+Screenshot format is not important, but the important thing is to use the format
+that gives you the best ratio of picture compression and size. Also, please 
+make sure the screenshots all have the app name in them.
+
+Once you have the screenshots and info ready, take the following steps to 
+update the web site:
+
+1) Put the screenshots in <wxWebSite root>/site-v2/images/front_screens
+
+2) Open <wxWebSite root>/site-v2/index.php
+
+3) Look for the "$apps = array();" line. Below it will be a series of items,
+which are the data used for each app shown in the front page screenshots.
+
+Add a new line at the bottom, with the following format:
+
+$apps[] = array(appname, appurl, array(screenshot1, screenshot2, ...));
+
+The screenshot1, etc. filenames should not have any path to them. They should
+just be the filename. The actual shown screenshot is chosen at random from
+the list of screenshots, so order, etc. doesn't matter.
+
+Once you've done this, the new app w/screenshots should appear on the front page!

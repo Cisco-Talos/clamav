@@ -1,0 +1,38 @@
+#############################################################################
+## Name:        Doxyfile.chm
+## Purpose:     Doxygen configuration file for generating CHM only
+## Author:      Francesco Montorsi
+## RCS-ID:      $Id$
+## Licence:     wxWindows licence
+#############################################################################
+
+@INCLUDE = Doxyfile_inc
+
+# HTML Help Compiler (hhc.exe) is the compiler used to produce CHM files from
+# the HTML sources. You are required to install HHC to generate this format.
+#
+# Windows:
+#   You can download it for free from MS website:
+#   <http://www.microsoft.com/downloads/details.aspx?FamilyID=00535334-c8a6-452f-9aa0-d597d16580cc&displaylang=en>
+#   Then set the HHC_PATH environment variable to the folder where you
+#   installed HHC. See <http://www.computerhope.com/issues/ch000549.htm>
+#   for more info about how to set env variables in WinXP or newer.
+#
+# Unix:
+#   You can install the Windows version of the compiler under WINE
+#   <http://www.winehq.org/> following the instructions placed here:
+#   <http://appdb.winehq.org/objectManager.php?sClass=application&iId=2140>
+#   Then place the hhc.exe executable in your PATH. You can add to your
+#   ~/.bashrc (if you use bash):
+#     PATH=$PATH:~/.wine/drive_c/Program Files/HTML Help Workshop
+#     export PATH
+
+#---------------------------------------------------------------------------
+# Generation switches
+#---------------------------------------------------------------------------
+
+# NOTE: GENERATE_HTML must be set to YES otherwise doxygen won't generate the
+#       index.hhp file and the CHM compilation will fail!
+GENERATE_HTML          = YES
+GENERATE_HTMLHELP      = YES
+

@@ -1,0 +1,379 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 2.3  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Robert Roebling">
+	<META NAME="CREATED" CONTENT="20080829;16130000">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGED" CONTENT="20090209;11181400">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Julian Smart">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<META NAME="CHANGEDBY" CONTENT="Robert Roebling">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Albany AMT", sans-serif; font-size: 14pt; font-style: italic }
+		H2.cjk { font-family: "Albany AMT"; font-size: 14pt; font-style: italic }
+		H2.ctl { font-family: "Arial Unicode MS"; font-size: 14pt; font-style: italic }
+		H3.western { font-family: "Albany", sans-serif }
+		H3.cjk { font-family: "HG Mincho Light J" }
+		H3.ctl { font-family: "Arial Unicode MS" }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="de-DE" DIR="LTR">
+<H2 CLASS="western">The Wonderful World of wxWidgets 3.0</H2>
+<H3 CLASS="western">What is wxWidgets?</H3>
+<P ALIGN=JUSTIFY>Although it is quite unlikely that you'll read this
+document if you don't know what wxWidgets is, let's just briefly
+mention that wxWidgets is a C++ framework for building rich GUI
+applications from a single source which can then be compiled on
+different operating systems, resulting in a native application on
+each system. wxWidgets uses native controls (or widgets) and other
+native functions whereever possible so that the resulting
+applications will look and feel as native as possible, and they are
+usually not distinguishable from applications written using single
+platform toolkits such as MFC for Windows, GTK+ for Linux or Cocoa
+under OS X. In some areas (such as graphics art or the installer),
+adaptations to the individual platforms have to be made in order to
+achieve perfect integration with that platform.</P>
+<P ALIGN=JUSTIFY>The major operating system for which wxWidgets
+supports are Windows (Windows 95, NT, 2000, XP, Vista) including its
+mobile variants (Windows CE, PocketPC, Windows Mobile), Linux and
+Unix using the GTK+ 2 toolkit (minimum version is GTK+ 2.4, more
+recent features are used when available) and Mac OS X (minimum
+version 10.4 Tiger, both Intel, PPC and the Universal Binaries for
+both are supported). wxWidgets includes many code pieces for
+optimising dialog and general layout for small screens such as those
+of the recent netbooks and mobile phones and tablets.</P>
+<P ALIGN=JUSTIFY>There is varying support for other platforms or
+toolkits such as OS/2, Motif, GTK 1.2, PalmOS and various mobile
+Linux variants using GTK+ or the Hildon framework and also a version
+for OS X using the Cocoa API and even the iPhone SDK.</P>
+<H3 CLASS="western">Documentation in Doxygen</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Until wxWidgets 3.0 all
+documentation was written in a customized LaTeX variant created for
+the project years ago. Although there were tools which could parse
+classes automatically and create a documentation skeleton, class
+documentation was troublesome to update and therefore often outdated.
+In order to improve this situation, the entire documentation
+including references and overviews was converted to a customized
+Doxygen format inlined in a special set of headers. Although many
+classes were converted in a single automated step, every class
+documentation had to be corrected by hand making this effort one of
+the biggest in the development cycle leading up wxWidgets 3.0.
+Additionally, tools were written to automatically compare the
+signature of the many class methods to the documentation. The result
+is more correct documentation with better formating and built-in
+searching and screenshots of many controls. Since Doxygen is a
+wide-spread format and easy to learn, the new documentation is much
+easier to edit, correct and read. See the <A HREF="http://docs.wxwidgets.org/trunk/index.html">wxWidgets
+on-line documentation</A> to which this document refers to in many
+places.</P>
+<H3 CLASS="western">C++ features and template support</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">The wxWidgets project
+tries to both move with new developments of the C++ language as well
+as to support older compilers to an extent which does not inhibit
+further development and indeed the usefulness of the entire project.
+Since support for templates used to be limited to a few compilers and
+was often buggy even in them, wxWidgets initially stayed away from
+using templates entirely including the use of the Standard Template
+Library (STL). In the meantime nearly all compilers have gained solid
+template support and therefore wxWidgets is now using templates for
+container classes (such as <A HREF="http://docs.wxwidgets.org/trunk/classwx_vector_3_01_t_01_4.html">wxVector&lt;T&gt;</A>),
+smart pointers (such as <A HREF="http://docs.wxwidgets.org/trunk/classwx_shared_ptr_3_01_t_01_4.html">wxSharedPtr&lt;T&gt;</A>),
+weak references (see <A HREF="http://docs.wxwidgets.org/trunk/classwx_weak_ref_3_01_t_01_4.html">wxWeakRef&lt;T&gt;</A>)
+and many other places where templates are useful. This means that
+very old compilers won't be able to compile wxWidgets anymore or only
+in a degraded way (such as Visual C++ 6.0).</P>
+<H3 CLASS="western">Platform features and backwards compatibility</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">In the same way wxWidgets
+tries to both make use of new features of the different operating
+systems and support older systems for as long as possible and as long
+as supporting them does not hinder development for up-to-date
+systems. This is especially true for OS X and GTK+ 2 and it was
+therefore decided that OS X versions older than 10.4 Tiger and GTK+ 2
+version older than 2.4 are no longer supported. The wxWidgets team
+also realized that it could not do everything and that support for a
+cross-platform database API was beyond the scope and focus of the
+project so that its old wxODBC database connectivity classes were
+removed from the project. There are many cross-platform database
+libraries available and many of them are better than the old wxODBC
+and all of them are better maintained.</P>
+<H3 CLASS="western">Unicode: A Single Build for Everyone</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Until version 3.0 there
+have always been two different versions (or builds) of wxWidgets: one
+with full support for Unicode where each character was represented by
+a wchar_t internally (using two bytes under Windows and four bytes
+almost everywhere else) and another called the „ANSI“ build where
+each character was represented by a single byte. This model was
+chosen following the original Windows API model and at a point of
+time when Unicode support was hardly present anywhere else. In the
+meantime, the Windows world together with projects such as Java have
+chosen UTF-16 as the native representation for Unicode strings
+whereas much of the free software world including GTK+ and parts of
+Mac OS X have chosen UTF-8. It was therefore decided to drastically
+change the implementation of wxWidgets' string class and make it use
+UTF-16 under Windows (mostly as before) but UTF-8 elsewhere (instead
+of wide character strings using wchar_t) so that strings received
+from and sent to Unix and GTK+ library calls would no longer have to
+be converted back and forth between different Unicode representations
+(see <A HREF="http://docs.wxwidgets.org/trunk/classwx_string.html">wxString</A>
+and <A HREF="http://docs.wxwidgets.org/trunk/overview_unicode.html">Unicode
+overview</A>). Additionally, the „ANSI“ mode was removed and the
+wxString class as well as some other classes were modified to accept
+and return both Unicode and 8-bit string literals if required. The
+same was done to functions like wxPrintf() etc. Although this change
+will eventually not be seen by the end user of an application written
+using wxWidgets, it is such a fundamental change that it was the
+primary reason to give wxWidgets the new major version number 3.</P>
+<H3 CLASS="western">New 2D Drawing Code</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Although a 2D drawing API
+has always been part of wxWidgets (using so-called device contexts
+such as a window or a bitmap and pens and brushes to draw into them,
+see <A HREF="http://docs.wxwidgets.org/trunk/classwx_d_c.html">wxDC</A>,
+<A HREF="http://docs.wxwidgets.org/trunk/classwx_pen.html">wxPen</A>,
+<A HREF="http://docs.wxwidgets.org/trunk/classwx_brush.html">wxBrush</A>),
+it has not changed much since its initial inception and so the code
+was completely reorganized using a single set of frontend classes and
+different backends which will make maintainance much easier without
+having to care for binary backwards compatibility and it also helped
+isolate a number of subtle platform differences. The old drawing API
+is good enough for many tasks and reflects the drawing capabilites of
+the 1990's but it didn't make use of advanced features such as
+transparency, anti-aliasing and free matrix transforms of modern 2D
+graphics systems such as GDI+ on Windows, Cairo on Linux (and
+elsewhere) and CoreGraphics on OS X. Therefore a completely new
+drawing API (the so called graphics contexts, see <A HREF="http://docs.wxwidgets.org/trunk/classwx_graphics_context.html">wxGraphicsContext</A>)
+was added to wxWidgets making use of modern drawing engines. This is
+complemented by a bitmap class with alpha channel support and fast
+raw access to the bitmap's internal data representation. Additionally
+the API of all existing GDI class constants was corrected so that
+wxMODERN becomes wxFONTFAMILY_MODERN, wxSOLID becomes
+wxBRUSHSTYLE_SOLID etc. and the reference counting system was
+streamlined and made identical on all platforms.</P>
+<H3 CLASS="western">Changes to wxBase</H3>
+<P ALIGN=JUSTIFY>wxBase is the name of the non-GUI part of wxWidgets
+libary which provides basic class such as the aforementioned wxString
+class, container classes, as well as classes for threading,
+networking, XML parsing, path and configuration management, logging,
+debugging etc. These functions and classes have been separated into
+their own library both for being able to write non-GUI apps as well
+as to make maintainance easier through reduced interdependence. 
+</P>
+<P ALIGN=JUSTIFY>Many of the changes to wxString and the container
+classes are located in wxBase, but on top of that support to wxBase
+was added for events loops, timers and sockets for writing
+event-based client or server apps with wxWidgets 3.0. The socket code
+itself has been reorganized removing a lot of duplicated code and
+dropping the previous implementation which was separated into a C and
+a C++ part.</P>
+<H3 CLASS="western">New controls and other major GUI additions for
+all ports</H3>
+<P ALIGN=JUSTIFY>This document cannot list every bug fix and minor
+change. Rather, this paragraph summarizes the most relevant changes
+to the GUI classes of wxWidgets. Given wxWidgets' nature as a GUI
+library, these changes are also most likely to be visible to the user
+and may thus be the most important changes from a user's perspective
+(although not necessarily from a developer's perspective): 
+</P>
+<UL>
+	<LI><P ALIGN=JUSTIFY>wxDataViewCtrl and wxDataViewTreeCtrl: this
+	control can partially replace both wxListCtrl and wxTreeCtrl (for
+	which there only was a native version of Windows and partially for
+	OS X) but also extends and combines the classes by being able to
+	display a hierarchy and list at the same time and by offering a much
+	more flexible way to display and edit data on a per column basis.
+	Reimplementing wxTreeCtrl and possibly wxListCtrl in terms of
+	wxDataViewCtrl was considered, but this was dropped as certain
+	special features are not available on all platforms (or
+	differently). See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_data_view_ctrl.html">wxDataViewCtrl</A>,
+	<A HREF="http://docs.wxwidgets.org/trunk/classwx_data_view_list_ctrl.html">wxDataViewListCtrl</A>
+	and <A HREF="http://docs.wxwidgets.org/trunk/classwx_data_view_tree_ctrl.html">wxDataViewTreeCtrl</A>.</P>
+	<LI><P ALIGN=JUSTIFY>The tabular view of wxGrid has been improved
+	including a native header control, which has been separated into a
+	new control. See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_grid.html">wxGrid</A>
+	and <A HREF="http://docs.wxwidgets.org/trunk/classwx_header_ctrl.html">wxHeaderCtrl.</A></P>
+	<LI><P ALIGN=JUSTIFY>Added wxPropertyGrid which is a big generic
+	control used to display lists and hierarchies of name-value pairs.
+	Like wxDataViewCtrl, it offers a number of ready-to-use editors for
+	editing text, numbers, lists, fonts, file names etc. using in-place
+	editing or using pop-up dialog and combo boxes. Developement of
+	wxPropertyGrid has so far taken place outside of wxWidgets as a
+	separate project, but it has not been included in wxWidgets per se.
+	See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_property_grid.html">wxPropertyGrid</A>.</P>
+	<LI><P ALIGN=JUSTIFY>wxHyperlinkCtrl added, implemented natively
+	under GTK+ and in a generic way on other platforms. It can be used
+	to represent a hypertext link, for example to the homepage of the
+	developer or company. See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_hyperlink_ctrl.html">wxHyperlinkCtrl</A>.</P>
+	<LI><P ALIGN=JUSTIFY>wxFileCtrl for constructing fully customized
+	file dialogs. Complementary to this, the possibility to add custom
+	control to wxFileDialog has been added. See <A HREF="http://docs.wxwidgets.org/trunk/classwx_file_ctrl.html">wxFileCtrl</A>
+	and <A HREF="http://docs.wxwidgets.org/trunk/classwx_file_dialog.html">wxFileDialog</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Several enhancements to wxRichTextCtrl
+	including support for super- and subscript and many speed-ups. See
+	<A HREF="http://docs.wxwidgets.org/trunk/classwx_rich_text_ctrl.html">wxRichTextCtrl</A>.</P>
+	<LI><P ALIGN=JUSTIFY>The possibility to display state icons has been
+	added to wxTreeCtrl. This can also be used to implement check-box
+	like behaviour. See <A HREF="http://docs.wxwidgets.org/trunk/classwx_tree_ctrl.html">wxTreeCtrl</A>.</P>
+	<LI><P ALIGN=JUSTIFY>wxCalendarCtrl has been rewritten using native
+	code under MSW and GTK+ and enhanced in many ways (for example
+	displaying week numbers). See <A HREF="http://docs.wxwidgets.org/trunk/classwx_calendar_ctrl.html">wxCalendarCtrl</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Implemented support for auto-completion for
+	wxTextCtrl and wxComboBox.</P>
+	<LI><P ALIGN=JUSTIFY>Added wxAUIToolBar to the set of wxAUI classes,
+	which is better integrated and more flexible than the standard
+	wxToolBar.</P>
+	<LI><P ALIGN=JUSTIFY>Reimplemented wxBitmapComboBox using native
+	code under MSW and GTK+. See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_bitmap_combo_box.html">wxBitmapComboBox</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Added wxBitmapToggleButton on all platforms.
+	See also <A HREF="http://docs.wxwidgets.org/trunk/classwx_bitmap_toggle_button.html">wxBitmapToggleButton</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Added support for ellipsization on all
+	platforms and for mark-up formatting under GTK+ to wxStaticText. See
+	<A HREF="http://docs.wxwidgets.org/trunk/classwx_static_text.html">wxStaticText</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Rewritten the selection event emission logic of
+	wxListBox on all platforms to more exactly match each other when
+	selecting and deselecting certain items.</P>
+	<LI><P ALIGN=JUSTIFY>Implemented wxCollapsiblePane natively for GTK
+	and OS X. See <A HREF="http://docs.wxwidgets.org/trunk/classwx_collapsible_pane.html">wxCollapsiblePane</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Added a new sizer which can wrap across
+	multiple lines. See <A HREF="http://docs.wxwidgets.org/trunk/classwx_wrap_sizer.html">wxWrapSizer</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Added multi-sample and anti-aliasing support
+	the the OpenGL canvas and separated wxGLCanvas and wxGLContext. See
+	<A HREF="http://docs.wxwidgets.org/trunk/classwx_g_l_canvas.html">wxGLCanvas</A>.</P>
+	<LI><P ALIGN=JUSTIFY>Added wxNativeContainerWindow in order to
+	construct a wxTopLevelWindow from a native window handle (MSW and
+	GTK+).</P>
+	<LI><P ALIGN=JUSTIFY>The <A HREF="http://docs.wxwidgets.org/trunk/classwx_v_scrolled_window.html">wxVScrolledWindow</A>
+	class has been completely rewritten to accommodate the addition of
+	the new horizontal scrolling variants (<A HREF="http://docs.wxwidgets.org/trunk/classwx_h_scrolled_window.html">wxHScrolledWindow</A>
+	and <A HREF="http://docs.wxwidgets.org/trunk/classwx_h_v_scrolled_window.html">wxHVScrolledWindow</A>)
+	while still providing complete backwards compatibility for
+	wxVScrolledWindow.</P>
+</UL>
+<H3 CLASS="western">wxMac specific changes (now called wxOSX)</H3>
+<P ALIGN=JUSTIFY>One important change of the wxMac port is that the
+port is not called wxMac anymore. Instead, the more appropriate term
+wxOSX should be used as the operating system is called OS X nowadays
+and – more importantly – wxWidgets now has partial support for
+iPhone and iPod, and these are devices are clearly not Macs. Apart
+from the name change – wxMac has undergone the most fundamental
+changes of the three main ports, even if some of the changes were
+mostly reorganizing code instead of writing new code. The code has
+been reorganized into common code (common to Carbon, Cocoa and Cocoa
+Touch) including both general wrapping or front-end classes for much
+of the GUI code as well as a wrapper for the so called CoreFoundation
+classes of OS X, which are responsible on all OS X variants for
+string manipulation, font support, graphics and other basic
+functionality (CoreImage and CoreVideo have recently been added by
+Apple) and toolkit dependent code for the Carbon, Cocoa and Cocoa
+Touch API. The Carbon variant is the core of what used to be wxMac
+and is the most stable and mature version. The reason behind adding
+optional support for Cocoa and Cocoa Touch is that Carbon is not
+available on iPhones at all and that it has been deprecated for all
+64-bit versions of OS X, which is likely to be the default a few
+years from now. So while present applications using wxOSX are advised
+to use the Carbon backend due its maturity, future developement will
+have to focus on the Cocoa backend.</P>
+<P ALIGN=JUSTIFY>As part of the restructuring, all remaining drawing
+code using the old QuickDraw API has been removed (it was only an
+option before) and drawing now always takes place using CoreGraphics.
+Likewise, all code using Carbon functions no longer present in OS X
+10.4 has been removed to clean-up the code greatly. This is turn
+means, as mentioned above, that applications will require a minimum
+of OS X 10.4 in order to run, better yet OS X 10.5.</P>
+<P ALIGN=JUSTIFY>Apart from these large changes, these additional
+features can be noted:</P>
+<UL>
+	<LI><P ALIGN=JUSTIFY>Better support for IconRef</P>
+	<LI><P ALIGN=JUSTIFY>A fix for duplicate menu entries in non-English
+	locales</P>
+	<LI><P ALIGN=JUSTIFY>Accelerators allowed to be used for buttons</P>
+	<LI><P ALIGN=JUSTIFY>wxLocale::GetInfo() implemented using CFLocale</P>
+</UL>
+<H3 CLASS="western">wxGTK specific changes</H3>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">The task of the GTK+ port
+of wxWidgets is to keep up with the development of the GTK+ library
+since it has the habit of adding new controls or new APIs if the
+existing code is too limited and cannot be fixed in a backward
+compatible way. The main problem of this approach is that
+applications written using wxGTK should work with relatively old
+versions of GTK+ but should also make use of recent features. In some
+cases, supporting an old version of GTK+ hinders development so we
+decided to declare GTK+ 2.4 the minimum toolkit version that is
+supported. As an example, this made it possible to always use the
+GTK+ file dialog instead of the old generic file dialog which had to
+be used when GTK+ didn't have a usable file dialog. 
+</P>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Other parts of wxGTK that
+were rewritten or which underwent a major update include, but are not
+limited to:</P>
+<UL>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">wxToolbar now uses
+	the „new“ GTK+ toolbar API</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">wxChoice now uses
+	GtkComboBox instead of the deprecated GtkOptionMenu</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">wxComboBox now
+	always uses GtkComboBox instead of the deprecated GtkCombo class</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">URL dragging using
+	the „text/x-moz-url“ in wxURLDataObject</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Added a completely
+	new printing backend using with dialogs GtkPrint and Cairo</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Rewritten idle event
+	generation code</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Tab traversal is now
+	done natively by GTK+ instead of by wxWidgets</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Rewrote layout of
+	wxFrame's menubar, toolbar, client window and statusbar using a
+	GtkVBox instead of our own calculation</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Correctly
+	implemented SetSize() and GetSize() for toplevel windows in spite of
+	the dreaded problems with window decorations belonging to the Window
+	Manager and not the window itself</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Added an
+	asynchronous API to wxClipboard to avoid having to call wxYield()
+	from within it (which causes reentrance problems).</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Some support for
+	Hildon control from the Maemo platform used for Nokia tablets</P>
+	<LI><P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm">Rewritten the
+	wxTaskBarIconIcon class using GtkStatusIcon if available.</P>
+</UL>
+<P ALIGN=JUSTIFY STYLE="margin-bottom: 0cm"><BR>
+</P>
+<H3 CLASS="western">wxMSW specific changes</H3>
+<P STYLE="margin-bottom: 0cm">wxMSW is the most mature platform,
+mostly because it is used most often and thus has the biggest user,
+tester and developer base, but also because the underlying Windows
+system has been more successful at preserving backwards
+compatibility. Therefore, the list of wxMSW-specific changes is
+smaller and the changes usually minor details when compared to the
+changes of the other two main ports:</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Implemented more native looking
+	wxCheckListBox and add ability to store client data in it</P>
+	<LI><P STYLE="margin-bottom: 0cm">Allow longer tooltips</P>
+	<LI><P STYLE="margin-bottom: 0cm">Support for multiline labels in
+	wxCheckBox and wxToggleButton</P>
+	<LI><P STYLE="margin-bottom: 0cm">More precise print preview</P>
+	<LI><P STYLE="margin-bottom: 0cm">Show resize gripper in resizable
+	dialogs</P>
+</UL>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

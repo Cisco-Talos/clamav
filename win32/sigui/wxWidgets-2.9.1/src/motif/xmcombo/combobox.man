@@ -1,0 +1,1386 @@
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+NNAAMMEE
+       XmComboBox - The Combo Box widget class
+
+SSYYNNOOPPSSIISS
+       ##iinncclluuddee <<CCoommbbooBBooxx..hh>>
+
+       Depending on your system's configuration the place of this
+       include file may vary. In doubt, contact your local system
+       administrator. Or run in circles and shout.
+
+
+DDEESSCCRRIIPPTTIIOONN
+       The  ComboBox  widget  allows  the user to select elements
+       from a list of choices, and enter their own  values  in  a
+       text widget. To conserve screen space, the list of choices
+       is shown only when the user selects the down arrow button.
+       The  choices may then be selected from this list. The list
+       will automatically by removed when  the  user  selects  an
+       item in the list.  When the list is removed, the item that
+       was selected will be placed in the text widget. Typing the
+       escape key when the list is up, cancels the list popup.
+
+     CCllaasssseess
+       ComboBox  inherits  behaviour  and resources from CCoorree and
+       CCoommppoossiittee, CCoonnssttrraaiinntt and XXmmMMaannaaggeerr classes.
+
+       The class pointer is xxmmCCoommbbooBBooxxWWiiddggeettCCllaassss.
+
+       The class name is XXmmCCoommbbooBBooxx.
+
+     NNeeww RReessoouurrcceess
+       The following table defines a set of widget resources used
+       by the programmer to specify data. The programmer can also
+       set the resource values for the inherited classes  to  set
+       attributes  for  this  widget.  To reference a resource by
+       name or by class in a .Xdefaults file, remove the  XXmmNN  or
+       XXmmCC  prefix  and use the remaining letters. To specify one
+       of the defined values for a resource in a .Xdefaults file,
+       remove  the  XXmm  prefix  and use the remaining letters (in
+       either lowercase or uppercase, but include any underscores
+       between words). The codes in the access column indicate if
+       the given resource can be set at creation time (C), set by
+       using XXttSSeettVVaalluueess (S), retrieved by using XXttGGeettVVaalluueess (G),
+       or is not applicable (N/A).
+
+                           XXmmCCoommbbooBBooxx RReessoouurrccee SSeett
+       -----------------------------------------------------------------
+        NNaammee                            DDeeffaauulltt                  AAcccceessss
+          CCllaassss                           TTyyppee
+       -----------------------------------------------------------------
+        XmNactivateCallback             NULL                     C
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+
+
+
+
+Version 1.31              20 March 1995                         1
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+        XmNalignment                    XmALIGNMENT_CENTER       CSG
+          XmCAlignment                    unsigned char
+       -----------------------------------------------------------------
+        XmNarrowSpacingOn               False                    CSG
+          XmNCArrowSpacingOn              Boolean
+       -----------------------------------------------------------------
+        XmNautomaticSelection           False                    CSG
+          XmCAutomaticSelection           Boolean
+       -----------------------------------------------------------------
+        XmNblinkRate                    500                      CSG
+          XmCBlinkRate                    int
+       -----------------------------------------------------------------
+        XmNcolumns                      dynamic                  CSG
+          XmCColumns                      short
+       -----------------------------------------------------------------
+        XmNcursorPosition               0                        CSG
+          XmCCursorPosition               XmTextPosition
+       -----------------------------------------------------------------
+        XmNcursorPositionVisible        True                     CSG
+          XmCCursorPositionVisible        Boolean
+       -----------------------------------------------------------------
+        XmNdefaultActionCallback        NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNdropDownCallback             NULL                     CSG
+          XmCDropDownCallback             XtCallbackList
+       -----------------------------------------------------------------
+        XmNdropDownCursor               center_ptr               CSG
+          XmCDropDownCursor               Cursor
+       -----------------------------------------------------------------
+        XmNdropDownOffset               dynamic                  CSG
+          XmCDropDownOffset               Position
+       -----------------------------------------------------------------
+        XmNeditable                     False                    CG
+          XmCEditable                     Boolean
+       -----------------------------------------------------------------
+        XmNfontList                     dynamic                  CSG
+          XmCFontList                     XmFontList
+       -----------------------------------------------------------------
+        XmNitemCount                    0                        CSG
+          XmCItemCount                    int
+       -----------------------------------------------------------------
+        XmNitems                        NULL                     CSG
+          XmCItems                        XmStringTable
+       -----------------------------------------------------------------
+        XmNlabelFontList                dynamic                  CSG
+          XmCLabelFontList                XmFontList
+       -----------------------------------------------------------------
+        XmNlabelInsensitivePixmap       XmUNSPECIFIED_PIXMAP     CSG
+          XmCLabelInsensitivePixmap       Pixmap
+       -----------------------------------------------------------------
+        XmNlabelMarginBottom            0                        CSG
+
+
+
+
+
+Version 1.31              20 March 1995                         2
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+          XmCLabelMarginBottom            Dimension
+       -----------------------------------------------------------------
+        XmNlabelMarginHeight            2                        CSG
+          XmCLabelMarginHeight            Dimension
+       -----------------------------------------------------------------
+        XmNlabelMarginLeft              0                        CSG
+          XmCLabelMarginLeft              Dimension
+       -----------------------------------------------------------------
+        XmNlabelMarginRight             0                        CSG
+          XmCLabelMarginRight             Dimension
+       -----------------------------------------------------------------
+        XmNlabelMarginTop               0                        CSG
+          XmCLabelMarginTop               Dimension
+       -----------------------------------------------------------------
+        XmNlabelMarginWidth             0                        CSG
+          XmCLabelMarginWidth             Dimension
+       -----------------------------------------------------------------
+        XmNlabelPixmap                  XmUNSPECIFIED_PIXMAP     CSG
+          XmCLabelPixmap                  Pixmap
+       -----------------------------------------------------------------
+        XmNlabelString                  dynamic                  CSG
+          XmCXmString                     XmString
+       -----------------------------------------------------------------
+        XmNlabelType                    XmSTRING                 CSG
+          XmCLabelType                    unsigned char
+       -----------------------------------------------------------------
+        XmNlistMarginHeight             0                        CSG
+          XmCListMarginHeight             Dimension
+       -----------------------------------------------------------------
+        XmNlistMarginWidth              0                        CSG
+          XmCListMarginWidth              Dimension
+       -----------------------------------------------------------------
+        XmNlistSizePolicy               XmVARIABLE               CG
+          XmCListSizePolicy               unsigned char
+       -----------------------------------------------------------------
+        XmNlistSpacing                  0                        CSG
+          XmCListSpacing                  Dimension
+       -----------------------------------------------------------------
+        XmNmarginHeight                 5                        CSG
+          XmCMarginHeight                 Dimension
+       -----------------------------------------------------------------
+        XmNmarginWidth                  5                        CSG
+          XmCMarginWidth                  Dimension
+       -----------------------------------------------------------------
+        XmNmaxLength                    largest integer          CSG
+          XmCMaxLength                    int
+       -----------------------------------------------------------------
+        XmNmodifyVerifyCallback         NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNmotionVerifyCallback         NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+
+
+
+
+Version 1.31              20 March 1995                         3
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+        XmNpersistentDropDown           False                    CSG
+          XmCPersistentDropDown           Boolean
+       -----------------------------------------------------------------
+        XmNscrollBarDisplayPolicy       XmAS_NEEDED              CSG
+          XmCScrollBarDisplayPolicy       unsigned char
+       -----------------------------------------------------------------
+        XmNselectionCallback            NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNselectionPolicy              XmBROWSE_SELECT          CG
+          XmCSelectionPolicy              unsigned char
+       -----------------------------------------------------------------
+        XmNselectThreshold              5                        CSG
+          XmCSelectThreshold              int
+       -----------------------------------------------------------------
+        XmNshowLabel                    False                    CG
+          XmCShowLabel                    Boolean
+       -----------------------------------------------------------------
+        XmNsorted                       False                    CSG
+           XmCSorted                      Boolean
+       -----------------------------------------------------------------
+        XmNsortingCallback              NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNsquareArrow                  False                    CSG
+          XmCSquareArrow                  Boolean
+       -----------------------------------------------------------------
+        XmNstaticList                   False                    CSG
+          XmCStaticList                   Boolean
+       -----------------------------------------------------------------
+        XmNstringDirection              dynamic                  CSG
+          XmCStringDirection              XmStringDirection
+       -----------------------------------------------------------------
+        XmNtwmHandlingOn                False                    CSG
+          XmCTwmHandlingOn                Boolean
+       -----------------------------------------------------------------
+        XmNtopItemPostion               1                        G
+          XmCTopItemPostion               int
+       -----------------------------------------------------------------
+        XmNunselectionCallback          NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNvalue                        ""                       CSG
+          XmCValue                        String
+       -----------------------------------------------------------------
+        XmNvalueChangedCallback         NULL                     CSG
+          XmCCallback                     XtCallbackList
+       -----------------------------------------------------------------
+        XmNvisibleItemCount             8                        CSG
+          XmCVisibleItemCount             Int
+       -----------------------------------------------------------------
+
+       XXmmNNaaccttiivvaatteeCCaallllbbaacckk
+              Specifies a list of callbacks to be called when the
+
+
+
+Version 1.31              20 March 1995                         4
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+              user  presses either the key "Enter" or "Activate".
+              The type of the structure passed to  this  callback
+              is    XXmmAAnnyyCCaallllbbaacckkSSttrruucctt   and   the   reason   is
+              XXmmCCRR__AACCTTIIVVAATTEE.
+
+       XXmmNNaalliiggnnmmeenntt
+              The alignment (left to right) for the label's  text
+              or    pixmap.    Possible   values   are   XXmmAALLIIGGNN--
+              MMEENNTT__BBEEGGIINNNNIINNGG,  XXmmAALLIIGGNNMMEENNTT__CCEENNTTEERR,  and  XXmmAALLIIGGNN--
+              MMEENNTT__EENNDD.
+
+       XXmmNNaauuttoommaattiiccSSeelleeccttiioonn
+              Indicates   whether   the  XXmmNNsseelleeccttiioonnCCaallllbbaacckk  is
+              invoked each time the user moves into a new item if
+              XXmmNNaauuttoommaattiiccSSeelleeccttiioonn  is  TTrruuee  and  the selection
+              mode is XXmmBBRROOWWSSEE__SSEELLEECCTT.  If set to FFaallssee the XXmmNNss--
+              eelleeccttiioonnCCaallllbbaacckk  is  not  invoked  until  the user
+              releases the mouse button.
+
+       XXmmNNaarrrroowwSSppaacciinnggOOnn
+              Indicates whether a gap is  displayed  between  the
+              arrow  button  and  the  text  input  field if this
+              resource is set to TTrruuee and XXmmNNeeddiittaabbllee is also set
+              to  TTrruuee.   If  this  resource  is set to FFaallssee the
+              combo box widget will never display a  gab  between
+              the arrow button and the text area, irrespective of
+              the setting  of  XXmmNNeeddiittaabbllee.   Note  that  setting
+              XXmmNNaarrrroowwSSppaacciinnggOOnn  to  FFaallssee  doesn  not conform to
+              common GUI styles. And it prevents  the  user  from
+              easily   recognizing   whether  the  combo  box  is
+              editable or not.
+
+       XXmmNNbblliinnkkRRaattee
+              The time in milliseconds  that  the  cursor  spends
+              being  visible  or invisible. A value of 0 prevents
+              the cursor from blinking.
+
+       XXmmNNbboorrddeerrWWiiddtthh
+              That's no new resource but is already introduced in
+              the  core  class.  This class overrides the default
+              value and sets it to zero. You can however override
+              it  again  if  you're  dissatisfied  with  the  new
+              default setting.
+
+       XXmmNNccoolluummnnss
+              Specifies the initial width of the input field mea-
+              sured   in  character  spaces.  The  default  value
+              depends on the value of the width of the combo box.
+
+       XXmmNNccuurrssoorrPPoossiittiioonn
+              Indicates the position in the text where the insert
+              cursor is to be located. Its position is the offset
+              of  characters  and  it starts with offset 0 at the
+              beginning of the text.
+
+
+
+Version 1.31              20 March 1995                         5
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       XXmmNNccuurrssoorrPPoossiittiioonnVViissiibbllee
+              Flags whether the insert cursor position is  marked
+              by a blinking cursor.
+
+       XXmmNNddeeffaauullttAAccttiioonnCCaallllbbaacckk
+              Specifies  a list of callbacks that is called every
+              time an item  is  double  clicked.  The  reason  is
+              XXmmCCRR__DDEEFFAAUULLTT__AACCTTIIOONN.    Please  remember  that  you
+              can't use this callback if XXmmNNssttaattiiccLLiisstt  is  FFaallssee
+              because  the  list  is  immediatly hidden after the
+              user selected an item from the list. Thus the  user
+              can't double click on any item within the list.
+
+       XXmmNNddrrooppDDoowwnnCCaallllbbaacckk
+              This  is  a list of callbacks to be called when the
+              list is about to be shown or  hidden.  The  reasons
+              are XXmmCCRR__SSHHOOWW__LLIISSTT or XXmmCCRR__HHIIDDEE__LLIISSTT.
+
+       XXmmNNddrrooppDDoowwnnCCuurrssoorr
+              Specifies  the cursor to be used whenever the mouse
+              cursor is within the drop down list.
+
+       XXmmNNddrrooppDDoowwnnOOffffsseett
+              Specifies the distance between the left  border  of
+              the  list  and  the left border of the input field.
+              The default value is set to the width of the  arrow
+              button.  Only  positive values are allowed for XXmmNN--
+              ddrrooppDDoowwnnOOffffsseett, negative ones will be ignored.
+
+       XXmmNNeeddiittaabbllee
+              Specifies the type of combo box. If  set  to  True,
+              the  combo  box  contains  an editable input field.
+              Therefore, the user is free to select  entries  out
+              of  the list and to enter new text or modify it. In
+              the other case, with XmNeditable set to  False  the
+              user can solely browse in and select entries out of
+              the list.
+
+       XXmmNNffoonnttLLiisstt
+              Indicates the font list to be used  for  the  input
+              field  and  the  list. If the value is NULL at ini-
+              tialization, it is initialized by  looking  up  the
+              parent hierarchy of the widget for an ancestor that
+              is a subclass of XXmmBBuulllleettiinnBBooaarrdd, XXmmVVeennddoorrSShheellll  or
+              XXmmMMeennuuSShheellll.   If  such  an ancestor is found, it's
+              font list will be taken by the combo box widget.
+
+       XXmmNNiitteemmCCoouunntt
+              Specifies the total number of items in the list.
+
+       XXmmNNiitteemmss
+              Points to an array of compound strings representing
+              the  items to be displayed in the list. By means of
+              this a program can find out  what  items  the  list
+
+
+
+Version 1.31              20 March 1995                         6
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+              contains.  It  is also possible to set the contents
+              of the  list  box  in  one  step  by  setting  this
+              resource to a new array of compound strings. Please
+              remember:  always  set  XXmmNNiitteemmss  and  XXmmNNiitteemmCCoouunntt
+              together   in  the  same  call  to  XXttSSeettVVaalluueess  or
+              XXttVVaaSSeettVVaalluueess.  If you ignore this rule  the  combo
+              box  will  ignore you and your attempt to set these
+              resources.
+
+       XXmmNNllaabbeellIInnsseennssiittiivveePPiixxmmaapp
+              Specifies a pixmap used as the button face if  XXmmNN--
+              llaabbeellTTyyppee is set to XXmmPPIIXXMMAAPP and the combo box wid-
+              get is insensitive.
+
+       XXmmNNllaabbeellPPiixxmmaapp
+              Specifies a pixmap to be displayed to the  left  of
+              the  input  field  if  XXmmNNllaabbeellTTyyppee is XXmmPPIIXXMMAAPP and
+              XXmmNNsshhoowwLLaabbeell is True (of course).
+
+       XXmmNNllaabbeellSSttrriinngg
+              Specifies the the compound string to  be  displayed
+              if XXmmNNllaabbeellTTyyppee is set to XXmmSSTTRRIINNGG and XXmmNNsshhoowwLLaabbeell
+              is True.
+
+       XXmmNNllaabbeellTTyyppee
+              The type of label (either string or pixmap). Possi-
+              ble values are XXmmPPIIXXMMAAPP and XXmmSSTTRRIINNGG.
+
+       XXmmNNllaabbeellMMaarrggiinnTToopp,, XXmmNNllaabbeellMMaarrggiinnBBoottttoomm
+       XXmmNNllaabbeellMMaarrggiinnLLeefftt,, XXmmNNllaabbeellMMaarrggiinnRRiigghhtt
+              The  amount  of space between one side of the label
+              and the nearest margin.
+
+       XXmmNNllaabbeellMMaarrggiinnHHeeiigghhtt,, XXmmNNllaabbeellMMaarrggiinnWWiiddtthh
+              The spacing between one side of the label  and  the
+              nearest edge of a shadow.
+
+       XXmmNNlliissttMMaarrggiinnHHeeiigghhtt,, XXmmNNlliissttMMaarrggiinnWWiiddtthh
+              The  height or width of the margin between the bor-
+              der of the list and the items in the list.
+
+       XXmmNNlliissttSSiizzeePPoolliiccyy
+              Controls the reaction of  the  list  when  an  item
+              grows  horizontally beyond the current width of the
+              list and XXmmNNssttaattiiccLLiisstt is set to TTrruuee.  If  set  to
+              XXmmCCOONNSSTTAANNTT,  the list does not grow, and a horizon-
+              tal scroll bar is shown. If this resource is set to
+              XXmmVVAARRIIAABBLLEE, the list instead trys to grow such that
+              it match the size of the longest item, thus no hor-
+              izontal  scroll  bar  will  appear.   When XXmmNNlliisstt--
+              SSiizzeePPoolliiccyy is the list will again try to  grow  but
+              in  case  the width of the longest item in the list
+              is wider than the viewing area of the list a  hori-
+              zontal scroll bar appears.
+
+
+
+Version 1.31              20 March 1995                         7
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       XXmmNNlliissttSSppaacciinngg
+              The spacing between items in the list.
+
+       XXmmNNmmaarrggiinnHHeeiigghhtt
+              Specifies the distance between the top and the bot-
+              tom of the widget window and the text displayed  in
+              the input field.
+
+       XXmmNNmmaarrggiinnWWiiddtthh
+              Like  XmNmarginHeight  this  resource specifies the
+              distance between the left and the right  border  of
+              the widget window and the text.
+
+       XXmmNNmmaaxxLLeennggtthh
+              Specifies  the  maximum  length  of the text string
+              that can be entered  from  the  keyboard  into  the
+              input  field of the combo box. Strings that are put
+              into  the  input  field  using  XXmmCCoommbbooBBooxxSSeettSSttrriinngg
+              ignore this resource.
+
+       XXmmNNmmooddiiffyyVVeerriiffyyCCaallllbbaacckk
+              Contains  a list of callbacks called before text is
+              deleted from or inserted into the text area of  the
+              combo  box widget. The callbacks are called only if
+              XXmmNNeeddiittaabbllee  is  set  to  TTrruuee.   The   reason   is
+              XXmmCCRR__MMOODDIIFFYYIINNGG__TTEEXXTT__VVAALLUUEE  and  the  type  of   the
+              structure passed to this  callback  is  XXmmCCoommbbooBBooxx--
+              TTeexxttVVeerriiffyyCCaallllbbaacckkSSttrruucctt.
+
+       XXmmNNmmoottiioonnVVeerriiffyyCCaallllbbaacckk
+              Specifies  the  list  of  callbacks  that is called
+              before the insert  cursor  gets  moved  to  another
+              position.  The  reason is XXmmCCRR__MMOOVVIINNGG__IINNSSEERRTT__CCUURRSSOORR
+              and the type of  the  structure  whose  address  is
+              passed to the callback is XXmmCCoommbbooBBooxxTTeexxttVVeerriiffyyCCaallll--
+              bbaacckk--SSttrruucctt.
+
+       XXmmNNssccrroollllBBaarrDDiissppllaayyPPoolliiccyy
+              Controls the display of the vertical scroll bar  in
+              the  list  when  XXmmNNssttaattiiccLLiisstt  is set to TTrruuee..When
+              XXmmNNssccrroollllBBaarrDDiissppllaayyPPoolliiccyy is  set  to  XXmmAASS__NNEEEEDDEEDD,
+              the  vertical scroll bar is displayed only when the
+              list contains more items than can be currently dis-
+              played.  If set to XXmmSSTTAATTIICC the vertical scroll bar
+              is always displayed.
+
+       XXmmNNppeerrssiisstteennttDDrrooppDDoowwnn
+              Welcome to the sad  section  in  the  life  of  X11
+              applications.  This resource and the inherent prob-
+              lems are due to the focus policy of the window man-
+              ager  you're  using. See the further details in the
+              later sections.
+
+
+
+
+
+Version 1.31              20 March 1995                         8
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       XXmmNNsseelleeccttiioonnCCaallllbbaacckk
+              Specifies a list of callbacks that is  called  when
+              an    item    is    selected.     The   reason   is
+              XXmmCCRR__SSIINNGGLLEE__SSEELLEECCTT.  The callbacks are  NOT  called
+              when  the  user  browses  through  the items in the
+              list.
+
+       XXmmNNsseelleeccttiioonnPPoolliiccyy
+              This resource controls whether the user  can  dese-
+              lect  the  currently  selected  item within a combo
+              box.  The  default  value  is  XXmmBBRROOWWSSEE__SSEELLEECCTT,  so
+              always  one  item gets selected if the combo box is
+              editable. In the case of XXmmSSIINNGGLLEE__SSEELLEECCTT  the  user
+              may deselect the current item either by clicking on
+              it in the  drop  down  list  or  pressing  the  key
+              "Delete".  Other  values for XXmmNNsseelleeccttiioonnPPoolliiccyy are
+              currently not allowed. (Multiple selections will be
+              probably availabe with the next release.)
+
+       XXmmNNsseelleeccttTThhrreesshhoolldd
+              Specifies  the amount of pixels the mouse must move
+              until the selection of text is recognized in  click
+              and drag mode.
+
+       XXmmNNsshhoowwLLaabbeell
+              Specifies,  whether  a  label  containing text or a
+              pixmap should be displayed on the left side of  the
+              combo box. This resource can only be specified dur-
+              ing the creation of the combo  box,  afterwards  it
+              will have no effect.
+
+       XXmmNNssoorrtteedd
+              Specifies  whether the items in the list are sorted
+              or not In an unsorted list, the items are shown  in
+              the  order in which they're put into the list. When
+              adding an item to a sorted list, this item will  be
+              put at the right place (alphabetically sorted).
+
+       XXmmNNssoorrttiinnggCCaallllbbaacckk
+              Contains  a  list of callbacks that is called when-
+              ever a new item is added to the  combo  box  widget
+              and  XXmmNNssoorrtteedd is TTrruuee.  The reason is XXmmCCRR__SSOORRTTIINNGG
+              and the type of  the  structure  whose  address  is
+              passed  to  the  callback is XXmmCCoommbbooBBooxxSSoorrttiinnggCCaallll--
+              bbaacckk--SSttrruucctt.  For detailed information see the fol-
+              lowing sections.
+
+       XXmmNNssqquuaarreeAArrrrooww
+              Controls  the  width of the arrow button in respect
+              to its height. If this resource is TTrruuee  the  arrow
+              button  is  always  layed out square. Otherwise the
+              arrow button's width will be approximatly 4/5th  of
+              its height.
+
+
+
+
+Version 1.31              20 March 1995                         9
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       XXmmNNssttaattiiccLLiisstt
+              Controls whether the list is always statically dis-
+              played right below the text input area of the combo
+              box  if  set  to TTrruuee.  If you use a combo box with
+              XXmmNNssttaattiiccLLiisstt set to TTrruuee and  XXmmNNeeddiittaabbllee  set  to
+              FFaallssee  you should consider using a simple list wid-
+              get instead.
+
+       XXmmNNssttrriinnggDDiirreeccttiioonn
+              Specifies the initial direction to draw the  string
+              (from  the  left  to  the  right or in the opposite
+              direction). The whole story seems to  be  incompre-
+              hensible... therefore this resource is provided for
+              completeness only.
+
+       XXmmNNttwwmmHHaannddlliinnggOOnn
+              If  you  have  trouble  with  the  list  then  this
+              resource may help you.  Set it to True, if the list
+              gets hidden at the moment the mouse  cursor  enters
+              the list.
+
+       XXmmNNttooppIItteemmPPoossiittiioonn
+              This  resource  is intended as an informal hint. It
+              specifies the index of the item which is  displayed
+              at the visible top of the list.
+
+       XXmmNNvvaalluuee
+              Contains  the  text  of  the input field. This also
+              concerns combo  boxes  which  are  not  editable  (
+              XXmmNNeeddiittaabbllee set to False).
+
+       XXmmNNuunnsseelleeccttiioonnCCaallllbbaacckk
+              Specifies  a list of callbacks that is called when-
+              ever the currently selected item is deselected  and
+              no other item gets selected. This callback is acti-
+              vated  only  when  XXmmNNsseelleeccttiioonnPPoolliiccyy   is   XXmmSSIINN--
+              GGLLEE__SSEELLEECCTT.  The reason is XXmmCCRR__UUNNSSEELLEECCTT.  The type
+              of the structure whose address is  passed  to  this
+              callback is XXmmAAnnyyCCaallllbbaacckkSSttrruucctt.
+
+       XXmmNNvvaalluuee
+              Contains  the  text  of  the input field. This also
+              concerns combo  boxes  which  are  not  editable  (
+              XXmmNNeeddiittaabbllee set to FFaallssee).
+
+       XXmmNNvvaalluueeCChhaannggeeddCCaallllbbaacckk
+              Specifies  a  list  of callbacks to be called after
+              text is deleted from or inserted into the text area
+              of   the   combo   box   widget.   The   reason  is
+              XXmmCCRR__VVAALLUUEE__CCHHAANNGGEEDD.   The  type  of  the  structure
+              whose  address is passed to this callback is XXmmAAnnyy--
+              CCaallllbbaacckkSSttrruucctt.
+
+
+
+
+
+Version 1.31              20 March 1995                        10
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       XXmmNNvviissiibblleeIItteemmCCoouunntt
+              Specifies the number of items that can fit  in  the
+              visible  space of the list. The combo box uses this
+              value to determine the height of its list.
+
+     IInnhheerriitteedd RReessoouurrcceess
+       XmComboBox inherits behaviour and resources from the  fol-
+       lowing  superclasses.  For  a complete description of each
+       resource, refer to the man page for that superclass.
+
+     CCaallllbbaacckk IInnffoorrmmaattiioonn
+       A pointer to the following  structure  is  passed  to  the
+       XXmmNNddrrooppDDoowwnnCCaallllbbaacckk callback:
+
+       ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+         XXEEvveenntt         **_e_v_e_n_t;;
+       }} XXmmCCoommbbooBBooxxDDrrooppDDoowwnnCCaallllbbaacckkSSttrruucctt;;
+
+       _r_e_a_s_o_n         Within this structure, _r_e_a_s_o_n indicates the
+                      reason why the callback was activated. This
+                      can    be   XXmmCCRR__SSHHOOWW__LLIISSTT   as   well   as
+                      XXmmCCRR__HHIIDDEE__LLIISSTT.  A callback is called  with
+                      the  reason  XXmmCCRR__SSHHOOWW__LLIISSTT just before the
+                      list is dropped down, whereas the  callback
+                      is  called  with  XXmmCCRR__HHIIDDEE__LLIISSTT  after the
+                      list is hidden.
+
+
+       _e_v_e_n_t          Points to the XXEEvveenntt, which  triggered  the
+                      callback.  May  be  NNUULLLL if the callback is
+                      triggered by a call  to  XXmmCCoommbbooBBooxxSShhoowwLLiisstt
+                      or XXmmCCoommbbooBBooxxHHiiddeeLLiisstt.
+
+       A  pointer  to  the  following  structure is passed to the
+       XXmmNNaaccttiivvaatteeCCaallllbbaacckk callback:
+
+       ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+         XXEEvveenntt         **_e_v_e_n_t;;
+       }} XXmmAAnnyyCCaallllbbaacckkSSttrruucctt;;
+
+       _r_e_a_s_o_n         Indicates why  the  callback  was  invoked.
+                      This  is XXmmCCRR__AACCTTIIVVAATTEE for XXmmNNaaccttiivvaatteeCCaallll--
+                      bbaacckk.
+
+       _e_v_e_n_t          Points to the XXEEvveenntt, which  triggered  the
+                      callback.
+
+       A  pointer  to  the  following  structure is passed to the
+       XXmmNNsseelleeccttiioonnCCaallllbbaacckk and XXmmNNddeeffaauullttAAccttiioonnCCaallllbbaacckk:
+
+       ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+
+
+
+Version 1.31              20 March 1995                        11
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+         XXEEvveenntt         **_e_v_e_n_t;;
+         XXmmSSttrriinngg       _v_a_l_u_e;;
+         iinntt            _i_n_d_e_x;;
+       }} XXmmCCoommbbooBBooxxSSeelleeccttiioonnCCaallllbbaacckkSSttrruucctt,,  XXmmCCoommbbooBBooxxDDeeffaauullttAAcc--
+       ttiioonnCCaallllbbaacckkSSttrruucctt;;
+
+       _r_e_a_s_o_n         Within this structure, _r_e_a_s_o_n indicates the
+                      reason why the callback was  activated.  At
+                      this   time,   the  reason  can  be  either
+                      XXmmCCRR__SSIINNGGLLEE__SSEELLEECCTT or XXmmCCRR__BBRROOWWSSEE__SSEELLEECCTT
+                      depending  on  the setting of XXmmNNsseelleeccttiioonn--
+                      PPoolliiccyy.   It  indicates   that   the   user
+                      selected  a  (potentially  new) item in the
+                      list.  Whether this callback  is  activated
+                      every  time  the user moves into a new item
+                      of the list or only when the user  releases
+                      the  mouse button is controlled through the
+                      setting of XXmmNNaauuttoommaattiiccSSeelleeccttiioonn.
+
+       _e_v_e_n_t          Points to the XXEEvveenntt, which  triggered  the
+                      callback.
+
+       _v_a_l_u_e          Points  to  a  XXmmSSttrriinngg, which contains the
+                      text of the current  selected  item.   This
+                      XXmmSSttrriinngg  must never be freed or changed by
+                      the called program code!
+
+       _i_n_d_e_x          Index (starting from 1)  of  the  currently
+                      selected item in the list.
+
+       A  pointer  to  the  following  structure is passed to the
+       XXmmNNuunnsseelleeccttiioonnCCaallllbbaacckk callback:
+
+       ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+         XXEEvveenntt         **_e_v_e_n_t;;
+       }} XXmmCCoommbbooBBooxxUUnnsseelleeccttiioonnCCaallllbbaacckkSSttrruucctt;;
+
+       _r_e_a_s_o_n         Indicates why  the  callback  was  invoked.
+                      This is XXmmCCRR__UUNNSSEELLEECCTT.
+
+       _e_v_e_n_t          Points  to  the XXEEvveenntt, which triggered the
+                      callback.
+
+       A pointer to the following  structure  is  passed  to  the
+       XXmmNNmmooddiiffyyVVeerriiffyyCCaallllbbaacckk and XXmmNNmmoottiioonnVVeerriiffyyCCaallllbbaacckk call-
+       backs:
+
+       ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+         XXEEvveenntt         **_e_v_e_n_t;;
+         BBoooolleeaann        _d_o_i_t;;
+         PPoossiittiioonn       _c_u_r_r_I_n_s_e_r_t_, _n_e_w_I_n_s_e_r_t;;
+         PPoossiittiioonn       _s_t_a_r_t_P_o_s_, _e_n_d_P_o_s;;
+
+
+
+Version 1.31              20 March 1995                        12
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+         XXmmTTeexxttBBlloocckk    _t_e_x_t;;
+       }} XXmmCCoommbbooBBooxxTTeexxttVVeerriiffyyCCaallllbbaacckkSSttrruucctt,, **XXmmCCoommbbooBBooxxTTeexxttVVeerrii--
+       ffyyPPttrr;;
+
+       _r_e_a_s_o_n         Indicates  the  reason why the callback was
+                      activated.    This    can     be     either
+                      XXmmCCRR__MMOODDIIFFYYIINNGG__TTEEXXTT__VVAALLUUEE                or
+                      XXmmCCRR__MMOOVVIINNGG__IINNSSEERRTT__CCUURRSSOORR.
+
+       _e_v_e_n_t          Points to the XXEEvveenntt, which  triggered  the
+                      callback.
+
+       _d_o_i_t           Indicates   whether  the  offending  action
+                      should be performed. Setting this field  of
+                      the  callback structure to FFaallssee denies the
+                      action.
+
+       _c_u_r_r_I_n_s_e_r_t     Specifies  the  current  position  of   the
+                      insert cursor.
+
+                      Indicates  the  position  at which the user
+                      attempts to position the cursor.
+
+       _s_t_a_r_t_P_o_s       Indicates the starting position of the text
+                      to     modify.    If    the    reason    is
+                      XXmmCCRR__MMOOVVIINNGG__IINNSSEERRTT__CCUURRSSOORR this value is the
+                      same as ccuurrrrIInnsseerrtt.
+
+       _e_n_d_P_o_s         Specifies  the  ending position of the text
+                      to  modify.  If  no  text  is  replaced  or
+                      deleted, then the value will be the same as
+                      ssttaarrttPPooss.      If     the     reason     is
+                      XXmmCCRR__MMOODDIIFFYYIINNGG__TTEEXXTT__VVAALLUUEE this value is the
+                      same as _c_u_r_r_I_n_s_e_r_t.
+
+       _t_e_x_t           Holds the address of a  structure  of  type
+                      XXmmTTeexxttBBlloocckkRReecc   which  holds  the  textual
+                      information to be inserted.
+
+       The following table describes the reasons why the individ-
+       ual verification callback structure fields are valid.
+
+                RReeaassoonn                    VVaalliidd FFiieellddss
+       -----------------------------------------------------
+       XXmmCCRR__MMOODDIIFFYYIINNGG__TTEEXXTT__VVAALLUUEE     _r_e_a_s_o_n, _e_v_e_n_t, _d_o_i_t,
+                                     _s_t_a_r_t_P_o_s, _e_n_d_P_o_s, _t_e_x_t
+
+       XXmmCCRR__MMOOVVIINNGG__IINNSSEERRTT__CCUURRSSOORR     _r_e_a_s_o_n, _e_v_e_n_t, _d_o_i_t,
+                                     _c_u_r_r_I_n_s_e_r_t, _n_e_w_I_n_s_e_r_t,
+
+       A pointer to the following structure is passed to the XXmmNN--
+       ssoorrttiinnggCCaallllbbaacckk callback: ttyyppeeddeeff ssttrruucctt {{
+         iinntt            _r_e_a_s_o_n;;
+         XXEEvveenntt         **_e_v_e_n_t;;
+
+
+
+Version 1.31              20 March 1995                        13
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+         iinntt            _o_p_e_r_a_t_i_o_n;;
+         vvooiidd           **_i_t_e_m___i_n_t_e_r_n_a_l;;
+         XXmmSSttrriinngg       _i_t_e_m;;
+         iinntt            _r_e_s_u_l_t;;
+       }} XXmmCCoommbbooBBooxxSSoorrttiinnggCCaallllbbaacckkSSttrruucctt,, **XXmmCCoommbbooBBooxxSSoorrttiinnggPPttrr;;
+
+       _r_e_a_s_o_n         Indicates the reason why the  callback  was
+                      activated. This is XXmmCCRR__SSOORRTTIINNGG.
+
+       _e_v_e_n_t          Contains  always NNUULLLL and is just there for
+                      compatibility reasons.
+
+       _o_p_e_r_a_t_i_o_n      Indicates the operation to  carry  out  and
+                      can   be   either   XXmmOOPP__IINNIITT,XXmmOOPP__DDOONNEE  or
+                      XXmmOOPP__CCOOMMPPAARREE.
+
+       _i_t_e_m___i_n_t_e_r_n_a_l  Must be set during the XXmmOOPP__IINNIITT  operation
+                      to  a  suitable  representation  of the new
+                      item which is to be added to the list.   In
+                      all  subsequent calls to this callback with
+                      XXmmOOPP__CCOOMMPPAARREEorXXmmOOPP__DDOONNEE  this  field   will
+                      contain  whatever you've put into it during
+                      XXmmOOPP__IINNIITT.  For detailed information  refer
+                      to the documentation "_T_h_e _C_o_m_b_o_B_o_x _W_i_d_g_e_t".
+
+       _i_t_e_m           During XXmmOOPP__IINNIITT this field points  to  the
+                      item  to be added to the list. When sorting
+                      the list ( XXmmOOPP__CCOOMMPPAARREE) the field contains
+                      the  address  of  an item in the list which
+                      should be compared against the new item (as
+                      remembered in _i_t_e_m___i_n_t_e_r_n_a_l).
+
+       _r_e_s_u_l_t         When comparing an item (out of the list) in
+                      _i_t_e_m with the new item  (as  remembered  in
+                      _i_t_e_m___i_n_t_e_r_n_a_l)  the result has to be stored
+                      into this structure's field.
+
+       The following table describes  which  individual  callback
+       structure fields are valid during which operations.
+
+          RReeaassoonn               VVaalliidd FFiieellddss
+       ---------------------------------------------
+       XXmmOOPP__IINNIITT        _r_e_a_s_o_n, _e_v_e_n_t, _o_p_e_r_a_t_i_o_n,
+                        _i_t_e_m, _i_t_e_m___i_n_t_e_r_n_a_l
+       XXmmOOPP__DDOONNEE        _r_e_a_s_o_n, _e_v_e_n_t, _o_p_e_r_a_t_i_o_n,
+                        _i_t_e_m___i_n_t_e_r_n_a_l
+       XXmmOOPP__CCOOMMPPAARREE     _r_e_a_s_o_n, _e_v_e_n_t, _o_p_e_r_a_t_i_o_n,
+                        _i_t_e_m, _i_t_e_m___i_n_t_e_r_n_a_l, _r_e_s_u_l_t
+
+       For  more  information about controlling the sorting order
+       see the acompanying documentation "_T_h_e _C_o_m_b_o_B_o_x _W_i_d_g_e_t".
+
+     CCoonnvveenniieennccee rroouuttiinneess
+       ComboBox has a number of convenience routines  to  control
+
+
+
+Version 1.31              20 March 1995                        14
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       the behavior and contents of its children.
+
+       vvooiidd XXmmCCoommbbooBBooxxAAddddIItteemm((WWiiddggeett ww,, XXmmSSttrriinngg iitteemm,, iinntt ppooss))
+              Add a new item to the list's contents. If XXmmNNssoorrtteedd
+              is set to True, the new item is inserted alphabeti-
+              cally.  If  the  list is unsorted, the same assump-
+              tions can be applied as with XXmmLLiissttAAddddIItteemm.
+
+
+       vvooiidd   XXmmCCoommbbooBBooxxAAddddIItteemmss((WWiiddggeett   ww,,   XXmmSSttrriinngg   **iitteemmss,,
+              iinntt iitteemm__ccoouunntt,, iinntt ppooss))
+              Similar to XXmmCCoommbbooBBooxxAAddddIItteemm.  Also  see  XXmmLLiissttAAdd--
+              ddIItteemmss.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxAAddddIItteemmUUnnsseelleecctteedd((WWiiddggeett  ww,,  XXmmSSttrriinngg
+              iitteemm,, iinntt ppooss))
+              See XXmmLLiissttAAddddIItteemmUUnnsseelleecctteedd.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxCClleeaarrIItteemmSSeelleeccttiioonn((WWiiddggeett ww))
+              Deselects   all   currently   selected  items  when
+              XXmmNNsseelleeccttiioonnPPoolliiccyy is XXmmSSIINNGGLLEE__SSEELLEECCTT.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxDDeelleetteeIItteemm((WWiiddggeett ww,, XXmmSSttrriinngg iitteemm))
+              See XXmmLLiissttDDeelleetteeIItteemm.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxDDeelleetteeIItteemmss((WWiiddggeett  ww,,   XXmmSSttrriinngg
+              **iitteemmss,,   iinntt iitteemm__ccoouunntt))
+              See XXmmLLiissttDDeelleetteeIItteemmss.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxDDeelleetteePPooss((WWiiddggeett ww,, iinntt ppooss))
+              See XXmmLLiissttDDeelleetteePPooss.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxDDeelleetteeIItteemmssPPooss((WWiiddggeett ww,, iinntt iitteemm__ccoouunntt,,
+              iinntt ppooss))
+              See XXmmLLiissttDDeelleetteeIItteemmssPPooss.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxDDeelleetteeAAllllIItteemmss((WWiiddggeett ww))
+              See XXmmLLiissttDDeelleetteeAAllllIItteemmss.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxRReeppllaacceeIItteemmss((WWiiddggeett  ww,,  XXmmSSttrriinngg
+              **oolldd__iitteemmss,, iinntt iitteemm__ccoouunntt,, XXmmSSttrriinngg **nneeww__iitteemmss))
+              See XXmmLLiissttRReeppllaacceeIItteemmss.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxRReeppllaacceeIItteemmssPPooss((WWiiddggeett ww,, XXmmSSttrriinngg
+              **nneeww__iitteemmss,, iinntt iitteemm__ccoouunntt,, iinntt ppoossiittiioonn))
+
+
+
+Version 1.31              20 March 1995                        15
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+              See XXmmLLiissttRReeppllaacceeIItteemmssPPooss.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxIItteemmEExxiissttss((WWiiddggeett ww,, XXmmSSttrriinngg iitteemm))
+              See XXmmLLiissttIItteemmEExxiissttss.
+
+
+       iinntt XXmmCCoommbbooBBooxxIItteemmPPooss((WWiiddggeett ww,, XXmmSSttrriinngg iitteemm))
+              See XXmmLLiissttIItteemmPPooss.
+
+
+       BBoooolleeaann   XXmmCCoommbbooBBooxxGGeettMMaattcchhPPooss((WWiiddggeett   ww,,  XXmmSSttrriinngg
+              iitteemm,,  iinntt ****ppooss__lliisstt,, iinntt **ppooss__ccoouunntt))
+              See XXmmLLiissttGGeettMMaattcchhPPooss.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxSSeelleeccttPPooss((WWiiddggeett ww,, iinntt ppooss,, BBoooolleeaann
+              nnoottiiffyy))
+              See XXmmLLiissttSSeelleeccttPPooss.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxSSeelleeccttIItteemm((WWiiddggeett  ww,,  XXmmSSttrriinngg   iitteemm,,
+              BBoooolleeaann nnoottiiffyy))
+              See XXmmLLiissttSSeelleeccttIItteemm.
+
+
+       iinntt XXmmCCoommbbooBBooxxGGeettSSeelleecctteeddPPooss((WWiiddggeett ww))
+              This function  differs  from  XXmmLLiissttGGeettSSeelleecctteeddPPooss.
+              The  list  in  a  combo  box  can  contain only one
+              selected item. Therefore this function returns  the
+              index  of the selected item in the list or zero, if
+              none is currently selected.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxCClleeaarrSSeelleeccttiioonn((WWiiddggeett ww,, TTiimmee ttiimmee))
+              See XXmmTTeexxttFFiieellddCClleeaarrSSeelleeccttiioonn.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxCCooppyy((WWiiddggeett ww,, TTiimmee ttiimmee))
+              See XXmmTTeexxttFFiieellddCCooppyy.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxCCuutt((WWiiddggeett ww,, TTiimmee ttiimmee))
+              See XXmmTTeexxttFFiieellddCCuutt.
+
+
+       XXmmTTeexxttPPoossiittiioonn XXmmCCoommbbooBBooxxGGeettIInnsseerrttiioonnPPoossiittiioonn((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddGGeettIInnsseerrttiioonnPPoossiittiioonn.
+
+
+       XXmmTTeexxttPPoossiittiioonn XXmmCCoommbbooBBooxxGGeettLLaassttPPoossiittiioonn((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddGGeettLLaassttPPoossiittiioonn.
+
+
+
+
+
+Version 1.31              20 March 1995                        16
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       iinntt XXmmCCoommbbooBBooxxGGeettMMaaxxLLeennggtthh((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddGGeettMMaaxxLLeennggtthh.
+
+
+       cchhaarr **XXmmCCoommbbooBBooxxGGeettSSeelleeccttiioonn((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddGGeettSSeelleeccttiioonn.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxGGeettSSeelleeccttiioonnPPoossiittiioonn((WWiiddggeett  ww,,
+              XXmmTTeexxttPPoossiittiioonn **lleefftt,, XXmmTTeexxttPPoossiittiioonn **rriigghhtt))
+              See XXmmTTeexxttFFiieellddGGeettSSeelleeccttiioonnPPoossiittiioonn.
+
+
+       cchhaarr **XXmmCCoommbbooBBooxxGGeettSSttrriinngg((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddGGeettSSttrriinngg.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxIInnsseerrtt((WWiiddggeett  ww,,  XXmmTTeexxttPPoossiittiioonn
+              ppoossiittiioonn,,  cchhaarr **vvaalluuee))
+              See XXmmTTeexxttFFiieellddIInnsseerrtt.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxPPaassttee((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddPPaassttee.
+
+
+       BBoooolleeaann XXmmCCoommbbooBBooxxRReemmoovvee((WWiiddggeett ww))
+              See XXmmTTeexxttFFiieellddRReemmoovvee.
+
+
+       vvooiidd   XXmmCCoommbbooBBooxxRReeppllaaccee((WWiiddggeett   ww,,   XXmmTTeexxttPPoossiittiioonn
+              ffrroomm__ppooss,, XXmmTTeexxttPPoossiittiioonn ttoo__ppooss,, cchhaarr **vvaalluuee))
+              See XXmmTTeexxttFFiieellddRReeppllaaccee.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxSSeettAAddddMMooddee((WWiiddggeett ww,, BBoooolleeaann ssttaattee))
+              See XXmmTTeexxttFFiieellddSSeettAAddddMMooddee.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxSSeettHHiigghhlliigghhtt((WWiiddggeett   ww,,   XXmmTTeexxttPPoossiittiioonn
+              lleefftt,, XXmmTTeexxttPPoossiittiioonn rriigghhtt,, XXmmHHiigghhlliigghhttMMooddee mmooddee))
+              See XXmmTTeexxttFFiieellddSSeettHHiigghhlliigghhtt.
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxSSeettIInnsseerrttiioonnPPoossiittiioonn((WWiiddggeett   ww,,
+              XXmmTTeexxttPPoossiittiioonn ppoossiittiioonn))
+              See XXmmTTeexxttFFiieellddSSeettIInnsseerrttiioonnPPoossiittiioonn.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxSSeettMMaaxxLLeennggtthh((WWiiddggeett ww,, iinntt mmaaxx__lleennggtthh))
+              See XXmmTTeexxttFFiieellddSSeettMMaaxxLLeennggtthh.
+
+
+
+
+
+
+Version 1.31              20 March 1995                        17
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       vvooiidd  XXmmCCoommbbooBBooxxSSeettSSeelleeccttiioonn((WWiiddggeett  ww,,   XXmmTTeexxttPPoossiittiioonn
+              ffiirrsstt,, XXmmTTeexxttPPoossiittiioonn llaasstt,, TTiimmee ttiimmee))
+              See XXmmTTeexxttFFiieellddSSeettSSeelleeccttiioonn.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxSSeettSSttrriinngg((WWiiddggeett ww,, cchhaarr **vvaalluuee))
+              At least Motif 1.1 contains a very anoying bug.  If
+              you try to set the contents of an XmTextField to an
+              empty string (""), you'll get garbage, when  asking
+              the  XmTextField  for its contents afterwards. This
+              interface function provides a work around. Also see
+              XXmmTTeexxttFFiieellddSSeettSSttrriinngg.
+
+
+       vvooiidd XXmmCCoommbbooBBooxxSShhoowwPPoossiittiioonn((WWiiddggeett ww,, XXmmTTeexxttPPoossiittiioonn ppoossii--
+              ttiioonn))
+              See XXmmTTeexxttFFiieellddSShhoowwPPoossiittiioonn.
+
+
+     TThhee DDiisslliikkeedd KKeeyybbooaarrdd FFooccuuss
+       Now I'll  annotate  a  somewhat  tricky  subject.  If  the
+       resource  XXmmNNppeerrssiisstteennttDDrrooppDDoowwnn  defaults  to  its initial
+       value of FFaallssee, one can observe the following effect (this
+       may be annoying).
+
+       When the user drops down the list and then moves the mouse
+       cursor out of the window where the combo box  resides  in,
+       the  list  will be hidden. This is because the widget lost
+       the keyboard focus. Some users are irritated because  they
+       didn't  expect  that behavior, because they just moved the
+       mouse to get it out of the way. If your  window  manager's
+       focus  policy  is  "pointer  focus", i.e.  if you move the
+       pointer into another window, that  window  will  automati-
+       cally  get  the keyboard focus. On the other hand, if your
+       window manager's focus policy is "explicit", you  have  to
+       move  the  pointer  into  another window and click a mouse
+       button to give that window the  keyboard  focus.  This  is
+       often  referred  to  as  the  "click-to-type"  method.  In
+       "explicit" mode, you will never see  the  list's  annoying
+       behavior.
+
+       To  bypass  this behavior on some window managers a really
+       dirty hack was used. The user can activate that  hack,  if
+       he sets XXmmNNppeerrssiisstteennttDDrrooppDDoowwnn to TTrruuee in the application's
+       resources. Sorry, on some window managers  this  will  not
+       fix the annoying behavior.
+
+       Try  it  if  you  like  -  but  don't complain at me if it
+       doesn't work as expected. But at least it  worked  on  the
+       author's machine: a cute little SGI Indigo running 4dwm as
+       the window manager.
+
+       On some other window  managers  like  twm  you  will  face
+       another problem: the list gets hidden as soon as the mouse
+
+
+
+Version 1.31              20 March 1995                        18
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+       cursor enters the list. Try  to  set  XXmmNNttwwmmHHaannddlliinnggOOnn  to
+       TTrruuee.  This resource will also work with other window man-
+       agers.
+
+
+     CCrreeaattiinngg aa CCoommbbooBBooxx
+       Using the combo box in your own  programs  is  easy.  Just
+       create  the  widget  with one of the innumerable X toolkit
+       functions (like  XXttCCrreeaatteeMMaannaaggeeddWWiiddggeett  or  XXttVVaaCCrreeaatteeMMaann--
+       aaggeeddWWiiddggeett).
+
+
+       Specify as the widget class xmComboBoxWidgetClass - that's
+       all. There is also a so-called creation convenience  func-
+       tion  called XXmmCCrreeaatteeCCoommbbooBBooxx, but it isn't really needed.
+
+       WWiiddggeett XXmmCCrreeaatteeCCoommbbooBBooxx((_p_a_r_e_n_t_, _n_a_m_e_, _a_r_g_l_i_s_t_, _a_r_g_c_o_u_n_t))
+         WWiiddggeett         _p_a_r_e_n_t;
+         SSttrriinngg         _n_a_m_e;
+         AArrggLLiisstt        _a_r_g_l_i_s_t;
+         CCaarrddiinnaall       _a_r_g_c_o_u_n_t;
+
+       Somewhere in your program you'll need something  like  the
+       following code fragment:
+
+
+            Widget ComboBox;
+
+            ComboBox = XtVaCreateManagedWidget("combobox",
+                           xmComboBoxWidgetClass, Parent,
+                           XmNeditable, True or False,
+                           other Resources...
+                           NULL);
+
+
+       Setting  the resource XXmmNNeeddiittaabbllee is not absolutely neces-
+       sary, but it's better to do so.
+
+       After creation, items can be added to the combo box's list
+       by   means   of  interface  functions  like  XXmmCCoommbbooBBooxxAAdd--
+       ddIItteemm((......)).  Which item the user selected  can  be  deter-
+       mined by calling XXmmCCoommbbooBBooxxGGeettSSttrriinngg((......)).
+
+
+       If  you  want  to  preselect  an  item  (that is setting a
+       default item to the input field of the combo box) you  can
+       use  several convenience functions.  On a combo box with a
+       non editable input field there are two ways to  select  an
+       item:
+
+
+            XmComboBoxSelectPos(ComboBox, item #, False);
+
+       or:
+
+
+
+Version 1.31              20 March 1995                        19
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+            XmComboBoxSelectItem(ComboBox, itemString, False);
+
+       The  third parameter in these two function calls indicates
+       whether the XXmmNNsseelleeccttiioonnCCaallllbbaacckk  should  be  called.  The
+       only  difference  between these functions is the first one
+       is expecting an item number whereas the second one expects
+       a  XmString. The list is then searched for this string and
+       if it is found the input field will be updated.
+
+       On a combo box with XXmmNNeeddiittaabbllee set to  TTrruuee  use  another
+       function:
+
+            XmComboBoxSetString(ComboBox, string);
+
+       This  sets the contents of the text input field to string.
+
+
+
+BBUUGGSS
+       Not more than currently available in Motif 1.2.3 or  Motif
+       1.2.4,  but  less  than in the upcomming Motif 2.0. Report
+       bugs to albrecht@igpm.rwth-aachen.de. Include a thoroughly
+       description,  and say which version of the ComboBox widget
+       you are using.
+
+
+
+CCOOPPYYRRIIGGHHTT
+       Copyright 1993, 1994 Harald Albrecht.
+
+       The ComboBox widget is free software; you can redistribute
+       it  and/or  modify  it  under the terms of the GNU General
+       Public License as published by the Free  Software  Founda-
+       tion; either version 2, or (at your option) any later ver-
+       sion.
+
+
+
+AAVVAAIILLAABBIILLIITTYY
+       The most recent released version of the ComboBox widget is
+       always available for anonymous ftp from either
+
+              ftp.x.org (198.112.44.100)
+              /contrib/widgets/motif/ComboBox
+
+       or from
+
+              ftp.informatik.rwth-aachen.de (137.226.112.172)
+              /pub/packages/ComboBox
+
+
+
+AAUUTTHHOORR
+       Author of Software & Documentation:
+
+
+
+Version 1.31              20 March 1995                        20
+
+
+
+
+
+XmComboBox(3Xm)        Harry's Motif Tools        XmComboBox(3Xm)
+
+
+              Harald Albrecht
+              Institut fuer Geometrie und Praktische Mathematik
+              RWTH Aachen, Bundesrepublik Deutschland
+              e-mail: albrecht@igpm.rwth-aachen.de
+
+       English Documentation:
+              Chris Marotz
+              Sterling Software ITD
+              e-mail: marotz@itd.sterling.com
+
+
+
+RREELLAATTEEDD IINNFFOORRMMAATTIIOONN
+       "_T_h_e _C_o_m_b_o_B_o_x _W_i_d_g_e_t" documentation
+       CCoorree((33XX)), XXmmCCoommppoossiittee((33XX)), XXmmLLiisstt((33XX)),  XXmmTTeexxttFFiieelldd((33XX))
+       _D_o_u_g_l_a_s _A_d_a_m_s_: _T_h_e _H_i_t_c_h_h_i_k_e_r_'_s _G_u_i_d_e _t_o _t_h_e _G_a_l_a_x_y_.
+       ffiillee::////113344..113300..116611..3300//aarrcc//ppuubb//uunniixx//hhttmmll//mmoottiiffccoorrnneerr..hhttmmll
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Version 1.31              20 March 1995                        21
+
+

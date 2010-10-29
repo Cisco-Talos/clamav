@@ -1,0 +1,224 @@
+Installing wxWidgets
+--------------------
+
+This is wxWidgets for IBM OS/2 Warp3 and Warp4. This is an unstable
+development release and OS/2 is considered to be in beta.
+
+IMPORTANT NOTE: If you experience problems installing, please
+re-read this instructions and other related files (changes.txt,
+readme.txt, notes on the Web site) carefully before mailing
+wx-users or the author. Preferably, try to fix the problem first and
+then send a patch to the author. Please report bugs using the
+bug report form on the wxWidgets web site.
+
+Unarchiving
+-----------
+
+At this time there is no comprehensive setup.exe type installation program.
+wxWidgets for OS/2 requires you download various .zip files and unpack them
+to your desired location on your system.  Pick a location say,
+C:\wx\wxWidgets-2.8.0, copy the .zip files to there and unzip them ensuring you
+unzip the subdirectories as well.  You will need:
+
+- All common, generic and OS2-specific wxWidgets source;
+- samples;
+- documentation in HTML Help format;
+- makefiles for VisualAge V3.0 (possibly for EMX and Watcom C++);
+- JPEG, TIFF, PNG, ZLIB, wxSTC, REGEX, EXPAT library sources.
+
+All but the documentation is included in wxOS2-2.8.0.zip, documentation
+must be downloaded separately from the wxWidgets Web site.
+
+
+General installation notes
+--------------------------
+
+After unzipping everything your directory tree should look something like
+this:
+
+x:\wx\wxWidgets-2.8.0\docs (your HTML reference manual)
+x:\wx\wxWidgets-2.8.0\include\wx
+x:\wx\wxWidgets-2.8.0\include\wx\generic
+x:\wx\wxWidgets-2.8.0\include\wx\html
+x:\wx\wxWidgets-2.8.0\include\wx\os2
+x:\wx\wxWidgets-2.8.0\samples\....  (all the sample directories)
+x:\wx\wxWidgets-2.8.0\src
+x:\wx\wxWidgets-2.8.0\src\common
+x:\wx\wxWidgets-2.8.0\src\generic
+x:\wx\wxWidgets-2.8.0\src\html
+x:\wx\wxWidgets-2.8.0\src\jpeg
+x:\wx\wxWidgets-2.8.0\src\os2
+x:\wx\wxWidgets-2.8.0\src\png
+x:\wx\wxWidgets-2.8.0\src\tiff
+x:\wx\wxWidgets-2.8.0\src\zlib
+
+If you are using VisualAge, you will also need to ensure you have a
+\lib directory as well, x:\wx\wxWidgets-2.8.0\lib
+and you will have to set a WXWIN environment variable in your
+config.sys,
+SET WXWIN=X:\WX\WXWINDOWS-2.8.0;
+
+Compilation
+-----------
+
+For now, only VisualAge V3.0 FP 8 and EMX-0.9d (with fix4) are supported.
+However, the library has been successfully compiled with Watcom C++ as
+well. As those build environments get a bit more "formalized", I will add
+them here.
+
+Compilation with VisualAge on the one hand and EMX on the other hand are
+rather different, VisualAge is essentially following Windows' way of doing
+it, EMX is following the example of the unix ports.
+
+Compilation with VisualAge
+--------------------------
+
+In addition to VisualAge V3.0 Fixpack 8 you will need the following inorder
+to successfully build and use wxWidgets for OS/2:
+
+1.  IBM OS/2 Toolkit Version 4.5 or later
+2.  IBM TCPIP V4.0 or later
+3.  You will need the IBMLAN Lan Requester service and UPM if you wish to use
+    network based components of the library (generally a standard part of any
+    Warp Connect 3.0 or Warp 4.0 installation.
+4.  I strongly suggest that you have the latest IBM fixpacks installed for
+    all your components.
+
+Go to the \src directory and open the file, makeva.env (there should be a
+.env for each supported compiler when they are fully supported), for edit.
+This is where the "make" environment for wxOS2 is set.  Locate UMPLIB, NETLIB,
+and TCPIP environment variables about 20 lines down.  Set these to match
+your system.
+
+There are number of possible outputs you can produce.  There is a static
+lib and a dynamically linked lib, and both can be built in debug or release
+mode.  Since wxOS2 is a beta and a rough one at that, I suggest, for now,
+you stick to the debug builds.  The resultant linkable binaries will be
+output to the \lib directory as will the .dll files.  The statically linked
+lib will be named wx.lib.  Each of the third party libs will be there as well,
+including png.lib, jpeg.lib, tiff.lib, and zlib.lib.  For DLL builds the
+import libs will have the same name, only with a 'd' appended.  Thus the
+import library for the main lib in a dll build is wxd.lib.
+
+Object modules will be output into paths dictated by the build mode.  For
+example, for debug static the outputs will be in DebugOS2, for DLLs in
+DebugOS2DLL.
+
+For your first build, you can directly build the library.  For subsequent
+builds you will want to "clean" the output paths.  To build the static library
+go to \src and execute nmake all -f makefile.va.  To clean out the outputs
+execute nmake clean -f makefile.va.
+
+To build the wx.dll execut nmake all -f makefile.va WXMAKINGDLL=1.  To clean
+the outputs execute namek clean -f makefile.va WXMAKINGDLL=1.  For
+VisualAge 3.0 we use the module definition file method.
+
+If, for some reason you encounter linking problems with your dll build you may
+need to rebuild the module definition file, wx23.def, found in \src\os2.  To
+do this you need to have a static version built.  Go to the \lib directoy and
+execute CPPFILT /B /P wx.lib>temp.def.  Copy this file to \src\os2.  Delete
+the temp.def from your \lib directory.
+
+I find the following to be the easiest to reconstruct the .def file.  Open
+both the wx23.def and the temp.def file.  Copy the header of the wx23.def to
+the clipboard and paste it into the top of the temp.def file.  If you have
+a valid SQL database client with its SDK on your system you can skip the next
+step.  wxWidgets included some ODBC and SQL modules.  They expect the standard
+sql.h and such to available.  If you do not have a database client with its
+SDK (such as DB/2) then for the .dll build you need to delete the exports for
+the following three modules from your temp.def file, db.cpp, dbgrid.cpp and
+dbtable.cpp.  save you changes to temp.def.  Delete wx23.def and rename your
+temp.def to wx23.def and you are ready to go.
+
+I hope to clean up the .dll builds at some point before the the library is
+a full fledged production caliber product.  Fortunately EMX and Watcom can use
+the import and export pragmas successfully negating the need for manual .def
+files.  VA 3.0, unfortunately in C++ does not properly export the mangled
+names so we are stuck with the CPPFILT .def file method of .dll builds for
+now.
+
+When building an application that uses the wx.dll you need to build it using
+the WXUSINGDLL=1 macro.  For example to build the minimal sample you would
+go to \samples\minimal and execute nmake all -f makefile.va WXUSINGDLL=1.
+
+I strongly suggest when developing apps using wxWidgets for OS/2 under old
+VisualAge 3.0, that you use the dynamically linked library. The library is
+very large and even the most trivial statically linked .exe can be very
+large and take a long time to link.  The release builds are much smaller,
+however.  Fortunately, EMX seems to build much smaller static executables.
+
+Compilation using EMX
+---------------------
+
+In addition to EMX-0.9d you will need a rather complete Unix-like
+environment, starting with a shell (e.g. ash) and most of the
+GNU file/text/shell utilities, but also flex, bison, sed, grep, awk
+and GNU make. Particularly note that uname is relevant to get the
+configure script working - the one from GNU shell utilities 1.12
+does work (check that uname -s returns "OS/2" and uname -m returns "i386"
+and you should be mostly fine.
+
+The first thing to do is to decide on a build directory. You can either
+do in-tree builds or you can do the build in a directory separated from
+the source directory. The later has the advantage, that it is much easier
+to compile and maintain several ports of wxWidgets on OS/2 - if you are
+developping cross-platform applications you might want to compile (and
+update) e.g. wxGTK or wxX11 as well.
+
+In the following, let's assume you decided to build in
+\wx\wxWidgets-2.8.0\build\pm. Now we need to set some environment
+variables, namely MAKESHELL (to a Unix like shell, let's assume ash)
+and INSTALL (to point to the install script. If you omit this, configure
+might find something like the system's tcpip\pcomos\install.exe which will
+not do the thing you want), e.g.
+SET MAKESHELL=ash
+SET INSTALL=/wx/wxWidgets-2.8.0/install-sh -c
+
+Be warned that depending on the precise version of your make, the
+variable that needs to be set might be MAKE_SHELL instead of MAKESHELL.
+If you have a really deficient version of GNU make, it might even be
+necessary to set SHELL or even COMSPEC to a unix like shell as well.
+
+Now run the provided configure script by executing e.g.
+`ash -c "../../configure \
+   --prefix=directory_where_you_want_wxWidgets_to_be_installed"'
+from within the build directory (the relative path might be different
+depending on the build directory you selected).
+If you are already running some unix-like shell and not cmd, you may
+of course ommit the `ash -c' part in the above command.
+This will create a whole directory structure containing lib and sample
+directories which each essentially contain a suitable makefile.
+
+Calling `make' now should start a compile run which hopefully ends
+with a library being placed in the lib subdirectory.
+
+Now you can change in the samples subdirectory and call make to compile
+all samples, however currently not all will work on OS/2, so you might
+prefer to change into the directory of a specific sample
+(e.g. samples\minimal) and call make there to just build this one example.
+Essentially, each sample that's not working indicates an area, where help
+in porting wxWidgets to OS/2 would be appreciated.
+
+Finally, you can run `make install' which should install wxWidgets to
+the desired place.
+Note that we also install the wx-config script which wants to help you
+compiling your own applications, e.g. `wx-config --cxxflags` will emit the
+flags that are needed for compiling source code which includes wxWidgets
+headers, `wx-config --libs` will emit the flags needed for linking against
+wxWidgets (wx-config is assuming you are calling it from a unix-like shell!).
+
+For building a DLL, the only supported way currently is to first build the
+static library and then use Andrew Zabolotny's dllar.cmd. However, this
+works quite nicely.
+
+Finally, if you also want to build a different port, e.g. wxGTK, you
+essentially have to use the procedure described above, the only difference
+being that you have to pass a switch to configure indicating which port
+to build. If you do not do this in a separate build directory (e.g.
+\wxWidgets-2.8.0\build\gtk), you'll have to do a `make clean' first.
+The magical switches that have to be passed to configure for the various
+ports are --with-gtk (wxGTK), --with-motif (wxMotif), --with-x11 (wxX11),
+and --disable-gui (wxBase). Note that contrary to the native, PM based
+OS/2 port, all of those ports work slightly better with POSIX/2's cExt
+library. If include and library path include the suitable paths, -lcExt
+is automatically appended to the linker flags by the configure script.

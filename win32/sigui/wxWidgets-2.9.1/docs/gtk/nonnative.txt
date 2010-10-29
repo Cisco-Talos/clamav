@@ -1,0 +1,24 @@
+List of classes which should use their native GTK+ equivalents but don't:
+
+- wxStatusBar:
+    Problem with multiple fields, GtkStatusbar only seems to support one pane
+
+- wxTreeCtrl
+    Ryan Norton has implemented this
+    
+- wxListCtrl
+    Could be reimplemeted in terms of wxDataViewCtrl?
+
+- wxSplitterWindow
+    Not possible because GTK's GtkHPane and GtkVPane
+    only support either horizontal or vertical panes
+    (therefore their names) whereas wxSplitterWindow
+    supports both and can even change orientiation at
+    runtime.
+
+- wxDatePickerCtrl
+- wxCalendarCtrl
+    Use GtkCalendar
+
+- wxWizard
+    Can GtkAssistant be used?

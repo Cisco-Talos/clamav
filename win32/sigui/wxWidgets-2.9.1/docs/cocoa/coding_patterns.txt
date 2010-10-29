@@ -1,0 +1,102 @@
+=== wxCocoa coding patterns ===
+
+Any language or library tends to have a particular set of coding patterns that serve to make the code easier to read
+by making it look consistent across the project.  Objective-C makes particularly heavy use of patterns as does wxWidgets.
+It is not the intention of this document to repeat Cocoa or wxWidgets documentation except for clarity.
+
+--- Class design ---
+
+wxCocoa takes a rather unique approach by decoupling interaction between C++ and Objective-C from the wxWidgets classes.
+For any given Objective-C class you wish to override messages from or receive action messages from (e.g. as a delegate
+or notification observer) you should implement a C++ wxCocoa##ObjcClass class and one or more Objective-C classes.
+
+The C++ class goes in a file include/wx/cocoa/ObjcClass.h (where ObjcClass is the Objective-C class name) and the
+Objective-C classes can either be declared in the implementation file (src/cocoa/ObjcClass.h) or separated into an
+include/wx/cocoa/objc/ObjcClass.h file.
+
+Take NSButton as an example.  The include/wx/cocoa/NSButton.h declares a wxCocoaNSButton class.  Classes such as
+wxButton, wxCheckBox, and wxRadioButton all multiply inherit from this (protected).  These classes can almost
+be thought of as an interface whereby the inheriting class is essentially declaring that it is able to respond
+to the various Cocoa_ methods that will be called.  It is not quite a pure interface as it actually contains the
+logic for this as well, but it can be thought of from a design perspective as such.
+
+Because we do not wish to subclass Objective-C classes except when absolutely necessary we use a hash map so
+that the wxCocoaObjcClass instance can be retrieved knowing only the ObjcClass instance.  This is acheived by
+the sm_cocoaHash static member and the GetFromCocoa method.  These are provided by the HASHMAP series of macros
+in the include/wx/cocoa/ObjcAssociate.h header.
+
+In addition to the GetFromCocoa method, the pattern also provides for a pair of Associate##ObjcClass and
+Disassociate##ObjcClass methods.  These non-virtual methods if implemented by the macro merely insert and
+remove the Objective-C/C++ pair from the hash map.  More often than not they require more than just associating
+using the hash map but also require setTarget: and setAction: to be called.  This is a leftover of the original
+design where it was expected that the classes would be subclasses already containing the code to call the
+C++ virtual methods.  Later design decisions changed this to use target/action and delegates whenever possible
+which is more often the case than not.
+
+To implement a response to an action message, one should simply create a singleton instance of a controller class
+that can be used for all instances of the given Objective-C class.  For NSButton there is the wxNSButtonTarget
+class which implements the (arbitrarily named) wxNSButtonAction: method.  The wxCocoaNSButton::AssociateNSButton
+method is implemented to setTarget:sm_cocoaTarget (the singleton wxNSButtonTarget) and
+setAction:@selector(wxNSButtonAction:).  When the button is clicked, the NSButton will send a wxNSButtonAction:
+message to its target (the singleton wxNSButtonTarget) with itself as the sender.  The implementation of
+that message simply looks up the wxCocoaNSButton in the hash map and calls the Cocoa_wxNSButtonAction method.
+
+The wxWidgets class (e.g. wxButton or wxCheckBox) implements that method as it sees fit.  For example, to
+simply send the corresponding wxWidgets wxEvent.
+
+It should be noted that a better design might have used a generic target/action handler since target/action isn't
+actually specific to buttons.  This might be a future design change.
+
+Of note, wxCocoaNSButton does not inherit from anything, particularly from wxCocoaNSControl.  This is because
+of the C++ non-virtual base class problem.  Instead, wxControl inherits from wxControlBase and wxCocoaNSControl.
+wxButtonBase in turn inherits from wxControl and wxButton in turn inherits from wxButtonBase and wxCocoaNSButton.
+
+One may be wondering how NSControl events (if any) make their way to the wxControl.  The answer is in the way
+the Associate* methods are called.  This is where the Set* methods come in.
+
+Within the wxWidgets class (e.g. wxButton) there is a SetNSButton(NSButton*) method.  This method calls
+AssociateNSButton and DisassociateNSButton appropriately and also calls the base class SetNSControl implemented
+by the wxControl class (note: not the wxCocoaNSControl class).  SetNSControl does a similar thing but then
+calls its base class SetNSView method.  All of these are implemented using the same macro except for SetNSView
+which is implemented to do proper retain/release and set the m_cocoaNSView instance variable in wxWindow.
+
+In addition to the Set* set of methods, there is also a Get* set.  These are implemented (inline) to cast
+the root class pointer type to the desired type.   For instance, GetNSButton merely returns
+(NSButton*)m_cocoaNSView.  These are a convenience for coding the library itself and are also public such that
+users of wxCocoa wishing to make Cocoa-specific calls can easily get at a properly-typed instance.
+
+This works well for the common case like a button or checkbox where one Cocoa class clearly represents one
+wxWidgets class.  For more complex cases involving a Cocoa view hierarchy one may need to implement these
+methods in a different manner.
+
+
+--- The view hierarchy ---
+
+Because the Cocoa view hierarchy isn't a perfect match with the wxWidgets hierarchy, there are some conventions
+used to resolve this conflict.  The first is that m_cocoaNSView is defined to be the view which most-closely
+represents the wxWidgets view.  For instance, a wxButton has an NSButton instance and a wxStaticBox has an NSBox
+instance.  Unfortunately, wxWidgets defines some behavior that Cocoa cannot directly implement.  This is primarily
+window scrolling (e.g. without using a wxScrolledWindow) and window hiding.
+
+Scrolling is implemented in a separate class known as wxWindowCocoaScrollView.  This class does not fit into
+the wxWidgets class hierarchy but instead implements the wxCocoaNSView interface itself, including listening for
+the Cocoa_FrameChanged notification.  This is a good example of why the Objective-C to C++ shim code is
+unrelated to the wxWidgets class hierarchy.  As you can clearly see, it allows the shim code to be used for
+classes that aren't part of the wxWidgets hierarchy.
+
+Hiding is implemented in another class known as wxWindowCocoaHider in a similar manner to wxWindowCocoaScrollView.
+This is an artifact of the pre-Panther days of Cocoa where there was no method for hiding a view.
+
+What these classes do is provide a Cocoa view that sits between the wxWidget's parent window's view and the
+m_cocoaNSView provided by the window.  The wxWindow class has a GetNSViewForSuperview() method that returns either
+the m_cocoaNSView (if the window does not need scrolling behavior and is not hidden) or returns the scroll view
+for the case of scrolling or the dummy view in the case of hiding.  As the name suggests, the method is used
+from the parent wxWindow (the superview) when it sends something like an addSubview: message.  The method is under
+no circumstances intended to be used as the receiver of an addSubview message.  In fact, not even the GetNSView()
+method should be used for this as in [m_parent->GetNSView() addSubview:GetNSViewForSuperView()] because this
+functionality is provided by the CocoaAddChild method.
+
+Note that there is a small hole in the API here because classes other than wxWindow wishing to implement a view
+hierarchy will not be able to correctly do this since CocoaAddChild is not virtual and there is no virtual
+GetNSViewForSubviews() method.
+

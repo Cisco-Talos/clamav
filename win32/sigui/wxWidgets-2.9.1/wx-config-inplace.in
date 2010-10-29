@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Name:        wx-config-inplace
+# Purpose:     wx configuration in tree search and query tool
+# Author:      Ron <ron@debian.org>
+# Modified by: VZ on 2005-09-20 to make it work with Bourne shell
+# Created:     14/9/2004
+# RCS-ID:      $Id$
+# Copyright:   (c) 2004 Ron <ron@debian.org>
+# Licence:     wxWindows licence
+############################################################################
+
+# Not much to do here.  Just initialise prefix to point things into the
+# local tree by default and then source the real wx-config if it all still
+# looks sane.
+
+check_dirname()
+{
+    if [ ! -d "$1" ]; then
+        printf "\n  *** Error: Directory '$1'\n"    1>&2
+        printf "             no longer exists.\n\n" 1>&2
+        exit 1
+    fi
+    ( cd $1 && pwd )
+}
+
+# set the variables which allow the real wx-config to check if we're using it
+# in place or after installation
+this_prefix=`check_dirname "@abs_top_srcdir@"`
+if [ "x$this_prefix" = "x" ]; then
+    exit 1
+fi
+this_exec_prefix=`check_dirname "@abs_top_builddir@"`
+if [ "x$this_exec_prefix" = "x" ]; then
+    exit 1
+fi
+
+. "$this_exec_prefix/lib/wx/config/@TOOLCHAIN_FULLNAME@"
+

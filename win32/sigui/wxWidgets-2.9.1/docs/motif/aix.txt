@@ -1,0 +1,17 @@
+Notes for wxWidgets compilation on AIX
+--------------------------------------
+
+wxWidgets 2.0 has been compiled under AIX with the C set ++ 3.1.
+
+The environment variables CC and CXX should be set accordingly before running
+configure for the first time:
+
+For Bourne shell (sh, ksh, zsh, bash) users:
+
+	CC=xlc ; export CC
+	CXX=xlC ; export CXX
+
+For C shell (csh, tcsh) users:
+
+	setenv CC xlc
+	setenv CXX xlC

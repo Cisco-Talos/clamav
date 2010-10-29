@@ -1,0 +1,29 @@
+
+ A simple autopackaged wxWidgets application
+ ==============================================================================
+
+ This directory contains the minimal wxWidgets sample program, a bakefile,
+ and an Autopackage spec file; this file shows you how to use them to create
+ the release of a wxWidgets-based application for Linux.
+
+ For more info about Autopackage refer to:
+  http://autopackage.org
+
+ A generic quick-start guide for non-wxWidgets based applications is at:
+  http://autopackage.org/developer-quickstart.html
+
+
+ Assuming you already have downloaded wxGTK port of wxWidgets, compiled it and
+ installed it, you need to install Autopackage and bakefile.
+ Search http://autopackage.org and http://bakefile.sourceforge.net for the download
+ page and grab the latest release.
+
+ Once you've got your development environment ready, just do from your shell:
+
+    bakefile -f gnu minimal.bkl     # to create the GNUmakefile for our app
+    makeinstaller                   # to create the Autopackage for our app
+
+ Yes: it's so easy. Now try to run "package install wxminimal-1.0-1.x86.package' and
+ admire your brand-new distro-neutral installer for Linux.
+
+

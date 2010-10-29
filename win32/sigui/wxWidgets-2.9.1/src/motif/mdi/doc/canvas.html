@@ -1,0 +1,140 @@
+<HTML>
+
+<HEAD>
+<TITLE>XsMDICanvas Class</TITLE>
+<LINK REV="made" HREF="mailto:ssadler@cisco.com">
+</HEAD>
+
+<H2>
+The XsMDICanvas Class
+</H2>
+
+<P>
+This section describes how to build and manipulate an MDI using the
+<I>XsMDICanvas</I> class.  Minimally, you must perform the following actions
+to build and display an MDI canvas:
+
+<OL>
+<LI>Create the <I>XsMDICanvas</I> object.</LI>
+<LI>Create the documents as instances of subclasses of <I>XsMDIWindow</I>.</LI>
+<LI>Add the documents to the canvas</LI>
+<LI>Show the canvas</LI>
+</OL>
+
+<P>
+<B>Constructor and Destructor:</B>
+
+<P>
+The <I>XsMDICanvas</I> accepts two arguments:
+
+<DL>
+<DD>XsMDICanvas (const char *name, Widget parent)</DD>
+</DL>
+
+<P>
+The <I>name</I> parameter specifies the name of the canvas and is used
+as the widget name for the underlying implementation.  The <I>parent</I>
+parameter specifies the widget that is to be used as the parent of the
+canvas.
+
+<P>
+The <I>XsMDICanvas</I> destructor destroys the canvas, but it <B>does not</B>
+destroy any of the underlying documents.  It is up to the application to
+destroy these.
+
+<P>
+<B>Adding and removing documents:</B>
+
+<P>
+After the documents are created, they must be added to the canvas.  The
+<I>XsMDICanvas::add()</I> member-function adds documents to the canvas:
+
+<DL>
+<DD>virtual void add (XsMDIWindow *window)</DD>
+</DL>
+
+<P>
+The behavior of adding the same document to the canvas more than once
+is undefined.  Documents can be removed from the canvas by using:
+
+<DL>
+<DD>virtual void remove (XsMDIWindow *window)</DD>
+</DL>
+
+<P>
+Additionally, all documents can be removed from the canvas with:
+
+<DL>
+<DD>void removeAll ( )</DD>
+</DL>
+
+<P>
+The number of documents currently installed in the canvas can be
+retrieved with:
+
+<DL>
+<DD>int numWindows ( ) const</DD>
+</DL>
+
+<P>
+<B>Showing the canvas:</B>
+
+<P>
+In order to show (manage) the canvas call the <I>show</I> member function:
+
+<DL>
+<DD>virtual void show ( )</DD>
+</DL>
+
+This member-function is responsible for cycling all of the installed documents
+and calling their respective <I>XsMDIWindow::_buildClientArea()</I>
+member-functions.  After each document has been created, <I>show</I> will then
+manage each document and, finally, itself.
+
+<P>
+<B>Window Placement:</B>
+
+<P>
+The current implementation of <I>XsMDICanvas</I> uses a very simple algorithm
+to place the documents on the canvas.  In order to implement a more specific
+placement algorithm, derive a class from <I>XsMDICanvas</I> and override
+the member-function:
+
+<DL>
+<DD>virtual  void _placeWindow (XsMDIWindow *win)</DD>
+</DL>
+
+<P>
+This member-function is called for each document in the canvas to compute
+the location of the document.  Please refer to the code (<I>XsMDICanvas.C</I>)
+for more details.
+
+<P>
+<B>Canvas Behavior:</B>
+
+<P>
+The <I>XsMDICanvas</I> is implemented as an <I>XmScrolledWindow</I> with an
+<I>XmDrawingArea</I> work-window.  The instance name for the work-window
+is <I>canvas</I>.  Internal callbacks in the canvas class force the work-window
+to be at-least the size of the clip-window.  This prevents documents from
+being clipped as they are moved around.  
+
+<P>
+By default, the <I>XmDrawingArea</I> work-window has its <I>XmNresizePolicy</I>
+set to <I>XmRESIZE_GROW</I>.  This will allow the work-area to grow to
+whatever size necessary, but it will not automatically shrink as windows
+are manipulated.  If different behavior is desired, the <I>XmNresizePolicy</I>
+resource on the work-area can be set to <I>XmRESIZE_ANY</I>.  This will
+force the work-window to recompute its size as windows are manipulated, and
+it will grow and shrink as necessary.  However, the <I>XsMDICanvas</I> will
+still force the work-area to be at-least the size of the clip-window.
+
+<P>To change the default behavior, add the following resource:
+
+<DL>
+<DD>&ltXsMDICanvas name&gt*canvas.resizePolicy:   XmRESIZE_ANY</DD>
+</DL>
+
+</BODY>
+</HTML>
+

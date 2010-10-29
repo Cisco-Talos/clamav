@@ -1,0 +1,1362 @@
+<!-- Creator     : groff version 1.18.1 -->
+<!-- CreationDate: Mon Mar 13 18:03:10 2006 -->
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta name="Content-Style" content="text/css">
+<title>TIFFSetField</title>
+</head>
+<body>
+
+<h1 align=center>TIFFSetField</h1>
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#RETURN VALUES">RETURN VALUES</a><br>
+<a href="#DIAGNOSTICS">DIAGNOSTICS</a><br>
+<a href="#SEE ALSO">SEE ALSO</a><br>
+
+<hr>
+<a name="NAME"></a>
+<h2>NAME</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p>TIFFSetField, TIFFVSetField &minus; set the value(s) of a
+tag in a <small>TIFF</small> file open for writing</p>
+</td>
+</table>
+<a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p><b>#include &lt;tiffio.h&gt;</b></p>
+<!-- INDENTATION -->
+<p><b>int TIFFSetField(TIFF *</b><i>tif</i><b>, ttag_t</b>
+<i>tag</i><b>,</b> <i>...</i><b>)</b></p>
+<!-- INDENTATION -->
+<p><b>#include &lt;stdarg.h&gt;</b></p>
+<!-- INDENTATION -->
+<p><b>int TIFFVSetField(TIFF *</b><i>tif</i><b>, ttag_t</b>
+<i>tag</i><b>, va_list</b> <i>ap</i><b>)</b></p>
+</td>
+</table>
+<a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p><i>TIFFSetField</i> sets the value of a field or
+pseudo-tag in the current directory associated with the open
+<small>TIFF</small> file <i>tif</i>. (A <i>pseudo-tag</i> is
+a parameter that is used to control the operation of the
+<small>TIFF</small> library but whose value is not read or
+written to the underlying file.) To set the value of a field
+the file must have been previously opened for writing with
+<i>TIFFOpen</i>(3TIFF); pseudo-tags can be set whether the
+file was opened for reading or writing. The field is
+identified by <i>tag</i>, one of the values defined in the
+include file <b>tiff.h</b> (see also the table below). The
+actual value is specified using a variable argument list, as
+prescribed by the <i>stdarg</i>(3) interface (or, on some
+machines, the <i>varargs</i>(3) interface.)</p>
+<!-- INDENTATION -->
+<p><i>TIFFVSetField</i> is functionally equivalent to
+<i>TIFFSetField</i> except that it takes a pointer to a
+variable argument list. <i>TIFFVSetField</i> is useful for
+writing routines that are layered on top of the
+functionality provided by <i>TIFFSetField</i>.</p>
+<!-- INDENTATION -->
+<p>The tags understood by <i>libtiff</i>, the number of
+parameter values, and the expected types for the parameter
+values are shown below. The data types are: <i>char*</i> is
+null-terminated string and corresponds to the
+<small>ASCII</small> data type; <i>uint16</i> is an unsigned
+16-bit value; <i>uint32</i> is an unsigned 32-bit value;
+<i>uint16*</i> is an array of unsigned 16-bit values.
+<i>void*</i> is an array of data values of unspecified
+type.</p>
+<!-- INDENTATION -->
+<p>Consult the <small>TIFF</small> specification for
+information on the meaning of each tag.</p></td>
+</table>
+<!-- TABS -->
+
+<p><i>Tag Name Count Types Notes</i></p>
+<!-- TABS -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="5" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_ARTIST</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_BADFAXLINES</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_BITSPERSAMPLE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_CLEANFAXDATA</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_COLORMAP</p>
+</td>
+<td width="8%">
+
+<p>3</p>
+</td>
+<td width="24%">
+
+<p>uint16*</p>
+</td>
+<td width="16%">
+
+<p>1&lt;&lt;BitsPerSample arrays</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_COMPRESSION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_CONSECUTIVEBADFAXLINES</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_COPYRIGHT</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_DATETIME</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_DOCUMENTNAME</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_DOTRANGE</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_EXTRASAMPLES</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16,uint16*</p>
+</td>
+<td width="16%">
+
+<p>&dagger; count &amp; types array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_FAXFILLFUNC</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>TIFFFaxFillFunc</p>
+</td>
+<td width="16%">
+
+<p>G3/G4 compression pseudo-tag</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_FAXMODE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>int</p>
+</td>
+<td width="16%">
+
+<p>&dagger; G3/G4 compression pseudo-tag</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_FILLORDER</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_GROUP3OPTIONS</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_GROUP4OPTIONS</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_HALFTONEHINTS</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_HOSTCOMPUTER</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_ICCPROFILE</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint32,void*</p>
+</td>
+<td width="16%">
+
+<p>count, profile data</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_IMAGEDEPTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_IMAGEDESCRIPTION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_IMAGELENGTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_IMAGEWIDTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_INKNAMES</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16, char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_INKSET</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_JPEGCOLORMODE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>int</p>
+</td>
+<td width="16%">
+
+<p>&dagger; JPEG pseudo-tag</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_JPEGQUALITY</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>int</p>
+</td>
+<td width="16%">
+
+<p>JPEG pseudo-tag</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_JPEGTABLES</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint32*,void*</p>
+</td>
+<td width="16%">
+
+<p>&dagger; count &amp; tables</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_JPEGTABLESMODE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>int</p>
+</td>
+<td width="16%">
+
+<p>&dagger; JPEG pseudo-tag</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_MAKE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_MATTEING</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_MAXSAMPLEVALUE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_MINSAMPLEVALUE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_MODEL</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_ORIENTATION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PAGENAME</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PAGENUMBER</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PHOTOMETRIC</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PHOTOSHOP</p>
+</td>
+<td width="8%">
+
+<p>?</p>
+</td>
+<td width="24%">
+
+<p>uint32,void*</p>
+</td>
+<td width="16%">
+
+<p>count, data</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PLANARCONFIG</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PREDICTOR</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_PRIMARYCHROMATICITIES</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float*</p>
+</td>
+<td width="16%">
+
+<p>6-entry array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_REFERENCEBLACKWHITE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float*</p>
+</td>
+<td width="16%">
+
+<p>&dagger; 2*SamplesPerPixel array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_RESOLUTIONUNIT</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_RICHTIFFIPTC</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint32,void*</p>
+</td>
+<td width="16%">
+
+<p>count, data</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_ROWSPERSTRIP</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger; must be &gt; 0</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SAMPLEFORMAT</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SAMPLESPERPIXEL</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger; value must be &lt;= 4</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SMAXSAMPLEVALUE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>double</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SMINSAMPLEVALUE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>double</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SOFTWARE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_STONITS</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>double</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SUBFILETYPE</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_SUBIFD</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16,uint32*</p>
+</td>
+<td width="16%">
+
+<p>count &amp; offsets array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_TARGETPRINTER</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>char*</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_THRESHHOLDING</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_TILEDEPTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_TILELENGTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger; must be a multiple of 8</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_TILEWIDTH</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint32</p>
+</td>
+<td width="16%">
+
+<p>&dagger; must be a multiple of 8</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_TRANSFERFUNCTION</p>
+</td>
+<td width="8%">
+
+<p>1 or 3&Dagger; uint16*</p>
+</td>
+<td width="24%"></td>
+<td width="16%">
+
+<p>1&lt;&lt;BitsPerSample entry arrays</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_WHITEPOINT</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float*</p>
+</td>
+<td width="16%">
+
+<p>2-entry array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_XMLPACKET</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint32,void*</p>
+</td>
+<td width="16%">
+
+<p>count, data</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_XPOSITION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_XRESOLUTION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_YCBCRCOEFFICIENTS</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float*</p>
+</td>
+<td width="16%">
+
+<p>&dagger; 3-entry array</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_YCBCRPOSITIONING</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_YCBCRSAMPLING</p>
+</td>
+<td width="8%">
+
+<p>2</p>
+</td>
+<td width="24%">
+
+<p>uint16</p>
+</td>
+<td width="16%">
+
+<p>&dagger;</p>
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_YPOSITION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float</p>
+</td>
+<td width="16%">
+</td>
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="41%">
+
+<p>TIFFTAG_YRESOLUTION</p>
+</td>
+<td width="8%">
+
+<p>1</p>
+</td>
+<td width="24%">
+
+<p>float</p>
+</td>
+<td width="16%">
+</td>
+</table>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p>&dagger; Tag may not have its values changed once data is
+written.<br>
+&Dagger; If <i>SamplesPerPixel</i> is one, then a single
+array is passed; otherwise three arrays should be
+passed.<br>
+* The contents of this field are quite complex. See <b>The
+ICC Profile Format Specification</b>, Annex B.3
+&quot;Embedding ICC Profiles in TIFF Files&quot; (available
+at http://www.color.org) for an explanation.</p>
+</td>
+</table>
+<a name="RETURN VALUES"></a>
+<h2>RETURN VALUES</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p>1 is returned if the operation was successful. Otherwise,
+0 is returned if an error was detected.</p>
+</td>
+</table>
+<a name="DIAGNOSTICS"></a>
+<h2>DIAGNOSTICS</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p>All error messages are directed to the
+<b>TIFFError</b>(3TIFF) routine.</p>
+<!-- INDENTATION -->
+<p><b>%s: Cannot modify tag &quot;%s&quot; while
+writing</b>. Data has already been written to the file, so
+the specified tag&rsquo;s value can not be changed. This
+restriction is applied to all tags that affect the format of
+written data.</p>
+<!-- INDENTATION -->
+<p><b>%d: Bad value for &quot;%s&quot;</b>. An invalid value
+was supplied for the named tag.</p>
+</td>
+</table>
+<a name="SEE ALSO"></a>
+<h2>SEE ALSO</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="8%"></td>
+<td width="91%">
+<p><b>TIFFOpen</b>(3TIFF), <b>TIFFGetField</b>(3TIFF),
+<b>TIFFSetDirectory</b>(3TIFF),
+<b>TIFFWriteDirectory</b>(3TIFF),
+<b>TIFFReadDirectory</b>(3TIFF), <b>libtiff</b>(3TIFF)</p>
+<!-- INDENTATION -->
+<p>Libtiff library home page:
+<b>http://www.remotesensing.org/libtiff/</b></p>
+</td>
+</table>
+<hr>
+</body>
+</html>

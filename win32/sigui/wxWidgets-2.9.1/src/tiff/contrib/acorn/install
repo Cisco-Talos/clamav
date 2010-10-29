@@ -1,0 +1,128 @@
+If "%0" = "" Then Error Syntax: install |<source_dir> |<dest_dir>
+If "%1" = "" Then Error Syntax: install |<source_dir> |<dest_dir>
+Set LibTiffInstall$Dir %0
+Set LibTiff$Dir %1
+Set Alias$CPY Copy <LibTiffInstall$Dir>.%%0 <LibTiff$Dir>.%%1 ~C~DF~NRV
+CDir <LibTiff$Dir>
+CDir <LibTiff$Dir>.c
+CDir <LibTiff$Dir>.h
+CDir <LibTiff$Dir>.o
+CPY COPYRIGHT			COPYRIGHT
+CPY README			README
+CPY VERSION			VERSION
+CPY dist.tiff/alpha             tiff/alpha
+CPY contrib.acorn.SetVars	SetVars
+CPY contrib.acorn.Makefile	Makefile
+CPY contrib.acorn.cleanlib      cleanlib
+CPY port.getopt/c		c.getopt
+CPY libtiff.mkg3states/c	c.mkg3states
+CPY libtiff.mkspans/c		c.mkspans
+CPY libtiff.mkversion/c		c.mkversion
+CPY libtiff.tif_acorn/c		c.tif_acorn
+CPY libtiff.tif_aux/c		c.tif_aux
+CPY libtiff.tif_close/c		c.tif_close
+CPY libtiff.tif_codec/c		c.tif_codec
+CPY libtiff.tif_compress/c	c.tif_compre
+CPY libtiff.tif_dir/c		c.tif_dir
+CPY libtiff.tif_dirinfo/c	c.tif_dirinf
+CPY libtiff.tif_dirread/c	c.tif_dirrea
+CPY libtiff.tif_dirwrite/c	c.tif_dirwri
+CPY libtiff.tif_dumpmode/c	c.tif_dumpmo
+CPY libtiff.tif_error/c		c.tif_error
+CPY libtiff.tif_fax3/c		c.tif_fax3
+CPY libtiff.tif_flush/c		c.tif_flush
+CPY libtiff.tif_getimage/c	c.tif_getima
+CPY libtiff.tif_jpeg/c		c.tif_jpeg
+CPY libtiff.tif_lzw/c		c.tif_lzw
+CPY libtiff.tif_next/c		c.tif_next
+CPY libtiff.tif_open/c		c.tif_open
+CPY libtiff.tif_packbits/c	c.tif_packbi
+CPY libtiff.tif_predict/c	c.tif_predic
+CPY libtiff.tif_print/c		c.tif_print
+CPY libtiff.tif_read/c		c.tif_read
+CPY libtiff.tif_strip/c		c.tif_strip
+CPY libtiff.tif_swab/c		c.tif_swab
+CPY libtiff.tif_thunder/c	c.tif_thunde
+CPY libtiff.tif_tile/c		c.tif_tile
+CPY libtiff.tif_version/c	c.tif_versio
+CPY libtiff.tif_warning/c	c.tif_warnin
+CPY libtiff.tif_write/c		c.tif_write
+CPY libtiff.tif_zip/c		c.tif_zip
+CPY libtiff.t4/h		h.t4
+CPY libtiff.tiff/h		h.tiff
+CPY libtiff.tiffcomp/h		h.tiffcomp
+CPY libtiff.tiffconf/h		h.tiffconf
+CPY libtiff.tiffio/h		h.tiffio
+CPY libtiff.tiffiop/h		h.tiffiop
+CPY libtiff.tif_dir/h		h.tif_dir
+CPY libtiff.tif_fax3/h		h.tif_fax3
+CPY libtiff.tif_predict/h	h.tif_predic
+SetType <LibTiff$Dir>.COPYRIGHT		Text
+SetType <LibTiff$Dir>.README		Text
+SetType <LibTiff$Dir>.VERSION		Text
+SetType <LibTiff$Dir>.tiff/alpha        Text
+SetType <LibTiff$Dir>.SetVars		Obey
+SetType <LibTiff$Dir>.Makefile		fe1
+SetType <LibTiff$Dir>.cleanlib          Obey
+SetType <LibTiff$Dir>.c.getopt		Text
+SetType <LibTiff$Dir>.c.mkg3states	Text
+SetType <LibTiff$Dir>.c.mkspans		Text
+SetType <LibTiff$Dir>.c.mkversion	Text
+SetType <LibTiff$Dir>.c.tif_acorn	Text
+SetType <LibTiff$Dir>.c.tif_aux		Text
+SetType <LibTiff$Dir>.c.tif_close	Text
+SetType <LibTiff$Dir>.c.tif_codec	Text
+SetType <LibTiff$Dir>.c.tif_compre	Text
+SetType <LibTiff$Dir>.c.tif_dir		Text
+SetType <LibTiff$Dir>.c.tif_dirinf	Text
+SetType <LibTiff$Dir>.c.tif_dirrea	Text
+SetType <LibTiff$Dir>.c.tif_dirwri	Text
+SetType <LibTiff$Dir>.c.tif_dumpmo	Text
+SetType <LibTiff$Dir>.c.tif_error	Text
+SetType <LibTiff$Dir>.c.tif_fax3	Text
+SetType <LibTiff$Dir>.c.tif_flush	Text
+SetType <LibTiff$Dir>.c.tif_getima	Text
+SetType <LibTiff$Dir>.c.tif_jpeg	Text
+SetType <LibTiff$Dir>.c.tif_lzw		Text
+SetType <LibTiff$Dir>.c.tif_next	Text
+SetType <LibTiff$Dir>.c.tif_open	Text
+SetType <LibTiff$Dir>.c.tif_packbi	Text
+SetType <LibTiff$Dir>.c.tif_predic	Text
+SetType <LibTiff$Dir>.c.tif_print	Text
+SetType <LibTiff$Dir>.c.tif_read	Text
+SetType <LibTiff$Dir>.c.tif_strip	Text
+SetType <LibTiff$Dir>.c.tif_swab	Text
+SetType <LibTiff$Dir>.c.tif_thunde	Text
+SetType <LibTiff$Dir>.c.tif_tile	Text
+SetType <LibTiff$Dir>.c.tif_versio	Text
+SetType <LibTiff$Dir>.c.tif_warnin	Text
+SetType <LibTiff$Dir>.c.tif_write	Text
+SetType <LibTiff$Dir>.c.tif_zip		Text
+SetType <LibTiff$Dir>.h.t4		Text
+SetType <LibTiff$Dir>.h.tiff		Text
+SetType <LibTiff$Dir>.h.tiffcomp	Text
+SetType <LibTiff$Dir>.h.tiffconf	Text
+SetType <LibTiff$Dir>.h.tiffio		Text
+SetType <LibTiff$Dir>.h.tiffiop		Text
+SetType <LibTiff$Dir>.h.tif_dir		Text
+SetType <LibTiff$Dir>.h.tif_fax3	Text
+SetType <LibTiff$Dir>.h.tif_predic	Text
+Unset Alias$CPY
+Unset LibTiffInstall$Dir
+| Now attempt to restore longfilename status. If it causes an error, OK.
+Set Alias$RN Rename <LibTiff$Dir>.%%0 <LibTiff$Dir>.%%1
+Unset LibTiff$Dir
+RN c.tif_compre c.tif_compress
+RN c.tif_dirinf c.tif_dirinfo
+RN c.tif_dirrea c.tif_dirread
+RN c.tif_dirwri c.tif_dirwrite
+RN c.tif_dumpmo c.tif_dumpmode
+RN c.tif_getima c.tif_getimage
+RN c.tif_packbi c.tif_packbits
+RN c.tif_predic c.tif_predict
+RN c.tif_thunde c.tif_thunder
+RN c.tif_versio c.tif_version
+RN c.tif_warnin c.tif_warning
+RN h.tif_predic h.tif_predict
+Unset Alias$RN
+Echo All done!

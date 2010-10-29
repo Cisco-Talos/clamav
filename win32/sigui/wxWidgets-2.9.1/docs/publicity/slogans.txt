@@ -1,0 +1,170 @@
+wxWidgets slogan ideas
+
+CafePress products:
+
+http://www.cafepress.com/cp/info/products/
+
+
+-----------
+
+On mug or umbrella:
+
+super-gui-OS-agnostic-XP-Linux-MacOS
+
+(perhaps highlighted in different colours)
+
+wxWidgets: "Practically Perfect in Every Way"
+
+-----------
+
+On tote bag:
+
+"Bag yourself some cool tools at wxwidgets.org"
+
+-----------
+
+On sweatshirt:
+
+Build an app for Windows, Mac and Linux in a week?
+No sweat.
+
+<wxWidgets logo>
+wxwidgets.org
+
+-----------
+
+Hallelujah!
+The future is open source and OS-agnostic.
+Tool up for it at wxwidgets.org.
+
+-----------
+
+On hat:
+
+wxWidgets
+Brim-full of cool GUI tools
+
+-----------
+
+On frosted glass mug:
+
+just the logo
+
+-----------
+
+Suggested slogans from wx-users:
+
+wxWidgets: The API for programmers who aren't sheep.
+(Robin Dunn)
+
+Better printed on a shirt:
+
+"A human being should be able to change a diaper, plan an invasion,
+ butcher a hog, conn a ship, design a building, write a sonnet,
+ balance accounts, build a wall, set a bone, comfort the dying,
+ take orders, give orders, cooperate, act alone, solve equations,
+ analyze a new problem, pitch manure, program a computer, cook a
+ tasty meal, fight efficiently, die gallantly.
+ Specialization is for insects."
+                                               [Robert A. Heinlein]
+
+maybe stripped down to
+
+"Specialization is for insects."
+
+============================
+The Open-Source, Cross-Platform GUI Framework 
+  with Ten Years of Evolution Behind It
+
+I saw this changed to 'native UI' on the website, which is slightly more
+accurate but sounds less 'catchy' imho.
+
+.. and templates.
+
+Hmm. I might buy a mug that had, say, a wxLogo and "wxWidgets" (and 
+maybe the website URL underneath in smaller type) on one side and 
+"Specialization is for insects ... and templates" on the other.
+
+.. only if it held at leat a full half (imperial) pint, mind. Not 
+one of those wussy 8.5 fl.oz. jobbies.
+
+That'd be a nice ice-breaker when working at a new client's site - 
+people would be bound to stop and ask what it was all about!
+
+.. and how about a nice silk tie (US: necktie) with the logo on ... 
+Oh, I forgot, we programmers don't wear ties.
+
+============================
+"I can't believe it's not native"
+
+============================
+"Because friends don't let friends use Win32".
+
+(or MFC)
+
+============================
+
+Have a photo of 3 babes wearing Linux, Windows and Mac Logo T-shirt with
+words at the bottom.
+
+"Why choose one when you can have 3?"
+
+(Mohammad Zubair <mzubair@singnet.com.sg>)
+
+============================
+
+wxWidgets: Write it once and for all.
+
+Matt Gregory <msgregory@earthlink.net>
+
+============================
+
+
+At front:
+
+    Need an API?
+      <wxWidgets>
+   and get THE API
+
+       C++, Python, Basic, Lua ...
+
+At back
+
+    <windows> OR <linux> OR <mac> ?
+                <wxWidgets>  is
+    <windows> AND <linux> AND <mac>
+
+where <xxxxx> is the respective logo
+
+Manuel Martin <mmartin@ceyd.es>
+
+============================
+
+
+Kevin Ollivier wrote:
+How about this for a t-shirt slogan?
+
+One API to rule them all, one API to hide them
+One API to bridge them all and in the compiler bind them.
+
+wxWidgets
+
+How about "and in the linker bind them"? That's where the local libraries 
+get bound to the wxWidgets code anyway.
+
+============================
+
+Hugh Gibson wrote:
+> > Perhaps a head shot of a Maori with full face tattoo and the
+> > slogan "Go native"?
+>
+> Perhaps the "tattoos" could be various representations of a common
+> window control in different operating systems to emphasise the
+> native look and feel.
+
+Nice idea. But I wonder where you'll find some volunteer willing to 
+have his face tattooed with win32 common controls ;-)
+
+============================
+
+

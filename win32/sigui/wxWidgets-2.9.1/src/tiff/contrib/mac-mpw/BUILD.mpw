@@ -1,0 +1,47 @@
+# BUILD.mpw:  
+#
+#   Full build for Apple Macintosh Programmer's Workshop (MPW).
+#
+#  This is an executable MPW script which creates various
+#  utilities, sets up the MPW makefiles and runs the builds.
+#  This script should be run at the top level TIFF directory with:
+#
+#     directory :::
+#     :contrib:mac-mpw:BUILD.mpw
+#
+#  NOTE: The full build requires that MPW have at least 6 MB
+#   allocated to it to compile the CCITT Fax codec tables. To
+#   deactivate CCITT compression edit the file :contrib:mac:libtiff.make
+#   first and follow the directions for disabling Fax decoding.
+#
+#  All TIFF tools are built as MPW tools, executable from the
+#  MPW shell or other compatible tool server.
+#
+#  Written by: Niles Ritter (ndr@tazboy.jpl.nasa.gov).
+#
+
+echo "############# Full Scratch Build for MPW #############"
+
+# Create the ascii->mpw translation tool; this is used to
+# convert standard ASCII files into ones using the special
+# MPW characters, which don't live comfortably in unix tar files.
+#
+echo "######## Creating ASCII->MPW translator ########"
+set contrib ':contrib:mac-mpw:'
+directory {contrib}
+createmake -tool mactrans mactrans.c > dev:null
+make -f mactrans.make | streamedit -e "/CSANELib/||/Math/||/ToolLibs/ del" > mactrans.bld
+execute mactrans.bld  > dev:null
+delete -y mactrans.make mactrans.bld mactrans.c.o || set status 0
+directory :::   #An mpw trick for going up two levels
+
+# Create the top-level Makefile and run it
+echo "######## Creating Makefile ########"
+catenate {contrib}top.make | {contrib}mactrans > Makefile
+
+echo "######## Running Makefile ########"
+make  > build.mpw
+execute build.mpw
+echo "############# MPW Build Complete #############"
+exit 0
+

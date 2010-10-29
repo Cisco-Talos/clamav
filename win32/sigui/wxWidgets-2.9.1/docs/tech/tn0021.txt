@@ -1,0 +1,74 @@
+               How to add a new wxUSE_XXX preprocessor constant
+               ================================================
+
+0. Purpose
+----------
+
+Detailed description of what needs to be done when you want to add a new
+wxUSE_XXX compilation flag. The text below assumes you need new wxUSE_FOO.
+
+
+1. Overview
+-----------
+
+wxWidgets uses wxUSE_XXX macros for conditionally compiling in (or not)
+optional components. In general, whenever a new non critical (i.e. not
+absolutely required by important parts of the library) class Foo is added it
+should use its own wxUSE_FOO compilation flag.
+
+wxUSE_FOO must be always defined and have value of 0 or 1. Be careful with
+testing for it in wx/foo.h: don't do it at the very beginning of the file
+because then wxUSE_FOO would be not defined at all if the user directly
+includes wx/foo.h, include "wx/defs.h" before testing for wxUSE_FOO.
+
+
+2. Required files update
+------------------------
+
+Assuming wxUSE_FOO is used on all platforms, the following must be done:
+
+a) update include/wx/setup_inc.h
+
+   This file contains all common wxUSE_XXXs, and is used to update wxMSW, wxMac
+   setup.h and Unix setup.h.in using build/update-setup-h. Please try to add
+   the new define in a logical place (i.e. near any related ones) and write a
+   detailed comment explaining what does it do and why would you want to turn
+   it on/off. Choose the appropriate default value: this should be usually 1
+   but can be 0 if there are some problems preventing the use of Foo by default
+   (e.g. it requires installation of some non standard 3rd party libraries).
+   After changing this file, run the update-setup-h script (this is probably
+   better done on a Unix machine although it should work under Cygwin too).
+
+b) update other setup.h files
+
+   Currently include/wx/univ/setup.h and setup.h_vms are not automatically
+   updated so please update them manually (or modify the update-setup-h script
+   to take care of them...).
+
+c) update configure.in
+
+   Here you need to add DEFAULT_wxUSE_FOO define. It should be added in the
+   block beginning after WX_ARG_CACHE_INIT line and should default to "no" for
+   "if DEBUG_CONFIGURE = 1" branch (this is used for absolutely minimal builds)
+   and the same as default value in setup_inc.h in the "else" branch.
+
+   You also need to add a WX_ARG_ENABLE (or, if new functionality can be
+   reasonably described as support for a 3rd party library, WX_ARG_WITH)
+   line togetherw with all the existing WX_ARG_ENABLEs.
+
+   If you have a sample/foo which should be only built when wxUSE_FOO==1,
+   then only add it to the SAMPLES_SUBDIRS if wxUSE_FOO=yes in configure.
+
+
+3. Documentation
+----------------
+
+Currently wxUSE_XXXs are documented in docs/latex/wx/wxusedef.tex and a few 
+important global ones are in docs/latex/wx/cppconst.tex.
+
+
+=== EOF ===
+
+Author:  VZ
+Version: $Id$
+

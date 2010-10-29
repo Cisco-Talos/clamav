@@ -1,0 +1,17 @@
+#############################################################################
+## Name:        Doxyfile.html
+## Purpose:     Doxygen configuration file for generating HTML only
+## Author:      Francesco Montorsi
+## RCS-ID:      $Id$
+## Licence:     wxWindows licence
+#############################################################################
+
+@INCLUDE = Doxyfile_inc
+
+#---------------------------------------------------------------------------
+# Generation switches
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+SEARCHENGINE           = YES
+

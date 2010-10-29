@@ -1,0 +1,18 @@
+----------------------------------------------------
+Build instructions for LIBTIFF - CodeWarrior (6.1):
+----------------------------------------------------
+
+In this directory you will find a Makefile.script Applescript
+file, which should be run in order to build the libtiff code
+using MetroWerks CodeWarrior.
+
+Refer to the "metrowerks.note" instructions on building the
+library for 68k and PowerPC native code, as well as building
+some of the libtiff tools, which are rather unix-like, but
+at least give an example of how to link everything together.
+
+  Questions, comments, bug reports to Niles Ritter
+  (ndr@tazboy.jpl.nasa.gov). Sam Leffler takes no responsibility
+  for the viability of this stuff.
+  
+    -Niles.

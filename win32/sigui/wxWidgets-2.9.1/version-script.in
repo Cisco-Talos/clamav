@@ -1,0 +1,31 @@
+#
+# $Id$
+#
+# Notes:
+#
+# Remove all of the tags below except for the last one when creating new
+# development branch.
+#
+# Once a symbol has been included in a stable release of wxWidgets its version
+# cannot be changed.
+#
+# With each new release a section should be added containing any new symbols,
+# for example:
+#
+#   # public symbols added in release @WX_VERSION_TAG@.2 (please keep in alphabetical order):
+#   @WX_VERSION_TAG@.2 {
+#           *wxChoice*GetCurrentSelection*;
+#   };
+#
+# If a symbols should have been added in this way, but is forgotten then it
+# cannot be added in the next release. This is because it has already been
+# released with the generic branch version due to the final wildcard below,
+# and once released its version cannot be changed.
+
+
+# symbols available since the beginning of this branch are only given
+# generic branch tag (don't remove this!):
+
+@WX_VERSION_TAG@ {
+        *;
+};

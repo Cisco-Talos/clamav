@@ -1,0 +1,10 @@
+wx_root:[wxwidgets.lib]libwx_x11_univ.olb/lib
+sys$library:libjpeg.olb/lib
+sys$library:libpng.olb/lib
+sys$library:libz.olb/lib
+sys$library:tiff.olb/lib
+sys$library:expat.olb/lib
+X11:libxpm.olb/lib
+sys$share:pthread$rtl.exe/share
+sys$library:decw$xextlibshr.exe/share
+sys$library:decw$xlibshr.exe/share

@@ -1,0 +1,3 @@
+Set LibTIFF$Dir <Obey$Dir>
+Set LibTIFF$Path <LibTIFF$Dir>.
+Set C$Path <C$Path>,LibTIFF:

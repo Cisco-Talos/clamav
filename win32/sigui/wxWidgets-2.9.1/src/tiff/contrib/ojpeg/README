@@ -1,0 +1,24 @@
+
+For the broadest possible support for OJPEG files the following steps are 
+necessary:
+
+ o Ensure you are able to build with JPEG support (see config.site).
+
+ o Uncomment OJPEG="yes" statement in config.site file or
+   #define OJPEG_SUPPORT somewhere.  This can be put in tiffconf.h for
+   instance.
+
+ o Append the jdhuff_add.c code to the end of jdhuff.c within the IJG JPEG
+   libraries jdhuff.c file and recompile libjpeg (jpeg-6b tested).
+
+ o Rebuild cleanly.
+
+
+OJPEG support implemented by Scott Marovich at HP (marovich@hpl.hp.com).
+
+---
+
+For notes on further improved JPEG-in-TIFF support also see the following
+bug in bugzilla:
+
+  http://bugzilla.remotesensing.org/show_bug.cgi?id=156

@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<bakefile-gen>
+  <include file="../../build/bakefiles/Bakefiles.bkgen"/>
+  <!-- add extra formats to release -->
+  <enable-formats>gnu,dmars,dmars_smake,msevc4prj</enable-formats>
+</bakefile-gen>
+

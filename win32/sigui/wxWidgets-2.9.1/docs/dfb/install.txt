@@ -1,0 +1,88 @@
+wxWidgets for DirectFB installation
+===================================
+
+IMPORTANT NOTE:
+
+  wxDFB is currently incomplete and some parts of the wxWidgets library
+  don't yet compile and must be disabled during configuration. In particular,
+  the coverage of wxDC API is limited.
+
+
+Dependencies
+------------
+
+wxDFB requires the DirectFB library (http://www.directfb.org), which must
+be installed before compiling wxDFB.
+
+
+Compiling
+---------
+
+Compilation is done in the standard Unix fashion, using configure and make.
+Please refer to e.g. wxGTK's install.txt for details if you are unfamiliar
+with configure.
+
+When configuring, use the --with-directfb option instead of e.g. --with-gtk
+to specify that the wxDFB port should be built. You may also need to disable
+wxUniv themes that don't work in wxDFB yet (alternatively you can set the
+WXTHEME environment variable to "mono"):
+
+$ ./configure --with-directfb --with-themes=mono
+$ make
+
+
+Configuring fonts
+-----------------
+
+DirectFB doesn't have native fonts configuration mechanism (such as
+fontconfig used by GTK+) and so wxDFB implements a simple configuration
+mechanism itself.
+
+No fonts are installed and configured by "make install", you have to manually
+configure fonts after you install the library.
+
+wxDFB looks the fonts up in directories specified in the WXDFB_FONTPATH
+environment variable (separated with :, similarly to the PATH variable).  If
+the variable is not set, $prefix/share/wx/fonts directory is used. All
+subdirectories of the directories on the path are scanned for FontsIndex
+files. These files are parsed and fonts defined in them are added to the fonts
+list.
+
+The FontsIndex file is standard wxFileConfig file text file. Each toplevel
+group specifies one font bundle, font's name is the name of group. Group's
+entries look like this:
+
+   [Font Name]
+   # font files (at least one of them must be present):
+   Regular=RegularFaceFile.ttf
+   Italic=ItalicFaceFile.ttf
+   Bold=BoldFaceFile.ttf
+   BoldItalic=BoldItalicFaceFile.ttf
+   # optional tag indicating this font is fixed-with (default is false):
+   IsFixed=1
+
+Additionally, there may be DefaultXXX entries at the toplevel for every family
+XXX and a Default entry that is shortcut for setting all families' default,
+their value is name of the default font:
+
+   # optional tags indicating the default font for given family:
+   DefaultDecorative=Font Name
+   DefaultRoman=Font Name
+   DefaultScript=Font Name
+   DefaultSwiss=Font Name
+   DefaultModern=Font Name
+   DefaultTeletype=Font Name
+   # indicate the font that is default for all families (optional):
+   Default=Font Name
+
+Any font formats supported by DirectFB (which typically includes formats
+supported by the FreeType library) can be used.
+
+
+Bug reports
+-----------
+
+Please send bug reports with a description of your environment,
+compiler and the error message(s) to the wxwin-developers mailing list at:
+
+    wx-dev@lists.wxwidgets.org

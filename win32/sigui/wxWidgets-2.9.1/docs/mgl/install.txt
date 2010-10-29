@@ -1,0 +1,252 @@
+wxWidgets for MGL installation
+------------------------------
+
+IMPORTANT NOTE:
+
+  wxMGL is currently in need of some work to bring it up to the
+  standard of some of the other wxWidgets ports.
+
+  If you experience problems installing, please re-read these
+  instructions and other related files (todo.txt, bugs.txt and
+  osname.txt for your platform if it exists) carefully before
+  mailing wxwin-users or the author. Preferably, try to fix the
+  problem first and then send a patch to the author.
+
+  When sending bug reports tell us what version of wxWidgets you are
+  using (including the beta) and what compiler on what system. One
+  example: wxMGL 2.8.0, gcc 2.95.3, Redhat 7.0
+
+First steps
+-----------
+
+- Download SciTech MGL library from http://www.scitechsoft.com. The
+  downloads page is here (you need MGL version 5.0beta7 or newer):
+  http://scitechsoft.com/products/dev/mgl_download/mgl_down.html
+
+  Install MGL according to provided instructions. In particular, make sure that
+  MGL_ROOT and NUCLEUS_PATH environment variables are set before attempting to
+  build wxMGL.
+
+  Make sure you installed all MGL components, including the "fonts" package
+  (it's called mgl_<ver>-font.tar.gz in Linux version). It is important to have
+  SciTech's basic fonts in $(MGL_ROOT)/fonts directory (you may want to add
+  Arial TrueType font for better output quality) and basic cursors in
+  $(MGL_ROOT)/cursors. wxMGL depends on their presence.
+
+- Download wxMGL-x.y.z.tgz, where x.y.z is the version number.
+  Download documentation in a preferred format, such as
+  wxWidgets-HTML.zip or wxWidgets-PDF.zip.
+
+- Make a directory such as ~/wx and unarchive the files into this
+  directory.
+
+- You can now use configure or makefiles to build wxWidgets and the samples.
+  In case of problems, please use GNU make.
+
+
+COMPILING
+=========
+
+Following systems are supported by wxMGL so far:
+ - Unix (Linux etc.)
+ - MS-DOS (DJGPP and Watcom compilers)
+
+
+* Compiling using configure
+----------------------------
+
+These instructions apply to installation on a Unix system (such as Linux). Please
+see below for information on using configure on non-Unix platforms.
+
+If you compile wxWidgets on Linux for the first time and don't like to read
+install instructions just do (in the base dir):
+
+> ./configure --with-mgl
+> make
+> su <type root password>
+> make install
+> ldconfig
+> exit
+
+Afterwards you can continue with
+
+> make
+> su <type root password>
+> make install
+> ldconfig
+> exit
+
+If you want to remove wxWidgets on Unix you can do this:
+
+> su <type root password>
+> make uninstall
+> ldconfig
+> exit
+
+You can set many options to configure. Type
+
+> ./configure --help
+
+and you will get a list of supported options.
+
+
+* Using wxMGL library built with configure
+-------------------------------------------
+
+'make install' will install wx-config script that can (and should) be used
+to get compiler flags that are needed to build your program. wx-config --cxxflags
+will output necessary C++ compiler flags and wx-config --libs will list all
+needed libraries. See an example of wxWidgets application makefile:
+
+minimal: minimal.o
+	$(CXX) -o minimal minimal.o `wx-config --libs`
+
+minimal.o: minimal.cpp
+	$(CXX) `wx-config --cxxflags` -c minimal.cpp -o minimal.o
+
+
+* Using configure to build MS-DOS version
+------------------------------------------
+
+Even though configure is a Unix script, you can use it to build MS-DOS version
+of the wxMGL library. There are two possible ways to achieve this: you can
+either cross-compile from Unix or compile natively. Either way you will needed
+the DJGPP port of GCC compiler freely available from:
+    http://www.delorie.com/djgpp/getting.html
+
+Scitech MGL must be compiled natively, and to do this you will need to download
+the following files (from the current/v2 and current/v2gnu directories). You
+should get the latest versions available rather than the exact versions shown
+below, they are just an example of what to look for:
+
+djdev203.zip B   1,530,778 020811 DJGPP development kit 2.03
+bnu2161b.zip B   3,483,132 050708 GNU Binutils 2.16.1 for DJGPP V2
+gcc344b.zip  B   3,772,211 050527 GNU GCC 3.4.4 for DJGPP V2
+gpp344b.zip  B   4,026,725 050527 GNU C++ Compiler 3.4.4 for DJGPP V2
+
+If you want to build wxMGL natively using the DJGPP compiler, you will have to
+install a couple of Unix utilities. I think the following is the minimum that
+will work:
+
+bsh204b.zip  B     454,308 020106 GNU Bash shell 2.04 for DJGPP V2
+fil41b.zip   B   1,738,170 030830 GNU fileutils 4.1 for DJGPP V2
+find41b.zip  B     306,826 010505 GNU findutils 4.1 for DJGPP V2
+grep24b.zip  B     254,997 000116 GNU Grep 2.4 for DJGPP V2
+mak3791b.zip B     272,798 020106 GNU Make 3.79.1 for DJGPP V2
+sed414b.zip  B     159,920 050331 GNU Sed 4.1.4 for DJGPP V2
+shl2011b.zip B   1,195,021 020419 GNU sh-utils 2.01 for DJGPP V2
+
+You'll probably also want a debugger:
+gdb611b.zip  B   1,585,648 040629 GNU GDB Debugger 6.1.1 for DJGPP V2
+
+And maybe some of these:
+faq230b.zip  B     679,865 000203 FAQ 2.30 for DJGPP v2.03
+dif281b.zip  B     402,859 040911 GNU Diffutils 2.8.1 for DJGPP V2
+gwk314b.zip  B     968,667 050321 GNU Awk 3.1.4 for DJGPP V2
+gzip135b.zip B     146,138 041215 GNU gzip 1.3.5 for DJGPP V2
+lss374b.zip  B     199,805 020405 GNU Less 374 for DJGPP V2
+pat254b.zip  B     114,250 040326 GNU Patch 2.5.4 for DJGPP V2
+tar112ab.zip B     236,427 000305 GNU Tar 1.12a for DJGPP V2
+whic211b.zip B      86,296 000911 GNU which 2.11 for DJGPP V2
+
+The system you compile on must support long file names. You can use Windows 9x
+or an x86 version of Windows 2000/XP or later. For example:
+
+C:\>set MGL_ROOT=c:/scitech
+C:\>set DJGPP=c:/djgpp/djgpp.env
+C:\>PATH=c:\djgpp\bin
+C:\>set PS1=\w\$
+C:\>bash
+c:/$ mkdir build
+c:/$ cd build
+c:/build$ ../wxWidgets/configure
+c:/build$ make
+c:/build$ cd samples/minimal
+c:/build/samples/minimal$ make
+
+Cross-compilation is very easy. It works like ordinary compilation with
+configure, you only have to specify the target:
+
+> ./configure --with-mgl --build=i586-linux --host=i586-pc-msdosdjgpp
+> make
+
+For this to work, you must have installed a cross compiler on your system.
+
+Linux rpms are available here:
+    http://ap1.pp.fi/djgpp/gcc/cross-compiler/index.html
+
+NetBSD has a binary package which can be installed with:
+    # pkg_add cross-i386-msdosdjgpp
+
+For other systems you will need to obtain the djgpp sources and compile them
+yourself.
+
+
+* Building wxMGL for MS-DOS using Watcom C/C++
+-----------------------------------------------
+
+<Note: this section is currently out of date>
+
+You will need Watcom C/C++ compiler version 11 or newer (Watcom is going to be
+OpenSourced by SciTech, check out http://www.openwatcom.org).
+
+1. Edit $(WXDIR)\include\wx\univ\setup.h to suit your needs (in same way as you
+   do when compiling wxMSW).
+
+2. Go to $(WXDIR)\src\mgl and run
+   > wmake -f makefile.wat all
+
+3. You can compile the samples by typing 'wmake -f makefile.mgl all' in sample
+   directory if this file is available. If it is not, copy makefile.wat to
+   makefile.mgl and replace the line that says
+
+       !include $(WXDIR)\src\makeprog.wat
+
+   with
+
+       !include $(WXDIR)\src\mgl\makeprog.wat
+
+
+Compilation notes for MGL with gcc
+----------------------------------
+
+The mvis library doesn't compile with current versions of gcc. However wxMGL
+does not use this part of MGL, so it can be taken out of the compile, e.g.:
+
+--- scitech/src/makefile.orig	2004-04-15 20:36:32.000000000 +0100
++++ scitech/src/makefile	2005-04-26 01:50:12.000000000 +0100
+@@ -88,7 +88,7 @@
+
+ # Target to build libraries for one compiler for SciTech MGL Graphics Library
+
+-all_mgl:    $(T_PM) $(T_GCONSOLE) $(T_SNAP) $(T_TECH) $(T_MVIS) $(T_FIXED) \
++all_mgl:    $(T_PM) $(T_GCONSOLE) $(T_SNAP) $(T_TECH) $(T_FIXED) \
+             $(T_GM) $(T_GLUT) $(T_MGL)
+     @$(ECHO) =============================================================================
+     @$(ECHO) DONE: Single compiler MGL build completed successfully!
+
+The following small change is also required to include/tcl/hashmap.hpp:
+
+--- scitech/include/tcl/hashtab.hpp.orig        2006-01-20 19:51:12.000000000 +0000
++++ scitech/include/tcl/hashtab.hpp     2006-01-22 14:12:12.000000000 +0000
+@@ -60,7 +60,7 @@
+     TCHashTableNode **prev;
+
+     friend class TCGenHashTable;
+-    friend  ostream& operator << (ostream& o,TCGenHashTable& h);
++    friend  ostream& operator << (ostream& o, class TCGenHashTable& h);
+ public:
+             // Constructor to satisfy some compilers :-(
+             TCHashTableNode() {};
+
+
+Bug reports
+-----------
+
+Please send bug reports with a description of your environment,
+compiler and the error message(s) to the wxwin-developers mailing list at:
+
+    wx-dev@lists.wxwidgets.org
+
+Vaclav Slavik, Julian Smart, Robert Roebling and Vadim Zeitlin, February 2002.
+Mike Wetherell 2005/2006

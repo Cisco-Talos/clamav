@@ -1,0 +1,121 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+Project: "screenshotgen"=screenshotgen.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+Begin Project Dependency
+Project_Dep_Name aui
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name adv
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name richtext
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name html
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name xml
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name core
+End Project Dependency
+Begin Project Dependency
+Project_Dep_Name base
+End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "aui"=..\..\..\build\msw\wx_aui.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "adv"=..\..\..\build\msw\wx_adv.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "richtext"=..\..\..\build\msw\wx_richtext.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "html"=..\..\..\build\msw\wx_html.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "xml"=..\..\..\build\msw\wx_xml.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "core"=..\..\..\build\msw\wx_core.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "base"=..\..\..\build\msw\wx_base.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+

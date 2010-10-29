@@ -1,0 +1,43 @@
+Porting wxUniversal to a new platform
+=====================================
+
+wxUniv relies on the low level toolkit to work. Here are the classes which
+this toolkit has to implement to support wxUniv (roughly sorted by importance
+inside each category):
+
+1. System classes
+-----------------
+
+wxApp
+wxEventLoop
+wxTimer
+wxSystemSettings
+
+2. Window classes
+-----------------
+
+wxWindow
+wxTopLevelWindow
+wxPopupWindow
+
+3. GDI classes
+--------------
+
+wxDC
+wxBitmap
+wxBrush
+wxColour
+wxCursor
+wxFont
+wxIcon
+wxPalette
+wxPen
+wxRegion
+
+4. Miscellaneous
+----------------
+
+wxClipboard
+wxDropSourceBase
+wxDropTarget
+

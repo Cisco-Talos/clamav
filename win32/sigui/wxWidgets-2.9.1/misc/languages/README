@@ -1,0 +1,5 @@
+Run the genlang.py script from the top level wxWidgets directory to update
+include/wx/language.h (wxLanguage enum), interface/wx/language.h (its
+documentation) and src/common/languageinfo.cpp (conversion tables) with the data
+from langtabl.txt.
+

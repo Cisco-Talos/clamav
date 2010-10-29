@@ -1,0 +1,66 @@
+#!/bin/sh
+
+REPOS="$1"
+TXN="$2"
+
+SVNLOOK=/usr/bin/svnlook
+
+svnl() {
+    cmd=$1
+    shift
+    $SVNLOOK $cmd "$REPOS" -t "$TXN" $*
+}
+
+rc=0
+
+# exclude all third-party files from consideration, we don't want to do any
+# checks for them
+#
+# also exclude message catalog files as they may be not in UTF-8
+all_changed_files=`svnl changed | \
+                    grep "^[AU]" | \
+                    sed 's/^....//' | \
+                    egrep -v "locale/.*\.po$" | \
+                    egrep -v "src/(tiff|regex|jpeg|stc/scintilla)" | \
+                    egrep -v "_wrap.cpp"`
+
+# analyze the changed files to find all non-binary and all source files
+for f in $all_changed_files; do
+    mimetype=`svnl proplist -v $f |
+                fgrep "svn:mime-type" |
+                sed 's/^ svn:mime-type : //'`
+    case $mimetype in
+        ''|text/*)
+            ;;
+
+        *)
+            continue
+            ;;
+    esac
+
+    changed_text_files="$changed_text_files $f"
+
+    case $f in
+        *.cpp|*.h|*.py)
+            changed_sources="$changed_sources $f"
+            ;;
+    esac
+done
+
+for f in $changed_sources; do
+     if  svnl cat $f | fgrep -q '	'; then
+         echo "Please remove TABs from $f before committing." >&2
+         rc=1
+     fi
+done
+
+for f in $changed_text_files; do
+    if ! svnl cat $f | iconv -f utf8 -t WCHAR_T > /dev/null; then
+        echo "File $f doesn't use UTF-8, please convert it before committing." >&2
+        echo "(or set svn:mime-type property correctly if the file is binary)." >&2
+        rc=1
+    fi
+done
+
+exit $rc
+

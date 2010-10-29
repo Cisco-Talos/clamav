@@ -1,0 +1,106 @@
+#!/bin/sh
+##############################################################################
+# Name:       misc/scripts/inc_release
+# Purpose:    increments the release version number in all files mentioned in
+#             docs/tech/tn0011.txt
+# Created:    2007-01-07
+# RCS-ID:     $Id$
+# Copyright:  (c) 2007 Vadim Zeitlin <vadim@wxwindows.org>
+# Licence:    wxWindows licence
+##############################################################################
+
+error() {
+    echo "$progname: $*" >&2
+}
+
+msg() {
+    echo "$progname: $*"
+}
+
+msgn() {
+    echo -n "$progname: $*"
+}
+
+msgc() {
+    echo "$*"
+}
+
+run_sed() {
+    filename=$1
+    shift
+    cmd=
+    while [ $# -gt 0 ]; do
+        cmd="$cmd-e \"$1\" "
+        shift
+    done
+
+    msgn "	processing $filename ...	"
+    eval "sed $cmd $filename" > $filename.$$
+    if cmp -s $filename $filename.$$; then
+        rm $filename.$$
+        msgc "unchanged"
+    else
+        mv $filename.$$ $filename
+        msgc "done"
+    fi
+}
+
+progname=`basename $0`
+
+# we must be run from wx directory
+if [ ! -f wxwin.m4 ]; then
+    error "must be ran from root wx directory"
+    exit 1
+fi
+
+# exit on any error
+set -e
+
+# the primary source of information is wx/version.h
+ver_string=`grep '#define wxVERSION_STRING ' include/wx/version.h | sed 's/^.*"wxWidgets \(.*\)")/\1/'`
+ver_major=`echo $ver_string | sed 's/\([0-9]\{1,\}\)\..*/\1/'`
+ver_minor=`echo $ver_string | sed 's/.*\.\([0-9]\{1,\}\)\..*/\1/'`
+ver_release=`echo $ver_string | sed 's/.*\.\([0-9]\{1,\}\)$/\1/'`
+
+msg "Original version is $ver_major.$ver_minor.$ver_release"
+
+ver_release_new=$(($ver_release + 1))
+ver_string_new=$ver_major.$ver_minor.$ver_release_new
+
+msg "Updating version to $ver_string_new"
+
+ver_for_sed="$ver_major\.$ver_minor\.$ver_release"
+
+run_sed configure.in \
+    "/^AC_INIT/s/$ver_for_sed/$ver_string_new/" \
+    "s/^wx_release_number=$ver_release/wx_release_number=$ver_release_new/" \
+    "s/^wx_subrelease_number=.*$/wx_subrelease_number=0/"
+
+for f in *.spec; do
+    run_sed $f "/^%define *ver/s/$ver_for_sed/$ver_string_new/"
+done
+
+run_sed build/osx/wxvers.xcconfig \
+    "/DYLIB_.* = /s/$ver_for_sed/$ver_string_new/"
+
+run_sed docs/doxygen/Doxyfile_inc \
+    "/^PROJECT_NUMBER/s/$ver_for_sed/$ver_string_new/"
+
+run_sed docs/doxygen/latexdocstart.inc \
+    "/\\large Version/s/$ver_for_sed/$ver_string_new/"
+
+run_sed include/wx/version.h \
+    "s/^\(#define wxRELEASE_NUMBER *\) $ver_release$/\1 $ver_release_new/" \
+    "s/^\(#define wxSUBRELEASE_NUMBER *\) [0-9]\{1,\}$/\1 0/" \
+    "/^#define wxVERSION_STRING/s/$ver_for_sed/$ver_string_new/"
+
+run_sed include/wx/osx/config_xcode.h \
+    "/^#define PACKAGE/s/$ver_for_sed/$ver_string_new/"
+
+run_sed samples/Info.plist \
+    "/version/s/$ver_for_sed/$ver_string_new/" \
+    "/<string>/s/$ver_for_sed/$ver_string_new/"
+
+run_sed samples/docview/Info.plist \
+    "/versionon/s/$ver_for_sed/$ver_string_new/" \
+    "/<string>/s/$ver_for_sed/$ver_string_new/"

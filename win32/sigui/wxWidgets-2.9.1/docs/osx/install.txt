@@ -1,0 +1,101 @@
+wxWidgets for Mac installation
+------------------------------
+
+On MacOS X, you can download Apple's free developer tools (gcc
+and associated headers and libraries, such as the Carbon API).
+You can then use configure in a similar way to compiling
+wxWidgets on Linux (or on Windows using MinGW or Cygwin). See
+'Apple Developer Tools' below for more details on using
+configure.
+
+
+Apple Developer Tools: command line
+-----------------------------------
+
+As in all Unix projects, you need to do something like this under MacOS X
+with the Apple Developer Tools installed:
+
+1) cd into the base dir
+2) mkdir osx-build
+3) cd osx-build
+4) ../configure (add --with-osx_cocoa for the Cocoa port)
+5) make
+
+If you want to install the library into the system directories you'll need
+to do this as root.  The accepted way of running commands as root is to
+use the built-in sudo mechanism.  First of all, you must be using an
+account marked as a "Computer Administrator".  Then
+
+6) sudo make install
+7) type <YOUR OWN PASSWORD>
+
+Note that while using this method is okay for development, it is not
+recommended that you require endusers to install wxWidgets into their
+system directories in order to use your program.  One way to avoid this
+is to configure wxWidgets with --disable-shared.  Another way to avoid
+it is to make a framework for wxWidgets.  Making frameworks is beyond
+the scope of this document.
+
+Note:
+We recommend you configure a static library instead:
+
+4) ../configure --disable-shared
+
+or activate OpenGL:
+
+4) ../configure --with-opengl
+
+Note:
+It is rarely desirable to install non-Apple software into system directories.
+By configuring the library with --disable-shared and using the full path
+to wx-config with the --in-place option you can avoid installing the library.
+
+
+Apple Developer Tools: Xcode
+----------------------------
+
+You can use the project in src/wxWindows.xcodeproj to build wxWidgets,
+and there is a sample project supplied with the minimal sample.
+
+Notice that the command line build above builds not just the library itself but
+also wxrc tool which doesn't have its own Xcode project. If you need this tool,
+the simplest possibility is to build it from the command line after installing
+the libraries using commands like this:
+
+$ cd utils/wxrc
+$ g++ -o wxrc wxrc.cpp `wx-config --cxxflags --libs base,xml`
+
+Creating universal binaries
+---------------------------
+
+The Xcode projects for the wxWidgets library and minimal project are set up
+to create universal binaries.
+
+If using the Apple command line tools, pass --enable-universal_binary when
+configuring wxWidgets. If you use wx-config --libs to link your application,
+he necessary linker flags will be added. When compiling your own files,
+you need to add -arch ppc -arch i386 to your CFLAGS.
+
+As an alternative to using --enable-universal_binary, you can build for
+each architecture separately and then use the lipo tool to glue the
+binaries together. Assuming building on a PPC system:
+
+1. First build in the usual way to get the PPC library.
+
+2. Then, build for Intel, in a different folder. This time use:
+
+export CFLAGS="-g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386"
+export LDFLAGS="-syslibroot,/Developer/SDKs/MacOSX10.4u.sdk"
+
+./configure --disable-dependency-tracking --enable-static=yes --enable-shared=no \
+  --target=i386-apple-darwin8 --host=powerpc-apple-darwin8 --build=i386-apple-darwin8
+
+You will need to reverse the powerpc and i386 parameters everywhere to build PPC on an Intel
+machine.
+
+3. Use lipo to glue the binaries together.
+
+See also:
+http://developer.apple.com/technotes/tn2005/tn2137.html
+
+
