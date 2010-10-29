@@ -299,6 +299,11 @@ This option enables scanning of OLE2 files, such as Microsoft Office documents a
 .br 
 Default: yes
 .TP 
+\fBOLE2BlockMacros BOOL\fR
+With this option enabled OLE2 files with VBA macros, which were not detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
+.br 
+Default: no
+.TP 
 \fBScanPDF BOOL\fR
 This option enables scanning within PDF files.
 .br 

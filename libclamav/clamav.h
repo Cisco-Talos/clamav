@@ -112,6 +112,7 @@ typedef enum {
 #define CL_SCAN_STRUCTURED_SSN_STRIPPED	0x20000
 #define CL_SCAN_PARTIAL_MESSAGE         0x40000
 #define CL_SCAN_HEURISTIC_PRECEDENCE    0x80000
+#define CL_SCAN_BLOCKMACROS		0x100000
 
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
 

@@ -767,7 +767,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, j, fd, data_len;
+	int ret = CL_CLEAN, i, j, fd, data_len, hasmacros = 0;
 	vba_project_t *vba_project;
 	DIR *dd;
 	struct dirent *dent;
@@ -798,7 +798,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
 		data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
 		close(fd);
-
+		hasmacros++;
 		if(!data) {
 		    cli_dbgmsg("VBADir: WARNING: VBA project '%s_%u' decompressed to NULL\n", vba_project->name[i], j);
 		} else {
@@ -830,6 +830,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
 	    if ((fullname = cli_ppt_vba_read(fd, ctx))) {
+		hasmacros++;
 		if(cli_scandir(fullname, ctx) == CL_VIRUS) {
 		    ret = CL_VIRUS;
 		}
@@ -856,7 +857,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    for (i = 0; i < vba_project->count; i++) {
 		cli_dbgmsg("VBADir: Decompress WM project macro:%d key:%d length:%d\n", i, vba_project->key[i], vba_project->length[i]);
 		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
-		
+		hasmacros++;
 		if(!data) {
 			cli_dbgmsg("VBADir: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
 		} else {
@@ -945,6 +946,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     }
 
     closedir(dd);
+    if(BLOCK_MACROS && hasmacros) {
+	*ctx->virname = "Heuristics.OLE2.ContainsMacros";
+	ret = CL_VIRUS;
+    }
     return ret;
 }
 

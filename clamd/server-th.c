@@ -846,6 +846,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     if(optget(opts, "ScanOLE2")->enabled) {
 	logg("OLE2 support enabled.\n");
 	options |= CL_SCAN_OLE2;
+	if(optget(opts, "OLE2BlockMacros")->enabled) {
+	    logg("OLE2: Blocking all VBA macros.\n");
+	    options |= CL_SCAN_BLOCKMACROS;
+	}
     } else {
 	logg("OLE2 support disabled.\n");
     }
