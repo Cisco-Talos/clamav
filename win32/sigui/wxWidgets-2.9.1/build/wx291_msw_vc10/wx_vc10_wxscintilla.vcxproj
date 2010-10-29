@@ -1,0 +1,538 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DLL Debug|Win32">
+      <Configuration>DLL Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DLL Release|Win32">
+      <Configuration>DLL Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DLL Universal Debug|Win32">
+      <Configuration>DLL Universal Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DLL Universal Release|Win32">
+      <Configuration>DLL Universal Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Universal Debug|Win32">
+      <Configuration>Universal Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Universal Release|Win32">
+      <Configuration>Universal Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>wxscintilla</ProjectName>
+    <ProjectGuid>{74827EBD-93DC-5110-BA95-3F2AB029B6B0}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\lib\vc_lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">vc_mswud\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\lib\vc_lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">vc_mswu\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">..\..\lib\vc_lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">vc_mswunivud\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">..\..\lib\vc_lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">vc_mswunivu\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">..\..\lib\vc_dll\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">vc_mswuddll\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">..\..\lib\vc_dll\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">vc_mswudll\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">..\..\lib\vc_dll\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">vc_mswunivuddll\wxscintilla\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">..\..\lib\vc_dll\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">vc_mswunivudll\wxscintilla\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswud\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_lib\wxscintillad.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_lib\wxscintillad.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_lib\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\msw\setup.h ..\..\lib\vc_lib\mswud\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MinSpace</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswu\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_lib\wxscintilla.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_lib\wxscintilla.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_lib\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\msw\setup.h ..\..\lib\vc_lib\mswu\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswunivud\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_lib\wxscintillad.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_lib\wxscintillad.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_lib\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\univ\setup.h ..\..\lib\vc_lib\mswunivud\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswunivu\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_lib\wxscintilla.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_lib\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_lib\wxscintilla.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_lib\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\univ\setup.h ..\..\lib\vc_lib\mswunivu\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswuddll\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_dll\wxscintillad.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_dll\wxscintillad.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_dll\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\msw\setup.h ..\..\lib\vc_dll\mswud\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswudll\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_dll\wxscintilla.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_dll\wxscintilla.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_dll\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\msw\setup.h ..\..\lib\vc_dll\mswu\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswunivuddll\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_dll\wxscintillad.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivud;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_dll\wxscintillad.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_dll\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\univ\setup.h ..\..\lib\vc_dll\mswunivud\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_LIB;NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <ObjectFileName>vc_mswunivudll\wxscintilla\</ObjectFileName>
+      <ProgramDataBaseFileName>..\..\lib\vc_dll\wxscintilla.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;__WX__;__WXMSW__;SCI_LEXER;LINK_LEXERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+      <AdditionalIncludeDirectories>..\..\src\stc\scintilla\include;..\..\src\stc\scintilla\src;..\..\lib\vc_dll\mswunivu;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>..\..\lib\vc_dll\wxscintilla.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <OutputFile>..\..\lib\vc_dll\wx_vc10_wxscintilla.bsc</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy ..\..\include\wx\univ\setup.h ..\..\lib\vc_dll\mswunivu\wx\ /Y</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\stc\scintilla\src\AutoComplete.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\CallTip.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\CellBuffer.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\CharClassify.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\ContractionState.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Decoration.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Document.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\DocumentAccessor.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Editor.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\ExternalLexer.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Indicator.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\KeyMap.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\KeyWords.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAPDL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexASY.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAU3.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAVE.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAbaqus.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAda.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAsm.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexAsn1.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexBaan.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexBash.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexBasic.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexBullant.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCLW.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCOBOL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCPP.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCSS.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCaml.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCmake.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexConf.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCrontab.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexCsound.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexD.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexEScript.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexEiffel.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexErlang.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexFlagship.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexForth.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexFortran.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexGAP.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexGui4Cli.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexHTML.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexHaskell.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexInno.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexKix.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexLisp.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexLout.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexLua.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMMIXAL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMPT.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMSSQL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMagik.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMarkdown.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMatlab.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMetapost.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexMySQL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexNimrod.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexNsis.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexOpal.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexOthers.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPB.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPLM.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPOV.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPS.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPascal.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPerl.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPowerPro.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPowerShell.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexProgress.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexPython.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexR.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexRebol.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexRuby.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSML.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSQL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexScriptol.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSmalltalk.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSorcus.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSpecman.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexSpice.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexTACL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexTADS3.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexTAL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexTCL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexTeX.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexVB.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexVHDL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexVerilog.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LexYAML.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\LineMarker.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\PerLine.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\PositionCache.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\PropSet.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\RESearch.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\RunStyles.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\ScintillaBase.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Selection.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\Style.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\StyleContext.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\UniConversion.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\ViewStyle.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\WindowAccessor.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\XPM.cxx" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

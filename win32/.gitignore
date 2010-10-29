@@ -1,6 +1,6 @@
 !platform.h
 !clamav-config.h
-build
+build/*
 *.ncb
 *.suo
 *.sdf
