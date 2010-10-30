@@ -9,38 +9,6 @@
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Debug|Win32">
-      <Configuration>DLL Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Debug|x64">
-      <Configuration>DLL Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Release|Win32">
-      <Configuration>DLL Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Release|x64">
-      <Configuration>DLL Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Universal Debug|Win32">
-      <Configuration>DLL Universal Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Universal Debug|x64">
-      <Configuration>DLL Universal Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Universal Release|Win32">
-      <Configuration>DLL Universal Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="DLL Universal Release|x64">
-      <Configuration>DLL Universal Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
@@ -49,88 +17,12 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Universal Debug|Win32">
-      <Configuration>Universal Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Universal Debug|x64">
-      <Configuration>Universal Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Universal Release|Win32">
-      <Configuration>Universal Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Universal Release|x64">
-      <Configuration>Universal Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>base</ProjectName>
     <ProjectGuid>{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
@@ -153,42 +45,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -213,46 +69,6 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">true</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">true</LinkIncremental>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">true</GenerateManifest>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">false</LinkIncremental>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">true</GenerateManifest>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">true</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">true</LinkIncremental>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">true</GenerateManifest>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">$(SolutionDir)$(PlatformName)\$(Configuration)</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">$(SolutionDir)build\$(PlatformName)\$(Configuration)</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">false</LinkIncremental>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">true</GenerateManifest>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">true</GenerateManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
@@ -426,558 +242,6 @@
       <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_lib\mswunivud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivud\wxprec_baselib.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>..\..\lib\vc_lib\wxbase29ud.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Lib>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_lib\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_lib\mswunivud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_LIB;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivud\wxprec_baselib.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>..\..\lib\vc_lib\wxbase29ud.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Lib>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_lib\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_LIB;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_lib\mswunivu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_LIB;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivu\wxprec_baselib.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>..\..\lib\vc_lib\wxbase29u.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Lib>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_lib\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_LIB;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_lib\mswunivu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_LIB;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivu\wxprec_baselib.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Lib>
-      <OutputFile>..\..\lib\vc_lib\wxbase29u.lib</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Lib>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_lib\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswuddll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291ud_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29ud.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.pdb</ProgramDatabaseFile>
-      <TargetMachine>MachineX86</TargetMachine>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswuddll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291ud_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29ud.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.pdb</ProgramDatabaseFile>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswudll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291u_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291u_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29u.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291u_vc_custom.pdb</ProgramDatabaseFile>
-      <TargetMachine>MachineX86</TargetMachine>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswudll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;NDEBUG;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291u_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291u_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29u.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291u_vc_custom.pdb</ProgramDatabaseFile>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswunivud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivuddll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291ud_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29ud.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.pdb</ProgramDatabaseFile>
-      <TargetMachine>MachineX86</TargetMachine>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswunivud;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivuddll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;__WXMSW__;__WXUNIVERSAL__;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291ud_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29ud.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291ud_vc_custom.pdb</ProgramDatabaseFile>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswunivu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivudll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291u_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291u_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29u.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291u_vc_custom.pdb</ProgramDatabaseFile>
-      <TargetMachine>MachineX86</TargetMachine>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">
-    <Midl>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\lib\vc_dll\mswunivu;..\..\include;..\..\src\tiff\libtiff;..\..\src\jpeg;..\..\src\png;..\..\src\zlib;..\..\src\regex;..\..\src\expat\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </Midl>
-    <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);..\..\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_USRDLL;DLL_EXPORTS;__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>wx/wxprec.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>vc_mswunivudll\wxprec_basedll.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
-      <WarningLevel>Level4</WarningLevel>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>__WXMSW__;__WXUNIVERSAL__;NDEBUG;_UNICODE;WXBUILDING;WXDLLNAME=wxbase291u_vc_custom;wxUSE_GUI=0;WXMAKINGDLL_BASE;wxUSE_BASE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0409</Culture>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);.\..\wxWidgets-2.9.1\include;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ResourceCompile>
-    <Link>
-      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\lib\vc_dll\wxbase291u_vc_custom.dll</OutputFile>
-      <ImportLibrary>..\..\lib\vc_dll\wxbase29u.lib</ImportLibrary>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>..\..\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>..\..\lib\vc_dll\wxbase291u_vc_custom.pdb</ProgramDatabaseFile>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
-    <Bscmake>
-      <OutputFile>..\..\lib\vc_dll\wx_vc10_base.bsc</OutputFile>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-    </Bscmake>
-    <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
-    </PreBuildEvent>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\any.cpp" />
     <ClCompile Include="..\..\src\common\appbase.cpp" />
@@ -995,22 +259,10 @@
     <ClCompile Include="..\..\src\common\datstrm.cpp" />
     <ClCompile Include="..\..\src\common\dircmn.cpp" />
     <ClCompile Include="..\..\src\common\dummy.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\common\dynarray.cpp" />
     <ClCompile Include="..\..\src\common\dynlib.cpp" />
@@ -1019,22 +271,6 @@
     <ClCompile Include="..\..\src\common\event.cpp" />
     <ClCompile Include="..\..\src\common\evtloopcmn.cpp" />
     <ClCompile Include="..\..\src\common\extended.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">
-      </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -1042,14 +278,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\common\ffile.cpp" />
@@ -1147,30 +375,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">true</ExcludedFromBuild>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\wx\msw\setup.h">
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">Creating ..\..\lib\vc_dll\mswud\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">Creating ..\..\lib\vc_dll\mswud\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">copy "%(FullPath)" ..\..\lib\vc_dll\mswud\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">copy "%(FullPath)" ..\..\lib\vc_dll\mswud\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">..\..\lib\vc_dll\mswud\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">..\..\lib\vc_dll\mswud\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">Creating ..\..\lib\vc_dll\mswu\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">Creating ..\..\lib\vc_dll\mswu\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">copy "%(FullPath)" ..\..\lib\vc_dll\mswu\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">copy "%(FullPath)" ..\..\lib\vc_dll\mswu\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">..\..\lib\vc_dll\mswu\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">..\..\lib\vc_dll\mswu\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Creating ..\..\lib\vc_lib\mswud\wx\setup.h</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Creating ..\..\lib\vc_lib\mswud\wx\setup.h</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy "%(FullPath)" ..\..\lib\vc_lib\mswud\wx\setup.h</Command>
@@ -1187,68 +395,12 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\lib\vc_lib\mswu\wx\setup.h;%(Outputs)</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\include\wx\univ\setup.h">
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">Creating ..\..\lib\vc_dll\mswunivud\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">Creating ..\..\lib\vc_dll\mswunivud\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">copy "%(FullPath)" ..\..\lib\vc_dll\mswunivud\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">copy "%(FullPath)" ..\..\lib\vc_dll\mswunivud\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">..\..\lib\vc_dll\mswunivud\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">..\..\lib\vc_dll\mswunivud\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">Creating ..\..\lib\vc_dll\mswunivu\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">Creating ..\..\lib\vc_dll\mswunivu\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">copy "%(FullPath)" ..\..\lib\vc_dll\mswunivu\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">copy "%(FullPath)" ..\..\lib\vc_dll\mswunivu\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">..\..\lib\vc_dll\mswunivu\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">..\..\lib\vc_dll\mswunivu\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">Creating ..\..\lib\vc_lib\mswunivud\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">Creating ..\..\lib\vc_lib\mswunivud\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">copy "%(FullPath)" ..\..\lib\vc_lib\mswunivud\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">copy "%(FullPath)" ..\..\lib\vc_lib\mswunivud\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">..\..\lib\vc_lib\mswunivud\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">..\..\lib\vc_lib\mswunivud\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">Creating ..\..\lib\vc_lib\mswunivu\wx\setup.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">Creating ..\..\lib\vc_lib\mswunivu\wx\setup.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">copy "%(FullPath)" ..\..\lib\vc_lib\mswunivu\wx\setup.h</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">copy "%(FullPath)" ..\..\lib\vc_lib\mswunivu\wx\setup.h</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">..\..\lib\vc_lib\mswunivu\wx\setup.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">..\..\lib\vc_lib\mswunivu\wx\setup.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">$(INTDIR) $(OUTDIR);%(AdditionalInputs)</AdditionalInputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\include\wx\msw\apptbase.h" />
     <ClInclude Include="..\..\include\wx\msw\apptrait.h" />
@@ -1259,38 +411,6 @@
     <ClInclude Include="..\..\include\wx\msw\fswatcher.h" />
     <ClInclude Include="..\..\include\wx\msw\gccpriv.h" />
     <CustomBuild Include="..\..\include\wx\msw\genrcdefs.h">
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">Creating ..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">Creating ..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">..\..\lib\vc_dll\mswud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|Win32'">..\..\lib\vc_dll\mswud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Debug|x64'">..\..\lib\vc_dll\mswud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">Creating ..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">Creating ..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">..\..\lib\vc_dll\mswu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|Win32'">..\..\lib\vc_dll\mswu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Release|x64'">..\..\lib\vc_dll\mswu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">Creating ..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">Creating ..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">..\..\lib\vc_dll\mswunivud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|Win32'">..\..\lib\vc_dll\mswunivud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Debug|x64'">..\..\lib\vc_dll\mswunivud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">Creating ..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">Creating ..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">..\..\lib\vc_dll\mswunivu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|Win32'">..\..\lib\vc_dll\mswunivu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='DLL Universal Release|x64'">..\..\lib\vc_dll\mswunivu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Creating ..\..\lib\vc_lib\mswud\wx\msw\rcdefs.h</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Creating ..\..\lib\vc_lib\mswud\wx\msw\rcdefs.h</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_lib\mswud\wx\msw\rcdefs.h"</Command>
@@ -1307,22 +427,6 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\lib\vc_lib\mswu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\lib\vc_lib\mswu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\lib\vc_lib\mswu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">Creating ..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">Creating ..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">..\..\lib\vc_lib\mswunivud\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|Win32'">..\..\lib\vc_lib\mswunivud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Debug|x64'">..\..\lib\vc_lib\mswunivud\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">Creating ..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">Creating ..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">cl /EP /nologo "%(FullPath)" &gt; "..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">..\..\lib\vc_lib\mswunivu\wx\msw\rcdefs.h;%(Outputs)</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|Win32'">..\..\lib\vc_lib\mswunivu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Universal Release|x64'">..\..\lib\vc_lib\mswunivu\wx\msw;%(AdditionalInputs)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\include\wx\msw\libraries.h" />
     <ClInclude Include="..\..\include\wx\msw\mimetype.h" />
