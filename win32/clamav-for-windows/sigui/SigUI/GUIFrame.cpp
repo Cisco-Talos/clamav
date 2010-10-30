@@ -228,7 +228,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panel_updater->SetSizer( bSizer4 );
 	m_panel_updater->Layout();
 	bSizer4->Fit( m_panel_updater );
-	tabs->AddPage( m_panel_updater, _("Updater configuration"), true );
+	tabs->AddPage( m_panel_updater, _("Updater configuration"), false );
 	m_panel_sigman = new wxPanel( tabs, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxVERTICAL );
@@ -243,7 +243,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	gbSizer61->SetFlexibleDirection( wxBOTH );
 	gbSizer61->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 	
-	m_sig_candidates = new wxListBox( m_panel_sigman, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_EXTENDED|wxLB_HSCROLL|wxLB_MULTIPLE|wxLB_NEEDED_SB ); 
+	m_sig_candidates = new wxListBox( m_panel_sigman, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_EXTENDED|wxLB_HSCROLL|wxLB_NEEDED_SB ); 
 	m_sig_candidates->SetToolTip( _("signature files to be added (candidates)") );
 	
 	gbSizer61->Add( m_sig_candidates, wxGBPosition( 0, 0 ), wxGBSpan( 3, 1 ), wxALL|wxEXPAND, 5 );
@@ -271,7 +271,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxStaticBoxSizer* sbSizer5;
 	sbSizer5 = new wxStaticBoxSizer( new wxStaticBox( m_panel_sigman, wxID_ANY, _("Installed signatures") ), wxHORIZONTAL );
 	
-	m_installed_sigs = new wxListBox( m_panel_sigman, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_EXTENDED|wxLB_HSCROLL|wxLB_MULTIPLE|wxLB_NEEDED_SB ); 
+	m_installed_sigs = new wxListBox( m_panel_sigman, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_EXTENDED|wxLB_HSCROLL|wxLB_NEEDED_SB ); 
 	m_installed_sigs->SetToolTip( _("Databases currently usable by ClamAV") );
 	
 	sbSizer5->Add( m_installed_sigs, 1, wxALL|wxEXPAND, 5 );
@@ -286,7 +286,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panel_sigman->SetSizer( bSizer7 );
 	m_panel_sigman->Layout();
 	bSizer7->Fit( m_panel_sigman );
-	tabs->AddPage( m_panel_sigman, _("Local signature management"), false );
+	tabs->AddPage( m_panel_sigman, _("Local signature management"), true );
 	
 	bSizer1->Add( tabs, 1, wxEXPAND, 5 );
 	
