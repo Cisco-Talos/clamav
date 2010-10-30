@@ -228,7 +228,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panel_updater->SetSizer( bSizer4 );
 	m_panel_updater->Layout();
 	bSizer4->Fit( m_panel_updater );
-	tabs->AddPage( m_panel_updater, _("Updater configuration"), false );
+	tabs->AddPage( m_panel_updater, _("Updater configuration"), true );
 	m_panel_sigman = new wxPanel( tabs, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxVERTICAL );
@@ -286,7 +286,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panel_sigman->SetSizer( bSizer7 );
 	m_panel_sigman->Layout();
 	bSizer7->Fit( m_panel_sigman );
-	tabs->AddPage( m_panel_sigman, _("Local signature management"), true );
+	tabs->AddPage( m_panel_sigman, _("Local signature management"), false );
 	
 	bSizer1->Add( tabs, 1, wxEXPAND, 5 );
 	
