@@ -51,6 +51,19 @@ typedef struct {
 
 typedef void* HINTERNET;
 
+#define wxDLW_VOIDMETHOD_DEFINE( name, args, argnames ) \
+    typedef void (WINAPI * wxDL_METHOD_TYPE(name)) args ; \
+    wxDL_METHOD_TYPE(name) wxDL_METHOD_NAME(name); \
+    void name args \
+        { if ( m_ok ) wxDL_METHOD_NAME(name) argnames ; }
+
+#define wxDLW_METHOD_DEFINE( rettype, name, args, argnames, defret ) \
+    typedef rettype (WINAPI * wxDL_METHOD_TYPE(name)) args ; \
+    wxDL_METHOD_TYPE(name) wxDL_METHOD_NAME(name); \
+    rettype name args \
+        { return m_ok ? wxDL_METHOD_NAME(name) argnames : defret; }
+
+
 class WHttp {
     public:
 	WHttp() {
@@ -62,15 +75,15 @@ class WHttp {
 	}
 	bool IsOK() const { return m_ok; }
 
-	wxDL_METHOD_DEFINE(BOOL, WinHttpGetIEProxyConfigForCurrentUser,
+	wxDLW_METHOD_DEFINE(BOOL, WinHttpGetIEProxyConfigForCurrentUser,
 			   (WINHTTP_CURRENT_USER_IE_PROXY_CONFIG *pProxyConfig),
 			   (pProxyConfig), FALSE)
-        wxDL_METHOD_DEFINE(BOOL, WinHttpGetProxyForUrl,
+    wxDLW_METHOD_DEFINE(BOOL, WinHttpGetProxyForUrl,
 			   (HINTERNET hSession, LPCWSTR lpcwszUrl,
 			    WINHTTP_AUTOPROXY_OPTIONS *pAutoProxyOptions,
 			    WINHTTP_PROXY_INFO *pProxyInfo),
 			   (hSession, lpcwszUrl, pAutoProxyOptions, pProxyInfo), FALSE)
-	wxDL_METHOD_DEFINE(HINTERNET, WinHttpOpen,
+	wxDLW_METHOD_DEFINE(HINTERNET, WinHttpOpen,
 			   (LPCWSTR pwszUserAgent,
 			    DWORD dwAccessType,
 			    LPCWSTR pwszProxyName,
@@ -78,7 +91,7 @@ class WHttp {
 			    DWORD dwFlags),
 			   (pwszUserAgent, dwAccessType, pwszProxyName,
 			    pwszProxyByPass, dwFlags), 0)
-	wxDL_METHOD_DEFINE(BOOL, WinHttpCloseHandle,
+	wxDLW_METHOD_DEFINE(BOOL, WinHttpCloseHandle,
 			   (HINTERNET hInternet),
 			   (hInternet), FALSE)
     private:
