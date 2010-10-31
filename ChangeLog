@@ -1,3 +1,7 @@
+Sun Oct 31 09:13:33 EET 2010 (edwin)
+------------------------------------
+ * libclamav/builtin_bytecodes.h: Don't disable JIT on pentium4 (bb #2345)
+
 Fri Oct 29 22:26:55 CEST 2010 (acab)
 ------------------------------------
  * clamav-for-windows: displace clamav-for-windows to a separate solution and directory

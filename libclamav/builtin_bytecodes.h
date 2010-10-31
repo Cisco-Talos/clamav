@@ -29,7 +29,7 @@
  * fallback.
  * Usually bytecode.cvd will contain this bytecode */
 
-static const char* builtin_bc_startup = "ClamBCafhmknalkld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacgcgcmbgfbffcbficbfbfac``bgcaap`clamcoincidencejb:4096\n"
+static const char* builtin_bc_startup = "ClamBCafhiifamlld|afefdfggifnf```aa```|biacflfafmfbfcfmb`cnbacacmbacgchcmbgfbcbfgcfffcffec``bgcaap`clamcoincidencejb:4096\n"
 "\n"
 "Teddaaahdabahdacahdadahdaeahdafahdagahebfgebidebegebdgebgdebkdebcgebbgebageb`gebofebnfebmfebedeblfebkfebjfebadcbgab`bb`bb`bb`bb`bb`bb`bbifbifbifbifbifbifbifahahahahahahahahahebneebifaaaaaaaab`baabb`bb`baacb`bbadb`baacb`bboeb`baacb`bb`bb`baadb`bbadb`bb`baadb`bbadbadb`bdbadahdbkaahdbbcahdbibahdb`eahdbddahdbodahdbdaahdaiahdakahdamahdahahdbgcahdbnbah\n"
 "Ebjdaibcdbbf|bcaefnfgfifnfefoedfcfofnfffoelfeffgeflf``bbdbbf|bkaefnfgfifnfefoeffegnfcfdgifofnfaflfifdgigoelfeffgeflf``agbcf|baadfefbfeggfoe`gbgifnfdgoeegifnfdg``bcabcf|afdgefcgdgbc``afbdf|b`adfefbfeggfoe`gbgifnfdgoecgdgbg``bhdbef|b`agfefdgoeefnffgifbgofnfmfefnfdg``aabff|afdgefcgdgac``bidbgf|bdadfifcgafbflfefoebfigdgefcfofdfefoeifff``bjdbgf|aodfifcgafbflfefoejfifdgoeifff``\n"
@@ -37,19 +37,19 @@ static const char* builtin_bc_startup = "ClamBCafhmknalkld|afefdfggifnf```aa```|
 "A`b`bLbjib`bab`bab`babneab`b`bad`ah`aa`bad`ah`aa`b`f`bad`b`b`aa`b`b`aa`b`b`b`b`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`aa`b`b`b`b`bad`ah`b`b`b`b`aa`b`b`bad`ah`aa`ah`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`bad`ah`aa`bad`ah`aa`b`b`aa`b`b`b`b`aa`aa`aa`aa`aa`b`b`b`b`b`b`ah`aa`bcd`b`b`aa`bcd`b`b`bcd`b`b`aa`b`b`aa`b`b`b`b`aa`bad`ah`b`b`aa`b`b`aa`bad`ah`b`b`b`b`bad`ah`b`b`b`b`bad`ah`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`b`b`bad`ah`b`b`b`b`bcd`b`b`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`bcd`b`b`aa`b`b`b`b`aa`b`b`b`b`aa`b`b`b`b`Fbombdc\n"
 "Bb`badabbbhdacClnadbadaedbboeacBdadahafgbaeaaageaahaf@aTaaagbkaaa\n"
 "BbadahdbboeacB`adahaigbahaaajeaahaiAaaTaaajabb`a\n"
-"Bb`fakdbboeacAidbadaldbb`fak@db`bamkbalBja`Addaaaneab`bam@db`b`bbAadabTaaanadac\n"
-"Bb`baokbalBka`Addaab`aeab`bao@db`bab`ab`ab`b`bbababTbaad\n"
-"Bb`bbaabbabbaab`bbbaabcbjdBia`@dbaab`bbcakbalBma`Addaabdaeab`bbca@db`b`bbAadaaTaabdaaoae\n"
-"Bb`bbeakbalBna`Agdaabfaeab`bbea@db`b`bbAadaaTaabfaaoaf\n"
-"Bb`bbgakbalBoa`Addaabhaeab`bbga@db`b`bbAadaaTaabhaaoag\n"
-"Bb`bbiakbalB`b`Abdaabjaeab`bbia@db`b`bbAadaaTaabjaaoah\n"
-"Bb`bbkakbalBab`Addaablaeab`bbka@db`b`bbAadaaTaablaaoai\n"
-"Bb`bbmakbalBbb`Addaabnaeab`bbma@db`b`bbAadaaTaabnaaoaj\n"
-"Bb`bboakbalBcb`Afdaab`beab`bboa@db`b`bbAadaaTaab`baoak\n"
-"Bb`bbabkbalBdb`Aldaabbbeab`bbab@db`b`bbAadaaTaabbbaoal\n"
-"Bb`bbcbkbalBeb`Ajdaabdbeab`bbcb@db`b`bbAadaaTaabdbaoam\n"
-"Bb`bbebkbalBfb`Ahdaabfbeab`bbeb@db`b`bbAadaaTaabfbaoan\n"
-"Bb`bbgbkbalBgb`Abdaabhbeab`bbgb@db`baa`abhbb`b`bbaaaaTbaao\n"
+"Bb`fakdbboeacAidbadaldbb`fak@db`bamkbalBja`Aedaaaneab`bam@db`b`bbAadabTaaanadac\n"
+"Bb`baokbalBka`Aedaab`aeab`bao@db`bab`ab`ab`b`bbababTbaad\n"
+"Bb`bbaabbabbaab`bbbaabcbjdBia`@dbaab`bbcakbalBma`Aedaabdaeab`bbca@db`b`bbAadaaTaabdaaoae\n"
+"Bb`bbeakbalBna`Ahdaabfaeab`bbea@db`b`bbAadaaTaabfaaoaf\n"
+"Bb`bbgakbalBoa`Aedaabhaeab`bbga@db`b`bbAadaaTaabhaaoag\n"
+"Bb`bbiakbalB`b`Acdaabjaeab`bbia@db`b`bbAadaaTaabjaaoah\n"
+"Bb`bbkakbalBab`Aedaablaeab`bbka@db`b`bbAadaaTaablaaoai\n"
+"Bb`bbmakbalBbb`Aedaabnaeab`bbma@db`b`bbAadaaTaabnaaoaj\n"
+"Bb`bboakbalBcb`Agdaab`beab`bboa@db`b`bbAadaaTaab`baoak\n"
+"Bb`bbabkbalBdb`Amdaabbbeab`bbab@db`b`bbAadaaTaabbbaoal\n"
+"Bb`bbcbkbalBeb`Akdaabdbeab`bbcb@db`b`bbAadaaTaabdbaoam\n"
+"Bb`bbebkbalBfb`Aidaabfbeab`bbeb@db`b`bbAadaaTaabfbaoan\n"
+"Bb`bbgbkbalBgb`Acdaabhbeab`bbgb@db`baa`abhbb`b`bbaaaaTbaao\n"
 "Bb`bbibbbaabibb`bbjbabcbjdBla`@dbibTbab`a\n"
 "BbadbkbdbboeacBeadahblbgbbkbb`bbmb`ablbb`bbnbk`bmbAadaabobeab`bbnb@dTaabobbaabga\n"
 "Bb`bb`cabcbjdBhb`@dAadbadbacdbboeacBaadahbbcgbbacaabcceaahbbcAjaTaabccbbabka\n"
@@ -106,23 +106,23 @@ int entrypoint()
     switch (env.arch) {
     case arch_i386:
       disable_jit_if("i[34]86 detected, JIT needs pentium or better",0,
-                     !memcmp(env.cpu,"i386",4) ||
-                     !memcmp(env.cpu,"i486",4));
+                     !memcmp(env.cpu,"i386",5) ||
+                     !memcmp(env.cpu,"i486",5));
       /* FIXME: update embedded LLVM to 2.8 which correctly skips CMOV if CPU
        * doesn't support it.
        * For now disable JIT on CPUs without cmov */
       disable_jit_if("CPU doesn't support CMOV, would need LLVM 2.8 to work!",0,
-		     !memcmp(env.cpu,"i586",4) ||
-		     !memcmp(env.cpu,"pentium",7) ||
-		     !memcmp(env.cpu,"i686",4) ||
-		     !memcmp(env.cpu,"k6",2) ||
-		     !memcmp(env.cpu,"k6-2",4) ||
-		     !memcmp(env.cpu,"k6-3",4) ||
-		     !memcmp(env.cpu,"athlon",6) ||
-		     !memcmp(env.cpu,"athlon-tbird",12) ||
-		     !memcmp(env.cpu,"winchip-c6",10) ||
-		     !memcmp(env.cpu,"winchip2",8) ||
-		     !memcmp(env.cpu,"c3",2));
+		     !memcmp(env.cpu,"i586",5) ||
+		     !memcmp(env.cpu,"pentium",8) ||
+		     !memcmp(env.cpu,"i686",5) ||
+		     !memcmp(env.cpu,"k6",3) ||
+		     !memcmp(env.cpu,"k6-2",5) ||
+		     !memcmp(env.cpu,"k6-3",5) ||
+		     !memcmp(env.cpu,"athlon",7) ||
+		     !memcmp(env.cpu,"athlon-tbird",13) ||
+		     !memcmp(env.cpu,"winchip-c6",11) ||
+		     !memcmp(env.cpu,"winchip2",9) ||
+		     !memcmp(env.cpu,"c3",3));
       break;
     default:
       break;
