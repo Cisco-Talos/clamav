@@ -2,6 +2,38 @@
 \chapter{User interface}
 \section{Run freshclam to test configuration}
 \label{sec:runfreshclam}
+
+Pressing this button will launch \gls{freshclam}, and opens a window to show its output.
+
+\begin{figure}[htp]
+\caption{SigUI: Updater configuration tab}
+\centering
+\includegraphics{sigui_run.jpg}
+\label{fig:tab1}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{SigUI: Updater configuration tab}
+\centering
+\includegraphics{sigui_tab1.jpg}
+\label{fig:tab1}
+\end{figure}
+
+\begin{figure}[htb]
+\caption{SigUI: Local signature management}
+\centering
+\includegraphics{sigui_tab2.jpg}
+\label{fig:tab1}
+\end{figure}
+
+
+The output shows the progress of the update, and any error messages from \gls{freshclam}.
+It is recommended that once you change \gls{freshclam.conf}, by clicking \emph{Save settings}, to test it by clicking on \emph{Run freshclam to test configuration}.
+
+The window has a button to forcefully terminate \gls{freshclam}, but this should only be used if for some reason it hangs. Note that by default the timeout for connecting to a remote server is 30 seconds, so you should wait at least 30 seconds before terminating it.
+
+Once \gls{freshclam} finishes the button changes to a \emph{Close window} button, that can be safely pressed to dismiss the window.
+
 \section{Custom URLs}
 \label{sec:ui_urladd}
 The \emph{Custom signature URLs} section on the \emph{Updater configuration}
