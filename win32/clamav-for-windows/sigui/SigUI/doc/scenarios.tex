@@ -1,1 +1,81 @@
+% !TeX root = sigui-manual.tex
 \chapter{Usage examples}
+\section{Configuring a proxy}
+\Gls{freshclam} by default attemps to connect to the Internet directly. If you can only access the Internet by using a proxy, then you should configure the proxy using SigUI.
+
+If you have already configured a system wide proxy setting, then easiest is to just press the \emph{Retrieve system proxy settings} button on the \emph{Updater configuration} tab.
+This will retrieve the proxy settings from Internet Explorer, and display them in the \emph{Proxy settings} section. 
+If the settings are correct, click \emph{Save settings}.
+
+You can also manually input the proxy settings:
+\begin{itemize}
+\item Tick the \emph{Proxy required for Internet access} checkbox
+\item Set the proxy server and port in the \emph{Proxy server:} and \emph{Proxy port:} fields
+\item If the proxy requires a username and password, then tick the \emph{Authentication required} checkbox
+\begin{itemize}
+\item Enter the username in the \emph{Proxy username:} field
+\item Enter the password in the \emph{Proxy password:} field \footnote{Note that the password will be saved as cleartext in \gls{freshclam.conf}}
+\end{itemize}
+\item Check that the settings are correct
+\item Click \emph{Save settings}
+\end{itemize}
+
+To test whether the proxy settings work, click \emph{Run freshclam to test configuration}.
+This will run \gls{freshclam}, and display an error if it failed to connect through the proxy.
+See \prettyref{sec:runfreshclam} for details.
+
+\section{Choose a mirror}
+\Gls{freshclam} by default uses the \gls{database.clamav.net} \gls{mirror}. Although this works well most of the time, you can get better download speeds by using a mirror from your country:
+\begin{itemize}
+\item Open SigUI
+\item Open the \emph{Download Official Signatures from mirror} dropdown \footnote{
+On the \emph{Updater configuration} tab, in the \emph{Signature sources} section}
+\item Mirrors are of the form \texttt{db.XY.clamav.net}, where \emph{XY} is your two-letter country-code
+\item Select the mirror corresponding to your country
+\item Click \emph{Save settings}
+\end{itemize}
+
+You can also enter the \gls{hostname} of the mirror you wish to use, instead of choosing one from the dropdown. 
+This mirror can be a server on your own network too. See \prettyref{sec:localmirror}.
+
+\section{Custom signature updates}
+If you have written some custom signatures and want to deploy them on your network you have a few choices:
+\begin{itemize}
+ \item Put your custom signatures on your own webserver, making sure nobody can alter them. 
+ \item Put your custom signatures on a network share, again making sure nobody can alter them.
+This is more complicated to setup than the webserver, since the network share needs to be accessible to the \verb+SYSTEM+ account. Usually no network share is accessible for it.
+ \item Manually copy your custom signatures each time you update them. See \prettyref{sec:manualcopy}
+ \item Write and deploy a script that copies the signatures to a local drive, and runs SigUI in command-line mode. See \prettyref{sec:automatedcopy}
+\end{itemize}
+
+The custom signature can be in any format that \gls{ClamAV} understands. 
+However digital signatures are checked only for \gls{CVD} signatures \footnote{because they are the only ones that contain such signatures}.
+
+If you want to deploy third-party signatures that are not in CVD format, you can do so with some additional steps:
+\begin{itemize}
+\item Download the third-party signatures to your server
+\item Check their integrity by comparing against the third-party supplied checksum and digital signatures. There usually are scripts to accomplish this
+\item Copy the signatures to your webserver, at a location of your choice
+\item Add the full URL path to these signatures to \gls{freshclam.conf} using \gls{SigUI}
+\end{itemize}
+
+Adding a new URL to freshclam is easy:
+\begin{itemize}
+\item Open SigUI
+\item Click the \emph{Add} button next to the \emph{Custom signature URLs} section
+\item Enter the URL
+\item Click OK.
+\item If the URL is not in the correct format, an error message is shown. Correct the URL and press OK again.
+\item The new URL shows up in the \emph{Custom signature URLs} section
+\item Add as many more URLs as needed
+\item You can remove an URL by clicking the \emph{Remove} button. \textbf{WARNING}: this won't remove the downloaded signature file from the disk. See \prettyref{sec:localremove} on how to do that.
+\item Check that you entered the correct URLs.
+\item Click \emph{Save settings}.
+\item Click \emph{Run freshclam to test configuration} to make sure freshclam is able to correctly download the signatures. Freshclam will only install signatures that are in the syntactically correct.
+See \prettyref{sec:runfreshclam}
+\item Freshclam will automatically download these URLs each time it updates the official databases too. This usually happens each hour. Freshclam has support for If-Modified-Since webserver headers, so it will only download a database if it is newer than the already existing one \footnote{Of course only if the webserver supports such headers}.
+\item The signatures are not loaded in the running ClamAV immediately. See \prettyref{sec:updatenow}.
+\end{itemize}
+
+Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename.
+The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.

@@ -42,7 +42,7 @@
 \usepackage{url}
 \usepackage{makeidx}
 \usepackage{xcolor}
-\usepackage{cmap}
+\usepackage{xspace}
 %\makeindex
 \newrefformat{cha}{Chapter~\ref{#1}}
 \newrefformat{sec}{Section~\ref{#1}}
@@ -105,6 +105,7 @@
 
 \fi
 
+\usepackage[toc]{glossaries}
 %A4 settings
 \ifpdf
    \pdfpageheight=297mm
@@ -113,7 +114,11 @@
    \setlength{\paperheight}{297mm}
    \setlength{\paperwidth}{210mm}
 \fi
-\makeglossary
+
+\glsSetSuffixF{\nohyperpage{f.}}
+\glsSetSuffixFF{\nohyperpage{ff.}}
+
+\makeglossaries
 
 \floatstyle{ruled}
 \newfloat{program}{thp}{lop}
@@ -198,9 +203,13 @@
 \advance\headsep by -3mm
 
 % workaround \hyperlink bug (see Debian #580912)
-\renewcommand{\hyperlink}[2]{%
-    \hyperref[#1]{#2}%
-}
+%\renewcommand{\hyperlink}[2]{%
+%    \hyperref[#1]{#2}%
+%}
+
+
+\newcommand{\ClamAV}{\gls{ClamAV}}
+\newcommand{\CW}{\textbf{ClamAV~for~Windows}\xspace}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BEGIN DOCUMENT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,6 +263,7 @@
 \setlength{\parindent}{18pt}
 %\mainmatter
 
+\include{glossary}
 \include{overview}
 \include{scenarios}
 \include{ui}
@@ -266,4 +276,8 @@
 %\phantomsection %needed so that Index shows up in TOC
 %\addcontentsline{toc}{chapter}{Index}
 %\printindex
+
+\cleardoublepage
+%\phantomsection %needed so that Glossary shows up in TOC
+\printglossaries
 \end{document}
