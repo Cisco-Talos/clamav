@@ -54,6 +54,7 @@
 \definecolor{LinkColor1}{rgb}{0.208,0.374,0.486}
 \definecolor{LinkColor2}{rgb}{0.216,0.439,0.388}
 
+%TODO: remove draft
 \ifpdf
 % pdfLaTeX setup
     \usepackage[pdftex]{graphicx}
@@ -105,6 +106,7 @@
 
 \fi
 
+\usepackage{draftwatermark}
 \usepackage[toc]{glossaries}
 %A4 settings
 \ifpdf
@@ -220,7 +222,7 @@
 %\frontmatter
 \setcounter{page}{0}
 \pagestyle{empty}
-%\includegraphics[width=353pt]{clam}
+\includegraphics[width=353pt]{clam}
 \vspace{3cm}
 \begin{flushright}
   \rule[-1ex]{8cm}{3pt}\\
