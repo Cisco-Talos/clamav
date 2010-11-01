@@ -8,6 +8,7 @@ This will retrieve the proxy settings from Internet Explorer, and display them i
 If the settings are correct, click \emph{Save settings}.
 
 You can also manually input the proxy settings:
+\label{sec:proxysettings}
 \begin{itemize}
 \item Tick the \emph{Proxy required for Internet access} checkbox
 \item Set the proxy server and port in the \emph{Proxy server:} and \emph{Proxy port:} fields
@@ -103,12 +104,91 @@ The UI will warn you if you try to do that\footnote{the two URLs with same filen
 
 \subsection{Manually copying custom signatures to database directory}
 \label{sec:custommanual}
+If you want \gls{ClamAV} to use a custom signature, you just need to copy it to its database directory. However, as explained earlier in this document, that directory is protected against changes so you need to use SigUI to copy the databases.
+
+This can be achieved by using the \emph{Local signature management} tab:
+\begin{itemize}
+\item Click \emph{Add}
+\item This will open the standard \emph{Open file(s)} dialog
+\item Select the file(s) you want to add
+\item Click \emph{Open}
+\item The files will show up in the \emph{New signatures} list
+\end{itemize}
+
+At this point the files haven't been installed yet.
+The databases currently installed can be seen in the \emph{Installed signatures} list.
+By default you should see \verb+main.cvd+,\verb+daily.cvd+, and \verb+bytecode.cvd+
+\footnote{Or .cld once they are updated. CVD files change into CLD files upon an update.
+Of course if the updater didn't run yet you won't see any files there}.
+
+You want your new signatures to show up in the \emph{Installed signatures}, so the next step is clicking on \emph{Verify and Install signatures}.
+This will perform the following:
+\begin{itemize}
+\item Copy all the signatures to a (protected) temporary staging directory \footnote{\texttt{clamav\textbackslash staging\_dir} subdirectory}.
+\item Test the signatures by loading each one\footnote{Using \texttt{libclamav.dll} only, they are not loaded in the realtime engine}. CVD files also have their digital signature checked.
+\item The signatures that pass verification are installed in the real database directory
+\item \CW will load them the next time it updates the database (usually once ah hour)
+\item If there are signatures that fail verification an error message will be shown, with details on why the signatures failed to load.
+\end{itemize}
+
+\subsection{Removing signature files}
+\label{sec:localremove}
+If you want to remove one of your signatures, you can select the file in the \emph{Installed signatures} list, and click \emph{Delete}. This will erase the file from the disk!
+Note that you can delete the files automatically downloaded by \gls{freshclam} too, but they will just reappear at the next update.  The only file you can't delete is \gls{daily.cvd} and \gls{daily.cld}.
+The presence of one these files is essential to the proper operation of the \gls{ClamAV} engine.
 
 \subsection{Automating signature and configuration file deployments on a network}
 \label{sec:customautomatedcopy}
 \label{sec:deploy_conf}
 
+The graphical mode of SigUI is useful for making local changes to \gls{freshclam.conf} and the database directory. However if you want to automate the process (call it from a script), there is a commandline interface too:
+\begin{itemize}
+	\item You must run it as Administrator user. Otherwise you get the \gls{UAC} popup, which is not what you want in a script.
+	\item If you want to copy signatures to the database directory:
+		\begin{itemize}
+			\item Create a file \verb+signatureslist+ with the full path to the signatures you want to install, one on a line. Don't quote or escape the filenames, just write them as is.
+			\item Run:
+\begin{verbatim}
+"C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -i <signatureslist
+\end{verbatim}
+			\item Another alternative is to pipe it the output of another program \footnote{Interactively entering the filenames from the commandprompt won't work}:
+\begin{verbatim}
+echo '<databasepath>' | "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -i
+\end{verbatim}
+			\item SigUI will test each database by loading them, and prints progress messages to the standard output.
+			\item SigUI will print error messages on failed database loads to the standard error
+			\item The exitcode will be 0 if all signatures were successfully installed, and nonzero if some signatures failed to install
+		\end{itemize}
+Note that using \gls{freshclam}'s support for custom signature URLs is usually a better solution, you will only need to deploy the modified \gls{freshclam.conf}.
+\item Deploying a modified \gls{freshclam.conf}:
+
+\begin{itemize}
+\item Create a \gls{freshclam.conf} on one machine with \gls{SigUI}
+\item Test it, see \prettyref{sec:runfreshclam}
+\item Write a script to automatically invoke \verb+SigUI.exe+ on each machine on your network (for example using a logon script, or a \verb+msi+ installer)
+\item Have it execute this command:
+\begin{verbatim}
+"C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -w <new\_freshclam.conf
+\end{verbatim}
+\item Alternatively you can pipe it the freshclam.conf:
+\begin{verbatim}
+somecommand | "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -w
+\end{verbatim}
+
+\item SigUI will test the config file for syntactic correctness, and install it if it is valid
+\end{itemize}
+\end{itemize}
+
 \section{Setting up a local mirror}
 \label{sec:localmirror}
 
+If you have a lot of ClamAV installations on your local network, then you can setup \gls{freshclam} as described in the answer for  \emph{I’m running ClamAV on a lot of clients on my local network} at \url{http://www.clamav.net/lang/en/support/faq/faq-cvd/}.
+Once you've setup the local mirror you can configure it:
+\begin{itemize}
+\item Open SigUI
+\item Enter the hostname, or IP address of your local mirror in the \emph{Download official signatures from mirror:} field
+\item Click \emph{Save settings}
+\item Click \emph{Run freshclam to test configuration}. See \prettyref{sec:runfreshclam}
+\end{itemize}
 
+Another option is to setup a caching proxy, and set ClamAV to use that. See \prettyref{sec:proxysettings}.

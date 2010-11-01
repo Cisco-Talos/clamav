@@ -7,8 +7,8 @@
 The \emph{Custom signature URLs} section on the \emph{Updater configuration}
 page allows you to add custom URLs.
 
-Freshclam will automatically download these each time it updates the official signatures (usually once an hour).
-If you webserver supports \verb+If-Modified-Since+ headers, it will only
+\Gls{freshclam} will automatically download these each time it updates the official signatures (usually once an hour).
+If your webserver supports \verb+If-Modified-Since+ headers, it will only
 download the new database if it is newer than the already installed one.
 
 Digital signatures  are checked only for \gls{CVD} signatures\footnote{because they are the only ones that contain such signatures}.
@@ -34,9 +34,11 @@ signatures that are in the syntactically correct.
 See \prettyref{sec:runfreshclam}
 \end{itemize}
 
-Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename. The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.
+Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename.
+The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.
 \section{Update now}
 \label{sec:updatenow}
-
-\section{Removing signature files}
-\label{sec:localremove}
+Any changes you make to \gls{freshclam.conf} and the databases won't take effect immediately.
+They will take effect the next time the signatures are updated (usually once an hour).
+To reload the signatures immediately open the \CW user interface from the tray (or desktop icon), and click on \emph{Update Now}. 
+Once the database is updated, it will be reloaded as soon as the system is idle.
