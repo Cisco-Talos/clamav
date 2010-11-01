@@ -3,7 +3,7 @@
 {
     name={freshclam},
     text={\texttt{freshclam}},
-    description={The application that automatically updates \ClamAV's signature databases}
+    description={\ClamAV's signature databases updater application}
 }
 \newglossaryentry{freshclam.conf}
 {
@@ -15,7 +15,7 @@
 {
     name={ClamAV},
     text={\textbf{ClamAV}},
-    description={Clam AntiVirus engine}
+    description={Clam AntiVirus engine, see \url{http://www.clamav.net}}
 }
 \newglossaryentry{database.clamav.net}
 {
@@ -27,12 +27,13 @@
 \newglossaryentry{mirror}
 {
     name={mirror},
-    description={mirror}
+    description={A server holding an exact copy of the original server, for
+	better load balancing and bandwidth purposes.}
 }
 \newglossaryentry{hostname}
 {
     name={hostname},
-    description={hostname}
+    description={DNS name of a server}
 }
 \newglossaryentry{CVD}
 {
@@ -44,31 +45,38 @@
 \newglossaryentry{SigUI}
 {
     name={SigUI},
-    description={ClamAV for Windows - Configuration User Interface. The
+    description={ClamAV for Windows - Signature Configuration User Interface. The
 	application documented in this manual}
 }
 \newglossaryentry{UNC path}
 {
     name={UNC path},
-    description={UNC path}
+    plural={UNC pathes},
+    description={Uniform Naming Convention path. A path of the form
+	\texttt{\textbackslash\textbackslash ComputerName \textbackslash
+	    \textbackslash SharedFolder \textbackslash\textbackslash Resource}, or a long UNC path
+	    starting with \texttt{\textbackslash\textbackslash?\textbackslash}}
 }
 \newglossaryentry{SYSTEM account}
 {
     name={SYSTEM account},
-    description={SYSTEM account}
+    description={A highly privileged account. This is the account used by system
+	services. You cannot login as SYSTEM}
 }
 \newglossaryentry{daily.cvd}
 {
     name={daily.cvd},
-    description={daily.cvd}
+    description={An important database file for \gls{ClamAV}. Contains often
+	updated virus signatures, file type definitions, engine configuration,
+	and whitelists}
 }
 \newglossaryentry{daily.cld}
 {
     name={daily.cld},
-    description={daily.cld}
+    description={A \gls{daily.cvd}, after \gls{freshclam} updated it}
 }
 \newglossaryentry{UAC}
 {
     name={UAC},
-    description={UAC}
+    description={User Account Control, a security infrastructure introduced in Windows Vista}
 }
