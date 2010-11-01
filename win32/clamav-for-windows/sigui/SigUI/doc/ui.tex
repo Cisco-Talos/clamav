@@ -2,3 +2,41 @@
 \chapter{User interface}
 \section{Run freshclam to test configuration}
 \label{sec:runfreshclam}
+\section{Custom URLs}
+\label{sec:ui_urladd}
+The \emph{Custom signature URLs} section on the \emph{Updater configuration}
+page allows you to add custom URLs.
+
+Freshclam will automatically download these each time it updates the official signatures (usually once an hour).
+If you webserver supports \verb+If-Modified-Since+ headers, it will only
+download the new database if it is newer than the already installed one.
+
+Digital signatures  are checked only for \gls{CVD} signatures\footnote{because they are the only ones that contain such signatures}.
+Freshclam automatically tests all signatures (for syntactic correctness) after downloading, but
+before installing them. If a signature file is malformed it is not installed and
+an error is logged.
+
+Usage:
+\begin{itemize}
+\item Click Add to add a new URL, press OK when done
+\item If the URL is not in the correct format, an error message is shown.
+Correct the URL and press OK again.
+\item The new URL shows up in the \emph{Custom signature URLs} section
+\item Add as many URLs as needed
+\item You can remove an URL by clicking the \emph{Remove} button.
+\textbf{WARNING}: If the database was already downloaded it won't remove the downloaded signature file from the disk.
+See \prettyref{sec:localremove} on how to do that.
+\item Check that you entered the correct URLs.
+\item Click \emph{Save settings}.
+\item Click \emph{Run freshclam to test configuration} to make sure freshclam is
+able to correctly download the signatures. Freshclam will only install
+signatures that are in the syntactically correct.
+See \prettyref{sec:runfreshclam}
+\end{itemize}
+
+Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename. The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.
+\section{Update now}
+\label{sec:updatenow}
+
+\section{Removing signature files}
+\label{sec:localremove}

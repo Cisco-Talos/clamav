@@ -24,7 +24,7 @@ To test whether the proxy settings work, click \emph{Run freshclam to test confi
 This will run \gls{freshclam}, and display an error if it failed to connect through the proxy.
 See \prettyref{sec:runfreshclam} for details.
 
-\section{Choose a mirror}
+\section{Choosing a mirror}
 \Gls{freshclam} by default uses the \gls{database.clamav.net} \gls{mirror}. Although this works well most of the time, you can get better download speeds by using a mirror from your country:
 \begin{itemize}
 \item Open SigUI
@@ -38,44 +38,77 @@ On the \emph{Updater configuration} tab, in the \emph{Signature sources} section
 You can also enter the \gls{hostname} of the mirror you wish to use, instead of choosing one from the dropdown. 
 This mirror can be a server on your own network too. See \prettyref{sec:localmirror}.
 
-\section{Custom signature updates}
-If you have written some custom signatures and want to deploy them on your network you have a few choices:
+\section{Deploying custom signature updates}
+In addition to the official virus signatures, you can use your own signatures, or signatures provided by third-parties.
+To deploy them you have these choices:
 \begin{itemize}
- \item Put your custom signatures on your own webserver, making sure nobody can alter them. 
- \item Put your custom signatures on a network share, again making sure nobody can alter them.
-This is more complicated to setup than the webserver, since the network share needs to be accessible to the \verb+SYSTEM+ account. Usually no network share is accessible for it.
- \item Manually copy your custom signatures each time you update them. See \prettyref{sec:manualcopy}
- \item Write and deploy a script that copies the signatures to a local drive, and runs SigUI in command-line mode. See \prettyref{sec:automatedcopy}
+ \item Put your custom signatures on your own webserver. See \prettyref{sec:customweb}
+ \item Put your custom signatures on a network share. See \prettyref{sec:customnet}
+ \item Manually copy your custom signatures each time you change them. See \prettyref{sec:custommanual}
+ \item Write and deploy a script that copies the signatures to a local drive, and runs SigUI in command-line mode. See \prettyref{sec:customautomatedcopy}
 \end{itemize}
 
-The custom signature can be in any format that \gls{ClamAV} understands. 
-However digital signatures are checked only for \gls{CVD} signatures \footnote{because they are the only ones that contain such signatures}.
+The signatures are not loaded in the running ClamAV immediately. See \prettyref{sec:updatenow}.
 
-If you want to deploy third-party signatures that are not in CVD format, you can do so with some additional steps:
+
+%This is more complicated to setup than the webserver, since the network share needs to be %accessible to the \verb+SYSTEM+ account. Usually no network share is accessible for it.
+%. See \prettyref{sec:manualcopy}
+
+\subsection{Deploying your own signatures from a webserver}
+\label{sec:customweb}
+If you have written your own signatures and want to deploy them to multiple
+\CW installations on your network, then the easiest is to put the signatures on your webserver (in your LAN).
+
+The custom signature can be in any format that \gls{ClamAV} understands.
+See \url{http://www.clamav.net/doc/latest/signatures.pdf} for details about the format.
+
+Since these files are not digitally signed \footnote{Official \gls{CVD} files are digitally signed}, it is your responsibility to ensure that the signature files are not altered (by malware, etc.).
+
+Deploying a new signature file is easy:
+\begin{itemize}
+\item Copy the signature to your webserver, at a location of your choice
+\item Open SigUI
+\item Click the \emph{Add} button next to the \emph{Custom signature URLs} section
+\item Enter the full URL to your new signature file
+\item Click OK.
+\item Click \emph{Save settings}
+\item See \prettyref{sec:ui_urladd} for details
+\item You can repeat this operation on each machine that has \CW installed, or you can automate it, see \prettyref{sec:deploy_conf}
+\end{itemize}
+
+\subsection{Deploying your own signatures from a network share}
+\label{sec:customnet}
+This is similar to downloading a signature file from a webserver, see \prettyref{sec:customweb}.
+Except you have to add an \gls{UNC path} instead of an \verb+http://+ URL.
+
+However \CW requires this \gls{UNC path} to be readable by the \gls{SYSTEM account}.
+Usually network shares, and network mapped drives are not accessible to this user.
+If you have made them accessible (it is out of scope for this document to discuss how), then you can of course use them in SigUI.
+
+\subsection{Deploying third-party signatures}
+
+If you want to deploy third-party signatures that are not in \gls{CVD} format \footnote{freshclam supports third-party signatures in CVD format, but there are no such signatures yet}, you can do so with some additional steps:
 \begin{itemize}
 \item Download the third-party signatures to your server
 \item Check their integrity by comparing against the third-party supplied checksum and digital signatures. There usually are scripts to accomplish this
 \item Copy the signatures to your webserver, at a location of your choice
-\item Add the full URL path to these signatures to \gls{freshclam.conf} using \gls{SigUI}
+\item Add the full URL path to these signatures to \gls{freshclam.conf} using \gls{SigUI}.
+See \prettyref{sec:ui_urladd}
 \end{itemize}
 
-Adding a new URL to freshclam is easy:
-\begin{itemize}
-\item Open SigUI
-\item Click the \emph{Add} button next to the \emph{Custom signature URLs} section
-\item Enter the URL
-\item Click OK.
-\item If the URL is not in the correct format, an error message is shown. Correct the URL and press OK again.
-\item The new URL shows up in the \emph{Custom signature URLs} section
-\item Add as many more URLs as needed
-\item You can remove an URL by clicking the \emph{Remove} button. \textbf{WARNING}: this won't remove the downloaded signature file from the disk. See \prettyref{sec:localremove} on how to do that.
-\item Check that you entered the correct URLs.
-\item Click \emph{Save settings}.
-\item Click \emph{Run freshclam to test configuration} to make sure freshclam is able to correctly download the signatures. Freshclam will only install signatures that are in the syntactically correct.
-See \prettyref{sec:runfreshclam}
-\item Freshclam will automatically download these URLs each time it updates the official databases too. This usually happens each hour. Freshclam has support for If-Modified-Since webserver headers, so it will only download a database if it is newer than the already existing one \footnote{Of course only if the webserver supports such headers}.
-\item The signatures are not loaded in the running ClamAV immediately. See \prettyref{sec:updatenow}.
-\end{itemize}
+Note that if you add third-party signatures memory usage will increase (depending on the complexity and size of the signatures), and performance may be different.
 
 Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename.
-The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.
+The UI will warn you if you try to do that\footnote{the two URLs with same filenames will just keep overwriting the same file}.
+
+\subsection{Manually copying custom signatures to database directory}
+\label{sec:custommanual}
+
+\subsection{Automating signature and configuration file deployments on a network}
+\label{sec:customautomatedcopy}
+\label{sec:deploy_conf}
+
+\section{Setting up a local mirror}
+\label{sec:localmirror}
+
+

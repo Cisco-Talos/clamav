@@ -1,0 +1,16 @@
+all: sigui-manual.pdf
+
+sigui-manual.pdf: *.tex
+	rm -f sigui-manual.gls
+	pdflatex sigui-manual.tex
+	makeglossaries sigui-manual
+	pdflatex sigui-manual.tex
+	makeglossaries sigui-manual
+	pdflatex sigui-manual.tex
+	pdflatex sigui-manual.tex
+
+clean:
+	rm -f sigui-manual.pdf
+
+
+.PHONY: all
