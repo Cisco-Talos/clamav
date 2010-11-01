@@ -26,6 +26,7 @@ This will run \gls{freshclam}, and display an error if it failed to connect thro
 See \prettyref{sec:runfreshclam} for details.
 
 \section{Choosing a mirror}
+\label{sec:mirror}
 \Gls{freshclam} by default uses the \gls{database.clamav.net} \gls{mirror}. Although this works well most of the time, you can get better download speeds by using a mirror from your country:
 \begin{itemize}
 \item Open SigUI
@@ -40,6 +41,7 @@ You can also enter the \gls{hostname} of the mirror you wish to use, instead of 
 This mirror can be a server on your own network too. See \prettyref{sec:localmirror}.
 
 \section{Deploying custom signature updates}
+\label{sec:customsigs}
 In addition to the official virus signatures, you can use your own signatures, or signatures provided by third-parties.
 To deploy them you have these choices:
 \begin{itemize}
@@ -51,17 +53,17 @@ To deploy them you have these choices:
 
 The signatures are not loaded in the running ClamAV immediately. See \prettyref{sec:updatenow}.
 
-
-%This is more complicated to setup than the webserver, since the network share needs to be %accessible to the \verb+SYSTEM+ account. Usually no network share is accessible for it.
-%. See \prettyref{sec:manualcopy}
-
 \subsection{Deploying your own signatures from a webserver}
 \label{sec:customweb}
 If you have written your own signatures and want to deploy them to multiple
 \CW installations on your network, then the easiest is to put the signatures on your webserver (in your LAN).
 
 The custom signature can be in any format that \gls{ClamAV} understands.
-See \url{http://www.clamav.net/doc/latest/signatures.pdf} for details about the format.
+See \url{http://www.clamav.net/doc/latest/signatures.pdf} section 3 "Signature formats" for details about the format.
+All the signature files, except CVD, are ASCII files. Both Unix (LF) and Windows-style (CR+LF) line-endings are accepted.
+CVD files are binary files though, so you should not modify them.
+The format of signatures is determined based on the database extension (in a case insensitive manner), so you must make sure to preserve the file's contents and
+extension when copying it. (You can safely rename the file, as long as you preserve the extension).
 
 Since these files are not digitally signed \footnote{Official \gls{CVD} files are digitally signed}, it is your responsibility to ensure that the signature files are not altered (by malware, etc.).
 
@@ -93,6 +95,7 @@ If you want to deploy third-party signatures that are not in \gls{CVD} format \f
 \item Download the third-party signatures to your server
 \item Check their integrity by comparing against the third-party supplied checksum and digital signatures. There usually are scripts to accomplish this
 \item Copy the signatures to your webserver, at a location of your choice
+\item Make sure you preserve the extension of the files, as the signature format is determined based on the extension
 \item Add the full URL path to these signatures to \gls{freshclam.conf} using \gls{SigUI}.
 See \prettyref{sec:ui_urladd}
 \end{itemize}

@@ -44,6 +44,7 @@
 \usepackage{makeidx}
 \usepackage{xcolor}
 \usepackage{xspace}
+\usepackage{wrapfig}
 %\makeindex
 \newrefformat{cha}{Chapter~\ref{#1}}
 \newrefformat{sec}{Section~\ref{#1}}
@@ -141,7 +142,7 @@
 \def\greyp{%
     \unitlength=1mm%
     \begin{picture}(0,0)
-	\put(0,-1.5){\textcolor{grey1}{\rule{13cm}{5.3mm}}\textcolor{grey2}%
+	\put(0,-1.5){\textcolor{grey1}{\rule{13.9cm}{5.3mm}}\textcolor{grey2}%
 	{\rule{9mm}{5.3mm}}\hss}
     \end{picture}
 }
@@ -149,7 +150,7 @@
     \unitlength=1mm%
     \begin{picture}(0,0)
 	\put(0,-1.5){\textcolor{grey2}{\rule{9mm}{5.3mm}}\textcolor{grey1}%
-	{\rule{13cm}{5.3mm}}\hss}
+	{\rule{13.9cm}{5.3mm}}\hss}
     \end{picture}
 }
 \fancyhead{}
@@ -202,8 +203,8 @@
 \renewcommand{\headrulewidth}{0pt} % remove lines as well
 \renewcommand{\footrulewidth}{0pt}}
 
-%\advance\headheight by 5.3mm
-%\advance\headsep by -3mm
+\advance\headheight by 5.3mm
+\advance\headsep by -3mm
 
 % workaround \hyperlink bug (see Debian #580912)
 %\renewcommand{\hyperlink}[2]{%
@@ -223,7 +224,7 @@
 %\frontmatter
 \setcounter{page}{0}
 \pagestyle{empty}
-\includegraphics[width=353pt]{clam.jpg}
+\includegraphics[width=353pt]{clam}
 \vspace{3cm}
 \begin{flushright}
   \rule[-1ex]{8cm}{3pt}\\
