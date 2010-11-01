@@ -1,4 +1,5 @@
 % !TeX root = sigui-manual.tex
+\lstset{breaklines=true,basicstyle=\footnotesize\ttfamily}
 \chapter{Usage examples}
 \section{Configuring a proxy}
 \Gls{freshclam} by default attemps to connect to the Internet directly. If you can only access the Internet by using a proxy, then you should configure the proxy using SigUI.
@@ -151,13 +152,13 @@ The graphical mode of SigUI is useful for making local changes to \gls{freshclam
 		\begin{itemize}
 			\item Create a file \verb+signatureslist+ with the full path to the signatures you want to install, one on a line. Don't quote or escape the filenames, just write them as is.
 			\item Run:
-\begin{verbatim}
+\begin{lstlisting}
 "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -i <signatureslist
-\end{verbatim}
+\end{lstlisting}
 			\item Another alternative is to pipe it the output of another program \footnote{Interactively entering the filenames from the commandprompt won't work}:
-\begin{verbatim}
+\begin{lstlisting}
 echo '<databasepath>' | "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -i
-\end{verbatim}
+\end{lstlisting}
 			\item SigUI will test each database by loading them, and prints progress messages to the standard output.
 			\item SigUI will print error messages on failed database loads to the standard error
 			\item The exitcode will be 0 if all signatures were successfully installed, and nonzero if some signatures failed to install
@@ -170,13 +171,13 @@ Note that using \gls{freshclam}'s support for custom signature URLs is usually a
 \item Test it, see \prettyref{sec:runfreshclam}
 \item Write a script to automatically invoke \verb+SigUI.exe+ on each machine on your network (for example using a logon script, or a \verb+msi+ installer)
 \item Have it execute this command:
-\begin{verbatim}
+\begin{lstlisting}
 "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -w <new\_freshclam.conf
-\end{verbatim}
+\end{lstlisting}
 \item Alternatively you can pipe it the freshclam.conf:
-\begin{verbatim}
+\begin{lstlisting}
 somecommand | "C:\Program Files\ClamAV for Windows\clamav\SigUI.exe" -w
-\end{verbatim}
+\end{lstlisting}
 
 \item SigUI will test the config file for syntactic correctness, and install it if it is valid
 \end{itemize}
