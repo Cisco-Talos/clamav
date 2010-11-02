@@ -41,6 +41,7 @@
 #include "others.h"
 #include "dazukofs.h"
 #include "clamuko.h"
+#include "scanner.h"
 
 static pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;
 static dazukofs_handle_t shutdown_hndl;
@@ -83,14 +84,15 @@ static void *clamuko_scanth(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
-	unsigned int sizelimit = 0, virsize;
+	unsigned int sizelimit = 0;
 	struct stat sb;
 	dazukofs_handle_t scan_hndl;
 	struct dazukofs_access acc;
 	const char *groupname = "ClamAV";
 	int skip_scan = 0, extinfo;
 	const char *virname;
-	char filename[4096], virhash[33];
+	char filename[4096];
+	struct cb_context context;
 
     /* ignore all signals */
     sigfillset(&sigset);
@@ -151,15 +153,17 @@ static void *clamuko_scanth(void *arg)
 	    }
 	}
 
+	context.filename = NULL;
+	context.virsize = 0;
 	if(skip_scan) {
 	    acc.deny = 0;
 	    /* reset skip flag */
 	    skip_scan = 0;
-	} else if(cli_scandesc_stats(acc.fd, &virname, virhash, &virsize, NULL, tharg->engine,
-			      tharg->options) == CL_VIRUS) {
+	} else if(cl_scandesc_callback(acc.fd, &virname, NULL, tharg->engine,
+			      tharg->options, &context) == CL_VIRUS) {
 	    dazukofs_get_filename(&acc, filename, sizeof(filename));
-	    if(extinfo && virsize)
-		logg("Clamuko: %s: %s(%s:%u) FOUND\n", filename, virname, virhash, virsize);
+	    if(context.virsize)
+		logg("Clamuko: %s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
 	    else
 		logg("Clamuko: %s: %s FOUND\n", filename, virname);
 	    /* we can not perform any special action because it will

@@ -36,6 +36,9 @@ EXPORTS cl_engine_set_clcb_pre_scan @28
 EXPORTS cl_engine_set_clcb_post_scan @29
 EXPORTS cl_scandesc_callback @30
 EXPORTS cl_engine_set_clcb_sigload @31
+EXPORTS cl_scanfile_callback @32
+EXPORTS cl_set_clcb_msg @33
+EXPORTS cl_engine_set_clcb_hash @34
 
 
 ; path variables
@@ -123,8 +126,6 @@ EXPORTS cli_hex2ui @44263 NONAME
 EXPORTS mpool_getstats @44264 NONAME
 EXPORTS cli_fmap_scandesc @44340
 EXPORTS cli_hashset_destroy @44341
-EXPORTS cli_scandesc_stats @44342
-EXPORTS cli_scanfile_stats @44343
 EXPORTS cli_detect_environment @44344 NONAME
 EXPORTS cli_filecopy @44345 NONAME
 

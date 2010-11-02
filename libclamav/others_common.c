@@ -75,39 +75,84 @@ static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 # endif
 static pthread_mutex_t cli_strerror_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_key_t cli_ctx_tls_key;
+static pthread_once_t cli_ctx_tls_key_once = PTHREAD_ONCE_INIT;
+
+static void cli_ctx_tls_key_alloc(void)
+{
+    pthread_key_create(&cli_ctx_tls_key, NULL);
+}
+
+void cli_logg_setup(const cli_ctx *ctx)
+{
+    pthread_once(&cli_ctx_tls_key_once, cli_ctx_tls_key_alloc);
+    pthread_setspecific(cli_ctx_tls_key, ctx);
+}
+
+static inline void *cli_getctx(void)
+{
+    cli_ctx *ctx = pthread_getspecific(cli_ctx_tls_key);
+    return ctx ? ctx->cb_ctx : NULL;
+}
+#else
+
+static const cli_ctx *current_ctx = NULL;
+void cli_logg_setup(const cli_ctx *ctx)
+{
+    current_ctx = ctx;
+}
+
+static inline void *cli_getctx(void)
+{
+    return current_ctx ? current_ctx->cb_ctx : NULL;
+}
 #endif
 uint8_t cli_debug_flag = 0;
 
-#define MSGCODE(x)					    \
+static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
+{
+    fputs(fullmsg, stderr);
+}
+
+static clcb_msg msg_callback = fputs_callback;
+
+void cl_set_clcb_msg(clcb_msg callback)
+{
+    msg_callback = callback;
+}
+
+#define MSGCODE(buff, len, x)				    \
 	va_list args;					    \
 	int len = sizeof(x) - 1;			    \
 	char buff[BUFSIZ];				    \
     strncpy(buff, x, len);				    \
-    buff[BUFSIZ-1]='\0';				    \
     va_start(args, str);				    \
     vsnprintf(buff + len, sizeof(buff) - len, str, args);   \
     buff[sizeof(buff) - 1] = '\0';			    \
-    fputs(buff, stderr);				    \
     va_end(args)
 
 void cli_warnmsg(const char *str, ...)
 {
-    MSGCODE("LibClamAV Warning: ");
+    MSGCODE(buff, len, "LibClamAV Warning: ");
+    msg_callback(CL_MSG_WARN, buff, buff+len, cli_getctx());
 }
 
 void cli_errmsg(const char *str, ...)
 {
-    MSGCODE("LibClamAV Error: ");
+    MSGCODE(buff, len, "LibClamAV Error: ");
+    msg_callback(CL_MSG_ERROR, buff, buff+len, cli_getctx());
+}
+
+void cli_infomsg(const cli_ctx* ctx, const char *str, ...)
+{
+    MSGCODE(buff, len, "LibClamAV info: ");
+    msg_callback(CL_MSG_INFO_VERBOSE, buff, buff+len, ctx ? ctx->cb_ctx : NULL);
 }
 
 void cli_dbgmsg_internal(const char *str, ...)
 {
-    MSGCODE("LibClamAV debug: ");
-}
-
-void cli_infomsg(const cli_ctx *ctx, const char *str, ...)
-{
-    MSGCODE("LibClamAV info: ");
+    MSGCODE(buff, len, "LibClamAV debug: ");
+    fputs(buff, stderr);
 }
 
 int cli_matchregex(const char *str, const char *regex)

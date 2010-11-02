@@ -239,6 +239,29 @@ WARNING: Some signatures (notably ldb, cbc) can be dependent upon other signatur
 */
 extern void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context);
 
+/* LibClamAV messages callback
+ * The specified callback will be called instead of logging to stderr.
+ * Messages of lower severity than specified are logged as usual.
+ *
+ * Just like with cl_debug() this must be called before going multithreaded.
+ * Callable before cl_init, if you want to log messages from cl_init() itself.
+ *
+ * You can use context of cl_scandesc_callback to convey more information to the callback (such as the filename!)
+ * Note: setting a 2nd callbacks overwrites previous, multiple callbacks are not
+ * supported
+ */
+enum cl_msg {
+    /* leave room for more message levels in the future */
+    CL_MSG_INFO_VERBOSE = 32, /* verbose */
+    CL_MSG_WARN = 64, /* LibClamAV WARNING: */
+    CL_MSG_ERROR = 128/* LibClamAV ERROR: */
+};
+typedef void (*clcb_msg)(enum cl_msg severity, const char *fullmsg, const char *msg, void *context);
+extern void cl_set_clcb_msg(clcb_msg callback);
+
+/* LibClamAV hash stats callback */
+typedef void (*clcb_hash)(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *context);
+extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback);
 
 struct cl_stat {
     char *dir;
@@ -264,6 +287,7 @@ extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanne
 extern int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
 
 extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
+extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
 
 /* database handling */
 extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);

@@ -11,6 +11,8 @@ CLAMAV_PUBLIC {
     cl_engine_get_num;
     cl_engine_set_str;
     cl_engine_get_str;
+    cl_engine_set_clcb_hash;
+    cl_set_clcb_msg;
     cl_engine_set_clcb_pre_scan;
     cl_engine_set_clcb_post_scan;
     cl_engine_set_clcb_sigload;
@@ -25,7 +27,9 @@ CLAMAV_PUBLIC {
     cl_retflevel;
     cl_retver;
     cl_scandesc;
+    cl_scandesc_callback;
     cl_scanfile;
+    cl_scanfile_callback;
     cl_statchkdir;
     cl_statfree;
     cl_statinidir;
@@ -128,8 +132,6 @@ CLAMAV_PRIVATE {
     cli_initroots;
     cli_scanbuff;
     cli_fmap_scandesc;
-    cli_scandesc_stats;
-    cli_scanfile_stats;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;

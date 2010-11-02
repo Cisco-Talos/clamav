@@ -421,12 +421,8 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
 #endif
 
-    if(ctx->virsize && !*ctx->virsize) {
-	if(ctx->virsize)
-	    *ctx->virsize = size;
-	if(ctx->virhash)
-	    strcpy(ctx->virhash, md5);
-    }
+    if (ctx->engine->cb_hash)
+	ctx->engine->cb_hash(ctx->fmap[0]->fd, size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
 
     return CL_VIRUS;
 }

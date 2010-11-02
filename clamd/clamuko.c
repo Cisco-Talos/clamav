@@ -43,6 +43,7 @@
 #include "dazukoio.h"
 #include "clamukofs.h"
 #include "clamuko.h"
+#include "scanner.h"
 
 struct dazuko_access *acc;
 short int clamuko_scanning;
@@ -76,8 +77,7 @@ static void *clamukolegacyth(void *arg)
 	short int scan;
 	int sizelimit = 0, extinfo;
 	struct stat sb;
-	char virhash[33];
-	unsigned int virsize;
+	struct cb_context context;
 
 
     clamuko_scanning = 0;
@@ -185,9 +185,11 @@ static void *clamukolegacyth(void *arg)
 		}
 	    }
 
-	    if(scan && cli_scanfile_stats(acc->filename, &virname, virhash, &virsize, NULL, tharg->engine, tharg->options) == CL_VIRUS) {
-		if(extinfo && virsize)
-		    logg("Clamuko: %s: %s(%s:%u) FOUND\n", acc->filename, virname, virhash, virsize);
+	    context.filename = acc->filename;
+	    context.virsize = 0;
+	    if(scan && cl_scanfile_callback(acc->filename, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
+		if(context.virsize)
+		    logg("Clamuko: %s: %s(%s:%llu) FOUND\n", acc->filename, virname, context.virhash, context.virsize);
 		else
 		    logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
 		virusaction(acc->filename, virname, tharg->opts);

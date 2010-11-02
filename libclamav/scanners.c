@@ -1927,7 +1927,7 @@ static void emax_reached(cli_ctx *ctx) {
 	default:										\
 	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");	\
 	}											\
-    }												\
+    }\
     return retcode;										\
     } while(0)
 
@@ -2395,62 +2395,10 @@ int cli_magic_scandesc_type(int desc, cli_ctx *ctx, cli_file_t type)
     return magic_scandesc(desc, ctx, type);
 }
 
-int cli_scandesc_stats(int desc, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
-{
-    cli_ctx ctx;
-    int rc;
-
-    memset(&ctx, '\0', sizeof(cli_ctx));
-    ctx.engine = engine;
-    ctx.virname = virname;
-    if(virsize) {
-	*virsize = 0;
-	ctx.virsize = virsize;
-	ctx.virhash = virhash;
-    }
-    ctx.scanned = scanned;
-    ctx.options = scanoptions;
-    ctx.found_possibly_unwanted = 0;
-    ctx.container_type = CL_TYPE_ANY;
-    ctx.container_size = 0;
-    ctx.dconf = (struct cli_dconf *) engine->dconf;
-    ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 2);
-    if(!ctx.fmap)
-	return CL_EMEM;
-    if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
-	free(ctx.fmap);
-	return CL_EMEM;
-    }
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
-	char link[32];
-	ssize_t linksz;
-
-	snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
-	link[sizeof(link)-1]='\0';
-	if((linksz=readlink(link, ctx.entry_filename, sizeof(ctx.entry_filename)))==-1) {
-	    cli_errmsg("failed to resolve filename for descriptor %d (%s)\n", desc, link);
-	    strcpy(ctx.entry_filename, "NO_IDEA");
-	} else
-	    ctx.entry_filename[linksz]='\0';
-    } while(0);
-#endif
-
-    rc = cli_magic_scandesc(desc, &ctx);
-
-    cli_bitset_free(ctx.hook_lsig_matches);
-    free(ctx.fmap);
-    if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
-    	rc = CL_VIRUS;
-    return rc;
-}
-
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
-    return cli_scandesc_stats(desc, virname, NULL, NULL, scanned, engine, scanoptions);
+    return cl_scandesc_callback(desc, virname, scanned, engine, scanoptions, NULL);
 }
-
 
 int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
@@ -2490,6 +2438,7 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
     } while(0);
 #endif
 
+    cli_logg_setup(&ctx);
     rc = cli_magic_scandesc(desc, &ctx);
 
     cli_bitset_free(ctx.hook_lsig_matches);
@@ -2537,25 +2486,17 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 
 int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
-	int fd, ret;
-
-    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
-	return CL_EOPEN;
-
-    ret = cl_scandesc(fd, virname, scanned, engine, scanoptions);
-    close(fd);
-
-    return ret;
+    return cl_scanfile_callback(filename, virname, scanned, engine, scanoptions, NULL);
 }
 
-int cli_scanfile_stats(const char *filename, const char **virname, char *virhash, unsigned int *virsize, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
+int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
 	int fd, ret;
 
     if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
-    ret = cli_scandesc_stats(fd, virname, virhash, virsize, scanned, engine, scanoptions);
+    ret = cl_scandesc_callback(fd, virname, scanned, engine, scanoptions, context);
     close(fd);
 
     return ret;

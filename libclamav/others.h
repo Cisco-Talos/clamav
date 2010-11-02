@@ -109,8 +109,6 @@ typedef struct bitset_tag
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     const char **virname;
-    char *virhash;
-    unsigned int *virsize;
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
@@ -255,6 +253,9 @@ struct cl_engine {
     clcb_post_scan cb_post_scan;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
+    clcb_msg cb_msg;
+    clcb_hash cb_hash;
+    enum cl_msg cb_msg_minseverity;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
