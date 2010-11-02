@@ -89,6 +89,11 @@ void cli_logg_setup(const cli_ctx *ctx)
     pthread_setspecific(cli_ctx_tls_key, ctx);
 }
 
+void cli_logg_unsetup(void)
+{
+    pthread_setspecific(cli_ctx_tls_key, NULL);
+}
+
 static inline void *cli_getctx(void)
 {
     cli_ctx *ctx = pthread_getspecific(cli_ctx_tls_key);

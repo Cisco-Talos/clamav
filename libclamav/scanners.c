@@ -2444,7 +2444,8 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
-    	rc = CL_VIRUS;
+	rc = CL_VIRUS;
+    cli_logg_unsetup(&ctx);
     return rc;
 }
 

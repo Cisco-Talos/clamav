@@ -436,6 +436,7 @@ void cli_infomsg(const cli_ctx* ctx, const char *fmt, ...);
 #endif
 
 void cli_logg_setup(const cli_ctx* ctx);
+void cli_logg_unsetup(void);
 
 /* tell compiler about branches that are very rarely taken,
  * such as debug paths, and error paths */
