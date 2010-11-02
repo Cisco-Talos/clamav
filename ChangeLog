@@ -1,3 +1,7 @@
+Tue Nov  2 13:01:14 EET 2010 (edwin)
+------------------------------------
+ * libclamav/7z.c: fix file descriptor leak (bb #2347)
+
 Mon Oct 18 11:35:45 EEST 2010 (edwin)
 -------------------------------------
  * clamd, libclamavll: add ability to logg messages from libclamav (bb #1965)

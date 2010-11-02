@@ -69,6 +69,7 @@ int cli_7unz (int fd, cli_ctx *ctx) {
     if(SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) != SZ_OK) {
 	SzArEx_Free(&db, &allocImp);
 	cli_dbgmsg("cli_7unz: possibly damaged archive\n");
+	fclose(archiveStream.file.file);
 	return CL_CLEAN;
     }
     for (i = 0; i < db.db.NumFiles; i++) {
