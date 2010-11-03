@@ -699,7 +699,7 @@ void detstats_add(const char *virname, const char *fname, unsigned int fsize, co
 
     if((fname = strrchr(fname, *PATHSEP)))
 	fname++;
-    strncpy(detstats_data[detstats_idx].fname, (fname || !strlen(fname)) ? "NOFNAME" : fname, sizeof(detstats_data[detstats_idx].fname));
+    strncpy(detstats_data[detstats_idx].fname, (!fname || !strlen(fname)) ? "NOFNAME" : fname, sizeof(detstats_data[detstats_idx].fname));
     detstats_data[detstats_idx].fname[sizeof(detstats_data[detstats_idx].fname) - 1] = 0;
 
     strncpy(detstats_data[detstats_idx].md5, md5, sizeof(detstats_data[detstats_idx].md5));
