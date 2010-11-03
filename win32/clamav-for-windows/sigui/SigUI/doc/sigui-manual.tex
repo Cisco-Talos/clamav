@@ -16,13 +16,10 @@
 %  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 \documentclass[a4paper,titlepage,english,12pt]{book}
-\usepackage{geometry}
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
 \usepackage{fancyhdr}
-\usepackage{longtable}
-\usepackage{afterpage}
 \usepackage{ifthen}
 \usepackage{ifpdf}
 \usepackage{titlesec}
@@ -33,12 +30,8 @@
 \usepackage[english]{babel}
 \usepackage[utf8x]{inputenc}
 \usepackage[perpage]{footmisc}
-\usepackage{nomencl}
 \usepackage{boxedminipage}
 \usepackage{float}
-\usepackage{algorithmic}
-\usepackage{subfig}
-\usepackage{moreverb}
 \usepackage{prettyref}
 \usepackage{listings}
 \usepackage{url}
@@ -58,14 +51,13 @@
 \definecolor{LinkColor1}{rgb}{0.208,0.374,0.486}
 \definecolor{LinkColor2}{rgb}{0.216,0.439,0.388}
 
-%TODO: remove draft
 \ifpdf
 % pdfLaTeX setup
     \usepackage[pdftex]{graphicx}
     \DeclareGraphicsExtensions{.pdf, .eps}   %%% standard extension for included graphics
-%    \pdfminorversion=5
-%    \pdfcompresslevel=9
-%    \pdfobjcompresslevel=1
+    \pdfminorversion=5
+    \pdfcompresslevel=9
+    \pdfobjcompresslevel=2
     \usepackage[                %%% hyper-references for pdflatex
     bookmarks=true,%                   %%% generate bookmarks ...
     bookmarksnumbered=true,%           %%% ... with numbers
@@ -110,7 +102,6 @@
 
 \fi
 
-\usepackage{draftwatermark}
 \usepackage[toc]{glossaries}
 %A4 settings
 \ifpdf
