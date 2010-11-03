@@ -92,9 +92,10 @@ static struct {
     {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0,	1, FEATURE_FDPASSING},
     {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0,	0, 1},
     {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0,	0, 1},
-    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0, 1}
+    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0, 1},
+    {CMD19, sizeof(CMD19)-1,	COMMAND_DETSTATSCLEAR,	0, 1, 1},
+    {CMD20, sizeof(CMD20)-1,	COMMAND_DETSTATS,   0, 1, 1}
 };
-
 
 enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
 {
@@ -570,6 +571,16 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		    mdprintf(desc, "%u: ", conn->id);
 		print_commands(desc, conn->term, engine);
 		return conn->group ? 0 : 1;
+	    }
+	case COMMAND_DETSTATSCLEAR:
+	    {
+		detstats_clear();
+		return 1;
+	    }
+	case COMMAND_DETSTATS:
+	    {
+		detstats_print(desc, conn->term);
+		return 1;
 	    }
 	case COMMAND_INSTREAM:
 	    {

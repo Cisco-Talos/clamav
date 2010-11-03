@@ -244,6 +244,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    return CL_ETIMEOUT;
 	}
 	if(context.virsize)
+	    detstats_add(virname, filename, context.virsize, context.virhash);
+	if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
 	    logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
 	else
 	    logg("~%s: %s FOUND\n", filename, virname);
@@ -338,6 +340,8 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 		if (conn_reply_virus(conn, fdstr, virname, context.virhash, context.virsize) == -1)
 		    ret = CL_ETIMEOUT;
 		if(context.virsize)
+		    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);
+		if(context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
 		    logg("%s: %s(%s:%llu) FOUND\n", fdstr, virname, context.virhash, context.virsize);
 		else
 		    logg("%s: %s FOUND\n", fdstr, virname);
@@ -509,7 +513,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     closesocket(sockfd);
 
     if(ret == CL_VIRUS) {
-	if(context.virsize) {
+	if(context.virsize)
+	    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);
+	if(context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled) {
 	    mdprintf(odesc, "stream: %s(%s:%llu) FOUND%c", virname, context.virhash, context.virsize, term);
 	    logg("stream(%s@%u): %s(%s:%llu) FOUND\n", peer_addr, port, virname, context.virhash, context.virsize);
 	} else {

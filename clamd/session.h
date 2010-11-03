@@ -40,6 +40,8 @@
 #define CMD16 "IDSESSION"
 #define CMD17 "INSTREAM"
 #define CMD18 "VERSIONCOMMANDS"
+#define CMD19 "DETSTATSCLEAR"
+#define CMD20 "DETSTATS"
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
@@ -64,6 +66,8 @@ enum commands {
     COMMAND_IDSESSION,
     COMMAND_INSTREAM,
     COMMAND_COMMANDS,
+    COMMAND_DETSTATSCLEAR,
+    COMMAND_DETSTATS,
     /* internal commands */
     COMMAND_MULTISCANFILE,
     COMMAND_INSTREAMSCAN

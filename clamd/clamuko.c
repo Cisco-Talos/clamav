@@ -189,6 +189,8 @@ static void *clamukolegacyth(void *arg)
 	    context.virsize = 0;
 	    if(scan && cl_scanfile_callback(acc->filename, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
 		if(context.virsize)
+		    detstats_add(virname, acc->filename, context.virsize, context.virhash);
+		if(extinfo && context.virsize)
 		    logg("Clamuko: %s: %s(%s:%llu) FOUND\n", acc->filename, virname, context.virhash, context.virsize);
 		else
 		    logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);

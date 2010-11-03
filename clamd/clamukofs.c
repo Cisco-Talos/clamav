@@ -163,6 +163,8 @@ static void *clamuko_scanth(void *arg)
 			      tharg->options, &context) == CL_VIRUS) {
 	    dazukofs_get_filename(&acc, filename, sizeof(filename));
 	    if(context.virsize)
+		detstats_add(virname, filename, context.virsize, context.virhash);
+	    if(extinfo && context.virsize)
 		logg("Clamuko: %s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
 	    else
 		logg("Clamuko: %s: %s FOUND\n", filename, virname);
