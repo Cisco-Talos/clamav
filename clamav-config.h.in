@@ -96,7 +96,7 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
-/* FPU byte ordering is little endian */
+/* FPU byte ordering matches CPU */
 #undef FPU_WORDS_BIGENDIAN
 
 /* enable workaround for broken DNS servers */

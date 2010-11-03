@@ -19,3 +19,5 @@ clean-local:
 	rm -f $(FILES)
 
 EXTRA_DIST = .split
+
+check: all

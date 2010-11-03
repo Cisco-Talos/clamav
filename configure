@@ -11191,7 +11191,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 LIBADD_DLOPEN=
-lt_save_LIBS="$LIBS"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
 $as_echo_n "checking for library containing dlopen... " >&6; }
 if test "${ac_cv_search_dlopen+set}" = set; then :
@@ -11326,6 +11325,7 @@ fi
 
 if test x"$libltdl_cv_func_dlopen" = xyes || test x"$libltdl_cv_lib_dl_dlopen" = xyes
 then
+  lt_save_LIBS="$LIBS"
   LIBS="$LIBS $LIBADD_DLOPEN"
   for ac_func in dlerror
 do :
@@ -11338,8 +11338,8 @@ _ACEOF
 fi
 done
 
+  LIBS="$lt_save_LIBS"
 fi
-LIBS="$lt_save_LIBS"
 
 
 LIBADD_SHL_LOAD=
