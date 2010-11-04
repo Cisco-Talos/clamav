@@ -74,6 +74,9 @@
 #include "session.h"
 #include "others.h"
 
+static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t detstats_lock = PTHREAD_MUTEX_INITIALIZER;
+
 #ifdef	_WIN32
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
@@ -85,9 +88,6 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 
 #define VE_FILENAME  "CLAM_VIRUSEVENT_FILENAME"
 #define VE_VIRUSNAME "CLAM_VIRUSEVENT_VIRUSNAME"
-
-static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t detstats_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
