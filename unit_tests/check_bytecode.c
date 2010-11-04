@@ -522,7 +522,7 @@ START_TEST (test_load_bytecode_int)
 }
 END_TEST
 
-#ifdef CL_THREAD_SAFE
+#if defined(CL_THREAD_SAFE) && defined(C_LINUX)
 static pthread_barrier_t barrier;
 static void* thread(void *arg)
 {
@@ -615,7 +615,7 @@ Suite *test_bytecode_suite(void)
 
     tcase_add_test(tc_cli_arith, test_load_bytecode_jit);
     tcase_add_test(tc_cli_arith, test_load_bytecode_int);
-#ifdef CL_THREAD_SAFE
+#if defined(CL_THREAD_SAFE) && defined(C_LINUX)
     tcase_add_test(tc_cli_arith, test_parallel_load);
 #endif
 
