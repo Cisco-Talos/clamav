@@ -53,6 +53,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>
+#ifndef	_WIN32
+#include <sys/wait.h>
+#endif
 #include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>

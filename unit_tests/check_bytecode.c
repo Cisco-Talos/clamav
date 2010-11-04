@@ -38,6 +38,9 @@
 #include "../libclamav/dconf.h"
 #include "../libclamav/bytecode_priv.h"
 #include "../libclamav/pe.h"
+#ifdef CL_THREAD_SAFE
+#include <pthread.h>
+#endif
 
 static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 		    const char *infile, struct cli_pe_hook_data *pedata,
