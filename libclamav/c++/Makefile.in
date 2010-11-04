@@ -8495,6 +8495,7 @@ uninstall-am:
 @BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	rm -f *.inc
 @BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@	rm -f llvm/include/llvm/Intrinsics.gen
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f $(top_srcdir)/llvm/utils/lit/lit/*.pyc
 
 @BUILD_EXTERNAL_LLVM_FALSE@distclean-local:
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
@@ -8519,7 +8520,7 @@ uninstall-am:
 @BUILD_EXTERNAL_LLVM_FALSE@	(cd llvm; ./config.status --recheck; ./config.status)
 
 # rm configure generated files
-dist-hook:
+dist-hook: clean-local
 	make -C llvm dist-hook
 	rm -f $(distdir)/llvm/include/llvm/Config/*.h $(distdir)/llvm/include/llvm/Config/*.def $(distdir)/llvm/Makefile.config $(distdir)/llvm/llvm.spec
 	rm -f $(distdir)/llvm/docs/doxygen.cfg $(distdir)/llvm/tools/llvmc/plugins/Base/Base.td $(distdir)/llvm/tools/llvm-config/llvm-config.in

@@ -35,3 +35,5 @@ lcov:
 quick-check:
 	($(MAKE); cd unit_tests; $(MAKE) quick-check)
 
+dist-hook:
+	rm -rf $(distdir)/win32/clamav-for-windows $(distdir)/win32/build
