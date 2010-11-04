@@ -1,3 +1,7 @@
+Thu Nov  4 19:47:17 EET 2010 (edwin)
+------------------------------------
+ * freshclam: load database in subprocess (bb #2147).
+
 Wed Nov  3 13:38:47 CET 2010 (tk)
 ---------------------------------
  * clamd: add new commands DETSTATS and DETSTATSCLEAR (part of bb#2312)

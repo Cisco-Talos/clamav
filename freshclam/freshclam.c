@@ -64,14 +64,22 @@ extern int active_children;
 
 static short foreground = 1;
 char updtmpdir[512];
+int sigchld_wait = 1;
 
 static void sighandler(int sig) {
 
     switch(sig) {
 #ifdef	SIGCHLD
 	case SIGCHLD:
-	    waitpid(-1, NULL, WNOHANG);
+	    if (sigchld_wait)
+		waitpid(-1, NULL, WNOHANG);
 	    active_children--;
+	    break;
+#endif
+
+#ifdef SIGPIPE
+	case SIGPIPE:
+	    /* no action, app will get EPIPE */
 	    break;
 #endif
 
@@ -396,6 +404,7 @@ int main(int argc, char **argv)
     memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = sighandler;
     sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
 #endif
     if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;

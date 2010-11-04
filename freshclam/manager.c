@@ -1519,11 +1519,128 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     return 0;
 }
 
+static int test_database(const char *newfile, const char *newdb, int bytecode)
+{
+    struct cl_engine *engine;
+    unsigned newsigs = 0;
+    int ret;
+
+    logg("*Loading signatures from %s\n", newdb);
+    if(!(engine = cl_engine_new())) {
+	return 55;
+    }
+
+    if((ret = cl_load(newfile, engine, &newsigs, CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA)) != CL_SUCCESS) {
+	logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	cl_engine_free(engine);
+	return 55;
+    }
+    if(bytecode && (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
+	logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
+	cl_engine_free(engine);
+	return 55;
+    }
+    logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
+    if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
+	cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
+    cl_engine_free(engine);
+    return 0;
+}
+
+#ifndef WIN32
+static int test_database_wrap(const char *file, const char *newdb, int bytecode)
+{
+    char firstline[256];
+    char lastline[256];
+    int pipefd[2];
+    pid_t pid;
+    int status = 0;
+    FILE *f;
+
+    if (pipe(pipefd) == -1) {
+	logg("^pipe() failed: %s\n", strerror(errno));
+	return test_database(file, newdb, bytecode);
+    }
+
+    switch ( pid = fork() ) {
+	case 0:
+	    close(pipefd[0]);
+	    dup2(pipefd[1], 2);
+	    exit(test_database(file, newdb, bytecode));
+	case -1:
+	    close(pipefd[0]);
+	    close(pipefd[1]);
+	    logg("^fork() failed: %s\n", strerror(errno));
+	    return test_database(file, newdb, bytecode);
+	default:
+	    /* read first / last line printed by child*/
+	    close(pipefd[1]);
+	    f = fdopen(pipefd[0], "r");
+	    firstline[0] = 0;
+	    lastline[0] = 0;
+	    do {
+		fgets(firstline, sizeof(firstline), f);
+		/* ignore warning messages, otherwise the outdated warning will
+		 * make us miss the important part of the error message */
+	    } while (!strncmp(firstline, "LibClamAV Warning:", 18));
+	    /* must read entire output, child doesn't like EPIPE */
+	    while (fgets(lastline, sizeof(firstline), f)) {
+		/* print the full output only when LogVerbose or -v is given */
+		logg("*%s", lastline);
+	    }
+	    fclose(f);
+
+	    if (waitpid(pid, &status, 0) == -1 && errno != ECHILD)
+		logg("^waitpid() failed: %s\n", strerror(errno));
+	    cli_chomp(firstline);
+	    cli_chomp(lastline);
+	    if (firstline[0]) {
+		logg("!During database load : %s%s%s\n",
+		     firstline, lastline[0] ? " [...] " : "",
+		     lastline);
+	    }
+	    if (WIFEXITED(status)) {
+		int ret = WEXITSTATUS(status);
+		if (ret) {
+		    logg("^Database load exited with status %d\n", ret);
+		    return ret;
+		}
+		if (firstline[0])
+		    logg("^Database successfully loaded, but there is stderr output\n");
+		return 0;
+	    }
+	    if (WIFSIGNALED(status)) {
+		logg("!Database load killed by signal %d\n", WTERMSIG(status));
+		return 55;
+	    }
+	    logg("^Unknown status from wait: %d\n", status);
+	    return 55;
+    }
+}
+#else
+static int test_database_wrap(const char *file, const char *newdb, int bytecode)
+{
+    int ret = 55;
+    __try
+    {
+	ret = test_database(file, newdb, bytecode);
+    }
+    __finally {
+	if (AbnormalTermination())
+	    logg("!Exception during database testing, code %08x at %08x\n",
+		 GetExceptionCode(), GetExceptionInformation()->ExceptionRecord->ExceptionAddress);
+    }
+    return ret;
+}
+#endif
+
+extern int sigchld_wait;
+
 static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra)
 {
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
-	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j, newsigs = 0;
+	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
 	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32];
 	char extradbinfo[64], *extradnsreply = NULL;
@@ -1531,7 +1648,6 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
 	unsigned int can_whitelist = 0;
 	int ctimeout, rtimeout;
-	struct cl_engine *engine;
 
 
     snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
@@ -1775,16 +1891,11 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     if(optget(opts, "TestDatabases")->enabled && strlen(newfile) > 4) {
-	if(!(engine = cl_engine_new())) {
-	    unlink(newfile);
-	    free(newfile);
-	    return 55;
-	}
 	newfile2 = strdup(newfile);
 	if(!newfile2) {
+	    logg("!Can't allocate memory for filename!\n");
 	    unlink(newfile);
 	    free(newfile);
-	    cl_engine_free(engine);
 	    return 55;
 	}
 	newfile2[strlen(newfile2) - 4] = '.';
@@ -1796,29 +1907,18 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    unlink(newfile);
 	    free(newfile);
 	    free(newfile2);
-	    cl_engine_free(engine);
 	    return 57;
 	}
 	free(newfile);
 	newfile = newfile2;
-	if((ret = cl_load(newfile, engine, &newsigs, CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA)) != CL_SUCCESS) {
+	sigchld_wait = 0;/* we need to wait() for the child ourselves */
+	if (test_database_wrap(newfile, newdb, optget(opts, "Bytecode")->enabled)) {
 	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
 	    unlink(newfile);
 	    free(newfile);
-	    cl_engine_free(engine);
 	    return 55;
 	}
-	if(optget(opts, "Bytecode")->enabled && (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
-	    logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
-	    unlink(newfile);
-	    free(newfile);
-	    cl_engine_free(engine);
-	    return 55;
-	}
-	logg("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
-	if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
-	    cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
-	cl_engine_free(engine);
+	sigchld_wait = 1;
     }
 
 #ifdef _WIN32
@@ -1872,7 +1972,6 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	char *pt, *host, urlcpy[256], *newfile = NULL, mtime[36], *newfile2;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL, *rpath, *dbname;
 	int ctimeout, rtimeout;
-	struct cl_engine *engine;
 	struct stat sb;
 	struct cl_cvd *cvd;
 
@@ -1982,29 +2081,14 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	}
 	free(newfile);
 	newfile = newfile2;
-	if(!(engine = cl_engine_new())) {
-	    unlink(newfile);
-	    free(newfile);
-	    return 55;
-	}
-	if((ret = cl_load(newfile, engine, &newsigs, CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA)) != CL_SUCCESS) {
+	sigchld_wait = 0;/* we need to wait() for the child ourselves */
+	if (test_database_wrap(newfile, dbname, optget(opts, "Bytecode")->enabled)) {
 	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
 	    unlink(newfile);
 	    free(newfile);
-	    cl_engine_free(engine);
 	    return 55;
 	}
-	if(optget(opts, "Bytecode")->enabled && (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode/*FIXME: dconf has no sense here*/))) {
-	    logg("!Failed to compile/load bytecode: %s\n", cl_strerror(ret));
-	    unlink(newfile);
-	    free(newfile);
-	    cl_engine_free(engine);
-	    return 55;
-	}
-	logg("*Properly loaded %u signatures from new (custom) %s\n", newsigs, dbname);
-	if(engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
-	    cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
-	cl_engine_free(engine);
+	sigchld_wait = 1;
     }
 
 #ifdef _WIN32
