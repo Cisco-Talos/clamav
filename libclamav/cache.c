@@ -589,7 +589,7 @@ struct CACHE {
 
 /* Allocates the trees for the engine cache */
 int cli_cache_init(struct cl_engine *engine) {
-    static struct CACHE *cache;
+    struct CACHE *cache;
     unsigned int i, j;
 
     if(!engine) {
@@ -623,7 +623,7 @@ int cli_cache_init(struct cl_engine *engine) {
 
 /* Frees the engine cache */
 void cli_cache_destroy(struct cl_engine *engine) {
-    static struct CACHE *cache;
+    struct CACHE *cache;
     unsigned int i;
 
     if(!engine || !(cache = engine->cache))

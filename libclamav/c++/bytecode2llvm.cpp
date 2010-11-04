@@ -1611,11 +1611,14 @@ class LLVMApiScopedLock {
 	// we need to wrap all LLVM API calls with a giant mutex lock, but
 	// only then.
 	LLVMApiScopedLock() {
-	    if (!llvm_is_multithreaded())
+	    // It is safer to just run all codegen under the mutex,
+	    // it is not like we are going to codegen from multiple threads
+	    // at a time anyway.
+//	    if (!llvm_is_multithreaded())
 		llvm_api_lock.acquire();
 	}
 	~LLVMApiScopedLock() {
-	    if (!llvm_is_multithreaded())
+//	    if (!llvm_is_multithreaded())
 		llvm_api_lock.release();
 	}
 };

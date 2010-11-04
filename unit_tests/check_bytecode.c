@@ -519,6 +519,43 @@ START_TEST (test_load_bytecode_int)
 }
 END_TEST
 
+#ifdef CL_THREAD_SAFE
+static pthread_barrier_t barrier;
+static void* thread(void *arg)
+{
+    struct cl_engine *engine;
+    engine = cl_engine_new();
+    fail_unless(!!engine, "failed to create engine\n");
+    /* run all cl_load at once, to maximize chance of a crash
+     * in case of a race condition */
+    pthread_barrier_wait(&barrier);
+    runload("input/bytecode.cvd", engine, 5);
+    cl_engine_free(engine);
+    return NULL;
+}
+
+START_TEST (test_parallel_load)
+{
+#define N 5
+    pthread_t threads[N];
+    unsigned i;
+
+    cl_init(CL_INIT_DEFAULT);
+    pthread_barrier_init(&barrier, NULL, N);
+    for (i=0;i<N;i++) {
+	pthread_create(&threads[i], NULL, thread, NULL);
+    }
+    for (i=0;i<N;i++) {
+	pthread_join(threads[i], NULL);
+    }
+    /* DB load used to crash due to 'static' variable in cache.c,
+     * and also due to something wrong in LLVM 2.7.
+     * Enabled the mutex around codegen in bytecode2llvm.cpp, and this test is
+     * here to make sure it doesn't crash */
+}
+END_TEST
+#endif
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -575,6 +612,9 @@ Suite *test_bytecode_suite(void)
 
     tcase_add_test(tc_cli_arith, test_load_bytecode_jit);
     tcase_add_test(tc_cli_arith, test_load_bytecode_int);
+#ifdef CL_THREAD_SAFE
+    tcase_add_test(tc_cli_arith, test_parallel_load);
+#endif
 
     return s;
 }
