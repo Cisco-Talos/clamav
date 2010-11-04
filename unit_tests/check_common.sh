@@ -57,6 +57,10 @@ test_start() {
     cat <<EOF >test-db/test.hdb
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
 EOF
+    port=331$1
+    if [ -n $RANDOM ]; then
+	port=1`expr 100 + \( $RANDOM % 899 \)`$1
+    fi
     cat <<EOF >test-clamd.conf
 LogFile `pwd`/clamd-test.log
 LogFileMaxSize 0
@@ -69,7 +73,7 @@ DatabaseDirectory `pwd`/test-db
 LocalSocket clamd-test.socket
 TCPAddr 127.0.0.1
 # using different port here to avoid conflicts with system clamd daemon
-TCPSocket 331$1
+TCPSocket $port
 ExitOnOOM yes
 DetectPUA yes
 ScanPDF yes
