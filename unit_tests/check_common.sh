@@ -58,7 +58,7 @@ test_start() {
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
 EOF
     port=331$1
-    if [ -n $RANDOM ]; then
+    if test "x$RANDOM" != "x"; then
 	port=1`expr 100 + \( $RANDOM % 899 \)`$1
     fi
     cat <<EOF >test-clamd.conf
