@@ -1582,7 +1582,8 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
 	    firstline[0] = 0;
 	    lastline[0] = 0;
 	    do {
-		fgets(firstline, sizeof(firstline), f);
+		if (!fgets(firstline, sizeof(firstline), f))
+		    break;
 		/* ignore warning messages, otherwise the outdated warning will
 		 * make us miss the important part of the error message */
 	    } while (!strncmp(firstline, "LibClamAV Warning:", 18));
