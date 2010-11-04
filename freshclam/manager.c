@@ -1625,11 +1625,10 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
     {
 	ret = test_database(file, newdb, bytecode);
     }
-    __finally {
-	if (AbnormalTermination())
-	    logg("!Exception during database testing, code %08x at %08x\n",
-		 GetExceptionCode(), GetExceptionInformation()->ExceptionRecord->ExceptionAddress);
-    }
+    __except (logg("!Exception during database testing, code %08x at %08x\n",
+		 GetExceptionCode(), GetExceptionInformation()->ExceptionRecord->ExceptionAddress),
+	      EXCEPTION_CONTINUE_SEARCH)
+    { }
     return ret;
 }
 #endif
