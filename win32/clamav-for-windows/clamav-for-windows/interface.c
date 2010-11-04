@@ -529,6 +529,40 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     logg("Scan_ScanObjectByHandle (instance %p) invoking cl_scandesc with clamav context %p\n", inst, &sctx);
     perf = GetTickCount();
     res = cl_scandesc_callback(fd, &virname, NULL, engine, inst->scanopts, &sctx);
+
+    do {
+	CLAM_SCAN_INFO si;
+	CLAM_ACTION act;
+	HANDLE fdhdl;
+	DWORD cbperf;
+	wchar_t wvirname[MAX_VIRNAME_LEN];
+	LONG lo = 0, hi = 0, hi2 = 0;
+
+	si.cbSize = sizeof(si);
+	si.flags = 0;
+	si.scanPhase = SCAN_PHASE_FINAL;
+	si.errorCode = CLAMAPI_SUCCESS;
+	if(res == CL_VIRUS) {
+	    if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
+		si.pThreatName = wvirname;
+	    else
+		si.pThreatName = L"INFECTED";
+	} else
+	    si.pThreatName = NULL;
+	logg("in final_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", &sctx, inst, fd, res, si.pThreatName);
+	si.pThreatType = threat_type(virname);
+	si.object = duphdl;
+	si.pInnerObjectPath = NULL;
+	lo = SetFilePointer(duphdl, 0, &hi, FILE_CURRENT);
+	SetFilePointer(duphdl, 0, &hi2, FILE_BEGIN);
+	logg("final_cb (clamav context %p, instance %p) invoking callback %p with context %p\n", &sctx, inst, inst->scancb, inst->scancb_ctx);
+	cbperf = GetTickCount();
+	inst->scancb(&si, &act, inst->scancb_ctx);
+	cbperf = GetTickCount() - cbperf;
+	logg("final_cb (clamav context %p, instance %p) callback completed with %u (result ignored) in %u ms\n", &sctx, inst, act, cbperf);
+	SetFilePointer(duphdl, lo, &hi, FILE_BEGIN);
+    } while(0);
+
     perf = GetTickCount() - perf;
     close(fd);
     logg("Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms\n", inst, res, perf);
@@ -656,10 +690,13 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	logg("!postscan_cb called with NULL clamav context\n");
 	return CL_CLEAN;
     }
+    if(fd == sctx->entryfd)
+	return CL_CLEAN; /* Moved to after cl_scandesc returns due to heuristic results not being yet set in magicscan */
+
     inst = sctx->inst;
     si.cbSize = sizeof(si);
     si.flags = 0;
-    si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_FINAL : SCAN_PHASE_POSTSCAN;
+    si.scanPhase = SCAN_PHASE_POSTSCAN;
     si.errorCode = CLAMAPI_SUCCESS;
     if(result == CL_VIRUS) {
 	if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
@@ -678,7 +715,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     perf = GetTickCount();
     inst->scancb(&si, &act, inst->scancb_ctx);
     perf = GetTickCount() - perf;
-    logg("prescan_cb (clamav context %p, instance %p) callback completed in %u ms\n", context, inst, act);
+    logg("postscan_cb (clamav context %p, instance %p) callback completed with %u in %u ms\n", context, inst, act, perf);
     SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     switch(act) {
 	case CLAM_ACTION_SKIP:

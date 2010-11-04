@@ -64,7 +64,7 @@ enum CLAM_SCAN_OPTIONS {
 /* CLAMAPI SCAN PHASES */
 /* Define the scan phase to which the returned results refer to */
 typedef enum _CLAM_SCAN_PHASE {
-    SCAN_PHASE_INITIAL,	 /* ight before ClamAV starts scanning the entry (outer) file - in scan callback mode only */
+    SCAN_PHASE_INITIAL,	 /* Right before ClamAV starts scanning the entry (outer) file - in scan callback mode only */
     SCAN_PHASE_PRESCAN,	 /* Right before ClamAV starts scanning the current file - in scan callback mode only */
     SCAN_PHASE_POSTSCAN, /* After ClamAV has scanned the current file - in scan callback mode only */
     SCAN_PHASE_FINAL	 /* After ClamAV has scanned the entry (outer) file (callback) and upon returning from ScanObject */
