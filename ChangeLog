@@ -1,3 +1,7 @@
+Fri Nov  5 16:40:31 CET 2010 (tk)
+---------------------------------
+ * freshclam: make query format backward compatible
+
 Fri Nov  5 15:32:22 CET 2010 (tk)
 ---------------------------------
  * freshclam: get detection stats directly from clamd (bb#2312)

@@ -640,7 +640,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	    break;
 	}
 
-	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%s&fname[]=%s&fsize[]=%s&md5[]=%s&virus[]=%s&", tokens[0], tokens[4], tokens[2], tokens[1], tokens[3]);
+	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%s&fname[]=%s&virus[]=%s(%s:%s)&", tokens[0], tokens[4], tokens[3], tokens[1], tokens[2]);
 	entries++;
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
