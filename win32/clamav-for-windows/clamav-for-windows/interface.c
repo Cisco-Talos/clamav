@@ -484,7 +484,7 @@ struct scan_ctx {
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
     instance *inst;
     HANDLE duphdl, self;
-    char *virname;
+    char *virname = NULL;
     int fd, res;
     unsigned int i;
     struct scan_ctx sctx;
