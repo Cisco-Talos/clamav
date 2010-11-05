@@ -159,6 +159,7 @@
     <ResourceCompile Include="res\freshclam.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\clamdcom.c"/>
     <ClCompile Include="..\freshclam\dns.c"/>
     <ClCompile Include="..\freshclam\execute.c"/>
     <ClCompile Include="..\freshclam\freshclam.c"/>

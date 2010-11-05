@@ -98,7 +98,7 @@
 /* file i/o buffer size */
 #define FILEBUFF 8192
 
-/* FPU byte ordering is little endian */
+/* FPU byte ordering matches CPU */
 #define FPU_WORDS_BIGENDIAN 0
 
 /* enable workaround for broken DNS servers */
@@ -502,7 +502,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.96.2-16-g8087101"
+#define VERSION "devel-clamav-0.96.4-63-g5f43282"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
