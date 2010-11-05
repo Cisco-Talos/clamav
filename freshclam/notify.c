@@ -39,11 +39,12 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/clamdcom.h"
+
 #include "notify.h"
 
-int notify(const char *cfgfile)
+int clamd_connect(const char *cfgfile, const char *option)
 {
-	char buff[20];
 #ifndef	_WIN32
 	struct sockaddr_un server;
 #endif
@@ -63,8 +64,8 @@ int notify(const char *cfgfile)
 
 
     if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
-	return 1;
+	logg("!%s: Can't find or parse configuration file %s\n", option, cfgfile);
+	return -11;
     }
 
 #ifndef	_WIN32
@@ -78,7 +79,7 @@ int notify(const char *cfgfile)
 	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", opt->strarg);
 	    perror("socket()");
 	    optfree(opts);
-	    return 1;
+	    return -1;
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
@@ -86,7 +87,7 @@ int notify(const char *cfgfile)
 	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", opt->strarg);
 	    perror("connect()");
 	    optfree(opts);
-	    return 1;
+	    return -11;
 	}
 
     } else
@@ -113,36 +114,36 @@ int notify(const char *cfgfile)
 	ret = getaddrinfo(addr, port, &hints, &res);
 
 	if(ret) {
-	    logg("^Clamd was NOT notified: Can't resolve hostname %s (%s)\n", addr ? addr : "", (ret == EAI_SYSTEM) ? strerror(errno) : gai_strerror(ret));
+	    logg("!%s: Can't resolve hostname %s (%s)\n", option, addr ? addr : "", (ret == EAI_SYSTEM) ? strerror(errno) : gai_strerror(ret));
 	    optfree(opts);
-	    return 1;
+	    return -1;
 	}
 
 	if((sockd = socket(res->ai_family, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
-	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
+	    logg("!%s: Can't create TCP socket\n", option);
 	    optfree(opts);
 	    freeaddrinfo(res);
-	    return 1;
+	    return -1;
 	}
 
 	if(connect(sockd, res->ai_addr, res->ai_addrlen) == -1) {
 	    perror("connect()");
 	    closesocket(sockd);
-	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%s\n", addr ? addr : "localhost", port);
+	    logg("!%s: Can't connect to clamd on %s:%s\n", option, addr ? addr : "localhost", port);
 	    optfree(opts);
 	    freeaddrinfo(res);
-	    return 1;
+	    return -1;
 	}
 	freeaddrinfo(res);
 
 #else /* IPv4 */
 
 	if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
+	    logg("!%s: Can't create TCP socket\n", option);
 	    perror("socket()");
 	    optfree(opts);
-	    return 1;
+	    return -1;
 	}
 
 	server2.sin_family = AF_INET;
@@ -154,7 +155,7 @@ int notify(const char *cfgfile)
 		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", opt->strarg);
 		optfree(opts);
 		closesocket(sockd);
-		return 1;
+		return -1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
 	} else
@@ -167,39 +168,48 @@ int notify(const char *cfgfile)
 		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 	    perror("connect()");
 	    optfree(opts);
-	    return 1;
+	    return -1;
 	}
 
 #endif
 
     } else {
-	logg("^Clamd was NOT notified: No socket specified in %s\n", cfgfile);
+	logg("!%s: No communication socket specified in %s\n", option, cfgfile);
 	optfree(opts);
 	return 1;
     }
 
-    if(send(sockd, "RELOAD", 6, 0) < 0) {
-	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
-	perror("write()");
+    optfree(opts);
+    return sockd;
+}
+
+int notify(const char *cfgfile)
+{
+	char buff[20];
+	int sockd, bread;
+	const char *socktype;
+
+    if((sockd = clamd_connect(cfgfile, "NotifyClamd")) < 0)
+	return 1;
+
+    if(sendln(sockd, "RELOAD", 7) < 0) {
+	logg("!NotifyClamd: Could not write to clamd socket\n");
+	perror("send()");
 	closesocket(sockd);
-	optfree(opts);
 	return 1;
     }
 
-    /* TODO: Handle timeout */
     memset(buff, 0, sizeof(buff));
-    if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0)
+    if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0) {
 	if(!strstr(buff, "RELOADING")) {
-	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
+	    logg("!NotifyClamd: Unknown answer from clamd: '%s'\n", buff);
 	    closesocket(sockd);
-	    optfree(opts);
 	    return 1;
 	}
+    }
 
     closesocket(sockd);
     logg("Clamd successfully notified about the update.\n");
-    optfree(opts);
     return 0;
 }
-
 #endif

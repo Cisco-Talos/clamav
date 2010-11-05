@@ -160,7 +160,7 @@ Timeout in seconds when reading from database server.
 Default: 30
 .TP
 \fBSubmitDetectionStats STRING\fR
-When enabled freshclam will submit statistics to the ClamAV Project about the latest virus detections in your environment. The ClamAV maintainers will then use this data to determine what types of malware are the most detected in the field and in what geographic area they are. This feature requires LogTime and LogFile to be enabled in clamd.conf, it's also recommended to turn on ExtendedDetectionInfo. The path for clamd.conf file must be provided.
+When enabled freshclam will submit statistics to the ClamAV Project about the latest virus detections in your environment. The ClamAV maintainers will then use this data to determine what types of malware are the most detected in the field and in what geographic area they are. Freshclam will connect to clamd in order to get the recent statistics. The path for clamd.conf file must be provided.
 .br
 Default: disabled
 .TP

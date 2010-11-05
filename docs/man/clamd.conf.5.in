@@ -67,7 +67,7 @@ Enable verbose logging.
 Default: no
 .TP 
 \fBExtendedDetectionInfo BOOL\fR
-Provide additional information about the infected file, such as its size and hash, together with the virus name. It's recommended to enable this option along with SubmitDetectionStats in freshclam.conf.
+Log additional information about the infected file, such as its size and hash, together with the virus name.
 .br 
 Default: no
 .TP 

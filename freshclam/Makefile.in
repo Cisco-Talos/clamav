@@ -79,9 +79,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_freshclam_OBJECTS = output.$(OBJEXT) optparser.$(OBJEXT) \
 	getopt.$(OBJEXT) misc.$(OBJEXT) cdiff.$(OBJEXT) tar.$(OBJEXT) \
-	freshclam.$(OBJEXT) manager.$(OBJEXT) notify.$(OBJEXT) \
-	dns.$(OBJEXT) execute.$(OBJEXT) nonblock.$(OBJEXT) \
-	mirman.$(OBJEXT)
+	clamdcom.$(OBJEXT) freshclam.$(OBJEXT) manager.$(OBJEXT) \
+	notify.$(OBJEXT) dns.$(OBJEXT) execute.$(OBJEXT) \
+	nonblock.$(OBJEXT) mirman.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 freshclam_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
@@ -291,6 +291,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/cdiff.h \
     $(top_srcdir)/shared/tar.c \
     $(top_srcdir)/shared/tar.h \
+    $(top_srcdir)/shared/clamdcom.c \
+    $(top_srcdir)/shared/clamdcom.h \
     freshclam.c \
     manager.c \
     manager.h \
@@ -412,6 +414,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cdiff.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdcom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/execute.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/freshclam.Po@am__quote@
@@ -544,6 +547,22 @@ tar.obj: $(top_srcdir)/shared/tar.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/tar.c' object='tar.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tar.obj `if test -f '$(top_srcdir)/shared/tar.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/tar.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/tar.c'; fi`
+
+clamdcom.o: $(top_srcdir)/shared/clamdcom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT clamdcom.o -MD -MP -MF $(DEPDIR)/clamdcom.Tpo -c -o clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamdcom.Tpo $(DEPDIR)/clamdcom.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/clamdcom.c' object='clamdcom.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
+
+clamdcom.obj: $(top_srcdir)/shared/clamdcom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT clamdcom.obj -MD -MP -MF $(DEPDIR)/clamdcom.Tpo -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamdcom.Tpo $(DEPDIR)/clamdcom.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/clamdcom.c' object='clamdcom.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

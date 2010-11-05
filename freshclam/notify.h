@@ -20,5 +20,6 @@
 #define __NOTIFY_H
 
 int notify(const char *cfgfile);
+int clamd_connect(const char *cfgfile, const char *option);
 
 #endif

@@ -56,6 +56,8 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/actions.h"
+#include "shared/clamdcom.h"
+
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 

@@ -22,18 +22,7 @@
 #define PROTO_H
 #include "shared/misc.h"
 
-struct RCVLN {
-    char buf[PATH_MAX+1024]; /* FIXME must match that in clamd - bb1349 */
-    int sockd;
-    int r;
-    char *cur;
-    char *bol;
-};
-
 int dconnect(void);
-int sendln(int sockd, const char *line, unsigned int len);
-void recvlninit(struct RCVLN *s, int sockd);
-int recvln(struct RCVLN *s, char **rbol, char **reol);
 int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
 int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
 int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors);

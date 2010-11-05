@@ -1,3 +1,7 @@
+Fri Nov  5 15:32:22 CET 2010 (tk)
+---------------------------------
+ * freshclam: get detection stats directly from clamd (bb#2312)
+
 Thu Nov  4 21:12:53 EET 2010 (edwin)
 ------------------------------------
  * libclamav/cache.c,c++/bytecode2llvm.cpp}: make cl_load thread safe (bb #2333).

@@ -75,6 +75,7 @@
 #include "shared/misc.h"
 #include "shared/cdiff.h"
 #include "shared/tar.h"
+#include "shared/clamdcom.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
@@ -429,6 +430,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     return -2;
 }
 
+/*
 static const char *readblineraw(int fd, char *buf, int bufsize, int filesize, int *bread)
 {
 	char *pt;
@@ -489,6 +491,7 @@ static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *
 
     return line;
 }
+*/
 
 static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
 {
@@ -559,25 +562,18 @@ static char *proxyauth(const char *user, const char *pass)
     return auth;
 }
 
-/*
- * TODO:
- * - strptime() is most likely not portable enough
- */
 int submitstats(const char *clamdcfg, const struct optstruct *opts)
 {
-	int fd, sd, bread, lread = 0, cnt, ret;
+	int sd, clamsockd, bread, cnt, ret;
 	char post[SUBMIT_MIN_ENTRIES * 256 + 512];
 	char query[SUBMIT_MIN_ENTRIES * 256];
-	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
-	char logfile[256], fbuff[FILEBUFF];
-	char *pt, *pt2, *auth = NULL;
-	const char *line, *country = NULL, *user, *proxy = NULL, *hostid = NULL;
-	struct optstruct *clamdopt;
+	char uastr[128], *line;
+	char *pt, *auth = NULL;
+	const char *country = NULL, *user, *proxy = NULL, *hostid = NULL;
 	const struct optstruct *opt;
-	struct stat sb;
-	struct tm tms;
-	time_t epoch;
 	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
+        struct RCVLN rcv;
+	const char *tokens[5];
 
 
     if((opt = optget(opts, "DetectionStatsCountry"))->enabled) {
@@ -596,67 +592,6 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	hostid = opt->strarg;
     }
 
-    if(!(clamdopt = optparse(clamdcfg, 0, NULL, 1, OPT_CLAMD, 0, NULL))) {
-	logg("!SubmitDetectionStats: Can't open or parse configuration file %s\n", clamdcfg);
-	return 56;
-    }
-
-    if(!(opt = optget(clamdopt, "LogFile"))->enabled) {
-	logg("!SubmitDetectionStats: LogFile needs to be enabled in %s\n", clamdcfg);
-	logg("SubmitDetectionStats: Please consider enabling ExtendedDetectionInfo\n");
-	optfree(clamdopt);
-	return 56;
-    }
-    strncpy(logfile, opt->strarg, sizeof(logfile));
-    logfile[sizeof(logfile) - 1] = 0;
-
-    if(!optget(clamdopt, "LogTime")->enabled) {
-	logg("!SubmitDetectionStats: LogTime needs to be enabled in %s\n", clamdcfg);
-	optfree(clamdopt);
-	return 56;
-    }
-    optfree(clamdopt);
-
-    if((fd = open("stats.dat", O_RDONLY|O_BINARY)) != -1) {
-	if((bread = read(fd, statsdat, sizeof(statsdat) - 1)) == -1) {
-	    logg("^SubmitDetectionStats: Can't read stats.dat\n");
-	    bread = 0;
-	}
-	statsdat[bread] = 0;
-	close(fd);
-    } else {
-	*statsdat = 0;
-    }
-
-    if((fd = open(logfile, O_RDONLY|O_BINARY)) == -1) {
-	logg("!SubmitDetectionStats: Can't open %s for reading\n", logfile);
-	return 56;
-    }
-
-    if(fstat(fd, &sb) == -1) {
-	logg("!SubmitDetectionStats: fstat() failed\n");
-	close(fd);
-	return 56;
-    }
-
-    while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)))
-	if(strlen(line) >= 32 && !strcmp(&line[strlen(line) - 6], " FOUND"))
-	    break;
-
-    if(!line) {
-	logg("SubmitDetectionStats: No detection records found\n");
-	close(fd);
-	return 1;
-    }
-
-    if(*statsdat && !strcmp(line, statsdat)) {
-	logg("SubmitDetectionStats: No new detection records found\n");
-	close(fd);
-	return 1;
-    } else {
-	strncpy(newstatsdat, line, sizeof(newstatsdat));
-    }
-
     if((opt = optget(opts, "HTTPUserAgent"))->enabled)
         strncpy(uastr, opt->strarg, sizeof(uastr));
     else
@@ -672,14 +607,11 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	    user = opt->strarg;
 	    if(!(opt = optget(opts, "HTTPProxyPassword"))->enabled) {
 		logg("!SubmitDetectionStats: HTTPProxyUsername requires HTTPProxyPassword\n");
-		close(fd);
 		return 56;
 	    }
 	    auth = proxyauth(user, opt->strarg);
-	    if(!auth) {
-		close(fd);
+	    if(!auth)
 		return 56;
-	    }
 	}
 
 	if((opt = optget(opts, "HTTPProxyPort"))->enabled)
@@ -688,50 +620,27 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	logg("*Connecting via %s\n", proxy);
     }
 
+    if((clamsockd = clamd_connect(clamdcfg, "SubmitDetectionStats")) < 0)
+	return 52;
+
+    recvlninit(&rcv, clamsockd);
+    if(sendln(clamsockd, "zDETSTATS", 10)) {
+        closesocket(clamsockd);
+	return 52;
+    }
+
     ret = 0;
     memset(query, 0, sizeof(query));
     qcnt = 0;
     entries = 0;
-    do {
-	if(strlen(line) < 32 || strcmp(&line[strlen(line) - 6], " FOUND"))
-	    continue;
-
-	if(*statsdat && !strcmp(line, statsdat))
-	    break;
-
-	strncpy(buff, line, sizeof(buff));
-	buff[sizeof(buff) - 1] = 0;
-	if(!(pt = strstr(buff, " -> "))) {
-	    logg("*SubmitDetectionStats: Skipping detection entry logged without time\b");
-	    continue;
-	}
-	*pt = 0;
-	pt += 4;
-
-	tms.tm_isdst = -1;
-	if(!strptime(buff, "%a %b  %d %H:%M:%S %Y", &tms) || (epoch = mktime(&tms)) == -1) {
-	    logg("!SubmitDetectionStats: Failed to convert date string\n");
-	    ret = 1;
+    while(recvln(&rcv, &line, NULL) > 0) {
+        if(cli_strtokenize(line, ':', 5, tokens) != 5) {
+	    logg("!SubmitDetectionStats: Invalid data format\n");
+	    ret = 52;
 	    break;
 	}
 
-	pt2 = &pt[strlen(pt) - 6];
-	*pt2 = 0;
-
-	if(!(pt2 = strrchr(pt, ' ')) || pt2[-1] != ':') {
-	    logg("!SubmitDetectionStats: Incorrect format of the log file (1)\n");
-	    ret = 1;
-	    break;
-	}
-	pt2[-1] = 0;
-	pt2++;
-
-	if((pt = strrchr(pt, *PATHSEP)))
-	    *pt++ = 0;
-	if(!pt)
-	    pt = (char*) "NOFNAME";
-
-	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%u&fname[]=%s&virus[]=%s&", (unsigned int) epoch, pt, pt2);
+	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%s&fname[]=%s&fsize[]=%s&md5[]=%s&virus[]=%s&", tokens[0], tokens[4], tokens[2], tokens[1], tokens[3]);
 	entries++;
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
@@ -741,7 +650,6 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 		ret = 52;
 		break;
 	    }
-
 	    query[sizeof(query) - 1] = 0;
 	    if(mdprintf(sd,
 		"POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
@@ -812,30 +720,23 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 
 	    break;
 	}
-
-    } while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)));
-
-    close(fd);
+    }
+    closesocket(clamsockd);
     if(auth)
 	free(auth);
 
-    if(submitted || permfail) {
-	if((fd = open("stats.dat", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0600)) == -1) {
-	    logg("^SubmitDetectionStats: Can't open stats.dat for writing\n");
+    if(ret == 0) {
+	if(!submitted) {
+	    logg("SubmitDetectionStats: Not enough recent data for submission\n");
 	} else {
-	    if((bread = write(fd, newstatsdat, sizeof(newstatsdat))) != sizeof(newstatsdat))
-		logg("^SubmitDetectionStats: Can't write to stats.dat\n");
-	    close(fd);
+	    logg("SubmitDetectionStats: Submitted %u records\n", submitted);
+	    if((clamsockd = clamd_connect(clamdcfg, "SubmitDetectionStats")) != -1) {
+		sendln(clamsockd, "DETSTATSCLEAR", 14);
+		recv(clamsockd, query, sizeof(query), 0);
+		closesocket(clamsockd);
+	    }
 	}
     }
-
-    if(ret == 0) {
-	if(!submitted)
-	    logg("SubmitDetectionStats: Not enough recent data for submission\n");
-	else
-	    logg("SubmitDetectionStats: Submitted %u records\n", submitted);
-    }
-
     return ret;
 }
 
@@ -1970,7 +1871,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 static int updatecustomdb(const char *url, int *signo, const struct optstruct *opts, char *localip, int logerr)
 {
 	const struct optstruct *opt;
-	unsigned int port = 0, newsigs = 0, sigs = 0;
+	unsigned int port = 0, sigs = 0;
 	int ret;
 	char *pt, *host, urlcpy[256], *newfile = NULL, mtime[36], *newfile2;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL, *rpath, *dbname;

@@ -177,7 +177,7 @@ const struct clam_option __clam_options[] = {
 
     { "LogVerbose", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "yes" },
 
-    { "ExtendedDetectionInfo", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Provide additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes" },
+    { "ExtendedDetectionInfo", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes" },
 
     { "PidFile", "pid", 'p', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clam.pid" },
 
@@ -390,7 +390,7 @@ const struct clam_option __clam_options[] = {
 
     { "ReceiveTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server.", "30" },
 
-    { "SubmitDetectionStats", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nThis feature requires LogTime and LogFile to be enabled in clamd.conf.", "/path/to/clamd.conf" },
+    { "SubmitDetectionStats", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nFreshclam will connect to clamd in order to get recent statistics.", "/path/to/clamd.conf" },
 
     { "DetectionStatsCountry", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Country of origin of malware/detection statistics (for statistical\npurposes only). The statistics collector at ClamAV.net will look up\nyour IP address to determine the geographical origin of the malware\nreported by your installation. If this installation is mainly used to\nscan data which comes from a different location, please enable this\noption and enter a two-letter code (see http://www.iana.org/domains/root/db/)\nof the country of origin.", "country-code" },
 

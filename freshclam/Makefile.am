@@ -32,6 +32,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/cdiff.h \
     $(top_srcdir)/shared/tar.c \
     $(top_srcdir)/shared/tar.h \
+    $(top_srcdir)/shared/clamdcom.c \
+    $(top_srcdir)/shared/clamdcom.h \
     freshclam.c \
     manager.c \
     manager.h \

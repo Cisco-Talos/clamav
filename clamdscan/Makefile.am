@@ -31,6 +31,8 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/actions.c \
     $(top_srcdir)/shared/actions.h \
+    $(top_srcdir)/shared/clamdcom.c \
+    $(top_srcdir)/shared/clamdcom.h \
     clamdscan.c \
     proto.c \
     proto.h \
