@@ -7,7 +7,7 @@ echo "Creating grafts for llvm-upstream"
 
 REPONAME=llvm
 REFPFX=refs/tags/merge-$REPONAME-
-UPSTREAM=$REPONAME-upstream/release
+UPSTREAM=$REPONAME-upstream/release-2.8
 git for-each-ref $REFPFX*  --format='%(refname)' | while read tag_ref
 do
 	tag_svn_ref=`echo $tag_ref|sed -e s\|$REFPFX\|\|`
@@ -19,9 +19,9 @@ do
 	echo "$local_ref $local_parent_ref $upstream_ref" >>.git/info/grafts
 done
 echo "Merging llvm-upstream"
-MERGEREV=`git log $UPSTREAM -1 |grep /release_27@|sed -s 's/.*@\([0-9]*\).*/\1/'`
+MERGEREV=`git log $UPSTREAM -1 |grep /release_28@|sed -s 's/.*@\([0-9]*\).*/\1/'`
 echo "$MERGEREV"
-git merge -s subtree --squash llvm-upstream/release
+git merge -s subtree --squash llvm-upstream/release-2.8
 
 echo "Run strip-llvm.sh from libclamav/c++"
 echo "Then fix conflicts if needed: git mergetool"
