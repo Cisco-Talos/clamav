@@ -19,21 +19,22 @@ struct PPCGenRegisterInfo : public TargetRegisterInfo {
      { return false; }
   unsigned getSubReg(unsigned RegNo, unsigned Index) const;
   unsigned getSubRegIndex(unsigned RegNo, unsigned SubRegNo) const;
+  unsigned composeSubRegIndices(unsigned, unsigned) const;
 };
 
 namespace PPC { // Register classes
   enum {
-    CARRYRCRegClassID = 1,
-    CRBITRCRegClassID = 2,
-    CRRCRegClassID = 3,
-    CTRRCRegClassID = 4,
-    CTRRC8RegClassID = 5,
-    F4RCRegClassID = 6,
-    F8RCRegClassID = 7,
-    G8RCRegClassID = 8,
-    GPRCRegClassID = 9,
-    VRRCRegClassID = 10,
-    VRSAVERCRegClassID = 11
+    CARRYRCRegClassID = 0,
+    CRBITRCRegClassID = 1,
+    CRRCRegClassID = 2,
+    CTRRCRegClassID = 3,
+    CTRRC8RegClassID = 4,
+    F4RCRegClassID = 5,
+    F8RCRegClassID = 6,
+    G8RCRegClassID = 7,
+    GPRCRegClassID = 8,
+    VRRCRegClassID = 9,
+    VRSAVERCRegClassID = 10
   };
 
   struct CARRYRCClass : public TargetRegisterClass {

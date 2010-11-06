@@ -12978,10 +12978,6 @@ ac_config_files="$ac_config_files Makefile.config"
 ac_config_files="$ac_config_files llvm.spec"
 
 
-ac_config_files="$ac_config_files tools/llvmc/src/Base.td"
-
-
-ac_config_files="$ac_config_files tools/llvm-config/llvm-config.in"
 
 
 ac_config_commands="$ac_config_commands setup"
@@ -13743,8 +13739,6 @@ do
     "include/llvm/System/DataTypes.h") CONFIG_HEADERS="$CONFIG_HEADERS include/llvm/System/DataTypes.h" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
     "llvm.spec") CONFIG_FILES="$CONFIG_FILES llvm.spec" ;;
-    "tools/llvmc/src/Base.td") CONFIG_FILES="$CONFIG_FILES tools/llvmc/src/Base.td" ;;
-    "tools/llvm-config/llvm-config.in") CONFIG_FILES="$CONFIG_FILES tools/llvm-config/llvm-config.in" ;;
     "setup") CONFIG_COMMANDS="$CONFIG_COMMANDS setup" ;;
     "Makefile") CONFIG_COMMANDS="$CONFIG_COMMANDS Makefile" ;;
     "Makefile.common") CONFIG_COMMANDS="$CONFIG_COMMANDS Makefile.common" ;;

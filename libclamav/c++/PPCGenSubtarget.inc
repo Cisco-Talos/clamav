@@ -12,32 +12,16 @@
 #include "llvm/Target/TargetInstrItineraries.h"
 
 enum {
-  BPU =  1 << 0,
-  FPU1 =  1 << 1,
-  FPU2 =  1 << 2,
-  IU1 =  1 << 3,
-  IU2 =  1 << 4,
-  IU3 =  1 << 5,
-  IU4 =  1 << 6,
-  SLU =  1 << 7,
-  SRU =  1 << 8,
-  VFPU =  1 << 9,
-  VIU1 =  1 << 10,
-  VIU2 =  1 << 11,
-  VPU =  1 << 12
-};
-
-enum {
   Directive32 =  1 << 0,
-  Directive601 =  1 << 1,
-  Directive602 =  1 << 2,
-  Directive603 =  1 << 3,
-  Directive604 =  1 << 4,
-  Directive620 =  1 << 5,
-  Directive64 =  1 << 6,
-  Directive7400 =  1 << 7,
-  Directive750 =  1 << 8,
-  Directive970 =  1 << 9,
+  Directive64 =  1 << 1,
+  Directive601 =  1 << 2,
+  Directive602 =  1 << 3,
+  Directive603 =  1 << 4,
+  Directive604 =  1 << 5,
+  Directive620 =  1 << 6,
+  Directive750 =  1 << 7,
+  Directive970 =  1 << 8,
+  Directive7400 =  1 << 9,
   Feature64Bit =  1 << 10,
   Feature64BitRegs =  1 << 11,
   FeatureAltivec =  1 << 12,
@@ -91,80 +75,168 @@ enum {
 enum {
   ItinClassesSize = 74
 };
+
+// Functional units for itineraries "G3Itineraries"
+namespace G3ItinerariesFU {
+  const unsigned IU1 = 1 << 0;
+  const unsigned IU2 = 1 << 1;
+  const unsigned FPU1 = 1 << 2;
+  const unsigned BPU = 1 << 3;
+  const unsigned SRU = 1 << 4;
+  const unsigned SLU = 1 << 5;
+}
+
+// Functional units for itineraries "G4Itineraries"
+namespace G4ItinerariesFU {
+  const unsigned IU1 = 1 << 0;
+  const unsigned IU2 = 1 << 1;
+  const unsigned SLU = 1 << 2;
+  const unsigned SRU = 1 << 3;
+  const unsigned BPU = 1 << 4;
+  const unsigned FPU1 = 1 << 5;
+  const unsigned VIU1 = 1 << 6;
+  const unsigned VIU2 = 1 << 7;
+  const unsigned VPU = 1 << 8;
+  const unsigned VFPU = 1 << 9;
+}
+
+// Functional units for itineraries "G4PlusItineraries"
+namespace G4PlusItinerariesFU {
+  const unsigned IU1 = 1 << 0;
+  const unsigned IU2 = 1 << 1;
+  const unsigned IU3 = 1 << 2;
+  const unsigned IU4 = 1 << 3;
+  const unsigned BPU = 1 << 4;
+  const unsigned SLU = 1 << 5;
+  const unsigned FPU1 = 1 << 6;
+  const unsigned VFPU = 1 << 7;
+  const unsigned VIU1 = 1 << 8;
+  const unsigned VIU2 = 1 << 9;
+  const unsigned VPU = 1 << 10;
+}
+
+// Functional units for itineraries "G5Itineraries"
+namespace G5ItinerariesFU {
+  const unsigned IU1 = 1 << 0;
+  const unsigned IU2 = 1 << 1;
+  const unsigned SLU = 1 << 2;
+  const unsigned BPU = 1 << 3;
+  const unsigned FPU1 = 1 << 4;
+  const unsigned FPU2 = 1 << 5;
+  const unsigned VFPU = 1 << 6;
+  const unsigned VIU1 = 1 << 7;
+  const unsigned VIU2 = 1 << 8;
+  const unsigned VPU = 1 << 9;
+}
+
 static const llvm::InstrStage Stages[] = {
-  { 0, 0, 0 }, // No itinerary
-  { 1, IU1 | IU2, -1 }, // 1
-  { 19, IU1, -1 }, // 2
-  { 1, FPU1, -1 }, // 3
-  { 3, FPU1, -1 }, // 4
-  { 5, IU1, -1 }, // 5
-  { 6, IU1, -1 }, // 6
-  { 3, IU1, -1 }, // 7
-  { 2, IU1 | IU2, -1 }, // 8
-  { 1, BPU, -1 }, // 9
-  { 1, SRU, -1 }, // 10
-  { 2, SLU, -1 }, // 11
-  { 3, SLU, -1 }, // 12
-  { 34, SLU, -1 }, // 13
-  { 8, SLU, -1 }, // 14
-  { 2, SRU, -1 }, // 15
-  { 3, SRU, -1 }, // 16
-  { 31, FPU1, -1 }, // 17
-  { 17, FPU1, -1 }, // 18
-  { 2, FPU1, -1 }, // 19
-  { 10, FPU1, -1 }, // 20
-  { 1, VIU1, -1 }, // 21
-  { 5, SLU, -1 }, // 22
-  { 8, SRU, -1 }, // 23
-  { 4, VFPU, -1 }, // 24
-  { 3, VIU2, -1 }, // 25
-  { 1, VPU, -1 }, // 26
-  { 1, IU1 | IU2 | IU3 | IU4, -1 }, // 27
-  { 23, IU2, -1 }, // 28
-  { 5, FPU1, -1 }, // 29
-  { 2, VFPU, -1 }, // 30
-  { 4, IU2, -1 }, // 31
-  { 3, IU2, -1 }, // 32
-  { 2, IU1 | IU2 | IU3 | IU4, -1 }, // 33
-  { 2, IU2, -1 }, // 34
-  { 4, SLU, -1 }, // 35
-  { 37, SLU, -1 }, // 36
-  { 35, SLU, -1 }, // 37
-  { 0, IU1 | IU2 | IU3 | IU4, -1 }, // 38
-  { 5, IU2, -1 }, // 39
-  { 35, FPU1, -1 }, // 40
-  { 21, FPU1, -1 }, // 41
-  { 14, FPU1, -1 }, // 42
-  { 4, VIU2, -1 }, // 43
-  { 2, VPU, -1 }, // 44
-  { 4, VIU1, -1 }, // 45
-  { 3, IU1 | IU2, -1 }, // 46
-  { 68, IU1, -1 }, // 47
-  { 36, IU1, -1 }, // 48
-  { 6, IU2, -1 }, // 49
-  { 1, VFPU, -1 }, // 50
-  { 6, FPU1 | FPU2, -1 }, // 51
-  { 7, IU1 | IU2, -1 }, // 52
-  { 5, IU1 | IU2, -1 }, // 53
-  { 4, IU1 | IU2, -1 }, // 54
-  { 1, IU2, -1 }, // 55
-  { 4, BPU, -1 }, // 56
-  { 2, BPU, -1 }, // 57
-  { 3, BPU, -1 }, // 58
-  { 10, SLU, -1 }, // 59
-  { 40, SLU, -1 }, // 60
-  { 11, SLU, -1 }, // 61
-  { 64, SLU, -1 }, // 62
-  { 10, IU2, -1 }, // 63
-  { 8, IU2, -1 }, // 64
-  { 8, FPU1 | FPU2, -1 }, // 65
-  { 33, FPU1 | FPU2, -1 }, // 66
-  { 40, FPU1 | FPU2, -1 }, // 67
-  { 2, VIU1, -1 }, // 68
-  { 8, VFPU, -1 }, // 69
-  { 5, VIU2, -1 }, // 70
-  { 3, VPU, -1 }, // 71
-  { 0, 0, 0 } // End itinerary
+  { 0, 0, 0, llvm::InstrStage::Required }, // No itinerary
+  { 1, G3ItinerariesFU::IU1 | G3ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 1
+  { 19, G3ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 2
+  { 1, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 3
+  { 3, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 4
+  { 5, G3ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 5
+  { 6, G3ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 6
+  { 3, G3ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 7
+  { 2, G3ItinerariesFU::IU1 | G3ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 8
+  { 1, G3ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 9
+  { 1, G3ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 10
+  { 2, G3ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 11
+  { 3, G3ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 12
+  { 34, G3ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 13
+  { 8, G3ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 14
+  { 2, G3ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 15
+  { 3, G3ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 16
+  { 31, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 17
+  { 17, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 18
+  { 2, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 19
+  { 10, G3ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 20
+  { 1, G4ItinerariesFU::IU1 | G4ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 21
+  { 19, G4ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 22
+  { 3, G4ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 23
+  { 1, G4ItinerariesFU::VIU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 24
+  { 5, G4ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 25
+  { 6, G4ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 26
+  { 3, G4ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 27
+  { 2, G4ItinerariesFU::IU1 | G4ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 28
+  { 1, G4ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 29
+  { 1, G4ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 30
+  { 2, G4ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 31
+  { 34, G4ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 32
+  { 3, G4ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 33
+  { 5, G4ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 34
+  { 8, G4ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 35
+  { 2, G4ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 36
+  { 3, G4ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 37
+  { 8, G4ItinerariesFU::SRU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 38
+  { 1, G4ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 39
+  { 31, G4ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 40
+  { 17, G4ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 41
+  { 10, G4ItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 42
+  { 4, G4ItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 43
+  { 3, G4ItinerariesFU::VIU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 44
+  { 1, G4ItinerariesFU::VPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 45
+  { 1, G4PlusItinerariesFU::IU1 | G4PlusItinerariesFU::IU2 | G4PlusItinerariesFU::IU3 | G4PlusItinerariesFU::IU4, -1, (llvm::InstrStage::ReservationKinds)0 }, // 46
+  { 23, G4PlusItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 47
+  { 5, G4PlusItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 48
+  { 2, G4PlusItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 49
+  { 4, G4PlusItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 50
+  { 3, G4PlusItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 51
+  { 2, G4PlusItinerariesFU::IU1 | G4PlusItinerariesFU::IU2 | G4PlusItinerariesFU::IU3 | G4PlusItinerariesFU::IU4, -1, (llvm::InstrStage::ReservationKinds)0 }, // 52
+  { 1, G4PlusItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 53
+  { 2, G4PlusItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 54
+  { 3, G4PlusItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 55
+  { 4, G4PlusItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 56
+  { 37, G4PlusItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 57
+  { 35, G4PlusItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 58
+  { 0, G4PlusItinerariesFU::IU1 | G4PlusItinerariesFU::IU2 | G4PlusItinerariesFU::IU3 | G4PlusItinerariesFU::IU4, -1, (llvm::InstrStage::ReservationKinds)0 }, // 59
+  { 5, G4PlusItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 60
+  { 35, G4PlusItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 61
+  { 21, G4PlusItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 62
+  { 14, G4PlusItinerariesFU::FPU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 63
+  { 1, G4PlusItinerariesFU::VIU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 64
+  { 4, G4PlusItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 65
+  { 4, G4PlusItinerariesFU::VIU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 66
+  { 2, G4PlusItinerariesFU::VPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 67
+  { 4, G4PlusItinerariesFU::VIU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 68
+  { 2, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 69
+  { 3, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 70
+  { 68, G5ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 71
+  { 36, G5ItinerariesFU::IU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 72
+  { 6, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 73
+  { 1, G5ItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 74
+  { 6, G5ItinerariesFU::FPU1 | G5ItinerariesFU::FPU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 75
+  { 7, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 76
+  { 5, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 77
+  { 4, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 78
+  { 1, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 79
+  { 1, G5ItinerariesFU::IU1 | G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 80
+  { 1, G5ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 81
+  { 4, G5ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 82
+  { 2, G5ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 83
+  { 3, G5ItinerariesFU::BPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 84
+  { 3, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 85
+  { 10, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 86
+  { 40, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 87
+  { 4, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 88
+  { 11, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 89
+  { 5, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 90
+  { 64, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 91
+  { 2, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 92
+  { 35, G5ItinerariesFU::SLU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 93
+  { 2, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 94
+  { 3, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 95
+  { 10, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 96
+  { 8, G5ItinerariesFU::IU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 97
+  { 8, G5ItinerariesFU::FPU1 | G5ItinerariesFU::FPU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 98
+  { 33, G5ItinerariesFU::FPU1 | G5ItinerariesFU::FPU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 99
+  { 40, G5ItinerariesFU::FPU1 | G5ItinerariesFU::FPU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 100
+  { 2, G5ItinerariesFU::VIU1, -1, (llvm::InstrStage::ReservationKinds)0 }, // 101
+  { 8, G5ItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 102
+  { 2, G5ItinerariesFU::VFPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 103
+  { 5, G5ItinerariesFU::VIU2, -1, (llvm::InstrStage::ReservationKinds)0 }, // 104
+  { 3, G5ItinerariesFU::VPU, -1, (llvm::InstrStage::ReservationKinds)0 }, // 105
+  { 0, 0, 0, llvm::InstrStage::Required } // End itinerary
 };
 static const unsigned OperandCycles[] = {
   0, // No itinerary
@@ -255,236 +327,236 @@ static const llvm::InstrItinerary G3Itineraries[] = {
 };
 
 static const llvm::InstrItinerary G4Itineraries[] = {
-  { 9, 10, 0, 0 }, // 0
-  { 10, 11, 0, 0 }, // 1
-  { 10, 11, 0, 0 }, // 2
-  { 10, 11, 0, 0 }, // 3
-  { 3, 4, 0, 0 }, // 4
-  { 17, 18, 0, 0 }, // 5
-  { 18, 19, 0, 0 }, // 6
-  { 3, 4, 0, 0 }, // 7
-  { 3, 4, 0, 0 }, // 8
-  { 20, 21, 0, 0 }, // 9
+  { 29, 30, 0, 0 }, // 0
+  { 30, 31, 0, 0 }, // 1
+  { 30, 31, 0, 0 }, // 2
+  { 30, 31, 0, 0 }, // 3
+  { 39, 40, 0, 0 }, // 4
+  { 40, 41, 0, 0 }, // 5
+  { 41, 42, 0, 0 }, // 6
+  { 39, 40, 0, 0 }, // 7
+  { 39, 40, 0, 0 }, // 8
+  { 42, 43, 0, 0 }, // 9
   { 0, 0, 0, 0 }, // 10
-  { 1, 2, 0, 0 }, // 11
+  { 21, 22, 0, 0 }, // 11
   { 0, 0, 0, 0 }, // 12
-  { 2, 3, 0, 0 }, // 13
-  { 1, 2, 0, 0 }, // 14
-  { 4, 5, 0, 0 }, // 15
-  { 21, 22, 0, 0 }, // 16
-  { 4, 5, 0, 0 }, // 17
+  { 22, 23, 0, 0 }, // 13
+  { 21, 22, 0, 0 }, // 14
+  { 23, 24, 0, 0 }, // 15
+  { 24, 25, 0, 0 }, // 16
+  { 23, 24, 0, 0 }, // 17
   { 0, 0, 0, 0 }, // 18
   { 0, 0, 0, 0 }, // 19
-  { 5, 6, 0, 0 }, // 20
-  { 6, 7, 0, 0 }, // 21
-  { 7, 8, 0, 0 }, // 22
+  { 25, 26, 0, 0 }, // 20
+  { 26, 27, 0, 0 }, // 21
+  { 27, 28, 0, 0 }, // 22
   { 0, 0, 0, 0 }, // 23
-  { 1, 2, 0, 0 }, // 24
+  { 21, 22, 0, 0 }, // 24
   { 0, 0, 0, 0 }, // 25
-  { 1, 2, 0, 0 }, // 26
+  { 21, 22, 0, 0 }, // 26
   { 0, 0, 0, 0 }, // 27
-  { 8, 9, 0, 0 }, // 28
+  { 28, 29, 0, 0 }, // 28
   { 0, 0, 0, 0 }, // 29
-  { 11, 12, 0, 0 }, // 30
-  { 11, 12, 0, 0 }, // 31
-  { 11, 12, 0, 0 }, // 32
-  { 11, 12, 0, 0 }, // 33
-  { 11, 12, 0, 0 }, // 34
+  { 31, 32, 0, 0 }, // 30
+  { 31, 32, 0, 0 }, // 31
+  { 31, 32, 0, 0 }, // 32
+  { 31, 32, 0, 0 }, // 33
+  { 31, 32, 0, 0 }, // 34
   { 0, 0, 0, 0 }, // 35
   { 0, 0, 0, 0 }, // 36
-  { 11, 12, 0, 0 }, // 37
-  { 11, 12, 0, 0 }, // 38
-  { 11, 12, 0, 0 }, // 39
-  { 13, 14, 0, 0 }, // 40
-  { 11, 12, 0, 0 }, // 41
+  { 31, 32, 0, 0 }, // 37
+  { 31, 32, 0, 0 }, // 38
+  { 31, 32, 0, 0 }, // 39
+  { 32, 33, 0, 0 }, // 40
+  { 31, 32, 0, 0 }, // 41
   { 0, 0, 0, 0 }, // 42
-  { 12, 13, 0, 0 }, // 43
+  { 33, 34, 0, 0 }, // 43
   { 0, 0, 0, 0 }, // 44
   { 0, 0, 0, 0 }, // 45
   { 0, 0, 0, 0 }, // 46
   { 0, 0, 0, 0 }, // 47
-  { 11, 12, 0, 0 }, // 48
-  { 22, 23, 0, 0 }, // 49
-  { 14, 15, 0, 0 }, // 50
-  { 11, 12, 0, 0 }, // 51
+  { 31, 32, 0, 0 }, // 48
+  { 34, 35, 0, 0 }, // 49
+  { 35, 36, 0, 0 }, // 50
+  { 31, 32, 0, 0 }, // 51
   { 0, 0, 0, 0 }, // 52
-  { 15, 16, 0, 0 }, // 53
-  { 10, 11, 0, 0 }, // 54
-  { 10, 11, 0, 0 }, // 55
-  { 16, 17, 0, 0 }, // 56
-  { 16, 17, 0, 0 }, // 57
-  { 10, 11, 0, 0 }, // 58
-  { 10, 11, 0, 0 }, // 59
-  { 15, 16, 0, 0 }, // 60
-  { 15, 16, 0, 0 }, // 61
-  { 15, 16, 0, 0 }, // 62
-  { 15, 16, 0, 0 }, // 63
-  { 15, 16, 0, 0 }, // 64
-  { 23, 24, 0, 0 }, // 65
-  { 25, 26, 0, 0 }, // 66
-  { 24, 25, 0, 0 }, // 67
-  { 21, 22, 0, 0 }, // 68
-  { 24, 25, 0, 0 }, // 69
-  { 21, 22, 0, 0 }, // 70
-  { 26, 27, 0, 0 }, // 71
-  { 21, 22, 0, 0 }, // 72
-  { 21, 22, 0, 0 }, // 73
+  { 36, 37, 0, 0 }, // 53
+  { 30, 31, 0, 0 }, // 54
+  { 30, 31, 0, 0 }, // 55
+  { 37, 38, 0, 0 }, // 56
+  { 37, 38, 0, 0 }, // 57
+  { 30, 31, 0, 0 }, // 58
+  { 30, 31, 0, 0 }, // 59
+  { 36, 37, 0, 0 }, // 60
+  { 36, 37, 0, 0 }, // 61
+  { 36, 37, 0, 0 }, // 62
+  { 36, 37, 0, 0 }, // 63
+  { 36, 37, 0, 0 }, // 64
+  { 38, 39, 0, 0 }, // 65
+  { 44, 45, 0, 0 }, // 66
+  { 43, 44, 0, 0 }, // 67
+  { 24, 25, 0, 0 }, // 68
+  { 43, 44, 0, 0 }, // 69
+  { 24, 25, 0, 0 }, // 70
+  { 45, 46, 0, 0 }, // 71
+  { 24, 25, 0, 0 }, // 72
+  { 24, 25, 0, 0 }, // 73
   { ~0U, ~0U, ~0U, ~0U } // end marker
 };
 
 static const llvm::InstrItinerary G4PlusItineraries[] = {
-  { 9, 10, 0, 0 }, // 0
-  { 34, 35, 0, 0 }, // 1
-  { 34, 35, 0, 0 }, // 2
-  { 34, 35, 0, 0 }, // 3
-  { 29, 30, 0, 0 }, // 4
-  { 40, 41, 0, 0 }, // 5
-  { 41, 42, 0, 0 }, // 6
-  { 29, 30, 0, 0 }, // 7
-  { 29, 30, 0, 0 }, // 8
-  { 42, 43, 0, 0 }, // 9
+  { 53, 54, 0, 0 }, // 0
+  { 54, 55, 0, 0 }, // 1
+  { 54, 55, 0, 0 }, // 2
+  { 54, 55, 0, 0 }, // 3
+  { 48, 49, 0, 0 }, // 4
+  { 61, 62, 0, 0 }, // 5
+  { 62, 63, 0, 0 }, // 6
+  { 48, 49, 0, 0 }, // 7
+  { 48, 49, 0, 0 }, // 8
+  { 63, 64, 0, 0 }, // 9
   { 0, 0, 0, 0 }, // 10
-  { 27, 28, 0, 0 }, // 11
+  { 46, 47, 0, 0 }, // 11
   { 0, 0, 0, 0 }, // 12
-  { 28, 29, 0, 0 }, // 13
-  { 27, 28, 0, 0 }, // 14
-  { 29, 30, 0, 0 }, // 15
-  { 30, 31, 0, 0 }, // 16
-  { 29, 30, 0, 0 }, // 17
+  { 47, 48, 0, 0 }, // 13
+  { 46, 47, 0, 0 }, // 14
+  { 48, 49, 0, 0 }, // 15
+  { 49, 50, 0, 0 }, // 16
+  { 48, 49, 0, 0 }, // 17
   { 0, 0, 0, 0 }, // 18
   { 0, 0, 0, 0 }, // 19
-  { 31, 32, 0, 0 }, // 20
-  { 31, 32, 0, 0 }, // 21
-  { 32, 33, 0, 0 }, // 22
+  { 50, 51, 0, 0 }, // 20
+  { 50, 51, 0, 0 }, // 21
+  { 51, 52, 0, 0 }, // 22
   { 0, 0, 0, 0 }, // 23
-  { 27, 28, 0, 0 }, // 24
+  { 46, 47, 0, 0 }, // 24
   { 0, 0, 0, 0 }, // 25
-  { 33, 34, 0, 0 }, // 26
+  { 52, 53, 0, 0 }, // 26
   { 0, 0, 0, 0 }, // 27
-  { 33, 34, 0, 0 }, // 28
+  { 52, 53, 0, 0 }, // 28
   { 0, 0, 0, 0 }, // 29
-  { 12, 13, 0, 0 }, // 30
-  { 12, 13, 0, 0 }, // 31
-  { 12, 13, 0, 0 }, // 32
-  { 12, 13, 0, 0 }, // 33
-  { 32, 33, 0, 0 }, // 34
+  { 55, 56, 0, 0 }, // 30
+  { 55, 56, 0, 0 }, // 31
+  { 55, 56, 0, 0 }, // 32
+  { 55, 56, 0, 0 }, // 33
+  { 51, 52, 0, 0 }, // 34
   { 0, 0, 0, 0 }, // 35
   { 0, 0, 0, 0 }, // 36
-  { 35, 36, 0, 0 }, // 37
-  { 35, 36, 0, 0 }, // 38
-  { 12, 13, 0, 0 }, // 39
-  { 36, 37, 0, 0 }, // 40
-  { 12, 13, 0, 0 }, // 41
-  { 12, 13, 0, 0 }, // 42
-  { 12, 13, 0, 0 }, // 43
+  { 56, 57, 0, 0 }, // 37
+  { 56, 57, 0, 0 }, // 38
+  { 55, 56, 0, 0 }, // 39
+  { 57, 58, 0, 0 }, // 40
+  { 55, 56, 0, 0 }, // 41
+  { 55, 56, 0, 0 }, // 42
+  { 55, 56, 0, 0 }, // 43
   { 0, 0, 0, 0 }, // 44
   { 0, 0, 0, 0 }, // 45
-  { 12, 13, 0, 0 }, // 46
-  { 12, 13, 0, 0 }, // 47
-  { 12, 13, 0, 0 }, // 48
-  { 12, 13, 0, 0 }, // 49
-  { 37, 38, 0, 0 }, // 50
-  { 12, 13, 0, 0 }, // 51
+  { 55, 56, 0, 0 }, // 46
+  { 55, 56, 0, 0 }, // 47
+  { 55, 56, 0, 0 }, // 48
+  { 55, 56, 0, 0 }, // 49
+  { 58, 59, 0, 0 }, // 50
+  { 55, 56, 0, 0 }, // 51
   { 0, 0, 0, 0 }, // 52
-  { 38, 39, 0, 0 }, // 53
-  { 34, 35, 0, 0 }, // 54
-  { 32, 33, 0, 0 }, // 55
-  { 31, 32, 0, 0 }, // 56
-  { 31, 32, 0, 0 }, // 57
-  { 39, 40, 0, 0 }, // 58
-  { 34, 35, 0, 0 }, // 59
-  { 34, 35, 0, 0 }, // 60
-  { 34, 35, 0, 0 }, // 61
-  { 34, 35, 0, 0 }, // 62
-  { 27, 28, 0, 0 }, // 63
-  { 38, 39, 0, 0 }, // 64
-  { 12, 13, 0, 0 }, // 65
-  { 43, 44, 0, 0 }, // 66
-  { 24, 25, 0, 0 }, // 67
-  { 30, 31, 0, 0 }, // 68
-  { 45, 46, 0, 0 }, // 69
-  { 21, 22, 0, 0 }, // 70
-  { 44, 45, 0, 0 }, // 71
-  { 44, 45, 0, 0 }, // 72
-  { 44, 45, 0, 0 }, // 73
+  { 59, 60, 0, 0 }, // 53
+  { 54, 55, 0, 0 }, // 54
+  { 51, 52, 0, 0 }, // 55
+  { 50, 51, 0, 0 }, // 56
+  { 50, 51, 0, 0 }, // 57
+  { 60, 61, 0, 0 }, // 58
+  { 54, 55, 0, 0 }, // 59
+  { 54, 55, 0, 0 }, // 60
+  { 54, 55, 0, 0 }, // 61
+  { 54, 55, 0, 0 }, // 62
+  { 46, 47, 0, 0 }, // 63
+  { 59, 60, 0, 0 }, // 64
+  { 55, 56, 0, 0 }, // 65
+  { 66, 67, 0, 0 }, // 66
+  { 65, 66, 0, 0 }, // 67
+  { 49, 50, 0, 0 }, // 68
+  { 68, 69, 0, 0 }, // 69
+  { 64, 65, 0, 0 }, // 70
+  { 67, 68, 0, 0 }, // 71
+  { 67, 68, 0, 0 }, // 72
+  { 67, 68, 0, 0 }, // 73
   { ~0U, ~0U, ~0U, ~0U } // end marker
 };
 
 static const llvm::InstrItinerary G5Itineraries[] = {
-  { 9, 10, 0, 0 }, // 0
-  { 56, 57, 0, 0 }, // 1
-  { 57, 58, 0, 0 }, // 2
-  { 58, 59, 0, 0 }, // 3
-  { 65, 66, 0, 0 }, // 4
-  { 66, 67, 0, 0 }, // 5
-  { 66, 67, 0, 0 }, // 6
-  { 51, 52, 0, 0 }, // 7
-  { 51, 52, 0, 0 }, // 8
-  { 51, 52, 0, 0 }, // 9
-  { 67, 68, 0, 0 }, // 10
-  { 46, 47, 0, 0 }, // 11
-  { 47, 48, 0, 0 }, // 12
-  { 48, 49, 0, 0 }, // 13
-  { 8, 9, 0, 0 }, // 14
-  { 49, 50, 0, 0 }, // 15
-  { 50, 51, 0, 0 }, // 16
-  { 51, 52, 0, 0 }, // 17
+  { 81, 82, 0, 0 }, // 0
+  { 82, 83, 0, 0 }, // 1
+  { 83, 84, 0, 0 }, // 2
+  { 84, 85, 0, 0 }, // 3
+  { 98, 99, 0, 0 }, // 4
+  { 99, 100, 0, 0 }, // 5
+  { 99, 100, 0, 0 }, // 6
+  { 75, 76, 0, 0 }, // 7
+  { 75, 76, 0, 0 }, // 8
+  { 75, 76, 0, 0 }, // 9
+  { 100, 101, 0, 0 }, // 10
+  { 70, 71, 0, 0 }, // 11
+  { 71, 72, 0, 0 }, // 12
+  { 72, 73, 0, 0 }, // 13
+  { 69, 70, 0, 0 }, // 14
+  { 73, 74, 0, 0 }, // 15
+  { 74, 75, 0, 0 }, // 16
+  { 75, 76, 0, 0 }, // 17
   { 0, 0, 0, 0 }, // 18
-  { 52, 53, 0, 0 }, // 19
-  { 53, 54, 0, 0 }, // 20
-  { 53, 54, 0, 0 }, // 21
-  { 54, 55, 0, 0 }, // 22
-  { 55, 56, 0, 0 }, // 23
-  { 54, 55, 0, 0 }, // 24
-  { 8, 9, 0, 0 }, // 25
-  { 8, 9, 0, 0 }, // 26
-  { 1, 2, 0, 0 }, // 27
-  { 1, 2, 0, 0 }, // 28
+  { 76, 77, 0, 0 }, // 19
+  { 77, 78, 0, 0 }, // 20
+  { 77, 78, 0, 0 }, // 21
+  { 78, 79, 0, 0 }, // 22
+  { 79, 80, 0, 0 }, // 23
+  { 78, 79, 0, 0 }, // 24
+  { 69, 70, 0, 0 }, // 25
+  { 69, 70, 0, 0 }, // 26
+  { 80, 81, 0, 0 }, // 27
+  { 80, 81, 0, 0 }, // 28
   { 0, 0, 0, 0 }, // 29
-  { 12, 13, 0, 0 }, // 30
+  { 85, 86, 0, 0 }, // 30
   { 0, 0, 0, 0 }, // 31
-  { 59, 60, 0, 0 }, // 32
-  { 12, 13, 0, 0 }, // 33
-  { 60, 61, 0, 0 }, // 34
-  { 12, 13, 0, 0 }, // 35
-  { 61, 62, 0, 0 }, // 36
-  { 12, 13, 0, 0 }, // 37
-  { 22, 23, 0, 0 }, // 38
-  { 22, 23, 0, 0 }, // 39
-  { 62, 63, 0, 0 }, // 40
-  { 12, 13, 0, 0 }, // 41
-  { 22, 23, 0, 0 }, // 42
-  { 61, 62, 0, 0 }, // 43
-  { 60, 61, 0, 0 }, // 44
-  { 11, 12, 0, 0 }, // 45
-  { 12, 13, 0, 0 }, // 46
-  { 61, 62, 0, 0 }, // 47
-  { 22, 23, 0, 0 }, // 48
-  { 61, 62, 0, 0 }, // 49
-  { 37, 38, 0, 0 }, // 50
-  { 35, 36, 0, 0 }, // 51
+  { 86, 87, 0, 0 }, // 32
+  { 85, 86, 0, 0 }, // 33
+  { 87, 88, 0, 0 }, // 34
+  { 85, 86, 0, 0 }, // 35
+  { 89, 90, 0, 0 }, // 36
+  { 85, 86, 0, 0 }, // 37
+  { 90, 91, 0, 0 }, // 38
+  { 90, 91, 0, 0 }, // 39
+  { 91, 92, 0, 0 }, // 40
+  { 85, 86, 0, 0 }, // 41
+  { 90, 91, 0, 0 }, // 42
+  { 89, 90, 0, 0 }, // 43
+  { 87, 88, 0, 0 }, // 44
+  { 92, 93, 0, 0 }, // 45
+  { 85, 86, 0, 0 }, // 46
+  { 89, 90, 0, 0 }, // 47
+  { 90, 91, 0, 0 }, // 48
+  { 89, 90, 0, 0 }, // 49
+  { 93, 94, 0, 0 }, // 50
+  { 88, 89, 0, 0 }, // 51
   { 0, 0, 0, 0 }, // 52
-  { 60, 61, 0, 0 }, // 53
-  { 34, 35, 0, 0 }, // 54
-  { 32, 33, 0, 0 }, // 55
-  { 32, 33, 0, 0 }, // 56
-  { 12, 13, 0, 0 }, // 57
-  { 63, 64, 0, 0 }, // 58
-  { 12, 13, 0, 0 }, // 59
-  { 64, 65, 0, 0 }, // 60
-  { 12, 13, 0, 0 }, // 61
+  { 87, 88, 0, 0 }, // 53
+  { 94, 95, 0, 0 }, // 54
+  { 95, 96, 0, 0 }, // 55
+  { 95, 96, 0, 0 }, // 56
+  { 85, 86, 0, 0 }, // 57
+  { 96, 97, 0, 0 }, // 58
+  { 85, 86, 0, 0 }, // 59
+  { 97, 98, 0, 0 }, // 60
+  { 85, 86, 0, 0 }, // 61
   { 0, 0, 0, 0 }, // 62
   { 0, 0, 0, 0 }, // 63
-  { 55, 56, 0, 0 }, // 64
-  { 12, 13, 0, 0 }, // 65
-  { 70, 71, 0, 0 }, // 66
-  { 69, 70, 0, 0 }, // 67
-  { 30, 31, 0, 0 }, // 68
-  { 69, 70, 0, 0 }, // 69
-  { 68, 69, 0, 0 }, // 70
-  { 71, 72, 0, 0 }, // 71
-  { 68, 69, 0, 0 }, // 72
-  { 71, 72, 0, 0 }, // 73
+  { 79, 80, 0, 0 }, // 64
+  { 85, 86, 0, 0 }, // 65
+  { 104, 105, 0, 0 }, // 66
+  { 102, 103, 0, 0 }, // 67
+  { 103, 104, 0, 0 }, // 68
+  { 102, 103, 0, 0 }, // 69
+  { 101, 102, 0, 0 }, // 70
+  { 105, 106, 0, 0 }, // 71
+  { 101, 102, 0, 0 }, // 72
+  { 105, 106, 0, 0 }, // 73
   { ~0U, ~0U, ~0U, ~0U } // end marker
 };
 
@@ -526,15 +598,15 @@ std::string llvm::PPCSubtarget::ParseSubtargetFeatures(const std::string &FS,
   uint32_t Bits =  Features.getBits(SubTypeKV, SubTypeKVSize,
                                     FeatureKV, FeatureKVSize);
   if ((Bits & Directive32) != 0 && DarwinDirective < PPC::DIR_32) DarwinDirective = PPC::DIR_32;
+  if ((Bits & Directive64) != 0 && DarwinDirective < PPC::DIR_64) DarwinDirective = PPC::DIR_64;
   if ((Bits & Directive601) != 0 && DarwinDirective < PPC::DIR_601) DarwinDirective = PPC::DIR_601;
   if ((Bits & Directive602) != 0 && DarwinDirective < PPC::DIR_602) DarwinDirective = PPC::DIR_602;
   if ((Bits & Directive603) != 0 && DarwinDirective < PPC::DIR_603) DarwinDirective = PPC::DIR_603;
   if ((Bits & Directive604) != 0 && DarwinDirective < PPC::DIR_603) DarwinDirective = PPC::DIR_603;
   if ((Bits & Directive620) != 0 && DarwinDirective < PPC::DIR_603) DarwinDirective = PPC::DIR_603;
-  if ((Bits & Directive64) != 0 && DarwinDirective < PPC::DIR_64) DarwinDirective = PPC::DIR_64;
-  if ((Bits & Directive7400) != 0 && DarwinDirective < PPC::DIR_7400) DarwinDirective = PPC::DIR_7400;
   if ((Bits & Directive750) != 0 && DarwinDirective < PPC::DIR_750) DarwinDirective = PPC::DIR_750;
   if ((Bits & Directive970) != 0 && DarwinDirective < PPC::DIR_970) DarwinDirective = PPC::DIR_970;
+  if ((Bits & Directive7400) != 0 && DarwinDirective < PPC::DIR_7400) DarwinDirective = PPC::DIR_7400;
   if ((Bits & Feature64Bit) != 0) Has64BitSupport = true;
   if ((Bits & Feature64BitRegs) != 0) Use64BitRegs = true;
   if ((Bits & FeatureAltivec) != 0) HasAltivec = true;

@@ -20,6 +20,8 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     0U,
     0U,
     0U,
+    0U,
+    0U,
     2080375316U,	// ADD4
     2080375316U,	// ADD8
     2080374804U,	// ADDC
@@ -156,7 +158,6 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     4227858490U,	// FMADD
     3959423034U,	// FMADDS
     4227858576U,	// FMR
-    4227858576U,	// FMRSD
     4227858488U,	// FMSUB
     3959423032U,	// FMSUBS
     4227858482U,	// FMUL
@@ -231,7 +232,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     2080374830U,	// LWZX
     2080374830U,	// LWZX8
     1275068416U,	// MCRF
-    2080374822U,	// MFCR
+    2080374822U,	// MFCRpseud
     2080965286U,	// MFCTR
     2080965286U,	// MFCTR8
     4227859598U,	// MFFS
@@ -1153,7 +1154,6 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     case PPC::FCTIDZ:
     case PPC::FCTIWZ:
     case PPC::FMR:
-    case PPC::FMRSD:
     case PPC::FNABSD:
     case PPC::FNABSS:
     case PPC::FNEGD:
@@ -1209,7 +1209,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
       Value |= (op & 31U) << 16;
       break;
     }
-    case PPC::MFCR:
+    case PPC::MFCRpseud:
     case PPC::MFCTR:
     case PPC::MFCTR8:
     case PPC::MFLR:
@@ -1557,7 +1557,7 @@ unsigned PPCCodeEmitter::getBinaryCodeForInstr(const MachineInstr &MI) {
     std::string msg;
     raw_string_ostream Msg(msg);
     Msg << "Not supported instr: " << MI;
-    llvm_report_error(Msg.str());
+    report_fatal_error(Msg.str());
   }
   return Value;
 }

@@ -19,29 +19,31 @@ struct X86GenRegisterInfo : public TargetRegisterInfo {
      { return false; }
   unsigned getSubReg(unsigned RegNo, unsigned Index) const;
   unsigned getSubRegIndex(unsigned RegNo, unsigned SubRegNo) const;
+  unsigned composeSubRegIndices(unsigned, unsigned) const;
 };
 
 namespace X86 { // Register classes
   enum {
-    CCRRegClassID = 1,
-    CONTROL_REG_32RegClassID = 2,
-    CONTROL_REG_64RegClassID = 3,
-    DEBUG_REGRegClassID = 4,
-    FR32RegClassID = 5,
-    FR64RegClassID = 6,
-    GR16RegClassID = 7,
-    GR16_ABCDRegClassID = 8,
-    GR16_NOREXRegClassID = 9,
-    GR32RegClassID = 10,
-    GR32_ABCDRegClassID = 11,
-    GR32_ADRegClassID = 12,
-    GR32_NOREXRegClassID = 13,
-    GR32_NOSPRegClassID = 14,
-    GR64RegClassID = 15,
-    GR64_ABCDRegClassID = 16,
-    GR64_NOREXRegClassID = 17,
-    GR64_NOREX_NOSPRegClassID = 18,
-    GR64_NOSPRegClassID = 19,
+    CCRRegClassID = 0,
+    CONTROL_REGRegClassID = 1,
+    DEBUG_REGRegClassID = 2,
+    FR32RegClassID = 3,
+    FR64RegClassID = 4,
+    GR16RegClassID = 5,
+    GR16_ABCDRegClassID = 6,
+    GR16_NOREXRegClassID = 7,
+    GR32RegClassID = 8,
+    GR32_ABCDRegClassID = 9,
+    GR32_ADRegClassID = 10,
+    GR32_NOREXRegClassID = 11,
+    GR32_NOSPRegClassID = 12,
+    GR32_TCRegClassID = 13,
+    GR64RegClassID = 14,
+    GR64_ABCDRegClassID = 15,
+    GR64_NOREXRegClassID = 16,
+    GR64_NOREX_NOSPRegClassID = 17,
+    GR64_NOSPRegClassID = 18,
+    GR64_TCRegClassID = 19,
     GR8RegClassID = 20,
     GR8_ABCD_HRegClassID = 21,
     GR8_ABCD_LRegClassID = 22,
@@ -58,19 +60,16 @@ namespace X86 { // Register classes
 
   struct CCRClass : public TargetRegisterClass {
     CCRClass();
-  };
+
+    iterator allocation_order_end(const MachineFunction &MF) const;
+    };
   extern CCRClass	CCRRegClass;
   static TargetRegisterClass * const CCRRegisterClass = &CCRRegClass;
-  struct CONTROL_REG_32Class : public TargetRegisterClass {
-    CONTROL_REG_32Class();
+  struct CONTROL_REGClass : public TargetRegisterClass {
+    CONTROL_REGClass();
   };
-  extern CONTROL_REG_32Class	CONTROL_REG_32RegClass;
-  static TargetRegisterClass * const CONTROL_REG_32RegisterClass = &CONTROL_REG_32RegClass;
-  struct CONTROL_REG_64Class : public TargetRegisterClass {
-    CONTROL_REG_64Class();
-  };
-  extern CONTROL_REG_64Class	CONTROL_REG_64RegClass;
-  static TargetRegisterClass * const CONTROL_REG_64RegisterClass = &CONTROL_REG_64RegClass;
+  extern CONTROL_REGClass	CONTROL_REGRegClass;
+  static TargetRegisterClass * const CONTROL_REGRegisterClass = &CONTROL_REGRegClass;
   struct DEBUG_REGClass : public TargetRegisterClass {
     DEBUG_REGClass();
   };
@@ -143,6 +142,11 @@ namespace X86 { // Register classes
     };
   extern GR32_NOSPClass	GR32_NOSPRegClass;
   static TargetRegisterClass * const GR32_NOSPRegisterClass = &GR32_NOSPRegClass;
+  struct GR32_TCClass : public TargetRegisterClass {
+    GR32_TCClass();
+  };
+  extern GR32_TCClass	GR32_TCRegClass;
+  static TargetRegisterClass * const GR32_TCRegisterClass = &GR32_TCRegClass;
   struct GR64Class : public TargetRegisterClass {
     GR64Class();
 
@@ -176,6 +180,11 @@ namespace X86 { // Register classes
     };
   extern GR64_NOSPClass	GR64_NOSPRegClass;
   static TargetRegisterClass * const GR64_NOSPRegisterClass = &GR64_NOSPRegClass;
+  struct GR64_TCClass : public TargetRegisterClass {
+    GR64_TCClass();
+  };
+  extern GR64_TCClass	GR64_TCRegClass;
+  static TargetRegisterClass * const GR64_TCRegisterClass = &GR64_TCRegClass;
   struct GR8Class : public TargetRegisterClass {
     GR8Class();
 
@@ -238,7 +247,9 @@ namespace X86 { // Register classes
   static TargetRegisterClass * const VR128RegisterClass = &VR128RegClass;
   struct VR256Class : public TargetRegisterClass {
     VR256Class();
-  };
+
+    iterator allocation_order_end(const MachineFunction &MF) const;
+    };
   extern VR256Class	VR256RegClass;
   static TargetRegisterClass * const VR256RegisterClass = &VR256RegClass;
   struct VR64Class : public TargetRegisterClass {
