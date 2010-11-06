@@ -6266,7 +6266,7 @@ uninstall-am:
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/mklib llvm/tools/llvmc/llvm-config.in
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/Makefile.config llvm/config.log
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
-@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/Config/Disassemblers.def
+@BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/Config/Disassemblers.def llvm/include/llvm/Config/llvm-config.h
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/System/DataTypes.h llvm/include/llvm/Config/Targets.def
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
 @BUILD_EXTERNAL_LLVM_FALSE@	rm -f llvm/include/llvm/Config/AsmParsers.def
