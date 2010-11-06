@@ -21,55 +21,6 @@ using namespace llvm;
 // DAGISelEmitter Helper methods
 //
 
-/// getPatternSize - Return the 'size' of this pattern.  We want to match large
-/// patterns before small ones.  This is used to determine the size of a
-/// pattern.
-static unsigned getPatternSize(TreePatternNode *P, CodeGenDAGPatterns &CGP) {
-  assert((EEVT::isExtIntegerInVTs(P->getExtTypes()) ||
-          EEVT::isExtFloatingPointInVTs(P->getExtTypes()) ||
-          P->getExtTypeNum(0) == MVT::isVoid ||
-          P->getExtTypeNum(0) == MVT::Flag ||
-          P->getExtTypeNum(0) == MVT::iPTR ||
-          P->getExtTypeNum(0) == MVT::iPTRAny) && 
-         "Not a valid pattern node to size!");
-  unsigned Size = 3;  // The node itself.
-  // If the root node is a ConstantSDNode, increases its size.
-  // e.g. (set R32:$dst, 0).
-  if (P->isLeaf() && dynamic_cast<IntInit*>(P->getLeafValue()))
-    Size += 2;
-
-  // FIXME: This is a hack to statically increase the priority of patterns
-  // which maps a sub-dag to a complex pattern. e.g. favors LEA over ADD.
-  // Later we can allow complexity / cost for each pattern to be (optionally)
-  // specified. To get best possible pattern match we'll need to dynamically
-  // calculate the complexity of all patterns a dag can potentially map to.
-  const ComplexPattern *AM = P->getComplexPatternInfo(CGP);
-  if (AM)
-    Size += AM->getNumOperands() * 3;
-
-  // If this node has some predicate function that must match, it adds to the
-  // complexity of this node.
-  if (!P->getPredicateFns().empty())
-    ++Size;
-  
-  // Count children in the count if they are also nodes.
-  for (unsigned i = 0, e = P->getNumChildren(); i != e; ++i) {
-    TreePatternNode *Child = P->getChild(i);
-    if (!Child->isLeaf() && Child->getExtTypeNum(0) != MVT::Other)
-      Size += getPatternSize(Child, CGP);
-    else if (Child->isLeaf()) {
-      if (dynamic_cast<IntInit*>(Child->getLeafValue())) 
-        Size += 5;  // Matches a ConstantSDNode (+3) and a specific value (+2).
-      else if (Child->getComplexPatternInfo(CGP))
-        Size += getPatternSize(Child, CGP);
-      else if (!Child->getPredicateFns().empty())
-        ++Size;
-    }
-  }
-  
-  return Size;
-}
-
 /// getResultPatternCost - Compute the number of instructions for this pattern.
 /// This is a temporary hack.  We should really include the instruction
 /// latencies in this calculation.
@@ -81,7 +32,7 @@ static unsigned getResultPatternCost(TreePatternNode *P,
   Record *Op = P->getOperator();
   if (Op->isSubClassOf("Instruction")) {
     Cost++;
-    CodeGenInstruction &II = CGP.getTargetInfo().getInstruction(Op->getName());
+    CodeGenInstruction &II = CGP.getTargetInfo().getInstruction(Op);
     if (II.usesCustomInserter)
       Cost += 10;
   }
@@ -106,51 +57,6 @@ static unsigned getResultPatternSize(TreePatternNode *P,
   return Cost;
 }
 
-//===----------------------------------------------------------------------===//
-// Predicate emitter implementation.
-//
-
-void DAGISelEmitter::EmitPredicateFunctions(raw_ostream &OS) {
-  OS << "\n// Predicate functions.\n";
-
-  // Walk the pattern fragments, adding them to a map, which sorts them by
-  // name.
-  typedef std::map<std::string, std::pair<Record*, TreePattern*> > PFsByNameTy;
-  PFsByNameTy PFsByName;
-
-  for (CodeGenDAGPatterns::pf_iterator I = CGP.pf_begin(), E = CGP.pf_end();
-       I != E; ++I)
-    PFsByName.insert(std::make_pair(I->first->getName(), *I));
-
-  
-  for (PFsByNameTy::iterator I = PFsByName.begin(), E = PFsByName.end();
-       I != E; ++I) {
-    Record *PatFragRecord = I->second.first;// Record that derives from PatFrag.
-    TreePattern *P = I->second.second;
-    
-    // If there is a code init for this fragment, emit the predicate code.
-    std::string Code = PatFragRecord->getValueAsCode("Predicate");
-    if (Code.empty()) continue;
-    
-    if (P->getOnlyTree()->isLeaf())
-      OS << "inline bool Predicate_" << PatFragRecord->getName()
-      << "(SDNode *N) const {\n";
-    else {
-      std::string ClassName =
-        CGP.getSDNodeInfo(P->getOnlyTree()->getOperator()).getSDClassName();
-      const char *C2 = ClassName == "SDNode" ? "N" : "inN";
-      
-      OS << "inline bool Predicate_" << PatFragRecord->getName()
-         << "(SDNode *" << C2 << ") const {\n";
-      if (ClassName != "SDNode")
-        OS << "  " << ClassName << " *N = cast<" << ClassName << ">(inN);\n";
-    }
-    OS << Code << "\n}\n";
-  }
-  
-  OS << "\n\n";
-}
-
 namespace {
 // PatternSortingPredicate - return true if we prefer to match LHS before RHS.
 // In particular, we want to match maximal patterns first and lowest cost within
@@ -159,12 +65,25 @@ struct PatternSortingPredicate {
   PatternSortingPredicate(CodeGenDAGPatterns &cgp) : CGP(cgp) {}
   CodeGenDAGPatterns &CGP;
   
-  bool operator()(const PatternToMatch *LHS,
-                  const PatternToMatch *RHS) {
-    unsigned LHSSize = getPatternSize(LHS->getSrcPattern(), CGP);
-    unsigned RHSSize = getPatternSize(RHS->getSrcPattern(), CGP);
-    LHSSize += LHS->getAddedComplexity();
-    RHSSize += RHS->getAddedComplexity();
+  bool operator()(const PatternToMatch *LHS, const PatternToMatch *RHS) {
+    const TreePatternNode *LHSSrc = LHS->getSrcPattern();
+    const TreePatternNode *RHSSrc = RHS->getSrcPattern();
+    
+    if (LHSSrc->getNumTypes() != 0 && RHSSrc->getNumTypes() != 0 &&
+        LHSSrc->getType(0) != RHSSrc->getType(0)) {
+      MVT::SimpleValueType V1 = LHSSrc->getType(0), V2 = RHSSrc->getType(0);
+      if (MVT(V1).isVector() != MVT(V2).isVector())
+        return MVT(V2).isVector();
+      
+      if (MVT(V1).isFloatingPoint() != MVT(V2).isFloatingPoint())
+        return MVT(V2).isFloatingPoint();
+    }
+    
+    // Otherwise, if the patterns might both match, sort based on complexity,
+    // which means that we prefer to match patterns that cover more nodes in the
+    // input over nodes that cover fewer.
+    unsigned LHSSize = LHS->getPatternComplexity(CGP);
+    unsigned RHSSize = RHS->getPatternComplexity(CGP);
     if (LHSSize > RHSSize) return true;   // LHS -> bigger -> less cost
     if (LHSSize < RHSSize) return false;
     
@@ -179,7 +98,8 @@ struct PatternSortingPredicate {
     if (LHSPatSize < RHSPatSize) return true;
     if (LHSPatSize > RHSPatSize) return false;
     
-    // Sort based on the UID of the pattern, giving us a deterministic ordering.
+    // Sort based on the UID of the pattern, giving us a deterministic ordering
+    // if all other sorting conditions fail.
     assert(LHS == RHS || LHS->ID != RHS->ID);
     return LHS->ID < RHS->ID;
   }
@@ -203,9 +123,6 @@ void DAGISelEmitter::run(raw_ostream &OS) {
           errs() << "\n";
         });
 
-  // FIXME: These are being used by hand written code, gross.
-  EmitPredicateFunctions(OS);
-
   // Add all the patterns to a temporary list so we can sort them.
   std::vector<const PatternToMatch*> Patterns;
   for (CodeGenDAGPatterns::ptm_iterator I = CGP.ptm_begin(), E = CGP.ptm_end();
@@ -214,8 +131,7 @@ void DAGISelEmitter::run(raw_ostream &OS) {
 
   // We want to process the matches in order of minimal cost.  Sort the patterns
   // so the least cost one is at the start.
-  std::stable_sort(Patterns.begin(), Patterns.end(),
-                   PatternSortingPredicate(CGP));
+  std::sort(Patterns.begin(), Patterns.end(), PatternSortingPredicate(CGP));
   
   
   // Convert each variant of each pattern into a Matcher.

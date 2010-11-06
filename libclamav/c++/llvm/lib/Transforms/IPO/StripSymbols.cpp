@@ -39,7 +39,7 @@ namespace {
   public:
     static char ID; // Pass identification, replacement for typeid
     explicit StripSymbols(bool ODI = false) 
-      : ModulePass(&ID), OnlyDebugInfo(ODI) {}
+      : ModulePass(ID), OnlyDebugInfo(ODI) {}
 
     virtual bool runOnModule(Module &M);
 
@@ -52,7 +52,7 @@ namespace {
   public:
     static char ID; // Pass identification, replacement for typeid
     explicit StripNonDebugSymbols()
-      : ModulePass(&ID) {}
+      : ModulePass(ID) {}
 
     virtual bool runOnModule(Module &M);
 
@@ -65,7 +65,20 @@ namespace {
   public:
     static char ID; // Pass identification, replacement for typeid
     explicit StripDebugDeclare()
-      : ModulePass(&ID) {}
+      : ModulePass(ID) {}
+
+    virtual bool runOnModule(Module &M);
+
+    virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+      AU.setPreservesAll();
+    }
+  };
+
+  class StripDeadDebugInfo : public ModulePass {
+  public:
+    static char ID; // Pass identification, replacement for typeid
+    explicit StripDeadDebugInfo()
+      : ModulePass(ID) {}
 
     virtual bool runOnModule(Module &M);
 
@@ -76,27 +89,36 @@ namespace {
 }
 
 char StripSymbols::ID = 0;
-static RegisterPass<StripSymbols>
-X("strip", "Strip all symbols from a module");
+INITIALIZE_PASS(StripSymbols, "strip",
+                "Strip all symbols from a module", false, false);
 
 ModulePass *llvm::createStripSymbolsPass(bool OnlyDebugInfo) {
   return new StripSymbols(OnlyDebugInfo);
 }
 
 char StripNonDebugSymbols::ID = 0;
-static RegisterPass<StripNonDebugSymbols>
-Y("strip-nondebug", "Strip all symbols, except dbg symbols, from a module");
+INITIALIZE_PASS(StripNonDebugSymbols, "strip-nondebug",
+                "Strip all symbols, except dbg symbols, from a module",
+                false, false);
 
 ModulePass *llvm::createStripNonDebugSymbolsPass() {
   return new StripNonDebugSymbols();
 }
 
 char StripDebugDeclare::ID = 0;
-static RegisterPass<StripDebugDeclare>
-Z("strip-debug-declare", "Strip all llvm.dbg.declare intrinsics");
+INITIALIZE_PASS(StripDebugDeclare, "strip-debug-declare",
+                "Strip all llvm.dbg.declare intrinsics", false, false);
 
 ModulePass *llvm::createStripDebugDeclarePass() {
   return new StripDebugDeclare();
+}
+
+char StripDeadDebugInfo::ID = 0;
+INITIALIZE_PASS(StripDeadDebugInfo, "strip-dead-debug-info",
+                "Strip debug info for unused symbols", false, false);
+
+ModulePass *llvm::createStripDeadDebugInfoPass() {
+  return new StripDeadDebugInfo();
 }
 
 /// OnlyUsedBy - Return true if V is only used by Usr.
@@ -223,21 +245,28 @@ static bool StripDebugInfo(Module &M) {
     Changed = true;
   }
 
-  NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.gv");
-  if (NMD) {
-    Changed = true;
-    NMD->eraseFromParent();
+  for (Module::named_metadata_iterator NMI = M.named_metadata_begin(),
+         NME = M.named_metadata_end(); NMI != NME;) {
+    NamedMDNode *NMD = NMI;
+    ++NMI;
+    if (NMD->getName().startswith("llvm.dbg.")) {
+      NMD->eraseFromParent();
+      Changed = true;
+    }
   }
-  
-  unsigned MDDbgKind = M.getMDKindID("dbg");
-  for (Module::iterator MI = M.begin(), ME = M.end(); MI != ME; ++MI) 
+
+  for (Module::iterator MI = M.begin(), ME = M.end(); MI != ME; ++MI)
     for (Function::iterator FI = MI->begin(), FE = MI->end(); FI != FE;
          ++FI)
       for (BasicBlock::iterator BI = FI->begin(), BE = FI->end(); BI != BE;
-           ++BI) 
-        BI->setMetadata(MDDbgKind, 0);
+           ++BI) {
+        if (!BI->getDebugLoc().isUnknown()) {
+          Changed = true;
+          BI->setDebugLoc(DebugLoc());
+        }
+      }
 
-  return true;
+  return Changed;
 }
 
 bool StripSymbols::runOnModule(Module &M) {
@@ -260,8 +289,8 @@ bool StripDebugDeclare::runOnModule(Module &M) {
   if (Declare) {
     while (!Declare->use_empty()) {
       CallInst *CI = cast<CallInst>(Declare->use_back());
-      Value *Arg1 = CI->getOperand(1);
-      Value *Arg2 = CI->getOperand(2);
+      Value *Arg1 = CI->getArgOperand(0);
+      Value *Arg2 = CI->getArgOperand(1);
       assert(CI->use_empty() && "llvm.dbg intrinsic should have void result");
       CI->eraseFromParent();
       if (Arg1->use_empty()) {
@@ -288,4 +317,84 @@ bool StripDebugDeclare::runOnModule(Module &M) {
   }
 
   return true;
+}
+
+/// getRealLinkageName - If special LLVM prefix that is used to inform the asm 
+/// printer to not emit usual symbol prefix before the symbol name is used then
+/// return linkage name after skipping this special LLVM prefix.
+static StringRef getRealLinkageName(StringRef LinkageName) {
+  char One = '\1';
+  if (LinkageName.startswith(StringRef(&One, 1)))
+    return LinkageName.substr(1);
+  return LinkageName;
+}
+
+bool StripDeadDebugInfo::runOnModule(Module &M) {
+  bool Changed = false;
+
+  // Debugging infomration is encoded in llvm IR using metadata. This is designed
+  // such a way that debug info for symbols preserved even if symbols are
+  // optimized away by the optimizer. This special pass removes debug info for 
+  // such symbols.
+
+  // llvm.dbg.gv keeps track of debug info for global variables.
+  if (NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.gv")) {
+    SmallVector<MDNode *, 8> MDs;
+    for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i)
+      if (DIGlobalVariable(NMD->getOperand(i)).Verify())
+        MDs.push_back(NMD->getOperand(i));
+      else
+        Changed = true;
+    NMD->eraseFromParent();
+    NMD = NULL;
+
+    for (SmallVector<MDNode *, 8>::iterator I = MDs.begin(),
+           E = MDs.end(); I != E; ++I) {
+      GlobalVariable *GV = DIGlobalVariable(*I).getGlobal();
+      if (GV && M.getGlobalVariable(GV->getName(), true)) {
+        if (!NMD)
+          NMD = M.getOrInsertNamedMetadata("llvm.dbg.gv");
+        NMD->addOperand(*I);
+      }
+      else
+        Changed = true;
+    }
+  }
+
+  // llvm.dbg.sp keeps track of debug info for subprograms.
+  if (NamedMDNode *NMD = M.getNamedMetadata("llvm.dbg.sp")) {
+    SmallVector<MDNode *, 8> MDs;
+    for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i)
+      if (DISubprogram(NMD->getOperand(i)).Verify())
+        MDs.push_back(NMD->getOperand(i));
+      else
+        Changed = true;
+    NMD->eraseFromParent();
+    NMD = NULL;
+
+    for (SmallVector<MDNode *, 8>::iterator I = MDs.begin(),
+           E = MDs.end(); I != E; ++I) {
+      bool FnIsLive = false;
+      if (Function *F = DISubprogram(*I).getFunction())
+        if (M.getFunction(F->getName()))
+          FnIsLive = true;
+      if (FnIsLive) {
+          if (!NMD)
+            NMD = M.getOrInsertNamedMetadata("llvm.dbg.sp");
+          NMD->addOperand(*I);
+      } else {
+        // Remove llvm.dbg.lv.fnname named mdnode which may have been used
+        // to hold debug info for dead function's local variables.
+        StringRef FName = DISubprogram(*I).getLinkageName();
+        if (FName.empty())
+          FName = DISubprogram(*I).getName();
+        if (NamedMDNode *LVNMD = 
+            M.getNamedMetadata(Twine("llvm.dbg.lv.", 
+                                     getRealLinkageName(FName)))) 
+          LVNMD->eraseFromParent();
+      }
+    }
+  }
+
+  return Changed;
 }

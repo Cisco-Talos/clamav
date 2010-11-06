@@ -39,14 +39,18 @@ ifndef PROJECT_NAME
 PROJECT_NAME := $(LLVMPackageName)
 endif
 
-PROJ_OBJ_DIR  := $(shell $(PWD))
-PROJ_OBJ_ROOT := $(shell cd $(PROJ_OBJ_DIR)/$(LEVEL); $(PWD))
+# The macro below is expanded when 'realpath' is not built-in.
+# Built-in 'realpath' is available on GNU Make 3.81.
+realpath = $(shell cd $(1); $(PWD))
+
+PROJ_OBJ_DIR  := $(call realpath, .)
+PROJ_OBJ_ROOT := $(call realpath, $(PROJ_OBJ_DIR)/$(LEVEL))
 
 ifeq ($(PROJECT_NAME),llvm)
-LLVM_SRC_ROOT   := $(shell cd @abs_top_srcdir@; $(PWD))
-LLVM_OBJ_ROOT   := $(shell cd @abs_top_builddir@; $(PWD))
-PROJ_SRC_ROOT   := $(shell cd $(LLVM_SRC_ROOT); $(PWD))
-PROJ_SRC_DIR    := $(shell cd $(LLVM_SRC_ROOT)/$(patsubst $(PROJ_OBJ_ROOT)%,%,$(PROJ_OBJ_DIR)); $(PWD))
+LLVM_SRC_ROOT   := $(call realpath, @abs_top_srcdir@)
+LLVM_OBJ_ROOT   := $(call realpath, @abs_top_builddir@)
+PROJ_SRC_ROOT   := $(LLVM_SRC_ROOT)
+PROJ_SRC_DIR    := $(call realpath, $(LLVM_SRC_ROOT)/$(patsubst $(PROJ_OBJ_ROOT)%,%,$(PROJ_OBJ_DIR)))
 prefix          := @prefix@
 PROJ_prefix     := $(prefix)
 PROJ_VERSION    := $(LLVMVersion)
@@ -66,7 +70,7 @@ endif
 ifndef LLVM_OBJ_ROOT
 $(error Projects must define LLVM_OBJ_ROOT)
 endif
-PROJ_SRC_DIR := $(shell cd $(PROJ_SRC_ROOT)/$(patsubst $(PROJ_OBJ_ROOT)%,%,$(PROJ_OBJ_DIR)); $(PWD))
+PROJ_SRC_DIR := $(call realpath, $(PROJ_SRC_ROOT)/$(patsubst $(PROJ_OBJ_ROOT)%,%,$(PROJ_OBJ_DIR)))
 prefix          := $(PROJ_INSTALL_ROOT)
 PROJ_prefix     := $(prefix)
 ifndef PROJ_VERSION
@@ -156,6 +160,7 @@ TAR        := @TAR@
 # Paths to miscellaneous programs we hope are present but might not be
 PERL       := @PERL@
 BZIP2      := @BZIP2@
+CAT        := @CAT@
 DOT        := @DOT@
 DOXYGEN    := @DOXYGEN@
 GROFF      := @GROFF@
@@ -167,6 +172,7 @@ OCAMLDOC   := @OCAMLDOC@
 GAS        := @GAS@
 POD2HTML   := @POD2HTML@
 POD2MAN    := @POD2MAN@
+PDFROFF    := @PDFROFF@
 RUNTEST    := @RUNTEST@
 TCLSH      := @TCLSH@
 ZIP        := @ZIP@
@@ -220,8 +226,8 @@ RDYNAMIC := @RDYNAMIC@
 
 # When ENABLE_PROFILING is enabled, profile instrumentation is done
 # and output is put into the "<Flavor>+Profile" directories, where
-# <Flavor> is either Debug or Release depending on how other builkd
-# flags are set.. Otherwise, output is put in the <Flavor>
+# <Flavor> is either Debug or Release depending on how other build
+# flags are set. Otherwise, output is put in the <Flavor>
 # directories.
 #ENABLE_PROFILING = 1
 @ENABLE_PROFILING@
@@ -267,6 +273,9 @@ ENABLE_SHARED := @ENABLE_SHARED@
 
 # Use -fvisibility-inlines-hidden?
 ENABLE_VISIBILITY_INLINES_HIDDEN := @ENABLE_VISIBILITY_INLINES_HIDDEN@
+
+# Do we want to allow timestamping information into builds?
+ENABLE_TIMESTAMPS := @ENABLE_TIMESTAMPS@
 
 # This option tells the Makefiles to produce verbose output.
 # It essentially prints the commands that make is executing
@@ -315,12 +324,6 @@ endif
 # Location of the plugin header file for gold.
 BINUTILS_INCDIR := @BINUTILS_INCDIR@
 
-C_INCLUDE_DIRS := @C_INCLUDE_DIRS@
-CXX_INCLUDE_ROOT := @CXX_INCLUDE_ROOT@
-CXX_INCLUDE_ARCH := @CXX_INCLUDE_ARCH@
-CXX_INCLUDE_32BIT_DIR = @CXX_INCLUDE_32BIT_DIR@
-CXX_INCLUDE_64BIT_DIR = @CXX_INCLUDE_64BIT_DIR@
-
 # When ENABLE_LLVMC_DYNAMIC is enabled, LLVMC will link libCompilerDriver
 # dynamically. This is needed to make dynamic plugins work on some targets
 # (Windows).
@@ -337,3 +340,7 @@ ENABLE_LLVMC_DYNAMIC_PLUGINS = 1
 NO_MISSING_FIELD_INITIALIZERS = @NO_MISSING_FIELD_INITIALIZERS@
 # -Wno-variadic-macros
 NO_VARIADIC_MACROS = @NO_VARIADIC_MACROS@
+
+# Flags supported by the linker.
+# bfd ld / gold --version-script=file
+HAVE_LINK_VERSION_SCRIPT = @HAVE_LINK_VERSION_SCRIPT@

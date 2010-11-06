@@ -32,8 +32,8 @@ namespace llvm {
 /// involves promoting small sizes to large sizes or splitting up large values
 /// into small values.
 ///
-class VISIBILITY_HIDDEN DAGTypeLegalizer {
-  TargetLowering &TLI;
+class LLVM_LIBRARY_VISIBILITY DAGTypeLegalizer {
+  const TargetLowering &TLI;
   SelectionDAG &DAG;
 public:
   // NodeIdFlags - This pass uses the NodeId on the SDNodes to hold information
@@ -75,7 +75,7 @@ private:
 
   /// getTypeAction - Return how we should legalize values of this type.
   LegalizeAction getTypeAction(EVT VT) const {
-    switch (ValueTypeActions.getTypeAction(*DAG.getContext(), VT)) {
+    switch (ValueTypeActions.getTypeAction(VT)) {
     default:
       assert(false && "Unknown legalize action!");
     case TargetLowering::Legal:
@@ -86,8 +86,7 @@ private:
       //   2) For vectors, use a wider vector type (e.g. v3i32 -> v4i32).
       if (!VT.isVector())
         return PromoteInteger;
-      else
-        return WidenVector;
+      return WidenVector;
     case TargetLowering::Expand:
       // Expand can mean
       // 1) split scalar in half, 2) convert a float to an integer,
@@ -95,23 +94,21 @@ private:
       if (!VT.isVector()) {
         if (VT.isInteger())
           return ExpandInteger;
-        else if (VT.getSizeInBits() ==
-                 TLI.getTypeToTransformTo(*DAG.getContext(), VT).getSizeInBits())
+        if (VT.getSizeInBits() ==
+                TLI.getTypeToTransformTo(*DAG.getContext(), VT).getSizeInBits())
           return SoftenFloat;
-        else
-          return ExpandFloat;
-      } else if (VT.getVectorNumElements() == 1) {
-        return ScalarizeVector;
-      } else {
-        return SplitVector;
+        return ExpandFloat;
       }
+        
+      if (VT.getVectorNumElements() == 1)
+        return ScalarizeVector;
+      return SplitVector;
     }
   }
 
   /// isTypeLegal - Return true if this type is legal on this target.
   bool isTypeLegal(EVT VT) const {
-    return (ValueTypeActions.getTypeAction(*DAG.getContext(), VT) == 
-            TargetLowering::Legal);
+    return ValueTypeActions.getTypeAction(VT) == TargetLowering::Legal;
   }
 
   /// IgnoreNodeResults - Pretend all of this node's results are legal.
@@ -257,6 +254,7 @@ private:
   SDValue PromoteIntRes_CTTZ(SDNode *N);
   SDValue PromoteIntRes_EXTRACT_VECTOR_ELT(SDNode *N);
   SDValue PromoteIntRes_FP_TO_XINT(SDNode *N);
+  SDValue PromoteIntRes_FP32_TO_FP16(SDNode *N);
   SDValue PromoteIntRes_INT_EXTEND(SDNode *N);
   SDValue PromoteIntRes_LOAD(LoadSDNode *N);
   SDValue PromoteIntRes_Overflow(SDNode *N);
@@ -344,6 +342,9 @@ private:
   void ExpandIntRes_UREM              (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandIntRes_Shift             (SDNode *N, SDValue &Lo, SDValue &Hi);
 
+  void ExpandIntRes_SADDSUBO          (SDNode *N, SDValue &Lo, SDValue &Hi);
+  void ExpandIntRes_UADDSUBO          (SDNode *N, SDValue &Lo, SDValue &Hi);
+
   void ExpandShiftByConstant(SDNode *N, unsigned Amt,
                              SDValue &Lo, SDValue &Hi);
   bool ExpandShiftWithKnownAmountBit(SDNode *N, SDValue &Lo, SDValue &Hi);
@@ -406,6 +407,7 @@ private:
   SDValue SoftenFloatRes_FNEARBYINT(SDNode *N);
   SDValue SoftenFloatRes_FNEG(SDNode *N);
   SDValue SoftenFloatRes_FP_EXTEND(SDNode *N);
+  SDValue SoftenFloatRes_FP16_TO_FP32(SDNode *N);
   SDValue SoftenFloatRes_FP_ROUND(SDNode *N);
   SDValue SoftenFloatRes_FPOW(SDNode *N);
   SDValue SoftenFloatRes_FPOWI(SDNode *N);
@@ -429,6 +431,7 @@ private:
   SDValue SoftenFloatOp_FP_ROUND(SDNode *N);
   SDValue SoftenFloatOp_FP_TO_SINT(SDNode *N);
   SDValue SoftenFloatOp_FP_TO_UINT(SDNode *N);
+  SDValue SoftenFloatOp_FP32_TO_FP16(SDNode *N);
   SDValue SoftenFloatOp_SELECT_CC(SDNode *N);
   SDValue SoftenFloatOp_SETCC(SDNode *N);
   SDValue SoftenFloatOp_STORE(SDNode *N, unsigned OpNo);
@@ -455,6 +458,7 @@ private:
   void ExpandFloatRes_FABS      (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandFloatRes_FADD      (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandFloatRes_FCEIL     (SDNode *N, SDValue &Lo, SDValue &Hi);
+  void ExpandFloatRes_FCOPYSIGN (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandFloatRes_FCOS      (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandFloatRes_FDIV      (SDNode *N, SDValue &Lo, SDValue &Hi);
   void ExpandFloatRes_FEXP      (SDNode *N, SDValue &Lo, SDValue &Hi);
@@ -577,6 +581,7 @@ private:
   SDValue SplitVecOp_EXTRACT_SUBVECTOR(SDNode *N);
   SDValue SplitVecOp_EXTRACT_VECTOR_ELT(SDNode *N);
   SDValue SplitVecOp_STORE(StoreSDNode *N, unsigned OpNo);
+  SDValue SplitVecOp_CONCAT_VECTORS(SDNode *N);
 
   //===--------------------------------------------------------------------===//
   // Vector Widening Support: LegalizeVectorTypes.cpp
@@ -616,6 +621,7 @@ private:
 
   SDValue WidenVecRes_Binary(SDNode *N);
   SDValue WidenVecRes_Convert(SDNode *N);
+  SDValue WidenVecRes_POWI(SDNode *N);
   SDValue WidenVecRes_Shift(SDNode *N);
   SDValue WidenVecRes_Unary(SDNode *N);
   SDValue WidenVecRes_InregOp(SDNode *N);

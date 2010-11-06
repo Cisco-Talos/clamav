@@ -23,22 +23,21 @@ namespace llvm {
   class TargetInstrInfo;
   class TargetRegisterClass;
   template<typename T> class SmallVectorImpl;
+  template<typename T> class SSAUpdaterTraits;
+  class BumpPtrAllocator;
 
 /// MachineSSAUpdater - This class updates SSA form for a set of virtual
 /// registers defined in multiple blocks.  This is used when code duplication
 /// or another unstructured transformation wants to rewrite a set of uses of one
 /// vreg with uses of a set of vregs.
 class MachineSSAUpdater {
+  friend class SSAUpdaterTraits<MachineSSAUpdater>;
+
+private:
   /// AvailableVals - This keeps track of which value to use on a per-block
   /// basis.  When we insert PHI nodes, we keep track of them here.
   //typedef DenseMap<MachineBasicBlock*, unsigned > AvailableValsTy;
   void *AV;
-
-  /// IncomingPredInfo - We use this as scratch space when doing our recursive
-  /// walk.  This should only be used in GetValueInBlockInternal, normally it
-  /// should be empty.
-  //std::vector<std::pair<MachineBasicBlock*, unsigned > > IncomingPredInfo;
-  void *IPI;
 
   /// VR - Current virtual register whose uses are being updated.
   unsigned VR;
@@ -106,6 +105,7 @@ public:
 private:
   void ReplaceRegWith(unsigned OldReg, unsigned NewReg);
   unsigned GetValueAtEndOfBlockInternal(MachineBasicBlock *BB);
+
   void operator=(const MachineSSAUpdater&); // DO NOT IMPLEMENT
   MachineSSAUpdater(const MachineSSAUpdater&);     // DO NOT IMPLEMENT
 };

@@ -111,9 +111,11 @@ def callseq_end   : SDNode<"ISD::CALLSEQ_END",   SDT_PPCCallSeqEnd,
 
 def SDT_PPCCall   : SDTypeProfile<0, -1, [SDTCisInt<0>]>;
 def PPCcall_Darwin : SDNode<"PPCISD::CALL_Darwin", SDT_PPCCall,
-                            [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
+                            [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag,
+                             SDNPVariadic]>;
 def PPCcall_SVR4  : SDNode<"PPCISD::CALL_SVR4", SDT_PPCCall,
-                           [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
+                           [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag,
+                            SDNPVariadic]>;
 def PPCnop : SDNode<"PPCISD::NOP", SDT_PPCnop, [SDNPInFlag, SDNPOutFlag]>;
 def PPCload   : SDNode<"PPCISD::LOAD", SDTypeProfile<1, 1, []>,
                        [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
@@ -124,16 +126,18 @@ def PPCtoc_restore : SDNode<"PPCISD::TOC_RESTORE", SDTypeProfile<0, 0, []>,
 def PPCmtctr      : SDNode<"PPCISD::MTCTR", SDT_PPCCall,
                            [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
 def PPCbctrl_Darwin  : SDNode<"PPCISD::BCTRL_Darwin", SDTNone,
-                              [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
+                              [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag,
+                               SDNPVariadic]>;
 
 def PPCbctrl_SVR4  : SDNode<"PPCISD::BCTRL_SVR4", SDTNone,
-                            [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag]>;
+                            [SDNPHasChain, SDNPOptInFlag, SDNPOutFlag,
+                             SDNPVariadic]>;
 
 def retflag       : SDNode<"PPCISD::RET_FLAG", SDTNone,
-                           [SDNPHasChain, SDNPOptInFlag]>;
+                           [SDNPHasChain, SDNPOptInFlag, SDNPVariadic]>;
 
 def PPCtc_return : SDNode<"PPCISD::TC_RETURN", SDT_PPCTC_ret,
-                        [SDNPHasChain,  SDNPOptInFlag]>;
+                        [SDNPHasChain,  SDNPOptInFlag, SDNPVariadic]>;
 
 def PPCvcmp       : SDNode<"PPCISD::VCMP" , SDT_PPCvcmp, []>;
 def PPCvcmp_o     : SDNode<"PPCISD::VCMPo", SDT_PPCvcmp, [SDNPOutFlag]>;
@@ -658,7 +662,7 @@ def STWCX : XForm_1<31, 150, (outs), (ins GPRC:$rS, memrr:$dst),
                    [(PPCstcx GPRC:$rS, xoaddr:$dst)]>,
                    isDOT;
 
-let isBarrier = 1, hasCtrlDep = 1 in
+let isTerminator = 1, isBarrier = 1, hasCtrlDep = 1 in
 def TRAP  : XForm_24<31, 4, (outs), (ins), "trap", LdStGeneral, [(trap)]>;
 
 //===----------------------------------------------------------------------===//
@@ -858,7 +862,6 @@ def STFDX : XForm_28<31, 727, (outs), (ins F8RC:$frS, memrr:$dst),
                      [(store F8RC:$frS, xaddr:$dst)]>;
 }
 
-let isBarrier = 1 in
 def SYNC : XForm_24_sync<31, 598, (outs), (ins),
                         "sync", LdStSync,
                         [(int_ppc_sync)]>;
@@ -1019,9 +1022,7 @@ let Uses = [RM] in {
   }
 }
 
-/// FMR is split into 2 versions, one for 4/8 byte FP, and one for extending.
-///
-/// Note that these are defined as pseudo-ops on the PPC970 because they are
+/// Note that FMR is defined as pseudo-ops on the PPC970 because they are
 /// often coalesced away and we don't want the dispatch group builder to think
 /// that they will fill slots (which could cause the load of a LSU reject to
 /// sneak into a d-group with a store).
@@ -1029,10 +1030,6 @@ def FMR   : XForm_26<63, 72, (outs F4RC:$frD), (ins F4RC:$frB),
                      "fmr $frD, $frB", FPGeneral,
                      []>,  // (set F4RC:$frD, F4RC:$frB)
                      PPC970_Unit_Pseudo;
-def FMRSD  : XForm_26<63, 72, (outs F8RC:$frD), (ins F4RC:$frB),
-                      "fmr $frD, $frB", FPGeneral,
-                      [(set F8RC:$frD, (fextend F4RC:$frB))]>,
-                      PPC970_Unit_Pseudo;
 
 let PPC970_Unit = 3 in {  // FPU Operations.
 // These are artificially split into two different forms, for 4/8 byte FP.
@@ -1114,14 +1111,17 @@ def MFVRSAVE : XFXForm_1_ext<31, 339, 256, (outs GPRC:$rT), (ins),
 def MTCRF : XFXForm_5<31, 144, (outs), (ins crbitm:$FXM, GPRC:$rS),
                       "mtcrf $FXM, $rS", BrMCRX>,
             PPC970_MicroCode, PPC970_Unit_CRU;
-// FIXME:  this Uses all the CR registers.  Marking it as such is 
-// necessary for DeadMachineInstructionElim to do the right thing.
-// However, marking it also exposes PR 2964, and causes crashes in
-// the Local RA because it doesn't like this sequence:
+
+// This is a pseudo for MFCR, which implicitly uses all 8 of its subregisters;
+// declaring that here gives the local register allocator problems with this:
 //  vreg = MCRF  CR0
 //  MFCR  <kill of whatever preg got assigned to vreg>
-// For now DeadMachineInstructionElim is turned off, so don't do the marking.
-def MFCR  : XFXForm_3<31, 19, (outs GPRC:$rT), (ins), "mfcr $rT", SprMFCR>,
+// while not declaring it breaks DeadMachineInstructionElimination.
+// As it turns out, in all cases where we currently use this,
+// we're only interested in one subregister of it.  Represent this in the
+// instruction to keep the register allocator from becoming confused.
+def MFCRpseud: XFXForm_3<31, 19, (outs GPRC:$rT), (ins crbitm:$FXM),
+                       "mfcr $rT ${:comment} $FXM", SprMFCR>,
             PPC970_MicroCode, PPC970_Unit_CRU;
 def MFOCRF: XFXForm_5a<31, 19, (outs GPRC:$rT), (ins crbitm:$FXM),
                        "mfcr $rT, $FXM", SprMFCR>,
@@ -1470,10 +1470,13 @@ def : Pat<(extloadi16 iaddr:$src),
           (LHZ iaddr:$src)>;
 def : Pat<(extloadi16 xaddr:$src),
           (LHZX xaddr:$src)>;
-def : Pat<(extloadf32 iaddr:$src),
-          (FMRSD (LFS iaddr:$src))>;
-def : Pat<(extloadf32 xaddr:$src),
-          (FMRSD (LFSX xaddr:$src))>;
+def : Pat<(f64 (extloadf32 iaddr:$src)),
+          (COPY_TO_REGCLASS (LFS iaddr:$src), F8RC)>;
+def : Pat<(f64 (extloadf32 xaddr:$src)),
+          (COPY_TO_REGCLASS (LFSX xaddr:$src), F8RC)>;
+
+def : Pat<(f64 (fextend F4RC:$src)),
+          (COPY_TO_REGCLASS F4RC:$src, F8RC)>;
 
 // Memory barriers
 def : Pat<(membarrier (i32 imm /*ll*/),

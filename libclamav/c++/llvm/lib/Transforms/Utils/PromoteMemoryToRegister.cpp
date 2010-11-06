@@ -68,12 +68,13 @@ bool llvm::isAllocaPromotable(const AllocaInst *AI) {
   // assignments to subsections of the memory unit.
 
   // Only allow direct and non-volatile loads and stores...
-  for (Value::use_const_iterator UI = AI->use_begin(), UE = AI->use_end();
-       UI != UE; ++UI)     // Loop over all of the uses of the alloca
-    if (const LoadInst *LI = dyn_cast<LoadInst>(*UI)) {
+  for (Value::const_use_iterator UI = AI->use_begin(), UE = AI->use_end();
+       UI != UE; ++UI) {   // Loop over all of the uses of the alloca
+    const User *U = *UI;
+    if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile())
         return false;
-    } else if (const StoreInst *SI = dyn_cast<StoreInst>(*UI)) {
+    } else if (const StoreInst *SI = dyn_cast<StoreInst>(U)) {
       if (SI->getOperand(0) == AI)
         return false;   // Don't allow a store OF the AI, only INTO the AI.
       if (SI->isVolatile())
@@ -81,6 +82,7 @@ bool llvm::isAllocaPromotable(const AllocaInst *AI) {
     } else {
       return false;
     }
+  }
 
   return true;
 }
@@ -226,14 +228,6 @@ namespace {
 
     void run();
 
-    /// properlyDominates - Return true if I1 properly dominates I2.
-    ///
-    bool properlyDominates(Instruction *I1, Instruction *I2) const {
-      if (InvokeInst *II = dyn_cast<InvokeInst>(I1))
-        I1 = II->getNormalDest()->begin();
-      return DT.properlyDominates(I1->getParent(), I2->getParent());
-    }
-    
     /// dominates - Return true if BB1 dominates BB2 using the DominatorTree.
     ///
     bool dominates(BasicBlock *BB1, BasicBlock *BB2) const {
@@ -603,9 +597,8 @@ ComputeLiveInBlocks(AllocaInst *AI, AllocaInfo &Info,
   // To determine liveness, we must iterate through the predecessors of blocks
   // where the def is live.  Blocks are added to the worklist if we need to
   // check their predecessors.  Start with all the using blocks.
-  SmallVector<BasicBlock*, 64> LiveInBlockWorklist;
-  LiveInBlockWorklist.insert(LiveInBlockWorklist.end(), 
-                             Info.UsingBlocks.begin(), Info.UsingBlocks.end());
+  SmallVector<BasicBlock*, 64> LiveInBlockWorklist(Info.UsingBlocks.begin(),
+                                                   Info.UsingBlocks.end());
   
   // If any of the using blocks is also a definition block, check to see if the
   // definition occurs before or after the use.  If it happens before the use,
@@ -886,7 +879,7 @@ void PromoteMem2Reg::PromoteSingleBlockAlloca(AllocaInst *AI, AllocaInfo &Info,
 void PromoteMem2Reg::ConvertDebugDeclareToDebugValue(DbgDeclareInst *DDI,
                                                      StoreInst *SI) {
   DIVariable DIVar(DDI->getVariable());
-  if (!DIVar.getNode())
+  if (!DIVar.Verify())
     return;
 
   if (!DIF)
@@ -895,8 +888,12 @@ void PromoteMem2Reg::ConvertDebugDeclareToDebugValue(DbgDeclareInst *DDI,
                                                      DIVar, SI);
   
   // Propagate any debug metadata from the store onto the dbg.value.
-  if (MDNode *SIMD = SI->getMetadata("dbg"))
-    DbgVal->setMetadata("dbg", SIMD);
+  DebugLoc SIDL = SI->getDebugLoc();
+  if (!SIDL.isUnknown())
+    DbgVal->setDebugLoc(SIDL);
+  // Otherwise propagate debug metadata from dbg.declare.
+  else
+    DbgVal->setDebugLoc(DDI->getDebugLoc());
 }
 
 // QueuePhiNode - queues a phi-node to be added to a basic-block for a specific

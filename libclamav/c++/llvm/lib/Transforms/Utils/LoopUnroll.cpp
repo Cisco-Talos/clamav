@@ -24,6 +24,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/LoopPass.h"
+#include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -37,13 +38,13 @@ STATISTIC(NumCompletelyUnrolled, "Number of loops completely unrolled");
 STATISTIC(NumUnrolled,    "Number of loops unrolled (completely or otherwise)");
 
 /// RemapInstruction - Convert the instruction operands from referencing the
-/// current values into those specified by ValueMap.
+/// current values into those specified by VMap.
 static inline void RemapInstruction(Instruction *I,
-                                    DenseMap<const Value *, Value*> &ValueMap) {
+                                    ValueMap<const Value *, Value*> &VMap) {
   for (unsigned op = 0, E = I->getNumOperands(); op != E; ++op) {
     Value *Op = I->getOperand(op);
-    DenseMap<const Value *, Value*>::iterator It = ValueMap.find(Op);
-    if (It != ValueMap.end())
+    ValueMap<const Value *, Value*>::iterator It = VMap.find(Op);
+    if (It != VMap.end())
       I->setOperand(op, It->second);
   }
 }
@@ -105,8 +106,6 @@ static BasicBlock *FoldBlockIntoPredecessor(BasicBlock *BB, LoopInfo* LI) {
 /// If a LoopPassManager is passed in, and the loop is fully removed, it will be
 /// removed from the LoopPassManager as well. LPM can also be NULL.
 bool llvm::UnrollLoop(Loop *L, unsigned Count, LoopInfo* LI, LPPassManager* LPM) {
-  assert(L->isLCSSAForm());
-
   BasicBlock *Preheader = L->getLoopPreheader();
   if (!Preheader) {
     DEBUG(dbgs() << "  Can't unroll; loop preheader-insertion failed.\n");
@@ -128,6 +127,11 @@ bool llvm::UnrollLoop(Loop *L, unsigned Count, LoopInfo* LI, LPPassManager* LPM)
              "  Can't unroll; loop not terminated by a conditional branch.\n");
     return false;
   }
+
+  // Notify ScalarEvolution that the loop will be substantially changed,
+  // if not outright eliminated.
+  if (ScalarEvolution *SE = LPM->getAnalysisIfAvailable<ScalarEvolution>())
+    SE->forgetLoop(L);
 
   // Find trip count
   unsigned TripCount = L->getSmallConstantTripCount();
@@ -185,8 +189,8 @@ bool llvm::UnrollLoop(Loop *L, unsigned Count, LoopInfo* LI, LPPassManager* LPM)
 
   // For the first iteration of the loop, we should use the precloned values for
   // PHI nodes.  Insert associations now.
-  typedef DenseMap<const Value*, Value*> ValueMapTy;
-  ValueMapTy LastValueMap;
+  typedef ValueMap<const Value*, Value*> ValueToValueMapTy;
+  ValueToValueMapTy LastValueMap;
   std::vector<PHINode*> OrigPHINode;
   for (BasicBlock::iterator I = Header->begin(); isa<PHINode>(I); ++I) {
     PHINode *PN = cast<PHINode>(I);
@@ -207,26 +211,26 @@ bool llvm::UnrollLoop(Loop *L, unsigned Count, LoopInfo* LI, LPPassManager* LPM)
     
     for (std::vector<BasicBlock*>::iterator BB = LoopBlocks.begin(),
          E = LoopBlocks.end(); BB != E; ++BB) {
-      ValueMapTy ValueMap;
-      BasicBlock *New = CloneBasicBlock(*BB, ValueMap, "." + Twine(It));
+      ValueToValueMapTy VMap;
+      BasicBlock *New = CloneBasicBlock(*BB, VMap, "." + Twine(It));
       Header->getParent()->getBasicBlockList().push_back(New);
 
       // Loop over all of the PHI nodes in the block, changing them to use the
       // incoming values from the previous block.
       if (*BB == Header)
         for (unsigned i = 0, e = OrigPHINode.size(); i != e; ++i) {
-          PHINode *NewPHI = cast<PHINode>(ValueMap[OrigPHINode[i]]);
+          PHINode *NewPHI = cast<PHINode>(VMap[OrigPHINode[i]]);
           Value *InVal = NewPHI->getIncomingValueForBlock(LatchBlock);
           if (Instruction *InValI = dyn_cast<Instruction>(InVal))
             if (It > 1 && L->contains(InValI))
               InVal = LastValueMap[InValI];
-          ValueMap[OrigPHINode[i]] = InVal;
+          VMap[OrigPHINode[i]] = InVal;
           New->getInstList().erase(NewPHI);
         }
 
       // Update our running map of newest clones
       LastValueMap[*BB] = New;
-      for (ValueMapTy::iterator VI = ValueMap.begin(), VE = ValueMap.end();
+      for (ValueToValueMapTy::iterator VI = VMap.begin(), VE = VMap.end();
            VI != VE; ++VI)
         LastValueMap[VI->first] = VI->second;
 
@@ -369,10 +373,6 @@ bool llvm::UnrollLoop(Loop *L, unsigned Count, LoopInfo* LI, LPPassManager* LPM)
   // Remove the loop from the LoopPassManager if it's completely removed.
   if (CompletelyUnroll && LPM != NULL)
     LPM->deleteLoopFromQueue(L);
-
-  // If we didn't completely unroll the loop, it should still be in LCSSA form.
-  if (!CompletelyUnroll)
-    assert(L->isLCSSAForm());
 
   return true;
 }

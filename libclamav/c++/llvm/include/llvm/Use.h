@@ -27,6 +27,7 @@
 
 #include "llvm/Support/Casting.h"
 #include "llvm/ADT/PointerIntPair.h"
+#include <cstddef>
 #include <iterator>
 
 namespace llvm {
@@ -209,30 +210,6 @@ public:
   unsigned getOperandNo() const;
 };
 
-
-template<> struct simplify_type<value_use_iterator<User> > {
-  typedef User* SimpleType;
-  
-  static SimpleType getSimplifiedValue(const value_use_iterator<User> &Val) {
-    return *Val;
-  }
-};
-
-template<> struct simplify_type<const value_use_iterator<User> >
- : public simplify_type<value_use_iterator<User> > {};
-
-template<> struct simplify_type<value_use_iterator<const User> > {
-  typedef const User* SimpleType;
-  
-  static SimpleType getSimplifiedValue(const 
-                                       value_use_iterator<const User> &Val) {
-    return *Val;
-  }
-};
-
-template<> struct simplify_type<const value_use_iterator<const User> >
-  : public simplify_type<value_use_iterator<const User> > {};
- 
 } // End llvm namespace
 
 #endif

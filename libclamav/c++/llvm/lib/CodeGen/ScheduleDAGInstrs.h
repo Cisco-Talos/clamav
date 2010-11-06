@@ -20,7 +20,6 @@
 #include "llvm/CodeGen/ScheduleDAG.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Target/TargetRegisterInfo.h"
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallSet.h"
 #include <map>
 
@@ -33,7 +32,7 @@ namespace llvm {
   /// For example, loop induction variable increments should be
   /// scheduled as soon as possible after the variable's last use.
   ///
-  class VISIBILITY_HIDDEN LoopDependencies {
+  class LLVM_LIBRARY_VISIBILITY LoopDependencies {
     const MachineLoopInfo &MLI;
     const MachineDominatorTree &MDT;
 
@@ -70,8 +69,10 @@ namespace llvm {
                      const SmallSet<unsigned, 8> &LoopLiveIns) {
       unsigned Count = 0;
       for (MachineBasicBlock::const_iterator I = MBB->begin(), E = MBB->end();
-           I != E; ++I, ++Count) {
+           I != E; ++I) {
         const MachineInstr *MI = I;
+        if (MI->isDebugValue())
+          continue;
         for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
           const MachineOperand &MO = MI->getOperand(i);
           if (!MO.isReg() || !MO.isUse())
@@ -80,6 +81,7 @@ namespace llvm {
           if (LoopLiveIns.count(MOReg))
             Deps.insert(std::make_pair(MOReg, std::make_pair(&MO, Count)));
         }
+        ++Count; // Not every iteration due to dbg_value above.
       }
 
       const std::vector<MachineDomTreeNode*> &Children = Node->getChildren();
@@ -95,7 +97,7 @@ namespace llvm {
 
   /// ScheduleDAGInstrs - A ScheduleDAG subclass for scheduling lists of
   /// MachineInstrs.
-  class VISIBILITY_HIDDEN ScheduleDAGInstrs : public ScheduleDAG {
+  class LLVM_LIBRARY_VISIBILITY ScheduleDAGInstrs : public ScheduleDAG {
     const MachineLoopInfo &MLI;
     const MachineDominatorTree &MDT;
     const MachineFrameInfo *MFI;
@@ -104,8 +106,12 @@ namespace llvm {
     /// are as we iterate upward through the instructions. This is allocated
     /// here instead of inside BuildSchedGraph to avoid the need for it to be
     /// initialized and destructed for each block.
-    std::vector<SUnit *> Defs[TargetRegisterInfo::FirstVirtualRegister];
-    std::vector<SUnit *> Uses[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<std::vector<SUnit *> > Defs;
+    std::vector<std::vector<SUnit *> > Uses;
+ 
+    /// DbgValueVec - Remember DBG_VALUEs that refer to a particular
+    /// register.
+    std::vector<MachineInstr *>DbgValueVec;
 
     /// PendingLoads - Remember where unknown loads are after the most recent
     /// unknown store, as we iterate. As with Defs and Uses, this is here
@@ -167,8 +173,7 @@ namespace llvm {
     virtual void ComputeOperandLatency(SUnit *Def, SUnit *Use,
                                        SDep& dep) const;
 
-    virtual MachineBasicBlock*
-    EmitSchedule(DenseMap<MachineBasicBlock*, MachineBasicBlock*>*);
+    virtual MachineBasicBlock *EmitSchedule();
 
     /// StartBlock - Prepare to perform scheduling in the given block.
     ///

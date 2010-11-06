@@ -44,8 +44,8 @@ namespace llvm {
     // Workaround PR5482: nearly all gcc 4.x miscompile StringRef and std::min()
     // Changing the arg of min to be an integer, instead of a reference to an
     // integer works around this bug.
-    size_t min(size_t a, size_t b) const { return a < b ? a : b; }
-    size_t max(size_t a, size_t b) const { return a > b ? a : b; }
+    static size_t min(size_t a, size_t b) { return a < b ? a : b; }
+    static size_t max(size_t a, size_t b) { return a > b ? a : b; }
 
   public:
     /// @name Constructors
@@ -128,6 +128,10 @@ namespace llvm {
     /// compare_lower - Compare two strings, ignoring case.
     int compare_lower(StringRef RHS) const;
 
+    /// compare_numeric - Compare two strings, treating sequences of digits as
+    /// numbers.
+    int compare_numeric(StringRef RHS) const;
+
     /// \brief Determine the edit distance between this string and another 
     /// string.
     ///
@@ -145,7 +149,10 @@ namespace llvm {
     unsigned edit_distance(StringRef Other, bool AllowReplacements = true);
 
     /// str - Get the contents as an std::string.
-    std::string str() const { return std::string(Data, Length); }
+    std::string str() const {
+      if (Data == 0) return std::string();
+      return std::string(Data, Length);
+    }
 
     /// @}
     /// @name Operator Overloads
@@ -224,12 +231,14 @@ namespace llvm {
 
     /// find_first_of - Find the first character in the string that is \arg C,
     /// or npos if not found. Same as find.
-    size_type find_first_of(char C, size_t = 0) const { return find(C); }
+    size_type find_first_of(char C, size_t From = 0) const {
+      return find(C, From);
+    }
 
     /// find_first_of - Find the first character in the string that is in \arg
     /// Chars, or npos if not found.
     ///
-    /// Note: O(size() * Chars.size())
+    /// Note: O(size() + Chars.size())
     size_type find_first_of(StringRef Chars, size_t From = 0) const;
 
     /// find_first_not_of - Find the first character in the string that is not
@@ -239,7 +248,7 @@ namespace llvm {
     /// find_first_not_of - Find the first character in the string that is not
     /// in the string \arg Chars, or npos if not found.
     ///
-    /// Note: O(size() * Chars.size())
+    /// Note: O(size() + Chars.size())
     size_type find_first_not_of(StringRef Chars, size_t From = 0) const;
 
     /// @}

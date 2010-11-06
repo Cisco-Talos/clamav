@@ -49,7 +49,7 @@ namespace {
     bool runOnFunction(Function &F);
   public:
     static char ID; // Pass identification, replacement for typeid
-    TailDup() : FunctionPass(&ID) {}
+    TailDup() : FunctionPass(ID) {}
 
   private:
     inline bool shouldEliminateUnconditionalBranch(TerminatorInst *, unsigned);
@@ -59,7 +59,7 @@ namespace {
 }
 
 char TailDup::ID = 0;
-static RegisterPass<TailDup> X("tailduplicate", "Tail Duplication");
+INITIALIZE_PASS(TailDup, "tailduplicate", "Tail Duplication", false, false);
 
 // Public interface to the Tail Duplication pass
 FunctionPass *llvm::createTailDuplicationPass() { return new TailDup(); }
@@ -206,12 +206,13 @@ static BasicBlock *FindObviousSharedDomOf(BasicBlock *SrcBlock,
   // there is only one other pred, get it, otherwise we can't handle it.
   PI = pred_begin(DstBlock); PE = pred_end(DstBlock);
   BasicBlock *DstOtherPred = 0;
-  if (*PI == SrcBlock) {
+  BasicBlock *P = *PI;
+  if (P == SrcBlock) {
     if (++PI == PE) return 0;
     DstOtherPred = *PI;
     if (++PI != PE) return 0;
   } else {
-    DstOtherPred = *PI;
+    DstOtherPred = P;
     if (++PI == PE || *PI != SrcBlock || ++PI != PE) return 0;
   }
 

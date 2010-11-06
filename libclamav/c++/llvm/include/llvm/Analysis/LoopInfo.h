@@ -35,6 +35,7 @@
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/Support/raw_ostream.h"
@@ -229,13 +230,16 @@ public:
     return 0;
   }
 
+  /// Edge type.
+  typedef std::pair<BlockT*, BlockT*> Edge;
+
   /// getExitEdges - Return all pairs of (_inside_block_,_outside_block_).
-  typedef std::pair<const BlockT*,const BlockT*> Edge;
-  void getExitEdges(SmallVectorImpl<Edge> &ExitEdges) const {
+  template <typename EdgeT>
+  void getExitEdges(SmallVectorImpl<EdgeT> &ExitEdges) const {
     // Sort the blocks vector so that we can use binary search to do quick
     // lookups.
     SmallVector<BlockT*, 128> LoopBBs(block_begin(), block_end());
-    std::sort(LoopBBs.begin(), LoopBBs.end());
+    array_pod_sort(LoopBBs.begin(), LoopBBs.end());
 
     typedef GraphTraits<BlockT*> BlockTraits;
     for (block_iterator BI = block_begin(), BE = block_end(); BI != BE; ++BI)
@@ -244,7 +248,7 @@ public:
            I != E; ++I)
         if (!std::binary_search(LoopBBs.begin(), LoopBBs.end(), *I))
           // Not in current loop? It must be an exit block.
-          ExitEdges.push_back(std::make_pair(*BI, *I));
+          ExitEdges.push_back(EdgeT(*BI, *I));
   }
 
   /// getLoopPreheader - If there is a preheader for this loop, return it.  A
@@ -256,6 +260,27 @@ public:
   ///
   BlockT *getLoopPreheader() const {
     // Keep track of nodes outside the loop branching to the header...
+    BlockT *Out = getLoopPredecessor();
+    if (!Out) return 0;
+
+    // Make sure there is only one exit out of the preheader.
+    typedef GraphTraits<BlockT*> BlockTraits;
+    typename BlockTraits::ChildIteratorType SI = BlockTraits::child_begin(Out);
+    ++SI;
+    if (SI != BlockTraits::child_end(Out))
+      return 0;  // Multiple exits from the block, must not be a preheader.
+
+    // The predecessor has exactly one successor, so it is a preheader.
+    return Out;
+  }
+
+  /// getLoopPredecessor - If the given loop's header has exactly one unique
+  /// predecessor outside the loop, return it. Otherwise return null.
+  /// This is less strict that the loop "preheader" concept, which requires
+  /// the predecessor to have exactly one successor.
+  ///
+  BlockT *getLoopPredecessor() const {
+    // Keep track of nodes outside the loop branching to the header...
     BlockT *Out = 0;
 
     // Loop over the predecessors of the header node...
@@ -264,22 +289,17 @@ public:
     typedef GraphTraits<Inverse<BlockT*> > InvBlockTraits;
     for (typename InvBlockTraits::ChildIteratorType PI =
          InvBlockTraits::child_begin(Header),
-         PE = InvBlockTraits::child_end(Header); PI != PE; ++PI)
-      if (!contains(*PI)) {     // If the block is not in the loop...
-        if (Out && Out != *PI)
+         PE = InvBlockTraits::child_end(Header); PI != PE; ++PI) {
+      typename InvBlockTraits::NodeType *N = *PI;
+      if (!contains(N)) {     // If the block is not in the loop...
+        if (Out && Out != N)
           return 0;             // Multiple predecessors outside the loop
-        Out = *PI;
+        Out = N;
       }
+    }
 
     // Make sure there is only one exit out of the preheader.
     assert(Out && "Header of loop has no predecessors from outside loop?");
-    typename BlockTraits::ChildIteratorType SI = BlockTraits::child_begin(Out);
-    ++SI;
-    if (SI != BlockTraits::child_end(Out))
-      return 0;  // Multiple exits from the block, must not be a preheader.
-
-    // If there is exactly one preheader, return it.  If there was zero, then
-    // Out is still null.
     return Out;
   }
 
@@ -293,11 +313,13 @@ public:
     typename InvBlockTraits::ChildIteratorType PE =
                                               InvBlockTraits::child_end(Header);
     BlockT *Latch = 0;
-    for (; PI != PE; ++PI)
-      if (contains(*PI)) {
+    for (; PI != PE; ++PI) {
+      typename InvBlockTraits::NodeType *N = *PI;
+      if (contains(N)) {
         if (Latch) return 0;
-        Latch = *PI;
+        Latch = N;
       }
+    }
 
     return Latch;
   }
@@ -409,10 +431,11 @@ public:
       for (typename InvBlockTraits::ChildIteratorType PI =
            InvBlockTraits::child_begin(BB), PE = InvBlockTraits::child_end(BB);
            PI != PE; ++PI) {
-        if (std::binary_search(LoopBBs.begin(), LoopBBs.end(), *PI))
+        typename InvBlockTraits::NodeType *N = *PI;
+        if (std::binary_search(LoopBBs.begin(), LoopBBs.end(), N))
           HasInsideLoopPreds = true;
         else
-          OutsideLoopPreds.push_back(*PI);
+          OutsideLoopPreds.push_back(N);
       }
 
       if (BB == getHeader()) {
@@ -486,6 +509,12 @@ protected:
   }
 };
 
+template<class BlockT, class LoopT>
+raw_ostream& operator<<(raw_ostream &OS, const LoopBase<BlockT, LoopT> &Loop) {
+  Loop.print(OS);
+  return OS;
+}
+
 class Loop : public LoopBase<BasicBlock, Loop> {
 public:
   Loop() {}
@@ -533,12 +562,6 @@ public:
   ///
   PHINode *getCanonicalInductionVariable() const;
 
-  /// getCanonicalInductionVariableIncrement - Return the LLVM value that holds
-  /// the canonical induction variable value for the "next" iteration of the
-  /// loop.  This always succeeds if getCanonicalInductionVariable succeeds.
-  ///
-  Instruction *getCanonicalInductionVariableIncrement() const;
-
   /// getTripCount - Return a loop-invariant LLVM value indicating the number of
   /// times the loop will be executed.  Note that this means that the backedge
   /// of the loop executes N-1 times.  If the trip-count cannot be determined,
@@ -571,7 +594,7 @@ public:
   unsigned getSmallConstantTripMultiple() const;
 
   /// isLCSSAForm - Return true if the Loop is in LCSSA form
-  bool isLCSSAForm() const;
+  bool isLCSSAForm(DominatorTree &DT) const;
 
   /// isLoopSimplifyForm - Return true if the Loop is in the form that
   /// the LoopSimplify form transforms loops to, which is sometimes called
@@ -743,9 +766,11 @@ public:
     typedef GraphTraits<Inverse<BlockT*> > InvBlockTraits;
     for (typename InvBlockTraits::ChildIteratorType I =
          InvBlockTraits::child_begin(BB), E = InvBlockTraits::child_end(BB);
-         I != E; ++I)
-      if (DT.dominates(BB, *I))   // If BB dominates its predecessor...
-        TodoStack.push_back(*I);
+         I != E; ++I) {
+      typename InvBlockTraits::NodeType *N = *I;
+      if (DT.dominates(BB, N))   // If BB dominates its predecessor...
+          TodoStack.push_back(N);
+    }
 
     if (TodoStack.empty()) return 0;  // No backedges to this block...
 
@@ -915,7 +940,7 @@ class LoopInfo : public FunctionPass {
 public:
   static char ID; // Pass identification, replacement for typeid
 
-  LoopInfo() : FunctionPass(&ID) {}
+  LoopInfo() : FunctionPass(ID) {}
 
   LoopInfoBase<BasicBlock, Loop>& getBase() { return LI; }
 

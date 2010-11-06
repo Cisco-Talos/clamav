@@ -19,15 +19,14 @@
 #include "CodeGenTarget.h"
 #include "Record.h"
 
+#include "llvm/MC/EDInstInfo.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <vector>
+#include <map>
 #include <string>
-
-#define MAX_OPERANDS 5
-#define MAX_SYNTAXES 2
+#include <vector>
 
 using namespace llvm;
 
@@ -54,9 +53,9 @@ namespace {
       
       unsigned int index = 0;
       unsigned int numEntries = Entries.size();
-      for(index = 0; index < numEntries; ++index) {
+      for (index = 0; index < numEntries; ++index) {
         o.indent(i) << Entries[index];
-        if(index < (numEntries - 1))
+        if (index < (numEntries - 1))
           o << ",";
         o << "\n";
       }
@@ -85,34 +84,6 @@ namespace {
     }
   };
 
-  class StructEmitter {
-  private:
-    std::string Name;
-    std::vector<std::string> MemberTypes;
-    std::vector<std::string> MemberNames;
-  public:
-    StructEmitter(const char *N) : Name(N) {
-    }
-    void addMember(const char *t, const char *n) {
-      MemberTypes.push_back(std::string(t));
-      MemberNames.push_back(std::string(n));
-    }
-    void emit(raw_ostream &o, unsigned int &i) {
-      o.indent(i) << "struct " << Name.c_str() << " {" << "\n";
-      i += 2;
-      
-      unsigned int index = 0;
-      unsigned int numMembers = MemberTypes.size();
-      for (index = 0; index < numMembers; ++index) {
-        o.indent(i) << MemberTypes[index] << " " << MemberNames[index] << ";";
-        o << "\n";
-      }
-      
-      i -= 2;
-      o.indent(i) << "};" << "\n";
-    }
-  };
-  
   class ConstantEmitter {
   public:
     virtual ~ConstantEmitter() { }
@@ -121,36 +92,50 @@ namespace {
   
   class LiteralConstantEmitter : public ConstantEmitter {
   private:
-    std::string Literal;
+    bool IsNumber;
+    union {
+      int Number;
+      const char* String;
+    };
   public:
-    LiteralConstantEmitter(const char *literal) : Literal(literal) {
+    LiteralConstantEmitter(int number = 0) : 
+      IsNumber(true),
+      Number(number) {
     }
-    LiteralConstantEmitter(int literal) {
-      char buf[256];
-      snprintf(buf, 256, "%d", literal);
-      Literal = buf;
+    void set(const char *string) {
+      IsNumber = false;
+      Number = 0;
+      String = string;
+    }
+    bool is(const char *string) {
+      return !strcmp(String, string);
     }
     void emit(raw_ostream &o, unsigned int &i) {
-      o << Literal;
+      if (IsNumber)
+        o << Number;
+      else
+        o << String;
     }
   };
   
   class CompoundConstantEmitter : public ConstantEmitter {
   private:
-    std::vector<ConstantEmitter*> Entries;
+    unsigned int Padding;
+    std::vector<ConstantEmitter *> Entries;
   public:
-    CompoundConstantEmitter() {
-    }
-    ~CompoundConstantEmitter() {
-      unsigned int index;
-      unsigned int numEntries = Entries.size();
-      for (index = 0; index < numEntries; ++index) {
-        delete Entries[index];
-      }
+    CompoundConstantEmitter(unsigned int padding = 0) : Padding(padding) {
     }
     CompoundConstantEmitter &addEntry(ConstantEmitter *e) {
       Entries.push_back(e);
+      
       return *this;
+    }
+    ~CompoundConstantEmitter() {
+      while (Entries.size()) {
+        ConstantEmitter *entry = Entries.back();
+        Entries.pop_back();
+        delete entry;
+      }
     }
     void emit(raw_ostream &o, unsigned int &i) {
       o << "{" << "\n";
@@ -158,10 +143,27 @@ namespace {
   
       unsigned int index;
       unsigned int numEntries = Entries.size();
-      for (index = 0; index < numEntries; ++index) {
+      
+      unsigned int numToPrint;
+      
+      if (Padding) {
+        if (numEntries > Padding) {
+          fprintf(stderr, "%u entries but %u padding\n", numEntries, Padding);
+          llvm_unreachable("More entries than padding");
+        }
+        numToPrint = Padding;
+      } else {
+        numToPrint = numEntries;
+      }
+          
+      for (index = 0; index < numToPrint; ++index) {
         o.indent(i);
-        Entries[index]->emit(o, i);
-        if (index < (numEntries - 1))
+        if (index < numEntries)
+          Entries[index]->emit(o, i);
+        else
+          o << "-1";
+        
+        if (index < (numToPrint - 1))
           o << ",";
         o << "\n";
       }
@@ -226,15 +228,10 @@ void populateOperandOrder(CompoundConstantEmitter *operandOrder,
        ++operandIterator) {
     if (operandIterator->OperandType == 
         AsmWriterOperand::isMachineInstrOperand) {
-      char buf[2];
-      snprintf(buf, sizeof(buf), "%u", operandIterator->CGIOpNo);
-      operandOrder->addEntry(new LiteralConstantEmitter(buf));
+      operandOrder->addEntry(
+        new LiteralConstantEmitter(operandIterator->CGIOpNo));
       numArgs++;
     }
-  }
-  
-  for(; numArgs < MAX_OPERANDS; numArgs++) {
-    operandOrder->addEntry(new LiteralConstantEmitter("-1"));
   }
 }
 
@@ -242,77 +239,83 @@ void populateOperandOrder(CompoundConstantEmitter *operandOrder,
 // Support functions for handling X86 instructions //
 /////////////////////////////////////////////////////
 
-#define ADDFLAG(flag) flags->addEntry(flag)
+#define SET(flag) { type->set(flag); return 0; }
 
-#define REG(str) if (name == str) { ADDFLAG("kOperandFlagRegister"); return 0; }
-#define MEM(str) if (name == str) { ADDFLAG("kOperandFlagMemory"); return 0; }
-#define LEA(str) if (name == str) { ADDFLAG("kOperandFlagEffectiveAddress"); \
-                                    return 0; }
-#define IMM(str) if (name == str) { ADDFLAG("kOperandFlagImmediate"); \
-                                    return 0; }
-#define PCR(str) if (name == str) { ADDFLAG("kOperandFlagMemory"); \
-                                    ADDFLAG("kOperandFlagPCRelative"); \
-                                    return 0; }
+#define REG(str) if (name == str) SET("kOperandTypeRegister");
+#define MEM(str) if (name == str) SET("kOperandTypeX86Memory");
+#define LEA(str) if (name == str) SET("kOperandTypeX86EffectiveAddress");
+#define IMM(str) if (name == str) SET("kOperandTypeImmediate");
+#define PCR(str) if (name == str) SET("kOperandTypeX86PCRelative");
 
-/// X86FlagFromOpName - Processes the name of a single X86 operand (which is
-///   actually its type) and translates it into an operand flag
+/// X86TypeFromOpName - Processes the name of a single X86 operand (which is
+///   actually its type) and translates it into an operand type
 ///
-/// @arg flags    - The flags object to add the flag to
+/// @arg flags    - The type object to set
 /// @arg name     - The name of the operand
-static int X86FlagFromOpName(FlagsConstantEmitter *flags,
+static int X86TypeFromOpName(LiteralConstantEmitter *type,
                              const std::string &name) {
   REG("GR8");
   REG("GR8_NOREX");
   REG("GR16");
   REG("GR32");
   REG("GR32_NOREX");
+  REG("GR32_TC");
   REG("FR32");
   REG("RFP32");
   REG("GR64");
+  REG("GR64_TC");
   REG("FR64");
   REG("VR64");
   REG("RFP64");
   REG("RFP80");
   REG("VR128");
+  REG("VR256");
   REG("RST");
   REG("SEGMENT_REG");
   REG("DEBUG_REG");
-  REG("CONTROL_REG_32");
-  REG("CONTROL_REG_64");
-  
-  MEM("i8mem");
-  MEM("i8mem_NOREX");
-  MEM("i16mem");
-  MEM("i32mem");
-  MEM("f32mem");
-  MEM("ssmem");
-  MEM("opaque32mem");
-  MEM("opaque48mem");
-  MEM("i64mem");
-  MEM("f64mem");
-  MEM("sdmem");
-  MEM("f80mem");
-  MEM("opaque80mem");
-  MEM("i128mem");
-  MEM("f128mem");
-  MEM("opaque512mem");
-  
-  LEA("lea32mem");
-  LEA("lea64_32mem");
-  LEA("lea64mem");
+  REG("CONTROL_REG");
   
   IMM("i8imm");
   IMM("i16imm");
   IMM("i16i8imm");
   IMM("i32imm");
-  IMM("i32imm_pcrel");
   IMM("i32i8imm");
   IMM("i64imm");
   IMM("i64i8imm");
   IMM("i64i32imm");
-  IMM("i64i32imm_pcrel");
   IMM("SSECC");
   
+  // all R, I, R, I, R
+  MEM("i8mem");
+  MEM("i8mem_NOREX");
+  MEM("i16mem");
+  MEM("i32mem");
+  MEM("i32mem_TC");
+  MEM("f32mem");
+  MEM("ssmem");
+  MEM("opaque32mem");
+  MEM("opaque48mem");
+  MEM("i64mem");
+  MEM("i64mem_TC");
+  MEM("f64mem");
+  MEM("sdmem");
+  MEM("f80mem");
+  MEM("opaque80mem");
+  MEM("i128mem");
+  MEM("i256mem");
+  MEM("f128mem");
+  MEM("f256mem");
+  MEM("opaque512mem");
+  
+  // all R, I, R, I
+  LEA("lea32mem");
+  LEA("lea64_32mem");
+  LEA("lea64mem");
+  
+  // all I
+  PCR("i16imm_pcrel");
+  PCR("i32imm_pcrel");
+  PCR("i64i32imm_pcrel");
   PCR("brtarget8");
   PCR("offset8");
   PCR("offset16");
@@ -328,7 +331,8 @@ static int X86FlagFromOpName(FlagsConstantEmitter *flags,
 #undef LEA
 #undef IMM
 #undef PCR
-#undef ADDFLAG
+
+#undef SET
 
 /// X86PopulateOperands - Handles all the operands in an X86 instruction, adding
 ///   the appropriate flags to their descriptors
@@ -336,7 +340,7 @@ static int X86FlagFromOpName(FlagsConstantEmitter *flags,
 /// @operandFlags - A reference the array of operand flag objects
 /// @inst         - The instruction to use as a source of information
 static void X86PopulateOperands(
-  FlagsConstantEmitter *(&operandFlags)[MAX_OPERANDS],
+  LiteralConstantEmitter *(&operandTypes)[EDIS_MAX_OPERANDS],
   const CodeGenInstruction &inst) {
   if (!inst.TheDef->isSubClassOf("X86Inst"))
     return;
@@ -349,7 +353,7 @@ static void X86PopulateOperands(
       inst.OperandList[index];
     Record &rec = *operandInfo.Rec;
     
-    if (X86FlagFromOpName(operandFlags[index], rec.getName())) {
+    if (X86TypeFromOpName(operandTypes[index], rec.getName())) {
       errs() << "Operand type: " << rec.getName().c_str() << "\n";
       errs() << "Operand name: " << operandInfo.Name.c_str() << "\n";
       errs() << "Instruction mame: " << inst.TheDef->getName().c_str() << "\n";
@@ -365,10 +369,11 @@ static void X86PopulateOperands(
 ///                 between names and operand indices
 /// @opName       - The name of the operand
 /// @flag         - The name of the flag to add
-static inline void decorate1(FlagsConstantEmitter *(&operandFlags)[MAX_OPERANDS],
-                             const CodeGenInstruction &inst,
-                             const char *opName,
-                             const char *opFlag) {
+static inline void decorate1(
+  FlagsConstantEmitter *(&operandFlags)[EDIS_MAX_OPERANDS],
+  const CodeGenInstruction &inst,
+  const char *opName,
+  const char *opFlag) {
   unsigned opIndex;
   
   opIndex = inst.getOperandNamed(std::string(opName));
@@ -378,78 +383,70 @@ static inline void decorate1(FlagsConstantEmitter *(&operandFlags)[MAX_OPERANDS]
 
 #define DECORATE1(opName, opFlag) decorate1(operandFlags, inst, opName, opFlag)
 
-#define MOV(source, target) {                       \
-  instFlags.addEntry("kInstructionFlagMove");       \
-  DECORATE1(source, "kOperandFlagSource");          \
-  DECORATE1(target, "kOperandFlagTarget");          \
+#define MOV(source, target) {               \
+  instType.set("kInstructionTypeMove");     \
+  DECORATE1(source, "kOperandFlagSource");  \
+  DECORATE1(target, "kOperandFlagTarget");  \
 }
 
-#define BRANCH(target) {                            \
-  instFlags.addEntry("kInstructionFlagBranch");     \
-  DECORATE1(target, "kOperandFlagTarget");          \
+#define BRANCH(target) {                    \
+  instType.set("kInstructionTypeBranch");   \
+  DECORATE1(target, "kOperandFlagTarget");  \
 }
 
-#define PUSH(source) {                              \
-  instFlags.addEntry("kInstructionFlagPush");       \
-  DECORATE1(source, "kOperandFlagSource");          \
+#define PUSH(source) {                      \
+  instType.set("kInstructionTypePush");     \
+  DECORATE1(source, "kOperandFlagSource");  \
 }
 
-#define POP(target) {                               \
-  instFlags.addEntry("kInstructionFlagPop");        \
-  DECORATE1(target, "kOperandFlagTarget");          \
+#define POP(target) {                       \
+  instType.set("kInstructionTypePop");      \
+  DECORATE1(target, "kOperandFlagTarget");  \
 }
 
-#define CALL(target) {                              \
-  instFlags.addEntry("kInstructionFlagCall");       \
-  DECORATE1(target, "kOperandFlagTarget");          \
+#define CALL(target) {                      \
+  instType.set("kInstructionTypeCall");     \
+  DECORATE1(target, "kOperandFlagTarget");  \
 }
 
-#define RETURN() {                                  \
-  instFlags.addEntry("kInstructionFlagReturn");     \
+#define RETURN() {                          \
+  instType.set("kInstructionTypeReturn");   \
 }
 
 /// X86ExtractSemantics - Performs various checks on the name of an X86
 ///   instruction to determine what sort of an instruction it is and then adds 
 ///   the appropriate flags to the instruction and its operands
 ///
-/// @arg instFlags    - A reference to the flags for the instruction as a whole
+/// @arg instType     - A reference to the type for the instruction as a whole
 /// @arg operandFlags - A reference to the array of operand flag object pointers
 /// @arg inst         - A reference to the original instruction
-static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
-                                FlagsConstantEmitter *(&operandFlags)[MAX_OPERANDS],
-                                const CodeGenInstruction &inst) {
+static void X86ExtractSemantics(
+  LiteralConstantEmitter &instType,
+  FlagsConstantEmitter *(&operandFlags)[EDIS_MAX_OPERANDS],
+  const CodeGenInstruction &inst) {
   const std::string &name = inst.TheDef->getName();
     
   if (name.find("MOV") != name.npos) {
     if (name.find("MOV_V") != name.npos) {
       // ignore (this is a pseudoinstruction)
-    }
-    else if (name.find("MASK") != name.npos) {
+    } else if (name.find("MASK") != name.npos) {
       // ignore (this is a masking move)
-    }
-    else if (name.find("r0") != name.npos) {
+    } else if (name.find("r0") != name.npos) {
       // ignore (this is a pseudoinstruction)
-    }
-    else if (name.find("PS") != name.npos ||
+    } else if (name.find("PS") != name.npos ||
              name.find("PD") != name.npos) {
       // ignore (this is a shuffling move)
-    }
-    else if (name.find("MOVS") != name.npos) {
+    } else if (name.find("MOVS") != name.npos) {
       // ignore (this is a string move)
-    }
-    else if (name.find("_F") != name.npos) {
+    } else if (name.find("_F") != name.npos) {
       // TODO handle _F moves to ST(0)
-    }
-    else if (name.find("a") != name.npos) {
+    } else if (name.find("a") != name.npos) {
       // TODO handle moves to/from %ax
-    }
-    else if (name.find("CMOV") != name.npos) {
+    } else if (name.find("CMOV") != name.npos) {
       MOV("src2", "dst");
-    }
-    else if (name.find("PC") != name.npos) {
+    } else if (name.find("PC") != name.npos) {
       MOV("label", "reg")
-    }
-    else {
+    } else {
       MOV("src", "dst");
     }
   }
@@ -458,8 +455,7 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
       name.find("J") == 0) {
     if (name.find("FAR") != name.npos && name.find("i") != name.npos) {
       BRANCH("off");
-    }
-    else {
+    } else {
       BRANCH("dst");
     }
   }
@@ -467,19 +463,17 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
   if (name.find("PUSH") != name.npos) {
     if (name.find("FS") != name.npos ||
         name.find("GS") != name.npos) {
-      instFlags.addEntry("kInstructionFlagPush");
+      instType.set("kInstructionTypePush");
       // TODO add support for fixed operands
-    }
-    else if (name.find("F") != name.npos) {
+    } else if (name.find("F") != name.npos) {
       // ignore (this pushes onto the FP stack)
-    }
-    else if (name[name.length() - 1] == 'm') {
+    } else if (name.find("A") != name.npos) {
+      // ignore (pushes all GP registoers onto the stack)
+    } else if (name[name.length() - 1] == 'm') {
       PUSH("src");
-    }
-    else if (name.find("i") != name.npos) {
+    } else if (name.find("i") != name.npos) {
       PUSH("imm");
-    }
-    else {
+    } else {
       PUSH("reg");
     }
   }
@@ -487,19 +481,17 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
   if (name.find("POP") != name.npos) {
     if (name.find("POPCNT") != name.npos) {
       // ignore (not a real pop)
-    }
-    else if (name.find("FS") != name.npos ||
+    } else if (name.find("FS") != name.npos ||
              name.find("GS") != name.npos) {
-      instFlags.addEntry("kInstructionFlagPop");
+      instType.set("kInstructionTypePop");
       // TODO add support for fixed operands
-    }
-    else if (name.find("F") != name.npos) {
+    } else if (name.find("F") != name.npos) {
       // ignore (this pops from the FP stack)
-    }
-    else if (name[name.length() - 1] == 'm') {
+    } else if (name.find("A") != name.npos) {
+      // ignore (pushes all GP registoers onto the stack)
+    } else if (name[name.length() - 1] == 'm') {
       POP("dst");
-    }
-    else {
+    } else {
       POP("reg");
     }
   }
@@ -507,17 +499,13 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
   if (name.find("CALL") != name.npos) {
     if (name.find("ADJ") != name.npos) {
       // ignore (not a call)
-    }
-    else if (name.find("SYSCALL") != name.npos) {
+    } else if (name.find("SYSCALL") != name.npos) {
       // ignore (doesn't go anywhere we know about)
-    }
-    else if (name.find("VMCALL") != name.npos) {
+    } else if (name.find("VMCALL") != name.npos) {
       // ignore (rather different semantics than a regular call)
-    }
-    else if (name.find("FAR") != name.npos && name.find("i") != name.npos) {
+    } else if (name.find("FAR") != name.npos && name.find("i") != name.npos) {
       CALL("off");
-    }
-    else {
+    } else {
       CALL("dst");
     }
   }
@@ -534,9 +522,185 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
 #undef CALL
 #undef RETURN
 
-#undef COND_DECORATE_2
-#undef COND_DECORATE_1
-#undef DECORATE1
+/////////////////////////////////////////////////////
+// Support functions for handling ARM instructions //
+/////////////////////////////////////////////////////
+
+#define SET(flag) { type->set(flag); return 0; }
+
+#define REG(str)    if (name == str) SET("kOperandTypeRegister");
+#define IMM(str)    if (name == str) SET("kOperandTypeImmediate");
+
+#define MISC(str, type)   if (name == str) SET(type);
+
+/// ARMFlagFromOpName - Processes the name of a single ARM operand (which is
+///   actually its type) and translates it into an operand type
+///
+/// @arg type     - The type object to set
+/// @arg name     - The name of the operand
+static int ARMFlagFromOpName(LiteralConstantEmitter *type,
+                             const std::string &name) {
+  REG("GPR");
+  REG("rGPR");
+  REG("tcGPR");
+  REG("cc_out");
+  REG("s_cc_out");
+  REG("tGPR");
+  REG("DPR");
+  REG("DPR_VFP2");
+  REG("DPR_8");
+  REG("SPR");
+  REG("QPR");
+  REG("QQPR");
+  REG("QQQQPR");
+  
+  IMM("i32imm");
+  IMM("bf_inv_mask_imm");
+  IMM("jtblock_operand");
+  IMM("nohash_imm");
+  IMM("cpinst_operand");
+  IMM("cps_opt");
+  IMM("vfp_f64imm");
+  IMM("vfp_f32imm");
+  IMM("memb_opt");
+  IMM("msr_mask");
+  IMM("neg_zero");
+  IMM("imm0_31");
+  IMM("nModImm");
+  IMM("imm0_4095");
+  IMM("jt2block_operand");
+  IMM("t_imm_s4");
+  IMM("pclabel");
+  IMM("shift_imm");
+  
+  MISC("brtarget", "kOperandTypeARMBranchTarget");                // ?
+  MISC("so_reg", "kOperandTypeARMSoReg");                         // R, R, I
+  MISC("t2_so_reg", "kOperandTypeThumb2SoReg");                   // R, I
+  MISC("so_imm", "kOperandTypeARMSoImm");                         // I
+  MISC("t2_so_imm", "kOperandTypeThumb2SoImm");                   // I
+  MISC("so_imm2part", "kOperandTypeARMSoImm2Part");               // I
+  MISC("pred", "kOperandTypeARMPredicate");                       // I, R
+  MISC("it_pred", "kOperandTypeARMPredicate");                    // I
+  MISC("addrmode2", "kOperandTypeARMAddrMode2");                  // R, R, I
+  MISC("am2offset", "kOperandTypeARMAddrMode2Offset");            // R, I
+  MISC("addrmode3", "kOperandTypeARMAddrMode3");                  // R, R, I
+  MISC("am3offset", "kOperandTypeARMAddrMode3Offset");            // R, I
+  MISC("addrmode4", "kOperandTypeARMAddrMode4");                  // R, I
+  MISC("addrmode5", "kOperandTypeARMAddrMode5");                  // R, I
+  MISC("addrmode6", "kOperandTypeARMAddrMode6");                  // R, R, I, I
+  MISC("am6offset", "kOperandTypeARMAddrMode6Offset");            // R, I, I
+  MISC("addrmodepc", "kOperandTypeARMAddrModePC");                // R, I
+  MISC("reglist", "kOperandTypeARMRegisterList");                 // I, R, ...
+  MISC("it_mask", "kOperandTypeThumbITMask");                     // I
+  MISC("t2addrmode_imm8", "kOperandTypeThumb2AddrModeImm8");      // R, I
+  MISC("t2am_imm8_offset", "kOperandTypeThumb2AddrModeImm8Offset");//I
+  MISC("t2addrmode_imm12", "kOperandTypeThumb2AddrModeImm12");    // R, I
+  MISC("t2addrmode_so_reg", "kOperandTypeThumb2AddrModeSoReg");   // R, R, I
+  MISC("t2addrmode_imm8s4", "kOperandTypeThumb2AddrModeImm8s4");  // R, I
+  MISC("t2am_imm8s4_offset", "kOperandTypeThumb2AddrModeImm8s4Offset");  
+                                                                  // R, I
+  MISC("tb_addrmode", "kOperandTypeARMTBAddrMode");               // I
+  MISC("t_addrmode_s1", "kOperandTypeThumbAddrModeS1");           // R, I, R
+  MISC("t_addrmode_s2", "kOperandTypeThumbAddrModeS2");           // R, I, R
+  MISC("t_addrmode_s4", "kOperandTypeThumbAddrModeS4");           // R, I, R
+  MISC("t_addrmode_rr", "kOperandTypeThumbAddrModeRR");           // R, R
+  MISC("t_addrmode_sp", "kOperandTypeThumbAddrModeSP");           // R, I
+  
+  return 1;
+}
+
+#undef SOREG
+#undef SOIMM
+#undef PRED
+#undef REG
+#undef MEM
+#undef LEA
+#undef IMM
+#undef PCR
+
+#undef SET
+
+/// ARMPopulateOperands - Handles all the operands in an ARM instruction, adding
+///   the appropriate flags to their descriptors
+///
+/// @operandFlags - A reference the array of operand flag objects
+/// @inst         - The instruction to use as a source of information
+static void ARMPopulateOperands(
+  LiteralConstantEmitter *(&operandTypes)[EDIS_MAX_OPERANDS],
+  const CodeGenInstruction &inst) {
+  if (!inst.TheDef->isSubClassOf("InstARM") &&
+      !inst.TheDef->isSubClassOf("InstThumb"))
+    return;
+  
+  unsigned int index;
+  unsigned int numOperands = inst.OperandList.size();
+  
+  if (numOperands > EDIS_MAX_OPERANDS) {
+    errs() << "numOperands == " << numOperands << " > " << 
+      EDIS_MAX_OPERANDS << '\n';
+    llvm_unreachable("Too many operands");
+  }
+  
+  for (index = 0; index < numOperands; ++index) {
+    const CodeGenInstruction::OperandInfo &operandInfo = 
+    inst.OperandList[index];
+    Record &rec = *operandInfo.Rec;
+    
+    if (ARMFlagFromOpName(operandTypes[index], rec.getName())) {
+      errs() << "Operand type: " << rec.getName() << '\n';
+      errs() << "Operand name: " << operandInfo.Name << '\n';
+      errs() << "Instruction mame: " << inst.TheDef->getName() << '\n';
+      llvm_unreachable("Unhandled type");
+    }
+  }
+}
+
+#define BRANCH(target) {                    \
+  instType.set("kInstructionTypeBranch");   \
+  DECORATE1(target, "kOperandFlagTarget");  \
+}
+
+/// ARMExtractSemantics - Performs various checks on the name of an ARM
+///   instruction to determine what sort of an instruction it is and then adds 
+///   the appropriate flags to the instruction and its operands
+///
+/// @arg instType     - A reference to the type for the instruction as a whole
+/// @arg operandTypes - A reference to the array of operand type object pointers
+/// @arg operandFlags - A reference to the array of operand flag object pointers
+/// @arg inst         - A reference to the original instruction
+static void ARMExtractSemantics(
+  LiteralConstantEmitter &instType,
+  LiteralConstantEmitter *(&operandTypes)[EDIS_MAX_OPERANDS],
+  FlagsConstantEmitter *(&operandFlags)[EDIS_MAX_OPERANDS],
+  const CodeGenInstruction &inst) {
+  const std::string &name = inst.TheDef->getName();
+  
+  if (name == "tBcc"   ||
+      name == "tB"     ||
+      name == "t2Bcc"  ||
+      name == "Bcc"    ||
+      name == "tCBZ"   ||
+      name == "tCBNZ") {
+    BRANCH("target");
+  }
+  
+  if (name == "tBLr9"      ||
+      name == "BLr9_pred"  ||
+      name == "tBLXi_r9"   ||
+      name == "tBLXr_r9"   ||
+      name == "BLXr9"      ||
+      name == "t2BXJ"      ||
+      name == "BXJ") {
+    BRANCH("func");
+    
+    unsigned opIndex;
+    opIndex = inst.getOperandNamed("func");
+    if (operandTypes[opIndex]->is("kOperandTypeImmediate"))
+      operandTypes[opIndex]->set("kOperandTypeARMBranchTarget");
+  }
+}
+
+#undef BRANCH
 
 /// populateInstInfo - Fills an array of InstInfos with information about each 
 ///   instruction in a target
@@ -545,8 +709,8 @@ static void X86ExtractSemantics(FlagsConstantEmitter &instFlags,
 /// @arg target     - The CodeGenTarget to use as a source of instructions
 static void populateInstInfo(CompoundConstantEmitter &infoArray,
                              CodeGenTarget &target) {
-  std::vector<const CodeGenInstruction*> numberedInstructions;
-  target.getInstructionsByEnumValue(numberedInstructions);
+  const std::vector<const CodeGenInstruction*> &numberedInstructions =
+    target.getInstructionsByEnumValue();
   
   unsigned int index;
   unsigned int numInstructions = numberedInstructions.size();
@@ -557,19 +721,29 @@ static void populateInstInfo(CompoundConstantEmitter &infoArray,
     CompoundConstantEmitter *infoStruct = new CompoundConstantEmitter;
     infoArray.addEntry(infoStruct);
     
-    FlagsConstantEmitter *instFlags = new FlagsConstantEmitter;
-    infoStruct->addEntry(instFlags);
+    LiteralConstantEmitter *instType = new LiteralConstantEmitter;
+    infoStruct->addEntry(instType);
     
     LiteralConstantEmitter *numOperandsEmitter = 
       new LiteralConstantEmitter(inst.OperandList.size());
     infoStruct->addEntry(numOperandsEmitter);
+    
+    CompoundConstantEmitter *operandTypeArray = new CompoundConstantEmitter;
+    infoStruct->addEntry(operandTypeArray);
+    
+    LiteralConstantEmitter *operandTypes[EDIS_MAX_OPERANDS];
                          
     CompoundConstantEmitter *operandFlagArray = new CompoundConstantEmitter;
     infoStruct->addEntry(operandFlagArray);
         
-    FlagsConstantEmitter *operandFlags[MAX_OPERANDS];
+    FlagsConstantEmitter *operandFlags[EDIS_MAX_OPERANDS];
     
-    for (unsigned operandIndex = 0; operandIndex < MAX_OPERANDS; ++operandIndex) {
+    for (unsigned operandIndex = 0; 
+         operandIndex < EDIS_MAX_OPERANDS; 
+         ++operandIndex) {
+      operandTypes[operandIndex] = new LiteralConstantEmitter;
+      operandTypeArray->addEntry(operandTypes[operandIndex]);
+      
       operandFlags[operandIndex] = new FlagsConstantEmitter;
       operandFlagArray->addEntry(operandFlags[operandIndex]);
     }
@@ -577,30 +751,97 @@ static void populateInstInfo(CompoundConstantEmitter &infoArray,
     unsigned numSyntaxes = 0;
     
     if (target.getName() == "X86") {
-      X86PopulateOperands(operandFlags, inst);
-      X86ExtractSemantics(*instFlags, operandFlags, inst);
+      X86PopulateOperands(operandTypes, inst);
+      X86ExtractSemantics(*instType, operandFlags, inst);
       numSyntaxes = 2;
     }
+    else if (target.getName() == "ARM") {
+      ARMPopulateOperands(operandTypes, inst);
+      ARMExtractSemantics(*instType, operandTypes, operandFlags, inst);
+      numSyntaxes = 1;
+    }
     
-    CompoundConstantEmitter *operandOrderArray = new CompoundConstantEmitter;
+    CompoundConstantEmitter *operandOrderArray = new CompoundConstantEmitter;    
+    
     infoStruct->addEntry(operandOrderArray);
     
-    for (unsigned syntaxIndex = 0; syntaxIndex < MAX_SYNTAXES; ++syntaxIndex) {
-      CompoundConstantEmitter *operandOrder = new CompoundConstantEmitter;
+    for (unsigned syntaxIndex = 0; 
+         syntaxIndex < EDIS_MAX_SYNTAXES; 
+         ++syntaxIndex) {
+      CompoundConstantEmitter *operandOrder = 
+        new CompoundConstantEmitter(EDIS_MAX_OPERANDS);
+      
       operandOrderArray->addEntry(operandOrder);
       
       if (syntaxIndex < numSyntaxes) {
         populateOperandOrder(operandOrder, inst, syntaxIndex);
       }
-      else {
-        for (unsigned operandIndex = 0; 
-             operandIndex < MAX_OPERANDS; 
-             ++operandIndex) {
-          operandOrder->addEntry(new LiteralConstantEmitter("-1"));
-        }
-      }
     }
+    
+    infoStruct = NULL;
   }
+}
+
+static void emitCommonEnums(raw_ostream &o, unsigned int &i) {
+  EnumEmitter operandTypes("OperandTypes");
+  operandTypes.addEntry("kOperandTypeNone");
+  operandTypes.addEntry("kOperandTypeImmediate");
+  operandTypes.addEntry("kOperandTypeRegister");
+  operandTypes.addEntry("kOperandTypeX86Memory");
+  operandTypes.addEntry("kOperandTypeX86EffectiveAddress");
+  operandTypes.addEntry("kOperandTypeX86PCRelative");
+  operandTypes.addEntry("kOperandTypeARMBranchTarget");
+  operandTypes.addEntry("kOperandTypeARMSoReg");
+  operandTypes.addEntry("kOperandTypeARMSoImm");
+  operandTypes.addEntry("kOperandTypeARMSoImm2Part");
+  operandTypes.addEntry("kOperandTypeARMPredicate");
+  operandTypes.addEntry("kOperandTypeARMAddrMode2");
+  operandTypes.addEntry("kOperandTypeARMAddrMode2Offset");
+  operandTypes.addEntry("kOperandTypeARMAddrMode3");
+  operandTypes.addEntry("kOperandTypeARMAddrMode3Offset");
+  operandTypes.addEntry("kOperandTypeARMAddrMode4");
+  operandTypes.addEntry("kOperandTypeARMAddrMode5");
+  operandTypes.addEntry("kOperandTypeARMAddrMode6");
+  operandTypes.addEntry("kOperandTypeARMAddrMode6Offset");
+  operandTypes.addEntry("kOperandTypeARMAddrModePC");
+  operandTypes.addEntry("kOperandTypeARMRegisterList");
+  operandTypes.addEntry("kOperandTypeARMTBAddrMode");
+  operandTypes.addEntry("kOperandTypeThumbITMask");
+  operandTypes.addEntry("kOperandTypeThumbAddrModeS1");
+  operandTypes.addEntry("kOperandTypeThumbAddrModeS2");
+  operandTypes.addEntry("kOperandTypeThumbAddrModeS4");
+  operandTypes.addEntry("kOperandTypeThumbAddrModeRR");
+  operandTypes.addEntry("kOperandTypeThumbAddrModeSP");
+  operandTypes.addEntry("kOperandTypeThumb2SoReg");
+  operandTypes.addEntry("kOperandTypeThumb2SoImm");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeImm8");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeImm8Offset");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeImm12");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeSoReg");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeImm8s4");
+  operandTypes.addEntry("kOperandTypeThumb2AddrModeImm8s4Offset");
+  operandTypes.emit(o, i);
+  
+  o << "\n";
+  
+  EnumEmitter operandFlags("OperandFlags");
+  operandFlags.addEntry("kOperandFlagSource");
+  operandFlags.addEntry("kOperandFlagTarget");
+  operandFlags.emitAsFlags(o, i);
+  
+  o << "\n";
+  
+  EnumEmitter instructionTypes("InstructionTypes");
+  instructionTypes.addEntry("kInstructionTypeNone");
+  instructionTypes.addEntry("kInstructionTypeMove");
+  instructionTypes.addEntry("kInstructionTypeBranch");
+  instructionTypes.addEntry("kInstructionTypePush");
+  instructionTypes.addEntry("kInstructionTypePop");
+  instructionTypes.addEntry("kInstructionTypeCall");
+  instructionTypes.addEntry("kInstructionTypeReturn");
+  instructionTypes.emit(o, i);
+  
+  o << "\n";
 }
 
 void EDEmitter::run(raw_ostream &o) {
@@ -611,55 +852,13 @@ void EDEmitter::run(raw_ostream &o) {
   
   populateInstInfo(infoArray, target);
   
-  o << "InstInfo instInfo" << target.getName().c_str() << "[] = ";
+  emitCommonEnums(o, i);
+  
+  o << "namespace {\n";
+  
+  o << "llvm::EDInstInfo instInfo" << target.getName().c_str() << "[] = ";
   infoArray.emit(o, i);
   o << ";" << "\n";
-}
-
-void EDEmitter::runHeader(raw_ostream &o) {
-  EmitSourceFileHeader("Enhanced Disassembly Info Header", o);
   
-  o << "#ifndef EDInfo_" << "\n";
-  o << "#define EDInfo_" << "\n";
-  o << "\n";
-  o << "#include <inttypes.h>" << "\n";
-  o << "\n";
-  o << "#define MAX_OPERANDS " << format("%d", MAX_OPERANDS) << "\n";
-  o << "#define MAX_SYNTAXES " << format("%d", MAX_SYNTAXES) << "\n";
-  o << "\n";
-  
-  unsigned int i = 0;
-  
-  EnumEmitter operandFlags("OperandFlags");
-  operandFlags.addEntry("kOperandFlagImmediate");
-  operandFlags.addEntry("kOperandFlagRegister");
-  operandFlags.addEntry("kOperandFlagMemory");
-  operandFlags.addEntry("kOperandFlagEffectiveAddress");
-  operandFlags.addEntry("kOperandFlagPCRelative");
-  operandFlags.addEntry("kOperandFlagSource");
-  operandFlags.addEntry("kOperandFlagTarget");
-  operandFlags.emitAsFlags(o, i);
-  
-  o << "\n";
-  
-  EnumEmitter instructionFlags("InstructionFlags");
-  instructionFlags.addEntry("kInstructionFlagMove");
-  instructionFlags.addEntry("kInstructionFlagBranch");
-  instructionFlags.addEntry("kInstructionFlagPush");
-  instructionFlags.addEntry("kInstructionFlagPop");
-  instructionFlags.addEntry("kInstructionFlagCall");
-  instructionFlags.addEntry("kInstructionFlagReturn");
-  instructionFlags.emitAsFlags(o, i);
-  
-  o << "\n";
-  
-  StructEmitter instInfo("InstInfo");
-  instInfo.addMember("uint32_t", "instructionFlags");
-  instInfo.addMember("uint8_t", "numOperands");
-  instInfo.addMember("uint8_t", "operandFlags[MAX_OPERANDS]");
-  instInfo.addMember("const char", "operandOrders[MAX_SYNTAXES][MAX_OPERANDS]");
-  instInfo.emit(o, i);
-  
-  o << "\n";
-  o << "#endif" << "\n";
+  o << "}\n";
 }

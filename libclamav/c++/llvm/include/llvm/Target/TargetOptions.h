@@ -16,6 +16,8 @@
 #define LLVM_TARGET_TARGETOPTIONS_H
 
 namespace llvm {
+  class MachineFunction;
+
   // Possible float ABI settings. Used with FloatABIType in TargetOptions.h.
   namespace FloatABI {
     enum ABIType {
@@ -34,6 +36,16 @@ namespace llvm {
   /// specified on the command line.  If the target supports the frame pointer
   /// elimination optimization, this option should disable it.
   extern bool NoFramePointerElim;
+
+  /// NoFramePointerElimNonLeaf - This flag is enabled when the
+  /// -disable-non-leaf-fp-elim is specified on the command line. If the target
+  /// supports the frame pointer elimination optimization, this option should
+  /// disable it for non-leaf functions.
+  extern bool NoFramePointerElimNonLeaf;
+
+  /// DisableFramePointerElim - This returns true if frame pointer elimination
+  /// optimization should be disabled for the given machine function.
+  extern bool DisableFramePointerElim(const MachineFunction &MF);
 
   /// LessPreciseFPMAD - This flag is enabled when the
   /// -enable-fp-mad is specified on the command line.  When this flag is off
@@ -56,16 +68,21 @@ namespace llvm {
   /// this flag is off (the default), the code generator is not allowed to
   /// produce results that are "less precise" than IEEE allows.  This includes
   /// use of X86 instructions like FSIN and FCOS instead of libcalls.
-  /// UnsafeFPMath implies FiniteOnlyFPMath and LessPreciseFPMAD.
+  /// UnsafeFPMath implies LessPreciseFPMAD.
   extern bool UnsafeFPMath;
 
-  /// FiniteOnlyFPMath - This returns true when the -enable-finite-only-fp-math
-  /// option is specified on the command line. If this returns false (default),
-  /// the code generator is not allowed to assume that FP arithmetic arguments
-  /// and results are never NaNs or +-Infs.
-  extern bool FiniteOnlyFPMathOption;
-  extern bool FiniteOnlyFPMath();
-  
+  /// NoInfsFPMath - This flag is enabled when the
+  /// -enable-no-infs-fp-math flag is specified on the command line. When
+  /// this flag is off (the default), the code generator is not allowed to
+  /// assume the FP arithmetic arguments and results are never +-Infs.
+  extern bool NoInfsFPMath;
+
+  /// NoNaNsFPMath - This flag is enabled when the
+  /// -enable-no-nans-fp-math flag is specified on the command line. When
+  /// this flag is off (the default), the code generator is not allowed to
+  /// assume the FP arithmetic arguments and results are never NaNs.
+  extern bool NoNaNsFPMath;
+
   /// HonorSignDependentRoundingFPMath - This returns true when the
   /// -enable-sign-dependent-rounding-fp-math is specified.  If this returns
   /// false (the default), the code generator is allowed to assume that the
@@ -95,13 +112,9 @@ namespace llvm {
   /// crt*.o compiling).
   extern bool NoZerosInBSS;
 
-  /// DwarfExceptionHandling - This flag indicates that Dwarf exception
-  /// information should be emitted.
-  extern bool DwarfExceptionHandling;
-
-  /// SjLjExceptionHandling - This flag indicates that SJLJ exception
-  /// information should be emitted.
-  extern bool SjLjExceptionHandling;
+  /// JITExceptionHandling - This flag indicates that the JIT should emit
+  /// exception handling information.
+  extern bool JITExceptionHandling;
 
   /// JITEmitDebugInfo - This flag indicates that the JIT should try to emit
   /// debug information and notify a debugger about it.
@@ -127,8 +140,8 @@ namespace llvm {
   /// StackAlignment - Override default stack alignment for target.
   extern unsigned StackAlignment;
 
-  /// RealignStack - This flag indicates, whether stack should be automatically
-  /// realigned, if needed.
+  /// RealignStack - This flag indicates whether the stack should be
+  /// automatically realigned, if needed.
   extern bool RealignStack;
 
   /// DisableJumpTables - This flag indicates jump tables should not be 
@@ -143,11 +156,6 @@ namespace llvm {
   /// StrongPHIElim - This flag enables more aggressive PHI elimination
   /// wth earlier copy coalescing.
   extern bool StrongPHIElim;
-
-  /// DisableScheduling - This flag disables instruction scheduling. In
-  /// particular, it assigns an ordering to the SDNodes, which the scheduler
-  /// uses instead of its normal heuristics to perform scheduling.
-  extern bool DisableScheduling;
 
 } // End llvm namespace
 

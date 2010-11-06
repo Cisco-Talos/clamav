@@ -29,6 +29,7 @@
 #include "llvm/System/Atomic.h"
 
 namespace llvm {
+class raw_ostream;
 
 class Statistic {
 public:
@@ -55,6 +56,10 @@ public:
   }
   
   const Statistic &operator++() {
+    // FIXME: This function and all those that follow carefully use an
+    // atomic operation to update the value safely in the presence of
+    // concurrent accesses, but not to read the return value, so the
+    // return value is not thread safe.
     sys::AtomicIncrement(&Value);
     return init();
   }
@@ -112,6 +117,15 @@ protected:
 // automatically passes the DEBUG_TYPE of the file into the statistic.
 #define STATISTIC(VARNAME, DESC) \
   static llvm::Statistic VARNAME = { DEBUG_TYPE, DESC, 0, 0 }
+
+/// \brief Enable the collection and printing of statistics.
+void EnableStatistics();
+
+/// \brief Print statistics to the file returned by CreateInfoOutputFile().
+void PrintStatistics();
+
+/// \brief Print statistics to the given output stream.
+void PrintStatistics(raw_ostream &OS);
 
 } // End llvm namespace
 

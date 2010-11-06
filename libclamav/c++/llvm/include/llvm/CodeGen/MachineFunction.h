@@ -26,13 +26,14 @@
 
 namespace llvm {
 
-class DILocation;
 class Value;
 class Function;
 class MachineRegisterInfo;
 class MachineFrameInfo;
 class MachineConstantPool;
 class MachineJumpTableInfo;
+class MachineModuleInfo;
+class MCContext;
 class Pass;
 class TargetMachine;
 class TargetRegisterClass;
@@ -69,9 +70,11 @@ struct MachineFunctionInfo {
 };
 
 class MachineFunction {
-  Function *Fn;
+  const Function *Fn;
   const TargetMachine &Target;
-
+  MCContext &Ctx;
+  MachineModuleInfo &MMI;
+  
   // RegInfo - Information about each register in use in the function.
   MachineRegisterInfo *RegInfo;
 
@@ -106,31 +109,32 @@ class MachineFunction {
   typedef ilist<MachineBasicBlock> BasicBlockListType;
   BasicBlockListType BasicBlocks;
 
-  // Default debug location. Used to print out the debug label at the beginning
-  // of a function.
-  DebugLoc DefaultDebugLoc;
-
-  // Tracks debug locations.
-  DebugLocTracker DebugLocInfo;
-
   /// FunctionNumber - This provides a unique ID for each function emitted in
   /// this translation unit.
   ///
   unsigned FunctionNumber;
   
-  // The alignment of the function.
+  /// Alignment - The alignment of the function.
   unsigned Alignment;
 
-  MachineFunction(const MachineFunction &); // intentionally unimplemented
-  void operator=(const MachineFunction&);   // intentionally unimplemented
+  /// CallsSetJmp - True if the function calls setjmp or sigsetjmp. This is used
+  /// to limit optimizations which cannot reason about the control flow of
+  /// setjmp.
+  bool CallsSetJmp;
 
+  MachineFunction(const MachineFunction &); // DO NOT IMPLEMENT
+  void operator=(const MachineFunction&);   // DO NOT IMPLEMENT
 public:
-  MachineFunction(Function *Fn, const TargetMachine &TM, unsigned FunctionNum);
+  MachineFunction(const Function *Fn, const TargetMachine &TM,
+                  unsigned FunctionNum, MachineModuleInfo &MMI);
   ~MachineFunction();
 
+  MachineModuleInfo &getMMI() const { return MMI; }
+  MCContext &getContext() const { return Ctx; }
+  
   /// getFunction - Return the LLVM function that this machine code represents
   ///
-  Function *getFunction() const { return Fn; }
+  const Function *getFunction() const { return Fn; }
 
   /// getFunctionNumber - Return a unique ID for the current function.
   ///
@@ -181,6 +185,17 @@ public:
   /// EnsureAlignment - Make sure the function is at least 'A' bits aligned.
   void EnsureAlignment(unsigned A) {
     if (Alignment < A) Alignment = A;
+  }
+
+  /// callsSetJmp - Returns true if the function calls setjmp or sigsetjmp.
+  bool callsSetJmp() const {
+    return CallsSetJmp;
+  }
+
+  /// setCallsSetJmp - Set a flag that indicates if there's a call to setjmp or
+  /// sigsetjmp.
+  void setCallsSetJmp(bool B) {
+    CallsSetJmp = B;
   }
   
   /// getInfo - Keep track of various per-function pieces of information for
@@ -251,7 +266,7 @@ public:
 
   /// verify - Run the current MachineFunction through the machine code
   /// verifier, useful for debugger use.
-  void verify(Pass *p=NULL, bool allowDoubleDefs=false) const;
+  void verify(Pass *p=NULL) const;
 
   // Provide accessors for the MachineBasicBlock list...
   typedef BasicBlockListType::iterator iterator;
@@ -391,25 +406,6 @@ public:
   /// normal 'L' label is returned.
   MCSymbol *getJTISymbol(unsigned JTI, MCContext &Ctx, 
                          bool isLinkerPrivate = false) const;
-  
-  
-  //===--------------------------------------------------------------------===//
-  // Debug location.
-  //
-
-  /// getDILocation - Get the DILocation for a given DebugLoc object.
-  DILocation getDILocation(DebugLoc DL) const;
-
-  /// getDefaultDebugLoc - Get the default debug location for the machine
-  /// function.
-  DebugLoc getDefaultDebugLoc() const { return DefaultDebugLoc; }
-
-  /// setDefaultDebugLoc - Get the default debug location for the machine
-  /// function.
-  void setDefaultDebugLoc(DebugLoc DL) { DefaultDebugLoc = DL; }
-
-  /// getDebugLocInfo - Get the debug info location tracker.
-  DebugLocTracker &getDebugLocInfo() { return DebugLocInfo; }
 };
 
 //===--------------------------------------------------------------------===//

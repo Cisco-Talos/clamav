@@ -33,7 +33,7 @@ using namespace llvm;
   MAP(C9, 38)           \
   MAP(E8, 39)           \
   MAP(F0, 40)           \
-  MAP(F8, 41)		\
+  MAP(F8, 41)           \
   MAP(F9, 42)
 
 // A clone of X86 since we can't depend on something that is generated.
@@ -212,6 +212,7 @@ RecognizableInstr::RecognizableInstr(DisassemblerTables &tables,
   
   HasOpSizePrefix  = Rec->getValueAsBit("hasOpSizePrefix");
   HasREX_WPrefix   = Rec->getValueAsBit("hasREX_WPrefix");
+  HasVEX_4VPrefix  = Rec->getValueAsBit("hasVEX_4VPrefix");
   HasLockPrefix    = Rec->getValueAsBit("hasLockPrefix");
   IsCodeGenOnly    = Rec->getValueAsBit("isCodeGenOnly");
   
@@ -230,6 +231,10 @@ void RecognizableInstr::processInstr(DisassemblerTables &tables,
                                    const CodeGenInstruction &insn,
                                    InstrUID uid)
 {
+  // Ignore "asm parser only" instructions.
+  if (insn.TheDef->getValueAsBit("isAsmParserOnly"))
+    return;
+  
   RecognizableInstr recogInstr(tables, insn, uid);
   
   recogInstr.emitInstructionSpecifier(tables);
@@ -298,6 +303,7 @@ RecognizableInstr::filter_ret RecognizableInstr::filter() const {
      Name.find("_int") != Name.npos       ||
      Name.find("Int_") != Name.npos       ||
      Name.find("_NOREX") != Name.npos     ||
+     Name.find("_TC") != Name.npos     ||
      Name.find("EH_RETURN") != Name.npos  ||
      Name.find("V_SET") != Name.npos      ||
      Name.find("LOCK_") != Name.npos      ||
@@ -527,7 +533,13 @@ void RecognizableInstr::emitInstructionSpecifier(DisassemblerTables &tables) {
            "Unexpected number of operands for MRMSrcRegFrm");
     HANDLE_OPERAND(roRegister)
     HANDLE_OPERAND(rmRegister)
-    HANDLE_OPTIONAL(immediate)
+
+    if (HasVEX_4VPrefix)
+      // FIXME: In AVX, the register below becomes the one encoded
+      // in ModRMVEX and the one above the one in the VEX.VVVV field
+      HANDLE_OPTIONAL(rmRegister)
+    else
+      HANDLE_OPTIONAL(immediate)
     break;
   case X86Local::MRMSrcMem:
     // Operand 1 is a register operand in the Reg/Opcode field.
@@ -536,6 +548,12 @@ void RecognizableInstr::emitInstructionSpecifier(DisassemblerTables &tables) {
     assert(numPhysicalOperands >= 2 && numPhysicalOperands <= 3 &&
            "Unexpected number of operands for MRMSrcMemFrm");
     HANDLE_OPERAND(roRegister)
+
+    if (HasVEX_4VPrefix)
+      // FIXME: In AVX, the register below becomes the one encoded
+      // in ModRMVEX and the one above the one in the VEX.VVVV field
+      HANDLE_OPTIONAL(rmRegister)
+
     HANDLE_OPERAND(memory)
     HANDLE_OPTIONAL(immediate)
     break;
@@ -818,8 +836,9 @@ OperandType RecognizableInstr::typeFromString(const std::string &s,
   TYPE("RST",                 TYPE_ST)
   TYPE("i128mem",             TYPE_M128)
   TYPE("i64i32imm_pcrel",     TYPE_REL64)
+  TYPE("i16imm_pcrel",        TYPE_REL16)
   TYPE("i32imm_pcrel",        TYPE_REL32)
-  TYPE("SSECC",               TYPE_IMM8)
+  TYPE("SSECC",               TYPE_IMM3)
   TYPE("brtarget",            TYPE_RELv)
   TYPE("brtarget8",           TYPE_REL8)
   TYPE("f80mem",              TYPE_M80FP)
@@ -834,8 +853,7 @@ OperandType RecognizableInstr::typeFromString(const std::string &s,
   TYPE("opaque512mem",        TYPE_M512)
   TYPE("SEGMENT_REG",         TYPE_SEGMENTREG)
   TYPE("DEBUG_REG",           TYPE_DEBUGREG)
-  TYPE("CONTROL_REG_32",      TYPE_CR32)
-  TYPE("CONTROL_REG_64",      TYPE_CR64)
+  TYPE("CONTROL_REG",         TYPE_CONTROLREG)
   TYPE("offset8",             TYPE_MOFFS8)
   TYPE("offset16",            TYPE_MOFFS16)
   TYPE("offset32",            TYPE_MOFFS32)
@@ -894,8 +912,7 @@ OperandEncoding RecognizableInstr::roRegisterEncodingFromString
   ENCODING("VR64",            ENCODING_REG)
   ENCODING("SEGMENT_REG",     ENCODING_REG)
   ENCODING("DEBUG_REG",       ENCODING_REG)
-  ENCODING("CONTROL_REG_32",  ENCODING_REG)
-  ENCODING("CONTROL_REG_64",  ENCODING_REG)
+  ENCODING("CONTROL_REG",     ENCODING_REG)
   errs() << "Unhandled reg/opcode register encoding " << s << "\n";
   llvm_unreachable("Unhandled reg/opcode register encoding");
 }
@@ -939,6 +956,7 @@ OperandEncoding RecognizableInstr::relocationEncodingFromString
   ENCODING("i64i8imm",        ENCODING_IB)
   ENCODING("i8imm",           ENCODING_IB)
   ENCODING("i64i32imm_pcrel", ENCODING_ID)
+  ENCODING("i16imm_pcrel",    ENCODING_IW)
   ENCODING("i32imm_pcrel",    ENCODING_ID)
   ENCODING("brtarget",        ENCODING_Iv)
   ENCODING("brtarget8",       ENCODING_IB)

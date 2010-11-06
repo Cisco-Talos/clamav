@@ -69,49 +69,121 @@ Value *llvm::EmitStrChr(Value *Ptr, char C, IRBuilder<> &B,
   return CI;
 }
 
+/// EmitStrNCmp - Emit a call to the strncmp function to the builder.
+Value *llvm::EmitStrNCmp(Value *Ptr1, Value *Ptr2, Value *Len,
+                         IRBuilder<> &B, const TargetData *TD) {
+  Module *M = B.GetInsertBlock()->getParent()->getParent();
+  AttributeWithIndex AWI[3];
+  AWI[0] = AttributeWithIndex::get(1, Attribute::NoCapture);
+  AWI[1] = AttributeWithIndex::get(2, Attribute::NoCapture);
+  AWI[2] = AttributeWithIndex::get(~0u, Attribute::ReadOnly |
+                                   Attribute::NoUnwind);
+
+  LLVMContext &Context = B.GetInsertBlock()->getContext();
+  Value *StrNCmp = M->getOrInsertFunction("strncmp", AttrListPtr::get(AWI, 3),
+                                          B.getInt32Ty(),
+                                          B.getInt8PtrTy(),
+                                          B.getInt8PtrTy(),
+                                          TD->getIntPtrType(Context), NULL);
+  CallInst *CI = B.CreateCall3(StrNCmp, CastToCStr(Ptr1, B),
+                               CastToCStr(Ptr2, B), Len, "strncmp");
+
+  if (const Function *F = dyn_cast<Function>(StrNCmp->stripPointerCasts()))
+    CI->setCallingConv(F->getCallingConv());
+
+  return CI;
+}
+
 /// EmitStrCpy - Emit a call to the strcpy function to the builder, for the
 /// specified pointer arguments.
 Value *llvm::EmitStrCpy(Value *Dst, Value *Src, IRBuilder<> &B,
-                        const TargetData *TD) {
+                        const TargetData *TD, StringRef Name) {
   Module *M = B.GetInsertBlock()->getParent()->getParent();
   AttributeWithIndex AWI[2];
   AWI[0] = AttributeWithIndex::get(2, Attribute::NoCapture);
   AWI[1] = AttributeWithIndex::get(~0u, Attribute::NoUnwind);
   const Type *I8Ptr = B.getInt8PtrTy();
-  Value *StrCpy = M->getOrInsertFunction("strcpy", AttrListPtr::get(AWI, 2),
+  Value *StrCpy = M->getOrInsertFunction(Name, AttrListPtr::get(AWI, 2),
                                          I8Ptr, I8Ptr, I8Ptr, NULL);
   CallInst *CI = B.CreateCall2(StrCpy, CastToCStr(Dst, B), CastToCStr(Src, B),
-                               "strcpy");
+                               Name);
   if (const Function *F = dyn_cast<Function>(StrCpy->stripPointerCasts()))
     CI->setCallingConv(F->getCallingConv());
   return CI;
 }
 
-/// EmitMemCpy - Emit a call to the memcpy function to the builder.  This always
-/// expects that the size has type 'intptr_t' and Dst/Src are pointers.
-Value *llvm::EmitMemCpy(Value *Dst, Value *Src, Value *Len,
-                        unsigned Align, IRBuilder<> &B, const TargetData *TD) {
+/// EmitStrNCpy - Emit a call to the strncpy function to the builder, for the
+/// specified pointer arguments.
+Value *llvm::EmitStrNCpy(Value *Dst, Value *Src, Value *Len,
+                         IRBuilder<> &B, const TargetData *TD, StringRef Name) {
   Module *M = B.GetInsertBlock()->getParent()->getParent();
-  const Type *Ty = Len->getType();
-  Value *MemCpy = Intrinsic::getDeclaration(M, Intrinsic::memcpy, &Ty, 1);
+  AttributeWithIndex AWI[2];
+  AWI[0] = AttributeWithIndex::get(2, Attribute::NoCapture);
+  AWI[1] = AttributeWithIndex::get(~0u, Attribute::NoUnwind);
+  const Type *I8Ptr = B.getInt8PtrTy();
+  Value *StrNCpy = M->getOrInsertFunction(Name, AttrListPtr::get(AWI, 2),
+                                          I8Ptr, I8Ptr, I8Ptr,
+                                          Len->getType(), NULL);
+  CallInst *CI = B.CreateCall3(StrNCpy, CastToCStr(Dst, B), CastToCStr(Src, B),
+                               Len, "strncpy");
+  if (const Function *F = dyn_cast<Function>(StrNCpy->stripPointerCasts()))
+    CI->setCallingConv(F->getCallingConv());
+  return CI;
+}
+
+
+/// EmitMemCpy - Emit a call to the memcpy function to the builder.  This always
+/// expects that Len has type 'intptr_t' and Dst/Src are pointers.
+Value *llvm::EmitMemCpy(Value *Dst, Value *Src, Value *Len, unsigned Align,
+                        bool isVolatile, IRBuilder<> &B, const TargetData *TD) {
+  Module *M = B.GetInsertBlock()->getParent()->getParent();
   Dst = CastToCStr(Dst, B);
   Src = CastToCStr(Src, B);
-  return B.CreateCall4(MemCpy, Dst, Src, Len,
-                       ConstantInt::get(B.getInt32Ty(), Align));
+  const Type *ArgTys[3] = { Dst->getType(), Src->getType(), Len->getType() };
+  Value *MemCpy = Intrinsic::getDeclaration(M, Intrinsic::memcpy, ArgTys, 3);
+  return B.CreateCall5(MemCpy, Dst, Src, Len,
+                       ConstantInt::get(B.getInt32Ty(), Align),
+                       ConstantInt::get(B.getInt1Ty(), isVolatile));
+}
+
+/// EmitMemCpyChk - Emit a call to the __memcpy_chk function to the builder.
+/// This expects that the Len and ObjSize have type 'intptr_t' and Dst/Src
+/// are pointers.
+Value *llvm::EmitMemCpyChk(Value *Dst, Value *Src, Value *Len, Value *ObjSize,
+                           IRBuilder<> &B, const TargetData *TD) {
+  Module *M = B.GetInsertBlock()->getParent()->getParent();
+  AttributeWithIndex AWI;
+  AWI = AttributeWithIndex::get(~0u, Attribute::NoUnwind);
+  LLVMContext &Context = B.GetInsertBlock()->getContext();
+  Value *MemCpy = M->getOrInsertFunction("__memcpy_chk",
+                                         AttrListPtr::get(&AWI, 1),
+                                         B.getInt8PtrTy(),
+                                         B.getInt8PtrTy(),
+                                         B.getInt8PtrTy(),
+                                         TD->getIntPtrType(Context),
+                                         TD->getIntPtrType(Context), NULL);
+  Dst = CastToCStr(Dst, B);
+  Src = CastToCStr(Src, B);
+  CallInst *CI = B.CreateCall4(MemCpy, Dst, Src, Len, ObjSize);
+  if (const Function *F = dyn_cast<Function>(MemCpy->stripPointerCasts()))
+    CI->setCallingConv(F->getCallingConv());
+  return CI;
 }
 
 /// EmitMemMove - Emit a call to the memmove function to the builder.  This
 /// always expects that the size has type 'intptr_t' and Dst/Src are pointers.
-Value *llvm::EmitMemMove(Value *Dst, Value *Src, Value *Len,
-					               unsigned Align, IRBuilder<> &B, const TargetData *TD) {
+Value *llvm::EmitMemMove(Value *Dst, Value *Src, Value *Len, unsigned Align,
+                         bool isVolatile, IRBuilder<> &B, const TargetData *TD) {
   Module *M = B.GetInsertBlock()->getParent()->getParent();
   LLVMContext &Context = B.GetInsertBlock()->getContext();
-  const Type *Ty = TD->getIntPtrType(Context);
-  Value *MemMove = Intrinsic::getDeclaration(M, Intrinsic::memmove, &Ty, 1);
+  const Type *ArgTys[3] = { Dst->getType(), Src->getType(),
+                            TD->getIntPtrType(Context) };
+  Value *MemMove = Intrinsic::getDeclaration(M, Intrinsic::memmove, ArgTys, 3);
   Dst = CastToCStr(Dst, B);
   Src = CastToCStr(Src, B);
   Value *A = ConstantInt::get(B.getInt32Ty(), Align);
-  return B.CreateCall4(MemMove, Dst, Src, Len, A);
+  Value *Vol = ConstantInt::get(B.getInt1Ty(), isVolatile);
+  return B.CreateCall5(MemMove, Dst, Src, Len, A, Vol);
 }
 
 /// EmitMemChr - Emit a call to the memchr function.  This assumes that Ptr is
@@ -162,15 +234,15 @@ Value *llvm::EmitMemCmp(Value *Ptr1, Value *Ptr2,
 }
 
 /// EmitMemSet - Emit a call to the memset function
-Value *llvm::EmitMemSet(Value *Dst, Value *Val,
-                        Value *Len, IRBuilder<> &B, const TargetData *TD) {
+Value *llvm::EmitMemSet(Value *Dst, Value *Val, Value *Len, bool isVolatile,
+                        IRBuilder<> &B, const TargetData *TD) {
  Module *M = B.GetInsertBlock()->getParent()->getParent();
  Intrinsic::ID IID = Intrinsic::memset;
- const Type *Tys[1];
- Tys[0] = Len->getType();
- Value *MemSet = Intrinsic::getDeclaration(M, IID, Tys, 1);
+ const Type *Tys[2] = { Dst->getType(), Len->getType() };
+ Value *MemSet = Intrinsic::getDeclaration(M, IID, Tys, 2);
  Value *Align = ConstantInt::get(B.getInt32Ty(), 1);
- return B.CreateCall4(MemSet, CastToCStr(Dst, B), Val, Len, Align);
+ Value *Vol = ConstantInt::get(B.getInt1Ty(), isVolatile);
+ return B.CreateCall5(MemSet, CastToCStr(Dst, B), Val, Len, Align, Vol);
 }
 
 /// EmitUnaryFloatFnCall - Emit a call to the unary function named 'Name' (e.g.
@@ -321,4 +393,135 @@ void llvm::EmitFWrite(Value *Ptr, Value *Size, Value *File,
 
   if (const Function *Fn = dyn_cast<Function>(F->stripPointerCasts()))
     CI->setCallingConv(Fn->getCallingConv());
+}
+
+SimplifyFortifiedLibCalls::~SimplifyFortifiedLibCalls() { }
+
+bool SimplifyFortifiedLibCalls::fold(CallInst *CI, const TargetData *TD) {
+  // We really need TargetData for later.
+  if (!TD) return false;
+  
+  this->CI = CI;
+  Function *Callee = CI->getCalledFunction();
+  StringRef Name = Callee->getName();
+  const FunctionType *FT = Callee->getFunctionType();
+  BasicBlock *BB = CI->getParent();
+  LLVMContext &Context = CI->getParent()->getContext();
+  IRBuilder<> B(Context);
+
+  // Set the builder to the instruction after the call.
+  B.SetInsertPoint(BB, CI);
+
+  if (Name == "__memcpy_chk") {
+    // Check if this has the right signature.
+    if (FT->getNumParams() != 4 || FT->getReturnType() != FT->getParamType(0) ||
+        !FT->getParamType(0)->isPointerTy() ||
+        !FT->getParamType(1)->isPointerTy() ||
+        FT->getParamType(2) != TD->getIntPtrType(Context) ||
+        FT->getParamType(3) != TD->getIntPtrType(Context))
+      return false;
+
+    if (isFoldable(3, 2, false)) {
+      EmitMemCpy(CI->getArgOperand(0), CI->getArgOperand(1),
+                 CI->getArgOperand(2), 1, false, B, TD);
+      replaceCall(CI->getArgOperand(0));
+      return true;
+    }
+    return false;
+  }
+
+  // Should be similar to memcpy.
+  if (Name == "__mempcpy_chk") {
+    return false;
+  }
+
+  if (Name == "__memmove_chk") {
+    // Check if this has the right signature.
+    if (FT->getNumParams() != 4 || FT->getReturnType() != FT->getParamType(0) ||
+        !FT->getParamType(0)->isPointerTy() ||
+        !FT->getParamType(1)->isPointerTy() ||
+        FT->getParamType(2) != TD->getIntPtrType(Context) ||
+        FT->getParamType(3) != TD->getIntPtrType(Context))
+      return false;
+
+    if (isFoldable(3, 2, false)) {
+      EmitMemMove(CI->getArgOperand(0), CI->getArgOperand(1),
+                  CI->getArgOperand(2), 1, false, B, TD);
+      replaceCall(CI->getArgOperand(0));
+      return true;
+    }
+    return false;
+  }
+
+  if (Name == "__memset_chk") {
+    // Check if this has the right signature.
+    if (FT->getNumParams() != 4 || FT->getReturnType() != FT->getParamType(0) ||
+        !FT->getParamType(0)->isPointerTy() ||
+        !FT->getParamType(1)->isIntegerTy() ||
+        FT->getParamType(2) != TD->getIntPtrType(Context) ||
+        FT->getParamType(3) != TD->getIntPtrType(Context))
+      return false;
+
+    if (isFoldable(3, 2, false)) {
+      Value *Val = B.CreateIntCast(CI->getArgOperand(1), B.getInt8Ty(),
+                                   false);
+      EmitMemSet(CI->getArgOperand(0), Val,  CI->getArgOperand(2),
+                 false, B, TD);
+      replaceCall(CI->getArgOperand(0));
+      return true;
+    }
+    return false;
+  }
+
+  if (Name == "__strcpy_chk" || Name == "__stpcpy_chk") {
+    // Check if this has the right signature.
+    if (FT->getNumParams() != 3 ||
+        FT->getReturnType() != FT->getParamType(0) ||
+        FT->getParamType(0) != FT->getParamType(1) ||
+        FT->getParamType(0) != Type::getInt8PtrTy(Context) ||
+        FT->getParamType(2) != TD->getIntPtrType(Context))
+      return 0;
+    
+    
+    // If a) we don't have any length information, or b) we know this will
+    // fit then just lower to a plain st[rp]cpy. Otherwise we'll keep our
+    // st[rp]cpy_chk call which may fail at runtime if the size is too long.
+    // TODO: It might be nice to get a maximum length out of the possible
+    // string lengths for varying.
+    if (isFoldable(2, 1, true)) {
+      Value *Ret = EmitStrCpy(CI->getArgOperand(0), CI->getArgOperand(1), B, TD,
+                              Name.substr(2, 6));
+      replaceCall(Ret);
+      return true;
+    }
+    return false;
+  }
+
+  if (Name == "__strncpy_chk" || Name == "__stpncpy_chk") {
+    // Check if this has the right signature.
+    if (FT->getNumParams() != 4 || FT->getReturnType() != FT->getParamType(0) ||
+        FT->getParamType(0) != FT->getParamType(1) ||
+        FT->getParamType(0) != Type::getInt8PtrTy(Context) ||
+        !FT->getParamType(2)->isIntegerTy() ||
+        FT->getParamType(3) != TD->getIntPtrType(Context))
+      return false;
+
+    if (isFoldable(3, 2, false)) {
+      Value *Ret = EmitStrNCpy(CI->getArgOperand(0), CI->getArgOperand(1),
+                               CI->getArgOperand(2), B, TD, Name.substr(2, 7));
+      replaceCall(Ret);
+      return true;
+    }
+    return false;
+  }
+
+  if (Name == "__strcat_chk") {
+    return false;
+  }
+
+  if (Name == "__strncat_chk") {
+    return false;
+  }
+
+  return false;
 }

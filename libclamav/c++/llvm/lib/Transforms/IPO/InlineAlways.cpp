@@ -36,7 +36,7 @@ namespace {
     InlineCostAnalyzer CA;
   public:
     // Use extremely low threshold. 
-    AlwaysInliner() : Inliner(&ID, -2000000000) {}
+    AlwaysInliner() : Inliner(ID, -2000000000) {}
     static char ID; // Pass identification, replacement for typeid
     InlineCost getInlineCost(CallSite CS) {
       return CA.getInlineCost(CS, NeverInline);
@@ -45,18 +45,24 @@ namespace {
       return CA.getInlineFudgeFactor(CS);
     }
     void resetCachedCostInfo(Function *Caller) {
-      return CA.resetCachedCostInfo(Caller);
+      CA.resetCachedCostInfo(Caller);
+    }
+    void growCachedCostInfo(Function* Caller, Function* Callee) {
+      CA.growCachedCostInfo(Caller, Callee);
     }
     virtual bool doFinalization(CallGraph &CG) { 
       return removeDeadFunctions(CG, &NeverInline); 
     }
     virtual bool doInitialization(CallGraph &CG);
+    void releaseMemory() {
+      CA.clear();
+    }
   };
 }
 
 char AlwaysInliner::ID = 0;
-static RegisterPass<AlwaysInliner>
-X("always-inline", "Inliner for always_inline functions");
+INITIALIZE_PASS(AlwaysInliner, "always-inline",
+                "Inliner for always_inline functions", false, false);
 
 Pass *llvm::createAlwaysInlinerPass() { return new AlwaysInliner(); }
 

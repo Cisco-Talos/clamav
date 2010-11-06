@@ -275,12 +275,12 @@ public:
     return I->second;
   }
   
-  LatticeVal getStructLatticeValueFor(Value *V, unsigned i) const {
+  /*LatticeVal getStructLatticeValueFor(Value *V, unsigned i) const {
     DenseMap<std::pair<Value*, unsigned>, LatticeVal>::const_iterator I = 
       StructValueState.find(std::make_pair(V, i));
     assert(I != StructValueState.end() && "V is not in valuemap!");
     return I->second;
-  }
+  }*/
 
   /// getTrackedRetVals - Get the inferred return value map.
   ///
@@ -317,7 +317,10 @@ private:
   void markConstant(LatticeVal &IV, Value *V, Constant *C) {
     if (!IV.markConstant(C)) return;
     DEBUG(dbgs() << "markConstant: " << *C << ": " << *V << '\n');
-    InstWorkList.push_back(V);
+    if (IV.isOverdefined())
+      OverdefinedInstWorkList.push_back(V);
+    else
+      InstWorkList.push_back(V);
   }
   
   void markConstant(Value *V, Constant *C) {
@@ -327,9 +330,13 @@ private:
 
   void markForcedConstant(Value *V, Constant *C) {
     assert(!V->getType()->isStructTy() && "Should use other method");
-    ValueState[V].markForcedConstant(C);
+    LatticeVal &IV = ValueState[V];
+    IV.markForcedConstant(C);
     DEBUG(dbgs() << "markForcedConstant: " << *C << ": " << *V << '\n');
-    InstWorkList.push_back(V);
+    if (IV.isOverdefined())
+      OverdefinedInstWorkList.push_back(V);
+    else
+      InstWorkList.push_back(V);
   }
   
   
@@ -501,17 +508,16 @@ private:
   void visitLoadInst      (LoadInst &I);
   void visitGetElementPtrInst(GetElementPtrInst &I);
   void visitCallInst      (CallInst &I) {
-    visitCallSite(CallSite::get(&I));
+    visitCallSite(&I);
   }
   void visitInvokeInst    (InvokeInst &II) {
-    visitCallSite(CallSite::get(&II));
+    visitCallSite(&II);
     visitTerminatorInst(II);
   }
   void visitCallSite      (CallSite CS);
   void visitUnwindInst    (TerminatorInst &I) { /*returns void*/ }
   void visitUnreachableInst(TerminatorInst &I) { /*returns void*/ }
   void visitAllocaInst    (Instruction &I) { markOverdefined(&I); }
-  void visitVANextInst    (Instruction &I) { markOverdefined(&I); }
   void visitVAArgInst     (Instruction &I) { markAnythingOverdefined(&I); }
 
   void visitInstruction(Instruction &I) {
@@ -1445,6 +1451,8 @@ bool SCCPSolver::ResolvedUndefsIn(Function &F) {
         // After a zero extend, we know the top part is zero.  SExt doesn't have
         // to be handled here, because we don't know whether the top part is 1's
         // or 0's.
+      case Instruction::SIToFP:  // some FP values are not possible, just use 0.
+      case Instruction::UIToFP:  // some FP values are not possible, just use 0.
         markForcedConstant(I, Constant::getNullValue(ITy));
         return true;
       case Instruction::Mul:
@@ -1521,45 +1529,48 @@ bool SCCPSolver::ResolvedUndefsIn(Function &F) {
       }
     }
   
+    // Check to see if we have a branch or switch on an undefined value.  If so
+    // we force the branch to go one way or the other to make the successor
+    // values live.  It doesn't really matter which way we force it.
     TerminatorInst *TI = BB->getTerminator();
     if (BranchInst *BI = dyn_cast<BranchInst>(TI)) {
       if (!BI->isConditional()) continue;
       if (!getValueState(BI->getCondition()).isUndefined())
         continue;
-    } else if (SwitchInst *SI = dyn_cast<SwitchInst>(TI)) {
+    
+      // If the input to SCCP is actually branch on undef, fix the undef to
+      // false.
+      if (isa<UndefValue>(BI->getCondition())) {
+        BI->setCondition(ConstantInt::getFalse(BI->getContext()));
+        markEdgeExecutable(BB, TI->getSuccessor(1));
+        return true;
+      }
+      
+      // Otherwise, it is a branch on a symbolic value which is currently
+      // considered to be undef.  Handle this by forcing the input value to the
+      // branch to false.
+      markForcedConstant(BI->getCondition(),
+                         ConstantInt::getFalse(TI->getContext()));
+      return true;
+    }
+    
+    if (SwitchInst *SI = dyn_cast<SwitchInst>(TI)) {
       if (SI->getNumSuccessors() < 2)   // no cases
         continue;
       if (!getValueState(SI->getCondition()).isUndefined())
         continue;
-    } else {
-      continue;
+      
+      // If the input to SCCP is actually switch on undef, fix the undef to
+      // the first constant.
+      if (isa<UndefValue>(SI->getCondition())) {
+        SI->setCondition(SI->getCaseValue(1));
+        markEdgeExecutable(BB, TI->getSuccessor(1));
+        return true;
+      }
+      
+      markForcedConstant(SI->getCondition(), SI->getCaseValue(1));
+      return true;
     }
-    
-    // If the edge to the second successor isn't thought to be feasible yet,
-    // mark it so now.  We pick the second one so that this goes to some
-    // enumerated value in a switch instead of going to the default destination.
-    if (KnownFeasibleEdges.count(Edge(BB, TI->getSuccessor(1))))
-      continue;
-    
-    // Otherwise, it isn't already thought to be feasible.  Mark it as such now
-    // and return.  This will make other blocks reachable, which will allow new
-    // values to be discovered and existing ones to be moved in the lattice.
-    markEdgeExecutable(BB, TI->getSuccessor(1));
-    
-    // This must be a conditional branch of switch on undef.  At this point,
-    // force the old terminator to branch to the first successor.  This is
-    // required because we are now influencing the dataflow of the function with
-    // the assumption that this edge is taken.  If we leave the branch condition
-    // as undef, then further analysis could think the undef went another way
-    // leading to an inconsistent set of conclusions.
-    if (BranchInst *BI = dyn_cast<BranchInst>(TI)) {
-      BI->setCondition(ConstantInt::getFalse(BI->getContext()));
-    } else {
-      SwitchInst *SI = cast<SwitchInst>(TI);
-      SI->setCondition(SI->getCaseValue(1));
-    }
-    
-    return true;
   }
 
   return false;
@@ -1574,7 +1585,7 @@ namespace {
   ///
   struct SCCP : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
-    SCCP() : FunctionPass(&ID) {}
+    SCCP() : FunctionPass(ID) {}
 
     // runOnFunction - Run the Sparse Conditional Constant Propagation
     // algorithm, and return true if the function was modified.
@@ -1588,8 +1599,8 @@ namespace {
 } // end anonymous namespace
 
 char SCCP::ID = 0;
-static RegisterPass<SCCP>
-X("sccp", "Sparse Conditional Constant Propagation");
+INITIALIZE_PASS(SCCP, "sccp",
+                "Sparse Conditional Constant Propagation", false, false);
 
 // createSCCPPass - This is the public interface to this file.
 FunctionPass *llvm::createSCCPPass() {
@@ -1690,14 +1701,15 @@ namespace {
   ///
   struct IPSCCP : public ModulePass {
     static char ID;
-    IPSCCP() : ModulePass(&ID) {}
+    IPSCCP() : ModulePass(ID) {}
     bool runOnModule(Module &M);
   };
 } // end anonymous namespace
 
 char IPSCCP::ID = 0;
-static RegisterPass<IPSCCP>
-Y("ipsccp", "Interprocedural Sparse Conditional Constant Propagation");
+INITIALIZE_PASS(IPSCCP, "ipsccp",
+                "Interprocedural Sparse Conditional Constant Propagation",
+                false, false);
 
 // createIPSCCPPass - This is the public interface to this file.
 ModulePass *llvm::createIPSCCPPass() {
@@ -1705,34 +1717,44 @@ ModulePass *llvm::createIPSCCPPass() {
 }
 
 
-static bool AddressIsTaken(GlobalValue *GV) {
+static bool AddressIsTaken(const GlobalValue *GV) {
   // Delete any dead constantexpr klingons.
   GV->removeDeadConstantUsers();
 
-  for (Value::use_iterator UI = GV->use_begin(), E = GV->use_end();
-       UI != E; ++UI)
-    if (StoreInst *SI = dyn_cast<StoreInst>(*UI)) {
+  for (Value::const_use_iterator UI = GV->use_begin(), E = GV->use_end();
+       UI != E; ++UI) {
+    const User *U = *UI;
+    if (const StoreInst *SI = dyn_cast<StoreInst>(U)) {
       if (SI->getOperand(0) == GV || SI->isVolatile())
         return true;  // Storing addr of GV.
-    } else if (isa<InvokeInst>(*UI) || isa<CallInst>(*UI)) {
+    } else if (isa<InvokeInst>(U) || isa<CallInst>(U)) {
       // Make sure we are calling the function, not passing the address.
-      if (UI.getOperandNo() != 0)
+      ImmutableCallSite CS(cast<Instruction>(U));
+      if (!CS.isCallee(UI))
         return true;
-    } else if (LoadInst *LI = dyn_cast<LoadInst>(*UI)) {
+    } else if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile())
         return true;
-    } else if (isa<BlockAddress>(*UI)) {
+    } else if (isa<BlockAddress>(U)) {
       // blockaddress doesn't take the address of the function, it takes addr
       // of label.
     } else {
       return true;
     }
+  }
   return false;
 }
 
 bool IPSCCP::runOnModule(Module &M) {
   SCCPSolver Solver(getAnalysisIfAvailable<TargetData>());
 
+  // AddressTakenFunctions - This set keeps track of the address-taken functions
+  // that are in the input.  As IPSCCP runs through and simplifies code,
+  // functions that were address taken can end up losing their
+  // address-taken-ness.  Because of this, we keep track of their addresses from
+  // the first pass so we can use them for the later simplification pass.
+  SmallPtrSet<Function*, 32> AddressTakenFunctions;
+  
   // Loop over all functions, marking arguments to those with their addresses
   // taken or that are external as overdefined.
   //
@@ -1748,9 +1770,13 @@ bool IPSCCP::runOnModule(Module &M) {
     // If this function only has direct calls that we can see, we can track its
     // arguments and return value aggressively, and can assume it is not called
     // unless we see evidence to the contrary.
-    if (F->hasLocalLinkage() && !AddressIsTaken(F)) {
-      Solver.AddArgumentTrackedFunction(F);
-      continue;
+    if (F->hasLocalLinkage()) {
+      if (AddressIsTaken(F))
+        AddressTakenFunctions.insert(F);
+      else {
+        Solver.AddArgumentTrackedFunction(F);
+        continue;
+      }
     }
 
     // Assume the function is called.
@@ -1935,7 +1961,7 @@ bool IPSCCP::runOnModule(Module &M) {
       continue;
   
     // We can only do this if we know that nothing else can call the function.
-    if (!F->hasLocalLinkage() || AddressIsTaken(F))
+    if (!F->hasLocalLinkage() || AddressTakenFunctions.count(F))
       continue;
     
     for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB)

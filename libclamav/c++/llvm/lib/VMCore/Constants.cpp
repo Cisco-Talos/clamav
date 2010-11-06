@@ -160,7 +160,7 @@ bool Constant::canTrap() const {
 /// isConstantUsed - Return true if the constant has users other than constant
 /// exprs and other dangling things.
 bool Constant::isConstantUsed() const {
-  for (use_const_iterator UI = use_begin(), E = use_end(); UI != E; ++UI) {
+  for (const_use_iterator UI = use_begin(), E = use_end(); UI != E; ++UI) {
     const Constant *UC = dyn_cast<Constant>(*UI);
     if (UC == 0 || isa<GlobalValue>(UC))
       return true;
@@ -525,6 +525,7 @@ Constant* ConstantArray::get(const ArrayType* T, Constant* const* Vals,
 Constant* ConstantArray::get(LLVMContext &Context, StringRef Str,
                              bool AddNull) {
   std::vector<Constant*> ElementVals;
+  ElementVals.reserve(Str.size() + size_t(AddNull));
   for (unsigned i = 0; i < Str.size(); ++i)
     ElementVals.push_back(ConstantInt::get(Type::getInt8Ty(Context), Str[i]));
 
@@ -584,27 +585,6 @@ Constant* ConstantStruct::get(LLVMContext &Context,
   // FIXME: make this the primary ctor method.
   return get(Context, std::vector<Constant*>(Vals, Vals+NumVals), Packed);
 }
-
-ConstantUnion::ConstantUnion(const UnionType *T, Constant* V)
-  : Constant(T, ConstantUnionVal,
-             OperandTraits<ConstantUnion>::op_end(this) - 1, 1) {
-  Use *OL = OperandList;
-  assert(T->getElementTypeIndex(V->getType()) >= 0 &&
-      "Initializer for union element isn't a member of union type!");
-  *OL = V;
-}
-
-// ConstantUnion accessors.
-Constant* ConstantUnion::get(const UnionType* T, Constant* V) {
-  LLVMContextImpl* pImpl = T->getContext().pImpl;
-  
-  // Create a ConstantAggregateZero value if all elements are zeros...
-  if (!V->isNullValue())
-    return pImpl->UnionConstants.getOrCreate(T, V);
-
-  return ConstantAggregateZero::get(T);
-}
-
 
 ConstantVector::ConstantVector(const VectorType *T,
                                const std::vector<Constant*> &V)
@@ -722,7 +702,7 @@ bool ConstantExpr::isGEPWithNoNotionalOverIndexing() const {
   if (getOpcode() != Instruction::GetElementPtr) return false;
 
   gep_type_iterator GEPI = gep_type_begin(this), E = gep_type_end(this);
-  User::const_op_iterator OI = next(this->op_begin());
+  User::const_op_iterator OI = llvm::next(this->op_begin());
 
   // Skip the first index, as it has no static limit.
   ++GEPI;
@@ -954,14 +934,14 @@ ConstantAggregateZero* ConstantAggregateZero::get(const Type* Ty) {
 /// destroyConstant - Remove the constant from the constant table...
 ///
 void ConstantAggregateZero::destroyConstant() {
-  getType()->getContext().pImpl->AggZeroConstants.remove(this);
+  getRawType()->getContext().pImpl->AggZeroConstants.remove(this);
   destroyConstantImpl();
 }
 
 /// destroyConstant - Remove the constant from the constant table...
 ///
 void ConstantArray::destroyConstant() {
-  getType()->getContext().pImpl->ArrayConstants.remove(this);
+  getRawType()->getContext().pImpl->ArrayConstants.remove(this);
   destroyConstantImpl();
 }
 
@@ -1025,21 +1005,14 @@ namespace llvm {
 // destroyConstant - Remove the constant from the constant table...
 //
 void ConstantStruct::destroyConstant() {
-  getType()->getContext().pImpl->StructConstants.remove(this);
-  destroyConstantImpl();
-}
-
-// destroyConstant - Remove the constant from the constant table...
-//
-void ConstantUnion::destroyConstant() {
-  getType()->getContext().pImpl->UnionConstants.remove(this);
+  getRawType()->getContext().pImpl->StructConstants.remove(this);
   destroyConstantImpl();
 }
 
 // destroyConstant - Remove the constant from the constant table...
 //
 void ConstantVector::destroyConstant() {
-  getType()->getContext().pImpl->VectorConstants.remove(this);
+  getRawType()->getContext().pImpl->VectorConstants.remove(this);
   destroyConstantImpl();
 }
 
@@ -1080,7 +1053,7 @@ ConstantPointerNull *ConstantPointerNull::get(const PointerType *Ty) {
 // destroyConstant - Remove the constant from the constant table...
 //
 void ConstantPointerNull::destroyConstant() {
-  getType()->getContext().pImpl->NullPtrConstants.remove(this);
+  getRawType()->getContext().pImpl->NullPtrConstants.remove(this);
   destroyConstantImpl();
 }
 
@@ -1095,7 +1068,7 @@ UndefValue *UndefValue::get(const Type *Ty) {
 // destroyConstant - Remove the constant from the constant table.
 //
 void UndefValue::destroyConstant() {
-  getType()->getContext().pImpl->UndefValueConstants.remove(this);
+  getRawType()->getContext().pImpl->UndefValueConstants.remove(this);
   destroyConstantImpl();
 }
 
@@ -1129,7 +1102,7 @@ BlockAddress::BlockAddress(Function *F, BasicBlock *BB)
 // destroyConstant - Remove the constant from the constant table.
 //
 void BlockAddress::destroyConstant() {
-  getFunction()->getType()->getContext().pImpl
+  getFunction()->getRawType()->getContext().pImpl
     ->BlockAddresses.erase(std::make_pair(getFunction(), getBasicBlock()));
   getBasicBlock()->AdjustBlockAddressRefCount(-1);
   destroyConstantImpl();
@@ -1222,20 +1195,20 @@ Constant *ConstantExpr::getCast(unsigned oc, Constant *C, const Type *Ty) {
 
 Constant *ConstantExpr::getZExtOrBitCast(Constant *C, const Type *Ty) {
   if (C->getType()->getScalarSizeInBits() == Ty->getScalarSizeInBits())
-    return getCast(Instruction::BitCast, C, Ty);
-  return getCast(Instruction::ZExt, C, Ty);
+    return getBitCast(C, Ty);
+  return getZExt(C, Ty);
 }
 
 Constant *ConstantExpr::getSExtOrBitCast(Constant *C, const Type *Ty) {
   if (C->getType()->getScalarSizeInBits() == Ty->getScalarSizeInBits())
-    return getCast(Instruction::BitCast, C, Ty);
-  return getCast(Instruction::SExt, C, Ty);
+    return getBitCast(C, Ty);
+  return getSExt(C, Ty);
 }
 
 Constant *ConstantExpr::getTruncOrBitCast(Constant *C, const Type *Ty) {
   if (C->getType()->getScalarSizeInBits() == Ty->getScalarSizeInBits())
-    return getCast(Instruction::BitCast, C, Ty);
-  return getCast(Instruction::Trunc, C, Ty);
+    return getBitCast(C, Ty);
+  return getTrunc(C, Ty);
 }
 
 Constant *ConstantExpr::getPointerCast(Constant *S, const Type *Ty) {
@@ -1243,8 +1216,8 @@ Constant *ConstantExpr::getPointerCast(Constant *S, const Type *Ty) {
   assert((Ty->isIntegerTy() || Ty->isPointerTy()) && "Invalid cast");
 
   if (Ty->isIntegerTy())
-    return getCast(Instruction::PtrToInt, S, Ty);
-  return getCast(Instruction::BitCast, S, Ty);
+    return getPtrToInt(S, Ty);
+  return getBitCast(S, Ty);
 }
 
 Constant *ConstantExpr::getIntegerCast(Constant *C, const Type *Ty, 
@@ -1448,12 +1421,6 @@ Constant *ConstantExpr::getCompareTy(unsigned short predicate,
 
 Constant *ConstantExpr::get(unsigned Opcode, Constant *C1, Constant *C2,
                             unsigned Flags) {
-  // API compatibility: Adjust integer opcodes to floating-point opcodes.
-  if (C1->getType()->isFPOrFPVectorTy()) {
-    if (Opcode == Instruction::Add) Opcode = Instruction::FAdd;
-    else if (Opcode == Instruction::Sub) Opcode = Instruction::FSub;
-    else if (Opcode == Instruction::Mul) Opcode = Instruction::FMul;
-  }
 #ifndef NDEBUG
   switch (Opcode) {
   case Instruction::Add:
@@ -1521,8 +1488,8 @@ Constant* ConstantExpr::getSizeOf(const Type* Ty) {
   Constant *GEPIdx = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 1);
   Constant *GEP = getGetElementPtr(
                  Constant::getNullValue(PointerType::getUnqual(Ty)), &GEPIdx, 1);
-  return getCast(Instruction::PtrToInt, GEP, 
-                 Type::getInt64Ty(Ty->getContext()));
+  return getPtrToInt(GEP, 
+                     Type::getInt64Ty(Ty->getContext()));
 }
 
 Constant* ConstantExpr::getAlignOf(const Type* Ty) {
@@ -1535,8 +1502,8 @@ Constant* ConstantExpr::getAlignOf(const Type* Ty) {
   Constant *One = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 1);
   Constant *Indices[2] = { Zero, One };
   Constant *GEP = getGetElementPtr(NullPtr, Indices, 2);
-  return getCast(Instruction::PtrToInt, GEP,
-                 Type::getInt64Ty(Ty->getContext()));
+  return getPtrToInt(GEP,
+                     Type::getInt64Ty(Ty->getContext()));
 }
 
 Constant* ConstantExpr::getOffsetOf(const StructType* STy, unsigned FieldNo) {
@@ -1553,8 +1520,8 @@ Constant* ConstantExpr::getOffsetOf(const Type* Ty, Constant *FieldNo) {
   };
   Constant *GEP = getGetElementPtr(
                 Constant::getNullValue(PointerType::getUnqual(Ty)), GEPIdx, 2);
-  return getCast(Instruction::PtrToInt, GEP,
-                 Type::getInt64Ty(Ty->getContext()));
+  return getPtrToInt(GEP,
+                     Type::getInt64Ty(Ty->getContext()));
 }
 
 Constant *ConstantExpr::getCompare(unsigned short pred, 
@@ -1838,9 +1805,6 @@ Constant *ConstantExpr::getExtractValue(Constant *Agg,
 }
 
 Constant* ConstantExpr::getNeg(Constant* C) {
-  // API compatibility: Adjust integer opcodes to floating-point opcodes.
-  if (C->getType()->isFPOrFPVectorTy())
-    return getFNeg(C);
   assert(C->getType()->isIntOrIntVectorTy() &&
          "Cannot NEG a nonintegral value!");
   return get(Instruction::Sub,
@@ -1937,13 +1901,27 @@ Constant* ConstantExpr::getAShr(Constant* C1, Constant* C2) {
 // destroyConstant - Remove the constant from the constant table...
 //
 void ConstantExpr::destroyConstant() {
-  getType()->getContext().pImpl->ExprConstants.remove(this);
+  getRawType()->getContext().pImpl->ExprConstants.remove(this);
   destroyConstantImpl();
 }
 
 const char *ConstantExpr::getOpcodeName() const {
   return Instruction::getOpcodeName(getOpcode());
 }
+
+
+
+GetElementPtrConstantExpr::
+GetElementPtrConstantExpr(Constant *C, const std::vector<Constant*> &IdxList,
+                          const Type *DestTy)
+  : ConstantExpr(DestTy, Instruction::GetElementPtr,
+                 OperandTraits<GetElementPtrConstantExpr>::op_end(this)
+                 - (IdxList.size()+1), IdxList.size()+1) {
+  OperandList[0] = C;
+  for (unsigned i = 0, E = IdxList.size(); i != E; ++i)
+    OperandList[i+1] = IdxList[i];
+}
+
 
 //===----------------------------------------------------------------------===//
 //                replaceUsesOfWithOnConstant implementations
@@ -1964,11 +1942,10 @@ void ConstantArray::replaceUsesOfWithOnConstant(Value *From, Value *To,
   assert(isa<Constant>(To) && "Cannot make Constant refer to non-constant!");
   Constant *ToC = cast<Constant>(To);
 
-  LLVMContext &Context = getType()->getContext();
-  LLVMContextImpl *pImpl = Context.pImpl;
+  LLVMContextImpl *pImpl = getRawType()->getContext().pImpl;
 
   std::pair<LLVMContextImpl::ArrayConstantsTy::MapKey, ConstantArray*> Lookup;
-  Lookup.first.first = getType();
+  Lookup.first.first = cast<ArrayType>(getRawType());
   Lookup.second = this;
 
   std::vector<Constant*> &Values = Lookup.first.second;
@@ -2002,7 +1979,7 @@ void ConstantArray::replaceUsesOfWithOnConstant(Value *From, Value *To,
   
   Constant *Replacement = 0;
   if (isAllZeros) {
-    Replacement = ConstantAggregateZero::get(getType());
+    Replacement = ConstantAggregateZero::get(getRawType());
   } else {
     // Check to see if we have this array type already.
     bool Exists;
@@ -2053,7 +2030,7 @@ void ConstantStruct::replaceUsesOfWithOnConstant(Value *From, Value *To,
   assert(getOperand(OperandToUpdate) == From && "ReplaceAllUsesWith broken!");
 
   std::pair<LLVMContextImpl::StructConstantsTy::MapKey, ConstantStruct*> Lookup;
-  Lookup.first.first = getType();
+  Lookup.first.first = cast<StructType>(getRawType());
   Lookup.second = this;
   std::vector<Constant*> &Values = Lookup.first.second;
   Values.reserve(getNumOperands());  // Build replacement struct.
@@ -2075,14 +2052,13 @@ void ConstantStruct::replaceUsesOfWithOnConstant(Value *From, Value *To,
   }
   Values[OperandToUpdate] = ToC;
   
-  LLVMContext &Context = getType()->getContext();
-  LLVMContextImpl *pImpl = Context.pImpl;
+  LLVMContextImpl *pImpl = getRawType()->getContext().pImpl;
   
   Constant *Replacement = 0;
   if (isAllZeros) {
-    Replacement = ConstantAggregateZero::get(getType());
+    Replacement = ConstantAggregateZero::get(getRawType());
   } else {
-    // Check to see if we have this array type already.
+    // Check to see if we have this struct type already.
     bool Exists;
     LLVMContextImpl::StructConstantsTy::MapTy::iterator I =
       pImpl->StructConstants.InsertOrGetItem(Lookup, Exists);
@@ -2111,56 +2087,6 @@ void ConstantStruct::replaceUsesOfWithOnConstant(Value *From, Value *To,
   destroyConstant();
 }
 
-void ConstantUnion::replaceUsesOfWithOnConstant(Value *From, Value *To,
-                                                 Use *U) {
-  assert(isa<Constant>(To) && "Cannot make Constant refer to non-constant!");
-  Constant *ToC = cast<Constant>(To);
-
-  assert(U == OperandList && "Union constants can only have one use!");
-  assert(getNumOperands() == 1 && "Union constants can only have one use!");
-  assert(getOperand(0) == From && "ReplaceAllUsesWith broken!");
-
-  std::pair<LLVMContextImpl::UnionConstantsTy::MapKey, ConstantUnion*> Lookup;
-  Lookup.first.first = getType();
-  Lookup.second = this;
-  Lookup.first.second = ToC;
-
-  LLVMContext &Context = getType()->getContext();
-  LLVMContextImpl *pImpl = Context.pImpl;
-
-  Constant *Replacement = 0;
-  if (ToC->isNullValue()) {
-    Replacement = ConstantAggregateZero::get(getType());
-  } else {
-    // Check to see if we have this union type already.
-    bool Exists;
-    LLVMContextImpl::UnionConstantsTy::MapTy::iterator I =
-      pImpl->UnionConstants.InsertOrGetItem(Lookup, Exists);
-    
-    if (Exists) {
-      Replacement = I->second;
-    } else {
-      // Okay, the new shape doesn't exist in the system yet.  Instead of
-      // creating a new constant union, inserting it, replaceallusesof'ing the
-      // old with the new, then deleting the old... just update the current one
-      // in place!
-      pImpl->UnionConstants.MoveConstantToNewSlot(this, I);
-      
-      // Update to the new value.
-      setOperand(0, ToC);
-      return;
-    }
-  }
-  
-  assert(Replacement != this && "I didn't contain From!");
-  
-  // Everyone using this now uses the replacement.
-  uncheckedReplaceAllUsesWith(Replacement);
-  
-  // Delete the old constant!
-  destroyConstant();
-}
-
 void ConstantVector::replaceUsesOfWithOnConstant(Value *From, Value *To,
                                                  Use *U) {
   assert(isa<Constant>(To) && "Cannot make Constant refer to non-constant!");
@@ -2173,7 +2099,7 @@ void ConstantVector::replaceUsesOfWithOnConstant(Value *From, Value *To,
     Values.push_back(Val);
   }
   
-  Constant *Replacement = get(getType(), Values);
+  Constant *Replacement = get(cast<VectorType>(getRawType()), Values);
   assert(Replacement != this && "I didn't contain From!");
   
   // Everyone using this now uses the replacement.
@@ -2220,7 +2146,7 @@ void ConstantExpr::replaceUsesOfWithOnConstant(Value *From, Value *ToV,
                                                &Indices[0], Indices.size());
   } else if (isCast()) {
     assert(getOperand(0) == From && "Cast only has one use!");
-    Replacement = ConstantExpr::getCast(getOpcode(), To, getType());
+    Replacement = ConstantExpr::getCast(getOpcode(), To, getRawType());
   } else if (getOpcode() == Instruction::Select) {
     Constant *C1 = getOperand(0);
     Constant *C2 = getOperand(1);

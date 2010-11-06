@@ -22,7 +22,9 @@
 #include "llvm/Analysis/Passes.h"
 #include "llvm/Analysis/PointerTracking.h"
 #include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/RegionPrinter.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/Lint.h"
 #include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/Function.h"
@@ -51,6 +53,7 @@ namespace {
       (void) llvm::createBasicAliasAnalysisPass();
       (void) llvm::createLibCallAliasAnalysisPass(0);
       (void) llvm::createScalarEvolutionAliasAnalysisPass();
+      (void) llvm::createTypeBasedAliasAnalysisPass();
       (void) llvm::createBlockPlacementPass();
       (void) llvm::createBreakCriticalEdgesPass();
       (void) llvm::createCFGSimplificationPass();
@@ -105,6 +108,11 @@ namespace {
       (void) llvm::createPostDomOnlyViewerPass();
       (void) llvm::createPostDomViewerPass();
       (void) llvm::createReassociatePass();
+      (void) llvm::createRegionInfoPass();
+      (void) llvm::createRegionOnlyPrinterPass();
+      (void) llvm::createRegionOnlyViewerPass();
+      (void) llvm::createRegionPrinterPass();
+      (void) llvm::createRegionViewerPass();
       (void) llvm::createSCCPPass();
       (void) llvm::createScalarReplAggregatesPass();
       (void) llvm::createSimplifyLibCallsPass();
@@ -112,6 +120,7 @@ namespace {
       (void) llvm::createSingleLoopExtractorPass();
       (void) llvm::createStripSymbolsPass();
       (void) llvm::createStripNonDebugSymbolsPass();
+      (void) llvm::createStripDeadDebugInfoPass();
       (void) llvm::createStripDeadPrototypesPass();
       (void) llvm::createTailCallEliminationPass();
       (void) llvm::createTailDuplicationPass();
@@ -131,12 +140,13 @@ namespace {
       (void) llvm::createPrintModulePass(0);
       (void) llvm::createPrintFunctionPass("", 0);
       (void) llvm::createDbgInfoPrinterPass();
+      (void) llvm::createModuleDebugInfoPrinterPass();
       (void) llvm::createPartialInliningPass();
-      (void) llvm::createSSIPass();
-      (void) llvm::createSSIEverythingPass();
       (void) llvm::createGEPSplitterPass();
-      (void) llvm::createSCCVNPass();
-      (void) llvm::createABCDPass();
+      (void) llvm::createLintPass();
+      (void) llvm::createSinkingPass();
+      (void) llvm::createLowerAtomicPass();
+      (void) llvm::createCorrelatedValuePropagationPass();
 
       (void)new llvm::IntervalPartition();
       (void)new llvm::FindUsedTypes();

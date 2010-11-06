@@ -31,8 +31,7 @@ class MachineFunction;
 /// override runOnMachineFunction.
 class MachineFunctionPass : public FunctionPass {
 protected:
-  explicit MachineFunctionPass(intptr_t ID) : FunctionPass(ID) {}
-  explicit MachineFunctionPass(void *ID) : FunctionPass(ID) {}
+  explicit MachineFunctionPass(char &ID) : FunctionPass(ID) {}
 
   /// runOnMachineFunction - This method must be overloaded to perform the
   /// desired machine code transformation or analysis.
@@ -48,7 +47,11 @@ protected:
   virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 
 private:
-  bool runOnFunction(Function &F);
+  /// createPrinterPass - Get a machine function printer pass.
+  virtual Pass *createPrinterPass(raw_ostream &O,
+                                  const std::string &Banner) const;
+
+  virtual bool runOnFunction(Function &F);
 };
 
 } // End llvm namespace

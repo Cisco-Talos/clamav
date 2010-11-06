@@ -31,17 +31,6 @@ class TargetData;
 template<typename T> class SmallVectorImpl;
   
 //===----------------------------------------------------------------------===//
-//  Local analysis.
-//
-
-/// isSafeToLoadUnconditionally - Return true if we know that executing a load
-/// from this value cannot trap.  If it is not obviously safe to load from the
-/// specified pointer, we do a quick local scan of the basic block containing
-/// ScanFrom, to determine if the address is already accessed.
-bool isSafeToLoadUnconditionally(Value *V, Instruction *ScanFrom,
-                                 unsigned Align, const TargetData *TD = 0);
-
-//===----------------------------------------------------------------------===//
 //  Local constant propagation.
 //
 
@@ -128,8 +117,6 @@ bool EliminateDuplicatePHINodes(BasicBlock *BB);
 /// eliminates unreachable basic blocks, and does other "peephole" optimization
 /// of the CFG.  It returns true if a modification was made, possibly deleting
 /// the basic block that was pointed to.
-///
-/// WARNING:  The entry node of a method may not be simplified.
 ///
 bool SimplifyCFG(BasicBlock *BB, const TargetData *TD = 0);
 

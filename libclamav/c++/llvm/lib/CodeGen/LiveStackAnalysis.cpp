@@ -25,7 +25,8 @@
 using namespace llvm;
 
 char LiveStacks::ID = 0;
-static RegisterPass<LiveStacks> X("livestacks", "Live Stack Slot Analysis");
+INITIALIZE_PASS(LiveStacks, "livestacks",
+                "Live Stack Slot Analysis", false, false);
 
 void LiveStacks::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
@@ -35,7 +36,7 @@ void LiveStacks::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 void LiveStacks::releaseMemory() {
-  // Release VNInfo memroy regions after all VNInfo objects are dtor'd.
+  // Release VNInfo memory regions, VNInfo objects don't need to be dtor'd.
   VNInfoAllocator.Reset();
   S2IMap.clear();
   S2RCMap.clear();

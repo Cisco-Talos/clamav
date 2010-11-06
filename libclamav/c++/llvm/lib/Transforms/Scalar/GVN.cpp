@@ -35,6 +35,7 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/Dominators.h"
+#include "llvm/Analysis/Loads.h"
 #include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Analysis/PHITransAddr.h"
@@ -164,7 +165,6 @@ namespace {
       Expression create_expression(CastInst* C);
       Expression create_expression(GetElementPtrInst* G);
       Expression create_expression(CallInst* C);
-      Expression create_expression(Constant* C);
       Expression create_expression(ExtractValueInst* C);
       Expression create_expression(InsertValueInst* C);
       
@@ -271,7 +271,8 @@ Expression ValueTable::create_expression(CallInst* C) {
   e.function = C->getCalledFunction();
   e.opcode = Expression::CALL;
 
-  for (CallInst::op_iterator I = C->op_begin()+1, E = C->op_end();
+  CallSite CS(C);
+  for (CallInst::op_iterator I = CS.arg_begin(), E = CS.arg_end();
        I != E; ++I)
     e.varargs.push_back(lookup_or_add(*I));
 
@@ -447,14 +448,14 @@ uint32_t ValueTable::lookup_or_add_call(CallInst* C) {
     if (local_dep.isDef()) {
       CallInst* local_cdep = cast<CallInst>(local_dep.getInst());
 
-      if (local_cdep->getNumOperands() != C->getNumOperands()) {
+      if (local_cdep->getNumArgOperands() != C->getNumArgOperands()) {
         valueNumbering[C] = nextValueNumber;
         return nextValueNumber++;
       }
 
-      for (unsigned i = 1; i < C->getNumOperands(); ++i) {
-        uint32_t c_vn = lookup_or_add(C->getOperand(i));
-        uint32_t cd_vn = lookup_or_add(local_cdep->getOperand(i));
+      for (unsigned i = 0, e = C->getNumArgOperands(); i < e; ++i) {
+        uint32_t c_vn = lookup_or_add(C->getArgOperand(i));
+        uint32_t cd_vn = lookup_or_add(local_cdep->getArgOperand(i));
         if (c_vn != cd_vn) {
           valueNumbering[C] = nextValueNumber;
           return nextValueNumber++;
@@ -504,13 +505,13 @@ uint32_t ValueTable::lookup_or_add_call(CallInst* C) {
       return nextValueNumber++;
     }
 
-    if (cdep->getNumOperands() != C->getNumOperands()) {
+    if (cdep->getNumArgOperands() != C->getNumArgOperands()) {
       valueNumbering[C] = nextValueNumber;
       return nextValueNumber++;
     }
-    for (unsigned i = 1; i < C->getNumOperands(); ++i) {
-      uint32_t c_vn = lookup_or_add(C->getOperand(i));
-      uint32_t cd_vn = lookup_or_add(cdep->getOperand(i));
+    for (unsigned i = 0, e = C->getNumArgOperands(); i < e; ++i) {
+      uint32_t c_vn = lookup_or_add(C->getArgOperand(i));
+      uint32_t cd_vn = lookup_or_add(cdep->getArgOperand(i));
       if (c_vn != cd_vn) {
         valueNumbering[C] = nextValueNumber;
         return nextValueNumber++;
@@ -663,7 +664,7 @@ namespace {
   public:
     static char ID; // Pass identification, replacement for typeid
     explicit GVN(bool noloads = false)
-      : FunctionPass(&ID), NoLoads(noloads), MD(0) { }
+      : FunctionPass(ID), NoLoads(noloads), MD(0) { }
 
   private:
     bool NoLoads;
@@ -714,8 +715,7 @@ FunctionPass *llvm::createGVNPass(bool NoLoads) {
   return new GVN(NoLoads);
 }
 
-static RegisterPass<GVN> X("gvn",
-                           "Global Value Numbering");
+INITIALIZE_PASS(GVN, "gvn", "Global Value Numbering", false, false);
 
 void GVN::dump(DenseMap<uint32_t, Value*>& d) {
   errs() << "{\n";
@@ -733,7 +733,7 @@ static bool isSafeReplacement(PHINode* p, Instruction *inst) {
 
   for (Instruction::use_iterator UI = p->use_begin(), E = p->use_end();
        UI != E; ++UI)
-    if (PHINode* use_phi = dyn_cast<PHINode>(UI))
+    if (PHINode* use_phi = dyn_cast<PHINode>(*UI))
       if (use_phi->getParent() == inst->getParent())
         return false;
 
@@ -868,7 +868,7 @@ static Value *CoerceAvailableValueToLoadType(Value *StoredVal,
   
   const Type *StoredValTy = StoredVal->getType();
   
-  uint64_t StoreSize = TD.getTypeSizeInBits(StoredValTy);
+  uint64_t StoreSize = TD.getTypeStoreSizeInBits(StoredValTy);
   uint64_t LoadSize = TD.getTypeSizeInBits(LoadedTy);
   
   // If the store and reload are the same size, we can always reuse it.
@@ -1004,18 +1004,18 @@ static int AnalyzeLoadFromClobberingWrite(const Type *LoadTy, Value *LoadPtr,
   
   // If the load and store are to the exact same address, they should have been
   // a must alias.  AA must have gotten confused.
-  // FIXME: Study to see if/when this happens.
-  if (LoadOffset == StoreOffset) {
+  // FIXME: Study to see if/when this happens.  One case is forwarding a memset
+  // to a load from the base of the memset.
 #if 0
+  if (LoadOffset == StoreOffset) {
     dbgs() << "STORE/LOAD DEP WITH COMMON POINTER MISSED:\n"
     << "Base       = " << *StoreBase << "\n"
     << "Store Ptr  = " << *WritePtr << "\n"
     << "Store Offs = " << StoreOffset << "\n"
     << "Load Ptr   = " << *LoadPtr << "\n";
     abort();
-#endif
-    return -1;
   }
+#endif
   
   // If the load and store don't overlap at all, the store doesn't provide
   // anything to the load.  In this case, they really don't alias at all, AA
@@ -1031,11 +1031,11 @@ static int AnalyzeLoadFromClobberingWrite(const Type *LoadTy, Value *LoadPtr,
   
   
   bool isAAFailure = false;
-  if (StoreOffset < LoadOffset) {
+  if (StoreOffset < LoadOffset)
     isAAFailure = StoreOffset+int64_t(StoreSize) <= LoadOffset;
-  } else {
+  else
     isAAFailure = LoadOffset+int64_t(LoadSize) <= StoreOffset;
-  }
+
   if (isAAFailure) {
 #if 0
     dbgs() << "STORE LOAD DEP WITH COMMON BASE:\n"
@@ -1132,8 +1132,8 @@ static Value *GetStoreValueForLoad(Value *SrcVal, unsigned Offset,
                                    Instruction *InsertPt, const TargetData &TD){
   LLVMContext &Ctx = SrcVal->getType()->getContext();
   
-  uint64_t StoreSize = TD.getTypeSizeInBits(SrcVal->getType())/8;
-  uint64_t LoadSize = TD.getTypeSizeInBits(LoadTy)/8;
+  uint64_t StoreSize = (TD.getTypeSizeInBits(SrcVal->getType()) + 7) / 8;
+  uint64_t LoadSize = (TD.getTypeSizeInBits(LoadTy) + 7) / 8;
   
   IRBuilder<> Builder(InsertPt->getParent(), InsertPt);
   
@@ -1217,7 +1217,7 @@ static Value *GetMemInstValueForLoad(MemIntrinsic *SrcInst, unsigned Offset,
   return ConstantFoldLoadFromConstPtr(Src, &TD);
 }
 
-
+namespace {
 
 struct AvailableValueInBlock {
   /// BB - The basic block in question.
@@ -1291,6 +1291,8 @@ struct AvailableValueInBlock {
   }
 };
 
+}
+
 /// ConstructSSAForLoadSet - Given a set of loads specified by ValuesPerBlock,
 /// construct SSA form, allowing us to eliminate LI.  This returns the value
 /// that should be used at LI's definition site.
@@ -1308,7 +1310,7 @@ static Value *ConstructSSAForLoadSet(LoadInst *LI,
   // Otherwise, we have to construct SSA form.
   SmallVector<PHINode*, 8> NewPHIs;
   SSAUpdater SSAUpdate(&NewPHIs);
-  SSAUpdate.Initialize(LI);
+  SSAUpdate.Initialize(LI->getType(), LI->getName());
   
   const Type *LoadTy = LI->getType();
   
@@ -1333,8 +1335,8 @@ static Value *ConstructSSAForLoadSet(LoadInst *LI,
   return V;
 }
 
-static bool isLifetimeStart(Instruction *Inst) {
-  if (IntrinsicInst* II = dyn_cast<IntrinsicInst>(Inst))
+static bool isLifetimeStart(const Instruction *Inst) {
+  if (const IntrinsicInst* II = dyn_cast<IntrinsicInst>(Inst))
     return II->getIntrinsicID() == Intrinsic::lifetime_start;
   return false;
 }
@@ -1498,7 +1500,7 @@ bool GVN::processNonLocalLoad(LoadInst *LI,
       MD->invalidateCachedPointerInfo(V);
     VN.erase(LI);
     toErase.push_back(LI);
-    NumGVNLoad++;
+    ++NumGVNLoad;
     return true;
   }
 
@@ -1582,7 +1584,7 @@ bool GVN::processNonLocalLoad(LoadInst *LI,
   for (unsigned i = 0, e = UnavailableBlocks.size(); i != e; ++i)
     FullyAvailableBlocks[UnavailableBlocks[i]] = false;
 
-  bool NeedToSplitEdges = false;
+  SmallVector<std::pair<TerminatorInst*, unsigned>, 4> NeedToSplit;
   for (pred_iterator PI = pred_begin(LoadBB), E = pred_end(LoadBB);
        PI != E; ++PI) {
     BasicBlock *Pred = *PI;
@@ -1598,12 +1600,13 @@ bool GVN::processNonLocalLoad(LoadInst *LI,
         return false;
       }
       unsigned SuccNum = GetSuccessorNumber(Pred, LoadBB);
-      toSplit.push_back(std::make_pair(Pred->getTerminator(), SuccNum));
-      NeedToSplitEdges = true;
+      NeedToSplit.push_back(std::make_pair(Pred->getTerminator(), SuccNum));
     }
   }
-  if (NeedToSplitEdges)
+  if (!NeedToSplit.empty()) {
+    toSplit.append(NeedToSplit.begin(), NeedToSplit.end());
     return false;
+  }
 
   // Decide whether PRE is profitable for this load.
   unsigned NumUnavailablePreds = PredLoads.size();
@@ -1720,7 +1723,7 @@ bool GVN::processNonLocalLoad(LoadInst *LI,
     MD->invalidateCachedPointerInfo(V);
   VN.erase(LI);
   toErase.push_back(LI);
-  NumPRELoad++;
+  ++NumPRELoad;
   return true;
 }
 
@@ -1781,7 +1784,7 @@ bool GVN::processLoad(LoadInst *L, SmallVectorImpl<Instruction*> &toErase) {
         MD->invalidateCachedPointerInfo(AvailVal);
       VN.erase(L);
       toErase.push_back(L);
-      NumGVNLoad++;
+      ++NumGVNLoad;
       return true;
     }
         
@@ -1827,7 +1830,7 @@ bool GVN::processLoad(LoadInst *L, SmallVectorImpl<Instruction*> &toErase) {
       MD->invalidateCachedPointerInfo(StoredVal);
     VN.erase(L);
     toErase.push_back(L);
-    NumGVNLoad++;
+    ++NumGVNLoad;
     return true;
   }
 
@@ -1857,7 +1860,7 @@ bool GVN::processLoad(LoadInst *L, SmallVectorImpl<Instruction*> &toErase) {
       MD->invalidateCachedPointerInfo(DepLI);
     VN.erase(L);
     toErase.push_back(L);
-    NumGVNLoad++;
+    ++NumGVNLoad;
     return true;
   }
 
@@ -1868,7 +1871,7 @@ bool GVN::processLoad(LoadInst *L, SmallVectorImpl<Instruction*> &toErase) {
     L->replaceAllUsesWith(UndefValue::get(L->getType()));
     VN.erase(L);
     toErase.push_back(L);
-    NumGVNLoad++;
+    ++NumGVNLoad;
     return true;
   }
   
@@ -1879,7 +1882,7 @@ bool GVN::processLoad(LoadInst *L, SmallVectorImpl<Instruction*> &toErase) {
       L->replaceAllUsesWith(UndefValue::get(L->getType()));
       VN.erase(L);
       toErase.push_back(L);
-      NumGVNLoad++;
+      ++NumGVNLoad;
       return true;
     }
   }
@@ -2011,7 +2014,7 @@ bool GVN::runOnFunction(Function& F) {
     BasicBlock *BB = FI;
     ++FI;
     bool removedBlock = MergeBlockIntoPredecessor(BB, this);
-    if (removedBlock) NumGVNBlocks++;
+    if (removedBlock) ++NumGVNBlocks;
 
     Changed |= removedBlock;
   }
@@ -2107,6 +2110,11 @@ bool GVN::performPRE(Function &F) {
           CurInst->mayReadFromMemory() || CurInst->mayHaveSideEffects() ||
           isa<DbgInfoIntrinsic>(CurInst))
         continue;
+      
+      // We don't currently value number ANY inline asm calls.
+      if (CallInst *CallI = dyn_cast<CallInst>(CurInst))
+        if (CallI->isInlineAsm())
+          continue;
 
       uint32_t ValNo = VN.lookup(CurInst);
 
@@ -2123,27 +2131,28 @@ bool GVN::performPRE(Function &F) {
 
       for (pred_iterator PI = pred_begin(CurrentBlock),
            PE = pred_end(CurrentBlock); PI != PE; ++PI) {
+        BasicBlock *P = *PI;
         // We're not interested in PRE where the block is its
         // own predecessor, or in blocks with predecessors
         // that are not reachable.
-        if (*PI == CurrentBlock) {
+        if (P == CurrentBlock) {
           NumWithout = 2;
           break;
-        } else if (!localAvail.count(*PI))  {
+        } else if (!localAvail.count(P))  {
           NumWithout = 2;
           break;
         }
 
         DenseMap<uint32_t, Value*>::iterator predV =
-                                            localAvail[*PI]->table.find(ValNo);
-        if (predV == localAvail[*PI]->table.end()) {
-          PREPred = *PI;
-          NumWithout++;
+                                            localAvail[P]->table.find(ValNo);
+        if (predV == localAvail[P]->table.end()) {
+          PREPred = P;
+          ++NumWithout;
         } else if (predV->second == CurInst) {
           NumWithout = 2;
         } else {
-          predMap[*PI] = predV->second;
-          NumWith++;
+          predMap[P] = predV->second;
+          ++NumWith;
         }
       }
 
@@ -2198,7 +2207,7 @@ bool GVN::performPRE(Function &F) {
       PREInstr->setName(CurInst->getName() + ".pre");
       predMap[PREPred] = PREInstr;
       VN.add(PREInstr, ValNo);
-      NumGVNPRE++;
+      ++NumGVNPRE;
 
       // Update the availability map to include the new instruction.
       localAvail[PREPred]->table.insert(std::make_pair(ValNo, PREInstr));
@@ -2208,8 +2217,10 @@ bool GVN::performPRE(Function &F) {
                                      CurInst->getName() + ".pre-phi",
                                      CurrentBlock->begin());
       for (pred_iterator PI = pred_begin(CurrentBlock),
-           PE = pred_end(CurrentBlock); PI != PE; ++PI)
-        Phi->addIncoming(predMap[*PI], *PI);
+           PE = pred_end(CurrentBlock); PI != PE; ++PI) {
+        BasicBlock *P = *PI;
+        Phi->addIncoming(predMap[P], P);
+      }
 
       VN.add(Phi, ValNo);
       localAvail[CurrentBlock]->table[ValNo] = Phi;

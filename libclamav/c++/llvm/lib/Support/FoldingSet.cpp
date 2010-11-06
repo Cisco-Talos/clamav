@@ -15,11 +15,43 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ADT/FoldingSet.h"
+#include "llvm/Support/Allocator.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include <cassert>
 #include <cstring>
 using namespace llvm;
+
+//===----------------------------------------------------------------------===//
+// FoldingSetNodeIDRef Implementation
+
+/// ComputeHash - Compute a strong hash value for this FoldingSetNodeIDRef,
+/// used to lookup the node in the FoldingSetImpl.
+unsigned FoldingSetNodeIDRef::ComputeHash() const {
+  // This is adapted from SuperFastHash by Paul Hsieh.
+  unsigned Hash = static_cast<unsigned>(Size);
+  for (const unsigned *BP = Data, *E = BP+Size; BP != E; ++BP) {
+    unsigned Data = *BP;
+    Hash         += Data & 0xFFFF;
+    unsigned Tmp  = ((Data >> 16) << 11) ^ Hash;
+    Hash          = (Hash << 16) ^ Tmp;
+    Hash         += Hash >> 11;
+  }
+  
+  // Force "avalanching" of final 127 bits.
+  Hash ^= Hash << 3;
+  Hash += Hash >> 5;
+  Hash ^= Hash << 4;
+  Hash += Hash >> 17;
+  Hash ^= Hash << 25;
+  Hash += Hash >> 6;
+  return Hash;
+}
+
+bool FoldingSetNodeIDRef::operator==(FoldingSetNodeIDRef RHS) const {
+  if (Size != RHS.Size) return false;
+  return memcmp(Data, RHS.Data, Size*sizeof(*Data)) == 0;
+}
 
 //===----------------------------------------------------------------------===//
 // FoldingSetNodeID Implementation
@@ -103,33 +135,30 @@ void FoldingSetNodeID::AddString(StringRef String) {
 /// ComputeHash - Compute a strong hash value for this FoldingSetNodeID, used to 
 /// lookup the node in the FoldingSetImpl.
 unsigned FoldingSetNodeID::ComputeHash() const {
-  // This is adapted from SuperFastHash by Paul Hsieh.
-  unsigned Hash = static_cast<unsigned>(Bits.size());
-  for (const unsigned *BP = &Bits[0], *E = BP+Bits.size(); BP != E; ++BP) {
-    unsigned Data = *BP;
-    Hash         += Data & 0xFFFF;
-    unsigned Tmp  = ((Data >> 16) << 11) ^ Hash;
-    Hash          = (Hash << 16) ^ Tmp;
-    Hash         += Hash >> 11;
-  }
-  
-  // Force "avalanching" of final 127 bits.
-  Hash ^= Hash << 3;
-  Hash += Hash >> 5;
-  Hash ^= Hash << 4;
-  Hash += Hash >> 17;
-  Hash ^= Hash << 25;
-  Hash += Hash >> 6;
-  return Hash;
+  return FoldingSetNodeIDRef(Bits.data(), Bits.size()).ComputeHash();
 }
 
 /// operator== - Used to compare two nodes to each other.
 ///
 bool FoldingSetNodeID::operator==(const FoldingSetNodeID &RHS)const{
-  if (Bits.size() != RHS.Bits.size()) return false;
-  return memcmp(&Bits[0], &RHS.Bits[0], Bits.size()*sizeof(Bits[0])) == 0;
+  return *this == FoldingSetNodeIDRef(RHS.Bits.data(), RHS.Bits.size());
 }
 
+/// operator== - Used to compare two nodes to each other.
+///
+bool FoldingSetNodeID::operator==(FoldingSetNodeIDRef RHS) const {
+  return FoldingSetNodeIDRef(Bits.data(), Bits.size()) == RHS;
+}
+
+/// Intern - Copy this node's data to a memory region allocated from the
+/// given allocator and return a FoldingSetNodeIDRef describing the
+/// interned data.
+FoldingSetNodeIDRef
+FoldingSetNodeID::Intern(BumpPtrAllocator &Allocator) const {
+  unsigned *New = Allocator.Allocate<unsigned>(Bits.size());
+  std::uninitialized_copy(Bits.begin(), Bits.end(), New);
+  return FoldingSetNodeIDRef(New, Bits.size());
+}
 
 //===----------------------------------------------------------------------===//
 /// Helper functions for FoldingSetImpl.
@@ -158,11 +187,18 @@ static void **GetBucketPtr(void *NextInBucketPtr) {
 
 /// GetBucketFor - Hash the specified node ID and return the hash bucket for
 /// the specified ID.
-static void **GetBucketFor(const FoldingSetNodeID &ID,
-                           void **Buckets, unsigned NumBuckets) {
+static void **GetBucketFor(unsigned Hash, void **Buckets, unsigned NumBuckets) {
   // NumBuckets is always a power of 2.
-  unsigned BucketNum = ID.ComputeHash() & (NumBuckets-1);
+  unsigned BucketNum = Hash & (NumBuckets-1);
   return Buckets + BucketNum;
+}
+
+/// AllocateBuckets - Allocated initialized bucket memory.
+static void **AllocateBuckets(unsigned NumBuckets) {
+  void **Buckets = static_cast<void**>(calloc(NumBuckets+1, sizeof(void*)));
+  // Set the very last bucket to be a non-null "pointer".
+  Buckets[NumBuckets] = reinterpret_cast<void*>(-1);
+  return Buckets;
 }
 
 //===----------------------------------------------------------------------===//
@@ -172,11 +208,11 @@ FoldingSetImpl::FoldingSetImpl(unsigned Log2InitSize) {
   assert(5 < Log2InitSize && Log2InitSize < 32 &&
          "Initial hash table size out of range");
   NumBuckets = 1 << Log2InitSize;
-  Buckets = new void*[NumBuckets+1];
-  clear();
+  Buckets = AllocateBuckets(NumBuckets);
+  NumNodes = 0;
 }
 FoldingSetImpl::~FoldingSetImpl() {
-  delete [] Buckets;
+  free(Buckets);
 }
 void FoldingSetImpl::clear() {
   // Set all but the last bucket to null pointers.
@@ -197,11 +233,11 @@ void FoldingSetImpl::GrowHashTable() {
   NumBuckets <<= 1;
   
   // Clear out new buckets.
-  Buckets = new void*[NumBuckets+1];
-  clear();
+  Buckets = AllocateBuckets(NumBuckets);
+  NumNodes = 0;
 
   // Walk the old buckets, rehashing nodes into their new place.
-  FoldingSetNodeID ID;
+  FoldingSetNodeID TempID;
   for (unsigned i = 0; i != OldNumBuckets; ++i) {
     void *Probe = OldBuckets[i];
     if (!Probe) continue;
@@ -211,13 +247,14 @@ void FoldingSetImpl::GrowHashTable() {
       NodeInBucket->SetNextInBucket(0);
 
       // Insert the node into the new bucket, after recomputing the hash.
-      GetNodeProfile(ID, NodeInBucket);
-      InsertNode(NodeInBucket, GetBucketFor(ID, Buckets, NumBuckets));
-      ID.clear();
+      InsertNode(NodeInBucket,
+                 GetBucketFor(ComputeNodeHash(NodeInBucket, TempID),
+                              Buckets, NumBuckets));
+      TempID.clear();
     }
   }
   
-  delete[] OldBuckets;
+  free(OldBuckets);
 }
 
 /// FindNodeOrInsertPos - Look up the node specified by ID.  If it exists,
@@ -227,19 +264,18 @@ FoldingSetImpl::Node
 *FoldingSetImpl::FindNodeOrInsertPos(const FoldingSetNodeID &ID,
                                      void *&InsertPos) {
   
-  void **Bucket = GetBucketFor(ID, Buckets, NumBuckets);
+  void **Bucket = GetBucketFor(ID.ComputeHash(), Buckets, NumBuckets);
   void *Probe = *Bucket;
   
   InsertPos = 0;
   
-  FoldingSetNodeID OtherID;
+  FoldingSetNodeID TempID;
   while (Node *NodeInBucket = GetNextPtr(Probe)) {
-    GetNodeProfile(OtherID, NodeInBucket);
-    if (OtherID == ID)
+    if (NodeEquals(NodeInBucket, ID, TempID))
       return NodeInBucket;
+    TempID.clear();
 
     Probe = NodeInBucket->getNextInBucket();
-    OtherID.clear();
   }
   
   // Didn't find the node, return null with the bucket as the InsertPos.
@@ -255,9 +291,8 @@ void FoldingSetImpl::InsertNode(Node *N, void *InsertPos) {
   // Do we need to grow the hashtable?
   if (NumNodes+1 > NumBuckets*2) {
     GrowHashTable();
-    FoldingSetNodeID ID;
-    GetNodeProfile(ID, N);
-    InsertPos = GetBucketFor(ID, Buckets, NumBuckets);
+    FoldingSetNodeID TempID;
+    InsertPos = GetBucketFor(ComputeNodeHash(N, TempID), Buckets, NumBuckets);
   }
 
   ++NumNodes;
@@ -323,7 +358,7 @@ bool FoldingSetImpl::RemoveNode(Node *N) {
 /// instead.
 FoldingSetImpl::Node *FoldingSetImpl::GetOrInsertNode(FoldingSetImpl::Node *N) {
   FoldingSetNodeID ID;
-  GetNodeProfile(ID, N);
+  GetNodeProfile(N, ID);
   void *IP;
   if (Node *E = FindNodeOrInsertPos(ID, IP))
     return E;

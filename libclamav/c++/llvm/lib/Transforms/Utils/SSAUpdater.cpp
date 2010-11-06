@@ -11,49 +11,39 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Transforms/Utils/SSAUpdater.h"
+#define DEBUG_TYPE "ssaupdater"
 #include "llvm/Instructions.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/Support/AlignOf.h"
+#include "llvm/Support/Allocator.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/ValueHandle.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/SSAUpdater.h"
+#include "llvm/Transforms/Utils/SSAUpdaterImpl.h"
 using namespace llvm;
 
-typedef DenseMap<BasicBlock*, TrackingVH<Value> > AvailableValsTy;
-typedef std::vector<std::pair<BasicBlock*, TrackingVH<Value> > >
-                IncomingPredInfoTy;
-
+typedef DenseMap<BasicBlock*, Value*> AvailableValsTy;
 static AvailableValsTy &getAvailableVals(void *AV) {
   return *static_cast<AvailableValsTy*>(AV);
 }
 
-static IncomingPredInfoTy &getIncomingPredInfo(void *IPI) {
-  return *static_cast<IncomingPredInfoTy*>(IPI);
-}
-
-
 SSAUpdater::SSAUpdater(SmallVectorImpl<PHINode*> *NewPHI)
-  : AV(0), PrototypeValue(0), IPI(0), InsertedPHIs(NewPHI) {}
+  : AV(0), ProtoType(0), ProtoName(), InsertedPHIs(NewPHI) {}
 
 SSAUpdater::~SSAUpdater() {
   delete &getAvailableVals(AV);
-  delete &getIncomingPredInfo(IPI);
 }
 
 /// Initialize - Reset this object to get ready for a new set of SSA
-/// updates.  ProtoValue is the value used to name PHI nodes.
-void SSAUpdater::Initialize(Value *ProtoValue) {
+/// updates with type 'Ty'.  PHI nodes get a name based on 'Name'.
+void SSAUpdater::Initialize(const Type *Ty, StringRef Name) {
   if (AV == 0)
     AV = new AvailableValsTy();
   else
     getAvailableVals(AV).clear();
-
-  if (IPI == 0)
-    IPI = new IncomingPredInfoTy();
-  else
-    getIncomingPredInfo(IPI).clear();
-  PrototypeValue = ProtoValue;
+  ProtoType = Ty;
+  ProtoName = Name;
 }
 
 /// HasValueForBlock - Return true if the SSAUpdater already has a value for
@@ -65,15 +55,15 @@ bool SSAUpdater::HasValueForBlock(BasicBlock *BB) const {
 /// AddAvailableValue - Indicate that a rewritten value is available in the
 /// specified block with the specified value.
 void SSAUpdater::AddAvailableValue(BasicBlock *BB, Value *V) {
-  assert(PrototypeValue != 0 && "Need to initialize SSAUpdater");
-  assert(PrototypeValue->getType() == V->getType() &&
+  assert(ProtoType != 0 && "Need to initialize SSAUpdater");
+  assert(ProtoType == V->getType() &&
          "All rewritten values must have the same type");
   getAvailableVals(AV)[BB] = V;
 }
 
 /// IsEquivalentPHI - Check if PHI has the same incoming value as specified
 /// in ValueMapping for each predecessor block.
-static bool IsEquivalentPHI(PHINode *PHI, 
+static bool IsEquivalentPHI(PHINode *PHI,
                             DenseMap<BasicBlock*, Value*> &ValueMapping) {
   unsigned PHINumValues = PHI->getNumIncomingValues();
   if (PHINumValues != ValueMapping.size())
@@ -89,38 +79,10 @@ static bool IsEquivalentPHI(PHINode *PHI,
   return true;
 }
 
-/// GetExistingPHI - Check if BB already contains a phi node that is equivalent
-/// to the specified mapping from predecessor blocks to incoming values.
-static Value *GetExistingPHI(BasicBlock *BB,
-                             DenseMap<BasicBlock*, Value*> &ValueMapping) {
-  PHINode *SomePHI;
-  for (BasicBlock::iterator It = BB->begin();
-       (SomePHI = dyn_cast<PHINode>(It)); ++It) {
-    if (IsEquivalentPHI(SomePHI, ValueMapping))
-      return SomePHI;
-  }
-  return 0;
-}
-
-/// GetExistingPHI - Check if BB already contains an equivalent phi node.
-/// The InputIt type must be an iterator over std::pair<BasicBlock*, Value*>
-/// objects that specify the mapping from predecessor blocks to incoming values.
-template<typename InputIt>
-static Value *GetExistingPHI(BasicBlock *BB, const InputIt &I,
-                             const InputIt &E) {
-  // Avoid create the mapping if BB has no phi nodes at all.
-  if (!isa<PHINode>(BB->begin()))
-    return 0;
-  DenseMap<BasicBlock*, Value*> ValueMapping(I, E);
-  return GetExistingPHI(BB, ValueMapping);
-}
-
 /// GetValueAtEndOfBlock - Construct SSA form, materializing a value that is
 /// live at the end of the specified block.
 Value *SSAUpdater::GetValueAtEndOfBlock(BasicBlock *BB) {
-  assert(getIncomingPredInfo(IPI).empty() && "Unexpected Internal State");
   Value *Res = GetValueAtEndOfBlockInternal(BB);
-  assert(getIncomingPredInfo(IPI).empty() && "Unexpected Internal State");
   return Res;
 }
 
@@ -146,7 +108,7 @@ Value *SSAUpdater::GetValueAtEndOfBlock(BasicBlock *BB) {
 Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
   // If there is no definition of the renamed variable in this block, just use
   // GetValueAtEndOfBlock to do our work.
-  if (!getAvailableVals(AV).count(BB))
+  if (!HasValueForBlock(BB))
     return GetValueAtEndOfBlock(BB);
 
   // Otherwise, we have the hard case.  Get the live-in values for each
@@ -187,21 +149,27 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
 
   // If there are no predecessors, just return undef.
   if (PredValues.empty())
-    return UndefValue::get(PrototypeValue->getType());
+    return UndefValue::get(ProtoType);
 
   // Otherwise, if all the merged values are the same, just use it.
   if (SingularValue != 0)
     return SingularValue;
 
-  // Otherwise, we do need a PHI.
-  if (Value *ExistingPHI = GetExistingPHI(BB, PredValues.begin(),
-                                          PredValues.end()))
-    return ExistingPHI;
+  // Otherwise, we do need a PHI: check to see if we already have one available
+  // in this block that produces the right value.
+  if (isa<PHINode>(BB->begin())) {
+    DenseMap<BasicBlock*, Value*> ValueMapping(PredValues.begin(),
+                                               PredValues.end());
+    PHINode *SomePHI;
+    for (BasicBlock::iterator It = BB->begin();
+         (SomePHI = dyn_cast<PHINode>(It)); ++It) {
+      if (IsEquivalentPHI(SomePHI, ValueMapping))
+        return SomePHI;
+    }
+  }
 
   // Ok, we have no way out, insert a new one now.
-  PHINode *InsertedPHI = PHINode::Create(PrototypeValue->getType(),
-                                         PrototypeValue->getName(),
-                                         &BB->front());
+  PHINode *InsertedPHI = PHINode::Create(ProtoType, ProtoName, &BB->front());
   InsertedPHI->reserveOperandSpace(PredValues.size());
 
   // Fill in all the predecessors of the PHI.
@@ -226,7 +194,7 @@ Value *SSAUpdater::GetValueInMiddleOfBlock(BasicBlock *BB) {
 /// which use their value in the corresponding predecessor.
 void SSAUpdater::RewriteUse(Use &U) {
   Instruction *User = cast<Instruction>(U.getUser());
-  
+
   Value *V;
   if (PHINode *UserPN = dyn_cast<PHINode>(User))
     V = GetValueAtEndOfBlock(UserPN->getIncomingBlock(U));
@@ -236,161 +204,141 @@ void SSAUpdater::RewriteUse(Use &U) {
   U.set(V);
 }
 
+/// RewriteUseAfterInsertions - Rewrite a use, just like RewriteUse.  However,
+/// this version of the method can rewrite uses in the same block as a
+/// definition, because it assumes that all uses of a value are below any
+/// inserted values.
+void SSAUpdater::RewriteUseAfterInsertions(Use &U) {
+  Instruction *User = cast<Instruction>(U.getUser());
+  
+  Value *V;
+  if (PHINode *UserPN = dyn_cast<PHINode>(User))
+    V = GetValueAtEndOfBlock(UserPN->getIncomingBlock(U));
+  else
+    V = GetValueAtEndOfBlock(User->getParent());
+  
+  U.set(V);
+}
+
+/// PHIiter - Iterator for PHI operands.  This is used for the PHI_iterator
+/// in the SSAUpdaterImpl template.
+namespace {
+  class PHIiter {
+  private:
+    PHINode *PHI;
+    unsigned idx;
+
+  public:
+    explicit PHIiter(PHINode *P) // begin iterator
+      : PHI(P), idx(0) {}
+    PHIiter(PHINode *P, bool) // end iterator
+      : PHI(P), idx(PHI->getNumIncomingValues()) {}
+
+    PHIiter &operator++() { ++idx; return *this; } 
+    bool operator==(const PHIiter& x) const { return idx == x.idx; }
+    bool operator!=(const PHIiter& x) const { return !operator==(x); }
+    Value *getIncomingValue() { return PHI->getIncomingValue(idx); }
+    BasicBlock *getIncomingBlock() { return PHI->getIncomingBlock(idx); }
+  };
+}
+
+/// SSAUpdaterTraits<SSAUpdater> - Traits for the SSAUpdaterImpl template,
+/// specialized for SSAUpdater.
+namespace llvm {
+template<>
+class SSAUpdaterTraits<SSAUpdater> {
+public:
+  typedef BasicBlock BlkT;
+  typedef Value *ValT;
+  typedef PHINode PhiT;
+
+  typedef succ_iterator BlkSucc_iterator;
+  static BlkSucc_iterator BlkSucc_begin(BlkT *BB) { return succ_begin(BB); }
+  static BlkSucc_iterator BlkSucc_end(BlkT *BB) { return succ_end(BB); }
+
+  typedef PHIiter PHI_iterator;
+  static inline PHI_iterator PHI_begin(PhiT *PHI) { return PHI_iterator(PHI); }
+  static inline PHI_iterator PHI_end(PhiT *PHI) {
+    return PHI_iterator(PHI, true);
+  }
+
+  /// FindPredecessorBlocks - Put the predecessors of Info->BB into the Preds
+  /// vector, set Info->NumPreds, and allocate space in Info->Preds.
+  static void FindPredecessorBlocks(BasicBlock *BB,
+                                    SmallVectorImpl<BasicBlock*> *Preds) {
+    // We can get our predecessor info by walking the pred_iterator list,
+    // but it is relatively slow.  If we already have PHI nodes in this
+    // block, walk one of them to get the predecessor list instead.
+    if (PHINode *SomePhi = dyn_cast<PHINode>(BB->begin())) {
+      for (unsigned PI = 0, E = SomePhi->getNumIncomingValues(); PI != E; ++PI)
+        Preds->push_back(SomePhi->getIncomingBlock(PI));
+    } else {
+      for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI)
+        Preds->push_back(*PI);
+    }
+  }
+
+  /// GetUndefVal - Get an undefined value of the same type as the value
+  /// being handled.
+  static Value *GetUndefVal(BasicBlock *BB, SSAUpdater *Updater) {
+    return UndefValue::get(Updater->ProtoType);
+  }
+
+  /// CreateEmptyPHI - Create a new PHI instruction in the specified block.
+  /// Reserve space for the operands but do not fill them in yet.
+  static Value *CreateEmptyPHI(BasicBlock *BB, unsigned NumPreds,
+                               SSAUpdater *Updater) {
+    PHINode *PHI = PHINode::Create(Updater->ProtoType, Updater->ProtoName,
+                                   &BB->front());
+    PHI->reserveOperandSpace(NumPreds);
+    return PHI;
+  }
+
+  /// AddPHIOperand - Add the specified value as an operand of the PHI for
+  /// the specified predecessor block.
+  static void AddPHIOperand(PHINode *PHI, Value *Val, BasicBlock *Pred) {
+    PHI->addIncoming(Val, Pred);
+  }
+
+  /// InstrIsPHI - Check if an instruction is a PHI.
+  ///
+  static PHINode *InstrIsPHI(Instruction *I) {
+    return dyn_cast<PHINode>(I);
+  }
+
+  /// ValueIsPHI - Check if a value is a PHI.
+  ///
+  static PHINode *ValueIsPHI(Value *Val, SSAUpdater *Updater) {
+    return dyn_cast<PHINode>(Val);
+  }
+
+  /// ValueIsNewPHI - Like ValueIsPHI but also check if the PHI has no source
+  /// operands, i.e., it was just added.
+  static PHINode *ValueIsNewPHI(Value *Val, SSAUpdater *Updater) {
+    PHINode *PHI = ValueIsPHI(Val, Updater);
+    if (PHI && PHI->getNumIncomingValues() == 0)
+      return PHI;
+    return 0;
+  }
+
+  /// GetPHIValue - For the specified PHI instruction, return the value
+  /// that it defines.
+  static Value *GetPHIValue(PHINode *PHI) {
+    return PHI;
+  }
+};
+
+} // End llvm namespace
 
 /// GetValueAtEndOfBlockInternal - Check to see if AvailableVals has an entry
 /// for the specified BB and if so, return it.  If not, construct SSA form by
-/// walking predecessors inserting PHI nodes as needed until we get to a block
-/// where the value is available.
-///
+/// first calculating the required placement of PHIs and then inserting new
+/// PHIs where needed.
 Value *SSAUpdater::GetValueAtEndOfBlockInternal(BasicBlock *BB) {
   AvailableValsTy &AvailableVals = getAvailableVals(AV);
+  if (Value *V = AvailableVals[BB])
+    return V;
 
-  // Query AvailableVals by doing an insertion of null.
-  std::pair<AvailableValsTy::iterator, bool> InsertRes =
-    AvailableVals.insert(std::make_pair(BB, TrackingVH<Value>()));
-
-  // Handle the case when the insertion fails because we have already seen BB.
-  if (!InsertRes.second) {
-    // If the insertion failed, there are two cases.  The first case is that the
-    // value is already available for the specified block.  If we get this, just
-    // return the value.
-    if (InsertRes.first->second != 0)
-      return InsertRes.first->second;
-
-    // Otherwise, if the value we find is null, then this is the value is not
-    // known but it is being computed elsewhere in our recursion.  This means
-    // that we have a cycle.  Handle this by inserting a PHI node and returning
-    // it.  When we get back to the first instance of the recursion we will fill
-    // in the PHI node.
-    return InsertRes.first->second =
-      PHINode::Create(PrototypeValue->getType(), PrototypeValue->getName(),
-                      &BB->front());
-  }
-
-  // Okay, the value isn't in the map and we just inserted a null in the entry
-  // to indicate that we're processing the block.  Since we have no idea what
-  // value is in this block, we have to recurse through our predecessors.
-  //
-  // While we're walking our predecessors, we keep track of them in a vector,
-  // then insert a PHI node in the end if we actually need one.  We could use a
-  // smallvector here, but that would take a lot of stack space for every level
-  // of the recursion, just use IncomingPredInfo as an explicit stack.
-  IncomingPredInfoTy &IncomingPredInfo = getIncomingPredInfo(IPI);
-  unsigned FirstPredInfoEntry = IncomingPredInfo.size();
-
-  // As we're walking the predecessors, keep track of whether they are all
-  // producing the same value.  If so, this value will capture it, if not, it
-  // will get reset to null.  We distinguish the no-predecessor case explicitly
-  // below.
-  TrackingVH<Value> ExistingValue;
-
-  // We can get our predecessor info by walking the pred_iterator list, but it
-  // is relatively slow.  If we already have PHI nodes in this block, walk one
-  // of them to get the predecessor list instead.
-  if (PHINode *SomePhi = dyn_cast<PHINode>(BB->begin())) {
-    for (unsigned i = 0, e = SomePhi->getNumIncomingValues(); i != e; ++i) {
-      BasicBlock *PredBB = SomePhi->getIncomingBlock(i);
-      Value *PredVal = GetValueAtEndOfBlockInternal(PredBB);
-      IncomingPredInfo.push_back(std::make_pair(PredBB, PredVal));
-
-      // Set ExistingValue to singular value from all predecessors so far.
-      if (i == 0)
-        ExistingValue = PredVal;
-      else if (PredVal != ExistingValue)
-        ExistingValue = 0;
-    }
-  } else {
-    bool isFirstPred = true;
-    for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
-      BasicBlock *PredBB = *PI;
-      Value *PredVal = GetValueAtEndOfBlockInternal(PredBB);
-      IncomingPredInfo.push_back(std::make_pair(PredBB, PredVal));
-
-      // Set ExistingValue to singular value from all predecessors so far.
-      if (isFirstPred) {
-        ExistingValue = PredVal;
-        isFirstPred = false;
-      } else if (PredVal != ExistingValue)
-        ExistingValue = 0;
-    }
-  }
-
-  // If there are no predecessors, then we must have found an unreachable block
-  // just return 'undef'.  Since there are no predecessors, InsertRes must not
-  // be invalidated.
-  if (IncomingPredInfo.size() == FirstPredInfoEntry)
-    return InsertRes.first->second = UndefValue::get(PrototypeValue->getType());
-
-  /// Look up BB's entry in AvailableVals.  'InsertRes' may be invalidated.  If
-  /// this block is involved in a loop, a no-entry PHI node will have been
-  /// inserted as InsertedVal.  Otherwise, we'll still have the null we inserted
-  /// above.
-  TrackingVH<Value> &InsertedVal = AvailableVals[BB];
-
-  // If the predecessor values are not all the same, then check to see if there
-  // is an existing PHI that can be used.
-  if (!ExistingValue)
-    ExistingValue = GetExistingPHI(BB,
-                                   IncomingPredInfo.begin()+FirstPredInfoEntry,
-                                   IncomingPredInfo.end());
-
-  // If there is an existing value we can use, then we don't need to insert a
-  // PHI.  This is the simple and common case.
-  if (ExistingValue) {
-    // If a PHI node got inserted, replace it with the existing value and delete
-    // it.
-    if (InsertedVal) {
-      PHINode *OldVal = cast<PHINode>(InsertedVal);
-      // Be careful about dead loops.  These RAUW's also update InsertedVal.
-      if (InsertedVal != ExistingValue)
-        OldVal->replaceAllUsesWith(ExistingValue);
-      else
-        OldVal->replaceAllUsesWith(UndefValue::get(InsertedVal->getType()));
-      OldVal->eraseFromParent();
-    } else {
-      InsertedVal = ExistingValue;
-    }
-
-    // Either path through the 'if' should have set InsertedVal -> ExistingVal.
-    assert((InsertedVal == ExistingValue || isa<UndefValue>(InsertedVal)) &&
-           "RAUW didn't change InsertedVal to be ExistingValue");
-
-    // Drop the entries we added in IncomingPredInfo to restore the stack.
-    IncomingPredInfo.erase(IncomingPredInfo.begin()+FirstPredInfoEntry,
-                           IncomingPredInfo.end());
-    return ExistingValue;
-  }
-
-  // Otherwise, we do need a PHI: insert one now if we don't already have one.
-  if (InsertedVal == 0)
-    InsertedVal = PHINode::Create(PrototypeValue->getType(),
-                                  PrototypeValue->getName(), &BB->front());
-
-  PHINode *InsertedPHI = cast<PHINode>(InsertedVal);
-  InsertedPHI->reserveOperandSpace(IncomingPredInfo.size()-FirstPredInfoEntry);
-
-  // Fill in all the predecessors of the PHI.
-  for (IncomingPredInfoTy::iterator I =
-         IncomingPredInfo.begin()+FirstPredInfoEntry,
-       E = IncomingPredInfo.end(); I != E; ++I)
-    InsertedPHI->addIncoming(I->second, I->first);
-
-  // Drop the entries we added in IncomingPredInfo to restore the stack.
-  IncomingPredInfo.erase(IncomingPredInfo.begin()+FirstPredInfoEntry,
-                         IncomingPredInfo.end());
-
-  // See if the PHI node can be merged to a single value.  This can happen in
-  // loop cases when we get a PHI of itself and one other value.
-  if (Value *ConstVal = InsertedPHI->hasConstantValue()) {
-    InsertedPHI->replaceAllUsesWith(ConstVal);
-    InsertedPHI->eraseFromParent();
-    InsertedVal = ConstVal;
-  } else {
-    DEBUG(dbgs() << "  Inserted PHI: " << *InsertedPHI << "\n");
-
-    // If the client wants to know about all new instructions, tell it.
-    if (InsertedPHIs) InsertedPHIs->push_back(InsertedPHI);
-  }
-
-  return InsertedVal;
+  SSAUpdaterImpl<SSAUpdater> Impl(this, &AvailableVals, InsertedPHIs);
+  return Impl.GetValue(BB);
 }

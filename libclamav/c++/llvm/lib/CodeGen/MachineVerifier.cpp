@@ -1,4 +1,4 @@
-//===-- MachineVerifier.cpp - Machine Code Verifier -------------*- C++ -*-===//
+//===-- MachineVerifier.cpp - Machine Code Verifier -----------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -24,6 +24,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Function.h"
+#include "llvm/CodeGen/LiveIntervalAnalysis.h"
 #include "llvm/CodeGen/LiveVariables.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -44,19 +45,14 @@ using namespace llvm;
 namespace {
   struct MachineVerifier {
 
-    MachineVerifier(Pass *pass, bool allowDoubleDefs) :
+    MachineVerifier(Pass *pass) :
       PASS(pass),
-      allowVirtDoubleDefs(allowDoubleDefs),
-      allowPhysDoubleDefs(allowDoubleDefs),
       OutFileName(getenv("LLVM_VERIFY_MACHINEINSTRS"))
       {}
 
     bool runOnMachineFunction(MachineFunction &MF);
 
     Pass *const PASS;
-    const bool allowVirtDoubleDefs;
-    const bool allowPhysDoubleDefs;
-
     const char *const OutFileName;
     raw_ostream *OS;
     const MachineFunction *MF;
@@ -90,10 +86,6 @@ namespace {
       // Vregs that must be live in because they are used without being
       // defined. Map value is the user.
       RegMap vregsLiveIn;
-
-      // Vregs that must be dead in because they are defined without being
-      // killed first. Map value is the defining instruction.
-      RegMap vregsDeadIn;
 
       // Regs killed in MBB. They may be defined again, and will then be in both
       // regsKilled and regsLiveOut.
@@ -175,6 +167,7 @@ namespace {
 
     // Analysis information if available
     LiveVariables *LiveVars;
+    const LiveIntervals *LiveInts;
 
     void visitMachineFunctionBefore();
     void visitMachineBasicBlockBefore(const MachineBasicBlock *MBB);
@@ -195,15 +188,14 @@ namespace {
 
     void calcRegsRequired();
     void verifyLiveVariables();
+    void verifyLiveIntervals();
   };
 
   struct MachineVerifierPass : public MachineFunctionPass {
     static char ID; // Pass ID, replacement for typeid
-    bool AllowDoubleDefs;
 
-    explicit MachineVerifierPass(bool allowDoubleDefs = false)
-      : MachineFunctionPass(&ID),
-        AllowDoubleDefs(allowDoubleDefs) {}
+    MachineVerifierPass()
+      : MachineFunctionPass(ID) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesAll();
@@ -211,7 +203,7 @@ namespace {
     }
 
     bool runOnMachineFunction(MachineFunction &MF) {
-      MF.verify(this, AllowDoubleDefs);
+      MF.verify(this);
       return false;
     }
   };
@@ -219,17 +211,15 @@ namespace {
 }
 
 char MachineVerifierPass::ID = 0;
-static RegisterPass<MachineVerifierPass>
-MachineVer("machineverifier", "Verify generated machine code");
-static const PassInfo *const MachineVerifyID = &MachineVer;
+INITIALIZE_PASS(MachineVerifierPass, "machineverifier",
+                "Verify generated machine code", false, false);
 
-FunctionPass *llvm::createMachineVerifierPass(bool allowPhysDoubleDefs) {
-  return new MachineVerifierPass(allowPhysDoubleDefs);
+FunctionPass *llvm::createMachineVerifierPass() {
+  return new MachineVerifierPass();
 }
 
-void MachineFunction::verify(Pass *p, bool allowDoubleDefs) const {
-  MachineVerifier(p, allowDoubleDefs)
-    .runOnMachineFunction(const_cast<MachineFunction&>(*this));
+void MachineFunction::verify(Pass *p) const {
+  MachineVerifier(p).runOnMachineFunction(const_cast<MachineFunction&>(*this));
 }
 
 bool MachineVerifier::runOnMachineFunction(MachineFunction &MF) {
@@ -255,10 +245,13 @@ bool MachineVerifier::runOnMachineFunction(MachineFunction &MF) {
   TRI = TM->getRegisterInfo();
   MRI = &MF.getRegInfo();
 
+  LiveVars = NULL;
+  LiveInts = NULL;
   if (PASS) {
-    LiveVars = PASS->getAnalysisIfAvailable<LiveVariables>();
-  } else {
-    LiveVars = NULL;
+    LiveInts = PASS->getAnalysisIfAvailable<LiveIntervals>();
+    // We don't want to verify LiveVariables if LiveIntervals is available.
+    if (!LiveInts)
+      LiveVars = PASS->getAnalysisIfAvailable<LiveVariables>();
   }
 
   visitMachineFunctionBefore();
@@ -279,7 +272,7 @@ bool MachineVerifier::runOnMachineFunction(MachineFunction &MF) {
   if (OutFile)
     delete OutFile;
   else if (foundErrors)
-    llvm_report_error("Found "+Twine(foundErrors)+" machine code errors.");
+    report_fatal_error("Found "+Twine(foundErrors)+" machine code errors.");
 
   // Clean up.
   regsLive.clear();
@@ -351,8 +344,8 @@ void MachineVerifier::visitMachineFunctionBefore() {
 }
 
 // Does iterator point to a and b as the first two elements?
-bool matchPair(MachineBasicBlock::const_succ_iterator i,
-               const MachineBasicBlock *a, const MachineBasicBlock *b) {
+static bool matchPair(MachineBasicBlock::const_succ_iterator i,
+                      const MachineBasicBlock *a, const MachineBasicBlock *b) {
   if (*i == a)
     return *++i == b;
   if (*i == b)
@@ -390,7 +383,8 @@ MachineVerifier::visitMachineBasicBlockBefore(const MachineBasicBlock *MBB) {
         report("MBB exits via unconditional fall-through but its successor "
                "differs from its CFG successor!", MBB);
       }
-      if (!MBB->empty() && MBB->back().getDesc().isBarrier()) {
+      if (!MBB->empty() && MBB->back().getDesc().isBarrier() &&
+          !TII->isPredicated(&MBB->back())) {
         report("MBB exits via unconditional fall-through but ends with a "
                "barrier instruction!", MBB);
       }
@@ -470,7 +464,7 @@ MachineVerifier::visitMachineBasicBlockBefore(const MachineBasicBlock *MBB) {
   }
 
   regsLive.clear();
-  for (MachineBasicBlock::const_livein_iterator I = MBB->livein_begin(),
+  for (MachineBasicBlock::livein_iterator I = MBB->livein_begin(),
          E = MBB->livein_end(); I != E; ++I) {
     if (!TargetRegisterInfo::isPhysicalRegister(*I)) {
       report("MBB live-in list contains non-physical register", MBB);
@@ -511,6 +505,20 @@ void MachineVerifier::visitMachineInstrBefore(const MachineInstr *MI) {
     if ((*I)->isStore() && !TI.mayStore())
       report("Missing mayStore flag", MI);
   }
+
+  // Debug values must not have a slot index.
+  // Other instructions must have one.
+  if (LiveInts) {
+    bool mapped = !LiveInts->isNotInMIMap(MI);
+    if (MI->isDebugValue()) {
+      if (mapped)
+        report("Debug instruction has a slot index", MI);
+    } else {
+      if (!mapped)
+        report("Missing slot index", MI);
+    }
+  }
+
 }
 
 void
@@ -552,28 +560,47 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
       regsLiveInButUnused.erase(Reg);
 
       bool isKill = false;
-      if (MO->isKill()) {
-        isKill = true;
-        // Tied operands on two-address instuctions MUST NOT have a <kill> flag.
-        if (MI->isRegTiedToDefOperand(MONum))
+      unsigned defIdx;
+      if (MI->isRegTiedToDefOperand(MONum, &defIdx)) {
+        // A two-addr use counts as a kill if use and def are the same.
+        unsigned DefReg = MI->getOperand(defIdx).getReg();
+        if (Reg == DefReg) {
+          isKill = true;
+          // ANd in that case an explicit kill flag is not allowed.
+          if (MO->isKill())
             report("Illegal kill flag on two-address instruction operand",
                    MO, MONum);
-      } else {
-        // TwoAddress instr modifying a reg is treated as kill+def.
-        unsigned defIdx;
-        if (MI->isRegTiedToDefOperand(MONum, &defIdx) &&
-            MI->getOperand(defIdx).getReg() == Reg)
-          isKill = true;
-      }
-      if (isKill) {
+        } else if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+          report("Two-address instruction operands must be identical",
+                 MO, MONum);
+        }
+      } else
+        isKill = MO->isKill();
+
+      if (isKill)
         addRegWithSubRegs(regsKilled, Reg);
 
-        // Check that LiveVars knows this kill
-        if (LiveVars && TargetRegisterInfo::isVirtualRegister(Reg)) {
-          LiveVariables::VarInfo &VI = LiveVars->getVarInfo(Reg);
-          if (std::find(VI.Kills.begin(),
-                        VI.Kills.end(), MI) == VI.Kills.end())
-            report("Kill missing from LiveVariables", MO, MONum);
+      // Check that LiveVars knows this kill.
+      if (LiveVars && TargetRegisterInfo::isVirtualRegister(Reg) &&
+          MO->isKill()) {
+        LiveVariables::VarInfo &VI = LiveVars->getVarInfo(Reg);
+        if (std::find(VI.Kills.begin(),
+                      VI.Kills.end(), MI) == VI.Kills.end())
+          report("Kill missing from LiveVariables", MO, MONum);
+      }
+
+      // Check LiveInts liveness and kill.
+      if (LiveInts && !LiveInts->isNotInMIMap(MI)) {
+        SlotIndex UseIdx = LiveInts->getInstructionIndex(MI).getUseIndex();
+        if (LiveInts->hasInterval(Reg)) {
+          const LiveInterval &LI = LiveInts->getInterval(Reg);
+          if (!LI.liveAt(UseIdx)) {
+            report("No live range at use", MO, MONum);
+            *OS << UseIdx << " is not live in " << LI << '\n';
+          }
+          // TODO: Verify isKill == LI.killedAt.
+        } else if (TargetRegisterInfo::isVirtualRegister(Reg)) {
+          report("Virtual register has no Live interval", MO, MONum);
         }
       }
 
@@ -602,6 +629,28 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
         addRegWithSubRegs(regsDead, Reg);
       else
         addRegWithSubRegs(regsDefined, Reg);
+
+      // Check LiveInts for a live range, but only for virtual registers.
+      if (LiveInts && TargetRegisterInfo::isVirtualRegister(Reg) &&
+          !LiveInts->isNotInMIMap(MI)) {
+        SlotIndex DefIdx = LiveInts->getInstructionIndex(MI).getDefIndex();
+        if (LiveInts->hasInterval(Reg)) {
+          const LiveInterval &LI = LiveInts->getInterval(Reg);
+          if (const LiveRange *LR = LI.getLiveRangeContaining(DefIdx)) {
+            assert(LR->valno && "NULL valno is not allowed");
+            if (LR->valno->def != DefIdx) {
+              report("Inconsistent valno->def", MO, MONum);
+              *OS << "Valno " << LR->valno->id << " is not defined at "
+                  << DefIdx << " in " << LI << '\n';
+            }
+          } else {
+            report("No live range at def", MO, MONum);
+            *OS << DefIdx << " is not live in " << LI << '\n';
+          }
+        } else {
+          report("Virtual register has no Live interval", MO, MONum);
+        }
+      }
     }
 
     // Check register classes.
@@ -631,11 +680,14 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
         // Virtual register.
         const TargetRegisterClass *RC = MRI->getRegClass(Reg);
         if (SubIdx) {
-          if (RC->subregclasses_begin()+SubIdx >= RC->subregclasses_end()) {
+          const TargetRegisterClass *SRC = RC->getSubRegisterRegClass(SubIdx);
+          if (!SRC) {
             report("Invalid subregister index for virtual register", MO, MONum);
+            *OS << "Register class " << RC->getName()
+                << " does not support subreg index " << SubIdx << "\n";
             return;
           }
-          RC = *(RC->subregclasses_begin()+SubIdx);
+          RC = SRC;
         }
         if (const TargetRegisterClass *DRC = TOI.getRegClass(TRI)) {
           if (RC != DRC && !RC->hasSuperClass(DRC)) {
@@ -662,40 +714,9 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
 void MachineVerifier::visitMachineInstrAfter(const MachineInstr *MI) {
   BBInfo &MInfo = MBBInfoMap[MI->getParent()];
   set_union(MInfo.regsKilled, regsKilled);
-  set_subtract(regsLive, regsKilled);
-  regsKilled.clear();
-
-  // Verify that both <def> and <def,dead> operands refer to dead registers.
-  RegVector defs(regsDefined);
-  defs.append(regsDead.begin(), regsDead.end());
-
-  for (RegVector::const_iterator I = defs.begin(), E = defs.end();
-       I != E; ++I) {
-    if (regsLive.count(*I)) {
-      if (TargetRegisterInfo::isPhysicalRegister(*I)) {
-        if (!allowPhysDoubleDefs && !isReserved(*I) &&
-            !regsLiveInButUnused.count(*I)) {
-          report("Redefining a live physical register", MI);
-          *OS << "Register " << TRI->getName(*I)
-              << " was defined but already live.\n";
-        }
-      } else {
-        if (!allowVirtDoubleDefs) {
-          report("Redefining a live virtual register", MI);
-          *OS << "Virtual register %reg" << *I
-              << " was defined but already live.\n";
-        }
-      }
-    } else if (TargetRegisterInfo::isVirtualRegister(*I) &&
-               !MInfo.regsKilled.count(*I)) {
-      // Virtual register defined without being killed first must be dead on
-      // entry.
-      MInfo.vregsDeadIn.insert(std::make_pair(*I, MI));
-    }
-  }
-
-  set_subtract(regsLive, regsDead); regsDead.clear();
-  set_union(regsLive, regsDefined); regsDefined.clear();
+  set_subtract(regsLive, regsKilled); regsKilled.clear();
+  set_subtract(regsLive, regsDead);   regsDead.clear();
+  set_union(regsLive, regsDefined);   regsDefined.clear();
 }
 
 void
@@ -820,35 +841,15 @@ void MachineVerifier::visitMachineFunctionAfter() {
       continue;
 
     checkPHIOps(MFI);
-
-    // Verify dead-in virtual registers.
-    if (!allowVirtDoubleDefs) {
-      for (MachineBasicBlock::const_pred_iterator PrI = MFI->pred_begin(),
-             PrE = MFI->pred_end(); PrI != PrE; ++PrI) {
-        BBInfo &PrInfo = MBBInfoMap[*PrI];
-        if (!PrInfo.reachable)
-          continue;
-
-        for (RegMap::iterator I = MInfo.vregsDeadIn.begin(),
-               E = MInfo.vregsDeadIn.end(); I != E; ++I) {
-          // DeadIn register must be in neither regsLiveOut or vregsPassed of
-          // any predecessor.
-          if (PrInfo.isLiveOut(I->first)) {
-            report("Live-in virtual register redefined", I->second);
-            *OS << "Register %reg" << I->first
-                << " was live-out from predecessor MBB #"
-                << (*PrI)->getNumber() << ".\n";
-          }
-        }
-      }
-    }
   }
 
-  // Now check LiveVariables info if available
-  if (LiveVars) {
+  // Now check liveness info if available
+  if (LiveVars || LiveInts)
     calcRegsRequired();
+  if (LiveVars)
     verifyLiveVariables();
-  }
+  if (LiveInts)
+    verifyLiveIntervals();
 }
 
 void MachineVerifier::verifyLiveVariables() {
@@ -878,4 +879,55 @@ void MachineVerifier::verifyLiveVariables() {
   }
 }
 
+void MachineVerifier::verifyLiveIntervals() {
+  assert(LiveInts && "Don't call verifyLiveIntervals without LiveInts");
+  for (LiveIntervals::const_iterator LVI = LiveInts->begin(),
+       LVE = LiveInts->end(); LVI != LVE; ++LVI) {
+    const LiveInterval &LI = *LVI->second;
+    assert(LVI->first == LI.reg && "Invalid reg to interval mapping");
+
+    for (LiveInterval::const_vni_iterator I = LI.vni_begin(), E = LI.vni_end();
+         I!=E; ++I) {
+      VNInfo *VNI = *I;
+      const LiveRange *DefLR = LI.getLiveRangeContaining(VNI->def);
+
+      if (!DefLR) {
+        if (!VNI->isUnused()) {
+          report("Valno not live at def and not marked unused", MF);
+          *OS << "Valno #" << VNI->id << " in " << LI << '\n';
+        }
+        continue;
+      }
+
+      if (VNI->isUnused())
+        continue;
+
+      if (DefLR->valno != VNI) {
+        report("Live range at def has different valno", MF);
+        DefLR->print(*OS);
+        *OS << " should use valno #" << VNI->id << " in " << LI << '\n';
+      }
+
+    }
+
+    for (LiveInterval::const_iterator I = LI.begin(), E = LI.end(); I!=E; ++I) {
+      const LiveRange &LR = *I;
+      assert(LR.valno && "Live range has no valno");
+
+      if (LR.valno->id >= LI.getNumValNums() ||
+          LR.valno != LI.getValNumInfo(LR.valno->id)) {
+        report("Foreign valno in live range", MF);
+        LR.print(*OS);
+        *OS << " has a valno not in " << LI << '\n';
+      }
+
+      if (LR.valno->isUnused()) {
+        report("Live range valno is marked unused", MF);
+        LR.print(*OS);
+        *OS << " in " << LI << '\n';
+      }
+
+    }
+  }
+}
 

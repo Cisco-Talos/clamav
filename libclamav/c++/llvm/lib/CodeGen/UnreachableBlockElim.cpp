@@ -43,7 +43,7 @@ namespace {
     virtual bool runOnFunction(Function &F);
   public:
     static char ID; // Pass identification, replacement for typeid
-    UnreachableBlockElim() : FunctionPass(&ID) {}
+    UnreachableBlockElim() : FunctionPass(ID) {}
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.addPreserved<ProfileInfo>();
@@ -51,8 +51,8 @@ namespace {
   };
 }
 char UnreachableBlockElim::ID = 0;
-static RegisterPass<UnreachableBlockElim>
-X("unreachableblockelim", "Remove unreachable blocks from the CFG");
+INITIALIZE_PASS(UnreachableBlockElim, "unreachableblockelim",
+                "Remove unreachable blocks from the CFG", false, false);
 
 FunctionPass *llvm::createUnreachableBlockEliminationPass() {
   return new UnreachableBlockElim();
@@ -100,16 +100,15 @@ namespace {
     MachineModuleInfo *MMI;
   public:
     static char ID; // Pass identification, replacement for typeid
-    UnreachableMachineBlockElim() : MachineFunctionPass(&ID) {}
+    UnreachableMachineBlockElim() : MachineFunctionPass(ID) {}
   };
 }
 char UnreachableMachineBlockElim::ID = 0;
 
-static RegisterPass<UnreachableMachineBlockElim>
-Y("unreachable-mbb-elimination",
-  "Remove unreachable machine basic blocks");
+INITIALIZE_PASS(UnreachableMachineBlockElim, "unreachable-mbb-elimination",
+  "Remove unreachable machine basic blocks", false, false);
 
-const PassInfo *const llvm::UnreachableMachineBlockElimID = &Y;
+char &llvm::UnreachableMachineBlockElimID = UnreachableMachineBlockElim::ID;
 
 void UnreachableMachineBlockElim::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addPreserved<MachineLoopInfo>();
@@ -165,20 +164,8 @@ bool UnreachableMachineBlockElim::runOnMachineFunction(MachineFunction &F) {
   }
 
   // Actually remove the blocks now.
-  for (unsigned i = 0, e = DeadBlocks.size(); i != e; ++i) {
-    MachineBasicBlock *MBB = DeadBlocks[i];
-    // If there are any labels in the basic block, unregister them from
-    // MachineModuleInfo.
-    if (MMI && !MBB->empty()) {
-      for (MachineBasicBlock::iterator I = MBB->begin(),
-             E = MBB->end(); I != E; ++I) {
-        if (I->isLabel())
-          // The label ID # is always operand #0, an immediate.
-          MMI->InvalidateLabel(I->getOperand(0).getImm());
-      }
-    }
-    MBB->eraseFromParent();
-  }
+  for (unsigned i = 0, e = DeadBlocks.size(); i != e; ++i)
+    DeadBlocks[i]->eraseFromParent();
 
   // Cleanup PHI nodes.
   for (MachineFunction::iterator I = F.begin(), E = F.end(); I != E; ++I) {

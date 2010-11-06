@@ -16,8 +16,10 @@
 #define CODEGEN_REGISTERS_H
 
 #include "llvm/CodeGen/ValueTypes.h"
+#include "llvm/ADT/DenseMap.h"
 #include <string>
 #include <vector>
+#include <set>
 #include <cstdlib>
 
 namespace llvm {
@@ -40,7 +42,8 @@ namespace llvm {
     unsigned SpillSize;
     unsigned SpillAlignment;
     int CopyCost;
-    std::vector<Record*> SubRegClasses;
+    // Map SubRegIndex -> RegisterClass
+    DenseMap<Record*,Record*> SubRegClasses;
     std::string MethodProtos, MethodBodies;
 
     const std::string &getName() const;
@@ -52,6 +55,37 @@ namespace llvm {
         return VTs[VTNum];
       assert(0 && "VTNum greater than number of ValueTypes in RegClass!");
       abort();
+    }
+    
+    // Returns true if RC is a strict subclass.
+    // RC is a sub-class of this class if it is a valid replacement for any
+    // instruction operand where a register of this classis required. It must 
+    // satisfy these conditions:
+    //
+    // 1. All RC registers are also in this.
+    // 2. The RC spill size must not be smaller than our spill size.
+    // 3. RC spill alignment must be compatible with ours.
+    //
+    bool hasSubClass(const CodeGenRegisterClass *RC) const {
+
+      if (RC->Elements.size() > Elements.size() ||
+          (SpillAlignment && RC->SpillAlignment % SpillAlignment) ||
+          SpillSize > RC->SpillSize)
+        return false;
+
+      std::set<Record*> RegSet;
+      for (unsigned i = 0, e = Elements.size(); i != e; ++i) {
+        Record *Reg = Elements[i];
+        RegSet.insert(Reg);
+      }
+
+      for (unsigned i = 0, e = RC->Elements.size(); i != e; ++i) {
+        Record *Reg = RC->Elements[i];
+        if (!RegSet.count(Reg))
+          return false;
+      }
+
+      return true;
     }
 
     CodeGenRegisterClass(Record *R);

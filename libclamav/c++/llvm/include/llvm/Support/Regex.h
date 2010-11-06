@@ -11,6 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef LLVM_SUPPORT_REGEX_H
+#define LLVM_SUPPORT_REGEX_H
+
 #include <string>
 
 struct llvm_regex;
@@ -18,7 +21,7 @@ struct llvm_regex;
 namespace llvm {
   class StringRef;
   template<typename T> class SmallVectorImpl;
-  
+
   class Regex {
   public:
     enum {
@@ -26,9 +29,9 @@ namespace llvm {
       /// Compile for matching that ignores upper/lower case distinctions.
       IgnoreCase=1,
       /// Compile for newline-sensitive matching. With this flag '[^' bracket
-      /// expressions and '.' never match newline. A ^ anchor matches the 
-      /// null string after any newline in the string in addition to its normal 
-      /// function, and the $ anchor matches the null string before any 
+      /// expressions and '.' never match newline. A ^ anchor matches the
+      /// null string after any newline in the string in addition to its normal
+      /// function, and the $ anchor matches the null string before any
       /// newline in the string in addition to its normal function.
       Newline=2
     };
@@ -36,7 +39,7 @@ namespace llvm {
     /// Compiles the given POSIX Extended Regular Expression \arg Regex.
     /// This implementation supports regexes and matching strings with embedded
     /// NUL characters.
-    Regex(const StringRef &Regex, unsigned Flags = NoFlags);
+    Regex(StringRef Regex, unsigned Flags = NoFlags);
     ~Regex();
 
     /// isValid - returns the error encountered during regex compilation, or
@@ -47,7 +50,7 @@ namespace llvm {
     /// matches it contains.  The number filled in by match will include this
     /// many entries plus one for the whole regex (as element 0).
     unsigned getNumMatches() const;
-    
+
     /// matches - Match the regex against a given \arg String.
     ///
     /// \param Matches - If given, on a succesful match this will be filled in
@@ -55,7 +58,7 @@ namespace llvm {
     /// the first group is always the entire pattern.
     ///
     /// This returns true on a successful match.
-    bool match(const StringRef &String, SmallVectorImpl<StringRef> *Matches=0);
+    bool match(StringRef String, SmallVectorImpl<StringRef> *Matches = 0);
 
     /// sub - Return the result of replacing the first match of the regex in
     /// \arg String with the \arg Repl string. Backreferences like "\0" in the
@@ -74,3 +77,5 @@ namespace llvm {
     int error;
   };
 }
+
+#endif // LLVM_SUPPORT_REGEX_H

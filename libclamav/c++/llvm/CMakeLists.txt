@@ -1,10 +1,20 @@
 # See docs/CMake.html for instructions about how to build LLVM with CMake.
 
 project(LLVM)
-cmake_minimum_required(VERSION 2.6.1)
+cmake_minimum_required(VERSION 2.8)
+
+# Add path for custom modules
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
+  )
+
+set(PACKAGE_VERSION "2.8")
+include(VersionFromVCS)
+add_version_info_from_vcs(PACKAGE_VERSION)
 
 set(PACKAGE_NAME llvm)
-set(PACKAGE_VERSION 2.7svn)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_BUGREPORT "llvmbugs@cs.uiuc.edu")
 
@@ -110,13 +120,6 @@ configure_file(
 
 set(llvm_builded_incs_dir ${LLVM_BINARY_DIR}/include/llvm)
 
-# Add path for custom modules
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${LLVM_MAIN_SRC_DIR}/cmake"
-  "${LLVM_MAIN_SRC_DIR}/cmake/modules"
-  )
-
 include(AddLLVMDefinitions)
 
 if(WIN32)
@@ -200,12 +203,8 @@ if( CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT WIN32 )
 endif( CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT WIN32 )
 
 if( MSVC )
-  # List of valid CRTs for MSVC
-  set(MSVC_CRT
-    MD
-    MDd)
+  include(ChooseMSVCCRT)
 
-  set(LLVM_USE_CRT "" CACHE STRING "Specify VC++ CRT to use for debug/release configurations.")
   add_llvm_definitions( -D_CRT_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS )
   add_llvm_definitions( -D_SCL_SECURE_NO_WARNINGS -DCRT_NONSTDC_NO_WARNINGS )
   add_llvm_definitions( -D_SCL_SECURE_NO_DEPRECATE )
@@ -214,15 +213,6 @@ if( MSVC )
 
   # Suppress 'new behavior: elements of array 'array' will be default initialized'
   add_llvm_definitions( -wd4351 )
-
-  if (NOT ${LLVM_USE_CRT} STREQUAL "")
-    list(FIND MSVC_CRT ${LLVM_USE_CRT} idx)
-    if (idx LESS 0)
-      message(FATAL_ERROR "Invalid value for LLVM_USE_CRT: ${LLVM_USE_CRT}. Valid options are one of: ${MSVC_CRT}")
-    endif (idx LESS 0)
-    add_llvm_definitions("/${LLVM_USE_CRT}")
-    message(STATUS "Using VC++ CRT: ${LLVM_USE_CRT}")
-  endif (NOT ${LLVM_USE_CRT} STREQUAL "")
 
   # Enable warnings
   if (LLVM_ENABLE_WARNINGS)
@@ -291,6 +281,7 @@ add_subdirectory(lib/Analysis)
 add_subdirectory(lib/Analysis/IPA)
 add_subdirectory(lib/MC)
 add_subdirectory(lib/MC/MCParser)
+add_subdirectory(lib/MC/MCDisassembler)
 add_subdirectory(test)
 
 add_subdirectory(utils/FileCheck)
@@ -351,6 +342,8 @@ option(LLVM_BUILD_TOOLS "Build LLVM tool programs." ON)
 add_subdirectory(tools)
 
 option(LLVM_BUILD_EXAMPLES "Build LLVM example programs." OFF)
+
+add_subdirectory(cmake/modules)
 
 install(DIRECTORY include/
   DESTINATION include

@@ -19,8 +19,10 @@
 #include "llvm/Config/config.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/System/Signals.h"
 #include "llvm/ADT/STLExtras.h"
 #include <cctype>
+#include <cerrno>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -55,13 +57,6 @@ raw_ostream::~raw_ostream() {
 
   if (BufferMode == InternalBuffer)
     delete [] OutBufStart;
-
-  // If there are any pending errors, report them now. Clients wishing
-  // to avoid llvm_report_error calls should check for errors with
-  // has_error() and clear the error flag with clear_error() before
-  // destructing raw_ostream objects which may have errors.
-  if (Error)
-    llvm_report_error("IO failure on output stream.");
 }
 
 // An out of line virtual method to provide a home for the class vtable.
@@ -81,9 +76,9 @@ void raw_ostream::SetBuffered() {
     SetUnbuffered();
 }
 
-void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size, 
+void raw_ostream::SetBufferAndMode(char *BufferStart, size_t Size,
                                     BufferKind Mode) {
-  assert(((Mode == Unbuffered && BufferStart == 0 && Size == 0) || 
+  assert(((Mode == Unbuffered && BufferStart == 0 && Size == 0) ||
           (Mode != Unbuffered && BufferStart && Size)) &&
          "stream must be unbuffered or have at least one byte");
   // Make sure the current buffer is free of content (we can't flush here; the
@@ -104,11 +99,11 @@ raw_ostream &raw_ostream::operator<<(unsigned long N) {
   // Zero is a special case.
   if (N == 0)
     return *this << '0';
-  
+
   char NumberBuffer[20];
   char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
   char *CurPtr = EndPtr;
-  
+
   while (N) {
     *--CurPtr = '0' + char(N % 10);
     N /= 10;
@@ -121,7 +116,7 @@ raw_ostream &raw_ostream::operator<<(long N) {
     *this << '-';
     N = -N;
   }
-  
+
   return this->operator<<(static_cast<unsigned long>(N));
 }
 
@@ -133,7 +128,7 @@ raw_ostream &raw_ostream::operator<<(unsigned long long N) {
   char NumberBuffer[20];
   char *EndPtr = NumberBuffer+sizeof(NumberBuffer);
   char *CurPtr = EndPtr;
-  
+
   while (N) {
     *--CurPtr = '0' + char(N % 10);
     N /= 10;
@@ -142,11 +137,12 @@ raw_ostream &raw_ostream::operator<<(unsigned long long N) {
 }
 
 raw_ostream &raw_ostream::operator<<(long long N) {
-  if (N <  0) {
+  if (N < 0) {
     *this << '-';
-    N = -N;
+    // Avoid undefined behavior on INT64_MIN with a cast.
+    N = -(unsigned long long)N;
   }
-  
+
   return this->operator<<(static_cast<unsigned long long>(N));
 }
 
@@ -297,33 +293,33 @@ raw_ostream &raw_ostream::operator<<(const format_object_base &Fmt) {
   size_t BufferBytesLeft = OutBufEnd - OutBufCur;
   if (BufferBytesLeft > 3) {
     size_t BytesUsed = Fmt.print(OutBufCur, BufferBytesLeft);
-    
+
     // Common case is that we have plenty of space.
     if (BytesUsed <= BufferBytesLeft) {
       OutBufCur += BytesUsed;
       return *this;
     }
-    
+
     // Otherwise, we overflowed and the return value tells us the size to try
     // again with.
     NextBufferSize = BytesUsed;
   }
-  
+
   // If we got here, we didn't have enough space in the output buffer for the
   // string.  Try printing into a SmallVector that is resized to have enough
   // space.  Iterate until we win.
   SmallVector<char, 128> V;
-  
+
   while (1) {
     V.resize(NextBufferSize);
-    
+
     // Try formatting into the SmallVector.
     size_t BytesUsed = Fmt.print(V.data(), NextBufferSize);
-    
+
     // If BytesUsed fit into the vector, we win.
     if (BytesUsed <= NextBufferSize)
       return write(V.data(), BytesUsed);
-    
+
     // Otherwise, try again with a new size.
     assert(BytesUsed > NextBufferSize && "Didn't grow buffer!?");
     NextBufferSize = BytesUsed;
@@ -339,7 +335,7 @@ raw_ostream &raw_ostream::indent(unsigned NumSpaces) {
   // Usually the indentation is small, handle it with a fastpath.
   if (NumSpaces < array_lengthof(Spaces))
     return write(Spaces, NumSpaces);
-  
+
   while (NumSpaces) {
     unsigned NumToWrite = std::min(NumSpaces,
                                    (unsigned)array_lengthof(Spaces)-1);
@@ -367,69 +363,118 @@ void format_object_base::home() {
 /// stream should be immediately destroyed; the string will be empty
 /// if no error occurred.
 raw_fd_ostream::raw_fd_ostream(const char *Filename, std::string &ErrorInfo,
-                               unsigned Flags) : pos(0) {
+                               unsigned Flags) : Error(false), pos(0) {
   assert(Filename != 0 && "Filename is null");
   // Verify that we don't have both "append" and "excl".
   assert((!(Flags & F_Excl) || !(Flags & F_Append)) &&
          "Cannot specify both 'excl' and 'append' file creation flags!");
-  
+
   ErrorInfo.clear();
 
-  // Handle "-" as stdout.
+  // Handle "-" as stdout. Note that when we do this, we consider ourself
+  // the owner of stdout. This means that we can do things like close the
+  // file descriptor when we're done and set the "binary" flag globally.
   if (Filename[0] == '-' && Filename[1] == 0) {
     FD = STDOUT_FILENO;
     // If user requested binary then put stdout into binary mode if
     // possible.
     if (Flags & F_Binary)
       sys::Program::ChangeStdoutToBinary();
-    ShouldClose = false;
+    // Close stdout when we're done, to detect any output errors.
+    ShouldClose = true;
     return;
   }
-  
+
   int OpenFlags = O_WRONLY|O_CREAT;
 #ifdef O_BINARY
   if (Flags & F_Binary)
     OpenFlags |= O_BINARY;
 #endif
-  
+
   if (Flags & F_Append)
     OpenFlags |= O_APPEND;
   else
     OpenFlags |= O_TRUNC;
   if (Flags & F_Excl)
     OpenFlags |= O_EXCL;
-  
-  FD = open(Filename, OpenFlags, 0664);
-  if (FD < 0) {
-    ErrorInfo = "Error opening output file '" + std::string(Filename) + "'";
-    ShouldClose = false;
-  } else {
-    ShouldClose = true;
+
+  while ((FD = open(Filename, OpenFlags, 0664)) < 0) {
+    if (errno != EINTR) {
+      ErrorInfo = "Error opening output file '" + std::string(Filename) + "'";
+      ShouldClose = false;
+      return;
+    }
   }
+
+  // Ok, we successfully opened the file, so it'll need to be closed.
+  ShouldClose = true;
 }
 
 raw_fd_ostream::~raw_fd_ostream() {
-  if (FD < 0) return;
-  flush();
-  if (ShouldClose)
-    if (::close(FD) != 0)
-      error_detected();
+  if (FD >= 0) {
+    flush();
+    if (ShouldClose)
+      while (::close(FD) != 0)
+        if (errno != EINTR) {
+          error_detected();
+          break;
+        }
+  }
+
+  // If there are any pending errors, report them now. Clients wishing
+  // to avoid report_fatal_error calls should check for errors with
+  // has_error() and clear the error flag with clear_error() before
+  // destructing raw_ostream objects which may have errors.
+  if (has_error())
+    report_fatal_error("IO failure on output stream.");
 }
 
 
 void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
-  assert (FD >= 0 && "File already closed.");
+  assert(FD >= 0 && "File already closed.");
   pos += Size;
-  if (::write(FD, Ptr, Size) != (ssize_t) Size)
-    error_detected();
+
+  do {
+    ssize_t ret = ::write(FD, Ptr, Size);
+
+    if (ret < 0) {
+      // If it's a recoverable error, swallow it and retry the write.
+      //
+      // Ideally we wouldn't ever see EAGAIN or EWOULDBLOCK here, since
+      // raw_ostream isn't designed to do non-blocking I/O. However, some
+      // programs, such as old versions of bjam, have mistakenly used
+      // O_NONBLOCK. For compatibility, emulate blocking semantics by
+      // spinning until the write succeeds. If you don't want spinning,
+      // don't use O_NONBLOCK file descriptors with raw_ostream.
+      if (errno == EINTR || errno == EAGAIN
+#ifdef EWOULDBLOCK
+          || errno == EWOULDBLOCK
+#endif
+          )
+        continue;
+
+      // Otherwise it's a non-recoverable error. Note it and quit.
+      error_detected();
+      break;
+    }
+
+    // The write may have written some or all of the data. Update the
+    // size and buffer pointer to reflect the remainder that needs
+    // to be written. If there are no bytes left, we're done.
+    Ptr += ret;
+    Size -= ret;
+  } while (Size > 0);
 }
 
 void raw_fd_ostream::close() {
-  assert (ShouldClose);
+  assert(ShouldClose);
   ShouldClose = false;
   flush();
-  if (::close(FD) != 0)
-    error_detected();
+  while (::close(FD) != 0)
+    if (errno != EINTR) {
+      error_detected();
+      break;
+    }
   FD = -1;
 }
 
@@ -438,16 +483,17 @@ uint64_t raw_fd_ostream::seek(uint64_t off) {
   pos = ::lseek(FD, off, SEEK_SET);
   if (pos != off)
     error_detected();
-  return pos;  
+  return pos;
 }
 
 size_t raw_fd_ostream::preferred_buffer_size() const {
-#if !defined(_MSC_VER) && !defined(__MINGW32__) // Windows has no st_blksize.
+#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__minix)
+  // Windows and Minix have no st_blksize.
   assert(FD >= 0 && "File not yet open!");
   struct stat statbuf;
   if (fstat(FD, &statbuf) != 0)
     return 0;
-  
+
   // If this is a terminal, don't use buffering. Line buffering
   // would be a more traditional thing to do, but it's not worth
   // the complexity.
@@ -455,8 +501,9 @@ size_t raw_fd_ostream::preferred_buffer_size() const {
     return 0;
   // Return the preferred block size.
   return statbuf.st_blksize;
-#endif
+#else
   return raw_ostream::preferred_buffer_size();
+#endif
 }
 
 raw_ostream &raw_fd_ostream::changeColor(enum Colors colors, bool bold,
@@ -493,30 +540,24 @@ bool raw_fd_ostream::is_displayed() const {
 }
 
 //===----------------------------------------------------------------------===//
-//  raw_stdout/err_ostream
+//  outs(), errs(), nulls()
 //===----------------------------------------------------------------------===//
-
-// Set buffer settings to model stdout and stderr behavior.
-// Set standard error to be unbuffered by default.
-raw_stdout_ostream::raw_stdout_ostream():raw_fd_ostream(STDOUT_FILENO, false) {}
-raw_stderr_ostream::raw_stderr_ostream():raw_fd_ostream(STDERR_FILENO, false,
-                                                        true) {}
-
-// An out of line virtual method to provide a home for the class vtable.
-void raw_stdout_ostream::handle() {}
-void raw_stderr_ostream::handle() {}
 
 /// outs() - This returns a reference to a raw_ostream for standard output.
 /// Use it like: outs() << "foo" << "bar";
 raw_ostream &llvm::outs() {
-  static raw_stdout_ostream S;
+  // Set buffer settings to model stdout behavior.
+  // Delete the file descriptor when the program exists, forcing error
+  // detection. If you don't want this behavior, don't use outs().
+  static raw_fd_ostream S(STDOUT_FILENO, true);
   return S;
 }
 
 /// errs() - This returns a reference to a raw_ostream for standard error.
 /// Use it like: errs() << "foo" << "bar";
 raw_ostream &llvm::errs() {
-  static raw_stderr_ostream S;
+  // Set standard error to be unbuffered by default.
+  static raw_fd_ostream S(STDERR_FILENO, false, true);
   return S;
 }
 
@@ -623,4 +664,35 @@ void raw_null_ostream::write_impl(const char *Ptr, size_t Size) {
 
 uint64_t raw_null_ostream::current_pos() const {
   return 0;
+}
+
+//===----------------------------------------------------------------------===//
+//  tool_output_file
+//===----------------------------------------------------------------------===//
+
+tool_output_file::CleanupInstaller::CleanupInstaller(const char *filename)
+  : Filename(filename), Keep(false) {
+  // Arrange for the file to be deleted if the process is killed.
+  if (Filename != "-")
+    sys::RemoveFileOnSignal(sys::Path(Filename));
+}
+
+tool_output_file::CleanupInstaller::~CleanupInstaller() {
+  // Delete the file if the client hasn't told us not to.
+  if (!Keep && Filename != "-")
+    sys::Path(Filename).eraseFromDisk();
+
+  // Ok, the file is successfully written and closed, or deleted. There's no
+  // further need to clean it up on signals.
+  if (Filename != "-")
+    sys::DontRemoveFileOnSignal(sys::Path(Filename));
+}
+
+tool_output_file::tool_output_file(const char *filename, std::string &ErrorInfo,
+                                   unsigned Flags)
+  : Installer(filename),
+    OS(filename, ErrorInfo, Flags) {
+  // If open fails, no cleanup is needed.
+  if (!ErrorInfo.empty())
+    Installer.Keep = true;
 }

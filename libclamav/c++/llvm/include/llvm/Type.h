@@ -82,11 +82,10 @@ public:
     IntegerTyID,     ///<  8: Arbitrary bit width integers
     FunctionTyID,    ///<  9: Functions
     StructTyID,      ///< 10: Structures
-    UnionTyID,       ///< 11: Unions
-    ArrayTyID,       ///< 12: Arrays
-    PointerTyID,     ///< 13: Pointers
-    OpaqueTyID,      ///< 14: Opaque: type with unknown structure
-    VectorTyID,      ///< 15: SIMD 'packed' format, or other vector type
+    ArrayTyID,       ///< 11: Arrays
+    PointerTyID,     ///< 12: Pointers
+    OpaqueTyID,      ///< 13: Opaque: type with unknown structure
+    VectorTyID,      ///< 14: SIMD 'packed' format, or other vector type
 
     NumTypeIDs,                         // Must remain as last defined ID
     LastPrimitiveTyID = MetadataTyID,
@@ -243,10 +242,6 @@ public:
   ///
   bool isStructTy() const { return ID == StructTyID; }
 
-  /// isUnionTy - True if this is an instance of UnionType.
-  ///
-  bool isUnionTy() const { return ID == UnionTyID; }
-
   /// isArrayTy - True if this is an instance of ArrayType.
   ///
   bool isArrayTy() const { return ID == ArrayTyID; }
@@ -306,7 +301,7 @@ public:
   /// does not include vector types.
   ///
   inline bool isAggregateType() const {
-    return ID == StructTyID || ID == ArrayTyID || ID == UnionTyID;
+    return ID == StructTyID || ID == ArrayTyID;
   }
 
   /// isSized - Return true if it makes sense to take the size of this type.  To
@@ -319,8 +314,7 @@ public:
       return true;
     // If it is not something that can have a size (e.g. a function or label),
     // it doesn't have a size.
-    if (ID != StructTyID && ID != ArrayTyID && ID != VectorTyID &&
-        ID != UnionTyID)
+    if (ID != StructTyID && ID != ArrayTyID && ID != VectorTyID)
       return false;
     // If it is something that can have a size and it's concrete, it definitely
     // has a size, otherwise we have to try harder to decide.
@@ -406,6 +400,7 @@ public:
   static const Type *getX86_FP80Ty(LLVMContext &C);
   static const Type *getFP128Ty(LLVMContext &C);
   static const Type *getPPC_FP128Ty(LLVMContext &C);
+  static const IntegerType *getIntNTy(LLVMContext &C, unsigned N);
   static const IntegerType *getInt1Ty(LLVMContext &C);
   static const IntegerType *getInt8Ty(LLVMContext &C);
   static const IntegerType *getInt16Ty(LLVMContext &C);
@@ -421,6 +416,8 @@ public:
   static const PointerType *getX86_FP80PtrTy(LLVMContext &C, unsigned AS = 0);
   static const PointerType *getFP128PtrTy(LLVMContext &C, unsigned AS = 0);
   static const PointerType *getPPC_FP128PtrTy(LLVMContext &C, unsigned AS = 0);
+  static const PointerType *getIntNPtrTy(LLVMContext &C, unsigned N,
+                                         unsigned AS = 0);
   static const PointerType *getInt1PtrTy(LLVMContext &C, unsigned AS = 0);
   static const PointerType *getInt8PtrTy(LLVMContext &C, unsigned AS = 0);
   static const PointerType *getInt16PtrTy(LLVMContext &C, unsigned AS = 0);
@@ -501,19 +498,19 @@ inline void PATypeHandle::removeUser() {
 /// reference to the type.
 ///
 inline Type* PATypeHolder::get() const {
+  if (Ty == 0) return 0;
   const Type *NewTy = Ty->getForwardedType();
   if (!NewTy) return const_cast<Type*>(Ty);
   return *const_cast<PATypeHolder*>(this) = NewTy;
 }
 
 inline void PATypeHolder::addRef() {
-  assert(Ty && "Type Holder has a null type!");
-  if (Ty->isAbstract())
+  if (Ty && Ty->isAbstract())
     Ty->addRef();
 }
 
 inline void PATypeHolder::dropRef() {
-  if (Ty->isAbstract())
+  if (Ty && Ty->isAbstract())
     Ty->dropRef();
 }
 
@@ -548,9 +545,11 @@ template <> struct GraphTraits<const Type*> {
   }
 };
 
-template <> inline bool isa_impl<PointerType, Type>(const Type &Ty) {
-  return Ty.getTypeID() == Type::PointerTyID;
-}
+template <> struct isa_impl<PointerType, Type> {
+  static inline bool doit(const Type &Ty) {
+    return Ty.getTypeID() == Type::PointerTyID;
+  }
+};
 
 raw_ostream &operator<<(raw_ostream &OS, const Type &T);
 

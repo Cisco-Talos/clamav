@@ -1,4 +1,4 @@
-//===- ValueMapper.h - Interface shared by lib/Transforms/Utils -*- C++ -*-===//
+//===- ValueMapper.h - Remapping for constants and metadata -----*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -12,18 +12,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef VALUEMAPPER_H
-#define VALUEMAPPER_H
+#ifndef LLVM_TRANSFORMS_UTILS_VALUEMAPPER_H
+#define LLVM_TRANSFORMS_UTILS_VALUEMAPPER_H
 
-#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/ValueMap.h"
 
 namespace llvm {
   class Value;
   class Instruction;
-  typedef DenseMap<const Value *, Value *> ValueMapTy;
+  typedef ValueMap<const Value *, Value *> ValueToValueMapTy;
 
-  Value *MapValue(const Value *V, ValueMapTy &VM);
-  void RemapInstruction(Instruction *I, ValueMapTy &VM);
+  Value *MapValue(const Value *V, ValueToValueMapTy &VM,
+                  bool ModuleLevelChanges);
+  void RemapInstruction(Instruction *I, ValueToValueMapTy &VM,
+                        bool ModuleLevelChanges);
 } // End llvm namespace
 
 #endif

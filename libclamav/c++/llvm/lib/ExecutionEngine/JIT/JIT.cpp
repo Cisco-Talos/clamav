@@ -67,7 +67,7 @@ extern "C" void LLVMLinkInJIT() {
 }
 
 
-#if defined(__GNUC__) && !defined(__ARM__EABI__)
+#if defined(__GNUC__) && !defined(__ARM_EABI__) && !defined(__USING_SJLJ_EXCEPTIONS__)
  
 // libgcc defines the __register_frame function to dynamically register new
 // dwarf frames for exception handling. This functionality is not portable
@@ -219,8 +219,8 @@ ExecutionEngine *JIT::createJIT(Module *M,
                                 StringRef MArch,
                                 StringRef MCPU,
                                 const SmallVectorImpl<std::string>& MAttrs) {
-  // Make sure we can resolve symbols in the program as well. The zero arg
-  // to the function tells DynamicLibrary to load the program, not a library.
+  // Try to register the program as a source of symbols to resolve against.
+  sys::DynamicLibrary::LoadLibraryPermanently(0, NULL);
 /* CLAMAV LOCAL: no dlopen */
 //  if (sys::DynamicLibrary::LoadLibraryPermanently(0, ErrorStr))
 //   return 0;
@@ -305,11 +305,11 @@ JIT::JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji,
   // Turn the machine code intermediate representation into bytes in memory that
   // may be executed.
   if (TM.addPassesToEmitMachineCode(PM, *JCE, OptLevel)) {
-    llvm_report_error("Target does not support machine code emission!");
+    report_fatal_error("Target does not support machine code emission!");
   }
   
   // Register routine for informing unwinding runtime about new EH frames
-#if defined(__GNUC__) && !defined(__ARM_EABI__)
+#if defined(__GNUC__) && !defined(__ARM_EABI__) && !defined(__USING_SJLJ_EXCEPTIONS__)
 #if USE_KEYMGR
   struct LibgccObjectInfo* LOI = (struct LibgccObjectInfo*)
     _keymgr_get_and_lock_processwide_ptr(KEYMGR_GCC3_DW2_OBJ_LIST);
@@ -353,7 +353,7 @@ void JIT::addModule(Module *M) {
     // Turn the machine code intermediate representation into bytes in memory
     // that may be executed.
     if (TM.addPassesToEmitMachineCode(PM, *JCE, CodeGenOpt::Default)) {
-      llvm_report_error("Target does not support machine code emission!");
+      report_fatal_error("Target does not support machine code emission!");
     }
     
     // Initialize passes.
@@ -384,7 +384,7 @@ bool JIT::removeModule(Module *M) {
     // Turn the machine code intermediate representation into bytes in memory
     // that may be executed.
     if (TM.addPassesToEmitMachineCode(PM, *JCE, CodeGenOpt::Default)) {
-      llvm_report_error("Target does not support machine code emission!");
+      report_fatal_error("Target does not support machine code emission!");
     }
     
     // Initialize passes.
@@ -627,10 +627,7 @@ void JIT::runJITOnFunction(Function *F, MachineCodeInfo *MCI) {
 void JIT::runJITOnFunctionUnlocked(Function *F, const MutexGuard &locked) {
   assert(!isAlreadyCodeGenerating && "Error: Recursive compilation detected!");
 
-  // JIT the function
-  isAlreadyCodeGenerating = true;
-  jitstate->getPM(locked).run(*F);
-  isAlreadyCodeGenerating = false;
+  jitTheFunction(F, locked);
 
   // If the function referred to another function that had not yet been
   // read from bitcode, and we are jitting non-lazily, emit it now.
@@ -641,15 +638,21 @@ void JIT::runJITOnFunctionUnlocked(Function *F, const MutexGuard &locked) {
     assert(!PF->hasAvailableExternallyLinkage() &&
            "Externally-defined function should not be in pending list.");
 
-    // JIT the function
-    isAlreadyCodeGenerating = true;
-    jitstate->getPM(locked).run(*PF);
-    isAlreadyCodeGenerating = false;
+    jitTheFunction(PF, locked);
     
     // Now that the function has been jitted, ask the JITEmitter to rewrite
     // the stub with real address of the function.
     updateFunctionStub(PF);
   }
+}
+
+void JIT::jitTheFunction(Function *F, const MutexGuard &locked) {
+  isAlreadyCodeGenerating = true;
+  jitstate->getPM(locked).run(*F);
+  isAlreadyCodeGenerating = false;
+
+  // clear basic block addresses after this function is done
+  getBasicBlockAddressMap(locked).clear();
 }
 
 /// getPointerToFunction - This method is used to get the address of the
@@ -666,7 +669,7 @@ void *JIT::getPointerToFunction(Function *F) {
   // exists in this Module.
   std::string ErrorMsg;
   if (F->Materialize(&ErrorMsg)) {
-    llvm_report_error("Error reading function '" + F->getName()+
+    report_fatal_error("Error reading function '" + F->getName()+
                       "' from bitcode file: " + ErrorMsg);
   }
 
@@ -688,6 +691,41 @@ void *JIT::getPointerToFunction(Function *F) {
   return Addr;
 }
 
+void JIT::addPointerToBasicBlock(const BasicBlock *BB, void *Addr) {
+  MutexGuard locked(lock);
+  
+  BasicBlockAddressMapTy::iterator I =
+    getBasicBlockAddressMap(locked).find(BB);
+  if (I == getBasicBlockAddressMap(locked).end()) {
+    getBasicBlockAddressMap(locked)[BB] = Addr;
+  } else {
+    // ignore repeats: some BBs can be split into few MBBs?
+  }
+}
+
+void JIT::clearPointerToBasicBlock(const BasicBlock *BB) {
+  MutexGuard locked(lock);
+  getBasicBlockAddressMap(locked).erase(BB);
+}
+
+void *JIT::getPointerToBasicBlock(BasicBlock *BB) {
+  // make sure it's function is compiled by JIT
+  (void)getPointerToFunction(BB->getParent());
+
+  // resolve basic block address
+  MutexGuard locked(lock);
+  
+  BasicBlockAddressMapTy::iterator I =
+    getBasicBlockAddressMap(locked).find(BB);
+  if (I != getBasicBlockAddressMap(locked).end()) {
+    return I->second;
+  } else {
+    assert(0 && "JIT does not have BB address for address-of-label, was"
+           " it eliminated by optimizer?");
+    return 0;
+  }
+}
+
 /// getOrEmitGlobalVariable - Return the address of the specified global
 /// variable, possibly emitting it to memory if needed.  This is used by the
 /// Emitter.
@@ -705,7 +743,7 @@ void *JIT::getOrEmitGlobalVariable(const GlobalVariable *GV) {
 #endif
     Ptr = sys::DynamicLibrary::SearchForAddressOfSymbol(GV->getName());
     if (Ptr == 0) {
-      llvm_report_error("Could not resolve external global address: "
+      report_fatal_error("Could not resolve external global address: "
                         +GV->getName());
     }
     addGlobalMapping(GV, Ptr);
@@ -755,7 +793,7 @@ char* JIT::getMemoryForGV(const GlobalVariable* GV) {
   // situation. It's returned in the same block of memory as code which may
   // not be writable.
   if (isGVCompilationDisabled() && !GV->isConstant()) {
-    llvm_report_error("Compilation of non-internal GlobalValue is disabled!");
+    report_fatal_error("Compilation of non-internal GlobalValue is disabled!");
   }
 
   // Some applications require globals and code to live together, so they may

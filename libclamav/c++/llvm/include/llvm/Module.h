@@ -28,7 +28,6 @@ namespace llvm {
 class FunctionType;
 class GVMaterializer;
 class LLVMContext;
-class MDSymbolTable;
 
 template<> struct ilist_traits<Function>
   : public SymbolTableListTraits<Function, Module> {
@@ -61,7 +60,7 @@ template<> struct ilist_traits<GlobalAlias>
 };
 
 template<> struct ilist_traits<NamedMDNode>
-  : public SymbolTableListTraits<NamedMDNode, Module> {
+  : public ilist_default_traits<NamedMDNode> {
   // createSentinel is used to get hold of a node that marks the end of
   // the list...
   NamedMDNode *createSentinel() const {
@@ -72,8 +71,8 @@ template<> struct ilist_traits<NamedMDNode>
   NamedMDNode *provideInitialHead() const { return createSentinel(); }
   NamedMDNode *ensureHead(NamedMDNode*) const { return createSentinel(); }
   static void noteHead(NamedMDNode*, NamedMDNode*) {}
-  void addNodeToList(NamedMDNode *N);
-  void removeNodeFromList(NamedMDNode *N);
+  void addNodeToList(NamedMDNode *) {}
+  void removeNodeFromList(NamedMDNode *) {}
 private:
   mutable ilist_node<NamedMDNode> Sentinel;
 };
@@ -100,7 +99,7 @@ public:
   /// The type for the list of aliases.
   typedef iplist<GlobalAlias> AliasListType;
   /// The type for the list of named metadata.
-  typedef iplist<NamedMDNode> NamedMDListType;
+  typedef ilist<NamedMDNode> NamedMDListType;
 
   /// The type for the list of dependent libraries.
   typedef std::vector<std::string> LibraryListType;
@@ -151,7 +150,7 @@ private:
   std::string ModuleID;           ///< Human readable identifier for the module
   std::string TargetTriple;       ///< Platform target triple Module compiled on
   std::string DataLayout;         ///< Target data description
-  MDSymbolTable *NamedMDSymTab;   ///< NamedMDNode names.
+  void *NamedMDSymTab;            ///< NamedMDNode names.
 
   friend class Constant;
 
@@ -197,11 +196,11 @@ public:
   /// Get any module-scope inline assembly blocks.
   /// @returns a string containing the module-scope inline assembly blocks.
   const std::string &getModuleInlineAsm() const { return GlobalScopeAsm; }
-  
+
 /// @}
 /// @name Module Level Mutators
 /// @{
-  
+
   /// Set the module identifier.
   void setModuleIdentifier(StringRef ID) { ModuleID = ID; }
 
@@ -235,12 +234,11 @@ public:
   /// getMDKindID - Return a unique non-zero ID for the specified metadata kind.
   /// This ID is uniqued across modules in the current LLVMContext.
   unsigned getMDKindID(StringRef Name) const;
-  
+
   /// getMDKindNames - Populate client supplied SmallVector with the name for
-  /// custom metadata IDs registered in this LLVMContext.   ID #0 is not used,
-  /// so it is filled in as an empty string.
+  /// custom metadata IDs registered in this LLVMContext.
   void getMDKindNames(SmallVectorImpl<StringRef> &Result) const;
-  
+
 /// @}
 /// @name Function Accessors
 /// @{
@@ -277,7 +275,7 @@ public:
   Constant *getOrInsertTargetIntrinsic(StringRef Name,
                                        const FunctionType *Ty,
                                        AttrListPtr AttributeList);
-  
+
   /// getFunction - Look up the specified function in the module symbol table.
   /// If it does not exist, return null.
   Function *getFunction(StringRef Name) const;
@@ -321,16 +319,20 @@ public:
 /// @}
 /// @name Named Metadata Accessors
 /// @{
-  
-  /// getNamedMetadata - Return the first NamedMDNode in the module with the
-  /// specified name. This method returns null if a NamedMDNode with the 
-  /// specified name is not found.
-  NamedMDNode *getNamedMetadata(StringRef Name) const;
 
-  /// getOrInsertNamedMetadata - Return the first named MDNode in the module 
-  /// with the specified name. This method returns a new NamedMDNode if a 
+  /// getNamedMetadata - Return the first NamedMDNode in the module with the
+  /// specified name. This method returns null if a NamedMDNode with the
+  /// specified name is not found.
+  NamedMDNode *getNamedMetadata(const Twine &Name) const;
+
+  /// getOrInsertNamedMetadata - Return the first named MDNode in the module
+  /// with the specified name. This method returns a new NamedMDNode if a
   /// NamedMDNode with the specified name is not found.
   NamedMDNode *getOrInsertNamedMetadata(StringRef Name);
+
+  /// eraseNamedMetadata - Remove the given NamedMDNode from this module
+  /// and delete it.
+  void eraseNamedMetadata(NamedMDNode *NMD);
 
 /// @}
 /// @name Type Accessors
@@ -418,13 +420,6 @@ public:
   static iplist<GlobalAlias> Module::*getSublistAccess(GlobalAlias*) {
     return &Module::AliasList;
   }
-  /// Get the Module's list of named metadata (constant).
-  const NamedMDListType  &getNamedMDList() const      { return NamedMDList; }
-  /// Get the Module's list of named metadata.
-  NamedMDListType  &getNamedMDList()                  { return NamedMDList; }
-  static iplist<NamedMDNode> Module::*getSublistAccess(NamedMDNode *) {
-    return &Module::NamedMDList;
-  }
   /// Get the symbol table of global variable and function identifiers
   const ValueSymbolTable &getValueSymbolTable() const { return *ValSymTab; }
   /// Get the Module's symbol table of global variable and function identifiers.
@@ -433,10 +428,6 @@ public:
   const TypeSymbolTable  &getTypeSymbolTable() const  { return *TypeSymTab; }
   /// Get the Module's symbol table of types
   TypeSymbolTable        &getTypeSymbolTable()        { return *TypeSymTab; }
-  /// Get the symbol table of named metadata
-  const MDSymbolTable  &getMDSymbolTable() const      { return *NamedMDSymTab; }
-  /// Get the Module's symbol table of named metadata
-  MDSymbolTable        &getMDSymbolTable()            { return *NamedMDSymTab; }
 
 /// @}
 /// @name Global Variable Iteration
@@ -515,15 +506,16 @@ public:
   const_named_metadata_iterator named_metadata_begin() const {
     return NamedMDList.begin();
   }
-  
+
   /// Get an iterator to the last named metadata.
   named_metadata_iterator named_metadata_end() { return NamedMDList.end(); }
   /// Get a constant iterator to the last named metadata.
   const_named_metadata_iterator named_metadata_end() const {
     return NamedMDList.end();
   }
-  
-  /// Determine how many NamedMDNodes are in the Module's list of named metadata.
+
+  /// Determine how many NamedMDNodes are in the Module's list of named
+  /// metadata.
   size_t named_metadata_size() const { return NamedMDList.size();  }
   /// Determine if the list of named metadata is empty.
   bool named_metadata_empty() const { return NamedMDList.empty(); }
@@ -535,7 +527,7 @@ public:
 
   /// Print the module to an output stream with AssemblyAnnotationWriter.
   void print(raw_ostream &OS, AssemblyAnnotationWriter *AAW) const;
-  
+
   /// Dump the module to stderr (for debugging).
   void dump() const;
   /// This function causes all the subinstructions to "let go" of all references

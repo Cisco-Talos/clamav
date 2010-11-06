@@ -42,12 +42,12 @@ public:
     Plus, Minus, Tilde,
     Slash,    // '/'
     LParen, RParen, LBrac, RBrac, LCurly, RCurly,
-    Star, Comma, Dollar, Equal, EqualEqual,
+    Star, Dot, Comma, Dollar, Equal, EqualEqual,
     
     Pipe, PipePipe, Caret, 
     Amp, AmpAmp, Exclaim, ExclaimEqual, Percent, Hash,
     Less, LessEqual, LessLess, LessGreater,
-    Greater, GreaterEqual, GreaterGreater
+    Greater, GreaterEqual, GreaterGreater, At
   };
 
   TokenKind Kind;
@@ -121,6 +121,8 @@ class MCAsmLexer {
   MCAsmLexer(const MCAsmLexer &);   // DO NOT IMPLEMENT
   void operator=(const MCAsmLexer &);  // DO NOT IMPLEMENT
 protected: // Can only create subclasses.
+  const char *TokStart;
+
   MCAsmLexer();
 
   virtual AsmToken LexToken() = 0;
@@ -140,6 +142,11 @@ public:
   const AsmToken &Lex() {
     return CurTok = LexToken();
   }
+
+  virtual StringRef LexUntilEndOfStatement() = 0;
+
+  /// getLoc - Get the current source location.
+  SMLoc getLoc() const;
 
   /// getTok - Get the current (last) lexed token.
   const AsmToken &getTok() {

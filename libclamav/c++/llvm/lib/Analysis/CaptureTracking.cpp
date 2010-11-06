@@ -49,7 +49,7 @@ bool llvm::PointerMayBeCaptured(const Value *V,
   SmallSet<Use*, Threshold> Visited;
   int Count = 0;
 
-  for (Value::use_const_iterator UI = V->use_begin(), UE = V->use_end();
+  for (Value::const_use_iterator UI = V->use_begin(), UE = V->use_end();
        UI != UE; ++UI) {
     // If there are lots of uses, conservatively say that the value
     // is captured to avoid taking too much compile time.
@@ -69,7 +69,7 @@ bool llvm::PointerMayBeCaptured(const Value *V,
     switch (I->getOpcode()) {
     case Instruction::Call:
     case Instruction::Invoke: {
-      CallSite CS = CallSite::get(I);
+      CallSite CS(I);
       // Not captured if the callee is readonly, doesn't return a copy through
       // its return value and doesn't unwind (a readonly function can leak bits
       // by throwing an exception or not depending on the input value).

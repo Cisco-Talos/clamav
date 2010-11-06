@@ -9,12 +9,12 @@ set -x
 # The first parameter is a space-separated list of the architectures the
 # compilers will run on. For instance, "ppc i386". If the current machine
 # isn't in the list, it will (effectively) be added.
-# FIXME: HOSTS is not used in this script. Use it or Remove it.
 HOSTS="$1"
 
 # The second parameter is a space-separated list of the architectures the
 # compilers will generate code for. If the current machine isn't in the list, a
 # compiler for it will get built anyway, but won't be installed.
+# FIXME: The list of targets is currently hard-coded and TARGETS is not used.
 TARGETS="$2"
 
 # The third parameter is the path to the compiler sources. There should be a
@@ -42,11 +42,21 @@ LLVM_ASSERTIONS="$7"
 # build.
 LLVM_OPTIMIZED="$8"
 
-# The nineth parameter is the version number of the submission, e.g. 1007.
-LLVM_SUBMIT_VERSION="$9"
+# The ninth parameter is a yes/no that indicates whether libLTO.dylib
+# should be installed.
+INSTALL_LIBLTO="$9"
 
-# The tenth parameter is the subversion number of the submission, e.g. 03.
-LLVM_SUBMIT_SUBVERSION="${10}"
+# A yes/no parameter that controls whether to cross-build for an ARM host.
+ARM_HOSTED_BUILD="${10}"
+
+# A yes/no parameter that controls whether to cross-build for the iOS simulator
+IOS_SIM_BUILD="${11}"
+
+# The version number of the submission, e.g. 1007.
+LLVM_SUBMIT_VERSION="${12}"
+
+# The subversion number of the submission, e.g. 03.
+LLVM_SUBMIT_SUBVERSION="${13}"
 
 # The current working directory is where the build will happen. It may already
 # contain a partial result of an interrupted build, in which case this script
@@ -55,21 +65,6 @@ DIR=`pwd`
 
 DARWIN_VERS=`uname -r | sed 's/\..*//'`
 echo DARWIN_VERS = $DARWIN_VERS
-
-if [ "x$RC_ProjectName" = "xllvmCore_Embedded" ]; then
-    DEST_DIR="$DEST_DIR/Developer/Platforms/iPhoneOS.platform"
-    mkdir -p "$DEST_DIR"
-fi
-
-DEVELOPER_DIR="${DEVELOPER_DIR-Developer}"
-if [ "x$RC_ProjectName" = "xllvmCore_EmbeddedHosted" ]; then
-    DT_HOME="$DEST_DIR/usr"
-    HOST_SDKROOT=$SDKROOT
-else
-    DT_HOME="$DEST_DIR/$DEVELOPER_DIR/usr"
-fi
-
-DEST_ROOT="/$DEVELOPER_DIR$DEST_ROOT"
 
 ################################################################################
 # Run the build.
@@ -90,8 +85,7 @@ sed -e '/[Aa]pple-style/d' -e '/include.*GNUmakefile/d' $ORIG_SRC_DIR/Makefile >
 mkdir -p $DIR/obj-llvm || exit 1
 cd $DIR/obj-llvm || exit 1
 
-
-if [ "x$RC_ProjectName" = "xllvmCore_EmbeddedHosted" ]; then
+if [ "$ARM_HOSTED_BUILD" = yes ]; then
   # The cross-tools' build process expects to find an existing cross toolchain
   # under names like 'arm-apple-darwin$DARWIN_VERS-as'; so make them.
   rm -rf $DIR/bin || exit 1
@@ -106,11 +100,10 @@ if [ "x$RC_ProjectName" = "xllvmCore_EmbeddedHosted" ]; then
   # Try to use the platform llvm-gcc. Fall back to gcc if it's not available.
   for prog in gcc g++ ; do
     P=$DIR/bin/arm-apple-darwin$DARWIN_VERS-${prog}
-# FIXME: Uncomment once llvm-gcc works for this
-#    T=`xcrun -find llvm-${prog}`
-#    if [ "x$T" = "x" ] ; then
+    T=`xcrun -sdk $SDKROOT -find llvm-${prog}`
+    if [ "x$T" = "x" ] ; then
       T=`xcrun -sdk $SDKROOT -find ${prog}`
-#    fi
+    fi
     echo '#!/bin/sh' > $P || exit 1
     echo 'exec '$T' -arch armv6 -isysroot '${SDKROOT}' "$@"' >> $P || exit 1
     chmod a+x $P || exit 1
@@ -131,28 +124,23 @@ elif [ $DARWIN_VERS -gt 9 ]; then
   unset XTMPCC savedPATH
 fi
 
-
-if [ "x$RC_ProjectName" = "xllvmCore_EmbeddedHosted" ]; then
-  if [ \! -f Makefile.config ]; then
-      $SRC_DIR/configure --prefix=$DT_HOME \
-          --enable-targets=arm \
-          --host=arm-apple-darwin10 \
-          --target=arm-apple-darwin10 \
-          --build=i686-apple-darwin10 \
-          --enable-assertions=$LLVM_ASSERTIONS \
-          --enable-optimized=$LLVM_OPTIMIZED \
-          --disable-bindings \
-          || exit 1
-  fi
+if [ "$ARM_HOSTED_BUILD" = yes ]; then
+  configure_opts="--enable-targets=arm --host=arm-apple-darwin10 \
+                  --target=arm-apple-darwin10 --build=i686-apple-darwin10"
+elif [ "$IOS_SIM_BUILD" = yes ]; then
+  # Use a non-standard "darwin_sim" host triple to trigger a cross-build.
+  configure_opts="--enable-targets=x86 --host=i686-apple-darwin_sim \
+                  --build=i686-apple-darwin10"
 else
-  if [ \! -f Makefile.config ]; then
-      $SRC_DIR/configure --prefix=$DT_HOME/local \
-          --enable-targets=arm,x86,powerpc,cbe \
-          --enable-assertions=$LLVM_ASSERTIONS \
-          --enable-optimized=$LLVM_OPTIMIZED \
-          --disable-bindings \
-          || exit 1
-  fi
+  configure_opts="--enable-targets=arm,x86,powerpc,cbe"
+fi
+
+if [ \! -f Makefile.config ]; then
+  $SRC_DIR/configure --prefix=$DEST_DIR$DEST_ROOT $configure_opts \
+    --enable-assertions=$LLVM_ASSERTIONS \
+    --enable-optimized=$LLVM_OPTIMIZED \
+    --disable-bindings \
+    || exit 1
 fi
 
 SUBVERSION=`echo $RC_ProjectSourceVersion | sed -e 's/[^.]*\.\([0-9]*\).*/\1/'`
@@ -201,9 +189,11 @@ if [ "x$MAJ_VER" != "x4" -o "x$MIN_VER" != "x0" ]; then
     JOBS_FLAG="-j $SYSCTL"
 fi
 
-make $JOBS_FLAG $OPTIMIZE_OPTS UNIVERSAL=1 UNIVERSAL_ARCH="$TARGETS" \
-    UNIVERSAL_SDK_PATH=$HOST_SDKROOT \
+make $JOBS_FLAG $OPTIMIZE_OPTS UNIVERSAL=1 UNIVERSAL_ARCH="$HOSTS" \
+    UNIVERSAL_SDK_PATH=$SDKROOT \
     NO_RUNTIME_LIBS=1 \
+    DISABLE_EDIS=1 \
+    DEBUG_SYMBOLS=1 \
     LLVM_SUBMIT_VERSION=$LLVM_SUBMIT_VERSION \
     LLVM_SUBMIT_SUBVERSION=$LLVM_SUBMIT_SUBVERSION \
     CXXFLAGS="-DLLVM_VERSION_INFO='\" Apple Build #$LLVM_VERSION\"'" \
@@ -226,8 +216,10 @@ rm -rf * || exit 1
 cd $DIR/obj-llvm || exit 1
 
 # Install the tree into the destination directory.
-make $LOCAL_MAKEFLAGS $OPTIMIZE_OPTS UNIVERSAL=1 UNIVERSAL_ARCH="$TARGETS" \
+make $LOCAL_MAKEFLAGS $OPTIMIZE_OPTS UNIVERSAL=1 UNIVERSAL_ARCH="$HOSTS" \
     NO_RUNTIME_LIBS=1 \
+    DISABLE_EDIS=1 \
+    DEBUG_SYMBOLS=1 \
     LLVM_SUBMIT_VERSION=$LLVM_SUBMIT_VERSION \
     LLVM_SUBMIT_SUBVERSION=$LLVM_SUBMIT_SUBVERSION \
     OPTIMIZE_OPTION='-O3' VERBOSE=1 install
@@ -248,14 +240,17 @@ echo "#define LLVM_MINOR_VERSION ${RC_ProjectSourceSubversion}" >> $DEST_DIR$DES
 
 if [ "x$LLVM_DEBUG" != "x1" ]; then
     # Strip local symbols from llvm libraries.
-    strip -S $DEST_DIR$DEST_ROOT/lib/*.[oa]
+    #
+    # Use '-l' to strip i386 modules. N.B. that flag doesn't work with kext or
+    # PPC objects!
+    strip -Sl $DEST_DIR$DEST_ROOT/lib/*.[oa]
     for f in `ls $DEST_DIR$DEST_ROOT/lib/*.so`; do
-        strip -Sx $f
+        strip -Sxl $f
     done
 fi
 
 # Copy over the tblgen utility.
-cp `find $DIR -name tblgen` $DT_HOME/local/bin
+cp `find $DIR -name tblgen` $DEST_DIR$DEST_ROOT/bin
 
 # Remove .dir files 
 cd $DEST_DIR$DEST_ROOT
@@ -274,14 +269,8 @@ else
         -exec lipo -extract ppc7400 -extract i386 -extract x86_64 {} -output {} \;
 fi
 
-cd $DEST_DIR$DEST_ROOT
-mkdir -p $DT_HOME/lib
-mv lib/libLTO.dylib $DT_HOME/lib/libLTO.dylib
-strip -S $DT_HOME/lib/libLTO.dylib
-rm -f lib/libLTO.a lib/libLTO.la
-
 # The Hello dylib is an example of how to build a pass. No need to install it.
-rm lib/libLLVMHello.dylib
+rm $DEST_DIR$DEST_ROOT/lib/LLVMHello.dylib
 
 # Compress manpages
 MDIR=$DEST_DIR$DEST_ROOT/share/man/man1
@@ -327,25 +316,56 @@ find obj-* -name \*.\[chy\] -o -name \*.cpp -print \
     | cpio -pdml $SYM_DIR/src || exit 1
 
 ################################################################################
+# Install and strip libLTO.dylib
+
+cd $DEST_DIR$DEST_ROOT
+if [ "$INSTALL_LIBLTO" = "yes" ]; then
+  DT_HOME="$DEST_DIR/Developer/usr"
+  mkdir -p $DT_HOME/lib
+  mv lib/libLTO.dylib $DT_HOME/lib/libLTO.dylib
+
+  # Save a copy of the unstripped dylib
+  mkdir -p $SYM_DIR/Developer/usr/lib
+  cp $DT_HOME/lib/libLTO.dylib $SYM_DIR/Developer/usr/lib/libLTO.dylib
+
+  # Use '-l' to strip i386 modules. N.B. that flag doesn't work with kext or
+  # PPC objects!
+  strip -arch all -Sl $DT_HOME/lib/libLTO.dylib
+
+  if [ "x$DISABLE_USR_LINKS" == "x" ]; then
+    # Add a symlink in /usr/lib for B&I.
+    mkdir -p $DEST_DIR/usr/lib/
+    (cd $DEST_DIR/usr/lib && \
+      ln -s ../../Developer/usr/lib/libLTO.dylib ./libLTO.dylib)
+  fi
+else
+  rm -f lib/libLTO.dylib
+fi
+rm -f lib/libLTO.a lib/libLTO.la
+
+################################################################################
 # Remove debugging information from DEST_DIR.
+
+cd $DIR || exit 1
 
 find $DEST_DIR -name \*.a -print | xargs ranlib || exit 1
 find $DEST_DIR -name \*.dSYM -print | xargs rm -r || exit 1
+
+# Strip debugging information from files
+#
+# Use '-l' to strip i386 modules. N.B. that flag doesn't work with kext or
+# PPC objects!
+find $DEST_DIR -perm -0111 -type f \
+    ! \( -name '*.la' -o -name gccas -o -name gccld -o -name llvm-config \) \
+    -print | xargs -n 1 -P ${SYSCTL} strip -arch all -Sl
+
 chgrp -h -R wheel $DEST_DIR
 chgrp -R wheel $DEST_DIR
 
 ################################################################################
-# Remove tar ball from docs directory
+# Remove the docs directory
 
-find $DEST_DIR -name html.tar.gz -exec rm {} \;
-
-################################################################################
-# symlinks so that B&I can find things
-
-cd $DEST_DIR
-mkdir -p ./usr/lib/
-cd usr/lib
-ln -s ../../$DEVELOPER_DIR/usr/lib/libLTO.dylib ./libLTO.dylib
+rm -rf $DEST_DIR$DEST_ROOT/docs
 
 ################################################################################
 # w00t! Done!

@@ -43,7 +43,6 @@
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/STLExtras.h"
 #include <cstdlib>
-using namespace llvm;
 
 // FIXME This disables some code that aligns the stack to a boundary
 // bigger than the default (16 bytes on Darwin) when there is a stack local
@@ -56,14 +55,19 @@ using namespace llvm;
 #define ALIGN_STACK 0
 
 // FIXME (64-bit): Eventually enable by default.
+namespace llvm {
 cl::opt<bool> EnablePPC32RS("enable-ppc32-regscavenger",
-                            cl::init(false),
-                            cl::desc("Enable PPC32 register scavenger"),
-                            cl::Hidden);
+                                   cl::init(false),
+                                   cl::desc("Enable PPC32 register scavenger"),
+                                   cl::Hidden);
 cl::opt<bool> EnablePPC64RS("enable-ppc64-regscavenger",
-                            cl::init(false),
-                            cl::desc("Enable PPC64 register scavenger"),
-                            cl::Hidden);
+                                   cl::init(false),
+                                   cl::desc("Enable PPC64 register scavenger"),
+                                   cl::Hidden);
+}
+
+using namespace llvm;
+
 #define EnableRegisterScavenging \
   ((EnablePPC32RS && !Subtarget.isPPC64()) || \
    (EnablePPC64RS && Subtarget.isPPC64()))
@@ -265,147 +269,16 @@ PPCRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   return Subtarget.isPPC64() ? SVR4_64_CalleeSavedRegs : SVR4_CalleeSavedRegs;
 }
 
-const TargetRegisterClass* const*
-PPCRegisterInfo::getCalleeSavedRegClasses(const MachineFunction *MF) const {
-  // 32-bit Darwin calling convention.
-  static const TargetRegisterClass * const Darwin32_CalleeSavedRegClasses[] = {
-                       &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    
-    &PPC::CRRCRegClass,&PPC::CRRCRegClass,&PPC::CRRCRegClass,
-    
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    
-    &PPC::GPRCRegClass, 0
-  };
-  
-  // 32-bit SVR4 calling convention.
-  static const TargetRegisterClass * const SVR4_CalleeSavedRegClasses[] = {
-                                          &PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-    &PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,&PPC::GPRCRegClass,
-
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    
-    &PPC::CRRCRegClass,&PPC::CRRCRegClass,&PPC::CRRCRegClass,
-    
-    &PPC::VRSAVERCRegClass,
-    
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    
-    0
-  };
-  
-  // 64-bit Darwin calling convention.
-  static const TargetRegisterClass * const Darwin64_CalleeSavedRegClasses[] = {
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    
-    &PPC::CRRCRegClass,&PPC::CRRCRegClass,&PPC::CRRCRegClass,
-    
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass, 
-    
-    &PPC::G8RCRegClass, 0
-  };
-
-  // 64-bit SVR4 calling convention.
-  static const TargetRegisterClass * const SVR4_64_CalleeSavedRegClasses[] = {
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-    &PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,&PPC::G8RCRegClass,
-
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,&PPC::F8RCRegClass,
-    &PPC::F8RCRegClass,&PPC::F8RCRegClass,
-
-    &PPC::CRRCRegClass,&PPC::CRRCRegClass,&PPC::CRRCRegClass,
-
-    &PPC::VRSAVERCRegClass,
-
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-    &PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,&PPC::VRRCRegClass,
-
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,&PPC::CRBITRCRegClass,
-    &PPC::CRBITRCRegClass,
-
-    0
-  };
-  
-  if (Subtarget.isDarwinABI())
-    return Subtarget.isPPC64() ? Darwin64_CalleeSavedRegClasses :
-                                 Darwin32_CalleeSavedRegClasses;
-  
-  return Subtarget.isPPC64() ? SVR4_64_CalleeSavedRegClasses
-                             : SVR4_CalleeSavedRegClasses;
-}
-
 // needsFP - Return true if the specified function should have a dedicated frame
 // pointer register.  This is true if the function has variable sized allocas or
 // if frame pointer elimination is disabled.
 //
 static bool needsFP(const MachineFunction &MF) {
   const MachineFrameInfo *MFI = MF.getFrameInfo();
-  return NoFramePointerElim || MFI->hasVarSizedObjects() ||
+  // Naked functions have no stack frame pushed, so we don't have a frame pointer.
+  if (MF.getFunction()->hasFnAttr(Attribute::Naked))
+    return false;
+  return DisableFramePointerElim(MF) || MFI->hasVarSizedObjects() ||
     (GuaranteedTailCallOpt && MF.getInfo<PPCFunctionInfo>()->hasFastCall());
 }
 
@@ -512,7 +385,7 @@ eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB,
       MachineInstr *MI = I;
       DebugLoc dl = MI->getDebugLoc();
 
-      if (isInt16(CalleeAmt)) {
+      if (isInt<16>(CalleeAmt)) {
         BuildMI(MBB, I, dl, TII.get(ADDIInstr), StackReg).addReg(StackReg).
           addImm(CalleeAmt);
       } else {
@@ -576,8 +449,8 @@ void PPCRegisterInfo::lowerDynamicAlloc(MachineBasicBlock::iterator II,
   // Get stack alignments.
   unsigned TargetAlign = MF.getTarget().getFrameInfo()->getStackAlignment();
   unsigned MaxAlign = MFI->getMaxAlignment();
-  assert(MaxAlign <= TargetAlign &&
-         "Dynamic alloca with large aligns not supported");
+  if (MaxAlign > TargetAlign)
+    report_fatal_error("Dynamic alloca with large aligns not supported");
 
   // Determine the previous frame's address.  If FrameSize can't be
   // represented as 16 bits or we need special alignment, then we load the
@@ -596,7 +469,7 @@ void PPCRegisterInfo::lowerDynamicAlloc(MachineBasicBlock::iterator II,
   else
     Reg = PPC::R0;
   
-  if (MaxAlign < TargetAlign && isInt16(FrameSize)) {
+  if (MaxAlign < TargetAlign && isInt<16>(FrameSize)) {
     BuildMI(MBB, II, dl, TII.get(PPC::ADDI), Reg)
       .addReg(PPC::R31)
       .addImm(FrameSize);
@@ -682,19 +555,15 @@ void PPCRegisterInfo::lowerCRSpilling(MachineBasicBlock::iterator II,
   const TargetRegisterClass *GPRC = &PPC::GPRCRegClass;
   const TargetRegisterClass *RC = Subtarget.isPPC64() ? G8RC : GPRC;
   unsigned Reg = findScratchRegister(II, RS, RC, SPAdj);
+  unsigned SrcReg = MI.getOperand(0).getReg();
 
   // We need to store the CR in the low 4-bits of the saved value. First, issue
-  // an MFCR to save all of the CRBits. Add an implicit kill of the CR.
-  if (!MI.getOperand(0).isKill())
-    BuildMI(MBB, II, dl, TII.get(PPC::MFCR), Reg);
-  else
-    // Implicitly kill the CR register.
-    BuildMI(MBB, II, dl, TII.get(PPC::MFCR), Reg)
-      .addReg(MI.getOperand(0).getReg(), RegState::ImplicitKill);
+  // an MFCRpsued to save all of the CRBits and, if needed, kill the SrcReg.
+  BuildMI(MBB, II, dl, TII.get(PPC::MFCRpseud), Reg)
+          .addReg(SrcReg, getKillRegState(MI.getOperand(0).isKill()));
     
   // If the saved register wasn't CR0, shift the bits left so that they are in
   // CR0's slot.
-  unsigned SrcReg = MI.getOperand(0).getReg();
   if (SrcReg != PPC::CR0)
     // rlwinm rA, rA, ShiftBits, 0, 31.
     BuildMI(MBB, II, dl, TII.get(PPC::RLWINM), Reg)
@@ -711,10 +580,9 @@ void PPCRegisterInfo::lowerCRSpilling(MachineBasicBlock::iterator II,
   MBB.erase(II);
 }
 
-unsigned
+void
 PPCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
-                                     int SPAdj, int *Value,
-                                     RegScavenger *RS) const {
+                                     int SPAdj, RegScavenger *RS) const {
   assert(SPAdj == 0 && "Unexpected");
 
   // Get the instruction.
@@ -753,14 +621,14 @@ PPCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (FPSI && FrameIndex == FPSI &&
       (OpC == PPC::DYNALLOC || OpC == PPC::DYNALLOC8)) {
     lowerDynamicAlloc(II, SPAdj, RS);
-    return 0;
+    return;
   }
 
   // Special case for pseudo-op SPILL_CR.
   if (EnableRegisterScavenging) // FIXME (64-bit): Enable by default.
     if (OpC == PPC::SPILL_CR) {
       lowerCRSpilling(II, FrameIndex, SPAdj, RS);
-      return 0;
+      return;
     }
 
   // Replace the FrameIndex with base register with GPR1 (SP) or GPR31 (FP).
@@ -790,7 +658,10 @@ PPCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // If we're not using a Frame Pointer that has been set to the value of the
   // SP before having the stack size subtracted from it, then add the stack size
   // to Offset to get the correct offset.
-  Offset += MFI->getStackSize();
+  // Naked functions have stack size 0, although getStackSize may not reflect that
+  // because we didn't call all the pieces that compute it for naked functions.
+  if (!MF.getFunction()->hasFnAttr(Attribute::Naked))
+    Offset += MFI->getStackSize();
 
   // If we can, encode the offset directly into the instruction.  If this is a
   // normal PPC "ri" instruction, any 16-bit value can be safely encoded.  If
@@ -798,11 +669,11 @@ PPCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // clear can be encoded.  This is extremely uncommon, because normally you
   // only "std" to a stack slot that is at least 4-byte aligned, but it can
   // happen in invalid code.
-  if (isInt16(Offset) && (!isIXAddr || (Offset & 3) == 0)) {
+  if (isInt<16>(Offset) && (!isIXAddr || (Offset & 3) == 0)) {
     if (isIXAddr)
       Offset >>= 2;    // The actual encoded value has the low two bits zero.
     MI.getOperand(OffsetOperandNo).ChangeToImmediate(Offset);
-    return 0;
+    return;
   }
 
   // The offset doesn't fit into a single register, scavenge one to build the
@@ -838,11 +709,10 @@ PPCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   } else {
     OperandBase = OffsetOperandNo;
   }
-    
+
   unsigned StackReg = MI.getOperand(FIOperandNo).getReg();
   MI.getOperand(OperandBase).ChangeToRegister(StackReg, false);
   MI.getOperand(OperandBase + 1).ChangeToRegister(SReg, false);
-  return 0;
 }
 
 /// VRRegNo - Map from a numbered VR register to its enum value.
@@ -999,7 +869,7 @@ void PPCRegisterInfo::determineFrameLayout(MachineFunction &MF) const {
   if (!DisableRedZone &&
       FrameSize <= 224 &&                          // Fits in red zone.
       !MFI->hasVarSizedObjects() &&                // No dynamic alloca.
-      !MFI->hasCalls() &&                          // No calls.
+      !MFI->adjustsStack() &&                      // No calls.
       (!ALIGN_STACK || MaxAlign <= TargetAlign)) { // No special alignment.
     // No need for frame
     MFI->setStackSize(0);
@@ -1054,8 +924,7 @@ PPCRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
     int FPOffset = PPCFrameInfo::getFramePointerSaveOffset(isPPC64,
                                                            isDarwinABI);
     // Allocate the frame index for frame pointer save area.
-    FPSI = MF.getFrameInfo()->CreateFixedObject(isPPC64? 8 : 4, FPOffset,
-                                                true, false);
+    FPSI = MF.getFrameInfo()->CreateFixedObject(isPPC64? 8 : 4, FPOffset, true);
     // Save the result.
     FI->setFramePointerSaveIndex(FPSI);                      
   }
@@ -1063,8 +932,7 @@ PPCRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
   // Reserve stack space to move the linkage area to in case of a tail call.
   int TCSPDelta = 0;
   if (GuaranteedTailCallOpt && (TCSPDelta = FI->getTailCallSPDelta()) < 0) {
-    MF.getFrameInfo()->CreateFixedObject(-1 * TCSPDelta, TCSPDelta,
-                                         true, false);
+    MF.getFrameInfo()->CreateFixedObject(-1 * TCSPDelta, TCSPDelta, true);
   }
   
   // Reserve a slot closest to SP or frame pointer if we have a dynalloc or
@@ -1121,9 +989,7 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
   
   for (unsigned i = 0, e = CSI.size(); i != e; ++i) {
     unsigned Reg = CSI[i].getReg();
-    const TargetRegisterClass *RC = CSI[i].getRegClass();
-    
-    if (RC == PPC::GPRCRegisterClass) {
+    if (PPC::GPRCRegisterClass->contains(Reg)) {
       HasGPSaveArea = true;
       
       GPRegs.push_back(CSI[i]);
@@ -1131,7 +997,7 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
       if (Reg < MinGPR) {
         MinGPR = Reg;
       }
-    } else if (RC == PPC::G8RCRegisterClass) {
+    } else if (PPC::G8RCRegisterClass->contains(Reg)) {
       HasG8SaveArea = true;
 
       G8Regs.push_back(CSI[i]);
@@ -1139,7 +1005,7 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
       if (Reg < MinG8R) {
         MinG8R = Reg;
       }
-    } else if (RC == PPC::F8RCRegisterClass) {
+    } else if (PPC::F8RCRegisterClass->contains(Reg)) {
       HasFPSaveArea = true;
       
       FPRegs.push_back(CSI[i]);
@@ -1148,12 +1014,12 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
         MinFPR = Reg;
       }
 // FIXME SVR4: Disable CR save area for now.
-    } else if (   RC == PPC::CRBITRCRegisterClass
-               || RC == PPC::CRRCRegisterClass) {
+    } else if (PPC::CRBITRCRegisterClass->contains(Reg)
+               || PPC::CRRCRegisterClass->contains(Reg)) {
 //      HasCRSaveArea = true;
-    } else if (RC == PPC::VRSAVERCRegisterClass) {
+    } else if (PPC::VRSAVERCRegisterClass->contains(Reg)) {
       HasVRSAVESaveArea = true;
-    } else if (RC == PPC::VRRCRegisterClass) {
+    } else if (PPC::VRRCRegisterClass->contains(Reg)) {
       HasVRSaveArea = true;
       
       VRegs.push_back(CSI[i]);
@@ -1234,9 +1100,10 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
     //             which have the CR/CRBIT register class?
     // Adjust the frame index of the CR spill slot.
     for (unsigned i = 0, e = CSI.size(); i != e; ++i) {
-      const TargetRegisterClass *RC = CSI[i].getRegClass();
+      unsigned Reg = CSI[i].getReg();
     
-      if (RC == PPC::CRBITRCRegisterClass || RC == PPC::CRRCRegisterClass) {
+      if (PPC::CRBITRCRegisterClass->contains(Reg) ||
+          PPC::CRRCRegisterClass->contains(Reg)) {
         int FI = CSI[i].getFrameIdx();
 
         FFI->setObjectOffset(FI, LowerBound + FFI->getObjectOffset(FI));
@@ -1251,9 +1118,9 @@ PPCRegisterInfo::processFunctionBeforeFrameFinalized(MachineFunction &MF)
     //             which have the VRSAVE register class?
     // Adjust the frame index of the VRSAVE spill slot.
     for (unsigned i = 0, e = CSI.size(); i != e; ++i) {
-      const TargetRegisterClass *RC = CSI[i].getRegClass();
+      unsigned Reg = CSI[i].getReg();
     
-      if (RC == PPC::VRSAVERCRegisterClass) {
+      if (PPC::VRSAVERCRegisterClass->contains(Reg)) {
         int FI = CSI[i].getFrameIdx();
 
         FFI->setObjectOffset(FI, LowerBound + FFI->getObjectOffset(FI));
@@ -1280,14 +1147,14 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
   MachineBasicBlock &MBB = MF.front();   // Prolog goes in entry BB
   MachineBasicBlock::iterator MBBI = MBB.begin();
   MachineFrameInfo *MFI = MF.getFrameInfo();
-  MachineModuleInfo *MMI = MFI->getMachineModuleInfo();
-  DebugLoc dl = DebugLoc::getUnknownLoc();
-  bool needsFrameMoves = (MMI && MMI->hasDebugInfo()) ||
+  MachineModuleInfo &MMI = MF.getMMI();
+  DebugLoc dl;
+  bool needsFrameMoves = MMI.hasDebugInfo() ||
        !MF.getFunction()->doesNotThrow() ||
        UnwindTablesMandatory;
   
   // Prepare for frame info.
-  unsigned FrameLabelId = 0;
+  MCSymbol *FrameLabel = 0;
 
   // Scan the prolog, looking for an UPDATE_VRSAVE instruction.  If we find it,
   // process it.
@@ -1375,8 +1242,9 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
   if (!isPPC64) {
     // PPC32.
     if (ALIGN_STACK && MaxAlign > TargetAlign) {
-      assert(isPowerOf2_32(MaxAlign)&&isInt16(MaxAlign)&&"Invalid alignment!");
-      assert(isInt16(NegFrameSize) && "Unhandled stack size and alignment!");
+      assert(isPowerOf2_32(MaxAlign) && isInt<16>(MaxAlign) &&
+             "Invalid alignment!");
+      assert(isInt<16>(NegFrameSize) && "Unhandled stack size and alignment!");
 
       BuildMI(MBB, MBBI, dl, TII.get(PPC::RLWINM), PPC::R0)
         .addReg(PPC::R1)
@@ -1390,7 +1258,7 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
         .addReg(PPC::R1)
         .addReg(PPC::R1)
         .addReg(PPC::R0);
-    } else if (isInt16(NegFrameSize)) {
+    } else if (isInt<16>(NegFrameSize)) {
       BuildMI(MBB, MBBI, dl, TII.get(PPC::STWU), PPC::R1)
         .addReg(PPC::R1)
         .addImm(NegFrameSize)
@@ -1408,8 +1276,9 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
     }
   } else {    // PPC64.
     if (ALIGN_STACK && MaxAlign > TargetAlign) {
-      assert(isPowerOf2_32(MaxAlign)&&isInt16(MaxAlign)&&"Invalid alignment!");
-      assert(isInt16(NegFrameSize) && "Unhandled stack size and alignment!");
+      assert(isPowerOf2_32(MaxAlign) && isInt<16>(MaxAlign) &&
+             "Invalid alignment!");
+      assert(isInt<16>(NegFrameSize) && "Unhandled stack size and alignment!");
 
       BuildMI(MBB, MBBI, dl, TII.get(PPC::RLDICL), PPC::X0)
         .addReg(PPC::X1)
@@ -1422,7 +1291,7 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
         .addReg(PPC::X1)
         .addReg(PPC::X1)
         .addReg(PPC::X0);
-    } else if (isInt16(NegFrameSize)) {
+    } else if (isInt<16>(NegFrameSize)) {
       BuildMI(MBB, MBBI, dl, TII.get(PPC::STDU), PPC::X1)
         .addReg(PPC::X1)
         .addImm(NegFrameSize / 4)
@@ -1440,39 +1309,39 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
     }
   }
 
-  std::vector<MachineMove> &Moves = MMI->getFrameMoves();
+  std::vector<MachineMove> &Moves = MMI.getFrameMoves();
   
   // Add the "machine moves" for the instructions we generated above, but in
   // reverse order.
   if (needsFrameMoves) {
     // Mark effective beginning of when frame pointer becomes valid.
-    FrameLabelId = MMI->NextLabelID();
-    BuildMI(MBB, MBBI, dl, TII.get(PPC::DBG_LABEL)).addImm(FrameLabelId);
+    FrameLabel = MMI.getContext().CreateTempSymbol();
+    BuildMI(MBB, MBBI, dl, TII.get(PPC::PROLOG_LABEL)).addSym(FrameLabel);
   
     // Show update of SP.
     if (NegFrameSize) {
       MachineLocation SPDst(MachineLocation::VirtualFP);
       MachineLocation SPSrc(MachineLocation::VirtualFP, NegFrameSize);
-      Moves.push_back(MachineMove(FrameLabelId, SPDst, SPSrc));
+      Moves.push_back(MachineMove(FrameLabel, SPDst, SPSrc));
     } else {
       MachineLocation SP(isPPC64 ? PPC::X31 : PPC::R31);
-      Moves.push_back(MachineMove(FrameLabelId, SP, SP));
+      Moves.push_back(MachineMove(FrameLabel, SP, SP));
     }
     
     if (HasFP) {
       MachineLocation FPDst(MachineLocation::VirtualFP, FPOffset);
       MachineLocation FPSrc(isPPC64 ? PPC::X31 : PPC::R31);
-      Moves.push_back(MachineMove(FrameLabelId, FPDst, FPSrc));
+      Moves.push_back(MachineMove(FrameLabel, FPDst, FPSrc));
     }
 
     if (MustSaveLR) {
       MachineLocation LRDst(MachineLocation::VirtualFP, LROffset);
       MachineLocation LRSrc(isPPC64 ? PPC::LR8 : PPC::LR);
-      Moves.push_back(MachineMove(FrameLabelId, LRDst, LRSrc));
+      Moves.push_back(MachineMove(FrameLabel, LRDst, LRSrc));
     }
   }
 
-  unsigned ReadyLabelId = 0;
+  MCSymbol *ReadyLabel = 0;
 
   // If there is a frame pointer, copy R1 into R31
   if (HasFP) {
@@ -1487,20 +1356,20 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
     }
 
     if (needsFrameMoves) {
-      ReadyLabelId = MMI->NextLabelID();
+      ReadyLabel = MMI.getContext().CreateTempSymbol();
 
       // Mark effective beginning of when frame pointer is ready.
-      BuildMI(MBB, MBBI, dl, TII.get(PPC::DBG_LABEL)).addImm(ReadyLabelId);
+      BuildMI(MBB, MBBI, dl, TII.get(PPC::PROLOG_LABEL)).addSym(ReadyLabel);
 
       MachineLocation FPDst(HasFP ? (isPPC64 ? PPC::X31 : PPC::R31) :
                                     (isPPC64 ? PPC::X1 : PPC::R1));
       MachineLocation FPSrc(MachineLocation::VirtualFP);
-      Moves.push_back(MachineMove(ReadyLabelId, FPDst, FPSrc));
+      Moves.push_back(MachineMove(ReadyLabel, FPDst, FPSrc));
     }
   }
 
   if (needsFrameMoves) {
-    unsigned LabelId = HasFP ? ReadyLabelId : FrameLabelId;
+    MCSymbol *Label = HasFP ? ReadyLabel : FrameLabel;
 
     // Add callee saved registers to move list.
     const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
@@ -1510,7 +1379,7 @@ PPCRegisterInfo::emitPrologue(MachineFunction &MF) const {
       if (Reg == PPC::LR || Reg == PPC::LR8 || Reg == PPC::RM) continue;
       MachineLocation CSDst(MachineLocation::VirtualFP, Offset);
       MachineLocation CSSrc(Reg);
-      Moves.push_back(MachineMove(LabelId, CSDst, CSSrc));
+      Moves.push_back(MachineMove(Label, CSDst, CSSrc));
     }
   }
 }
@@ -1519,7 +1388,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
                                    MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = prior(MBB.end());
   unsigned RetOpcode = MBBI->getOpcode();
-  DebugLoc dl = DebugLoc::getUnknownLoc();
+  DebugLoc dl;
 
   assert( (RetOpcode == PPC::BLR ||
            RetOpcode == PPC::TCRETURNri ||
@@ -1591,7 +1460,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
       // enabled (=> hasFastCall()==true) the fastcc call might contain a tail
       // call which invalidates the stack pointer value in SP(0). So we use the
       // value of R31 in this case.
-      if (FI->hasFastCall() && isInt16(FrameSize)) {
+      if (FI->hasFastCall() && isInt<16>(FrameSize)) {
         assert(hasFP(MF) && "Expecting a valid the frame pointer.");
         BuildMI(MBB, MBBI, dl, TII.get(PPC::ADDI), PPC::R1)
           .addReg(PPC::R31).addImm(FrameSize);
@@ -1605,7 +1474,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
           .addReg(PPC::R1)
           .addReg(PPC::R31)
           .addReg(PPC::R0);
-      } else if (isInt16(FrameSize) &&
+      } else if (isInt<16>(FrameSize) &&
                  (!ALIGN_STACK || TargetAlign >= MaxAlign) &&
                  !MFI->hasVarSizedObjects()) {
         BuildMI(MBB, MBBI, dl, TII.get(PPC::ADDI), PPC::R1)
@@ -1615,7 +1484,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
           .addImm(0).addReg(PPC::R1);
       }
     } else {
-      if (FI->hasFastCall() && isInt16(FrameSize)) {
+      if (FI->hasFastCall() && isInt<16>(FrameSize)) {
         assert(hasFP(MF) && "Expecting a valid the frame pointer.");
         BuildMI(MBB, MBBI, dl, TII.get(PPC::ADDI8), PPC::X1)
           .addReg(PPC::X31).addImm(FrameSize);
@@ -1629,7 +1498,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
           .addReg(PPC::X1)
           .addReg(PPC::X31)
           .addReg(PPC::X0);
-      } else if (isInt16(FrameSize) && TargetAlign >= MaxAlign &&
+      } else if (isInt<16>(FrameSize) && TargetAlign >= MaxAlign &&
             !MFI->hasVarSizedObjects()) {
         BuildMI(MBB, MBBI, dl, TII.get(PPC::ADDI8), PPC::X1)
            .addReg(PPC::X1).addImm(FrameSize);
@@ -1678,7 +1547,7 @@ void PPCRegisterInfo::emitEpilogue(MachineFunction &MF,
      unsigned LISInstr = isPPC64 ? PPC::LIS8 : PPC::LIS;
      unsigned ORIInstr = isPPC64 ? PPC::ORI8 : PPC::ORI;
 
-     if (CallerAllocatedAmt && isInt16(CallerAllocatedAmt)) {
+     if (CallerAllocatedAmt && isInt<16>(CallerAllocatedAmt)) {
        BuildMI(MBB, MBBI, dl, TII.get(ADDIInstr), StackReg)
          .addReg(StackReg).addImm(CallerAllocatedAmt);
      } else {
@@ -1754,4 +1623,3 @@ int PPCRegisterInfo::getDwarfRegNum(unsigned RegNum, bool isEH) const {
 }
 
 #include "PPCGenRegisterInfo.inc"
-

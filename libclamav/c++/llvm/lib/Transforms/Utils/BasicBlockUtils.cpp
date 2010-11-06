@@ -97,23 +97,13 @@ bool llvm::DeleteDeadPHIs(BasicBlock *BB) {
 /// MergeBlockIntoPredecessor - Attempts to merge a block into its predecessor,
 /// if possible.  The return value indicates success or failure.
 bool llvm::MergeBlockIntoPredecessor(BasicBlock *BB, Pass *P) {
-  pred_iterator PI(pred_begin(BB)), PE(pred_end(BB));
-  // Can't merge the entry block.  Don't merge away blocks who have their
-  // address taken: this is a bug if the predecessor block is the entry node
-  // (because we'd end up taking the address of the entry) and undesirable in
-  // any case.
-  if (pred_begin(BB) == pred_end(BB) ||
-      BB->hasAddressTaken()) return false;
+  // Don't merge away blocks who have their address taken.
+  if (BB->hasAddressTaken()) return false;
   
-  BasicBlock *PredBB = *PI++;
-  for (; PI != PE; ++PI)  // Search all predecessors, see if they are all same
-    if (*PI != PredBB) {
-      PredBB = 0;       // There are multiple different predecessors...
-      break;
-    }
-  
-  // Can't merge if there are multiple predecessors.
+  // Can't merge if there are multiple predecessors, or no predecessors.
+  BasicBlock *PredBB = BB->getUniquePredecessor();
   if (!PredBB) return false;
+
   // Don't break self-loops.
   if (PredBB == BB) return false;
   // Don't break invokes.
@@ -267,7 +257,7 @@ void llvm::RemoveSuccessor(TerminatorInst *TI, unsigned SuccNum) {
   case Instruction::Switch:    // Should remove entry
   default:
   case Instruction::Ret:       // Cannot happen, has no successors!
-    llvm_unreachable("Unhandled terminator instruction type in RemoveSuccessor!");
+    llvm_unreachable("Unhandled terminator inst type in RemoveSuccessor!");
   }
 
   if (NewTI)   // If it's a different instruction, replace.
@@ -336,21 +326,19 @@ BasicBlock *llvm::SplitBlock(BasicBlock *Old, Instruction *SplitPt, Pass *P) {
     if (Loop *L = LI->getLoopFor(Old))
       L->addBasicBlockToLoop(New, LI->getBase());
 
-  if (DominatorTree *DT = P->getAnalysisIfAvailable<DominatorTree>())
-    {
-      // Old dominates New. New node domiantes all other nodes dominated by Old.
-      DomTreeNode *OldNode = DT->getNode(Old);
-      std::vector<DomTreeNode *> Children;
-      for (DomTreeNode::iterator I = OldNode->begin(), E = OldNode->end();
-           I != E; ++I) 
-        Children.push_back(*I);
+  if (DominatorTree *DT = P->getAnalysisIfAvailable<DominatorTree>()) {
+    // Old dominates New. New node domiantes all other nodes dominated by Old.
+    DomTreeNode *OldNode = DT->getNode(Old);
+    std::vector<DomTreeNode *> Children;
+    for (DomTreeNode::iterator I = OldNode->begin(), E = OldNode->end();
+         I != E; ++I) 
+      Children.push_back(*I);
 
-      DomTreeNode *NewNode =   DT->addNewBlock(New,Old);
-
+      DomTreeNode *NewNode = DT->addNewBlock(New,Old);
       for (std::vector<DomTreeNode *>::iterator I = Children.begin(),
              E = Children.end(); I != E; ++I) 
         DT->changeImmediateDominator(*I, NewNode);
-    }
+  }
 
   if (DominanceFrontier *DF = P->getAnalysisIfAvailable<DominanceFrontier>())
     DF->splitBlock(Old);
@@ -423,7 +411,8 @@ BasicBlock *llvm::SplitBlockPredecessors(BasicBlock *BB,
   DominatorTree *DT = P ? P->getAnalysisIfAvailable<DominatorTree>() : 0;
   if (DT)
     DT->splitBlock(NewBB);
-  if (DominanceFrontier *DF = P ? P->getAnalysisIfAvailable<DominanceFrontier>():0)
+  if (DominanceFrontier *DF =
+        P ? P->getAnalysisIfAvailable<DominanceFrontier>() : 0)
     DF->splitBlock(NewBB);
 
   // Insert a new PHI node into NewBB for every PHI node in BB and that new PHI
@@ -560,121 +549,3 @@ void llvm::FindFunctionBackedges(const Function &F,
   
   
 }
-
-
-
-/// AreEquivalentAddressValues - Test if A and B will obviously have the same
-/// value. This includes recognizing that %t0 and %t1 will have the same
-/// value in code like this:
-///   %t0 = getelementptr \@a, 0, 3
-///   store i32 0, i32* %t0
-///   %t1 = getelementptr \@a, 0, 3
-///   %t2 = load i32* %t1
-///
-static bool AreEquivalentAddressValues(const Value *A, const Value *B) {
-  // Test if the values are trivially equivalent.
-  if (A == B) return true;
-  
-  // Test if the values come from identical arithmetic instructions.
-  // Use isIdenticalToWhenDefined instead of isIdenticalTo because
-  // this function is only used when one address use dominates the
-  // other, which means that they'll always either have the same
-  // value or one of them will have an undefined value.
-  if (isa<BinaryOperator>(A) || isa<CastInst>(A) ||
-      isa<PHINode>(A) || isa<GetElementPtrInst>(A))
-    if (const Instruction *BI = dyn_cast<Instruction>(B))
-      if (cast<Instruction>(A)->isIdenticalToWhenDefined(BI))
-        return true;
-  
-  // Otherwise they may not be equivalent.
-  return false;
-}
-
-/// FindAvailableLoadedValue - Scan the ScanBB block backwards (starting at the
-/// instruction before ScanFrom) checking to see if we have the value at the
-/// memory address *Ptr locally available within a small number of instructions.
-/// If the value is available, return it.
-///
-/// If not, return the iterator for the last validated instruction that the 
-/// value would be live through.  If we scanned the entire block and didn't find
-/// something that invalidates *Ptr or provides it, ScanFrom would be left at
-/// begin() and this returns null.  ScanFrom could also be left 
-///
-/// MaxInstsToScan specifies the maximum instructions to scan in the block.  If
-/// it is set to 0, it will scan the whole block. You can also optionally
-/// specify an alias analysis implementation, which makes this more precise.
-Value *llvm::FindAvailableLoadedValue(Value *Ptr, BasicBlock *ScanBB,
-                                      BasicBlock::iterator &ScanFrom,
-                                      unsigned MaxInstsToScan,
-                                      AliasAnalysis *AA) {
-  if (MaxInstsToScan == 0) MaxInstsToScan = ~0U;
-
-  // If we're using alias analysis to disambiguate get the size of *Ptr.
-  unsigned AccessSize = 0;
-  if (AA) {
-    const Type *AccessTy = cast<PointerType>(Ptr->getType())->getElementType();
-    AccessSize = AA->getTypeStoreSize(AccessTy);
-  }
-  
-  while (ScanFrom != ScanBB->begin()) {
-    // We must ignore debug info directives when counting (otherwise they
-    // would affect codegen).
-    Instruction *Inst = --ScanFrom;
-    if (isa<DbgInfoIntrinsic>(Inst))
-      continue;
-
-    // Restore ScanFrom to expected value in case next test succeeds
-    ScanFrom++;
-   
-    // Don't scan huge blocks.
-    if (MaxInstsToScan-- == 0) return 0;
-    
-    --ScanFrom;
-    // If this is a load of Ptr, the loaded value is available.
-    if (LoadInst *LI = dyn_cast<LoadInst>(Inst))
-      if (AreEquivalentAddressValues(LI->getOperand(0), Ptr))
-        return LI;
-    
-    if (StoreInst *SI = dyn_cast<StoreInst>(Inst)) {
-      // If this is a store through Ptr, the value is available!
-      if (AreEquivalentAddressValues(SI->getOperand(1), Ptr))
-        return SI->getOperand(0);
-      
-      // If Ptr is an alloca and this is a store to a different alloca, ignore
-      // the store.  This is a trivial form of alias analysis that is important
-      // for reg2mem'd code.
-      if ((isa<AllocaInst>(Ptr) || isa<GlobalVariable>(Ptr)) &&
-          (isa<AllocaInst>(SI->getOperand(1)) ||
-           isa<GlobalVariable>(SI->getOperand(1))))
-        continue;
-      
-      // If we have alias analysis and it says the store won't modify the loaded
-      // value, ignore the store.
-      if (AA &&
-          (AA->getModRefInfo(SI, Ptr, AccessSize) & AliasAnalysis::Mod) == 0)
-        continue;
-      
-      // Otherwise the store that may or may not alias the pointer, bail out.
-      ++ScanFrom;
-      return 0;
-    }
-    
-    // If this is some other instruction that may clobber Ptr, bail out.
-    if (Inst->mayWriteToMemory()) {
-      // If alias analysis claims that it really won't modify the load,
-      // ignore it.
-      if (AA &&
-          (AA->getModRefInfo(Inst, Ptr, AccessSize) & AliasAnalysis::Mod) == 0)
-        continue;
-      
-      // May modify the pointer, bail out.
-      ++ScanFrom;
-      return 0;
-    }
-  }
-  
-  // Got to the start of the block, we didn't find it, but are done for this
-  // block.
-  return 0;
-}
-

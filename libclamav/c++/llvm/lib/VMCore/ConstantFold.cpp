@@ -357,22 +357,6 @@ static Constant *getFoldedSizeOf(const Type *Ty, const Type *DestTy,
       }
     }
 
-  if (const UnionType *UTy = dyn_cast<UnionType>(Ty)) {
-    unsigned NumElems = UTy->getNumElements();
-    // Check for a union with all members having the same size.
-    Constant *MemberSize =
-      getFoldedSizeOf(UTy->getElementType(0), DestTy, true);
-    bool AllSame = true;
-    for (unsigned i = 1; i != NumElems; ++i)
-      if (MemberSize !=
-          getFoldedSizeOf(UTy->getElementType(i), DestTy, true)) {
-        AllSame = false;
-        break;
-      }
-    if (AllSame)
-      return MemberSize;
-  }
-
   // Pointer size doesn't depend on the pointee type, so canonicalize them
   // to an arbitrary pointee.
   if (const PointerType *PTy = dyn_cast<PointerType>(Ty))
@@ -431,24 +415,6 @@ static Constant *getFoldedAlignOf(const Type *Ty, const Type *DestTy,
     bool AllSame = true;
     for (unsigned i = 1; i != NumElems; ++i)
       if (MemberAlign != getFoldedAlignOf(STy->getElementType(i), DestTy, true)) {
-        AllSame = false;
-        break;
-      }
-    if (AllSame)
-      return MemberAlign;
-  }
-
-  if (const UnionType *UTy = dyn_cast<UnionType>(Ty)) {
-    // Union alignment is the maximum alignment of any member.
-    // Without target data, we can't compare much, but we can check to see
-    // if all the members have the same alignment.
-    unsigned NumElems = UTy->getNumElements();
-    // Check for a union with all members having the same alignment.
-    Constant *MemberAlign =
-      getFoldedAlignOf(UTy->getElementType(0), DestTy, true);
-    bool AllSame = true;
-    for (unsigned i = 1; i != NumElems; ++i)
-      if (MemberAlign != getFoldedAlignOf(UTy->getElementType(i), DestTy, true)) {
         AllSame = false;
         break;
       }
@@ -658,7 +624,7 @@ Constant *llvm::ConstantFoldCastInstruction(unsigned opc, Constant *V,
               }
             }
           // Handle an offsetof-like expression.
-          if (Ty->isStructTy() || Ty->isArrayTy() || Ty->isVectorTy()){
+          if (Ty->isStructTy() || Ty->isArrayTy()) {
             if (Constant *C = getFoldedOffsetOf(Ty, CE->getOperand(2),
                                                 DestTy, false))
               return C;
@@ -909,8 +875,6 @@ Constant *llvm::ConstantFoldInsertValueInstruction(Constant *Agg,
     unsigned numOps;
     if (const ArrayType *AR = dyn_cast<ArrayType>(AggTy))
       numOps = AR->getNumElements();
-    else if (AggTy->isUnionTy())
-      numOps = 1;
     else
       numOps = cast<StructType>(AggTy)->getNumElements();
     
@@ -927,10 +891,6 @@ Constant *llvm::ConstantFoldInsertValueInstruction(Constant *Agg,
     
     if (const StructType* ST = dyn_cast<StructType>(AggTy))
       return ConstantStruct::get(ST->getContext(), Ops, ST->isPacked());
-    if (const UnionType* UT = dyn_cast<UnionType>(AggTy)) {
-      assert(Ops.size() == 1 && "Union can only contain a single value!");
-      return ConstantUnion::get(UT, Ops[0]);
-    }
     return ConstantArray::get(cast<ArrayType>(AggTy), Ops);
   }
   
@@ -1817,8 +1777,15 @@ Constant *llvm::ConstantFoldCompareInstruction(unsigned short pred,
     return Constant::getAllOnesValue(ResultTy);
 
   // Handle some degenerate cases first
-  if (isa<UndefValue>(C1) || isa<UndefValue>(C2))
+  if (isa<UndefValue>(C1) || isa<UndefValue>(C2)) {
+    // For EQ and NE, we can always pick a value for the undef to make the
+    // predicate pass or fail, so we can return undef.
+    if (ICmpInst::isEquality(ICmpInst::Predicate(pred)))
+      return UndefValue::get(ResultTy);
+    // Otherwise, pick the same value as the non-undef operand, and fold
+    // it to true or false.
     return ConstantInt::get(ResultTy, CmpInst::isTrueWhenEqual(pred));
+  }
 
   // No compile-time operations on this type yet.
   if (C1->getType()->isPPC_FP128Ty())
@@ -2194,7 +2161,7 @@ Constant *llvm::ConstantFoldGetElementPtr(Constant *C,
         }
 
         NewIndices.push_back(Combined);
-        NewIndices.insert(NewIndices.end(), Idxs+1, Idxs+NumIdx);
+        NewIndices.append(Idxs+1, Idxs+NumIdx);
         return (inBounds && cast<GEPOperator>(CE)->isInBounds()) ?
           ConstantExpr::getInBoundsGetElementPtr(CE->getOperand(0),
                                                  &NewIndices[0],

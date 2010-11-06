@@ -21,6 +21,7 @@
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
@@ -31,17 +32,20 @@ using namespace llvm;
 // If DebugDiv > 0 then only break antidep with (ID % DebugDiv) == DebugMod
 static cl::opt<int>
 DebugDiv("agg-antidep-debugdiv",
-                      cl::desc("Debug control for aggressive anti-dep breaker"),
-                      cl::init(0), cl::Hidden);
+         cl::desc("Debug control for aggressive anti-dep breaker"),
+         cl::init(0), cl::Hidden);
 static cl::opt<int>
 DebugMod("agg-antidep-debugmod",
-                      cl::desc("Debug control for aggressive anti-dep breaker"),
-                      cl::init(0), cl::Hidden);
+         cl::desc("Debug control for aggressive anti-dep breaker"),
+         cl::init(0), cl::Hidden);
 
 AggressiveAntiDepState::AggressiveAntiDepState(const unsigned TargetRegs,
                                                MachineBasicBlock *BB) :
-  NumTargetRegs(TargetRegs), GroupNodes(TargetRegs, 0) {
-
+  NumTargetRegs(TargetRegs), GroupNodes(TargetRegs, 0),
+  GroupNodeIndices(TargetRegs, 0),
+  KillIndices(TargetRegs, 0),
+  DefIndices(TargetRegs, 0)
+{
   const unsigned BBSize = BB->size();
   for (unsigned i = 0; i < NumTargetRegs; ++i) {
     // Initialize all registers to be in their own group. Initially we
@@ -53,8 +57,7 @@ AggressiveAntiDepState::AggressiveAntiDepState(const unsigned TargetRegs,
   }
 }
 
-unsigned AggressiveAntiDepState::GetGroup(unsigned Reg)
-{
+unsigned AggressiveAntiDepState::GetGroup(unsigned Reg) {
   unsigned Node = GroupNodeIndices[Reg];
   while (GroupNodes[Node] != Node)
     Node = GroupNodes[Node];
@@ -114,6 +117,7 @@ AggressiveAntiDepBreaker(MachineFunction& MFi,
                          TargetSubtarget::RegClassVector& CriticalPathRCs) :
   AntiDepBreaker(), MF(MFi),
   MRI(MF.getRegInfo()),
+  TII(MF.getTarget().getInstrInfo()),
   TRI(MF.getTarget().getRegisterInfo()),
   AllocatableSet(TRI->getAllocatableSet(MF)),
   State(NULL) {
@@ -143,8 +147,8 @@ void AggressiveAntiDepBreaker::StartBlock(MachineBasicBlock *BB) {
   State = new AggressiveAntiDepState(TRI->getNumRegs(), BB);
 
   bool IsReturnBlock = (!BB->empty() && BB->back().getDesc().isReturn());
-  unsigned *KillIndices = State->GetKillIndices();
-  unsigned *DefIndices = State->GetDefIndices();
+  std::vector<unsigned> &KillIndices = State->GetKillIndices();
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
 
   // Determine the live-out physregs for this block.
   if (IsReturnBlock) {
@@ -163,25 +167,27 @@ void AggressiveAntiDepBreaker::StartBlock(MachineBasicBlock *BB) {
         DefIndices[AliasReg] = ~0u;
       }
     }
-  } else {
-    // In a non-return block, examine the live-in regs of all successors.
-    for (MachineBasicBlock::succ_iterator SI = BB->succ_begin(),
-         SE = BB->succ_end(); SI != SE; ++SI)
-      for (MachineBasicBlock::livein_iterator I = (*SI)->livein_begin(),
-           E = (*SI)->livein_end(); I != E; ++I) {
-        unsigned Reg = *I;
-        State->UnionGroups(Reg, 0);
-        KillIndices[Reg] = BB->size();
-        DefIndices[Reg] = ~0u;
-        // Repeat, for all aliases.
-        for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
-          unsigned AliasReg = *Alias;
-          State->UnionGroups(AliasReg, 0);
-          KillIndices[AliasReg] = BB->size();
-          DefIndices[AliasReg] = ~0u;
-        }
-      }
   }
+
+  // In a non-return block, examine the live-in regs of all successors.
+  // Note a return block can have successors if the return instruction is
+  // predicated.
+  for (MachineBasicBlock::succ_iterator SI = BB->succ_begin(),
+         SE = BB->succ_end(); SI != SE; ++SI)
+    for (MachineBasicBlock::livein_iterator I = (*SI)->livein_begin(),
+           E = (*SI)->livein_end(); I != E; ++I) {
+      unsigned Reg = *I;
+      State->UnionGroups(Reg, 0);
+      KillIndices[Reg] = BB->size();
+      DefIndices[Reg] = ~0u;
+      // Repeat, for all aliases.
+      for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
+        unsigned AliasReg = *Alias;
+        State->UnionGroups(AliasReg, 0);
+        KillIndices[AliasReg] = BB->size();
+        DefIndices[AliasReg] = ~0u;
+      }
+    }
 
   // Mark live-out callee-saved registers. In a return block this is
   // all callee-saved registers. In non-return this is any
@@ -210,7 +216,7 @@ void AggressiveAntiDepBreaker::FinishBlock() {
 }
 
 void AggressiveAntiDepBreaker::Observe(MachineInstr *MI, unsigned Count,
-                                     unsigned InsertPosIndex) {
+                                       unsigned InsertPosIndex) {
   assert(Count < InsertPosIndex && "Instruction index out of expected range!");
 
   std::set<unsigned> PassthruRegs;
@@ -222,7 +228,7 @@ void AggressiveAntiDepBreaker::Observe(MachineInstr *MI, unsigned Count,
   DEBUG(MI->dump());
   DEBUG(dbgs() << "\tRegs:");
 
-  unsigned *DefIndices = State->GetDefIndices();
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
   for (unsigned Reg = 0; Reg != TRI->getNumRegs(); ++Reg) {
     // If Reg is current live, then mark that it can't be renamed as
     // we don't know the extent of its live-range anymore (now that it
@@ -244,7 +250,7 @@ void AggressiveAntiDepBreaker::Observe(MachineInstr *MI, unsigned Count,
 }
 
 bool AggressiveAntiDepBreaker::IsImplicitDefUse(MachineInstr *MI,
-                                            MachineOperand& MO)
+                                                MachineOperand& MO)
 {
   if (!MO.isReg() || !MO.isImplicit())
     return false;
@@ -281,9 +287,9 @@ void AggressiveAntiDepBreaker::GetPassthruRegs(MachineInstr *MI,
 
 /// AntiDepEdges - Return in Edges the anti- and output- dependencies
 /// in SU that we want to consider for breaking.
-static void AntiDepEdges(SUnit *SU, std::vector<SDep*>& Edges) {
+static void AntiDepEdges(const SUnit *SU, std::vector<const SDep*>& Edges) {
   SmallSet<unsigned, 4> RegSet;
-  for (SUnit::pred_iterator P = SU->Preds.begin(), PE = SU->Preds.end();
+  for (SUnit::const_pred_iterator P = SU->Preds.begin(), PE = SU->Preds.end();
        P != PE; ++P) {
     if ((P->getKind() == SDep::Anti) || (P->getKind() == SDep::Output)) {
       unsigned Reg = P->getReg();
@@ -297,14 +303,14 @@ static void AntiDepEdges(SUnit *SU, std::vector<SDep*>& Edges) {
 
 /// CriticalPathStep - Return the next SUnit after SU on the bottom-up
 /// critical path.
-static SUnit *CriticalPathStep(SUnit *SU) {
-  SDep *Next = 0;
+static const SUnit *CriticalPathStep(const SUnit *SU) {
+  const SDep *Next = 0;
   unsigned NextDepth = 0;
   // Find the predecessor edge with the greatest depth.
   if (SU != 0) {
-    for (SUnit::pred_iterator P = SU->Preds.begin(), PE = SU->Preds.end();
+    for (SUnit::const_pred_iterator P = SU->Preds.begin(), PE = SU->Preds.end();
          P != PE; ++P) {
-      SUnit *PredSU = P->getSUnit();
+      const SUnit *PredSU = P->getSUnit();
       unsigned PredLatency = P->getLatency();
       unsigned PredTotalLatency = PredSU->getDepth() + PredLatency;
       // In the case of a latency tie, prefer an anti-dependency edge over
@@ -324,8 +330,8 @@ void AggressiveAntiDepBreaker::HandleLastUse(unsigned Reg, unsigned KillIdx,
                                              const char *tag,
                                              const char *header,
                                              const char *footer) {
-  unsigned *KillIndices = State->GetKillIndices();
-  unsigned *DefIndices = State->GetDefIndices();
+  std::vector<unsigned> &KillIndices = State->GetKillIndices();
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
   std::multimap<unsigned, AggressiveAntiDepState::RegisterReference>&
     RegRefs = State->GetRegRefs();
 
@@ -359,9 +365,8 @@ void AggressiveAntiDepBreaker::HandleLastUse(unsigned Reg, unsigned KillIdx,
 
 void AggressiveAntiDepBreaker::PrescanInstruction(MachineInstr *MI,
                                                   unsigned Count,
-                                              std::set<unsigned>& PassthruRegs)
-{
-  unsigned *DefIndices = State->GetDefIndices();
+                                             std::set<unsigned>& PassthruRegs) {
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
   std::multimap<unsigned, AggressiveAntiDepState::RegisterReference>&
     RegRefs = State->GetRegRefs();
 
@@ -391,7 +396,8 @@ void AggressiveAntiDepBreaker::PrescanInstruction(MachineInstr *MI,
     // If MI's defs have a special allocation requirement, don't allow
     // any def registers to be changed. Also assume all registers
     // defined in a call must not be changed (ABI).
-    if (MI->getDesc().isCall() || MI->getDesc().hasExtraDefRegAllocReq()) {
+    if (MI->getDesc().isCall() || MI->getDesc().hasExtraDefRegAllocReq() ||
+        TII->isPredicated(MI)) {
       DEBUG(if (State->GetGroup(Reg) != 0) dbgs() << "->g0(alloc-req)");
       State->UnionGroups(Reg, 0);
     }
@@ -439,10 +445,30 @@ void AggressiveAntiDepBreaker::PrescanInstruction(MachineInstr *MI,
 }
 
 void AggressiveAntiDepBreaker::ScanInstruction(MachineInstr *MI,
-                                           unsigned Count) {
+                                               unsigned Count) {
   DEBUG(dbgs() << "\tUse Groups:");
   std::multimap<unsigned, AggressiveAntiDepState::RegisterReference>&
     RegRefs = State->GetRegRefs();
+
+  // If MI's uses have special allocation requirement, don't allow
+  // any use registers to be changed. Also assume all registers
+  // used in a call must not be changed (ABI).
+  // FIXME: The issue with predicated instruction is more complex. We are being
+  // conservatively here because the kill markers cannot be trusted after
+  // if-conversion:
+  // %R6<def> = LDR %SP, %reg0, 92, pred:14, pred:%reg0; mem:LD4[FixedStack14]
+  // ...
+  // STR %R0, %R6<kill>, %reg0, 0, pred:0, pred:%CPSR; mem:ST4[%395]
+  // %R6<def> = LDR %SP, %reg0, 100, pred:0, pred:%CPSR; mem:LD4[FixedStack12]
+  // STR %R0, %R6<kill>, %reg0, 0, pred:14, pred:%reg0; mem:ST4[%396](align=8)
+  //
+  // The first R6 kill is not really a kill since it's killed by a predicated
+  // instruction which may not be executed. The second R6 def may or may not
+  // re-define R6 so it's not safe to change it since the last R6 use cannot be
+  // changed.
+  bool Special = MI->getDesc().isCall() ||
+    MI->getDesc().hasExtraSrcRegAllocReq() ||
+    TII->isPredicated(MI);
 
   // Scan the register uses for this instruction and update
   // live-ranges, groups and RegRefs.
@@ -460,10 +486,7 @@ void AggressiveAntiDepBreaker::ScanInstruction(MachineInstr *MI,
     // for the register.
     HandleLastUse(Reg, Count, "(last-use)");
 
-    // If MI's uses have special allocation requirement, don't allow
-    // any use registers to be changed. Also assume all registers
-    // used in a call must not be changed (ABI).
-    if (MI->getDesc().isCall() || MI->getDesc().hasExtraSrcRegAllocReq()) {
+    if (Special) {
       DEBUG(if (State->GetGroup(Reg) != 0) dbgs() << "->g0(alloc-req)");
       State->UnionGroups(Reg, 0);
     }
@@ -539,8 +562,8 @@ bool AggressiveAntiDepBreaker::FindSuitableFreeRegisters(
                                 unsigned AntiDepGroupIndex,
                                 RenameOrderType& RenameOrder,
                                 std::map<unsigned, unsigned> &RenameMap) {
-  unsigned *KillIndices = State->GetKillIndices();
-  unsigned *DefIndices = State->GetDefIndices();
+  std::vector<unsigned> &KillIndices = State->GetKillIndices();
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
   std::multimap<unsigned, AggressiveAntiDepState::RegisterReference>&
     RegRefs = State->GetRegRefs();
 
@@ -605,8 +628,12 @@ bool AggressiveAntiDepBreaker::FindSuitableFreeRegisters(
   // order. If that register is available, and the corresponding
   // registers are available for the other group subregisters, then we
   // can use those registers to rename.
+
+  // FIXME: Using getMinimalPhysRegClass is very conservative. We should
+  // check every use of the register and find the largest register class
+  // that can be used in all of them.
   const TargetRegisterClass *SuperRC =
-    TRI->getPhysicalRegisterRegClass(SuperReg, MVT::Other);
+    TRI->getMinimalPhysRegClass(SuperReg, MVT::Other);
 
   const TargetRegisterClass::iterator RB = SuperRC->allocation_order_begin(MF);
   const TargetRegisterClass::iterator RE = SuperRC->allocation_order_end(MF);
@@ -627,6 +654,8 @@ bool AggressiveAntiDepBreaker::FindSuitableFreeRegisters(
     if (R == RB) R = RE;
     --R;
     const unsigned NewSuperReg = *R;
+    // Don't consider non-allocatable registers
+    if (!AllocatableSet.test(NewSuperReg)) continue;
     // Don't replace a register with itself.
     if (NewSuperReg == SuperReg) continue;
 
@@ -704,12 +733,12 @@ bool AggressiveAntiDepBreaker::FindSuitableFreeRegisters(
 /// ScheduleDAG and break them by renaming registers.
 ///
 unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
-                              std::vector<SUnit>& SUnits,
-                              MachineBasicBlock::iterator& Begin,
-                              MachineBasicBlock::iterator& End,
+                              const std::vector<SUnit>& SUnits,
+                              MachineBasicBlock::iterator Begin,
+                              MachineBasicBlock::iterator End,
                               unsigned InsertPosIndex) {
-  unsigned *KillIndices = State->GetKillIndices();
-  unsigned *DefIndices = State->GetDefIndices();
+  std::vector<unsigned> &KillIndices = State->GetKillIndices();
+  std::vector<unsigned> &DefIndices = State->GetDefIndices();
   std::multimap<unsigned, AggressiveAntiDepState::RegisterReference>&
     RegRefs = State->GetRegRefs();
 
@@ -721,20 +750,21 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
   RenameOrderType RenameOrder;
 
   // ...need a map from MI to SUnit.
-  std::map<MachineInstr *, SUnit *> MISUnitMap;
+  std::map<MachineInstr *, const SUnit *> MISUnitMap;
   for (unsigned i = 0, e = SUnits.size(); i != e; ++i) {
-    SUnit *SU = &SUnits[i];
-    MISUnitMap.insert(std::pair<MachineInstr *, SUnit *>(SU->getInstr(), SU));
+    const SUnit *SU = &SUnits[i];
+    MISUnitMap.insert(std::pair<MachineInstr *, const SUnit *>(SU->getInstr(),
+                                                               SU));
   }
 
   // Track progress along the critical path through the SUnit graph as
   // we walk the instructions. This is needed for regclasses that only
   // break critical-path anti-dependencies.
-  SUnit *CriticalPathSU = 0;
+  const SUnit *CriticalPathSU = 0;
   MachineInstr *CriticalPathMI = 0;
   if (CriticalPathSet.any()) {
     for (unsigned i = 0, e = SUnits.size(); i != e; ++i) {
-      SUnit *SU = &SUnits[i];
+      const SUnit *SU = &SUnits[i];
       if (!CriticalPathSU ||
           ((SU->getDepth() + SU->Latency) >
            (CriticalPathSU->getDepth() + CriticalPathSU->Latency))) {
@@ -775,8 +805,8 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
 
     // The dependence edges that represent anti- and output-
     // dependencies that are candidates for breaking.
-    std::vector<SDep*> Edges;
-    SUnit *PathSU = MISUnitMap[MI];
+    std::vector<const SDep *> Edges;
+    const SUnit *PathSU = MISUnitMap[MI];
     AntiDepEdges(PathSU, Edges);
 
     // If MI is not on the critical path, then we don't rename
@@ -794,7 +824,7 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
     if (!MI->isKill()) {
       // Attempt to break each anti-dependency...
       for (unsigned i = 0, e = Edges.size(); i != e; ++i) {
-        SDep *Edge = Edges[i];
+        const SDep *Edge = Edges[i];
         SUnit *NextSU = Edge->getSUnit();
 
         if ((Edge->getKind() != SDep::Anti) &&
@@ -838,7 +868,7 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
           // Also, if there are dependencies on other SUnits with the
           // same register as the anti-dependency, don't attempt to
           // break it.
-          for (SUnit::pred_iterator P = PathSU->Preds.begin(),
+          for (SUnit::const_pred_iterator P = PathSU->Preds.begin(),
                  PE = PathSU->Preds.end(); P != PE; ++P) {
             if (P->getSUnit() == NextSU ?
                 (P->getKind() != SDep::Anti || P->getReg() != AntiDepReg) :
@@ -847,7 +877,7 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
               break;
             }
           }
-          for (SUnit::pred_iterator P = PathSU->Preds.begin(),
+          for (SUnit::const_pred_iterator P = PathSU->Preds.begin(),
                  PE = PathSU->Preds.end(); P != PE; ++P) {
             if ((P->getSUnit() == NextSU) && (P->getKind() != SDep::Anti) &&
                 (P->getKind() != SDep::Output)) {
@@ -905,6 +935,19 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
                  AggressiveAntiDepState::RegisterReference>::iterator
                    Q = Range.first, QE = Range.second; Q != QE; ++Q) {
               Q->second.Operand->setReg(NewReg);
+              // If the SU for the instruction being updated has debug
+              // information related to the anti-dependency register, make
+              // sure to update that as well.
+              const SUnit *SU = MISUnitMap[Q->second.Operand->getParent()];
+              if (!SU) continue;
+              for (unsigned i = 0, e = SU->DbgInstrList.size() ; i < e ; ++i) {
+                MachineInstr *DI = SU->DbgInstrList[i];
+                assert (DI->getNumOperands()==3 && DI->getOperand(0).isReg() &&
+                        DI->getOperand(0).getReg()
+                        && "Non register dbg_value attached to SUnit!");
+                if (DI->getOperand(0).getReg() == AntiDepReg)
+                  DI->getOperand(0).setReg(NewReg);
+              }
             }
 
             // We just went back in time and modified history; the

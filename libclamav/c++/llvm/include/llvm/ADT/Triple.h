@@ -24,7 +24,7 @@ class Twine;
 
 /// Triple - Helper class for working with target triples.
 ///
-/// Target triples are strings in the format of:
+/// Target triples are strings in the canonical form:
 ///   ARCHITECTURE-VENDOR-OPERATING_SYSTEM
 /// or
 ///   ARCHITECTURE-VENDOR-OPERATING_SYSTEM-ENVIRONMENT
@@ -35,20 +35,11 @@ class Twine;
 /// from the components of the target triple to well known IDs.
 ///
 /// At its core the Triple class is designed to be a wrapper for a triple
-/// string; it does not normally change or normalize the triple string, instead
-/// it provides additional APIs to parse normalized parts out of the triple.
+/// string; the constructor does not change or normalize the triple string.
+/// Clients that need to handle the non-canonical triples that users often
+/// specify should use the normalize method.
 ///
-/// One curiosity this implies is that for some odd triples the results of,
-/// e.g., getOSName() can be very different from the result of getOS().  For
-/// example, for 'i386-mingw32', getOS() will return MinGW32, but since
-/// getOSName() is purely based on the string structure that will return the
-/// empty string.
-///
-/// Clients should generally avoid using getOSName() and related APIs unless
-/// they are familiar with the triple format (this is particularly true when
-/// rewriting a triple).
-///
-/// See autoconf/config.guess for a glimpse into what they look like in
+/// See autoconf/config.guess for a glimpse into what triples look like in
 /// practice.
 class Triple {
 public:
@@ -100,7 +91,8 @@ public:
     Psp,
     Solaris,
     Win32,
-    Haiku
+    Haiku,
+    Minix
   };
   
 private:
@@ -116,6 +108,9 @@ private:
   mutable OSType OS;
 
   bool isInitialized() const { return Arch != InvalidArch; }
+  static ArchType ParseArch(StringRef ArchName);
+  static VendorType ParseVendor(StringRef VendorName);
+  static OSType ParseOS(StringRef OSName);
   void Parse() const;
 
 public:
@@ -131,6 +126,16 @@ public:
     Data += '-';
     Data += OSStr;
   }
+
+  /// @}
+  /// @name Normalization
+  /// @{
+
+  /// normalize - Turn an arbitrary machine specification into the canonical
+  /// triple form (or something sensible that the Triple class understands if
+  /// nothing better can reasonably be done).  In particular, it handles the
+  /// common case in which otherwise valid components are in the wrong order.
+  static std::string normalize(StringRef Str);
 
   /// @}
   /// @name Typed Component Access
@@ -242,8 +247,8 @@ public:
   /// environment components with a single string.
   void setOSAndEnvironmentName(StringRef Str);
 
-  /// getArchNameForAssembler - Get an architecture name that is understood by the
-  /// target assembler.
+  /// getArchNameForAssembler - Get an architecture name that is understood by
+  /// the target assembler.
   const char *getArchNameForAssembler();
 
   /// @}

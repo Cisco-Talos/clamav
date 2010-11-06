@@ -35,7 +35,7 @@ class MachineRegisterInfo {
   /// RegClassVRegMap - This vector acts as a map from TargetRegisterClass to
   /// virtual registers. For each target register class, it keeps a list of
   /// virtual registers belonging to the class.
-  std::vector<std::vector<unsigned> > RegClass2VRegMap;
+  std::vector<unsigned> *RegClass2VRegMap;
 
   /// RegAllocHints - This vector records register allocation hints for virtual
   /// registers. For each virtual register, it keeps a register and hint type
@@ -92,6 +92,20 @@ public:
   /// reg_empty - Return true if there are no instructions using or defining the
   /// specified register (it may be live-in).
   bool reg_empty(unsigned RegNo) const { return reg_begin(RegNo) == reg_end(); }
+
+  /// reg_nodbg_iterator/reg_nodbg_begin/reg_nodbg_end - Walk all defs and uses
+  /// of the specified register, skipping those marked as Debug.
+  typedef defusechain_iterator<true,true,true> reg_nodbg_iterator;
+  reg_nodbg_iterator reg_nodbg_begin(unsigned RegNo) const {
+    return reg_nodbg_iterator(getRegUseDefListHead(RegNo));
+  }
+  static reg_nodbg_iterator reg_nodbg_end() { return reg_nodbg_iterator(0); }
+
+  /// reg_nodbg_empty - Return true if the only instructions using or defining
+  /// Reg are Debug instructions.
+  bool reg_nodbg_empty(unsigned RegNo) const {
+    return reg_nodbg_begin(RegNo) == reg_nodbg_end();
+  }
 
   /// def_iterator/def_begin/def_end - Walk all defs of the specified register.
   typedef defusechain_iterator<false,true,false> def_iterator;
@@ -162,6 +176,12 @@ public:
   /// register or null if none is found.  This assumes that the code is in SSA
   /// form, so there should only be one definition.
   MachineInstr *getVRegDef(unsigned Reg) const;
+
+  /// clearKillFlags - Iterate over all the uses of the given register and
+  /// clear the kill flag from the MachineOperand. This function is used by
+  /// optimization passes which extend register lifetimes and need only
+  /// preserve conservative kill flag information.
+  void clearKillFlags(unsigned Reg) const;
   
 #ifndef NDEBUG
   void dumpUses(unsigned RegNo) const;
@@ -196,7 +216,8 @@ public:
 
   /// getRegClassVirtRegs - Return the list of virtual registers of the given
   /// target register class.
-  std::vector<unsigned> &getRegClassVirtRegs(const TargetRegisterClass *RC) {
+  const std::vector<unsigned> &
+  getRegClassVirtRegs(const TargetRegisterClass *RC) const {
     return RegClass2VRegMap[RC->getID()];
   }
 
@@ -229,11 +250,18 @@ public:
   /// setPhysRegUsed - Mark the specified register used in this function.
   /// This should only be called during and after register allocation.
   void setPhysRegUsed(unsigned Reg) { UsedPhysRegs[Reg] = true; }
-  
+
+  /// addPhysRegsUsed - Mark the specified registers used in this function.
+  /// This should only be called during and after register allocation.
+  void addPhysRegsUsed(const BitVector &Regs) { UsedPhysRegs |= Regs; }
+
   /// setPhysRegUnused - Mark the specified register unused in this function.
   /// This should only be called during and after register allocation.
   void setPhysRegUnused(unsigned Reg) { UsedPhysRegs[Reg] = false; }
-  
+
+  /// closePhysRegsUsed - Expand UsedPhysRegs to its transitive closure over
+  /// subregisters. That means that if R is used, so are all subregisters.
+  void closePhysRegsUsed(const TargetRegisterInfo&);
 
   //===--------------------------------------------------------------------===//
   // LiveIn/LiveOut Management
@@ -258,18 +286,22 @@ public:
   liveout_iterator liveout_end()   const { return LiveOuts.end(); }
   bool             liveout_empty() const { return LiveOuts.empty(); }
 
-  bool isLiveIn(unsigned Reg) const {
-    for (livein_iterator I = livein_begin(), E = livein_end(); I != E; ++I)
-      if (I->first == Reg || I->second == Reg)
-        return true;
-    return false;
-  }
-  bool isLiveOut(unsigned Reg) const {
-    for (liveout_iterator I = liveout_begin(), E = liveout_end(); I != E; ++I)
-      if (*I == Reg)
-        return true;
-    return false;
-  }
+  bool isLiveIn(unsigned Reg) const;
+  bool isLiveOut(unsigned Reg) const;
+
+  /// getLiveInPhysReg - If VReg is a live-in virtual register, return the
+  /// corresponding live-in physical register.
+  unsigned getLiveInPhysReg(unsigned VReg) const;
+
+  /// getLiveInVirtReg - If PReg is a live-in physical register, return the
+  /// corresponding live-in physical register.
+  unsigned getLiveInVirtReg(unsigned PReg) const;
+
+  /// EmitLiveInCopies - Emit copies to initialize livein virtual registers
+  /// into the given entry block.
+  void EmitLiveInCopies(MachineBasicBlock *EntryMBB,
+                        const TargetRegisterInfo &TRI,
+                        const TargetInstrInfo &TII);
 
 private:
   void HandleVRegListReallocation();
@@ -331,7 +363,18 @@ public:
     defusechain_iterator operator++(int) {        // Postincrement
       defusechain_iterator tmp = *this; ++*this; return tmp;
     }
-    
+
+    /// skipInstruction - move forward until reaching a different instruction.
+    /// Return the skipped instruction that is no longer pointed to, or NULL if
+    /// already pointing to end().
+    MachineInstr *skipInstruction() {
+      if (!Op) return 0;
+      MachineInstr *MI = Op->getParent();
+      do ++*this;
+      while (Op && Op->getParent() == MI);
+      return MI;
+    }
+
     MachineOperand &getOperand() const {
       assert(Op && "Cannot dereference end iterator!");
       return *Op;

@@ -676,8 +676,8 @@ void cl::ParseCommandLineOptions(int argc, char **argv,
          << " positional arguments: See: " << argv[0] << " -help\n";
 
     ErrorParsing = true;
-  } else if (!HasUnlimitedPositionals
-             && PositionalVals.size() > PositionalOpts.size()) {
+  } else if (!HasUnlimitedPositionals &&
+             PositionalVals.size() > PositionalOpts.size()) {
     errs() << ProgramName
          << ": Too many positional arguments specified!\n"
          << "Can specify at most " << PositionalOpts.size()
@@ -1170,7 +1170,9 @@ public:
     std::string CPU = sys::getHostCPUName();
     if (CPU == "generic") CPU = "(unknown)";
     OS << ".\n"
+#if (ENABLE_TIMESTAMPS == 1)
        << "  Built " << __DATE__ << " (" << __TIME__ << ").\n"
+#endif
        << "  Host: " << sys::getHostTriple() << '\n'
        << "  Host CPU: " << CPU << '\n'
        << '\n'

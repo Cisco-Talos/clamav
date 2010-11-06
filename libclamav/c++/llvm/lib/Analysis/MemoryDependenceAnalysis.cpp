@@ -46,11 +46,11 @@ STATISTIC(NumCacheCompleteNonLocalPtr,
 char MemoryDependenceAnalysis::ID = 0;
   
 // Register this pass...
-static RegisterPass<MemoryDependenceAnalysis> X("memdep",
-                                     "Memory Dependence Analysis", false, true);
+INITIALIZE_PASS(MemoryDependenceAnalysis, "memdep",
+                "Memory Dependence Analysis", false, true);
 
 MemoryDependenceAnalysis::MemoryDependenceAnalysis()
-: FunctionPass(&ID), PredCache(0) {
+: FunctionPass(ID), PredCache(0) {
 }
 MemoryDependenceAnalysis::~MemoryDependenceAnalysis() {
 }
@@ -116,37 +116,25 @@ getCallSiteDependencyFrom(CallSite CS, bool isReadOnlyCall,
     } else if (VAArgInst *V = dyn_cast<VAArgInst>(Inst)) {
       Pointer = V->getOperand(0);
       PointerSize = AA->getTypeStoreSize(V->getType());
-    } else if (isFreeCall(Inst)) {
-      Pointer = Inst->getOperand(1);
+    } else if (const CallInst *CI = isFreeCall(Inst)) {
+      Pointer = CI->getArgOperand(0);
       // calls to free() erase the entire structure
       PointerSize = ~0ULL;
-    } else if (isa<CallInst>(Inst) || isa<InvokeInst>(Inst)) {
+    } else if (CallSite InstCS = cast<Value>(Inst)) {
       // Debug intrinsics don't cause dependences.
       if (isa<DbgInfoIntrinsic>(Inst)) continue;
-      CallSite InstCS = CallSite::get(Inst);
       // If these two calls do not interfere, look past it.
       switch (AA->getModRefInfo(CS, InstCS)) {
       case AliasAnalysis::NoModRef:
-        // If the two calls don't interact (e.g. InstCS is readnone) keep
-        // scanning.
+        // If the two calls are the same, return InstCS as a Def, so that
+        // CS can be found redundant and eliminated.
+        if (isReadOnlyCall && InstCS.onlyReadsMemory() &&
+            CS.getInstruction()->isIdenticalToWhenDefined(Inst))
+          return MemDepResult::getDef(Inst);
+
+        // Otherwise if the two calls don't interact (e.g. InstCS is readnone)
+        // keep scanning.
         continue;
-      case AliasAnalysis::Ref:
-        // If the two calls read the same memory locations and CS is a readonly
-        // function, then we have two cases: 1) the calls may not interfere with
-        // each other at all.  2) the calls may produce the same value.  In case
-        // #1 we want to ignore the values, in case #2, we want to return Inst
-        // as a Def dependence.  This allows us to CSE in cases like:
-        //   X = strlen(P);
-        //    memchr(...);
-        //   Y = strlen(P);  // Y = X
-        if (isReadOnlyCall) {
-          if (CS.getCalledFunction() != 0 &&
-              CS.getCalledFunction() == InstCS.getCalledFunction())
-            return MemDepResult::getDef(Inst);
-          // Ignore unrelated read/read call dependences.
-          continue;
-        }
-        // FALL THROUGH
       default:
         return MemDepResult::getClobber(Inst);
       }
@@ -196,10 +184,9 @@ getPointerDependencyFrom(Value *MemPtr, uint64_t MemSize, bool isLoad,
         // FIXME: This only considers queries directly on the invariant-tagged
         // pointer, not on query pointers that are indexed off of them.  It'd
         // be nice to handle that at some point.
-        AliasAnalysis::AliasResult R = 
-          AA->alias(II->getOperand(3), ~0U, MemPtr, ~0U);
+        AliasAnalysis::AliasResult R = AA->alias(II->getArgOperand(2), MemPtr);
         if (R == AliasAnalysis::MustAlias) {
-          InvariantTag = II->getOperand(1);
+          InvariantTag = II->getArgOperand(0);
           continue;
         }
       
@@ -209,8 +196,7 @@ getPointerDependencyFrom(Value *MemPtr, uint64_t MemSize, bool isLoad,
         // FIXME: This only considers queries directly on the invariant-tagged
         // pointer, not on query pointers that are indexed off of them.  It'd
         // be nice to handle that at some point.
-        AliasAnalysis::AliasResult R =
-          AA->alias(II->getOperand(2), ~0U, MemPtr, ~0U);
+        AliasAnalysis::AliasResult R = AA->alias(II->getArgOperand(1), MemPtr);
         if (R == AliasAnalysis::MustAlias)
           return MemDepResult::getDef(II);
       }
@@ -365,28 +351,29 @@ MemDepResult MemoryDependenceAnalysis::getDependency(Instruction *QueryInst) {
       MemPtr = LI->getPointerOperand();
       MemSize = AA->getTypeStoreSize(LI->getType());
     }
-  } else if (isFreeCall(QueryInst)) {
-    MemPtr = QueryInst->getOperand(1);
+  } else if (const CallInst *CI = isFreeCall(QueryInst)) {
+    MemPtr = CI->getArgOperand(0);
     // calls to free() erase the entire structure, not just a field.
     MemSize = ~0UL;
   } else if (isa<CallInst>(QueryInst) || isa<InvokeInst>(QueryInst)) {
     int IntrinsicID = 0;  // Intrinsic IDs start at 1.
-    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(QueryInst))
+    IntrinsicInst *II = dyn_cast<IntrinsicInst>(QueryInst);
+    if (II)
       IntrinsicID = II->getIntrinsicID();
 
     switch (IntrinsicID) {
     case Intrinsic::lifetime_start:
     case Intrinsic::lifetime_end:
     case Intrinsic::invariant_start:
-      MemPtr = QueryInst->getOperand(2);
-      MemSize = cast<ConstantInt>(QueryInst->getOperand(1))->getZExtValue();
+      MemPtr = II->getArgOperand(1);
+      MemSize = cast<ConstantInt>(II->getArgOperand(0))->getZExtValue();
       break;
     case Intrinsic::invariant_end:
-      MemPtr = QueryInst->getOperand(3);
-      MemSize = cast<ConstantInt>(QueryInst->getOperand(2))->getZExtValue();
+      MemPtr = II->getArgOperand(2);
+      MemSize = cast<ConstantInt>(II->getArgOperand(1))->getZExtValue();
       break;
     default:
-      CallSite QueryCS = CallSite::get(QueryInst);
+      CallSite QueryCS(QueryInst);
       bool isReadOnly = AA->onlyReadsMemory(QueryCS);
       LocalCache = getCallSiteDependencyFrom(QueryCS, isReadOnly, ScanPos,
                                              QueryParent);
@@ -456,7 +443,7 @@ MemoryDependenceAnalysis::getNonLocalCallDependency(CallSite QueryCS) {
     // Okay, we have a cache entry.  If we know it is not dirty, just return it
     // with no computation.
     if (!CacheP.second) {
-      NumCacheNonLocal++;
+      ++NumCacheNonLocal;
       return Cache;
     }
     
@@ -478,7 +465,7 @@ MemoryDependenceAnalysis::getNonLocalCallDependency(CallSite QueryCS) {
     BasicBlock *QueryBB = QueryCS.getInstruction()->getParent();
     for (BasicBlock **PI = PredCache->GetPreds(QueryBB); *PI; ++PI)
       DirtyBlocks.push_back(*PI);
-    NumUncacheNonLocal++;
+    ++NumUncacheNonLocal;
   }
   
   // isReadonlyCall - If this is a read-only call, we can be more aggressive.

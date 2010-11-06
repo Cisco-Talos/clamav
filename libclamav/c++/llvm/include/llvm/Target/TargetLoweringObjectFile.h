@@ -22,11 +22,12 @@ namespace llvm {
   class MachineModuleInfo;
   class Mangler;
   class MCAsmInfo;
+  class MCContext;
   class MCExpr;
   class MCSection;
   class MCSectionMachO;
   class MCSymbol;
-  class MCContext;
+  class MCStreamer;
   class GlobalValue;
   class TargetMachine;
   
@@ -87,11 +88,27 @@ protected:
   const MCSection *DwarfRangesSection;
   const MCSection *DwarfMacroInfoSection;
   
+  // Extra TLS Variable Data section.  If the target needs to put additional
+  // information for a TLS variable, it'll go here.
+  const MCSection *TLSExtraDataSection;
+  
+  /// SupportsWeakEmptyEHFrame - True if target object file supports a
+  /// weak_definition of constant 0 for an omitted EH frame.
+  bool SupportsWeakOmittedEHFrame;
+  
+  /// IsFunctionEHSymbolGlobal - This flag is set to true if the ".eh" symbol
+  /// for a function should be marked .globl.
+  bool IsFunctionEHSymbolGlobal;
+  
+  /// IsFunctionEHFrameSymbolPrivate - This flag is set to true if the
+  /// "EH_frame" symbol for EH information should be an assembler temporary (aka
+  /// private linkage, aka an L or .L label) or false if it should be a normal
+  /// non-.globl label.  This defaults to true.
+  bool IsFunctionEHFrameSymbolPrivate;
 public:
   
   MCContext &getContext() const { return *Ctx; }
   
-
   virtual ~TargetLoweringObjectFile();
   
   /// Initialize - this method must be called before any actual lowering is
@@ -101,6 +118,15 @@ public:
     Ctx = &ctx;
   }
   
+  bool isFunctionEHSymbolGlobal() const {
+    return IsFunctionEHSymbolGlobal;
+  }
+  bool isFunctionEHFrameSymbolPrivate() const {
+    return IsFunctionEHFrameSymbolPrivate;
+  }
+  bool getSupportsWeakOmittedEHFrame() const {
+    return SupportsWeakOmittedEHFrame;
+  }
   
   const MCSection *getTextSection() const { return TextSection; }
   const MCSection *getDataSection() const { return DataSection; }
@@ -124,6 +150,9 @@ public:
   const MCSection *getDwarfRangesSection() const { return DwarfRangesSection; }
   const MCSection *getDwarfMacroInfoSection() const {
     return DwarfMacroInfoSection;
+  }
+  const MCSection *getTLSExtraDataSection() const {
+    return TLSExtraDataSection;
   }
   
   /// shouldEmitUsedDirectiveFor - This hook allows targets to selectively
@@ -176,17 +205,20 @@ public:
     return 0;
   }
   
-  /// getSymbolForDwarfGlobalReference - Return an MCExpr to use for a reference
+  /// getExprForDwarfGlobalReference - Return an MCExpr to use for a reference
   /// to the specified global variable from exception handling information.
   ///
   virtual const MCExpr *
-  getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
-                              MachineModuleInfo *MMI, unsigned Encoding) const;
+  getExprForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
+                                 MachineModuleInfo *MMI, unsigned Encoding,
+                                 MCStreamer &Streamer) const;
 
-  virtual const MCExpr *
-  getSymbolForDwarfReference(const MCSymbol *Sym, MachineModuleInfo *MMI,
-                             unsigned Encoding) const;
-
+  /// 
+  const MCExpr *
+  getExprForDwarfReference(const MCSymbol *Sym, Mangler *Mang,
+                           MachineModuleInfo *MMI, unsigned Encoding,
+                           MCStreamer &Streamer) const;
+  
   virtual unsigned getPersonalityEncoding() const;
   virtual unsigned getLSDAEncoding() const;
   virtual unsigned getFDEEncoding() const;

@@ -235,6 +235,9 @@ public:
 
   void setAlignment(unsigned Align);
 
+  Value *getValueOperand() { return getOperand(0); }
+  const Value *getValueOperand() const { return getOperand(0); }
+  
   Value *getPointerOperand() { return getOperand(1); }
   const Value *getPointerOperand() const { return getOperand(1); }
   static unsigned getPointerOperandIndex() { return 1U; }
@@ -883,14 +886,14 @@ public:
                           InputIterator ArgBegin, InputIterator ArgEnd,
                           const Twine &NameStr = "",
                           Instruction *InsertBefore = 0) {
-    return new((unsigned)(ArgEnd - ArgBegin + 1))
+    return new(unsigned(ArgEnd - ArgBegin + 1))
       CallInst(Func, ArgBegin, ArgEnd, NameStr, InsertBefore);
   }
   template<typename InputIterator>
   static CallInst *Create(Value *Func,
                           InputIterator ArgBegin, InputIterator ArgEnd,
                           const Twine &NameStr, BasicBlock *InsertAtEnd) {
-    return new((unsigned)(ArgEnd - ArgBegin + 1))
+    return new(unsigned(ArgEnd - ArgBegin + 1))
       CallInst(Func, ArgBegin, ArgEnd, NameStr, InsertAtEnd);
   }
   static CallInst *Create(Value *F, Value *Actual,
@@ -919,6 +922,7 @@ public:
   static Instruction *CreateMalloc(Instruction *InsertBefore,
                                    const Type *IntPtrTy, const Type *AllocTy,
                                    Value *AllocSize, Value *ArraySize = 0,
+                                   Function* MallocF = 0,
                                    const Twine &Name = "");
   static Instruction *CreateMalloc(BasicBlock *InsertAtEnd,
                                    const Type *IntPtrTy, const Type *AllocTy,
@@ -926,7 +930,7 @@ public:
                                    Function* MallocF = 0,
                                    const Twine &Name = "");
   /// CreateFree - Generate the IR for a call to the builtin free function.
-  static void CreateFree(Value* Source, Instruction *InsertBefore);
+  static Instruction* CreateFree(Value* Source, Instruction *InsertBefore);
   static Instruction* CreateFree(Value* Source, BasicBlock *InsertAtEnd);
 
   ~CallInst();
@@ -939,6 +943,15 @@ public:
 
   /// Provide fast operand accessors
   DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Value);
+
+  /// getNumArgOperands - Return the number of call arguments.
+  ///
+  unsigned getNumArgOperands() const { return getNumOperands() - 1; }
+
+  /// getArgOperand/setArgOperand - Return/set the i-th call argument.
+  ///
+  Value *getArgOperand(unsigned i) const { return getOperand(i); }
+  void setArgOperand(unsigned i, Value *v) { setOperand(i, v); }
 
   /// getCallingConv/setCallingConv - Get or set the calling convention of this
   /// function call.
@@ -971,6 +984,13 @@ public:
   unsigned getParamAlignment(unsigned i) const {
     return AttributeList.getParamAlignment(i);
   }
+  
+  /// @brief Return true if the call should not be inlined.
+  bool isNoInline() const { return paramHasAttr(~0, Attribute::NoInline); }
+  void setIsNoInline(bool Value = true) {
+    if (Value) addAttribute(~0, Attribute::NoInline);
+    else removeAttribute(~0, Attribute::NoInline);
+  }
 
   /// @brief Determine if the call does not access memory.
   bool doesNotAccessMemory() const {
@@ -991,18 +1011,14 @@ public:
   }
 
   /// @brief Determine if the call cannot return.
-  bool doesNotReturn() const {
-    return paramHasAttr(~0, Attribute::NoReturn);
-  }
+  bool doesNotReturn() const { return paramHasAttr(~0, Attribute::NoReturn); }
   void setDoesNotReturn(bool DoesNotReturn = true) {
     if (DoesNotReturn) addAttribute(~0, Attribute::NoReturn);
     else removeAttribute(~0, Attribute::NoReturn);
   }
 
   /// @brief Determine if the call cannot unwind.
-  bool doesNotThrow() const {
-    return paramHasAttr(~0, Attribute::NoUnwind);
-  }
+  bool doesNotThrow() const { return paramHasAttr(~0, Attribute::NoUnwind); }
   void setDoesNotThrow(bool DoesNotThrow = true) {
     if (DoesNotThrow) addAttribute(~0, Attribute::NoUnwind);
     else removeAttribute(~0, Attribute::NoUnwind);
@@ -1024,17 +1040,22 @@ public:
   /// indirect function invocation.
   ///
   Function *getCalledFunction() const {
-    return dyn_cast<Function>(Op<0>());
+    return dyn_cast<Function>(Op<-1>());
   }
 
   /// getCalledValue - Get a pointer to the function that is invoked by this
   /// instruction.
-  const Value *getCalledValue() const { return Op<0>(); }
-        Value *getCalledValue()       { return Op<0>(); }
+  const Value *getCalledValue() const { return Op<-1>(); }
+        Value *getCalledValue()       { return Op<-1>(); }
 
   /// setCalledFunction - Set the function called.
   void setCalledFunction(Value* Fn) {
-    Op<0>() = Fn;
+    Op<-1>() = Fn;
+  }
+  
+  /// isInlineAsm - Check if this call is an inline asm statement.
+  bool isInlineAsm() const {
+    return isa<InlineAsm>(Op<-1>());
   }
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:
@@ -1064,7 +1085,7 @@ CallInst::CallInst(Value *Func, InputIterator ArgBegin, InputIterator ArgEnd,
                                    ->getElementType())->getReturnType(),
                 Instruction::Call,
                 OperandTraits<CallInst>::op_end(this) - (ArgEnd - ArgBegin + 1),
-                (unsigned)(ArgEnd - ArgBegin + 1), InsertAtEnd) {
+                unsigned(ArgEnd - ArgBegin + 1), InsertAtEnd) {
   init(Func, ArgBegin, ArgEnd, NameStr,
        typename std::iterator_traits<InputIterator>::iterator_category());
 }
@@ -1076,11 +1097,15 @@ CallInst::CallInst(Value *Func, InputIterator ArgBegin, InputIterator ArgEnd,
                                    ->getElementType())->getReturnType(),
                 Instruction::Call,
                 OperandTraits<CallInst>::op_end(this) - (ArgEnd - ArgBegin + 1),
-                (unsigned)(ArgEnd - ArgBegin + 1), InsertBefore) {
+                unsigned(ArgEnd - ArgBegin + 1), InsertBefore) {
   init(Func, ArgBegin, ArgEnd, NameStr,
        typename std::iterator_traits<InputIterator>::iterator_category());
 }
 
+
+// Note: if you get compile errors about private methods then
+//       please update your code to use the high-level operand
+//       interfaces. See line 943 above.
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(CallInst, Value)
 
 //===----------------------------------------------------------------------===//
@@ -1984,7 +2009,7 @@ public:
 };
 
 template <>
-struct OperandTraits<ReturnInst> : public OptionalOperandTraits<> {
+struct OperandTraits<ReturnInst> : public VariadicOperandTraits<> {
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(ReturnInst, Value)
@@ -2425,6 +2450,15 @@ public:
   /// Provide fast operand accessors
   DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Value);
 
+  /// getNumArgOperands - Return the number of invoke arguments.
+  ///
+  unsigned getNumArgOperands() const { return getNumOperands() - 3; }
+
+  /// getArgOperand/setArgOperand - Return/set the i-th invoke argument.
+  ///
+  Value *getArgOperand(unsigned i) const { return getOperand(i); }
+  void setArgOperand(unsigned i, Value *v) { setOperand(i, v); }
+
   /// getCallingConv/setCallingConv - Get or set the calling convention of this
   /// function call.
   CallingConv::ID getCallingConv() const {
@@ -2456,6 +2490,13 @@ public:
     return AttributeList.getParamAlignment(i);
   }
 
+  /// @brief Return true if the call should not be inlined.
+  bool isNoInline() const { return paramHasAttr(~0, Attribute::NoInline); }
+  void setIsNoInline(bool Value = true) {
+    if (Value) addAttribute(~0, Attribute::NoInline);
+    else removeAttribute(~0, Attribute::NoInline);
+  }
+
   /// @brief Determine if the call does not access memory.
   bool doesNotAccessMemory() const {
     return paramHasAttr(~0, Attribute::ReadNone);
@@ -2475,18 +2516,14 @@ public:
   }
 
   /// @brief Determine if the call cannot return.
-  bool doesNotReturn() const {
-    return paramHasAttr(~0, Attribute::NoReturn);
-  }
+  bool doesNotReturn() const { return paramHasAttr(~0, Attribute::NoReturn); }
   void setDoesNotReturn(bool DoesNotReturn = true) {
     if (DoesNotReturn) addAttribute(~0, Attribute::NoReturn);
     else removeAttribute(~0, Attribute::NoReturn);
   }
 
   /// @brief Determine if the call cannot unwind.
-  bool doesNotThrow() const {
-    return paramHasAttr(~0, Attribute::NoUnwind);
-  }
+  bool doesNotThrow() const { return paramHasAttr(~0, Attribute::NoUnwind); }
   void setDoesNotThrow(bool DoesNotThrow = true) {
     if (DoesNotThrow) addAttribute(~0, Attribute::NoUnwind);
     else removeAttribute(~0, Attribute::NoUnwind);
@@ -2508,27 +2545,31 @@ public:
   /// indirect function invocation.
   ///
   Function *getCalledFunction() const {
-    return dyn_cast<Function>(getOperand(0));
+    return dyn_cast<Function>(Op<-3>());
   }
 
   /// getCalledValue - Get a pointer to the function that is invoked by this
   /// instruction
-  const Value *getCalledValue() const { return getOperand(0); }
-        Value *getCalledValue()       { return getOperand(0); }
+  const Value *getCalledValue() const { return Op<-3>(); }
+        Value *getCalledValue()       { return Op<-3>(); }
+
+  /// setCalledFunction - Set the function called.
+  void setCalledFunction(Value* Fn) {
+    Op<-3>() = Fn;
+  }
 
   // get*Dest - Return the destination basic blocks...
   BasicBlock *getNormalDest() const {
-    return cast<BasicBlock>(getOperand(1));
+    return cast<BasicBlock>(Op<-2>());
   }
   BasicBlock *getUnwindDest() const {
-    return cast<BasicBlock>(getOperand(2));
+    return cast<BasicBlock>(Op<-1>());
   }
   void setNormalDest(BasicBlock *B) {
-    setOperand(1, (Value*)B);
+    Op<-2>() = reinterpret_cast<Value*>(B);
   }
-
   void setUnwindDest(BasicBlock *B) {
-    setOperand(2, (Value*)B);
+    Op<-1>() = reinterpret_cast<Value*>(B);
   }
 
   BasicBlock *getSuccessor(unsigned i) const {
@@ -2538,7 +2579,7 @@ public:
 
   void setSuccessor(unsigned idx, BasicBlock *NewSucc) {
     assert(idx < 2 && "Successor # out of range for invoke!");
-    setOperand(idx+1, (Value*)NewSucc);
+    *(&Op<-2>() + idx) = reinterpret_cast<Value*>(NewSucc);
   }
 
   unsigned getNumSuccessors() const { return 2; }
@@ -2551,6 +2592,7 @@ public:
   static inline bool classof(const Value *V) {
     return isa<Instruction>(V) && classof(cast<Instruction>(V));
   }
+
 private:
   virtual BasicBlock *getSuccessorV(unsigned idx) const;
   virtual unsigned getNumSuccessorsV() const;
@@ -2687,7 +2729,7 @@ public:
   TruncInst(
     Value *S,                     ///< The value to be truncated
     const Type *Ty,               ///< The (smaller) type to truncate to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2695,7 +2737,7 @@ public:
   TruncInst(
     Value *S,                     ///< The value to be truncated
     const Type *Ty,               ///< The (smaller) type to truncate to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2724,7 +2766,7 @@ public:
   ZExtInst(
     Value *S,                     ///< The value to be zero extended
     const Type *Ty,               ///< The type to zero extend to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2732,7 +2774,7 @@ public:
   ZExtInst(
     Value *S,                     ///< The value to be zero extended
     const Type *Ty,               ///< The type to zero extend to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2761,7 +2803,7 @@ public:
   SExtInst(
     Value *S,                     ///< The value to be sign extended
     const Type *Ty,               ///< The type to sign extend to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2769,7 +2811,7 @@ public:
   SExtInst(
     Value *S,                     ///< The value to be sign extended
     const Type *Ty,               ///< The type to sign extend to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2798,7 +2840,7 @@ public:
   FPTruncInst(
     Value *S,                     ///< The value to be truncated
     const Type *Ty,               ///< The type to truncate to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2806,7 +2848,7 @@ public:
   FPTruncInst(
     Value *S,                     ///< The value to be truncated
     const Type *Ty,               ///< The type to truncate to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2835,7 +2877,7 @@ public:
   FPExtInst(
     Value *S,                     ///< The value to be extended
     const Type *Ty,               ///< The type to extend to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2843,7 +2885,7 @@ public:
   FPExtInst(
     Value *S,                     ///< The value to be extended
     const Type *Ty,               ///< The type to extend to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2872,7 +2914,7 @@ public:
   UIToFPInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2880,7 +2922,7 @@ public:
   UIToFPInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2909,7 +2951,7 @@ public:
   SIToFPInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2917,7 +2959,7 @@ public:
   SIToFPInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -2946,7 +2988,7 @@ public:
   FPToUIInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2954,7 +2996,7 @@ public:
   FPToUIInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< Where to insert the new instruction
   );
 
@@ -2983,7 +3025,7 @@ public:
   FPToSIInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -2991,7 +3033,7 @@ public:
   FPToSIInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -3016,7 +3058,7 @@ public:
   IntToPtrInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -3024,7 +3066,7 @@ public:
   IntToPtrInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -3056,7 +3098,7 @@ public:
   PtrToIntInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -3064,7 +3106,7 @@ public:
   PtrToIntInst(
     Value *S,                     ///< The value to be converted
     const Type *Ty,               ///< The type to convert to
-    const Twine &NameStr,   ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 
@@ -3093,7 +3135,7 @@ public:
   BitCastInst(
     Value *S,                     ///< The value to be casted
     const Type *Ty,               ///< The type to casted to
-    const Twine &NameStr = "", ///< A name for the new instruction
+    const Twine &NameStr = "",    ///< A name for the new instruction
     Instruction *InsertBefore = 0 ///< Where to insert the new instruction
   );
 
@@ -3101,7 +3143,7 @@ public:
   BitCastInst(
     Value *S,                     ///< The value to be casted
     const Type *Ty,               ///< The type to casted to
-    const Twine &NameStr,      ///< A name for the new instruction
+    const Twine &NameStr,         ///< A name for the new instruction
     BasicBlock *InsertAtEnd       ///< The block to insert the instruction into
   );
 

@@ -22,8 +22,6 @@
 #include "AntiDepBreaker.h"
 #include "AggressiveAntiDepBreaker.h"
 #include "CriticalAntiDepBreaker.h"
-#include "ExactHazardRecognizer.h"
-#include "SimpleHazardRecognizer.h"
 #include "ScheduleDAGInstrs.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/LatencyPriorityQueue.h"
@@ -46,7 +44,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/Statistic.h"
-#include <map>
 #include <set>
 using namespace llvm;
 
@@ -66,10 +63,6 @@ EnableAntiDepBreaking("break-anti-dependencies",
                       cl::desc("Break post-RA scheduling anti-dependencies: "
                                "\"critical\", \"all\", or \"none\""),
                       cl::init("none"), cl::Hidden);
-static cl::opt<bool>
-EnablePostRAHazardAvoidance("avoid-hazards",
-                      cl::desc("Enable exact hazard avoidance"),
-                      cl::init(true), cl::Hidden);
 
 // If DebugDiv > 0 then only schedule MBB with (ID % DebugDiv) == DebugMod
 static cl::opt<int>
@@ -86,12 +79,13 @@ AntiDepBreaker::~AntiDepBreaker() { }
 namespace {
   class PostRAScheduler : public MachineFunctionPass {
     AliasAnalysis *AA;
+    const TargetInstrInfo *TII;
     CodeGenOpt::Level OptLevel;
 
   public:
     static char ID;
     PostRAScheduler(CodeGenOpt::Level ol) :
-      MachineFunctionPass(&ID), OptLevel(ol) {}
+      MachineFunctionPass(ID), OptLevel(ol) {}
 
     void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesCFG();
@@ -115,7 +109,7 @@ namespace {
     /// AvailableQueue - The priority queue to use for the available SUnits.
     ///
     LatencyPriorityQueue AvailableQueue;
-  
+
     /// PendingQueue - This contains all of the instructions whose operands have
     /// been issued, but their results are not ready yet (due to the latency of
     /// the operation).  Once the operands becomes available, the instruction is
@@ -136,7 +130,7 @@ namespace {
 
     /// KillIndices - The index of the most recent kill (proceding bottom-up),
     /// or ~0u if the register is not live.
-    unsigned KillIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> KillIndices;
 
   public:
     SchedulePostRATDList(MachineFunction &MF,
@@ -146,7 +140,8 @@ namespace {
                          AntiDepBreaker *ADB,
                          AliasAnalysis *aa)
       : ScheduleDAGInstrs(MF, MLI, MDT), Topo(SUnits),
-      HazardRec(HR), AntiDepBreak(ADB), AA(aa) {}
+        HazardRec(HR), AntiDepBreak(ADB), AA(aa),
+        KillIndices(TRI->getNumRegs()) {}
 
     ~SchedulePostRATDList() {
     }
@@ -159,7 +154,7 @@ namespace {
     /// Schedule - Schedule the instruction range using list scheduling.
     ///
     void Schedule();
-    
+
     /// Observe - Update liveness information to account for the current
     /// instruction, which will not be scheduled.
     ///
@@ -180,7 +175,7 @@ namespace {
     void ScheduleNodeTopDown(SUnit *SU, unsigned CurCycle);
     void ListScheduleTopDown();
     void StartBlockForKills(MachineBasicBlock *BB);
-    
+
     // ToggleKillFlag - Toggle a register operand kill flag. Other
     // adjustments may be made to the instruction if necessary. Return
     // true if the operand has been deleted, false if not.
@@ -188,30 +183,9 @@ namespace {
   };
 }
 
-/// isSchedulingBoundary - Test if the given instruction should be
-/// considered a scheduling boundary. This primarily includes labels
-/// and terminators.
-///
-static bool isSchedulingBoundary(const MachineInstr *MI,
-                                 const MachineFunction &MF) {
-  // Terminators and labels can't be scheduled around.
-  if (MI->getDesc().isTerminator() || MI->isLabel())
-    return true;
-
-  // Don't attempt to schedule around any instruction that modifies
-  // a stack-oriented pointer, as it's unlikely to be profitable. This
-  // saves compile time, because it doesn't require every single
-  // stack slot reference to depend on the instruction that does the
-  // modification.
-  const TargetLowering &TLI = *MF.getTarget().getTargetLowering();
-  if (MI->modifiesRegister(TLI.getStackPointerRegisterToSaveRestore()))
-    return true;
-
-  return false;
-}
-
 bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
   AA = &getAnalysis<AliasAnalysis>();
+  TII = Fn.getTarget().getInstrInfo();
 
   // Check for explicit enable/disable of post-ra scheduling.
   TargetSubtarget::AntiDepBreakMode AntiDepMode = TargetSubtarget::ANTIDEP_NONE;
@@ -228,23 +202,24 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
 
   // Check for antidep breaking override...
   if (EnableAntiDepBreaking.getPosition() > 0) {
-    AntiDepMode = (EnableAntiDepBreaking == "all") ? TargetSubtarget::ANTIDEP_ALL :
-      (EnableAntiDepBreaking == "critical") ? TargetSubtarget::ANTIDEP_CRITICAL :
-      TargetSubtarget::ANTIDEP_NONE;
+    AntiDepMode = (EnableAntiDepBreaking == "all") ?
+      TargetSubtarget::ANTIDEP_ALL :
+        (EnableAntiDepBreaking == "critical")
+           ? TargetSubtarget::ANTIDEP_CRITICAL : TargetSubtarget::ANTIDEP_NONE;
   }
 
   DEBUG(dbgs() << "PostRAScheduler\n");
 
   const MachineLoopInfo &MLI = getAnalysis<MachineLoopInfo>();
   const MachineDominatorTree &MDT = getAnalysis<MachineDominatorTree>();
-  const InstrItineraryData &InstrItins = Fn.getTarget().getInstrItineraryData();
-  ScheduleHazardRecognizer *HR = EnablePostRAHazardAvoidance ?
-    (ScheduleHazardRecognizer *)new ExactHazardRecognizer(InstrItins) :
-    (ScheduleHazardRecognizer *)new SimpleHazardRecognizer();
-  AntiDepBreaker *ADB = 
+  const TargetMachine &TM = Fn.getTarget();
+  const InstrItineraryData &InstrItins = TM.getInstrItineraryData();
+  ScheduleHazardRecognizer *HR =
+    TM.getInstrInfo()->CreateTargetPostRAHazardRecognizer(InstrItins);
+  AntiDepBreaker *ADB =
     ((AntiDepMode == TargetSubtarget::ANTIDEP_ALL) ?
      (AntiDepBreaker *)new AggressiveAntiDepBreaker(Fn, CriticalPathRCs) :
-     ((AntiDepMode == TargetSubtarget::ANTIDEP_CRITICAL) ? 
+     ((AntiDepMode == TargetSubtarget::ANTIDEP_CRITICAL) ?
       (AntiDepBreaker *)new CriticalAntiDepBreaker(Fn) : NULL));
 
   SchedulePostRATDList Scheduler(Fn, MLI, MDT, HR, ADB, AA);
@@ -271,10 +246,10 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
     MachineBasicBlock::iterator Current = MBB->end();
     unsigned Count = MBB->size(), CurrentCount = Count;
     for (MachineBasicBlock::iterator I = Current; I != MBB->begin(); ) {
-      MachineInstr *MI = prior(I);
-      if (isSchedulingBoundary(MI, Fn)) {
+      MachineInstr *MI = llvm::prior(I);
+      if (TII->isSchedulingBoundary(MI, MBB, Fn)) {
         Scheduler.Run(MBB, I, Current, CurrentCount);
-        Scheduler.EmitSchedule(0);
+        Scheduler.EmitSchedule();
         Current = MI;
         CurrentCount = Count - 1;
         Scheduler.Observe(MI, CurrentCount);
@@ -286,7 +261,7 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
     assert((MBB->begin() == Current || CurrentCount != 0) &&
            "Instruction count mismatch!");
     Scheduler.Run(MBB, MBB->begin(), Current, CurrentCount);
-    Scheduler.EmitSchedule(0);
+    Scheduler.EmitSchedule();
 
     // Clean up register live-range state.
     Scheduler.FinishBlock();
@@ -300,7 +275,7 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
 
   return true;
 }
-  
+
 /// StartBlock - Initialize register live-range state for scheduling in
 /// this block.
 ///
@@ -321,10 +296,10 @@ void SchedulePostRATDList::Schedule() {
   BuildSchedGraph(AA);
 
   if (AntiDepBreak != NULL) {
-    unsigned Broken = 
+    unsigned Broken =
       AntiDepBreak->BreakAntiDependencies(SUnits, Begin, InsertPos,
                                           InsertPosIndex);
-    
+
     if (Broken != 0) {
       // We made changes. Update the dependency graph.
       // Theoretically we could update the graph in place:
@@ -337,7 +312,7 @@ void SchedulePostRATDList::Schedule() {
       EntrySU = SUnit();
       ExitSU = SUnit();
       BuildSchedGraph(AA);
-      
+
       NumFixedAnti += Broken;
     }
   }
@@ -415,7 +390,7 @@ bool SchedulePostRATDList::ToggleKillFlag(MachineInstr *MI,
     MO.setIsKill(true);
     return false;
   }
-  
+
   // If MO itself is live, clear the kill flag...
   if (KillIndices[MO.getReg()] != ~0u) {
     MO.setIsKill(false);
@@ -454,7 +429,7 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
   BitVector ReservedRegs = TRI->getReservedRegs(MF);
 
   StartBlockForKills(MBB);
-  
+
   // Examine block from end to start...
   unsigned Count = MBB->size();
   for (MachineBasicBlock::iterator I = MBB->end(), E = MBB->begin();
@@ -474,9 +449,9 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
       if (!MO.isDef()) continue;
       // Ignore two-addr defs.
       if (MI->isRegTiedToUseOperand(i)) continue;
-      
+
       KillIndices[Reg] = ~0u;
-      
+
       // Repeat for all subregs.
       for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
            *Subreg; ++Subreg) {
@@ -511,17 +486,17 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
         if (kill)
           kill = (KillIndices[Reg] == ~0u);
       }
-      
+
       if (MO.isKill() != kill) {
         DEBUG(dbgs() << "Fixing " << MO << " in ");
         // Warning: ToggleKillFlag may invalidate MO.
         ToggleKillFlag(MI, MO);
         DEBUG(MI->dump());
       }
-      
+
       killedRegs.insert(Reg);
     }
-    
+
     // Mark any used register (that is not using undef) and subregs as
     // now live...
     for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
@@ -531,7 +506,7 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
       if ((Reg == 0) || ReservedRegs.test(Reg)) continue;
 
       KillIndices[Reg] = Count;
-      
+
       for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
            *Subreg; ++Subreg) {
         KillIndices[*Subreg] = Count;
@@ -563,7 +538,7 @@ void SchedulePostRATDList::ReleaseSucc(SUnit *SU, SDep *SuccEdge) {
   // available.  This is the max of the start time of all predecessors plus
   // their latencies.
   SuccSU->setDepthToAtLeast(SU->getDepth() + SuccEdge->getLatency());
-  
+
   // If all the node's predecessors are scheduled, this node is ready
   // to be scheduled. Ignore the special ExitSU node.
   if (SuccSU->NumPredsLeft == 0 && SuccSU != &ExitSU)
@@ -584,9 +559,9 @@ void SchedulePostRATDList::ReleaseSuccessors(SUnit *SU) {
 void SchedulePostRATDList::ScheduleNodeTopDown(SUnit *SU, unsigned CurCycle) {
   DEBUG(dbgs() << "*** Scheduling [" << CurCycle << "]: ");
   DEBUG(SU->dump(this));
-  
+
   Sequence.push_back(SU);
-  assert(CurCycle >= SU->getDepth() && 
+  assert(CurCycle >= SU->getDepth() &&
          "Node scheduled above its depth!");
   SU->setDepthToAtLeast(CurCycle);
 
@@ -599,7 +574,7 @@ void SchedulePostRATDList::ScheduleNodeTopDown(SUnit *SU, unsigned CurCycle) {
 /// schedulers.
 void SchedulePostRATDList::ListScheduleTopDown() {
   unsigned CurCycle = 0;
-  
+
   // We're scheduling top-down but we're visiting the regions in
   // bottom-up order, so we don't know the hazards at the start of a
   // region. So assume no hazards (this should usually be ok as most
@@ -680,15 +655,6 @@ void SchedulePostRATDList::ListScheduleTopDown() {
       ScheduleNodeTopDown(FoundSUnit, CurCycle);
       HazardRec->EmitInstruction(FoundSUnit);
       CycleHasInsts = true;
-
-      // If we are using the target-specific hazards, then don't
-      // advance the cycle time just because we schedule a node. If
-      // the target allows it we can schedule multiple nodes in the
-      // same cycle.
-      if (!EnablePostRAHazardAvoidance) {
-        if (FoundSUnit->Latency)  // Don't increment CurCycle for pseudo-ops!
-          ++CurCycle;
-      }
     } else {
       if (CycleHasInsts) {
         DEBUG(dbgs() << "*** Finished cycle " << CurCycle << '\n');

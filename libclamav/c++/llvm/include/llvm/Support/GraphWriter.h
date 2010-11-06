@@ -89,7 +89,7 @@ class GraphWriter {
 
 public:
   GraphWriter(raw_ostream &o, const GraphType &g, bool SN) : O(o), G(g) {
-  DTraits = DOTTraits(SN); 
+  DTraits = DOTTraits(SN);
 }
 
   void writeHeader(const std::string &Name) {
@@ -122,7 +122,20 @@ public:
     // Loop over the graph, printing it out...
     for (node_iterator I = GTraits::nodes_begin(G), E = GTraits::nodes_end(G);
          I != E; ++I)
-      writeNode(*I);
+      if (!isNodeHidden(*I))
+        writeNode(*I);
+  }
+
+  bool isNodeHidden(NodeType &Node) {
+    return isNodeHidden(&Node);
+  }
+
+  bool isNodeHidden(NodeType *const *Node) {
+    return isNodeHidden(*Node);
+  }
+
+  bool isNodeHidden(NodeType *Node) {
+    return DTraits.isNodeHidden(Node);
   }
 
   void writeNode(NodeType& Node) {
@@ -174,7 +187,8 @@ public:
       unsigned i = 0, e = DTraits.numEdgeDestLabels(Node);
       for (; i != e && i != 64; ++i) {
         if (i) O << "|";
-        O << "<d" << i << ">" << DTraits.getEdgeDestLabel(Node, i);
+        O << "<d" << i << ">"
+          << DOT::EscapeString(DTraits.getEdgeDestLabel(Node, i));
       }
 
       if (i != e)
@@ -188,9 +202,11 @@ public:
     child_iterator EI = GTraits::child_begin(Node);
     child_iterator EE = GTraits::child_end(Node);
     for (unsigned i = 0; EI != EE && i != 64; ++EI, ++i)
-      writeEdge(Node, i, EI);
+      if (!DTraits.isNodeHidden(*EI))
+        writeEdge(Node, i, EI);
     for (; EI != EE; ++EI)
-      writeEdge(Node, 64, EI);
+      if (!DTraits.isNodeHidden(*EI))
+        writeEdge(Node, 64, EI);
   }
 
   void writeEdge(NodeType *Node, unsigned edgeidx, child_iterator EI) {
@@ -230,7 +246,7 @@ public:
       for (unsigned i = 0; i != NumEdgeSources; ++i) {
         if (i) O << "|";
         O << "<s" << i << ">";
-        if (EdgeSourceLabels) O << (*EdgeSourceLabels)[i];
+        if (EdgeSourceLabels) O << DOT::EscapeString((*EdgeSourceLabels)[i]);
       }
       O << "}}";
     }
@@ -254,6 +270,12 @@ public:
     if (!Attrs.empty())
       O << "[" << Attrs << "]";
     O << ";\n";
+  }
+
+  /// getOStream - Get the raw output stream into the graph file. Useful to
+  /// write fancy things using addCustomGraphFeatures().
+  raw_ostream &getOStream() {
+    return O;
   }
 };
 
@@ -300,7 +322,7 @@ sys::Path WriteGraph(const GraphType &G, const std::string &Name,
   raw_fd_ostream O(Filename.c_str(), ErrorInfo);
 
   if (ErrorInfo.empty()) {
-    WriteGraph(O, G, ShortNames, Name, Title);
+    llvm::WriteGraph(O, G, ShortNames, Name, Title);
     errs() << " done. \n";
   } else {
     errs() << "error opening file '" << Filename.str() << "' for writing!\n";
@@ -317,7 +339,7 @@ template<typename GraphType>
 void ViewGraph(const GraphType &G, const std::string &Name,
                bool ShortNames = false, const std::string &Title = "",
                GraphProgram::Name Program = GraphProgram::DOT) {
-  sys::Path Filename = WriteGraph(G, Name, ShortNames, Title);
+  sys::Path Filename = llvm::WriteGraph(G, Name, ShortNames, Title);
 
   if (Filename.isEmpty())
     return;

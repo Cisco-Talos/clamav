@@ -42,7 +42,7 @@ class BasicCallGraph : public ModulePass, public CallGraph {
 
 public:
   static char ID; // Class identification, replacement for typeinfo
-  BasicCallGraph() : ModulePass(&ID), Root(0), 
+  BasicCallGraph() : ModulePass(ID), Root(0), 
     ExternalCallingNode(0), CallsExternalNode(0) {}
 
   // runOnModule - Compute the call graph for the specified module.
@@ -86,8 +86,8 @@ public:
   /// an analysis interface through multiple inheritance.  If needed, it should
   /// override this to adjust the this pointer as needed for the specified pass
   /// info.
-  virtual void *getAdjustedAnalysisPointer(const PassInfo *PI) {
-    if (PI->isPassID(&CallGraph::ID))
+  virtual void *getAdjustedAnalysisPointer(AnalysisID PI) {
+    if (PI == &CallGraph::ID)
       return (CallGraph*)this;
     return this;
   }
@@ -126,13 +126,15 @@ private:
     }
 
     // Loop over all of the users of the function, looking for non-call uses.
-    for (Value::use_iterator I = F->use_begin(), E = F->use_end(); I != E; ++I)
-      if ((!isa<CallInst>(I) && !isa<InvokeInst>(I))
-          || !CallSite(cast<Instruction>(I)).isCallee(I)) {
+    for (Value::use_iterator I = F->use_begin(), E = F->use_end(); I != E; ++I){
+      User *U = *I;
+      if ((!isa<CallInst>(U) && !isa<InvokeInst>(U))
+          || !CallSite(cast<Instruction>(U)).isCallee(I)) {
         // Not a call, or being used as a parameter rather than as the callee.
         ExternalCallingNode->addCalledFunction(CallSite(), Node);
         break;
       }
+    }
 
     // If this function is not defined in this translation unit, it could call
     // anything.
@@ -143,8 +145,8 @@ private:
     for (Function::iterator BB = F->begin(), BBE = F->end(); BB != BBE; ++BB)
       for (BasicBlock::iterator II = BB->begin(), IE = BB->end();
            II != IE; ++II) {
-        CallSite CS = CallSite::get(II);
-        if (CS.getInstruction() && !isa<DbgInfoIntrinsic>(II)) {
+        CallSite CS(cast<Value>(II));
+        if (CS && !isa<DbgInfoIntrinsic>(II)) {
           const Function *Callee = CS.getCalledFunction();
           if (Callee)
             Node->addCalledFunction(CS, getOrInsertFunction(Callee));
@@ -158,8 +160,11 @@ private:
   // destroy - Release memory for the call graph
   virtual void destroy() {
     /// CallsExternalNode is not in the function map, delete it explicitly.
-    delete CallsExternalNode;
-    CallsExternalNode = 0;
+    if (CallsExternalNode) {
+      CallsExternalNode->allReferencesDropped();
+      delete CallsExternalNode;
+      CallsExternalNode = 0;
+    }
     CallGraph::destroy();
   }
 };
@@ -167,9 +172,8 @@ private:
 } //End anonymous namespace
 
 static RegisterAnalysisGroup<CallGraph> X("Call Graph");
-static RegisterPass<BasicCallGraph>
-Y("basiccg", "Basic CallGraph Construction", false, true);
-static RegisterAnalysisGroup<CallGraph, true> Z(Y);
+INITIALIZE_AG_PASS(BasicCallGraph, CallGraph, "basiccg",
+                   "Basic CallGraph Construction", false, true, true);
 
 char CallGraph::ID = 0;
 char BasicCallGraph::ID = 0;
@@ -180,6 +184,14 @@ void CallGraph::initialize(Module &M) {
 
 void CallGraph::destroy() {
   if (FunctionMap.empty()) return;
+  
+  // Reset all node's use counts to zero before deleting them to prevent an
+  // assertion from firing.
+#ifndef NDEBUG
+  for (FunctionMapTy::iterator I = FunctionMap.begin(), E = FunctionMap.end();
+       I != E; ++I)
+    I->second->allReferencesDropped();
+#endif
   
   for (FunctionMapTy::iterator I = FunctionMap.begin(), E = FunctionMap.end();
       I != E; ++I)
@@ -233,14 +245,16 @@ void CallGraphNode::print(raw_ostream &OS) const {
   else
     OS << "Call graph node <<null function>>";
   
-  OS << "<<0x" << this << ">>  #uses=" << getNumReferences() << '\n';
+  OS << "<<" << this << ">>  #uses=" << getNumReferences() << '\n';
 
-  for (const_iterator I = begin(), E = end(); I != E; ++I)
+  for (const_iterator I = begin(), E = end(); I != E; ++I) {
+    OS << "  CS<" << I->first << "> calls ";
     if (Function *FI = I->second->getFunction())
-      OS << "  Calls function '" << FI->getName() <<"'\n";
-  else
-    OS << "  Calls external node\n";
-  OS << "\n";
+      OS << "function '" << FI->getName() <<"'\n";
+    else
+      OS << "external node\n";
+  }
+  OS << '\n';
 }
 
 void CallGraphNode::dump() const { print(dbgs()); }

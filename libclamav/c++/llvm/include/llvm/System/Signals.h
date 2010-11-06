@@ -20,10 +20,18 @@
 namespace llvm {
 namespace sys {
 
+  /// This function runs all the registered interrupt handlers, including the
+  /// removal of files registered by RemoveFileOnSignal.
+  void RunInterruptHandlers();
+
   /// This function registers signal handlers to ensure that if a signal gets
   /// delivered that the named file is removed.
   /// @brief Remove a file if a fatal signal occurs.
   bool RemoveFileOnSignal(const Path &Filename, std::string* ErrMsg = 0);
+
+  /// This function removes a file from the list of files to be removed on
+  /// signal delivery.
+  void DontRemoveFileOnSignal(const Path &Filename);
 
   /// When an error signal (such as SIBABRT or SIGSEGV) is delivered to the
   /// process, print a stack trace and then exit.

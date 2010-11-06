@@ -41,6 +41,10 @@ namespace llvm {
     /// the macho-specific .zerofill directive for emitting BSS Symbols.
     bool HasMachoZeroFillDirective;               // Default is false.
     
+    /// HasMachoTBSSDirective - True if this is a MachO target that supports
+    /// the macho-specific .tbss directive for emitting thread local BSS Symbols
+    bool HasMachoTBSSDirective;                 // Default is false.
+    
     /// HasStaticCtorDtorReferenceInStaticMode - True if the compiler should
     /// emit a ".reference .constructors_used" or ".reference .destructors_used"
     /// directive after the a static ctor/dtor list.  This directive is only
@@ -97,7 +101,11 @@ namespace llvm {
     /// AllowNameToStartWithDigit - This is true if the assembler allows symbol
     /// names to start with a digit (e.g., "0x0021").  This defaults to false.
     bool AllowNameToStartWithDigit;
-    
+
+    /// AllowPeriodsInName - This is true if the assembler allows periods in
+    /// symbol names.  This defaults to true.
+    bool AllowPeriodsInName;
+
     //===--- Data Emission Directives -------------------------------------===//
 
     /// ZeroDirective - this should be set to the directive used to get some
@@ -144,6 +152,11 @@ namespace llvm {
     /// '.section' directive before the '.bss' one. It's used for PPC/Linux 
     /// which doesn't support the '.bss' directive only.
     bool UsesELFSectionDirectiveForBSS;      // Defaults to false.
+    
+    /// HasMicrosoftFastStdCallMangling - True if this target uses microsoft
+    /// style mangling for functions with X86_StdCall/X86_FastCall calling
+    /// convention.
+    bool HasMicrosoftFastStdCallMangling;    // Defaults to false.
     
     //===--- Alignment Information ----------------------------------------===//
 
@@ -218,14 +231,6 @@ namespace llvm {
 
     //===--- Dwarf Emission Directives -----------------------------------===//
 
-    /// AbsoluteDebugSectionOffsets - True if we should emit abolute section
-    /// offsets for debug information.
-    bool AbsoluteDebugSectionOffsets;        // Defaults to false.
-
-    /// AbsoluteEHSectionOffsets - True if we should emit abolute section
-    /// offsets for EH information. Defaults to false.
-    bool AbsoluteEHSectionOffsets;
-
     /// HasLEB128 - True if target asm supports leb128 directives.
     bool HasLEB128;                          // Defaults to false.
 
@@ -247,21 +252,17 @@ namespace llvm {
     /// encode inline subroutine information.
     bool DwarfUsesInlineInfoSection;         // Defaults to false.
 
-    /// Is_EHSymbolPrivate - If set, the "_foo.eh" is made private so that it
-    /// doesn't show up in the symbol table of the object file.
-    bool Is_EHSymbolPrivate;                 // Defaults to true.
-
-    /// GlobalEHDirective - This is the directive used to make exception frame
-    /// tables globally visible.
-    const char *GlobalEHDirective;           // Defaults to NULL.
-
-    /// SupportsWeakEmptyEHFrame - True if target assembler and linker will
-    /// handle a weak_definition of constant 0 for an omitted EH frame.
-    bool SupportsWeakOmittedEHFrame;         // Defaults to true.
-
     /// DwarfSectionOffsetDirective - Special section offset directive.
     const char* DwarfSectionOffsetDirective; // Defaults to NULL
     
+    /// DwarfUsesAbsoluteLabelForStmtList - True if DW_AT_stmt_list needs 
+    /// absolute label instead of offset.
+    bool DwarfUsesAbsoluteLabelForStmtList;  // Defaults to true;
+
+    // DwarfUsesLabelOffsetDifference - True if Dwarf2 output can
+    // use EmitLabelOffsetDifference.
+    bool DwarfUsesLabelOffsetForRanges;
+
     //===--- CBE Asm Translation Table -----------------------------------===//
 
     const char *const *AsmTransCBE;          // Defaults to empty
@@ -295,7 +296,7 @@ namespace llvm {
     /// getNonexecutableStackSection - Targets can implement this method to
     /// specify a section to switch to if the translation unit doesn't have any
     /// trampolines that require an executable stack.
-    virtual MCSection *getNonexecutableStackSection(MCContext &Ctx) const {
+    virtual const MCSection *getNonexecutableStackSection(MCContext &Ctx) const{
       return 0;
     }
     
@@ -307,9 +308,14 @@ namespace llvm {
       return UsesELFSectionDirectiveForBSS;
     }
 
+    bool hasMicrosoftFastStdCallMangling() const {
+      return HasMicrosoftFastStdCallMangling;
+    }
+    
     // Accessors.
     //
     bool hasMachoZeroFillDirective() const { return HasMachoZeroFillDirective; }
+    bool hasMachoTBSSDirective() const { return HasMachoTBSSDirective; }
     bool hasStaticCtorDtorReferenceInStaticMode() const {
       return HasStaticCtorDtorReferenceInStaticMode;
     }
@@ -352,6 +358,9 @@ namespace llvm {
     bool doesAllowNameToStartWithDigit() const {
       return AllowNameToStartWithDigit;
     }
+    bool doesAllowPeriodsInName() const {
+      return AllowPeriodsInName;
+    }
     const char *getZeroDirective() const {
       return ZeroDirective;
     }
@@ -392,12 +401,6 @@ namespace llvm {
     MCSymbolAttr getProtectedVisibilityAttr() const {
       return ProtectedVisibilityAttr;
     }
-    bool isAbsoluteDebugSectionOffsets() const {
-      return AbsoluteDebugSectionOffsets;
-    }
-    bool isAbsoluteEHSectionOffsets() const {
-      return AbsoluteEHSectionOffsets;
-    }
     bool hasLEB128() const {
       return HasLEB128;
     }
@@ -419,17 +422,14 @@ namespace llvm {
     bool doesDwarfUsesInlineInfoSection() const {
       return DwarfUsesInlineInfoSection;
     }
-    bool is_EHSymbolPrivate() const {
-      return Is_EHSymbolPrivate;
-    }
-    const char *getGlobalEHDirective() const {
-      return GlobalEHDirective;
-    }
-    bool getSupportsWeakOmittedEHFrame() const {
-      return SupportsWeakOmittedEHFrame;
-    }
     const char *getDwarfSectionOffsetDirective() const {
       return DwarfSectionOffsetDirective;
+    }
+    bool doesDwarfUsesAbsoluteLabelForStmtList() const {
+      return DwarfUsesAbsoluteLabelForStmtList;
+    }
+    bool doesDwarfUsesLabelOffsetForRanges() const {
+      return DwarfUsesLabelOffsetForRanges;
     }
     const char *const *getAsmCBE() const {
       return AsmTransCBE;

@@ -10,6 +10,8 @@
 #ifndef LLVM_TARGET_TARGETPARSER_H
 #define LLVM_TARGET_TARGETPARSER_H
 
+#include "llvm/MC/MCParser/MCAsmParserExtension.h"
+
 namespace llvm {
 class MCInst;
 class StringRef;
@@ -20,19 +22,25 @@ class MCParsedAsmOperand;
 template <typename T> class SmallVectorImpl;
 
 /// TargetAsmParser - Generic interface to target specific assembly parsers.
-class TargetAsmParser {
+class TargetAsmParser : public MCAsmParserExtension {
   TargetAsmParser(const TargetAsmParser &);   // DO NOT IMPLEMENT
   void operator=(const TargetAsmParser &);  // DO NOT IMPLEMENT
 protected: // Can only create subclasses.
   TargetAsmParser(const Target &);
  
-  /// TheTarget - The Target that this machine was created for.
+  /// The Target that this machine was created for.
   const Target &TheTarget;
+
+  /// The current set of available features.
+  unsigned AvailableFeatures;
 
 public:
   virtual ~TargetAsmParser();
 
   const Target &getTarget() const { return TheTarget; }
+
+  unsigned getAvailableFeatures() const { return AvailableFeatures; }
+  void setAvailableFeatures(unsigned Value) { AvailableFeatures = Value; }
 
   /// ParseInstruction - Parse one assembly instruction.
   ///
@@ -47,7 +55,7 @@ public:
   /// \param Operands [out] - The list of parsed operands, this returns
   ///        ownership of them to the caller.
   /// \return True on failure.
-  virtual bool ParseInstruction(const StringRef &Name, SMLoc NameLoc,
+  virtual bool ParseInstruction(StringRef Name, SMLoc NameLoc,
                             SmallVectorImpl<MCParsedAsmOperand*> &Operands) = 0;
 
   /// ParseDirective - Parse a target specific assembler directive
@@ -65,8 +73,12 @@ public:
   /// MatchInstruction - Recognize a series of operands of a parsed instruction
   /// as an actual MCInst.  This returns false and fills in Inst on success and
   /// returns true on failure to match.
+  ///
+  /// On failure, the target parser is responsible for emitting a diagnostic
+  /// explaining the match failure.
   virtual bool 
-  MatchInstruction(const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
+  MatchInstruction(SMLoc IDLoc,
+                   const SmallVectorImpl<MCParsedAsmOperand*> &Operands,
                    MCInst &Inst) = 0;
   
 };

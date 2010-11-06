@@ -208,7 +208,7 @@ static bool IsConstantOffsetFromGlobal(Constant *C, GlobalValue *&GV,
          i != e; ++i, ++GTI) {
       ConstantInt *CI = dyn_cast<ConstantInt>(*i);
       if (!CI) return false;  // Index isn't a simple constant?
-      if (CI->getZExtValue() == 0) continue;  // Not adding anything.
+      if (CI->isZero()) continue;  // Not adding anything.
       
       if (const StructType *ST = dyn_cast<StructType>(*GTI)) {
         // N = N + Offset
@@ -401,7 +401,7 @@ static Constant *FoldReinterpretLoadFromConstPtr(Constant *C,
   APInt ResultVal = APInt(IntType->getBitWidth(), RawBytes[BytesLoaded-1]);
   for (unsigned i = 1; i != BytesLoaded; ++i) {
     ResultVal <<= 8;
-    ResultVal |= APInt(IntType->getBitWidth(), RawBytes[BytesLoaded-1-i]);
+    ResultVal |= RawBytes[BytesLoaded-1-i];
   }
 
   return ConstantInt::get(IntType->getContext(), ResultVal);
@@ -436,8 +436,10 @@ Constant *llvm::ConstantFoldLoadFromConstPtr(Constant *C,
     unsigned StrLen = Str.length();
     const Type *Ty = cast<PointerType>(CE->getType())->getElementType();
     unsigned NumBits = Ty->getPrimitiveSizeInBits();
-    // Replace LI with immediate integer store.
-    if ((NumBits >> 3) == StrLen + 1) {
+    // Replace load with immediate integer if the result is an integer or fp
+    // value.
+    if ((NumBits >> 3) == StrLen + 1 && (NumBits & 7) == 0 &&
+        (isa<IntegerType>(Ty) || Ty->isFloatingPointTy())) {
       APInt StrVal(NumBits, 0);
       APInt SingleChar(NumBits, 0);
       if (TD->isLittleEndian()) {
@@ -454,7 +456,11 @@ Constant *llvm::ConstantFoldLoadFromConstPtr(Constant *C,
         SingleChar = 0;
         StrVal = (StrVal << 8) | SingleChar;
       }
-      return ConstantInt::get(CE->getContext(), StrVal);
+      
+      Constant *Res = ConstantInt::get(CE->getContext(), StrVal);
+      if (Ty->isFloatingPointTy())
+        Res = ConstantExpr::getBitCast(Res, Ty);
+      return Res;
     }
   }
   
@@ -564,21 +570,6 @@ static Constant *SymbolicallyEvaluateGEP(Constant *const *Ops, unsigned NumOps,
 
   unsigned BitWidth =
     TD->getTypeSizeInBits(TD->getIntPtrType(Ptr->getContext()));
-  APInt BasePtr(BitWidth, 0);
-  bool BaseIsInt = true;
-  if (!Ptr->isNullValue()) {
-    // If this is a inttoptr from a constant int, we can fold this as the base,
-    // otherwise we can't.
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Ptr))
-      if (CE->getOpcode() == Instruction::IntToPtr)
-        if (ConstantInt *Base = dyn_cast<ConstantInt>(CE->getOperand(0))) {
-          BasePtr = Base->getValue();
-          BasePtr.zextOrTrunc(BitWidth);
-        }
-    
-    if (BasePtr == 0)
-      BaseIsInt = false;
-  }
 
   // If this is a constant expr gep that is effectively computing an
   // "offsetof", fold it into 'cast int Size to T*' instead of 'gep 0, 0, 12'
@@ -589,9 +580,40 @@ static Constant *SymbolicallyEvaluateGEP(Constant *const *Ops, unsigned NumOps,
   APInt Offset = APInt(BitWidth,
                        TD->getIndexedOffset(Ptr->getType(),
                                             (Value**)Ops+1, NumOps-1));
+  Ptr = cast<Constant>(Ptr->stripPointerCasts());
+
+  // If this is a GEP of a GEP, fold it all into a single GEP.
+  while (GEPOperator *GEP = dyn_cast<GEPOperator>(Ptr)) {
+    SmallVector<Value *, 4> NestedOps(GEP->op_begin()+1, GEP->op_end());
+
+    // Do not try the incorporate the sub-GEP if some index is not a number.
+    bool AllConstantInt = true;
+    for (unsigned i = 0, e = NestedOps.size(); i != e; ++i)
+      if (!isa<ConstantInt>(NestedOps[i])) {
+        AllConstantInt = false;
+        break;
+      }
+    if (!AllConstantInt)
+      break;
+
+    Ptr = cast<Constant>(GEP->getOperand(0));
+    Offset += APInt(BitWidth,
+                    TD->getIndexedOffset(Ptr->getType(),
+                                         (Value**)NestedOps.data(),
+                                         NestedOps.size()));
+    Ptr = cast<Constant>(Ptr->stripPointerCasts());
+  }
+
   // If the base value for this address is a literal integer value, fold the
   // getelementptr to the resulting integer value casted to the pointer type.
-  if (BaseIsInt) {
+  APInt BasePtr(BitWidth, 0);
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Ptr))
+    if (CE->getOpcode() == Instruction::IntToPtr)
+      if (ConstantInt *Base = dyn_cast<ConstantInt>(CE->getOperand(0))) {
+        BasePtr = Base->getValue();
+        BasePtr.zextOrTrunc(BitWidth);
+      }
+  if (Ptr->isNullValue() || BasePtr != 0) {
     Constant *C = ConstantInt::get(Ptr->getContext(), Offset+BasePtr);
     return ConstantExpr::getIntToPtr(C, ResultTy);
   }
@@ -600,7 +622,6 @@ static Constant *SymbolicallyEvaluateGEP(Constant *const *Ops, unsigned NumOps,
   // we eliminate over-indexing of the notional static type array bounds.
   // This makes it easy to determine if the getelementptr is "inbounds".
   // Also, this helps GlobalOpt do SROA on GlobalVariables.
-  Ptr = cast<Constant>(Ptr->stripPointerCasts());
   const Type *Ty = Ptr->getType();
   SmallVector<Constant*, 32> NewIdxs;
   do {
@@ -757,9 +778,9 @@ Constant *llvm::ConstantFoldInstOperands(unsigned Opcode, const Type *DestTy,
   case Instruction::ICmp:
   case Instruction::FCmp: assert(0 && "Invalid for compares");
   case Instruction::Call:
-    if (Function *F = dyn_cast<Function>(Ops[0]))
+    if (Function *F = dyn_cast<Function>(Ops[NumOps - 1]))
       if (canConstantFoldCallTo(F))
-        return ConstantFoldCall(F, Ops+1, NumOps-1);
+        return ConstantFoldCall(F, Ops, NumOps - 1);
     return 0;
   case Instruction::PtrToInt:
     // If the input is a inttoptr, eliminate the pair.  This requires knowing
@@ -979,6 +1000,8 @@ llvm::canConstantFoldCallTo(const Function *F) {
   case Intrinsic::usub_with_overflow:
   case Intrinsic::sadd_with_overflow:
   case Intrinsic::ssub_with_overflow:
+  case Intrinsic::convert_from_fp16:
+  case Intrinsic::convert_to_fp16:
     return true;
   default:
     return false;
@@ -1059,6 +1082,15 @@ llvm::ConstantFoldCall(Function *F,
   const Type *Ty = F->getReturnType();
   if (NumOperands == 1) {
     if (ConstantFP *Op = dyn_cast<ConstantFP>(Operands[0])) {
+      if (Name == "llvm.convert.to.fp16") {
+        APFloat Val(Op->getValueAPF());
+
+        bool lost = false;
+        Val.convert(APFloat::IEEEhalf, APFloat::rmNearestTiesToEven, &lost);
+
+        return ConstantInt::get(F->getContext(), Val.bitcastToAPInt());
+      }
+
       if (!Ty->isFloatTy() && !Ty->isDoubleTy())
         return 0;
       /// Currently APFloat versions of these functions do not exist, so we use
@@ -1143,6 +1175,20 @@ llvm::ConstantFoldCall(Function *F,
         return ConstantInt::get(Ty, Op->getValue().countTrailingZeros());
       else if (Name.startswith("llvm.ctlz"))
         return ConstantInt::get(Ty, Op->getValue().countLeadingZeros());
+      else if (Name == "llvm.convert.from.fp16") {
+        APFloat Val(Op->getValue());
+
+        bool lost = false;
+        APFloat::opStatus status =
+          Val.convert(APFloat::IEEEsingle, APFloat::rmNearestTiesToEven, &lost);
+
+        // Conversion is always precise.
+        status = status;
+        assert(status == APFloat::opOK && !lost &&
+               "Precision lost during fp16 constfolding");
+
+        return ConstantFP::get(F->getContext(), Val);
+      }
       return 0;
     }
     

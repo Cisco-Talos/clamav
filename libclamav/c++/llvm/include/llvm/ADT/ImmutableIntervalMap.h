@@ -16,14 +16,14 @@ namespace llvm {
 
 class Interval {
 private:
-  uint64_t Start;
-  uint64_t End;
+  int64_t Start;
+  int64_t End;
 
 public:
-  Interval(uint64_t S, uint64_t E) : Start(S), End(E) {}
+  Interval(int64_t S, int64_t E) : Start(S), End(E) {}
 
-  uint64_t getStart() const { return Start; }
-  uint64_t getEnd() const { return End; }
+  int64_t getStart() const { return Start; }
+  int64_t getEnd() const { return End; }
 };
 
 template <typename T>
@@ -125,9 +125,11 @@ private:
     key_type_ref KCurrent = ImutInfo::KeyOfValue(this->Value(T));
 
     if (ImutInfo::isLess(K, KCurrent))
-      return this->Balance(Add_internal(V, this->Left(T)), this->Value(T), this->Right(T));
+      return this->Balance(Add_internal(V, this->Left(T)), this->Value(T), 
+                                        this->Right(T));
     else
-      return this->Balance(this->Left(T), this->Value(T), Add_internal(V, this->Right(T)));
+      return this->Balance(this->Left(T), this->Value(T), 
+                           Add_internal(V, this->Right(T)));
   }
 
   // Remove all overlaps from T.
@@ -150,9 +152,11 @@ private:
 
     // If current key does not overlap the inserted key.
     if (CurrentK.getStart() > K.getEnd())
-      return this->Balance(RemoveOverlap(this->Left(T), K, Changed), this->Value(T), this->Right(T));
+      return this->Balance(RemoveOverlap(this->Left(T), K, Changed),
+                           this->Value(T), this->Right(T));
     else if (CurrentK.getEnd() < K.getStart())
-      return this->Balance(this->Left(T), this->Value(T), RemoveOverlap(this->Right(T), K, Changed));
+      return this->Balance(this->Left(T), this->Value(T), 
+                           RemoveOverlap(this->Right(T), K, Changed));
 
     // Current key overlaps with the inserted key.
     // Remove the current key.

@@ -40,8 +40,7 @@ protected:
 
 /// IRBuilderBase - Common base class shared among various IRBuilders.
 class IRBuilderBase {
-  unsigned DbgMDKind;
-  MDNode *CurDbgLocation;
+  DebugLoc CurDbgLocation;
 protected:
   BasicBlock *BB;
   BasicBlock::iterator InsertPt;
@@ -49,7 +48,7 @@ protected:
 public:
   
   IRBuilderBase(LLVMContext &context)
-    : DbgMDKind(0), CurDbgLocation(0), Context(context) {
+    : Context(context) {
     ClearInsertionPoint();
   }
   
@@ -65,6 +64,7 @@ public:
   
   BasicBlock *GetInsertBlock() const { return BB; }
   BasicBlock::iterator GetInsertPoint() const { return InsertPt; }
+  LLVMContext &getContext() const { return Context; }
   
   /// SetInsertPoint - This specifies that created instructions should be
   /// appended to the end of the specified block.
@@ -82,12 +82,62 @@ public:
   
   /// SetCurrentDebugLocation - Set location information used by debugging
   /// information.
-  void SetCurrentDebugLocation(MDNode *L);
-  MDNode *getCurrentDebugLocation() const { return CurDbgLocation; }
+  void SetCurrentDebugLocation(const DebugLoc &L) {
+    CurDbgLocation = L;
+  }
+  
+  /// getCurrentDebugLocation - Get location information used by debugging
+  /// information.
+  const DebugLoc &getCurrentDebugLocation() const { return CurDbgLocation; }
   
   /// SetInstDebugLocation - If this builder has a current debug location, set
   /// it on the specified instruction.
-  void SetInstDebugLocation(Instruction *I) const;
+  void SetInstDebugLocation(Instruction *I) const {
+    if (!CurDbgLocation.isUnknown())
+      I->setDebugLoc(CurDbgLocation);
+  }
+
+  /// InsertPoint - A saved insertion point.
+  class InsertPoint {
+    BasicBlock *Block;
+    BasicBlock::iterator Point;
+
+  public:
+    /// Creates a new insertion point which doesn't point to anything.
+    InsertPoint() : Block(0) {}
+
+    /// Creates a new insertion point at the given location.
+    InsertPoint(BasicBlock *InsertBlock, BasicBlock::iterator InsertPoint)
+      : Block(InsertBlock), Point(InsertPoint) {}
+
+    /// isSet - Returns true if this insert point is set.
+    bool isSet() const { return (Block != 0); }
+
+    llvm::BasicBlock *getBlock() const { return Block; }
+    llvm::BasicBlock::iterator getPoint() const { return Point; }
+  };
+
+  /// saveIP - Returns the current insert point.
+  InsertPoint saveIP() const {
+    return InsertPoint(GetInsertBlock(), GetInsertPoint());
+  }
+
+  /// saveAndClearIP - Returns the current insert point, clearing it
+  /// in the process.
+  InsertPoint saveAndClearIP() {
+    InsertPoint IP(GetInsertBlock(), GetInsertPoint());
+    ClearInsertionPoint();
+    return IP;
+  }
+
+  /// restoreIP - Sets the current insert point to a previously-saved
+  /// location.
+  void restoreIP(InsertPoint IP) {
+    if (IP.isSet())
+      SetInsertPoint(IP.getBlock(), IP.getPoint());
+    else
+      ClearInsertionPoint();
+  }
 
   //===--------------------------------------------------------------------===//
   // Miscellaneous creation methods.
@@ -98,33 +148,68 @@ public:
   /// specified.  If Name is specified, it is the name of the global variable
   /// created.
   Value *CreateGlobalString(const char *Str = "", const Twine &Name = "");
+
+  /// getInt1 - Get a constant value representing either true or false.
+  ConstantInt *getInt1(bool V) {
+    return ConstantInt::get(getInt1Ty(), V);
+  }
+
+  /// getTrue - Get the constant value for i1 true.
+  ConstantInt *getTrue() {
+    return ConstantInt::getTrue(Context);
+  }
+
+  /// getFalse - Get the constant value for i1 false.
+  ConstantInt *getFalse() {
+    return ConstantInt::getFalse(Context);
+  }
+
+  /// getInt8 - Get a constant 8-bit value.
+  ConstantInt *getInt8(uint8_t C) {
+    return ConstantInt::get(getInt8Ty(), C);
+  }
+
+  /// getInt16 - Get a constant 16-bit value.
+  ConstantInt *getInt16(uint16_t C) {
+    return ConstantInt::get(getInt16Ty(), C);
+  }
+
+  /// getInt32 - Get a constant 32-bit value.
+  ConstantInt *getInt32(uint32_t C) {
+    return ConstantInt::get(getInt32Ty(), C);
+  }
+  
+  /// getInt64 - Get a constant 64-bit value.
+  ConstantInt *getInt64(uint64_t C) {
+    return ConstantInt::get(getInt64Ty(), C);
+  }
   
   //===--------------------------------------------------------------------===//
   // Type creation methods
   //===--------------------------------------------------------------------===//
   
   /// getInt1Ty - Fetch the type representing a single bit
-  const Type *getInt1Ty() {
+  const IntegerType *getInt1Ty() {
     return Type::getInt1Ty(Context);
   }
   
   /// getInt8Ty - Fetch the type representing an 8-bit integer.
-  const Type *getInt8Ty() {
+  const IntegerType *getInt8Ty() {
     return Type::getInt8Ty(Context);
   }
   
   /// getInt16Ty - Fetch the type representing a 16-bit integer.
-  const Type *getInt16Ty() {
+  const IntegerType *getInt16Ty() {
     return Type::getInt16Ty(Context);
   }
   
   /// getInt32Ty - Fetch the type resepresenting a 32-bit integer.
-  const Type *getInt32Ty() {
+  const IntegerType *getInt32Ty() {
     return Type::getInt32Ty(Context);
   }
   
   /// getInt64Ty - Fetch the type representing a 64-bit integer.
-  const Type *getInt64Ty() {
+  const IntegerType *getInt64Ty() {
     return Type::getInt64Ty(Context);
   }
   
@@ -143,7 +228,7 @@ public:
     return Type::getVoidTy(Context);
   }
   
-  const Type *getInt8PtrTy() {
+  const PointerType *getInt8PtrTy() {
     return Type::getInt8PtrTy(Context);
   }
   
@@ -208,7 +293,7 @@ public:
   template<typename InstTy>
   InstTy *Insert(InstTy *I, const Twine &Name = "") const {
     this->InsertHelper(I, Name, BB, InsertPt);
-    if (getCurrentDebugLocation() != 0)
+    if (!getCurrentDebugLocation().isUnknown())
       this->SetInstDebugLocation(I);
     return I;
   }
@@ -424,11 +509,18 @@ public:
         return Folder.CreateFRem(LC, RC);
     return Insert(BinaryOperator::CreateFRem(LHS, RHS), Name);
   }
+
   Value *CreateShl(Value *LHS, Value *RHS, const Twine &Name = "") {
     if (Constant *LC = dyn_cast<Constant>(LHS))
       if (Constant *RC = dyn_cast<Constant>(RHS))
         return Folder.CreateShl(LC, RC);
     return Insert(BinaryOperator::CreateShl(LHS, RHS), Name);
+  }
+  Value *CreateShl(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateShl(LC, RHSC);
+    return Insert(BinaryOperator::CreateShl(LHS, RHSC), Name);
   }
   Value *CreateShl(Value *LHS, uint64_t RHS, const Twine &Name = "") {
     Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
@@ -443,23 +535,35 @@ public:
         return Folder.CreateLShr(LC, RC);
     return Insert(BinaryOperator::CreateLShr(LHS, RHS), Name);
   }
+  Value *CreateLShr(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateLShr(LC, RHSC);
+    return Insert(BinaryOperator::CreateLShr(LHS, RHSC), Name);
+  }
   Value *CreateLShr(Value *LHS, uint64_t RHS, const Twine &Name = "") {
     Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
     if (Constant *LC = dyn_cast<Constant>(LHS))
       return Folder.CreateLShr(LC, RHSC);
     return Insert(BinaryOperator::CreateLShr(LHS, RHSC), Name);
   }
-  
+
   Value *CreateAShr(Value *LHS, Value *RHS, const Twine &Name = "") {
     if (Constant *LC = dyn_cast<Constant>(LHS))
       if (Constant *RC = dyn_cast<Constant>(RHS))
         return Folder.CreateAShr(LC, RC);
     return Insert(BinaryOperator::CreateAShr(LHS, RHS), Name);
   }
+  Value *CreateAShr(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateAShr(LC, RHSC);
+    return Insert(BinaryOperator::CreateAShr(LHS, RHSC), Name);
+  }
   Value *CreateAShr(Value *LHS, uint64_t RHS, const Twine &Name = "") {
     Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
     if (Constant *LC = dyn_cast<Constant>(LHS))
-      return Folder.CreateSShr(LC, RHSC);
+      return Folder.CreateAShr(LC, RHSC);
     return Insert(BinaryOperator::CreateAShr(LHS, RHSC), Name);
   }
 
@@ -472,6 +576,19 @@ public:
     }
     return Insert(BinaryOperator::CreateAnd(LHS, RHS), Name);
   }
+  Value *CreateAnd(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateAnd(LC, RHSC);
+    return Insert(BinaryOperator::CreateAnd(LHS, RHSC), Name);
+  }
+  Value *CreateAnd(Value *LHS, uint64_t RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateAnd(LC, RHSC);
+    return Insert(BinaryOperator::CreateAnd(LHS, RHSC), Name);
+  }
+
   Value *CreateOr(Value *LHS, Value *RHS, const Twine &Name = "") {
     if (Constant *RC = dyn_cast<Constant>(RHS)) {
       if (RC->isNullValue())
@@ -481,11 +598,36 @@ public:
     }
     return Insert(BinaryOperator::CreateOr(LHS, RHS), Name);
   }
+  Value *CreateOr(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateOr(LC, RHSC);
+    return Insert(BinaryOperator::CreateOr(LHS, RHSC), Name);
+  }
+  Value *CreateOr(Value *LHS, uint64_t RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateOr(LC, RHSC);
+    return Insert(BinaryOperator::CreateOr(LHS, RHSC), Name);
+  }
+
   Value *CreateXor(Value *LHS, Value *RHS, const Twine &Name = "") {
     if (Constant *LC = dyn_cast<Constant>(LHS))
       if (Constant *RC = dyn_cast<Constant>(RHS))
         return Folder.CreateXor(LC, RC);
     return Insert(BinaryOperator::CreateXor(LHS, RHS), Name);
+  }
+  Value *CreateXor(Value *LHS, const APInt &RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateXor(LC, RHSC);
+    return Insert(BinaryOperator::CreateXor(LHS, RHSC), Name);
+  }
+  Value *CreateXor(Value *LHS, uint64_t RHS, const Twine &Name = "") {
+    Constant *RHSC = ConstantInt::get(LHS->getType(), RHS);
+    if (Constant *LC = dyn_cast<Constant>(LHS))
+      return Folder.CreateXor(LC, RHSC);
+    return Insert(BinaryOperator::CreateXor(LHS, RHSC), Name);
   }
 
   Value *CreateBinOp(Instruction::BinaryOps Opc,
@@ -559,8 +701,8 @@ public:
     return Insert(GetElementPtrInst::Create(Ptr, IdxBegin, IdxEnd), Name);
   }
   template<typename InputIterator>
-  Value *CreateInBoundsGEP(Value *Ptr, InputIterator IdxBegin, InputIterator IdxEnd,
-                           const Twine &Name = "") {
+  Value *CreateInBoundsGEP(Value *Ptr, InputIterator IdxBegin,
+                           InputIterator IdxEnd, const Twine &Name = "") {
     if (Constant *PC = dyn_cast<Constant>(Ptr)) {
       // Every index must be constant.
       InputIterator i;
@@ -908,6 +1050,11 @@ public:
                         Value *Arg4, const Twine &Name = "") {
     Value *Args[] = { Arg1, Arg2, Arg3, Arg4 };
     return Insert(CallInst::Create(Callee, Args, Args+4), Name);
+  }
+  CallInst *CreateCall5(Value *Callee, Value *Arg1, Value *Arg2, Value *Arg3,
+                        Value *Arg4, Value *Arg5, const Twine &Name = "") {
+    Value *Args[] = { Arg1, Arg2, Arg3, Arg4, Arg5 };
+    return Insert(CallInst::Create(Callee, Args, Args+5), Name);
   }
 
   template<typename InputIterator>

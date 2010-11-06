@@ -164,6 +164,7 @@ namespace sys {
 
       /// GetMainExecutable - Return the path to the main executable, given the
       /// value of argv[0] from program startup and the address of main itself.
+      /// In extremis, this function may fail and return an empty path.
       static Path GetMainExecutable(const char *argv0, void *MainAddr);
 
       /// This is one of the very few ways in which a path can be constructed
@@ -292,14 +293,6 @@ namespace sys {
     /// @name Disk Accessors
     /// @{
     public:
-      /// This function determines if the path name in this object references
-      /// the root (top level directory) of the file system. The details of what
-      /// is considered the "root" may vary from system to system so this method
-      /// will do the necessary checking.
-      /// @returns true iff the path name references the root directory.
-      /// @brief Determines if the path references the root directory.
-      bool isRootDirectory() const;
-
       /// This function determines if the path name is absolute, as opposed to
       /// relative.
       /// @brief Determine if the path is absolute.
@@ -344,9 +337,9 @@ namespace sys {
       /// native Dynamic Library (shared library, shared object) by looking at
       /// the file's magic number. The Path object must reference a file, not a
       /// directory.
-      /// @return strue if the file starts with the magid number for a native
+      /// @returns true if the file starts with the magic number for a native
       /// shared library.
-      /// @brief Determine if the path reference a dynamic library.
+      /// @brief Determine if the path references a dynamic library.
       bool isDynamicLibrary() const;
 
       /// This function determines if the path name references an existing file

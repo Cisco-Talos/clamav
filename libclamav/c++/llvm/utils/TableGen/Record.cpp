@@ -270,7 +270,15 @@ Init *RecordRecTy::convertValue(TypedInit *TI) {
 }
 
 bool RecordRecTy::baseClassOf(const RecordRecTy *RHS) const {
-  return Rec == RHS->getRecord() || RHS->getRecord()->isSubClassOf(Rec);
+  if (Rec == RHS->getRecord() || RHS->getRecord()->isSubClassOf(Rec))
+    return true;
+
+  const std::vector<Record*> &SC = Rec->getSuperClasses();
+  for (unsigned i = 0, e = SC.size(); i != e; ++i)
+    if (RHS->getRecord()->isSubClassOf(SC[i]))
+      return true;
+
+  return false;
 }
 
 
@@ -620,23 +628,6 @@ std::string UnOpInit::getAsString() const {
   return Result + "(" + LHS->getAsString() + ")";
 }
 
-RecTy *UnOpInit::getFieldType(const std::string &FieldName) const {
-  switch (getOpcode()) {
-  default: assert(0 && "Unknown unop");
-  case CAST: {
-    RecordRecTy *RecordType = dynamic_cast<RecordRecTy *>(getType());
-    if (RecordType) {
-      RecordVal *Field = RecordType->getRecord()->getValue(FieldName);
-      if (Field) {
-        return Field->getType();
-      }
-    }
-    break;
-  }
-  }
-  return 0;
-}
-
 Init *BinOpInit::Fold(Record *CurRec, MultiClass *CurMultiClass) {
   switch (getOpcode()) {
   default: assert(0 && "Unknown binop");
@@ -646,18 +637,8 @@ Init *BinOpInit::Fold(Record *CurRec, MultiClass *CurMultiClass) {
     if (LHSs && RHSs) {
       DefInit *LOp = dynamic_cast<DefInit*>(LHSs->getOperator());
       DefInit *ROp = dynamic_cast<DefInit*>(RHSs->getOperator());
-      if (LOp->getDef() != ROp->getDef()) {
-        bool LIsOps =
-          LOp->getDef()->getName() == "outs" ||
-          LOp->getDef()->getName() != "ins" ||
-          LOp->getDef()->getName() != "defs";
-        bool RIsOps =
-          ROp->getDef()->getName() == "outs" ||
-          ROp->getDef()->getName() != "ins" ||
-          ROp->getDef()->getName() != "defs";
-        if (!LIsOps || !RIsOps)
-          throw "Concated Dag operators do not match!";
-      }
+      if (LOp == 0 || ROp == 0 || LOp->getDef() != ROp->getDef())
+        throw "Concated Dag operators do not match!";
       std::vector<Init*> Args;
       std::vector<std::string> ArgNames;
       for (unsigned i = 0, e = LHSs->getNumArgs(); i != e; ++i) {
@@ -731,9 +712,20 @@ Init *BinOpInit::Fold(Record *CurRec, MultiClass *CurMultiClass) {
     break;
   }
   case EQ: {
-    // Make sure we've resolved
+    // try to fold eq comparison for 'bit' and 'int', otherwise fallback
+    // to string objects.
+    IntInit* L =
+      dynamic_cast<IntInit*>(LHS->convertInitializerTo(new IntRecTy()));
+    IntInit* R =
+      dynamic_cast<IntInit*>(RHS->convertInitializerTo(new IntRecTy()));
+
+    if (L && R)
+      return new IntInit(L->getValue() == R->getValue());
+
     StringInit *LHSs = dynamic_cast<StringInit*>(LHS);
     StringInit *RHSs = dynamic_cast<StringInit*>(RHS);
+
+    // Make sure we've resolved
     if (LHSs && RHSs)
       return new IntInit(LHSs->getValue() == RHSs->getValue());
 
@@ -981,6 +973,8 @@ Init *TernOpInit::Fold(Record *CurRec, MultiClass *CurMultiClass) {
 
   case IF: {
     IntInit *LHSi = dynamic_cast<IntInit*>(LHS);
+    if (Init *I = LHS->convertInitializerTo(new IntRecTy()))
+      LHSi = dynamic_cast<IntInit*>(I);
     if (LHSi) {
       if (LHSi->getValue()) {
         return MHS;
@@ -1000,6 +994,8 @@ Init *TernOpInit::resolveReferences(Record &R, const RecordVal *RV) {
 
   if (Opc == IF && lhs != LHS) {
     IntInit *Value = dynamic_cast<IntInit*>(lhs);
+    if (Init *I = lhs->convertInitializerTo(new IntRecTy()))
+      Value = dynamic_cast<IntInit*>(I);
     if (Value != 0) {
       // Short-circuit
       if (Value->getValue()) {
@@ -1031,6 +1027,17 @@ std::string TernOpInit::getAsString() const {
  }
   return Result + "(" + LHS->getAsString() + ", " + MHS->getAsString() + ", "
     + RHS->getAsString() + ")";
+}
+
+RecTy *TypedInit::getFieldType(const std::string &FieldName) const {
+  RecordRecTy *RecordType = dynamic_cast<RecordRecTy *>(getType());
+  if (RecordType) {
+    RecordVal *Field = RecordType->getRecord()->getValue(FieldName);
+    if (Field) {
+      return Field->getType();
+    }
+  }
+  return 0;
 }
 
 Init *TypedInit::convertInitializerBitRange(const std::vector<unsigned> &Bits) {
@@ -1118,12 +1125,15 @@ RecTy *VarInit::getFieldType(const std::string &FieldName) const {
   return 0;
 }
 
-Init *VarInit::getFieldInit(Record &R, const std::string &FieldName) const {
+Init *VarInit::getFieldInit(Record &R, const RecordVal *RV,
+                            const std::string &FieldName) const {
   if (dynamic_cast<RecordRecTy*>(getType()))
-    if (const RecordVal *RV = R.getValue(VarName)) {
-      Init *TheInit = RV->getValue();
+    if (const RecordVal *Val = R.getValue(VarName)) {
+      if (RV != Val && (RV || dynamic_cast<UnsetInit*>(Val->getValue())))
+        return 0;
+      Init *TheInit = Val->getValue();
       assert(TheInit != this && "Infinite loop detected!");
-      if (Init *I = TheInit->getFieldInit(R, FieldName))
+      if (Init *I = TheInit->getFieldInit(R, RV, FieldName))
         return I;
       else
         return 0;
@@ -1184,7 +1194,8 @@ RecTy *DefInit::getFieldType(const std::string &FieldName) const {
   return 0;
 }
 
-Init *DefInit::getFieldInit(Record &R, const std::string &FieldName) const {
+Init *DefInit::getFieldInit(Record &R, const RecordVal *RV,
+                            const std::string &FieldName) const {
   return Def->getValue(FieldName)->getValue();
 }
 
@@ -1195,7 +1206,7 @@ std::string DefInit::getAsString() const {
 
 Init *FieldInit::resolveBitReference(Record &R, const RecordVal *RV,
                                      unsigned Bit) {
-  if (Init *BitsVal = Rec->getFieldInit(R, FieldName))
+  if (Init *BitsVal = Rec->getFieldInit(R, RV, FieldName))
     if (BitsInit *BI = dynamic_cast<BitsInit*>(BitsVal)) {
       assert(Bit < BI->getNumBits() && "Bit reference out of range!");
       Init *B = BI->getBit(Bit);
@@ -1208,7 +1219,7 @@ Init *FieldInit::resolveBitReference(Record &R, const RecordVal *RV,
 
 Init *FieldInit::resolveListElementReference(Record &R, const RecordVal *RV,
                                              unsigned Elt) {
-  if (Init *ListVal = Rec->getFieldInit(R, FieldName))
+  if (Init *ListVal = Rec->getFieldInit(R, RV, FieldName))
     if (ListInit *LI = dynamic_cast<ListInit*>(ListVal)) {
       if (Elt >= LI->getSize()) return 0;
       Init *E = LI->getElement(Elt);
@@ -1225,7 +1236,7 @@ Init *FieldInit::resolveListElementReference(Record &R, const RecordVal *RV,
 Init *FieldInit::resolveReferences(Record &R, const RecordVal *RV) {
   Init *NewRec = RV ? Rec->resolveReferences(R, RV) : Rec;
 
-  Init *BitsVal = NewRec->getFieldInit(R, FieldName);
+  Init *BitsVal = NewRec->getFieldInit(R, RV, FieldName);
   if (BitsVal) {
     Init *BVR = BitsVal->resolveReferences(R, RV);
     return BVR->isComplete() ? BVR : this;
@@ -1245,7 +1256,7 @@ Init *DagInit::resolveReferences(Record &R, const RecordVal *RV) {
   Init *Op = Val->resolveReferences(R, RV);
 
   if (Args != NewArgs || Op != Val)
-    return new DagInit(Op, "", NewArgs, ArgNames);
+    return new DagInit(Op, ValName, NewArgs, ArgNames);
 
   return this;
 }
@@ -1312,7 +1323,6 @@ void Record::resolveReferencesTo(const RecordVal *RV) {
       Values[i].setValue(V->resolveReferences(*this, RV));
   }
 }
-
 
 void Record::dump() const { errs() << *this; }
 

@@ -258,9 +258,10 @@ def getTestsInSuite(ts, path_in_suite, litConfig,
     lc = getLocalConfig(ts, path_in_suite, litConfig, localConfigCache)
 
     # Search for tests.
-    for res in lc.test_format.getTestsInDirectory(ts, path_in_suite,
-                                                  litConfig, lc):
-        yield res
+    if lc.test_format is not None:
+        for res in lc.test_format.getTestsInDirectory(ts, path_in_suite,
+                                                      litConfig, lc):
+            yield res
 
     # Search subdirectories.
     for filename in os.listdir(source_path):
@@ -315,8 +316,49 @@ def runTests(numThreads, litConfig, provider, display):
     except KeyboardInterrupt:
         sys.exit(2)
 
-def main():
-    # Bump the GIL check interval, its more important to get any one thread to a
+def load_test_suite(inputs):
+    import unittest
+
+    # Create the global config object.
+    litConfig = LitConfig.LitConfig(progname = 'lit',
+                                    path = [],
+                                    quiet = False,
+                                    useValgrind = False,
+                                    valgrindLeakCheck = False,
+                                    valgrindArgs = [],
+                                    useTclAsSh = False,
+                                    noExecute = False,
+                                    debug = False,
+                                    isWindows = (platform.system()=='Windows'),
+                                    params = {})
+
+    # Load the tests from the inputs.
+    tests = []
+    testSuiteCache = {}
+    localConfigCache = {}
+    for input in inputs:
+        prev = len(tests)
+        tests.extend(getTests(input, litConfig,
+                              testSuiteCache, localConfigCache)[1])
+        if prev == len(tests):
+            litConfig.warning('input %r contained no tests' % input)
+
+    # If there were any errors during test discovery, exit now.
+    if litConfig.numErrors:
+        print >>sys.stderr, '%d errors, exiting.' % litConfig.numErrors
+        sys.exit(2)
+
+    # Return a unittest test suite which just runs the tests in order.
+    def get_test_fn(test):
+        return unittest.FunctionTestCase(
+            lambda: test.config.test_format.execute(
+                test, litConfig),
+            description = test.getFullName())
+
+    from LitTestCase import LitTestCase
+    return unittest.TestSuite([LitTestCase(test, litConfig) for test in tests])
+
+def main(builtinParameters = {}):    # Bump the GIL check interval, its more important to get any one thread to a
     # blocking operation (hopefully exec) than to try and unblock other threads.
     #
     # FIXME: This is a hack.
@@ -361,6 +403,9 @@ def main():
                      action="append", type=str, default=[])
     group.add_option("", "--vg", dest="useValgrind",
                      help="Run tests under valgrind",
+                     action="store_true", default=False)
+    group.add_option("", "--vg-leak", dest="valgrindLeakCheck",
+                     help="Check for memory leaks under valgrind",
                      action="store_true", default=False)
     group.add_option("", "--vg-arg", dest="valgrindArgs", metavar="ARG",
                      help="Specify an extra argument for valgrind",
@@ -423,7 +468,7 @@ def main():
     inputs = args
 
     # Create the user defined parameters.
-    userParams = {}
+    userParams = dict(builtinParameters)
     for entry in opts.userParameters:
         if '=' not in entry:
             name,val = entry,''
@@ -436,6 +481,7 @@ def main():
                                     path = opts.path,
                                     quiet = opts.quiet,
                                     useValgrind = opts.useValgrind,
+                                    valgrindLeakCheck = opts.valgrindLeakCheck,
                                     valgrindArgs = opts.valgrindArgs,
                                     useTclAsSh = opts.useTclAsSh,
                                     noExecute = opts.noExecute,
@@ -443,11 +489,27 @@ def main():
                                     isWindows = (platform.system()=='Windows'),
                                     params = userParams)
 
+    # Expand '@...' form in inputs.
+    actual_inputs = []
+    for input in inputs:
+        if os.path.exists(input) or not input.startswith('@'):
+            actual_inputs.append(input)
+        else:
+            f = open(input[1:])
+            try:
+                for ln in f:
+                    ln = ln.strip()
+                    if ln:
+                        actual_inputs.append(ln)
+            finally:
+                f.close()
+                    
+            
     # Load the tests from the inputs.
     tests = []
     testSuiteCache = {}
     localConfigCache = {}
-    for input in inputs:
+    for input in actual_inputs:
         prev = len(tests)
         tests.extend(getTests(input, litConfig,
                               testSuiteCache, localConfigCache)[1])

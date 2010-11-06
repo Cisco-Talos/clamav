@@ -28,16 +28,24 @@
 #include "llvm/Transforms/Utils/AddrModeMatcher.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Local.h"
+#include "llvm/Transforms/Utils/BuildLibCalls.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/Assembly/Writer.h"
 #include "llvm/Support/CallSite.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/GetElementPtrTypeIterator.h"
 #include "llvm/Support/PatternMatch.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/IRBuilder.h"
 using namespace llvm;
 using namespace llvm::PatternMatch;
+
+static cl::opt<bool>
+CriticalEdgeSplit("cgp-critical-edge-splitting",
+                  cl::desc("Split critical edges during codegen prepare"),
+                  cl::init(true), cl::Hidden);
 
 namespace {
   class CodeGenPrepare : public FunctionPass {
@@ -52,7 +60,7 @@ namespace {
   public:
     static char ID; // Pass identification, replacement for typeid
     explicit CodeGenPrepare(const TargetLowering *tli = 0)
-      : FunctionPass(&ID), TLI(tli) {}
+      : FunctionPass(ID), TLI(tli) {}
     bool runOnFunction(Function &F);
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
@@ -72,6 +80,7 @@ namespace {
                             DenseMap<Value*,Value*> &SunkAddrs);
     bool OptimizeInlineAsmInst(Instruction *I, CallSite CS,
                                DenseMap<Value*,Value*> &SunkAddrs);
+    bool OptimizeCallInst(CallInst *CI);
     bool MoveExtToFormExtLoad(Instruction *I);
     bool OptimizeExtUses(Instruction *I);
     void findLoopBackEdges(const Function &F);
@@ -79,8 +88,8 @@ namespace {
 }
 
 char CodeGenPrepare::ID = 0;
-static RegisterPass<CodeGenPrepare> X("codegenprepare",
-                                      "Optimize for code generation");
+INITIALIZE_PASS(CodeGenPrepare, "codegenprepare",
+                "Optimize for code generation", false, false);
 
 FunctionPass *llvm::createCodeGenPreparePass(const TargetLowering *TLI) {
   return new CodeGenPrepare(TLI);
@@ -171,7 +180,7 @@ bool CodeGenPrepare::CanMergeBlocks(const BasicBlock *BB,
   // don't mess around with them.
   BasicBlock::const_iterator BBI = BB->begin();
   while (const PHINode *PN = dyn_cast<PHINode>(BBI++)) {
-    for (Value::use_const_iterator UI = PN->use_begin(), E = PN->use_end();
+    for (Value::const_use_iterator UI = PN->use_begin(), E = PN->use_end();
          UI != E; ++UI) {
       const Instruction *User = cast<Instruction>(*UI);
       if (User->getParent() != DestBB || !isa<PHINode>(User))
@@ -424,9 +433,9 @@ static bool OptimizeNoopCopyExpression(CastInst *CI, const TargetLowering &TLI){
   // If these values will be promoted, find out what they will be promoted
   // to.  This helps us consider truncates on PPC as noop copies when they
   // are.
-  if (TLI.getTypeAction(CI->getContext(), SrcVT) == TargetLowering::Promote)
+  if (TLI.getTypeAction(SrcVT) == TargetLowering::Promote)
     SrcVT = TLI.getTypeToTransformTo(CI->getContext(), SrcVT);
-  if (TLI.getTypeAction(CI->getContext(), DstVT) == TargetLowering::Promote)
+  if (TLI.getTypeAction(DstVT) == TargetLowering::Promote)
     DstVT = TLI.getTypeToTransformTo(CI->getContext(), DstVT);
 
   // If, after promotion, these are the same types, this is a noop copy.
@@ -537,6 +546,48 @@ static bool OptimizeCmpExpression(CmpInst *CI) {
   return MadeChange;
 }
 
+namespace {
+class CodeGenPrepareFortifiedLibCalls : public SimplifyFortifiedLibCalls {
+protected:
+  void replaceCall(Value *With) {
+    CI->replaceAllUsesWith(With);
+    CI->eraseFromParent();
+  }
+  bool isFoldable(unsigned SizeCIOp, unsigned, bool) const {
+      if (ConstantInt *SizeCI =
+                             dyn_cast<ConstantInt>(CI->getArgOperand(SizeCIOp)))
+        return SizeCI->isAllOnesValue();
+    return false;
+  }
+};
+} // end anonymous namespace
+
+bool CodeGenPrepare::OptimizeCallInst(CallInst *CI) {
+  // Lower all uses of llvm.objectsize.*
+  IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI);
+  if (II && II->getIntrinsicID() == Intrinsic::objectsize) {
+    bool Min = (cast<ConstantInt>(II->getArgOperand(1))->getZExtValue() == 1);
+    const Type *ReturnTy = CI->getType();
+    Constant *RetVal = ConstantInt::get(ReturnTy, Min ? 0 : -1ULL);    
+    CI->replaceAllUsesWith(RetVal);
+    CI->eraseFromParent();
+    return true;
+  }
+
+  // From here on out we're working with named functions.
+  if (CI->getCalledFunction() == 0) return false;
+  
+  // We'll need TargetData from here on out.
+  const TargetData *TD = TLI ? TLI->getTargetData() : 0;
+  if (!TD) return false;
+  
+  // Lower all default uses of _chk calls.  This is very similar
+  // to what InstCombineCalls does, but here we are only lowering calls
+  // that have the default "don't know" as the objectsize.  Anything else
+  // should be left alone.
+  CodeGenPrepareFortifiedLibCalls Simplifier;
+  return Simplifier.fold(CI, TD);
+}
 //===----------------------------------------------------------------------===//
 // Memory Optimization
 //===----------------------------------------------------------------------===//
@@ -670,8 +721,12 @@ bool CodeGenPrepare::OptimizeMemoryInst(Instruction *MemoryInst, Value *Addr,
 
   MemoryInst->replaceUsesOfWith(Addr, SunkAddr);
 
-  if (Addr->use_empty())
+  if (Addr->use_empty()) {
     RecursivelyDeleteTriviallyDeadInstructions(Addr);
+    // This address is now available for reassignment, so erase the table entry;
+    // we don't want to match some completely different instruction.
+    SunkAddrs[Addr] = 0;
+  }
   return true;
 }
 
@@ -711,8 +766,7 @@ bool CodeGenPrepare::OptimizeInlineAsmInst(Instruction *I, CallSite CS,
     }
 
     // Compute the constraint code and ConstraintType to use.
-    TLI->ComputeConstraintToUse(OpInfo, SDValue(),
-                             OpInfo.ConstraintType == TargetLowering::C_Memory);
+    TLI->ComputeConstraintToUse(OpInfo, SDValue());
 
     if (OpInfo.ConstraintType == TargetLowering::C_Memory &&
         OpInfo.isIndirect) {
@@ -843,12 +897,14 @@ bool CodeGenPrepare::OptimizeBlock(BasicBlock &BB) {
   bool MadeChange = false;
 
   // Split all critical edges where the dest block has a PHI.
-  TerminatorInst *BBTI = BB.getTerminator();
-  if (BBTI->getNumSuccessors() > 1 && !isa<IndirectBrInst>(BBTI)) {
-    for (unsigned i = 0, e = BBTI->getNumSuccessors(); i != e; ++i) {
-      BasicBlock *SuccBB = BBTI->getSuccessor(i);
-      if (isa<PHINode>(SuccBB->begin()) && isCriticalEdge(BBTI, i, true))
-        SplitEdgeNicely(BBTI, i, BackEdges, this);
+  if (CriticalEdgeSplit) {
+    TerminatorInst *BBTI = BB.getTerminator();
+    if (BBTI->getNumSuccessors() > 1 && !isa<IndirectBrInst>(BBTI)) {
+      for (unsigned i = 0, e = BBTI->getNumSuccessors(); i != e; ++i) {
+        BasicBlock *SuccBB = BBTI->getSuccessor(i);
+        if (isa<PHINode>(SuccBB->begin()) && isCriticalEdge(BBTI, i, true))
+          SplitEdgeNicely(BBTI, i, BackEdges, this);
+      }
     }
   }
 
@@ -913,6 +969,10 @@ bool CodeGenPrepare::OptimizeBlock(BasicBlock &BB) {
         } else
           // Sink address computing for memory operands into the block.
           MadeChange |= OptimizeInlineAsmInst(I, &(*CI), SunkAddrs);
+      } else {
+        // Other CallInst optimizations that don't need to muck with the
+        // enclosing iterator here.
+        MadeChange |= OptimizeCallInst(CI);
       }
     }
   }

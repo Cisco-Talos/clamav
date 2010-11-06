@@ -18,81 +18,26 @@
 #include "PPCGenInstrInfo.inc"
 #include "PPCTargetMachine.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/MC/MCAsmInfo.h"
-using namespace llvm;
 
+namespace llvm {
 extern cl::opt<bool> EnablePPC32RS;  // FIXME (64-bit): See PPCRegisterInfo.cpp.
 extern cl::opt<bool> EnablePPC64RS;  // FIXME (64-bit): See PPCRegisterInfo.cpp.
+}
+
+using namespace llvm;
 
 PPCInstrInfo::PPCInstrInfo(PPCTargetMachine &tm)
   : TargetInstrInfoImpl(PPCInsts, array_lengthof(PPCInsts)), TM(tm),
     RI(*TM.getSubtargetImpl(), *this) {}
-
-bool PPCInstrInfo::isMoveInstr(const MachineInstr& MI,
-                               unsigned& sourceReg,
-                               unsigned& destReg,
-                               unsigned& sourceSubIdx,
-                               unsigned& destSubIdx) const {
-  sourceSubIdx = destSubIdx = 0; // No sub-registers.
-
-  unsigned oc = MI.getOpcode();
-  if (oc == PPC::OR || oc == PPC::OR8 || oc == PPC::VOR ||
-      oc == PPC::OR4To8 || oc == PPC::OR8To4) {                // or r1, r2, r2
-    assert(MI.getNumOperands() >= 3 &&
-           MI.getOperand(0).isReg() &&
-           MI.getOperand(1).isReg() &&
-           MI.getOperand(2).isReg() &&
-           "invalid PPC OR instruction!");
-    if (MI.getOperand(1).getReg() == MI.getOperand(2).getReg()) {
-      sourceReg = MI.getOperand(1).getReg();
-      destReg = MI.getOperand(0).getReg();
-      return true;
-    }
-  } else if (oc == PPC::ADDI) {             // addi r1, r2, 0
-    assert(MI.getNumOperands() >= 3 &&
-           MI.getOperand(0).isReg() &&
-           MI.getOperand(2).isImm() &&
-           "invalid PPC ADDI instruction!");
-    if (MI.getOperand(1).isReg() && MI.getOperand(2).getImm() == 0) {
-      sourceReg = MI.getOperand(1).getReg();
-      destReg = MI.getOperand(0).getReg();
-      return true;
-    }
-  } else if (oc == PPC::ORI) {             // ori r1, r2, 0
-    assert(MI.getNumOperands() >= 3 &&
-           MI.getOperand(0).isReg() &&
-           MI.getOperand(1).isReg() &&
-           MI.getOperand(2).isImm() &&
-           "invalid PPC ORI instruction!");
-    if (MI.getOperand(2).getImm() == 0) {
-      sourceReg = MI.getOperand(1).getReg();
-      destReg = MI.getOperand(0).getReg();
-      return true;
-    }
-  } else if (oc == PPC::FMR || oc == PPC::FMRSD) { // fmr r1, r2
-    assert(MI.getNumOperands() >= 2 &&
-           MI.getOperand(0).isReg() &&
-           MI.getOperand(1).isReg() &&
-           "invalid PPC FMR instruction");
-    sourceReg = MI.getOperand(1).getReg();
-    destReg = MI.getOperand(0).getReg();
-    return true;
-  } else if (oc == PPC::MCRF) {             // mcrf cr1, cr2
-    assert(MI.getNumOperands() >= 2 &&
-           MI.getOperand(0).isReg() &&
-           MI.getOperand(1).isReg() &&
-           "invalid PPC MCRF instruction");
-    sourceReg = MI.getOperand(1).getReg();
-    destReg = MI.getOperand(0).getReg();
-    return true;
-  }
-  return false;
-}
 
 unsigned PPCInstrInfo::isLoadFromStackSlot(const MachineInstr *MI, 
                                            int &FrameIndex) const {
@@ -199,9 +144,7 @@ PPCInstrInfo::commuteInstruction(MachineInstr *MI, bool NewMI) const {
 
 void PPCInstrInfo::insertNoop(MachineBasicBlock &MBB, 
                               MachineBasicBlock::iterator MI) const {
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
-
+  DebugLoc DL;
   BuildMI(MBB, MI, DL, get(PPC::NOP));
 }
 
@@ -213,7 +156,15 @@ bool PPCInstrInfo::AnalyzeBranch(MachineBasicBlock &MBB,MachineBasicBlock *&TBB,
                                  bool AllowModify) const {
   // If the block has no terminators, it just falls into the block after it.
   MachineBasicBlock::iterator I = MBB.end();
-  if (I == MBB.begin() || !isUnpredicatedTerminator(--I))
+  if (I == MBB.begin())
+    return false;
+  --I;
+  while (I->isDebugValue()) {
+    if (I == MBB.begin())
+      return false;
+    --I;
+  }
+  if (!isUnpredicatedTerminator(I))
     return false;
 
   // Get the last instruction in the block.
@@ -281,6 +232,11 @@ unsigned PPCInstrInfo::RemoveBranch(MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator I = MBB.end();
   if (I == MBB.begin()) return 0;
   --I;
+  while (I->isDebugValue()) {
+    if (I == MBB.begin())
+      return 0;
+    --I;
+  }
   if (I->getOpcode() != PPC::B && I->getOpcode() != PPC::BCC)
     return 0;
   
@@ -302,9 +258,8 @@ unsigned PPCInstrInfo::RemoveBranch(MachineBasicBlock &MBB) const {
 unsigned
 PPCInstrInfo::InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
                            MachineBasicBlock *FBB,
-                           const SmallVectorImpl<MachineOperand> &Cond) const {
-  // FIXME this should probably have a DebugLoc argument
-  DebugLoc dl = DebugLoc::getUnknownLoc();
+                           const SmallVectorImpl<MachineOperand> &Cond,
+                           DebugLoc DL) const {
   // Shouldn't be a fall through.
   assert(TBB && "InsertBranch must not be told to insert a fallthrough");
   assert((Cond.size() == 2 || Cond.size() == 0) && 
@@ -313,52 +268,46 @@ PPCInstrInfo::InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
   // One-way branch.
   if (FBB == 0) {
     if (Cond.empty())   // Unconditional branch
-      BuildMI(&MBB, dl, get(PPC::B)).addMBB(TBB);
+      BuildMI(&MBB, DL, get(PPC::B)).addMBB(TBB);
     else                // Conditional branch
-      BuildMI(&MBB, dl, get(PPC::BCC))
+      BuildMI(&MBB, DL, get(PPC::BCC))
         .addImm(Cond[0].getImm()).addReg(Cond[1].getReg()).addMBB(TBB);
     return 1;
   }
   
   // Two-way Conditional Branch.
-  BuildMI(&MBB, dl, get(PPC::BCC))
+  BuildMI(&MBB, DL, get(PPC::BCC))
     .addImm(Cond[0].getImm()).addReg(Cond[1].getReg()).addMBB(TBB);
-  BuildMI(&MBB, dl, get(PPC::B)).addMBB(FBB);
+  BuildMI(&MBB, DL, get(PPC::B)).addMBB(FBB);
   return 2;
 }
 
-bool PPCInstrInfo::copyRegToReg(MachineBasicBlock &MBB,
-                                   MachineBasicBlock::iterator MI,
-                                   unsigned DestReg, unsigned SrcReg,
-                                   const TargetRegisterClass *DestRC,
-                                   const TargetRegisterClass *SrcRC) const {
-  if (DestRC != SrcRC) {
-    // Not yet supported!
-    return false;
-  }
+void PPCInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
+                               MachineBasicBlock::iterator I, DebugLoc DL,
+                               unsigned DestReg, unsigned SrcReg,
+                               bool KillSrc) const {
+  unsigned Opc;
+  if (PPC::GPRCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::OR;
+  else if (PPC::G8RCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::OR8;
+  else if (PPC::F4RCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::FMR;
+  else if (PPC::CRRCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::MCRF;
+  else if (PPC::VRRCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::VOR;
+  else if (PPC::CRBITRCRegClass.contains(DestReg, SrcReg))
+    Opc = PPC::CROR;
+  else
+    llvm_unreachable("Impossible reg-to-reg copy");
 
-  DebugLoc DL = DebugLoc::getUnknownLoc();
-  if (MI != MBB.end()) DL = MI->getDebugLoc();
-
-  if (DestRC == PPC::GPRCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::OR), DestReg).addReg(SrcReg).addReg(SrcReg);
-  } else if (DestRC == PPC::G8RCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::OR8), DestReg).addReg(SrcReg).addReg(SrcReg);
-  } else if (DestRC == PPC::F4RCRegisterClass ||
-             DestRC == PPC::F8RCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::FMR), DestReg).addReg(SrcReg);
-  } else if (DestRC == PPC::CRRCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::MCRF), DestReg).addReg(SrcReg);
-  } else if (DestRC == PPC::VRRCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::VOR), DestReg).addReg(SrcReg).addReg(SrcReg);
-  } else if (DestRC == PPC::CRBITRCRegisterClass) {
-    BuildMI(MBB, MI, DL, get(PPC::CROR), DestReg).addReg(SrcReg).addReg(SrcReg);
-  } else {
-    // Attempt to copy register that is not GPR or FPR
-    return false;
-  }
-  
-  return true;
+  const TargetInstrDesc &TID = get(Opc);
+  if (TID.getNumOperands() == 3)
+    BuildMI(MBB, I, DL, TID, DestReg)
+      .addReg(SrcReg).addReg(SrcReg, getKillRegState(KillSrc));
+  else
+    BuildMI(MBB, I, DL, TID, DestReg).addReg(SrcReg, getKillRegState(KillSrc));
 }
 
 bool
@@ -367,7 +316,7 @@ PPCInstrInfo::StoreRegToStackSlot(MachineFunction &MF,
                                   int FrameIdx,
                                   const TargetRegisterClass *RC,
                                   SmallVectorImpl<MachineInstr*> &NewMIs) const{
-  DebugLoc DL = DebugLoc::getUnknownLoc();
+  DebugLoc DL;
   if (RC == PPC::GPRCRegisterClass) {
     if (SrcReg != PPC::LR) {
       NewMIs.push_back(addFrameReference(BuildMI(MF, DL, get(PPC::STW))
@@ -430,7 +379,8 @@ PPCInstrInfo::StoreRegToStackSlot(MachineFunction &MF,
       // issue a MFCR to save all of the CRBits.
       unsigned ScratchReg = TM.getSubtargetImpl()->isDarwinABI() ? 
                                                            PPC::R2 : PPC::R0;
-      NewMIs.push_back(BuildMI(MF, DL, get(PPC::MFCR), ScratchReg));
+      NewMIs.push_back(BuildMI(MF, DL, get(PPC::MFCRpseud), ScratchReg)
+                               .addReg(SrcReg, getKillRegState(isKill)));
     
       // If the saved register wasn't CR0, shift the bits left so that they are
       // in CR0's slot.
@@ -504,7 +454,8 @@ void
 PPCInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator MI,
                                   unsigned SrcReg, bool isKill, int FrameIdx,
-                                  const TargetRegisterClass *RC) const {
+                                  const TargetRegisterClass *RC,
+                                  const TargetRegisterInfo *TRI) const {
   MachineFunction &MF = *MBB.getParent();
   SmallVector<MachineInstr*, 4> NewMIs;
 
@@ -515,6 +466,14 @@ PPCInstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
 
   for (unsigned i = 0, e = NewMIs.size(); i != e; ++i)
     MBB.insert(MI, NewMIs[i]);
+
+  const MachineFrameInfo &MFI = *MF.getFrameInfo();
+  MachineMemOperand *MMO =
+    MF.getMachineMemOperand(PseudoSourceValue::getFixedStack(FrameIdx),
+                            MachineMemOperand::MOStore, /*Offset=*/0,
+                            MFI.getObjectSize(FrameIdx),
+                            MFI.getObjectAlignment(FrameIdx));
+  NewMIs.back()->addMemOperand(MF, MMO);
 }
 
 void
@@ -619,130 +578,34 @@ void
 PPCInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                    MachineBasicBlock::iterator MI,
                                    unsigned DestReg, int FrameIdx,
-                                   const TargetRegisterClass *RC) const {
+                                   const TargetRegisterClass *RC,
+                                   const TargetRegisterInfo *TRI) const {
   MachineFunction &MF = *MBB.getParent();
   SmallVector<MachineInstr*, 4> NewMIs;
-  DebugLoc DL = DebugLoc::getUnknownLoc();
+  DebugLoc DL;
   if (MI != MBB.end()) DL = MI->getDebugLoc();
   LoadRegFromStackSlot(MF, DL, DestReg, FrameIdx, RC, NewMIs);
   for (unsigned i = 0, e = NewMIs.size(); i != e; ++i)
     MBB.insert(MI, NewMIs[i]);
+
+  const MachineFrameInfo &MFI = *MF.getFrameInfo();
+  MachineMemOperand *MMO =
+    MF.getMachineMemOperand(PseudoSourceValue::getFixedStack(FrameIdx),
+                            MachineMemOperand::MOLoad, /*Offset=*/0,
+                            MFI.getObjectSize(FrameIdx),
+                            MFI.getObjectAlignment(FrameIdx));
+  NewMIs.back()->addMemOperand(MF, MMO);
 }
 
-/// foldMemoryOperand - PowerPC (like most RISC's) can only fold spills into
-/// copy instructions, turning them into load/store instructions.
-MachineInstr *PPCInstrInfo::foldMemoryOperandImpl(MachineFunction &MF,
-                                                  MachineInstr *MI,
-                                           const SmallVectorImpl<unsigned> &Ops,
-                                                  int FrameIndex) const {
-  if (Ops.size() != 1) return NULL;
-
-  // Make sure this is a reg-reg copy.  Note that we can't handle MCRF, because
-  // it takes more than one instruction to store it.
-  unsigned Opc = MI->getOpcode();
-  unsigned OpNum = Ops[0];
-
-  MachineInstr *NewMI = NULL;
-  if ((Opc == PPC::OR &&
-       MI->getOperand(1).getReg() == MI->getOperand(2).getReg())) {
-    if (OpNum == 0) {  // move -> store
-      unsigned InReg = MI->getOperand(1).getReg();
-      bool isKill = MI->getOperand(1).isKill();
-      bool isUndef = MI->getOperand(1).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(), get(PPC::STW))
-                                .addReg(InReg,
-                                        getKillRegState(isKill) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    } else {           // move -> load
-      unsigned OutReg = MI->getOperand(0).getReg();
-      bool isDead = MI->getOperand(0).isDead();
-      bool isUndef = MI->getOperand(0).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(), get(PPC::LWZ))
-                                .addReg(OutReg,
-                                        RegState::Define |
-                                        getDeadRegState(isDead) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    }
-  } else if ((Opc == PPC::OR8 &&
-              MI->getOperand(1).getReg() == MI->getOperand(2).getReg())) {
-    if (OpNum == 0) {  // move -> store
-      unsigned InReg = MI->getOperand(1).getReg();
-      bool isKill = MI->getOperand(1).isKill();
-      bool isUndef = MI->getOperand(1).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(), get(PPC::STD))
-                                .addReg(InReg,
-                                        getKillRegState(isKill) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    } else {           // move -> load
-      unsigned OutReg = MI->getOperand(0).getReg();
-      bool isDead = MI->getOperand(0).isDead();
-      bool isUndef = MI->getOperand(0).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(), get(PPC::LD))
-                                .addReg(OutReg,
-                                        RegState::Define |
-                                        getDeadRegState(isDead) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    }
-  } else if (Opc == PPC::FMR || Opc == PPC::FMRSD) {
-    // The register may be F4RC or F8RC, and that determines the memory op.
-    unsigned OrigReg = MI->getOperand(OpNum).getReg();
-    // We cannot tell the register class from a physreg alone.
-    if (TargetRegisterInfo::isPhysicalRegister(OrigReg))
-      return NULL;
-    const TargetRegisterClass *RC = MF.getRegInfo().getRegClass(OrigReg);
-    const bool is64 = RC == PPC::F8RCRegisterClass;
-
-    if (OpNum == 0) {  // move -> store
-      unsigned InReg = MI->getOperand(1).getReg();
-      bool isKill = MI->getOperand(1).isKill();
-      bool isUndef = MI->getOperand(1).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(),
-                                        get(is64 ? PPC::STFD : PPC::STFS))
-                                .addReg(InReg,
-                                        getKillRegState(isKill) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    } else {           // move -> load
-      unsigned OutReg = MI->getOperand(0).getReg();
-      bool isDead = MI->getOperand(0).isDead();
-      bool isUndef = MI->getOperand(0).isUndef();
-      NewMI = addFrameReference(BuildMI(MF, MI->getDebugLoc(),
-                                        get(is64 ? PPC::LFD : PPC::LFS))
-                                .addReg(OutReg,
-                                        RegState::Define |
-                                        getDeadRegState(isDead) |
-                                        getUndefRegState(isUndef)),
-                                FrameIndex);
-    }
-  }
-
-  return NewMI;
+MachineInstr*
+PPCInstrInfo::emitFrameIndexDebugValue(MachineFunction &MF,
+                                       int FrameIx, uint64_t Offset,
+                                       const MDNode *MDPtr,
+                                       DebugLoc DL) const {
+  MachineInstrBuilder MIB = BuildMI(MF, DL, get(PPC::DBG_VALUE));
+  addFrameReference(MIB, FrameIx, 0, false).addImm(Offset).addMetadata(MDPtr);
+  return &*MIB;
 }
-
-bool PPCInstrInfo::canFoldMemoryOperand(const MachineInstr *MI,
-                                  const SmallVectorImpl<unsigned> &Ops) const {
-  if (Ops.size() != 1) return false;
-
-  // Make sure this is a reg-reg copy.  Note that we can't handle MCRF, because
-  // it takes more than one instruction to store it.
-  unsigned Opc = MI->getOpcode();
-
-  if ((Opc == PPC::OR &&
-       MI->getOperand(1).getReg() == MI->getOperand(2).getReg()))
-    return true;
-  else if ((Opc == PPC::OR8 &&
-              MI->getOperand(1).getReg() == MI->getOperand(2).getReg()))
-    return true;
-  else if (Opc == PPC::FMR || Opc == PPC::FMRSD)
-    return true;
-
-  return false;
-}
-
 
 bool PPCInstrInfo::
 ReverseBranchCondition(SmallVectorImpl<MachineOperand> &Cond) const {
@@ -762,9 +625,10 @@ unsigned PPCInstrInfo::GetInstSizeInBytes(const MachineInstr *MI) const {
     const char *AsmStr = MI->getOperand(0).getSymbolName();
     return getInlineAsmLength(AsmStr, *MF->getTarget().getMCAsmInfo());
   }
-  case PPC::DBG_LABEL:
+  case PPC::PROLOG_LABEL:
   case PPC::EH_LABEL:
   case PPC::GC_LABEL:
+  case PPC::DBG_VALUE:
     return 0;
   default:
     return 4; // PowerPC instructions are all 4 bytes

@@ -64,7 +64,8 @@ class InstrEmitter {
   void AddRegisterOperand(MachineInstr *MI, SDValue Op,
                           unsigned IIOpNum,
                           const TargetInstrDesc *II,
-                          DenseMap<SDValue, unsigned> &VRBaseMap);
+                          DenseMap<SDValue, unsigned> &VRBaseMap,
+                          bool IsDebug, bool IsClone, bool IsCloned);
 
   /// AddOperand - Add the specified operand to the specified machine instr.  II
   /// specifies the instruction information for the node, and IIOpNum is the
@@ -73,11 +74,13 @@ class InstrEmitter {
   void AddOperand(MachineInstr *MI, SDValue Op,
                   unsigned IIOpNum,
                   const TargetInstrDesc *II,
-                  DenseMap<SDValue, unsigned> &VRBaseMap);
+                  DenseMap<SDValue, unsigned> &VRBaseMap,
+                  bool IsDebug, bool IsClone, bool IsCloned);
 
   /// EmitSubregNode - Generate machine code for subreg nodes.
   ///
-  void EmitSubregNode(SDNode *Node, DenseMap<SDValue, unsigned> &VRBaseMap);
+  void EmitSubregNode(SDNode *Node, DenseMap<SDValue, unsigned> &VRBaseMap,
+                      bool IsClone, bool IsCloned);
 
   /// EmitCopyToRegClassNode - Generate machine code for COPY_TO_REGCLASS nodes.
   /// COPY_TO_REGCLASS is just a normal copy, except that the destination
@@ -86,6 +89,10 @@ class InstrEmitter {
   void EmitCopyToRegClassNode(SDNode *Node,
                               DenseMap<SDValue, unsigned> &VRBaseMap);
 
+  /// EmitRegSequence - Generate machine code for REG_SEQUENCE nodes.
+  ///
+  void EmitRegSequence(SDNode *Node, DenseMap<SDValue, unsigned> &VRBaseMap,
+                       bool IsClone, bool IsCloned);
 public:
   /// CountResults - The results of target nodes have register or immediate
   /// operands first, then an optional chain, and optional flag operands
@@ -98,21 +105,20 @@ public:
   /// MachineInstr.
   static unsigned CountOperands(SDNode *Node);
 
-  /// EmitDbgValue - Generate any debug info that refers to this Node.  Constant
-  /// dbg_value is not handled here.
-  void EmitDbgValue(SDNode *Node,
-                    DenseMap<SDValue, unsigned> &VRBaseMap,
-                    SDDbgValue* sd);
-
-
-  /// EmitDbgValue - Generate a constant DBG_VALUE.  No node is involved.
-  void EmitDbgValue(SDDbgValue* sd);
+  /// EmitDbgValue - Generate machine instruction for a dbg_value node.
+  ///
+  MachineInstr *EmitDbgValue(SDDbgValue *SD,
+                             DenseMap<SDValue, unsigned> &VRBaseMap);
 
   /// EmitNode - Generate machine code for a node and needed dependencies.
   ///
   void EmitNode(SDNode *Node, bool IsClone, bool IsCloned,
-                DenseMap<SDValue, unsigned> &VRBaseMap,
-                DenseMap<MachineBasicBlock*, MachineBasicBlock*> *EM);
+                DenseMap<SDValue, unsigned> &VRBaseMap) {
+    if (Node->isMachineOpcode())
+      EmitMachineNode(Node, IsClone, IsCloned, VRBaseMap);
+    else
+      EmitSpecialNode(Node, IsClone, IsCloned, VRBaseMap);
+  }
 
   /// getBlock - Return the current basic block.
   MachineBasicBlock *getBlock() { return MBB; }
@@ -123,6 +129,12 @@ public:
   /// InstrEmitter - Construct an InstrEmitter and set it to start inserting
   /// at the given position in the given block.
   InstrEmitter(MachineBasicBlock *mbb, MachineBasicBlock::iterator insertpos);
+  
+private:
+  void EmitMachineNode(SDNode *Node, bool IsClone, bool IsCloned,
+                       DenseMap<SDValue, unsigned> &VRBaseMap);
+  void EmitSpecialNode(SDNode *Node, bool IsClone, bool IsCloned,
+                       DenseMap<SDValue, unsigned> &VRBaseMap);
 };
 
 }

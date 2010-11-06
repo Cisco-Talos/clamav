@@ -40,7 +40,8 @@ namespace {
 }
 
 char SlotIndexes::ID = 0;
-static RegisterPass<SlotIndexes> X("slotindexes", "Slot index numbering");
+INITIALIZE_PASS(SlotIndexes, "slotindexes",
+                "Slot index numbering", false, false);
 
 IndexListEntry* IndexListEntry::getEmptyKeyEntry() {
   return &*IndexListEntryEmptyKey;
@@ -213,9 +214,11 @@ void SlotIndexes::dump() const {
 
 // Print a SlotIndex to a raw_ostream.
 void SlotIndex::print(raw_ostream &os) const {
-  os << getIndex();
+  os << entry().getIndex();
   if (isPHI())
     os << "*";
+  else
+    os << "LudS"[getSlot()];
 }
 
 // Dump a SlotIndex to stderr.

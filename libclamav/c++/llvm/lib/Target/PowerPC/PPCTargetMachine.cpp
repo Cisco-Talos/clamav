@@ -20,7 +20,7 @@
 #include "llvm/Support/FormattedStream.h"
 using namespace llvm;
 
-static const MCAsmInfo *createMCAsmInfo(const Target &T, StringRef TT) {
+static MCAsmInfo *createMCAsmInfo(const Target &T, StringRef TT) {
   Triple TheTriple(TT);
   bool isPPC64 = TheTriple.getArch() == Triple::ppc64;
   if (TheTriple.getOS() == Triple::Darwin)
@@ -44,7 +44,8 @@ PPCTargetMachine::PPCTargetMachine(const Target &T, const std::string &TT,
   : LLVMTargetMachine(T, TT),
     Subtarget(TT, FS, is64Bit),
     DataLayout(Subtarget.getTargetDataString()), InstrInfo(*this),
-    FrameInfo(*this, is64Bit), JITInfo(*this, is64Bit), TLInfo(*this),
+    FrameInfo(*this, is64Bit), JITInfo(*this, is64Bit),
+    TLInfo(*this), TSInfo(*this),
     InstrItins(Subtarget.getInstrItineraryData()) {
 
   if (getRelocationModel() == Reloc::Default) {

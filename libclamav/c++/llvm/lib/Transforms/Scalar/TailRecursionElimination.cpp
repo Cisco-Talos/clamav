@@ -16,9 +16,9 @@
 //     transformation from taking place, though currently the analysis cannot
 //     support moving any really useful instructions (only dead ones).
 //  2. This pass transforms functions that are prevented from being tail
-//     recursive by an associative expression to use an accumulator variable,
-//     thus compiling the typical naive factorial or 'fib' implementation into
-//     efficient code.
+//     recursive by an associative and commutative expression to use an
+//     accumulator variable, thus compiling the typical naive factorial or
+//     'fib' implementation into efficient code.
 //  3. TRE is performed if the function returns void, if the return
 //     returns the result returned by the call, or if the function returns a
 //     run-time constant on all exits from the function.  It is possible, though
@@ -59,6 +59,9 @@
 #include "llvm/Instructions.h"
 #include "llvm/Pass.h"
 #include "llvm/Analysis/CaptureTracking.h"
+#include "llvm/Analysis/InlineCost.h"
+#include "llvm/Analysis/Loads.h"
+#include "llvm/Support/CallSite.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/ADT/Statistic.h"
 using namespace llvm;
@@ -69,7 +72,7 @@ STATISTIC(NumAccumAdded, "Number of accumulators introduced");
 namespace {
   struct TailCallElim : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
-    TailCallElim() : FunctionPass(&ID) {}
+    TailCallElim() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F);
 
@@ -84,7 +87,8 @@ namespace {
 }
 
 char TailCallElim::ID = 0;
-static RegisterPass<TailCallElim> X("tailcallelim", "Tail Call Elimination");
+INITIALIZE_PASS(TailCallElim, "tailcallelim",
+                "Tail Call Elimination", false, false);
 
 // Public interface to the TailCallElimination pass
 FunctionPass *llvm::createTailCallEliminationPass() {
@@ -250,7 +254,7 @@ static bool isDynamicConstant(Value *V, CallInst *CI, ReturnInst *RI) {
     // If we are passing this argument into call as the corresponding
     // argument operand, then the argument is dynamically constant.
     // Otherwise, we cannot transform this function safely.
-    if (CI->getOperand(ArgNo+1) == Arg)
+    if (CI->getArgOperand(ArgNo) == Arg)
       return true;
   }
 
@@ -267,29 +271,29 @@ static bool isDynamicConstant(Value *V, CallInst *CI, ReturnInst *RI) {
 }
 
 // getCommonReturnValue - Check to see if the function containing the specified
-// return instruction and tail call consistently returns the same
-// runtime-constant value at all exit points.  If so, return the returned value.
+// tail call consistently returns the same runtime-constant value at all exit
+// points except for IgnoreRI.  If so, return the returned value.
 //
-static Value *getCommonReturnValue(ReturnInst *TheRI, CallInst *CI) {
-  Function *F = TheRI->getParent()->getParent();
+static Value *getCommonReturnValue(ReturnInst *IgnoreRI, CallInst *CI) {
+  Function *F = CI->getParent()->getParent();
   Value *ReturnedValue = 0;
 
-  for (Function::iterator BBI = F->begin(), E = F->end(); BBI != E; ++BBI)
-    if (ReturnInst *RI = dyn_cast<ReturnInst>(BBI->getTerminator()))
-      if (RI != TheRI) {
-        Value *RetOp = RI->getOperand(0);
+  for (Function::iterator BBI = F->begin(), E = F->end(); BBI != E; ++BBI) {
+    ReturnInst *RI = dyn_cast<ReturnInst>(BBI->getTerminator());
+    if (RI == 0 || RI == IgnoreRI) continue;
 
-        // We can only perform this transformation if the value returned is
-        // evaluatable at the start of the initial invocation of the function,
-        // instead of at the end of the evaluation.
-        //
-        if (!isDynamicConstant(RetOp, CI, RI))
-          return 0;
+    // We can only perform this transformation if the value returned is
+    // evaluatable at the start of the initial invocation of the function,
+    // instead of at the end of the evaluation.
+    //
+    Value *RetOp = RI->getOperand(0);
+    if (!isDynamicConstant(RetOp, CI, RI))
+      return 0;
 
-        if (ReturnedValue && RetOp != ReturnedValue)
-          return 0;     // Cannot transform if differing values are returned.
-        ReturnedValue = RetOp;
-      }
+    if (ReturnedValue && RetOp != ReturnedValue)
+      return 0;     // Cannot transform if differing values are returned.
+    ReturnedValue = RetOp;
+  }
   return ReturnedValue;
 }
 
@@ -299,11 +303,11 @@ static Value *getCommonReturnValue(ReturnInst *TheRI, CallInst *CI) {
 ///
 Value *TailCallElim::CanTransformAccumulatorRecursion(Instruction *I,
                                                       CallInst *CI) {
-  if (!I->isAssociative()) return 0;
+  if (!I->isAssociative() || !I->isCommutative()) return 0;
   assert(I->getNumOperands() == 2 &&
-         "Associative operations should have 2 args!");
+         "Associative/commutative operations should have 2 args!");
 
-  // Exactly one operand should be the result of the call instruction...
+  // Exactly one operand should be the result of the call instruction.
   if ((I->getOperand(0) == CI && I->getOperand(1) == CI) ||
       (I->getOperand(0) != CI && I->getOperand(1) != CI))
     return 0;
@@ -328,15 +332,6 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   if (&BB->front() == Ret) // Make sure there is something before the ret...
     return false;
   
-  // If the return is in the entry block, then making this transformation would
-  // turn infinite recursion into an infinite loop.  This transformation is ok
-  // in theory, but breaks some code like:
-  //   double fabs(double f) { return __builtin_fabs(f); } // a 'fabs' call
-  // disable this xform in this case, because the code generator will lower the
-  // call to fabs into inline code.
-  if (BB == &F->getEntryBlock())
-    return false;
-
   // Scan backwards from the return, checking to see if there is a tail call in
   // this block.  If so, set CI to it.
   CallInst *CI;
@@ -356,11 +351,35 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   if (CI->isTailCall() && CannotTailCallElimCallsMarkedTail)
     return false;
 
-  // If we are introducing accumulator recursion to eliminate associative
-  // operations after the call instruction, this variable contains the initial
-  // value for the accumulator.  If this value is set, we actually perform
-  // accumulator recursion elimination instead of simple tail recursion
-  // elimination.
+  // As a special case, detect code like this:
+  //   double fabs(double f) { return __builtin_fabs(f); } // a 'fabs' call
+  // and disable this xform in this case, because the code generator will
+  // lower the call to fabs into inline code.
+  if (BB == &F->getEntryBlock() && 
+      &BB->front() == CI && &*++BB->begin() == Ret &&
+      callIsSmall(F)) {
+    // A single-block function with just a call and a return. Check that
+    // the arguments match.
+    CallSite::arg_iterator I = CallSite(CI).arg_begin(),
+                           E = CallSite(CI).arg_end();
+    Function::arg_iterator FI = F->arg_begin(),
+                           FE = F->arg_end();
+    for (; I != E && FI != FE; ++I, ++FI)
+      if (*I != &*FI) break;
+    if (I == E && FI == FE)
+      return false;
+  }
+
+  // If we are introducing accumulator recursion to eliminate operations after
+  // the call instruction that are both associative and commutative, the initial
+  // value for the accumulator is placed in this variable.  If this value is set
+  // then we actually perform accumulator recursion elimination instead of
+  // simple tail recursion elimination.  If the operation is an LLVM instruction
+  // (eg: "add") then it is recorded in AccumulatorRecursionInstr.  If not, then
+  // we are handling the case when the return instruction returns a constant C
+  // which is different to the constant returned by other return instructions
+  // (which is recorded in AccumulatorRecursionEliminationInitVal).  This is a
+  // special case of accumulator recursion, the operation being "return C".
   Value *AccumulatorRecursionEliminationInitVal = 0;
   Instruction *AccumulatorRecursionInstr = 0;
 
@@ -368,21 +387,22 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   // tail call if all of the instructions between the call and the return are
   // movable to above the call itself, leaving the call next to the return.
   // Check that this is the case now.
-  for (BBI = CI, ++BBI; &*BBI != Ret; ++BBI)
-    if (!CanMoveAboveCall(BBI, CI)) {
-      // If we can't move the instruction above the call, it might be because it
-      // is an associative operation that could be tranformed using accumulator
-      // recursion elimination.  Check to see if this is the case, and if so,
-      // remember the initial accumulator value for later.
-      if ((AccumulatorRecursionEliminationInitVal =
-                             CanTransformAccumulatorRecursion(BBI, CI))) {
-        // Yes, this is accumulator recursion.  Remember which instruction
-        // accumulates.
-        AccumulatorRecursionInstr = BBI;
-      } else {
-        return false;   // Otherwise, we cannot eliminate the tail recursion!
-      }
+  for (BBI = CI, ++BBI; &*BBI != Ret; ++BBI) {
+    if (CanMoveAboveCall(BBI, CI)) continue;
+    
+    // If we can't move the instruction above the call, it might be because it
+    // is an associative and commutative operation that could be tranformed
+    // using accumulator recursion elimination.  Check to see if this is the
+    // case, and if so, remember the initial accumulator value for later.
+    if ((AccumulatorRecursionEliminationInitVal =
+                           CanTransformAccumulatorRecursion(BBI, CI))) {
+      // Yes, this is accumulator recursion.  Remember which instruction
+      // accumulates.
+      AccumulatorRecursionInstr = BBI;
+    } else {
+      return false;   // Otherwise, we cannot eliminate the tail recursion!
     }
+  }
 
   // We can only transform call/return pairs that either ignore the return value
   // of the call and return void, ignore the value of the call and return a
@@ -391,8 +411,18 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   if (Ret->getNumOperands() == 1 && Ret->getReturnValue() != CI &&
       !isa<UndefValue>(Ret->getReturnValue()) &&
       AccumulatorRecursionEliminationInitVal == 0 &&
-      !getCommonReturnValue(Ret, CI))
-    return false;
+      !getCommonReturnValue(0, CI)) {
+    // One case remains that we are able to handle: the current return
+    // instruction returns a constant, and all other return instructions
+    // return a different constant.
+    if (!isDynamicConstant(Ret->getReturnValue(), CI, Ret))
+      return false; // Current return instruction does not return a constant.
+    // Check that all other return instructions return a common constant.  If
+    // so, record it in AccumulatorRecursionEliminationInitVal.
+    AccumulatorRecursionEliminationInitVal = getCommonReturnValue(Ret, CI);
+    if (!AccumulatorRecursionEliminationInitVal)
+      return false;
+  }
 
   // OK! We can transform this tail call.  If this is the first one found,
   // create the new entry block, allowing us to branch back to the old entry.
@@ -441,8 +471,8 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   // Ok, now that we know we have a pseudo-entry block WITH all of the
   // required PHI nodes, add entries into the PHI node for the actual
   // parameters passed into the tail-recursive call.
-  for (unsigned i = 0, e = CI->getNumOperands()-1; i != e; ++i)
-    ArgumentPHIs[i]->addIncoming(CI->getOperand(i+1), BB);
+  for (unsigned i = 0, e = CI->getNumArgOperands(); i != e; ++i)
+    ArgumentPHIs[i]->addIncoming(CI->getArgOperand(i), BB);
 
   // If we are introducing an accumulator variable to eliminate the recursion,
   // do so now.  Note that we _know_ that no subsequent tail recursion
@@ -452,8 +482,9 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
   if (AccumulatorRecursionEliminationInitVal) {
     Instruction *AccRecInstr = AccumulatorRecursionInstr;
     // Start by inserting a new PHI node for the accumulator.
-    PHINode *AccPN = PHINode::Create(AccRecInstr->getType(), "accumulator.tr",
-                                     OldEntry->begin());
+    PHINode *AccPN =
+      PHINode::Create(AccumulatorRecursionEliminationInitVal->getType(),
+                      "accumulator.tr", OldEntry->begin());
 
     // Loop over all of the predecessors of the tail recursion block.  For the
     // real entry into the function we seed the PHI with the initial value,
@@ -463,20 +494,27 @@ bool TailCallElim::ProcessReturningBlock(ReturnInst *Ret, BasicBlock *&OldEntry,
     // it will not show up as a predecessor.
     for (pred_iterator PI = pred_begin(OldEntry), PE = pred_end(OldEntry);
          PI != PE; ++PI) {
-      if (*PI == &F->getEntryBlock())
-        AccPN->addIncoming(AccumulatorRecursionEliminationInitVal, *PI);
+      BasicBlock *P = *PI;
+      if (P == &F->getEntryBlock())
+        AccPN->addIncoming(AccumulatorRecursionEliminationInitVal, P);
       else
-        AccPN->addIncoming(AccPN, *PI);
+        AccPN->addIncoming(AccPN, P);
     }
 
-    // Add an incoming argument for the current block, which is computed by our
-    // associative accumulator instruction.
-    AccPN->addIncoming(AccRecInstr, BB);
+    if (AccRecInstr) {
+      // Add an incoming argument for the current block, which is computed by
+      // our associative and commutative accumulator instruction.
+      AccPN->addIncoming(AccRecInstr, BB);
 
-    // Next, rewrite the accumulator recursion instruction so that it does not
-    // use the result of the call anymore, instead, use the PHI node we just
-    // inserted.
-    AccRecInstr->setOperand(AccRecInstr->getOperand(0) != CI, AccPN);
+      // Next, rewrite the accumulator recursion instruction so that it does not
+      // use the result of the call anymore, instead, use the PHI node we just
+      // inserted.
+      AccRecInstr->setOperand(AccRecInstr->getOperand(0) != CI, AccPN);
+    } else {
+      // Add an incoming argument for the current block, which is just the
+      // constant returned by the current return instruction.
+      AccPN->addIncoming(Ret->getReturnValue(), BB);
+    }
 
     // Finally, rewrite any return instructions in the program to return the PHI
     // node instead of the "initval" that they do currently.  This loop will

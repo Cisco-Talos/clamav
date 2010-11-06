@@ -59,27 +59,27 @@ namespace llvm {
     /// currently representing the group that the register belongs to.
     /// Register 0 is always represented by the 0 group, a group
     /// composed of registers that are not eligible for anti-aliasing.
-    unsigned GroupNodeIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> GroupNodeIndices;
 
     /// RegRefs - Map registers to all their references within a live range.
     std::multimap<unsigned, RegisterReference> RegRefs;
 
     /// KillIndices - The index of the most recent kill (proceding bottom-up),
     /// or ~0u if the register is not live.
-    unsigned KillIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> KillIndices;
 
     /// DefIndices - The index of the most recent complete def (proceding bottom
     /// up), or ~0u if the register is live.
-    unsigned DefIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> DefIndices;
 
   public:
     AggressiveAntiDepState(const unsigned TargetRegs, MachineBasicBlock *BB);
 
     /// GetKillIndices - Return the kill indices.
-    unsigned *GetKillIndices() { return KillIndices; }
+    std::vector<unsigned> &GetKillIndices() { return KillIndices; }
 
     /// GetDefIndices - Return the define indices.
-    unsigned *GetDefIndices() { return DefIndices; }
+    std::vector<unsigned> &GetDefIndices() { return DefIndices; }
 
     /// GetRegRefs - Return the RegRefs map.
     std::multimap<unsigned, RegisterReference>& GetRegRefs() { return RegRefs; }
@@ -115,6 +115,7 @@ namespace llvm {
   class AggressiveAntiDepBreaker : public AntiDepBreaker {
     MachineFunction& MF;
     MachineRegisterInfo &MRI;
+    const TargetInstrInfo *TII;
     const TargetRegisterInfo *TRI;
 
     /// AllocatableSet - The set of allocatable registers.
@@ -142,9 +143,9 @@ namespace llvm {
     /// path
     /// of the ScheduleDAG and break them by renaming registers.
     ///
-    unsigned BreakAntiDependencies(std::vector<SUnit>& SUnits,
-                                   MachineBasicBlock::iterator& Begin,
-                                   MachineBasicBlock::iterator& End,
+    unsigned BreakAntiDependencies(const std::vector<SUnit>& SUnits,
+                                   MachineBasicBlock::iterator Begin,
+                                   MachineBasicBlock::iterator End,
                                    unsigned InsertPosIndex);
 
     /// Observe - Update liveness information to account for the current

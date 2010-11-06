@@ -17,6 +17,7 @@
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/MachineSSAUpdater.h"
 #include "llvm/Target/TargetInstrInfo.h"
@@ -68,7 +69,7 @@ namespace {
   public:
     static char ID;
     explicit TailDuplicatePass(bool PreRA) :
-      MachineFunctionPass(&ID), PreRegAlloc(PreRA) {}
+      MachineFunctionPass(ID), PreRegAlloc(PreRA) {}
 
     virtual bool runOnMachineFunction(MachineFunction &MF);
     virtual const char *getPassName() const { return "Tail Duplication"; }
@@ -253,14 +254,15 @@ bool TailDuplicatePass::TailDuplicateBlocks(MachineFunction &MF) {
       // SSA form.
       for (unsigned i = 0, e = Copies.size(); i != e; ++i) {
         MachineInstr *Copy = Copies[i];
-        unsigned Src, Dst, SrcSR, DstSR;
-        if (TII->isMoveInstr(*Copy, Src, Dst, SrcSR, DstSR)) {
-          MachineRegisterInfo::use_iterator UI = MRI->use_begin(Src);
-          if (++UI == MRI->use_end()) {
-            // Copy is the only use. Do trivial copy propagation here.
-            MRI->replaceRegWith(Dst, Src);
-            Copy->eraseFromParent();
-          }
+        if (!Copy->isCopy())
+          continue;
+        unsigned Dst = Copy->getOperand(0).getReg();
+        unsigned Src = Copy->getOperand(1).getReg();
+        MachineRegisterInfo::use_iterator UI = MRI->use_begin(Src);
+        if (++UI == MRI->use_end()) {
+          // Copy is the only use. Do trivial copy propagation here.
+          MRI->replaceRegWith(Dst, Src);
+          Copy->eraseFromParent();
         }
       }
 
@@ -495,7 +497,7 @@ TailDuplicatePass::TailDuplicate(MachineBasicBlock *TailBB, MachineFunction &MF,
     if (InstrCount == MaxDuplicateCount) return false;
     // Remember if we saw a call.
     if (I->getDesc().isCall()) HasCall = true;
-    if (!I->isPHI())
+    if (!I->isPHI() && !I->isDebugValue())
       InstrCount += 1;
   }
   // Heuristically, don't tail-duplicate calls if it would expand code size,
@@ -559,11 +561,9 @@ TailDuplicatePass::TailDuplicate(MachineBasicBlock *TailBB, MachineFunction &MF,
     }
     MachineBasicBlock::iterator Loc = PredBB->getFirstTerminator();
     for (unsigned i = 0, e = CopyInfos.size(); i != e; ++i) {
-      const TargetRegisterClass *RC = MRI->getRegClass(CopyInfos[i].first);
-      TII->copyRegToReg(*PredBB, Loc, CopyInfos[i].first,
-                        CopyInfos[i].second, RC,RC);
-      MachineInstr *CopyMI = prior(Loc);
-      Copies.push_back(CopyMI);
+      Copies.push_back(BuildMI(*PredBB, Loc, DebugLoc(),
+                               TII->get(TargetOpcode::COPY),
+                               CopyInfos[i].first).addReg(CopyInfos[i].second));
     }
     NumInstrDups += TailBB->size() - 1; // subtract one for removed branch
 
@@ -618,11 +618,10 @@ TailDuplicatePass::TailDuplicate(MachineBasicBlock *TailBB, MachineFunction &MF,
       }
       MachineBasicBlock::iterator Loc = PrevBB->getFirstTerminator();
       for (unsigned i = 0, e = CopyInfos.size(); i != e; ++i) {
-        const TargetRegisterClass *RC = MRI->getRegClass(CopyInfos[i].first);
-        TII->copyRegToReg(*PrevBB, Loc, CopyInfos[i].first,
-                          CopyInfos[i].second, RC, RC);
-        MachineInstr *CopyMI = prior(Loc);
-        Copies.push_back(CopyMI);
+        Copies.push_back(BuildMI(*PrevBB, Loc, DebugLoc(),
+                                 TII->get(TargetOpcode::COPY),
+                                 CopyInfos[i].first)
+                           .addReg(CopyInfos[i].second));
       }
     } else {
       // No PHIs to worry about, just splice the instructions over.
@@ -647,17 +646,6 @@ void TailDuplicatePass::RemoveDeadBlock(MachineBasicBlock *MBB) {
   // Remove all successors.
   while (!MBB->succ_empty())
     MBB->removeSuccessor(MBB->succ_end()-1);
-
-  // If there are any labels in the basic block, unregister them from
-  // MachineModuleInfo.
-  if (MMI && !MBB->empty()) {
-    for (MachineBasicBlock::iterator I = MBB->begin(), E = MBB->end();
-         I != E; ++I) {
-      if (I->isLabel())
-        // The label ID # is always operand #0, an immediate.
-        MMI->InvalidateLabel(I->getOperand(0).getImm());
-    }
-  }
 
   // Remove the block.
   MBB->eraseFromParent();

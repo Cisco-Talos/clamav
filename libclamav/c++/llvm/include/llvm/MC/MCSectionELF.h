@@ -21,7 +21,9 @@ namespace llvm {
 /// MCSectionELF - This represents a section on linux, lots of unix variants
 /// and some bare metal systems.
 class MCSectionELF : public MCSection {
-  std::string SectionName;
+  /// SectionName - This is the name of the section.  The referenced memory is
+  /// owned by TargetLoweringObjectFileELF's ELFUniqueMap.
+  StringRef SectionName;
   
   /// Type - This is the sh_type field of a section, drawn from the enums below.
   unsigned Type;
@@ -33,17 +35,20 @@ class MCSectionELF : public MCSection {
   /// IsExplicit - Indicates that this section comes from globals with an
   /// explicit section specified.
   bool IsExplicit;
+
+  /// EntrySize - The size of each entry in this section. This size only
+  /// makes sense for sections that contain fixed-sized entries. If a
+  /// section does not contain fixed-sized entries 'EntrySize' will be 0.
+  unsigned EntrySize;
   
-protected:
+private:
+  friend class MCContext;
   MCSectionELF(StringRef Section, unsigned type, unsigned flags,
-               SectionKind K, bool isExplicit)
-    : MCSection(K), SectionName(Section.str()), Type(type), Flags(flags), 
-      IsExplicit(isExplicit) {}
+               SectionKind K, bool isExplicit, unsigned entrySize)
+    : MCSection(SV_ELF, K), SectionName(Section), Type(type), Flags(flags),
+      IsExplicit(isExplicit), EntrySize(entrySize) {}
+  ~MCSectionELF();
 public:
-  
-  static MCSectionELF *Create(StringRef Section, unsigned Type, 
-                              unsigned Flags, SectionKind K, bool isExplicit,
-                              MCContext &Ctx);
 
   /// ShouldOmitSectionDirective - Decides whether a '.section' directive
   /// should be printed before the section name
@@ -151,38 +156,39 @@ public:
 
     // This section holds Thread-Local Storage.
     SHF_TLS              = 0x400U,
-    
-    /// FIRST_TARGET_DEP_FLAG - This is the first flag that subclasses are
-    /// allowed to specify.
-    FIRST_TARGET_DEP_FLAG = 0x800U,
 
-    /// TARGET_INDEP_SHF - This is the bitmask for all the target independent
-    /// section flags.  Targets can define their own target flags above these.
-    /// If they do that, they should implement their own MCSectionELF subclasses
-    /// and implement the virtual method hooks below to handle printing needs.
-    TARGET_INDEP_SHF     = FIRST_TARGET_DEP_FLAG-1U
+    
+    // Start of target-specific flags.
+
+    /// XCORE_SHF_CP_SECTION - All sections with the "c" flag are grouped
+    /// together by the linker to form the constant pool and the cp register is
+    /// set to the start of the constant pool by the boot code.
+    XCORE_SHF_CP_SECTION = 0x800U,
+    
+    /// XCORE_SHF_DP_SECTION - All sections with the "d" flag are grouped
+    /// together by the linker to form the data section and the dp register is
+    /// set to the start of the section by the boot code.
+    XCORE_SHF_DP_SECTION = 0x1000U
   };
 
-  StringRef getSectionName() const {
-    return StringRef(SectionName);
-  }
-  
+  StringRef getSectionName() const { return SectionName; }
   unsigned getType() const { return Type; }
   unsigned getFlags() const { return Flags; }
+  unsigned getEntrySize() const { return EntrySize; }
   
-  virtual void PrintSwitchToSection(const MCAsmInfo &MAI,
-                                    raw_ostream &OS) const;
+  void PrintSwitchToSection(const MCAsmInfo &MAI,
+                            raw_ostream &OS) const;
   
-  
-  /// PrintTargetSpecificSectionFlags - Targets that define their own
-  /// MCSectionELF subclasses with target specific section flags should
-  /// implement this method if they end up adding letters to the attributes
-  /// list.
-  virtual void PrintTargetSpecificSectionFlags(const MCAsmInfo &MAI,
-                                               raw_ostream &OS) const {
+  /// isBaseAddressKnownZero - We know that non-allocatable sections (like
+  /// debug info) have a base of zero.
+  virtual bool isBaseAddressKnownZero() const {
+    return (getFlags() & SHF_ALLOC) == 0;
   }
-                                               
-  
+
+  static bool classof(const MCSection *S) {
+    return S->getVariant() == SV_ELF;
+  }
+  static bool classof(const MCSectionELF *) { return true; }
 };
 
 } // end namespace llvm

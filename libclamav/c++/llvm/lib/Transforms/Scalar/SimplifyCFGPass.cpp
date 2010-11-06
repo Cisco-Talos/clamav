@@ -26,6 +26,7 @@
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Constants.h"
 #include "llvm/Instructions.h"
+#include "llvm/IntrinsicInst.h"
 #include "llvm/Module.h"
 #include "llvm/Attributes.h"
 #include "llvm/Support/CFG.h"
@@ -41,14 +42,15 @@ STATISTIC(NumSimpl, "Number of blocks simplified");
 namespace {
   struct CFGSimplifyPass : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
-    CFGSimplifyPass() : FunctionPass(&ID) {}
+    CFGSimplifyPass() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F);
   };
 }
 
 char CFGSimplifyPass::ID = 0;
-static RegisterPass<CFGSimplifyPass> X("simplifycfg", "Simplify the CFG");
+INITIALIZE_PASS(CFGSimplifyPass, "simplifycfg",
+                "Simplify the CFG", false, false);
 
 // Public interface to the CFGSimplification pass
 FunctionPass *llvm::createCFGSimplificationPass() {
@@ -57,13 +59,20 @@ FunctionPass *llvm::createCFGSimplificationPass() {
 
 /// ChangeToUnreachable - Insert an unreachable instruction before the specified
 /// instruction, making it and the rest of the code in the block dead.
-static void ChangeToUnreachable(Instruction *I) {
+static void ChangeToUnreachable(Instruction *I, bool UseLLVMTrap) {
   BasicBlock *BB = I->getParent();
   // Loop over all of the successors, removing BB's entry from any PHI
   // nodes.
   for (succ_iterator SI = succ_begin(BB), SE = succ_end(BB); SI != SE; ++SI)
     (*SI)->removePredecessor(BB);
   
+  // Insert a call to llvm.trap right before this.  This turns the undefined
+  // behavior into a hard fail instead of falling through into random code.
+  if (UseLLVMTrap) {
+    Function *TrapFn =
+      Intrinsic::getDeclaration(BB->getParent()->getParent(), Intrinsic::trap);
+    CallInst::Create(TrapFn, "", I);
+  }
   new UnreachableInst(I->getContext(), I);
   
   // All instructions after this are dead.
@@ -78,7 +87,7 @@ static void ChangeToUnreachable(Instruction *I) {
 /// ChangeToCall - Convert the specified invoke into a normal call.
 static void ChangeToCall(InvokeInst *II) {
   BasicBlock *BB = II->getParent();
-  SmallVector<Value*, 8> Args(II->op_begin()+3, II->op_end());
+  SmallVector<Value*, 8> Args(II->op_begin(), II->op_end() - 3);
   CallInst *NewCall = CallInst::Create(II->getCalledValue(), Args.begin(),
                                        Args.end(), "", II);
   NewCall->takeName(II);
@@ -117,7 +126,8 @@ static bool MarkAliveBlocks(BasicBlock *BB,
           // though.
           ++BBI;
           if (!isa<UnreachableInst>(BBI)) {
-            ChangeToUnreachable(BBI);
+            // Don't insert a call to llvm.trap right before the unreachable.
+            ChangeToUnreachable(BBI, false);
             Changed = true;
           }
           break;
@@ -128,12 +138,15 @@ static bool MarkAliveBlocks(BasicBlock *BB,
       // they should be changed to unreachable by passes that can't modify the
       // CFG.
       if (StoreInst *SI = dyn_cast<StoreInst>(BBI)) {
+        // Don't touch volatile stores.
+        if (SI->isVolatile()) continue;
+
         Value *Ptr = SI->getOperand(1);
         
         if (isa<UndefValue>(Ptr) ||
             (isa<ConstantPointerNull>(Ptr) &&
              SI->getPointerAddressSpace() == 0)) {
-          ChangeToUnreachable(SI);
+          ChangeToUnreachable(SI, true);
           Changed = true;
           break;
         }
@@ -210,12 +223,16 @@ static bool MergeEmptyReturnBlocks(Function &F) {
       // Check for something else in the block.
       BasicBlock::iterator I = Ret;
       --I;
-      if (!isa<PHINode>(I) || I != BB.begin() ||
-          Ret->getNumOperands() == 0 ||
-          Ret->getOperand(0) != I)
+      // Skip over debug info.
+      while (isa<DbgInfoIntrinsic>(I) && I != BB.begin())
+        --I;
+      if (!isa<DbgInfoIntrinsic>(I) &&
+          (!isa<PHINode>(I) || I != BB.begin() ||
+           Ret->getNumOperands() == 0 ||
+           Ret->getOperand(0) != I))
         continue;
     }
-    
+
     // If this is the first returning block, remember it and keep going.
     if (RetBlock == 0) {
       RetBlock = &BB;
@@ -239,7 +256,7 @@ static bool MergeEmptyReturnBlocks(Function &F) {
     // If the canonical return block has no PHI node, create one now.
     PHINode *RetBlockPHI = dyn_cast<PHINode>(RetBlock->begin());
     if (RetBlockPHI == 0) {
-      Value *InVal = cast<ReturnInst>(RetBlock->begin())->getOperand(0);
+      Value *InVal = cast<ReturnInst>(RetBlock->getTerminator())->getOperand(0);
       RetBlockPHI = PHINode::Create(Ret->getOperand(0)->getType(), "merge",
                                     &RetBlock->front());
       
@@ -268,10 +285,9 @@ static bool IterativeSimplifyCFG(Function &F, const TargetData *TD) {
   while (LocalChange) {
     LocalChange = false;
     
-    // Loop over all of the basic blocks (except the first one) and remove them
-    // if they are unneeded...
+    // Loop over all of the basic blocks and remove them if they are unneeded...
     //
-    for (Function::iterator BBIt = ++F.begin(); BBIt != F.end(); ) {
+    for (Function::iterator BBIt = F.begin(); BBIt != F.end(); ) {
       if (SimplifyCFG(BBIt++, TD)) {
         LocalChange = true;
         ++NumSimpl;

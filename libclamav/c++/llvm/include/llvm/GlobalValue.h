@@ -40,6 +40,9 @@ public:
     InternalLinkage,    ///< Rename collisions when linking (static functions).
     PrivateLinkage,     ///< Like Internal, but omit from symbol table.
     LinkerPrivateLinkage, ///< Like Private, but linker removes.
+    LinkerPrivateWeakLinkage, ///< Like LinkerPrivate, but weak.
+    LinkerPrivateWeakDefAutoLinkage, ///< Like LinkerPrivateWeak, but possibly
+                                     ///  hidden.
     DLLImportLinkage,   ///< Function to be imported from DLL
     DLLExportLinkage,   ///< Function to be accessible from DLL.
     ExternalWeakLinkage,///< ExternalWeak linkage description.
@@ -73,11 +76,10 @@ public:
     removeDeadConstantUsers();   // remove any dead constants using this.
   }
 
-  unsigned getAlignment() const { return Alignment; }
-  void setAlignment(unsigned Align) {
-    assert((Align & (Align-1)) == 0 && "Alignment is not a power of 2!");
-    Alignment = Align;
+  unsigned getAlignment() const {
+    return (1u << Alignment) >> 1;
   }
+  void setAlignment(unsigned Align);
 
   VisibilityTypes getVisibility() const { return VisibilityTypes(Visibility); }
   bool hasDefaultVisibility() const { return Visibility == DefaultVisibility; }
@@ -132,11 +134,18 @@ public:
     return Linkage == PrivateLinkage;
   }
   static bool isLinkerPrivateLinkage(LinkageTypes Linkage) {
-    return Linkage==LinkerPrivateLinkage;
+    return Linkage == LinkerPrivateLinkage;
+  }
+  static bool isLinkerPrivateWeakLinkage(LinkageTypes Linkage) {
+    return Linkage == LinkerPrivateWeakLinkage;
+  }
+  static bool isLinkerPrivateWeakDefAutoLinkage(LinkageTypes Linkage) {
+    return Linkage == LinkerPrivateWeakDefAutoLinkage;
   }
   static bool isLocalLinkage(LinkageTypes Linkage) {
     return isInternalLinkage(Linkage) || isPrivateLinkage(Linkage) ||
-      isLinkerPrivateLinkage(Linkage);
+      isLinkerPrivateLinkage(Linkage) || isLinkerPrivateWeakLinkage(Linkage) ||
+      isLinkerPrivateWeakDefAutoLinkage(Linkage);
   }
   static bool isDLLImportLinkage(LinkageTypes Linkage) {
     return Linkage == DLLImportLinkage;
@@ -155,22 +164,26 @@ public:
   /// by something non-equivalent at link time.  For example, if a function has
   /// weak linkage then the code defining it may be replaced by different code.
   static bool mayBeOverridden(LinkageTypes Linkage) {
-    return (Linkage == WeakAnyLinkage ||
-            Linkage == LinkOnceAnyLinkage ||
-            Linkage == CommonLinkage ||
-            Linkage == ExternalWeakLinkage);
+    return Linkage == WeakAnyLinkage ||
+           Linkage == LinkOnceAnyLinkage ||
+           Linkage == CommonLinkage ||
+           Linkage == ExternalWeakLinkage ||
+           Linkage == LinkerPrivateWeakLinkage ||
+           Linkage == LinkerPrivateWeakDefAutoLinkage;
   }
 
   /// isWeakForLinker - Whether the definition of this global may be replaced at
   /// link time.
   static bool isWeakForLinker(LinkageTypes Linkage)  {
-    return (Linkage == AvailableExternallyLinkage ||
-            Linkage == WeakAnyLinkage ||
-            Linkage == WeakODRLinkage ||
-            Linkage == LinkOnceAnyLinkage ||
-            Linkage == LinkOnceODRLinkage ||
-            Linkage == CommonLinkage ||
-            Linkage == ExternalWeakLinkage);
+    return Linkage == AvailableExternallyLinkage ||
+           Linkage == WeakAnyLinkage ||
+           Linkage == WeakODRLinkage ||
+           Linkage == LinkOnceAnyLinkage ||
+           Linkage == LinkOnceODRLinkage ||
+           Linkage == CommonLinkage ||
+           Linkage == ExternalWeakLinkage ||
+           Linkage == LinkerPrivateWeakLinkage ||
+           Linkage == LinkerPrivateWeakDefAutoLinkage;
   }
 
   bool hasExternalLinkage() const { return isExternalLinkage(Linkage); }
@@ -187,6 +200,12 @@ public:
   bool hasInternalLinkage() const { return isInternalLinkage(Linkage); }
   bool hasPrivateLinkage() const { return isPrivateLinkage(Linkage); }
   bool hasLinkerPrivateLinkage() const { return isLinkerPrivateLinkage(Linkage); }
+  bool hasLinkerPrivateWeakLinkage() const {
+    return isLinkerPrivateWeakLinkage(Linkage);
+  }
+  bool hasLinkerPrivateWeakDefAutoLinkage() const {
+    return isLinkerPrivateWeakDefAutoLinkage(Linkage);
+  }
   bool hasLocalLinkage() const { return isLocalLinkage(Linkage); }
   bool hasDLLImportLinkage() const { return isDLLImportLinkage(Linkage); }
   bool hasDLLExportLinkage() const { return isDLLExportLinkage(Linkage); }

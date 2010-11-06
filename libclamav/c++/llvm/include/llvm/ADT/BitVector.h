@@ -49,6 +49,11 @@ public:
 
     ~reference() {}
 
+    reference &operator=(reference t) {
+      *this = bool(t);
+      return *this;
+    }
+
     reference& operator=(bool t) {
       if (t)
         *WordRef |= 1L << BitPos;
@@ -329,7 +334,8 @@ public:
     Size = RHS.size();
     unsigned RHSWords = NumBitWords(Size);
     if (Size <= Capacity * BITWORD_SIZE) {
-      std::copy(RHS.Bits, &RHS.Bits[RHSWords], Bits);
+      if (Size)
+        std::copy(RHS.Bits, &RHS.Bits[RHSWords], Bits);
       clear_unused_bits();
       return *this;
     }

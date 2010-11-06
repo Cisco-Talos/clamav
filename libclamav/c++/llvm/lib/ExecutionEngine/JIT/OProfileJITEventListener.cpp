@@ -19,6 +19,7 @@
 #define DEBUG_TYPE "oprofile-jit-event-listener"
 #include "llvm/Function.h"
 #include "llvm/Metadata.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/Analysis/DebugInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
@@ -77,10 +78,10 @@ class FilenameCache {
   DenseMap<AssertingVH<MDNode>, std::string> Filenames;
 
  public:
-  const char *getFilename(DIScope Scope) {
-    std::string &Filename = Filenames[Scope.getNode()];
+  const char *getFilename(MDNode *Scope) {
+    std::string &Filename = Filenames[Scope];
     if (Filename.empty()) {
-      Filename = Scope.getFilename();
+      Filename = DIScope(Scope).getFilename();
     }
     return Filename.c_str();
   }
@@ -91,9 +92,9 @@ static debug_line_info LineStartToOProfileFormat(
     uintptr_t Address, DebugLoc Loc) {
   debug_line_info Result;
   Result.vma = Address;
-  DILocation DILoc = MF.getDILocation(Loc);
-  Result.lineno = DILoc.getLineNumber();
-  Result.filename = Filenames.getFilename(DILoc.getScope());
+  Result.lineno = Loc.getLine();
+  Result.filename = Filenames.getFilename(
+    Loc.getScope(MF.getFunction()->getContext()));
   DEBUG(dbgs() << "Mapping " << reinterpret_cast<void*>(Result.vma) << " to "
                << Result.filename << ":" << Result.lineno << "\n");
   return Result;
@@ -113,26 +114,43 @@ void OProfileJITEventListener::NotifyFunctionEmitted(
     return;
   }
 
-  // Now we convert the line number information from the address/DebugLoc format
-  // in Details to the address/filename/lineno format that OProfile expects.
-  // OProfile 0.9.4 (and maybe later versions) has a bug that causes it to
-  // ignore line numbers for addresses above 4G.
-  FilenameCache Filenames;
-  std::vector<debug_line_info> LineInfo;
-  LineInfo.reserve(1 + Details.LineStarts.size());
-  if (!Details.MF->getDefaultDebugLoc().isUnknown()) {
-    LineInfo.push_back(LineStartToOProfileFormat(
-        *Details.MF, Filenames,
-        reinterpret_cast<uintptr_t>(FnStart),
-        Details.MF->getDefaultDebugLoc()));
-  }
-  for (std::vector<EmittedFunctionDetails::LineStart>::const_iterator
+  if (!Details.LineStarts.empty()) {
+    // Now we convert the line number information from the address/DebugLoc
+    // format in Details to the address/filename/lineno format that OProfile
+    // expects.  Note that OProfile 0.9.4 has a bug that causes it to ignore
+    // line numbers for addresses above 4G.
+    FilenameCache Filenames;
+    std::vector<debug_line_info> LineInfo;
+    LineInfo.reserve(1 + Details.LineStarts.size());
+
+    DebugLoc FirstLoc = Details.LineStarts[0].Loc;
+    assert(!FirstLoc.isUnknown()
+           && "LineStarts should not contain unknown DebugLocs");
+    MDNode *FirstLocScope = FirstLoc.getScope(F.getContext());
+    DISubprogram FunctionDI = getDISubprogram(FirstLocScope);
+    if (FunctionDI.Verify()) {
+      // If we have debug info for the function itself, use that as the line
+      // number of the first several instructions.  Otherwise, after filling
+      // LineInfo, we'll adjust the address of the first line number to point at
+      // the start of the function.
+      debug_line_info line_info;
+      line_info.vma = reinterpret_cast<uintptr_t>(FnStart);
+      line_info.lineno = FunctionDI.getLineNumber();
+      line_info.filename = Filenames.getFilename(FirstLocScope);
+      LineInfo.push_back(line_info);
+    }
+
+    for (std::vector<EmittedFunctionDetails::LineStart>::const_iterator
            I = Details.LineStarts.begin(), E = Details.LineStarts.end();
-       I != E; ++I) {
-    LineInfo.push_back(LineStartToOProfileFormat(
-        *Details.MF, Filenames, I->Address, I->Loc));
-  }
-  if (!LineInfo.empty()) {
+         I != E; ++I) {
+      LineInfo.push_back(LineStartToOProfileFormat(
+                           *Details.MF, Filenames, I->Address, I->Loc));
+    }
+
+    // In case the function didn't have line info of its own, adjust the first
+    // line info's address to include the start of the function.
+    LineInfo[0].vma = reinterpret_cast<uintptr_t>(FnStart);
+
     if (op_write_debug_line_info(Agent, FnStart,
                                  LineInfo.size(), &*LineInfo.begin()) == -1) {
       DEBUG(dbgs() 

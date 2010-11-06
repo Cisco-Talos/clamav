@@ -20,9 +20,7 @@
 namespace llvm {
 
 class FunctionPass;
-class MCContext;
 class JITCodeEmitter;
-class MCAssembler;
 class MCCodeEmitter;
 class MCContext;
 class MachineCodeEmitter;
@@ -37,16 +35,19 @@ class formatted_raw_ostream;
 FunctionPass *createX86ISelDag(X86TargetMachine &TM,
                                CodeGenOpt::Level OptLevel);
 
+/// createGlobalBaseRegPass - This pass initializes a global base
+/// register for PIC on x86-32.
+FunctionPass* createGlobalBaseRegPass();
+
 /// createX86FloatingPointStackifierPass - This function returns a pass which
 /// converts floating point register references and pseudo instructions into
 /// floating point stack references and physical instructions.
 ///
 FunctionPass *createX86FloatingPointStackifierPass();
 
-/// createX87FPRegKillInserterPass - This function returns a pass which
-/// inserts FP_REG_KILL instructions where needed.
-///
-FunctionPass *createX87FPRegKillInserterPass();
+/// createSSEDomainFixPass - This pass twiddles SSE opcodes to prevent domain
+/// crossings.
+FunctionPass *createSSEDomainFixPass();
 
 /// createX86CodeEmitterPass - Return a pass that emits the collected X86 code
 /// to the specified MCE object.
@@ -58,8 +59,8 @@ MCCodeEmitter *createX86_32MCCodeEmitter(const Target &, TargetMachine &TM,
 MCCodeEmitter *createX86_64MCCodeEmitter(const Target &, TargetMachine &TM,
                                          MCContext &Ctx);
 
-TargetAsmBackend *createX86_32AsmBackend(const Target &, MCAssembler &);
-TargetAsmBackend *createX86_64AsmBackend(const Target &, MCAssembler &);
+TargetAsmBackend *createX86_32AsmBackend(const Target &, const std::string &);
+TargetAsmBackend *createX86_64AsmBackend(const Target &, const std::string &);
 
 /// createX86EmitCodeToMemory - Returns a pass that converts a register
 /// allocated function into raw machine code in a dynamically

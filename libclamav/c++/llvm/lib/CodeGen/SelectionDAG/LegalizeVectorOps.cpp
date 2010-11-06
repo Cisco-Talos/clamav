@@ -34,7 +34,7 @@ using namespace llvm;
 namespace {
 class VectorLegalizer {
   SelectionDAG& DAG;
-  TargetLowering& TLI;
+  const TargetLowering &TLI;
   bool Changed; // Keep track of whether anything changed
 
   /// LegalizedNodes - For nodes that are of legal width, and that have more
@@ -116,7 +116,7 @@ SDValue VectorLegalizer::LegalizeOp(SDValue Op) {
     Ops.push_back(LegalizeOp(Node->getOperand(i)));
 
   SDValue Result =
-      DAG.UpdateNodeOperands(Op.getValue(0), Ops.data(), Ops.size());
+    SDValue(DAG.UpdateNodeOperands(Op.getNode(), Ops.data(), Ops.size()), 0);
 
   bool HasVectorValue = false;
   for (SDNode::value_iterator J = Node->value_begin(), E = Node->value_end();

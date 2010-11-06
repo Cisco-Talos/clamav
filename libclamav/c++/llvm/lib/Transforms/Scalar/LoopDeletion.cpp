@@ -28,7 +28,7 @@ namespace {
   class LoopDeletion : public LoopPass {
   public:
     static char ID; // Pass ID, replacement for typeid
-    LoopDeletion() : LoopPass(&ID) {}
+    LoopDeletion() : LoopPass(ID) {}
     
     // Possibly eliminate loop L if it is dead.
     bool runOnLoop(Loop* L, LPPassManager& LPM);
@@ -38,9 +38,9 @@ namespace {
                     bool &Changed, BasicBlock *Preheader);
 
     virtual void getAnalysisUsage(AnalysisUsage& AU) const {
-      AU.addRequired<ScalarEvolution>();
       AU.addRequired<DominatorTree>();
       AU.addRequired<LoopInfo>();
+      AU.addRequired<ScalarEvolution>();
       AU.addRequiredID(LoopSimplifyID);
       AU.addRequiredID(LCSSAID);
       
@@ -55,7 +55,8 @@ namespace {
 }
   
 char LoopDeletion::ID = 0;
-static RegisterPass<LoopDeletion> X("loop-deletion", "Delete dead loops");
+INITIALIZE_PASS(LoopDeletion, "loop-deletion",
+                "Delete dead loops", false, false);
 
 Pass* llvm::createLoopDeletionPass() {
   return new LoopDeletion();
@@ -83,7 +84,7 @@ bool LoopDeletion::IsLoopDead(Loop* L,
       if (!L->makeLoopInvariant(I, Changed, Preheader->getTerminator()))
         return false;
       
-    BI++;
+    ++BI;
   }
   
   // Make sure that no instructions in the block have potential side-effects.
@@ -176,7 +177,7 @@ bool LoopDeletion::runOnLoop(Loop* L, LPPassManager& LPM) {
   BasicBlock::iterator BI = exitBlock->begin();
   while (PHINode* P = dyn_cast<PHINode>(BI)) {
     P->replaceUsesOfWith(exitingBlock, preheader);
-    BI++;
+    ++BI;
   }
   
   // Update the dominator tree and remove the instructions and blocks that will
@@ -226,7 +227,7 @@ bool LoopDeletion::runOnLoop(Loop* L, LPPassManager& LPM) {
   LPM.deleteLoopFromQueue(L);
   Changed = true;
   
-  NumDeleted++;
+  ++NumDeleted;
   
   return Changed;
 }

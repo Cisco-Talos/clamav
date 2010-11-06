@@ -86,7 +86,7 @@ Value::~Value() {
 /// hasNUses - Return true if this Value has exactly N users.
 ///
 bool Value::hasNUses(unsigned N) const {
-  use_const_iterator UI = use_begin(), E = use_end();
+  const_use_iterator UI = use_begin(), E = use_end();
 
   for (; N; --N, ++UI)
     if (UI == E) return false;  // Too few.
@@ -97,7 +97,7 @@ bool Value::hasNUses(unsigned N) const {
 /// logically equivalent to getNumUses() >= N.
 ///
 bool Value::hasNUsesOrMore(unsigned N) const {
-  use_const_iterator UI = use_begin(), E = use_end();
+  const_use_iterator UI = use_begin(), E = use_end();
 
   for (; N; --N, ++UI)
     if (UI == E) return false;  // Too few.
@@ -108,7 +108,7 @@ bool Value::hasNUsesOrMore(unsigned N) const {
 /// isUsedInBasicBlock - Return true if this value is used in the specified
 /// basic block.
 bool Value::isUsedInBasicBlock(const BasicBlock *BB) const {
-  for (use_const_iterator I = use_begin(), E = use_end(); I != E; ++I) {
+  for (const_use_iterator I = use_begin(), E = use_end(); I != E; ++I) {
     const Instruction *User = dyn_cast<Instruction>(*I);
     if (User && User->getParent() == BB)
       return true;
@@ -139,10 +139,6 @@ static bool getSymTab(Value *V, ValueSymbolTable *&ST) {
   } else if (Argument *A = dyn_cast<Argument>(V)) {
     if (Function *P = A->getParent())
       ST = &P->getValueSymbolTable();
-  } else if (NamedMDNode *N = dyn_cast<NamedMDNode>(V)) {
-    if (Module *P = N->getParent()) {
-      ST = &P->getValueSymbolTable();
-    }
   } else if (isa<MDString>(V))
     return true;
   else {
@@ -322,7 +318,13 @@ void Value::replaceAllUsesWith(Value *New) {
 Value *Value::stripPointerCasts() {
   if (!getType()->isPointerTy())
     return this;
+
+  // Even though we don't look through PHI nodes, we could be called on an
+  // instruction in an unreachable block, which may be on a cycle.
+  SmallPtrSet<Value *, 4> Visited;
+
   Value *V = this;
+  Visited.insert(V);
   do {
     if (GEPOperator *GEP = dyn_cast<GEPOperator>(V)) {
       if (!GEP->hasAllZeroIndices())
@@ -338,7 +340,9 @@ Value *Value::stripPointerCasts() {
       return V;
     }
     assert(V->getType()->isPointerTy() && "Unexpected operand type!");
-  } while (1);
+  } while (Visited.insert(V));
+
+  return V;
 }
 
 Value *Value::getUnderlyingObject(unsigned MaxLookup) {
@@ -484,10 +488,15 @@ void ValueHandleBase::ValueIsDeleted(Value *V) {
   ValueHandleBase *Entry = pImpl->ValueHandles[V];
   assert(Entry && "Value bit set but no entries exist");
 
-  // We use a local ValueHandleBase as an iterator so that
-  // ValueHandles can add and remove themselves from the list without
-  // breaking our iteration.  This is not really an AssertingVH; we
-  // just have to give ValueHandleBase some kind.
+  // We use a local ValueHandleBase as an iterator so that ValueHandles can add
+  // and remove themselves from the list without breaking our iteration.  This
+  // is not really an AssertingVH; we just have to give ValueHandleBase a kind.
+  // Note that we deliberately do not the support the case when dropping a value
+  // handle results in a new value handle being permanently added to the list
+  // (as might occur in theory for CallbackVH's): the new value handle will not
+  // be processed and the checking code will mete out righteous punishment if
+  // the handle is still present once we have finished processing all the other
+  // value handles (it is fine to momentarily add then remove a value handle).
   for (ValueHandleBase Iterator(Assert, *Entry); Entry; Entry = Iterator.Next) {
     Iterator.RemoveFromUseList();
     Iterator.AddToExistingUseListAfter(Entry);
@@ -568,6 +577,24 @@ void ValueHandleBase::ValueIsRAUWd(Value *Old, Value *New) {
       break;
     }
   }
+
+#ifndef NDEBUG
+  // If any new tracking or weak value handles were added while processing the
+  // list, then complain about it now.
+  if (Old->HasValueHandle)
+    for (Entry = pImpl->ValueHandles[Old]; Entry; Entry = Entry->Next)
+      switch (Entry->getKind()) {
+      case Tracking:
+      case Weak:
+        dbgs() << "After RAUW from " << *Old->getType() << " %"
+          << Old->getNameStr() << " to " << *New->getType() << " %"
+          << New->getNameStr() << "\n";
+        llvm_unreachable("A tracking or weak value handle still pointed to the"
+                         " old value!\n");
+      default:
+        break;
+      }
+#endif
 }
 
 /// ~CallbackVH. Empty, but defined here to avoid emitting the vtable

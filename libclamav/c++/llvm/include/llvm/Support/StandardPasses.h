@@ -20,6 +20,7 @@
 #define LLVM_SUPPORT_STANDARDPASSES_H
 
 #include "llvm/PassManager.h"
+#include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Transforms/Scalar.h"
@@ -31,7 +32,7 @@ namespace llvm {
   ///
   /// \arg OptimizationLevel - The optimization level, corresponding to -O0,
   /// -O1, etc.
-  static inline void createStandardFunctionPasses(FunctionPassManager *PM,
+  static inline void createStandardFunctionPasses(PassManagerBase *PM,
                                                   unsigned OptimizationLevel);
 
   /// createStandardModulePasses - Add the standard list of module passes to the
@@ -46,7 +47,7 @@ namespace llvm {
   /// \arg HaveExceptions - Whether the module may have code using exceptions.
   /// \arg InliningPass - The inlining pass to use, if any, or null. This will
   /// always be added, even at -O0.a
-  static inline void createStandardModulePasses(PassManager *PM,
+  static inline void createStandardModulePasses(PassManagerBase *PM,
                                                 unsigned OptimizationLevel,
                                                 bool OptimizeSize,
                                                 bool UnitAtATime,
@@ -61,14 +62,14 @@ namespace llvm {
   /// Internalize - Run the internalize pass.
   /// RunInliner - Use a function inlining pass.
   /// VerifyEach - Run the verifier after each pass.
-  static inline void createStandardLTOPasses(PassManager *PM,
+  static inline void createStandardLTOPasses(PassManagerBase *PM,
                                              bool Internalize,
                                              bool RunInliner,
                                              bool VerifyEach);
 
   // Implementations
 
-  static inline void createStandardFunctionPasses(FunctionPassManager *PM,
+  static inline void createStandardFunctionPasses(PassManagerBase *PM,
                                                   unsigned OptimizationLevel) {
     if (OptimizationLevel > 0) {
       PM->add(createCFGSimplificationPass());
@@ -82,7 +83,7 @@ namespace llvm {
 
   /// createStandardModulePasses - Add the standard module passes.  This is
   /// expected to be run after the standard function passes.
-  static inline void createStandardModulePasses(PassManager *PM,
+  static inline void createStandardModulePasses(PassManagerBase *PM,
                                                 unsigned OptimizationLevel,
                                                 bool OptimizeSize,
                                                 bool UnitAtATime,
@@ -116,7 +117,6 @@ namespace llvm {
       PM->add(createArgumentPromotionPass());   // Scalarize uninlined fn args
     
     // Start of function pass.
-    
     PM->add(createScalarReplAggregatesPass());  // Break up aggregate allocas
     if (SimplifyLibCalls)
       PM->add(createSimplifyLibCallsPass());    // Library Call Optimizations
@@ -146,6 +146,7 @@ namespace llvm {
     // opened up by them.
     PM->add(createInstructionCombiningPass());
     PM->add(createJumpThreadingPass());         // Thread jumps
+    PM->add(createCorrelatedValuePropagationPass());
     PM->add(createDeadStoreEliminationPass());  // Delete dead stores
     PM->add(createAggressiveDCEPass());         // Delete dead instructions
     PM->add(createCFGSimplificationPass());     // Merge & remove BBs
@@ -164,14 +165,14 @@ namespace llvm {
     }
   }
 
-  static inline void addOnePass(PassManager *PM, Pass *P, bool AndVerify) {
+  static inline void addOnePass(PassManagerBase *PM, Pass *P, bool AndVerify) {
     PM->add(P);
 
     if (AndVerify)
       PM->add(createVerifierPass());
   }
 
-  static inline void createStandardLTOPasses(PassManager *PM,
+  static inline void createStandardLTOPasses(PassManagerBase *PM,
                                              bool Internalize,
                                              bool RunInliner,
                                              bool VerifyEach) {

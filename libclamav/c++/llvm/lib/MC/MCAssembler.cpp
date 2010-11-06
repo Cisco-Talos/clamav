@@ -9,943 +9,184 @@
 
 #define DEBUG_TYPE "assembler"
 #include "llvm/MC/MCAssembler.h"
+#include "llvm/MC/MCAsmLayout.h"
+#include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCExpr.h"
-#include "llvm/MC/MCSectionMachO.h"
+#include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCValue.h"
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/Twine.h"
-#include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/MachO.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
-
-// FIXME: Gross.
-#include "../Target/X86/X86FixupKinds.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetRegistry.h"
+#include "llvm/Target/TargetAsmBackend.h"
 
 #include <vector>
 using namespace llvm;
 
-class MachObjectWriter;
-
+namespace {
+namespace stats {
 STATISTIC(EmittedFragments, "Number of emitted assembler fragments");
+STATISTIC(EvaluateFixup, "Number of evaluated fixups");
+STATISTIC(FragmentLayouts, "Number of fragment layouts");
+STATISTIC(ObjectBytes, "Number of emitted object file bytes");
+STATISTIC(RelaxationSteps, "Number of assembler layout and relaxation steps");
+STATISTIC(RelaxedInstructions, "Number of relaxed instructions");
+STATISTIC(SectionLayouts, "Number of section layouts");
+}
+}
 
 // FIXME FIXME FIXME: There are number of places in this file where we convert
 // what is a 64-bit assembler value used for computation into a value in the
 // object file, which may truncate it. We should detect that truncation where
 // invalid and report errors back.
 
-static void WriteFileData(raw_ostream &OS, const MCSectionData &SD,
-                          MachObjectWriter &MOW);
+/* *** */
 
-static uint64_t WriteNopData(uint64_t Count, MachObjectWriter &MOW);
-
-/// isVirtualSection - Check if this is a section which does not actually exist
-/// in the object file.
-static bool isVirtualSection(const MCSection &Section) {
-  // FIXME: Lame.
-  const MCSectionMachO &SMO = static_cast<const MCSectionMachO&>(Section);
-  unsigned Type = SMO.getTypeAndAttributes() & MCSectionMachO::SECTION_TYPE;
-  return (Type == MCSectionMachO::S_ZEROFILL);
+MCAsmLayout::MCAsmLayout(MCAssembler &Asm)
+  : Assembler(Asm), LastValidFragment(0)
+ {
+  // Compute the section layout order. Virtual sections must go last.
+  for (MCAssembler::iterator it = Asm.begin(), ie = Asm.end(); it != ie; ++it)
+    if (!Asm.getBackend().isVirtualSection(it->getSection()))
+      SectionOrder.push_back(&*it);
+  for (MCAssembler::iterator it = Asm.begin(), ie = Asm.end(); it != ie; ++it)
+    if (Asm.getBackend().isVirtualSection(it->getSection()))
+      SectionOrder.push_back(&*it);
 }
 
-static unsigned getFixupKindLog2Size(unsigned Kind) {
-  switch (Kind) {
-  default: llvm_unreachable("invalid fixup kind!");
-  case X86::reloc_pcrel_1byte:
-  case FK_Data_1: return 0;
-  case FK_Data_2: return 1;
-  case X86::reloc_pcrel_4byte:
-  case X86::reloc_riprel_4byte:
-  case FK_Data_4: return 2;
-  case FK_Data_8: return 3;
-  }
-}
-
-static bool isFixupKindPCRel(unsigned Kind) {
-  switch (Kind) {
-  default:
-    return false;
-  case X86::reloc_pcrel_1byte:
-  case X86::reloc_pcrel_4byte:
-  case X86::reloc_riprel_4byte:
+bool MCAsmLayout::isSectionUpToDate(const MCSectionData *SD) const {
+  // The first section is always up-to-date.
+  unsigned Index = SD->getLayoutOrder();
+  if (!Index)
     return true;
+
+  // Otherwise, sections are always implicitly computed when the preceeding
+  // fragment is layed out.
+  const MCSectionData *Prev = getSectionOrder()[Index - 1];
+  return isFragmentUpToDate(&(Prev->getFragmentList().back()));
+}
+
+bool MCAsmLayout::isFragmentUpToDate(const MCFragment *F) const {
+  return (LastValidFragment &&
+          F->getLayoutOrder() <= LastValidFragment->getLayoutOrder());
+}
+
+void MCAsmLayout::UpdateForSlide(MCFragment *F, int SlideAmount) {
+  // If this fragment wasn't already up-to-date, we don't need to do anything.
+  if (!isFragmentUpToDate(F))
+    return;
+
+  // Otherwise, reset the last valid fragment to the predecessor of the
+  // invalidated fragment.
+  LastValidFragment = F->getPrevNode();
+  if (!LastValidFragment) {
+    unsigned Index = F->getParent()->getLayoutOrder();
+    if (Index != 0) {
+      MCSectionData *Prev = getSectionOrder()[Index - 1];
+      LastValidFragment = &(Prev->getFragmentList().back());
+    }
   }
 }
 
-class MachObjectWriter {
-  // See <mach-o/loader.h>.
-  enum {
-    Header_Magic32 = 0xFEEDFACE,
-    Header_Magic64 = 0xFEEDFACF
-  };
-
-  static const unsigned Header32Size = 28;
-  static const unsigned Header64Size = 32;
-  static const unsigned SegmentLoadCommand32Size = 56;
-  static const unsigned Section32Size = 68;
-  static const unsigned SymtabLoadCommandSize = 24;
-  static const unsigned DysymtabLoadCommandSize = 80;
-  static const unsigned Nlist32Size = 12;
-  static const unsigned RelocationInfoSize = 8;
-
-  enum HeaderFileType {
-    HFT_Object = 0x1
-  };
-
-  enum HeaderFlags {
-    HF_SubsectionsViaSymbols = 0x2000
-  };
-
-  enum LoadCommandType {
-    LCT_Segment = 0x1,
-    LCT_Symtab = 0x2,
-    LCT_Dysymtab = 0xb
-  };
-
-  // See <mach-o/nlist.h>.
-  enum SymbolTypeType {
-    STT_Undefined = 0x00,
-    STT_Absolute  = 0x02,
-    STT_Section   = 0x0e
-  };
-
-  enum SymbolTypeFlags {
-    // If any of these bits are set, then the entry is a stab entry number (see
-    // <mach-o/stab.h>. Otherwise the other masks apply.
-    STF_StabsEntryMask = 0xe0,
-
-    STF_TypeMask       = 0x0e,
-    STF_External       = 0x01,
-    STF_PrivateExtern  = 0x10
-  };
-
-  /// IndirectSymbolFlags - Flags for encoding special values in the indirect
-  /// symbol entry.
-  enum IndirectSymbolFlags {
-    ISF_Local    = 0x80000000,
-    ISF_Absolute = 0x40000000
-  };
-
-  /// RelocationFlags - Special flags for addresses.
-  enum RelocationFlags {
-    RF_Scattered = 0x80000000
-  };
-
-  enum RelocationInfoType {
-    RIT_Vanilla             = 0,
-    RIT_Pair                = 1,
-    RIT_Difference          = 2,
-    RIT_PreboundLazyPointer = 3,
-    RIT_LocalDifference     = 4
-  };
-
-  /// MachSymbolData - Helper struct for containing some precomputed information
-  /// on symbols.
-  struct MachSymbolData {
-    MCSymbolData *SymbolData;
-    uint64_t StringIndex;
-    uint8_t SectionIndex;
-
-    // Support lexicographic sorting.
-    bool operator<(const MachSymbolData &RHS) const {
-      const std::string &Name = SymbolData->getSymbol().getName();
-      return Name < RHS.SymbolData->getSymbol().getName();
+void MCAsmLayout::EnsureValid(const MCFragment *F) const {
+  // Advance the layout position until the fragment is up-to-date.
+  while (!isFragmentUpToDate(F)) {
+    // Advance to the next fragment.
+    MCFragment *Cur = LastValidFragment;
+    if (Cur)
+      Cur = Cur->getNextNode();
+    if (!Cur) {
+      unsigned NextIndex = 0;
+      if (LastValidFragment)
+        NextIndex = LastValidFragment->getParent()->getLayoutOrder() + 1;
+      Cur = SectionOrder[NextIndex]->begin();
     }
-  };
 
-  raw_ostream &OS;
-  bool IsLSB;
-
-public:
-  MachObjectWriter(raw_ostream &_OS, bool _IsLSB = true)
-    : OS(_OS), IsLSB(_IsLSB) {
+    const_cast<MCAsmLayout*>(this)->LayoutFragment(Cur);
   }
-
-  /// @name Helper Methods
-  /// @{
-
-  void Write8(uint8_t Value) {
-    OS << char(Value);
-  }
-
-  void Write16(uint16_t Value) {
-    if (IsLSB) {
-      Write8(uint8_t(Value >> 0));
-      Write8(uint8_t(Value >> 8));
-    } else {
-      Write8(uint8_t(Value >> 8));
-      Write8(uint8_t(Value >> 0));
-    }
-  }
-
-  void Write32(uint32_t Value) {
-    if (IsLSB) {
-      Write16(uint16_t(Value >> 0));
-      Write16(uint16_t(Value >> 16));
-    } else {
-      Write16(uint16_t(Value >> 16));
-      Write16(uint16_t(Value >> 0));
-    }
-  }
-
-  void Write64(uint64_t Value) {
-    if (IsLSB) {
-      Write32(uint32_t(Value >> 0));
-      Write32(uint32_t(Value >> 32));
-    } else {
-      Write32(uint32_t(Value >> 32));
-      Write32(uint32_t(Value >> 0));
-    }
-  }
-
-  void WriteZeros(unsigned N) {
-    const char Zeros[16] = { 0 };
-
-    for (unsigned i = 0, e = N / 16; i != e; ++i)
-      OS << StringRef(Zeros, 16);
-
-    OS << StringRef(Zeros, N % 16);
-  }
-
-  void WriteString(StringRef Str, unsigned ZeroFillSize = 0) {
-    OS << Str;
-    if (ZeroFillSize)
-      WriteZeros(ZeroFillSize - Str.size());
-  }
-
-  /// @}
-
-  void WriteHeader32(unsigned NumLoadCommands, unsigned LoadCommandsSize,
-                     bool SubsectionsViaSymbols) {
-    uint32_t Flags = 0;
-
-    if (SubsectionsViaSymbols)
-      Flags |= HF_SubsectionsViaSymbols;
-
-    // struct mach_header (28 bytes)
-
-    uint64_t Start = OS.tell();
-    (void) Start;
-
-    Write32(Header_Magic32);
-
-    // FIXME: Support cputype.
-    Write32(MachO::CPUTypeI386);
-    // FIXME: Support cpusubtype.
-    Write32(MachO::CPUSubType_I386_ALL);
-    Write32(HFT_Object);
-    Write32(NumLoadCommands);    // Object files have a single load command, the
-                                 // segment.
-    Write32(LoadCommandsSize);
-    Write32(Flags);
-
-    assert(OS.tell() - Start == Header32Size);
-  }
-
-  /// WriteSegmentLoadCommand32 - Write a 32-bit segment load command.
-  ///
-  /// \arg NumSections - The number of sections in this segment.
-  /// \arg SectionDataSize - The total size of the sections.
-  void WriteSegmentLoadCommand32(unsigned NumSections,
-                                 uint64_t VMSize,
-                                 uint64_t SectionDataStartOffset,
-                                 uint64_t SectionDataSize) {
-    // struct segment_command (56 bytes)
-
-    uint64_t Start = OS.tell();
-    (void) Start;
-
-    Write32(LCT_Segment);
-    Write32(SegmentLoadCommand32Size + NumSections * Section32Size);
-
-    WriteString("", 16);
-    Write32(0); // vmaddr
-    Write32(VMSize); // vmsize
-    Write32(SectionDataStartOffset); // file offset
-    Write32(SectionDataSize); // file size
-    Write32(0x7); // maxprot
-    Write32(0x7); // initprot
-    Write32(NumSections);
-    Write32(0); // flags
-
-    assert(OS.tell() - Start == SegmentLoadCommand32Size);
-  }
-
-  void WriteSection32(const MCSectionData &SD, uint64_t FileOffset,
-                      uint64_t RelocationsStart, unsigned NumRelocations) {
-    // The offset is unused for virtual sections.
-    if (isVirtualSection(SD.getSection())) {
-      assert(SD.getFileSize() == 0 && "Invalid file size!");
-      FileOffset = 0;
-    }
-
-    // struct section (68 bytes)
-
-    uint64_t Start = OS.tell();
-    (void) Start;
-
-    // FIXME: cast<> support!
-    const MCSectionMachO &Section =
-      static_cast<const MCSectionMachO&>(SD.getSection());
-    WriteString(Section.getSectionName(), 16);
-    WriteString(Section.getSegmentName(), 16);
-    Write32(SD.getAddress()); // address
-    Write32(SD.getSize()); // size
-    Write32(FileOffset);
-
-    unsigned Flags = Section.getTypeAndAttributes();
-    if (SD.hasInstructions())
-      Flags |= MCSectionMachO::S_ATTR_SOME_INSTRUCTIONS;
-
-    assert(isPowerOf2_32(SD.getAlignment()) && "Invalid alignment!");
-    Write32(Log2_32(SD.getAlignment()));
-    Write32(NumRelocations ? RelocationsStart : 0);
-    Write32(NumRelocations);
-    Write32(Flags);
-    Write32(0); // reserved1
-    Write32(Section.getStubSize()); // reserved2
-
-    assert(OS.tell() - Start == Section32Size);
-  }
-
-  void WriteSymtabLoadCommand(uint32_t SymbolOffset, uint32_t NumSymbols,
-                              uint32_t StringTableOffset,
-                              uint32_t StringTableSize) {
-    // struct symtab_command (24 bytes)
-
-    uint64_t Start = OS.tell();
-    (void) Start;
-
-    Write32(LCT_Symtab);
-    Write32(SymtabLoadCommandSize);
-    Write32(SymbolOffset);
-    Write32(NumSymbols);
-    Write32(StringTableOffset);
-    Write32(StringTableSize);
-
-    assert(OS.tell() - Start == SymtabLoadCommandSize);
-  }
-
-  void WriteDysymtabLoadCommand(uint32_t FirstLocalSymbol,
-                                uint32_t NumLocalSymbols,
-                                uint32_t FirstExternalSymbol,
-                                uint32_t NumExternalSymbols,
-                                uint32_t FirstUndefinedSymbol,
-                                uint32_t NumUndefinedSymbols,
-                                uint32_t IndirectSymbolOffset,
-                                uint32_t NumIndirectSymbols) {
-    // struct dysymtab_command (80 bytes)
-
-    uint64_t Start = OS.tell();
-    (void) Start;
-
-    Write32(LCT_Dysymtab);
-    Write32(DysymtabLoadCommandSize);
-    Write32(FirstLocalSymbol);
-    Write32(NumLocalSymbols);
-    Write32(FirstExternalSymbol);
-    Write32(NumExternalSymbols);
-    Write32(FirstUndefinedSymbol);
-    Write32(NumUndefinedSymbols);
-    Write32(0); // tocoff
-    Write32(0); // ntoc
-    Write32(0); // modtaboff
-    Write32(0); // nmodtab
-    Write32(0); // extrefsymoff
-    Write32(0); // nextrefsyms
-    Write32(IndirectSymbolOffset);
-    Write32(NumIndirectSymbols);
-    Write32(0); // extreloff
-    Write32(0); // nextrel
-    Write32(0); // locreloff
-    Write32(0); // nlocrel
-
-    assert(OS.tell() - Start == DysymtabLoadCommandSize);
-  }
-
-  void WriteNlist32(MachSymbolData &MSD) {
-    MCSymbolData &Data = *MSD.SymbolData;
-    const MCSymbol &Symbol = Data.getSymbol();
-    uint8_t Type = 0;
-    uint16_t Flags = Data.getFlags();
-    uint32_t Address = 0;
-
-    // Set the N_TYPE bits. See <mach-o/nlist.h>.
-    //
-    // FIXME: Are the prebound or indirect fields possible here?
-    if (Symbol.isUndefined())
-      Type = STT_Undefined;
-    else if (Symbol.isAbsolute())
-      Type = STT_Absolute;
-    else
-      Type = STT_Section;
-
-    // FIXME: Set STAB bits.
-
-    if (Data.isPrivateExtern())
-      Type |= STF_PrivateExtern;
-
-    // Set external bit.
-    if (Data.isExternal() || Symbol.isUndefined())
-      Type |= STF_External;
-
-    // Compute the symbol address.
-    if (Symbol.isDefined()) {
-      if (Symbol.isAbsolute()) {
-        llvm_unreachable("FIXME: Not yet implemented!");
-      } else {
-        Address = Data.getFragment()->getAddress() + Data.getOffset();
-      }
-    } else if (Data.isCommon()) {
-      // Common symbols are encoded with the size in the address
-      // field, and their alignment in the flags.
-      Address = Data.getCommonSize();
-
-      // Common alignment is packed into the 'desc' bits.
-      if (unsigned Align = Data.getCommonAlignment()) {
-        unsigned Log2Size = Log2_32(Align);
-        assert((1U << Log2Size) == Align && "Invalid 'common' alignment!");
-        if (Log2Size > 15)
-          llvm_report_error("invalid 'common' alignment '" +
-                            Twine(Align) + "'");
-        // FIXME: Keep this mask with the SymbolFlags enumeration.
-        Flags = (Flags & 0xF0FF) | (Log2Size << 8);
-      }
-    }
-
-    // struct nlist (12 bytes)
-
-    Write32(MSD.StringIndex);
-    Write8(Type);
-    Write8(MSD.SectionIndex);
-
-    // The Mach-O streamer uses the lowest 16-bits of the flags for the 'desc'
-    // value.
-    Write16(Flags);
-    Write32(Address);
-  }
-
-  struct MachRelocationEntry {
-    uint32_t Word0;
-    uint32_t Word1;
-  };
-  void ComputeScatteredRelocationInfo(MCAssembler &Asm, MCFragment &Fragment,
-                                      MCAsmFixup &Fixup,
-                                      const MCValue &Target,
-                             DenseMap<const MCSymbol*,MCSymbolData*> &SymbolMap,
-                                     std::vector<MachRelocationEntry> &Relocs) {
-    uint32_t Address = Fragment.getOffset() + Fixup.Offset;
-    unsigned IsPCRel = 0;
-    unsigned Log2Size = getFixupKindLog2Size(Fixup.Kind);
-    unsigned Type = RIT_Vanilla;
-
-    // See <reloc.h>.
-    const MCSymbol *A = Target.getSymA();
-    MCSymbolData *SD = SymbolMap.lookup(A);
-    uint32_t Value = SD->getFragment()->getAddress() + SD->getOffset();
-    uint32_t Value2 = 0;
-
-    if (const MCSymbol *B = Target.getSymB()) {
-      Type = RIT_LocalDifference;
-
-      MCSymbolData *SD = SymbolMap.lookup(B);
-      Value2 = SD->getFragment()->getAddress() + SD->getOffset();
-    }
-
-    // The value which goes in the fixup is current value of the expression.
-    Fixup.FixedValue = Value - Value2 + Target.getConstant();
-    if (isFixupKindPCRel(Fixup.Kind)) {
-      Fixup.FixedValue -= Address;
-      IsPCRel = 1;
-    }
-
-    MachRelocationEntry MRE;
-    MRE.Word0 = ((Address   <<  0) |
-                 (Type      << 24) |
-                 (Log2Size  << 28) |
-                 (IsPCRel   << 30) |
-                 RF_Scattered);
-    MRE.Word1 = Value;
-    Relocs.push_back(MRE);
-
-    if (Type == RIT_LocalDifference) {
-      Type = RIT_Pair;
-
-      MachRelocationEntry MRE;
-      MRE.Word0 = ((0         <<  0) |
-                   (Type      << 24) |
-                   (Log2Size  << 28) |
-                   (0   << 30) |
-                   RF_Scattered);
-      MRE.Word1 = Value2;
-      Relocs.push_back(MRE);
-    }
-  }
-
-  void ComputeRelocationInfo(MCAssembler &Asm, MCDataFragment &Fragment,
-                             MCAsmFixup &Fixup,
-                             DenseMap<const MCSymbol*,MCSymbolData*> &SymbolMap,
-                             std::vector<MachRelocationEntry> &Relocs) {
-    MCValue Target;
-    if (!Fixup.Value->EvaluateAsRelocatable(Target))
-      llvm_report_error("expected relocatable expression");
-
-    // If this is a difference or a local symbol plus an offset, then we need a
-    // scattered relocation entry.
-    if (Target.getSymB() ||
-        (Target.getSymA() && !Target.getSymA()->isUndefined() &&
-         Target.getConstant()))
-      return ComputeScatteredRelocationInfo(Asm, Fragment, Fixup, Target,
-                                            SymbolMap, Relocs);
-
-    // See <reloc.h>.
-    uint32_t Address = Fragment.getOffset() + Fixup.Offset;
-    uint32_t Value = 0;
-    unsigned Index = 0;
-    unsigned IsPCRel = 0;
-    unsigned Log2Size = getFixupKindLog2Size(Fixup.Kind);
-    unsigned IsExtern = 0;
-    unsigned Type = 0;
-
-    if (Target.isAbsolute()) { // constant
-      // SymbolNum of 0 indicates the absolute section.
-      //
-      // FIXME: When is this generated?
-      Type = RIT_Vanilla;
-      Value = 0;
-      llvm_unreachable("FIXME: Not yet implemented!");
-    } else {
-      const MCSymbol *Symbol = Target.getSymA();
-      MCSymbolData *SD = SymbolMap.lookup(Symbol);
-
-      if (Symbol->isUndefined()) {
-        IsExtern = 1;
-        Index = SD->getIndex();
-        Value = 0;
-      } else {
-        // The index is the section ordinal.
-        //
-        // FIXME: O(N)
-        Index = 1;
-        MCAssembler::iterator it = Asm.begin(), ie = Asm.end();
-        for (; it != ie; ++it, ++Index)
-          if (&*it == SD->getFragment()->getParent())
-            break;
-        assert(it != ie && "Unable to find section index!");
-        Value = SD->getFragment()->getAddress() + SD->getOffset();
-      }
-
-      Type = RIT_Vanilla;
-    }
-
-    // The value which goes in the fixup is current value of the expression.
-    Fixup.FixedValue = Value + Target.getConstant();
-
-    if (isFixupKindPCRel(Fixup.Kind)) {
-      Fixup.FixedValue -= Address;
-      IsPCRel = 1;
-    }
-
-    // struct relocation_info (8 bytes)
-    MachRelocationEntry MRE;
-    MRE.Word0 = Address;
-    MRE.Word1 = ((Index     <<  0) |
-                 (IsPCRel   << 24) |
-                 (Log2Size  << 25) |
-                 (IsExtern  << 27) |
-                 (Type      << 28));
-    Relocs.push_back(MRE);
-  }
-
-  void BindIndirectSymbols(MCAssembler &Asm,
-                           DenseMap<const MCSymbol*,MCSymbolData*> &SymbolMap) {
-    // This is the point where 'as' creates actual symbols for indirect symbols
-    // (in the following two passes). It would be easier for us to do this
-    // sooner when we see the attribute, but that makes getting the order in the
-    // symbol table much more complicated than it is worth.
-    //
-    // FIXME: Revisit this when the dust settles.
-
-    // Bind non lazy symbol pointers first.
-    for (MCAssembler::indirect_symbol_iterator it = Asm.indirect_symbol_begin(),
-           ie = Asm.indirect_symbol_end(); it != ie; ++it) {
-      // FIXME: cast<> support!
-      const MCSectionMachO &Section =
-        static_cast<const MCSectionMachO&>(it->SectionData->getSection());
-
-      unsigned Type =
-        Section.getTypeAndAttributes() & MCSectionMachO::SECTION_TYPE;
-      if (Type != MCSectionMachO::S_NON_LAZY_SYMBOL_POINTERS)
-        continue;
-
-      MCSymbolData *&Entry = SymbolMap[it->Symbol];
-      if (!Entry)
-        Entry = new MCSymbolData(*it->Symbol, 0, 0, &Asm);
-    }
-
-    // Then lazy symbol pointers and symbol stubs.
-    for (MCAssembler::indirect_symbol_iterator it = Asm.indirect_symbol_begin(),
-           ie = Asm.indirect_symbol_end(); it != ie; ++it) {
-      // FIXME: cast<> support!
-      const MCSectionMachO &Section =
-        static_cast<const MCSectionMachO&>(it->SectionData->getSection());
-
-      unsigned Type =
-        Section.getTypeAndAttributes() & MCSectionMachO::SECTION_TYPE;
-      if (Type != MCSectionMachO::S_LAZY_SYMBOL_POINTERS &&
-          Type != MCSectionMachO::S_SYMBOL_STUBS)
-        continue;
-
-      MCSymbolData *&Entry = SymbolMap[it->Symbol];
-      if (!Entry) {
-        Entry = new MCSymbolData(*it->Symbol, 0, 0, &Asm);
-
-        // Set the symbol type to undefined lazy, but only on construction.
-        //
-        // FIXME: Do not hardcode.
-        Entry->setFlags(Entry->getFlags() | 0x0001);
-      }
-    }
-  }
-
-  /// ComputeSymbolTable - Compute the symbol table data
-  ///
-  /// \param StringTable [out] - The string table data.
-  /// \param StringIndexMap [out] - Map from symbol names to offsets in the
-  /// string table.
-  void ComputeSymbolTable(MCAssembler &Asm, SmallString<256> &StringTable,
-                          std::vector<MachSymbolData> &LocalSymbolData,
-                          std::vector<MachSymbolData> &ExternalSymbolData,
-                          std::vector<MachSymbolData> &UndefinedSymbolData) {
-    // Build section lookup table.
-    DenseMap<const MCSection*, uint8_t> SectionIndexMap;
-    unsigned Index = 1;
-    for (MCAssembler::iterator it = Asm.begin(),
-           ie = Asm.end(); it != ie; ++it, ++Index)
-      SectionIndexMap[&it->getSection()] = Index;
-    assert(Index <= 256 && "Too many sections!");
-
-    // Index 0 is always the empty string.
-    StringMap<uint64_t> StringIndexMap;
-    StringTable += '\x00';
-
-    // Build the symbol arrays and the string table, but only for non-local
-    // symbols.
-    //
-    // The particular order that we collect the symbols and create the string
-    // table, then sort the symbols is chosen to match 'as'. Even though it
-    // doesn't matter for correctness, this is important for letting us diff .o
-    // files.
-    for (MCAssembler::symbol_iterator it = Asm.symbol_begin(),
-           ie = Asm.symbol_end(); it != ie; ++it) {
-      const MCSymbol &Symbol = it->getSymbol();
-
-      // Ignore assembler temporaries.
-      if (it->getSymbol().isTemporary())
-        continue;
-
-      if (!it->isExternal() && !Symbol.isUndefined())
-        continue;
-
-      uint64_t &Entry = StringIndexMap[Symbol.getName()];
-      if (!Entry) {
-        Entry = StringTable.size();
-        StringTable += Symbol.getName();
-        StringTable += '\x00';
-      }
-
-      MachSymbolData MSD;
-      MSD.SymbolData = it;
-      MSD.StringIndex = Entry;
-
-      if (Symbol.isUndefined()) {
-        MSD.SectionIndex = 0;
-        UndefinedSymbolData.push_back(MSD);
-      } else if (Symbol.isAbsolute()) {
-        MSD.SectionIndex = 0;
-        ExternalSymbolData.push_back(MSD);
-      } else {
-        MSD.SectionIndex = SectionIndexMap.lookup(&Symbol.getSection());
-        assert(MSD.SectionIndex && "Invalid section index!");
-        ExternalSymbolData.push_back(MSD);
-      }
-    }
-
-    // Now add the data for local symbols.
-    for (MCAssembler::symbol_iterator it = Asm.symbol_begin(),
-           ie = Asm.symbol_end(); it != ie; ++it) {
-      const MCSymbol &Symbol = it->getSymbol();
-
-      // Ignore assembler temporaries.
-      if (it->getSymbol().isTemporary())
-        continue;
-
-      if (it->isExternal() || Symbol.isUndefined())
-        continue;
-
-      uint64_t &Entry = StringIndexMap[Symbol.getName()];
-      if (!Entry) {
-        Entry = StringTable.size();
-        StringTable += Symbol.getName();
-        StringTable += '\x00';
-      }
-
-      MachSymbolData MSD;
-      MSD.SymbolData = it;
-      MSD.StringIndex = Entry;
-
-      if (Symbol.isAbsolute()) {
-        MSD.SectionIndex = 0;
-        LocalSymbolData.push_back(MSD);
-      } else {
-        MSD.SectionIndex = SectionIndexMap.lookup(&Symbol.getSection());
-        assert(MSD.SectionIndex && "Invalid section index!");
-        LocalSymbolData.push_back(MSD);
-      }
-    }
-
-    // External and undefined symbols are required to be in lexicographic order.
-    std::sort(ExternalSymbolData.begin(), ExternalSymbolData.end());
-    std::sort(UndefinedSymbolData.begin(), UndefinedSymbolData.end());
-
-    // Set the symbol indices.
-    Index = 0;
-    for (unsigned i = 0, e = LocalSymbolData.size(); i != e; ++i)
-      LocalSymbolData[i].SymbolData->setIndex(Index++);
-    for (unsigned i = 0, e = ExternalSymbolData.size(); i != e; ++i)
-      ExternalSymbolData[i].SymbolData->setIndex(Index++);
-    for (unsigned i = 0, e = UndefinedSymbolData.size(); i != e; ++i)
-      UndefinedSymbolData[i].SymbolData->setIndex(Index++);
-
-    // The string table is padded to a multiple of 4.
-    while (StringTable.size() % 4)
-      StringTable += '\x00';
-  }
-
-  void WriteObject(MCAssembler &Asm) {
-    unsigned NumSections = Asm.size();
-
-    // Compute the symbol -> symbol data map.
-    //
-    // FIXME: This should not be here.
-    DenseMap<const MCSymbol*, MCSymbolData *> SymbolMap;
-    for (MCAssembler::symbol_iterator it = Asm.symbol_begin(),
-           ie = Asm.symbol_end(); it != ie; ++it)
-      SymbolMap[&it->getSymbol()] = it;
-
-    // Create symbol data for any indirect symbols.
-    BindIndirectSymbols(Asm, SymbolMap);
-
-    // Compute symbol table information.
-    SmallString<256> StringTable;
-    std::vector<MachSymbolData> LocalSymbolData;
-    std::vector<MachSymbolData> ExternalSymbolData;
-    std::vector<MachSymbolData> UndefinedSymbolData;
-    unsigned NumSymbols = Asm.symbol_size();
-
-    // No symbol table command is written if there are no symbols.
-    if (NumSymbols)
-      ComputeSymbolTable(Asm, StringTable, LocalSymbolData, ExternalSymbolData,
-                         UndefinedSymbolData);
-
-    // The section data starts after the header, the segment load command (and
-    // section headers) and the symbol table.
-    unsigned NumLoadCommands = 1;
-    uint64_t LoadCommandsSize =
-      SegmentLoadCommand32Size + NumSections * Section32Size;
-
-    // Add the symbol table load command sizes, if used.
-    if (NumSymbols) {
-      NumLoadCommands += 2;
-      LoadCommandsSize += SymtabLoadCommandSize + DysymtabLoadCommandSize;
-    }
-
-    // Compute the total size of the section data, as well as its file size and
-    // vm size.
-    uint64_t SectionDataStart = Header32Size + LoadCommandsSize;
-    uint64_t SectionDataSize = 0;
-    uint64_t SectionDataFileSize = 0;
-    uint64_t VMSize = 0;
-    for (MCAssembler::iterator it = Asm.begin(),
-           ie = Asm.end(); it != ie; ++it) {
-      MCSectionData &SD = *it;
-
-      VMSize = std::max(VMSize, SD.getAddress() + SD.getSize());
-
-      if (isVirtualSection(SD.getSection()))
-        continue;
-
-      SectionDataSize = std::max(SectionDataSize,
-                                 SD.getAddress() + SD.getSize());
-      SectionDataFileSize = std::max(SectionDataFileSize,
-                                     SD.getAddress() + SD.getFileSize());
-    }
-
-    // The section data is padded to 4 bytes.
-    //
-    // FIXME: Is this machine dependent?
-    unsigned SectionDataPadding = OffsetToAlignment(SectionDataFileSize, 4);
-    SectionDataFileSize += SectionDataPadding;
-
-    // Write the prolog, starting with the header and load command...
-    WriteHeader32(NumLoadCommands, LoadCommandsSize,
-                  Asm.getSubsectionsViaSymbols());
-    WriteSegmentLoadCommand32(NumSections, VMSize,
-                              SectionDataStart, SectionDataSize);
-
-    // ... and then the section headers.
-    //
-    // We also compute the section relocations while we do this. Note that
-    // computing relocation info will also update the fixup to have the correct
-    // value; this will overwrite the appropriate data in the fragment when it
-    // is written.
-    std::vector<MachRelocationEntry> RelocInfos;
-    uint64_t RelocTableEnd = SectionDataStart + SectionDataFileSize;
-    for (MCAssembler::iterator it = Asm.begin(),
-           ie = Asm.end(); it != ie; ++it) {
-      MCSectionData &SD = *it;
-
-      // The assembler writes relocations in the reverse order they were seen.
-      //
-      // FIXME: It is probably more complicated than this.
-      unsigned NumRelocsStart = RelocInfos.size();
-      for (MCSectionData::reverse_iterator it2 = SD.rbegin(),
-             ie2 = SD.rend(); it2 != ie2; ++it2)
-        if (MCDataFragment *DF = dyn_cast<MCDataFragment>(&*it2))
-          for (unsigned i = 0, e = DF->fixup_size(); i != e; ++i)
-            ComputeRelocationInfo(Asm, *DF, DF->getFixups()[e - i - 1],
-                                  SymbolMap, RelocInfos);
-
-      unsigned NumRelocs = RelocInfos.size() - NumRelocsStart;
-      uint64_t SectionStart = SectionDataStart + SD.getAddress();
-      WriteSection32(SD, SectionStart, RelocTableEnd, NumRelocs);
-      RelocTableEnd += NumRelocs * RelocationInfoSize;
-    }
-
-    // Write the symbol table load command, if used.
-    if (NumSymbols) {
-      unsigned FirstLocalSymbol = 0;
-      unsigned NumLocalSymbols = LocalSymbolData.size();
-      unsigned FirstExternalSymbol = FirstLocalSymbol + NumLocalSymbols;
-      unsigned NumExternalSymbols = ExternalSymbolData.size();
-      unsigned FirstUndefinedSymbol = FirstExternalSymbol + NumExternalSymbols;
-      unsigned NumUndefinedSymbols = UndefinedSymbolData.size();
-      unsigned NumIndirectSymbols = Asm.indirect_symbol_size();
-      unsigned NumSymTabSymbols =
-        NumLocalSymbols + NumExternalSymbols + NumUndefinedSymbols;
-      uint64_t IndirectSymbolSize = NumIndirectSymbols * 4;
-      uint64_t IndirectSymbolOffset = 0;
-
-      // If used, the indirect symbols are written after the section data.
-      if (NumIndirectSymbols)
-        IndirectSymbolOffset = RelocTableEnd;
-
-      // The symbol table is written after the indirect symbol data.
-      uint64_t SymbolTableOffset = RelocTableEnd + IndirectSymbolSize;
-
-      // The string table is written after symbol table.
-      uint64_t StringTableOffset =
-        SymbolTableOffset + NumSymTabSymbols * Nlist32Size;
-      WriteSymtabLoadCommand(SymbolTableOffset, NumSymTabSymbols,
-                             StringTableOffset, StringTable.size());
-
-      WriteDysymtabLoadCommand(FirstLocalSymbol, NumLocalSymbols,
-                               FirstExternalSymbol, NumExternalSymbols,
-                               FirstUndefinedSymbol, NumUndefinedSymbols,
-                               IndirectSymbolOffset, NumIndirectSymbols);
-    }
-
-    // Write the actual section data.
-    for (MCAssembler::iterator it = Asm.begin(), ie = Asm.end(); it != ie; ++it)
-      WriteFileData(OS, *it, *this);
-
-    // Write the extra padding.
-    WriteZeros(SectionDataPadding);
-
-    // Write the relocation entries.
-    for (unsigned i = 0, e = RelocInfos.size(); i != e; ++i) {
-      Write32(RelocInfos[i].Word0);
-      Write32(RelocInfos[i].Word1);
-    }
-
-    // Write the symbol table data, if used.
-    if (NumSymbols) {
-      // Write the indirect symbol entries.
-      for (MCAssembler::indirect_symbol_iterator
-             it = Asm.indirect_symbol_begin(),
-             ie = Asm.indirect_symbol_end(); it != ie; ++it) {
-        // Indirect symbols in the non lazy symbol pointer section have some
-        // special handling.
-        const MCSectionMachO &Section =
-          static_cast<const MCSectionMachO&>(it->SectionData->getSection());
-        unsigned Type =
-          Section.getTypeAndAttributes() & MCSectionMachO::SECTION_TYPE;
-        if (Type == MCSectionMachO::S_NON_LAZY_SYMBOL_POINTERS) {
-          // If this symbol is defined and internal, mark it as such.
-          if (it->Symbol->isDefined() &&
-              !SymbolMap.lookup(it->Symbol)->isExternal()) {
-            uint32_t Flags = ISF_Local;
-            if (it->Symbol->isAbsolute())
-              Flags |= ISF_Absolute;
-            Write32(Flags);
-            continue;
-          }
-        }
-
-        Write32(SymbolMap[it->Symbol]->getIndex());
-      }
-
-      // FIXME: Check that offsets match computed ones.
-
-      // Write the symbol table entries.
-      for (unsigned i = 0, e = LocalSymbolData.size(); i != e; ++i)
-        WriteNlist32(LocalSymbolData[i]);
-      for (unsigned i = 0, e = ExternalSymbolData.size(); i != e; ++i)
-        WriteNlist32(ExternalSymbolData[i]);
-      for (unsigned i = 0, e = UndefinedSymbolData.size(); i != e; ++i)
-        WriteNlist32(UndefinedSymbolData[i]);
-
-      // Write the string table.
-      OS << StringTable.str();
-    }
-  }
-
-  void ApplyFixup(const MCAsmFixup &Fixup, MCDataFragment &DF) {
-    unsigned Size = 1 << getFixupKindLog2Size(Fixup.Kind);
-
-    // FIXME: Endianness assumption.
-    assert(Fixup.Offset + Size <= DF.getContents().size() &&
-           "Invalid fixup offset!");
-    for (unsigned i = 0; i != Size; ++i)
-      DF.getContents()[Fixup.Offset + i] = uint8_t(Fixup.FixedValue >> (i * 8));
-  }
-};
+}
+
+void MCAsmLayout::FragmentReplaced(MCFragment *Src, MCFragment *Dst) {
+  if (LastValidFragment == Src)
+    LastValidFragment = Dst;
+
+  Dst->Offset = Src->Offset;
+  Dst->EffectiveSize = Src->EffectiveSize;
+}
+
+uint64_t MCAsmLayout::getFragmentAddress(const MCFragment *F) const {
+  assert(F->getParent() && "Missing section()!");
+  return getSectionAddress(F->getParent()) + getFragmentOffset(F);
+}
+
+uint64_t MCAsmLayout::getFragmentEffectiveSize(const MCFragment *F) const {
+  EnsureValid(F);
+  assert(F->EffectiveSize != ~UINT64_C(0) && "Address not set!");
+  return F->EffectiveSize;
+}
+
+uint64_t MCAsmLayout::getFragmentOffset(const MCFragment *F) const {
+  EnsureValid(F);
+  assert(F->Offset != ~UINT64_C(0) && "Address not set!");
+  return F->Offset;
+}
+
+uint64_t MCAsmLayout::getSymbolAddress(const MCSymbolData *SD) const {
+  assert(SD->getFragment() && "Invalid getAddress() on undefined symbol!");
+  return getFragmentAddress(SD->getFragment()) + SD->getOffset();
+}
+
+uint64_t MCAsmLayout::getSectionAddress(const MCSectionData *SD) const {
+  EnsureValid(SD->begin());
+  assert(SD->Address != ~UINT64_C(0) && "Address not set!");
+  return SD->Address;
+}
+
+uint64_t MCAsmLayout::getSectionAddressSize(const MCSectionData *SD) const {
+  // The size is the last fragment's end offset.
+  const MCFragment &F = SD->getFragmentList().back();
+  return getFragmentOffset(&F) + getFragmentEffectiveSize(&F);
+}
+
+uint64_t MCAsmLayout::getSectionFileSize(const MCSectionData *SD) const {
+  // Virtual sections have no file size.
+  if (getAssembler().getBackend().isVirtualSection(SD->getSection()))
+    return 0;
+
+  // Otherwise, the file size is the same as the address space size.
+  return getSectionAddressSize(SD);
+}
+
+uint64_t MCAsmLayout::getSectionSize(const MCSectionData *SD) const {
+  // The logical size is the address space size minus any tail padding.
+  uint64_t Size = getSectionAddressSize(SD);
+  const MCAlignFragment *AF =
+    dyn_cast<MCAlignFragment>(&(SD->getFragmentList().back()));
+  if (AF && AF->hasOnlyAlignAddress())
+    Size -= getFragmentEffectiveSize(AF);
+
+  return Size;
+}
 
 /* *** */
 
 MCFragment::MCFragment() : Kind(FragmentType(~0)) {
 }
 
-MCFragment::MCFragment(FragmentType _Kind, MCSectionData *_Parent)
-  : Kind(_Kind),
-    Parent(_Parent),
-    FileSize(~UINT64_C(0))
-{
-  if (Parent)
-    Parent->getFragmentList().push_back(this);
-}
-
 MCFragment::~MCFragment() {
 }
 
-uint64_t MCFragment::getAddress() const {
-  assert(getParent() && "Missing Section!");
-  return getParent()->getAddress() + Offset;
+MCFragment::MCFragment(FragmentType _Kind, MCSectionData *_Parent)
+  : Kind(_Kind), Parent(_Parent), Atom(0), Offset(~UINT64_C(0)),
+    EffectiveSize(~UINT64_C(0))
+{
+  if (Parent)
+    Parent->getFragmentList().push_back(this);
 }
 
 /* *** */
@@ -956,8 +197,6 @@ MCSectionData::MCSectionData(const MCSection &_Section, MCAssembler *A)
   : Section(&_Section),
     Alignment(1),
     Address(~UINT64_C(0)),
-    Size(~UINT64_C(0)),
-    FileSize(~UINT64_C(0)),
     HasInstructions(false)
 {
   if (A)
@@ -972,7 +211,8 @@ MCSymbolData::MCSymbolData(const MCSymbol &_Symbol, MCFragment *_Fragment,
                            uint64_t _Offset, MCAssembler *A)
   : Symbol(&_Symbol), Fragment(_Fragment), Offset(_Offset),
     IsExternal(false), IsPrivateExtern(false),
-    CommonSize(0), CommonAlign(0), Flags(0), Index(0)
+    CommonSize(0), SymbolSize(0), CommonAlign(0),
+    Flags(0), Index(0)
 {
   if (A)
     A->getSymbolList().push_back(this);
@@ -980,183 +220,354 @@ MCSymbolData::MCSymbolData(const MCSymbol &_Symbol, MCFragment *_Fragment,
 
 /* *** */
 
-MCAssembler::MCAssembler(MCContext &_Context, raw_ostream &_OS)
-  : Context(_Context), OS(_OS), SubsectionsViaSymbols(false)
+MCAssembler::MCAssembler(MCContext &_Context, TargetAsmBackend &_Backend,
+                         MCCodeEmitter &_Emitter, raw_ostream &_OS)
+  : Context(_Context), Backend(_Backend), Emitter(_Emitter),
+    OS(_OS), RelaxAll(false), SubsectionsViaSymbols(false)
 {
 }
 
 MCAssembler::~MCAssembler() {
 }
 
-void MCAssembler::LayoutSection(MCSectionData &SD) {
-  uint64_t Address = SD.getAddress();
+static bool isScatteredFixupFullyResolvedSimple(const MCAssembler &Asm,
+                                                const MCFixup &Fixup,
+                                                const MCValue Target,
+                                                const MCSection *BaseSection) {
+  // The effective fixup address is
+  //     addr(atom(A)) + offset(A)
+  //   - addr(atom(B)) - offset(B)
+  //   - addr(<base symbol>) + <fixup offset from base symbol>
+  // and the offsets are not relocatable, so the fixup is fully resolved when
+  //  addr(atom(A)) - addr(atom(B)) - addr(<base symbol>)) == 0.
+  //
+  // The simple (Darwin, except on x86_64) way of dealing with this was to
+  // assume that any reference to a temporary symbol *must* be a temporary
+  // symbol in the same atom, unless the sections differ. Therefore, any PCrel
+  // relocation to a temporary symbol (in the same section) is fully
+  // resolved. This also works in conjunction with absolutized .set, which
+  // requires the compiler to use .set to absolutize the differences between
+  // symbols which the compiler knows to be assembly time constants, so we don't
+  // need to worry about considering symbol differences fully resolved.
 
-  for (MCSectionData::iterator it = SD.begin(), ie = SD.end(); it != ie; ++it) {
-    MCFragment &F = *it;
+  // Non-relative fixups are only resolved if constant.
+  if (!BaseSection)
+    return Target.isAbsolute();
 
-    F.setOffset(Address - SD.getAddress());
+  // Otherwise, relative fixups are only resolved if not a difference and the
+  // target is a temporary in the same section.
+  if (Target.isAbsolute() || Target.getSymB())
+    return false;
 
-    // Evaluate fragment size.
-    switch (F.getKind()) {
-    case MCFragment::FT_Align: {
-      MCAlignFragment &AF = cast<MCAlignFragment>(F);
+  const MCSymbol *A = &Target.getSymA()->getSymbol();
+  if (!A->isTemporary() || !A->isInSection() ||
+      &A->getSection() != BaseSection)
+    return false;
 
-      uint64_t Size = OffsetToAlignment(Address, AF.getAlignment());
-      if (Size > AF.getMaxBytesToEmit())
-        AF.setFileSize(0);
-      else
-        AF.setFileSize(Size);
-      break;
-    }
+  return true;
+}
 
-    case MCFragment::FT_Data:
-    case MCFragment::FT_Fill:
-      F.setFileSize(F.getMaxFileSize());
-      break;
+static bool isScatteredFixupFullyResolved(const MCAssembler &Asm,
+                                          const MCAsmLayout &Layout,
+                                          const MCFixup &Fixup,
+                                          const MCValue Target,
+                                          const MCSymbolData *BaseSymbol) {
+  // The effective fixup address is
+  //     addr(atom(A)) + offset(A)
+  //   - addr(atom(B)) - offset(B)
+  //   - addr(BaseSymbol) + <fixup offset from base symbol>
+  // and the offsets are not relocatable, so the fixup is fully resolved when
+  //  addr(atom(A)) - addr(atom(B)) - addr(BaseSymbol) == 0.
+  //
+  // Note that "false" is almost always conservatively correct (it means we emit
+  // a relocation which is unnecessary), except when it would force us to emit a
+  // relocation which the target cannot encode.
 
-    case MCFragment::FT_Org: {
-      MCOrgFragment &OF = cast<MCOrgFragment>(F);
+  const MCSymbolData *A_Base = 0, *B_Base = 0;
+  if (const MCSymbolRefExpr *A = Target.getSymA()) {
+    // Modified symbol references cannot be resolved.
+    if (A->getKind() != MCSymbolRefExpr::VK_None)
+      return false;
 
-      MCValue Target;
-      if (!OF.getOffset().EvaluateAsRelocatable(Target))
-        llvm_report_error("expected relocatable expression");
-
-      if (!Target.isAbsolute())
-        llvm_unreachable("FIXME: Not yet implemented!");
-      uint64_t OrgOffset = Target.getConstant();
-      uint64_t Offset = Address - SD.getAddress();
-
-      // FIXME: We need a way to communicate this error.
-      if (OrgOffset < Offset)
-        llvm_report_error("invalid .org offset '" + Twine(OrgOffset) +
-                          "' (at offset '" + Twine(Offset) + "'");
-
-      F.setFileSize(OrgOffset - Offset);
-      break;
-    }
-
-    case MCFragment::FT_ZeroFill: {
-      MCZeroFillFragment &ZFF = cast<MCZeroFillFragment>(F);
-
-      // Align the fragment offset; it is safe to adjust the offset freely since
-      // this is only in virtual sections.
-      uint64_t Aligned = RoundUpToAlignment(Address, ZFF.getAlignment());
-      F.setOffset(Aligned - SD.getAddress());
-
-      // FIXME: This is misnamed.
-      F.setFileSize(ZFF.getSize());
-      break;
-    }
-    }
-
-    Address += F.getFileSize();
+    A_Base = Asm.getAtom(Layout, &Asm.getSymbolData(A->getSymbol()));
+    if (!A_Base)
+      return false;
   }
 
-  // Set the section sizes.
-  SD.setSize(Address - SD.getAddress());
-  if (isVirtualSection(SD.getSection()))
-    SD.setFileSize(0);
-  else
-    SD.setFileSize(Address - SD.getAddress());
+  if (const MCSymbolRefExpr *B = Target.getSymB()) {
+    // Modified symbol references cannot be resolved.
+    if (B->getKind() != MCSymbolRefExpr::VK_None)
+      return false;
+
+    B_Base = Asm.getAtom(Layout, &Asm.getSymbolData(B->getSymbol()));
+    if (!B_Base)
+      return false;
+  }
+
+  // If there is no base, A and B have to be the same atom for this fixup to be
+  // fully resolved.
+  if (!BaseSymbol)
+    return A_Base == B_Base;
+
+  // Otherwise, B must be missing and A must be the base.
+  return !B_Base && BaseSymbol == A_Base;
 }
 
-/// WriteNopData - Write optimal nops to the output file for the \arg Count
-/// bytes.  This returns the number of bytes written.  It may return 0 if
-/// the \arg Count is more than the maximum optimal nops.
-///
-/// FIXME this is X86 32-bit specific and should move to a better place.
-static uint64_t WriteNopData(uint64_t Count, MachObjectWriter &MOW) {
-  static const uint8_t Nops[16][16] = {
-    // nop
-    {0x90},
-    // xchg %ax,%ax
-    {0x66, 0x90},
-    // nopl (%[re]ax)
-    {0x0f, 0x1f, 0x00},
-    // nopl 0(%[re]ax)
-    {0x0f, 0x1f, 0x40, 0x00},
-    // nopl 0(%[re]ax,%[re]ax,1)
-    {0x0f, 0x1f, 0x44, 0x00, 0x00},
-    // nopw 0(%[re]ax,%[re]ax,1)
-    {0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00},
-    // nopl 0L(%[re]ax)
-    {0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00},
-    // nopl 0L(%[re]ax,%[re]ax,1)
-    {0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
-    // nopw 0L(%[re]ax,%[re]ax,1)
-    {0x66, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
-    // nopw %cs:0L(%[re]ax,%[re]ax,1)
-    {0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
-    // nopl 0(%[re]ax,%[re]ax,1)
-    // nopw 0(%[re]ax,%[re]ax,1)
-    {0x0f, 0x1f, 0x44, 0x00, 0x00,
-     0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00},
-    // nopw 0(%[re]ax,%[re]ax,1)
-    // nopw 0(%[re]ax,%[re]ax,1)
-    {0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00,
-     0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00},
-    // nopw 0(%[re]ax,%[re]ax,1)
-    // nopl 0L(%[re]ax) */
-    {0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00,
-     0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00},
-    // nopl 0L(%[re]ax)
-    // nopl 0L(%[re]ax)
-    {0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00,
-     0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00},
-    // nopl 0L(%[re]ax)
-    // nopl 0L(%[re]ax,%[re]ax,1)
-    {0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00,
-     0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00}
-  };
+bool MCAssembler::isSymbolLinkerVisible(const MCSymbol &Symbol) const {
+  // Non-temporary labels should always be visible to the linker.
+  if (!Symbol.isTemporary())
+    return true;
 
-  if (Count > 15)
+  // Absolute temporary labels are never visible.
+  if (!Symbol.isInSection())
+    return false;
+
+  // Otherwise, check if the section requires symbols even for temporary labels.
+  return getBackend().doesSectionRequireSymbols(Symbol.getSection());
+}
+
+const MCSymbolData *MCAssembler::getAtom(const MCAsmLayout &Layout,
+                                         const MCSymbolData *SD) const {
+  // Linker visible symbols define atoms.
+  if (isSymbolLinkerVisible(SD->getSymbol()))
+    return SD;
+
+  // Absolute and undefined symbols have no defining atom.
+  if (!SD->getFragment())
     return 0;
 
-  for (uint64_t i = 0; i < Count; i++)
-    MOW.Write8 (uint8_t(Nops[Count - 1][i]));
+  // Non-linker visible symbols in sections which can't be atomized have no
+  // defining atom.
+  if (!getBackend().isSectionAtomizable(
+        SD->getFragment()->getParent()->getSection()))
+    return 0;
 
-  return Count;
+  // Otherwise, return the atom for the containing fragment.
+  return SD->getFragment()->getAtom();
 }
 
-/// WriteFileData - Write the \arg F data to the output file.
-static void WriteFileData(raw_ostream &OS, const MCFragment &F,
-                          MachObjectWriter &MOW) {
-  uint64_t Start = OS.tell();
+bool MCAssembler::EvaluateFixup(const MCAsmLayout &Layout,
+                                const MCFixup &Fixup, const MCFragment *DF,
+                                MCValue &Target, uint64_t &Value) const {
+  ++stats::EvaluateFixup;
+
+  if (!Fixup.getValue()->EvaluateAsRelocatable(Target, &Layout))
+    report_fatal_error("expected relocatable expression");
+
+  // FIXME: How do non-scattered symbols work in ELF? I presume the linker
+  // doesn't support small relocations, but then under what criteria does the
+  // assembler allow symbol differences?
+
+  Value = Target.getConstant();
+
+  bool IsPCRel = Emitter.getFixupKindInfo(
+    Fixup.getKind()).Flags & MCFixupKindInfo::FKF_IsPCRel;
+  bool IsResolved = true;
+  if (const MCSymbolRefExpr *A = Target.getSymA()) {
+    if (A->getSymbol().isDefined())
+      Value += Layout.getSymbolAddress(&getSymbolData(A->getSymbol()));
+    else
+      IsResolved = false;
+  }
+  if (const MCSymbolRefExpr *B = Target.getSymB()) {
+    if (B->getSymbol().isDefined())
+      Value -= Layout.getSymbolAddress(&getSymbolData(B->getSymbol()));
+    else
+      IsResolved = false;
+  }
+
+  // If we are using scattered symbols, determine whether this value is actually
+  // resolved; scattering may cause atoms to move.
+  if (IsResolved && getBackend().hasScatteredSymbols()) {
+    if (getBackend().hasReliableSymbolDifference()) {
+      // If this is a PCrel relocation, find the base atom (identified by its
+      // symbol) that the fixup value is relative to.
+      const MCSymbolData *BaseSymbol = 0;
+      if (IsPCRel) {
+        BaseSymbol = DF->getAtom();
+        if (!BaseSymbol)
+          IsResolved = false;
+      }
+
+      if (IsResolved)
+        IsResolved = isScatteredFixupFullyResolved(*this, Layout, Fixup, Target,
+                                                   BaseSymbol);
+    } else {
+      const MCSection *BaseSection = 0;
+      if (IsPCRel)
+        BaseSection = &DF->getParent()->getSection();
+
+      IsResolved = isScatteredFixupFullyResolvedSimple(*this, Fixup, Target,
+                                                       BaseSection);
+    }
+  }
+
+  if (IsPCRel)
+    Value -= Layout.getFragmentAddress(DF) + Fixup.getOffset();
+
+  return IsResolved;
+}
+
+uint64_t MCAssembler::ComputeFragmentSize(MCAsmLayout &Layout,
+                                          const MCFragment &F,
+                                          uint64_t SectionAddress,
+                                          uint64_t FragmentOffset) const {
+  switch (F.getKind()) {
+  case MCFragment::FT_Data:
+    return cast<MCDataFragment>(F).getContents().size();
+  case MCFragment::FT_Fill:
+    return cast<MCFillFragment>(F).getSize();
+  case MCFragment::FT_Inst:
+    return cast<MCInstFragment>(F).getInstSize();
+
+  case MCFragment::FT_Align: {
+    const MCAlignFragment &AF = cast<MCAlignFragment>(F);
+
+    assert((!AF.hasOnlyAlignAddress() || !AF.getNextNode()) &&
+           "Invalid OnlyAlignAddress bit, not the last fragment!");
+
+    uint64_t Size = OffsetToAlignment(SectionAddress + FragmentOffset,
+                                      AF.getAlignment());
+
+    // Honor MaxBytesToEmit.
+    if (Size > AF.getMaxBytesToEmit())
+      return 0;
+
+    return Size;
+  }
+
+  case MCFragment::FT_Org: {
+    const MCOrgFragment &OF = cast<MCOrgFragment>(F);
+
+    // FIXME: We should compute this sooner, we don't want to recurse here, and
+    // we would like to be more functional.
+    int64_t TargetLocation;
+    if (!OF.getOffset().EvaluateAsAbsolute(TargetLocation, &Layout))
+      report_fatal_error("expected assembly-time absolute expression");
+
+    // FIXME: We need a way to communicate this error.
+    int64_t Offset = TargetLocation - FragmentOffset;
+    if (Offset < 0)
+      report_fatal_error("invalid .org offset '" + Twine(TargetLocation) +
+                         "' (at offset '" + Twine(FragmentOffset) + "'");
+
+    return Offset;
+  }
+  }
+
+  assert(0 && "invalid fragment kind");
+  return 0;
+}
+
+void MCAsmLayout::LayoutFile() {
+  // Initialize the first section and set the valid fragment layout point. All
+  // actual layout computations are done lazily.
+  LastValidFragment = 0;
+  if (!getSectionOrder().empty())
+    getSectionOrder().front()->Address = 0;
+}
+
+void MCAsmLayout::LayoutFragment(MCFragment *F) {
+  MCFragment *Prev = F->getPrevNode();
+
+  // We should never try to recompute something which is up-to-date.
+  assert(!isFragmentUpToDate(F) && "Attempt to recompute up-to-date fragment!");
+  // We should never try to compute the fragment layout if the section isn't
+  // up-to-date.
+  assert(isSectionUpToDate(F->getParent()) &&
+         "Attempt to compute fragment before it's section!");
+  // We should never try to compute the fragment layout if it's predecessor
+  // isn't up-to-date.
+  assert((!Prev || isFragmentUpToDate(Prev)) &&
+         "Attempt to compute fragment before it's predecessor!");
+
+  ++stats::FragmentLayouts;
+
+  // Compute the fragment start address.
+  uint64_t StartAddress = F->getParent()->Address;
+  uint64_t Address = StartAddress;
+  if (Prev)
+    Address += Prev->Offset + Prev->EffectiveSize;
+
+  // Compute fragment offset and size.
+  F->Offset = Address - StartAddress;
+  F->EffectiveSize = getAssembler().ComputeFragmentSize(*this, *F, StartAddress,
+                                                        F->Offset);
+  LastValidFragment = F;
+
+  // If this is the last fragment in a section, update the next section address.
+  if (!F->getNextNode()) {
+    unsigned NextIndex = F->getParent()->getLayoutOrder() + 1;
+    if (NextIndex != getSectionOrder().size())
+      LayoutSection(getSectionOrder()[NextIndex]);
+  }
+}
+
+void MCAsmLayout::LayoutSection(MCSectionData *SD) {
+  unsigned SectionOrderIndex = SD->getLayoutOrder();
+
+  ++stats::SectionLayouts;
+
+  // Compute the section start address.
+  uint64_t StartAddress = 0;
+  if (SectionOrderIndex) {
+    MCSectionData *Prev = getSectionOrder()[SectionOrderIndex - 1];
+    StartAddress = getSectionAddress(Prev) + getSectionAddressSize(Prev);
+  }
+
+  // Honor the section alignment requirements.
+  StartAddress = RoundUpToAlignment(StartAddress, SD->getAlignment());
+
+  // Set the section address.
+  SD->Address = StartAddress;
+}
+
+/// WriteFragmentData - Write the \arg F data to the output file.
+static void WriteFragmentData(const MCAssembler &Asm, const MCAsmLayout &Layout,
+                              const MCFragment &F, MCObjectWriter *OW) {
+  uint64_t Start = OW->getStream().tell();
   (void) Start;
 
-  ++EmittedFragments;
+  ++stats::EmittedFragments;
 
   // FIXME: Embed in fragments instead?
+  uint64_t FragmentSize = Layout.getFragmentEffectiveSize(&F);
   switch (F.getKind()) {
   case MCFragment::FT_Align: {
     MCAlignFragment &AF = cast<MCAlignFragment>(F);
-    uint64_t Count = AF.getFileSize() / AF.getValueSize();
+    uint64_t Count = FragmentSize / AF.getValueSize();
+
+    assert(AF.getValueSize() && "Invalid virtual align in concrete fragment!");
 
     // FIXME: This error shouldn't actually occur (the front end should emit
     // multiple .align directives to enforce the semantics it wants), but is
     // severe enough that we want to report it. How to handle this?
-    if (Count * AF.getValueSize() != AF.getFileSize())
-      llvm_report_error("undefined .align directive, value size '" +
+    if (Count * AF.getValueSize() != FragmentSize)
+      report_fatal_error("undefined .align directive, value size '" +
                         Twine(AF.getValueSize()) +
                         "' is not a divisor of padding size '" +
-                        Twine(AF.getFileSize()) + "'");
+                        Twine(FragmentSize) + "'");
 
     // See if we are aligning with nops, and if so do that first to try to fill
     // the Count bytes.  Then if that did not fill any bytes or there are any
     // bytes left to fill use the the Value and ValueSize to fill the rest.
-    if (AF.getEmitNops()) {
-      uint64_t NopByteCount = WriteNopData(Count, MOW);
-      Count -= NopByteCount;
+    // If we are aligning with nops, ask that target to emit the right data.
+    if (AF.hasEmitNops()) {
+      if (!Asm.getBackend().WriteNopData(Count, OW))
+        report_fatal_error("unable to write nop sequence of " +
+                          Twine(Count) + " bytes");
+      break;
     }
 
+    // Otherwise, write out in multiples of the value size.
     for (uint64_t i = 0; i != Count; ++i) {
       switch (AF.getValueSize()) {
       default:
         assert(0 && "Invalid size!");
-      case 1: MOW.Write8 (uint8_t (AF.getValue())); break;
-      case 2: MOW.Write16(uint16_t(AF.getValue())); break;
-      case 4: MOW.Write32(uint32_t(AF.getValue())); break;
-      case 8: MOW.Write64(uint64_t(AF.getValue())); break;
+      case 1: OW->Write8 (uint8_t (AF.getValue())); break;
+      case 2: OW->Write16(uint16_t(AF.getValue())); break;
+      case 4: OW->Write32(uint32_t(AF.getValue())); break;
+      case 8: OW->Write64(uint64_t(AF.getValue())); break;
       }
     }
     break;
@@ -1164,136 +575,388 @@ static void WriteFileData(raw_ostream &OS, const MCFragment &F,
 
   case MCFragment::FT_Data: {
     MCDataFragment &DF = cast<MCDataFragment>(F);
-
-    // Apply the fixups.
-    //
-    // FIXME: Move elsewhere.
-    for (MCDataFragment::const_fixup_iterator it = DF.fixup_begin(),
-           ie = DF.fixup_end(); it != ie; ++it)
-      MOW.ApplyFixup(*it, DF);
-
-    OS << cast<MCDataFragment>(F).getContents().str();
+    assert(FragmentSize == DF.getContents().size() && "Invalid size!");
+    OW->WriteBytes(DF.getContents().str());
     break;
   }
 
   case MCFragment::FT_Fill: {
     MCFillFragment &FF = cast<MCFillFragment>(F);
-    for (uint64_t i = 0, e = FF.getCount(); i != e; ++i) {
+
+    assert(FF.getValueSize() && "Invalid virtual align in concrete fragment!");
+
+    for (uint64_t i = 0, e = FF.getSize() / FF.getValueSize(); i != e; ++i) {
       switch (FF.getValueSize()) {
       default:
         assert(0 && "Invalid size!");
-      case 1: MOW.Write8 (uint8_t (FF.getValue())); break;
-      case 2: MOW.Write16(uint16_t(FF.getValue())); break;
-      case 4: MOW.Write32(uint32_t(FF.getValue())); break;
-      case 8: MOW.Write64(uint64_t(FF.getValue())); break;
+      case 1: OW->Write8 (uint8_t (FF.getValue())); break;
+      case 2: OW->Write16(uint16_t(FF.getValue())); break;
+      case 4: OW->Write32(uint32_t(FF.getValue())); break;
+      case 8: OW->Write64(uint64_t(FF.getValue())); break;
       }
     }
     break;
   }
 
+  case MCFragment::FT_Inst:
+    llvm_unreachable("unexpected inst fragment after lowering");
+    break;
+
   case MCFragment::FT_Org: {
     MCOrgFragment &OF = cast<MCOrgFragment>(F);
 
-    for (uint64_t i = 0, e = OF.getFileSize(); i != e; ++i)
-      MOW.Write8(uint8_t(OF.getValue()));
+    for (uint64_t i = 0, e = FragmentSize; i != e; ++i)
+      OW->Write8(uint8_t(OF.getValue()));
 
     break;
   }
-
-  case MCFragment::FT_ZeroFill: {
-    assert(0 && "Invalid zero fill fragment in concrete section!");
-    break;
-  }
   }
 
-  assert(OS.tell() - Start == F.getFileSize());
+  assert(OW->getStream().tell() - Start == FragmentSize);
 }
 
-/// WriteFileData - Write the \arg SD data to the output file.
-static void WriteFileData(raw_ostream &OS, const MCSectionData &SD,
-                          MachObjectWriter &MOW) {
+void MCAssembler::WriteSectionData(const MCSectionData *SD,
+                                   const MCAsmLayout &Layout,
+                                   MCObjectWriter *OW) const {
   // Ignore virtual sections.
-  if (isVirtualSection(SD.getSection())) {
-    assert(SD.getFileSize() == 0);
+  if (getBackend().isVirtualSection(SD->getSection())) {
+    assert(Layout.getSectionFileSize(SD) == 0 && "Invalid size for section!");
+
+    // Check that contents are only things legal inside a virtual section.
+    for (MCSectionData::const_iterator it = SD->begin(),
+           ie = SD->end(); it != ie; ++it) {
+      switch (it->getKind()) {
+      default:
+        assert(0 && "Invalid fragment in virtual section!");
+      case MCFragment::FT_Data: {
+        // Check that we aren't trying to write a non-zero contents (or fixups)
+        // into a virtual section. This is to support clients which use standard
+        // directives to fill the contents of virtual sections.
+        MCDataFragment &DF = cast<MCDataFragment>(*it);
+        assert(DF.fixup_begin() == DF.fixup_end() &&
+               "Cannot have fixups in virtual section!");
+        for (unsigned i = 0, e = DF.getContents().size(); i != e; ++i)
+          assert(DF.getContents()[i] == 0 &&
+                 "Invalid data value for virtual section!");
+        break;
+      }
+      case MCFragment::FT_Align:
+        // Check that we aren't trying to write a non-zero value into a virtual
+        // section.
+        assert((!cast<MCAlignFragment>(it)->getValueSize() ||
+                !cast<MCAlignFragment>(it)->getValue()) &&
+               "Invalid align in virtual section!");
+        break;
+      case MCFragment::FT_Fill:
+        assert(!cast<MCFillFragment>(it)->getValueSize() &&
+               "Invalid fill in virtual section!");
+        break;
+      }
+    }
+
     return;
   }
 
-  uint64_t Start = OS.tell();
+  uint64_t Start = OW->getStream().tell();
   (void) Start;
 
-  for (MCSectionData::const_iterator it = SD.begin(),
-         ie = SD.end(); it != ie; ++it)
-    WriteFileData(OS, *it, MOW);
+  for (MCSectionData::const_iterator it = SD->begin(),
+         ie = SD->end(); it != ie; ++it)
+    WriteFragmentData(*this, Layout, *it, OW);
 
-  // Add section padding.
-  assert(SD.getFileSize() >= SD.getSize() && "Invalid section sizes!");
-  MOW.WriteZeros(SD.getFileSize() - SD.getSize());
-
-  assert(OS.tell() - Start == SD.getFileSize());
+  assert(OW->getStream().tell() - Start == Layout.getSectionFileSize(SD));
 }
 
-void MCAssembler::Finish() {
+void MCAssembler::AddSectionToTheEnd(MCSectionData &SD, MCAsmLayout &Layout) {
+  // Create dummy fragments and assign section ordinals.
+  unsigned SectionIndex = 0;
+  for (MCAssembler::iterator it = begin(), ie = end(); it != ie; ++it)
+    SectionIndex++;
+
+  SD.setOrdinal(SectionIndex);
+
+  // Assign layout order indices to sections and fragments.
+  unsigned FragmentIndex = 0;
+  unsigned i = 0;
+  for (unsigned e = Layout.getSectionOrder().size(); i != e; ++i) {
+    MCSectionData *SD = Layout.getSectionOrder()[i];
+
+    for (MCSectionData::iterator it2 = SD->begin(),
+           ie2 = SD->end(); it2 != ie2; ++it2)
+      FragmentIndex++;
+  }
+
+  SD.setLayoutOrder(i);
+  for (MCSectionData::iterator it2 = SD.begin(),
+         ie2 = SD.end(); it2 != ie2; ++it2) {
+    it2->setLayoutOrder(FragmentIndex++);
+  }
+  Layout.getSectionOrder().push_back(&SD);
+
+  Layout.LayoutSection(&SD);
+
+  // Layout until everything fits.
+  while (LayoutOnce(Layout))
+    continue;
+
+}
+
+void MCAssembler::Finish(MCObjectWriter *Writer) {
   DEBUG_WITH_TYPE("mc-dump", {
       llvm::errs() << "assembler backend - pre-layout\n--\n";
       dump(); });
 
-  // Layout the concrete sections and fragments.
-  uint64_t Address = 0;
-  MCSectionData *Prev = 0;
-  for (iterator it = begin(), ie = end(); it != ie; ++it) {
-    MCSectionData &SD = *it;
+  // Create the layout object.
+  MCAsmLayout Layout(*this);
 
-    // Skip virtual sections.
-    if (isVirtualSection(SD.getSection()))
+  // Insert additional align fragments for concrete sections to explicitly pad
+  // the previous section to match their alignment requirements. This is for
+  // 'gas' compatibility, it shouldn't strictly be necessary.
+  //
+  // FIXME: This may be Mach-O specific.
+  for (unsigned i = 1, e = Layout.getSectionOrder().size(); i < e; ++i) {
+    MCSectionData *SD = Layout.getSectionOrder()[i];
+
+    // Ignore sections without alignment requirements.
+    unsigned Align = SD->getAlignment();
+    if (Align <= 1)
       continue;
 
-    // Align this section if necessary by adding padding bytes to the previous
+    // Ignore virtual sections, they don't cause file size modifications.
+    if (getBackend().isVirtualSection(SD->getSection()))
+      continue;
+
+    // Otherwise, create a new align fragment at the end of the previous
     // section.
-    if (uint64_t Pad = OffsetToAlignment(Address, it->getAlignment())) {
-      assert(Prev && "Missing prev section!");
-      Prev->setFileSize(Prev->getFileSize() + Pad);
-      Address += Pad;
-    }
-
-    // Layout the section fragments and its size.
-    SD.setAddress(Address);
-    LayoutSection(SD);
-    Address += SD.getFileSize();
-
-    Prev = &SD;
+    MCAlignFragment *AF = new MCAlignFragment(Align, 0, 1, Align,
+                                              Layout.getSectionOrder()[i - 1]);
+    AF->setOnlyAlignAddress(true);
   }
 
-  // Layout the virtual sections.
-  for (iterator it = begin(), ie = end(); it != ie; ++it) {
-    MCSectionData &SD = *it;
+  // Create dummy fragments and assign section ordinals.
+  unsigned SectionIndex = 0;
+  for (MCAssembler::iterator it = begin(), ie = end(); it != ie; ++it) {
+    // Create dummy fragments to eliminate any empty sections, this simplifies
+    // layout.
+    if (it->getFragmentList().empty())
+      new MCFillFragment(0, 1, 0, it);
 
-    if (!isVirtualSection(SD.getSection()))
-      continue;
-
-    SD.setAddress(Address);
-    LayoutSection(SD);
-    Address += SD.getSize();
+    it->setOrdinal(SectionIndex++);
   }
+
+  // Assign layout order indices to sections and fragments.
+  unsigned FragmentIndex = 0;
+  for (unsigned i = 0, e = Layout.getSectionOrder().size(); i != e; ++i) {
+    MCSectionData *SD = Layout.getSectionOrder()[i];
+    SD->setLayoutOrder(i);
+
+    for (MCSectionData::iterator it2 = SD->begin(),
+           ie2 = SD->end(); it2 != ie2; ++it2)
+      it2->setLayoutOrder(FragmentIndex++);
+  }
+
+  // Layout until everything fits.
+  while (LayoutOnce(Layout))
+    continue;
 
   DEBUG_WITH_TYPE("mc-dump", {
-      llvm::errs() << "assembler backend - post-layout\n--\n";
+      llvm::errs() << "assembler backend - post-relaxation\n--\n";
       dump(); });
 
-  // Write the object file.
-  MachObjectWriter MOW(OS);
-  MOW.WriteObject(*this);
+  // Finalize the layout, including fragment lowering.
+  FinishLayout(Layout);
 
-  OS.flush();
+  DEBUG_WITH_TYPE("mc-dump", {
+      llvm::errs() << "assembler backend - final-layout\n--\n";
+      dump(); });
+
+  uint64_t StartOffset = OS.tell();
+
+  llvm::OwningPtr<MCObjectWriter> OwnWriter(0);
+  if (Writer == 0) {
+    //no custom Writer_ : create the default one life-managed by OwningPtr
+    OwnWriter.reset(getBackend().createObjectWriter(OS));
+    Writer = OwnWriter.get();
+    if (!Writer)
+      report_fatal_error("unable to create object writer!");
+  }
+
+  // Allow the object writer a chance to perform post-layout binding (for
+  // example, to set the index fields in the symbol data).
+  Writer->ExecutePostLayoutBinding(*this);
+
+  // Evaluate and apply the fixups, generating relocation entries as necessary.
+  for (MCAssembler::iterator it = begin(), ie = end(); it != ie; ++it) {
+    for (MCSectionData::iterator it2 = it->begin(),
+           ie2 = it->end(); it2 != ie2; ++it2) {
+      MCDataFragment *DF = dyn_cast<MCDataFragment>(it2);
+      if (!DF)
+        continue;
+
+      for (MCDataFragment::fixup_iterator it3 = DF->fixup_begin(),
+             ie3 = DF->fixup_end(); it3 != ie3; ++it3) {
+        MCFixup &Fixup = *it3;
+
+        // Evaluate the fixup.
+        MCValue Target;
+        uint64_t FixedValue;
+        if (!EvaluateFixup(Layout, Fixup, DF, Target, FixedValue)) {
+          // The fixup was unresolved, we need a relocation. Inform the object
+          // writer of the relocation, and give it an opportunity to adjust the
+          // fixup value if need be.
+          Writer->RecordRelocation(*this, Layout, DF, Fixup, Target,FixedValue);
+        }
+
+        getBackend().ApplyFixup(Fixup, *DF, FixedValue);
+      }
+    }
+  }
+
+  // Write the object file.
+  Writer->WriteObject(*this, Layout);
+
+  stats::ObjectBytes += OS.tell() - StartOffset;
 }
 
+bool MCAssembler::FixupNeedsRelaxation(const MCFixup &Fixup,
+                                       const MCFragment *DF,
+                                       const MCAsmLayout &Layout) const {
+  if (getRelaxAll())
+    return true;
+
+  // If we cannot resolve the fixup value, it requires relaxation.
+  MCValue Target;
+  uint64_t Value;
+  if (!EvaluateFixup(Layout, Fixup, DF, Target, Value))
+    return true;
+
+  // Otherwise, relax if the value is too big for a (signed) i8.
+  //
+  // FIXME: This is target dependent!
+  return int64_t(Value) != int64_t(int8_t(Value));
+}
+
+bool MCAssembler::FragmentNeedsRelaxation(const MCInstFragment *IF,
+                                          const MCAsmLayout &Layout) const {
+  // If this inst doesn't ever need relaxation, ignore it. This occurs when we
+  // are intentionally pushing out inst fragments, or because we relaxed a
+  // previous instruction to one that doesn't need relaxation.
+  if (!getBackend().MayNeedRelaxation(IF->getInst()))
+    return false;
+
+  for (MCInstFragment::const_fixup_iterator it = IF->fixup_begin(),
+         ie = IF->fixup_end(); it != ie; ++it)
+    if (FixupNeedsRelaxation(*it, IF, Layout))
+      return true;
+
+  return false;
+}
+
+bool MCAssembler::LayoutOnce(MCAsmLayout &Layout) {
+  ++stats::RelaxationSteps;
+
+  // Layout the sections in order.
+  Layout.LayoutFile();
+
+  // Scan for fragments that need relaxation.
+  bool WasRelaxed = false;
+  for (iterator it = begin(), ie = end(); it != ie; ++it) {
+    MCSectionData &SD = *it;
+
+    for (MCSectionData::iterator it2 = SD.begin(),
+           ie2 = SD.end(); it2 != ie2; ++it2) {
+      // Check if this is an instruction fragment that needs relaxation.
+      MCInstFragment *IF = dyn_cast<MCInstFragment>(it2);
+      if (!IF || !FragmentNeedsRelaxation(IF, Layout))
+        continue;
+
+      ++stats::RelaxedInstructions;
+
+      // FIXME-PERF: We could immediately lower out instructions if we can tell
+      // they are fully resolved, to avoid retesting on later passes.
+
+      // Relax the fragment.
+
+      MCInst Relaxed;
+      getBackend().RelaxInstruction(IF->getInst(), Relaxed);
+
+      // Encode the new instruction.
+      //
+      // FIXME-PERF: If it matters, we could let the target do this. It can
+      // probably do so more efficiently in many cases.
+      SmallVector<MCFixup, 4> Fixups;
+      SmallString<256> Code;
+      raw_svector_ostream VecOS(Code);
+      getEmitter().EncodeInstruction(Relaxed, VecOS, Fixups);
+      VecOS.flush();
+
+      // Update the instruction fragment.
+      int SlideAmount = Code.size() - IF->getInstSize();
+      IF->setInst(Relaxed);
+      IF->getCode() = Code;
+      IF->getFixups().clear();
+      // FIXME: Eliminate copy.
+      for (unsigned i = 0, e = Fixups.size(); i != e; ++i)
+        IF->getFixups().push_back(Fixups[i]);
+
+      // Update the layout, and remember that we relaxed.
+      Layout.UpdateForSlide(IF, SlideAmount);
+      WasRelaxed = true;
+    }
+  }
+
+  return WasRelaxed;
+}
+
+void MCAssembler::FinishLayout(MCAsmLayout &Layout) {
+  // Lower out any instruction fragments, to simplify the fixup application and
+  // output.
+  //
+  // FIXME-PERF: We don't have to do this, but the assumption is that it is
+  // cheap (we will mostly end up eliminating fragments and appending on to data
+  // fragments), so the extra complexity downstream isn't worth it. Evaluate
+  // this assumption.
+  for (iterator it = begin(), ie = end(); it != ie; ++it) {
+    MCSectionData &SD = *it;
+
+    for (MCSectionData::iterator it2 = SD.begin(),
+           ie2 = SD.end(); it2 != ie2; ++it2) {
+      MCInstFragment *IF = dyn_cast<MCInstFragment>(it2);
+      if (!IF)
+        continue;
+
+      // Create a new data fragment for the instruction.
+      //
+      // FIXME-PERF: Reuse previous data fragment if possible.
+      MCDataFragment *DF = new MCDataFragment();
+      SD.getFragmentList().insert(it2, DF);
+
+      // Update the data fragments layout data.
+      DF->setParent(IF->getParent());
+      DF->setAtom(IF->getAtom());
+      DF->setLayoutOrder(IF->getLayoutOrder());
+      Layout.FragmentReplaced(IF, DF);
+
+      // Copy in the data and the fixups.
+      DF->getContents().append(IF->getCode().begin(), IF->getCode().end());
+      for (unsigned i = 0, e = IF->getFixups().size(); i != e; ++i)
+        DF->getFixups().push_back(IF->getFixups()[i]);
+
+      // Delete the instruction fragment and update the iterator.
+      SD.getFragmentList().erase(IF);
+      it2 = DF;
+    }
+  }
+}
 
 // Debugging methods
 
 namespace llvm {
 
-raw_ostream &operator<<(raw_ostream &OS, const MCAsmFixup &AF) {
-  OS << "<MCAsmFixup" << " Offset:" << AF.Offset << " Value:" << *AF.Value
-     << " Kind:" << AF.Kind << ">";
+raw_ostream &operator<<(raw_ostream &OS, const MCFixup &AF) {
+  OS << "<MCFixup" << " Offset:" << AF.getOffset()
+     << " Value:" << *AF.getValue()
+     << " Kind:" << AF.getKind() << ">";
   return OS;
 }
 
@@ -1302,75 +965,75 @@ raw_ostream &operator<<(raw_ostream &OS, const MCAsmFixup &AF) {
 void MCFragment::dump() {
   raw_ostream &OS = llvm::errs();
 
-  OS << "<MCFragment " << (void*) this << " Offset:" << Offset
-     << " FileSize:" << FileSize;
-
-  OS << ">";
-}
-
-void MCAlignFragment::dump() {
-  raw_ostream &OS = llvm::errs();
-
-  OS << "<MCAlignFragment ";
-  this->MCFragment::dump();
-  OS << "\n       ";
-  OS << " Alignment:" << getAlignment()
-     << " Value:" << getValue() << " ValueSize:" << getValueSize()
-     << " MaxBytesToEmit:" << getMaxBytesToEmit() << ">";
-}
-
-void MCDataFragment::dump() {
-  raw_ostream &OS = llvm::errs();
-
-  OS << "<MCDataFragment ";
-  this->MCFragment::dump();
-  OS << "\n       ";
-  OS << " Contents:[";
-  for (unsigned i = 0, e = getContents().size(); i != e; ++i) {
-    if (i) OS << ",";
-    OS << hexdigit((Contents[i] >> 4) & 0xF) << hexdigit(Contents[i] & 0xF);
+  OS << "<";
+  switch (getKind()) {
+  case MCFragment::FT_Align: OS << "MCAlignFragment"; break;
+  case MCFragment::FT_Data:  OS << "MCDataFragment"; break;
+  case MCFragment::FT_Fill:  OS << "MCFillFragment"; break;
+  case MCFragment::FT_Inst:  OS << "MCInstFragment"; break;
+  case MCFragment::FT_Org:   OS << "MCOrgFragment"; break;
   }
-  OS << "] (" << getContents().size() << " bytes)";
 
-  if (!getFixups().empty()) {
-    OS << ",\n       ";
-    OS << " Fixups:[";
-    for (fixup_iterator it = fixup_begin(), ie = fixup_end(); it != ie; ++it) {
-      if (it != fixup_begin()) OS << ",\n            ";
-      OS << *it;
+  OS << "<MCFragment " << (void*) this << " LayoutOrder:" << LayoutOrder
+     << " Offset:" << Offset << " EffectiveSize:" << EffectiveSize << ">";
+
+  switch (getKind()) {
+  case MCFragment::FT_Align: {
+    const MCAlignFragment *AF = cast<MCAlignFragment>(this);
+    if (AF->hasEmitNops())
+      OS << " (emit nops)";
+    if (AF->hasOnlyAlignAddress())
+      OS << " (only align section)";
+    OS << "\n       ";
+    OS << " Alignment:" << AF->getAlignment()
+       << " Value:" << AF->getValue() << " ValueSize:" << AF->getValueSize()
+       << " MaxBytesToEmit:" << AF->getMaxBytesToEmit() << ">";
+    break;
+  }
+  case MCFragment::FT_Data:  {
+    const MCDataFragment *DF = cast<MCDataFragment>(this);
+    OS << "\n       ";
+    OS << " Contents:[";
+    const SmallVectorImpl<char> &Contents = DF->getContents();
+    for (unsigned i = 0, e = Contents.size(); i != e; ++i) {
+      if (i) OS << ",";
+      OS << hexdigit((Contents[i] >> 4) & 0xF) << hexdigit(Contents[i] & 0xF);
     }
-    OS << "]";
+    OS << "] (" << Contents.size() << " bytes)";
+
+    if (!DF->getFixups().empty()) {
+      OS << ",\n       ";
+      OS << " Fixups:[";
+      for (MCDataFragment::const_fixup_iterator it = DF->fixup_begin(),
+             ie = DF->fixup_end(); it != ie; ++it) {
+        if (it != DF->fixup_begin()) OS << ",\n                ";
+        OS << *it;
+      }
+      OS << "]";
+    }
+    break;
   }
-
+  case MCFragment::FT_Fill:  {
+    const MCFillFragment *FF = cast<MCFillFragment>(this);
+    OS << " Value:" << FF->getValue() << " ValueSize:" << FF->getValueSize()
+       << " Size:" << FF->getSize();
+    break;
+  }
+  case MCFragment::FT_Inst:  {
+    const MCInstFragment *IF = cast<MCInstFragment>(this);
+    OS << "\n       ";
+    OS << " Inst:";
+    IF->getInst().dump_pretty(OS);
+    break;
+  }
+  case MCFragment::FT_Org:  {
+    const MCOrgFragment *OF = cast<MCOrgFragment>(this);
+    OS << "\n       ";
+    OS << " Offset:" << OF->getOffset() << " Value:" << OF->getValue();
+    break;
+  }
+  }
   OS << ">";
-}
-
-void MCFillFragment::dump() {
-  raw_ostream &OS = llvm::errs();
-
-  OS << "<MCFillFragment ";
-  this->MCFragment::dump();
-  OS << "\n       ";
-  OS << " Value:" << getValue() << " ValueSize:" << getValueSize()
-     << " Count:" << getCount() << ">";
-}
-
-void MCOrgFragment::dump() {
-  raw_ostream &OS = llvm::errs();
-
-  OS << "<MCOrgFragment ";
-  this->MCFragment::dump();
-  OS << "\n       ";
-  OS << " Offset:" << getOffset() << " Value:" << getValue() << ">";
-}
-
-void MCZeroFillFragment::dump() {
-  raw_ostream &OS = llvm::errs();
-
-  OS << "<MCZeroFillFragment ";
-  this->MCFragment::dump();
-  OS << "\n       ";
-  OS << " Size:" << getSize() << " Alignment:" << getAlignment() << ">";
 }
 
 void MCSectionData::dump() {
@@ -1378,8 +1041,7 @@ void MCSectionData::dump() {
 
   OS << "<MCSectionData";
   OS << " Alignment:" << getAlignment() << " Address:" << Address
-     << " Size:" << Size << " FileSize:" << FileSize
-     << " Fragments:[";
+     << " Fragments:[\n      ";
   for (iterator it = begin(), ie = end(); it != ie; ++it) {
     if (it != begin()) OS << ",\n      ";
     it->dump();
@@ -1407,7 +1069,7 @@ void MCAssembler::dump() {
   raw_ostream &OS = llvm::errs();
 
   OS << "<MCAssembler\n";
-  OS << "  Sections:[";
+  OS << "  Sections:[\n    ";
   for (iterator it = begin(), ie = end(); it != ie; ++it) {
     if (it != begin()) OS << ",\n    ";
     it->dump();
@@ -1416,7 +1078,7 @@ void MCAssembler::dump() {
   OS << "  Symbols:[";
 
   for (symbol_iterator it = symbol_begin(), ie = symbol_end(); it != ie; ++it) {
-    if (it != symbol_begin()) OS << ",\n    ";
+    if (it != symbol_begin()) OS << ",\n           ";
     it->dump();
   }
   OS << "]>\n";

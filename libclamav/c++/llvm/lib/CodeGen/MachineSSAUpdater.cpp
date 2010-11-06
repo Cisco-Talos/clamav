@@ -21,34 +21,28 @@
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Support/AlignOf.h"
+#include "llvm/Support/Allocator.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/SSAUpdaterImpl.h"
 using namespace llvm;
 
 typedef DenseMap<MachineBasicBlock*, unsigned> AvailableValsTy;
-typedef std::vector<std::pair<MachineBasicBlock*, unsigned> >
-                IncomingPredInfoTy;
-
 static AvailableValsTy &getAvailableVals(void *AV) {
   return *static_cast<AvailableValsTy*>(AV);
 }
 
-static IncomingPredInfoTy &getIncomingPredInfo(void *IPI) {
-  return *static_cast<IncomingPredInfoTy*>(IPI);
-}
-
-
 MachineSSAUpdater::MachineSSAUpdater(MachineFunction &MF,
                                      SmallVectorImpl<MachineInstr*> *NewPHI)
-  : AV(0), IPI(0), InsertedPHIs(NewPHI) {
+  : AV(0), InsertedPHIs(NewPHI) {
   TII = MF.getTarget().getInstrInfo();
   MRI = &MF.getRegInfo();
 }
 
 MachineSSAUpdater::~MachineSSAUpdater() {
   delete &getAvailableVals(AV);
-  delete &getIncomingPredInfo(IPI);
 }
 
 /// Initialize - Reset this object to get ready for a new set of SSA
@@ -58,11 +52,6 @@ void MachineSSAUpdater::Initialize(unsigned V) {
     AV = new AvailableValsTy();
   else
     getAvailableVals(AV).clear();
-
-  if (IPI == 0)
-    IPI = new IncomingPredInfoTy();
-  else
-    getIncomingPredInfo(IPI).clear();
 
   VR = V;
   VRC = MRI->getRegClass(VR);
@@ -123,11 +112,12 @@ static
 MachineInstr *InsertNewDef(unsigned Opcode,
                            MachineBasicBlock *BB, MachineBasicBlock::iterator I,
                            const TargetRegisterClass *RC,
-                           MachineRegisterInfo *MRI, const TargetInstrInfo *TII) {
+                           MachineRegisterInfo *MRI,
+                           const TargetInstrInfo *TII) {
   unsigned NewVR = MRI->createVirtualRegister(RC);
-  return BuildMI(*BB, I, DebugLoc::getUnknownLoc(), TII->get(Opcode), NewVR);
+  return BuildMI(*BB, I, DebugLoc(), TII->get(Opcode), NewVR);
 }
-                          
+
 /// GetValueInMiddleOfBlock - Construct SSA form, materializing a value that
 /// is live in the middle of the specified block.
 ///
@@ -150,7 +140,7 @@ MachineInstr *InsertNewDef(unsigned Opcode,
 unsigned MachineSSAUpdater::GetValueInMiddleOfBlock(MachineBasicBlock *BB) {
   // If there is no definition of the renamed variable in this block, just use
   // GetValueAtEndOfBlock to do our work.
-  if (!getAvailableVals(AV).count(BB))
+  if (!HasValueForBlock(BB))
     return GetValueAtEndOfBlockInternal(BB);
 
   // If there are no predecessors, just return undef.
@@ -252,143 +242,131 @@ void MachineSSAUpdater::ReplaceRegWith(unsigned OldReg, unsigned NewReg) {
       I->second = NewReg;
 }
 
-/// GetValueAtEndOfBlockInternal - Check to see if AvailableVals has an entry
-/// for the specified BB and if so, return it.  If not, construct SSA form by
-/// walking predecessors inserting PHI nodes as needed until we get to a block
-/// where the value is available.
-///
-unsigned MachineSSAUpdater::GetValueAtEndOfBlockInternal(MachineBasicBlock *BB){
-  AvailableValsTy &AvailableVals = getAvailableVals(AV);
+/// MachinePHIiter - Iterator for PHI operands.  This is used for the
+/// PHI_iterator in the SSAUpdaterImpl template.
+namespace {
+  class MachinePHIiter {
+  private:
+    MachineInstr *PHI;
+    unsigned idx;
+ 
+  public:
+    explicit MachinePHIiter(MachineInstr *P) // begin iterator
+      : PHI(P), idx(1) {}
+    MachinePHIiter(MachineInstr *P, bool) // end iterator
+      : PHI(P), idx(PHI->getNumOperands()) {}
 
-  // Query AvailableVals by doing an insertion of null.
-  std::pair<AvailableValsTy::iterator, bool> InsertRes =
-    AvailableVals.insert(std::make_pair(BB, 0));
+    MachinePHIiter &operator++() { idx += 2; return *this; } 
+    bool operator==(const MachinePHIiter& x) const { return idx == x.idx; }
+    bool operator!=(const MachinePHIiter& x) const { return !operator==(x); }
+    unsigned getIncomingValue() { return PHI->getOperand(idx).getReg(); }
+    MachineBasicBlock *getIncomingBlock() {
+      return PHI->getOperand(idx+1).getMBB();
+    }
+  };
+}
 
-  // Handle the case when the insertion fails because we have already seen BB.
-  if (!InsertRes.second) {
-    // If the insertion failed, there are two cases.  The first case is that the
-    // value is already available for the specified block.  If we get this, just
-    // return the value.
-    if (InsertRes.first->second != 0)
-      return InsertRes.first->second;
+/// SSAUpdaterTraits<MachineSSAUpdater> - Traits for the SSAUpdaterImpl
+/// template, specialized for MachineSSAUpdater.
+namespace llvm {
+template<>
+class SSAUpdaterTraits<MachineSSAUpdater> {
+public:
+  typedef MachineBasicBlock BlkT;
+  typedef unsigned ValT;
+  typedef MachineInstr PhiT;
 
-    // Otherwise, if the value we find is null, then this is the value is not
-    // known but it is being computed elsewhere in our recursion.  This means
-    // that we have a cycle.  Handle this by inserting a PHI node and returning
-    // it.  When we get back to the first instance of the recursion we will fill
-    // in the PHI node.
-    MachineBasicBlock::iterator Loc = BB->empty() ? BB->end() : BB->front();
-    MachineInstr *NewPHI = InsertNewDef(TargetOpcode::PHI, BB, Loc,
-                                        VRC, MRI,TII);
-    unsigned NewVR = NewPHI->getOperand(0).getReg();
-    InsertRes.first->second = NewVR;
-    return NewVR;
+  typedef MachineBasicBlock::succ_iterator BlkSucc_iterator;
+  static BlkSucc_iterator BlkSucc_begin(BlkT *BB) { return BB->succ_begin(); }
+  static BlkSucc_iterator BlkSucc_end(BlkT *BB) { return BB->succ_end(); }
+
+  typedef MachinePHIiter PHI_iterator;
+  static inline PHI_iterator PHI_begin(PhiT *PHI) { return PHI_iterator(PHI); }
+  static inline PHI_iterator PHI_end(PhiT *PHI) {
+    return PHI_iterator(PHI, true);
   }
 
-  // If there are no predecessors, then we must have found an unreachable block
-  // just return 'undef'.  Since there are no predecessors, InsertRes must not
-  // be invalidated.
-  if (BB->pred_empty()) {
+  /// FindPredecessorBlocks - Put the predecessors of BB into the Preds
+  /// vector.
+  static void FindPredecessorBlocks(MachineBasicBlock *BB,
+                                    SmallVectorImpl<MachineBasicBlock*> *Preds){
+    for (MachineBasicBlock::pred_iterator PI = BB->pred_begin(),
+           E = BB->pred_end(); PI != E; ++PI)
+      Preds->push_back(*PI);
+  }
+
+  /// GetUndefVal - Create an IMPLICIT_DEF instruction with a new register.
+  /// Add it into the specified block and return the register.
+  static unsigned GetUndefVal(MachineBasicBlock *BB,
+                              MachineSSAUpdater *Updater) {
     // Insert an implicit_def to represent an undef value.
     MachineInstr *NewDef = InsertNewDef(TargetOpcode::IMPLICIT_DEF,
                                         BB, BB->getFirstTerminator(),
-                                        VRC, MRI, TII);
-    return InsertRes.first->second = NewDef->getOperand(0).getReg();
+                                        Updater->VRC, Updater->MRI,
+                                        Updater->TII);
+    return NewDef->getOperand(0).getReg();
   }
 
-  // Okay, the value isn't in the map and we just inserted a null in the entry
-  // to indicate that we're processing the block.  Since we have no idea what
-  // value is in this block, we have to recurse through our predecessors.
-  //
-  // While we're walking our predecessors, we keep track of them in a vector,
-  // then insert a PHI node in the end if we actually need one.  We could use a
-  // smallvector here, but that would take a lot of stack space for every level
-  // of the recursion, just use IncomingPredInfo as an explicit stack.
-  IncomingPredInfoTy &IncomingPredInfo = getIncomingPredInfo(IPI);
-  unsigned FirstPredInfoEntry = IncomingPredInfo.size();
-
-  // As we're walking the predecessors, keep track of whether they are all
-  // producing the same value.  If so, this value will capture it, if not, it
-  // will get reset to null.  We distinguish the no-predecessor case explicitly
-  // below.
-  unsigned SingularValue = 0;
-  bool isFirstPred = true;
-  for (MachineBasicBlock::pred_iterator PI = BB->pred_begin(),
-         E = BB->pred_end(); PI != E; ++PI) {
-    MachineBasicBlock *PredBB = *PI;
-    unsigned PredVal = GetValueAtEndOfBlockInternal(PredBB);
-    IncomingPredInfo.push_back(std::make_pair(PredBB, PredVal));
-
-    // Compute SingularValue.
-    if (isFirstPred) {
-      SingularValue = PredVal;
-      isFirstPred = false;
-    } else if (PredVal != SingularValue)
-      SingularValue = 0;
-  }
-
-  /// Look up BB's entry in AvailableVals.  'InsertRes' may be invalidated.  If
-  /// this block is involved in a loop, a no-entry PHI node will have been
-  /// inserted as InsertedVal.  Otherwise, we'll still have the null we inserted
-  /// above.
-  unsigned &InsertedVal = AvailableVals[BB];
-
-  // If all the predecessor values are the same then we don't need to insert a
-  // PHI.  This is the simple and common case.
-  if (SingularValue) {
-    // If a PHI node got inserted, replace it with the singlar value and delete
-    // it.
-    if (InsertedVal) {
-      MachineInstr *OldVal = MRI->getVRegDef(InsertedVal);
-      // Be careful about dead loops.  These RAUW's also update InsertedVal.
-      assert(InsertedVal != SingularValue && "Dead loop?");
-      ReplaceRegWith(InsertedVal, SingularValue);
-      OldVal->eraseFromParent();
-    }
-
-    InsertedVal = SingularValue;
-
-    // Drop the entries we added in IncomingPredInfo to restore the stack.
-    IncomingPredInfo.erase(IncomingPredInfo.begin()+FirstPredInfoEntry,
-                           IncomingPredInfo.end());
-    return InsertedVal;
-  }
-
-
-  // Otherwise, we do need a PHI: insert one now if we don't already have one.
-  MachineInstr *InsertedPHI;
-  if (InsertedVal == 0) {
+  /// CreateEmptyPHI - Create a PHI instruction that defines a new register.
+  /// Add it into the specified block and return the register.
+  static unsigned CreateEmptyPHI(MachineBasicBlock *BB, unsigned NumPreds,
+                                 MachineSSAUpdater *Updater) {
     MachineBasicBlock::iterator Loc = BB->empty() ? BB->end() : BB->front();
-    InsertedPHI = InsertNewDef(TargetOpcode::PHI, BB, Loc,
-                               VRC, MRI, TII);
-    InsertedVal = InsertedPHI->getOperand(0).getReg();
-  } else {
-    InsertedPHI = MRI->getVRegDef(InsertedVal);
+    MachineInstr *PHI = InsertNewDef(TargetOpcode::PHI, BB, Loc,
+                                     Updater->VRC, Updater->MRI,
+                                     Updater->TII);
+    return PHI->getOperand(0).getReg();
   }
 
-  // Fill in all the predecessors of the PHI.
-  MachineInstrBuilder MIB(InsertedPHI);
-  for (IncomingPredInfoTy::iterator I =
-         IncomingPredInfo.begin()+FirstPredInfoEntry,
-         E = IncomingPredInfo.end(); I != E; ++I)
-    MIB.addReg(I->second).addMBB(I->first);
-
-  // Drop the entries we added in IncomingPredInfo to restore the stack.
-  IncomingPredInfo.erase(IncomingPredInfo.begin()+FirstPredInfoEntry,
-                         IncomingPredInfo.end());
-
-  // See if the PHI node can be merged to a single value.  This can happen in
-  // loop cases when we get a PHI of itself and one other value.
-  if (unsigned ConstVal = InsertedPHI->isConstantValuePHI()) {
-    MRI->replaceRegWith(InsertedVal, ConstVal);
-    InsertedPHI->eraseFromParent();
-    InsertedVal = ConstVal;
-  } else {
-    DEBUG(dbgs() << "  Inserted PHI: " << *InsertedPHI << "\n");
-
-    // If the client wants to know about all new instructions, tell it.
-    if (InsertedPHIs) InsertedPHIs->push_back(InsertedPHI);
+  /// AddPHIOperand - Add the specified value as an operand of the PHI for
+  /// the specified predecessor block.
+  static void AddPHIOperand(MachineInstr *PHI, unsigned Val,
+                            MachineBasicBlock *Pred) {
+    PHI->addOperand(MachineOperand::CreateReg(Val, false));
+    PHI->addOperand(MachineOperand::CreateMBB(Pred));
   }
 
-  return InsertedVal;
+  /// InstrIsPHI - Check if an instruction is a PHI.
+  ///
+  static MachineInstr *InstrIsPHI(MachineInstr *I) {
+    if (I && I->isPHI())
+      return I;
+    return 0;
+  }
+
+  /// ValueIsPHI - Check if the instruction that defines the specified register
+  /// is a PHI instruction.
+  static MachineInstr *ValueIsPHI(unsigned Val, MachineSSAUpdater *Updater) {
+    return InstrIsPHI(Updater->MRI->getVRegDef(Val));
+  }
+
+  /// ValueIsNewPHI - Like ValueIsPHI but also check if the PHI has no source
+  /// operands, i.e., it was just added.
+  static MachineInstr *ValueIsNewPHI(unsigned Val, MachineSSAUpdater *Updater) {
+    MachineInstr *PHI = ValueIsPHI(Val, Updater);
+    if (PHI && PHI->getNumOperands() <= 1)
+      return PHI;
+    return 0;
+  }
+
+  /// GetPHIValue - For the specified PHI instruction, return the register
+  /// that it defines.
+  static unsigned GetPHIValue(MachineInstr *PHI) {
+    return PHI->getOperand(0).getReg();
+  }
+};
+
+} // End llvm namespace
+
+/// GetValueAtEndOfBlockInternal - Check to see if AvailableVals has an entry
+/// for the specified BB and if so, return it.  If not, construct SSA form by
+/// first calculating the required placement of PHIs and then inserting new
+/// PHIs where needed.
+unsigned MachineSSAUpdater::GetValueAtEndOfBlockInternal(MachineBasicBlock *BB){
+  AvailableValsTy &AvailableVals = getAvailableVals(AV);
+  if (unsigned V = AvailableVals[BB])
+    return V;
+
+  SSAUpdaterImpl<MachineSSAUpdater> Impl(this, &AvailableVals, InsertedPHIs);
+  return Impl.GetValue(BB);
 }

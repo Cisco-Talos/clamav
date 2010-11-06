@@ -15,12 +15,14 @@
 #ifndef CODEGEN_DAGPATTERNS_H
 #define CODEGEN_DAGPATTERNS_H
 
+#include "CodeGenTarget.h"
+#include "CodeGenIntrinsics.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringMap.h"
 #include <set>
 #include <algorithm>
 #include <vector>
-
-#include "CodeGenTarget.h"
-#include "CodeGenIntrinsics.h"
+#include <map>
 
 namespace llvm {
   class Record;
@@ -39,21 +41,107 @@ namespace llvm {
 /// arbitrary integer, floating-point, and vector types, so only an unknown
 /// value is needed.
 namespace EEVT {
-  enum DAGISelGenValueType {
-    isUnknown  = MVT::LAST_VALUETYPE
+  /// TypeSet - This is either empty if it's completely unknown, or holds a set
+  /// of types.  It is used during type inference because register classes can
+  /// have multiple possible types and we don't know which one they get until
+  /// type inference is complete.
+  ///
+  /// TypeSet can have three states:
+  ///    Vector is empty: The type is completely unknown, it can be any valid
+  ///       target type.
+  ///    Vector has multiple constrained types: (e.g. v4i32 + v4f32) it is one
+  ///       of those types only.
+  ///    Vector has one concrete type: The type is completely known.
+  ///
+  class TypeSet {
+    SmallVector<MVT::SimpleValueType, 4> TypeVec;
+  public:
+    TypeSet() {}
+    TypeSet(MVT::SimpleValueType VT, TreePattern &TP);
+    TypeSet(const std::vector<MVT::SimpleValueType> &VTList);    
+    
+    bool isCompletelyUnknown() const { return TypeVec.empty(); }
+    
+    bool isConcrete() const {
+      if (TypeVec.size() != 1) return false;
+      unsigned char T = TypeVec[0]; (void)T;
+      assert(T < MVT::LAST_VALUETYPE || T == MVT::iPTR || T == MVT::iPTRAny);
+      return true;
+    }
+    
+    MVT::SimpleValueType getConcrete() const {
+      assert(isConcrete() && "Type isn't concrete yet");
+      return (MVT::SimpleValueType)TypeVec[0];
+    }
+    
+    bool isDynamicallyResolved() const {
+      return getConcrete() == MVT::iPTR || getConcrete() == MVT::iPTRAny;
+    }
+    
+    const SmallVectorImpl<MVT::SimpleValueType> &getTypeList() const {
+      assert(!TypeVec.empty() && "Not a type list!");
+      return TypeVec;
+    }
+    
+    bool isVoid() const {
+      return TypeVec.size() == 1 && TypeVec[0] == MVT::isVoid;
+    }
+    
+    /// hasIntegerTypes - Return true if this TypeSet contains any integer value
+    /// types.
+    bool hasIntegerTypes() const;
+    
+    /// hasFloatingPointTypes - Return true if this TypeSet contains an fAny or
+    /// a floating point value type.
+    bool hasFloatingPointTypes() const;
+    
+    /// hasVectorTypes - Return true if this TypeSet contains a vector value
+    /// type.
+    bool hasVectorTypes() const;
+    
+    /// getName() - Return this TypeSet as a string.
+    std::string getName() const;
+    
+    /// MergeInTypeInfo - This merges in type information from the specified
+    /// argument.  If 'this' changes, it returns true.  If the two types are
+    /// contradictory (e.g. merge f32 into i32) then this throws an exception.
+    bool MergeInTypeInfo(const EEVT::TypeSet &InVT, TreePattern &TP);
+
+    bool MergeInTypeInfo(MVT::SimpleValueType InVT, TreePattern &TP) {
+      return MergeInTypeInfo(EEVT::TypeSet(InVT, TP), TP);
+    }
+
+    /// Force this type list to only contain integer types.
+    bool EnforceInteger(TreePattern &TP);
+
+    /// Force this type list to only contain floating point types.
+    bool EnforceFloatingPoint(TreePattern &TP);
+
+    /// EnforceScalar - Remove all vector types from this type list.
+    bool EnforceScalar(TreePattern &TP);
+
+    /// EnforceVector - Remove all non-vector types from this type list.
+    bool EnforceVector(TreePattern &TP);
+
+    /// EnforceSmallerThan - 'this' must be a smaller VT than Other.  Update
+    /// this an other based on this information.
+    bool EnforceSmallerThan(EEVT::TypeSet &Other, TreePattern &TP);
+    
+    /// EnforceVectorEltTypeIs - 'this' is now constrainted to be a vector type
+    /// whose element is VT.
+    bool EnforceVectorEltTypeIs(EEVT::TypeSet &VT, TreePattern &TP);
+    
+    bool operator!=(const TypeSet &RHS) const { return TypeVec != RHS.TypeVec; }
+    bool operator==(const TypeSet &RHS) const { return TypeVec == RHS.TypeVec; }
+    
+  private:
+    /// FillWithPossibleTypes - Set to all legal types and return true, only
+    /// valid on completely unknown type sets.  If Pred is non-null, only MVTs
+    /// that pass the predicate are added.
+    bool FillWithPossibleTypes(TreePattern &TP,
+                               bool (*Pred)(MVT::SimpleValueType) = 0,
+                               const char *PredicateName = 0);
   };
-
-  /// isExtIntegerInVTs - Return true if the specified extended value type
-  /// vector contains iAny or an integer value type.
-  bool isExtIntegerInVTs(const std::vector<unsigned char> &EVTs);
-
-  /// isExtFloatingPointInVTs - Return true if the specified extended value
-  /// type vector contains fAny or a FP value type.
-  bool isExtFloatingPointInVTs(const std::vector<unsigned char> &EVTs);
-
-  /// isExtVectorinVTs - Return true if the specified extended value type 
-  /// vector contains vAny or a vector value type.
-  bool isExtVectorInVTs(const std::vector<unsigned char> &EVTs);
 }
 
 /// Set type used to track multiply used variables in patterns
@@ -72,7 +160,7 @@ struct SDTypeConstraint {
   
   union {   // The discriminated union.
     struct {
-      unsigned char VT;
+      MVT::SimpleValueType VT;
     } SDTCisVT_Info;
     struct {
       unsigned OtherOperandNum;
@@ -94,11 +182,6 @@ struct SDTypeConstraint {
   /// exception.
   bool ApplyTypeConstraint(TreePatternNode *N, const SDNodeInfo &NodeInfo,
                            TreePattern &TP) const;
-  
-  /// getOperandNum - Return the node corresponding to operand #OpNo in tree
-  /// N, which has NumResults results.
-  TreePatternNode *getOperandNum(unsigned OpNo, TreePatternNode *N,
-                                 unsigned NumResults) const;
 };
 
 /// SDNodeInfo - One of these records is created for each SDNode instance in
@@ -116,6 +199,9 @@ public:
   SDNodeInfo(Record *R);  // Parse the specified record.
   
   unsigned getNumResults() const { return NumResults; }
+  
+  /// getNumOperands - This is the number of operands required or -1 if
+  /// variadic.
   int getNumOperands() const { return NumOperands; }
   Record *getRecord() const { return Def; }
   const std::string &getEnumName() const { return EnumName; }
@@ -127,8 +213,8 @@ public:
   
   /// getKnownType - If the type constraints on this node imply a fixed type
   /// (e.g. all stores return void, etc), then return it as an
-  /// MVT::SimpleValueType.  Otherwise, return EEVT::isUnknown.
-  unsigned getKnownType() const;
+  /// MVT::SimpleValueType.  Otherwise, return MVT::Other.
+  MVT::SimpleValueType getKnownType(unsigned ResNo) const;
   
   /// hasProperty - Return true if this node has the specified property.
   ///
@@ -150,10 +236,10 @@ public:
 /// patterns), and as such should be ref counted.  We currently just leak all
 /// TreePatternNode objects!
 class TreePatternNode {
-  /// The inferred type for this node, or EEVT::isUnknown if it hasn't
-  /// been determined yet. This is a std::vector because during inference
-  /// there may be multiple possible types.
-  std::vector<unsigned char> Types;
+  /// The type of each node result.  Before and during type inference, each
+  /// result may be a set of possible types.  After (successful) type inference,
+  /// each is a single concrete type.
+  SmallVector<EEVT::TypeSet, 1> Types;
   
   /// Operator - The Record for the operator if this is an interior node (not
   /// a leaf).
@@ -177,41 +263,41 @@ class TreePatternNode {
   
   std::vector<TreePatternNode*> Children;
 public:
-  TreePatternNode(Record *Op, const std::vector<TreePatternNode*> &Ch) 
-    : Types(), Operator(Op), Val(0), TransformFn(0),
-    Children(Ch) { Types.push_back(EEVT::isUnknown); }
-  TreePatternNode(Init *val)    // leaf ctor
-    : Types(), Operator(0), Val(val), TransformFn(0) {
-    Types.push_back(EEVT::isUnknown);
+  TreePatternNode(Record *Op, const std::vector<TreePatternNode*> &Ch,
+                  unsigned NumResults) 
+    : Operator(Op), Val(0), TransformFn(0), Children(Ch) {
+    Types.resize(NumResults);
+  }
+  TreePatternNode(Init *val, unsigned NumResults)    // leaf ctor
+    : Operator(0), Val(val), TransformFn(0) {
+    Types.resize(NumResults);
   }
   ~TreePatternNode();
   
   const std::string &getName() const { return Name; }
-  void setName(const std::string &N) { Name = N; }
+  void setName(StringRef N) { Name.assign(N.begin(), N.end()); }
   
   bool isLeaf() const { return Val != 0; }
-  bool hasTypeSet() const {
-    return (Types[0] < MVT::LAST_VALUETYPE) || (Types[0] == MVT::iPTR) || 
-          (Types[0] == MVT::iPTRAny);
+  
+  // Type accessors.
+  unsigned getNumTypes() const { return Types.size(); }
+  MVT::SimpleValueType getType(unsigned ResNo) const {
+    return Types[ResNo].getConcrete();
   }
-  bool isTypeCompletelyUnknown() const {
-    return Types[0] == EEVT::isUnknown;
+  const SmallVectorImpl<EEVT::TypeSet> &getExtTypes() const { return Types; }
+  const EEVT::TypeSet &getExtType(unsigned ResNo) const { return Types[ResNo]; }
+  EEVT::TypeSet &getExtType(unsigned ResNo) { return Types[ResNo]; }
+  void setType(unsigned ResNo, const EEVT::TypeSet &T) { Types[ResNo] = T; }
+  
+  bool hasTypeSet(unsigned ResNo) const {
+    return Types[ResNo].isConcrete();
   }
-  bool isTypeDynamicallyResolved() const {
-    return (Types[0] == MVT::iPTR) || (Types[0] == MVT::iPTRAny);
+  bool isTypeCompletelyUnknown(unsigned ResNo) const {
+    return Types[ResNo].isCompletelyUnknown();
   }
-  MVT::SimpleValueType getTypeNum(unsigned Num) const {
-    assert(hasTypeSet() && "Doesn't have a type yet!");
-    assert(Types.size() > Num && "Type num out of range!");
-    return (MVT::SimpleValueType)Types[Num];
+  bool isTypeDynamicallyResolved(unsigned ResNo) const {
+    return Types[ResNo].isDynamicallyResolved();
   }
-  unsigned char getExtTypeNum(unsigned Num) const { 
-    assert(Types.size() > Num && "Extended type num out of range!");
-    return Types[Num]; 
-  }
-  const std::vector<unsigned char> &getExtTypes() const { return Types; }
-  void setTypes(const std::vector<unsigned char> &T) { Types = T; }
-  void removeTypes() { Types = std::vector<unsigned char>(1, EEVT::isUnknown); }
   
   Init *getLeafValue() const { assert(isLeaf()); return Val; }
   Record *getOperator() const { assert(!isLeaf()); return Operator; }
@@ -304,17 +390,22 @@ public:   // Higher level manipulation routines.
   /// information.  If N already contains a conflicting type, then throw an
   /// exception.  This returns true if any information was updated.
   ///
-  bool UpdateNodeType(const std::vector<unsigned char> &ExtVTs,
-                      TreePattern &TP);
-  bool UpdateNodeType(unsigned char ExtVT, TreePattern &TP) {
-    std::vector<unsigned char> ExtVTs(1, ExtVT);
-    return UpdateNodeType(ExtVTs, TP);
+  bool UpdateNodeType(unsigned ResNo, const EEVT::TypeSet &InTy,
+                      TreePattern &TP) {
+    return Types[ResNo].MergeInTypeInfo(InTy, TP);
+  }
+
+  bool UpdateNodeType(unsigned ResNo, MVT::SimpleValueType InTy,
+                      TreePattern &TP) {
+    return Types[ResNo].MergeInTypeInfo(EEVT::TypeSet(InTy, TP), TP);
   }
   
   /// ContainsUnresolvedType - Return true if this tree contains any
   /// unresolved types.
   bool ContainsUnresolvedType() const {
-    if (!hasTypeSet() && !isTypeDynamicallyResolved()) return true;
+    for (unsigned i = 0, e = Types.size(); i != e; ++i)
+      if (!Types[i].isConcrete()) return true;
+    
     for (unsigned i = 0, e = getNumChildren(); i != e; ++i)
       if (getChild(i)->ContainsUnresolvedType()) return true;
     return false;
@@ -339,6 +430,10 @@ class TreePattern {
   /// Note that PatFrag's only have a single tree.
   ///
   std::vector<TreePatternNode*> Trees;
+  
+  /// NamedNodes - This is all of the nodes that have names in the trees in this
+  /// pattern.
+  StringMap<SmallVector<TreePatternNode*,1> > NamedNodes;
   
   /// TheRecord - The actual TableGen record corresponding to this pattern.
   ///
@@ -375,6 +470,12 @@ public:
     assert(Trees.size() == 1 && "Doesn't have exactly one pattern!");
     return Trees[0];
   }
+  
+  const StringMap<SmallVector<TreePatternNode*,1> > &getNamedNodesMap() {
+    if (NamedNodes.empty())
+      ComputeNamedNodes();
+    return NamedNodes;
+  }
       
   /// getRecord - Return the actual TableGen record corresponding to this
   /// pattern.
@@ -401,7 +502,8 @@ public:
   /// InferAllTypes - Infer/propagate as many types throughout the expression
   /// patterns as possible.  Return true if all types are inferred, false
   /// otherwise.  Throw an exception if a type contradiction is found.
-  bool InferAllTypes();
+  bool InferAllTypes(const StringMap<SmallVector<TreePatternNode*,1> >
+                          *NamedTypes=0);
   
   /// error - Throw an exception, prefixing it with information about this
   /// pattern.
@@ -411,7 +513,9 @@ public:
   void dump() const;
   
 private:
-  TreePatternNode *ParseTreePattern(DagInit *DI);
+  TreePatternNode *ParseTreePattern(Init *DI, StringRef OpName);
+  void ComputeNamedNodes();
+  void ComputeNamedNodes(TreePatternNode *N);
 };
 
 /// DAGDefaultOperand - One of these is created for each PredicateOperand
@@ -425,23 +529,19 @@ class DAGInstruction {
   std::vector<Record*> Results;
   std::vector<Record*> Operands;
   std::vector<Record*> ImpResults;
-  std::vector<Record*> ImpOperands;
   TreePatternNode *ResultPattern;
 public:
   DAGInstruction(TreePattern *TP,
                  const std::vector<Record*> &results,
                  const std::vector<Record*> &operands,
-                 const std::vector<Record*> &impresults,
-                 const std::vector<Record*> &impoperands)
+                 const std::vector<Record*> &impresults)
     : Pattern(TP), Results(results), Operands(operands), 
-      ImpResults(impresults), ImpOperands(impoperands),
-      ResultPattern(0) {}
+      ImpResults(impresults), ResultPattern(0) {}
 
   const TreePattern *getPattern() const { return Pattern; }
   unsigned getNumResults() const { return Results.size(); }
   unsigned getNumOperands() const { return Operands.size(); }
   unsigned getNumImpResults() const { return ImpResults.size(); }
-  unsigned getNumImpOperands() const { return ImpOperands.size(); }
   const std::vector<Record*>& getImpResults() const { return ImpResults; }
   
   void setResultPattern(TreePatternNode *R) { ResultPattern = R; }
@@ -461,11 +561,6 @@ public:
     return ImpResults[RN];
   }
   
-  Record *getImpOperand(unsigned ON) const {
-    assert(ON < ImpOperands.size());
-    return ImpOperands[ON];
-  }
-
   TreePatternNode *getResultPattern() const { return ResultPattern; }
 };
   
@@ -494,6 +589,10 @@ public:
   unsigned         getAddedComplexity() const { return AddedComplexity; }
 
   std::string getPredicateCheck() const;
+  
+  /// Compute the complexity metric for the input pattern.  This roughly
+  /// corresponds to the number of nodes that are covered.
+  unsigned getPatternComplexity(const CodeGenDAGPatterns &CGP) const;
 };
 
 // Deterministic comparison of Record*.
@@ -591,6 +690,11 @@ public:
     assert(PatternFragments.count(R) && "Invalid pattern fragment request!");
     return PatternFragments.find(R)->second;
   }
+  TreePattern *getPatternFragmentIfRead(Record *R) const {
+    if (!PatternFragments.count(R)) return 0;
+    return PatternFragments.find(R)->second;
+  }
+  
   typedef std::map<Record*, TreePattern*, RecordPtrCmp>::const_iterator
           pf_iterator;
   pf_iterator pf_begin() const { return PatternFragments.begin(); }
@@ -637,7 +741,6 @@ private:
                                    TreePatternNode*> &InstInputs,
                                    std::map<std::string,
                                    TreePatternNode*> &InstResults,
-                                   std::vector<Record*> &InstImpInputs,
                                    std::vector<Record*> &InstImpResults);
 };
 } // end namespace llvm

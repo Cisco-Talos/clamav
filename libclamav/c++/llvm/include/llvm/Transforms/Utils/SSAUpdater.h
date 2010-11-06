@@ -19,34 +19,33 @@ namespace llvm {
   class BasicBlock;
   class Use;
   class PHINode;
-  template<typename T>
-  class SmallVectorImpl;
+  template<typename T> class SmallVectorImpl;
+  template<typename T> class SSAUpdaterTraits;
+  class BumpPtrAllocator;
 
 /// SSAUpdater - This class updates SSA form for a set of values defined in
 /// multiple blocks.  This is used when code duplication or another unstructured
 /// transformation wants to rewrite a set of uses of one value with uses of a
 /// set of values.
 class SSAUpdater {
+  friend class SSAUpdaterTraits<SSAUpdater>;
+
+private:
   /// AvailableVals - This keeps track of which value to use on a per-block
-  /// basis.  When we insert PHI nodes, we keep track of them here.  We use
-  /// TrackingVH's for the value of the map because we RAUW PHI nodes when we
-  /// eliminate them, and want the TrackingVH's to track this.
-  //typedef DenseMap<BasicBlock*, TrackingVH<Value> > AvailableValsTy;
+  /// basis.  When we insert PHI nodes, we keep track of them here.
+  //typedef DenseMap<BasicBlock*, Value*> AvailableValsTy;
   void *AV;
 
-  /// PrototypeValue is an arbitrary representative value, which we derive names
-  /// and a type for PHI nodes.
-  Value *PrototypeValue;
+  /// ProtoType holds the type of the values being rewritten.
+  const Type *ProtoType;
 
-  /// IncomingPredInfo - We use this as scratch space when doing our recursive
-  /// walk.  This should only be used in GetValueInBlockInternal, normally it
-  /// should be empty.
-  //std::vector<std::pair<BasicBlock*, TrackingVH<Value> > > IncomingPredInfo;
-  void *IPI;
+  // PHI nodes are given a name based on ProtoName.
+  std::string ProtoName;
 
   /// InsertedPHIs - If this is non-null, the SSAUpdater adds all PHI nodes that
   /// it creates to the vector.
   SmallVectorImpl<PHINode*> *InsertedPHIs;
+
 public:
   /// SSAUpdater constructor.  If InsertedPHIs is specified, it will be filled
   /// in with all PHI Nodes created by rewriting.
@@ -54,8 +53,8 @@ public:
   ~SSAUpdater();
 
   /// Initialize - Reset this object to get ready for a new set of SSA
-  /// updates.  ProtoValue is the value used to name PHI nodes.
-  void Initialize(Value *ProtoValue);
+  /// updates with type 'Ty'.  PHI nodes get a name based on 'Name'.
+  void Initialize(const Type *Ty, StringRef Name);
 
   /// AddAvailableValue - Indicate that a rewritten value is available at the
   /// end of the specified block with the specified value.
@@ -97,8 +96,15 @@ public:
   /// for the use's block will be considered to be below it.
   void RewriteUse(Use &U);
 
+  /// RewriteUseAfterInsertions - Rewrite a use, just like RewriteUse.  However,
+  /// this version of the method can rewrite uses in the same block as a
+  /// definition, because it assumes that all uses of a value are below any
+  /// inserted values.
+  void RewriteUseAfterInsertions(Use &U);
+
 private:
   Value *GetValueAtEndOfBlockInternal(BasicBlock *BB);
+
   void operator=(const SSAUpdater&); // DO NOT IMPLEMENT
   SSAUpdater(const SSAUpdater&);     // DO NOT IMPLEMENT
 };

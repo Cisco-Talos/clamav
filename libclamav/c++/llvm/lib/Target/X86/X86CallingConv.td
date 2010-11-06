@@ -33,16 +33,22 @@ def RetCC_X86Common : CallingConv<[
   CCIfType<[i16], CCAssignToReg<[AX, DX]>>,
   CCIfType<[i32], CCAssignToReg<[EAX, EDX]>>,
   CCIfType<[i64], CCAssignToReg<[RAX, RDX]>>,
-  
-  // Vector types are returned in XMM0 and XMM1, when they fit.  XMMM2 and XMM3
+
+  // Vector types are returned in XMM0 and XMM1, when they fit.  XMM2 and XMM3
   // can only be used by ABI non-compliant code. If the target doesn't have XMM
   // registers, it won't have vector types.
   CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
             CCAssignToReg<[XMM0,XMM1,XMM2,XMM3]>>,
 
+  // 256-bit vectors are returned in YMM0 and XMM1, when they fit. YMM2 and YMM3
+  // can only be used by ABI non-compliant code. This vector type is only
+  // supported while using the AVX target feature.
+  CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
+            CCIfSubtarget<"hasAVX()", CCAssignToReg<[YMM0,YMM1,YMM2,YMM3]>>>,
+
   // MMX vector types are always returned in MM0. If the target doesn't have
   // MM0, it doesn't support these vector types.
-  CCIfType<[v8i8, v4i16, v2i32, v1i64, v2f32], CCAssignToReg<[MM0]>>,
+  CCIfType<[v8i8, v4i16, v2i32, v1i64], CCAssignToReg<[MM0]>>,
 
   // Long double types are always returned in ST0 (even with SSE).
   CCIfType<[f80], CCAssignToReg<[ST0, ST1]>>
@@ -89,7 +95,7 @@ def RetCC_X86_64_C : CallingConv<[
   // returned in RAX. This disagrees with ABI documentation but is bug
   // compatible with gcc.
   CCIfType<[v1i64], CCAssignToReg<[RAX]>>,
-  CCIfType<[v8i8, v4i16, v2i32, v2f32], CCAssignToReg<[XMM0, XMM1]>>,
+  CCIfType<[v8i8, v4i16, v2i32], CCAssignToReg<[XMM0, XMM1]>>,
   CCDelegateTo<RetCC_X86Common>
 ]>;
 
@@ -155,7 +161,7 @@ def CC_X86_64_C : CallingConv<[
 
   // The first 8 MMX (except for v1i64) vector arguments are passed in XMM
   // registers on Darwin.
-  CCIfType<[v8i8, v4i16, v2i32, v2f32],
+  CCIfType<[v8i8, v4i16, v2i32],
             CCIfSubtarget<"isTargetDarwin()",
             CCIfSubtarget<"hasSSE2()",
             CCPromoteToType<v2i64>>>>,
@@ -164,11 +170,16 @@ def CC_X86_64_C : CallingConv<[
   CCIfType<[f32, f64, v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
             CCIfSubtarget<"hasSSE1()",
             CCAssignToReg<[XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7]>>>,
- 
+
+  // The first 8 256-bit vector arguments are passed in YMM registers.
+  CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
+            CCIfSubtarget<"hasAVX()",
+            CCAssignToReg<[YMM0, YMM1, YMM2, YMM3, YMM4, YMM5, YMM6, YMM7]>>>,
+
   // Integer/FP values get stored in stack slots that are 8 bytes in size and
   // 8-byte aligned if there are no more registers to hold them.
   CCIfType<[i32, i64, f32, f64], CCAssignToStack<8, 8>>,
-  
+
   // Long doubles get stack slots whose size and alignment depends on the
   // subtarget.
   CCIfType<[f80], CCAssignToStack<0, 0>>,
@@ -176,8 +187,12 @@ def CC_X86_64_C : CallingConv<[
   // Vectors get 16-byte stack slots that are 16-byte aligned.
   CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], CCAssignToStack<16, 16>>,
 
+  // 256-bit vectors get 32-byte stack slots that are 32-byte aligned.
+  CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
+           CCAssignToStack<32, 32>>,
+
   // __m64 vectors get 8-byte stack slots that are 8-byte aligned.
-  CCIfType<[v8i8, v4i16, v2i32, v1i64, v2f32], CCAssignToStack<8, 8>>
+  CCIfType<[v8i8, v4i16, v2i32, v1i64], CCAssignToStack<8, 8>>
 ]>;
 
 // Calling convention used on Win64
@@ -195,7 +210,7 @@ def CC_X86_Win64_C : CallingConv<[
   CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], CCPassIndirect<i64>>,
 
   // The first 4 MMX vector arguments are passed in GPRs.
-  CCIfType<[v8i8, v4i16, v2i32, v1i64, v2f32],
+  CCIfType<[v8i8, v4i16, v2i32, v1i64],
            CCBitConvertToType<i64>>,
 
   // The first 4 integer arguments are passed in integer registers.
@@ -254,7 +269,7 @@ def CC_X86_32_Common : CallingConv<[
 
   // The first 3 __m64 (except for v1i64) vector arguments are passed in mmx
   // registers if the call is not a vararg call.
-  CCIfNotVarArg<CCIfType<[v8i8, v4i16, v2i32, v2f32],
+  CCIfNotVarArg<CCIfType<[v8i8, v4i16, v2i32],
                 CCAssignToReg<[MM0, MM1, MM2]>>>,
 
   // Integer/Float values get stored in stack slots that are 4 bytes in
@@ -271,8 +286,17 @@ def CC_X86_32_Common : CallingConv<[
   CCIfNotVarArg<CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
                 CCAssignToReg<[XMM0, XMM1, XMM2, XMM3]>>>,
 
+  // The first 4 AVX 256-bit vector arguments are passed in YMM registers.
+  CCIfNotVarArg<CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
+                CCIfSubtarget<"hasAVX()",
+                CCAssignToReg<[YMM0, YMM1, YMM2, YMM3]>>>>,
+
   // Other SSE vectors get 16-byte stack slots that are 16-byte aligned.
   CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], CCAssignToStack<16, 16>>,
+
+  // 256-bit AVX vectors get 32-byte stack slots that are 32-byte aligned.
+  CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
+           CCAssignToStack<32, 32>>,
 
   // __m64 vectors get 8-byte stack slots that are 4-byte aligned. They are
   // passed in the parameter area.
@@ -302,6 +326,20 @@ def CC_X86_32_FastCall : CallingConv<[
 
   // The first 2 integer arguments are passed in ECX/EDX
   CCIfType<[i32], CCAssignToReg<[ECX, EDX]>>,
+
+  // Otherwise, same as everything else.
+  CCDelegateTo<CC_X86_32_Common>
+]>;
+
+def CC_X86_32_ThisCall : CallingConv<[
+  // Promote i8/i16 arguments to i32.
+  CCIfType<[i8, i16], CCPromoteToType<i32>>,
+
+  // The 'nest' parameter, if any, is passed in EAX.
+  CCIfNest<CCAssignToReg<[EAX]>>,
+
+  // The first integer argument is passed in ECX
+  CCIfType<[i32], CCAssignToReg<[ECX]>>,
 
   // Otherwise, same as everything else.
   CCDelegateTo<CC_X86_32_Common>

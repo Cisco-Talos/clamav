@@ -18,7 +18,6 @@
 #ifndef LLVM_CODEGEN_PBQP_HEURISTICS_BRIGGS_H
 #define LLVM_CODEGEN_PBQP_HEURISTICS_BRIGGS_H
 
-#include "llvm/Support/Compiler.h"
 #include "../HeuristicSolver.h"
 #include "../HeuristicBase.h"
 
@@ -53,9 +52,7 @@ namespace PBQP {
         bool operator()(Graph::NodeItr n1Itr, Graph::NodeItr n2Itr) const {
           if (s->getSolverDegree(n1Itr) > s->getSolverDegree(n2Itr))
             return true;
-          if (s->getSolverDegree(n1Itr) < s->getSolverDegree(n2Itr))
-            return false;
-          return (&*n1Itr < &*n2Itr);
+          return false;
         }
       private:
         HeuristicSolverImpl<Briggs> *s;
@@ -70,9 +67,7 @@ namespace PBQP {
                   cost2 = g->getNodeCosts(n2Itr)[0] / s->getSolverDegree(n2Itr);
           if (cost1 < cost2)
             return true;
-          if (cost1 > cost2)
-            return false;
-          return (&*n1Itr < &*n2Itr);
+          return false;
         }
 
       private:
@@ -267,8 +262,8 @@ namespace PBQP {
         if (!nd.isHeuristic)
           return;
 
-        EdgeData &ed ATTRIBUTE_UNUSED = getHeuristicEdgeData(eItr);
-
+        EdgeData &ed = getHeuristicEdgeData(eItr);
+        (void)ed;
         assert(ed.isUpToDate && "Edge data is not up to date.");
 
         // Update node.

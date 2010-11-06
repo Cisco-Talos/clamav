@@ -82,8 +82,8 @@ void BasicInlinerImpl::inlineFunctions() {
     Function *F = *FI;
     for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
       for (BasicBlock::iterator I = BB->begin(); I != BB->end(); ++I) {
-        CallSite CS = CallSite::get(I);
-        if (CS.getInstruction() && CS.getCalledFunction()
+        CallSite CS(cast<Value>(I));
+        if (CS && CS.getCalledFunction()
             && !CS.getCalledFunction()->isDeclaration())
           CallSites.push_back(CS);
       }
@@ -129,7 +129,8 @@ void BasicInlinerImpl::inlineFunctions() {
         }
         
         // Inline
-        if (InlineFunction(CS, NULL, TD)) {
+        InlineFunctionInfo IFI(0, TD);
+        if (InlineFunction(CS, IFI)) {
           if (Callee->use_empty() && (Callee->hasLocalLinkage() ||
                                       Callee->hasAvailableExternallyLinkage()))
             DeadFunctions.insert(Callee);

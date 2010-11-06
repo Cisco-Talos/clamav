@@ -32,7 +32,7 @@ namespace {
     const TargetData *TD;
   public:
     static char ID; // Pass identification
-    SimplifyHalfPowrLibCalls() : FunctionPass(&ID) {}
+    SimplifyHalfPowrLibCalls() : FunctionPass(ID) {}
 
     bool runOnFunction(Function &F);
 
@@ -46,8 +46,8 @@ namespace {
   char SimplifyHalfPowrLibCalls::ID = 0;
 } // end anonymous namespace.
 
-static RegisterPass<SimplifyHalfPowrLibCalls>
-X("simplify-libcalls-halfpowr", "Simplify half_powr library calls");
+INITIALIZE_PASS(SimplifyHalfPowrLibCalls, "simplify-libcalls-halfpowr",
+                "Simplify half_powr library calls", false, false);
 
 // Public interface to the Simplify HalfPowr LibCalls pass.
 FunctionPass *llvm::createSimplifyHalfPowrLibCallsPass() {
@@ -93,7 +93,8 @@ InlineHalfPowrs(const std::vector<Instruction *> &HalfPowrs,
     // Inline the call, taking care of what code ends up where.
     NewBlock = SplitBlock(NextInst->getParent(), NextInst, this);
 
-    bool B = InlineFunction(Call, 0, TD);
+    InlineFunctionInfo IFI(0, TD);
+    bool B = InlineFunction(Call, IFI);
     assert(B && "half_powr didn't inline?"); B=B;
 
     BasicBlock *NewBody = NewBlock->getSinglePredecessor();

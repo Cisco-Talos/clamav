@@ -80,7 +80,7 @@ std::string JITDebugRegisterer::MakeELF(const Function *F, DebugInfo &I) {
 
   // Copy the binary into the .text section.  This isn't necessary, but it's
   // useful to be able to disassemble the ELF by hand.
-  ELFSection &Text = EW.getTextSection((Function *)F);
+  ELFSection &Text = EW.getTextSection(const_cast<Function *>(F));
   Text.Addr = (uint64_t)I.FnStart;
   // TODO: We could eliminate this copy if we somehow used a pointer/size pair
   // instead of a vector.
@@ -90,8 +90,8 @@ std::string JITDebugRegisterer::MakeELF(const Function *F, DebugInfo &I) {
   // section.  This allows GDB to get a good stack trace, particularly on
   // linux x86_64.  Mark this as a PROGBITS section that needs to be loaded
   // into memory at runtime.
-  ELFSection &EH = EW.getSection(".eh_frame", ELFSection::SHT_PROGBITS,
-                                 ELFSection::SHF_ALLOC);
+  ELFSection &EH = EW.getSection(".eh_frame", ELF::SHT_PROGBITS,
+                                 ELF::SHF_ALLOC);
   // Pointers in the DWARF EH info are all relative to the EH frame start,
   // which is stored here.
   EH.Addr = (uint64_t)I.EhStart;
@@ -102,9 +102,9 @@ std::string JITDebugRegisterer::MakeELF(const Function *F, DebugInfo &I) {
   // Add this single function to the symbol table, so the debugger prints the
   // name instead of '???'.  We give the symbol default global visibility.
   ELFSym *FnSym = ELFSym::getGV(F,
-                                ELFSym::STB_GLOBAL,
-                                ELFSym::STT_FUNC,
-                                ELFSym::STV_DEFAULT);
+                                ELF::STB_GLOBAL,
+                                ELF::STT_FUNC,
+                                ELF::STV_DEFAULT);
   FnSym->SectionIdx = Text.SectionIdx;
   FnSym->Size = I.FnEnd - I.FnStart;
   FnSym->Value = 0;  // Offset from start of section.
@@ -165,7 +165,7 @@ void JITDebugRegisterer::RegisterFunction(const Function *F, DebugInfo &I) {
 
 void JITDebugRegisterer::UnregisterFunctionInternal(
     RegisteredFunctionsMap::iterator I) {
-  jit_code_entry *JITCodeEntry = I->second.second;
+  jit_code_entry *&JITCodeEntry = I->second.second;
 
   // Acquire the lock and do the unregistration.
   {
@@ -189,6 +189,9 @@ void JITDebugRegisterer::UnregisterFunctionInternal(
     __jit_debug_descriptor.relevant_entry = JITCodeEntry;
     __jit_debug_register_code();
   }
+
+  delete JITCodeEntry;
+  JITCodeEntry = NULL;
 
   // Free the ELF file in memory.
   std::string &Buffer = I->second.first;

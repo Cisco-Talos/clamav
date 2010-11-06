@@ -1,5 +1,4 @@
 add_llvm_library(LLVMSelectionDAG
-  CallingConvLower.cpp
   DAGCombiner.cpp
   FastISel.cpp
   FunctionLoweringInfo.cpp
@@ -20,6 +19,7 @@ add_llvm_library(LLVMSelectionDAG
   SelectionDAGISel.cpp
   SelectionDAGPrinter.cpp
   TargetLowering.cpp
+  TargetSelectionDAGInfo.cpp
   )
 
 target_link_libraries (LLVMSelectionDAG LLVMAnalysis LLVMAsmPrinter LLVMCodeGen)

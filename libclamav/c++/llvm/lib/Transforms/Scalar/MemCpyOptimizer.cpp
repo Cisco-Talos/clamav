@@ -304,7 +304,7 @@ namespace {
     bool runOnFunction(Function &F);
   public:
     static char ID; // Pass identification, replacement for typeid
-    MemCpyOpt() : FunctionPass(&ID) {}
+    MemCpyOpt() : FunctionPass(ID) {}
 
   private:
     // This transformation requires dominator postdominator info
@@ -331,8 +331,7 @@ namespace {
 // createMemCpyOptPass - The public interface to this file...
 FunctionPass *llvm::createMemCpyOptPass() { return new MemCpyOpt(); }
 
-static RegisterPass<MemCpyOpt> X("memcpyopt",
-                                 "MemCpy Optimization");
+INITIALIZE_PASS(MemCpyOpt, "memcpyopt", "MemCpy Optimization", false, false);
 
 
 
@@ -374,7 +373,7 @@ bool MemCpyOpt::processStore(StoreInst *SI, BasicBlock::iterator &BBI) {
       // If the call is readnone, ignore it, otherwise bail out.  We don't even
       // allow readonly here because we don't want something like:
       // A[1] = 2; strlen(A); A[2] = 2; -> memcpy(A, ...); strlen(A).
-      if (AA.getModRefBehavior(CallSite::get(BI)) ==
+      if (AA.getModRefBehavior(CallSite(BI)) ==
             AliasAnalysis::DoesNotAccessMemory)
         continue;
       
@@ -413,7 +412,6 @@ bool MemCpyOpt::processStore(StoreInst *SI, BasicBlock::iterator &BBI) {
   // interesting as a small compile-time optimization.
   Ranges.addStore(0, SI);
   
-  Function *MemSetF = 0;
   
   // Now that we have full information about ranges, loop over the ranges and
   // emit memset's for anything big enough to be worthwhile.
@@ -433,29 +431,40 @@ bool MemCpyOpt::processStore(StoreInst *SI, BasicBlock::iterator &BBI) {
     // memset block.  This ensure that the memset is dominated by any addressing
     // instruction needed by the start of the block.
     BasicBlock::iterator InsertPt = BI;
-  
-    if (MemSetF == 0) {
-      const Type *Ty = Type::getInt64Ty(Context);
-      MemSetF = Intrinsic::getDeclaration(M, Intrinsic::memset, &Ty, 1);
-    }
-    
+
     // Get the starting pointer of the block.
     StartPtr = Range.StartPtr;
-  
+
+    // Determine alignment
+    unsigned Alignment = Range.Alignment;
+    if (Alignment == 0) {
+      const Type *EltType = 
+         cast<PointerType>(StartPtr->getType())->getElementType();
+      Alignment = TD->getABITypeAlignment(EltType);
+    }
+
     // Cast the start ptr to be i8* as memset requires.
-    const Type *i8Ptr = Type::getInt8PtrTy(Context);
-    if (StartPtr->getType() != i8Ptr)
+    const PointerType* StartPTy = cast<PointerType>(StartPtr->getType());
+    const PointerType *i8Ptr = Type::getInt8PtrTy(Context,
+                                                  StartPTy->getAddressSpace());
+    if (StartPTy!= i8Ptr)
       StartPtr = new BitCastInst(StartPtr, i8Ptr, StartPtr->getName(),
                                  InsertPt);
-  
+
     Value *Ops[] = {
       StartPtr, ByteVal,   // Start, value
       // size
       ConstantInt::get(Type::getInt64Ty(Context), Range.End-Range.Start),
       // align
-      ConstantInt::get(Type::getInt32Ty(Context), Range.Alignment)
+      ConstantInt::get(Type::getInt32Ty(Context), Alignment),
+      // volatile
+      ConstantInt::get(Type::getInt1Ty(Context), 0),
     };
-    Value *C = CallInst::Create(MemSetF, Ops, Ops+4, "", InsertPt);
+    const Type *Tys[] = { Ops[0]->getType(), Ops[2]->getType() };
+
+    Function *MemSetF = Intrinsic::getDeclaration(M, Intrinsic::memset, Tys, 2);
+
+    Value *C = CallInst::Create(MemSetF, Ops, Ops+5, "", InsertPt);
     DEBUG(dbgs() << "Replace stores:\n";
           for (unsigned i = 0, e = Range.TheStores.size(); i != e; ++i)
             dbgs() << *Range.TheStores[i];
@@ -499,7 +508,7 @@ bool MemCpyOpt::performCallSlotOptzn(MemCpyInst *cpy, CallInst *C) {
   // because we'll need to do type comparisons based on the underlying type.
   Value *cpyDest = cpy->getDest();
   Value *cpySrc = cpy->getSource();
-  CallSite CS = CallSite::get(C);
+  CallSite CS(C);
 
   // We need to be able to reason about the size of the memcpy, so we require
   // that it be a constant.
@@ -622,15 +631,16 @@ bool MemCpyOpt::performCallSlotOptzn(MemCpyInst *cpy, CallInst *C) {
   // Remove the memcpy
   MD.removeInstruction(cpy);
   cpy->eraseFromParent();
-  NumMemCpyInstr++;
+  ++NumMemCpyInstr;
 
   return true;
 }
 
-/// processMemCpy - perform simplication of memcpy's.  If we have memcpy A which
-/// copies X to Y, and memcpy B which copies Y to Z, then we can rewrite B to be
-/// a memcpy from X to Z (or potentially a memmove, depending on circumstances).
-///  This allows later passes to remove the first memcpy altogether.
+/// processMemCpy - perform simplification of memcpy's.  If we have memcpy A
+/// which copies X to Y, and memcpy B which copies Y to Z, then we can rewrite
+/// B to be a memcpy from X to Z (or potentially a memmove, depending on
+/// circumstances). This allows later passes to remove the first memcpy
+/// altogether.
 bool MemCpyOpt::processMemCpy(MemCpyInst *M) {
   MemoryDependenceAnalysis &MD = getAnalysis<MemoryDependenceAnalysis>();
 
@@ -680,16 +690,19 @@ bool MemCpyOpt::processMemCpy(MemCpyInst *M) {
     return false;
   
   // If all checks passed, then we can transform these memcpy's
-  const Type *Ty = M->getLength()->getType();
+  const Type *ArgTys[3] = { M->getRawDest()->getType(),
+                            MDep->getRawSource()->getType(),
+                            M->getLength()->getType() };
   Function *MemCpyFun = Intrinsic::getDeclaration(
                                  M->getParent()->getParent()->getParent(),
-                                 M->getIntrinsicID(), &Ty, 1);
+                                 M->getIntrinsicID(), ArgTys, 3);
     
-  Value *Args[4] = {
-    M->getRawDest(), MDep->getRawSource(), M->getLength(), M->getAlignmentCst()
+  Value *Args[5] = {
+    M->getRawDest(), MDep->getRawSource(), M->getLength(),
+    M->getAlignmentCst(), M->getVolatileCst()
   };
   
-  CallInst *C = CallInst::Create(MemCpyFun, Args, Args+4, "", M);
+  CallInst *C = CallInst::Create(MemCpyFun, Args, Args+5, "", M);
   
   
   // If C and M don't interfere, then this is a valid transformation.  If they
@@ -697,7 +710,7 @@ bool MemCpyOpt::processMemCpy(MemCpyInst *M) {
   if (MD.getDependency(C) == dep) {
     MD.removeInstruction(M);
     M->eraseFromParent();
-    NumMemCpyInstr++;
+    ++NumMemCpyInstr;
     return true;
   }
   
@@ -728,8 +741,11 @@ bool MemCpyOpt::processMemMove(MemMoveInst *M) {
   
   // If not, then we know we can transform this.
   Module *Mod = M->getParent()->getParent()->getParent();
-  const Type *Ty = M->getLength()->getType();
-  M->setOperand(0, Intrinsic::getDeclaration(Mod, Intrinsic::memcpy, &Ty, 1));
+  const Type *ArgTys[3] = { M->getRawDest()->getType(),
+                            M->getRawSource()->getType(),
+                            M->getLength()->getType() };
+  M->setCalledFunction(Intrinsic::getDeclaration(Mod, Intrinsic::memcpy,
+                                                 ArgTys, 3));
 
   // MemDep may have over conservative information about this instruction, just
   // conservatively flush it from the cache.

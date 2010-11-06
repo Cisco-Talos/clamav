@@ -90,8 +90,33 @@ struct DenseMapAPFloatKeyInfo {
   }
 };
 
+/// DebugRecVH - This is a CallbackVH used to keep the Scope -> index maps
+/// up to date as MDNodes mutate.  This class is implemented in DebugLoc.cpp.
+class DebugRecVH : public CallbackVH {
+  /// Ctx - This is the LLVM Context being referenced.
+  LLVMContextImpl *Ctx;
+  
+  /// Idx - The index into either ScopeRecordIdx or ScopeInlinedAtRecords that
+  /// this reference lives in.  If this is zero, then it represents a
+  /// non-canonical entry that has no DenseMap value.  This can happen due to
+  /// RAUW.
+  int Idx;
+public:
+  DebugRecVH(MDNode *n, LLVMContextImpl *ctx, int idx)
+    : CallbackVH(n), Ctx(ctx), Idx(idx) {}
+  
+  MDNode *get() const {
+    return cast_or_null<MDNode>(getValPtr());
+  }
+  
+  virtual void deleted();
+  virtual void allUsesReplacedWith(Value *VNew);
+};
+  
 class LLVMContextImpl {
 public:
+  void *InlineAsmDiagHandler, *InlineAsmDiagContext;
+  
   typedef DenseMap<DenseMapAPIntKeyInfo::KeyTy, ConstantInt*, 
                          DenseMapAPIntKeyInfo> IntMapTy;
   IntMapTy IntConstants;
@@ -119,16 +144,11 @@ public:
     ConstantStruct, true /*largekey*/> StructConstantsTy;
   StructConstantsTy StructConstants;
   
-  typedef ConstantUniqueMap<Constant*, UnionType, ConstantUnion>
-      UnionConstantsTy;
-  UnionConstantsTy UnionConstants;
-  
   typedef ConstantUniqueMap<std::vector<Constant*>, VectorType,
                             ConstantVector> VectorConstantsTy;
   VectorConstantsTy VectorConstants;
   
   ConstantUniqueMap<char, PointerType, ConstantPointerNull> NullPtrConstants;
-  
   ConstantUniqueMap<char, Type, UndefValue> UndefValueConstants;
   
   DenseMap<std::pair<Function*, BasicBlock*> , BlockAddress*> BlockAddresses;
@@ -168,7 +188,6 @@ public:
   TypeMap<PointerValType, PointerType> PointerTypes;
   TypeMap<FunctionValType, FunctionType> FunctionTypes;
   TypeMap<StructValType, StructType> StructTypes;
-  TypeMap<UnionValType, UnionType> UnionTypes;
   TypeMap<IntegerValType, IntegerType> IntegerTypes;
 
   // Opaque types are not structurally uniqued, so don't use TypeMap.
@@ -194,6 +213,27 @@ public:
   /// MetadataStore - Collection of per-instruction metadata used in this
   /// context.
   DenseMap<const Instruction *, MDMapTy> MetadataStore;
+  
+  /// ScopeRecordIdx - This is the index in ScopeRecords for an MDNode scope
+  /// entry with no "inlined at" element.
+  DenseMap<MDNode*, int> ScopeRecordIdx;
+  
+  /// ScopeRecords - These are the actual mdnodes (in a value handle) for an
+  /// index.  The ValueHandle ensures that ScopeRecordIdx stays up to date if
+  /// the MDNode is RAUW'd.
+  std::vector<DebugRecVH> ScopeRecords;
+  
+  /// ScopeInlinedAtIdx - This is the index in ScopeInlinedAtRecords for an
+  /// scope/inlined-at pair.
+  DenseMap<std::pair<MDNode*, MDNode*>, int> ScopeInlinedAtIdx;
+  
+  /// ScopeInlinedAtRecords - These are the actual mdnodes (in value handles)
+  /// for an index.  The ValueHandle ensures that ScopeINlinedAtIdx stays up
+  /// to date.
+  std::vector<std::pair<DebugRecVH, DebugRecVH> > ScopeInlinedAtRecords;
+  
+  int getOrAddScopeRecordIdxEntry(MDNode *N, int ExistingIdx);
+  int getOrAddScopeInlinedAtIdxEntry(MDNode *Scope, MDNode *IA,int ExistingIdx);
   
   LLVMContextImpl(LLVMContext &C);
   ~LLVMContextImpl();

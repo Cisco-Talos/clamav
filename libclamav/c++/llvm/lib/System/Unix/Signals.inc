@@ -39,8 +39,8 @@ static SmartMutex<true> SignalsMutex;
 /// InterruptFunction - The function to call if ctrl-c is pressed.
 static void (*InterruptFunction)() = 0;
 
-static std::vector<sys::Path> *FilesToRemove = 0;
-static std::vector<std::pair<void(*)(void*), void*> > *CallBacksToRun = 0;
+static std::vector<sys::Path> FilesToRemove;
+static std::vector<std::pair<void(*)(void*), void*> > CallBacksToRun;
 
 // IntSigs - Signals that may interrupt the program at any time.
 static const int IntSigs[] = {
@@ -111,6 +111,14 @@ static void UnregisterHandlers() {
 }
 
 
+/// RemoveFilesToRemove - Process the FilesToRemove list. This function
+/// should be called with the SignalsMutex lock held.
+static void RemoveFilesToRemove() {
+  while (!FilesToRemove.empty()) {
+    FilesToRemove.back().eraseFromDisk(true);
+    FilesToRemove.pop_back();
+  }
+}
 
 // SignalHandler - The signal handler that runs.
 static RETSIGTYPE SignalHandler(int Sig) {
@@ -126,11 +134,7 @@ static RETSIGTYPE SignalHandler(int Sig) {
   sigprocmask(SIG_UNBLOCK, &SigMask, 0);
 
   SignalsMutex.acquire();
-  if (FilesToRemove != 0)
-    while (!FilesToRemove->empty()) {
-      FilesToRemove->back().eraseFromDisk(true);
-      FilesToRemove->pop_back();
-    }
+  RemoveFilesToRemove();
 
   if (std::find(IntSigs, IntSigsEnd, Sig) != IntSigsEnd) {
     if (InterruptFunction) {
@@ -149,12 +153,15 @@ static RETSIGTYPE SignalHandler(int Sig) {
   SignalsMutex.release();
 
   // Otherwise if it is a fault (like SEGV) run any handler.
-  if (CallBacksToRun)
-    for (unsigned i = 0, e = CallBacksToRun->size(); i != e; ++i)
-      (*CallBacksToRun)[i].first((*CallBacksToRun)[i].second);
+  for (unsigned i = 0, e = CallBacksToRun.size(); i != e; ++i)
+    CallBacksToRun[i].first(CallBacksToRun[i].second);
 }
 
-
+void llvm::sys::RunInterruptHandlers() {
+  SignalsMutex.acquire();
+  RemoveFilesToRemove();
+  SignalsMutex.release();
+}
 
 void llvm::sys::SetInterruptFunction(void (*IF)()) {
   SignalsMutex.acquire();
@@ -167,10 +174,7 @@ void llvm::sys::SetInterruptFunction(void (*IF)()) {
 bool llvm::sys::RemoveFileOnSignal(const sys::Path &Filename,
                                    std::string* ErrMsg) {
   SignalsMutex.acquire();
-  if (FilesToRemove == 0)
-    FilesToRemove = new std::vector<sys::Path>();
-
-  FilesToRemove->push_back(Filename);
+  FilesToRemove.push_back(Filename);
 
   SignalsMutex.release();
 
@@ -178,13 +182,21 @@ bool llvm::sys::RemoveFileOnSignal(const sys::Path &Filename,
   return false;
 }
 
+// DontRemoveFileOnSignal - The public API
+void llvm::sys::DontRemoveFileOnSignal(const sys::Path &Filename) {
+  SignalsMutex.acquire();
+  std::vector<sys::Path>::reverse_iterator I =
+    std::find(FilesToRemove.rbegin(), FilesToRemove.rend(), Filename);
+  if (I != FilesToRemove.rend())
+    FilesToRemove.erase(I.base()-1);
+  SignalsMutex.release();
+}
+
 /// AddSignalHandler - Add a function to be called when a signal is delivered
 /// to the process.  The handler can have a cookie passed to it to identify
 /// what instance of the handler it is.
 void llvm::sys::AddSignalHandler(void (*FnPtr)(void *), void *Cookie) {
-  if (CallBacksToRun == 0)
-    CallBacksToRun = new std::vector<std::pair<void(*)(void*), void*> >();
-  CallBacksToRun->push_back(std::make_pair(FnPtr, Cookie));
+  CallBacksToRun.push_back(std::make_pair(FnPtr, Cookie));
   RegisterHandlers();
 }
 
@@ -252,3 +264,37 @@ void llvm::sys::PrintStackTraceOnErrorSignal() {
   AddSignalHandler(PrintStackTrace, 0);
 }
 
+
+/***/
+
+// On Darwin, raise sends a signal to the main thread instead of the current
+// thread. This has the unfortunate effect that assert() and abort() will end up
+// bypassing our crash recovery attempts. We work around this for anything in
+// the same linkage unit by just defining our own versions of the assert handler
+// and abort.
+
+#ifdef __APPLE__
+
+void __assert_rtn(const char *func,
+                  const char *file,
+                  int line,
+                  const char *expr) {
+  if (func)
+    fprintf(stderr, "Assertion failed: (%s), function %s, file %s, line %d.\n",
+            expr, func, file, line);
+  else
+    fprintf(stderr, "Assertion failed: (%s), file %s, line %d.\n",
+            expr, file, line);
+  abort();
+}
+
+#include <signal.h>
+#include <pthread.h>
+
+void abort() {
+  pthread_kill(pthread_self(), SIGABRT);
+  usleep(1000);
+  __builtin_trap();
+}
+
+#endif

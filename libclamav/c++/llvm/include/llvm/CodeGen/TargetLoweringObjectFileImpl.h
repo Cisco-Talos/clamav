@@ -33,7 +33,6 @@ namespace llvm {
 
 
 class TargetLoweringObjectFileELF : public TargetLoweringObjectFile {
-  mutable void *UniquingMap;
 protected:
   /// TLSDataSection - Section directive for Thread Local data.
   ///
@@ -52,14 +51,9 @@ protected:
   const MCSection *MergeableConst4Section;
   const MCSection *MergeableConst8Section;
   const MCSection *MergeableConst16Section;
-
-protected:
-  const MCSection *getELFSection(StringRef Section, unsigned Type,
-                                 unsigned Flags, SectionKind Kind,
-                                 bool IsExplicit = false) const;
 public:
-  TargetLoweringObjectFileELF() : UniquingMap(0) {}
-  ~TargetLoweringObjectFileELF();
+  TargetLoweringObjectFileELF() {}
+  ~TargetLoweringObjectFileELF() {}
 
   virtual void Initialize(MCContext &Ctx, const TargetMachine &TM);
 
@@ -78,24 +72,39 @@ public:
   SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const;
 
-  /// getSymbolForDwarfGlobalReference - Return an MCExpr to use for a reference
+  /// getExprForDwarfGlobalReference - Return an MCExpr to use for a reference
   /// to the specified global variable from exception handling information.
   ///
   virtual const MCExpr *
-  getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
-                              MachineModuleInfo *MMI, unsigned Encoding) const;
+  getExprForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
+                                 MachineModuleInfo *MMI, unsigned Encoding,
+                                 MCStreamer &Streamer) const;
 };
 
 
 
 class TargetLoweringObjectFileMachO : public TargetLoweringObjectFile {
-  mutable void *UniquingMap;
+  /// TLSDataSection - Section for thread local data.
+  ///
+  const MCSection *TLSDataSection;        // Defaults to ".tdata".
 
+  /// TLSBSSSection - Section for thread local uninitialized data.
+  ///
+  const MCSection *TLSBSSSection;         // Defaults to ".tbss".
+  
+  /// TLSTLVSection - Section for thread local structure infomation.
+  /// Contains the source code name of the variable, visibility and a pointer
+  /// to the initial value (.tdata or .tbss).
+  const MCSection *TLSTLVSection;         // Defaults to ".tlv".
+  
+  /// TLSThreadInitSection - Section for thread local data initialization
+  /// functions.
+  const MCSection *TLSThreadInitSection;  // Defaults to ".thread_init_func".
+  
   const MCSection *CStringSection;
   const MCSection *UStringSection;
   const MCSection *TextCoalSection;
   const MCSection *ConstTextCoalSection;
-  const MCSection *ConstDataCoalSection;
   const MCSection *ConstDataSection;
   const MCSection *DataCoalSection;
   const MCSection *DataCommonSection;
@@ -107,8 +116,8 @@ class TargetLoweringObjectFileMachO : public TargetLoweringObjectFile {
   const MCSection *LazySymbolPointerSection;
   const MCSection *NonLazySymbolPointerSection;
 public:
-  TargetLoweringObjectFileMachO() : UniquingMap(0) {}
-  ~TargetLoweringObjectFileMachO();
+  TargetLoweringObjectFileMachO() {}
+  ~TargetLoweringObjectFileMachO() {}
 
   virtual void Initialize(MCContext &Ctx, const TargetMachine &TM);
 
@@ -127,20 +136,6 @@ public:
   /// FIXME: REMOVE this (rdar://7071300)
   virtual bool shouldEmitUsedDirectiveFor(const GlobalValue *GV,
                                           Mangler *) const;
-
-  /// getMachOSection - Return the MCSection for the specified mach-o section.
-  /// This requires the operands to be valid.
-  const MCSectionMachO *getMachOSection(StringRef Segment,
-                                        StringRef Section,
-                                        unsigned TypeAndAttributes,
-                                        SectionKind K) const {
-    return getMachOSection(Segment, Section, TypeAndAttributes, 0, K);
-  }
-  const MCSectionMachO *getMachOSection(StringRef Segment,
-                                        StringRef Section,
-                                        unsigned TypeAndAttributes,
-                                        unsigned Reserved2,
-                                        SectionKind K) const;
 
   /// getTextCoalSection - Return the "__TEXT,__textcoal_nt" section we put weak
   /// text symbols into.
@@ -166,11 +161,12 @@ public:
     return NonLazySymbolPointerSection;
   }
 
-  /// getSymbolForDwarfGlobalReference - The mach-o version of this method
+  /// getExprForDwarfGlobalReference - The mach-o version of this method
   /// defaults to returning a stub reference.
   virtual const MCExpr *
-  getSymbolForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
-                              MachineModuleInfo *MMI, unsigned Encoding) const;
+  getExprForDwarfGlobalReference(const GlobalValue *GV, Mangler *Mang,
+                                 MachineModuleInfo *MMI, unsigned Encoding,
+                                 MCStreamer &Streamer) const;
 
   virtual unsigned getPersonalityEncoding() const;
   virtual unsigned getLSDAEncoding() const;
@@ -181,12 +177,14 @@ public:
 
 
 class TargetLoweringObjectFileCOFF : public TargetLoweringObjectFile {
-  mutable void *UniquingMap;
+  const MCSection *DrectveSection;
 public:
-  TargetLoweringObjectFileCOFF() : UniquingMap(0) {}
-  ~TargetLoweringObjectFileCOFF();
+  TargetLoweringObjectFileCOFF() {}
+  ~TargetLoweringObjectFileCOFF() {}
 
   virtual void Initialize(MCContext &Ctx, const TargetMachine &TM);
+
+  virtual const MCSection *getDrectveSection() const { return DrectveSection; }
 
   virtual const MCSection *
   getExplicitSectionGlobal(const GlobalValue *GV, SectionKind Kind,
@@ -195,11 +193,6 @@ public:
   virtual const MCSection *
   SelectSectionForGlobal(const GlobalValue *GV, SectionKind Kind,
                          Mangler *Mang, const TargetMachine &TM) const;
-
-  /// getCOFFSection - Return the MCSection for the specified COFF section.
-  /// FIXME: Switch this to a semantic view eventually.
-  const MCSection *getCOFFSection(StringRef Name, bool isDirective,
-                                  SectionKind K) const;
 };
 
 } // end namespace llvm

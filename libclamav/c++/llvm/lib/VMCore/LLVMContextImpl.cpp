@@ -13,6 +13,7 @@
 
 #include "LLVMContextImpl.h"
 #include <algorithm>
+using namespace llvm;
 
 LLVMContextImpl::LLVMContextImpl(LLVMContext &C)
   : TheTrueVal(0), TheFalseVal(0),
@@ -30,6 +31,9 @@ LLVMContextImpl::LLVMContextImpl(LLVMContext &C)
     Int32Ty(C, 32),
     Int64Ty(C, 64),
     AlwaysOpaqueTy(new OpaqueType(C)) {
+  InlineAsmDiagHandler = 0;
+  InlineAsmDiagContext = 0;
+      
   // Make sure the AlwaysOpaqueTy stays alive as long as the Context.
   AlwaysOpaqueTy->addRef();
   OpaqueTypes.insert(AlwaysOpaqueTy);
@@ -53,14 +57,11 @@ LLVMContextImpl::~LLVMContextImpl() {
                 DropReferences());
   std::for_each(StructConstants.map_begin(), StructConstants.map_end(),
                 DropReferences());
-  std::for_each(UnionConstants.map_begin(), UnionConstants.map_end(),
-                DropReferences());
   std::for_each(VectorConstants.map_begin(), VectorConstants.map_end(),
                 DropReferences());
   ExprConstants.freeConstants();
   ArrayConstants.freeConstants();
   StructConstants.freeConstants();
-  UnionConstants.freeConstants();
   VectorConstants.freeConstants();
   AggZeroConstants.freeConstants();
   NullPtrConstants.freeConstants();

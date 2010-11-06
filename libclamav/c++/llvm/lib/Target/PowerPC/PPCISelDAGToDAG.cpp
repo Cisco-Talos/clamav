@@ -16,7 +16,6 @@
 #include "PPC.h"
 #include "PPCPredicates.h"
 #include "PPCTargetMachine.h"
-#include "PPCISelLowering.h"
 #include "PPCHazardRecognizers.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -41,8 +40,8 @@ namespace {
   /// instructions for SelectionDAG operations.
   ///
   class PPCDAGToDAGISel : public SelectionDAGISel {
-    PPCTargetMachine &TM;
-    PPCTargetLowering &PPCLowering;
+    const PPCTargetMachine &TM;
+    const PPCTargetLowering &PPCLowering;
     const PPCSubtarget &PPCSubTarget;
     unsigned GlobalBaseReg;
   public:
@@ -215,7 +214,7 @@ void PPCDAGToDAGISel::InsertVRSaveCode(MachineFunction &Fn) {
   
   const TargetInstrInfo &TII = *TM.getInstrInfo();
   MachineBasicBlock &EntryBB = *Fn.begin();
-  DebugLoc dl = DebugLoc::getUnknownLoc();
+  DebugLoc dl;
   // Emit the following code into the entry block:
   // InVRSAVE = MFVRSAVE
   // UpdatedVRSAVE = UPDATE_VRSAVE InVRSAVE
@@ -253,7 +252,7 @@ SDNode *PPCDAGToDAGISel::getGlobalBaseReg() {
     // Insert the set of GlobalBaseReg into the first MBB of the function
     MachineBasicBlock &FirstMBB = MF->front();
     MachineBasicBlock::iterator MBBI = FirstMBB.begin();
-    DebugLoc dl = DebugLoc::getUnknownLoc();
+    DebugLoc dl;
 
     if (PPCLowering.getPointerTy() == MVT::i32) {
       GlobalBaseReg = RegInfo->createVirtualRegister(PPC::GPRCRegisterClass);
@@ -470,11 +469,11 @@ SDValue PPCDAGToDAGISel::SelectCC(SDValue LHS, SDValue RHS,
     if (CC == ISD::SETEQ || CC == ISD::SETNE) {
       if (isInt32Immediate(RHS, Imm)) {
         // SETEQ/SETNE comparison with 16-bit immediate, fold it.
-        if (isUInt16(Imm))
+        if (isUInt<16>(Imm))
           return SDValue(CurDAG->getMachineNode(PPC::CMPLWI, dl, MVT::i32, LHS,
                                                 getI32Imm(Imm & 0xFFFF)), 0);
         // If this is a 16-bit signed immediate, fold it.
-        if (isInt16((int)Imm))
+        if (isInt<16>((int)Imm))
           return SDValue(CurDAG->getMachineNode(PPC::CMPWI, dl, MVT::i32, LHS,
                                                 getI32Imm(Imm & 0xFFFF)), 0);
         
@@ -494,7 +493,7 @@ SDValue PPCDAGToDAGISel::SelectCC(SDValue LHS, SDValue RHS,
       }
       Opc = PPC::CMPLW;
     } else if (ISD::isUnsignedIntSetCC(CC)) {
-      if (isInt32Immediate(RHS, Imm) && isUInt16(Imm))
+      if (isInt32Immediate(RHS, Imm) && isUInt<16>(Imm))
         return SDValue(CurDAG->getMachineNode(PPC::CMPLWI, dl, MVT::i32, LHS,
                                               getI32Imm(Imm & 0xFFFF)), 0);
       Opc = PPC::CMPLW;
@@ -511,11 +510,11 @@ SDValue PPCDAGToDAGISel::SelectCC(SDValue LHS, SDValue RHS,
     if (CC == ISD::SETEQ || CC == ISD::SETNE) {
       if (isInt64Immediate(RHS.getNode(), Imm)) {
         // SETEQ/SETNE comparison with 16-bit immediate, fold it.
-        if (isUInt16(Imm))
+        if (isUInt<16>(Imm))
           return SDValue(CurDAG->getMachineNode(PPC::CMPLDI, dl, MVT::i64, LHS,
                                                 getI32Imm(Imm & 0xFFFF)), 0);
         // If this is a 16-bit signed immediate, fold it.
-        if (isInt16(Imm))
+        if (isInt<16>(Imm))
           return SDValue(CurDAG->getMachineNode(PPC::CMPDI, dl, MVT::i64, LHS,
                                                 getI32Imm(Imm & 0xFFFF)), 0);
         
@@ -528,7 +527,7 @@ SDValue PPCDAGToDAGISel::SelectCC(SDValue LHS, SDValue RHS,
         //   xoris r0,r3,0x1234
         //   cmpldi cr0,r0,0x5678
         //   beq cr0,L6
-        if (isUInt32(Imm)) {
+        if (isUInt<32>(Imm)) {
           SDValue Xor(CurDAG->getMachineNode(PPC::XORIS8, dl, MVT::i64, LHS,
                                              getI64Imm(Imm >> 16)), 0);
           return SDValue(CurDAG->getMachineNode(PPC::CMPLDI, dl, MVT::i64, Xor,
@@ -537,7 +536,7 @@ SDValue PPCDAGToDAGISel::SelectCC(SDValue LHS, SDValue RHS,
       }
       Opc = PPC::CMPLD;
     } else if (ISD::isUnsignedIntSetCC(CC)) {
-      if (isInt64Immediate(RHS.getNode(), Imm) && isUInt16(Imm))
+      if (isInt64Immediate(RHS.getNode(), Imm) && isUInt<16>(Imm))
         return SDValue(CurDAG->getMachineNode(PPC::CMPLDI, dl, MVT::i64, LHS,
                                               getI64Imm(Imm & 0xFFFF)), 0);
       Opc = PPC::CMPLD;
@@ -713,8 +712,9 @@ SDNode *PPCDAGToDAGISel::SelectSETCC(SDNode *N) {
   if (PPCSubTarget.isGigaProcessor() && OtherCondIdx == -1)
     IntCR = SDValue(CurDAG->getMachineNode(PPC::MFOCRF, dl, MVT::i32, CR7Reg,
                                            CCReg), 0);
-  else
-    IntCR = SDValue(CurDAG->getMachineNode(PPC::MFCR, dl, MVT::i32, CCReg), 0);
+ else
+    IntCR = SDValue(CurDAG->getMachineNode(PPC::MFCRpseud, dl, MVT::i32,
+                                           CR7Reg, CCReg), 0);
   
   SDValue Ops[] = { IntCR, getI32Imm((32-(3-Idx)) & 31),
                       getI32Imm(31), getI32Imm(31) };
@@ -761,12 +761,12 @@ SDNode *PPCDAGToDAGISel::Select(SDNode *N) {
       unsigned Shift = 0;
       
       // If it can't be represented as a 32 bit value.
-      if (!isInt32(Imm)) {
+      if (!isInt<32>(Imm)) {
         Shift = CountTrailingZeros_64(Imm);
         int64_t ImmSh = static_cast<uint64_t>(Imm) >> Shift;
         
         // If the shifted value fits 32 bits.
-        if (isInt32(ImmSh)) {
+        if (isInt<32>(ImmSh)) {
           // Go with the shifted value.
           Imm = ImmSh;
         } else {
@@ -785,7 +785,7 @@ SDNode *PPCDAGToDAGISel::Select(SDNode *N) {
       unsigned Hi = (Imm >> 16) & 0xFFFF;
       
       // Simple value.
-      if (isInt16(Imm)) {
+      if (isInt<16>(Imm)) {
        // Just the Lo bits.
         Result = CurDAG->getMachineNode(PPC::LI8, dl, MVT::i64, getI32Imm(Lo));
       } else if (Lo) {
@@ -849,7 +849,8 @@ SDNode *PPCDAGToDAGISel::Select(SDNode *N) {
       return CurDAG->getMachineNode(PPC::MFOCRF, dl, MVT::i32,
                                     N->getOperand(0), InFlag);
     else
-      return CurDAG->getMachineNode(PPC::MFCR, dl, MVT::i32, InFlag);
+      return CurDAG->getMachineNode(PPC::MFCRpseud, dl, MVT::i32,
+                                    N->getOperand(0), InFlag);
   }
     
   case ISD::SDIV: {

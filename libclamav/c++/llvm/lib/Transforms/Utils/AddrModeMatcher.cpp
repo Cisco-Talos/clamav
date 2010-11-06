@@ -381,29 +381,28 @@ static bool IsOperandAMemoryOperand(CallInst *CI, InlineAsm *IA, Value *OpVal,
                                     const TargetLowering &TLI) {
   std::vector<InlineAsm::ConstraintInfo>
   Constraints = IA->ParseConstraints();
-  
-  unsigned ArgNo = 1;   // ArgNo - The operand of the CallInst.
+
+  unsigned ArgNo = 0;   // The argument of the CallInst.
   for (unsigned i = 0, e = Constraints.size(); i != e; ++i) {
     TargetLowering::AsmOperandInfo OpInfo(Constraints[i]);
-    
+
     // Compute the value type for each operand.
     switch (OpInfo.Type) {
       case InlineAsm::isOutput:
         if (OpInfo.isIndirect)
-          OpInfo.CallOperandVal = CI->getOperand(ArgNo++);
+          OpInfo.CallOperandVal = CI->getArgOperand(ArgNo++);
         break;
       case InlineAsm::isInput:
-        OpInfo.CallOperandVal = CI->getOperand(ArgNo++);
+        OpInfo.CallOperandVal = CI->getArgOperand(ArgNo++);
         break;
       case InlineAsm::isClobber:
         // Nothing to do.
         break;
     }
-    
+
     // Compute the constraint code and ConstraintType to use.
-    TLI.ComputeConstraintToUse(OpInfo, SDValue(),
-                             OpInfo.ConstraintType == TargetLowering::C_Memory);
-    
+    TLI.ComputeConstraintToUse(OpInfo, SDValue());
+
     // If this asm operand is our Value*, and if it isn't an indirect memory
     // operand, we can't fold it!
     if (OpInfo.CallOperandVal == OpVal &&
@@ -411,7 +410,7 @@ static bool IsOperandAMemoryOperand(CallInst *CI, InlineAsm *IA, Value *OpVal,
          !OpInfo.isIndirect))
       return false;
   }
-  
+
   return true;
 }
 
@@ -434,20 +433,23 @@ static bool FindAllMemoryUses(Instruction *I,
   // Loop over all the uses, recursively processing them.
   for (Value::use_iterator UI = I->use_begin(), E = I->use_end();
        UI != E; ++UI) {
-    if (LoadInst *LI = dyn_cast<LoadInst>(*UI)) {
+    User *U = *UI;
+
+    if (LoadInst *LI = dyn_cast<LoadInst>(U)) {
       MemoryUses.push_back(std::make_pair(LI, UI.getOperandNo()));
       continue;
     }
     
-    if (StoreInst *SI = dyn_cast<StoreInst>(*UI)) {
-      if (UI.getOperandNo() == 0) return true; // Storing addr, not into addr.
-      MemoryUses.push_back(std::make_pair(SI, UI.getOperandNo()));
+    if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
+      unsigned opNo = UI.getOperandNo();
+      if (opNo == 0) return true; // Storing addr, not into addr.
+      MemoryUses.push_back(std::make_pair(SI, opNo));
       continue;
     }
     
-    if (CallInst *CI = dyn_cast<CallInst>(*UI)) {
+    if (CallInst *CI = dyn_cast<CallInst>(U)) {
       InlineAsm *IA = dyn_cast<InlineAsm>(CI->getCalledValue());
-      if (IA == 0) return true;
+      if (!IA) return true;
       
       // If this is a memory operand, we're cool, otherwise bail out.
       if (!IsOperandAMemoryOperand(CI, IA, I, TLI))
@@ -455,7 +457,7 @@ static bool FindAllMemoryUses(Instruction *I,
       continue;
     }
     
-    if (FindAllMemoryUses(cast<Instruction>(*UI), MemoryUses, ConsideredInsts,
+    if (FindAllMemoryUses(cast<Instruction>(U), MemoryUses, ConsideredInsts,
                           TLI))
       return true;
   }

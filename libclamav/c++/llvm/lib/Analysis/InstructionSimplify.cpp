@@ -314,6 +314,35 @@ Value *llvm::SimplifyFCmpInst(unsigned Predicate, Value *LHS, Value *RHS,
   return 0;
 }
 
+/// SimplifySelectInst - Given operands for a SelectInst, see if we can fold
+/// the result.  If not, this returns null.
+Value *llvm::SimplifySelectInst(Value *CondVal, Value *TrueVal, Value *FalseVal,
+                                const TargetData *TD) {
+  // select true, X, Y  -> X
+  // select false, X, Y -> Y
+  if (ConstantInt *CB = dyn_cast<ConstantInt>(CondVal))
+    return CB->getZExtValue() ? TrueVal : FalseVal;
+  
+  // select C, X, X -> X
+  if (TrueVal == FalseVal)
+    return TrueVal;
+  
+  if (isa<UndefValue>(TrueVal))   // select C, undef, X -> X
+    return FalseVal;
+  if (isa<UndefValue>(FalseVal))   // select C, X, undef -> X
+    return TrueVal;
+  if (isa<UndefValue>(CondVal)) {  // select undef, X, Y -> X or Y
+    if (isa<Constant>(TrueVal))
+      return TrueVal;
+    return FalseVal;
+  }
+  
+  
+  
+  return 0;
+}
+
+
 /// SimplifyGEPInst - Given operands for an GetElementPtrInst, see if we can
 /// fold the result.  If not, this returns null.
 Value *llvm::SimplifyGEPInst(Value *const *Ops, unsigned NumOps,
@@ -391,6 +420,9 @@ Value *llvm::SimplifyInstruction(Instruction *I, const TargetData *TD) {
   case Instruction::FCmp:
     return SimplifyFCmpInst(cast<FCmpInst>(I)->getPredicate(),
                             I->getOperand(0), I->getOperand(1), TD);
+  case Instruction::Select:
+    return SimplifySelectInst(I->getOperand(0), I->getOperand(1),
+                              I->getOperand(2), TD);
   case Instruction::GetElementPtr: {
     SmallVector<Value*, 8> Ops(I->op_begin(), I->op_end());
     return SimplifyGEPInst(&Ops[0], Ops.size(), TD);
@@ -408,27 +440,47 @@ void llvm::ReplaceAndSimplifyAllUses(Instruction *From, Value *To,
                                      const TargetData *TD) {
   assert(From != To && "ReplaceAndSimplifyAllUses(X,X) is not valid!");
   
-  // FromHandle - This keeps a weakvh on the from value so that we can know if
-  // it gets deleted out from under us in a recursive simplification.
+  // FromHandle/ToHandle - This keeps a WeakVH on the from/to values so that
+  // we can know if it gets deleted out from under us or replaced in a
+  // recursive simplification.
   WeakVH FromHandle(From);
+  WeakVH ToHandle(To);
   
   while (!From->use_empty()) {
     // Update the instruction to use the new value.
-    Use &U = From->use_begin().getUse();
-    Instruction *User = cast<Instruction>(U.getUser());
-    U = To;
+    Use &TheUse = From->use_begin().getUse();
+    Instruction *User = cast<Instruction>(TheUse.getUser());
+    TheUse = To;
+
+    // Check to see if the instruction can be folded due to the operand
+    // replacement.  For example changing (or X, Y) into (or X, -1) can replace
+    // the 'or' with -1.
+    Value *SimplifiedVal;
+    {
+      // Sanity check to make sure 'User' doesn't dangle across
+      // SimplifyInstruction.
+      AssertingVH<> UserHandle(User);
     
-    // See if we can simplify it.
-    if (Value *V = SimplifyInstruction(User, TD)) {
-      // Recursively simplify this.
-      ReplaceAndSimplifyAllUses(User, V, TD);
-      
-      // If the recursive simplification ended up revisiting and deleting 'From'
-      // then we're done.
-      if (FromHandle == 0)
-        return;
+      SimplifiedVal = SimplifyInstruction(User, TD);
+      if (SimplifiedVal == 0) continue;
     }
+    
+    // Recursively simplify this user to the new value.
+    ReplaceAndSimplifyAllUses(User, SimplifiedVal, TD);
+    From = dyn_cast_or_null<Instruction>((Value*)FromHandle);
+    To = ToHandle;
+      
+    assert(ToHandle && "To value deleted by recursive simplification?");
+      
+    // If the recursive simplification ended up revisiting and deleting
+    // 'From' then we're done.
+    if (From == 0)
+      return;
   }
+  
+  // If 'From' has value handles referring to it, do a real RAUW to update them.
+  From->replaceAllUsesWith(To);
+  
   From->eraseFromParent();
 }
 

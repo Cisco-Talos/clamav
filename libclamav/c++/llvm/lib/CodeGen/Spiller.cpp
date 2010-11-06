@@ -14,18 +14,21 @@
 #include "llvm/CodeGen/LiveIntervalAnalysis.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include <set>
 
 using namespace llvm;
 
 namespace {
-  enum SpillerName { trivial, standard, splitting };
+  enum SpillerName { trivial, standard, splitting, inline_ };
 }
 
 static cl::opt<SpillerName>
@@ -35,6 +38,7 @@ spillerOpt("spiller",
            cl::values(clEnumVal(trivial,   "trivial spiller"),
                       clEnumVal(standard,  "default spiller"),
                       clEnumVal(splitting, "splitting spiller"),
+                      clEnumValN(inline_,  "inline", "inline spiller"),
                       clEnumValEnd),
            cl::init(standard));
 
@@ -46,27 +50,31 @@ namespace {
 /// Utility class for spillers.
 class SpillerBase : public Spiller {
 protected:
-
+  MachineFunctionPass *pass;
   MachineFunction *mf;
+  VirtRegMap *vrm;
   LiveIntervals *lis;
   MachineFrameInfo *mfi;
   MachineRegisterInfo *mri;
   const TargetInstrInfo *tii;
-  VirtRegMap *vrm;
-  
-  /// Construct a spiller base. 
-  SpillerBase(MachineFunction *mf, LiveIntervals *lis, VirtRegMap *vrm)
-    : mf(mf), lis(lis), vrm(vrm)
+  const TargetRegisterInfo *tri;
+
+  /// Construct a spiller base.
+  SpillerBase(MachineFunctionPass &pass, MachineFunction &mf, VirtRegMap &vrm)
+    : pass(&pass), mf(&mf), vrm(&vrm)
   {
-    mfi = mf->getFrameInfo();
-    mri = &mf->getRegInfo();
-    tii = mf->getTarget().getInstrInfo();
+    lis = &pass.getAnalysis<LiveIntervals>();
+    mfi = mf.getFrameInfo();
+    mri = &mf.getRegInfo();
+    tii = mf.getTarget().getInstrInfo();
+    tri = mf.getTarget().getRegisterInfo();
   }
 
   /// Add spill ranges for every use/def of the live interval, inserting loads
   /// immediately before each use, and stores after each def. No folding or
   /// remat is attempted.
-  std::vector<LiveInterval*> trivialSpillEverywhere(LiveInterval *li) {
+  void trivialSpillEverywhere(LiveInterval *li,
+                              SmallVectorImpl<LiveInterval*> &newIntervals) {
     DEBUG(dbgs() << "Spilling everywhere " << *li << "\n");
 
     assert(li->weight != HUGE_VALF &&
@@ -77,8 +85,6 @@ protected:
 
     DEBUG(dbgs() << "Trivial spill everywhere of reg" << li->reg << "\n");
 
-    std::vector<LiveInterval*> added;
-    
     const TargetRegisterClass *trc = mri->getRegClass(li->reg);
     unsigned ss = vrm->assignVirt2StackSlot(li->reg);
 
@@ -95,7 +101,7 @@ protected:
       do {
         ++regItr;
       } while (regItr != mri->reg_end() && (&*regItr == mi));
-      
+
       // Collect uses & defs for this instr.
       SmallVector<unsigned, 2> indices;
       bool hasUse = false;
@@ -115,7 +121,7 @@ protected:
       vrm->assignVirt2StackSlot(newVReg, ss);
       LiveInterval *newLI = &lis->getOrCreateInterval(newVReg);
       newLI->weight = HUGE_VALF;
-      
+
       // Update the reg operands & kill flags.
       for (unsigned i = 0; i < indices.size(); ++i) {
         unsigned mopIdx = indices[i];
@@ -130,108 +136,117 @@ protected:
       // Insert reload if necessary.
       MachineBasicBlock::iterator miItr(mi);
       if (hasUse) {
-        tii->loadRegFromStackSlot(*mi->getParent(), miItr, newVReg, ss, trc);
+        tii->loadRegFromStackSlot(*mi->getParent(), miItr, newVReg, ss, trc,
+                                  tri);
         MachineInstr *loadInstr(prior(miItr));
         SlotIndex loadIndex =
           lis->InsertMachineInstrInMaps(loadInstr).getDefIndex();
+        vrm->addSpillSlotUse(ss, loadInstr);
         SlotIndex endIndex = loadIndex.getNextIndex();
         VNInfo *loadVNI =
           newLI->getNextValue(loadIndex, 0, true, lis->getVNInfoAllocator());
-        loadVNI->addKill(endIndex);
         newLI->addRange(LiveRange(loadIndex, endIndex, loadVNI));
       }
 
       // Insert store if necessary.
       if (hasDef) {
-        tii->storeRegToStackSlot(*mi->getParent(), llvm::next(miItr), newVReg, true,
-                                 ss, trc);
+        tii->storeRegToStackSlot(*mi->getParent(), llvm::next(miItr), newVReg,
+                                 true, ss, trc, tri);
         MachineInstr *storeInstr(llvm::next(miItr));
         SlotIndex storeIndex =
           lis->InsertMachineInstrInMaps(storeInstr).getDefIndex();
+        vrm->addSpillSlotUse(ss, storeInstr);
         SlotIndex beginIndex = storeIndex.getPrevIndex();
         VNInfo *storeVNI =
           newLI->getNextValue(beginIndex, 0, true, lis->getVNInfoAllocator());
-        storeVNI->addKill(storeIndex);
         newLI->addRange(LiveRange(beginIndex, storeIndex, storeVNI));
       }
 
-      added.push_back(newLI);
+      newIntervals.push_back(newLI);
     }
-
-    return added;
   }
-
 };
 
+} // end anonymous namespace
+
+namespace {
 
 /// Spills any live range using the spill-everywhere method with no attempt at
 /// folding.
 class TrivialSpiller : public SpillerBase {
 public:
 
-  TrivialSpiller(MachineFunction *mf, LiveIntervals *lis, VirtRegMap *vrm)
-    : SpillerBase(mf, lis, vrm) {}
+  TrivialSpiller(MachineFunctionPass &pass, MachineFunction &mf,
+                 VirtRegMap &vrm)
+    : SpillerBase(pass, mf, vrm) {}
 
-  std::vector<LiveInterval*> spill(LiveInterval *li,
-                                   SmallVectorImpl<LiveInterval*> &spillIs,
-                                   SlotIndex*) {
+  void spill(LiveInterval *li,
+             SmallVectorImpl<LiveInterval*> &newIntervals,
+             SmallVectorImpl<LiveInterval*> &) {
     // Ignore spillIs - we don't use it.
-    return trivialSpillEverywhere(li);
+    trivialSpillEverywhere(li, newIntervals);
   }
-
 };
+
+} // end anonymous namespace
+
+namespace {
 
 /// Falls back on LiveIntervals::addIntervalsForSpills.
 class StandardSpiller : public Spiller {
 protected:
   LiveIntervals *lis;
-  const MachineLoopInfo *loopInfo;
+  MachineLoopInfo *loopInfo;
   VirtRegMap *vrm;
 public:
-  StandardSpiller(LiveIntervals *lis, const MachineLoopInfo *loopInfo,
-                  VirtRegMap *vrm)
-    : lis(lis), loopInfo(loopInfo), vrm(vrm) {}
+  StandardSpiller(MachineFunctionPass &pass, MachineFunction &mf,
+                  VirtRegMap &vrm)
+    : lis(&pass.getAnalysis<LiveIntervals>()),
+      loopInfo(pass.getAnalysisIfAvailable<MachineLoopInfo>()),
+      vrm(&vrm) {}
 
   /// Falls back on LiveIntervals::addIntervalsForSpills.
-  std::vector<LiveInterval*> spill(LiveInterval *li,
-                                   SmallVectorImpl<LiveInterval*> &spillIs,
-                                   SlotIndex*) {
-    return lis->addIntervalsForSpills(*li, spillIs, loopInfo, *vrm);
+  void spill(LiveInterval *li,
+             SmallVectorImpl<LiveInterval*> &newIntervals,
+             SmallVectorImpl<LiveInterval*> &spillIs) {
+    std::vector<LiveInterval*> added =
+      lis->addIntervalsForSpills(*li, spillIs, loopInfo, *vrm);
+    newIntervals.insert(newIntervals.end(), added.begin(), added.end());
   }
-
 };
+
+} // end anonymous namespace
+
+namespace {
 
 /// When a call to spill is placed this spiller will first try to break the
 /// interval up into its component values (one new interval per value).
 /// If this fails, or if a call is placed to spill a previously split interval
-/// then the spiller falls back on the standard spilling mechanism. 
+/// then the spiller falls back on the standard spilling mechanism.
 class SplittingSpiller : public StandardSpiller {
 public:
-  SplittingSpiller(MachineFunction *mf, LiveIntervals *lis,
-                   const MachineLoopInfo *loopInfo, VirtRegMap *vrm)
-    : StandardSpiller(lis, loopInfo, vrm) {
-
-    mri = &mf->getRegInfo();
-    tii = mf->getTarget().getInstrInfo();
-    tri = mf->getTarget().getRegisterInfo();
+  SplittingSpiller(MachineFunctionPass &pass, MachineFunction &mf,
+                   VirtRegMap &vrm)
+    : StandardSpiller(pass, mf, vrm) {
+    mri = &mf.getRegInfo();
+    tii = mf.getTarget().getInstrInfo();
+    tri = mf.getTarget().getRegisterInfo();
   }
 
-  std::vector<LiveInterval*> spill(LiveInterval *li,
-                                   SmallVectorImpl<LiveInterval*> &spillIs,
-                                   SlotIndex *earliestStart) {
-    
-    if (worthTryingToSplit(li)) {
-      return tryVNISplit(li, earliestStart);
-    }
-    // else
-    return StandardSpiller::spill(li, spillIs, earliestStart);
+  void spill(LiveInterval *li,
+             SmallVectorImpl<LiveInterval*> &newIntervals,
+             SmallVectorImpl<LiveInterval*> &spillIs) {
+    if (worthTryingToSplit(li))
+      tryVNISplit(li);
+    else
+      StandardSpiller::spill(li, newIntervals, spillIs);
   }
 
 private:
 
   MachineRegisterInfo *mri;
   const TargetInstrInfo *tii;
-  const TargetRegisterInfo *tri;  
+  const TargetRegisterInfo *tri;
   DenseSet<LiveInterval*> alreadySplit;
 
   bool worthTryingToSplit(LiveInterval *li) const {
@@ -239,8 +254,7 @@ private:
   }
 
   /// Try to break a LiveInterval into its component values.
-  std::vector<LiveInterval*> tryVNISplit(LiveInterval *li,
-                                         SlotIndex *earliestStart) {
+  std::vector<LiveInterval*> tryVNISplit(LiveInterval *li) {
 
     DEBUG(dbgs() << "Trying VNI split of %reg" << *li << "\n");
 
@@ -248,42 +262,34 @@ private:
     SmallVector<VNInfo*, 4> vnis;
 
     std::copy(li->vni_begin(), li->vni_end(), std::back_inserter(vnis));
-   
+
     for (SmallVectorImpl<VNInfo*>::iterator vniItr = vnis.begin(),
          vniEnd = vnis.end(); vniItr != vniEnd; ++vniItr) {
       VNInfo *vni = *vniItr;
-      
-      // Skip unused VNIs, or VNIs with no kills.
-      if (vni->isUnused() || vni->kills.empty())
+
+      // Skip unused VNIs.
+      if (vni->isUnused())
         continue;
 
       DEBUG(dbgs() << "  Extracted Val #" << vni->id << " as ");
       LiveInterval *splitInterval = extractVNI(li, vni);
-      
+
       if (splitInterval != 0) {
         DEBUG(dbgs() << *splitInterval << "\n");
         added.push_back(splitInterval);
         alreadySplit.insert(splitInterval);
-        if (earliestStart != 0) {
-          if (splitInterval->beginIndex() < *earliestStart)
-            *earliestStart = splitInterval->beginIndex();
-        }
       } else {
         DEBUG(dbgs() << "0\n");
       }
-    } 
+    }
 
     DEBUG(dbgs() << "Original LI: " << *li << "\n");
 
     // If there original interval still contains some live ranges
-    // add it to added and alreadySplit.    
+    // add it to added and alreadySplit.
     if (!li->empty()) {
       added.push_back(li);
       alreadySplit.insert(li);
-      if (earliestStart != 0) {
-        if (li->beginIndex() < *earliestStart)
-          *earliestStart = li->beginIndex();
-      }
     }
 
     return added;
@@ -292,16 +298,15 @@ private:
   /// Extract the given value number from the interval.
   LiveInterval* extractVNI(LiveInterval *li, VNInfo *vni) const {
     assert(vni->isDefAccurate() || vni->isPHIDef());
-    assert(!vni->kills.empty());
 
-    // Create a new vreg and live interval, copy VNI kills & ranges over.                                                                                                                                                     
+    // Create a new vreg and live interval, copy VNI ranges over.
     const TargetRegisterClass *trc = mri->getRegClass(li->reg);
     unsigned newVReg = mri->createVirtualRegister(trc);
     vrm->grow();
     LiveInterval *newLI = &lis->getOrCreateInterval(newVReg);
     VNInfo *newVNI = newLI->createValueCopy(vni, lis->getVNInfoAllocator());
 
-    // Start by copying all live ranges in the VN to the new interval.                                                                                                                                                        
+    // Start by copying all live ranges in the VN to the new interval.
     for (LiveInterval::iterator rItr = li->begin(), rEnd = li->end();
          rItr != rEnd; ++rItr) {
       if (rItr->valno == vni) {
@@ -309,7 +314,7 @@ private:
       }
     }
 
-    // Erase the old VNI & ranges.                                                                                                                                                                                            
+    // Erase the old VNI & ranges.
     li->removeValNo(vni);
 
     // Collect all current uses of the register belonging to the given VNI.
@@ -326,14 +331,13 @@ private:
       // Insert a copy at the start of the MBB. The range proceeding the
       // copy will be attached to the original LiveInterval.
       MachineBasicBlock *defMBB = lis->getMBBFromIndex(newVNI->def);
-      tii->copyRegToReg(*defMBB, defMBB->begin(), newVReg, li->reg, trc, trc);
-      MachineInstr *copyMI = defMBB->begin();
-      copyMI->addRegisterKilled(li->reg, tri);
+      MachineInstr *copyMI = BuildMI(*defMBB, defMBB->begin(), DebugLoc(),
+                                     tii->get(TargetOpcode::COPY), newVReg)
+                               .addReg(li->reg, RegState::Kill);
       SlotIndex copyIdx = lis->InsertMachineInstrInMaps(copyMI);
       VNInfo *phiDefVNI = li->getNextValue(lis->getMBBStartIdx(defMBB),
                                            0, false, lis->getVNInfoAllocator());
       phiDefVNI->setIsPHIDef(true);
-      phiDefVNI->addKill(copyIdx.getDefIndex());
       li->addRange(LiveRange(phiDefVNI->def, copyIdx.getDefIndex(), phiDefVNI));
       LiveRange *oldPHIDefRange =
         newLI->getLiveRangeContaining(lis->getMBBStartIdx(defMBB));
@@ -356,8 +360,8 @@ private:
       newVNI->setIsPHIDef(false); // not a PHI def anymore.
       newVNI->setIsDefAccurate(true);
     } else {
-      // non-PHI def. Rename the def. If it's two-addr that means renaming the use
-      // and inserting a new copy too.
+      // non-PHI def. Rename the def. If it's two-addr that means renaming the
+      // use and inserting a new copy too.
       MachineInstr *defInst = lis->getInstructionFromIndex(newVNI->def);
       // We'll rename this now, so we can remove it from uses.
       uses.erase(defInst);
@@ -373,37 +377,26 @@ private:
             twoAddrUseIsUndef = true;
         }
       }
-    
+
       SlotIndex defIdx = lis->getInstructionIndex(defInst);
       newVNI->def = defIdx.getDefIndex();
 
       if (isTwoAddr && !twoAddrUseIsUndef) {
         MachineBasicBlock *defMBB = defInst->getParent();
-        tii->copyRegToReg(*defMBB, defInst, newVReg, li->reg, trc, trc);
-        MachineInstr *copyMI = prior(MachineBasicBlock::iterator(defInst));
+        MachineInstr *copyMI = BuildMI(*defMBB, defInst, DebugLoc(),
+                                       tii->get(TargetOpcode::COPY), newVReg)
+                                 .addReg(li->reg, RegState::Kill);
         SlotIndex copyIdx = lis->InsertMachineInstrInMaps(copyMI);
-        copyMI->addRegisterKilled(li->reg, tri);
         LiveRange *origUseRange =
           li->getLiveRangeContaining(newVNI->def.getUseIndex());
-        VNInfo *origUseVNI = origUseRange->valno;
         origUseRange->end = copyIdx.getDefIndex();
-        bool updatedKills = false;
-        for (unsigned k = 0; k < origUseVNI->kills.size(); ++k) {
-          if (origUseVNI->kills[k] == defIdx.getDefIndex()) {
-            origUseVNI->kills[k] = copyIdx.getDefIndex();
-            updatedKills = true;
-            break;
-          }
-        }
-        assert(updatedKills && "Failed to update VNI kill list.");
         VNInfo *copyVNI = newLI->getNextValue(copyIdx.getDefIndex(), copyMI,
                                               true, lis->getVNInfoAllocator());
-        copyVNI->addKill(defIdx.getDefIndex());
         LiveRange copyRange(copyIdx.getDefIndex(),defIdx.getDefIndex(),copyVNI);
         newLI->addRange(copyRange);
-      }    
+      }
     }
-    
+
     for (std::set<MachineInstr*>::iterator
          usesItr = uses.begin(), usesEnd = uses.end();
          usesItr != usesEnd; ++usesItr) {
@@ -423,7 +416,7 @@ private:
       // Check if this instr is two address.
       unsigned useOpIdx = useInst->findRegisterUseOperandIdx(li->reg);
       bool isTwoAddress = useInst->isRegTiedToDefOperand(useOpIdx);
-      
+
       // Rename uses (and defs for two-address instrs).
       for (unsigned i = 0; i < useInst->getNumOperands(); ++i) {
         MachineOperand &mo = useInst->getOperand(i);
@@ -439,9 +432,9 @@ private:
         // reg.
         MachineBasicBlock *useMBB = useInst->getParent();
         MachineBasicBlock::iterator useItr(useInst);
-        tii->copyRegToReg(*useMBB, llvm::next(useItr), li->reg, newVReg, trc, trc);
-        MachineInstr *copyMI = llvm::next(useItr);
-        copyMI->addRegisterKilled(newVReg, tri);
+        MachineInstr *copyMI = BuildMI(*useMBB, llvm::next(useItr), DebugLoc(),
+                                       tii->get(TargetOpcode::COPY), newVReg)
+                                 .addReg(li->reg, RegState::Kill);
         SlotIndex copyIdx = lis->InsertMachineInstrInMaps(copyMI);
 
         // Change the old two-address defined range & vni to start at
@@ -457,55 +450,44 @@ private:
         VNInfo *copyVNI =
           newLI->getNextValue(useIdx.getDefIndex(), 0, true,
                               lis->getVNInfoAllocator());
-        copyVNI->addKill(copyIdx.getDefIndex());
         LiveRange copyRange(useIdx.getDefIndex(),copyIdx.getDefIndex(),copyVNI);
         newLI->addRange(copyRange);
       }
     }
-    
+
     // Iterate over any PHI kills - we'll need to insert new copies for them.
-    for (VNInfo::KillSet::iterator
-         killItr = newVNI->kills.begin(), killEnd = newVNI->kills.end();
-         killItr != killEnd; ++killItr) {
-      SlotIndex killIdx(*killItr);
-      if (killItr->isPHI()) {
-        MachineBasicBlock *killMBB = lis->getMBBFromIndex(killIdx);
-        LiveRange *oldKillRange =
-          newLI->getLiveRangeContaining(killIdx);
+    for (LiveInterval::iterator LRI = newLI->begin(), LRE = newLI->end();
+         LRI != LRE; ++LRI) {
+      if (LRI->valno != newVNI || LRI->end.isPHI())
+        continue;
+      SlotIndex killIdx = LRI->end;
+      MachineBasicBlock *killMBB = lis->getMBBFromIndex(killIdx);
+      MachineInstr *copyMI = BuildMI(*killMBB, killMBB->getFirstTerminator(),
+                                     DebugLoc(), tii->get(TargetOpcode::COPY),
+                                     li->reg)
+                               .addReg(newVReg, RegState::Kill);
+      SlotIndex copyIdx = lis->InsertMachineInstrInMaps(copyMI);
 
-        assert(oldKillRange != 0 && "No kill range?");
+      // Save the current end. We may need it to add a new range if the
+      // current range runs of the end of the MBB.
+      SlotIndex newKillRangeEnd = LRI->end;
+      LRI->end = copyIdx.getDefIndex();
 
-        tii->copyRegToReg(*killMBB, killMBB->getFirstTerminator(),
-                          li->reg, newVReg, trc, trc);
-        MachineInstr *copyMI = prior(killMBB->getFirstTerminator());
-        copyMI->addRegisterKilled(newVReg, tri);
-        SlotIndex copyIdx = lis->InsertMachineInstrInMaps(copyMI);
-
-        // Save the current end. We may need it to add a new range if the
-        // current range runs of the end of the MBB.
-        SlotIndex newKillRangeEnd = oldKillRange->end;
-        oldKillRange->end = copyIdx.getDefIndex();
-
-        if (newKillRangeEnd != lis->getMBBEndIdx(killMBB)) {
-          assert(newKillRangeEnd > lis->getMBBEndIdx(killMBB) &&
-                 "PHI kill range doesn't reach kill-block end. Not sane.");
-          newLI->addRange(LiveRange(lis->getMBBEndIdx(killMBB),
-                                    newKillRangeEnd, newVNI));
-        }
-
-        *killItr = oldKillRange->end;
-        VNInfo *newKillVNI = li->getNextValue(copyIdx.getDefIndex(),
-                                              copyMI, true,
-                                              lis->getVNInfoAllocator());
-        newKillVNI->addKill(lis->getMBBTerminatorGap(killMBB));
-        newKillVNI->setHasPHIKill(true);
-        li->addRange(LiveRange(copyIdx.getDefIndex(),
-                               lis->getMBBEndIdx(killMBB),
-                               newKillVNI));
+      if (newKillRangeEnd != lis->getMBBEndIdx(killMBB)) {
+        assert(newKillRangeEnd > lis->getMBBEndIdx(killMBB) &&
+               "PHI kill range doesn't reach kill-block end. Not sane.");
+        newLI->addRange(LiveRange(lis->getMBBEndIdx(killMBB),
+                                  newKillRangeEnd, newVNI));
       }
 
+      VNInfo *newKillVNI = li->getNextValue(copyIdx.getDefIndex(),
+                                            copyMI, true,
+                                            lis->getVNInfoAllocator());
+      newKillVNI->setHasPHIKill(true);
+      li->addRange(LiveRange(copyIdx.getDefIndex(),
+                             lis->getMBBEndIdx(killMBB),
+                             newKillVNI));
     }
-
     newVNI->setHasPHIKill(false);
 
     return newLI;
@@ -513,15 +495,23 @@ private:
 
 };
 
+} // end anonymous namespace
+
+
+namespace llvm {
+Spiller *createInlineSpiller(MachineFunctionPass &pass,
+                             MachineFunction &mf,
+                             VirtRegMap &vrm);
 }
 
-llvm::Spiller* llvm::createSpiller(MachineFunction *mf, LiveIntervals *lis,
-                                   const MachineLoopInfo *loopInfo,
-                                   VirtRegMap *vrm) {
+llvm::Spiller* llvm::createSpiller(MachineFunctionPass &pass,
+                                   MachineFunction &mf,
+                                   VirtRegMap &vrm) {
   switch (spillerOpt) {
-    case trivial: return new TrivialSpiller(mf, lis, vrm); break;
-    case standard: return new StandardSpiller(lis, loopInfo, vrm); break;
-    case splitting: return new SplittingSpiller(mf, lis, loopInfo, vrm); break;
-    default: llvm_unreachable("Unreachable!"); break;
+  default: assert(0 && "unknown spiller");
+  case trivial: return new TrivialSpiller(pass, mf, vrm);
+  case standard: return new StandardSpiller(pass, mf, vrm);
+  case splitting: return new SplittingSpiller(pass, mf, vrm);
+  case inline_: return createInlineSpiller(pass, mf, vrm);
   }
 }

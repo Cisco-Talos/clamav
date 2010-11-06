@@ -1,5 +1,8 @@
 /* include/llvm/Config/config.h.in.  Generated from autoconf/configure.ac by autoheader.  */
 
+#ifndef CONFIG_H
+#define CONFIG_H
+
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
@@ -26,6 +29,9 @@
 
 /* Define if threads enabled */
 #undef ENABLE_THREADS
+
+/* Define if timestamp information (e.g., __DATE___) is allowed */
+#undef ENABLE_TIMESTAMPS
 
 /* Define to 1 if you have the `argz_append' function. */
 #undef HAVE_ARGZ_APPEND
@@ -62,6 +68,9 @@
 
 /* Define to 1 if you have the `closedir' function. */
 #undef HAVE_CLOSEDIR
+
+/* Define to 1 if you have the <CrashReporterClient.h> header file. */
+#undef HAVE_CRASHREPORTERCLIENT_H
 
 /* Define to 1 if you have the <ctype.h> header file. */
 #undef HAVE_CTYPE_H
@@ -267,6 +276,9 @@
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
+/* Define to 1 if you have the `posix_spawn' function. */
+#undef HAVE_POSIX_SPAWN
+
 /* Define to 1 if you have the `powf' function. */
 #undef HAVE_POWF
 
@@ -443,11 +455,17 @@
 /* Define to 1 if the system has the type `u_int64_t'. */
 #undef HAVE_U_INT64_T
 
+/* Define to 1 if you have the <valgrind/valgrind.h> header file. */
+#undef HAVE_VALGRIND_VALGRIND_H
+
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
 
 /* Define to 1 if you have the `__dso_handle' function. */
 #undef HAVE___DSO_HANDLE
+
+/* Linker version detected at compile time. */
+#undef HOST_LINK_VERSION
 
 /* Installation directory for binary executables */
 #undef LLVM_BINDIR
@@ -484,6 +502,15 @@
 
 /* LLVM architecture name for the native architecture, if available */
 #undef LLVM_NATIVE_ARCH
+
+/* LLVM name for the native AsmPrinter init function, if available */
+#undef LLVM_NATIVE_ASMPRINTER
+
+/* LLVM name for the native Target init function, if available */
+#undef LLVM_NATIVE_TARGET
+
+/* LLVM name for the native TargetInfo init function, if available */
+#undef LLVM_NATIVE_TARGETINFO
 
 /* Define if this is Unixish platform */
 #undef LLVM_ON_UNIX
@@ -604,3 +631,5 @@
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
+
+#endif

@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CodeGenInstruction.h"
+#include "CodeGenTarget.h"
 #include "Record.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/STLExtras.h"
@@ -101,12 +102,12 @@ CodeGenInstruction::CodeGenInstruction(Record *R, const std::string &AsmStr)
   isReturn     = R->getValueAsBit("isReturn");
   isBranch     = R->getValueAsBit("isBranch");
   isIndirectBranch = R->getValueAsBit("isIndirectBranch");
+  isCompare    = R->getValueAsBit("isCompare");
   isBarrier    = R->getValueAsBit("isBarrier");
   isCall       = R->getValueAsBit("isCall");
   canFoldAsLoad = R->getValueAsBit("canFoldAsLoad");
   mayLoad      = R->getValueAsBit("mayLoad");
   mayStore     = R->getValueAsBit("mayStore");
-  bool isTwoAddress = R->getValueAsBit("isTwoAddress");
   isPredicable = R->getValueAsBit("isPredicable");
   isConvertibleToThreeAddress = R->getValueAsBit("isConvertibleToThreeAddress");
   isCommutable = R->getValueAsBit("isCommutable");
@@ -123,36 +124,43 @@ CodeGenInstruction::CodeGenInstruction(Record *R, const std::string &AsmStr)
   hasExtraDefRegAllocReq = R->getValueAsBit("hasExtraDefRegAllocReq");
   hasOptionalDef = false;
   isVariadic = false;
+  ImplicitDefs = R->getValueAsListOfDefs("Defs");
+  ImplicitUses = R->getValueAsListOfDefs("Uses");
 
   if (neverHasSideEffects + hasSideEffects > 1)
     throw R->getName() + ": multiple conflicting side-effect flags set!";
 
-  DagInit *DI;
-  try {
-    DI = R->getValueAsDag("OutOperandList");
-  } catch (...) {
-    // Error getting operand list, just ignore it (sparcv9).
-    AsmString.clear();
-    OperandList.clear();
-    return;
-  }
-  NumDefs = DI->getNumArgs();
+  DagInit *OutDI = R->getValueAsDag("OutOperandList");
 
-  DagInit *IDI;
-  try {
-    IDI = R->getValueAsDag("InOperandList");
-  } catch (...) {
-    // Error getting operand list, just ignore it (sparcv9).
-    AsmString.clear();
-    OperandList.clear();
-    return;
-  }
-  DI = (DagInit*)(new BinOpInit(BinOpInit::CONCAT, DI, IDI, new DagRecTy))->Fold(R, 0);
-
+  if (DefInit *Init = dynamic_cast<DefInit*>(OutDI->getOperator())) {
+    if (Init->getDef()->getName() != "outs")
+      throw R->getName() + ": invalid def name for output list: use 'outs'";
+  } else
+    throw R->getName() + ": invalid output list: use 'outs'";
+    
+  NumDefs = OutDI->getNumArgs();
+    
+  DagInit *InDI = R->getValueAsDag("InOperandList");
+  if (DefInit *Init = dynamic_cast<DefInit*>(InDI->getOperator())) {
+    if (Init->getDef()->getName() != "ins")
+      throw R->getName() + ": invalid def name for input list: use 'ins'";
+  } else
+    throw R->getName() + ": invalid input list: use 'ins'";
+    
   unsigned MIOperandNo = 0;
   std::set<std::string> OperandNames;
-  for (unsigned i = 0, e = DI->getNumArgs(); i != e; ++i) {
-    DefInit *Arg = dynamic_cast<DefInit*>(DI->getArg(i));
+  for (unsigned i = 0, e = InDI->getNumArgs()+OutDI->getNumArgs(); i != e; ++i){
+    Init *ArgInit;
+    std::string ArgName;
+    if (i < NumDefs) {
+      ArgInit = OutDI->getArg(i);
+      ArgName = OutDI->getArgName(i);
+    } else {
+      ArgInit = InDI->getArg(i-NumDefs);
+      ArgName = InDI->getArgName(i-NumDefs);
+    }
+    
+    DefInit *Arg = dynamic_cast<DefInit*>(ArgInit);
     if (!Arg)
       throw "Illegal operand for the '" + R->getName() + "' instruction!";
 
@@ -189,30 +197,20 @@ CodeGenInstruction::CodeGenInstruction(Record *R, const std::string &AsmStr)
             "' in '" + R->getName() + "' instruction!";
 
     // Check that the operand has a name and that it's unique.
-    if (DI->getArgName(i).empty())
+    if (ArgName.empty())
       throw "In instruction '" + R->getName() + "', operand #" + utostr(i) +
         " has no name!";
-    if (!OperandNames.insert(DI->getArgName(i)).second)
+    if (!OperandNames.insert(ArgName).second)
       throw "In instruction '" + R->getName() + "', operand #" + utostr(i) +
         " has the same name as a previous operand!";
 
-    OperandList.push_back(OperandInfo(Rec, DI->getArgName(i), PrintMethod,
+    OperandList.push_back(OperandInfo(Rec, ArgName, PrintMethod,
                                       MIOperandNo, NumOps, MIOpInfo));
     MIOperandNo += NumOps;
   }
 
   // Parse Constraints.
   ParseConstraints(R->getValueAsString("Constraints"), this);
-
-  // For backward compatibility: isTwoAddress means operand 1 is tied to
-  // operand 0.
-  if (isTwoAddress) {
-    if (!OperandList[1].Constraints[0].isNone())
-      throw R->getName() + ": cannot use isTwoAddress property: instruction "
-            "already has constraint set!";
-    OperandList[1].Constraints[0] =
-      CodeGenInstruction::ConstraintInfo::getTied(0);
-  }
 
   // Parse the DisableEncoding field.
   std::string DisableEncoding = R->getValueAsString("DisableEncoding");
@@ -287,3 +285,22 @@ CodeGenInstruction::ParseOperandName(const std::string &Op,
   // Otherwise, didn't find it!
   throw TheDef->getName() + ": unknown suboperand name in '" + Op + "'";
 }
+
+
+/// HasOneImplicitDefWithKnownVT - If the instruction has at least one
+/// implicit def and it has a known VT, return the VT, otherwise return
+/// MVT::Other.
+MVT::SimpleValueType CodeGenInstruction::
+HasOneImplicitDefWithKnownVT(const CodeGenTarget &TargetInfo) const {
+  if (ImplicitDefs.empty()) return MVT::Other;
+  
+  // Check to see if the first implicit def has a resolvable type.
+  Record *FirstImplicitDef = ImplicitDefs[0];
+  assert(FirstImplicitDef->isSubClassOf("Register"));
+  const std::vector<MVT::SimpleValueType> &RegVTs = 
+    TargetInfo.getRegisterVTs(FirstImplicitDef);
+  if (RegVTs.size() == 1)
+    return RegVTs[0];
+  return MVT::Other;
+}
+

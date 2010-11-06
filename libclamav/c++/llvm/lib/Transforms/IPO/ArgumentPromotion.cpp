@@ -64,10 +64,10 @@ namespace {
       CallGraphSCCPass::getAnalysisUsage(AU);
     }
 
-    virtual bool runOnSCC(std::vector<CallGraphNode *> &SCC);
+    virtual bool runOnSCC(CallGraphSCC &SCC);
     static char ID; // Pass identification, replacement for typeid
     explicit ArgPromotion(unsigned maxElements = 3)
-      : CallGraphSCCPass(&ID), maxElements(maxElements) {}
+      : CallGraphSCCPass(ID), maxElements(maxElements) {}
 
     /// A vector used to hold the indices of a single GEP instruction
     typedef std::vector<uint64_t> IndicesVector;
@@ -84,27 +84,28 @@ namespace {
 }
 
 char ArgPromotion::ID = 0;
-static RegisterPass<ArgPromotion>
-X("argpromotion", "Promote 'by reference' arguments to scalars");
+INITIALIZE_PASS(ArgPromotion, "argpromotion",
+                "Promote 'by reference' arguments to scalars", false, false);
 
 Pass *llvm::createArgumentPromotionPass(unsigned maxElements) {
   return new ArgPromotion(maxElements);
 }
 
-bool ArgPromotion::runOnSCC(std::vector<CallGraphNode *> &SCC) {
+bool ArgPromotion::runOnSCC(CallGraphSCC &SCC) {
   bool Changed = false, LocalChange;
 
   do {  // Iterate until we stop promoting from this SCC.
     LocalChange = false;
     // Attempt to promote arguments from all functions in this SCC.
-    for (unsigned i = 0, e = SCC.size(); i != e; ++i)
-      if (CallGraphNode *CGN = PromoteArguments(SCC[i])) {
+    for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+      if (CallGraphNode *CGN = PromoteArguments(*I)) {
         LocalChange = true;
-        SCC[i] = CGN;
+        SCC.ReplaceNode(*I, CGN);
       }
+    }
     Changed |= LocalChange;               // Remember that we changed something.
   } while (LocalChange);
-
+  
   return Changed;
 }
 
@@ -207,8 +208,8 @@ static bool AllCalleesPassInValidPointerForArgument(Argument *Arg) {
   // have direct callees.
   for (Value::use_iterator UI = Callee->use_begin(), E = Callee->use_end();
        UI != E; ++UI) {
-    CallSite CS = CallSite::get(*UI);
-    assert(CS.getInstruction() && "Should only have direct calls!");
+    CallSite CS(*UI);
+    assert(CS && "Should only have direct calls!");
 
     if (!IsAlwaysValidPointer(CS.getArgument(ArgNo)))
       return false;
@@ -359,19 +360,20 @@ bool ArgPromotion::isSafeToPromoteArgument(Argument *Arg, bool isByVal) const {
   IndicesVector Operands;
   for (Value::use_iterator UI = Arg->use_begin(), E = Arg->use_end();
        UI != E; ++UI) {
+    User *U = *UI;
     Operands.clear();
-    if (LoadInst *LI = dyn_cast<LoadInst>(*UI)) {
+    if (LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile()) return false;  // Don't hack volatile loads
       Loads.push_back(LI);
       // Direct loads are equivalent to a GEP with a zero index and then a load.
       Operands.push_back(0);
-    } else if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(*UI)) {
+    } else if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(U)) {
       if (GEP->use_empty()) {
         // Dead GEP's cause trouble later.  Just remove them if we run into
         // them.
         getAnalysis<AliasAnalysis>().deleteValue(GEP);
         GEP->eraseFromParent();
-        // TODO: This runs the above loop over and over again for dead GEPS
+        // TODO: This runs the above loop over and over again for dead GEPs
         // Couldn't we just do increment the UI iterator earlier and erase the
         // use?
         return isSafeToPromoteArgument(Arg, isByVal);
@@ -451,12 +453,14 @@ bool ArgPromotion::isSafeToPromoteArgument(Argument *Arg, bool isByVal) const {
     // Now check every path from the entry block to the load for transparency.
     // To do this, we perform a depth first search on the inverse CFG from the
     // loading block.
-    for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI)
+    for (pred_iterator PI = pred_begin(BB), E = pred_end(BB); PI != E; ++PI) {
+      BasicBlock *P = *PI;
       for (idf_ext_iterator<BasicBlock*, SmallPtrSet<BasicBlock*, 16> >
-             I = idf_ext_begin(*PI, TranspBlocks),
-             E = idf_ext_end(*PI, TranspBlocks); I != E; ++I)
+             I = idf_ext_begin(P, TranspBlocks),
+             E = idf_ext_end(P, TranspBlocks); I != E; ++I)
         if (AA.canBasicBlockModify(**I, Arg, LoadSize))
           return false;
+    }
   }
 
   // If the path from the entry of the function to each load is free of
@@ -615,14 +619,14 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
   
   // Get a new callgraph node for NF.
   CallGraphNode *NF_CGN = CG.getOrInsertFunction(NF);
-  
 
   // Loop over all of the callers of the function, transforming the call sites
   // to pass in the loaded pointers.
   //
   SmallVector<Value*, 16> Args;
   while (!F->use_empty()) {
-    CallSite CS = CallSite::get(F->use_back());
+    CallSite CS(F->use_back());
+    assert(CS.getCalledFunction() == F);
     Instruction *Call = CS.getInstruction();
     const AttrListPtr &CallPAL = CS.getAttributes();
 
@@ -660,7 +664,7 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
         // Non-dead argument: insert GEPs and loads as appropriate.
         ScalarizeTable &ArgIndices = ScalarizedElements[I];
         // Store the Value* version of the indices in here, but declare it now
-        // for reuse
+        // for reuse.
         std::vector<Value*> Ops;
         for (ScalarizeTable::iterator SI = ArgIndices.begin(),
                E = ArgIndices.end(); SI != E; ++SI) {
@@ -677,16 +681,20 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
                     Type::getInt32Ty(F->getContext()) : 
                     Type::getInt64Ty(F->getContext()));
               Ops.push_back(ConstantInt::get(IdxTy, *II));
-              // Keep track of the type we're currently indexing
+              // Keep track of the type we're currently indexing.
               ElTy = cast<CompositeType>(ElTy)->getTypeAtIndex(*II);
             }
-            // And create a GEP to extract those indices
+            // And create a GEP to extract those indices.
             V = GetElementPtrInst::Create(V, Ops.begin(), Ops.end(),
                                           V->getName()+".idx", Call);
             Ops.clear();
             AA.copyValue(OrigLoad->getOperand(0), V);
           }
-          Args.push_back(new LoadInst(V, V->getName()+".val", Call));
+          // Since we're replacing a load make sure we take the alignment
+          // of the previous load.
+          LoadInst *newLoad = new LoadInst(V, V->getName()+".val", Call);
+          newLoad->setAlignment(OrigLoad->getAlignment());
+          Args.push_back(newLoad);
           AA.copyValue(OrigLoad, Args.back());
         }
       }
@@ -694,7 +702,7 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
     if (ExtraArgHack)
       Args.push_back(Constant::getNullValue(Type::getInt32Ty(F->getContext())));
 
-    // Push any varargs arguments on the list
+    // Push any varargs arguments on the list.
     for (; AI != CS.arg_end(); ++AI, ++ArgIndex) {
       Args.push_back(*AI);
       if (Attributes Attrs = CallPAL.getParamAttributes(ArgIndex))
@@ -868,8 +876,14 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
   
   NF_CGN->stealCalledFunctionsFrom(CG[F]);
   
-  // Now that the old function is dead, delete it.
-  delete CG.removeFunctionFromModule(F);
+  // Now that the old function is dead, delete it.  If there is a dangling
+  // reference to the CallgraphNode, just leave the dead function around for
+  // someone else to nuke.
+  CallGraphNode *CGN = CG[F];
+  if (CGN->getNumReferences() == 0)
+    delete CG.removeFunctionFromModule(CGN);
+  else
+    F->setLinkage(Function::ExternalLinkage);
   
   return NF_CGN;
 }

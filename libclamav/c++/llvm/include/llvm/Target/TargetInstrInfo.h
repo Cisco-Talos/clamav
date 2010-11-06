@@ -20,10 +20,14 @@
 namespace llvm {
 
 class CalleeSavedInfo;
+class InstrItineraryData;
 class LiveVariables;
 class MCAsmInfo;
 class MachineMemOperand;
+class MDNode;
+class MCInst;
 class SDNode;
+class ScheduleHazardRecognizer;
 class SelectionDAG;
 class TargetRegisterClass;
 class TargetRegisterInfo;
@@ -88,15 +92,6 @@ private:
                                                 AliasAnalysis *AA) const;
 
 public:
-  /// isMoveInstr - Return true if the instruction is a register to register
-  /// move and return the source and dest operands and their sub-register
-  /// indices by reference.
-  virtual bool isMoveInstr(const MachineInstr& MI,
-                           unsigned& SrcReg, unsigned& DstReg,
-                           unsigned& SrcSubIdx, unsigned& DstSubIdx) const {
-    return false;
-  }
-
   /// isCoalescableExtInstr - Return true if the instruction is a "coalescable"
   /// extension instruction. That is, it's like a copy where it's legal for the
   /// source to overlap the destination. e.g. X86::MOVSX64rr32. If this returns
@@ -109,26 +104,6 @@ public:
     return false;
   }
 
-  /// isIdentityCopy - Return true if the instruction is a copy (or
-  /// extract_subreg, insert_subreg, subreg_to_reg) where the source and
-  /// destination registers are the same.
-  bool isIdentityCopy(const MachineInstr &MI) const {
-    unsigned SrcReg, DstReg, SrcSubIdx, DstSubIdx;
-    if (isMoveInstr(MI, SrcReg, DstReg, SrcSubIdx, DstSubIdx) &&
-        SrcReg == DstReg)
-      return true;
-
-    if (MI.getOpcode() == TargetOpcode::EXTRACT_SUBREG &&
-        MI.getOperand(0).getReg() == MI.getOperand(1).getReg())
-    return true;
-
-    if ((MI.getOpcode() == TargetOpcode::INSERT_SUBREG ||
-         MI.getOpcode() == TargetOpcode::SUBREG_TO_REG) &&
-        MI.getOperand(0).getReg() == MI.getOperand(2).getReg())
-      return true;
-    return false;
-  }
-  
   /// isLoadFromStackSlot - If the specified machine instruction is a direct
   /// load from a stack slot, return the virtual or physical register number of
   /// the destination along with the FrameIndex of the loaded stack slot.  If
@@ -182,7 +157,7 @@ public:
   /// store to a stack slot, return true along with the FrameIndex of
   /// the loaded stack slot and the machine mem operand containing the
   /// reference.  If not, return false.  Unlike isStoreToStackSlot,
-  /// this returns true for any instructions that loads from the
+  /// this returns true for any instructions that stores to the
   /// stack.  This is just a hint, as some cases may be missed.
   virtual bool hasStoreToStackSlot(const MachineInstr *MI,
                                    const MachineMemOperand *&MMO,
@@ -192,11 +167,22 @@ public:
 
   /// reMaterialize - Re-issue the specified 'original' instruction at the
   /// specific location targeting a new destination register.
+  /// The register in Orig->getOperand(0).getReg() will be substituted by
+  /// DestReg:SubIdx. Any existing subreg index is preserved or composed with
+  /// SubIdx.
   virtual void reMaterialize(MachineBasicBlock &MBB,
                              MachineBasicBlock::iterator MI,
                              unsigned DestReg, unsigned SubIdx,
                              const MachineInstr *Orig,
-                             const TargetRegisterInfo *TRI) const = 0;
+                             const TargetRegisterInfo &TRI) const = 0;
+
+  /// scheduleTwoAddrSource - Schedule the copy / re-mat of the source of the
+  /// two-addrss instruction inserted by two-address pass.
+  virtual void scheduleTwoAddrSource(MachineInstr *SrcMI,
+                                     MachineInstr *UseMI,
+                                     const TargetRegisterInfo &TRI) const {
+    // Do nothing.
+  }
 
   /// duplicate - Create a duplicate of the Orig instruction in MF. This is like
   /// MachineFunction::CloneMachineInstr(), but the target may update operands
@@ -222,23 +208,19 @@ public:
     return 0;
   }
 
-  /// commuteInstruction - If a target has any instructions that are commutable,
-  /// but require converting to a different instruction or making non-trivial
-  /// changes to commute them, this method can overloaded to do this.  The
-  /// default implementation of this method simply swaps the first two operands
-  /// of MI and returns it.
-  ///
-  /// If a target wants to make more aggressive changes, they can construct and
-  /// return a new machine instruction.  If an instruction cannot commute, it
-  /// can also return null.
-  ///
-  /// If NewMI is true, then a new machine instruction must be created.
-  ///
+  /// commuteInstruction - If a target has any instructions that are
+  /// commutable but require converting to different instructions or making
+  /// non-trivial changes to commute them, this method can overloaded to do
+  /// that.  The default implementation simply swaps the commutable operands.
+  /// If NewMI is false, MI is modified in place and returned; otherwise, a
+  /// new machine instruction is created and returned.  Do not call this
+  /// method for a non-commutable instruction, but there may be some cases
+  /// where this method fails and returns null.
   virtual MachineInstr *commuteInstruction(MachineInstr *MI,
                                            bool NewMI = false) const = 0;
 
   /// findCommutedOpIndices - If specified MI is commutable, return the two
-  /// operand indices that would swap value. Return true if the instruction
+  /// operand indices that would swap value. Return false if the instruction
   /// is not in a form which this routine understands.
   virtual bool findCommutedOpIndices(MachineInstr *MI, unsigned &SrcOpIdx1,
                                      unsigned &SrcOpIdx2) const = 0;
@@ -300,24 +282,60 @@ public:
   /// branch to analyze.  At least this much must be implemented, else tail
   /// merging needs to be disabled.
   virtual unsigned InsertBranch(MachineBasicBlock &MBB, MachineBasicBlock *TBB,
-                            MachineBasicBlock *FBB,
-                            const SmallVectorImpl<MachineOperand> &Cond) const {
+                                MachineBasicBlock *FBB,
+                                const SmallVectorImpl<MachineOperand> &Cond,
+                                DebugLoc DL) const {
     assert(0 && "Target didn't implement TargetInstrInfo::InsertBranch!"); 
     return 0;
   }
-  
-  /// copyRegToReg - Emit instructions to copy between a pair of registers. It
-  /// returns false if the target does not how to copy between the specified
-  /// registers.
-  virtual bool copyRegToReg(MachineBasicBlock &MBB,
-                            MachineBasicBlock::iterator MI,
-                            unsigned DestReg, unsigned SrcReg,
-                            const TargetRegisterClass *DestRC,
-                            const TargetRegisterClass *SrcRC) const {
-    assert(0 && "Target didn't implement TargetInstrInfo::copyRegToReg!");
+
+  /// ReplaceTailWithBranchTo - Delete the instruction OldInst and everything
+  /// after it, replacing it with an unconditional branch to NewDest. This is
+  /// used by the tail merging pass.
+  virtual void ReplaceTailWithBranchTo(MachineBasicBlock::iterator Tail,
+                                       MachineBasicBlock *NewDest) const = 0;
+
+  /// isLegalToSplitMBBAt - Return true if it's legal to split the given basic
+  /// block at the specified instruction (i.e. instruction would be the start
+  /// of a new basic block).
+  virtual bool isLegalToSplitMBBAt(MachineBasicBlock &MBB,
+                                   MachineBasicBlock::iterator MBBI) const {
+    return true;
+  }
+
+  /// isProfitableToIfCvt - Return true if it's profitable to first "NumInstrs"
+  /// of the specified basic block.
+  virtual
+  bool isProfitableToIfCvt(MachineBasicBlock &MBB, unsigned NumInstrs) const {
     return false;
   }
   
+  /// isProfitableToIfCvt - Second variant of isProfitableToIfCvt, this one
+  /// checks for the case where two basic blocks from true and false path
+  /// of a if-then-else (diamond) are predicated on mutally exclusive
+  /// predicates.
+  virtual bool
+  isProfitableToIfCvt(MachineBasicBlock &TMBB, unsigned NumTInstrs,
+                      MachineBasicBlock &FMBB, unsigned NumFInstrs) const {
+    return false;
+  }
+
+  /// isProfitableToDupForIfCvt - Return true if it's profitable for
+  /// if-converter to duplicate a specific number of instructions in the
+  /// specified MBB to enable if-conversion.
+  virtual bool
+  isProfitableToDupForIfCvt(MachineBasicBlock &MBB,unsigned NumInstrs) const {
+    return false;
+  }
+  
+  /// copyPhysReg - Emit instructions to copy a pair of physical registers.
+  virtual void copyPhysReg(MachineBasicBlock &MBB,
+                           MachineBasicBlock::iterator MI, DebugLoc DL,
+                           unsigned DestReg, unsigned SrcReg,
+                           bool KillSrc) const {
+    assert(0 && "Target didn't implement TargetInstrInfo::copyPhysReg!");
+  }
+
   /// storeRegToStackSlot - Store the specified register of the given register
   /// class to the specified stack frame index. The store instruction is to be
   /// added to the given machine basic block before the specified machine
@@ -326,8 +344,9 @@ public:
   virtual void storeRegToStackSlot(MachineBasicBlock &MBB,
                                    MachineBasicBlock::iterator MI,
                                    unsigned SrcReg, bool isKill, int FrameIndex,
-                                   const TargetRegisterClass *RC) const {
-    assert(0 && "Target didn't implement TargetInstrInfo::storeRegToStackSlot!");
+                                   const TargetRegisterClass *RC,
+                                   const TargetRegisterInfo *TRI) const {
+  assert(0 && "Target didn't implement TargetInstrInfo::storeRegToStackSlot!");
   }
 
   /// loadRegFromStackSlot - Load the specified register of the given register
@@ -337,8 +356,9 @@ public:
   virtual void loadRegFromStackSlot(MachineBasicBlock &MBB,
                                     MachineBasicBlock::iterator MI,
                                     unsigned DestReg, int FrameIndex,
-                                    const TargetRegisterClass *RC) const {
-    assert(0 && "Target didn't implement TargetInstrInfo::loadRegFromStackSlot!");
+                                    const TargetRegisterClass *RC,
+                                    const TargetRegisterInfo *TRI) const {
+  assert(0 && "Target didn't implement TargetInstrInfo::loadRegFromStackSlot!");
   }
   
   /// spillCalleeSavedRegisters - Issues instruction(s) to spill all callee
@@ -347,7 +367,8 @@ public:
   /// storeRegToStackSlot(). Returns false otherwise.
   virtual bool spillCalleeSavedRegisters(MachineBasicBlock &MBB,
                                          MachineBasicBlock::iterator MI,
-                                const std::vector<CalleeSavedInfo> &CSI) const {
+                                        const std::vector<CalleeSavedInfo> &CSI,
+                                         const TargetRegisterInfo *TRI) const {
     return false;
   }
 
@@ -357,26 +378,41 @@ public:
   /// Returns false otherwise.
   virtual bool restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
                                            MachineBasicBlock::iterator MI,
-                                const std::vector<CalleeSavedInfo> &CSI) const {
+                                        const std::vector<CalleeSavedInfo> &CSI,
+                                        const TargetRegisterInfo *TRI) const {
     return false;
   }
   
+  /// emitFrameIndexDebugValue - Emit a target-dependent form of
+  /// DBG_VALUE encoding the address of a frame index.  Addresses would
+  /// normally be lowered the same way as other addresses on the target,
+  /// e.g. in load instructions.  For targets that do not support this
+  /// the debug info is simply lost.
+  /// If you add this for a target you should handle this DBG_VALUE in the
+  /// target-specific AsmPrinter code as well; you will probably get invalid
+  /// assembly output if you don't.
+  virtual MachineInstr *emitFrameIndexDebugValue(MachineFunction &MF,
+                                                 int FrameIx,
+                                                 uint64_t Offset,
+                                                 const MDNode *MDPtr,
+                                                 DebugLoc dl) const {
+    return 0;
+  }
+
   /// foldMemoryOperand - Attempt to fold a load or store of the specified stack
   /// slot into the specified machine instruction for the specified operand(s).
   /// If this is possible, a new instruction is returned with the specified
-  /// operand folded, otherwise NULL is returned. The client is responsible for
-  /// removing the old instruction and adding the new one in the instruction
-  /// stream.
-  MachineInstr* foldMemoryOperand(MachineFunction &MF,
-                                  MachineInstr* MI,
+  /// operand folded, otherwise NULL is returned.
+  /// The new instruction is inserted before MI, and the client is responsible
+  /// for removing the old instruction.
+  MachineInstr* foldMemoryOperand(MachineBasicBlock::iterator MI,
                                   const SmallVectorImpl<unsigned> &Ops,
                                   int FrameIndex) const;
 
   /// foldMemoryOperand - Same as the previous version except it allows folding
   /// of any load and store from / to any address, not just from a specific
   /// stack slot.
-  MachineInstr* foldMemoryOperand(MachineFunction &MF,
-                                  MachineInstr* MI,
+  MachineInstr* foldMemoryOperand(MachineBasicBlock::iterator MI,
                                   const SmallVectorImpl<unsigned> &Ops,
                                   MachineInstr* LoadMI) const;
 
@@ -396,7 +432,7 @@ protected:
   /// take care of adding a MachineMemOperand to the newly created instruction.
   virtual MachineInstr* foldMemoryOperandImpl(MachineFunction &MF,
                                               MachineInstr* MI,
-                                              const SmallVectorImpl<unsigned> &Ops,
+                                          const SmallVectorImpl<unsigned> &Ops,
                                               MachineInstr* LoadMI) const {
     return 0;
   }
@@ -406,9 +442,7 @@ public:
   /// folding is possible.
   virtual
   bool canFoldMemoryOperand(const MachineInstr *MI,
-                            const SmallVectorImpl<unsigned> &Ops) const {
-    return false;
-  }
+                            const SmallVectorImpl<unsigned> &Ops) const =0;
 
   /// unfoldMemoryOperand - Separate a single instruction which folded a load or
   /// a store or a load and a store into two or more instruction. If this is
@@ -442,7 +476,7 @@ public:
   /// only differences between the two addresses are the offset. It also returns
   /// the offsets by reference.
   virtual bool areLoadsFromSameBasePtr(SDNode *Load1, SDNode *Load2,
-                                       int64_t &Offset1, int64_t &Offset2) const {
+                                    int64_t &Offset1, int64_t &Offset2) const {
     return false;
   }
 
@@ -472,6 +506,13 @@ public:
   /// point.
   virtual void insertNoop(MachineBasicBlock &MBB, 
                           MachineBasicBlock::iterator MI) const;
+  
+  
+  /// getNoopForMachoTarget - Return the noop instruction to use for a noop.
+  virtual void getNoopForMachoTarget(MCInst &NopInst) const {
+    // Default to just using 'nop' string.
+  }
+  
   
   /// isPredicated - Returns true if the instruction is already predicated.
   ///
@@ -518,22 +559,38 @@ public:
     return true;
   }
 
-  /// GetInstSize - Returns the size of the specified Instruction.
-  /// 
-  virtual unsigned GetInstSizeInBytes(const MachineInstr *MI) const {
-    assert(0 && "Target didn't implement TargetInstrInfo::GetInstSize!");
-    return 0;
-  }
+  /// isSchedulingBoundary - Test if the given instruction should be
+  /// considered a scheduling boundary. This primarily includes labels and
+  /// terminators.
+  virtual bool isSchedulingBoundary(const MachineInstr *MI,
+                                    const MachineBasicBlock *MBB,
+                                    const MachineFunction &MF) const = 0;
 
-  /// GetFunctionSizeInBytes - Returns the size of the specified
-  /// MachineFunction.
-  /// 
-  virtual unsigned GetFunctionSizeInBytes(const MachineFunction &MF) const = 0;
-  
   /// Measure the specified inline asm to determine an approximation of its
   /// length.
   virtual unsigned getInlineAsmLength(const char *Str,
                                       const MCAsmInfo &MAI) const;
+
+  /// CreateTargetHazardRecognizer - Allocate and return a hazard recognizer
+  /// to use for this target when scheduling the machine instructions after
+  /// register allocation.
+  virtual ScheduleHazardRecognizer*
+  CreateTargetPostRAHazardRecognizer(const InstrItineraryData&) const = 0;
+
+  /// AnalyzeCompare - For a comparison instruction, return the source register
+  /// in SrcReg and the value it compares against in CmpValue. Return true if
+  /// the comparison instruction can be analyzed.
+  virtual bool AnalyzeCompare(const MachineInstr *MI,
+                              unsigned &SrcReg, int &CmpValue) const {
+    return false;
+  }
+
+  /// ConvertToSetZeroFlag - Convert the instruction to set the zero flag so
+  /// that we can remove a "comparison with zero".
+  virtual bool ConvertToSetZeroFlag(MachineInstr *Instr,
+                                    MachineInstr *CmpInstr) const {
+    return false;
+  }
 };
 
 /// TargetInstrInfoImpl - This is the default implementation of
@@ -545,22 +602,31 @@ protected:
   TargetInstrInfoImpl(const TargetInstrDesc *desc, unsigned NumOpcodes)
   : TargetInstrInfo(desc, NumOpcodes) {}
 public:
+  virtual void ReplaceTailWithBranchTo(MachineBasicBlock::iterator OldInst,
+                                       MachineBasicBlock *NewDest) const;
   virtual MachineInstr *commuteInstruction(MachineInstr *MI,
                                            bool NewMI = false) const;
   virtual bool findCommutedOpIndices(MachineInstr *MI, unsigned &SrcOpIdx1,
                                      unsigned &SrcOpIdx2) const;
+  virtual bool canFoldMemoryOperand(const MachineInstr *MI,
+                                    const SmallVectorImpl<unsigned> &Ops) const;
   virtual bool PredicateInstruction(MachineInstr *MI,
                             const SmallVectorImpl<MachineOperand> &Pred) const;
   virtual void reMaterialize(MachineBasicBlock &MBB,
                              MachineBasicBlock::iterator MI,
                              unsigned DestReg, unsigned SubReg,
                              const MachineInstr *Orig,
-                             const TargetRegisterInfo *TRI) const;
+                             const TargetRegisterInfo &TRI) const;
   virtual MachineInstr *duplicate(MachineInstr *Orig,
                                   MachineFunction &MF) const;
   virtual bool produceSameValue(const MachineInstr *MI0,
                                 const MachineInstr *MI1) const;
-  virtual unsigned GetFunctionSizeInBytes(const MachineFunction &MF) const;
+  virtual bool isSchedulingBoundary(const MachineInstr *MI,
+                                    const MachineBasicBlock *MBB,
+                                    const MachineFunction &MF) const;
+
+  virtual ScheduleHazardRecognizer *
+  CreateTargetPostRAHazardRecognizer(const InstrItineraryData&) const;
 };
 
 } // End llvm namespace

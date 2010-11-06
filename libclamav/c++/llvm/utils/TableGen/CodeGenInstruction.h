@@ -22,6 +22,7 @@
 namespace llvm {
   class Record;
   class DagInit;
+  class CodeGenTarget;
 
   class CodeGenInstruction {
   public:
@@ -105,7 +106,8 @@ namespace llvm {
           MINumOperands(MINO), MIOperandInfo(MIOI) {}
     };
 
-    /// NumDefs - Number of def operands declared.
+    /// NumDefs - Number of def operands declared, this is the number of
+    /// elements in the instruction's (outs) list.
     ///
     unsigned NumDefs;
 
@@ -113,10 +115,15 @@ namespace llvm {
     /// type (which is a record).
     std::vector<OperandInfo> OperandList;
 
+    /// ImplicitDefs/ImplicitUses - These are lists of registers that are
+    /// implicitly defined and used by the instruction.
+    std::vector<Record*> ImplicitDefs, ImplicitUses;
+
     // Various boolean values we track for the instruction.
     bool isReturn;
     bool isBranch;
     bool isIndirectBranch;
+    bool isCompare;
     bool isBarrier;
     bool isCall;
     bool canFoldAsLoad;
@@ -178,6 +185,12 @@ namespace llvm {
     /// non-empty name.  If the instruction does not have an operand with the
     /// specified name, throw an exception.
     unsigned getOperandNamed(const std::string &Name) const;
+    
+    /// HasOneImplicitDefWithKnownVT - If the instruction has at least one
+    /// implicit def and it has a known VT, return the VT, otherwise return
+    /// MVT::Other.
+    MVT::SimpleValueType 
+      HasOneImplicitDefWithKnownVT(const CodeGenTarget &TargetInfo) const;
   };
 }
 

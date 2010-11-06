@@ -38,7 +38,6 @@ namespace llvm {
   class TargetAsmLexer;
   class TargetAsmParser;
   class TargetMachine;
-  class formatted_raw_ostream;
   class raw_ostream;
 
   /// Target - Wrapper for Target specific information.
@@ -55,29 +54,33 @@ namespace llvm {
 
     typedef unsigned (*TripleMatchQualityFnTy)(const std::string &TT);
 
-    typedef const MCAsmInfo *(*AsmInfoCtorFnTy)(const Target &T,
+    typedef MCAsmInfo *(*AsmInfoCtorFnTy)(const Target &T,
                                                 StringRef TT);
     typedef TargetMachine *(*TargetMachineCtorTy)(const Target &T,
                                                   const std::string &TT,
                                                   const std::string &Features);
-    typedef AsmPrinter *(*AsmPrinterCtorTy)(formatted_raw_ostream &OS,
-                                            TargetMachine &TM,
-                                            MCContext &Ctx,
-                                            MCStreamer &Streamer,
-                                            const MCAsmInfo *MAI);
+    typedef AsmPrinter *(*AsmPrinterCtorTy)(TargetMachine &TM,
+                                            MCStreamer &Streamer);
     typedef TargetAsmBackend *(*AsmBackendCtorTy)(const Target &T,
-                                                  MCAssembler &A);
+                                                  const std::string &TT);
     typedef TargetAsmLexer *(*AsmLexerCtorTy)(const Target &T,
                                               const MCAsmInfo &MAI);
-    typedef TargetAsmParser *(*AsmParserCtorTy)(const Target &T,MCAsmParser &P);
-    typedef const MCDisassembler *(*MCDisassemblerCtorTy)(const Target &T);
+    typedef TargetAsmParser *(*AsmParserCtorTy)(const Target &T,MCAsmParser &P,
+                                                TargetMachine &TM);
+    typedef MCDisassembler *(*MCDisassemblerCtorTy)(const Target &T);
     typedef MCInstPrinter *(*MCInstPrinterCtorTy)(const Target &T,
                                                   unsigned SyntaxVariant,
-                                                  const MCAsmInfo &MAI,
-                                                  raw_ostream &O);
+                                                  const MCAsmInfo &MAI);
     typedef MCCodeEmitter *(*CodeEmitterCtorTy)(const Target &T,
                                                 TargetMachine &TM,
                                                 MCContext &Ctx);
+    typedef MCStreamer *(*ObjectStreamerCtorTy)(const Target &T,
+                                                const std::string &TT,
+                                                MCContext &Ctx,
+                                                TargetAsmBackend &TAB,
+                                                raw_ostream &_OS,
+                                                MCCodeEmitter *_Emitter,
+                                                bool RelaxAll);
 
   private:
     /// Next - The next registered target in the linked list, maintained by the
@@ -131,6 +134,10 @@ namespace llvm {
     /// if registered.
     CodeEmitterCtorTy CodeEmitterCtorFn;
 
+    /// ObjectStreamerCtorFn - Construction function for this target's
+    /// ObjectStreamer, if registered.
+    ObjectStreamerCtorTy ObjectStreamerCtorFn;
+
   public:
     /// @name Target Information
     /// @{
@@ -175,6 +182,9 @@ namespace llvm {
     /// hasCodeEmitter - Check if this target supports instruction encoding.
     bool hasCodeEmitter() const { return CodeEmitterCtorFn != 0; }
 
+    /// hasObjectStreamer - Check if this target supports streaming to files.
+    bool hasObjectStreamer() const { return ObjectStreamerCtorFn != 0; }
+
     /// @}
     /// @name Feature Constructors
     /// @{
@@ -186,7 +196,7 @@ namespace llvm {
     /// feature set; it should always be provided. Generally this should be
     /// either the target triple from the module, or the target triple of the
     /// host if that does not exist.
-    const MCAsmInfo *createAsmInfo(StringRef Triple) const {
+    MCAsmInfo *createAsmInfo(StringRef Triple) const {
       if (!AsmInfoCtorFn)
         return 0;
       return AsmInfoCtorFn(*this, Triple);
@@ -208,11 +218,12 @@ namespace llvm {
 
     /// createAsmBackend - Create a target specific assembly parser.
     ///
+    /// \arg Triple - The target triple string.
     /// \arg Backend - The target independent assembler object.
-    TargetAsmBackend *createAsmBackend(MCAssembler &Backend) const {
+    TargetAsmBackend *createAsmBackend(const std::string &Triple) const {
       if (!AsmBackendCtorFn)
         return 0;
-      return AsmBackendCtorFn(*this, Backend);
+      return AsmBackendCtorFn(*this, Triple);
     }
 
     /// createAsmLexer - Create a target specific assembly lexer.
@@ -227,34 +238,32 @@ namespace llvm {
     ///
     /// \arg Parser - The target independent parser implementation to use for
     /// parsing and lexing.
-    TargetAsmParser *createAsmParser(MCAsmParser &Parser) const {
+    TargetAsmParser *createAsmParser(MCAsmParser &Parser,
+                                     TargetMachine &TM) const {
       if (!AsmParserCtorFn)
         return 0;
-      return AsmParserCtorFn(*this, Parser);
+      return AsmParserCtorFn(*this, Parser, TM);
     }
 
     /// createAsmPrinter - Create a target specific assembly printer pass.  This
-    /// takes ownership of the MCContext and MCStreamer objects but not the MAI.
-    AsmPrinter *createAsmPrinter(formatted_raw_ostream &OS, TargetMachine &TM,
-                                 MCContext &Ctx, MCStreamer &Streamer,
-                                 const MCAsmInfo *MAI) const {
+    /// takes ownership of the MCStreamer object.
+    AsmPrinter *createAsmPrinter(TargetMachine &TM, MCStreamer &Streamer) const{
       if (!AsmPrinterCtorFn)
         return 0;
-      return AsmPrinterCtorFn(OS, TM, Ctx, Streamer, MAI);
+      return AsmPrinterCtorFn(TM, Streamer);
     }
 
-    const MCDisassembler *createMCDisassembler() const {
+    MCDisassembler *createMCDisassembler() const {
       if (!MCDisassemblerCtorFn)
         return 0;
       return MCDisassemblerCtorFn(*this);
     }
 
     MCInstPrinter *createMCInstPrinter(unsigned SyntaxVariant,
-                                       const MCAsmInfo &MAI,
-                                       raw_ostream &O) const {
+                                       const MCAsmInfo &MAI) const {
       if (!MCInstPrinterCtorFn)
         return 0;
-      return MCInstPrinterCtorFn(*this, SyntaxVariant, MAI, O);
+      return MCInstPrinterCtorFn(*this, SyntaxVariant, MAI);
     }
 
 
@@ -263,6 +272,24 @@ namespace llvm {
       if (!CodeEmitterCtorFn)
         return 0;
       return CodeEmitterCtorFn(*this, TM, Ctx);
+    }
+
+    /// createObjectStreamer - Create a target specific MCStreamer.
+    ///
+    /// \arg TT - The target triple.
+    /// \arg Ctx - The target context.
+    /// \arg TAB - The target assembler backend object. Takes ownership.
+    /// \arg _OS - The stream object.
+    /// \arg _Emitter - The target independent assembler object.Takes ownership.
+    /// \arg RelaxAll - Relax all fixups?
+    MCStreamer *createObjectStreamer(const std::string &TT, MCContext &Ctx,
+                                     TargetAsmBackend &TAB,
+                                     raw_ostream &_OS,
+                                     MCCodeEmitter *_Emitter,
+                                     bool RelaxAll) const {
+      if (!ObjectStreamerCtorFn)
+        return 0;
+      return ObjectStreamerCtorFn(*this, TT, Ctx, TAB, _OS, _Emitter, RelaxAll);
     }
 
     /// @}
@@ -486,6 +513,20 @@ namespace llvm {
         T.CodeEmitterCtorFn = Fn;
     }
 
+    /// RegisterObjectStreamer - Register an MCStreamer implementation
+    /// for the given target.
+    ///
+    /// Clients are responsible for ensuring that registration doesn't occur
+    /// while another thread is attempting to access the registry. Typically
+    /// this is done by initializing all targets at program startup.
+    ///
+    /// @param T - The target being registered.
+    /// @param Fn - A function to construct an MCStreamer for the target.
+    static void RegisterObjectStreamer(Target &T, Target::ObjectStreamerCtorTy Fn) {
+      if (!T.ObjectStreamerCtorFn)
+        T.ObjectStreamerCtorFn = Fn;
+    }
+
     /// @}
   };
 
@@ -531,7 +572,7 @@ namespace llvm {
       TargetRegistry::RegisterAsmInfo(T, &Allocator);
     }
   private:
-    static const MCAsmInfo *Allocator(const Target &T, StringRef TT) {
+    static MCAsmInfo *Allocator(const Target &T, StringRef TT) {
       return new MCAsmInfoImpl(T, TT);
     }
 
@@ -587,8 +628,9 @@ namespace llvm {
     }
 
   private:
-    static TargetAsmBackend *Allocator(const Target &T, MCAssembler &Backend) {
-      return new AsmBackendImpl(T, Backend);
+    static TargetAsmBackend *Allocator(const Target &T,
+                                       const std::string &Triple) {
+      return new AsmBackendImpl(T, Triple);
     }
   };
 
@@ -627,8 +669,9 @@ namespace llvm {
     }
 
   private:
-    static TargetAsmParser *Allocator(const Target &T, MCAsmParser &P) {
-      return new AsmParserImpl(T, P);
+    static TargetAsmParser *Allocator(const Target &T, MCAsmParser &P,
+                                      TargetMachine &TM) {
+      return new AsmParserImpl(T, P, TM);
     }
   };
 
@@ -647,10 +690,8 @@ namespace llvm {
     }
 
   private:
-    static AsmPrinter *Allocator(formatted_raw_ostream &OS, TargetMachine &TM,
-                                 MCContext &Ctx, MCStreamer &Streamer,
-                                 const MCAsmInfo *MAI) {
-      return new AsmPrinterImpl(OS, TM, Ctx, Streamer, MAI);
+    static AsmPrinter *Allocator(TargetMachine &TM, MCStreamer &Streamer) {
+      return new AsmPrinterImpl(TM, Streamer);
     }
   };
 

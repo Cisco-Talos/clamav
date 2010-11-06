@@ -79,6 +79,7 @@ void DAGTypeLegalizer::SoftenFloatResult(SDNode *N, unsigned ResNo) {
     case ISD::FNEG:        R = SoftenFloatRes_FNEG(N); break;
     case ISD::FP_EXTEND:   R = SoftenFloatRes_FP_EXTEND(N); break;
     case ISD::FP_ROUND:    R = SoftenFloatRes_FP_ROUND(N); break;
+    case ISD::FP16_TO_FP32:R = SoftenFloatRes_FP16_TO_FP32(N); break;
     case ISD::FPOW:        R = SoftenFloatRes_FPOW(N); break;
     case ISD::FPOWI:       R = SoftenFloatRes_FPOWI(N); break;
     case ISD::FREM:        R = SoftenFloatRes_FREM(N); break;
@@ -108,14 +109,16 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_BIT_CONVERT(SDNode *N) {
 SDValue DAGTypeLegalizer::SoftenFloatRes_BUILD_PAIR(SDNode *N) {
   // Convert the inputs to integers, and build a new pair out of them.
   return DAG.getNode(ISD::BUILD_PAIR, N->getDebugLoc(),
-                     TLI.getTypeToTransformTo(*DAG.getContext(), N->getValueType(0)),
+                     TLI.getTypeToTransformTo(*DAG.getContext(),
+                                              N->getValueType(0)),
                      BitConvertToInteger(N->getOperand(0)),
                      BitConvertToInteger(N->getOperand(1)));
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatRes_ConstantFP(ConstantFPSDNode *N) {
   return DAG.getConstant(N->getValueAPF().bitcastToAPInt(),
-                         TLI.getTypeToTransformTo(*DAG.getContext(), N->getValueType(0)));
+                         TLI.getTypeToTransformTo(*DAG.getContext(),
+                                                  N->getValueType(0)));
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatRes_EXTRACT_VECTOR_ELT(SDNode *N) {
@@ -332,6 +335,15 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_FP_EXTEND(SDNode *N) {
   return MakeLibCall(LC, NVT, &Op, 1, false, N->getDebugLoc());
 }
 
+// FIXME: Should we just use 'normal' FP_EXTEND / FP_TRUNC instead of special
+// nodes?
+SDValue DAGTypeLegalizer::SoftenFloatRes_FP16_TO_FP32(SDNode *N) {
+  EVT NVT = TLI.getTypeToTransformTo(*DAG.getContext(), N->getValueType(0));
+  SDValue Op = N->getOperand(0);
+  return MakeLibCall(RTLIB::FPEXT_F16_F32, NVT, &Op, 1, false,
+                     N->getDebugLoc());
+}
+
 SDValue DAGTypeLegalizer::SoftenFloatRes_FP_ROUND(SDNode *N) {
   EVT NVT = TLI.getTypeToTransformTo(*DAG.getContext(), N->getValueType(0));
   SDValue Op = N->getOperand(0);
@@ -441,8 +453,8 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_LOAD(SDNode *N) {
 
   SDValue NewL;
   if (L->getExtensionType() == ISD::NON_EXTLOAD) {
-    NewL = DAG.getLoad(L->getAddressingMode(), dl, L->getExtensionType(),
-                       NVT, L->getChain(), L->getBasePtr(), L->getOffset(),
+    NewL = DAG.getLoad(L->getAddressingMode(), L->getExtensionType(),
+                       NVT, dl, L->getChain(), L->getBasePtr(), L->getOffset(),
                        L->getSrcValue(), L->getSrcValueOffset(), NVT,
                        L->isVolatile(), L->isNonTemporal(), L->getAlignment());
     // Legalized the chain result - switch anything that used the old chain to
@@ -452,8 +464,8 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_LOAD(SDNode *N) {
   }
 
   // Do a non-extending load followed by FP_EXTEND.
-  NewL = DAG.getLoad(L->getAddressingMode(), dl, ISD::NON_EXTLOAD,
-                     L->getMemoryVT(), L->getChain(),
+  NewL = DAG.getLoad(L->getAddressingMode(), ISD::NON_EXTLOAD,
+                     L->getMemoryVT(), dl, L->getChain(),
                      L->getBasePtr(), L->getOffset(),
                      L->getSrcValue(), L->getSrcValueOffset(),
                      L->getMemoryVT(), L->isVolatile(),
@@ -480,7 +492,8 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_SELECT_CC(SDNode *N) {
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatRes_UNDEF(SDNode *N) {
-  return DAG.getUNDEF(TLI.getTypeToTransformTo(*DAG.getContext(), N->getValueType(0)));
+  return DAG.getUNDEF(TLI.getTypeToTransformTo(*DAG.getContext(),
+                                               N->getValueType(0)));
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatRes_VAARG(SDNode *N) {
@@ -491,7 +504,8 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_VAARG(SDNode *N) {
   DebugLoc dl = N->getDebugLoc();
 
   SDValue NewVAARG;
-  NewVAARG = DAG.getVAArg(NVT, dl, Chain, Ptr, N->getOperand(2));
+  NewVAARG = DAG.getVAArg(NVT, dl, Chain, Ptr, N->getOperand(2),
+                          N->getConstantOperandVal(3));
 
   // Legalized the chain result - switch anything that used the old chain to
   // use the new one.
@@ -522,7 +536,8 @@ SDValue DAGTypeLegalizer::SoftenFloatRes_XINT_TO_FP(SDNode *N) {
   // Sign/zero extend the argument if the libcall takes a larger type.
   SDValue Op = DAG.getNode(Signed ? ISD::SIGN_EXTEND : ISD::ZERO_EXTEND, dl,
                            NVT, N->getOperand(0));
-  return MakeLibCall(LC, TLI.getTypeToTransformTo(*DAG.getContext(), RVT), &Op, 1, false, dl);
+  return MakeLibCall(LC, TLI.getTypeToTransformTo(*DAG.getContext(), RVT),
+                     &Op, 1, false, dl);
 }
 
 
@@ -548,6 +563,7 @@ bool DAGTypeLegalizer::SoftenFloatOperand(SDNode *N, unsigned OpNo) {
   case ISD::FP_ROUND:    Res = SoftenFloatOp_FP_ROUND(N); break;
   case ISD::FP_TO_SINT:  Res = SoftenFloatOp_FP_TO_SINT(N); break;
   case ISD::FP_TO_UINT:  Res = SoftenFloatOp_FP_TO_UINT(N); break;
+  case ISD::FP32_TO_FP16:Res = SoftenFloatOp_FP32_TO_FP16(N); break;
   case ISD::SELECT_CC:   Res = SoftenFloatOp_SELECT_CC(N); break;
   case ISD::SETCC:       Res = SoftenFloatOp_SETCC(N); break;
   case ISD::STORE:       Res = SoftenFloatOp_STORE(N, OpNo); break;
@@ -683,9 +699,10 @@ SDValue DAGTypeLegalizer::SoftenFloatOp_BR_CC(SDNode *N) {
   }
 
   // Update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), N->getOperand(0),
+  return SDValue(DAG.UpdateNodeOperands(N, N->getOperand(0),
                                 DAG.getCondCode(CCCode), NewLHS, NewRHS,
-                                N->getOperand(4));
+                                N->getOperand(4)),
+                 0);
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatOp_FP_TO_SINT(SDNode *N) {
@@ -704,6 +721,13 @@ SDValue DAGTypeLegalizer::SoftenFloatOp_FP_TO_UINT(SDNode *N) {
   return MakeLibCall(LC, RVT, &Op, 1, false, N->getDebugLoc());
 }
 
+SDValue DAGTypeLegalizer::SoftenFloatOp_FP32_TO_FP16(SDNode *N) {
+  EVT RVT = N->getValueType(0);
+  RTLIB::Libcall LC = RTLIB::FPROUND_F32_F16;
+  SDValue Op = GetSoftenedFloat(N->getOperand(0));
+  return MakeLibCall(LC, RVT, &Op, 1, false, N->getDebugLoc());
+}
+
 SDValue DAGTypeLegalizer::SoftenFloatOp_SELECT_CC(SDNode *N) {
   SDValue NewLHS = N->getOperand(0), NewRHS = N->getOperand(1);
   ISD::CondCode CCCode = cast<CondCodeSDNode>(N->getOperand(4))->get();
@@ -717,9 +741,10 @@ SDValue DAGTypeLegalizer::SoftenFloatOp_SELECT_CC(SDNode *N) {
   }
 
   // Update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), NewLHS, NewRHS,
+  return SDValue(DAG.UpdateNodeOperands(N, NewLHS, NewRHS,
                                 N->getOperand(2), N->getOperand(3),
-                                DAG.getCondCode(CCCode));
+                                DAG.getCondCode(CCCode)),
+                 0);
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatOp_SETCC(SDNode *N) {
@@ -735,8 +760,9 @@ SDValue DAGTypeLegalizer::SoftenFloatOp_SETCC(SDNode *N) {
   }
 
   // Otherwise, update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), NewLHS, NewRHS,
-                                DAG.getCondCode(CCCode));
+  return SDValue(DAG.UpdateNodeOperands(N, NewLHS, NewRHS,
+                                DAG.getCondCode(CCCode)),
+                 0);
 }
 
 SDValue DAGTypeLegalizer::SoftenFloatOp_STORE(SDNode *N, unsigned OpNo) {
@@ -800,6 +826,7 @@ void DAGTypeLegalizer::ExpandFloatResult(SDNode *N, unsigned ResNo) {
   case ISD::FABS:       ExpandFloatRes_FABS(N, Lo, Hi); break;
   case ISD::FADD:       ExpandFloatRes_FADD(N, Lo, Hi); break;
   case ISD::FCEIL:      ExpandFloatRes_FCEIL(N, Lo, Hi); break;
+  case ISD::FCOPYSIGN:  ExpandFloatRes_FCOPYSIGN(N, Lo, Hi); break;
   case ISD::FCOS:       ExpandFloatRes_FCOS(N, Lo, Hi); break;
   case ISD::FDIV:       ExpandFloatRes_FDIV(N, Lo, Hi); break;
   case ISD::FEXP:       ExpandFloatRes_FEXP(N, Lo, Hi); break;
@@ -869,6 +896,17 @@ void DAGTypeLegalizer::ExpandFloatRes_FCEIL(SDNode *N,
   SDValue Call = LibCallify(GetFPLibCall(N->getValueType(0),
                                          RTLIB::CEIL_F32, RTLIB::CEIL_F64,
                                          RTLIB::CEIL_F80, RTLIB::CEIL_PPCF128),
+                            N, false);
+  GetPairElements(Call, Lo, Hi);
+}
+
+void DAGTypeLegalizer::ExpandFloatRes_FCOPYSIGN(SDNode *N,
+                                                SDValue &Lo, SDValue &Hi) {
+  SDValue Call = LibCallify(GetFPLibCall(N->getValueType(0),
+                                         RTLIB::COPYSIGN_F32,
+                                         RTLIB::COPYSIGN_F64,
+                                         RTLIB::COPYSIGN_F80,
+                                         RTLIB::COPYSIGN_PPCF128),
                             N, false);
   GetPairElements(Call, Lo, Hi);
 }
@@ -1072,7 +1110,7 @@ void DAGTypeLegalizer::ExpandFloatRes_LOAD(SDNode *N, SDValue &Lo,
   assert(NVT.isByteSized() && "Expanded type not byte sized!");
   assert(LD->getMemoryVT().bitsLE(NVT) && "Float type not round?");
 
-  Hi = DAG.getExtLoad(LD->getExtensionType(), dl, NVT, Chain, Ptr,
+  Hi = DAG.getExtLoad(LD->getExtensionType(), NVT, dl, Chain, Ptr,
                       LD->getSrcValue(), LD->getSrcValueOffset(),
                       LD->getMemoryVT(), LD->isVolatile(),
                       LD->isNonTemporal(), LD->getAlignment());
@@ -1260,9 +1298,9 @@ SDValue DAGTypeLegalizer::ExpandFloatOp_BR_CC(SDNode *N) {
   }
 
   // Update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), N->getOperand(0),
+  return SDValue(DAG.UpdateNodeOperands(N, N->getOperand(0),
                                 DAG.getCondCode(CCCode), NewLHS, NewRHS,
-                                N->getOperand(4));
+                                N->getOperand(4)), 0);
 }
 
 SDValue DAGTypeLegalizer::ExpandFloatOp_FP_ROUND(SDNode *N) {
@@ -1341,9 +1379,9 @@ SDValue DAGTypeLegalizer::ExpandFloatOp_SELECT_CC(SDNode *N) {
   }
 
   // Update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), NewLHS, NewRHS,
+  return SDValue(DAG.UpdateNodeOperands(N, NewLHS, NewRHS,
                                 N->getOperand(2), N->getOperand(3),
-                                DAG.getCondCode(CCCode));
+                                DAG.getCondCode(CCCode)), 0);
 }
 
 SDValue DAGTypeLegalizer::ExpandFloatOp_SETCC(SDNode *N) {
@@ -1359,8 +1397,8 @@ SDValue DAGTypeLegalizer::ExpandFloatOp_SETCC(SDNode *N) {
   }
 
   // Otherwise, update N to have the operands specified.
-  return DAG.UpdateNodeOperands(SDValue(N, 0), NewLHS, NewRHS,
-                                DAG.getCondCode(CCCode));
+  return SDValue(DAG.UpdateNodeOperands(N, NewLHS, NewRHS,
+                                DAG.getCondCode(CCCode)), 0);
 }
 
 SDValue DAGTypeLegalizer::ExpandFloatOp_STORE(SDNode *N, unsigned OpNo) {
@@ -1374,7 +1412,8 @@ SDValue DAGTypeLegalizer::ExpandFloatOp_STORE(SDNode *N, unsigned OpNo) {
   SDValue Chain = ST->getChain();
   SDValue Ptr = ST->getBasePtr();
 
-  EVT NVT = TLI.getTypeToTransformTo(*DAG.getContext(), ST->getValue().getValueType());
+  EVT NVT = TLI.getTypeToTransformTo(*DAG.getContext(),
+                                     ST->getValue().getValueType());
   assert(NVT.isByteSized() && "Expanded type not byte sized!");
   assert(ST->getMemoryVT().bitsLE(NVT) && "Float type not round?");
 

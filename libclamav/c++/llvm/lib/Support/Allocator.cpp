@@ -23,9 +23,7 @@ namespace llvm {
 BumpPtrAllocator::BumpPtrAllocator(size_t size, size_t threshold,
                                    SlabAllocator &allocator)
     : SlabSize(size), SizeThreshold(threshold), Allocator(allocator),
-      CurSlab(0), BytesAllocated(0) {
-  StartNewSlab();
-}
+      CurSlab(0), BytesAllocated(0) { }
 
 BumpPtrAllocator::~BumpPtrAllocator() {
   DeallocateSlabs(CurSlab);
@@ -72,30 +70,20 @@ void BumpPtrAllocator::DeallocateSlabs(MemSlab *Slab) {
 /// Reset - Deallocate all but the current slab and reset the current pointer
 /// to the beginning of it, freeing all memory allocated so far.
 void BumpPtrAllocator::Reset() {
+  if (!CurSlab)
+    return;
   DeallocateSlabs(CurSlab->NextPtr);
   CurSlab->NextPtr = 0;
   CurPtr = (char*)(CurSlab + 1);
   End = ((char*)CurSlab) + CurSlab->Size;
 }
 
-void BumpPtrAllocator::Reset(size_t Size, size_t Alignment, DTorFunction DTor) {
-  if (Alignment == 0) Alignment = 1;
-  MemSlab *Slab = CurSlab;
-  while (Slab) {
-    char *End = Slab == CurSlab ? CurPtr : (char*)Slab + Slab->Size;
-    for (char *Ptr = (char*)(Slab+1); Ptr < End; Ptr += Size) {
-	Ptr = AlignPtr(Ptr, Alignment);
-	if (Ptr + Size <= End)
-	    DTor(Ptr);
-    }
-    Slab = Slab->NextPtr;
-  }
-  Reset();
-}
-
 /// Allocate - Allocate space at the specified alignment.
 ///
 void *BumpPtrAllocator::Allocate(size_t Size, size_t Alignment) {
+  if (!CurSlab) // Start a new slab if we haven't allocated one already.
+    StartNewSlab();
+
   // Keep track of how many bytes we've allocated.
   BytesAllocated += Size;
 

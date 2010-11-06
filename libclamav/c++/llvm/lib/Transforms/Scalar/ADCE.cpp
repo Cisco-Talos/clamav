@@ -33,7 +33,7 @@ STATISTIC(NumRemoved, "Number of instructions removed");
 namespace {
   struct ADCE : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
-    ADCE() : FunctionPass(&ID) {}
+    ADCE() : FunctionPass(ID) {}
     
     virtual bool runOnFunction(Function& F);
     
@@ -45,7 +45,7 @@ namespace {
 }
 
 char ADCE::ID = 0;
-static RegisterPass<ADCE> X("adce", "Aggressive Dead Code Elimination");
+INITIALIZE_PASS(ADCE, "adce", "Aggressive Dead Code Elimination", false, false);
 
 bool ADCE::runOnFunction(Function& F) {
   SmallPtrSet<Instruction*, 128> alive;
@@ -83,7 +83,7 @@ bool ADCE::runOnFunction(Function& F) {
   
   for (SmallVector<Instruction*, 1024>::iterator I = worklist.begin(),
        E = worklist.end(); I != E; ++I) {
-    NumRemoved++;
+    ++NumRemoved;
     (*I)->eraseFromParent();
   }
 

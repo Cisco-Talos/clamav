@@ -34,29 +34,9 @@ class MCSectionMachO : public MCSection {
   unsigned Reserved2;
   
   MCSectionMachO(StringRef Segment, StringRef Section,
-                 unsigned TAA, unsigned reserved2, SectionKind K)
-    : MCSection(K), TypeAndAttributes(TAA), Reserved2(reserved2) {
-    assert(Segment.size() <= 16 && Section.size() <= 16 &&
-           "Segment or section string too long");
-    for (unsigned i = 0; i != 16; ++i) {
-      if (i < Segment.size())
-        SegmentName[i] = Segment[i];
-      else
-        SegmentName[i] = 0;
-      
-      if (i < Section.size())
-        SectionName[i] = Section[i];
-      else
-        SectionName[i] = 0;
-    }        
-  }
+                 unsigned TAA, unsigned reserved2, SectionKind K);  
+  friend class MCContext;
 public:
-  
-  static MCSectionMachO *Create(StringRef Segment,
-                                StringRef Section,
-                                unsigned TypeAndAttributes,
-                                unsigned Reserved2,
-                                SectionKind K, MCContext &Ctx);
   
   /// These are the section type and attributes fields.  A MachO section can
   /// have only one Type, but can have any of the attributes specified.
@@ -107,8 +87,20 @@ public:
     /// S_LAZY_DYLIB_SYMBOL_POINTERS - Section with lazy symbol pointers to
     /// lazy loaded dylibs.
     S_LAZY_DYLIB_SYMBOL_POINTERS = 0x10U,
+    /// S_THREAD_LOCAL_REGULAR - Section with ....
+    S_THREAD_LOCAL_REGULAR = 0x11U,
+    /// S_THREAD_LOCAL_ZEROFILL - Thread local zerofill section.
+    S_THREAD_LOCAL_ZEROFILL = 0x12U,
+    /// S_THREAD_LOCAL_VARIABLES - Section with thread local variable structure
+    /// data.
+    S_THREAD_LOCAL_VARIABLES = 0x13U,
+    /// S_THREAD_LOCAL_VARIABLE_POINTERS - Section with ....
+    S_THREAD_LOCAL_VARIABLE_POINTERS = 0x14U,
+    /// S_THREAD_LOCAL_INIT_FUNCTION_POINTERS - Section with thread local
+    /// variable initialization pointers to functions.
+    S_THREAD_LOCAL_INIT_FUNCTION_POINTERS = 0x15U,
 
-    LAST_KNOWN_SECTION_TYPE = S_LAZY_DYLIB_SYMBOL_POINTERS,
+    LAST_KNOWN_SECTION_TYPE = S_THREAD_LOCAL_INIT_FUNCTION_POINTERS,
     
 
     // Valid section attributes.
@@ -151,10 +143,15 @@ public:
       return StringRef(SectionName, 16);
     return StringRef(SectionName);
   }
-  
+
   unsigned getTypeAndAttributes() const { return TypeAndAttributes; }
   unsigned getStubSize() const { return Reserved2; }
-  
+
+  unsigned getType() const { return TypeAndAttributes & SECTION_TYPE; }
+  bool hasAttribute(unsigned Value) const {
+    return (TypeAndAttributes & Value) != 0;
+  }
+
   /// ParseSectionSpecifier - Parse the section specifier indicated by "Spec".
   /// This is a string that can appear after a .section directive in a mach-o
   /// flavored .s file.  If successful, this fills in the specified Out
@@ -165,9 +162,14 @@ public:
                                            StringRef &Section,   // Out.
                                            unsigned  &TAA,       // Out.
                                            unsigned  &StubSize); // Out.
-  
+
   virtual void PrintSwitchToSection(const MCAsmInfo &MAI,
                                     raw_ostream &OS) const;
+
+  static bool classof(const MCSection *S) {
+    return S->getVariant() == SV_MachO;
+  }
+  static bool classof(const MCSectionMachO *) { return true; }
 };
 
 } // end namespace llvm

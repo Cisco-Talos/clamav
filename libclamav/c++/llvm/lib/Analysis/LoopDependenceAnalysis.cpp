@@ -46,8 +46,8 @@ LoopPass *llvm::createLoopDependenceAnalysisPass() {
   return new LoopDependenceAnalysis();
 }
 
-static RegisterPass<LoopDependenceAnalysis>
-R("lda", "Loop Dependence Analysis", false, true);
+INITIALIZE_PASS(LoopDependenceAnalysis, "lda",
+                "Loop Dependence Analysis", false, true);
 char LoopDependenceAnalysis::ID = 0;
 
 //===----------------------------------------------------------------------===//
@@ -119,8 +119,7 @@ bool LoopDependenceAnalysis::findOrInsertDependencePair(Value *A,
   P = Pairs.FindNodeOrInsertPos(id, insertPos);
   if (P) return true;
 
-  P = PairAllocator.Allocate<DependencePair>();
-  new (P) DependencePair(id, A, B);
+  P = new (PairAllocator) DependencePair(id, A, B);
   Pairs.InsertNode(P, insertPos);
   return false;
 }

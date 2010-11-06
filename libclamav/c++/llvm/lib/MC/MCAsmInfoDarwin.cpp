@@ -35,24 +35,17 @@ MCAsmInfoDarwin::MCAsmInfoDarwin() {
   WeakRefDirective = "\t.weak_reference ";
   ZeroDirective = "\t.space\t";  // ".space N" emits N zeros.
   HasMachoZeroFillDirective = true;  // Uses .zerofill
+  HasMachoTBSSDirective = true; // Uses .tbss
   HasStaticCtorDtorReferenceInStaticMode = true;
   
   HiddenVisibilityAttr = MCSA_PrivateExtern;
   // Doesn't support protected visibility.
   ProtectedVisibilityAttr = MCSA_Global;
-
   
   HasDotTypeDotSizeDirective = false;
   HasNoDeadStrip = true;
-  // Note: Even though darwin has the .lcomm directive, it is just a synonym for
-  // zerofill, so we prefer to use .zerofill.
 
-  // _foo.eh symbols are currently always exported so that the linker knows
-  // about them.  This is not necessary on 10.6 and later, but it
-  // doesn't hurt anything.
-  // FIXME: I need to get this from Triple.
-  Is_EHSymbolPrivate = false;
-  GlobalEHDirective = "\t.globl\t";
-  SupportsWeakOmittedEHFrame = false;
+  DwarfUsesAbsoluteLabelForStmtList = false;
+  DwarfUsesLabelOffsetForRanges = false;
 }
 

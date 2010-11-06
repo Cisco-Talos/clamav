@@ -15,7 +15,7 @@
 #define X86COFF_MACHINEMODULEINFO_H
 
 #include "llvm/CodeGen/MachineModuleInfo.h"
-#include "llvm/ADT/StringSet.h"
+#include "llvm/ADT/DenseSet.h"
 #include "X86MachineFunctionInfo.h"
 
 namespace llvm {
@@ -25,21 +25,18 @@ namespace llvm {
 /// X86COFFMachineModuleInfo - This is a MachineModuleInfoImpl implementation
 /// for X86 COFF targets.
 class X86COFFMachineModuleInfo : public MachineModuleInfoImpl {
-  StringSet<> CygMingStubs;
-  DenseMap<const Function*, unsigned> FnArgWords;
+  DenseSet<MCSymbol const *> Externals;
 public:
-  X86COFFMachineModuleInfo(const MachineModuleInfo &);
-  ~X86COFFMachineModuleInfo();
+  X86COFFMachineModuleInfo(const MachineModuleInfo &) {}
+  virtual ~X86COFFMachineModuleInfo();
 
-  void DecorateCygMingName(MCSymbol* &Name, MCContext &Ctx,
-                           const GlobalValue *GV, const TargetData &TD);
-  void DecorateCygMingName(SmallVectorImpl<char> &Name, const GlobalValue *GV,
-                           const TargetData &TD);
-
-  void addExternalFunction(const StringRef& Name);
-  typedef StringSet<>::const_iterator stub_iterator;
-  stub_iterator stub_begin() const { return CygMingStubs.begin(); }
-  stub_iterator stub_end() const { return CygMingStubs.end(); }
+  void addExternalFunction(MCSymbol* Symbol) {
+    Externals.insert(Symbol);
+  }
+    
+  typedef DenseSet<MCSymbol const *>::const_iterator externals_iterator;
+  externals_iterator externals_begin() const { return Externals.begin(); }
+  externals_iterator externals_end() const { return Externals.end(); }
 };
 
 

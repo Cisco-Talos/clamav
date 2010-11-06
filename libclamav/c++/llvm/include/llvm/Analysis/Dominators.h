@@ -116,12 +116,12 @@ public:
       return true;
 
     SmallPtrSet<NodeT *, 4> OtherChildren;
-    for(iterator I = Other->begin(), E = Other->end(); I != E; ++I) {
+    for (iterator I = Other->begin(), E = Other->end(); I != E; ++I) {
       NodeT *Nd = (*I)->getBlock();
       OtherChildren.insert(Nd);
     }
 
-    for(iterator I = begin(), E = end(); I != E; ++I) {
+    for (iterator I = begin(), E = end(); I != E; ++I) {
       NodeT *N = (*I)->getBlock();
       if (OtherChildren.count(N) == 0)
         return true;
@@ -240,27 +240,31 @@ protected:
   template<class N, class GraphT>
   void Split(DominatorTreeBase<typename GraphT::NodeType>& DT,
              typename GraphT::NodeType* NewBB) {
-    assert(std::distance(GraphT::child_begin(NewBB), GraphT::child_end(NewBB)) == 1
-           && "NewBB should have a single successor!");
+    assert(std::distance(GraphT::child_begin(NewBB),
+                         GraphT::child_end(NewBB)) == 1 &&
+           "NewBB should have a single successor!");
     typename GraphT::NodeType* NewBBSucc = *GraphT::child_begin(NewBB);
 
     std::vector<typename GraphT::NodeType*> PredBlocks;
-    for (typename GraphTraits<Inverse<N> >::ChildIteratorType PI =
-         GraphTraits<Inverse<N> >::child_begin(NewBB),
-         PE = GraphTraits<Inverse<N> >::child_end(NewBB); PI != PE; ++PI)
+    typedef GraphTraits<Inverse<N> > InvTraits;
+    for (typename InvTraits::ChildIteratorType PI =
+         InvTraits::child_begin(NewBB),
+         PE = InvTraits::child_end(NewBB); PI != PE; ++PI)
       PredBlocks.push_back(*PI);
 
-    assert(!PredBlocks.empty() && "No predblocks??");
+    assert(!PredBlocks.empty() && "No predblocks?");
 
     bool NewBBDominatesNewBBSucc = true;
-    for (typename GraphTraits<Inverse<N> >::ChildIteratorType PI =
-         GraphTraits<Inverse<N> >::child_begin(NewBBSucc),
-         E = GraphTraits<Inverse<N> >::child_end(NewBBSucc); PI != E; ++PI)
-      if (*PI != NewBB && !DT.dominates(NewBBSucc, *PI) &&
-          DT.isReachableFromEntry(*PI)) {
+    for (typename InvTraits::ChildIteratorType PI =
+         InvTraits::child_begin(NewBBSucc),
+         E = InvTraits::child_end(NewBBSucc); PI != E; ++PI) {
+      typename InvTraits::NodeType *ND = *PI;
+      if (ND != NewBB && !DT.dominates(NewBBSucc, ND) &&
+          DT.isReachableFromEntry(ND)) {
         NewBBDominatesNewBBSucc = false;
         break;
       }
+    }
 
     // Find NewBB's immediate dominator and create new dominator tree node for
     // NewBB.
@@ -374,8 +378,8 @@ public:
   /// isReachableFromEntry - Return true if A is dominated by the entry
   /// block of the function containing it.
   bool isReachableFromEntry(NodeT* A) {
-    assert (!this->isPostDominator()
-            && "This is not implemented for post dominators");
+    assert(!this->isPostDominator() &&
+           "This is not implemented for post dominators");
     return dominates(&A->getParent()->front(), A);
   }
 
@@ -393,8 +397,9 @@ public:
     // Compare the result of the tree walk and the dfs numbers, if expensive
     // checks are enabled.
 #ifdef XDEBUG
-    assert(!DFSInfoValid
-           || (dominatedBySlowTreeWalk(A, B) == B->DominatedBy(A)));
+    assert((!DFSInfoValid ||
+            (dominatedBySlowTreeWalk(A, B) == B->DominatedBy(A))) &&
+           "Tree walk disagrees with dfs numbers!");
 #endif
 
     if (DFSInfoValid)
@@ -430,16 +435,16 @@ public:
   /// findNearestCommonDominator - Find nearest common dominator basic block
   /// for basic block A and B. If there is no such block then return NULL.
   NodeT *findNearestCommonDominator(NodeT *A, NodeT *B) {
+    assert(A->getParent() == B->getParent() &&
+           "Two blocks are not in same function");
 
-    assert (!this->isPostDominator()
-            && "This is not implemented for post dominators");
-    assert (A->getParent() == B->getParent()
-            && "Two blocks are not in same function");
-
-    // If either A or B is a entry block then it is nearest common dominator.
-    NodeT &Entry  = A->getParent()->front();
-    if (A == &Entry || B == &Entry)
-      return &Entry;
+    // If either A or B is a entry block then it is nearest common dominator
+    // (for forward-dominators).
+    if (!this->isPostDominator()) {
+      NodeT &Entry = A->getParent()->front();
+      if (A == &Entry || B == &Entry)
+        return &Entry;
+    }
 
     // If B dominates A then B is nearest common dominator.
     if (dominates(B, A))
@@ -463,7 +468,7 @@ public:
 
     // Walk NodeB immediate dominators chain and find common dominator node.
     DomTreeNodeBase<NodeT> *IDomB = NodeB->getIDom();
-    while(IDomB) {
+    while (IDomB) {
       if (NodeADoms.count(IDomB) != 0)
         return IDomB->getBlock();
 
@@ -508,8 +513,8 @@ public:
   /// children list. Deletes dominator node associated with basic block BB.
   void eraseNode(NodeT *BB) {
     DomTreeNodeBase<NodeT> *Node = getNode(BB);
-    assert (Node && "Removing node that isn't in dominator tree.");
-    assert (Node->getChildren().empty() && "Node is not a leaf node.");
+    assert(Node && "Removing node that isn't in dominator tree.");
+    assert(Node->getChildren().empty() && "Node is not a leaf node.");
 
       // Remove node from immediate dominator's children list.
     DomTreeNodeBase<NodeT> *IDom = Node->getIDom();
@@ -697,12 +702,11 @@ public:
   static char ID; // Pass ID, replacement for typeid
   DominatorTreeBase<BasicBlock>* DT;
 
-  DominatorTree() : FunctionPass(&ID) {
+  DominatorTree() : FunctionPass(ID) {
     DT = new DominatorTreeBase<BasicBlock>(false);
   }
 
   ~DominatorTree() {
-    DT->releaseMemory();
     delete DT;
   }
 
@@ -886,7 +890,7 @@ protected:
   const bool IsPostDominators;
 
 public:
-  DominanceFrontierBase(void *ID, bool isPostDom)
+  DominanceFrontierBase(char &ID, bool isPostDom)
     : FunctionPass(ID), IsPostDominators(isPostDom) {}
 
   /// getRoots - Return the root blocks of the current CFG.  This may include
@@ -952,7 +956,7 @@ public:
         return true;
     }
 
-    if(!tmpSet.empty())
+    if (!tmpSet.empty())
       // There are nodes that are in DS2 but not in DS1.
       return true;
 
@@ -991,6 +995,9 @@ public:
   /// print - Convert to human readable form
   ///
   virtual void print(raw_ostream &OS, const Module* = 0) const;
+
+  /// dump - Dump the dominance frontier to dbgs().
+  void dump() const;
 };
 
 
@@ -1002,7 +1009,7 @@ class DominanceFrontier : public DominanceFrontierBase {
 public:
   static char ID; // Pass ID, replacement for typeid
   DominanceFrontier() :
-    DominanceFrontierBase(&ID, false) {}
+    DominanceFrontierBase(ID, false) {}
 
   BasicBlock *getRoot() const {
     assert(Roots.size() == 1 && "Should always have entry node!");

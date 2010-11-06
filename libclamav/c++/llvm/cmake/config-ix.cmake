@@ -4,7 +4,7 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckCXXSourceCompiles)
 
-if( UNIX )
+if( UNIX AND NOT BEOS )
   # Used by check_symbol_exists:
   set(CMAKE_REQUIRED_LIBRARIES m)
 endif()
@@ -67,6 +67,7 @@ check_include_file(sys/wait.h HAVE_SYS_WAIT_H)
 check_include_file(termios.h HAVE_TERMIOS_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(utime.h HAVE_UTIME_H)
+check_include_file(valgrind/valgrind.h HAVE_VALGRIND_VALGRIND_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
 # library checks
@@ -213,6 +214,9 @@ if (LLVM_NATIVE_ARCH)
     set(LLVM_NATIVE_ARCH)
   else ()
     message(STATUS "Native target architecture is ${LLVM_NATIVE_ARCH}")
+    set(LLVM_NATIVE_TARGET LLVMInitialize${LLVM_NATIVE_ARCH}Target)
+    set(LLVM_NATIVE_TARGETINFO LLVMInitialize${LLVM_NATIVE_ARCH}TargetInfo)
+    set(LLVM_NATIVE_ASMPRINTER LLVMInitialize${LLVM_NATIVE_ARCH}AsmPrinter)
   endif ()
 endif()
 
@@ -258,9 +262,16 @@ else( ENABLE_THREADS )
   message(STATUS "Threads disabled.")
 endif()
 
+set(LLVM_PREFIX ${CMAKE_INSTALL_PREFIX})
+
 configure_file(
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Config/config.h.cmake
   ${LLVM_BINARY_DIR}/include/llvm/Config/config.h
+  )
+
+configure_file(
+  ${LLVM_MAIN_INCLUDE_DIR}/llvm/Config/llvm-config.h.cmake
+  ${LLVM_BINARY_DIR}/include/llvm/Config/llvm-config.h
   )
 
 configure_file(

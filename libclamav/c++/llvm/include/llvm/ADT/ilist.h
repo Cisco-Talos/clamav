@@ -39,6 +39,7 @@
 #define LLVM_ADT_ILIST_H
 
 #include <cassert>
+#include <cstddef>
 #include <iterator>
 
 namespace llvm {
@@ -613,7 +614,6 @@ public:
 
   template<class Pr3> void sort(Pr3 pred);
   void sort() { sort(op_less); }
-  void reverse();
 };
 
 

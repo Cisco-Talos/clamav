@@ -216,6 +216,14 @@ public:
   static const StringMapEntry &GetStringMapEntryFromValue(const ValueTy &V) {
     return GetStringMapEntryFromValue(const_cast<ValueTy&>(V));
   }
+  
+  /// GetStringMapEntryFromKeyData - Given key data that is known to be embedded
+  /// into a StringMapEntry, return the StringMapEntry itself.
+  static StringMapEntry &GetStringMapEntryFromKeyData(const char *KeyData) {
+    char *Ptr = const_cast<char*>(KeyData) - sizeof(StringMapEntry<ValueTy>);
+    return *reinterpret_cast<StringMapEntry*>(Ptr);
+  }
+  
 
   /// Destroy - Destroy this StringMapEntry, releasing memory back to the
   /// specified allocator.
@@ -246,6 +254,10 @@ public:
   StringMap() : StringMapImpl(static_cast<unsigned>(sizeof(MapEntryTy))) {}
   explicit StringMap(unsigned InitialSize)
     : StringMapImpl(InitialSize, static_cast<unsigned>(sizeof(MapEntryTy))) {}
+  
+  explicit StringMap(AllocatorTy A)
+    : StringMapImpl(static_cast<unsigned>(sizeof(MapEntryTy))), Allocator(A) {}
+
   explicit StringMap(const StringMap &RHS)
     : StringMapImpl(static_cast<unsigned>(sizeof(MapEntryTy))) {
     assert(RHS.empty() &&

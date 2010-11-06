@@ -47,7 +47,7 @@ STATISTIC(NumLCSSA, "Number of live out of a loop variables");
 namespace {
   struct LCSSA : public LoopPass {
     static char ID; // Pass identification, replacement for typeid
-    LCSSA() : LoopPass(&ID) {}
+    LCSSA() : LoopPass(ID) {}
 
     // Cached analysis information for the current function.
     DominatorTree *DT;
@@ -64,22 +64,13 @@ namespace {
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesCFG();
 
-      // LCSSA doesn't actually require LoopSimplify, but the PassManager
-      // doesn't know how to schedule LoopSimplify by itself.
-      AU.addRequiredID(LoopSimplifyID);
-      AU.addPreservedID(LoopSimplifyID);
-      AU.addRequiredTransitive<LoopInfo>();
-      AU.addPreserved<LoopInfo>();
-      AU.addRequiredTransitive<DominatorTree>();
-      AU.addPreserved<ScalarEvolution>();
+      AU.addRequired<DominatorTree>();
       AU.addPreserved<DominatorTree>();
-
-      // Request DominanceFrontier now, even though LCSSA does
-      // not use it. This allows Pass Manager to schedule Dominance
-      // Frontier early enough such that one LPPassManager can handle
-      // multiple loop transformation passes.
-      AU.addRequired<DominanceFrontier>(); 
       AU.addPreserved<DominanceFrontier>();
+      AU.addRequired<LoopInfo>();
+      AU.addPreserved<LoopInfo>();
+      AU.addPreservedID(LoopSimplifyID);
+      AU.addPreserved<ScalarEvolution>();
     }
   private:
     bool ProcessInstruction(Instruction *Inst,
@@ -88,7 +79,7 @@ namespace {
     /// verifyAnalysis() - Verify loop nest.
     virtual void verifyAnalysis() const {
       // Check the special guarantees that LCSSA makes.
-      assert(L->isLCSSAForm() && "LCSSA form not preserved!");
+      assert(L->isLCSSAForm(*DT) && "LCSSA form not preserved!");
     }
 
     /// inLoop - returns true if the given block is within the current loop
@@ -99,10 +90,10 @@ namespace {
 }
   
 char LCSSA::ID = 0;
-static RegisterPass<LCSSA> X("lcssa", "Loop-Closed SSA Form Pass");
+INITIALIZE_PASS(LCSSA, "lcssa", "Loop-Closed SSA Form Pass", false, false);
 
 Pass *llvm::createLCSSAPass() { return new LCSSA(); }
-const PassInfo *const llvm::LCSSAID = &X;
+char &llvm::LCSSAID = LCSSA::ID;
 
 
 /// BlockDominatesAnExit - Return true if the specified block dominates at least
@@ -164,7 +155,7 @@ bool LCSSA::runOnLoop(Loop *TheLoop, LPPassManager &LPM) {
     }
   }
   
-  assert(L->isLCSSAForm());
+  assert(L->isLCSSAForm(*DT));
   PredCache.clear();
 
   return MadeChange;
@@ -190,14 +181,15 @@ bool LCSSA::ProcessInstruction(Instruction *Inst,
   
   for (Value::use_iterator UI = Inst->use_begin(), E = Inst->use_end();
        UI != E; ++UI) {
-    BasicBlock *UserBB = cast<Instruction>(*UI)->getParent();
-    if (PHINode *PN = dyn_cast<PHINode>(*UI))
+    User *U = *UI;
+    BasicBlock *UserBB = cast<Instruction>(U)->getParent();
+    if (PHINode *PN = dyn_cast<PHINode>(U))
       UserBB = PN->getIncomingBlock(UI);
     
     if (InstBB != UserBB && !inLoop(UserBB))
       UsesToRewrite.push_back(&UI.getUse());
   }
-  
+
   // If there are no uses outside the loop, exit with no change.
   if (UsesToRewrite.empty()) return false;
   
@@ -214,7 +206,7 @@ bool LCSSA::ProcessInstruction(Instruction *Inst,
   DomTreeNode *DomNode = DT->getNode(DomBB);
 
   SSAUpdater SSAUpdate;
-  SSAUpdate.Initialize(Inst);
+  SSAUpdate.Initialize(Inst->getType(), Inst->getName());
   
   // Insert the LCSSA phi's into all of the exit blocks dominated by the
   // value, and add them to the Phi's map.

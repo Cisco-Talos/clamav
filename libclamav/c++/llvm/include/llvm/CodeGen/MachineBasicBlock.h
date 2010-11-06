@@ -19,9 +19,9 @@
 
 namespace llvm {
 
+class Pass;
 class BasicBlock;
 class MachineFunction;
-class MCContext;
 class MCSymbol;
 class StringRef;
 class raw_ostream;
@@ -202,12 +202,9 @@ public:
 
   // Iteration support for live in sets.  These sets are kept in sorted
   // order by their register number.
-  typedef std::vector<unsigned>::iterator       livein_iterator;
-  typedef std::vector<unsigned>::const_iterator const_livein_iterator;
-  livein_iterator       livein_begin()       { return LiveIns.begin(); }
-  const_livein_iterator livein_begin() const { return LiveIns.begin(); }
-  livein_iterator       livein_end()         { return LiveIns.end(); }
-  const_livein_iterator livein_end()   const { return LiveIns.end(); }
+  typedef std::vector<unsigned>::const_iterator livein_iterator;
+  livein_iterator livein_begin() const { return LiveIns.begin(); }
+  livein_iterator livein_end()   const { return LiveIns.end(); }
   bool            livein_empty() const { return LiveIns.empty(); }
 
   /// getAlignment - Return alignment of the basic block.
@@ -262,6 +259,11 @@ public:
   /// machine basic block (i.e., copies all the successors fromMBB and
   /// remove all the successors from fromMBB).
   void transferSuccessors(MachineBasicBlock *fromMBB);
+
+  /// transferSuccessorsAndUpdatePHIs - Transfers all the successors, as
+  /// in transferSuccessors, and update PHI operands in the successor blocks
+  /// which refer to fromMBB to refer to this.
+  void transferSuccessorsAndUpdatePHIs(MachineBasicBlock *fromMBB);
   
   /// isSuccessor - Return true if the specified MBB is a successor of this
   /// block.
@@ -280,10 +282,25 @@ public:
   /// branch to do so (e.g., a table jump).  True is a conservative answer.
   bool canFallThrough();
 
+  /// Returns a pointer to the first instructon in this block that is not a 
+  /// PHINode instruction. When adding instruction to the beginning of the
+  /// basic block, they should be added before the returned value, not before
+  /// the first instruction, which might be PHI.
+  /// Returns end() is there's no non-PHI instruction.
+  iterator getFirstNonPHI();
+
   /// getFirstTerminator - returns an iterator to the first terminator
   /// instruction of this basic block. If a terminator does not exist,
   /// it returns end()
   iterator getFirstTerminator();
+
+  /// SplitCriticalEdge - Split the critical edge from this block to the
+  /// given successor block, and return the newly created block, or null
+  /// if splitting is not possible.
+  ///
+  /// This function updates LiveVariables, MachineDominatorTree, and
+  /// MachineLoopInfo, as applicable.
+  MachineBasicBlock *SplitCriticalEdge(MachineBasicBlock *Succ, Pass *P);
 
   void pop_front() { Insts.pop_front(); }
   void pop_back() { Insts.pop_back(); }
@@ -352,7 +369,7 @@ public:
 
   /// getSymbol - Return the MCSymbol for this basic block.
   ///
-  MCSymbol *getSymbol(MCContext &Ctx) const;
+  MCSymbol *getSymbol() const;
   
 private:   // Methods used to maintain doubly linked list of blocks...
   friend struct ilist_traits<MachineBasicBlock>;

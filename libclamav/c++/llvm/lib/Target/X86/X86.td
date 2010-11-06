@@ -55,14 +55,20 @@ def Feature3DNowA  : SubtargetFeature<"3dnowa", "X863DNowLevel", "ThreeDNowA",
 // feature, because SSE2 can be disabled (e.g. for compiling OS kernels)
 // without disabling 64-bit mode.
 def Feature64Bit   : SubtargetFeature<"64bit", "HasX86_64", "true",
-                                      "Support 64-bit instructions">;
+                                      "Support 64-bit instructions",
+                                      [FeatureCMOV]>;
 def FeatureSlowBTMem : SubtargetFeature<"slow-bt-mem", "IsBTMemSlow", "true",
                                        "Bit testing of memory is slow">;
+def FeatureFastUAMem : SubtargetFeature<"fast-unaligned-mem",
+                                        "IsUAMemFast", "true",
+                                        "Fast unaligned memory access">;
 def FeatureSSE4A   : SubtargetFeature<"sse4a", "HasSSE4A", "true",
                                       "Support SSE 4a instructions">;
 
 def FeatureAVX     : SubtargetFeature<"avx", "HasAVX", "true",
                                       "Enable AVX instructions">;
+def FeatureCLMUL   : SubtargetFeature<"clmul", "HasCLMUL", "true",
+                               "Enable carry-less multiplication instructions">;
 def FeatureFMA3    : SubtargetFeature<"fma3", "HasFMA3", "true",
                                      "Enable three-operand fused multiple-add">;
 def FeatureFMA4    : SubtargetFeature<"fma4", "HasFMA4", "true",
@@ -70,6 +76,8 @@ def FeatureFMA4    : SubtargetFeature<"fma4", "HasFMA4", "true",
 def FeatureVectorUAMem : SubtargetFeature<"vector-unaligned-mem",
                                           "HasVectorUAMem", "true",
                  "Allow unaligned memory operands on vector/SIMD instructions">;
+def FeatureAES     : SubtargetFeature<"aes", "HasAES", "true",
+                                      "Enable AES instructions">;
 
 //===----------------------------------------------------------------------===//
 // X86 processors supported.
@@ -97,9 +105,17 @@ def : Proc<"nocona",          [FeatureSSE3,   Feature64Bit, FeatureSlowBTMem]>;
 def : Proc<"core2",           [FeatureSSSE3,  Feature64Bit, FeatureSlowBTMem]>;
 def : Proc<"penryn",          [FeatureSSE41,  Feature64Bit, FeatureSlowBTMem]>;
 def : Proc<"atom",            [FeatureSSE3,   Feature64Bit, FeatureSlowBTMem]>;
-def : Proc<"corei7",          [FeatureSSE42,  Feature64Bit, FeatureSlowBTMem]>;
-def : Proc<"nehalem",         [FeatureSSE42,  Feature64Bit, FeatureSlowBTMem]>;
+// "Arrandale" along with corei3 and corei5
+def : Proc<"corei7",          [FeatureSSE42,  Feature64Bit, FeatureSlowBTMem,
+                               FeatureFastUAMem, FeatureAES]>;
+def : Proc<"nehalem",         [FeatureSSE42,  Feature64Bit, FeatureSlowBTMem,
+                               FeatureFastUAMem]>;
+// Westmere is a similar machine to nehalem with some additional features.
+// Westmere is the corei3/i5/i7 path from nehalem to sandybridge
+def : Proc<"westmere",         [FeatureSSE42,  Feature64Bit, FeatureSlowBTMem,
+                                FeatureFastUAMem, FeatureAES]>;
 // Sandy Bridge does not have FMA
+// FIXME: Wikipedia says it does... it should have AES as well.
 def : Proc<"sandybridge",     [FeatureSSE42,  FeatureAVX,   Feature64Bit]>;
 
 def : Proc<"k6",              [FeatureMMX]>;
@@ -150,31 +166,7 @@ include "X86RegisterInfo.td"
 
 include "X86InstrInfo.td"
 
-def X86InstrInfo : InstrInfo {
-
-  // Define how we want to layout our TargetSpecific information field... This
-  // should be kept up-to-date with the fields in the X86InstrInfo.h file.
-  let TSFlagsFields = ["FormBits",
-                       "hasOpSizePrefix",
-                       "hasAdSizePrefix",
-                       "Prefix",
-                       "hasREX_WPrefix",
-                       "ImmTypeBits",
-                       "FPFormBits",
-                       "hasLockPrefix",
-                       "SegOvrBits",
-                       "Opcode"];
-  let TSFlagsShifts = [0,
-                       6,
-                       7,
-                       8,
-                       12,
-                       13,
-                       16,
-                       19,
-                       20,
-                       24];
-}
+def X86InstrInfo : InstrInfo;
 
 //===----------------------------------------------------------------------===//
 // Calling Conventions
@@ -189,7 +181,7 @@ include "X86CallingConv.td"
 
 // Currently the X86 assembly parser only supports ATT syntax.
 def ATTAsmParser : AsmParser {
-  string AsmParserClassName  = "ATTAsmParser";
+  string AsmParserClassName = "ATTAsmParser";
   int Variant = 0;
 
   // Discard comments in assembly strings.

@@ -41,23 +41,23 @@ STATISTIC(NumNoAlias, "Number of function returns marked noalias");
 namespace {
   struct FunctionAttrs : public CallGraphSCCPass {
     static char ID; // Pass identification, replacement for typeid
-    FunctionAttrs() : CallGraphSCCPass(&ID) {}
+    FunctionAttrs() : CallGraphSCCPass(ID) {}
 
     // runOnSCC - Analyze the SCC, performing the transformation if possible.
-    bool runOnSCC(std::vector<CallGraphNode *> &SCC);
+    bool runOnSCC(CallGraphSCC &SCC);
 
     // AddReadAttrs - Deduce readonly/readnone attributes for the SCC.
-    bool AddReadAttrs(const std::vector<CallGraphNode *> &SCC);
+    bool AddReadAttrs(const CallGraphSCC &SCC);
 
     // AddNoCaptureAttrs - Deduce nocapture attributes for the SCC.
-    bool AddNoCaptureAttrs(const std::vector<CallGraphNode *> &SCC);
+    bool AddNoCaptureAttrs(const CallGraphSCC &SCC);
 
     // IsFunctionMallocLike - Does this function allocate new memory?
     bool IsFunctionMallocLike(Function *F,
                               SmallPtrSet<Function*, 8> &) const;
 
     // AddNoAliasAttrs - Deduce noalias attributes for the SCC.
-    bool AddNoAliasAttrs(const std::vector<CallGraphNode *> &SCC);
+    bool AddNoAliasAttrs(const CallGraphSCC &SCC);
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesCFG();
@@ -69,8 +69,8 @@ namespace {
 }
 
 char FunctionAttrs::ID = 0;
-static RegisterPass<FunctionAttrs>
-X("functionattrs", "Deduce function attributes");
+INITIALIZE_PASS(FunctionAttrs, "functionattrs",
+                "Deduce function attributes", false, false);
 
 Pass *llvm::createFunctionAttrsPass() { return new FunctionAttrs(); }
 
@@ -123,19 +123,19 @@ bool FunctionAttrs::PointsToLocalMemory(Value *V) {
 }
 
 /// AddReadAttrs - Deduce readonly/readnone attributes for the SCC.
-bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
+bool FunctionAttrs::AddReadAttrs(const CallGraphSCC &SCC) {
   SmallPtrSet<Function*, 8> SCCNodes;
 
   // Fill SCCNodes with the elements of the SCC.  Used for quickly
   // looking up whether a given CallGraphNode is in this SCC.
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i)
-    SCCNodes.insert(SCC[i]->getFunction());
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I)
+    SCCNodes.insert((*I)->getFunction());
 
   // Check if any of the functions in the SCC read or write memory.  If they
   // write memory then they can't be marked readnone or readonly.
   bool ReadsMemory = false;
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
-    Function *F = SCC[i]->getFunction();
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+    Function *F = (*I)->getFunction();
 
     if (F == 0)
       // External node - may write memory.  Just give up.
@@ -162,14 +162,14 @@ bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
 
       // Some instructions can be ignored even if they read or write memory.
       // Detect these now, skipping to the next instruction if one is found.
-      CallSite CS = CallSite::get(I);
-      if (CS.getInstruction() && CS.getCalledFunction()) {
+      CallSite CS(cast<Value>(I));
+      if (CS && CS.getCalledFunction()) {
         // Ignore calls to functions in the same SCC.
         if (SCCNodes.count(CS.getCalledFunction()))
           continue;
         // Ignore intrinsics that only access local memory.
         if (unsigned id = CS.getCalledFunction()->getIntrinsicID())
-          if (AliasAnalysis::getModRefBehavior(id) ==
+          if (AliasAnalysis::getIntrinsicModRefBehavior(id) ==
               AliasAnalysis::AccessesArguments) {
             // Check that all pointer arguments point to local memory.
             for (CallSite::arg_iterator CI = CS.arg_begin(), CE = CS.arg_end();
@@ -210,8 +210,8 @@ bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
   // Success!  Functions in this SCC do not access memory, or only read memory.
   // Give them the appropriate attribute.
   bool MadeChange = false;
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
-    Function *F = SCC[i]->getFunction();
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+    Function *F = (*I)->getFunction();
 
     if (F->doesNotAccessMemory())
       // Already perfect!
@@ -239,13 +239,13 @@ bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
 }
 
 /// AddNoCaptureAttrs - Deduce nocapture attributes for the SCC.
-bool FunctionAttrs::AddNoCaptureAttrs(const std::vector<CallGraphNode *> &SCC) {
+bool FunctionAttrs::AddNoCaptureAttrs(const CallGraphSCC &SCC) {
   bool Changed = false;
 
   // Check each function in turn, determining which pointer arguments are not
   // captured.
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
-    Function *F = SCC[i]->getFunction();
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+    Function *F = (*I)->getFunction();
 
     if (F == 0)
       // External node - skip it;
@@ -334,18 +334,18 @@ bool FunctionAttrs::IsFunctionMallocLike(Function *F,
 }
 
 /// AddNoAliasAttrs - Deduce noalias attributes for the SCC.
-bool FunctionAttrs::AddNoAliasAttrs(const std::vector<CallGraphNode *> &SCC) {
+bool FunctionAttrs::AddNoAliasAttrs(const CallGraphSCC &SCC) {
   SmallPtrSet<Function*, 8> SCCNodes;
 
   // Fill SCCNodes with the elements of the SCC.  Used for quickly
   // looking up whether a given CallGraphNode is in this SCC.
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i)
-    SCCNodes.insert(SCC[i]->getFunction());
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I)
+    SCCNodes.insert((*I)->getFunction());
 
   // Check each function in turn, determining which functions return noalias
   // pointers.
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
-    Function *F = SCC[i]->getFunction();
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+    Function *F = (*I)->getFunction();
 
     if (F == 0)
       // External node - skip it;
@@ -370,8 +370,8 @@ bool FunctionAttrs::AddNoAliasAttrs(const std::vector<CallGraphNode *> &SCC) {
   }
 
   bool MadeChange = false;
-  for (unsigned i = 0, e = SCC.size(); i != e; ++i) {
-    Function *F = SCC[i]->getFunction();
+  for (CallGraphSCC::iterator I = SCC.begin(), E = SCC.end(); I != E; ++I) {
+    Function *F = (*I)->getFunction();
     if (F->doesNotAlias(0) || !F->getReturnType()->isPointerTy())
       continue;
 
@@ -383,7 +383,7 @@ bool FunctionAttrs::AddNoAliasAttrs(const std::vector<CallGraphNode *> &SCC) {
   return MadeChange;
 }
 
-bool FunctionAttrs::runOnSCC(std::vector<CallGraphNode *> &SCC) {
+bool FunctionAttrs::runOnSCC(CallGraphSCC &SCC) {
   bool Changed = AddReadAttrs(SCC);
   Changed |= AddNoCaptureAttrs(SCC);
   Changed |= AddNoAliasAttrs(SCC);

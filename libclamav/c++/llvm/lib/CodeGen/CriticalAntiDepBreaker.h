@@ -22,15 +22,18 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/ScheduleDAG.h"
-#include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallSet.h"
 #include <map>
 
 namespace llvm {
+class TargetInstrInfo;
+class TargetRegisterInfo;
+
   class CriticalAntiDepBreaker : public AntiDepBreaker {
     MachineFunction& MF;
     MachineRegisterInfo &MRI;
+    const TargetInstrInfo *TII;
     const TargetRegisterInfo *TRI;
 
     /// AllocatableSet - The set of allocatable registers.
@@ -43,19 +46,18 @@ namespace llvm {
     /// corresponding value is null. If the register is live but used in
     /// multiple register classes, the corresponding value is -1 casted to a
     /// pointer.
-    const TargetRegisterClass *
-      Classes[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<const TargetRegisterClass*> Classes;
 
     /// RegRegs - Map registers to all their references within a live range.
     std::multimap<unsigned, MachineOperand *> RegRefs;
 
     /// KillIndices - The index of the most recent kill (proceding bottom-up),
     /// or ~0u if the register is not live.
-    unsigned KillIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> KillIndices;
 
     /// DefIndices - The index of the most recent complete def (proceding bottom
     /// up), or ~0u if the register is live.
-    unsigned DefIndices[TargetRegisterInfo::FirstVirtualRegister];
+    std::vector<unsigned> DefIndices;
 
     /// KeepRegs - A set of registers which are live and cannot be changed to
     /// break anti-dependencies.
@@ -72,9 +74,9 @@ namespace llvm {
     /// path
     /// of the ScheduleDAG and break them by renaming registers.
     ///
-    unsigned BreakAntiDependencies(std::vector<SUnit>& SUnits,
-                                   MachineBasicBlock::iterator& Begin,
-                                   MachineBasicBlock::iterator& End,
+    unsigned BreakAntiDependencies(const std::vector<SUnit>& SUnits,
+                                   MachineBasicBlock::iterator Begin,
+                                   MachineBasicBlock::iterator End,
                                    unsigned InsertPosIndex);
 
     /// Observe - Update liveness information to account for the current

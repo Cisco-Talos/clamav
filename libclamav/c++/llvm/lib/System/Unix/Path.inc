@@ -276,20 +276,20 @@ Path::GetCurrentDirectory() {
   char pathname[MAXPATHLEN];
   if (!getcwd(pathname,MAXPATHLEN)) {
     assert (false && "Could not query current working directory.");
-    return Path("");
+    return Path();
   }
 
   return Path(pathname);
 }
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined (__NetBSD__) || defined(__minix)
 static int
 test_dir(char buf[PATH_MAX], char ret[PATH_MAX],
     const char *dir, const char *bin)
 {
   struct stat sb;
 
-  snprintf(buf, PATH_MAX, "%s//%s", dir, bin);
+  snprintf(buf, PATH_MAX, "%s/%s", dir, bin);
   if (realpath(buf, ret) == NULL)
     return (1);
   if (stat(buf, &sb) != 0)
@@ -334,7 +334,7 @@ getprogpath(char ret[PATH_MAX], const char *bin)
   free(pv);
   return (NULL);
 }
-#endif // __FreeBSD__
+#endif // __FreeBSD__ || __NetBSD__
 
 /// GetMainExecutable - Return the path to the main executable, given the
 /// value of argv[0] from program startup.
@@ -350,7 +350,7 @@ Path Path::GetMainExecutable(const char *argv0, void *MainAddr) {
     if (realpath(exe_path, link_path))
       return Path(std::string(link_path));
   }
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined (__NetBSD__) || defined(__minix)
   char exe_path[PATH_MAX];
 
   if (getprogpath(exe_path, argv0) != NULL)
@@ -408,7 +408,7 @@ Path::getSuffix() const {
 
   std::string::size_type dot = path.rfind('.');
   if (dot == std::string::npos || dot < slash)
-    return StringRef("");
+    return StringRef();
   else
     return StringRef(path).substr(dot + 1);
 }
@@ -421,10 +421,8 @@ bool Path::getMagicNumber(std::string &Magic, unsigned len) const {
     return false;
   ssize_t bytes_read = ::read(fd, Buf, len);
   ::close(fd);
-  if (ssize_t(len) != bytes_read) {
-    Magic.clear();
+  if (ssize_t(len) != bytes_read)
     return false;
-  }
   Magic.assign(Buf, len);
   return true;
 }
@@ -454,7 +452,7 @@ Path::canWrite() const {
 
 bool
 Path::isRegularFile() const {
-  // Get the status so we can determine if its a file or directory
+  // Get the status so we can determine if it's a file or directory
   struct stat buf;
 
   if (0 != stat(path.c_str(), &buf))
@@ -736,7 +734,7 @@ Path::createTemporaryFileOnDisk(bool reuse_current, std::string* ErrMsg) {
 
 bool
 Path::eraseFromDisk(bool remove_contents, std::string *ErrStr) const {
-  // Get the status so we can determine if its a file or directory
+  // Get the status so we can determine if it's a file or directory.
   struct stat buf;
   if (0 != stat(path.c_str(), &buf)) {
     MakeErrMsg(ErrStr, path + ": can't get status of file");
@@ -858,15 +856,20 @@ Path::makeUnique(bool reuse_current, std::string* ErrMsg) {
 
   // Append an XXXXXX pattern to the end of the file for use with mkstemp,
   // mktemp or our own implementation.
-  std::string Buf(path);
+  // This uses std::vector instead of SmallVector to avoid a dependence on
+  // libSupport. And performance isn't critical here.
+  std::vector<char> Buf;
+  Buf.resize(path.size()+8);
+  char *FNBuffer = &Buf[0];
+    path.copy(FNBuffer,path.size());
   if (isDirectory())
-    Buf += "/XXXXXX";
+    strcpy(FNBuffer+path.size(), "/XXXXXX");
   else
-    Buf += "-XXXXXX";
+    strcpy(FNBuffer+path.size(), "-XXXXXX");
 
 #if defined(HAVE_MKSTEMP)
   int TempFD;
-  if ((TempFD = mkstemp((char*)Buf.c_str())) == -1)
+  if ((TempFD = mkstemp(FNBuffer)) == -1)
     return MakeErrMsg(ErrMsg, path + ": can't make unique filename");
 
   // We don't need to hold the temp file descriptor... we will trust that no one
@@ -874,25 +877,30 @@ Path::makeUnique(bool reuse_current, std::string* ErrMsg) {
   close(TempFD);
 
   // Save the name
-  path = Buf;
+  path = FNBuffer;
 #elif defined(HAVE_MKTEMP)
   // If we don't have mkstemp, use the old and obsolete mktemp function.
-  if (mktemp(Buf.c_str()) == 0)
+  if (mktemp(FNBuffer) == 0)
     return MakeErrMsg(ErrMsg, path + ": can't make unique filename");
 
   // Save the name
-  path = Buf;
+  path = FNBuffer;
 #else
   // Okay, looks like we have to do it all by our lonesome.
   static unsigned FCounter = 0;
-  unsigned offset = path.size() + 1;
-  while (FCounter < 999999 && exists()) {
-    sprintf(Buf.data()+offset, "%06u", ++FCounter);
-    path = Buf;
-  }
-  if (FCounter > 999999)
-    return MakeErrMsg(ErrMsg,
-      path + ": can't make unique filename: too many files");
+  // Try to initialize with unique value.
+  if (FCounter == 0) FCounter = ((unsigned)getpid() & 0xFFFF) << 8;
+  char* pos = strstr(FNBuffer, "XXXXXX");
+  do {
+    if (++FCounter > 0xFFFFFF) {
+      return MakeErrMsg(ErrMsg,
+        path + ": can't make unique filename: too many files");
+    }
+    sprintf(pos, "%06X", FCounter);
+    path = FNBuffer;
+  } while (exists());
+  // POSSIBLE SECURITY BUG: An attacker can easily guess the name and exploit
+  // LLVM.
 #endif
   return false;
 }
