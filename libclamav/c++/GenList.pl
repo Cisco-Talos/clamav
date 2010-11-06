@@ -6,7 +6,7 @@ my $path = $ARGV[0];
 `(cd $path/tools/llvm-config; make ENABLE_OPTIMIZED=0 llvm-config-perobjincl)`;
 
 my %compdeps;
-my @codegencomponents = ('x86codegen','powerpccodegen','armcodegen');
+my @codegencomponents = ('x86codegen','powerpccodegen');
 my @allnonsys = ('support','jit','fullcodegen',@codegencomponents);
 my @allcomponents= ('system',@allnonsys);
 my $allJIT="jit core lib/Support/SourceMgr.o lib/Analysis/PointerTracking.o lib/Transforms/Scalar/DCE.o lib/Analysis/IPA/CallGraph.o";
