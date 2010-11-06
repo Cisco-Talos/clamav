@@ -90,7 +90,6 @@ bool DynamicLibrary::LoadLibraryPermanently(const char *Filename,
   OpenedHandles->push_back(H);
   return false;
 }
-#else
 
 using namespace llvm;
 using namespace llvm::sys;
@@ -100,7 +99,6 @@ bool DynamicLibrary::LoadLibraryPermanently(const char *Filename,
   if (ErrMsg) *ErrMsg = "dlopen() not supported on this platform";
   return true;
 }
-#endif
 
 namespace llvm {
 void *SearchForAddressOfSpecialSymbol(const char* symbolName);
