@@ -250,9 +250,9 @@ int main(int argc, char **argv) {
     case GenCallingConv:
       CallingConvEmitter(Records).run(Out.os());
       break;
-    case GenAsmWriter:
+/*    case GenAsmWriter:
       AsmWriterEmitter(Records).run(Out.os());
-      break;
+      break;*/
     case GenARMDecoder:
       ARMDecoderEmitter(Records).run(Out.os());
       break;
@@ -287,9 +287,9 @@ int main(int argc, char **argv) {
     case GenClangStmtNodes:
       ClangASTNodesEmitter(Records, "Stmt", "").run(Out.os());
       break;
-    case GenDisassembler:
+/*    case GenDisassembler:
       DisassemblerEmitter(Records).run(Out.os());
-      break;
+      break;*/
     case GenOptParserDefs:
       OptParserEmitter(Records, true).run(Out.os());
       break;
