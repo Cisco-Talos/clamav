@@ -24,7 +24,6 @@
 #  error Please define the macro LLVM_ASM_PARSER(TargetName)
 #endif
 
-LLVM_ASM_PARSER(X86)
 
 
 #undef LLVM_ASM_PARSER

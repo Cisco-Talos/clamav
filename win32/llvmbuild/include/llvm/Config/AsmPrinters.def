@@ -24,7 +24,6 @@
 #  error Please define the macro LLVM_ASM_PRINTER(TargetName)
 #endif
 
-LLVM_ASM_PRINTER(X86)
 
 
 #undef LLVM_ASM_PRINTER

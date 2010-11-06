@@ -23,7 +23,6 @@
 #  error Please define the macro LLVM_TARGET(TargetName)
 #endif
 
-LLVM_TARGET(X86)
-
+LLVM_TARGET(X86) 
 
 #undef LLVM_TARGET

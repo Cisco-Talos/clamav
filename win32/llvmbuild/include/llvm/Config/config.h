@@ -467,13 +467,6 @@
 /* Installation directory for config files */
 #undef LLVM_ETCDIR
 
-/* Host triple we were built on */
-#ifdef _WIN64
-#define LLVM_HOSTTRIPLE "x86_64-pc-win32"
-#else
-#define LLVM_HOSTTRIPLE "i686-pc-win32"
-#endif
-
 /* Installation directory for include files */
 #undef LLVM_INCLUDEDIR
 
@@ -621,5 +614,8 @@
 /* Define to a function implementing strdup */
 #define strdup _strdup
 
-/* Native LLVM architecture */
-#define LLVM_NATIVE_ARCH X86Target
+#ifdef _WIN64
+#define LLVM_HOSTTRIPLE "x86_64-pc-win32"
+#else
+#define LLVM_HOSTTRIPLE "i686-pc-win32"
+#endif
