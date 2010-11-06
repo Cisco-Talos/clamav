@@ -20,15 +20,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\LiveVariables.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineFunctionPrinterPass.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\ProfileInfo.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCAssembler.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineLoopInfo.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\DebugLoc.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\PostRAHazardRecognizer.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\AliasSetTracker.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSectionMachO.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ScheduleDAG.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\UnreachableBlockElim.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\PassRegistry.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCInst.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSectionCOFF.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineDominators.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\ExecutionEngine\JIT\JIT.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineFunction.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\SmallVector.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSymbol.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\ConstantMerge.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\GlobalDCE.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\GlobalOpt.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\ADCE.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SCCP.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyCFGPass.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\IRBuilder.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\PrettyStackTrace.cpp"/>
@@ -44,7 +54,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\APInt.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\TargetLoweringObjectFile.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\IPA\CallGraph.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\LLVMContext.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\ConstantRange.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\Globals.cpp"/>

@@ -20,9 +20,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\SSEDomainFix.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\ELFObjectWriter.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\WinCOFFStreamer.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86SelectionDAGInfo.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\WinCOFFObjectWriter.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MachObjectWriter.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCObjectWriter.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCELFStreamer.cpp"/>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCObjectStreamer.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86AsmBackend.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86ISelLowering.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86FloatingPointRegKill.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCCodeEmitter.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86FloatingPoint.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86FastISel.cpp"/>
@@ -39,7 +48,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86Subtarget.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86COFFMachineModuleInfo.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86MCAsmInfo.cpp"/>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86MCTargetExpr.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86TargetMachine.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86TargetObjectFile.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCAsmInfoCOFF.cpp"/>

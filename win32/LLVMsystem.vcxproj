@@ -20,6 +20,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\System\Valgrind.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\System\Path.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\System\ThreadLocal.cpp"/>
     <ClCompile Include="..\libclamav\c++\llvm\lib\System\Memory.cpp"/>
