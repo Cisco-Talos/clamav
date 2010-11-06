@@ -1558,10 +1558,11 @@ dnl Configure the RPM spec file for LLVM
 AC_CONFIG_FILES([llvm.spec])
 
 dnl Configure llvmc's Base plugin
-AC_CONFIG_FILES([tools/llvmc/src/Base.td])
+dnl ClamAV local: no tools
+dnl AC_CONFIG_FILES([tools/llvmc/src/Base.td])
 
 dnl Do the first stage of configuration for llvm-config.in.
-AC_CONFIG_FILES([tools/llvm-config/llvm-config.in])
+dnl AC_CONFIG_FILES([tools/llvm-config/llvm-config.in])
 
 dnl Do special configuration of Makefiles
 AC_CONFIG_COMMANDS([setup],,[llvm_src="${srcdir}"])
