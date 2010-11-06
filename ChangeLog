@@ -1,3 +1,7 @@
+Sat Nov  6 15:47:01 EET 2010 (edwin)
+------------------------------------
+ * libclamav/c++: Update embedded copy of LLVM to version 2.8 (bb #2327)
+
 Fri Nov  5 16:40:31 CET 2010 (tk)
 ---------------------------------
  * freshclam: make query format backward compatible
