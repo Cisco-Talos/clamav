@@ -54,6 +54,7 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Support/Debug.h"
 
+#define LLVM28
 #ifdef LLVM28
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
 #else

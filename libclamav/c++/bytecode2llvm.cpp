@@ -66,6 +66,9 @@
 #include "llvm/System/Signals.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/System/Threading.h"
+
+void LLVMInitializeX86AsmPrinter();
+void LLVMInitializePowerPCAsmPrinter();
 #include "llvm/Target/TargetSelect.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetOptions.h"
@@ -130,6 +133,7 @@ struct cli_bcengine {
 extern "C" uint8_t cli_debug_flag;
 namespace {
 
+#define LLVM28
 #ifdef LLVM28
 #define llvm_report_error(x) report_fatal_error(x)
 #define llvm_install_error_handler(x) install_fatal_error_handler(x)
