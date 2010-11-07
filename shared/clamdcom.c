@@ -31,7 +31,6 @@
 #endif
 #include <fcntl.h>
 #include <errno.h>
-#include <libgen.h>
 
 #include "shared/output.h"
 #include "shared/clamdcom.h"
@@ -118,3 +117,4 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 	}
     }
 }
+
