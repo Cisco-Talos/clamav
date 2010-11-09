@@ -80,7 +80,7 @@ pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 FILE *logg_fp = NULL;
 
-short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1;
+short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1, logg_noflush = 0;
 unsigned int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -329,6 +329,7 @@ int logg(const char *str, ...)
 	}
 
 	if(logg_fp) {
+	    char flush = !logg_noflush;
             /* Need to avoid logging time for verbose messages when logverbose
                is not set or we get a bunch of timestamps in the log without
                newlines... */
@@ -343,9 +344,11 @@ int logg(const char *str, ...)
 
 	    if(*buff == '!') {
 		fprintf(logg_fp, "ERROR: %s", buff + 1);
+		flush = 1;
 	    } else if(*buff == '^') {
 		if(!logg_nowarn)
 		    fprintf(logg_fp, "WARNING: %s", buff + 1);
+		flush = 1;
 	    } else if(*buff == '*' || *buff == '$') {
 		    fprintf(logg_fp, "%s", buff + 1);
 	    } else if(*buff == '#' || *buff == '~') {
@@ -353,7 +356,8 @@ int logg(const char *str, ...)
 	    } else
 		fprintf(logg_fp, "%s", buff);
 
-	    fflush(logg_fp);
+	    if (flush)
+		fflush(logg_fp);
 	}
     }
 

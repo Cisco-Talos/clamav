@@ -61,6 +61,7 @@ BOOL init() {
     logg_time = 1;
     logg_size = -1;
     logg_file = strdup(whereami);
+    logg_noflush = 1;/* only flush on errors and warnings */
     if(!logg_file)
 	return FALSE;
     if(logg("ClamAV core initialized\n"))
