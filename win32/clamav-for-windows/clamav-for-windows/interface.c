@@ -23,6 +23,7 @@
 
 #include "clamav.h"
 #include "shared/output.h"
+#include "mpool.h"
 #include "clscanapi.h"
 #include "interface.h"
 
@@ -184,11 +185,12 @@ static int sigload_callback(const char *type, const char *name, void *context) {
 /* Must be called with engine_mutex locked ! */
 static int load_db(void) {
     int ret;
+    size_t used, total;
     unsigned int signo = 0;
     INFN();
 
     cl_engine_set_clcb_sigload(engine, sigload_callback, NULL);
-    if((ret = cl_load(dbdir, engine, &signo, CL_DB_STDOPT & ~CL_DB_PHISHING & ~CL_DB_PHISHING_URLS & CL_DB_OFFICIAL_ONLY)) != CL_SUCCESS) {
+    if((ret = cl_load(dbdir, engine, &signo, CL_DB_STDOPT & ~CL_DB_PHISHING & ~CL_DB_PHISHING_URLS)) != CL_SUCCESS) {
 	cl_engine_free(engine);
 	engine = NULL;
 	FAIL(ret, "Failed to load database: %s", cl_strerror(ret));
@@ -201,6 +203,10 @@ static int load_db(void) {
     }
 
     logg("load_db: loaded %d signatures\n", signo);
+    if (!mpool_getstats(engine, &used, &total)) {
+	logg("load_db: memory %.3f MB / %.3f MB\n",
+	     used/(1024*1024.0), total/(1024*1024.0));
+    }
     WIN();
 }
 
