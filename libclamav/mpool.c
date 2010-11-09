@@ -434,6 +434,7 @@ void mpool_flush(struct MP *mp) {
 	mp->u.mpm.size = mused - sizeof(*mp);
     }
     used += mp->u.mpm.size;
+    cli_dbgmsg("pool memory used: %.3f MB\n", used/(1024*1024.0));
     spam("Map flushed @%p, in use: %lu\n", mp, used);
 }
 

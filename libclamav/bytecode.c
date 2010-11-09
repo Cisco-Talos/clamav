@@ -2411,6 +2411,11 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
     int rc;
     struct cli_bc_ctx *ctx;
 
+    if (!bcs->count) {
+	cli_dbgmsg("No bytecodes loaded, not running builtin test\n");
+	return CL_SUCCESS;
+    }
+
     cli_detect_environment(&bcs->env);
     switch (bcs->env.arch) {
 	case arch_i386:
