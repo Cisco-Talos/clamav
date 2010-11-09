@@ -189,6 +189,7 @@ static int load_db(void) {
 
     cl_engine_set_clcb_sigload(engine, sigload_callback, NULL);
     if((ret = cl_load(dbdir, engine, &signo, CL_DB_STDOPT & ~CL_DB_PHISHING & ~CL_DB_PHISHING_URLS & CL_DB_OFFICIAL_ONLY)) != CL_SUCCESS) {
+	cl_engine_free(engine);
 	engine = NULL;
 	FAIL(ret, "Failed to load database: %s", cl_strerror(ret));
     }
