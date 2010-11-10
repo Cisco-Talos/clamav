@@ -45,6 +45,7 @@ BOOL init() {
     *slash='\0';
     SetDllDirectory(whereami);
     __try {
+	cl_set_clcb_msg(msg_callback);
 	ret = cl_init(CL_INIT_DEFAULT);
     }
     __except(EXCEPTION_EXECUTE_HANDLER) { ret = 1; }

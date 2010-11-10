@@ -21,5 +21,6 @@
 #define __INTERFACE_H
 
 BOOL interface_setup(void);
+void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx);
 
 #endif

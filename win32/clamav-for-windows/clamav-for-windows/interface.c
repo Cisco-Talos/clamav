@@ -818,3 +818,25 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 	logg("^Database reload requested received while reload is pending\n");
     InterlockedDecrement(&reload_waiters);
 }
+
+void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx)
+{
+    struct scan_ctx *sctx = (struct scan_ctx*)ctx;
+    const void *instance = sctx ? sctx->inst : NULL;
+    int fd = sctx ? sctx->entryfd : -1;
+    char sv;
+    switch (severity) {
+	case CL_MSG_ERROR:
+	    sv = '!';
+	    break;
+	case CL_MSG_WARN:
+	    sv = '^';
+	    break;
+	default:
+	    sv = '*';
+	    break;
+    }
+
+    logg("%c[LibClamAV] (instance %p, clamav context %p, fd %d): %s",
+	 sv, instance, sctx, fd, msg);
+}
