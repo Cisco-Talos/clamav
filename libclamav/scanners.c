@@ -2356,8 +2356,11 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	 * in raw mode. Now we will try to unpack them
 	 */
 	case CL_TYPE_MSEXE:
-	    if(SCAN_PE && ctx->dconf->pe)
+	    if(SCAN_PE && ctx->dconf->pe) {
+		unsigned int corrupted_input = ctx->corrupted_input;
 		ret = cli_scanpe(ctx);
+		ctx->corrupted_input = corrupted_input;
+	    }
 	    break;
 	default:
 	    break;

@@ -1,3 +1,7 @@
+Wed Nov 10 16:31:49 CET 2010 (acab)
+-----------------------------------
+ * libclamav: Set the unreliability flag on (un)packed files (bb#2307)
+
 Sat Nov  6 15:47:01 EET 2010 (edwin)
 ------------------------------------
  * libclamav/c++: Update embedded copy of LLVM to version 2.8 (bb #2327)

@@ -1348,6 +1348,11 @@ int cli_scanpe(cli_ctx *ctx)
 	    }
     }
 
+
+    /* !!!!!!!!!!!!!!    PACKERS START HERE    !!!!!!!!!!!!!! */
+    ctx->corrupted_input = 2; /* caller will reset on return */
+
+
     /* UPX, FSG, MEW support */
 
     /* try to find the first section with physical size == 0 */
