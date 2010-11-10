@@ -176,15 +176,11 @@ void cli_dbgmsg_internal(const char *str, ...);
 
 class ScopedExceptionHandler {
     public:
-	bool Set() {
-	    if (setjmp(env) == 0) {
-		/* set the exception handler's return location to here for the
-		 * current thread */
-		ExceptionReturn.set((const jmp_buf*)&env);
-		return true;
-	    }
-	    cli_warnmsg("[JIT]: recovered from error\n");
-	    return false;
+	jmp_buf &getEnv() { return env;}
+	void Set() {
+	    /* set the exception handler's return location to here for the
+	     * current thread */
+	    ExceptionReturn.set((const jmp_buf*)&env);
 	}
 	~ScopedExceptionHandler() {
 	    /* leaving scope, remove exception handler for current thread */
@@ -193,10 +189,17 @@ class ScopedExceptionHandler {
     private:
 	jmp_buf env;
 };
+#define HANDLER_TRY(handler) \
+    if (setjmp(handler.getEnv()) == 0) {\
+	handler.Set();
+
+#define HANDLER_END(handler) \
+    } else cli_warnmsg("[Bytecode JIT]: recovered from error\n");
+
 
 void do_shutdown() {
     ScopedExceptionHandler handler;
-    if (handler.Set()) {
+    HANDLER_TRY(handler) {
 	// TODO: be on the safe side, and clear errors here,
 	// otherwise destructor calls report_fatal_error
 	((class raw_fd_ostream&)errs()).clear_error();
@@ -205,6 +208,7 @@ void do_shutdown() {
 
 	((class raw_fd_ostream&)errs()).clear_error();
     }
+    HANDLER_END(handler);
     remove_fatal_error_handler();
 }
 
@@ -1836,12 +1840,13 @@ static int bytecode_execute(intptr_t code, struct cli_bc_ctx *ctx)
 {
     ScopedExceptionHandler handler;
     // execute;
-    if (handler.Set()) {
+    HANDLER_TRY(handler) {
 	// setup exception handler to longjmp back here
 	uint32_t result = ((uint32_t (*)(struct cli_bc_ctx *))(intptr_t)code)(ctx);
 	*(uint32_t*)ctx->values = result;
 	return 0;
     }
+    HANDLER_END(handler);
     cli_warnmsg("[Bytecode JIT]: JITed code intercepted runtime error!\n");
     return CL_EBYTECODE;
 }
@@ -1943,10 +1948,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
   ScopedExceptionHandler handler;
   LLVMApiScopedLock scopedLock;
   // setup exception handler to longjmp back here
-  if (!handler.Set()) {
-      cli_errmsg("[Bytecode JIT] *** FATAL error encountered during bytecode generation\n");
-      return CL_EBYTECODE;
-  }
+  HANDLER_TRY(handler) {
   // LLVM itself never throws exceptions, but operator new may throw bad_alloc
   try {
     Module *M = new Module("ClamAV jit module", bcs->engine->Context);
@@ -2130,6 +2132,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
       cli_errmsg("[Bytecode JIT]: Unexpected unknown exception occured\n");
       return CL_EBYTECODE;
   }
+  return 0;
+  } HANDLER_END(handler);
+  cli_errmsg("[Bytecode JIT] *** FATAL error encountered during bytecode generation\n");
+  return CL_EBYTECODE;
 }
 
 int bytecode_init(void)
