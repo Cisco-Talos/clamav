@@ -154,25 +154,82 @@ static void UpgradeCall(CallInst *&C, Function *Intr)
     UpgradeIntrinsicCall(C, New);
 }
 
+extern "C" {
+#ifdef __GNUC__
+void cli_errmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
+void cli_errmsg(const char *str, ...);
+#endif
+
+#ifdef __GNUC__
+void cli_warnmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
+void cli_warnmsg(const char *str, ...);
+#endif
+
+#ifdef __GNUC__
+void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
+void cli_dbgmsg_internal(const char *str, ...);
+#endif
+}
+
+class ScopedExceptionHandler {
+    public:
+	bool Set() {
+	    if (setjmp(env) == 0) {
+		/* set the exception handler's return location to here for the
+		 * current thread */
+		ExceptionReturn.set((const jmp_buf*)&env);
+		return true;
+	    }
+	    cli_warnmsg("[JIT]: recovered from error\n");
+	    return false;
+	}
+	~ScopedExceptionHandler() {
+	    /* leaving scope, remove exception handler for current thread */
+	    ExceptionReturn.erase();
+	}
+    private:
+	jmp_buf env;
+};
+
 void do_shutdown() {
-    llvm_shutdown();
+    ScopedExceptionHandler handler;
+    if (handler.Set()) {
+	// TODO: be on the safe side, and clear errors here,
+	// otherwise destructor calls report_fatal_error
+	((class raw_fd_ostream&)errs()).clear_error();
+
+	llvm_shutdown();
+
+	((class raw_fd_ostream&)errs()).clear_error();
+    }
 }
 
 static void NORETURN jit_exception_handler(void)
 {
-    longjmp(*(jmp_buf*)(ExceptionReturn.get()), 1);
+    jmp_buf* buf = (jmp_buf*)ExceptionReturn.get();
+    if (buf) {
+	// For errors raised during bytecode generation and execution.
+	longjmp(*buf, 1);
+    } else {
+	// Oops, got no error recovery pointer set up,
+	// this is probably an error raised during shutdown.
+	cli_errmsg("[Bytecode JIT]: exception handler called, but no recovery point set up");
+    }
 }
 
 static void NORETURN jit_ssp_handler(void)
 {
-    errs() << "Bytecode JIT: *** stack smashing detected, bytecode aborted\n";
+    cli_errmsg("[Bytecode JIT]: *** stack smashing detected, bytecode aborted\n");
     jit_exception_handler();
 }
 
 void llvm_error_handler(void *user_data, const std::string &reason)
 {
     // Output it to stderr, it might exceed the 1k/4k limit of cli_errmsg
-    errs() << MODULE << reason;
+    cli_errmsg("[Bytecode JIT]: [LLVM error] %s\n", reason.c_str());
     jit_exception_handler();
 }
 
@@ -1738,26 +1795,22 @@ static void *bytecode_watchdog(void *arg)
     pthread_mutex_unlock(&w->mutex);
     if (ret == ETIMEDOUT) {
 	*w->timeout = 1;
-	errs() << "Bytecode run timed out, timeout flag set\n";
+	cli_warnmsg("[Bytecode JIT]: Bytecode run timed out, timeout flag set\n");
     }
     return NULL;
 }
 
 static int bytecode_execute(intptr_t code, struct cli_bc_ctx *ctx)
 {
-    jmp_buf env;
+    ScopedExceptionHandler handler;
     // execute;
-    if (setjmp(env) == 0) {
+    if (handler.Set()) {
 	// setup exception handler to longjmp back here
-	ExceptionReturn.set((const jmp_buf*)&env);
 	uint32_t result = ((uint32_t (*)(struct cli_bc_ctx *))(intptr_t)code)(ctx);
 	*(uint32_t*)ctx->values = result;
 	return 0;
     }
-    errs() << "\n";
-    errs().changeColor(raw_ostream::RED, true) << MODULE
-	<< "*** JITed code intercepted runtime error!\n";
-    errs().resetColor();
+    cli_warnmsg("[Bytecode JIT]: JITed code intercepted runtime error!\n");
     return CL_EBYTECODE;
 }
 
@@ -1854,15 +1907,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
   if (!bcs->engine)
       return CL_EBYTECODE;
-  jmp_buf env;
+  ScopedExceptionHandler handler;
   LLVMApiScopedLock scopedLock;
   // setup exception handler to longjmp back here
-  ExceptionReturn.set((const jmp_buf*)&env);
-  if (setjmp(env) != 0) {
-      errs() << "\n";
-      errs().changeColor(raw_ostream::RED, true) << MODULE 
-      << "*** FATAL error encountered during bytecode generation\n";
-      errs().resetColor();
+  if (!handler.Set()) {
+      cli_errmsg("[Bytecode JIT] *** FATAL error encountered during bytecode generation\n");
       return CL_EBYTECODE;
   }
   // LLVM itself never throws exceptions, but operator new may throw bad_alloc
