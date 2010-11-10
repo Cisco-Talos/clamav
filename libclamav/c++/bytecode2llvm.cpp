@@ -205,6 +205,7 @@ void do_shutdown() {
 
 	((class raw_fd_ostream&)errs()).clear_error();
     }
+    remove_fatal_error_handler();
 }
 
 static void NORETURN jit_exception_handler(void)
@@ -217,6 +218,9 @@ static void NORETURN jit_exception_handler(void)
 	// Oops, got no error recovery pointer set up,
 	// this is probably an error raised during shutdown.
 	cli_errmsg("[Bytecode JIT]: exception handler called, but no recovery point set up");
+	// should never happen, we remove the error handler when we don't use
+	// LLVM anymore, and when we use it, we do set an error recovery point.
+	assert(0 && "[Bytecode JIT]: no exception handler recovery installed, but exception hit!");
     }
 }
 
