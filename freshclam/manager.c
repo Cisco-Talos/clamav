@@ -1887,7 +1887,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	    return 70;
 	}
 	*pt = 0;
-	rpath = &url[pt - urlcpy];
+	rpath = &url[pt - urlcpy + 1];
 	dbname = strrchr(url, '/') + 1;
 	if(!dbname || strlen(dbname) < 4) {
 	    logg("DatabaseCustomURL: Incorrect URL\n");
