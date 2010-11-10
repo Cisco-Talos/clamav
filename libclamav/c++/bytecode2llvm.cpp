@@ -330,10 +330,8 @@ public:
     {
 	if (!cli_debug_flag)
 	    return;
-	errs() << "bytecode JIT: emitted function " << F.getName() << 
-	    " of " << Size << " bytes at 0x";
-	errs().write_hex((uintptr_t)Code);
-	errs() << "\n";
+	cli_dbgmsg_internal("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
+			    F.getNameStr().c_str(), (long)Size, Code);
     }
 };
 
@@ -781,9 +779,14 @@ private:
 		isa<PointerType>(Ty))
 		V = Builder.CreateBitCast(V, Ty);
 	    if (V->getType() != Ty) {
-		errs() << operand << " ";
-		V->dump();
-		Ty->dump();
+		if (cli_debug_flag) {
+		    std::string str;
+		    raw_string_ostream ostr(str);
+		    ostr << operand << " " ;
+		    V->print(ostr);
+		    Ty->print(ostr);
+		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+		}
 		llvm_report_error("(libclamav) Type mismatch converting operand");
 	    }
 	    return V;
@@ -944,17 +947,25 @@ public:
     Value* createGEP(Value *Base, const Type *ETy, InputIterator Start, InputIterator End) {
 	const Type *Ty = GetElementPtrInst::getIndexedType(Base->getType(), Start, End);
 	if (!Ty || (ETy && (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy))))) {
-	    errs() << MODULE << "Wrong indices for GEP opcode: "
-		<< " expected type: " << *ETy;
-	    if (Ty)
-		errs() << " actual type: " << *Ty;
-	    errs() << " base: " << *Base << ";";
-	    Base->getType()->dump();
-	    errs() << "\n indices: ";
-	    for (InputIterator I=Start; I != End; I++) {
-		errs() << **I << ", ";
+	    if (cli_debug_flag) {
+		std::string str;
+		raw_string_ostream ostr(str);
+
+		ostr << "Wrong indices for GEP opcode: "
+		    << " expected type: " << *ETy;
+		if (Ty)
+		    ostr << " actual type: " << *Ty;
+		ostr << " base: " << *Base << ";";
+		Base->getType()->print(ostr);
+		ostr << "\n indices: ";
+		for (InputIterator I=Start; I != End; I++) {
+		    ostr << **I << ", ";
+		}
+		ostr << "\n";
+		cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+	    } else {
+		cli_warnmsg("[Bytecode JIT]: Wrong indices for GEP opcode\n");
 	    }
-	    errs() << "\n";
 	    return 0;
 	}
 	return Builder.CreateGEP(Base, Start, End);
@@ -966,7 +977,8 @@ public:
 	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
 	Value *V = createGEP(Base, ETy, Start, End);
 	if (!V) {
-	    errs() << "@ " << dest << "\n";
+	    if (cli_debug_flag)
+		cli_dbgmsg_internal("[Bytecode JIT] @%d\n", dest);
 	    return false;
 	}
 	V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
@@ -1178,8 +1190,13 @@ public:
 		    };
 		    globals[i] = createGEP(SpecialGV, 0, C, C+1);
 		    if (!globals[i]) {
-			errs() << i << ":" << g << ":" << bc->globals[i][0] <<"\n";
-			Ty->dump();
+			if (cli_debug_flag) {
+			    std::string str;
+			    raw_string_ostream ostr(str);
+			    ostr << i << ":" << g << ":" << bc->globals[i][0] <<"\n";
+			    Ty->print(ostr);
+			    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+			}
 			llvm_report_error("(libclamav) unable to create fake global");
 		    }
 		    globals[i] = Builder.CreateBitCast(globals[i], Ty);
@@ -1335,7 +1352,7 @@ public:
 			    BasicBlock *True = BB[inst->u.branch.br_true];
 			    BasicBlock *False = BB[inst->u.branch.br_false];
 			    if (Cond->getType() != Type::getInt1Ty(Context)) {
-				errs() << MODULE << "type mismatch in condition\n";
+				cli_warnmsg("[Bytecode JIT]: type mismatch in condition");
 				return 0;
 			    }
 			    Builder.CreateCondBr(Cond, True, False);
@@ -1593,17 +1610,22 @@ public:
 				break;
 			    }
 			default:
-			    errs() << MODULE << "JIT doesn't implement opcode " <<
-				inst->opcode << " yet!\n";
+			    cli_warnmsg("[Bytecode JIT]: JIT doesn't implement opcode %d yet!\n",
+					inst->opcode);
 			    return 0;
 		    }
 		}
 	    }
 
 	    if (verifyFunction(*F, PrintMessageAction)) {
-		errs() << MODULE << "Verification failed\n";
-		F->dump();
 		// verification failed
+		cli_warnmsg("[Bytecode JIT]: Verification failed\n");
+		if (cli_debug_flag) {
+		    std::string str;
+		    raw_string_ostream ostr(str);
+		    F->print(ostr);
+		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+		}
 		return 0;
 	    }
 	    delete [] Values;
@@ -1637,7 +1659,7 @@ public:
 
 	// If prototype matches, add to callable functions
 	if (Functions[0]->getFunctionType() != Callable) {
-	    errs() << "Wrong prototype for function 0 in bytecode " << bc->id << "\n";
+	    cli_warnmsg("[Bytecode JIT]: Wrong prototype for function 0 in bytecode %d\n",  bc->id);
 	    return 0;
 	}
 	// All functions have the Fast calling convention, however
@@ -1837,10 +1859,10 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     // if needed.
     void *code = bcs->engine->compiledFunctions[func];
     if (!code) {
-	errs() << MODULE << "Unable to find compiled function\n";
+	cli_warnmsg("[Bytecode JIT]: Unable to find compiled function\n");
 	if (func->numArgs)
-	    errs() << MODULE << "Function has "
-		<< (unsigned)func->numArgs << " arguments, it must have 0 to be called as entrypoint\n";
+	    cli_warnmsg("[Bytecode JIT] Function has %d arguments, it must have 0 to be called as entrypoint\n",
+			func->numArgs);
 	return CL_EBYTECODE;
     }
     gettimeofday(&tv0, NULL);
@@ -1863,9 +1885,8 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 	/* only spawn if timeout is set.
 	 * we don't set timeout for selfcheck (see bb #2235) */
 	if ((ret = pthread_create(&thread, NULL, bytecode_watchdog, &w))) {
-	    errs() << "Bytecode: failed to create new thread!";
-	    errs() << cli_strerror(ret, buf, sizeof(buf));
-	    errs() << "\n";
+	    cli_warnmsg("[Bytecode JIT]: Bytecode: failed to create new thread :%s!\n",
+			cli_strerror(ret, buf, sizeof(buf)));
 	    return CL_EBYTECODE;
 	}
     }
@@ -1880,10 +1901,12 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     }
 
     if (cli_debug_flag) {
+	long diff;
 	gettimeofday(&tv1, NULL);
 	tv1.tv_sec -= tv0.tv_sec;
 	tv1.tv_usec -= tv0.tv_usec;
-	errs() << "bytecode finished in " << (tv1.tv_sec*1000000 + tv1.tv_usec) << "us\n";
+	diff = tv1.tv_sec*1000000 + tv1.tv_usec;
+	cli_dbgmsg_internal("bytecode finished in %ld us\n", diff);
     }
     return ctx->timeout ? CL_ETIMEOUT : ret;
 }
@@ -1937,9 +1960,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	ExecutionEngine *EE = bcs->engine->EE = builder.create();
 	if (!EE) {
 	    if (!ErrorMsg.empty())
-		errs() << MODULE << "error creating execution engine: " << ErrorMsg << "\n";
+		cli_errmsg("[Bytecode JIT]: error creating execution engine: %s\n",
+			   ErrorMsg.c_str());
 	    else
-		errs() << MODULE << "JIT not registered?\n";
+		cli_errmsg("[Bytecode JIT]: JIT not registered?\n");
 	    return CL_EBYTECODE;
 	}
 	bcs->engine->Listener  = new NotifyListener();
@@ -2044,7 +2068,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 				OurFPM, OurFPMUnsigned, apiFuncs, apiMap);
 	    Function *F = Codegen.generate();
 	    if (!F) {
-		errs() << MODULE << "JIT codegen failed\n";
+		cli_errmsg("[Bytecode JIT]: JIT codegen failed\n");
 		return CL_EBYTECODE;
 	    }
 	    Functions[i] = F;
@@ -2099,10 +2123,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
     }
     return CL_SUCCESS;
   } catch (std::bad_alloc &badalloc) {
-      errs() << MODULE << badalloc.what() << "\n";
+      cli_errmsg("[Bytecode JIT]: bad_alloc: %s\n",
+		 badalloc.what());
       return CL_EMEM;
   } catch (...) {
-      errs() << MODULE << "Unexpected unknown exception occurred.\n";
+      cli_errmsg("[Bytecode JIT]: Unexpected unknown exception occured\n");
       return CL_EBYTECODE;
   }
 }
@@ -2111,7 +2136,7 @@ int bytecode_init(void)
 {
     // If already initialized return
     if (llvm_is_multithreaded()) {
-	errs() << "bytecode_init: already initialized";
+	cli_warnmsg("bytecode_init: already initialized");
 	return CL_EARG;
     }
     llvm_install_error_handler(llvm_error_handler);
@@ -2276,9 +2301,11 @@ void cli_printcxxver()
 namespace ClamBCModule {
 void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 {
-    if (F && F->hasName())
-	llvm::errs() << "in function " << F->getName() << ": ";
-    llvm::errs() << msg << "\n";
+    if (F && F->hasName()) {
+	cli_warnmsg("[Bytecode JIT] in function %s: %s", F->getNameStr().c_str(), msg);
+    } else {
+	cli_warnmsg("[Bytecode JIT] %s", msg);
+    }
 }
 }
 
