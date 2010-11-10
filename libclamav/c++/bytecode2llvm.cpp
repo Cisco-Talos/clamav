@@ -290,6 +290,9 @@ static void rtlib_bzero(void *s, size_t n)
     memset(s, 0, n);
 }
 
+#ifdef _WIN32
+extern "C" void _chkstk(void);
+#endif
 // Resolve integer libcalls, but nothing else.
 static void* noUnknownFunctions(const std::string& name) {
     void *addr =
@@ -307,6 +310,9 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("memcpy", (void*)(intptr_t)memcpy)
 	.Case("memset", (void*)(intptr_t)memset)
 	.Case("abort", (void*)(intptr_t)jit_exception_handler)
+#ifdef _WIN32
+	.Case("_chkstk", (void*)(intptr_t)_chkstk)
+#endif
 	.Default(0);
     if (addr)
 	return addr;
