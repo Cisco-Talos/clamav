@@ -316,7 +316,7 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("abort", (void*)(intptr_t)jit_exception_handler)
 #ifdef _WIN32
 #ifdef _WIN64
-	.Case("__chkstk", (void*)(intptr_t)_chkstk)
+	.Case("_chkstk", (void*)(intptr_t)__chkstk)
 #else
 	.Case("_chkstk", (void*)(intptr_t)_chkstk)
 #endif
