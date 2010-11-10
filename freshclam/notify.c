@@ -97,11 +97,12 @@ int clamd_connect(const char *cfgfile, const char *option)
 
 #ifdef HAVE_GETADDRINFO
 	memset(&hints, 0, sizeof(hints));
+/*
 #ifdef SUPPORT_IPv6
 	hints.ai_family = AF_UNSPEC;
 #else
+*/
 	hints.ai_family = AF_INET;
-#endif
 	hints.ai_socktype = SOCK_STREAM;
 	snprintf(port, sizeof(port), "%u", (unsigned int) opt->numarg);
 	port[5] = 0;
