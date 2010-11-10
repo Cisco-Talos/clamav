@@ -295,7 +295,11 @@ static void rtlib_bzero(void *s, size_t n)
 }
 
 #ifdef _WIN32
+#ifdef _WIN64
+extern "C" void __chkstk(void);
+#else
 extern "C" void _chkstk(void);
+#endif
 #endif
 // Resolve integer libcalls, but nothing else.
 static void* noUnknownFunctions(const std::string& name) {
