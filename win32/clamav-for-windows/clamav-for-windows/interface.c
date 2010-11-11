@@ -467,6 +467,80 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
     WIN();
 }
 
+
+int CLAMAPI Scan_GetLimit(int option, unsigned int *value) {
+    enum cl_engine_field limit;
+    long long curlimit;
+    int err;
+
+    INFN();
+    if(lock_engine())
+	FAIL(CL_EMEM, "Failed to lock engine");
+    if(!engine) {
+	unlock_engine();
+	FAIL(CL_EARG, "Engine is NULL");
+    }
+    switch((enum CLAM_LIMIT_TYPE)option) {
+    case CLAM_LIMIT_FILESIZE:
+	limit = CL_ENGINE_MAX_FILESIZE;
+	break;
+    case CLAM_LIMIT_SCANSIZE:
+	limit = CL_ENGINE_MAX_SCANSIZE;
+	break;
+    case CLAM_LIMIT_RECURSION:
+	limit = CL_ENGINE_MAX_SCANSIZE;
+	break;
+    default:
+	unlock_engine();
+	FAIL(CL_EARG, "Unsupported limit type: %d", option);
+    }
+    curlimit = cl_engine_get_num(engine, limit, &err);
+    if(err) {
+	unlock_engine();
+	FAIL(err, "Failed to get engine value: %s", cl_strerror(err));
+    }
+    if(curlimit > 0xffffffff)
+	*value = 0xffffffff;
+    else
+	*value = (unsigned int)curlimit;
+    unlock_engine();
+    WIN();
+}
+
+
+int CLAMAPI Scan_SetLimit(int option, unsigned int value) {
+    enum cl_engine_field limit;
+    int err;
+
+    INFN();
+    if(lock_engine())
+	FAIL(CL_EMEM, "Failed to lock engine");
+    if(!engine) {
+	unlock_engine();
+	FAIL(CL_EARG, "Engine is NULL");
+    }
+    switch((enum CLAM_LIMIT_TYPE)option) {
+    case CLAM_LIMIT_FILESIZE:
+	limit = CL_ENGINE_MAX_FILESIZE;
+	break;
+    case CLAM_LIMIT_SCANSIZE:
+	limit = CL_ENGINE_MAX_SCANSIZE;
+	break;
+    case CLAM_LIMIT_RECURSION:
+	limit = CL_ENGINE_MAX_SCANSIZE;
+	break;
+    default:
+	unlock_engine();
+	FAIL(CL_EARG, "Unsupported limit type: %d", option);
+    }
+    err = cl_engine_set_num(engine, limit, (long long)value);
+    unlock_engine();
+    if(err)
+	FAIL(err, "Failed to set engine value: %s", cl_strerror(err));
+    WIN();
+}
+
+
 int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
     HANDLE fhdl;
     int res;
@@ -540,7 +614,6 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     do {
 	CLAM_SCAN_INFO si;
 	CLAM_ACTION act;
-	HANDLE fdhdl;
 	DWORD cbperf;
 	wchar_t wvirname[MAX_VIRNAME_LEN];
 	LONG lo = 0, hi = 0, hi2 = 0;

@@ -44,6 +44,15 @@
 #define CLAMAPI_SUCCESS 0
 
 
+/* CLAMAPI LIMITS */
+/* List of limits configurable via Scan_SetLimit and readable via Scan_GetLimit (see below) */
+enum CLAM_LIMIT_TYPE {
+    CLAM_LIMIT_FILESIZE,
+    CLAM_LIMIT_SCANSIZE,
+    CLAM_LIMIT_RECURSION
+};
+
+
 /* CLAMAPI SCAN OPTIONS */
 /* List of options settable via Scan_SetOption and retrievable via Scan_GetOption (see below)
  * All the options have a corresponding unsigned int value (0 = option disabled / non 0 = option enabled)
@@ -248,6 +257,22 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
  * INPUT/OUTPUT @param pInfoList : list to be freed
  */
 int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST pInfoList);
+
+/*
+ * Get integer based scanning options
+ * ex: License Expiration Time, Count of DB signatures, Last updated time for DB, Major, Minor version of scan library
+ * INPUT @param option : limit type
+ * OUTPUT @param value : limit size in bytes
+ */
+int CLAMAPI Scan_GetLimit(int option, unsigned int *value);
+
+/*
+ * Set integer based scanning options
+ * ex: scan Archives, scan packed samples, scan e-mail databases, scan installers
+ * INPUT @param option : limit type
+ * INPUT @param value : limit size in bytes
+ */
+int CLAMAPI Scan_SetLimit(int option, unsigned int value);
 
 /*
  * Get integer based scanning options
