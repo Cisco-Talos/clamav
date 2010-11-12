@@ -711,7 +711,7 @@ void MyProcessOutput::m_cancel_processOnButtonClick( wxCommandEvent& WXUNUSED(ev
 	if (answer != wxYES)
 	    return;
 	wxLogVerbose("kill pid %ld", pid);
-	wxKillError rc =  wxProcess::Kill(pid, wxSIGTERM);
+	wxKillError rc =  wxProcess::Kill(pid, wxSIGKILL);
 	if (rc != wxKILL_OK) {
 	    wxLogVerbose("kill pid %ld failed: %d", pid, rc);
 	    wxLogWarning(_("Failed to terminate process"));
