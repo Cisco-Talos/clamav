@@ -130,7 +130,7 @@ struct qtm_stream {
   unsigned char header_read;      /* have we started decoding a new frame?   */
   unsigned char wflag;	    /* write flag */
 
-  int error;
+  int error, input_end;
 
   /* data tables */
   unsigned int  position_base[42];

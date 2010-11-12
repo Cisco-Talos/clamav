@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "clamav.h"
 #include "cltypes.h"
@@ -111,6 +112,7 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
     if(cli_checklimits("MSEXPAND", ctx, EC32(hdr.fsize), 0, 0)!=CL_CLEAN)
         return CL_SUCCESS;
 
+    memset(buff, 0, BSIZE);
     while(1) {
 
 	if(!rbytes || (r == rbytes)) {

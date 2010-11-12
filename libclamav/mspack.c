@@ -1610,6 +1610,18 @@ static int qtm_read_input(struct qtm_stream *qtm) {
       return qtm->error = CL_EFORMAT;
   }
 
+  if (nread == 0) {
+    if (qtm->input_end) {
+      cli_dbgmsg("qtm_read_input: out of input bytes\n");
+      return qtm->error = CL_EREAD;
+    }
+    else {
+      nread = 2;
+      qtm->inbuf[0] = qtm->inbuf[1] = 0;
+      qtm->input_end = 1;
+    }
+  }
+
   qtm->i_ptr = &qtm->inbuf[0];
   qtm->i_end = &qtm->inbuf[nread];
   return CL_SUCCESS;
