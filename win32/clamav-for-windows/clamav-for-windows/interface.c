@@ -105,7 +105,7 @@ DWORD WINAPI monitor_thread(VOID *p) {
 	switch(WaitForMultipleObjects(2, harr, FALSE, INFINITE)) {
 	case WAIT_OBJECT_0:
 	    logg("monitor_thread: terminating upon request\n");
-	    FindCloseChangeNotification(fff);
+	    FindCloseChangeNotification(harr[1]);
 	    return 0;
 	case WAIT_OBJECT_0 + 1:
 	    break;
@@ -114,11 +114,9 @@ DWORD WINAPI monitor_thread(VOID *p) {
 	    Sleep(1000);
 	    continue;
 	}
-	FindNextChangeNotification(fff);
-	if((fff = FindFirstFile(watchme, &wfd)) == INVALID_HANDLE_VALUE) {
-	    logg("monitor_thread: failed to find %s - %u\n", watchme, GetLastError());
+	FindNextChangeNotification(harr[1]);
+	if((fff = FindFirstFile(watchme, &wfd)) == INVALID_HANDLE_VALUE)
 	    continue;
-	}
 	FindClose(fff);
 
 	GetSystemTime(&st);
