@@ -388,7 +388,7 @@ static char *sha256file(const char *file, unsigned int *size)
 
 
     sha256_init(&ctx);
-    if(!(fh = fopen(file, "r"))) {
+    if(!(fh = fopen(file, "rb"))) {
 	mprintf("!sha256file: Can't open file %s\n", file);
 	return NULL;
     }
@@ -424,7 +424,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	}
     }
 
-    if(!(fh = fopen(file, "w+"))) {
+    if(!(fh = fopen(file, "wb+"))) {
 	mprintf("!writeinfo: Can't create file %s\n", file);
 	return -1;
     }
@@ -1461,7 +1461,7 @@ static int comparesha(const char *dbname)
 
     snprintf(info, sizeof(info), "%s.info", getdbname(dbname));
 
-    if(!(fh = fopen(info, "r"))) {
+    if(!(fh = fopen(info, "rb"))) {
 	mprintf("!verifydiff: Can't open %s\n", info);
 	return -1;
     }
@@ -1613,14 +1613,14 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
     fprintf(diff, "OPEN %s\n", newpath);
 
-    if(!(new = fopen(newpath, "r"))) {
+    if(!(new = fopen(newpath, "rb"))) {
 	mprintf("!compare: Can't open file %s for reading\n", newpath);
 	free(obuff);
 	free(nbuff);
 	free(tbuff);
 	return -1;
     }
-    old = fopen(oldpath, "r");
+    old = fopen(oldpath, "rb");
 
     while(fgets(nbuff, l1, new)) {
 	i = strlen(nbuff);
@@ -1801,7 +1801,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 	return -1;
     }
 
-    if((fd = open(diff, O_RDONLY)) == -1) {
+    if((fd = open(diff, O_RDONLY | O_BINARY)) == -1) {
 	mprintf("!verifydiff: Can't open diff file %s\n", diff);
 	cli_rmdirs(tempdir);
 	free(tempdir);
@@ -2478,7 +2478,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 	return -1;
     }
 
-    if(!(diff = fopen(patch, "w"))) {
+    if(!(diff = fopen(patch, "wb"))) {
         mprintf("!diffdirs: Can't open %s for writing\n", patch);
 	return -1;
     }
