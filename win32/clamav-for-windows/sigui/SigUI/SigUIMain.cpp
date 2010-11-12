@@ -371,7 +371,7 @@ static wxString GetConfigFile()
     return GetExecPath() + "freshclam.conf";
 }
 SigUIFrame::SigUIFrame(wxFrame *frame)
-    : GUIFrame(frame), val_bytecode(true)
+    : GUIFrame(frame), val_bytecode(true), watcher(0)
 {
     #ifdef _WIN32
     SetIcon(wxIcon(wxT("aaaa")));
