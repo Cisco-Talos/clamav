@@ -37,11 +37,15 @@
 HANDLE reload_event;
 volatile LONG reload_waiters = 0;
 
+HANDLE monitor_event;
+HANDLE monitor_hdl = NULL;
+
 HANDLE engine_mutex;
 /* protects the following items */
 struct cl_engine *engine = NULL;
 char dbdir[PATH_MAX];
 char tmpdir[PATH_MAX];
+FILETIME last_chk_time = {0, 0};
 /* end of protected items */
 
 typedef struct {
@@ -68,6 +72,68 @@ BOOL minimal_definitions = FALSE;
 
 cl_error_t prescan_cb(int fd, void *context);
 cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
+
+
+DWORD WINAPI monitor_thread(VOID *p) {
+    char watchme[PATH_MAX];
+    HANDLE harr[2], fff;
+
+    if(lock_engine()) {
+	logg("monitor_thread: failed to lock engine\n");
+	return 0;
+    }
+
+    snprintf(watchme, sizeof(watchme), "%s\\forcerld", dbdir);
+    watchme[sizeof(watchme)-1] = '\0';
+
+    harr[0] = monitor_event;
+    harr[1] = FindFirstChangeNotification(dbdir, FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
+
+    logg("monitor_thread: watching directory changes on %s\n", dbdir);
+
+    unlock_engine();
+
+    if(harr[1] == INVALID_HANDLE_VALUE) {
+	logg("monitor_thread: failed to monitor directory changes on %s\n", dbdir);
+	return 0;
+    }
+
+    while(1) {
+	WIN32_FIND_DATA wfd;
+	SYSTEMTIME st;
+
+	switch(WaitForMultipleObjects(2, harr, FALSE, INFINITE)) {
+	case WAIT_OBJECT_0:
+	    logg("monitor_thread: terminating upon request\n");
+	    FindCloseChangeNotification(fff);
+	    return 0;
+	case WAIT_OBJECT_0 + 1:
+	    break;
+	default:
+	    logg("monitor_thread: unexpected wait failure - %u\n", GetLastError());
+	    Sleep(1000);
+	    continue;
+	}
+	FindNextChangeNotification(fff);
+	if((fff = FindFirstFile(watchme, &wfd)) == INVALID_HANDLE_VALUE) {
+	    logg("monitor_thread: failed to find %s - %u\n", watchme, GetLastError());
+	    continue;
+	}
+	FindClose(fff);
+
+	GetSystemTime(&st);
+	SystemTimeToFileTime(&st, &wfd.ftCreationTime);
+	if(CompareFileTime(&wfd.ftLastWriteTime, &wfd.ftCreationTime) > 0)
+	    wfd.ftLastWriteTime = wfd.ftCreationTime;
+	if(CompareFileTime(&wfd.ftLastWriteTime, &last_chk_time) <= 0)
+	    continue;
+
+	logg("monitor_thread: reload requested!\n");
+	Scan_ReloadDatabase();
+	GetSystemTime(&st);
+	SystemTimeToFileTime(&st, &last_chk_time); /* FIXME: small race here */
+    }
+}
 
 static wchar_t *threat_type(const char *virname) {
     if(!virname)
@@ -169,7 +235,14 @@ BOOL interface_setup(void) {
 	CloseHandle(engine_mutex);
 	return FALSE;
     }
+    if(!(monitor_event = CreateEvent(NULL, TRUE, FALSE, NULL))) {
+	CloseHandle(reload_event);
+	CloseHandle(engine_mutex);
+	return FALSE;
+    }
     if(!(instance_mutex = CreateMutex(NULL, FALSE, NULL))) {
+	CloseHandle(monitor_event);
+	CloseHandle(reload_event);
 	CloseHandle(engine_mutex);
 	return FALSE;
     }
@@ -182,11 +255,35 @@ static int sigload_callback(const char *type, const char *name, void *context) {
     return 0;
 }
 
+
+/* Must be called with engine_mutex locked ! */
+static void touch_last_update(void) {
+    char touchme[PATH_MAX];
+    HANDLE h;
+
+    snprintf(touchme, sizeof(touchme), "%s\\lastupd", dbdir);
+    touchme[sizeof(touchme)-1] = '\0';
+    if((h = CreateFile(touchme, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE) {
+	DWORD d;
+	snprintf(touchme, sizeof(touchme), "w00t!");
+	touchme[sizeof(touchme)-1] = '\0';
+	if(WriteFile(h, touchme, strlen(touchme), &d, NULL)) {
+	    /* SetEndOfFile(h); */
+	    GetFileTime(h, NULL, NULL, &last_chk_time);
+	}
+	CloseHandle(h);
+    } else
+	logg("touch_lastcheck: failed to touch lastreload\n");
+}
+
+
 /* Must be called with engine_mutex locked ! */
 static int load_db(void) {
-    int ret;
-    size_t used, total;
     unsigned int signo = 0;
+    size_t used, total;
+    int ret;
+
+
     INFN();
 
     cl_engine_set_clcb_sigload(engine, sigload_callback, NULL);
@@ -203,10 +300,11 @@ static int load_db(void) {
     }
 
     logg("load_db: loaded %d signatures\n", signo);
-    if (!mpool_getstats(engine, &used, &total)) {
-	logg("load_db: memory %.3f MB / %.3f MB\n",
-	     used/(1024*1024.0), total/(1024*1024.0));
-    }
+    if (!mpool_getstats(engine, &used, &total))
+	logg("load_db: memory %.3f MB / %.3f MB\n", used/(1024*1024.0), total/(1024*1024.0));
+
+    touch_last_update();
+
     WIN();
 }
 
@@ -257,6 +355,11 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     }
     ret = load_db();
     unlock_engine();
+
+    ResetEvent(monitor_event);
+    if(!(monitor_hdl = CreateThread(NULL, 0, monitor_thread, NULL, 0, NULL)))
+	logg("!Falied to start db monitoring thread\n");
+
     logg("Scan_Initialize: returning %d\n", ret);
     return ret;
 }
@@ -287,6 +390,15 @@ int CLAMAPI Scan_Uninitialize(void) {
     }
     unlock_instances();
     free_engine_and_unlock();
+
+    if(monitor_hdl) {
+	SetEvent(monitor_event);
+	if(WaitForSingleObject(monitor_hdl, 60000) != WAIT_OBJECT_0) {
+	    logg("Scan_Uninitialize: forcibly terminating monitor thread after 60 seconds\n");
+	    TerminateThread(monitor_hdl, 0);
+	}
+    }
+    monitor_hdl = NULL;
     WIN();
 }
 
@@ -825,10 +937,6 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 		continue;
 	    }
 	    logg("Scan_ReloadDatabase: Now idle, acquiring engine lock\n");
-    	    if(lock_engine()) {
-		logg("!Scan_ReloadDatabase: failed to lock engine\n");
-		break;
-	    }
 	    if(lock_engine()) {
 		logg("!Scan_ReloadDatabase: failed to lock engine\n");
 		break;
@@ -861,7 +969,6 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 
 	    // NEW STUFF //
 	    if(!(engine = cl_engine_new())) {
-		unlock_engine();
 		logg("!Scan_ReloadDatabase: Not enough memory for a new engine\n");
 		unlock_instances();
 		unlock_engine();
