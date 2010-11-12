@@ -87,7 +87,7 @@ DWORD WINAPI monitor_thread(VOID *p) {
     watchme[sizeof(watchme)-1] = '\0';
 
     harr[0] = monitor_event;
-    harr[1] = FindFirstChangeNotification(dbdir, FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE);
+    harr[1] = FindFirstChangeNotification(dbdir, FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME);
 
     logg("monitor_thread: watching directory changes on %s\n", dbdir);
 
