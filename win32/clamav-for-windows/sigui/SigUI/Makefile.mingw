@@ -31,7 +31,7 @@ PCH_H = wx_pch.h
 WINDRES=`$(WX)/wx-config --rescomp`
 CXXFLAGS = `$(WX)/wx-config --cxxflags` $(COMMON_CPPFLAGS) $(COMMON_CXXFLAGS)
 CPPFLAGS = `$(WX)/wx-config --cppflags` $(COMMON_CPPFLAGS)
-LDFLAGS = `$(WX)/wx-config --libs core,base` $(COMMON_LDFLAGS)
+LDFLAGS = `$(WX)/wx-config --libs core,base,adv` $(COMMON_LDFLAGS)
 RCFLAGS = `$(WX)/wx-config --cppflags`
 
 OBJ = $(addprefix $(OBJDIR)/,$(subst .rc,.o,$(subst .cpp,.o,$(SRC))))

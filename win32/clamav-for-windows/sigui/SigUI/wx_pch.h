@@ -57,6 +57,8 @@
 #include <wx/icon.h>
 #include <wx/notebook.h>
 #include <wx/frame.h>
+#include <wx/fswatcher.h>
+#include <wx/taskbar.h>
 
 #ifdef WX_PRECOMP
 #include "SigUIApp.h"

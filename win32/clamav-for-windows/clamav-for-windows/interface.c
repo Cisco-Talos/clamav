@@ -253,9 +253,9 @@ static int sigload_callback(const char *type, const char *name, void *context) {
     return 0;
 }
 
-
+const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 /* Must be called with engine_mutex locked ! */
-static void touch_last_update(void) {
+static void touch_last_update(unsigned signo) {
     char touchme[PATH_MAX];
     HANDLE h;
 
@@ -263,7 +263,27 @@ static void touch_last_update(void) {
     touchme[sizeof(touchme)-1] = '\0';
     if((h = CreateFile(touchme, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE) {
 	DWORD d;
-	snprintf(touchme, sizeof(touchme), "w00t!");
+	int err;
+	unsigned ver = (unsigned)cl_engine_get_num(engine, CL_ENGINE_DB_VERSION, &err);
+	if (ver) {
+	    char timestr[32];
+	    const char *tstr;
+	    time_t t;
+	    t = cl_engine_get_num(engine, CL_ENGINE_DB_TIME, NULL);
+	    tstr = cli_ctime(&t, timestr, sizeof(timestr));
+	    /* cut trailing \n */
+	    timestr[strlen(tstr)-1] = '\0';
+	    snprintf(touchme, sizeof(touchme), "daily %u/%u sigs\n"
+		     "Database version: %u/%s\n"
+		     "Known viruses: %u\n"
+		     "Reloaded at: %d\n",
+		     ver, signo, ver, tstr, signo, (unsigned)time(NULL));
+	} else {
+	    snprintf(touchme, sizeof(touchme), "no daily/%u sigs\n"
+		     "Known viruses: %u\n"
+		     "Reloaded at: %d\n",
+		     signo, signo, (unsigned)time(NULL));
+	}
 	touchme[sizeof(touchme)-1] = '\0';
 	if(WriteFile(h, touchme, strlen(touchme), &d, NULL)) {
 	    /* SetEndOfFile(h); */
@@ -301,7 +321,7 @@ static int load_db(void) {
     if (!mpool_getstats(engine, &used, &total))
 	logg("load_db: memory %.3f MB / %.3f MB\n", used/(1024*1024.0), total/(1024*1024.0));
 
-    touch_last_update();
+    touch_last_update(signo);
 
     WIN();
 }

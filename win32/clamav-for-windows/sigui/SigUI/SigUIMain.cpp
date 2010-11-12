@@ -24,6 +24,7 @@
 #pragma hdrstop
 #endif //__BORLANDC__
 
+#include "../../../../libclamav/version.h"
 #include "SigUIMain.h"
 #include "installdb.h"
 #include <wx/clipbrd.h>
@@ -36,34 +37,6 @@
 #include <wx/stdpaths.h>
 #include <wx/dir.h>
 #include <wx/hashset.h>
-
-//helper functions
-enum wxbuildinfoformat {
-    short_f, long_f };
-
-wxString wxbuildinfo(wxbuildinfoformat format)
-{
-    wxString wxbuild(wxVERSION_STRING);
-
-    if (format == long_f )
-    {
-#if defined(__WXMSW__)
-        wxbuild << _T("-Windows");
-#elif defined(__WXMAC__)
-        wxbuild << _T("-Mac");
-#elif defined(__UNIX__)
-        wxbuild << _T("-Linux");
-#endif
-
-#if wxUSE_UNICODE
-        wxbuild << _T("-Unicode build");
-#else
-        wxbuild << _T("-ANSI build");
-#endif // wxUSE_UNICODE
-    }
-
-    return wxbuild;
-}
 
 #if wxUSE_DRAG_AND_DROP
 class DropFiles : public wxFileDropTarget
@@ -123,6 +96,8 @@ class HostnameValidator : public wxTextValidator
 
 SigUIFrame::~SigUIFrame()
 {
+    delete watcher;
+    delete icon;
     delete editor;
 }
 
@@ -164,6 +139,7 @@ void SigUIFrame::OnClose(wxCloseEvent& event)
 	}
     }
 
+//    icon->RemoveIcon();
     Destroy();
 }
 
@@ -174,8 +150,6 @@ void SigUIFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void SigUIFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
-    wxString msg = wxbuildinfo(long_f);
-    wxMessageBox(msg, _("Welcome to..."));
 }
 
 void SigUIFrame::m_proxyOnCheckBox( wxCommandEvent& event )
@@ -367,6 +341,21 @@ void SigUIFrame::m_custom_removeOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	m_custom_remove->Disable();
 }
 
+static wxString GetExecPath()
+{
+    wxFileName exec(wxStandardPaths::Get().GetExecutablePath());
+    return exec.GetPathWithSep();
+}
+
+static wxFileSystemWatcher *watcher;
+void SigUIApp::OnEventLoopEnter(wxEventLoopBase *WXUNUSED(loop))
+{
+    watcher = new wxFileSystemWatcher();
+    watcher->SetOwner(GetTopWindow());
+    watcher->Add(GetExecPath(), wxFSW_EVENT_CREATE | wxFSW_EVENT_MODIFY |
+		 wxFSW_EVENT_WARNING | wxFSW_EVENT_ERROR);
+}
+
 void SigUIFrame::m_save_settingsOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
     if (!Validate() || !TransferDataFromWindow()) {
@@ -377,28 +366,27 @@ void SigUIFrame::m_save_settingsOnButtonClick( wxCommandEvent& WXUNUSED(event) )
     wxLogMessage(_("Settings saved"));
 }
 
-static wxString GetExecPath()
-{
-    wxFileName exec(wxStandardPaths::Get().GetExecutablePath());
-    return exec.GetPathWithSep();
-}
-
 static wxString GetConfigFile()
 {
     return GetExecPath() + "freshclam.conf";
 }
-
 SigUIFrame::SigUIFrame(wxFrame *frame)
     : GUIFrame(frame), val_bytecode(true)
 {
     #ifdef _WIN32
-    SetIcon(wxIcon(wxT("clam")));
+    SetIcon(wxIcon(wxT("aaaa")));
     #endif
+
+    icon = new wxTaskBarIcon();
+    icon->Connect(wxEVT_TASKBAR_BALLOON_TIMEOUT, wxTaskBarIconEventHandler(SigUIFrame::OnBalloon), NULL, this);
+    icon->Connect(wxEVT_TASKBAR_BALLOON_CLICK, wxTaskBarIconEventHandler(SigUIFrame::OnBalloon), NULL, this);
+
+    this->Connect(wxEVT_FSWATCHER, wxFileSystemWatcherEventHandler(SigUIFrame::OnChange));
 
     this->Connect(wxEVT_END_PROCESS, wxProcessEventHandler(SigUIFrame::OnTerminateInstall));
 
     this->SetStatusBar(statusBar);
-    statusBar->SetStatusText(wxbuildinfo(short_f), 1);
+    statusBar->SetStatusText(REPO_VERSION, 1);
 
 //    m_sig_files->SetDropTarget(new DropFiles(m_sig_files));
 //    m_urls->SetDropTarget(new DropURLs(m_urls));
@@ -450,6 +438,66 @@ SigUIFrame::SigUIFrame(wxFrame *frame)
 
     //prevent window from being resizing below minimum
     this->GetSizer()->SetSizeHints(this);
+    show_db(true);
+}
+
+void SigUIFrame::OnBalloon(wxTaskBarIconEvent& WXUNUSED(event))
+{
+    if (icon->IsIconInstalled())
+	icon->RemoveIcon();
+}
+
+void SigUIFrame::OnChange(wxFileSystemWatcherEvent &event)
+{
+    if (event.IsError()) {
+	wxLogVerbose("fswatcher error: %s", event.GetErrorDescription());
+	return;
+    }
+    wxLogVerbose("event on %s", event.GetPath().GetFullPath());
+    switch (event.GetChangeType()) {
+	default:
+	    break;
+	case wxFSW_EVENT_CREATE:
+	case wxFSW_EVENT_MODIFY:
+	    wxFileName filename = event.GetPath();
+	    if (filename.GetName() != "lastupd")
+		return;
+	    show_db(false);
+	    break;
+    }
+}
+
+void SigUIFrame::show_db(bool first)
+{
+    wxLogNull logNo;
+    char msg[512];
+    wxFileName filename(GetExecPath() + "lastupd");
+    if (!filename.IsFileReadable())
+	return;
+    wxFile file(filename.GetFullPath());
+    if (!file.IsOpened())
+	return;
+    memset(&msg, 0, sizeof(msg));
+    if (file.Read(msg, sizeof(msg) - 1) <= 0)
+	return;
+
+    wxString line = wxString(msg).BeforeFirst('\n');
+    wxString text = statusBar->GetStatusText(0);
+    statusBar->SetStatusText(line, 0);
+    if (first || lastmsg == msg)
+	return;
+    lastmsg = msg;
+    //only show when changed, and not the first time
+    if (icon->IsIconInstalled())
+	icon->RemoveIcon();//remove old balloon
+    icon->SetIcon(GetIcon());
+    line = wxString(msg).AfterFirst('\n');
+#ifdef _WIN32
+    icon->ShowBalloon("ClamAV database reloaded",
+		      line, wxICON_INFORMATION);
+#endif
+    wxFileName filename0(GetExecPath() + "forcerld");
+    wxLogVerbose("Reload delta: %s", filename.GetModificationTime().Subtract( filename0.GetModificationTime() ).Format());
 }
 
 void SigUIFrame::tabsOnNotebookPageChanged( wxNotebookEvent& event )
@@ -493,6 +541,22 @@ class MyProcess : public wxProcess
 	MyProcessOutput *m_parent;
 };
 
+void SigUIFrame::reload()
+{
+    wxFileName filename(GetExecPath() + "forcerld");
+    if (!filename.FileExists()) {
+	wxFile file;
+	if (!file.Create(filename.GetFullPath(), true)) {
+	    wxLogMessage(_("Cannot signal reload"));
+	    return;
+	}
+    } else {
+	filename.Touch();
+    }
+
+    wxLogMessage(_("Database reload queued"));
+}
+
 void SigUIFrame::m_run_freshclamOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
     MyProcessOutput *output = new MyProcessOutput(this);
@@ -521,9 +585,7 @@ void SigUIFrame::m_run_freshclamOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 
     output->SetProcess(process);
     output->ShowModal();
-
-    wxLogMessage(_("The database will be reloaded in the next hour.\n"
-		   "Press 'Update Now' in the main UI if you want them reloaded now"));
+    reload();
 }
 
 MyProcessOutput::MyProcessOutput(wxWindow *parent)
@@ -712,9 +774,8 @@ void SigUIFrame::OnTerminateInstall(wxProcessEvent &event)
     wxWakeUpIdle();
     if (event.GetExitCode() == 0) {
 	m_sig_candidates->Clear();
-	wxLogMessage(_("Successfully installed new virus signatures\n"
-		       "The signatures will be reloaded in the next hour."
-		       "If you want to reload them now, press 'Update Now' on the main UI"));
+	wxLogMessage(_("Successfully installed new virus signatures\n"));
+	reload();
     } else {
 	bool had_errors = false;
 	wxInputStream *err = m_siginst_process->GetErrorStream();

@@ -41,6 +41,9 @@ class SigUIFrame: public GUIFrame
 	wxString      val_mirror;
 	bool          val_bytecode;
 	wxProcess     *m_siginst_process;
+	wxFileSystemWatcher *watcher;
+	wxTaskBarIcon       *icon;
+	wxString            lastmsg;
 
         virtual void OnClose(wxCloseEvent& event);
         virtual void OnQuit(wxCommandEvent& event);
@@ -60,7 +63,11 @@ class SigUIFrame: public GUIFrame
 	virtual void GUIFrameOnIdle( wxIdleEvent& event );
 	void tabsOnNotebookPageChanged( wxNotebookEvent& event );
 	void OnTerminateInstall(wxProcessEvent &event);
+	void OnChange(wxFileSystemWatcherEvent &event);
 	void GetFreshclamDBnames(StringSet *set);
+	void OnBalloon(wxTaskBarIconEvent& event);
+	void reload(void);
+	void show_db(bool first);
 };
 
 class MyProcessOutput : public ProcessOutput

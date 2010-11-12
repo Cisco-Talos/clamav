@@ -1,5 +1,5 @@
 /***************************************************************
- * Purpose:  Test and install ClamAV databases 
+ * Purpose:  Test and install ClamAV databases
  *
  *  Copyright (C) 2010 Sourcefire, Inc.
  *
@@ -30,6 +30,7 @@
 
 #include "../../../../libclamav/clamav.h"
 #include "installdb.h"
+#include <errno.h>
 
 static wxString GetExecPath()
 {

@@ -247,6 +247,8 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\common\taskbarcmn.cpp" />
+    <ClCompile Include="..\..\src\msw\taskbar.cpp" />
     <ClCompile Include="..\..\src\common\accelcmn.cpp" />
     <ClCompile Include="..\..\src\common\accesscmn.cpp" />
     <ClCompile Include="..\..\src\common\anidecod.cpp" />

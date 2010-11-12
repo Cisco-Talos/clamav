@@ -68,7 +68,7 @@
 
 #define wxUSE_CMDLINE_PARSER 1
 
-#define wxUSE_THREADS 0
+#define wxUSE_THREADS 1
 
 #define wxUSE_STREAMS 1
 
@@ -114,7 +114,7 @@
 
 #define wxUSE_STOPWATCH 0
 
-#define wxUSE_FSWATCHER     0
+#define wxUSE_FSWATCHER     1
 
 #define wxUSE_CONFIG 1
 
@@ -272,7 +272,7 @@
 
 #define wxUSE_TOOLBOOK 0
 
-#define wxUSE_TASKBARICON 0
+#define wxUSE_TASKBARICON 1
 
 #define wxUSE_GRID 0
 
@@ -506,7 +506,7 @@
 
 #define wxUSE_OWNER_DRAWN 1
 
-#define wxUSE_TASKBARICON_BALLOONS 0
+#define wxUSE_TASKBARICON_BALLOONS 1
 
 #define wxUSE_UXTHEME 1
 
