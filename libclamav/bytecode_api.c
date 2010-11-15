@@ -114,7 +114,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 	    cli_dbgmsg("bcapi_seek: invalid whence value\n");
 	    return -1;
     }
-    if (off < 0 || off > ctx->file_size) {
+    if (off < 0 || off >= ctx->file_size) {
 	cli_dbgmsg("bcapi_seek: out of file: %ld (max %d)\n",
 		   off, ctx->file_size);
 	return -1;

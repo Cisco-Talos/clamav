@@ -1145,7 +1145,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
-    return rc;
+    /* PDF hooks may abort, don't return CL_BREAK to caller! */
+    return rc == CL_BREAK ? CL_CLEAN : rc;
 }
 
 #else
