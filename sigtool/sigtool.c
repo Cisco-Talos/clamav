@@ -1518,7 +1518,7 @@ static int rundiff(const struct optstruct *opts)
 	return -1;
     }
 
-    if((fd = open(diff, O_RDONLY)) == -1) {
+    if((fd = open(diff, O_RDONLY | O_BINARY)) == -1) {
 	mprintf("!rundiff: Can't open file %s\n", diff);
 	return -1;
     }
