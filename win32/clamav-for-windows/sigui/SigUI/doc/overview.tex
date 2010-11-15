@@ -43,4 +43,4 @@ settings are syntactically correct, and saves them in \gls{freshclam.conf}.
 
 When installing custom signatures, \verb+SigUI+ verifies that \ClamAV can successfully load the databases, and install only those that are successfully loaded.
 
-Any changes you make will not take effect immediately, but only the next time the databases are reloaded. This usually happens each hour. You can reload the databases immediately by opening the \CW user interface \footnote{from the tray, or the desktop}, and clicking on \textbf{Update Now}.
+Once the databases are successfully installed, a reload is queued. ClamAV for Windows will reload the databases the next time the system is idle. SigUI will show a notification when the reload happens.
