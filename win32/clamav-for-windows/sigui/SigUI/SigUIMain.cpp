@@ -868,7 +868,8 @@ void SigUIFrame::m_deleteOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	wxFileName filepath(GetExecPath(), file);
 	if (!wxRemoveFile(filepath.GetFullPath())) {
 	    wxLogError(_("Can't remove file %s"), filepath.GetFullPath());
-	}
+	} else
+	    reload();
     }
 
     wxWakeUpIdle();
