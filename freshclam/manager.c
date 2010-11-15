@@ -2257,7 +2257,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 
     mirman_write("mirrors.dat", dbdir, &mdat);
     mirman_free(&mdat);
-    cli_rmdirs(updtmpdir);
 
     /* custom dbs */
     if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
@@ -2267,6 +2266,8 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    opt = opt->nextarg;
 	}
     }
+
+    cli_rmdirs(updtmpdir);
 
     if(updated) {
 	if(optget(opts, "HTTPProxyServer")->enabled || !ipaddr[0]) {
