@@ -152,7 +152,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
     return 0;
 }
 
-int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
+static int mirman_update_int(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken, int succ, int fail)
 {
 	unsigned int i, found = 0;
 
@@ -169,24 +169,32 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 
     if(found) {
 	mdat->mirtab[i].atime = 0; /* will be updated in mirman_write() */
-	if(broken)
-	    mdat->mirtab[i].fail++;
-	else
-	    mdat->mirtab[i].succ++;
-
-	if(broken == 2) {
-	    mdat->mirtab[i].ignore = 2;
+	if(succ || fail) {
+	    mdat->mirtab[i].fail += fail;
+	    if(mdat->mirtab[i].fail < 0)
+		mdat->mirtab[i].fail = 0;
+	    mdat->mirtab[i].succ += succ;
+	    if(mdat->mirtab[i].succ < 0)
+		mdat->mirtab[i].succ = 0;
 	} else {
-	    /*
-	     * If the total number of failures is less than 3 then never
-	     * mark a permanent failure, in other case use the real status.
-	     */
-	    if(mdat->mirtab[i].fail < 3)
-		mdat->mirtab[i].ignore = 0;
+	    if(broken)
+		mdat->mirtab[i].fail++;
 	    else
-		mdat->mirtab[i].ignore = broken;
-	}
+		mdat->mirtab[i].succ++;
 
+	    if(broken == 2) {
+		mdat->mirtab[i].ignore = 2;
+	    } else {
+		/*
+		 * If the total number of failures is less than 3 then never
+		 * mark a permanent failure, in other case use the real status.
+		 */
+		if(mdat->mirtab[i].fail < 3)
+		    mdat->mirtab[i].ignore = 0;
+		else
+		    mdat->mirtab[i].ignore = broken;
+	    }
+	}
     } else {
 	mdat->mirtab = (struct mirdat_ip *) realloc(mdat->mirtab, (mdat->num + 1) * sizeof(struct mirdat_ip));
 	if(!mdat->mirtab) {
@@ -200,18 +208,30 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 	    memcpy(mdat->mirtab[mdat->num].ip6, ip, 4 * sizeof(uint32_t));
 	}
 	mdat->mirtab[mdat->num].atime = 0;
-	mdat->mirtab[mdat->num].succ = 0;
-	mdat->mirtab[mdat->num].fail = 0;
+	mdat->mirtab[mdat->num].succ = (succ > 0) ? succ : 0;
+	mdat->mirtab[mdat->num].fail = (fail > 0) ? fail : 0;
 	mdat->mirtab[mdat->num].ignore = (broken == 2) ? 2 : 0;
 	memset(&mdat->mirtab[mdat->num].res, 0xff, sizeof(mdat->mirtab[mdat->num].res));
-	if(broken)
-	    mdat->mirtab[mdat->num].fail++;
-	else
-	    mdat->mirtab[mdat->num].succ++;
+	if(!succ && !fail) {
+	    if(broken)
+		mdat->mirtab[mdat->num].fail++;
+	    else
+		mdat->mirtab[mdat->num].succ++;
+	}
 	mdat->num++;
     }
 
     return 0;
+}
+
+int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
+{
+    return mirman_update_int(ip, af, mdat, broken, 0, 0);
+}
+
+int mirman_update_sf(uint32_t *ip, int af, struct mirdat *mdat, int succ, int fail)
+{
+    return mirman_update_int(ip, af, mdat, 0, succ, fail);
 }
 
 void mirman_list(const struct mirdat *mdat)
@@ -252,18 +272,20 @@ void mirman_whitelist(struct mirdat *mdat, unsigned int mode)
 	    mdat->mirtab[i].ignore = 0;
 }
 
-int mirman_write(const char *file, struct mirdat *mdat)
+int mirman_write(const char *file, const char *dir, struct mirdat *mdat)
 {
 	int fd;
 	unsigned int i;
+	char path[512];
 
+    snprintf(path, sizeof(path), "%s/%s", dir, file);
+    path[sizeof(path) - 1] = 0;
 
     if(!mdat->num)
 	return 0;
 
-    if((fd = open(file, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600)) == -1) {
-	logg("!Can't open %s for writing\n", file);
-	mirman_free(mdat);
+    if((fd = open(path, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600)) == -1) {
+	logg("!Can't open %s for writing\n", path);
 	return -1;
     }
 
@@ -272,13 +294,11 @@ int mirman_write(const char *file, struct mirdat *mdat)
 	    mdat->mirtab[i].atime = (uint32_t) time(NULL);
 
     if(write(fd, mdat->mirtab, mdat->num * sizeof(struct mirdat_ip)) == -1) {
-	logg("!Can't write to %s\n", file);
-	mirman_free(mdat);
+	logg("!Can't write to %s\n", path);
 	close(fd);
 	return -1;
     }
 
-    mirman_free(mdat);
     close(fd);
     return 0;
 }

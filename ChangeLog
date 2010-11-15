@@ -1,3 +1,7 @@
+Mon Nov 15 16:04:31 CET 2010 (tk)
+---------------------------------
+ * freshclam: improve mirror management
+
 Fri Nov 12 15:47:09 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix possible use of uninitialized values (bb#2291)

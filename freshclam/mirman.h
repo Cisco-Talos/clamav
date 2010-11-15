@@ -43,9 +43,10 @@ struct mirdat {
 int mirman_read(const char *file, struct mirdat *mdat, uint8_t active);
 int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **md);
 int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken);
+int mirman_update_sf(uint32_t *ip, int af, struct mirdat *mdat, int succ, int fail);
 void mirman_list(const struct mirdat *mdat);
 void mirman_whitelist(struct mirdat *mdat, unsigned int mode);
-int mirman_write(const char *file, struct mirdat *mdat);
+int mirman_write(const char *file, const char *dir, struct mirdat *mdat);
 void mirman_free(struct mirdat *mdat);
 
 #endif
