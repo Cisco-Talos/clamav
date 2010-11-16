@@ -22,11 +22,18 @@
 
 #include "flog.h"
 
-static HANDLE logh;
+static HANDLE logh = INVALID_HANDLE_VALUE;
 
 void flog_open(const char *path) {
+    DWORD sz;
     logh = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    SetFilePointer(logh, 0, NULL, FILE_END);
+    if(logh == INVALID_HANDLE_VALUE)
+	return;
+    sz = GetFileSize(logh, NULL);
+    if(sz >= 10*1024*1024)
+	SetEndOfFile(logh);
+    else
+	SetFilePointer(logh, 0, NULL, FILE_END);
     flog("Log file initialized");
 }
 
@@ -35,18 +42,30 @@ void flog(const char *fmt, ...) {
     SYSTEMTIME t;
     DWORD x;
     va_list ap;
+    int len;
+
+    if(logh == INVALID_HANDLE_VALUE)
+	return;
 
     GetLocalTime(&t);
     _snprintf(buf, sizeof(buf), "%04u-%02u-%02u %02u:%02u:%02u - ", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
-    WriteFile(logh, buf, strlen(buf), &x, NULL);
+    buf[sizeof(buf)-1] = '\0';
+    len = strlen(buf);
     va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
+    vsnprintf(buf + len, sizeof(buf) - len, fmt, ap);
     va_end(ap);
-    WriteFile(logh, buf, strlen(buf), &x, NULL);
-    WriteFile(logh, "\r\n", 2, &x, NULL);
+    buf[sizeof(buf)-1] = '\0';
+    len = strlen(buf);
+    len = len < sizeof(buf) - 2 ? len : sizeof(buf) - 2;
+    memcpy(buf + len, "\r\n", 2);
+    len += 2;
+    WriteFile(logh, buf, len, &x, NULL);
 }
 
 void flog_close(void) {
+    if(logh == INVALID_HANDLE_VALUE)
+	return;
     flog("Log file closed");
     CloseHandle(logh);
 }
+
