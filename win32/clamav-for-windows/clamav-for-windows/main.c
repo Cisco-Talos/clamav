@@ -62,9 +62,13 @@ BOOL init() {
     logg_time = 1;
     logg_size = -1;
     logg_file = strdup(whereami);
-    logg_noflush = 1;/* only flush on errors and warnings */
     if(!logg_file)
 	return FALSE;
+    strncpy(slash, "clamav.old.log", sizeof(whereami) - (slash - whereami));
+    whereami[sizeof(whereami)-1] = '\0';
+    if(!MoveFileEx(logg_file, whereami, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+	DeleteFile(logg_file);
+    logg_noflush = 1;/* only flush on errors and warnings */
     if(logg("ClamAV core initialized\n"))
 	return FALSE;
 
