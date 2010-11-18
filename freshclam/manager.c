@@ -1074,8 +1074,8 @@ static int getfile_mirman(const char *srcfile, const char *destfile, const char 
 #endif
         if(write(fd, buffer, bread) != bread) {
 	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
-	    unlink(destfile);
 	    close(fd);
+	    unlink(destfile);
 	    return 57; /* FIXME */
 	}
 
@@ -1346,16 +1346,16 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     if(write(fd, buff, 512) != 512) {
 	logg("!buildcld: Can't write to %s\n", newfile);
 	CHDIR_ERR(cwd);
-	unlink(newfile);
 	close(fd);
+	unlink(newfile);
 	return -1;
     }
 
     if((dir = opendir(".")) == NULL) {
 	logg("!buildcld: Can't open directory %s\n", tmpdir);
 	CHDIR_ERR(cwd);
-	unlink(newfile);
 	close(fd);
+	unlink(newfile);
 	return -1;
     }
 
@@ -1364,8 +1364,8 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	if(!(gzs = gzopen(newfile, "ab9f"))) {
 	    logg("!buildcld: gzopen() failed for %s\n", newfile);
 	    CHDIR_ERR(cwd);
-	    unlink(newfile);
 	    closedir(dir);
+	    unlink(newfile);
 	    return -1;
 	}
     }
@@ -1393,8 +1393,8 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	    gzclose(gzs);
 	else
 	    close(fd);
-	unlink(newfile);
 	closedir(dir);
+	unlink(newfile);
 	return -1;
     }
 
@@ -1411,8 +1411,8 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 		    gzclose(gzs);
 		else
 		    close(fd);
-		unlink(newfile);
 		closedir(dir);
+		unlink(newfile);
 		return -1;
 	    }
 	}
