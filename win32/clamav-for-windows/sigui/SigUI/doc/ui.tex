@@ -113,9 +113,16 @@ See \prettyref{sec:runfreshclam}
 
 Note that the downloaded signature files will all be placed in the same directory. Hence you must make sure you don't have two URLs that, when downloaded, have the same filename.
 The UI will warn you if you try to do that. \footnote{the two URLs with same filenames will just keep overwriting the same file}.
-\section{Update now}
+\section{Reloading the databases}
 \label{sec:updatenow}
-Any changes you make to \gls{freshclam.conf} and the databases won't take effect immediately.
-They will take effect the next time the signatures are updated (usually once an hour).
-To reload the signatures immediately open the \CW user interface from the tray (or desktop icon), and click on \emph{Update Now}. 
-Once the database is updated, it will be reloaded as soon as the system is idle.
+A database reload is automatically queued in the following situations:
+\begin{itemize}
+\item You click \emph{Run freshclam to test configuration}, after freshclam
+finishes and you close the window
+\item You install new databases by clicking on \emph{Verify and Install
+    signatures}
+\item You remove a database by using the \emph{Delete} button
+\end{itemize}
+
+The reload will happen the next time the system is idle (or immediately if
+already idle).

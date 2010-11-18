@@ -754,6 +754,7 @@ void SigUIFrame::m_local_addOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	    m_sig_candidates->Append(path);
 	}
 	m_local_remove->Enable(!m_sig_candidates->IsEmpty());
+	m_install->Enable(!m_sig_candidates->IsEmpty());
     }
 }
 
@@ -766,6 +767,7 @@ void SigUIFrame::m_local_removeOnButtonClick( wxCommandEvent& WXUNUSED(event) )
         m_sig_candidates->Delete(selections[--n]);
     }
     m_local_remove->Enable(!m_sig_candidates->IsEmpty());
+    m_install->Enable(!m_sig_candidates->IsEmpty());
 }
 
 void SigUIFrame::OnTerminateInstall(wxProcessEvent &event)
@@ -868,7 +870,8 @@ void SigUIFrame::m_deleteOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	wxFileName filepath(GetExecPath(), file);
 	if (!wxRemoveFile(filepath.GetFullPath())) {
 	    wxLogError(_("Can't remove file %s"), filepath.GetFullPath());
-	}
+	} else
+	    reload();
     }
 
     wxWakeUpIdle();

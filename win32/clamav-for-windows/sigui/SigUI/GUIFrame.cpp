@@ -264,6 +264,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer7->Add( sbSizer4, 1, wxALL|wxEXPAND, 5 );
 	
 	m_install = new wxButton( m_panel_sigman, wxID_ANY, _("Verify and &Install signatures"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_install->Enable( false );
 	m_install->SetToolTip( _("Check that the signature files are well formed and install them in ClamAV's database directory") );
 	
 	bSizer7->Add( m_install, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
