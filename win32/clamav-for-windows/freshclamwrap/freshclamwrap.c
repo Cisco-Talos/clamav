@@ -343,7 +343,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    unsigned char *partname = buf + 12, *partend, *pctend;
 	    wchar_t nuname[AV_UPD_FILE_NAME_MAX];
 
-	     GenerateConsoleCtrlEvent(CTRL_C_EVENT, pinfo.dwProcessId);
 	    if(!updated_files) {
 		SENDOK(UPD_NEWER_FOUND);
 		SENDOK(UPD_DOWNLOAD_BEGIN);
@@ -361,9 +360,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    pct = strtol(partend, &pctend, 10);
 	    if(pctend == partend || *pctend != '%')
 		break;
-	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, partname, (fnamelen < AV_UPD_FILE_NAME_MAX) ? fnamelen : AV_UPD_FILE_NAME_MAX, nuname, sizeof(nuname)))
+	    fnamelen = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, partname, (fnamelen < AV_UPD_FILE_NAME_MAX-1) ? fnamelen : AV_UPD_FILE_NAME_MAX-1, nuname, sizeof(nuname));
+	    if(!fnamelen)
 		break;
-	    nuname[AV_UPD_FILE_NAME_MAX-1] = L'\0';
+	    nuname[fnamelen] = L'\0';
 	    if(fstate == FRESH_DOWN && wcscmp(nuname, st.fileName)) {
 		st.percentDownloaded = 100;
 		SENDOK(UPD_FILE_COMPLETE);
