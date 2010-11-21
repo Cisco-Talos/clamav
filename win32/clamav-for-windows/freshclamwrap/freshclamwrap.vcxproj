@@ -22,6 +22,12 @@
     <ClCompile Include="flog.c" />
     <ClCompile Include="freshclamwrap.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="freshclamwrap.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{366C2DCE-777A-43EE-96DC-C530E67E7B32}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
