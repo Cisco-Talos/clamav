@@ -522,7 +522,11 @@ START_TEST (test_load_bytecode_int)
 }
 END_TEST
 
-#if defined(CL_THREAD_SAFE) && defined(C_LINUX)
+#if defined(CL_THREAD_SAFE) && defined(C_LINUX) && ((__GLIBC__ << 16) + __GLIBC_MINOR__ >= (2 << 16) + 2)
+#define DO_BARRIER
+#endif
+
+#ifdef DO_BARRIER
 static pthread_barrier_t barrier;
 static void* thread(void *arg)
 {
@@ -615,7 +619,7 @@ Suite *test_bytecode_suite(void)
 
     tcase_add_test(tc_cli_arith, test_load_bytecode_jit);
     tcase_add_test(tc_cli_arith, test_load_bytecode_int);
-#if defined(CL_THREAD_SAFE) && defined(C_LINUX)
+#ifdef DO_BARRIER
     tcase_add_test(tc_cli_arith, test_parallel_load);
 #endif
 
