@@ -357,7 +357,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    if(loadbal) {
 		loadbal = 0;
 		i = 0;
-	    }
+	    } else i++;
 	    continue;
 	} else {
 	    if(mdat) {
