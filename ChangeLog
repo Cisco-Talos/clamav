@@ -1,3 +1,8 @@
+Tue Nov 23 13:13:40 EET 2010 (edwin)
+------------------------------------
+ * clamd/clamd.c: fix RLIMIT_DATA setting on BSD (bb #1941), thanks to
+    Andreas Longwitz <longwitz* incore.de>.
+
 Mon Nov 15 16:04:31 CET 2010 (tk)
 ---------------------------------
  * freshclam: improve mirror management

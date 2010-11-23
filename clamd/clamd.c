@@ -307,14 +307,13 @@ int main(int argc, char **argv)
         * too soon (after ~120 MB).
         * Set limit lower than 2G if on 32-bit */
        uint64_t lim = rlim.rlim_cur;
-       lim = (int32_t) lim;
        if (sizeof(void*) == 4 &&
-           lim != rlim.rlim_cur) {
-           rlim.rlim_cur = 2048*1024-1;
+           lim > (1ULL << 31)) {
+           rlim.rlim_cur = 1ULL << 31;
            if (setrlimit(RLIMIT_DATA, &rlim) < 0)
                logg("!setrlimit(RLIMIT_DATA) failed: %s\n", strerror(errno));
            else
-               logg("^Running on 32-bit system, and RLIMIT_DATA > 2GB, lowering to 2GB!\n");
+               logg("Running on 32-bit system, and RLIMIT_DATA > 2GB, lowering to 2GB!\n");
        }
     }
 #endif
