@@ -1057,12 +1057,12 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff)
+static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
 
     if(realoff != CLI_OFF_NONE) {
-	if(mdata->lsigsuboff[lsigid1][lsigid2] != CLI_OFF_NONE && realoff <= mdata->lsigsuboff[lsigid1][lsigid2])
+	if(mdata->lsigsuboff[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff[lsigid1][lsigid2])))
 	    return;
 	mdata->lsigcnt[lsigid1][lsigid2]++;
 	if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
@@ -1111,7 +1111,7 @@ void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigne
     /* Loop through all subsigs, and if they are tied to macros check that the
      * macro matched at a correct distance */
     for (i=0;i<tdb->subsigs;i++) {
-	lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE);
+	lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE, 0);
     }
 }
 
@@ -1122,7 +1122,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_ac_patt *patt, *pt;
         uint32_t i, bp, realoff, matchend;
 	uint16_t j;
-	int32_t **offmatrix;
+	int32_t **offmatrix, swp;
 	uint8_t found;
 	int type = CL_CLEAN;
 	struct cli_ac_result *newres;
@@ -1246,8 +1246,15 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				}
 			    }
 
-			    if(pt->partno == 2 && found > 1)
+			    if(pt->partno == 2 && found > 1) {
+				swp = offmatrix[0][1];
 				offmatrix[0][1] = offmatrix[0][found];
+				offmatrix[0][found] = swp;
+
+				swp = offmatrix[pt->parts - 1][1];
+				offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
+				offmatrix[pt->parts - 1][found] = swp;
+			    }
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
 				if(offmatrix[pt->partno - 1][0] == CLI_DEFAULT_AC_TRACKLEN + 1)
@@ -1282,7 +1289,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				} else { /* !pt->type */
 				    if(pt->lsigid[0]) {
-					lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1]);
+					lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1], 1);
 					pt = pt->next_same;
 					continue;
 				    }
@@ -1325,7 +1332,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				}
 			    } else {
 				if(pt->lsigid[0]) {
-				    lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff);
+				    lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff, 0);
 				    pt = pt->next_same;
 				    continue;
 				}
