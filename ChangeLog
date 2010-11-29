@@ -1,3 +1,7 @@
+Mon Nov 29 17:40:39 CET 2010 (tk)
+---------------------------------
+ * libclamav: fix detection of embedded executables
+
 Wed Nov 24 23:52:28 CET 2010 (tk)
 ---------------------------------
  * libclamav/matcher-ac.c: fix offset handling for sigs with {x-y}

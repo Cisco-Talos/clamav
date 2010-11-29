@@ -1251,9 +1251,11 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				offmatrix[0][1] = offmatrix[0][found];
 				offmatrix[0][found] = swp;
 
-				swp = offmatrix[pt->parts - 1][1];
-				offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
-				offmatrix[pt->parts - 1][found] = swp;
+				if(pt->type != CL_TYPE_MSEXE) {
+				    swp = offmatrix[pt->parts - 1][1];
+				    offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
+				    offmatrix[pt->parts - 1][found] = swp;
+				}
 			    }
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
