@@ -1,7 +1,10 @@
-0.96.4
+0.96.5
 ------
 
-ClamAV 0.96.4 is a bugfix release recommended for all users.
+ClamAV 0.96.5 includes bugfixes and minor feature enhancements, such as
+improved handling of detection statistics, better file logging,
+and support for custom database URLs in freshclam. Please refer to the
+ChangeLog for details.
 
 --
 The ClamAV team (http://www.clamav.net/team)
