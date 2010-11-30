@@ -1,3 +1,7 @@
+Tue Nov 30 12:09:56 CET 2010 (acab)
+-----------------------------------
+ * libclamav/pe_icons.c: off by one while (bb#2344)
+
 Mon Nov 29 17:40:39 CET 2010 (tk)
 ---------------------------------
  * libclamav: fix detection of embedded executables
