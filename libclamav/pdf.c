@@ -113,7 +113,10 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
     const char *q2, *q;
     if ((q2 = cli_memstr(start, bytesleft, "stream", 6))) {
 	q2 += 6;
-	if (q2[0] == '\xd' && q2[1] == '\xa')
+	bytesleft -= q2 - start;
+	if (bytesleft < 1)
+	    return 0;
+	if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa')
 	    q2 += 2;
 	if (q2[0] == '\xa')
 	    q2++;
@@ -348,9 +351,9 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		    const char *q = pdf_nextlinestart(buf, len);
 		    if (q) {
 			skipped = 1;
-			buf = q;
 			inflateEnd(&stream);
 			len -= q - buf;
+			buf = q;
 			stream.next_in = (Bytef *)buf;
 			stream.avail_in = len;
 			stream.next_out = (Bytef *)output;
@@ -468,6 +471,10 @@ static int find_length(struct pdf_struct *pdf,
 		return 0;
 	    }
 	    q = pdf_nextobject(pdf->map+obj->start, pdf->size - obj->start);
+	    if (!q) {
+		cli_dbgmsg("cli_pdf: next object not found\n");
+		return 0;
+	    }
 	    length = atoi(q);
 	}
     }

@@ -1,3 +1,8 @@
+Tue Nov 30 13:07:15 EET 2010 (edwin)
+------------------------------------
+ * libclamav/pdf.c: fix crashes (bb #2358, bb #2380, bb #2396).
+ Thanks to Arkadiusz Miskiewicz <arekm*maven.pl> for bb #2380.
+
 Tue Nov 30 12:09:56 CET 2010 (acab)
 -----------------------------------
  * libclamav/pe_icons.c: off by one while (bb#2344)
