@@ -42,6 +42,7 @@ struct cli_ac_data {
     uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */
     const struct cli_hashset *vinfo;
+    uint32_t min_partno;
 };
 
 struct cli_ac_special {

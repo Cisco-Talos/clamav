@@ -1,3 +1,8 @@
+Thu Dec  2 18:44:12 CET 2010 (tk)
+---------------------------------
+ * libclamav/matcher-ac.c: optimize handling of multi-part signatures (bb#2322)
+			   Patch by finglenark <finglenark*gmail.com>
+
 Tue Nov 30 14:05:34 CET 2010 (tk)
 ---------------------------------
  * V 0.96.5

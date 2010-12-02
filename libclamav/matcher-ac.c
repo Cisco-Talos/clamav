@@ -82,7 +82,7 @@ static char boundary[256] = {
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next;
-	struct cli_ac_patt *ph;
+	struct cli_ac_patt *ph, *ph_prev, *ph_add_after;
 	void *newtable;
 	struct cli_ac_special *a1, *a2;
 	uint8_t i, match;
@@ -162,7 +162,10 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     pattern->depth = i;
 
     ph = pt->list;
+    ph_add_after = ph_prev = NULL;
     while(ph) {
+	if(!ph_add_after && ph->partno <= pattern->partno && (!ph->next || ph->next->partno > pattern->partno))
+	    ph_add_after = ph;
 	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length) && (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
 	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
 		if(!ph->special && !pattern->special) {
@@ -207,17 +210,35 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 		}
 
 		if(match) {
-		    pattern->next_same = ph->next_same;
-		    ph->next_same = pattern;
-		    return CL_SUCCESS;
+		    if(pattern->partno < ph->partno) {
+			pattern->next_same = ph;
+			if(ph_prev)
+			    ph_prev->next = ph->next;
+			else
+			    pt->list = ph->next;
+			ph->next = NULL;
+			break;
+		    } else {
+			while(ph->next_same && ph->next_same->partno < pattern->partno)
+			    ph = ph->next_same;
+			pattern->next_same = ph->next_same;
+			ph->next_same = pattern;
+			return CL_SUCCESS;
+		    }
 		}
 	    }
 	}
+	ph_prev = ph;
 	ph = ph->next;
     }
 
-    pattern->next = pt->list;
-    pt->list = pattern;
+    if(ph_add_after) {
+	pattern->next = ph_add_after->next;
+	ph_add_after->next = pattern;
+    } else {
+	pattern->next = pt->list;
+	pt->list = pattern;
+    }
 
     return CL_SUCCESS;
 }
@@ -304,16 +325,6 @@ static int ac_maketrans(struct cli_matcher *root)
 		    fail = fail->fail;
 
 		child->fail = fail->trans[i];
-
-		if(child->list) {
-		    patt = child->list;
-		    while(patt->next)
-			patt = patt->next;
-
-		    patt->next = child->fail->list;
-		} else {
-		    child->list = child->fail->list;
-		}
 
 		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
@@ -969,6 +980,8 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
     for (i=0;i<32;i++)
 	data->macro_lastmatch[i] = CLI_OFF_NONE;
 
+    data->min_partno = 1;
+
     return CL_SUCCESS;
 }
 
@@ -1119,7 +1132,7 @@ void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigne
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
-	struct cli_ac_patt *patt, *pt;
+	struct cli_ac_patt *patt, *pt, *faillist;
         uint32_t i, bp, realoff, matchend;
 	uint16_t j;
 	int32_t **offmatrix, swp;
@@ -1141,10 +1154,22 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	current = current->trans[buffer[i]];
 
 	if(IS_FINAL(current)) {
+	    faillist = NULL;
 	    patt = current->list;
-	    if (IS_LEAF(current))
+	    if(IS_LEAF(current)) {
 		current = current->fail;
-	    while(patt) {
+		faillist = current->list;
+	    }
+	    while(1) {
+		if(!patt) {
+		    if(!(patt = faillist))
+			break;
+		    faillist = NULL;
+		}
+		if(patt->partno > mdata->min_partno) {
+		    patt = NULL;
+		    continue;
+		}
 		bp = i + 1 - patt->depth;
 		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
 		    if(patt->offset_min == CLI_OFF_NONE) {
@@ -1167,6 +1192,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		pt = patt;
 		if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend)) {
 		    while(pt) {
+			if(pt->partno > mdata->min_partno)
+			    break;
 			if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
 			    pt = pt->next_same;
 			    continue;
@@ -1205,6 +1232,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				pt = pt->next_same;
 				continue;
 			    }
+
+			    if(pt->partno + 1 > mdata->min_partno)
+				mdata->min_partno = pt->partno + 1;
 
 			    if(!mdata->offmatrix[pt->sigid - 1]) {
 				mdata->offmatrix[pt->sigid - 1] = cli_malloc(pt->parts * sizeof(int32_t *));
