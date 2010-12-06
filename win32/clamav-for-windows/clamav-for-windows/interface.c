@@ -382,6 +382,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     return ret;
 }
 
+int uninitialize_called = 0;
 int CLAMAPI Scan_Uninitialize(void) {
  //   int rett;
  //   __asm {
@@ -389,6 +390,7 @@ int CLAMAPI Scan_Uninitialize(void) {
 	//mov rett, eax
  //   }
  //   logg("%x", rett);
+    uninitialize_called = 1;
     INFN();
     if(lock_engine())
 	FAIL(CL_EMEM, "failed to lock engine");

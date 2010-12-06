@@ -81,6 +81,9 @@ BOOL init() {
     return ret;
 }
 
+extern struct cl_engine *engine;
+extern FILE* logg_fp;
+extern int uninitialize_called;
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
 	switch (ul_reason_for_call)
@@ -91,7 +94,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	case DLL_THREAD_DETACH:
 	    break;
 	case DLL_PROCESS_DETACH:
-	    logg("ClamAV module shutting down\n");
+	    // Can't use logg(), or logg_close() here because pthreads
+	    // may have already been shut down, and pthread_mutex_lock would
+	    // deadlock
+	    if (engine) {
+		if (uninitialize_called)
+		    fprintf(logg_fp, "Engine still active during detach! (we are probably going to crash now)\n");
+		else
+		    fprintf(logg_fp, "Scan_Uninitialize not called, but process is terminating\n");
+	    }
+	    fprintf(logg_fp, "ClamAV module shutting down\n");
+	    fclose(logg_fp);
 	}
 	return TRUE;
 }
