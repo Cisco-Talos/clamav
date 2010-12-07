@@ -870,7 +870,7 @@ cl_error_t prescan_cb(int fd, void *context) {
     perf = GetTickCount();
     inst->scancb(&si, &act, inst->scancb_ctx);
     perf = GetTickCount() - perf;
-    logg("prescan_cb (clamav context %p, instance %p) callback completed in %u ms\n", context, inst, act);
+    logg("prescan_cb (clamav context %p, instance %p) callback completed with %u in %u ms\n", context, inst, act, perf);
     SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     switch(act) {
 	case CLAM_ACTION_SKIP:
