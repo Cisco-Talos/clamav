@@ -99,7 +99,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	    // deadlock
 	    if (engine) {
 		if (uninitialize_called)
-		    fprintf(logg_fp, "Engine still active during detach! (we are probably going to crash now)\n");
+		    fprintf(logg_fp, "Engine still active during detach!\n");
 		else
 		    fprintf(logg_fp, "Scan_Uninitialize not called, but process is terminating\n");
 	    }

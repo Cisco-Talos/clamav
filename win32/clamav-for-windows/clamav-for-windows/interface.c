@@ -398,7 +398,17 @@ int CLAMAPI Scan_Uninitialize(void) {
 	unlock_engine();
 	FAIL(CL_ESTATE, "attempted to uninit a NULL engine");
     }
-   if(lock_instances()) {
+
+    if(monitor_hdl) {
+	SetEvent(monitor_event);
+	if(WaitForSingleObject(monitor_hdl, 5000) != WAIT_OBJECT_0) {
+	    logg("Scan_Uninitialize: forcibly terminating monitor thread after 5 seconds\n");
+	    TerminateThread(monitor_hdl, 0);
+	}
+    }
+    monitor_hdl = NULL;
+
+    if(lock_instances()) {
 	unlock_engine();
 	FAIL(CL_ELOCK, "failed to lock instances");
     }
@@ -411,14 +421,6 @@ int CLAMAPI Scan_Uninitialize(void) {
     unlock_instances();
     free_engine_and_unlock();
 
-    if(monitor_hdl) {
-	SetEvent(monitor_event);
-	if(WaitForSingleObject(monitor_hdl, 5000) != WAIT_OBJECT_0) {
-	    logg("Scan_Uninitialize: forcibly terminating monitor thread after 60 seconds\n");
-	    TerminateThread(monitor_hdl, 0);
-	}
-    }
-    monitor_hdl = NULL;
     WIN();
 }
 
@@ -452,13 +454,24 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
     WIN();
 }
 
+// Caller: if we return error will retry once after 2 seconds.
+// No point in retrying more times since we are shutting down anyway.
 int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
     int rc;
     INFN();
     if(!pScanner)
 	FAIL(CL_ENULLARG, "NULL pScanner");
-    if((rc = del_instance((instance *)pScanner)))
-	FAIL(rc, "del_instance failed for %p", pScanner);
+    if((rc = del_instance((instance *)pScanner))) {
+	if (rc == CL_EBUSY) {
+	    // wait for one of the scanner threads to finish, and retry again,
+	    // thats better than caller always waiting 2 seconds to retry.
+	    if (WaitForSingleObject(reload_event, 1000) != WAIT_OBJECT_0)
+		logg("Scan_DestroyInstance: timeout");
+	    rc = del_instance((instance *)pScanner);
+	}
+	if (rc)
+	    FAIL(rc, "del_instance failed for %p", pScanner);
+    }
     free(pScanner);
     logg("in Scan_DestroyInstance: Instance %p destroyed\n", pScanner);
     WIN();
