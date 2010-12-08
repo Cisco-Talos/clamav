@@ -69,6 +69,11 @@ typedef enum {
     CL_EBYTECODE,/* may be reported in testmode */
     CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
 
+    /* c4w error codes */
+    CL_ELOCK,
+    CL_EBUSY,
+    CL_ESTATE,
+
     /* no error codes below this line please */
     CL_ELAST_ERROR
 } cl_error_t;

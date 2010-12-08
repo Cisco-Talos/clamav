@@ -193,7 +193,7 @@ static int del_instance(instance *inst) {
     INFN();
     if(lock_instances()) {
 	logg("!del_instance: failed to lock instances\n");
-	return 1;
+	return CL_ELOCK;
     }
     for(i=0; i<ninsts_total; i++) {
 	if(instances[i].inst != inst)
@@ -201,18 +201,18 @@ static int del_instance(instance *inst) {
 	if(instances[i].refcnt) {
 	    logg("!del_instance: attempted to free instance with %d active scanners\n", instances[i].refcnt);
 	    unlock_instances();
-	    return 1;
+	    return CL_EBUSY;
 	}
 	instances[i].inst = NULL;
 	instances[i].refcnt = 0;
 	ninsts_avail++;
 	logg("del_instance: %u / %u instances now available\n", ninsts_avail, ninsts_total);
 	unlock_instances();
-	return 0;
+	return CL_SUCCESS;
     }
     logg("!del_instances: instance not found\n");
     unlock_instances();
-    return 1;
+    return CL_EARG;
 }
 
 /* To be called with the instances locked */
@@ -342,10 +342,10 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     if(!pTempRoot)
 	FAIL(CL_ENULLARG, "pTempRoot is NULL");
     if(lock_engine())
-	FAIL(CL_EMEM, "failed to lock engine");
+	FAIL(CL_ELOCK, "failed to lock engine");
     if(engine) {
 	unlock_engine();
-	FAIL(CL_EARG, "Already initialized");
+	FAIL(CL_ESTATE, "Already initialized");
     }
 
     if(!(engine = cl_engine_new())) {
@@ -393,27 +393,27 @@ int CLAMAPI Scan_Uninitialize(void) {
     uninitialize_called = 1;
     INFN();
     if(lock_engine())
-	FAIL(CL_EMEM, "failed to lock engine");
+	FAIL(CL_ELOCK, "failed to lock engine");
     if(!engine) {
 	unlock_engine();
-	FAIL(CL_EARG, "attempted to uninit a NULL engine");
+	FAIL(CL_ESTATE, "attempted to uninit a NULL engine");
     }
    if(lock_instances()) {
 	unlock_engine();
-	FAIL(CL_EMEM, "failed to lock instances");
+	FAIL(CL_ELOCK, "failed to lock instances");
     }
     if(ninsts_avail != ninsts_total) {
 	volatile unsigned int refcnt = ninsts_total - ninsts_avail;
 	unlock_instances();
 	unlock_engine();
-	FAIL(CL_EARG, "Attempted to uninit the engine with %u active instances", refcnt);
+	FAIL(CL_EBUSY, "Attempted to uninit the engine with %u active instances", refcnt);
     }
     unlock_instances();
     free_engine_and_unlock();
 
     if(monitor_hdl) {
 	SetEvent(monitor_event);
-	if(WaitForSingleObject(monitor_hdl, 60000) != WAIT_OBJECT_0) {
+	if(WaitForSingleObject(monitor_hdl, 5000) != WAIT_OBJECT_0) {
 	    logg("Scan_Uninitialize: forcibly terminating monitor thread after 60 seconds\n");
 	    TerminateThread(monitor_hdl, 0);
 	}
@@ -433,12 +433,12 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 	FAIL(CL_EMEM, "CreateInstance: OOM");
     if(lock_engine()) {
 	free(inst);
-	FAIL(CL_EMEM, "Failed to lock engine");
+	FAIL(CL_ELOCK, "Failed to lock engine");
     }
     if(!engine) {
 	free(inst);
 	unlock_engine();
-	FAIL(CL_ENULLARG, "Create instance called with no engine");
+	FAIL(CL_ESTATE, "Create instance called with no engine");
     }
     if(add_instance(inst)) {
 	free(inst);
@@ -453,11 +453,12 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 }
 
 int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
+    int rc;
     INFN();
     if(!pScanner)
 	FAIL(CL_ENULLARG, "NULL pScanner");
-    if(del_instance((instance *)pScanner))
-	FAIL(CL_EMEM, "del_instance failed for %p", pScanner);
+    if((rc = del_instance((instance *)pScanner)))
+	FAIL(rc, "del_instance failed for %p", pScanner);
     free(pScanner);
     logg("in Scan_DestroyInstance: Instance %p destroyed\n", pScanner);
     WIN();
@@ -470,7 +471,7 @@ int CLAMAPI Scan_SetScanCallback(CClamAVScanner *pScanner, CLAM_SCAN_CALLBACK pf
     if(!pScanner)
 	FAIL(CL_ENULLARG, "NULL pScanner");
     if(lock_instances())
-	FAIL(CL_EMEM, "failed to lock instances for instance %p", pScanner);
+	FAIL(CL_ELOCK, "failed to lock instances for instance %p", pScanner);
 
     inst = (instance *)pScanner;
     if(is_instance(inst)) {
@@ -493,7 +494,7 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
     if(!value)
 	FAIL(CL_ENULLARG, "NULL value");
     if(lock_instances())
-	FAIL(CL_EMEM, "failed to lock instances");
+	FAIL(CL_ELOCK, "failed to lock instances");
 
     inst = (instance *)pScanner;
     if(!is_instance(inst)) {
@@ -557,7 +558,7 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
     if(!value || !inputLength)
 	FAIL(CL_ENULLARG, "NULL value");
     if(lock_instances())
-	FAIL(CL_EMEM, "failed to lock instances");
+	FAIL(CL_ELOCK, "failed to lock instances");
 
     inst = (instance *)pScanner;
     if(!is_instance(inst)) {
@@ -607,10 +608,10 @@ int CLAMAPI Scan_GetLimit(int option, unsigned int *value) {
 
     INFN();
     if(lock_engine())
-	FAIL(CL_EMEM, "Failed to lock engine");
+	FAIL(CL_ELOCK, "Failed to lock engine");
     if(!engine) {
 	unlock_engine();
-	FAIL(CL_EARG, "Engine is NULL");
+	FAIL(CL_ESTATE, "Engine is NULL");
     }
     switch((enum CLAM_LIMIT_TYPE)option) {
     case CLAM_LIMIT_FILESIZE:
@@ -646,10 +647,10 @@ int CLAMAPI Scan_SetLimit(int option, unsigned int value) {
 
     INFN();
     if(lock_engine())
-	FAIL(CL_EMEM, "Failed to lock engine");
+	FAIL(CL_ELOCK, "Failed to lock engine");
     if(!engine) {
 	unlock_engine();
-	FAIL(CL_EARG, "Engine is NULL");
+	FAIL(CL_ESTATE, "Engine is NULL");
     }
     switch((enum CLAM_LIMIT_TYPE)option) {
     case CLAM_LIMIT_FILESIZE:
@@ -721,7 +722,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 
     if(lock_instances()) {
 	close(fd);
-	FAIL(CL_EMEM, "failed to lock instances for instance %p", pScanner);
+	FAIL(CL_ELOCK, "failed to lock instances for instance %p", pScanner);
     }
     inst = (instance *)pScanner;
     for(i=0; i<ninsts_total; i++) {
@@ -780,7 +781,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     logg("Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms\n", inst, res, perf);
 
     if(lock_instances())
-	FAIL(CL_EMEM, "failed to lock instances for instance %p", pScanner);
+	FAIL(CL_ELOCK, "failed to lock instances for instance %p", pScanner);
     instances[i].refcnt--;
     if(!instances[i].refcnt)
 	SetEvent(reload_event);

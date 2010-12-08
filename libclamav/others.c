@@ -251,6 +251,12 @@ const char *cl_strerror(int clerror)
 	    return "Error during bytecode execution";
 	case CL_EBYTECODE_TESTFAIL:
 	    return "Failure in bytecode testmode";
+	case CL_ELOCK:
+	    return "Mutex lock failed";
+	case CL_EBUSY:
+	    return "Scanner still active";
+	case CL_ESTATE:
+	    return "Bad state (engine not initialized, or already initialized)";
 	default:
 	    return "Unknown error code";
     }
