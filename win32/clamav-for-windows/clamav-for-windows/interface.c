@@ -693,6 +693,7 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
 struct scan_ctx {
     int entryfd;
     instance *inst;
+    DWORD cb_times;
 };
 
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
@@ -740,6 +741,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 
     sctx.entryfd = fd;
     sctx.inst = inst;
+    sctx.cb_times = 0;
     logg("Scan_ScanObjectByHandle (instance %p) invoking cl_scandesc with clamav context %p\n", inst, &sctx);
     perf = GetTickCount();
     res = cl_scandesc_callback(fd, &virname, NULL, engine, inst->scanopts, &sctx);
@@ -772,13 +774,14 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	cbperf = GetTickCount();
 	inst->scancb(&si, &act, inst->scancb_ctx);
 	cbperf = GetTickCount() - cbperf;
+	sctx.cb_times += cbperf;
 	logg("final_cb (clamav context %p, instance %p) callback completed with %u (result ignored) in %u ms\n", &sctx, inst, act, cbperf);
 	SetFilePointer(duphdl, lo, &hi, FILE_BEGIN);
     } while(0);
 
     perf = GetTickCount() - perf;
     close(fd);
-    logg("Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms\n", inst, res, perf);
+    logg("Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms (%d ms own)\n", inst, res, perf, perf - sctx.cb_times);
 
     if(lock_instances())
 	FAIL(CL_ELOCK, "failed to lock instances for instance %p", pScanner);
@@ -871,6 +874,7 @@ cl_error_t prescan_cb(int fd, void *context) {
     perf = GetTickCount();
     inst->scancb(&si, &act, inst->scancb_ctx);
     perf = GetTickCount() - perf;
+    sctx->cb_times += perf;
     logg("prescan_cb (clamav context %p, instance %p) callback completed with %u in %u ms\n", context, inst, act, perf);
     SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     switch(act) {
@@ -928,6 +932,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     perf = GetTickCount();
     inst->scancb(&si, &act, inst->scancb_ctx);
     perf = GetTickCount() - perf;
+    sctx->cb_times += perf;
     logg("postscan_cb (clamav context %p, instance %p) callback completed with %u in %u ms\n", context, inst, act, perf);
     SetFilePointer(fdhdl, lo, &hi, FILE_BEGIN);
     switch(act) {
