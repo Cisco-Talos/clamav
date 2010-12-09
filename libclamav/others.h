@@ -284,6 +284,14 @@ struct cl_settings {
     uint32_t min_cc_count;
     uint32_t min_ssn_count;
     char *pua_cats;
+
+    /* callbacks */
+    clcb_pre_scan cb_pre_scan;
+    clcb_post_scan cb_post_scan;
+    clcb_sigload cb_sigload;
+    void *cb_sigload_ctx;
+    clcb_msg cb_msg;
+    clcb_hash cb_hash;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
