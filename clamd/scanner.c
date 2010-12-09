@@ -239,7 +239,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	if (conn_reply_virus(scandata->conn, filename, virname, context.virhash, context.virsize) == -1) {
+	if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
 	    free(filename);
 	    return CL_ETIMEOUT;
 	}
@@ -337,7 +337,7 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	}
 
 	if(ret == CL_VIRUS) {
-		if (conn_reply_virus(conn, fdstr, virname, context.virhash, context.virsize) == -1)
+		if (conn_reply_virus(conn, fdstr, virname) == -1)
 		    ret = CL_ETIMEOUT;
 		if(context.virsize)
 		    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);

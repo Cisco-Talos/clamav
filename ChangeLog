@@ -1,3 +1,7 @@
+Thu Dec  9 13:40:55 CET 2010 (tk)
+---------------------------------
+ * clamd: don't report file hashes to clients (bb#2409)
+
 Thu Dec  9 13:29:16 CET 2010 (tk)
 ---------------------------------
  * libclamav: preserve callbacks during db reload (bb#2418)
