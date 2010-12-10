@@ -971,7 +971,7 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 	while(1) {
 	    unsigned int i;
 	    int ret;
-	    cl_settings *settings;
+	    struct cl_settings *settings;
 
 	    if(WaitForSingleObject(reload_event, INFINITE) == WAIT_FAILED) {
 		logg("!Scan_ReloadDatabase: failed to wait on reload event\n");
