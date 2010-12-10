@@ -971,6 +971,8 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 	while(1) {
 	    unsigned int i;
 	    int ret;
+	    cl_settings *settings;
+
 	    if(WaitForSingleObject(reload_event, INFINITE) == WAIT_FAILED) {
 		logg("!Scan_ReloadDatabase: failed to wait on reload event\n");
 		continue;
@@ -1002,6 +1004,14 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 		unlock_engine();
 		continue;
 	    }
+	    settings = cl_engine_settings_copy(engine);
+	    if (!settings) {
+		logg("!Scan_ReloadDatabase: Not enough memory for engine settings\n");
+		unlock_instances();
+		unlock_engine();
+		break;
+	    }
+
 	    logg("Scan_ReloadDatabase: Destroying old engine\n");
 	    cl_engine_free(engine);
 	    logg("Scan_ReloadDatabase: Loading new engine\n");
@@ -1013,15 +1023,8 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 		unlock_engine();
 		break;
 	    }
-	    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
-	    cl_engine_set_clcb_post_scan(engine, postscan_cb);
-    
-	    if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, tmpdir))) {
-		unlock_instances();
-		free_engine_and_unlock();
-		logg("!Scan_ReloadDatabase: Failed to set engine tempdir: %s\n", cl_strerror(ret));
-		break;
-	    }
+	    cl_engine_settings_apply(engine, settings);
+	    cl_engine_settings_free(settings);
 
 	    load_db(); /* FIXME: FIAL? */
 	    unlock_instances();
