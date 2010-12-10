@@ -253,9 +253,7 @@ struct cl_engine {
     clcb_post_scan cb_post_scan;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
-    clcb_msg cb_msg;
     clcb_hash cb_hash;
-    enum cl_msg cb_msg_minseverity;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -283,6 +281,9 @@ struct cl_settings {
     uint32_t maxfiles;
     uint32_t min_cc_count;
     uint32_t min_ssn_count;
+    enum bytecode_security bytecode_security;
+    uint32_t bytecode_timeout;
+    enum bytecode_mode bytecode_mode;
     char *pua_cats;
 
     /* callbacks */

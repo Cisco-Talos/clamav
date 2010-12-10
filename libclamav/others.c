@@ -568,13 +568,15 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->maxfiles = engine->maxfiles;
     settings->min_cc_count = engine->min_cc_count;
     settings->min_ssn_count = engine->min_ssn_count;
+    settings->bytecode_security = engine->bytecode_security;
+    settings->bytecode_timeout = engine->bytecode_timeout;
+    settings->bytecode_mode = engine->bytecode_mode;
     settings->pua_cats = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
 
     settings->cb_pre_scan = engine->cb_pre_scan;
     settings->cb_post_scan = engine->cb_post_scan;
     settings->cb_sigload = engine->cb_sigload;
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
-    settings->cb_msg = engine->cb_msg;
     settings->cb_hash = engine->cb_hash;
 
     return settings;
@@ -592,6 +594,9 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->maxfiles = settings->maxfiles;
     engine->min_cc_count = settings->min_cc_count;
     engine->min_ssn_count = settings->min_ssn_count;
+    engine->bytecode_security = settings->bytecode_security;
+    engine->bytecode_timeout = settings->bytecode_timeout;
+    engine->bytecode_mode = settings->bytecode_mode;
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
@@ -617,7 +622,6 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_post_scan = settings->cb_post_scan;
     engine->cb_sigload = settings->cb_sigload;
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
-    engine->cb_msg = settings->cb_msg;
     engine->cb_hash = settings->cb_hash;
 
     return CL_SUCCESS;
