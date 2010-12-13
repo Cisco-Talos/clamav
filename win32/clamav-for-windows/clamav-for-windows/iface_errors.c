@@ -31,10 +31,10 @@ wchar_t **clerrors;
 int init_errors(void) {
     int i;
 
-    logg("in init_errors\n");
+    logg("*in init_errors\n");
     clerrors = calloc(CL_ELAST_ERROR, sizeof(*clerrors));
     if(!clerrors) {
-	logg("init_errors: failed to allocate the error array, aborting\n");
+	logg("!init_errors: failed to allocate the error array, aborting\n");
 	return 1;
     }
     for(i=0; i<CL_ELAST_ERROR; i++) {
@@ -48,12 +48,12 @@ int init_errors(void) {
 	werr = (wchar_t *)malloc(len * sizeof(wchar_t));
 	if(!werr) {
 	    free_errors();
-	    logg("init_errors: failed to allocate string buffer, aborting\n");
+	    logg("!init_errors: failed to allocate string buffer, aborting\n");
 	    return 1;
 	}
 	if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, cerr, -1, werr, len)) {
 	    free_errors();
-	    logg("init_errors: failed to convert ascii error <%s> to wide, aborting\n", cerr);
+	    logg("!init_errors: failed to convert ascii error <%s> to wide, aborting\n", cerr);
 	    return 1;
 	}
 	logg("*init_errors: error %d is %S\n", i, werr);

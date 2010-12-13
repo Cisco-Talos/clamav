@@ -54,9 +54,12 @@ BOOL init() {
     if(ret)
 	return FALSE;
 
+    strncpy(slash, "clamav_log_verbose_off", sizeof(whereami) - (slash - whereami));
+    whereami[sizeof(whereami)-1] = '\0';
+    logg_verbose = access(whereami, 0) == -1 ? 1 : 0;
+
     strncpy(slash, "clamav.log", sizeof(whereami) - (slash - whereami));
     whereami[sizeof(whereami)-1] = '\0';
-    logg_verbose = 1;
     logg_nowarn = 0;
     logg_lock = 0;
     logg_time = 1;
@@ -69,7 +72,7 @@ BOOL init() {
     if(!MoveFileEx(logg_file, whereami, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	DeleteFile(logg_file);
     logg_noflush = 1;/* only flush on errors and warnings */
-    if(logg("ClamAV core initialized\n"))
+    if(logg("ClamAV core initialized (version %s, flevel %d)\n", cl_retver(), cl_retflevel()))
 	return FALSE;
 
     if(init_errors()) {
