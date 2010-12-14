@@ -148,7 +148,7 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
     updstatus->state = state;
     updstatus->status = fail;
     if(!WriteFile(updpipe, updstatus, sizeof(*updstatus), NULL, &o)) {
-	DROWRD er = GetLastError();
+	DWORD er = GetLastError();
 	if(er != ERROR_IO_PENDING)
 	    flog("WARNING: cannot write to pipe (%u)", er);
 	else if(!GetOverlappedResult(updpipe, &o, &got, TRUE))
