@@ -2347,7 +2347,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(ctx);
-	    if(ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL) {
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL) {
 		lseek(desc, 0, SEEK_SET);
 		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL);
 	    }

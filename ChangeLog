@@ -1,3 +1,7 @@
+Tue Dec 14 11:33:00 CET 2010 (tk)
+---------------------------------
+ * libclamav/scanners.c: ScanMail wasn't always honored (bb#2426)
+
 Thu Dec  9 13:40:55 CET 2010 (tk)
 ---------------------------------
  * clamd: don't report file hashes to clients (bb#2409)
