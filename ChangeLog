@@ -1,3 +1,7 @@
+Tue Dec 14 19:13:53 EET 2010 (edwin)
+------------------------------------
+ * libclamav/chmunpack.c: avoid crash on fstat failure (bb #2429).
+
 Tue Dec 14 16:07:42 CET 2010 (tk)
 ---------------------------------
  * libclamav: pass array with initial matches to bytecode (bb#2397)

@@ -678,6 +678,10 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 		if (!metadata->map) {
 			return CL_EMAP;
 		}
+	} else {
+	    char err[128];
+	    cli_warnmsg("fstat() failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+	    return CL_ESTAT;
 	}
 
 	if (!itsf_read_header(metadata)) {
