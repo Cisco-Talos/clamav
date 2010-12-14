@@ -62,6 +62,31 @@ void flog(const char *fmt, ...) {
     WriteFile(logh, buf, len, &x, NULL);
 }
 
+void flog_dbg(const char *fmt, ...) {
+    char buf[4096];
+    SYSTEMTIME t;
+    DWORD x;
+    va_list ap;
+    int len;
+
+    if(logh == INVALID_HANDLE_VALUE)
+	return;
+
+    GetLocalTime(&t);
+    _snprintf(buf, sizeof(buf), "%04u-%02u-%02u %02u:%02u:%02u - [", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+    buf[sizeof(buf)-1] = '\0';
+    len = strlen(buf);
+    va_start(ap, fmt);
+    vsnprintf(buf + len, sizeof(buf) - len, fmt, ap);
+    va_end(ap);
+    buf[sizeof(buf)-1] = '\0';
+    len = strlen(buf);
+    len = len < sizeof(buf) - 3 ? len : sizeof(buf) - 3;
+    memcpy(buf + len, "]\r\n", 3);
+    len += 3;
+    WriteFile(logh, buf, len, &x, NULL);
+}
+
 void flog_close(void) {
     if(logh == INVALID_HANDLE_VALUE)
 	return;
