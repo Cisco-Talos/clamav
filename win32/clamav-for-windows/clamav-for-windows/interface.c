@@ -89,14 +89,14 @@ DWORD WINAPI monitor_thread(VOID *p) {
     harr[0] = monitor_event;
     harr[1] = FindFirstChangeNotification(dbdir, FALSE, FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME);
 
-    logg("monitor_thread: watching directory changes on %s\n", dbdir);
-
     unlock_engine();
 
     if(harr[1] == INVALID_HANDLE_VALUE) {
-	logg("monitor_thread: failed to monitor directory changes on %s\n", dbdir);
+	logg("^monitor_thread: failed to monitor directory changes on %s\n", dbdir);
 	return 0;
     }
+
+    logg("monitor_thread: watching directory changes on %s\n", dbdir);
 
     while(1) {
 	WIN32_FIND_DATA wfd;
@@ -104,13 +104,13 @@ DWORD WINAPI monitor_thread(VOID *p) {
 
 	switch(WaitForMultipleObjects(2, harr, FALSE, INFINITE)) {
 	case WAIT_OBJECT_0:
-	    logg("monitor_thread: terminating upon request\n");
+	    logg("*monitor_thread: terminating upon request\n");
 	    FindCloseChangeNotification(harr[1]);
 	    return 0;
 	case WAIT_OBJECT_0 + 1:
 	    break;
 	default:
-	    logg("monitor_thread: unexpected wait failure - %u\n", GetLastError());
+	    logg("*monitor_thread: unexpected wait failure - %u\n", GetLastError());
 	    Sleep(1000);
 	    continue;
 	}
@@ -126,7 +126,7 @@ DWORD WINAPI monitor_thread(VOID *p) {
 	if(CompareFileTime(&wfd.ftLastWriteTime, &last_chk_time) <= 0)
 	    continue;
 
-	logg("*monitor_thread: reload requested!\n");
+	logg("monitor_thread: reload requested!\n");
 	Scan_ReloadDatabase();
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &last_chk_time); /* FIXME: small race here */
@@ -210,7 +210,7 @@ static int del_instance(instance *inst) {
 	unlock_instances();
 	return CL_SUCCESS;
     }
-    logg("!del_instances: instance not found\n");
+    logg("!del_instances: instance %p not found\n", inst);
     unlock_instances();
     return CL_EARG;
 }
@@ -291,7 +291,7 @@ static void touch_last_update(unsigned signo) {
 	}
 	CloseHandle(h);
     } else
-	logg("touch_lastcheck: failed to touch lastreload\n");
+	logg("^touch_last_lastcheck: failed to touch lastreload\n");
 }
 
 
@@ -336,7 +336,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     BOOL cant_convert;
     int ret;
 
-    logg("in Scan_Initialize(pEnginesFolder = %S, pTempRoot = %S)\n", pEnginesFolder, pTempRoot);
+    logg("*in Scan_Initialize(pEnginesFolder = %S, pTempRoot = %S)\n", pEnginesFolder, pTempRoot);
     if(!pEnginesFolder)
 	FAIL(CL_ENULLARG, "pEnginesFolder is NULL");
     if(!pTempRoot)
@@ -357,7 +357,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     
     minimal_definitions = bLoadMinDefs;
     if(bLoadMinDefs)
-	logg("!MINIMAL DEFINITIONS MODE ON!\n");
+	logg("^MINIMAL DEFINITIONS MODE ON!\n");
 
     if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pTempRoot, -1, tmpdir, sizeof(tmpdir), NULL, &cant_convert) || cant_convert) {
 	free_engine_and_unlock();
@@ -402,7 +402,7 @@ int CLAMAPI Scan_Uninitialize(void) {
     if(monitor_hdl) {
 	SetEvent(monitor_event);
 	if(WaitForSingleObject(monitor_hdl, 5000) != WAIT_OBJECT_0) {
-	    logg("Scan_Uninitialize: forcibly terminating monitor thread after 5 seconds\n");
+	    logg("^Scan_Uninitialize: forcibly terminating monitor thread after 5 seconds\n");
 	    TerminateThread(monitor_hdl, 0);
 	}
     }
@@ -450,7 +450,7 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
     unlock_engine();
     inst->scanopts = CL_SCAN_STDOPT;
     *ppScanner = (CClamAVScanner *)inst;
-    logg("*Created new instance %p\n", inst);
+    logg("Created new instance %p\n", inst);
     WIN();
 }
 
@@ -473,7 +473,7 @@ int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
 	    FAIL(rc, "del_instance failed for %p", pScanner);
     }
     free(pScanner);
-    logg("*in Scan_DestroyInstance: Instance %p destroyed\n", pScanner);
+    logg("in Scan_DestroyInstance: Instance %p destroyed\n", pScanner);
     WIN();
 }
 
@@ -807,7 +807,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     unlock_instances();
 
     if(res == CL_VIRUS) {
-	logg("*Scan_ScanObjectByHandle (instance %p): file is INFECTED with %s\n", inst, virname);
+	logg("Scan_ScanObjectByHandle (instance %p): file is INFECTED with %s\n", inst, virname);
 	if(pInfoList) {
 	    CLAM_SCAN_INFO_LIST *infolist = calloc(1, sizeof(CLAM_SCAN_INFO_LIST) + sizeof(CLAM_SCAN_INFO) + MAX_VIRNAME_LEN * 2);
 	    PCLAM_SCAN_INFO scaninfo;
@@ -825,7 +825,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
 		scaninfo->pThreatName = L"INFECTED";
 	    *pInfoList = infolist;
-	    logg("Scan_ScanObjectByHandle (instance %p): created result list %p\n", inst, infolist);
+	    logg("*Scan_ScanObjectByHandle (instance %p): created result list %p\n", inst, infolist);
 	}
 	*pScanStatus = CLAM_INFECTED;
     } else if(res == CL_CLEAN) {
@@ -1015,9 +1015,9 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 		break;
 	    }
 
-	    logg("*Scan_ReloadDatabase: Destroying old engine\n");
+	    logg("Scan_ReloadDatabase: Destroying old engine\n");
 	    cl_engine_free(engine);
-	    logg("*Scan_ReloadDatabase: Loading new engine\n");
+	    logg("Scan_ReloadDatabase: Loading new engine\n");
 
 	    // NEW STUFF //
 	    if(!(engine = cl_engine_new())) {
@@ -1036,11 +1036,11 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 	    break;
 	}
 	if(reload_ok)
-	    logg("*Scan_ReloadDatabase: Database successfully reloaded\n");
+	    logg("Scan_ReloadDatabase: Database successfully reloaded\n");
 	else
 	    logg("!Scan_ReloadDatabase: Database reload failed\n");
     } else
-	logg("^Database reload requested received while reload is pending\n");
+	logg("*Database reload requested received while reload is pending\n");
     InterlockedDecrement(&reload_waiters);
 }
 

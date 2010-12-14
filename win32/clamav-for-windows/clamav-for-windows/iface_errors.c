@@ -74,6 +74,6 @@ void free_errors(void) {
 CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode) {
     if(errorCode>=0 && errorCode<CL_ELAST_ERROR && clerrors[errorCode])
 	return clerrors[errorCode];
-    logg("Scan_GetErrorMsg called with invalid errorCode %d\n", errorCode);
+    logg("^Scan_GetErrorMsg called with invalid errorCode %d\n", errorCode);
     return L"GetErrorMsg called with an invalid error code";
 }
