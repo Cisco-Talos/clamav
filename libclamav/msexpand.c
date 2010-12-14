@@ -68,11 +68,11 @@ struct msexp_hdr {
 #pragma pack
 #endif
 
-#define BSIZE 4096
-#define RWBUFF 2048
+#define B_SIZE 4096
+#define RW_SIZE 2048
 
 #define READBYTES				\
-    ret = cli_readn(fd, rbuff, RWBUFF);		\
+    ret = cli_readn(fd, rbuff, RW_SIZE);		\
     if(ret == -1)				\
 	return CL_EREAD;			\
     if(!ret)					\
@@ -94,8 +94,8 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 {
 	struct msexp_hdr hdr;
 	uint8_t i, mask, bits;
-	unsigned char buff[BSIZE], rbuff[RWBUFF], wbuff[RWBUFF];
-	unsigned int j = BSIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
+	unsigned char buff[B_SIZE], rbuff[RW_SIZE], wbuff[RW_SIZE];
+	unsigned int j = B_SIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
 	int ret;
 
 
@@ -112,7 +112,7 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
     if(cli_checklimits("MSEXPAND", ctx, EC32(hdr.fsize), 0, 0)!=CL_CLEAN)
         return CL_SUCCESS;
 
-    memset(buff, 0, BSIZE);
+    memset(buff, 0, B_SIZE);
     while(1) {
 
 	if(!rbytes || (r == rbytes)) {
@@ -128,13 +128,13 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 		    READBYTES;
 		}
 
-		if(w == RWBUFF) {
+		if(w == RW_SIZE) {
 		    WRITEBYTES;
 		}
 
 		wbuff[w] = buff[j] = rbuff[r];
 		r++; w++;
-		j++; j %= BSIZE;
+		j++; j %= B_SIZE;
 	    } else {
 		if(r == rbytes) {
 		    READBYTES;
@@ -149,13 +149,13 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 		k += (l & 0xf0) << 4;
 		l = (l & 0x0f) + 3;
 		while(l--) {
-		    if(w == RWBUFF) {
+		    if(w == RW_SIZE) {
 			WRITEBYTES;
 		    }
 		    wbuff[w] = buff[j] = buff[k];
 		    w++;
-		    k++; k %= BSIZE;
-		    j++; j %= BSIZE;
+		    k++; k %= B_SIZE;
+		    j++; j %= B_SIZE;
 		}
 	    }
 	    mask *= 2;
