@@ -946,35 +946,47 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	    data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
 
 	/* subsig offsets */
-	data->lsigsuboff = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
-	if(!data->lsigsuboff) {
+	data->lsigsuboff_last = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
+	data->lsigsuboff_first = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
+	if(!data->lsigsuboff_last || !data->lsigsuboff_first) {
+	    free(data->lsigsuboff_last);
+	    free(data->lsigsuboff_first);
 	    free(data->lsigcnt[0]);
 	    free(data->lsigcnt);
 	    if(partsigs)
 		free(data->offmatrix);
 	    if(reloffsigs)
 		free(data->offset);
-	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff\n");
+	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)\n");
 	    return CL_EMEM;
 	}
-	data->lsigsuboff[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
-	if(!data->lsigsuboff[0]) {
-	    free(data->lsigsuboff);
+	data->lsigsuboff_last[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
+	data->lsigsuboff_first[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
+	if(!data->lsigsuboff_last[0] || !data->lsigsuboff_first[0]) {
+	    free(data->lsigsuboff_last[0]);
+	    free(data->lsigsuboff_first[0]);
+	    free(data->lsigsuboff_last);
+	    free(data->lsigsuboff_first);
 	    free(data->lsigcnt[0]);
 	    free(data->lsigcnt);
 	    if(partsigs)
 		free(data->offmatrix);
 	    if(reloffsigs)
 		free(data->offset);
-	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff[0]\n");
+	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)[0]\n");
 	    return CL_EMEM;
 	}
-	for(j = 0; j < 64; j++)
-	    data->lsigsuboff[0][j] = CLI_OFF_NONE;
+	for(j = 0; j < 64; j++) {
+	    data->lsigsuboff_last[0][j] = CLI_OFF_NONE;
+	    data->lsigsuboff_first[0][j] = CLI_OFF_NONE;
+	}
 	for(i = 1; i < lsigs; i++) {
-	    data->lsigsuboff[i] = data->lsigsuboff[0] + 64 * i;
-	    for(j = 0; j < 64; j++)
-		data->lsigsuboff[i][j] = CLI_OFF_NONE;
+	    data->lsigsuboff_last[i] = data->lsigsuboff_last[0] + 64 * i;
+	    data->lsigsuboff_first[i] = data->lsigsuboff_first[0] + 64 * i;
+	    for(j = 0; j < 64; j++) {
+		data->lsigsuboff_last[i][j] = CLI_OFF_NONE;
+		data->lsigsuboff_first[i][j] = CLI_OFF_NONE;
+	    }
 	}
     }
     for (i=0;i<32;i++)
@@ -1027,8 +1039,10 @@ void cli_ac_freedata(struct cli_ac_data *data)
     if(data && data->lsigs) {
 	free(data->lsigcnt[0]);
 	free(data->lsigcnt);
-	free(data->lsigsuboff[0]);
-	free(data->lsigsuboff);
+	free(data->lsigsuboff_last[0]);
+	free(data->lsigsuboff_last);
+	free(data->lsigsuboff_first[0]);
+	free(data->lsigsuboff_first);
 	data->lsigs = 0;
     }
 
@@ -1075,11 +1089,13 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
 
     if(realoff != CLI_OFF_NONE) {
-	if(mdata->lsigsuboff[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff[lsigid1][lsigid2])))
+	if(mdata->lsigsuboff_first[lsigid1][lsigid2] == CLI_OFF_NONE)
+	    mdata->lsigsuboff_first[lsigid1][lsigid2] = realoff;
+	if(mdata->lsigsuboff_last[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff_last[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff_last[lsigid1][lsigid2])))
 	    return;
 	mdata->lsigcnt[lsigid1][lsigid2]++;
 	if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
-	    mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
+	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
     }
 
     if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
@@ -1098,7 +1114,7 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
 	/* start of last macro match */
 	last_macro_match = mdata->macro_lastmatch[macropt->sigid];
 	/* start of previous lsig subsig match */
-	last_macroprev_match = mdata->lsigsuboff[lsigid1][lsigid2];
+	last_macroprev_match = mdata->lsigsuboff_last[lsigid1][lsigid2];
 	if (last_macro_match != CLI_OFF_NONE)
 	    cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
 		       last_macroprev_match, smin, smax, last_macro_match);
@@ -1108,11 +1124,11 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
 	    cli_dbgmsg("Canceled false lsig macro match\n");
 	    /* Previous match was false - cancel it */
 	    mdata->lsigcnt[lsigid1][lsigid2]--;
-	    mdata->lsigsuboff[lsigid1][lsigid2] = realoff;
+	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
 	} else {
 	    /* mark the macro sig itself matched */
 	    mdata->lsigcnt[lsigid1][lsigid2+1]++;
-	    mdata->lsigsuboff[lsigid1][lsigid2+1] = last_macro_match;
+	    mdata->lsigsuboff_last[lsigid1][lsigid2+1] = last_macro_match;
 	}
     }
 }

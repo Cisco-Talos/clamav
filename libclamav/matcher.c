@@ -545,7 +545,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 			if(ctx->virname)
 			    *ctx->virname = root->ac_lsigtable[i]->virname;
 			return CL_VIRUS;
-		    } else if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff[i], map) == CL_VIRUS) {
+		    } else if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff_first[i], map) == CL_VIRUS) {
 			return CL_VIRUS;
 		    }
 		}
@@ -556,7 +556,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 		    *ctx->virname = root->ac_lsigtable[i]->virname;
 		return CL_VIRUS;
 	    }
-	    if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff[i], map) == CL_VIRUS) {
+	    if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, ctx->virname, acdata->lsigcnt[i], acdata->lsigsuboff_first[i], map) == CL_VIRUS) {
 		return CL_VIRUS;
 	    }
 	}

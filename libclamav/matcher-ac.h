@@ -37,7 +37,7 @@ struct cli_ac_data {
     int32_t ***offmatrix;
     uint32_t partsigs, lsigs, reloffsigs;
     uint32_t **lsigcnt;
-    uint32_t **lsigsuboff;
+    uint32_t **lsigsuboff_last, **lsigsuboff_first;
     uint32_t *offset;
     uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */

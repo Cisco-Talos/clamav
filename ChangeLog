@@ -1,3 +1,7 @@
+Tue Dec 14 16:07:42 CET 2010 (tk)
+---------------------------------
+ * libclamav: pass array with initial matches to bytecode (bb#2397)
+
 Tue Dec 14 12:20:34 CET 2010 (tk)
 ---------------------------------
  * libclamav/msexpand.c: fix name clash on HP-UX (bb#2398)
