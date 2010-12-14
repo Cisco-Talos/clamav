@@ -32,6 +32,7 @@
 #include <unistd.h>
 #endif
 #include <string.h>
+#include <errno.h>
 
 #include "fmap.h"
 #include "others.h"
