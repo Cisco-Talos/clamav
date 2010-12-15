@@ -19,14 +19,20 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <io.h>
 
 #include "flog.h"
 
 static HANDLE logh = INVALID_HANDLE_VALUE;
+static int log_dbg = 0;
 
 void flog_open(const char *path) {
+    char logfile[4096];
     DWORD sz;
-    logh = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    _snprintf(logfile, sizeof(logfile), "%s\\update.log", path);
+    logfile[sizeof(logfile)-1] = '\0';
+    logh = CreateFile(logfile, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if(logh == INVALID_HANDLE_VALUE)
 	return;
     sz = GetFileSize(logh, NULL);
@@ -34,6 +40,11 @@ void flog_open(const char *path) {
 	SetEndOfFile(logh);
     else
 	SetFilePointer(logh, 0, NULL, FILE_END);
+
+    _snprintf(logfile, sizeof(logfile), "%s\\update_log_verbose_off", path);
+    logfile[sizeof(logfile)-1] = '\0';
+    if(access(logfile, 0) == -1)
+	log_dbg = 1;
     flog("Log file initialized");
 }
 
@@ -69,7 +80,7 @@ void flog_dbg(const char *fmt, ...) {
     va_list ap;
     int len;
 
-    if(logh == INVALID_HANDLE_VALUE)
+    if(!log_dbg)
 	return;
 
     GetLocalTime(&t);

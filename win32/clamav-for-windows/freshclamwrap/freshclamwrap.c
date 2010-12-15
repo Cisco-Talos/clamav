@@ -250,9 +250,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     *ptr = '\0';
 
     /* Log file */
-    _snprintf(command, sizeof(command)-1, "%s\\update.log", datadir);
-    command[sizeof(command)-1] = '\0';
-    flog_open(command);
+    flog_open(datadir);
 
     _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"", datadir, datadir);
     command[sizeof(command)-1] = '\0';
