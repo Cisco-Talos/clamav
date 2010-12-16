@@ -1476,7 +1476,7 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
     char lastline[256];
     int pipefd[2];
     pid_t pid;
-    int status = 0;
+    int status = 0, ret;
     FILE *f;
 
     if (pipe(pipefd) == -1) {
@@ -1513,7 +1513,8 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
 	    }
 	    fclose(f);
 
-	    if (waitpid(pid, &status, 0) == -1 && errno != ECHILD)
+	    while ((ret = waitpid(pid, &status, 0)) == -1 && errno == EINTR);
+	    if (ret == -1 && errno != ECHILD)
 		logg("^waitpid() failed: %s\n", strerror(errno));
 	    cli_chomp(firstline);
 	    cli_chomp(lastline);
@@ -1523,7 +1524,7 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
 		     lastline);
 	    }
 	    if (WIFEXITED(status)) {
-		int ret = WEXITSTATUS(status);
+		ret = WEXITSTATUS(status);
 		if (ret) {
 		    logg("^Database load exited with status %d\n", ret);
 		    return ret;

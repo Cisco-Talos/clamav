@@ -1,3 +1,7 @@
+Thu Dec 16 14:15:33 CET 2010 (tk)
+---------------------------------
+ * freshclam, clamd: handle EINTR during waitpid() (bb#2422)
+
 Tue Dec 14 19:13:53 EET 2010 (edwin)
 ------------------------------------
  * libclamav/chmunpack.c: avoid crash on fstat failure (bb #2429).
