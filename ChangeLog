@@ -1,3 +1,7 @@
+Thu Dec 16 15:31:38 CET 2010 (acab)
+---------------------------------
+ * clamav-milter: handle EINTR during waitpid()
+
 Thu Dec 16 14:15:33 CET 2010 (tk)
 ---------------------------------
  * freshclam, clamd: handle EINTR during waitpid() (bb#2422)

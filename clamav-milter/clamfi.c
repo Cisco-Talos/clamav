@@ -382,8 +382,10 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 				args[8] = NULL;
 				exit(execvp(viraction, args));
 			    } else if(pid > 0) {
+				int wret;
 				pthread_mutex_unlock(&virusaction_lock);
-				if(waitpid(pid, &ret, 0)<0)
+				while((wret = waitpid(pid, &ret, 0)) == -1 && errno == EINTR);
+				if(wret<0)
 				    logg("!VirusEvent: waitpid() failed: %s\n", cli_strerror(errno, er, sizeof(er)));
 				else {
 				    if(WIFEXITED(ret))
