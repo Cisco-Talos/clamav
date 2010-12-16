@@ -146,7 +146,7 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 	    exit(execle("/bin/sh", "sh", "-c", buffer_cmd, NULL, env));
 	} else if(pid > 0) { /* parent */
 	    pthread_mutex_unlock(&virusaction_lock);
-	    while(waitpid(pid, NULL, 0) == -1 && errno = EINTR);
+	    while(waitpid(pid, NULL, 0) == -1 && errno == EINTR);
 	} else {
 	    logg("!VirusEvent: fork failed.\n");
 	}
