@@ -1,3 +1,8 @@
+Fri Dec 17 17:10:46 CET 2010 (acab)
+-----------------------------------
+ * shared/cdiff.c: Fix error path double free - missed in 4bc4581d
+		   thanks Michael Tautschnig <mt*debian.org>
+
 Fri Dec 17 14:21:21 CET 2010 (acab)
 -----------------------------------
  * clamav-milter/whitelist.c, clamscan/manager.c, libclamav/sis.c:
