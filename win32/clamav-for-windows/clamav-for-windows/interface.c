@@ -766,7 +766,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	CLAM_SCAN_INFO si;
 	CLAM_ACTION act;
 	DWORD cbperf;
-	wchar_t wvirname[MAX_VIRNAME_LEN];
+	wchar_t wvirname[MAX_VIRNAME_LEN] = L"Clam.";
 	LONG lo = 0, hi = 0, hi2 = 0;
 
 	si.cbSize = sizeof(si);
@@ -774,10 +774,10 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	si.scanPhase = SCAN_PHASE_FINAL;
 	si.errorCode = CLAMAPI_SUCCESS;
 	if(res == CL_VIRUS) {
-	    if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
+	    if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN - 5))
 		si.pThreatName = wvirname;
 	    else
-		si.pThreatName = L"INFECTED";
+		si.pThreatName = L"Clam.INFECTED";
 	} else
 	    si.pThreatName = NULL;
 	logg("*in final_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", &sctx, inst, fd, res, si.pThreatName);
@@ -822,8 +822,9 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	    scaninfo->pThreatType = threat_type(virname);
 	    wvirname = (wchar_t *)(scaninfo + 1);
 	    scaninfo->pThreatName = wvirname;
-	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
-		scaninfo->pThreatName = L"INFECTED";
+	    memcpy(wvirname, L"Clam.", 10);
+	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN-5))
+		scaninfo->pThreatName = L"Clam.INFECTED";
 	    *pInfoList = infolist;
 	    logg("*Scan_ScanObjectByHandle (instance %p): created result list %p\n", inst, infolist);
 	}
@@ -916,7 +917,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     CLAM_ACTION act;
     HANDLE fdhdl;
     DWORD perf;
-    wchar_t wvirname[MAX_VIRNAME_LEN];
+    wchar_t wvirname[MAX_VIRNAME_LEN] = L"Clam.";
     LONG lo = 0, hi = 0, hi2 = 0;
 
     if(!context) {
@@ -932,10 +933,10 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     si.scanPhase = SCAN_PHASE_POSTSCAN;
     si.errorCode = CLAMAPI_SUCCESS;
     if(result == CL_VIRUS) {
-	if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, wvirname, MAX_VIRNAME_LEN))
+	if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN-5))
 	    si.pThreatName = wvirname;
 	else
-	    si.pThreatName = L"INFECTED";
+	    si.pThreatName = L"Clam.INFECTED";
     } else
 	    si.pThreatName = NULL;
     logg("*in postscan_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", context, inst, fd, result, si.pThreatName);
