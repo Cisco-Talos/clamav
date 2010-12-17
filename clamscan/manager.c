@@ -273,6 +273,7 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 	if(fwrite(buff, 1, bread, fs) < bread) {
 	    logg("!Can't write to %s\n", file);
 	    free(file);
+	    fclose(fs);
 	    return 2;
 	}
     }

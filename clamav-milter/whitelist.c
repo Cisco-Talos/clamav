@@ -90,6 +90,7 @@ int whitelist_init(const char *fname) {
 	if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
 	    logg("!Out of memory loading whitelist file\n");
 	    whitelist_free();
+	    fclose(f);
 	    return 1;
 	}
 	w->next = (*addto);
@@ -97,9 +98,11 @@ int whitelist_init(const char *fname) {
 	if (cli_regcomp(&w->preg, ptr, REG_ICASE|REG_NOSUB)) {
 	    logg("!Failed to compile regex '%s' in whitelist file\n", ptr);
 	    whitelist_free();
+	    fclose(f);
 	    return 1;
 	}
     }
+    fclose(f);
     return 0;
 }
 
