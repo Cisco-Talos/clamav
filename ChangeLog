@@ -1,3 +1,7 @@
+Mon Dec 20 16:30:57 EET 2010 (edwin)
+-----------------------------------
+ * clamd: bump default MaxConnectionQueueLength to 200
+
 Fri Dec 17 17:10:46 CET 2010 (acab)
 -----------------------------------
  * shared/cdiff.c: Fix error path double free - missed in 4bc4581d

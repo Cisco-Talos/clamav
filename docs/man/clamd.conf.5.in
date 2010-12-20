@@ -122,7 +122,7 @@ Default: no
 \fBMaxConnectionQueueLength NUMBER\fR
 Maximum length the queue of pending connections may grow to.
 .br 
-Default: 15
+Default: 200
 .TP 
 \fBMaxThreads NUMBER\fR
 Maximum number of threads running at the same time.
