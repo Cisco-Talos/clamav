@@ -58,11 +58,13 @@ static char *rejectfmt = NULL;
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
 char xvirushdr[255];
 char *viraction = NULL;
-enum {
-    LOGINF_NONE,
-    LOGINF_BASIC,
-    LOGINF_FULL
-} loginfected;
+
+#define LOGINF_NONE 0
+#define LOGINF_BASIC 1
+#define LOGINF_FULL 2
+#define LOGCLN_BASIC 4
+#define LOGCLN_FULL 8
+int loginfected;
 
 #define CLAMFIBUFSZ 1424
 static const char *HDR_UNAVAIL = "UNKNOWN";
@@ -218,7 +220,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 
     if(!headerf) return SMFIS_CONTINUE; /* just in case */
 
-    if(loginfected == LOGINF_FULL || viraction) {
+    if((loginfected & (LOGINF_FULL | LOGCLN_FULL)) || viraction) {
 	if(!cf->msg_subj && !strcasecmp(headerf, "Subject"))
 	    cf->msg_subj = strdup(headerv ? headerv : "");
 	if(!cf->msg_date && !strcasecmp(headerf, "Date"))
@@ -317,10 +319,23 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     len = strlen(reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n")) {
 	if(addxvirus) add_x_header(ctx, "Clean", cf->scanned_count, cf->status_count);
+	if(loginfected & LOGCLN_FULL) {
+	    const char *id = smfi_getsymval(ctx, "{i}");
+	    const char *from = smfi_getsymval(ctx, "{mail_addr}");
+	    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+	    const char *msg_subj = makesanehdr(cf->msg_subj);
+	    const char *msg_date = makesanehdr(cf->msg_date);
+	    const char *msg_id = makesanehdr(cf->msg_id);
+	    logg("~Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, to, msg_subj, msg_id, msg_date);
+	} else if(loginfected & LOGCLN_BASIC) {
+	    const char *from = smfi_getsymval(ctx, "{mail_addr}");
+	    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+	    logg("~Clean message from <%s> to <%s>\n", from, to);
+	}
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
 	cf->virusname = NULL;
-	if(loginfected || addxvirus || rejectfmt || viraction) {
+	if((loginfected & (LOGINF_BASIC | LOGINF_FULL)) || addxvirus || rejectfmt || viraction) {
 	    char *vir;
 
 	    reply[len-7] = '\0';
@@ -344,7 +359,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
 		    if(!from) from = HDR_UNAVAIL;
 		    if(!to) to = HDR_UNAVAIL;
-		    if(loginfected == LOGINF_FULL || viraction) {
+		    if((loginfected & LOGINF_FULL) || viraction) {
 			const char *id = smfi_getsymval(ctx, "{i}");
 			const char *msg_subj = makesanehdr(cf->msg_subj);
 			const char *msg_date = makesanehdr(cf->msg_date);
@@ -352,7 +367,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
 			if(!id) id = HDR_UNAVAIL;
 			
-			if(loginfected == LOGINF_FULL)
+			if(loginfected & LOGINF_FULL)
 			    logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
 
 			if(viraction) {
@@ -406,7 +421,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 			    free(e_msg_id);
 			}
 		    }
-		    if(loginfected == LOGINF_BASIC)
+		    if(loginfected & LOGINF_BASIC)
 			logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		}
 	    }
@@ -509,6 +524,17 @@ int init_actions(struct optstruct *opts) {
     else {
 	logg("!Invalid setting %s for option LogInfected\n", opt->strarg);
 	return 1;
+    }
+
+    if((opt = optget(opts, "LogClean"))->enabled) {
+	if(!strcasecmp(opt->strarg, "Basic"))
+	    loginfected |= LOGCLN_BASIC;
+	else if(!strcasecmp(opt->strarg, "Full"))
+	    loginfected |= LOGCLN_FULL;
+	else if(strcasecmp(opt->strarg, "Off")) {
+	    logg("!Invalid setting %s for option LogInfected\n", opt->strarg);
+	    return 1;
+	}
     }
 
     if((opt = optget(opts, "VirusAction"))->enabled)

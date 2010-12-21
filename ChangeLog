@@ -1,3 +1,7 @@
+Tue Dec 21 16:00:26 CET 2010 (acab)
+-----------------------------------
+ * clamav-milter: add LogClean option (bb#2129)
+
 Mon Dec 20 16:30:57 EET 2010 (edwin)
 -----------------------------------
  * clamd: bump default MaxConnectionQueueLength to 200

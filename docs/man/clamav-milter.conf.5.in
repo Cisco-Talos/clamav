@@ -212,13 +212,20 @@ Enable verbose logging.
 Default: no
 .TP 
 \fBLogInfected STRING\fR
-Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
-.br 
-This option allows to tune what is logged when a message is infected. Possible values are Off (the default - nothing is logged), Basic (minimal info logged), Full (verbose info logged)
+This option allows to tune what is logged when a message is infected. Possible values are Off (the default \- nothing is logged), Basic (minimal info logged), Full (verbose info logged)
 .br
 Note: For this to work properly in sendmail, make sure the msg_id, mail_addr, rcpt_addr and i macroes are available in eom. In other words add a line like: Milter.macros.eom={msg_id}, {mail_addr}, {rcpt_addr}, i to your .cf file. Alternatively use the macro: define(`confMILTER_MACROS_EOM', `{msg_id}, {mail_addr}, {rcpt_addr}, i')
 .br
 Postfix should be working fine with the default settings.
+.br
+Default: disabled
+.TP 
+\fBLogClean STRING\fR
+This option allows to tune what is logged when no threat is found in a scanned message.
+.br
+See LogInfected for possible values and caveats.
+.br
+Useful in debugging but drastically increases the log size.
 .br
 Default: disabled
 .SH "NOTES"
