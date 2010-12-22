@@ -63,7 +63,7 @@ static short terminate = 0;
 extern int active_children;
 
 static short foreground = 1;
-char updtmpdir[512];
+char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
 
 static void sighandler(int sig) {
@@ -164,7 +164,7 @@ static void help(void)
     mprintf("\n");
 }
 
-static int download(const struct optstruct *opts, const char *datadir, const char *cfgfile)
+static int download(const struct optstruct *opts, const char *cfgfile)
 {
 	int ret = 0, try = 0, maxattempts = 0;
 	const struct optstruct *opt;
@@ -178,7 +178,7 @@ static int download(const struct optstruct *opts, const char *datadir, const cha
 	return 56;
     } else {
 	while(opt) {
-	    ret = downloadmanager(opts, opt->strarg, datadir, try == maxattempts - 1);
+	    ret = downloadmanager(opts, opt->strarg, try == maxattempts - 1);
 #ifndef _WIN32
 	    alarm(0);
 #endif
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 {
 	int ret = 52, retcl;
 	const char *cfgfile, *arg = NULL, *pidfile = NULL;
-	char *pt, dbdir[512];
+	char *pt;
 	struct optstruct *opts;
 	const struct optstruct *opt;
 #ifndef	_WIN32
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
 	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
 	while(!terminate) {
-	    ret = download(opts, dbdir, cfgfile);
+	    ret = download(opts, cfgfile);
 
 	    if(ret <= 1) {
 		if((opt = optget(opts, "SubmitDetectionStats"))->enabled)
@@ -529,7 +529,7 @@ int main(int argc, char **argv)
 		logg(" *** Virus databases are not updated in this mode ***\n");
 	    ret = submitstats(opt->strarg, opts);
 	} else {
-	    ret = download(opts, dbdir, cfgfile);
+	    ret = download(opts, cfgfile);
 
 	    if((opt = optget(opts, "SubmitDetectionStats"))->enabled)
 		submitstats(opt->strarg, opts);

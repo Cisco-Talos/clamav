@@ -1,3 +1,7 @@
+Wed Dec 22 12:10:06 CET 2010 (tk)
+---------------------------------
+ * freshclam: fix again handling of relative db paths (bb#2240)
+
 Tue Dec 21 16:00:26 CET 2010 (acab)
 -----------------------------------
  * clamav-milter: add LogClean option (bb#2442)
