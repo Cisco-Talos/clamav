@@ -690,15 +690,117 @@ int CLAMAPI Scan_SetLimit(int option, unsigned int value) {
 }
 
 
+static wchar_t *uncpathw(const wchar_t *path) {
+    DWORD len = 0;
+    unsigned int pathlen;
+    wchar_t *stripme, *strip_from, *dest = malloc((PATH_MAX + 1) * sizeof(wchar_t));
+
+    if(!dest)
+	return NULL;
+
+    pathlen = wcslen(path);
+    if(wcsncmp(path, L"\\\\", 2)) {
+	/* NOT already UNC */
+	memcpy(dest, L"\\\\?\\", 8);
+	if(pathlen < 2 || path[1] != L':' || *path < L'A' || *path > L'z' || (*path > L'Z' && *path < L'a')) {
+	    /* Relative path */
+	    len = GetCurrentDirectoryW(PATH_MAX - 5, &dest[4]);
+	    if(!len || len > PATH_MAX - 5) {
+		free(dest);
+		return NULL;
+	    }
+	    if(*path == L'\\')
+		len = 6; /* Current drive root */
+	    else {
+		len += 4; /* A 'really' relative path */
+		dest[len] = L'\\';
+		len++;
+	    }
+	} else {
+	    /* C:\ and friends */
+	    len = 4;
+	}
+    } else {
+	/* UNC already */
+	len = 0;
+    }
+
+    if(pathlen >= PATH_MAX - len) {
+	free(dest);
+        return NULL;
+    }
+    wcscpy(&dest[len], path);
+    len = wcslen(dest);
+    strip_from = &dest[3];
+    /* append a backslash to naked drives and get rid of . and .. */
+    if(!wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
+	if(len == 6) {
+	    dest[6] = L'\\';
+	    dest[7] = L'\0';
+	}
+	strip_from = &dest[6];
+    }
+    while((stripme = wcsstr(strip_from, L"\\."))) {
+	wchar_t *copy_from, *copy_to;
+	if(!stripme[2] || stripme[2] == L'\\') {
+	    copy_from = &stripme[2];
+	    copy_to = stripme;
+	} else if (stripme[2] == L'.' && (!stripme[3] || stripme[3] == L'\\')) {
+	    *stripme = L'\0';
+	    copy_from = &stripme[3];
+	    copy_to = wcsrchr(strip_from, L'\\');
+	    if(!copy_to)
+		copy_to = stripme;
+	} else {
+	    strip_from = &stripme[1];
+	    continue;
+	}
+	while(1) {
+	    *copy_to = *copy_from;
+	    if(!*copy_from) break;
+	    copy_to++;
+	    copy_from++;
+	}
+    }
+
+    /* strip double slashes */
+    if((stripme = wcsstr(&dest[4], L"\\\\"))) {
+	strip_from = stripme;
+	while(1) {
+	    wchar_t c = *strip_from;
+	    strip_from++;
+	    if(c == L'\\' && *strip_from == L'\\')
+		continue;
+	    *stripme = c;
+	    stripme++;
+	    if(!c)
+		break;
+	}
+    }
+    if(wcslen(dest) == 6 && !wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
+	dest[6] = L'\\';
+	dest[7] = L'\0';
+    }
+    return dest;
+}
+
+
 int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList) {
     HANDLE fhdl;
     int res;
     instance *inst = (instance *)pScanner;
 
     logg("*in Scan_ScanObject(pScanner = %p, pObjectPath = %S)\n", pScanner, pObjectPath);
-    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE)
-	FAIL(CL_EOPEN, "open() failed");
-
+    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE) {
+	wchar_t *uncfname = uncpathw(pObjectPath);
+	if(!uncfname)
+	    FAIL(CL_EMEM, "uncpathw() failed");
+	fhdl = CreateFileW(uncfname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
+	logg("*Scan_ScanObject translating '%S' to '%S'\n", pObjectPath, uncfname);
+	free(uncfname);
+	if(fhdl == INVALID_HANDLE_VALUE)
+	    FAIL(CL_EOPEN, "open() failed");
+    }
     logg("*Scan_ScanObject (instance %p) invoking Scan_ScanObjectByHandle for handle %p (%S)\n", pScanner, fhdl, pObjectPath);
     res = Scan_ScanObjectByHandle(pScanner, fhdl, pScanStatus, pInfoList);
     logg("*Scan_ScanObject (instance %p) invoking Scan_ScanObjectByHandle returned %d\n", pScanner, res);
@@ -974,7 +1076,6 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 	logg("*Scan_ReloadDatabase: Database reload requested received, waiting for idle state\n");
 	while(1) {
 	    unsigned int i;
-	    int ret;
 	    struct cl_settings *settings;
 
 	    if(WaitForSingleObject(reload_event, INFINITE) == WAIT_FAILED) {
