@@ -1,3 +1,7 @@
+Mon Dec 27 15:21:43 CET 2010 (acab)
+-----------------------------------
+ * libclamav/disasm.c: fix movsx/movzx disasm src size (bb#2341)
+
 Wed Dec 22 12:10:06 CET 2010 (tk)
 ---------------------------------
  * freshclam: fix again handling of relative db paths (bb#2240)
