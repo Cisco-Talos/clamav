@@ -157,7 +157,6 @@
   <ItemGroup>
     <ClCompile Include="..\clamscan\clamscan.c"/>
     <ClCompile Include="..\clamscan\manager.c"/>
-    <ClCompile Include="..\clamscan\others.c"/>
     <ClCompile Include="..\shared\actions.c"/>
     <ClCompile Include="..\shared\misc.c"/>
     <ClCompile Include="..\shared\output.c"/>

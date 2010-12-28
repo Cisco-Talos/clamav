@@ -335,6 +335,8 @@ libclamav_la_SOURCES = \
 	default.h\
 	sha256.c\
 	sha256.h\
+	sha1.c\
+	sha1.h\
 	bignum.h\
 	bytecode.c\
 	bytecode.h\
@@ -365,10 +367,6 @@ libclamav_la_SOURCES = \
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
 		     bignum_class.h
-endif
-
-if BUILD_SHA1
-libclamav_la_SOURCES += sha1.c sha1.h
 endif
 
 .PHONY: version.h.tmp
