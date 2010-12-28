@@ -396,12 +396,6 @@ fileblobCreate(void)
 int
 fileblobScanAndDestroy(fileblob *fb)
 {
-	if(fb->ctx && fb->ctx->engine->keeptmp) {
-		/* Can't remove the file, the caller must scan */
-		fileblobDestroy(fb);
-		return CL_CLEAN;
-	}
-		
 	switch(fileblobScan(fb)) {
 		case CL_VIRUS:
 			fileblobDestructiveDestroy(fb);
@@ -424,7 +418,8 @@ fileblobDestructiveDestroy(fileblob *fb)
 	if(fb->fp && fb->fullname) {
 		fclose(fb->fp);
 		cli_dbgmsg("fileblobDestructiveDestroy: %s\n", fb->fullname);
-		cli_unlink(fb->fullname);
+		if(!fb->ctx || !fb->ctx->engine->keeptmp)
+			cli_unlink(fb->fullname);
 		free(fb->fullname);
 		fb->fp = NULL;
 		fb->fullname = NULL;

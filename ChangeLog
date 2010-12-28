@@ -1,3 +1,8 @@
+Tue Dec 28 13:03:14 CET 2010 (tk)
+---------------------------------
+ * libclamav/blob.c: properly scan files when LeaveTemporaryFiles
+		     is enabled (bb#2447)
+
 Mon Dec 27 15:21:43 CET 2010 (acab)
 -----------------------------------
  * libclamav/disasm.c: fix movsx/movzx disasm src size (bb#2341)
