@@ -29,13 +29,7 @@
 #ifndef _SHA1_H
 #define _SHA1_H
 
-#if HAVE_INTTYPES_H
-# include <inttypes.h>
-#else
-# if HAVE_STDINT_H
-#  include <stdint.h>
-# endif
-#endif
+#include "cltypes.h"
 
 #define SHA1_HASH_SIZE 20
 
