@@ -29,6 +29,9 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 #include <dirent.h>
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -43,9 +46,9 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
+#include <target.h>
 
 #include "manager.h"
-#include "others.h"
 #include "global.h"
 
 #include "shared/optparser.h"
@@ -64,24 +67,65 @@
 dev_t procdev;
 #endif
 
-void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
+#ifdef _WIN32
+/* FIXME: If possible, handle users correctly */
+static int checkaccess(const char *path, const char *username, int mode)
+{
+    return !_access(path, mode);
+}
+#else
+static int checkaccess(const char *path, const char *username, int mode)
+{
+	struct passwd *user;
+	int ret = 0, status;
+
+    if(!geteuid()) {
+
+	if((user = getpwnam(username)) == NULL) {
+	    return -1;
+	}
+
+	switch(fork()) {
+	    case -1:
+		return -2;
+
+	    case 0:
+		if(setgid(user->pw_gid)) {
+		    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
+		    exit(0);
+		}
+
+		if(setuid(user->pw_uid)) {
+		    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
+		    exit(0);
+		}
+
+		if(access(path, mode))
+		    exit(0);
+		else
+		    exit(1);
+
+	    default:
+		wait(&status);
+		if(WIFEXITED(status) && WEXITSTATUS(status) == 1)
+		    ret = 1;
+	}
+
+    } else {
+	if(!access(path, mode))
+	    ret = 1;
+    }
+
+    return ret;
+}
+#endif
+
+static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
 	int ret = 0, fd, included, printclean = 1;
-	unsigned int fsize;
 	const struct optstruct *opt;
 	const char *virname;
-#ifdef C_LINUX
 	struct stat sb;
-
-    /* argh, don't scan /proc files */
-    if(procdev)
-	if(stat(filename, &sb) != -1)
-	    if(sb.st_dev == procdev) {
-		if(!printinfected)
-		    logg("~%s: Excluded (/proc)\n", filename);
-		return;
-	    }
-#endif    
 
     if((opt = optget(opts, "exclude"))->enabled) {
 	while(opt) {
@@ -110,13 +154,23 @@ void scanfile(const char *filename, struct cl_engine *engine, const struct optst
 	}
     }
 
-    fsize = fileinfo(filename, 1);
-    if(fsize == 0) {
-	if(!printinfected)
-	    logg("~%s: Empty file\n", filename);
-	return;
+    /* argh, don't scan /proc files */
+    if(stat(filename, &sb) != -1) {
+#ifdef C_LINUX
+	if(procdev && sb.st_dev == procdev) {
+	    if(!printinfected)
+		logg("~%s: Excluded (/proc)\n", filename);
+		return;
+	}
+#endif    
+	if(!sb.st_size) {
+	    if(!printinfected)
+		logg("~%s: Empty file\n", filename);
+	    return;
+	}
+	info.rblocks += sb.st_size / CL_COUNT_PRECISION;
     }
-    info.rblocks += fsize / CL_COUNT_PRECISION;
+
 #ifndef _WIN32
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
@@ -159,14 +213,15 @@ void scanfile(const char *filename, struct cl_engine *engine, const struct optst
 	action(filename);
 }
 
-void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth, dev_t dev)
+static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth, dev_t dev)
 {
 	DIR *dd;
 	struct dirent *dent;
-	struct stat statbuf;
+	struct stat sb;
 	char *fname;
 	int included;
 	const struct optstruct *opt;
+	unsigned int dirlnk, filelnk;
 
 
     if((opt = optget(opts, "exclude-dir"))->enabled) {
@@ -199,6 +254,9 @@ void scandirs(const char *dirname, struct cl_engine *engine, const struct optstr
     if(depth > (unsigned int) optget(opts, "max-dir-recursion")->numarg)
 	return;
 
+    dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
+    filelnk = optget(opts, "follow-file-symlinks")->numarg;
+
     if((dd = opendir(dirname)) != NULL) {
 	info.dirs++;
 	depth++;
@@ -214,19 +272,35 @@ void scandirs(const char *dirname, struct cl_engine *engine, const struct optstr
 			sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
+		    if(lstat(fname, &sb) != -1) {
 			if(!optget(opts, "cross-fs")->enabled) {
-			    if(statbuf.st_dev != dev) {
+			    if(sb.st_dev != dev) {
 				if(!printinfected)
 				    logg("~%s: Excluded\n", fname);
 				free(fname);
 				continue;
 			    }
 			}
-			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion)
-			    scandirs(fname, engine, opts, options, depth, dev);
-			else if(S_ISREG(statbuf.st_mode))
+			if(S_ISLNK(sb.st_mode)) {
+			    if(dirlnk != 2 && filelnk != 2) {
+				if(!printinfected)
+				    logg("%s: Symbolic link\n", fname);
+			    } else if(stat(fname, &sb) != -1) {
+				if(S_ISREG(sb.st_mode) && filelnk == 2) {
+				    scanfile(fname, engine, opts, options);
+				} else if(S_ISDIR(sb.st_mode) && dirlnk == 2) {
+				    if(recursion)
+					scandirs(fname, engine, opts, options, depth, dev);
+				} else {
+				    if(!printinfected)
+					logg("%s: Symbolic link\n", fname);
+				}
+			    }
+			} else if(S_ISREG(sb.st_mode)) {
 			    scanfile(fname, engine, opts, options);
+			} else if(S_ISDIR(sb.st_mode) && recursion) {
+			    scandirs(fname, engine, opts, options, depth, dev);
+			}
 		    }
 		    free(fname);
 		}
@@ -306,9 +380,8 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 
 int scanmanager(const struct optstruct *opts)
 {
-	mode_t fmode;
-	int ret = 0, fmodeint, i;
-	unsigned int options = 0, dboptions = 0;
+	int ret = 0, i;
+	unsigned int options = 0, dboptions = 0, dirlnk = 1, filelnk = 1;
 	struct cl_engine *engine;
 	struct stat sb;
 	char *file, cwd[1024], *pua_cats = NULL;
@@ -317,6 +390,18 @@ int scanmanager(const struct optstruct *opts)
 #ifndef _WIN32
 	struct rlimit rlim;
 #endif
+
+    dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
+    if(dirlnk > 2) {
+	logg("!--follow-dir-symlinks: Invalid argument\n");
+	return 2;
+    }
+
+    filelnk = optget(opts, "follow-file-symlinks")->numarg;
+    if(filelnk > 2) {
+	logg("!--follow-file-symlinks: Invalid argument\n");
+	return 2;
+    }
 
     if(optget(opts, "phishing-sigs")->enabled)
 	dboptions |= CL_DB_PHISHING;
@@ -612,8 +697,8 @@ int scanmanager(const struct optstruct *opts)
 	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
 	while((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
-	    if((fmodeint = fileinfo(file, 2)) == -1) {
-		logg("^Can't access file %s\n", file);
+	    if(lstat(file, &sb) == -1) {
+		logg("^%s: Can't access file\n", file);
 		perror(file);
 		ret = 2;
 	    } else {
@@ -624,21 +709,27 @@ int scanmanager(const struct optstruct *opts)
 			break;
 		}
 
-		fmode = (mode_t) fmodeint;
-
-		switch(fmode & S_IFMT) {
-		    case S_IFREG:
-			scanfile(file, engine, opts, options);
-			break;
-
-		    case S_IFDIR:
-			stat(file, &sb);
-			scandirs(file, engine, opts, options, 1, sb.st_dev);
-			break;
-
-		    default:
-			logg("!Not supported file type (%s)\n", file);
-			ret = 2;
+		if(S_ISLNK(sb.st_mode)) {
+		    if(dirlnk == 0 && filelnk == 0) {
+			if(!printinfected)
+			    logg("%s: Symbolic link\n", file);
+		    } else if(stat(file, &sb) != -1) {
+			if(S_ISREG(sb.st_mode) && filelnk) {
+			    scanfile(file, engine, opts, options);
+			} else if(S_ISDIR(sb.st_mode) && dirlnk) {
+			    scandirs(file, engine, opts, options, 1, sb.st_dev);
+			} else {
+			    if(!printinfected)
+				logg("%s: Symbolic link\n", file);
+			}
+		    }
+		} else if(S_ISREG(sb.st_mode)) {
+		    scanfile(file, engine, opts, options);
+		} else if(S_ISDIR(sb.st_mode)) {
+		    scandirs(file, engine, opts, options, 1, sb.st_dev);
+		} else {
+		    logg("^%s: Not supported file type\n", file);
+		    ret = 2;
 		}
 	    }
 	    free(file);
@@ -656,4 +747,3 @@ int scanmanager(const struct optstruct *opts)
 
     return ret;
 }
-

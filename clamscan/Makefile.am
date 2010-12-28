@@ -31,8 +31,6 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     clamscan.c \
-    others.c \
-    others.h \
     global.h \
     manager.c \
     manager.h

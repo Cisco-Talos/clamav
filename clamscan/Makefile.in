@@ -79,7 +79,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_clamscan_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
 	optparser.$(OBJEXT) actions.$(OBJEXT) misc.$(OBJEXT) \
-	clamscan.$(OBJEXT) others.$(OBJEXT) manager.$(OBJEXT)
+	clamscan.$(OBJEXT) manager.$(OBJEXT)
 clamscan_OBJECTS = $(am_clamscan_OBJECTS)
 clamscan_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
@@ -288,8 +288,6 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     clamscan.c \
-    others.c \
-    others.h \
     global.h \
     manager.c \
     manager.h
@@ -405,7 +403,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 
 .c.o:

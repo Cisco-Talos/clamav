@@ -210,6 +210,8 @@ void help(void)
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf("    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems\n");
+    mprintf("    --follow-dir-symlinks[=0/1(*)/2]     Follow directory symlinks (0 = never, 1 = direct, 2 = always)\n");
+    mprintf("    --follow-file-symlinks[=0/1(*)/2]    Follow file symlinks (0 = never, 1 = direct, 2 = always)\n");
     mprintf("    --file-list=FILE      -f FILE        Scan files from FILE\n");
     mprintf("    --remove[=yes/no(*)]                 Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
@@ -221,7 +223,7 @@ void help(void)
     mprintf("\n");
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-trust-all[=yes/no(*)]     Trust all loaded bytecode\n");
-    mprintf("    --bytecode-timeout=N		      Set bytecode timeout (in milliseconds)\n");
+    mprintf("    --bytecode-timeout=N                 Set bytecode timeout (in milliseconds)\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
     mprintf("    --include-pua=CAT                    Load PUA sigs of category CAT\n");

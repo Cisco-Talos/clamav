@@ -1,3 +1,7 @@
+Tue Dec 28 18:22:30 CET 2010 (tk)
+---------------------------------
+ * clamscan: add new options --follow-(dir|file)-symlinks (bb#1870)
+
 Tue Dec 28 13:03:14 CET 2010 (tk)
 ---------------------------------
  * libclamav/blob.c: properly scan files when LeaveTemporaryFiles
