@@ -1,3 +1,7 @@
+Wed Dec 29 14:36:46 CET 2010 (tk)
+---------------------------------
+ * libclamav/scanners.c: improve scanning of mail files in raw mode (bb#2244)
+
 Tue Dec 28 18:22:30 CET 2010 (tk)
 ---------------------------------
  * clamscan: add new options --follow-(dir|file)-symlinks (bb#1870)

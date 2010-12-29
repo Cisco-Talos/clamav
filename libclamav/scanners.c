@@ -1869,8 +1869,10 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	    case CL_TYPE_MAIL:
 		ctx->container_type = CL_TYPE_MAIL;
 		ctx->container_size = map->len;
-		if(SCAN_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX))
+		if(SCAN_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX)) {
+		    *dettype = CL_TYPE_MAIL;
 		    nret = cli_scanmail(map->fd, ctx);
+		}
 		ctx->container_type = current_container_type;
 		ctx->container_size = current_container_size;
 		break;
@@ -2347,7 +2349,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(ctx);
-	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL) {
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (ctx->container_type == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
 		lseek(desc, 0, SEEK_SET);
 		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL);
 	    }
