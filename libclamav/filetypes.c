@@ -163,6 +163,17 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 
     ret = cli_filetype(buff, bread, engine);
 
+    if(ret == CL_TYPE_BINARY_DATA) {
+	switch(is_tar(buff, bread)) {
+	    case 1:
+		cli_dbgmsg("Recognized old fashioned tar file\n");
+		return CL_TYPE_OLD_TAR;
+	    case 2:
+		cli_dbgmsg("Recognized POSIX tar file\n");
+		return CL_TYPE_POSIX_TAR;
+	}
+    }
+
     if(ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
 	/* HTML files may contain special characters and could be
 	 * misidentified as BINARY_DATA by cli_filetype()
@@ -231,19 +242,6 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 			    }
 		    }
 	    }
-	}
-    }
-
-    if(ret == CL_TYPE_BINARY_DATA) {
-	switch(is_tar(buff, bread)) {
-	    case 1:
-		ret = CL_TYPE_OLD_TAR;
-		cli_dbgmsg("Recognized old fashioned tar file\n");
-		break;
-	    case 2:
-		ret = CL_TYPE_POSIX_TAR;
-		cli_dbgmsg("Recognized POSIX tar file\n");
-		break;
 	}
     }
 
