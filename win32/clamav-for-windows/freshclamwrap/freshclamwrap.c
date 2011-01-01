@@ -158,10 +158,11 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
 
 #define SENDFAIL_AND_QUIT(phase)	    \
     do {				    \
-	send_pipe(&st, (phase), 1);\
+	send_pipe(&st, (phase), 1);	    \
 	CloseHandle(updpipe);		    \
-	cleanup(NULL);                 \
-	flog_close();		    \
+	CloseHandle(write_event);	    \
+	cleanup(NULL);			    \
+	flog_close();			    \
 	return 1;			    \
     } while(0)
 
@@ -269,6 +270,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     	flog_close();
 	return 1;
     }
+    if(!(write_event = CreateEvent(NULL, TRUE, FALSE, NULL))) {
+	CloseHandle(updpipe);
+	flog("ERROR: failed to create write event");
+	flog_close();
+	return 1;
+    }
 
     /* Make pipe for freshclam stdio */
     if(!CreatePipe(&cld_r, &cld_w, NULL, 0)) {
@@ -306,18 +313,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     flog_dbg("Executing '%s'", command);
 
     /* Create STOP watcher */
-    if(!(write_event = CreateEvent(NULL, TRUE, FALSE, NULL))) {
-	flog("ERROR: failed to create write event");
-	CloseHandle(cld_r);
-	CloseHandle(pinfo.hProcess);
-	SENDFAIL_AND_QUIT(UPD_CHECK);
-    }
-
     if(!CreateThread(NULL, 0, watch_stop, NULL, 0, &dw)) {
 	flog("ERROR: failed to create watch_stop thread");
 	CloseHandle(cld_r);
 	CloseHandle(pinfo.hProcess);
-	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(UPD_CHECK);
     }
 
@@ -418,8 +417,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if(!GetExitCodeProcess(pinfo.hProcess, &dw)) {
 	CloseHandle(pinfo.hProcess);
 	flog("ERROR: failed to retrieve freshclam return code");
-	CloseHandle(write_event);
-	SENDFAIL_AND_QUIT(st.state);
+	SENDFAIL_AND_QUIT(UPD_ABORT);
     }
     CloseHandle(pinfo.hProcess);
     if(dw) {
@@ -428,12 +426,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    kill_freshclam();
 	} else
 	    flog("ERROR: freshclam exit code %u", dw);
-	CloseHandle(write_event);
+	if(st.state == UPD_CHECK)
+	    st.state = UPD_ABORT;
 	SENDFAIL_AND_QUIT(st.state);
     }
     if((updated_files && fstate != FRESH_RELOAD) || (!updated_files && fstate != FRESH_IDLE)) {
 	flog("ERROR: log parse failure. Freshclam exit value: %u", dw);
-	CloseHandle(write_event);
 	SENDFAIL_AND_QUIT(st.state);
     }
 
@@ -445,7 +443,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SENDOK(UPD_DONE);
     } else
 	SENDOK(UPD_NONE);
-    flog_close();
+
+    CloseHandle(updpipe);
     CloseHandle(write_event);
+    flog_close();
     return 0;
 }
