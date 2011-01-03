@@ -120,6 +120,7 @@ typedef struct cli_ctx_tag {
     unsigned int corrupted_input;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     size_t container_size;
+    unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
     fmap_t **fmap;
     bitset_t* hook_lsig_matches;

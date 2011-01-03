@@ -502,7 +502,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     return ret;
 }
 
-int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info)
+int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
 {
 	unsigned int i, evalcnt;
 	uint64_t evalids;
@@ -527,14 +527,17 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 		    continue;
 	    }
 
-	    if(root->ac_lsigtable[i]->tdb.handlertype) {
-		ctx->recursion++;
-		if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
+	    if(hash && root->ac_lsigtable[i]->tdb.handlertype) {
+		if(memcmp(ctx->handlertype_hash, hash, 16)) {
+		    ctx->recursion++;
+		    memcpy(ctx->handlertype_hash, hash, 16);
+		    if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
+			ctx->recursion--;
+			return CL_VIRUS;
+		    }
 		    ctx->recursion--;
-		    return CL_VIRUS;
+		    continue;
 		}
-		ctx->recursion--;
-		continue;
 	    }
 
 	    if(root->ac_lsigtable[i]->tdb.icongrp1 || root->ac_lsigtable[i]->tdb.icongrp2) {
@@ -695,8 +698,18 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	offset += bytes - maxpatlen;
     }
 
+    if(!ftonly && ctx->engine->md5_hdb) {
+	if(!refhash) {
+	    cli_md5_final(digest, &md5ctx);
+	    refhash = digest;
+	}
+	if(cli_md5m_scan(refhash, map->len, ctx->virname, ctx->engine->md5_hdb) == CL_VIRUS && cli_md5m_scan(refhash, map->len, NULL, ctx->engine->md5_fp) != CL_VIRUS)
+	    ret = CL_VIRUS;
+    }
+
     if(troot) {
-	ret = cli_lsig_eval(ctx, troot, &tdata, &info);
+	if(ret != CL_VIRUS)
+	    ret = cli_lsig_eval(ctx, troot, &tdata, &info, refhash);
 	cli_ac_freedata(&tdata);
 	if(bm_offmode)
 	    cli_bm_freeoff(&toff);
@@ -704,7 +717,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(groot) {
 	if(ret != CL_VIRUS)
-	    ret = cli_lsig_eval(ctx, groot, &gdata, &info);
+	    ret = cli_lsig_eval(ctx, groot, &gdata, &info, refhash);
 	cli_ac_freedata(&gdata);
     }
 
@@ -714,15 +727,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(ret == CL_VIRUS)
 	return CL_VIRUS;
-
-    if(!ftonly && ctx->engine->md5_hdb) {
-	if(!refhash) {
-	    cli_md5_final(digest, &md5ctx);
-	    refhash = digest;
-	}
-	if(cli_md5m_scan(refhash, map->len, ctx->virname, ctx->engine->md5_hdb) == CL_VIRUS && cli_md5m_scan(refhash, map->len, NULL, ctx->engine->md5_fp) != CL_VIRUS)
-	    return CL_VIRUS;
-    }
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }

@@ -1,3 +1,7 @@
+Mon Jan  3 16:38:46 CET 2011 (tk)
+---------------------------------
+ * libclamav: improve handling of HandlerType (bb#2298)
+
 Thu Dec 30 15:02:05 CET 2010 (tk)
 ---------------------------------
  * libclamav/filetypes.c: improve detection of tar files
