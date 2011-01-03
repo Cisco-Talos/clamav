@@ -2119,11 +2119,9 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 		    logg("*Software version from DNS: %s\n", newver);
 		    strncpy(vstr, get_version(), 32);
 		    vstr[31] = 0;
-		    if((pt = strstr(vstr, "-exp")) || (pt = strstr(vstr,"-broken")))
-			*pt = 0;
-
 		    if(vwarning && !strstr(vstr, "devel") && !strstr(vstr, "rc")) {
-			if(strcmp(vstr, newver)) {
+			pt = strchr(vstr, '-');
+			if((pt && strncmp(vstr, newver, pt - vstr)) || (!pt && strcmp(vstr, newver))) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
 			    logg("^Local version: %s Recommended version: %s\n", vstr, newver);
 			    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");

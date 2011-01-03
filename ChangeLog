@@ -1,3 +1,7 @@
+Mon Jan  3 17:10:03 CET 2011 (tk)
+---------------------------------
+ * freshclam/manager.c: fix version warning (bb#2456)
+
 Mon Jan  3 16:38:46 CET 2011 (tk)
 ---------------------------------
  * libclamav: improve handling of HandlerType (bb#2298)
