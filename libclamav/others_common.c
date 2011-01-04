@@ -111,6 +111,10 @@ static inline void *cli_getctx(void)
 {
     return current_ctx ? current_ctx->cb_ctx : NULL;
 }
+
+void cli_logg_unsetup(void)
+{
+}
 #endif
 uint8_t cli_debug_flag = 0;
 

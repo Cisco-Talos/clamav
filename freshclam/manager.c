@@ -567,6 +567,7 @@ static char *proxyauth(const char *user, const char *pass)
     return auth;
 }
 
+#if BUILD_CLAMD
 int submitstats(const char *clamdcfg, const struct optstruct *opts)
 {
 	int sd, clamsockd, bread, cnt, ret;
@@ -744,6 +745,13 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
     }
     return ret;
 }
+#else
+int submitstats(const char *clamdcfg, const struct optstruct *opts)
+{
+    logg("clamd not built, no statistics");
+    return 52;
+}
+#endif
 
 static int Rfc2822DateTime(char *buf, time_t mtime)
 {
