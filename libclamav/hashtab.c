@@ -367,7 +367,7 @@ void cli_hashtab_clear(struct cli_hashtable *s)
 			free((void *)s->htable[i].key);
 	}
 	if(s->htable)
-		memset(s->htable, 0, s->capacity);
+		memset(s->htable, 0, s->capacity * sizeof(*s->htable));
 	s->used = 0;
 }
 
