@@ -299,6 +299,29 @@ const struct cli_htu32_element *cli_htu32_find(const struct cli_htu32 *s, uint32
 	return NULL; /* not found */
 }
 
+/* linear enumeration - start with current = NULL, returns next item if present or NULL if not */
+const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const struct cli_htu32_element *current) {
+	size_t ncur;
+	if(!s || !s->capacity)
+		return NULL;
+
+	if(!current)
+		ncur = 0;
+	else {
+		ncur = current - s->htable;
+		if(ncur >= s->capacity)
+			return NULL;
+
+		ncur++;
+	}
+	for(; ncur<s->capacity; ncur++) {
+		const struct cli_htu32_element *item = &s->htable[ncur & (s->capacity - 1)];
+		if(item->key && item->key != DELETED_HTU32_KEY)
+			return item;
+	}
+	return NULL;
+}
+
 
 static int cli_hashtab_grow(struct cli_hashtable *s)
 {
