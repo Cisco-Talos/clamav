@@ -2120,6 +2120,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	return ret;
     }
 
+    hm_flush(db);
     if(signo)
 	*signo += sigs;
 

@@ -52,5 +52,6 @@ struct cli_hash_patt {
 
 
 int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const char *virusname);
+void hm_flush(struct cli_matcher *root);
 
 #endif

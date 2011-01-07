@@ -29,7 +29,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     struct cli_sz_hash *szh;
     struct cli_htu32 *ht;
     enum CLI_HASH_TYPE type;
-    uint8_t binhash[64];
+    uint8_t binhash[32];
     int hashlen, i;
 
     if(!root || !hash) {
@@ -66,6 +66,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     if(!root->hm.htiint[type]) {
 	i = cli_htu32_init(ht, 5000, root->mempool);
 	if(i) return i;
+	root->hm.htiint[type] = 1;
     }
 
     item = cli_htu32_find(ht, size);
@@ -113,3 +114,88 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     
     return 0;
 }
+
+
+
+static const unsigned int hashlen[] = {
+    16, /* CLI_HASH_MD5 */
+    20, /* CLI_HASH_SHA1 */
+    32, /* CLI_HASH_SHA256 */
+};
+
+
+static inline int hm_cmp(uint8_t *itm, uint8_t *ref, unsigned int keylen) {
+    uint32_t i = *(uint32_t *)itm, r = *(uint32_t *)ref; /* safely aligned and faster than memcmp */
+    if(i != r) 
+	return (int)(i - r);
+    return memcmp(&itm[4], &ref[4], keylen - 4);
+}
+
+void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int keylen) {
+    uint8_t piv[32], tmph[32];
+    size_t l1, r1;
+
+    const char *tmpv;
+
+    if(l > r - 1)
+	return;
+
+    l1 = l+1, r1 = r;
+
+    memcpy(piv, &szh->hash_array[keylen * l], keylen);
+    while(l1 < r1) {
+	if(hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
+	    r1--;
+	    memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
+	    tmpv = szh->virusnames[l1];
+	    memcpy(&szh->hash_array[keylen * l1], &szh->hash_array[keylen * r1], keylen);
+	    szh->virusnames[l1] = szh->virusnames[r1];
+	    memcpy(&szh->hash_array[keylen * r1], tmph, keylen);
+	    szh->virusnames[r1] = tmpv;
+	} else
+	    l1++;
+    }
+
+    l1--;
+    memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
+    tmpv = szh->virusnames[l1];
+    memcpy(&szh->hash_array[keylen * l1], &szh->hash_array[keylen * l], keylen);
+    szh->virusnames[l1] = szh->virusnames[l];
+    memcpy(&szh->hash_array[keylen * l], tmph, keylen);
+    szh->virusnames[l] = tmpv;
+
+    hm_sort(szh, l, l1, keylen);
+    hm_sort(szh, r1, r, keylen);
+}
+
+void hm_flush(struct cli_matcher *root) {
+    enum CLI_HASH_TYPE type;
+
+    if(!root)
+	return;
+
+
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+	struct cli_htu32 *ht = &root->hm.sizehashes[type];
+	const struct cli_htu32_element *item = NULL;
+
+	if(!root->hm.htiint[type])
+	    continue;
+
+	while((item = cli_htu32_next(ht, item))) {
+	    struct cli_sz_hash *szh = (struct cli_sz_hash *)item->data.as_ptr;
+	    unsigned int keylen = hashlen[type];
+
+	    if(szh->items != szh->max) {
+		void *p;
+		p = mpool_realloc(root->mempool, szh->hash_array, keylen * szh->items);
+		if(p) szh->hash_array = p;
+		p = mpool_realloc(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
+		if(p) szh->virusnames = p;
+	    }
+	    if(szh->items > 1)
+		hm_sort(szh, 0, szh->items, keylen);
+	}
+    }
+}
+
