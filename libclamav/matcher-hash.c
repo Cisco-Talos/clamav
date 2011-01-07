@@ -62,6 +62,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	return CL_EARG;
     }
 
+    hashlen /= 2;
     ht = &root->hm.sizehashes[type];
     if(!root->hm.htinint[type]) {
 	i = cli_htu32_init(ht, 5000, root->mempool);
@@ -101,14 +102,14 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	    return CL_EMEM;
 	}
 
-	szh->virusnames = mpool_realloc2(root->mempool, szh->hash_array, sizeof(*szh->virusnames) * szh->max);
+	szh->virusnames = mpool_realloc2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->max);
 	if(!szh->virusnames) {
 	    cli_errmsg("ht_add: failed to grow virusname array to %u entries\n", szh->max);
 	    return CL_EMEM;
 	}
     }
 
-    memcpy(&szh->hash_array[szh->items * hashlen], binhash, hashlen / 2);
+    memcpy(&szh->hash_array[szh->items * hashlen], binhash, hashlen);
     szh->virusnames[szh->items] = virusname;
     szh->items++;
     
@@ -173,7 +174,6 @@ void hm_flush(struct cli_matcher *root) {
 
     if(!root)
 	return;
-
 
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
 	struct cli_htu32 *ht = &root->hm.sizehashes[type];
