@@ -588,6 +588,11 @@ void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool)
 	s->capacity = 0;
 }
 
+size_t cli_htu32_numitems(struct cli_htu32 *s) {
+	if(!s) return 0;
+	return s->capacity;
+}
+
 int cli_hashtab_store(const struct cli_hashtable *s,FILE* out)
 {
 	size_t i;

@@ -111,6 +111,7 @@ void cli_htu32_delete(struct cli_htu32 *s, uint32_t key);
 void cli_htu32_clear(struct cli_htu32 *s);
 void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool);
 const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const struct cli_htu32_element *current);
+size_t cli_htu32_numitems(struct cli_htu32 *s);
 
 
 /* a hashtable that stores the values too */

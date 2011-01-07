@@ -217,6 +217,15 @@ struct cl_engine {
     /* B-M matcher for whitelist db */
     struct cli_matcher *md5_fp;
 
+
+    /* hash matcher for standard MD5 sigs */
+    struct cli_matcher *hm_hdb;
+    /* hash matcher for MD5 sigs for PE sections */
+    struct cli_matcher *hm_mdb;
+    /* hash matcher for whitelist db */
+    struct cli_matcher *hm_fp;
+
+
     /* Container metadata */
     struct cli_cdb *cdb;
 

@@ -47,6 +47,7 @@
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher-md5.h"
+#include "matcher-hash.h"
 #include "matcher.h"
 #include "others.h"
 #include "str.h"
@@ -2023,6 +2024,108 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+
+
+#define MD5_TOKENS 3
+static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+	const char *tokens[MD5_TOKENS + 1];
+	char buffer[FILEBUFF], *buffer_cpy = NULL;
+	const char *pt, *virname;
+	int ret = CL_SUCCESS;
+	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
+	struct cli_matcher *db = NULL;
+	unsigned long size;
+
+
+    if(mode == MD5_MDB) {
+	size_field = 0;
+	md5_field = 1;
+    }
+
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
+	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
+	if(tokens_count != MD5_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	size = strtol(tokens[size_field], (char **)&pt, 10);
+	if(*pt || !size || size >= 0xffffffff) {
+	    cli_errmsg("cli_loadhash: Invalid value for the size field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	pt = tokens[2]; /* virname */
+	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
+	    if(cli_chkpua(pt, engine->pua_cats, options))
+		continue;
+
+	if(engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy))
+	    continue;
+
+	if(engine->cb_sigload) {
+	    const char *dot = strchr(dbname, '.');
+	    if(!dot)
+		dot = dbname;
+	    else
+		dot++;
+	    if(engine->cb_sigload(dot, pt, engine->cb_sigload_ctx)) {
+		cli_dbgmsg("cli_loadhash: skipping %s (%s) due to callback\n", pt, dot);
+	        continue;
+	    }
+	}
+
+	virname = cli_mpool_virname(engine->mempool, pt, options & CL_DB_OFFICIAL);
+	if(!virname) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(mode == MD5_HDB)	
+	    db = engine->hm_hdb;
+	else if(mode == MD5_MDB)
+	    db = engine->hm_mdb;
+	else
+	    db = engine->hm_fp;
+
+	if((ret = hm_addhash(db, tokens[md5_field], size, virname))) {
+	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
+	    mpool_free(engine->mempool, (void *)virname);
+	    break;
+	}
+
+	sigs++;
+    }
+    if(engine->ignored)
+	free(buffer_cpy);
+
+    if(!line) {
+	cli_errmsg("cli_loadmd5: Empty database file\n");
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
+
+    return CL_SUCCESS;
+}
+
 #define MD_TOKENS 9
 static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
@@ -2468,7 +2571,24 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cdb")) {
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
+    } else if(cli_strbcasestr(dbname, ".hsb")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);
+    } else if(cli_strbcasestr(dbname, ".hsu")) {
+	if(options & CL_DB_PUA)
+	    ret = cli_loadhash(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
+	else
+	    skipped = 1;
+    } else if(cli_strbcasestr(dbname, ".sfp")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_FP, options, dbio, dbname);
 
+    } else if(cli_strbcasestr(dbname, ".msb")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_MDB, options, dbio, dbname);
+
+    } else if(cli_strbcasestr(dbname, ".msu")) {
+	if(options & CL_DB_PUA)
+	    ret = cli_loadhash(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
+	else
+	    skipped = 1;
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
