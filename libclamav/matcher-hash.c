@@ -63,10 +63,10 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     }
 
     ht = &root->hm.sizehashes[type];
-    if(!root->hm.htiint[type]) {
+    if(!root->hm.htinint[type]) {
 	i = cli_htu32_init(ht, 5000, root->mempool);
 	if(i) return i;
-	root->hm.htiint[type] = 1;
+	root->hm.htinint[type] = 1;
     }
 
     item = cli_htu32_find(ht, size);
@@ -124,7 +124,7 @@ static const unsigned int hashlen[] = {
 };
 
 
-static inline int hm_cmp(uint8_t *itm, uint8_t *ref, unsigned int keylen) {
+static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int keylen) {
     uint32_t i = *(uint32_t *)itm, r = *(uint32_t *)ref; /* safely aligned and faster than memcmp */
     if(i != r) 
 	return (int)(i - r);
@@ -144,7 +144,7 @@ void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int keylen) {
 
     memcpy(piv, &szh->hash_array[keylen * l], keylen);
     while(l1 < r1) {
-	if(hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
+	if(cli_hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
 	    r1--;
 	    memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
 	    tmpv = szh->virusnames[l1];
@@ -179,7 +179,7 @@ void hm_flush(struct cli_matcher *root) {
 	struct cli_htu32 *ht = &root->hm.sizehashes[type];
 	const struct cli_htu32_element *item = NULL;
 
-	if(!root->hm.htiint[type])
+	if(!root->hm.htinint[type])
 	    continue;
 
 	while((item = cli_htu32_next(ht, item))) {
@@ -199,3 +199,38 @@ void hm_flush(struct cli_matcher *root) {
     }
 }
 
+
+int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type) {
+    const struct cli_htu32_element *item;
+    unsigned int keylen;
+    struct cli_sz_hash *szh;
+    size_t l, r;
+
+    if(!digest || !size || size == 0xffffffff || !root || !root->hm.htinint[type])
+	return CL_CLEAN;
+
+    item = cli_htu32_find(&root->hm.sizehashes[type], size);
+    if(!item)
+	return CL_CLEAN;
+
+    szh = (struct cli_sz_hash *)item->data.as_ptr;
+    keylen = hashlen[type];
+
+    l = 0;
+    r = szh->items;
+    while(l < r) {
+	size_t c = (l + r) / 2;
+	int res = hm_cmp(digest, &szh->hash_array[keylen * c], keylen);
+
+	if(res < 0)
+	    r = c;
+	else if(res > 0)
+	    l = c;
+	else {
+	    if(virname)
+		*virname = szh->virusnames[c];
+	    return CL_VIRUS;
+	}
+    }
+    return CL_CLEAN;
+}

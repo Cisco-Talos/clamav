@@ -47,7 +47,7 @@ struct cli_sz_hash {
 
 struct cli_hash_patt {
     struct cli_htu32 sizehashes[CLI_HASH_AVAIL_TYPES];
-    int htiint[CLI_HASH_AVAIL_TYPES];
+    int htinint[CLI_HASH_AVAIL_TYPES];
 };
 
 
