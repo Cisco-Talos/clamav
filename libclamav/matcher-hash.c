@@ -72,7 +72,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     item = cli_htu32_find(ht, size);
     if(!item) {
 	struct cli_htu32_element htitem;
-	szh = mpool_calloc(root->mempool, 1, sizeof(szh));
+	szh = mpool_calloc(root->mempool, 1, sizeof(*szh));
 	if(!szh) {
 	    cli_errmsg("hm_addhash: failed to allocate size hash\n");
 	    return CL_EMEM;
@@ -144,7 +144,7 @@ void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int keylen) {
 
     memcpy(piv, &szh->hash_array[keylen * l], keylen);
     while(l1 < r1) {
-	if(cli_hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
+	if(hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
 	    r1--;
 	    memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
 	    tmpv = szh->virusnames[l1];
@@ -199,6 +199,13 @@ void hm_flush(struct cli_matcher *root) {
     }
 }
 
+
+int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size) {
+    if(!size || size == 0xffffffff || !root || !root->hm.htinint[type] || !cli_htu32_find(&root->hm.sizehashes[type], size))
+	return 0;
+
+    return 1;
+}
 
 int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type) {
     const struct cli_htu32_element *item;

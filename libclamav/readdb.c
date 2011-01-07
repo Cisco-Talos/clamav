@@ -2092,15 +2092,29 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    break;
 	}
 
-	if(mode == MD5_HDB)	
+	if(mode == MD5_HDB)
 	    db = engine->hm_hdb;
 	else if(mode == MD5_MDB)
 	    db = engine->hm_mdb;
 	else
 	    db = engine->hm_fp;
 
+	if(!db) {
+	    if(!(db = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    db->mempool = engine->mempool;
+	    if(mode == MD5_HDB)
+		engine->hm_hdb = db;
+	    else if(mode == MD5_MDB)
+		engine->hm_mdb = db;
+	    else
+		engine->hm_fp = db;
+	}
+
 	if((ret = hm_addhash(db, tokens[md5_field], size, virname))) {
-	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
+	    cli_errmsg("cli_loadhash: Malformed MD5 string at line %u\n", line);
 	    mpool_free(engine->mempool, (void *)virname);
 	    break;
 	}
@@ -2111,12 +2125,12 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	free(buffer_cpy);
 
     if(!line) {
-	cli_errmsg("cli_loadmd5: Empty database file\n");
+	cli_errmsg("cli_loadhash: Empty database file\n");
 	return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
+	cli_errmsg("cli_loadhash: Problem parsing database at line %u\n", line);
 	return ret;
     }
 

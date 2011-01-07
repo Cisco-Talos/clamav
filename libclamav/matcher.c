@@ -387,6 +387,12 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
 	return CL_CLEAN;
     }
+
+    if(ctx->engine->hm_fp && cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
+	return CL_CLEAN;
+    }
+
     for(i = 0; i < 16; i++)
 	sprintf(md5 + i * 2, "%02x", digest[i]);
     md5[32] = 0;
@@ -698,12 +704,14 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	offset += bytes - maxpatlen;
     }
 
-    if(!ftonly && ctx->engine->md5_hdb) {
+    if(!ftonly && (ctx->engine->md5_hdb || ctx->engine->hm_hdb)) {
 	if(!refhash) {
 	    cli_md5_final(digest, &md5ctx);
 	    refhash = digest;
 	}
-	if(cli_md5m_scan(refhash, map->len, ctx->virname, ctx->engine->md5_hdb) == CL_VIRUS && cli_md5m_scan(refhash, map->len, NULL, ctx->engine->md5_fp) != CL_VIRUS)
+	if(ctx->engine->md5_hdb && cli_md5m_scan(refhash, map->len, ctx->virname, ctx->engine->md5_hdb) == CL_VIRUS && cli_md5m_scan(refhash, map->len, NULL, ctx->engine->md5_fp) != CL_VIRUS)
+	    ret = CL_VIRUS;
+	if(ctx->engine->hm_hdb && cli_hm_scan(refhash, map->len, ctx->virname, ctx->engine->hm_hdb, CLI_HASH_MD5) == CL_VIRUS && cli_hm_scan(refhash, map->len, NULL, ctx->engine->hm_fp, CLI_HASH_MD5) != CL_VIRUS)
 	    ret = CL_VIRUS;
     }
 
