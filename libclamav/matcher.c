@@ -651,7 +651,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	}
     }
 
-    if(!refhash && !ftonly && ctx->engine->md5_hdb)
+    if(!refhash && !ftonly && (ctx->engine->md5_hdb || ctx->engine->hm_hdb))
 	cli_md5_init(&md5ctx);
 
     while(offset < map->len) {
@@ -696,7 +696,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 		    type = ret;
 	    }
 
-	    if(!refhash && ctx->engine->md5_hdb)
+	    if(!refhash && (ctx->engine->md5_hdb || ctx->engine->hm_hdb))
 		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes - maxpatlen * (offset!=0));
 	}
 
