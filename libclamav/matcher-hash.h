@@ -30,8 +30,8 @@
 
 enum CLI_HASH_TYPE {
     CLI_HASH_MD5,
-    CLI_HASH_SHA256,
     CLI_HASH_SHA1,
+    CLI_HASH_SHA256,
 
     /* new hash types go above this line */
     CLI_HASH_AVAIL_TYPES
