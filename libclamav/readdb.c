@@ -2134,7 +2134,6 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	return ret;
     }
 
-    hm_flush(db);
     if(signo)
 	*signo += sigs;
 
@@ -3229,6 +3228,15 @@ int cl_engine_compile(struct cl_engine *engine)
 
     if(engine->md5_mdb)
 	cli_dbgmsg("MD5 sigs (PE sections): %u\n", engine->md5_mdb->md5_patterns);
+
+    if(engine->hm_hdb)
+	hm_flush(engine->hm_hdb);
+
+    if(engine->hm_mdb)
+	hm_flush(engine->hm_mdb);
+
+    if(engine->hm_fp)
+	hm_flush(engine->hm_fp);
 
     if((ret = cli_build_regex_list(engine->whitelist_matcher))) {
 	    return ret;

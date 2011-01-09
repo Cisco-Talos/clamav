@@ -37,6 +37,11 @@
 	cli_strbcasestr(ext, ".fp")    ||	\
 	cli_strbcasestr(ext, ".mdb")   ||	\
 	cli_strbcasestr(ext, ".mdu")   ||	\
+	cli_strbcasestr(ext, ".hsb")   ||	\
+	cli_strbcasestr(ext, ".hsu")   ||	\
+	cli_strbcasestr(ext, ".sfp")   ||	\
+	cli_strbcasestr(ext, ".msb")   ||	\
+	cli_strbcasestr(ext, ".msu")   ||	\
 	cli_strbcasestr(ext, ".ndb")   ||	\
 	cli_strbcasestr(ext, ".ndu")   ||	\
 	cli_strbcasestr(ext, ".ldb")   ||	\

@@ -67,7 +67,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     hashlen /= 2;
     ht = &root->hm.sizehashes[type];
     if(!root->hm.htinint[type]) {
-	i = cli_htu32_init(ht, 5000, root->mempool);
+	i = cli_htu32_init(ht, 64, root->mempool);
 	if(i) return i;
 	root->hm.htinint[type] = 1;
     }
@@ -94,9 +94,9 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 
     if(szh->items == szh->max) {
 	if(!szh->max)
-	    szh->max = 1024;
+	    szh->max = 1;
 	else
-	    szh->max = szh->max + szh->max / 2;
+	    szh->max += 1 + szh->max / 2;
 
 	szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hashlen * szh->max);
 	if(!szh->hash_array) {
@@ -197,6 +197,7 @@ void hm_flush(struct cli_matcher *root) {
 		if(p) szh->hash_array = p;
 		p = mpool_realloc(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
 		if(p) szh->virusnames = p;
+		szh->max = szh->items;
 	    }
 	    if(szh->items > 1)
 		hm_sort(szh, 0, szh->items, keylen);
