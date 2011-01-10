@@ -1564,7 +1564,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 {
 	FILE *old, *new;
 	char *obuff, *nbuff, *tbuff, *pt, *omd5, *nmd5;
-	unsigned int oline = 0, tline, found, i;
+	unsigned int oline = 0, tline, found, i, badxchg = 0;
 	int l1 = 0, l2;
 	long opos;
 
@@ -1675,6 +1675,10 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 			oline += tline;
 
 		    } else {
+			if(!*obuff || *obuff == ' ') {
+			    badxchg = 1;
+			    break;
+			}
 			obuff[MIN(16, l1-1)] = 0;
 			if((pt = strchr(obuff, ' ')))
 			    *pt = 0;
@@ -1688,23 +1692,34 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	    }
 	}
     }
-    fclose(new);
 
     if(old) {
-	while(fgets(obuff, l1, old)) {
-	    oline++;
-	    obuff[MIN(16, l1-1)] = 0;
-	    if((pt = strchr(obuff, ' ')))
-		*pt = 0;
-	    fprintf(diff, "DEL %u %s\n", oline, obuff);
+	if(!badxchg) {
+	    while(fgets(obuff, l1, old)) {
+		oline++;
+		obuff[MIN(16, l1-1)] = 0;
+		if((pt = strchr(obuff, ' ')))
+		    *pt = 0;
+		fprintf(diff, "DEL %u %s\n", oline, obuff);
+	    }
 	}
 	fclose(old);
     }
-
     fprintf(diff, "CLOSE\n");
     free(obuff);
-    free(nbuff);
     free(tbuff);
+    if(badxchg) {
+	fprintf(diff, "UNLINK %s\n", newpath);
+	fprintf(diff, "OPEN %s\n", newpath);
+	rewind(new);
+	while(fgets(nbuff, l1, new)) {
+	    cli_chomp(nbuff);
+	    fprintf(diff, "ADD %s\n", nbuff);
+	}
+	fprintf(diff, "CLOSE\n");
+    }
+    free(nbuff);
+    fclose(new);
     return 0;
 }
 

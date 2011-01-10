@@ -1,3 +1,7 @@
+Mon Jan 10 18:43:02 CET 2011 (tk)
+---------------------------------
+ * sigtool: improve handling of spaces in cdiffs (bb#2090)
+
 Thu Jan  6 14:52:38 CET 2011 (acab)
 -----------------------------------
  * libclamav/hashtab.c: properly clear the table
