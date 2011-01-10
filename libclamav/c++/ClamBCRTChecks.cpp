@@ -117,8 +117,16 @@ namespace {
 
       std::vector<Instruction*> insns;
 
+      BasicBlock *LastBB = 0;
+      bool skip = false;
       for (inst_iterator I=inst_begin(F),E=inst_end(F); I != E;++I) {
         Instruction *II = &*I;
+	if (II->getParent() != LastBB) {
+	    LastBB = II->getParent();
+	    skip = DT->getNode(LastBB) == 0;
+	}
+	if (skip)
+	    continue;
         if (isa<LoadInst>(II) || isa<StoreInst>(II) || isa<MemIntrinsic>(II))
           insns.push_back(II);
         if (CallInst *CI = dyn_cast<CallInst>(II)) {
