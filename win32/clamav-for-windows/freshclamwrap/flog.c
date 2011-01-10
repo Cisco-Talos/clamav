@@ -41,9 +41,9 @@ void flog_open(const char *path) {
     else
 	SetFilePointer(logh, 0, NULL, FILE_END);
 
-    _snprintf(logfile, sizeof(logfile), "%s\\update_log_verbose_off", path);
+    _snprintf(logfile, sizeof(logfile), "%s\\update_log_verbose", path);
     logfile[sizeof(logfile)-1] = '\0';
-    if(access(logfile, 0) == -1)
+    if(access(logfile, 0) != -1)
 	log_dbg = 1;
     flog("Log file initialized");
 }

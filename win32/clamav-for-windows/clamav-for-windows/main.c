@@ -54,9 +54,9 @@ BOOL init() {
     if(ret)
 	return FALSE;
 
-    strncpy(slash, "clamav_log_verbose_off", sizeof(whereami) - (slash - whereami));
+    strncpy(slash, "clamav_log_verbose", sizeof(whereami) - (slash - whereami));
     whereami[sizeof(whereami)-1] = '\0';
-    logg_verbose = access(whereami, 0) == -1 ? 1 : 0;
+    logg_verbose = access(whereami, 0) == -1 ? 0 : 1;
 
     strncpy(slash, "clamav.log", sizeof(whereami) - (slash - whereami));
     whereami[sizeof(whereami)-1] = '\0';
