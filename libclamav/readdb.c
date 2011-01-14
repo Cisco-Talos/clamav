@@ -1860,7 +1860,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define MD5_MDB	    1
 #define MD5_FP	    2
 
-#define MD5_TOKENS 3
+#define MD5_TOKENS 5
 static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD5_TOKENS + 1];
@@ -1888,9 +1888,25 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
-	if(tokens_count != MD5_TOKENS) {
+	if(tokens_count < 3) {
 	    ret = CL_EMALFDB;
 	    break;
+	}
+	if(tokens_count > MD5_TOKENS - 2) {
+	    unsigned int req_fl = atoi(tokens[MD5_TOKENS - 2]);
+
+	    if(tokens_count > MD5_TOKENS) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+
+	    if(cl_retflevel() < req_fl)
+		continue;
+	    if(tokens_count == MD5_TOKENS) {
+		req_fl = atoi(tokens[MD5_TOKENS - 1]);
+		if(cl_retflevel() > req_fl)
+		    continue;
+	    }
 	}
 
 	size = strtol(tokens[size_field], (char **)&pt, 10);
