@@ -1954,7 +1954,9 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 		ret = CL_EMEM;
 		break;
 	    }
+#ifdef USE_MPOOL
 	    db->mempool = engine->mempool;
+#endif
 	    if(mode == MD5_HDB)
 		engine->hm_hdb = db;
 	    else if(mode == MD5_MDB)

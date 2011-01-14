@@ -104,6 +104,11 @@ struct cli_htu32 {
     STRUCT_PROFILE
 };
 
+#ifndef USE_MPOOL
+#define cli_htu32_init(A, B, C) cli_htu32_init(A, B)
+#define cli_htu32_insert(A, B, C) cli_htu32_insert(A, B)
+#define cli_htu32_free(A, B) cli_htu32_free(A)
+#endif
 int cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool);
 int cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element *item, mpool_t *mempool);
 const struct cli_htu32_element *cli_htu32_find(const struct cli_htu32 *s, uint32_t key);

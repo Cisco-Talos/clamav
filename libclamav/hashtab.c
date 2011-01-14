@@ -369,6 +369,10 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 	return CL_SUCCESS;
 }
 
+#ifndef USE_MPOOL
+#define cli_htu32_grow(A, B) cli_htu32_grow(A)
+#endif
+
 static int cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
 {
 	const size_t new_capacity = nearest_power(s->capacity + 1);
