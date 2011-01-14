@@ -166,6 +166,7 @@
     <ResourceCompile Include="res\libclamav.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\matcher-hash.c"/>
     <ClCompile Include="..\libclamav\sha1.c"/>
     <ClCompile Include="..\libclamav\events.c"/>
     <ClCompile Include="..\libclamav\bytecode_detect.c"/>
@@ -226,7 +227,6 @@
     <ClCompile Include="..\libclamav\macho.c"/>
     <ClCompile Include="..\libclamav\matcher-ac.c"/>
     <ClCompile Include="..\libclamav\matcher-bm.c"/>
-    <ClCompile Include="..\libclamav\matcher-md5.c"/>
     <ClCompile Include="..\libclamav\matcher.c"/>
     <ClCompile Include="..\libclamav\mbox.c"/>
     <ClCompile Include="..\libclamav\md5.c"/>
