@@ -66,10 +66,9 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 
     hashlen /= 2;
     ht = &root->hm.sizehashes[type];
-    if(!root->hm.htinint[type]) {
+    if(!root->hm.sizehashes[type].capacity) {
 	i = cli_htu32_init(ht, 64, root->mempool);
 	if(i) return i;
-	root->hm.htinint[type] = 1;
     }
 
     item = cli_htu32_find(ht, size);
@@ -99,6 +98,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	cli_errmsg("ht_add: failed to grow hash array to %u entries\n", szh->items);
 	szh->items=0;
 	mpool_free(root->mempool, szh->virusnames);
+	szh->virusnames = NULL;
 	return CL_EMEM;
     }
 
@@ -107,6 +107,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	cli_errmsg("ht_add: failed to grow virusname array to %u entries\n", szh->items);
 	szh->items=0;
 	mpool_free(root->mempool, szh->hash_array);
+	szh->hash_array = NULL;
 	return CL_EMEM;
     }
 
@@ -182,7 +183,7 @@ void hm_flush(struct cli_matcher *root) {
 	struct cli_htu32 *ht = &root->hm.sizehashes[type];
 	const struct cli_htu32_element *item = NULL;
 
-	if(!root->hm.htinint[type])
+	if(!root->hm.sizehashes[type].capacity)
 	    continue;
 
 	while((item = cli_htu32_next(ht, item))) {
@@ -197,7 +198,7 @@ void hm_flush(struct cli_matcher *root) {
 
 
 int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size) {
-    return (size && size != 0xffffffff && root && root->hm.htinint[type] && cli_htu32_find(&root->hm.sizehashes[type], size));
+    return (size && size != 0xffffffff && root && root->hm.sizehashes[type].capacity && cli_htu32_find(&root->hm.sizehashes[type], size));
 }
 
 int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type) {
@@ -206,7 +207,7 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
     struct cli_sz_hash *szh;
     size_t l, r;
 
-    if(!digest || !size || size == 0xffffffff || !root || !root->hm.htinint[type])
+    if(!digest || !size || size == 0xffffffff || !root || !root->hm.sizehashes[type].capacity)
 	return CL_CLEAN;
 
     item = cli_htu32_find(&root->hm.sizehashes[type], size);
@@ -236,3 +237,29 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
     }
     return CL_CLEAN;
 }
+
+void hm_free(struct cli_matcher *root) {
+    enum CLI_HASH_TYPE type;
+
+    if(!root)
+	return;
+
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+	struct cli_htu32 *ht = &root->hm.sizehashes[type];
+	const struct cli_htu32_element *item = NULL;
+
+	if(!root->hm.sizehashes[type].capacity)
+	    continue;
+
+	while((item = cli_htu32_next(ht, item))) {
+	    struct cli_sz_hash *szh = (struct cli_sz_hash *)item->data.as_ptr;
+	    unsigned int keylen = hashlen[type];
+
+	    mpool_free(root->mempool, szh->hash_array);
+	    mpool_free(root->mempool, szh->virusnames);
+	    mpool_free(root->mempool, szh);
+	}
+	cli_htu32_free(ht, root->mempool);
+    }
+}
+
