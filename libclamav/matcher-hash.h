@@ -38,17 +38,16 @@ enum CLI_HASH_TYPE {
 };
 
 struct cli_sz_hash {
-    uint8_t *hash_array;
+    uint8_t *hash_array; /* FIXME: make 256 entries? */
     const char **virusnames;
     uint32_t items;
     uint32_t max;
 };
 
 
-#define HM_NUM_ENTRIES 4
-
 struct cli_hash_patt {
-    struct cli_sz_hash sizehashes[CLI_HASH_AVAIL_TYPES][HM_NUM_ENTRIES];
+    struct cli_htu32 sizehashes[CLI_HASH_AVAIL_TYPES];
+    int htinint[CLI_HASH_AVAIL_TYPES];
 };
 
 
