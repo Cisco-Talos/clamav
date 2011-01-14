@@ -33,6 +33,7 @@
 #define MODULE_NAME "hashtab: "
 
 static const char DELETED_KEY[] = "";
+#define DELETED_HTU32_KEY ((uint32_t)(-1))
 
 static unsigned long nearest_power(unsigned long num)
 {
@@ -185,6 +186,24 @@ int cli_hashtab_init(struct cli_hashtable *s,size_t capacity)
 	return 0;
 }
 
+int cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
+{
+	if(!s)
+		return CL_ENULLARG;
+
+	PROFILE_INIT(s);
+
+	capacity = nearest_power(capacity);
+	s->htable = mpool_calloc(mempool, capacity, sizeof(*s->htable));
+	if(!s->htable)
+		return CL_EMEM;
+	s->capacity = capacity;
+	s->used = 0;
+	s->maxfill = 8*capacity/10;
+	return 0;
+}
+
+
 static inline uint32_t hash32shift(uint32_t key)
 {
   key = ~key + (key << 15);
@@ -206,6 +225,14 @@ static inline size_t hash(const unsigned char* k,const size_t len,const size_t S
 		/* mixing function */
 		Hash = hash32shift(Hash);
 	}
+	/* SIZE is power of 2 */
+	return Hash & (SIZE - 1);
+}
+
+static inline size_t hash_htu32(uint32_t k, const size_t SIZE)
+{
+	/* mixing function */
+	size_t Hash = hash32shift(k);
 	/* SIZE is power of 2 */
 	return Hash & (SIZE - 1);
 }
@@ -241,6 +268,61 @@ struct cli_element* cli_hashtab_find(const struct cli_hashtable *s,const char* k
 	return NULL; /* not found */
 }
 
+
+const struct cli_htu32_element *cli_htu32_find(const struct cli_htu32 *s, uint32_t key)
+{
+	struct cli_htu32_element* element;
+	size_t tries = 1;
+	size_t idx;
+
+	if(!s)
+		return NULL;
+	PROFILE_CALC_HASH(s);
+	PROFILE_FIND_ELEMENT(s);
+	idx = hash_htu32(key, s->capacity);
+	element = &s->htable[idx];
+	do {
+		if(!element->key) {
+			PROFILE_FIND_NOTFOUND(s, tries);
+			return NULL; /* element not found, place is empty */
+		}
+		else if(key == element->key) {
+			PROFILE_FIND_FOUND(s, tries);
+			return element;/* found */
+		}
+		else {
+			idx = (idx + tries++) & (s->capacity-1);
+			element = &s->htable[idx];
+		}
+	} while (tries <= s->capacity);
+	PROFILE_HASH_EXHAUSTED(s);
+	return NULL; /* not found */
+}
+
+/* linear enumeration - start with current = NULL, returns next item if present or NULL if not */
+const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const struct cli_htu32_element *current) {
+	size_t ncur;
+	if(!s || !s->capacity)
+		return NULL;
+
+	if(!current)
+		ncur = 0;
+	else {
+		ncur = current - s->htable;
+		if(ncur >= s->capacity)
+			return NULL;
+
+		ncur++;
+	}
+	for(; ncur<s->capacity; ncur++) {
+		const struct cli_htu32_element *item = &s->htable[ncur & (s->capacity - 1)];
+		if(item->key && item->key != DELETED_HTU32_KEY)
+			return item;
+	}
+	return NULL;
+}
+
+
 static int cli_hashtab_grow(struct cli_hashtable *s)
 {
 	const size_t new_capacity = nearest_power(s->capacity + 1);
@@ -262,7 +344,7 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 			element = &htable[idx];
 
 			while(element->key && tries <= new_capacity) {
-				idx = (idx + tries++) % new_capacity;
+				idx = (idx + tries++) & (new_capacity-1);
 				element = &htable[idx];
 			}
 			if(!element->key) {
@@ -286,6 +368,57 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 	PROFILE_GROW_DONE(s);
 	return CL_SUCCESS;
 }
+
+#ifndef USE_MPOOL
+#define cli_htu32_grow(A, B) cli_htu32_grow(A)
+#endif
+
+static int cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
+{
+	const size_t new_capacity = nearest_power(s->capacity + 1);
+	struct cli_htu32_element* htable = mpool_calloc(mempool, new_capacity, sizeof(*s->htable));
+	size_t i,idx, used = 0;
+	cli_dbgmsg("hashtab.c: new capacity: %lu\n",new_capacity);
+	if(new_capacity == s->capacity || !htable)
+		return CL_EMEM;
+
+	PROFILE_GROW_START(s);
+
+	for(i=0; i < s->capacity; i++) {
+		if(s->htable[i].key && s->htable[i].key != DELETED_HTU32_KEY) {
+			struct cli_htu32_element* element;
+			size_t tries = 1;
+
+			PROFILE_CALC_HASH(s);
+			idx = hash_htu32(s->htable[i].key, new_capacity);
+			element = &htable[idx];
+
+			while(element->key && tries <= new_capacity) {
+				idx = (idx + tries++) & (new_capacity-1);
+				element = &htable[idx];
+			}
+			if(!element->key) {
+				/* copy element from old hashtable to new */
+				PROFILE_GROW_FOUND(s, tries);
+				*element = s->htable[i];
+				used++;
+			}
+			else {
+				cli_errmsg("hashtab.c: Impossible - unable to rehash table");
+				return CL_EMEM;/* this means we didn't find enough room for all elements in the new table, should never happen */ 
+			}
+		}
+	}
+	mpool_free(mempool, s->htable);
+	s->htable = htable;
+	s->used = used;
+	s->capacity = new_capacity;
+	s->maxfill = new_capacity*8/10;
+	cli_dbgmsg("Table %p size after grow:%ld\n",(void*)s,s->capacity);
+	PROFILE_GROW_DONE(s);
+	return CL_SUCCESS;
+}
+
 
 const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char* key, const size_t len, const cli_element_data data)
 {
@@ -349,6 +482,64 @@ const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char
 	return NULL;
 }
 
+
+int cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element *item, mpool_t *mempool)
+{
+	struct cli_htu32_element* element;
+	struct cli_htu32_element* deleted_element = NULL;
+	size_t tries = 1;
+	size_t idx;
+	int ret;
+
+	if(!s)
+		return CL_ENULLARG;
+	if(s->used > s->maxfill) {
+		cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",(void*)s,s->capacity);
+		cli_htu32_grow(s, mempool);
+	}
+	do {
+		PROFILE_CALC_HASH(s);
+		idx = hash_htu32(item->key, s->capacity);
+		element = &s->htable[idx];
+
+		do {
+			if(!element->key) {
+				/* element not found, place is empty, insert*/
+				if(deleted_element) {
+					/* reuse deleted elements*/
+					element = deleted_element;
+					PROFILE_DELETED_REUSE(s, tries);
+				}
+				else {
+					PROFILE_INSERT(s, tries);
+				}
+				*element = *item;
+				s->used++;
+				return 0;
+			}
+			else if(element->key == DELETED_HTU32_KEY) {
+				deleted_element = element;
+				element->key = 0;
+			}
+			else if(item->key == element->key) {
+				PROFILE_DATA_UPDATE(s, tries);
+				element->data = item->data;/* key found, update */
+				return 0;
+			}
+			else {
+				idx = (idx + tries++) % s->capacity;
+				element = &s->htable[idx];
+			}
+		} while (tries <= s->capacity);
+		/* no free place found*/
+		PROFILE_HASH_EXHAUSTED(s);
+		cli_dbgmsg("hashtab.c: Growing hashtable %p, because its full, old size:%ld.\n",(void*)s,s->capacity);
+	} while( (ret = cli_htu32_grow(s, mempool)) >= 0 );
+	cli_warnmsg("hashtab.c: Unable to grow hashtable\n");
+	return ret;
+}
+
+
 void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len)
 {
     struct cli_element *el = cli_hashtab_find(s, key, len);
@@ -356,6 +547,13 @@ void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len
 	return;
     free((void*)el->key);
     el->key = DELETED_KEY;
+}
+
+void cli_htu32_delete(struct cli_htu32 *s, uint32_t key)
+{
+	struct cli_htu32_element *el = (struct cli_htu32_element *)cli_htu32_find(s, key);
+	if(el)
+		el->key = DELETED_HTU32_KEY;
 }
 
 void cli_hashtab_clear(struct cli_hashtable *s)
@@ -371,12 +569,32 @@ void cli_hashtab_clear(struct cli_hashtable *s)
 	s->used = 0;
 }
 
+void cli_htu32_clear(struct cli_htu32 *s)
+{
+	PROFILE_HASH_CLEAR(s);
+	if(s->htable)
+		memset(s->htable, 0, s->capacity * sizeof(struct cli_htu32_element));
+	s->used = 0;
+}
+
 void cli_hashtab_free(struct cli_hashtable *s)
 {
 	cli_hashtab_clear(s);
 	free(s->htable);
 	s->htable = NULL;
 	s->capacity = 0;
+}
+
+void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool)
+{
+	mpool_free(mempool, s->htable);
+	s->htable = NULL;
+	s->capacity = 0;
+}
+
+size_t cli_htu32_numitems(struct cli_htu32 *s) {
+	if(!s) return 0;
+	return s->capacity;
 }
 
 int cli_hashtab_store(const struct cli_hashtable *s,FILE* out)

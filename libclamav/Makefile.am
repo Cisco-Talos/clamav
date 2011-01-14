@@ -142,8 +142,8 @@ libclamav_la_SOURCES = \
         matcher-ac.h \
         matcher-bm.c \
         matcher-bm.h \
-        matcher-md5.c \
-        matcher-md5.h \
+        matcher-hash.c \
+        matcher-hash.h \
         matcher.c \
         matcher.h \
         others.c \

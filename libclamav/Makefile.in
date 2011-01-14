@@ -114,7 +114,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_LLVM_FALSE@am__DEPENDENCIES_2 = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@am__DEPENDENCIES_2 = c++/libclamavcxx.la
 am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
-	matcher-bm.c matcher-bm.h matcher-md5.c matcher-md5.h \
+	matcher-bm.c matcher-bm.h matcher-hash.c matcher-hash.h \
 	matcher.c matcher.h others.c others.h readdb.c readdb.h cvd.c \
 	cvd.h dsig.c dsig.h scanners.c scanners.h textdet.c textdet.h \
 	filetypes.c filetypes.h filetypes_int.h rtf.c rtf.h blob.c \
@@ -161,7 +161,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
-	libclamav_la-matcher-bm.lo libclamav_la-matcher-md5.lo \
+	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
 	libclamav_la-matcher.lo libclamav_la-others.lo \
 	libclamav_la-readdb.lo libclamav_la-cvd.lo \
 	libclamav_la-dsig.lo libclamav_la-scanners.lo \
@@ -619,7 +619,7 @@ libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
-	matcher-bm.h matcher-md5.c matcher-md5.h matcher.c matcher.h \
+	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
 	others.c others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
 	scanners.c scanners.h textdet.c textdet.h filetypes.c \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
@@ -837,7 +837,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-macho.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-ac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-bm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-md5.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-message.Plo@am__quote@
@@ -935,13 +935,13 @@ libclamav_la-matcher-bm.lo: matcher-bm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-bm.lo `test -f 'matcher-bm.c' || echo '$(srcdir)/'`matcher-bm.c
 
-libclamav_la-matcher-md5.lo: matcher-md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher-md5.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher-md5.Tpo -c -o libclamav_la-matcher-md5.lo `test -f 'matcher-md5.c' || echo '$(srcdir)/'`matcher-md5.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-matcher-md5.Tpo $(DEPDIR)/libclamav_la-matcher-md5.Plo
+libclamav_la-matcher-hash.lo: matcher-hash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher-hash.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher-hash.Tpo -c -o libclamav_la-matcher-hash.lo `test -f 'matcher-hash.c' || echo '$(srcdir)/'`matcher-hash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-matcher-hash.Tpo $(DEPDIR)/libclamav_la-matcher-hash.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='matcher-md5.c' object='libclamav_la-matcher-md5.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='matcher-hash.c' object='libclamav_la-matcher-hash.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-md5.lo `test -f 'matcher-md5.c' || echo '$(srcdir)/'`matcher-md5.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-hash.lo `test -f 'matcher-hash.c' || echo '$(srcdir)/'`matcher-hash.c
 
 libclamav_la-matcher.lo: matcher.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher.Tpo -c -o libclamav_la-matcher.lo `test -f 'matcher.c' || echo '$(srcdir)/'`matcher.c

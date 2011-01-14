@@ -208,14 +208,13 @@ struct cl_engine {
     /* Roots table */
     struct cli_matcher **root;
 
-    /* B-M matcher for standard MD5 sigs */
-    struct cli_matcher *md5_hdb;
+    /* hash matcher for standard MD5 sigs */
+    struct cli_matcher *hm_hdb;
+    /* hash matcher for MD5 sigs for PE sections */
+    struct cli_matcher *hm_mdb;
+    /* hash matcher for whitelist db */
+    struct cli_matcher *hm_fp;
 
-    /* B-M matcher for MD5 sigs for PE sections */
-    struct cli_matcher *md5_mdb;
-
-    /* B-M matcher for whitelist db */
-    struct cli_matcher *md5_fp;
 
     /* Container metadata */
     struct cli_cdb *cdb;

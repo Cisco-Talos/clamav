@@ -34,8 +34,9 @@
 #include "others.h"
 #include "matcher-ac.h"
 #include "matcher-bm.h"
-#include "matcher-md5.h"
 #include "md5.h"
+#include "sha1.h"
+#include "sha256.h"
 #include "filetypes.h"
 #include "matcher.h"
 #include "pe.h"
@@ -54,11 +55,8 @@
 #include "perflogging.h"
 #include "bytecode_priv.h"
 #include "bytecode_api_impl.h"
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
 #include "sha256.h"
 #include "sha1.h"
-#endif
 
 #ifdef CLI_PERF_LOGGING
 
@@ -382,35 +380,65 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	char md5[33];
 	unsigned int i;
 	const char *virname;
+        SHA1Context sha1;
+        SHA256_CTX sha256;
+        fmap_t *map;
+        char *ptr;
+        uint8_t shash1[SHA1_HASH_SIZE*2+1];
+        uint8_t shash256[SHA256_HASH_SIZE*2+1];
+	int have_sha1, have_sha256;
 
-    if(ctx->engine->md5_fp && cli_md5m_scan(digest, size, &virname, ctx->engine->md5_fp) == CL_VIRUS) {
-	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
+    if(cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+	cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s)\n", virname);
 	return CL_CLEAN;
     }
+
     for(i = 0; i < 16; i++)
 	sprintf(md5 + i * 2, "%02x", digest[i]);
     md5[32] = 0;
     cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size, *ctx->virname ? *ctx->virname : "Name");
 
+    map = *ctx->fmap;
+    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size);
+    have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size);
+    if(have_sha1 || have_sha256) {
+	if((ptr = fmap_need_off_once(map, 0, size))) {
+	    if(have_sha1) {
+		SHA1Init(&sha1);
+		SHA1Update(&sha1, ptr, size);
+		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+		if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS){
+		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+		    return CL_CLEAN;
+		}
+	    }
+	    if(have_sha256) {
+		sha256_init(&sha256);
+		sha256_update(&sha256, ptr, size);
+		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+		if(cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS){
+		    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+		    return CL_CLEAN;
+		}
+	    }
+	}
+    }
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
-        SHA1Context sha1;
-        SHA256_CTX sha256;
-        fmap_t *map = *ctx->fmap;
-        char *ptr;
-        uint8_t shash1[SHA1_HASH_SIZE*2+1];
-        uint8_t shash256[SHA256_HASH_SIZE*2+1];
-
         if((ptr = fmap_need_off_once(map, 0, size))) {
-            sha256_init(&sha256);
-            sha256_update(&sha256, ptr, size);
-            sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+	    if(!have_sha256) {
+		sha256_init(&sha256);
+		sha256_update(&sha256, ptr, size);
+		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+	    }
             for(i=0; i<SHA256_HASH_SIZE; i++)
                 sprintf((char *)shash256+i*2, "%02x", shash256[SHA256_HASH_SIZE+i]);
 
-            SHA1Init(&sha1);
-            SHA1Update(&sha1, ptr, size);
-            SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+	    if(!have_sha1) {
+		SHA1Init(&sha1);
+		SHA1Update(&sha1, ptr, size);
+		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+	    }
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
@@ -570,16 +598,19 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
  	unsigned char *buff;
-	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
+	int ret = CL_CLEAN, type = CL_CLEAN, bytes, compute_hash[CLI_HASH_AVAIL_TYPES];
 	unsigned int i = 0, bm_offmode = 0;
 	uint32_t maxpatlen, offset = 0;
 	struct cli_ac_data gdata, tdata;
 	struct cli_bm_off toff;
 	cli_md5_ctx md5ctx;
-	unsigned char digest[16];
+	SHA256_CTX sha256ctx;
+	SHA1Context sha1ctx;
+	unsigned char digest[CLI_HASH_AVAIL_TYPES][32];
 	struct cli_matcher *groot = NULL, *troot = NULL;
 	struct cli_target_info info;
 	fmap_t *map = *ctx->fmap;
+	struct cli_matcher *hdb, *fp;
 
     if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");
@@ -645,8 +676,33 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	}
     }
 
-    if(!refhash && !ftonly && ctx->engine->md5_hdb)
-	cli_md5_init(&md5ctx);
+    hdb = ctx->engine->hm_hdb;
+    fp = ctx->engine->hm_fp;
+
+    if(!ftonly && hdb) {
+	if(!refhash) {
+	    if(cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) || cli_hm_have_size(fp, CLI_HASH_MD5, map->len)) {
+		cli_md5_init(&md5ctx);
+		compute_hash[CLI_HASH_MD5] = 1;
+	    } else
+		compute_hash[CLI_HASH_MD5] = 0;
+	} else {
+	    compute_hash[CLI_HASH_MD5] = 0;
+	    memcpy(digest[CLI_HASH_MD5], refhash, 16);
+	}
+
+	if(cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) || cli_hm_have_size(fp, CLI_HASH_SHA1, map->len)) {
+	    SHA1Init(&sha1ctx);
+	    compute_hash[CLI_HASH_SHA1] = 1;
+	} else
+	    compute_hash[CLI_HASH_SHA1] = 0;
+
+	if(cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) || cli_hm_have_size(fp, CLI_HASH_SHA256, map->len)) {
+	    sha256_init(&sha256ctx);
+	    compute_hash[CLI_HASH_SHA256] = 1;
+	} else
+	    compute_hash[CLI_HASH_SHA256] = 0;
+    }
 
     while(offset < map->len) {
 	bytes = MIN(map->len - offset, SCANBUFF);
@@ -690,21 +746,48 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 		    type = ret;
 	    }
 
-	    if(!refhash && ctx->engine->md5_hdb)
-		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes - maxpatlen * (offset!=0));
+	    if(hdb) {
+		void *data = buff + maxpatlen * (offset!=0);
+		uint32_t data_len = bytes - maxpatlen * (offset!=0);
+
+		if(compute_hash[CLI_HASH_MD5])
+		    cli_md5_update(&md5ctx, data, data_len);
+		if(compute_hash[CLI_HASH_SHA1])
+		    SHA1Update(&sha1ctx, data, data_len);
+		if(compute_hash[CLI_HASH_SHA256])
+		    sha256_update(&sha256ctx, data, data_len);
+	    }
 	}
 
 	if(bytes < SCANBUFF) break;
 	offset += bytes - maxpatlen;
     }
 
-    if(!ftonly && ctx->engine->md5_hdb) {
-	if(!refhash) {
-	    cli_md5_final(digest, &md5ctx);
-	    refhash = digest;
+    if(!ftonly && hdb) {
+	enum CLI_HASH_TYPE hashtype;
+
+	if(compute_hash[CLI_HASH_MD5])
+	    cli_md5_final(digest[CLI_HASH_MD5], &md5ctx);
+	if(refhash)
+	    compute_hash[CLI_HASH_MD5] = 1;
+	if(compute_hash[CLI_HASH_SHA1])
+	    SHA1Final(&sha1ctx, digest[CLI_HASH_SHA1]);
+	if(compute_hash[CLI_HASH_SHA256])
+	    sha256_final(&sha256ctx, digest[CLI_HASH_SHA256]);
+
+	for(hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
+	    if(compute_hash[hashtype] && (ret = cli_hm_scan(digest[hashtype], map->len, ctx->virname, hdb, hashtype)) == CL_VIRUS)
+		break;
 	}
-	if(cli_md5m_scan(refhash, map->len, ctx->virname, ctx->engine->md5_hdb) == CL_VIRUS && cli_md5m_scan(refhash, map->len, NULL, ctx->engine->md5_fp) != CL_VIRUS)
-	    ret = CL_VIRUS;
+
+	if(ret == CL_VIRUS && fp) {
+	    for(hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
+		if(compute_hash[hashtype] && cli_hm_scan(digest[hashtype], map->len, ctx->virname, fp, hashtype) == CL_VIRUS) {
+		    ret = CL_CLEAN;
+		    break;
+		}
+	    }
+	}
     }
 
     if(troot) {

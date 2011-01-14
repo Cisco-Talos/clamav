@@ -54,7 +54,7 @@
 #include "mew.h"
 #include "upack.h"
 #include "matcher.h"
-#include "matcher-md5.h"
+#include "matcher-hash.h"
 #include "disasm.h"
 #include "special.h"
 #include "ishield.h"
@@ -1000,24 +1000,20 @@ int cli_scanpe(cli_ctx *ctx)
 	    if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
 
 	    /* check MD5 section sigs */
-	    md5_sect = ctx->engine->md5_mdb;
+	    md5_sect = ctx->engine->hm_mdb;
 	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
-		found = 0;
-		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
-		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
-			unsigned char md5_dig[16];
-			const struct cli_md5m_patt *patt;
-			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_md5m_scan(md5_dig, exe_sections[i].rsz, ctx->virname, ctx->engine->md5_mdb) == CL_VIRUS) {
-			    if(cli_md5m_scan(md5_dig, fsize, NULL, ctx->engine->md5_fp) != CL_VIRUS) {
-				free(section_hdr);
-				free(exe_sections);
-				return CL_VIRUS;
-			    }
-			}
-			break;
+		unsigned char md5_dig[16];
+		if(cli_hm_have_size(md5_sect, CLI_HASH_MD5, exe_sections[i].rsz) && 
+		   cli_md5sect(map, &exe_sections[i], md5_dig) &&
+		   cli_hm_scan(md5_dig, exe_sections[i].rsz, ctx->virname, md5_sect, CLI_HASH_MD5) == CL_VIRUS) {
+		    if(cli_hm_scan(md5_dig, fsize, NULL, ctx->engine->hm_fp, CLI_HASH_MD5) != CL_VIRUS) {
+			free(section_hdr);
+			free(exe_sections);
+			return CL_VIRUS;
 		    }
 		}
 	    }
+
 	}
 
 	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {

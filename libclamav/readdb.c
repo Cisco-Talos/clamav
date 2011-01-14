@@ -46,7 +46,7 @@
 #endif
 #include "matcher-ac.h"
 #include "matcher-bm.h"
-#include "matcher-md5.h"
+#include "matcher-hash.h"
 #include "matcher.h"
 #include "others.h"
 #include "str.h"
@@ -1860,52 +1860,16 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define MD5_MDB	    1
 #define MD5_FP	    2
 
-static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
-{
-	struct cli_matcher *bm = NULL;
-	int ret;
-
-
-    if(mode == MD5_HDB) {
-	bm = engine->md5_hdb = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
-    } else if(mode == MD5_MDB) {
-	bm = engine->md5_mdb = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
-    } else {
-	bm = engine->md5_fp = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
-    }
-
-    if(!bm)
-	return CL_EMEM;
-#ifdef USE_MPOOL
-    bm->mempool = engine->mempool;
-#endif
-    if((ret = cli_md5m_init(bm))) {
-	cli_errmsg("cli_md5db_init: Failed to initialize MD5 matcher\n");
-	return ret;
-    }
-
-    return CL_SUCCESS;
-}
-
-#define MD5_DB			    \
-    if(mode == MD5_HDB)		    \
-	db = engine->md5_hdb;    \
-    else if(mode == MD5_MDB)	    \
-	db = engine->md5_mdb;    \
-    else			    \
-	db = engine->md5_fp;
-
-#define MD5_TOKENS 3
-static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+#define MD5_TOKENS 5
+static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD5_TOKENS + 1];
 	char buffer[FILEBUFF], *buffer_cpy = NULL;
-	const char *pt;
-	unsigned char *md5;
+	const char *pt, *virname;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
-	struct cli_md5m_patt *new;
 	struct cli_matcher *db = NULL;
+	unsigned long size;
 
 
     if(mode == MD5_MDB) {
@@ -1924,12 +1888,30 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
-	if(tokens_count != MD5_TOKENS) {
+	if(tokens_count < 3) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
-	if(!cli_isnumber(tokens[size_field])) {
-	    cli_errmsg("cli_loadmd5: Invalid value for the size field\n");
+	if(tokens_count > MD5_TOKENS - 2) {
+	    unsigned int req_fl = atoi(tokens[MD5_TOKENS - 2]);
+
+	    if(tokens_count > MD5_TOKENS) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+
+	    if(cl_retflevel() < req_fl)
+		continue;
+	    if(tokens_count == MD5_TOKENS) {
+		req_fl = atoi(tokens[MD5_TOKENS - 1]);
+		if(cl_retflevel() > req_fl)
+		    continue;
+	    }
+	}
+
+	size = strtol(tokens[size_field], (char **)&pt, 10);
+	if(*pt || !size || size >= 0xffffffff) {
+	    cli_errmsg("cli_loadhash: Invalid value for the size field\n");
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1949,57 +1931,44 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    else
 		dot++;
 	    if(engine->cb_sigload(dot, pt, engine->cb_sigload_ctx)) {
-		cli_dbgmsg("cli_loadmd5: skipping %s due to callback\n", pt);
+		cli_dbgmsg("cli_loadhash: skipping %s (%s) due to callback\n", pt, dot);
 	        continue;
 	    }
 	}
 
-	new = (struct cli_md5m_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_md5m_patt));
-	if(!new) {
-	    ret = CL_EMEM;
-	    break;
-	}
-
-	pt = tokens[md5_field]; /* md5 */
-	if(strlen(pt) != 32 || !(md5 = (unsigned char *) cli_mpool_hex2str(engine->mempool, pt))) {
-	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
-	    mpool_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-	memcpy(new->md5, md5, 16);
-	mpool_free(engine->mempool, md5);
-
-	new->filesize = atoi(tokens[size_field]);
-
-	new->virname = cli_mpool_virname(engine->mempool, tokens[2], options & CL_DB_OFFICIAL);
-	if(!new->virname) {
-	    mpool_free(engine->mempool, new);
+	virname = cli_mpool_virname(engine->mempool, pt, options & CL_DB_OFFICIAL);
+	if(!virname) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	MD5_DB;
-	if(!db && (ret = cli_md5db_init(engine, mode))) {
-	    mpool_free(engine->mempool, new->virname);
-	    mpool_free(engine->mempool, new);
-	    break;
-	} else {
-	    MD5_DB;
-	}
+	if(mode == MD5_HDB)
+	    db = engine->hm_hdb;
+	else if(mode == MD5_MDB)
+	    db = engine->hm_mdb;
+	else
+	    db = engine->hm_fp;
 
-	if((ret = cli_md5m_addpatt(db, new))) {
-	    cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
-	    mpool_free(engine->mempool, new->virname);
-	    mpool_free(engine->mempool, new);
-	    break;
-	}
-
-	if(mode == MD5_MDB) { /* section MD5 */
-	    if(!db->md5_sizes_hs.capacity) {
-		cli_hashset_init_pool(&db->md5_sizes_hs, 65536, 80, engine->mempool);
+	if(!db) {
+	    if(!(db = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
+		ret = CL_EMEM;
+		break;
 	    }
-	    cli_hashset_addkey(&db->md5_sizes_hs, new->filesize);
+#ifdef USE_MPOOL
+	    db->mempool = engine->mempool;
+#endif
+	    if(mode == MD5_HDB)
+		engine->hm_hdb = db;
+	    else if(mode == MD5_MDB)
+		engine->hm_mdb = db;
+	    else
+		engine->hm_fp = db;
+	}
+
+	if((ret = hm_addhash(db, tokens[md5_field], size, virname))) {
+	    cli_errmsg("cli_loadhash: Malformed MD5 string at line %u\n", line);
+	    mpool_free(engine->mempool, (void *)virname);
+	    break;
 	}
 
 	sigs++;
@@ -2008,12 +1977,12 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	free(buffer_cpy);
 
     if(!line) {
-	cli_errmsg("cli_loadmd5: Empty database file\n");
+	cli_errmsg("cli_loadhash: Empty database file\n");
 	return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
+	cli_errmsg("cli_loadhash: Problem parsing database at line %u\n", line);
 	return ret;
     }
 
@@ -2389,24 +2358,22 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".cld")) {
 	ret = cli_cvdload(fs, engine, signo, options, 1, filename);
 
-    } else if(cli_strbcasestr(dbname, ".hdb")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);
-
-    } else if(cli_strbcasestr(dbname, ".hdu")) {
+    } else if(cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);
+    } else if(cli_strbcasestr(dbname, ".hdu") || cli_strbcasestr(dbname, ".hsu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
+	    ret = cli_loadhash(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
 
-    } else if(cli_strbcasestr(dbname, ".fp")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_FP, options, dbio, dbname);
+    } else if(cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_FP, options, dbio, dbname);
+    } else if(cli_strbcasestr(dbname, ".mdb") || cli_strbcasestr(dbname, ".msb")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_MDB, options, dbio, dbname);
 
-    } else if(cli_strbcasestr(dbname, ".mdb")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, dbio, dbname);
-
-    } else if(cli_strbcasestr(dbname, ".mdu")) {
+    } else if(cli_strbcasestr(dbname, ".mdu") || cli_strbcasestr(dbname, ".msu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
+	    ret = cli_loadhash(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
 
@@ -2468,7 +2435,6 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cdb")) {
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
-
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
@@ -2945,22 +2911,18 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, engine->root);
     }
 
-    if((root = engine->md5_hdb)) {
-	cli_md5m_free(root);
+    if((root = engine->hm_hdb)) {
+	hm_free(root);
 	mpool_free(engine->mempool, root);
     }
 
-    if((root = engine->md5_mdb)) {
-	cli_md5m_free(root);
-	mpool_free(engine->mempool, root->soff);
-	if(root->md5_sizes_hs.capacity) {
-		cli_hashset_destroy(&root->md5_sizes_hs);
-	}
+    if((root = engine->hm_mdb)) {
+	hm_free(root);
 	mpool_free(engine->mempool, root);
     }
 
-    if((root = engine->md5_fp)) {
-	cli_md5m_free(root);
+    if((root = engine->hm_fp)) {
+	hm_free(root);
 	mpool_free(engine->mempool, root);
     }
 
@@ -3045,29 +3007,6 @@ int cl_engine_free(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-static void cli_md5db_build(struct cli_matcher* root)
-{
-	if(root && root->md5_sizes_hs.capacity) {
-		/* TODO: use hashset directly, instead of the array when matching*/
-		cli_dbgmsg("Converting hashset to array: %u entries\n", root->md5_sizes_hs.count);
-
-#ifdef USE_MPOOL
-		{
-		uint32_t *mpoolht;
-		unsigned int mpoolhtsz = root->md5_sizes_hs.count * sizeof(*mpoolht);
-		root->soff = mpool_malloc(root->mempool, mpoolhtsz);
-		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &mpoolht);
-		memcpy(root->soff, mpoolht, mpoolhtsz);
-		free(mpoolht);
-		}
-#else
-		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
-#endif
-		cli_hashset_destroy(&root->md5_sizes_hs);
-		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), NULL);
-	}
-}
-
 int cl_engine_compile(struct cl_engine *engine)
 {
 	unsigned int i;
@@ -3089,11 +3028,14 @@ int cl_engine_compile(struct cl_engine *engine)
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
-    if(engine->md5_hdb)
-	cli_dbgmsg("MD5 sigs (files): %u\n", engine->md5_hdb->md5_patterns);
+    if(engine->hm_hdb)
+	hm_flush(engine->hm_hdb);
 
-    if(engine->md5_mdb)
-	cli_dbgmsg("MD5 sigs (PE sections): %u\n", engine->md5_mdb->md5_patterns);
+    if(engine->hm_mdb)
+	hm_flush(engine->hm_mdb);
+
+    if(engine->hm_fp)
+	hm_flush(engine->hm_fp);
 
     if((ret = cli_build_regex_list(engine->whitelist_matcher))) {
 	    return ret;
@@ -3101,7 +3043,6 @@ int cl_engine_compile(struct cl_engine *engine)
     if((ret = cli_build_regex_list(engine->domainlist_matcher))) {
 	    return ret;
     }
-    cli_md5db_build(engine->md5_mdb);
     if(engine->ignored) {
 	cli_bm_free(engine->ignored);
 	mpool_free(engine->mempool, engine->ignored);
