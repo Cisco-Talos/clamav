@@ -55,11 +55,8 @@
 #include "perflogging.h"
 #include "bytecode_priv.h"
 #include "bytecode_api_impl.h"
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
 #include "sha256.h"
 #include "sha1.h"
-#endif
 
 #ifdef CLI_PERF_LOGGING
 
@@ -383,9 +380,16 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	char md5[33];
 	unsigned int i;
 	const char *virname;
+        SHA1Context sha1;
+        SHA256_CTX sha256;
+        fmap_t *map;
+        char *ptr;
+        uint8_t shash1[SHA1_HASH_SIZE*2+1];
+        uint8_t shash256[SHA256_HASH_SIZE*2+1];
+	int have_sha1, have_sha256;
 
-    if(ctx->engine->hm_fp && cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
-	cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
+    if(cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+	cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s)\n", virname);
 	return CL_CLEAN;
     }
 
@@ -394,25 +398,47 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     md5[32] = 0;
     cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size, *ctx->virname ? *ctx->virname : "Name");
 
+    map = *ctx->fmap;
+    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size);
+    have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size);
+    if(have_sha1 || have_sha256) {
+	if((ptr = fmap_need_off_once(map, 0, size))) {
+	    if(have_sha1) {
+		SHA1Init(&sha1);
+		SHA1Update(&sha1, ptr, size);
+		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+		if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS){
+		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+		    return CL_CLEAN;
+		}
+	    }
+	    if(have_sha256) {
+		sha256_init(&sha256);
+		sha256_update(&sha256, ptr, size);
+		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+		if(cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS){
+		    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+		    return CL_CLEAN;
+		}
+	    }
+	}
+    }
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
-        SHA1Context sha1;
-        SHA256_CTX sha256;
-        fmap_t *map = *ctx->fmap;
-        char *ptr;
-        uint8_t shash1[SHA1_HASH_SIZE*2+1];
-        uint8_t shash256[SHA256_HASH_SIZE*2+1];
-
         if((ptr = fmap_need_off_once(map, 0, size))) {
-            sha256_init(&sha256);
-            sha256_update(&sha256, ptr, size);
-            sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+	    if(!have_sha256) {
+		sha256_init(&sha256);
+		sha256_update(&sha256, ptr, size);
+		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+	    }
             for(i=0; i<SHA256_HASH_SIZE; i++)
                 sprintf((char *)shash256+i*2, "%02x", shash256[SHA256_HASH_SIZE+i]);
 
-            SHA1Init(&sha1);
-            SHA1Update(&sha1, ptr, size);
-            SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+	    if(!have_sha1) {
+		SHA1Init(&sha1);
+		SHA1Update(&sha1, ptr, size);
+		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+	    }
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
