@@ -1,3 +1,7 @@
+Fri Jan 14 15:52:30 CET 2011 (tk)
+---------------------------------
+ * freshclam: verify integrity of all *.cvd files during each session
+
 Mon Jan 10 23:51:08 EET 2011 (edwin)
 ------------------------------------
  * libclamav/c++/ClamBCRTChecks.cpp: fix paranoid mode crash (bb #2434).

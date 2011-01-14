@@ -1565,6 +1565,35 @@ static int test_database_wrap(const char *file, const char *newdb, int bytecode)
 }
 #endif
 
+static int checkdbdir(void)
+{
+	DIR *dir;
+	struct dirent *dent;
+	char fname[512];
+	int ret = 0;
+
+    if(!(dir = opendir(dbdir))) {
+	logg("!checkdbdir: Can't open directory %s\n", dbdir);
+	return -1;
+    }
+
+    while((dent = readdir(dir))) {
+	if(dent->d_ino) {
+	    if(/*cli_strbcasestr(dent->d_name, ".cld") ||*/ cli_strbcasestr(dent->d_name, ".cvd")) {
+		snprintf(fname, sizeof(fname), "%s"PATHSEP"%s", dbdir, dent->d_name);
+		if((ret = cl_cvdverify(fname))) {
+		    mprintf("!Corrupted database file %s: %s\n", fname, cl_strerror(ret));
+		    ret = -1;
+		    break;
+		}
+	    }
+	}
+    }
+
+    closedir(dir);
+    return ret;
+}
+
 extern int sigchld_wait;
 
 static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra)
@@ -2275,6 +2304,13 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
     }
 
     cli_rmdirs(updtmpdir);
+
+    if(checkdbdir() < 0) {
+	logg("!Broken databases found. Please inspect the problem and remove the files manually before restarting freshclam\n");
+	if(newver)
+	    free(newver);
+	return 54;
+    }
 
     if(updated) {
 	if(optget(opts, "HTTPProxyServer")->enabled || !ipaddr[0]) {
