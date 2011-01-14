@@ -92,28 +92,26 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
     } else
 	szh = (struct cli_sz_hash *)item->data.as_ptr;
 
-    if(szh->items == szh->max) {
-	if(!szh->max)
-	    szh->max = 1;
-	else
-	    szh->max += 1 + szh->max / 2;
+    szh->items++;
 
-	szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hashlen * szh->max);
-	if(!szh->hash_array) {
-	    cli_errmsg("ht_add: failed to grow hash array to %u entries\n", szh->max);
-	    return CL_EMEM;
-	}
-
-	szh->virusnames = mpool_realloc2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->max);
-	if(!szh->virusnames) {
-	    cli_errmsg("ht_add: failed to grow virusname array to %u entries\n", szh->max);
-	    return CL_EMEM;
-	}
+    szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hashlen * szh->items);
+    if(!szh->hash_array) {
+	cli_errmsg("ht_add: failed to grow hash array to %u entries\n", szh->items);
+	szh->items=0;
+	mpool_free(root->mempool, szh->virusnames);
+	return CL_EMEM;
     }
 
-    memcpy(&szh->hash_array[szh->items * hashlen], binhash, hashlen);
-    szh->virusnames[szh->items] = virusname;
-    szh->items++;
+    szh->virusnames = mpool_realloc2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
+    if(!szh->virusnames) {
+	cli_errmsg("ht_add: failed to grow virusname array to %u entries\n", szh->items);
+	szh->items=0;
+	mpool_free(root->mempool, szh->hash_array);
+	return CL_EMEM;
+    }
+
+    memcpy(&szh->hash_array[(szh->items-1) * hashlen], binhash, hashlen);
+    szh->virusnames[(szh->items-1)] = virusname;
     
     return 0;
 }
@@ -191,14 +189,6 @@ void hm_flush(struct cli_matcher *root) {
 	    struct cli_sz_hash *szh = (struct cli_sz_hash *)item->data.as_ptr;
 	    unsigned int keylen = hashlen[type];
 
-	    if(szh->items != szh->max) {
-		void *p;
-		p = mpool_realloc(root->mempool, szh->hash_array, keylen * szh->items);
-		if(p) szh->hash_array = p;
-		p = mpool_realloc(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
-		if(p) szh->virusnames = p;
-		szh->max = szh->items;
-	    }
 	    if(szh->items > 1)
 		hm_sort(szh, 0, szh->items, keylen);
 	}

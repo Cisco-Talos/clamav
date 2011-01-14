@@ -41,7 +41,6 @@ struct cli_sz_hash {
     uint8_t *hash_array; /* FIXME: make 256 entries? */
     const char **virusnames;
     uint32_t items;
-    uint32_t max;
 };
 
 
