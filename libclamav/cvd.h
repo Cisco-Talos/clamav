@@ -33,10 +33,11 @@ struct cli_dbio {
     unsigned int size, bread;
     char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
+    unsigned int chkonly;
     SHA256_CTX sha256ctx;
 };
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename);
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename, unsigned int chkonly);
 int cli_cvdunpack(const char *file, const char *dir);
 
 #endif

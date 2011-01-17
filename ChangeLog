@@ -1,3 +1,7 @@
+Mon Jan 17 19:05:25 CET 2011 (tk)
+---------------------------------
+ * freshclam: detect and fix corruptions of existing db files
+
 Fri Jan 14 23:33:25 CET 2011 (acab)
 -----------------------------------
  * libclamav: merge multihash branch - we can now match on md5, sha1, sha256

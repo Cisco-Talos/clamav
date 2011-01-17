@@ -399,6 +399,11 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->bread += bread;
 		sha256_update(&dbio->sha256ctx, dbio->readpt, bread);
 	    }
+	    if(dbio->chkonly && dbio->bufpt) {
+		dbio->bufpt = NULL;
+		dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
+		continue;
+	    }
 	    nl = strchr(dbio->bufpt, '\n');
 	    if(nl) {
 		if(nl - dbio->bufpt >= size) {
@@ -2329,7 +2334,13 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	int ret = CL_SUCCESS;
 	uint8_t skipped = 0;
 	const char *dbname;
+	char buff[FILEBUFF];
 
+
+    if(dbio && dbio->chkonly) {
+	while(cli_dbgets(buff, FILEBUFF, NULL, dbio));
+	return CL_SUCCESS;
+    }
 
     if(!dbio && (fs = fopen(filename, "rb")) == NULL) {
 	if(options & CL_DB_DIRECTORY) { /* bb#1624 */
@@ -2353,10 +2364,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cvd")) {
-	ret = cli_cvdload(fs, engine, signo, options, 0, filename);
+	ret = cli_cvdload(fs, engine, signo, options, 0, filename, 0);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	ret = cli_cvdload(fs, engine, signo, options, 1, filename);
+	ret = cli_cvdload(fs, engine, signo, options, 1, filename, 0);
 
     } else if(cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
 	ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);

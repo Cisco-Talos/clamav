@@ -539,6 +539,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
 
 int cl_cvdverify(const char *file)
 {
+	struct cl_engine *engine;
 	FILE *fs;
 	int ret;
 
@@ -548,13 +549,20 @@ int cl_cvdverify(const char *file)
 	return CL_EOPEN;
     }
 
-    ret = cli_cvdverify(fs, NULL, 0);
-    fclose(fs);
+    if(!(engine = cl_engine_new())) {
+	cli_errmsg("cld_cvdverify: Can't create new engine\n");
+	fclose(fs);
+	return CL_EMEM;
+    }
 
+    ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, !!cli_strbcasestr(file, ".cld"), file, 1);
+
+    cl_engine_free(engine);
+    fclose(fs);
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename)
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename, unsigned int chkonly)
 {
 	struct cl_cvd cvd, dupcvd;
 	FILE *dupfs;
@@ -622,6 +630,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     }
 
     cfd = fileno(fs);
+    dbio.chkonly = 0;
     ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
     if(ret != CL_SUCCESS)
 	return ret;
@@ -635,6 +644,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     if(!dbinfo)
 	return CL_EMALFDB;
 
+    dbio.chkonly = chkonly;
     options |= CL_DB_SIGNED;
     ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, dbinfo);
 

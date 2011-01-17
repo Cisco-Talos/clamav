@@ -1120,17 +1120,13 @@ static int cvdinfo(const struct optstruct *opts)
     if(cli_strbcasestr(pt, ".cvd")) {
 	mprintf("MD5: %s\n", cvd->md5);
 	mprintf("Digital signature: %s\n", cvd->dsig);
-	cl_cvdfree(cvd);
-	if((ret = cl_cvdverify(pt))) {
-	    mprintf("!cvdinfo: Verification: %s\n", cl_strerror(ret));
-	    return -1;
-	} else {
-	    mprintf("Verification OK.\n");
-	    return 0;
-	}
     }
-
     cl_cvdfree(cvd);
+    if((ret = cl_cvdverify(pt))) {
+	mprintf("!cvdinfo: Verification: %s\n", cl_strerror(ret));
+	return -1;
+    }
+    mprintf("Verification OK.\n");
     return 0;
 }
 

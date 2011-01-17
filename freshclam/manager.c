@@ -1569,8 +1569,8 @@ static int checkdbdir(void)
 {
 	DIR *dir;
 	struct dirent *dent;
-	char fname[512];
-	int ret = 0;
+	char fname[512], broken[513];
+	int ret, fret = 0;
 
     if(!(dir = opendir(dbdir))) {
 	logg("!checkdbdir: Can't open directory %s\n", dbdir);
@@ -1579,19 +1579,27 @@ static int checkdbdir(void)
 
     while((dent = readdir(dir))) {
 	if(dent->d_ino) {
-	    if(/*cli_strbcasestr(dent->d_name, ".cld") ||*/ cli_strbcasestr(dent->d_name, ".cvd")) {
+	    if(cli_strbcasestr(dent->d_name, ".cld") || cli_strbcasestr(dent->d_name, ".cvd")) {
 		snprintf(fname, sizeof(fname), "%s"PATHSEP"%s", dbdir, dent->d_name);
 		if((ret = cl_cvdverify(fname))) {
+		    fret = -1;
 		    mprintf("!Corrupted database file %s: %s\n", fname, cl_strerror(ret));
-		    ret = -1;
-		    break;
+		    snprintf(broken, sizeof(broken), "%s.broken", fname);
+		    if(!access(broken, R_OK))
+			unlink(broken);
+		    if(rename(fname, broken)) {
+			if(unlink(fname))
+			    mprintf("!Can't remove broken database file %s, please delete it manually and restart freshclam\n", fname);
+		    } else {
+			mprintf("Corrupted database file renamed to %s\n", broken);
+		    }
 		}
 	    }
 	}
     }
 
     closedir(dir);
-    return ret;
+    return fret;
 }
 
 extern int sigchld_wait;
@@ -2306,7 +2314,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
     cli_rmdirs(updtmpdir);
 
     if(checkdbdir() < 0) {
-	logg("!Broken databases found. Please inspect the problem and remove the files manually before restarting freshclam\n");
 	if(newver)
 	    free(newver);
 	return 54;
