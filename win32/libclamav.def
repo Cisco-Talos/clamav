@@ -113,8 +113,8 @@ EXPORTS uniq_get @44250 NONAME
 EXPORTS cli_ole2_extract @44251 NONAME
 EXPORTS cli_calloc @44252 NONAME
 EXPORTS cli_str2hex @44253 NONAME
-EXPORTS cli_md5stream @44254 NONAME
-EXPORTS cli_md5file @44255 NONAME
+EXPORTS cli_hashstream @44254 NONAME
+EXPORTS cli_hashfile @44255 NONAME
 EXPORTS html_normalise_map @44256 NONAME
 EXPORTS cli_utf16toascii @44257 NONAME
 EXPORTS cli_strbcasestr @44258 NONAME
