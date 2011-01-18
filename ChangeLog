@@ -1,3 +1,7 @@
+Tue Jan 18 14:59:37 CET 2011 (tk)
+---------------------------------
+ * sigtool: add new options --sha1 and --sha256
+
 Mon Jan 17 19:05:25 CET 2011 (tk)
 ---------------------------------
  * freshclam: detect and fix corruptions of existing db files

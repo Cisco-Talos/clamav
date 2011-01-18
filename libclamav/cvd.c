@@ -515,7 +515,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
 	return CL_SUCCESS;
     }
 
-    md5 = cli_md5stream(fs, NULL);
+    md5 = cli_hashstream(fs, NULL, 1);
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {

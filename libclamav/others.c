@@ -60,6 +60,8 @@
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"
+#include "sha1.h"
+#include "sha256.h"
 #include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
@@ -683,73 +685,77 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
     return CL_CLEAN;
 }
 
-unsigned char *cli_md5digest(int desc)
+/*
+ * Type: 1 = MD5, 2 = SHA1, 3 = SHA256
+ */
+char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 {
-	unsigned char *digest;
+	unsigned char digest[32];
 	char buff[FILEBUFF];
-	cli_md5_ctx ctx;
-	int bytes;
+	cli_md5_ctx md5;
+	SHA1Context sha1;
+	SHA256_CTX sha256;
+	char *hashstr, *pt;
+	int i, bytes, size;
 
 
-    if(!(digest = cli_malloc(16)))
+    if(type == 1)
+	cli_md5_init(&md5);
+    else if(type == 2)
+	SHA1Init(&sha1);
+    else
+	sha256_init(&sha256);
+
+    while((bytes = fread(buff, 1, FILEBUFF, fs))) {
+	if(type == 1)
+	    cli_md5_update(&md5, buff, bytes);
+	else if(type == 2)
+	    SHA1Update(&sha1, buff, bytes);
+	else
+	    sha256_update(&sha256, buff, bytes);
+    }
+
+    if(type == 1) {
+	cli_md5_final(digest, &md5);
+	size = 16;
+    } else if(type == 2) {
+	SHA1Final(&sha1, digest);
+	size = 20;
+    } else {
+	sha256_final(&sha256, digest);
+	size = 32;
+    }
+
+    if(!(hashstr = (char *) cli_calloc(size*2 + 1, sizeof(char))))
 	return NULL;
 
-    cli_md5_init(&ctx);
-
-    while((bytes = cli_readn(desc, buff, FILEBUFF)))
-	cli_md5_update(&ctx, buff, bytes);
-
-    cli_md5_final(digest, &ctx);
-
-    return digest;
-}
-
-char *cli_md5stream(FILE *fs, unsigned char *digcpy)
-{
-	unsigned char digest[16];
-	char buff[FILEBUFF];
-	cli_md5_ctx ctx;
-	char *md5str, *pt;
-	int i, bytes;
-
-
-    cli_md5_init(&ctx);
-
-    while((bytes = fread(buff, 1, FILEBUFF, fs)))
-	cli_md5_update(&ctx, buff, bytes);
-
-    cli_md5_final(digest, &ctx);
-
-    if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
-	return NULL;
-
-    pt = md5str;
-    for(i = 0; i < 16; i++) {
+    pt = hashstr;
+    for(i = 0; i < size; i++) {
 	sprintf(pt, "%02x", digest[i]);
 	pt += 2;
     }
 
     if(digcpy)
-	memcpy(digcpy, digest, 16);
+	memcpy(digcpy, digest, size);
 
-    return md5str;
+    return hashstr;
 }
 
-char *cli_md5file(const char *filename)
+char *cli_hashfile(const char *filename, int type)
 {
 	FILE *fs;
-	char *md5str;
+	char *hashstr;
 
 
     if((fs = fopen(filename, "rb")) == NULL) {
-	cli_errmsg("cli_md5file(): Can't read file %s\n", filename);
+	cli_errmsg("cli_hashfile(): Can't open file %s\n", filename);
 	return NULL;
     }
 
-    md5str = cli_md5stream(fs, NULL);
-    fclose(fs);
+    hashstr = cli_hashstream(fs, NULL, type);
 
-    return md5str;
+    fclose(fs);
+    return hashstr;
 }
 
 /* Function: unlink

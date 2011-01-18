@@ -66,8 +66,8 @@ CLAMAV_PRIVATE {
     cli_wm_decrypt_macro;
     cli_readn;
     cli_str2hex;
-    cli_md5file;
-    cli_md5stream;
+    cli_hashfile;
+    cli_hashstream;
     html_normalise_map;
     cli_utf16toascii;
 
