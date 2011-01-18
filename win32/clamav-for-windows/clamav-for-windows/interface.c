@@ -390,9 +390,11 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     ret = load_db();
     unlock_engine();
 
-    ResetEvent(monitor_event);
-    if(!(monitor_hdl = CreateThread(NULL, 0, monitor_thread, NULL, 0, NULL)))
-	logg("^Failed to start db monitoring thread\n");
+    if(!ret) {
+	ResetEvent(monitor_event);
+	if(!(monitor_hdl = CreateThread(NULL, 0, monitor_thread, NULL, 0, NULL)))
+	    logg("^Failed to start db monitoring thread\n");
+    }
 
     logg("*Scan_Initialize: returning %d\n", ret);
     return ret;
@@ -408,12 +410,6 @@ int CLAMAPI Scan_Uninitialize(void) {
  //   logg("%x", rett);
     uninitialize_called = 1;
     INFN();
-    if(lock_engine())
-	FAIL(CL_ELOCK, "failed to lock engine");
-    if(!engine) {
-	unlock_engine();
-	FAIL(CL_ESTATE, "attempted to uninit a NULL engine");
-    }
 
     if(monitor_hdl) {
 	SetEvent(monitor_event);
@@ -423,6 +419,13 @@ int CLAMAPI Scan_Uninitialize(void) {
 	}
     }
     monitor_hdl = NULL;
+
+    if(lock_engine())
+	FAIL(CL_ELOCK, "failed to lock engine");
+    if(!engine) {
+	unlock_engine();
+	FAIL(CL_ESTATE, "attempted to uninit a NULL engine");
+    }
 
     if(lock_instances()) {
 	unlock_engine();
