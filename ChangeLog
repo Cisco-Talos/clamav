@@ -1,3 +1,7 @@
+Tue Jan 18 16:18:07 CET 2011 (tk)
+---------------------------------
+ * sigtool: handle .hs(b|u) and .ms(b|u) files
+
 Tue Jan 18 14:59:37 CET 2011 (tk)
 ---------------------------------
  * sigtool: add new options --sha1 and --sha256
