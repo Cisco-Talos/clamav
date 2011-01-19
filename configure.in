@@ -528,6 +528,8 @@ fi
 AC_MSG_RESULT([$ZLIB_HOME])
 ])
 
+CLAMDSCAN_LIBS="$FRESHCLAM_LIBS"
+
 AC_ARG_ENABLE([zlib-vcheck],
 [  --disable-zlib-vcheck	  do not check for buggy zlib version ],
 zlib_check=$enableval, zlib_check="yes")
@@ -972,6 +974,7 @@ kfreebsd*-gnu)
     fi
     ;;
 solaris*)
+    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lresolv"
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
@@ -1050,6 +1053,7 @@ darwin*)
     use_netinfo="yes"
     ;;
 os2*)
+    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lsyslog"
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
     CLAMD_LIBS="$CLAMD_LIBS -lsyslog"
     CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsyslog"
@@ -1126,6 +1130,7 @@ AC_SUBST([LIBCLAMAV_LIBS])
 AC_SUBST([CLAMD_LIBS])
 AC_SUBST([CLAMAV_MILTER_LIBS])
 AC_SUBST([FRESHCLAM_LIBS])
+AC_SUBST([CLAMDSCAN_LIBS])
 AC_SUBST([TH_SAFE])
 AC_SUBST([THREAD_LIBS])
 

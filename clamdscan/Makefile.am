@@ -43,7 +43,7 @@ endif
 
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @FRESHCLAM_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @CLAMDSCAN_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamdscan$(EXEEXT)
 CLEANFILES=*.gcda *.gcno
