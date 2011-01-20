@@ -31,6 +31,7 @@ class SigUIApp : public wxApp
 	virtual void OnInitCmdLine(wxCmdLineParser& parser);
 	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
 	virtual void OnEventLoopEnter(wxEventLoopBase *loop);
+	virtual void OnEventLoopExit(wxEventLoopBase *loop);
 	static bool validate_dbname(const wxString &name);
     private:
 	bool install_mode;

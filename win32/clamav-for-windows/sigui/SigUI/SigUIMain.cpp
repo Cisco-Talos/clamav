@@ -96,7 +96,8 @@ class HostnameValidator : public wxTextValidator
 
 SigUIFrame::~SigUIFrame()
 {
-    delete watcher;
+    if (watcher)
+        delete watcher;
     delete icon;
     delete editor;
 }
@@ -347,13 +348,25 @@ static wxString GetExecPath()
     return exec.GetPathWithSep();
 }
 
-static wxFileSystemWatcher *watcher;
-void SigUIApp::OnEventLoopEnter(wxEventLoopBase *WXUNUSED(loop))
+static wxFileSystemWatcher *watcher = 0;
+static bool watcher_deleted = false;
+void SigUIApp::OnEventLoopEnter(wxEventLoopBase *loop)
 {
-    watcher = new wxFileSystemWatcher();
-    watcher->SetOwner(GetTopWindow());
-    watcher->Add(GetExecPath(), wxFSW_EVENT_CREATE | wxFSW_EVENT_MODIFY |
-		 wxFSW_EVENT_WARNING | wxFSW_EVENT_ERROR);
+    if (!watcher && !watcher_deleted) {
+        watcher = new wxFileSystemWatcher();
+        watcher->SetOwner(GetTopWindow());
+        watcher->Add(GetExecPath(), wxFSW_EVENT_CREATE | wxFSW_EVENT_MODIFY |
+            wxFSW_EVENT_WARNING | wxFSW_EVENT_ERROR);
+    }
+}
+
+void SigUIApp::OnEventLoopExit(wxEventLoopBase *WXUNUSED(loop))
+{
+    if (watcher) {
+        delete watcher;
+        watcher_deleted = true;
+        watcher = 0;
+    }
 }
 
 void SigUIFrame::m_save_settingsOnButtonClick( wxCommandEvent& WXUNUSED(event) )
