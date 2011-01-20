@@ -1,3 +1,7 @@
+Thu Jan 20 11:16:17 EET 2011 (edwin)
+------------------------------------
+ * libclamav/pdf.c: fix uninit value (bb #2455).
+
 Thu Jan 20 10:11:32 EET 2011 (edwin)
 ------------------------------------
  * libclamav/c++/llvm: port 2 upstream commits to fix bb#8723.

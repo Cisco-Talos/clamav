@@ -1761,11 +1761,12 @@ static int asciihexdecode(const char *buf, off_t len, char *output)
 	    continue;
 	if (buf[i] == '>')
 	    break;
-	if (cli_hex2str_to(buf+i, output+j++, 2) == -1) {
+	if (cli_hex2str_to(buf+i, output+j, 2) == -1) {
 	    if (len - i < 4)
 		continue;
 	    return -1;
 	}
+	j++;
 	i++;
     }
     return j;
