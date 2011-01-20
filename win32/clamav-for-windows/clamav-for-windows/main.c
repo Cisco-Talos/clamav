@@ -33,15 +33,32 @@ BOOL init() {
     int ret;
 
     ret = GetModuleFileName((HINSTANCE)&__ImageBase, whereami, sizeof(whereami) -1);
-    if(!ret || ret == sizeof(whereami) -1)
+    if(!ret || ret == sizeof(whereami) -1) {
+	printf("ERROR: GetModuleFileName failed\n");
 	return FALSE;
+    }
 
     whereami[sizeof(whereami)-1] = '\0';
     slash = strrchr(whereami, '\\');
-    if(!slash)
+    if(!slash) {
+	printf("ERROR: No slash found in path %s\n", whereami);
 	return FALSE;
+    }
 
     slash++;
+    *slash='\0';
+    SetDllDirectory(whereami);
+    __try {
+	cl_set_clcb_msg(msg_callback);
+	ret = cl_init(CL_INIT_DEFAULT);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) { ret = -1; }
+
+    SetDllDirectory(NULL);
+    if(ret) {
+	printf("ERROR: Failed cl_init() returned %d\n", ret);
+	return FALSE;
+    }
 
     strncpy(slash, "clamav_log_verbose", sizeof(whereami) - (slash - whereami));
     whereami[sizeof(whereami)-1] = '\0';
@@ -54,31 +71,19 @@ BOOL init() {
     logg_time = 1;
     logg_size = -1;
     logg_file = strdup(whereami);
-    if(!logg_file)
+    if(!logg_file) {
+	printf("ERROR: failed to duplicate log filename\n");
 	return FALSE;
+    }
     strncpy(slash, "clamav.old.log", sizeof(whereami) - (slash - whereami));
     whereami[sizeof(whereami)-1] = '\0';
-
     if(!MoveFileEx(logg_file, whereami, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	DeleteFile(logg_file);
     logg_noflush = 1;/* only flush on errors and warnings */
-    if(logg("ClamAV module initializing\n")<0)
-	return FALSE;
-
-    *slash='\0';
-    SetDllDirectory(whereami);
-    __try {
-	cl_set_clcb_msg(msg_callback);
-	ret = cl_init(CL_INIT_DEFAULT);
-    }
-    __except(EXCEPTION_EXECUTE_HANDLER) { ret = -1; }
-
-    SetDllDirectory(NULL);
-    if(ret) {
-	logg("!Failed to init ClamAV engine (%d)\n", ret);
+    if(logg("ClamAV core initialized (version %s, flevel %d)\n", cl_retver(), cl_retflevel())<0) {
+	printf("ERROR: logg failed\n");
 	return FALSE;
     }
-    logg("ClamAV core initialized (version %s, flevel %d)\n", cl_retver(), cl_retflevel());
 
     if(init_errors()) {
 	logg("!Failed to initialize errors\n");
