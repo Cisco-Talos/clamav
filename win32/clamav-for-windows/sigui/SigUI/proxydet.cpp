@@ -157,7 +157,7 @@ void SigUIFrame::m_proxy_autodetOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	if (h) {
 	    wxLogVerbose(_("Retrieving proxy settings for URL"));
 	    if (whttp.WinHttpGetProxyForUrl(h,
-					    L"http://database.clamav.net",
+					    L"http://db.local.win.clamav.net",
 					    &autoproxy_opts,
 					    &autoproxy_info)) {
 		wxLogVerbose(_("proxy: %s, accesstype: %d"),

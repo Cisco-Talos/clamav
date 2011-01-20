@@ -118,7 +118,7 @@ GUIFrame::GUIFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_staticText6->Wrap( -1 );
 	fgSizer1->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_mirror = new wxComboBox( m_panel_updater, wxID_ANY, _("database.clamav.net"), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 );
+	m_mirror = new wxComboBox( m_panel_updater, wxID_ANY, _("db.local.win.clamav.net"), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 );
 	m_mirror->Append( _("db.at.clamav.net") );
 	m_mirror->Append( _("db.au.clamav.net") );
 	m_mirror->Append( _("db.ba.clamav.net") );

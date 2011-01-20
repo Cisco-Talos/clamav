@@ -39,7 +39,9 @@ ConfigEditor::ConfigEditor(const wxString& filename)
 #endif
 	    wxLogFatalError("Can't create file %s", filename);
 	}
-	file.AddLine("DatabaseMirror database.clamav.net");
+	file.AddLine("DatabaseMirror db.local.win.clamav.net");
+	file.AddLine("DNSDatabaseInfo current.cvd.win.clamav.net");
+	file.AddLine("ConnectTimeout 5");
 	file.Write(wxTextFile::typeDefault);
     } else {
 	//bb #2343

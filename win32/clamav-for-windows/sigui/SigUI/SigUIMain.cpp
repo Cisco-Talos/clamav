@@ -398,7 +398,7 @@ SigUIFrame::SigUIFrame(wxFrame *frame)
     editor->RegisterText("HTTPProxyUsername", &val_proxy_username, m_proxy_user);
     editor->RegisterText("HTTPProxyPassword", &val_proxy_password, m_proxy_password);
     editor->RegisterText("DatabaseMirror", &val_mirror, m_mirror, "db.COUNTRYCODE.clamav.net");
-    editor->RegisterStatic("DatabaseMirror", "database.clamav.net");
+    editor->RegisterStatic("DatabaseMirror", "db.local.win.clamav.net");
     editor->RegisterBool("Bytecode", &val_bytecode, m_bytecode);
     editor->RegisterList("DatabaseCustomURL", m_urls);
 
