@@ -2155,7 +2155,7 @@ int bytecode_init(void)
 {
     // If already initialized return
     if (llvm_is_multithreaded()) {
-	cli_warnmsg("bytecode_init: already initialized");
+	cli_warnmsg("bytecode_init: already initialized\n");
 	return CL_EARG;
     }
     llvm_install_error_handler(llvm_error_handler);
