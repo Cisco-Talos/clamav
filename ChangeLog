@@ -1,3 +1,7 @@
+Thu Jan 20 16:11:43 EET 2011 (edwin)
+------------------------------------
+ * shared/optparser.c: reduce BytecodeTimeout to 5s (instead of 60).
+
 Thu Jan 20 16:09:29 EET 2011 (edwin)
 -----------------------------------
  * libclamav/bytecode_vm.c: fix memset on bigendian arch (bb #2478).
