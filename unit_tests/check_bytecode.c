@@ -522,7 +522,7 @@ START_TEST (test_load_bytecode_int)
 }
 END_TEST
 
-#if defined(CL_THREAD_SAFE) && defined(C_LINUX) && ((__GLIBC__ << 16) + __GLIBC_MINOR__ >= (2 << 16) + 3)
+#if defined(CL_THREAD_SAFE) && defined(C_LINUX) && ((__GLIBC__ << 16) + __GLIBC_MINOR__ >= (2 << 16) + 4)
 #define DO_BARRIER
 #endif
 

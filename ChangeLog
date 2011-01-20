@@ -1,3 +1,8 @@
+Thu Jan 20 10:02:24 EET 2011 (edwin)
+------------------------------------
+ * unit_tests/check_bytecode.c: fix build on etch (bb #2399),
+    thanks to David F. Skoll <dfs*roaringpenguin.com>.
+
 Thu Jan 20 03:29:04 CET 2011 (acab)
 -----------------------------------
  * win32/compat/resolv.c: fix nasty typo
