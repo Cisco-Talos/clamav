@@ -107,6 +107,8 @@ void ConfigEditor::Add(const wxString& key, const wxString &value, bool comment)
     if (value.IsEmpty())
 	return;
 
+
+
     wxString writeLine = key + " " + value;
 
     if (comment) {
@@ -122,6 +124,11 @@ void ConfigEditor::Add(const wxString& key, const wxString &value, bool comment)
 
     if (value.find_first_of(" \t\"") != wxString::npos)
 	writeLine = "\"" + writeLine + "\"";
+
+    for (wxString str = file.GetFirstLine(); !file.Eof(); str = file.GetNextLine()) {
+	if (str.IsSameAs(writeLine))
+	    return;
+    }
 
     file.InsertLine(writeLine, lastadd);
     lastadd++;
