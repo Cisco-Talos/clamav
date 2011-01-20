@@ -1128,7 +1128,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		void *arg1, *arg2;
 		int64_t res=0;
 
-		READ64(arg3, inst->u.three[2]);
+		READ32(arg3, inst->u.three[2]);
 		READPOP(arg1, inst->u.three[0], arg3);
 		READPOP(arg2, inst->u.three[1], arg3);
 		memcpy(arg1, arg2, (int32_t)arg3);
