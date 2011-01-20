@@ -1832,7 +1832,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 
 				if(quintet > 1)
 					sum += (0xFFFFFF >> ((quintet - 2) * 8));
-				ret += quintet;
+				ret += quintet-1;
 				for(i = 0; i < quintet - 1; i++)
 					*output++ = (unsigned char)((sum >> (24 - 8 * i)) & 0xFF);
 			}

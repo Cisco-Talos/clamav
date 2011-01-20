@@ -1,3 +1,7 @@
+Thu Jan 20 11:19:50 EET 2011 (edwin)
+-----------------------------------
+ * libclamav/pdf.c: fix another pdf uninit (bb #2404).
+
 Thu Jan 20 11:16:17 EET 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: fix uninit value (bb #2455).
