@@ -1,3 +1,7 @@
+Thu Jan 20 16:09:29 EET 2011 (edwin)
+-----------------------------------
+ * libclamav/bytecode_vm.c: fix memset on bigendian arch (bb #2478).
+
 Thu Jan 20 11:38:33 EET 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: fix missed detection (bb #2455).

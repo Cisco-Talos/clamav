@@ -226,7 +226,6 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
     entry->bb_inst = bb_inst;
     /* we allocated room for values right after stack_entry! */
     entry->values = values = (char*)&entry[1];
-
     memcpy(&values[func->numBytes - func->numConstants*8], func->constants,
 	   sizeof(*values)*func->numConstants*8);
     return entry;
@@ -1125,40 +1124,41 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMCPY) {
-		int32_t arg3;
+		int64_t arg3;
 		void *arg1, *arg2;
 		int64_t res=0;
 
-		READ32(arg3, inst->u.three[2]);
+		READ64(arg3, inst->u.three[2]);
 		READPOP(arg1, inst->u.three[0], arg3);
 		READPOP(arg2, inst->u.three[1], arg3);
-		memcpy(arg1, arg2, arg3);
+		memcpy(arg1, arg2, (int32_t)arg3);
 /*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMMOVE) {
-		int32_t arg3;
+		int64_t arg3;
 		void *arg1, *arg2;
 		int64_t res=0;
 
-		READ32(arg3, inst->u.three[2]);
+		READ64(arg3, inst->u.three[2]);
 		READPOP(arg1, inst->u.three[0], arg3);
 		READPOP(arg2, inst->u.three[1], arg3);
-		memmove(arg1, arg2, arg3);
+		memmove(arg1, arg2, (int32_t)arg3);
 /*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
 	    }
 	    DEFINE_OP(OP_BC_MEMSET) {
-		int32_t arg2, arg3;
+		int64_t arg3;
+		int32_t arg2;
 		void *arg1;
 		int64_t res=0;
 
-		READ32(arg3, inst->u.three[2]);
+		READ64(arg3, inst->u.three[2]);
 		READPOP(arg1, inst->u.three[0], arg3);
 		READ32(arg2, inst->u.three[1]);
-		memset(arg1, arg2, arg3);
+		memset(arg1, arg2, (int32_t)arg3);
 /*		READ64(res, inst->u.three[0]);*/
 		WRITE64(inst->dest, res);
 		break;
