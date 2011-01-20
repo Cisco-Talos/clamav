@@ -46,7 +46,7 @@ int res_query(const char *dname, int class, int type, unsigned char *answer, int
 
     rr = rrs;
     do {
-	if(rr->wType == (WORD)type || rr->Data.TXT.dwStringCount || rr->Data.TXT.pStringArray[0]) {
+	if(rr->wType == (WORD)type && rr->Data.TXT.dwStringCount && rr->Data.TXT.pStringArray[0]) {
 	    unsigned int len = strlen(dname), txtlen = strlen(rr->Data.TXT.pStringArray[0]);
 	    if(txtlen > 255) continue;
 	    len++;
