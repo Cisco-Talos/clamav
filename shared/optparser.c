@@ -1009,7 +1009,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		    lnumarg = UINT_MAX;
 		}
 
-		numarg = lnumarg;
+		numarg = lnumarg ? lnumarg : UINT_MAX;
 		break;
 
 	    case TYPE_BOOL:
