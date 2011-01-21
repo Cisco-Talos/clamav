@@ -1200,8 +1200,6 @@ static void spam_x86(struct DISASMED *s, char *hr) {
     case ACCESS_NOARG:
       break;
     case ACCESS_IMM:
-      hr += sprintf(hr, "%s %lx", comma, (long)s->args[i].arg.q);
-      break;
     case ACCESS_REL:
       if (s->args[i].arg.rq >=0)
 	hr += sprintf(hr, "%s %lx", comma, (long)s->args[i].arg.q);
@@ -1418,10 +1416,10 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	  GETBYTE(b);
 	  s->args[0].arg.q+=(uint64_t)b<<(i*8);
 	}
-	if (x86ops[table][s->table_op].dmethod==ADDR_RELJ) {
+	/* if (x86ops[table][s->table_op].dmethod==ADDR_RELJ) { */
 	  s->args[0].arg.q<<=((8-sz)*8);
 	  s->args[0].arg.rq>>=((8-sz)*8);
-	}
+	/* } */
 	s->state = STATE_CHECKSTYPE;
 	continue;
       }
@@ -1627,6 +1625,8 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	  GETBYTE(b);
 	  s->args[s->cur].arg.q+=b<<(i*8);
 	}
+	  s->args[s->cur].arg.q<<=((8-sz)*8);
+	  s->args[s->cur].arg.rq>>=((8-sz)*8);
 	s->state = STATE_FINALIZE;
 	continue;
       }
