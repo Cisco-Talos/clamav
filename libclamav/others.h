@@ -53,7 +53,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 58
+#define CL_FLEVEL 59
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
