@@ -1,3 +1,7 @@
+Mon Jan 31 16:53:39 CET 2011 (tk)
+---------------------------------
+ * V 0.97rc
+
 Fri Jan 21 15:05:13 CET 2011 (acab)
 -----------------------------------
  * libclamav/disasm.c: sign extend immeds, displacers and reljumps (bb#2341)
