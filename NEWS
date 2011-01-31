@@ -1,10 +1,12 @@
-0.96.5
+0.97rc
 ------
 
-ClamAV 0.96.5 includes bugfixes and minor feature enhancements, such as
-improved handling of detection statistics, better file logging,
-and support for custom database URLs in freshclam. Please refer to the
-ChangeLog for details.
+ClamAV 0.97 brings many improvements, including complete Windows support
+(all major components compile out-of-box under Visual Studio), support for
+signatures based on SHA1 and SHA256, better error detection, as well as 
+speed and memory optimizations. The complete list of changes is available 
+in the ChangeLog file. For upgrade notes and tips please see: 
+https://wiki.clamav.net/Main/UpgradeNotes097
 
 --
 The ClamAV team (http://www.clamav.net/team)
