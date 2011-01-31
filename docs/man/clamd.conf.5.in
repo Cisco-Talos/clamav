@@ -257,7 +257,7 @@ Default: TrustSigned
 \fBBytecodeTimeout NUMBER\fR
 Set bytecode timeout in milliseconds.
 .br
-Default: 60000
+Default: 5000
 .TP 
 \fBDetectPUA BOOL\fR
 Detect Possibly Unwanted Applications.
