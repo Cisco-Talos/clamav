@@ -119,13 +119,17 @@ typedef struct _CLAM_SCAN_INFO {
     const wchar_t *pThreatName;
 
     /** The handle of the file being processed **/
-    /* Note #1: the handle MUST NOT BE CLOSED by the callback
-     * Note #2: the handle has got GENERIC_READ	access
+    /* Note #1: the handle MUST BE CLOSED by the caller, at any point
+     * Note #2: the has FILE_ATTRIBUTE_TEMPORARY and FILE_FLAG_DELETE_ON_CLOSE attributes
      * Note #3: the file pointer is guaranteed to be set at the begin of
-     *          the file and its position needs not to be reset
-     * Note #4: the file may already be mapped into memory, entirely or just partially */
+     *          the file and its position needs not to be reset */
     /* Presence: SCAN_PHASE_PRESCAN, SCAN_PHASE_POSTSCAN */
     HANDLE object;
+
+    /** An unique identifier for the file being processed **/
+    /* Provided for mapping purposes (type HANDLE for legacy reasons) */
+    /* Presence: SCAN_PHASE_PRESCAN, SCAN_PHASE_POSTSCAN */
+    HANDLE objectId;
     
     /** The path of inner file relative to file being scanned **/
     /* This applies only to archive for which internal names can be retrieved and is NULL otherwise */
