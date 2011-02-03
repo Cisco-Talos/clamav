@@ -1012,24 +1012,36 @@ cl_error_t prescan_cb(int fd, void *context) {
 	snprintf(tmpf, sizeof(tmpf), "%s\\%08x.tmp", tmpdir, ++tmpn);
 	tmpf[sizeof(tmpf)-1] = '\0';
 	fdhdl = CreateFile(tmpf, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
-	if(fdhdl != INVALID_HANDLE_VALUE) break;
-	/* FIXME: handle non dup filename errors */
+	if(fdhdl != INVALID_HANDLE_VALUE) {
+	    logg("*prescan_cb: dumping content to tempfile %s (handle %p)\n", tmpf, fdhdl);
+	    break;
+	}
+	if((perf = GetLastError()) != ERROR_FILE_EXISTS) {
+	    logg("!prescan_cb: failed to create tempfile %s - error %u\n", tmpf, perf);
+	    return CL_CLEAN;
+	}
     }
 
     fpos = lseek(fd, 0, SEEK_CUR);
     lseek(fd, 0, SEEK_SET);
     while((rsz = read(fd, tmpf, sizeof(tmpf))) > 0) {
-	    int wsz = 0;
-	    while(wsz != rsz) {
-		DWORD rwsz;
-		if(!WriteFile(fdhdl, &tmpf[wsz], rsz - wsz, &rwsz, NULL)) {
-		    /* FIXME: handle write fail here */
-		}
-		wsz += rwsz;
+	int wsz = 0;
+	while(wsz != rsz) {
+	    DWORD rwsz;
+	    if(!WriteFile(fdhdl, &tmpf[wsz], rsz - wsz, &rwsz, NULL)) {
+		logg("!prescan_cb: failed to write to tempfile %s - error %u\n", GetLastError());
+		lseek(fd, fpos, SEEK_SET);
+		CloseHandle(fdhdl);
+		return CL_CLEAN;
 	    }
+	    wsz += rwsz;
+	}
     }
     if(rsz) {
-	/* FIXME: handle read fail here */
+	logg("!prescan_cb: failed to read from clamav tempfile - errno = %d\n", errno);
+	lseek(fd, fpos, SEEK_SET);
+	CloseHandle(fdhdl);
+	return CL_CLEAN;
     }
     lseek(fd, fpos, SEEK_SET);
     SetFilePointer(fdhdl, 0, NULL, FILE_BEGIN);
