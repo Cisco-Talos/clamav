@@ -1,3 +1,7 @@
+Thu Feb  3 16:40:24 CET 2011 (acab)
+-----------------------------------
+ * libclamav/matcher-hash.c: stop leaking virusnames (nopool mode)
+
 Mon Jan 31 16:53:39 CET 2011 (tk)
 ---------------------------------
  * V 0.97rc
