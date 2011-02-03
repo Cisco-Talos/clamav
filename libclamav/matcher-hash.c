@@ -257,7 +257,7 @@ void hm_free(struct cli_matcher *root) {
 
 	    mpool_free(root->mempool, szh->hash_array);
 	    while(szh->items)
-		mpool_free(root->mempool, szh->virusnames[--szh->items]);
+		mpool_free(root->mempool, (void *)szh->virusnames[--szh->items]);
 	    mpool_free(root->mempool, szh->virusnames);
 	    mpool_free(root->mempool, szh);
 	}
