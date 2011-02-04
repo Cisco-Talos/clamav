@@ -1205,6 +1205,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    }
 	    h[64]='\0';
 	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, (unsigned)hlen, path, (unsigned)plen);
+#if 0
 	    if (prefix_matched) {
 		if (cli_bm_scanbuff(sha256_dig, 4, &virname, NULL, &rlist->hostkey_prefix,0,NULL,NULL) == CL_VIRUS) {
 		    cli_dbgmsg("prefix matched\n");
@@ -1212,6 +1213,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		} else
 		    return CL_SUCCESS;
 	    }
+#endif
 	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, NULL, &rlist->sha256_hashes,0,NULL,NULL) == CL_VIRUS) {
 		cli_dbgmsg("This hash matched: %s\n", h);
 		switch(*virname) {
@@ -1408,6 +1410,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		    return rc;
 		}
 		count++;
+#if 0
 		if (count == 2 && !prefix_matched && rlist->hostkey_prefix.bm_patterns) {
 		    /* if hostkey is not matched, don't bother calculating
 		     * hashes for other parts of the URL, they are not in the DB
@@ -1415,6 +1418,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		    cli_dbgmsg("hostkey prefix not matched, short-circuiting lookups\n");
 		    return CL_SUCCESS;
 		}
+#endif
 	    }
 	}
 	return CL_SUCCESS;

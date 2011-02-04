@@ -1,3 +1,7 @@
+Fri Feb  4 16:55:07 EET 2011 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: fix some missed safebrowsing URLs (bb #2514)
+
 Fri Feb  4 14:35:32 CET 2011 (tk)
 ---------------------------------
  * libclamav/matcher-bm.c: fix error message (bb#2513)
