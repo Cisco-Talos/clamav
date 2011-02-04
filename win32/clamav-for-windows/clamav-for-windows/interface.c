@@ -898,7 +898,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	    if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN - 5))
 		si.pThreatName = wvirname;
 	    else
-		si.pThreatName = L"Clam.INFECTED";
+		si.pThreatName = L"Clam.UNOFFICIAL";
 	} else
 	    si.pThreatName = NULL;
 	logg("*in final_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", &sctx, inst, fd, res, si.pThreatName);
@@ -948,7 +948,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 	    scaninfo->pThreatName = wvirname;
 	    memcpy(wvirname, L"Clam.", 10);
 	    if(!MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN-5))
-		scaninfo->pThreatName = L"Clam.INFECTED";
+		scaninfo->pThreatName = L"Clam.UNOFFICIAL";
 	    *pInfoList = infolist;
 	    logg("*Scan_ScanObjectByHandle (instance %p): created result list %p\n", inst, infolist);
 	}
@@ -1101,7 +1101,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	if(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, virname, -1, &wvirname[5], MAX_VIRNAME_LEN-5))
 	    si.pThreatName = wvirname;
 	else
-	    si.pThreatName = L"Clam.INFECTED";
+	    si.pThreatName = L"Clam.UNOFFICIAL";
     } else
 	    si.pThreatName = NULL;
     logg("*in postscan_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", context, inst, fd, result, si.pThreatName);
