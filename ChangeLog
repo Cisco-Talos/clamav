@@ -1,3 +1,7 @@
+Mon Feb  7 17:24:52 CET 2011 (tk)
+---------------------------------
+ * libclamav/vba_extract.c: fix error path double free (bb#2486)
+
 Fri Feb  4 16:55:07 EET 2011 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: fix some missed safebrowsing URLs (bb #2514)

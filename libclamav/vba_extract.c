@@ -221,8 +221,10 @@ vba_read_project_strings(int fd, int big_endian)
 		free(name);
 
 		if(!read_uint16(fd, &length, big_endian)) {
-			if(buf)
+			if(buf) {
 				free(buf);
+				buf = NULL;
+			}
 			break;
 		}
 
