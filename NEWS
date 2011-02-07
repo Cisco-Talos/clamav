@@ -1,5 +1,5 @@
-0.97rc
-------
+0.97
+----
 
 ClamAV 0.97 brings many improvements, including complete Windows support
 (all major components compile out-of-box under Visual Studio), support for
@@ -7,6 +7,17 @@ signatures based on SHA1 and SHA256, better error detection, as well as
 speed and memory optimizations. The complete list of changes is available 
 in the ChangeLog file. For upgrade notes and tips please see: 
 https://wiki.clamav.net/Main/UpgradeNotes097
+
+With Sourcefire, Inc. acquisition of Immunet Corp., ClamAV for Windows
+3.0 has been renamed Immunet 3.0, powered by ClamAV. This release
+contains the fully integrated LibClamAV 0.97 engine for offline,
+OnDemand, and OnAccess scanning. Immunet 3.0 users can now utilize
+the full power of the LibClamAV engine, all the ClamAV signatures,
+and creation of custom signatures on any platform running Immunet 3.0,
+powered by ClamAV. If you run Windows systems in your environment and
+need an AV solution to protect them, give Immunet 3.0, powered by ClamAV
+a try; you can download it from http://www.clamav.net/about/win32
+
 
 --
 The ClamAV team (http://www.clamav.net/team)
