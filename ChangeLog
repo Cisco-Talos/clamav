@@ -1,3 +1,7 @@
+Mon Feb  7 17:45:49 CET 2011 (tk)
+---------------------------------
+ * V 0.97
+
 Mon Feb  7 17:24:52 CET 2011 (tk)
 ---------------------------------
  * libclamav/vba_extract.c: fix error path double free (bb#2486)
