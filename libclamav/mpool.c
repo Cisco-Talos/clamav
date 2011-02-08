@@ -862,6 +862,7 @@ void mpool_free() {}
 void mpool_create() {}
 void mpool_destroy() {}
 void mpool_getstats() {}
+void mpool_calloc() {}
 
 #endif /* USE_MPOOL */
 
