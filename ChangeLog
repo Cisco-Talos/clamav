@@ -1,3 +1,7 @@
+Tue Feb  8 02:42:11 CET 2011 (acab)
+-----------------------------------
+ * libclamav/mpoo.c: Make solaris linker happy - Thanks to John Kendall <john*capps.com>
+
 Mon Feb  7 17:45:49 CET 2011 (tk)
 ---------------------------------
  * V 0.97
