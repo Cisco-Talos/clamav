@@ -1015,7 +1015,7 @@ cl_error_t prescan_cb(int fd, void *context) {
 	    static int tmpn;
 	    snprintf(tmpf, sizeof(tmpf), "%s\\%08x.tmp", tmpdir, ++tmpn);
 	    tmpf[sizeof(tmpf)-1] = '\0';
-	    fdhdl = CreateFile(tmpf, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
+	    fdhdl = CreateFile(tmpf, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
 	    if(fdhdl != INVALID_HANDLE_VALUE) {
 		logg("*prescan_cb: dumping content to tempfile %s (handle %p)\n", tmpf, fdhdl);
 		break;
