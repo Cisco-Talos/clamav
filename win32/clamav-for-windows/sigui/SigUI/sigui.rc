@@ -32,3 +32,6 @@ BEGIN
 	VALUE "Translation", 0x409, 0x4b0
     }
 END
+
+sigui_hu MOFILE "lang/hu/sigui.mo"
+wxstd_hu MOFILE "lang/hu/wxstd.mo"

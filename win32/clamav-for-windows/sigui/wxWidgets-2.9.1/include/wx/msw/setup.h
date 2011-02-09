@@ -104,9 +104,9 @@
 #define wxUSE_TEXTFILE 1
 
 /* TODO: enable if we need i18n */
-#define wxUSE_INTL 0
+#define wxUSE_INTL 1
 
-#define wxUSE_XLOCALE 0
+#define wxUSE_XLOCALE 1
 
 #define wxUSE_DATETIME 1
 
@@ -152,7 +152,7 @@
 
 #define wxUSE_FONTENUM 0
 
-#define wxUSE_FONTMAP 0
+#define wxUSE_FONTMAP 1
 
 #define wxUSE_MIMETYPE 0
 

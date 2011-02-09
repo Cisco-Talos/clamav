@@ -742,7 +742,7 @@ void MyProcessOutput::m_cancel_processOnButtonClick( wxCommandEvent& WXUNUSED(ev
 void SigUIFrame::m_local_addOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
     //TODO: keep in sync with DBEXT
-    wxString wildcard = _("ClamAV database files") + " (*.cbc, *.cdb, *.cfg, *.cld, *.cvd, *.db, *.fp, *.ftm, *.gdb, *.hdb, *.hdu, *.idb, *.ldb, *.ldu, *.mdb, *.mdu, *.ndb, *.ndu, *.pdb, *.rmd, *.sdb, *.wdb, *.zmd)|*.cbc;*.cdb;*.cfg;*.cld;*.cvd;*.db;*.fp;*.ftm;*.gdb;*.hdb;*.hdu;*.idb;*.ldb;*.ldu;*.mdb;*.mdu;*.ndb;*.ndu;*.pdb;*.rmd;*.sdb;*.wdb;*.zmd";
+    wxString wildcard = wxString(_("ClamAV database files")) + " (*.cbc, *.cdb, *.cfg, *.cld, *.cvd, *.db, *.fp, *.ftm, *.gdb, *.hdb, *.hdu, *.idb, *.ldb, *.ldu, *.mdb, *.mdu, *.ndb, *.ndu, *.pdb, *.rmd, *.sdb, *.wdb, *.zmd)|*.cbc;*.cdb;*.cfg;*.cld;*.cvd;*.db;*.fp;*.ftm;*.gdb;*.hdb;*.hdu;*.idb;*.ldb;*.ldu;*.mdb;*.mdu;*.ndb;*.ndu;*.pdb;*.rmd;*.sdb;*.wdb;*.zmd";
     wxFileDialog dlg(this, _("Choose a virus signature file"),
 		     wxEmptyString, wxEmptyString,
 		     wildcard,

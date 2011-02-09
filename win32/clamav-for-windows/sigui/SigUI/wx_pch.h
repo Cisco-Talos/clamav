@@ -59,7 +59,7 @@
 #include <wx/frame.h>
 #include <wx/fswatcher.h>
 #include <wx/taskbar.h>
-
+#include <wx/intl.h>
 #ifdef WX_PRECOMP
 #include "SigUIApp.h"
 #endif

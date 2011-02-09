@@ -21,7 +21,7 @@
 #include "wx_pch.h"
 
 #include <wx/cmdline.h>
-
+#include <wx/translation.h>
 #include "SigUIApp.h"
 #include "SigUIMain.h"
 #include "installdb.h"
@@ -32,6 +32,7 @@ static const wxCmdLineEntryDesc g_cmdLineDesc [] =
     {wxCMD_LINE_SWITCH, "i", "install", "install databases specified on stdin", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_SWITCH, "v", "verbose", "verbose log messages", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_SWITCH, "w", "write-conf", "copy&validate stdin to freshclam.conf", wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL },
+	{wxCMD_LINE_OPTION, "l", "lang", "UI language (locale)", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL },
     {wxCMD_LINE_NONE, NULL, NULL, NULL, wxCMD_LINE_VAL_NONE, wxCMD_LINE_PARAM_OPTIONAL}
 };
 
@@ -49,14 +50,46 @@ int SigUIApp::OnRun()
     return wxApp::OnRun();
 }
 
+static wxLocale *locale;
 bool SigUIApp::OnInit()
 {
+	int language = wxLANGUAGE_DEFAULT;
     if (!wxApp::OnInit())
 	return false;
 
     if (verbose_mode) {
 	wxLog::SetVerbose();
     }
+
+	if (!langname.empty()) {
+		const wxLanguageInfo *info = wxLocale::FindLanguageInfo(langname);
+		if (info)
+			language = info->Language;
+		else
+			wxLogWarning("Specified language is unknown" + langname);
+	}
+    if (wxLocale::IsAvailable(language)) {
+	locale = new wxLocale(language, wxLOCALE_DONT_LOAD_DEFAULT);
+	locale->AddCatalog("sigui");
+	if (!locale->IsOk()) {
+	    wxLogWarning("This language is not available");
+	    delete locale;
+	    language = wxLANGUAGE_ENGLISH;
+	    locale = new wxLocale(language);
+	}
+    } else {
+	wxLogWarning("The selected language is not supported by your system");
+        language = wxLANGUAGE_ENGLISH;
+        locale = new wxLocale(language);
+    }
+    wxLocale::AddCatalogLookupPathPrefix("./lang");
+
+#ifdef _WIN32
+    wxTranslations::Get()->SetLoader(new wxResourceTranslationsLoader);
+#endif
+
+    locale->AddCatalog("sigui");
+    locale->AddCatalog("wxstd");
 
     if (install_mode || conf_mode)
         return true;
@@ -79,6 +112,8 @@ bool SigUIApp::OnCmdLineParsed(wxCmdLineParser& parser)
     install_mode = parser.Found(wxT("i"));
     verbose_mode = parser.Found(wxT("v"));
     conf_mode = parser.Found(wxT("w"));
+	if (!parser.Found(wxT("l"), &langname))
+		langname = "";
 
     return true;
 }
