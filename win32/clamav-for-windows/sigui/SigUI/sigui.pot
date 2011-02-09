@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Copyright (C) YEAR Sourcefire, Inc.
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: SigUI 0.97w\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-02-09 12:55+0200\n"
+"POT-Creation-Date: 2011-02-09 22:43+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -144,6 +144,10 @@ msgstr ""
 msgid "Settings saved"
 msgstr ""
 
+#: SigUIMain.cpp:509
+msgid "ClamAV database reloaded"
+msgstr ""
+
 #: SigUIMain.cpp:563
 msgid "Cannot signal reload"
 msgstr ""
@@ -257,6 +261,14 @@ msgstr ""
 #: proxydet.cpp:123
 #, c-format
 msgid "WinHTTP could not be loaded: %s"
+msgstr ""
+
+#: GUIFrame.h:101
+msgid "Signature configuration UI"
+msgstr ""
+
+#: GUIFrame.h:126
+msgid "Freshclam output"
 msgstr ""
 
 #: GUIFrame.cpp:37

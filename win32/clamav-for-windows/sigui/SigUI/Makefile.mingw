@@ -63,12 +63,12 @@ clean :
 	rm -fv $(BIN) $(OBJ) $(PCH)
 	rm -fv $(DEPFILES) $(DEPFILES:.P=.d)
 
-CPPFILES_1=`find . -name '*.cpp' -print`
-CPPFILES_2=`find ../../ -name '*.cpp' -print`
+CPPFILES_1=`find . -name '*.cpp' -print -o -name '*.h' -a ! -name bak -print`
+CPPFILES_2=`find ../../ -name '*.cpp' -print -o -name '*.h' -a ! -name bak -print`
 LANGDIRS=`find -type d ! -name . -print`
 
 generate-pot:
-	xgettext -x exclude.po -C -n -k_ -kwxPLURAL:1,2 -kwxTRANSLATE -o sigui.pot $(CPPFILES_1)
+	xgettext -x exclude.po -C -n -k_ -kwxPLURAL:1,2 -kwxTRANSLATE -o sigui.pot --foreign-user --package-name=SigUI --package-version=0.97w --copyright-holder="Sourcefire, Inc." $(CPPFILES_1)
 
 mklang: generate-pot
 	mkdir -p lang/$(LANG)

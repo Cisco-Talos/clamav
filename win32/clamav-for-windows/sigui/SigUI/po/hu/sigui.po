@@ -1,16 +1,20 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: SigUI 0.97w\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-02-09 12:55+0200\n"
-"PO-Revision-Date: \n"
+"POT-Creation-Date: 2011-02-09 22:43+0200\n"
+"PO-Revision-Date: 2011-02-09 22:44+0200\n"
 "Last-Translator: Török Edwin <edwin@clamav.net>\n"
-"Language-Team: \n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-Language: Hungarian\n"
 
 #: SigUIMain.cpp:77
 #: SigUIMain.cpp:192
@@ -148,6 +152,10 @@ msgstr "A megadott adatok érvénytelenek"
 msgid "Settings saved"
 msgstr "Mentett beállítások"
 
+#: SigUIMain.cpp:509
+msgid "ClamAV database reloaded"
+msgstr "ClamAV adatbázis fájlok ujra betöltve"
+
 #: SigUIMain.cpp:563
 msgid "Cannot signal reload"
 msgstr "a szignál nem kombinálható a -l vagy -t kapcsolóval"
@@ -266,6 +274,14 @@ msgstr "Fontos aláirás adatbázis kikapcsolása."
 #, c-format
 msgid "WinHTTP could not be loaded: %s"
 msgstr "A WinHTTP nem tölthető be: %s"
+
+#: GUIFrame.h:101
+msgid "Signature configuration UI"
+msgstr "Virusaláirás konfigurácio interfész"
+
+#: GUIFrame.h:126
+msgid "Freshclam output"
+msgstr "Freshclam kimenete"
 
 #: GUIFrame.cpp:37
 msgid "Proxy settings"
