@@ -506,7 +506,7 @@ void SigUIFrame::show_db(bool first)
     icon->SetIcon(GetIcon());
     line = wxString(msg).AfterFirst('\n');
 #ifdef _WIN32
-    icon->ShowBalloon("_(ClamAV database reloaded"),
+    icon->ShowBalloon(_("ClamAV database reloaded"),
 		      line, wxICON_INFORMATION);
 #endif
     wxFileName filename0(GetExecPath() + "forcerld");
