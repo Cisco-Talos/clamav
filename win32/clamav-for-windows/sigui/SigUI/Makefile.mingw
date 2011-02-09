@@ -7,7 +7,7 @@ COMMON_LDFLAGS = -Wl,--nxcompat -Wl,--dynamicbase -s
 
 # -----------------------------------------
 # wxWidgets location
-WX = ~/clam/git/sigui/wxWidgets-2.9.1
+WX = ../wxWidgets-2.9.1
 
 # -----------------------------------------
 # Toolchain
