@@ -106,12 +106,12 @@ void SigUIFrame::OnClose(wxCloseEvent& event)
 {
     if (event.CanVeto()) {
 	if (!Validate() || !TransferDataFromWindow()) {
-	    wxLogWarning(_("Validation failed"));
+	    wxLogWarning(_("Invalid data entered"));
 	    event.Veto();
 	    return;
 	}
 	if (!m_sig_candidates->IsEmpty()) {
-	    int answer = wxMessageBox(_("You have added new signatures that have not been installed yet\n"
+	    int answer = wxMessageBox(_("You have added new virus signatures that have not been installed yet\n"
 					"Are you sure you want to exit?"),
 				      _("There are new signatures"),
 				      wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this);
@@ -199,7 +199,7 @@ class URLValidator : public wxTextValidator
 
 	    if (uri.GetScheme() == "file") {
 		if (!wxFileName::FileExists(uri.GetPath()))
-		    return _("file doesn't exist: %s");
+		    return _("File doesn't exist: %s");
 		return "";
 	    }
 	    if (uri.GetScheme() == "http" && uri.IsReference())
@@ -211,7 +211,7 @@ class URLValidator : public wxTextValidator
 	    if (!uri.HasPath())
 		return _("URL must specify a path: %s");
 	    if (!SigUICopy::validate_dbname(uri.GetPath(), false))
-		return _("Extension is not a valid virus signature database extension: %s");
+		return _("The extension is not a valid virus signature database extension: %s");
 	    return "";
 	}
     public:
@@ -306,7 +306,7 @@ void SigUIFrame::GetFreshclamDBnames(StringSet *set)
 
 void SigUIFrame::m_custom_addOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
-    URLEntryDialog dlg(this, "Custom virus signatures source HTTP or file URL:", "Input http:// file:// URL or UNC path:");
+    URLEntryDialog dlg(this, _("Custom virus signatures source HTTP or file URL:"), _("Input http:// file:// URL or UNC path:"));
     if (dlg.ShowModal() == wxID_OK) {
 	wxString str = dlg.GetValue();
 	if (str.StartsWith("\\\\")) {
@@ -372,7 +372,7 @@ void SigUIApp::OnEventLoopExit(wxEventLoopBase *WXUNUSED(loop))
 void SigUIFrame::m_save_settingsOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
     if (!Validate() || !TransferDataFromWindow()) {
-        wxLogWarning(_("Validation failed"));
+        wxLogWarning(_("Data entered is invalid"));
         return;
     }
     editor->Save();
@@ -506,7 +506,7 @@ void SigUIFrame::show_db(bool first)
     icon->SetIcon(GetIcon());
     line = wxString(msg).AfterFirst('\n');
 #ifdef _WIN32
-    icon->ShowBalloon("ClamAV database reloaded",
+    icon->ShowBalloon("_(ClamAV database reloaded"),
 		      line, wxICON_INFORMATION);
 #endif
     wxFileName filename0(GetExecPath() + "forcerld");
@@ -582,7 +582,7 @@ void SigUIFrame::m_run_freshclamOnButtonClick( wxCommandEvent& WXUNUSED(event) )
     //wxMessageBox(cmd);
     long pid = wxExecute(cmd, wxEXEC_ASYNC, process);
     if (!pid) {
-	wxLogError("Failed to launch freshclam");
+	wxLogError(_("Failed to launch freshclam"));
 	delete process;
 	return;
     }
@@ -592,7 +592,7 @@ void SigUIFrame::m_run_freshclamOnButtonClick( wxCommandEvent& WXUNUSED(event) )
     wxInputStream *in = process->GetInputStream();
     if (!in)
     {
-        wxLogError("Failed to connect to child output");
+        wxLogError(_("Failed to connect to child process output"));
         return;
     }
 
@@ -705,7 +705,7 @@ void MyProcessOutput::OnTerminate(wxProcessEvent &event)
 
     m_cancel_process->SetLabel(_("&Close window"));
     wxString msg;
-    msg << "Freshclam exited with code: " << exit;
+    msg << _("Freshclam exited with code: ") << exit;
     m_logoutput->Append(msg);
 }
 
@@ -742,7 +742,7 @@ void MyProcessOutput::m_cancel_processOnButtonClick( wxCommandEvent& WXUNUSED(ev
 void SigUIFrame::m_local_addOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 {
     //TODO: keep in sync with DBEXT
-    wxString wildcard = "ClamAV database files (*.cbc, *.cdb, *.cfg, *.cld, *.cvd, *.db, *.fp, *.ftm, *.gdb, *.hdb, *.hdu, *.idb, *.ldb, *.ldu, *.mdb, *.mdu, *.ndb, *.ndu, *.pdb, *.rmd, *.sdb, *.wdb, *.zmd)|*.cbc;*.cdb;*.cfg;*.cld;*.cvd;*.db;*.fp;*.ftm;*.gdb;*.hdb;*.hdu;*.idb;*.ldb;*.ldu;*.mdb;*.mdu;*.ndb;*.ndu;*.pdb;*.rmd;*.sdb;*.wdb;*.zmd";
+    wxString wildcard = _("ClamAV database files") + " (*.cbc, *.cdb, *.cfg, *.cld, *.cvd, *.db, *.fp, *.ftm, *.gdb, *.hdb, *.hdu, *.idb, *.ldb, *.ldu, *.mdb, *.mdu, *.ndb, *.ndu, *.pdb, *.rmd, *.sdb, *.wdb, *.zmd)|*.cbc;*.cdb;*.cfg;*.cld;*.cvd;*.db;*.fp;*.ftm;*.gdb;*.hdb;*.hdu;*.idb;*.ldb;*.ldu;*.mdb;*.mdu;*.ndb;*.ndu;*.pdb;*.rmd;*.sdb;*.wdb;*.zmd";
     wxFileDialog dlg(this, _("Choose a virus signature file"),
 		     wxEmptyString, wxEmptyString,
 		     wildcard,

@@ -117,10 +117,10 @@ void SigUIFrame::m_proxy_autodetOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 
     memset(&config, 0, sizeof(config));
 
-    wxLogVerbose(_("Starting proxy autodetection"));
+    wxLogVerbose("Starting proxy autodetection");
     WHttp whttp;
     if (!whttp.IsOK()) {
-	wxLogVerbose(_("WinHTTP could not be loaded: %s"), wxSysErrorMsg(wxSysErrorCode()));
+	wxLogError(_("WinHTTP could not be loaded: %s"), wxSysErrorMsg(wxSysErrorCode()));
 	return;
     }
 
@@ -128,20 +128,20 @@ void SigUIFrame::m_proxy_autodetOnButtonClick( wxCommandEvent& WXUNUSED(event) )
     memset(&config, 0, sizeof(config));
     memset(&autoproxy_opts, 0, sizeof(autoproxy_opts));
     if (whttp.WinHttpGetIEProxyConfigForCurrentUser(&config) == TRUE) {
-	wxLogVerbose(_("IE proxy: %s"), config.lpszProxy);
+	wxLogVerbose("IE proxy: %s", config.lpszProxy);
 	if (config.fAutoDetect) {
-	    wxLogVerbose(_("Autodetect is set"));
+	    wxLogVerbose("Autodetect is set");
 	    need_autoproxy = true;
 	    autoproxy_opts.dwFlags |= 1;
 	}
 	if (config.lpszAutoConfigUrl) {
 	    need_autoproxy = true;
-	    wxLogVerbose(_("Autoconfig URL: %s"), config.lpszAutoConfigUrl);
+	    wxLogVerbose("Autoconfig URL: %s", config.lpszAutoConfigUrl);
 	    autoproxy_opts.dwFlags |= 2;
 	    autoproxy_opts.lpszAutoConfigUrl = config.lpszAutoConfigUrl;
 	}
     } else {
-	wxLogVerbose(_("Failed to get IE proxy settings: %s"), wxSysErrorMsg(wxSysErrorCode()));
+	wxLogVerbose("Failed to get IE proxy settings: %s", wxSysErrorMsg(wxSysErrorCode()));
 	need_autoproxy = true;
 	autoproxy_opts.dwFlags |= 1;
     }
@@ -155,28 +155,28 @@ void SigUIFrame::m_proxy_autodetOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	HINTERNET h = whttp.WinHttpOpen(L"SigUI",1,NULL,NULL,0);
 
 	if (h) {
-	    wxLogVerbose(_("Retrieving proxy settings for URL"));
+	    wxLogVerbose("Retrieving proxy settings for URL");
 	    if (whttp.WinHttpGetProxyForUrl(h,
 					    L"http://db.local.win.clamav.net",
 					    &autoproxy_opts,
 					    &autoproxy_info)) {
-		wxLogVerbose(_("proxy: %s, accesstype: %d"),
+		wxLogVerbose("proxy: %s, accesstype: %d",
 			     autoproxy_info.lpszProxy,
 			     autoproxy_info.dwAccessType);
 		if (autoproxy_info.dwAccessType == 3)
 		    proxy = wxString(autoproxy_info.lpszProxy);
 	    } else {
-		wxLogVerbose(_("Autoconfig failed, falling back to manual IE settings"));
+		wxLogVerbose("Autoconfig failed, falling back to manual IE settings");
 		proxy = config.lpszProxy;
 	    }
 	    whttp.WinHttpCloseHandle(h);
 	} else {
-	    wxLogVerbose(_("WinHttpOpen failed"), wxSysErrorMsg(wxSysErrorCode()));
+	    wxLogVerbose("WinHttpOpen failed", wxSysErrorMsg(wxSysErrorCode()));
 	}
     } else {
 	proxy = config.lpszProxy;
     }
-    wxLogVerbose(_("Final proxy: %s"), proxy);
+    wxLogVerbose("Final proxy: %s", proxy);
 
     if (proxy.empty()) {
         m_proxy->SetValue(false);
@@ -197,7 +197,7 @@ void SigUIFrame::m_proxy_autodetOnButtonClick( wxCommandEvent& WXUNUSED(event) )
 	if (token.StartsWith("http://"))
 	    token = token.Mid(7);
 	token = "http://" + token;
-	wxLogVerbose(_("token: %s"), token);
+	wxLogVerbose("token: %s", token);
 	wxURI uri(token);
 	m_proxy->SetValue(true);
         m_proxy_server->SetValue(uri.GetServer());

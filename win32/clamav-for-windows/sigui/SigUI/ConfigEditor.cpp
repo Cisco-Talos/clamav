@@ -37,7 +37,7 @@ ConfigEditor::ConfigEditor(const wxString& filename)
 #if wxUSE_LOG
 	    wxLog::FlushActive();
 #endif
-	    wxLogFatalError("Can't create file %s", filename);
+	    wxLogFatalError(_("Can't create configuration file %s"), filename);
 	}
 	file.AddLine("DatabaseMirror db.local.win.clamav.net");
 	file.AddLine("DNSDatabaseInfo current.cvd.win.clamav.net");
@@ -49,7 +49,7 @@ ConfigEditor::ConfigEditor(const wxString& filename)
 #if wxUSE_LOG
 	    wxLog::FlushActive();
 #endif
-	    wxLogFatalError("Can't open existing file %s", filename);
+	    wxLogFatalError(_("Can't open existing configuration file %s"), filename);
 	}
     }
 }

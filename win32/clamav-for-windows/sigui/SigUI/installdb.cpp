@@ -120,8 +120,8 @@ bool SigUICopy::validate_dbname(const wxString &name, bool all)
 
 SigUICopy::SigUICopy()
     : cnt(0), max(0), progress(new wxProgressDialog(
-	    _("Signature verification and installation"),
-	    _("Preparing"),
+	    _("Virus signature database verification and installation"),
+	    _("Preparing for installation"),
 	    100,
 	    NULL,
 	    wxPD_AUTO_HIDE | wxPD_SMOOTH | wxPD_CAN_ABORT |
@@ -131,7 +131,7 @@ SigUICopy::SigUICopy()
 bool SigUICopy::canceled(void)
 {
     if (progress->WasCancelled()) {
-	wxLogMessage(_("User aborted operation"));
+	wxLogMessage(_("Install aborted by user"));
 	return true;
     }
     return false;
@@ -168,7 +168,7 @@ bool SigUICopy::installDBs(void)
     }
 
     if (!OK) {
-	wxLogError(_("Failed to verify and install databases\n"));
+	wxLogError(_("Failed to verify and install virus signature databases\n"));
     }
     progress->Destroy();
     return OK;
@@ -268,7 +268,7 @@ int SigUICopy::sigprogress(const char* WXUNUSED(type), const char* WXUNUSED(name
     else
 	canceled = !p->progress->Update(p->cnt);
     if (canceled) {
-	wxLogMessage(_("User aborted"));
+	wxLogMessage(_("Copy aborted by user"));
 	longjmp(p->env, 1);
     }
 
@@ -297,7 +297,7 @@ bool SigUICopy::loadDB(const wxString& dir)
     //TODO: how about filenames that are not convertible to C strings?
     //libclamav doesn't support these, should test what happens
     if (!(engine = libclamav.cl_engine_new())) {
-	wxLogError(_("Can't create new engine"));
+	wxLogError(_("Can't create new antivirus engine"));
 	return false;
     }
 
@@ -313,11 +313,11 @@ bool SigUICopy::loadDB(const wxString& dir)
 	    break;
 	}
 
-	progress->Update(0, _("Loading signatures ..."));
+	progress->Update(0, _("Loading virus signatures ..."));
 	progress->Fit();
 	if (setjmp(env) == 0) {
 	    if ((ret = libclamav.cl_load(dir.mb_str(), engine, &sigs, CL_DB_STDOPT)) != CL_SUCCESS) {
-		wxLogError(_("Failed to load signatures: %s\n"),
+		wxLogError(_("Failed to load virus signatures: %s\n"),
 			   libclamav.cl_strerror(ret));
 		OK = false;
 		break;
@@ -327,7 +327,7 @@ bool SigUICopy::loadDB(const wxString& dir)
 	    break;
 	}
 
-	progress->Pulse(_("Compiling signatures ..."));
+	progress->Pulse(_("Compiling virus signatures ..."));
 	progress->Fit();
 	if (canceled()) {
 	    OK = false;
@@ -335,7 +335,7 @@ bool SigUICopy::loadDB(const wxString& dir)
 	}
 
 	if ((ret = libclamav.cl_engine_compile(engine)) != CL_SUCCESS) {
-	    wxLogError(_("Failed to compile signatures: %s"),
+	    wxLogError(_("Failed to compile virus signatures: %s"),
 		       libclamav.cl_strerror(ret));
 	    OK = false;
 	    break;
@@ -347,7 +347,7 @@ bool SigUICopy::loadDB(const wxString& dir)
 	return false;
 
     if (OK) {
-	progress->Pulse(_("Successfully loaded all signatures"));
+	progress->Pulse(_("Successfully loaded all virus signatures"));
 	progress->Fit();
     }
     return OK;
@@ -362,7 +362,7 @@ bool SigUICopy::installDB(const wxString& staging, const wxString &dest)
 	return false;
     }
 
-    progress->Pulse(_("Installing signatures"));
+    progress->Pulse(_("Installing virus signatures"));
     progress->Fit();
     if (canceled())
 	return false;
@@ -402,7 +402,7 @@ bool SigUICopy::writeFreshclamConf()
 	wxLogError(_("Cannot create temporary file!"));
 	return false;
     }
-    wxLogVerbose(_("Reading config file from stdin"));
+    wxLogVerbose(_("Reading configuration file from stdin"));
 
     char buffer[1024];
     long n;
@@ -413,7 +413,7 @@ bool SigUICopy::writeFreshclamConf()
 		wxLogError(_("No input provided! Use SigUI -w </path/to/freshclam.conf"));
 		return false;
 	    }
-	    wxLogError(_("read() failed: %d"), errno);
+	    wxLogError(_("read failed: %d"), errno);
 	    return false;
 	}
 	if (n == 0)
@@ -430,19 +430,19 @@ bool SigUICopy::writeFreshclamConf()
     cmd << "\"" << GetExecPath() << "freshclam.exe\" -V --config-file=\""
 	<< tempname << "\"";
 
-    wxLogVerbose(_("Validating config file with freshclam: %s"), tempname);
+    wxLogVerbose(_("Validating configuration file with freshclam: %s"), tempname);
 
     wxArrayString output;
     wxArrayString errors;
     if (wxExecute(cmd, output, errors, wxEXEC_BLOCK) != 0) {
-	wxLogVerbose(_("Config file is not valid: %s"), tempname);
+	wxLogVerbose(_("Configuration file is not valid: %s"), tempname);
 	for (unsigned i=0;i<errors.GetCount();i++)
-	    wxLogError(_("freshclam: %s"), errors[i]);
+	    wxLogError("freshclam: %s", errors[i]);
 	wxLogError(_("Configuration file provided is not valid!"));
 	wxRemoveFile(tempname);
 	return false;
     }
-    wxLogVerbose(_("Config file is valid: %s"), tempname);
+    wxLogVerbose(_("Configuration file is valid: %s"), tempname);
 
     wxString conf = GetExecPath() + "freshclam.conf";
 
@@ -451,7 +451,7 @@ bool SigUICopy::writeFreshclamConf()
 
     if (!wxRemoveFile(tempname))
 	return false;
-    wxLogVerbose(_("Config file updated"));
+    wxLogVerbose(_("Configuration file updated"));
     return true;
 }
 
