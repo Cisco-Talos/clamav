@@ -1,0 +1,203 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2011-02-09 12:06+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: GUIFrame.cpp:121
+msgid "db.local.win.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:122
+msgid "db.at.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:123
+msgid "db.au.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:124
+msgid "db.ba.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:125
+msgid "db.br.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:126
+msgid "db.by.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:127
+msgid "db.ca.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:128
+msgid "db.ch.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:129
+msgid "db.cn.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:130
+msgid "db.cy.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:131
+msgid "db.cz.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:132
+msgid "db.de.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:133
+msgid "db.dk.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:134
+msgid "db.ee.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:135
+msgid "db.es.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:136
+msgid "db.fi.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:137
+msgid "db.fr.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:138
+msgid "db.gl.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:139
+msgid "db.gr.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:140
+msgid "db.hk.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:141
+msgid "db.hu.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:142
+msgid "db.id.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:143
+msgid "db.ie.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:144
+msgid "db.in.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:145
+msgid "db.it.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:146
+msgid "db.jp.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:147
+msgid "db.kr.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:148
+msgid "db.li.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:149
+msgid "db.lt.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:150
+msgid "db.mt.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:151
+msgid "db.nl.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:152
+msgid "db.no.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:153
+msgid "db.pl.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:154
+msgid "db.pt.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:155
+msgid "db.ro.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:156
+msgid "db.ru.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:157
+msgid "db.se.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:158
+msgid "db.si.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:159
+msgid "db.sk.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:160
+msgid "db.th.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:161
+msgid "db.tr.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:162
+msgid "db.tw.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:163
+msgid "db.ua.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:164
+msgid "db.uk.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:165
+msgid "db.us.clamav.net"
+msgstr ""
+
+#: GUIFrame.cpp:166
+msgid "db.local.clamav.net"
+msgstr ""
+

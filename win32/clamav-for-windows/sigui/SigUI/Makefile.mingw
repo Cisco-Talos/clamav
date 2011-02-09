@@ -63,6 +63,36 @@ clean :
 	rm -fv $(BIN) $(OBJ) $(PCH)
 	rm -fv $(DEPFILES) $(DEPFILES:.P=.d)
 
+CPPFILES_1=`find . -name '*.cpp' -print`
+CPPFILES_2=`find ../../ -name '*.cpp' -print`
+LANGDIRS=`find lang ! -name lang -type d -print`
+
+generate-pot:
+	xgettext -x exclude.po -C -n -k_ -kwxPLURAL:1,2 -kwxTRANSLATE -o sigui.pot $(CPPFILES_1)
+
+mklang: generate-pot
+	(mkdir -p lang/$(LANG) && cd lang/$(LANG) &&\
+	cp ../../sigui.pot sigui.po &&\
+	cp $(HOME)/wxWidgets-2.9.1/locale/$(LANG).po ./wxstd.pot &&\
+	git add sigui.po &&\
+	git add wxstd.pot)
+
+compile-po:
+	for i in $(LANGDIRS); do\
+	    (cd $$i;\
+	    msgfmt -c --check-accelerators -o sigui.mo sigui.po;\
+	    msgfmt -o wxstd.mo wxstd.pot\
+	    )\
+	done
+
+update-po:
+	for i in `find lang -type d -print`; do\
+	    (cd $$i;\
+	     xgettext -j -C -n -k_ -kwxPLURAL:1,2 -kwxTRANSLATE -o sigui.po $(CPPFILES_2)\
+	    )\
+	done
+
+
 .SUFFIXES: .o .d .cpp .rc .gch
 .PHONY: all clean sigui.rc
 
