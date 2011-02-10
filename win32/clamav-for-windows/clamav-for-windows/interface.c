@@ -921,7 +921,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 
     perf = GetTickCount() - perf;
     close(fd);
-    logg("*Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms (%d ms own, %d ms copy)\n", inst, res, perf, perf - sctx.cb_time - sctx.copy_times, sctx.copy_times);
+    logg("*Scan_ScanObjectByHandle (instance %p): cl_scandesc returned %d in %u ms (%d ms own, %d ms copy)\n", inst, res, perf, perf - sctx.cb_times - sctx.copy_times, sctx.copy_times);
 
     if(lock_instances())
 	FAIL(CL_ELOCK, "failed to lock instances for instance %p", pScanner);
@@ -1011,9 +1011,9 @@ cl_error_t prescan_cb(int fd, void *context) {
     si.pInnerObjectPath = NULL;
 
     if(si.scanPhase == SCAN_PHASE_PRESCAN) {
-	perf2 = GetTickCount();
 	long fpos;
 	int rsz;
+	perf2 = GetTickCount();
 	while(1) {
 	    static int tmpn;
 	    snprintf(tmpf, sizeof(tmpf), "%s\\%08x.tmp", tmpdir, ++tmpn);
