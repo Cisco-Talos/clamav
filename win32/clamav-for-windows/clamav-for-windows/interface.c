@@ -1055,7 +1055,7 @@ cl_error_t prescan_cb(int fd, void *context) {
 	si.object = fdhdl;
 	si.objectId = (HANDLE)_get_osfhandle(fd);
 	perf2 = GetTickCount() - perf2;
-	sctx.copy_times -= perf2;
+	sctx->copy_times -= perf2;
     } else { /* SCAN_PHASE_INITIAL */
 	si.object = INVALID_HANDLE_VALUE;
 	si.objectId = INVALID_HANDLE_VALUE;
