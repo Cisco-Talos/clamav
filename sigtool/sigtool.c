@@ -1352,8 +1352,7 @@ static int listdb(const char *filename, const regex_t *regex)
 	}
 
     } else if(cli_strbcasestr(filename, ".cbc")) {
-	fgets(buffer, FILEBUFF, fh);
-	if(fgets(buffer, FILEBUFF, fh)) {
+	if(fgets(buffer, FILEBUFF, fh) && fgets(buffer, FILEBUFF, fh)) {
 	    pt = strchr(buffer, ';');
 	    if(!pt) { /* not a real sig */
 		fclose(fh);
