@@ -1,3 +1,7 @@
+Fri Feb 11 13:16:41 CET 2011 (tk)
+---------------------------------
+ * sigtool/sigtool.c: handle all signature formats with --(list|find)-sigs (bb#2534)
+
 Tue Feb  8 02:42:11 CET 2011 (acab)
 -----------------------------------
  * libclamav/mpoo.c: Make solaris linker happy - Thanks to John Kendall <john*capps.com>

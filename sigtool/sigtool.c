@@ -1155,8 +1155,12 @@ static int listdir(const char *dirname, const regex_t *regex)
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
 	     cli_strbcasestr(dent->d_name, ".hdu") ||
+	     cli_strbcasestr(dent->d_name, ".hsb") ||
+	     cli_strbcasestr(dent->d_name, ".hsu") ||
 	     cli_strbcasestr(dent->d_name, ".mdb") ||
 	     cli_strbcasestr(dent->d_name, ".mdu") ||
+	     cli_strbcasestr(dent->d_name, ".msb") ||
+	     cli_strbcasestr(dent->d_name, ".msu") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
 	     cli_strbcasestr(dent->d_name, ".ndu") ||
 	     cli_strbcasestr(dent->d_name, ".ldb") ||
@@ -1164,6 +1168,8 @@ static int listdir(const char *dirname, const regex_t *regex)
 	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
 	     cli_strbcasestr(dent->d_name, ".rmd") ||
+	     cli_strbcasestr(dent->d_name, ".cdb") ||
+	     cli_strbcasestr(dent->d_name, ".cbc") ||
 	     cli_strbcasestr(dent->d_name, ".cld") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1315,7 +1321,7 @@ static int listdb(const char *filename, const regex_t *regex)
 	    free(start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
+    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd") || cli_strbcasestr(filename, ".cdb")) {
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    cli_chomp(buffer);
@@ -1327,22 +1333,41 @@ static int listdb(const char *filename, const regex_t *regex)
 	    line++;
 
 	    if(cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu"))
-		start = cli_strtok(buffer, 0, ";");
+		pt = strchr(buffer, ';');
 	    else
-		start = cli_strtok(buffer, 0, ":");
+		pt = strchr(buffer, ':');
 
-	    if(!start) {
+	    if(!pt) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
 		fclose(fh);
 		free(buffer);
 		return -1;
 	    }
+	    *pt = 0;
 
-	    if((pt = strstr(start, " (Clam)")))
+	    if((pt = strstr(buffer, " (Clam)")))
 		*pt = 0;
 
-	    mprintf("%s\n", start);
-	    free(start);
+	    mprintf("%s\n", buffer);
+	}
+
+    } else if(cli_strbcasestr(filename, ".cbc")) {
+	fgets(buffer, FILEBUFF, fh);
+	if(fgets(buffer, FILEBUFF, fh)) {
+	    pt = strchr(buffer, ';');
+	    if(!pt) { /* not a real sig */
+		fclose(fh);
+		free(buffer);
+		return 0;
+	    }
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0)) {
+		    mprintf("[%s BYTECODE] %s", dbname, buffer);
+		}
+	    } else {
+		*pt = 0;
+		mprintf("%s\n", buffer);
+	    }
 	}
     }
     fclose(fh);
