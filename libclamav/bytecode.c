@@ -1558,7 +1558,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     }
     free(buffer);
     cli_dbgmsg("Parsed %d functions\n", current_func);
-    if (current_func != bc->num_func) {
+    if (current_func != bc->num_func && bc->state != bc_skip) {
 	cli_errmsg("Loaded less functions than declared: %u vs. %u\n",
 		   current_func, bc->num_func);
 	return CL_EMALFDB;
