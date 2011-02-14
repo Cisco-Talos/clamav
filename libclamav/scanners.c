@@ -1757,7 +1757,7 @@ static struct {
 static void get_thread_times(uint64_t *kt, uint64_t *ut)
 {
 #ifdef _WIN32
-    LPFILETIME c,e,k,u;
+    FILETIME c,e,k,u;
     ULARGE_INTEGER kl,ul;
     if (!GetThreadTimes(GetCurrentThread(), &c, &e, &k, &u)) {
 	*kt = *ut = 0;
