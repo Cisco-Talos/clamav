@@ -1862,12 +1862,12 @@ static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid)
 
 
 #else
-static inline void perf_init(cli_ctx*) {}
+static inline void perf_init(cli_ctx* ctx) {}
 static inline void perf_start(cli_ctx* ctx, int id){}
 static inline void perf_stop(cli_ctx* ctx, int id){}
 static inline void perf_nested_start(cli_ctx* ctx, int id, int nestedid){}
 static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid){}
-static inline void perf_done(cli_ctx*){}
+static inline void perf_done(cli_ctx* ctx){}
 #endif
 
 
