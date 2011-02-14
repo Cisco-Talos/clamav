@@ -1807,13 +1807,14 @@ static inline void perf_done(cli_ctx* ctx)
     char *p;
     unsigned i;
     uint64_t kt,ut;
+    char *pend;
     cli_events_t *perf = ctx->perf;
 
     if (!perf)
 	return;
 
     p = timestr;
-    char *pend = timestr + sizeof(timestr) - 1;
+    pend = timestr + sizeof(timestr) - 1;
     *pend = 0;
 
     cli_event_time_stop(perf, PERFT_SCAN);
