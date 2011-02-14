@@ -630,6 +630,9 @@ int scanmanager(const struct optstruct *opts)
 	options |= CL_SCAN_INTERNAL_COLLECT_SHA;
 #endif
 
+    if(optget(opts, "dev-performance")->enabled)
+	options |= CL_SCAN_PERFORMANCE_INFO;
+
     if(optget(opts, "detect-structured")->enabled) {
 	options |= CL_SCAN_STRUCTURED;
 

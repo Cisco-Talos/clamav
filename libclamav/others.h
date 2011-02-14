@@ -43,6 +43,7 @@
 #include "regex/regex.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
+#include "events.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -125,6 +126,7 @@ typedef struct cli_ctx_tag {
     fmap_t **fmap;
     bitset_t* hook_lsig_matches;
     void *cb_ctx;
+    cli_events_t* perf;
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     char entry_filename[2048];
     int sha_collect;

@@ -150,8 +150,10 @@ void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)
     switch (ev->multiple) {
 	case multiple_last:
 	    ev->u.v_int = arg;
+	    ev->count++;
 	    break;
 	case multiple_sum:
+	    ev->count++;
 	    ev->u.v_int += arg;
 	    break;
 	case multiple_chain:
@@ -176,6 +178,24 @@ void cli_event_time_start(cli_events_t *ctx, unsigned id)
     }
     gettimeofday(&tv, NULL);
     ev->u.v_int -= ((int64_t)tv.tv_sec * 1000000) + tv.tv_usec;
+    ev->count++;
+}
+
+void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nestedid)
+{
+    struct timeval tv;
+    struct cli_event *ev = get_event(ctx, id);
+    struct cli_event *evnested = get_event(ctx, nestedid);
+    if (!ev || !evnested)
+	return;
+    if (ev->type != ev_time || evnested->type != ev_time) {
+	cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
+	return;
+    }
+    gettimeofday(&tv, NULL);
+    ev->u.v_int -= ((int64_t)tv.tv_sec * 1000000) + tv.tv_usec;
+    ev->u.v_int += evnested->u.v_int;
+    ev->count++;
 }
 
 void cli_event_time_stop(cli_events_t *ctx, unsigned id)
@@ -190,6 +210,22 @@ void cli_event_time_stop(cli_events_t *ctx, unsigned id)
     }
     gettimeofday(&tv, NULL);
     ev->u.v_int += ((int64_t)tv.tv_sec * 1000000) + tv.tv_usec;
+}
+
+void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedid)
+{
+    struct timeval tv;
+    struct cli_event *ev = get_event(ctx, id);
+    struct cli_event *evnested = get_event(ctx, nestedid);
+    if (!ev || !evnested)
+	return;
+    if (ev->type != ev_time || evnested->type != ev_time) {
+	cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
+	return;
+    }
+    gettimeofday(&tv, NULL);
+    ev->u.v_int += ((int64_t)tv.tv_sec * 1000000) + tv.tv_usec;
+    ev->u.v_int -= evnested->u.v_int;
 }
 
 static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *str)

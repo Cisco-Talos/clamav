@@ -1624,6 +1624,8 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	cli_dbgmsg("bytecode triggered but running bytecodes is disabled\n");
 	return CL_SUCCESS;
     }
+    if (cctx)
+	cli_event_time_start(cctx->perf, PERFT_BYTECODE);
     ctx->env = &bcs->env;
     context_safe(ctx);
     if (test_mode) {
@@ -1736,6 +1738,8 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
     }
     cli_events_free(jit_ev);
     cli_events_free(interp_ev);
+    if (cctx)
+	cli_event_time_stop(cctx->perf, PERFT_BYTECODE);
     return ret;
 }
 

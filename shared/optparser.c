@@ -342,6 +342,7 @@ const struct clam_option __clam_options[] = {
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     { "DevCollectHashes", "dev-collect-hashes", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 #endif
+    { "DevPerformance", "dev-performance", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
     { "DevLiblog", "dev-liblog", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD, "", "" },
 
     /* Freshclam-only entries */

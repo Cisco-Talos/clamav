@@ -74,7 +74,8 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void* data, uint32_t l
 void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32_t len);
 
 void cli_event_time_start(cli_events_t *ctx, unsigned id);
-void cli_event_time_stop(cli_events_t *ctx, unsigned id);
+void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nestedid);
+void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedid);
 
 /* event_count is implemented as ev_int, with ev_multiple_sum multiple */
 void cli_event_count(cli_events_t *ctx, unsigned id);
@@ -98,5 +99,23 @@ int cli_event_diff_all(cli_events_t *ctx1, cli_events_t *ctx2, compare_filter_t 
 
 /* returns whether the given context had errors */
 int cli_event_errors(cli_events_t *ctx);
+
+enum perfev {
+    PERFT_SCAN,
+    PERFT_PRECB,
+    PERFT_POSTCB,
+    PERFT_CACHE,
+    PERFT_FT,
+    PERFT_CONTAINER,
+    PERFT_SCRIPT,
+    PERFT_PE,
+    PERFT_RAW,
+    PERFT_RAWTYPENO,
+    PERFT_MAP,
+    PERFT_BYTECODE,
+    PERFT_KTIME,
+    PERFT_UTIME,
+    PERFT_LAST
+};
 
 #endif
