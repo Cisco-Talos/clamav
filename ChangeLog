@@ -1,3 +1,7 @@
+Tue Feb 15 19:19:31 CET 2011 (tk)
+---------------------------------
+ * sigtool/sigtool.c: improve handling of bytecode.info (bb#2292)
+
 Fri Feb 11 13:16:41 CET 2011 (tk)
 ---------------------------------
  * sigtool/sigtool.c: handle all signature formats with --(list|find)-sigs (bb#2534)
