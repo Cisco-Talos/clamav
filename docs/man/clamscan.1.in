@@ -87,8 +87,8 @@ Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVU
 \fB\-\-bytecode[=yes(*)/no]\fR
 With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
 .TP 
-\fB\-\-bytecode\-trust\-all[=yes/no(*)]\fR
-This option disables safety checks and makes ClamAV trust all bytecode. It should only be used for debugging.
+\fB\-\-bytecode\-unsigned[=yes/no(*)]\fR
+Allow loading bytecode from outside digitally signed .c[lv]d files.
 .TP 
 \fB\-\-bytecode\-timeout=N\fR
 Set bytecode timeout in milliseconds (default: 60000 = 60s)

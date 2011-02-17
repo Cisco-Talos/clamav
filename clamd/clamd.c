@@ -436,44 +436,49 @@ int main(int argc, char **argv)
     else
 	logg("#Not loading phishing signatures.\n");
 
-    if(optget(opts,"Bytecode")->enabled)
+    if(optget(opts,"Bytecode")->enabled) {
 	dboptions |= CL_DB_BYTECODE;
-
-    if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
-	enum bytecode_security s;
-	if (!strcmp(opt->strarg, "TrustSigned"))
-	    s = CL_BYTECODE_TRUST_SIGNED;
-	else if (!strcmp(opt->strarg, "None"))
-	    s = CL_BYTECODE_TRUST_ALL;
-	else if (!strcmp(opt->strarg, "Paranoid"))
-	    s = CL_BYTECODE_TRUST_NOTHING;
-	else {
-	    logg("!Unable to parse bytecode security setting:%s\n",
-		 opt->strarg);
-	    ret = 1;
-	    break;
+	if((opt = optget(opts,"BytecodeSecurity"))->enabled) {
+	    enum bytecode_security s;
+	    if (!strcmp(opt->strarg, "TrustSigned")) {
+		s = CL_BYTECODE_TRUST_SIGNED;
+		logg("Bytecode: Security mode set to \"TrustSigned\".\n");
+	    } else if (!strcmp(opt->strarg, "Paranoid")) {
+		s = CL_BYTECODE_TRUST_NOTHING;
+		logg("Bytecode: Security mode set to \"Paranoid\".\n");
+	    } else {
+		logg("!Unable to parse bytecode security setting:%s\n",
+		    opt->strarg);
+		ret = 1;
+		break;
+	    }
+	    if ((ret = cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s))) {
+		logg("Invalid bytecode security setting %s: %s\n", opt->strarg, cl_strerror(ret));
+		ret = 1;
+		break;
+	    }
 	}
-	if ((ret = cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s))) {
-	    logg("Invalid bytecode security setting %s: %s\n", opt->strarg, cl_strerror(ret));
-	    ret = 1;
-	    break;
+	if((opt = optget(opts,"BytecodeUnsigned"))->enabled) {
+	    dboptions |= CL_DB_BYTECODE_UNSIGNED;
+	    logg("Bytecode: Enabled support for unsigned bytecode.\n");
 	}
-    }
-    if((opt = optget(opts,"BytecodeMode"))->enabled) {
-	enum bytecode_mode mode;
-	if (!strcmp(opt->strarg, "ForceJIT"))
-	    mode = CL_BYTECODE_MODE_JIT;
-	else if(!strcmp(opt->strarg, "ForceInterpreter"))
-	    mode = CL_BYTECODE_MODE_INTERPRETER;
-	else if(!strcmp(opt->strarg, "Test"))
-	    mode = CL_BYTECODE_MODE_TEST;
-	else
-	    mode = CL_BYTECODE_MODE_AUTO;
-	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
-    }
-    if((opt = optget(opts,"BytecodeTimeout"))->enabled) {
-	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
-    }
+	if((opt = optget(opts,"BytecodeMode"))->enabled) {
+	    enum bytecode_mode mode;
+	    if (!strcmp(opt->strarg, "ForceJIT"))
+		mode = CL_BYTECODE_MODE_JIT;
+	    else if(!strcmp(opt->strarg, "ForceInterpreter"))
+		mode = CL_BYTECODE_MODE_INTERPRETER;
+	    else if(!strcmp(opt->strarg, "Test"))
+		mode = CL_BYTECODE_MODE_TEST;
+	    else
+		mode = CL_BYTECODE_MODE_AUTO;
+	    cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
+	}
+	if((opt = optget(opts,"BytecodeTimeout"))->enabled) {
+	    cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
+	}
+    } else
+	logg("Bytecode support disabled.\n");
 
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;

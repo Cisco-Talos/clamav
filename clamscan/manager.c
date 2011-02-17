@@ -488,8 +488,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "leave-temps")->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
 
-    if(optget(opts, "bytecode-trust-all")->enabled)
-	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, CL_BYTECODE_TRUST_ALL);
+    if(optget(opts, "bytecode-unsigned")->enabled)
+	dboptions |= CL_DB_BYTECODE_UNSIGNED;
+
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
     if((opt = optget(opts,"bytecode-mode"))->enabled) {
