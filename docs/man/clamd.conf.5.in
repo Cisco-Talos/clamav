@@ -250,9 +250,14 @@ With this option enabled ClamAV will load bytecode from the database. It is high
 Default: yes
 .TP 
 \fBBytecodeSecurity STRING\fR
-Set bytecode security level. Possible values: \fBNone\fR: no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS, \fBTrustSigned\fR: trust bytecode loaded from signed .c[lv]d files and insert runtime safety checks for bytecode loaded from other sources, \fBParanoid\fR: don't trust any bytecode, insert runtime checks for all. The recommended setting is \fBTrustSigned\fR, because bytecode in .cvd files already has safety checks inserted into it.
+Set bytecode security level. Possible values: \fBTrustSigned\fR: trust bytecode loaded from signed .c[lv]d files and insert runtime safety checks for bytecode loaded from other sources, \fBParanoid\fR: don't trust any bytecode, insert runtime checks for all. The recommended setting is \fBTrustSigned\fR, because bytecode in .cvd files already has safety checks inserted into it.
 .br 
 Default: TrustSigned
+.TP 
+\fBBytecodeUnsigned BOOL\fR
+Allow loading bytecode from outside digitally signed .c[lv]d files.
+.br
+Default: no
 .TP 
 \fBBytecodeTimeout NUMBER\fR
 Set bytecode timeout in milliseconds.

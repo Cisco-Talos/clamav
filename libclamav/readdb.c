@@ -1430,13 +1430,12 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return CL_SUCCESS;
     }
 
-#ifndef CL_BCUNSIGNED
-    if (!(options & CL_DB_SIGNED)) {
+    if (!(options & CL_DB_BYTECODE_UNSIGNED) && !(options & CL_DB_SIGNED)) {
 	cli_warnmsg("Only loading signed bytecode, skipping load of unsigned bytecode!\n");
-	cli_warnmsg("Build with ./configure --enable-unsigned-bytecode to enable loading of unsigned bytecode\n");
+	cli_warnmsg("Turn on BytecodeUnsigned/--bytecode-unsigned to enable loading of unsigned bytecode\n");
 	return CL_SUCCESS;
     }
-#endif
+
     bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
     if (!bcs->all_bcs) {
 	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
@@ -1446,10 +1445,6 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     bc = &bcs->all_bcs[bcs->count-1];
 
     switch (engine->bytecode_security) {
-	case CL_BYTECODE_TRUST_ALL:
-	    security_trust = 1;
-	    cli_dbgmsg("bytecode: trusting all bytecode!\n");
-	    break;
 	case CL_BYTECODE_TRUST_SIGNED:
 	    security_trust = !!(options & CL_DB_SIGNED);
 	    break;

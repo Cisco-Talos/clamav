@@ -92,6 +92,7 @@ typedef enum {
 #define CL_DB_OFFICIAL_ONLY 0x1000
 #define CL_DB_BYTECODE      0x2000
 #define CL_DB_SIGNED	    0x4000  /* internal */
+#define CL_DB_BYTECODE_UNSIGNED	0x8000
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
@@ -159,7 +160,7 @@ enum cl_engine_field {
 };
 
 enum bytecode_security {
-    CL_BYTECODE_TRUST_ALL=0, /* insecure, debug setting */
+    CL_BYTECODE_TRUST_ALL=0, /* obsolete */
     CL_BYTECODE_TRUST_SIGNED, /* default */
     CL_BYTECODE_TRUST_NOTHING /* paranoid setting */
 };
