@@ -59,7 +59,7 @@ int clamd_connect(const char *cfgfile, const char *option)
 #endif
 	struct optstruct *opts;
 	const struct optstruct *opt;
-	int sockd, bread;
+	int sockd;
 	const char *socktype;
 
 
@@ -188,7 +188,6 @@ int notify(const char *cfgfile)
 {
 	char buff[20];
 	int sockd, bread;
-	const char *socktype;
 
     if((sockd = clamd_connect(cfgfile, "NotifyClamd")) < 0)
 	return 1;
