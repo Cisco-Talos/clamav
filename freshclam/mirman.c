@@ -170,12 +170,15 @@ static int mirman_update_int(uint32_t *ip, int af, struct mirdat *mdat, uint8_t 
     if(found) {
 	mdat->mirtab[i].atime = 0; /* will be updated in mirman_write() */
 	if(succ || fail) {
-	    mdat->mirtab[i].fail += fail;
-	    if(mdat->mirtab[i].fail < 0)
+	    if((int) mdat->mirtab[i].fail + fail < 0)
 		mdat->mirtab[i].fail = 0;
-	    mdat->mirtab[i].succ += succ;
-	    if(mdat->mirtab[i].succ < 0)
+	    else
+		mdat->mirtab[i].fail += fail;
+
+	    if((int) mdat->mirtab[i].succ + succ < 0)
 		mdat->mirtab[i].succ = 0;
+	    else
+		mdat->mirtab[i].succ += succ;
 	} else {
 	    if(broken)
 		mdat->mirtab[i].fail++;
