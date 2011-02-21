@@ -403,12 +403,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     port += min_port;
 
     timeout = optget(opts, "ReadTimeout")->numarg;
-    if(timeout == 0)
-	timeout = -1;
-
     firsttimeout = optget(opts, "CommandReadTimeout")->numarg;
-    if (firsttimeout == 0)
-	firsttimeout = -1;
 
     if(!bound && !portscan) {
 	logg("!ScanStream: Can't find any free port.\n");
