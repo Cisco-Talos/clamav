@@ -66,7 +66,7 @@ Clamd will process the commands asynchronously, and reply as soon as it has fini
 Clamd requires clients to read all the replies it sent, before sending more commands to prevent send() deadlocks. The recommended way to implement a client that uses IDSESSION is with non-blocking sockets, and a select()/poll() loop: whenever send would block, sleep in select/poll until either you can write more data, or read more replies.
 \fINote that using non-blocking sockets without the select/poll loop and alternating recv()/send() doesn't comply with clamd's requirements.\fR
 
-If clamd detects that a client has deadlocked,  it will close the connection. Note that clamd may close an IDSESSION connection too if you don't follow the protocol's requirements.
+If clamd detects that a client has deadlocked,  it will close the connection. Note that clamd may close an IDSESSION connection too if you don't follow the protocol's requirements. The client can use the PING command to keep the connection alive.
 .TP
 \fBVERSIONCOMMANDS\fR
 It is mandatory to prefix this command with either \fBn\fR or \fBz\fR.

@@ -220,7 +220,7 @@ const struct clam_option __clam_options[] = {
 
     { "SendBufTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in miliseconds) if the send buffer is full. Keep this value low to prevent clamd hanging\n", "200"},
 
-    { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).\nValue of 0 disables the timeout.", "300" },
+    { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).", "300" },
 
     { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads threads)\nIt is recommended to have this value at least twice MaxThreads if possible.\nWARNING: you shouldn't increase this too much to avoid running out  of file descriptors,\n the following condition should hold:\n MaxThreads*MaxRecursion + MaxQueue - MaxThreads  + 6 < RLIMIT_NOFILE (usual max is 1024)\n", "200" },
 
