@@ -1,3 +1,7 @@
+Thu Feb 24 14:52:18 CET 2011 (tk)
+---------------------------------
+ * shared/output.c: fix empty lines in syslog (bb#2578)
+
 Mon Feb 21 18:19:18 CET 2011 (tk)
 ---------------------------------
  * clamd: update description of ReadTimeout (bb#2565)

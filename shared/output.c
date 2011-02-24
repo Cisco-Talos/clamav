@@ -52,6 +52,7 @@
 
 #include "output.h"
 #include "libclamav/others.h"
+#include "libclamav/str.h"
 
 #ifdef CL_NOTHREADS
 #undef CL_THREAD_SAFE
@@ -361,8 +362,14 @@ int logg(const char *str, ...)
 	}
     }
 
+    if(logg_foreground) {
+	if(buff[0] != '#')
+	    mprintf("%s", buff);
+    }
+
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {
+	cli_chomp(buff);
 	if(buff[0] == '!') {
 	    syslog(LOG_ERR, "%s", buff + 1);
 	} else if(buff[0] == '^') {
@@ -376,11 +383,6 @@ int logg(const char *str, ...)
 
     }
 #endif
-
-    if(logg_foreground) {
-	if(buff[0] != '#')
-	    mprintf("%s", buff);
-    }
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&logg_mutex);
