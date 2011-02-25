@@ -1,3 +1,7 @@
+Fri Feb 25 14:49:04 CET 2011 (tk)
+---------------------------------
+ * libclamav/elf.c: fix incorrect detection of Broken.Executable (bb#2580)
+
 Thu Feb 24 14:52:18 CET 2011 (tk)
 ---------------------------------
  * shared/output.c: fix empty lines in syslog (bb#2578)
