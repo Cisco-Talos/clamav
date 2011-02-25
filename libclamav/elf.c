@@ -310,14 +310,9 @@ int cli_scanelf(cli_ctx *ctx)
 
     shnum = EC16(file_hdr.e_shnum, conv);
     cli_dbgmsg("ELF: Number of sections: %d\n", shnum);
-    if(shnum > 256) {
-	cli_dbgmsg("ELF: Suspicious number of sections\n");
-        if(DETECT_BROKEN) {
-	    if(ctx->virname)
-		*ctx->virname = "Heuristics.Broken.Executable";
-	    return CL_VIRUS;
-        }
-	return CL_EFORMAT;
+    if(shnum > 2048) {
+	cli_dbgmsg("ELF: Number of sections > 2048, skipping\n");
+	return CL_CLEAN;
     }
 
     shentsize = EC16(file_hdr.e_shentsize, conv);
