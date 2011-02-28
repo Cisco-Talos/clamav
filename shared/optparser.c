@@ -339,6 +339,8 @@ const struct clam_option __clam_options[] = {
 
     { "ClamukoExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times.", "/home/bofh\n/root" },
 
+    { "ClamukoExcludeUID", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line).", "0" },
+
     { "ClamukoMaxFileSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned.", "5M" },
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */

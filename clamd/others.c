@@ -722,3 +722,25 @@ void detstats_print(int desc, char term)
 	mdprintf(desc, "%u:%s:%u:%s:%s%c", detstats_data[i].time, detstats_data[i].md5, detstats_data[i].fsize, detstats_data[i].virname, detstats_data[i].fname, term);
     pthread_mutex_unlock(&detstats_lock);
 }
+
+#ifdef CLAMUKO
+int clamuko_checkowner(int pid, const struct optstruct *opts)
+{
+	char path[32];
+	struct stat sb;
+	const struct optstruct *opt;
+
+    if(!(opt = optget(opts, "ClamukoExcludeUID"))->enabled)
+	return 0;
+
+    snprintf(path, sizeof(path), "/proc/%u", pid);
+    if(stat(path, &sb) == 0) {
+	while(opt) {
+	    if(opt->numarg == (long long) sb.st_uid)
+		return 1;
+	    opt = opt->nextarg;
+	}
+    }
+    return 0;
+}
+#endif

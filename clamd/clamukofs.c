@@ -153,6 +153,12 @@ static void *clamuko_scanth(void *arg)
 	    }
 	}
 
+	if(clamuko_checkowner(acc.pid, tharg->opts)) {
+	    dazukofs_get_filename(&acc, filename, sizeof(filename));
+	    logg("*Clamuko: %s skipped (excluded UID)\n", filename);
+	    skip_scan = 1;
+	}
+
 	context.filename = NULL;
 	context.virsize = 0;
 	if(skip_scan) {

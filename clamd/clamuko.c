@@ -185,6 +185,11 @@ static void *clamukolegacyth(void *arg)
 		}
 	    }
 
+	    if(clamuko_checkowner(acc->pid, tharg->opts)) {
+		scan = 0;
+		logg("*Clamuko: %s skipped (excluded UID)\n", acc->filename);
+	    }
+
 	    context.filename = acc->filename;
 	    context.virsize = 0;
 	    if(scan && cl_scanfile_callback(acc->filename, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
