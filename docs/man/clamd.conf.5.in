@@ -466,6 +466,10 @@ Default: no
 Set the exclude paths. All subdirectories will also be excluded.
 .br 
 Default: no
+\fBClamukoExcludeUID NUMBER\fR
+With this option you can whitelist specific UIDs. Processes with these UIDs will be able to access all files. This option can be used multiple times (one per line).
+.br 
+Default: no
 .TP 
 \fBClamukoMaxFileSize SIZE\fR
 Ignore files larger than SIZE.
