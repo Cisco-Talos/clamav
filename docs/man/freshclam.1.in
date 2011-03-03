@@ -27,6 +27,9 @@ Be quiet \- output only error messages.
 \fB\-\-no\-warnings\fR
 Don't print and log warnings.
 .TP 
+\fB\-v, \-\-debug\fR
+Enable debug messages from LibClamAV.
+.TP 
 \fB\-\-stdout\fR
 Write all messages to stdout.
 .TP 
