@@ -110,6 +110,17 @@ cli_file_t cli_ftcode(const char *name)
     return CL_TYPE_ERROR;
 }
 
+const char *cli_ftname(cli_file_t code)
+{
+	unsigned int i;
+
+    for(i = 0; ftmap[i].name; i++)
+	if(ftmap[i].code == code)
+	    return ftmap[i].name;
+
+    return NULL;
+}
+
 void cli_ftfree(const struct cl_engine *engine)
 {
 	struct cli_ftype *ftypes=engine->ftypes, *pt;

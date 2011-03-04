@@ -196,13 +196,14 @@ extern int cl_engine_addref(struct cl_engine *engine);
 extern int cl_engine_free(struct cl_engine *engine);
 
 
-/* CALLBACKS - WARNING: unstable API - WIP */
+/* CALLBACKS */
 
 
-typedef cl_error_t (*clcb_pre_scan)(int fd, void *context);
+typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
 /* PRE-SCAN
 Input:
 fd      = File descriptor which is about to be scanned
+type    = File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE")
 context = Opaque application provided data
 
 Output:
