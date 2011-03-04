@@ -73,7 +73,7 @@ BOOL minimal_definitions = FALSE;
 #define lock_instances()(WaitForSingleObject(instance_mutex, INFINITE) == WAIT_FAILED)
 #define unlock_instances() do {ReleaseMutex(instance_mutex);} while(0)
 
-cl_error_t prescan_cb(int fd, void *context);
+cl_error_t prescan_cb(int fd, const char *detected_file_type, void *context);
 cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
 
 
@@ -987,7 +987,7 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
-cl_error_t prescan_cb(int fd, void *context) {
+cl_error_t prescan_cb(int fd, const char *type, void *context) {
     struct scan_ctx *sctx = (struct scan_ctx *)context;
     char tmpf[4096];
     instance *inst;
@@ -1001,7 +1001,16 @@ cl_error_t prescan_cb(int fd, void *context) {
 	return CL_CLEAN;
     }
     inst = sctx->inst;
-    logg("*in prescan_cb with clamav context %p, instance %p, fd %d)\n", context, inst, fd);
+    logg("*in prescan_cb with clamav context %p, instance %p, fd %d, type %s)\n", context, inst, fd, type);
+    if(strncmp(type, "CL_TYPE_", 8) ||
+       (strcmp(&type[8], "BINARY_DATA") &&
+	strcmp(&type[8], "ANY") &&
+	strcmp(&type[8], "MSEXE") &&
+	strcmp(&type[8], "MSCAB") &&
+	strcmp(&type[8], "OLE2")
+	)
+       ) logg("*prescan_cb: skipping scan of type %s\n", type);
+
     si.cbSize = sizeof(si);
     si.flags = 0;
     si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_INITIAL : SCAN_PHASE_PRESCAN;
