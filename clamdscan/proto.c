@@ -181,6 +181,11 @@ static int chkpath(const char *path)
     return 0;
 }
 
+static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
+{
+    return chkpath(path);
+}
+
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
@@ -282,8 +287,6 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     return infected;
 }
 
-
-
 /* Used by serial_callback() */
 struct client_serial_data {
     int infected;
@@ -300,6 +303,8 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
     int sockd, ret;
     const char *f = filename;
 
+    if(chkpath(path))
+	return CL_SUCCESS;
     c->files++;
     switch(reason) {
     case error_stat:
@@ -359,7 +364,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
     cdata.scantype = scantype;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, NULL);
+    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, ftw_chkpath);
     *infected += cdata.infected;
     *err += cdata.errors;
 
@@ -452,8 +457,8 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     struct SCANID *cid;
     int res;
 
-    if(chkpath(filename))
-	return 0;
+    if(chkpath(path))
+	return CL_SUCCESS;
     c->files++;
     switch(reason) {
     case error_stat:
@@ -558,7 +563,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     cdata.printok = printinfected^1;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, NULL);
+    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, ftw_chkpath);
 
     if(ftw != CL_SUCCESS) {
 	*err += cdata.errors;

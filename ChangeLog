@@ -1,3 +1,7 @@
+Wed Mar  9 15:42:50 CET 2011 (tk)
+---------------------------------
+ * clamdscan: fix file exclusion (bb#2579)
+
 Mon Feb 28 21:46:50 CET 2011 (tk)
 ---------------------------------
  * clamd: add new option ClamukoExcludeUID (bb#2260)
