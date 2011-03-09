@@ -1,3 +1,7 @@
+Wed Mar  9 15:42:50 CET 2011 (tk)
+---------------------------------
+ * clamdscan: fix file exclusion (bb#2579)
+
 Fri Mar  4 18:26:44 CET 2011 (acab)
 -----------------------------------
  * libclamav: Extend prescan_cb with file types
