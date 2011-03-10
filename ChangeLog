@@ -1,3 +1,7 @@
+Thu Mar 10 15:54:05 CET 2011 (tk)
+---------------------------------
+ * libclamav: optimize handling of {n} wildcards (bb#1796)
+
 Wed Mar  9 15:42:50 CET 2011 (tk)
 ---------------------------------
  * clamdscan: fix file exclusion (bb#2579)
