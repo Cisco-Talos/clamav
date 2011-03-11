@@ -86,6 +86,7 @@
 #include "7z.h"
 #include "fmap.h"
 #include "cache.h"
+#include "events.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>

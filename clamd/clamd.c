@@ -146,9 +146,7 @@ int main(int argc, char **argv)
 
     if(optget(opts, "debug")->enabled) {
 #if defined(C_LINUX)
-	    /* njh@bandsman.co.uk: create a dump if needed */
-	    struct rlimit rlim;
-
+	/* njh@bandsman.co.uk: create a dump if needed */
 	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
 	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
 	    perror("setrlimit");

@@ -291,7 +291,7 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
 static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *arg, *arg2;
-	struct cdiff_node *pt, *last, *new;
+	struct cdiff_node *new;
 	unsigned int lineno;
 
 

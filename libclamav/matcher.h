@@ -171,6 +171,6 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
 
-int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, int filepos, int res1, void *res2);
+int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
 
 #endif
