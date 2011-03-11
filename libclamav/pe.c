@@ -210,7 +210,7 @@ struct vinfo_list {
     unsigned int count;
 };
 
-int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+static int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct vinfo_list *vlist = (struct vinfo_list *)opaque;
 
     cli_dbgmsg("versioninfo_cb: type: %x, name: %x, lang: %x, rva: %x\n", type, name, lang, rva);
@@ -1326,7 +1326,7 @@ int cli_scanpe(cli_ctx *ctx)
 	    if(dirs[2].Size) {
 		    struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
 		    unsigned int m = 1000;
-		    int ret = CL_CLEAN;
+		    ret = CL_CLEAN;
 
 		    if (!stats)
 			    ret = CL_EMEM;
@@ -2211,11 +2211,11 @@ int cli_scanpe(cli_ctx *ctx)
 
     while (DCONF & PE_CONF_NSPACK) {
 	uint32_t eprva = vep;
-	uint32_t start_of_stuff, ssize, dsize, rep = ep;
+	uint32_t start_of_stuff, rep = ep;
 	unsigned int nowinldr;
 	char *nbuff;
-	char *src=epbuff, *dest;
 
+	src=epbuff;
 	if (*epbuff=='\xe9') { /* bitched headers */
 	    eprva = cli_readint32(epbuff+1)+vep+5;
 	    if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize, hdr_size)) && err) break;
@@ -2466,7 +2466,6 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	struct vinfo_list vlist;
 	uint8_t *vptr, *baseptr;
     	uint32_t rva, res_sz;
-	unsigned int i;
 
 	memset(&vlist, 0, sizeof(vlist));
     	findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo_cb, &vlist);

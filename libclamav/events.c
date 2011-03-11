@@ -64,7 +64,7 @@ cli_events_t *cli_events_new(unsigned max_event)
 void cli_events_free(cli_events_t *ev)
 {
     if (ev) {
-	//TODO: free components
+	/* TODO: free components */
 	free(ev->events);
 	free(ev);
     }

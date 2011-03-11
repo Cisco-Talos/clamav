@@ -82,7 +82,6 @@ extern struct optstruct *clamdopts;
 static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
-    const char *clamd_conf = optget(opts, "config-file")->strarg;
     static struct sockaddr_in testsock;
 
 #ifndef _WIN32

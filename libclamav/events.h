@@ -74,6 +74,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void* data, uint32_t l
 void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32_t len);
 
 void cli_event_time_start(cli_events_t *ctx, unsigned id);
+void cli_event_time_stop(cli_events_t *ctx, unsigned id);
 void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nestedid);
 void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedid);
 

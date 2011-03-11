@@ -19,8 +19,8 @@
 
 #ifdef CLAMUKO
 
-#ifndef __CLAMUKO_H
-#define __CLAMUKO_H
+#ifndef __CLAMUKOFS_H
+#define __CLAMUKOFS_H
 
 extern void *clamukofsth(void *arg);
 
