@@ -189,13 +189,33 @@ static void fmap_aging(fmap_t *m) {
 	    }
 	}
 	if(avail) { /* at least one page is paged and not locked */
+	    char *lastpage = NULL;
+	    char *firstpage = NULL;
 	    for(i=0; i<avail; i++) {
 		char *pptr = (char *)m + freeme[i] * m->pgsz + m->hdrsz;
 		/* we mark the page as seen */
 		fmap_bitmap[freeme[i]] = FM_MASK_SEEN;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
+		/* reduce number of mmap calls: if pages are adjacent only do 1 mmap call */
+		if (lastpage && pptr == lastpage) {
+			lastpage = pptr + m->pgsz;
+			continue;
+		}
+		if (!lastpage) {
+			firstpage = pptr;
+			lastpage = pptr + m->pgsz;
+			continue;
+		}
 		fmap_lock;
-		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
+		if(mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
+		    cli_dbgmsg("fmap_aging: kernel hates you\n");
+		fmap_unlock;
+		firstpage = pptr;
+		lastpage = pptr + m->pgsz;
+	    }
+	    if (lastpage) {
+		fmap_lock;
+		if(mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
 		    cli_dbgmsg("fmap_aging: kernel hates you\n");
 		fmap_unlock;
 	    }
