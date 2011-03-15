@@ -72,58 +72,62 @@
 #define MAX_DEL_LOOKAHEAD   200
 
 static const struct dblist_s {
-    const char *name;
+    const char *ext;
     unsigned int count;
 } dblist[] = {
 
     /* special files */
-    { "COPYING",    0 },
-    { "daily.cfg",  0 },
-    { "daily.ign",  0 },
-    { "daily.ign2",  0 },
-    { "daily.ftm",  0 },
-    { "main.info",  0 },    { "daily.info", 0 },    { "safebrowsing.info", 0 },
+    { "cfg",  0 },
+    { "ign",  0 },
+    { "ign2",  0 },
+    { "ftm",  0 },
+    { "info",  0 },
 
     /* databases */
-    { "main.db",    1 },    { "daily.db",   1 },
-    { "main.hdb",   1 },    { "daily.hdb",  1 },
-    { "main.hdu",   1 },    { "daily.hdu",  1 },
-    { "main.hsb",   1 },    { "daily.hsb",  1 },
-    { "main.hsu",   1 },    { "daily.hsu",  1 },
-    { "main.mdb",   1 },    { "daily.mdb",  1 },
-    { "main.mdu",   1 },    { "daily.mdu",  1 },
-    { "main.msb",   1 },    { "daily.msb",  1 },
-    { "main.msu",   1 },    { "daily.msu",  1 },
-    { "main.ndb",   1 },    { "daily.ndb",  1 },
-    { "main.ndu",   1 },    { "daily.ndu",  1 },
-    { "main.ldb",   1 },    { "daily.ldb",  1 },
-    { "main.ldu",   1 },    { "daily.ldu",  1 },
-    { "main.sdb",   1 },    { "daily.sdb",  1 },
-    { "main.zmd",   1 },    { "daily.zmd",  1 },
-    { "main.rmd",   1 },    { "daily.rmd",  1 },
-    { "main.idb",   0 },    { "daily.idb",  0 },
-    { "main.fp",    0 },    { "daily.fp",   0 },
-    { "main.sfp",   0 },    { "daily.sfp",  0 },
-    { "main.pdb",   1 },    { "daily.pdb",  1 },    { "safebrowsing.gdb", 1 },
-    { "main.wdb",   0 },    { "daily.wdb",  0 },    { "safebrowsing.wdb", 0 },
+    { "db",    1 },
+    { "hdb",   1 },
+    { "hdu",   1 },
+    { "hsb",   1 },
+    { "hsu",   1 },
+    { "mdb",   1 },
+    { "mdu",   1 },
+    { "msb",   1 },
+    { "msu",   1 },
+    { "ndb",   1 },
+    { "ndu",   1 },
+    { "ldb",   1 },
+    { "ldu",   1 },
+    { "sdb",   1 },
+    { "zmd",   1 },
+    { "rmd",   1 },
+    { "idb",   0 },
+    { "fp",    0 },
+    { "sfp",   0 },
+    { "gdb",   1 },
+    { "pdb",   1 },
+    { "wdb",   0 },
 
     { NULL,	    0 }
 };
 
-static const char *getdbname(const char *str)
+static char *getdbname(const char *str, char *dst, int dstlen)
 {
-    if(strstr(str, "main"))
-	return "main";
-    else if(strstr(str, "daily"))
-	return "daily";
-    else if(strstr(str, "safebrowsing"))
-	return "safebrowsing";
-    else if(strstr(str, "bytecode"))
-	return "bytecode";
-    else {
-	mprintf("!getdbname: Can't extract db name\n");
-	return "UNKNOWN";
+	int len = strlen(str);
+
+    if(cli_strbcasestr(str, ".cvd") || cli_strbcasestr(str, ".cld"))
+	len -= 4;
+
+    if(dst) {
+	strncpy(dst, str, MIN(dstlen - 1, len));
+	dst[MIN(dstlen - 1, len)] = 0;
+    } else {
+	dst = (char *) malloc(len + 1);
+	if(!dst)
+	    return NULL;
+	strncpy(dst, str, len - 4);
+	dst[MIN(dstlen - 1, len - 4)] = 0;
     }
+    return dst;
 }
 
 static int hexdump(void)
@@ -411,7 +415,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 {
 	FILE *fh;
 	unsigned int i, bytes;
-	char file[32], *pt;
+	char file[32], *pt, dbfile[32];
 	unsigned char digest[32], buffer[FILEBUFF];
 	SHA256_CTX ctx;
 
@@ -450,14 +454,15 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	    free(pt);
 	}
     } else {
-	for(i = 0; dblist[i].name; i++) {
-	    if(!cli_strbcasestr(dblist[i].name, ".info") && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
-		if(!(pt = sha256file(dblist[i].name, &bytes))) {
+	for(i = 0; dblist[i].ext; i++) {
+	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
+	    if(strcmp(dblist[i].ext, "info") && !access(dbfile, R_OK)) {
+		if(!(pt = sha256file(dbfile, &bytes))) {
 		    mprintf("!writeinfo: Can't generate SHA256 for %s\n", file);
 		    fclose(fh);
 		    return -1;
 		}
-		if(fprintf(fh, "%s:%u:%s\n", dblist[i].name, bytes, pt) < 0) {
+		if(fprintf(fh, "%s:%u:%s\n", dbfile, bytes, pt) < 0) {
 		    mprintf("!writeinfo: Can't write to info file\n");
 		    fclose(fh);
 		    free(pt);
@@ -617,8 +622,9 @@ static int build(const struct optstruct *opts)
 	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl;
 	struct stat foo;
 	unsigned char buffer[FILEBUFF];
-	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512], patch[32], broken[32];
-	const char *dbname, *newcvd, *localdbdir = NULL;
+	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512];
+	char patch[32], broken[32], dbname[32], dbfile[32];
+	const char *newcvd, *localdbdir = NULL;
         struct cl_engine *engine;
 	FILE *cvd, *fh;
 	gzFile *tar;
@@ -648,7 +654,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    dbname = getdbname(optget(opts, "build")->strarg);
+    getdbname(optget(opts, "build")->strarg, dbname, sizeof(dbname));
     if(!strcmp(dbname, "bytecode"))
 	bc = 1;
 
@@ -714,9 +720,11 @@ static int build(const struct optstruct *opts)
 		entries += countlines("last.hdb");
 	    }
 	} else {
-	    for(i = 0; dblist[i].name; i++)
-		if(dblist[i].count && strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK))
-		    entries += countlines(dblist[i].name);
+	    for(i = 0; dblist[i].ext; i++) {
+		snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
+		if(dblist[i].count && !access(dbfile, R_OK))
+		    entries += countlines(dbfile);
+	    }
 	}
 
 	if(entries != sigs)
@@ -871,9 +879,10 @@ static int build(const struct optstruct *opts)
 	    }
 	}
     } else {
-	for(i = 0; dblist[i].name; i++) {
-	    if(strstr(dblist[i].name, dbname) && !access(dblist[i].name, R_OK)) {
-		if(tar_addfile(-1, tar, dblist[i].name) == -1) {
+	for(i = 0; dblist[i].ext; i++) {
+	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
+	    if(!access(dbfile, R_OK)) {
+		if(tar_addfile(-1, tar, dbfile) == -1) {
 		    gzclose(tar);
 		    unlink(tarfile);
 		    free(tarfile);
@@ -1474,7 +1483,7 @@ static int comparesha(const char *dbname)
 	int ret = 0, tokens_count;
 
 
-    snprintf(info, sizeof(info), "%s.info", getdbname(dbname));
+    snprintf(info, sizeof(info), "%s.info", getdbname(dbname, buff, 32));
 
     if(!(fh = fopen(info, "rb"))) {
 	mprintf("!verifydiff: Can't open %s\n", info);
@@ -1712,6 +1721,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	if(!badxchg) {
 	    while(fgets(obuff, l1, old)) {
 		oline++;
+		cli_chomp(obuff);
 		obuff[MIN(16, l1-1)] = 0;
 		if((pt = strchr(obuff, ' ')))
 		    *pt = 0;
@@ -2574,7 +2584,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 
 static int makediff(const struct optstruct *opts)
 {
-	char *odir, *ndir, name[32], broken[32];
+	char *odir, *ndir, name[32], broken[32], dbname[32];
 	struct cl_cvd *cvd;
 	unsigned int oldver, newver;
 	int ret;
@@ -2648,7 +2658,7 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    snprintf(name, sizeof(name), "%s-%u.script", getdbname(opts->filename[0]), newver);
+    snprintf(name, sizeof(name), "%s-%u.script", getdbname(opts->filename[0], dbname, sizeof(dbname)), newver);
     ret = diffdirs(odir, ndir, name);
 
     cli_rmdirs(odir);

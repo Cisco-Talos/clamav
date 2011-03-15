@@ -1,3 +1,7 @@
+Tue Mar 15 17:56:59 CET 2011 (tk)
+---------------------------------
+ * sigtool: allow arbitrary names for --build
+
 Thu Mar 10 15:54:05 CET 2011 (tk)
 ---------------------------------
  * libclamav: optimize handling of {n} wildcards (bb#1796)
