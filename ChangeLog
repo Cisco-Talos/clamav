@@ -1,3 +1,7 @@
+Tue Mar 15 17:56:59 CET 2011 (tk)
+---------------------------------
+ * sigtool: allow arbitrary names for --build
+
 Wed Mar  9 15:42:50 CET 2011 (tk)
 ---------------------------------
  * clamdscan: fix file exclusion (bb#2579)
