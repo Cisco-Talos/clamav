@@ -44,6 +44,7 @@
 #include <sys/wait.h>
 #endif
 #include <dirent.h>
+#include <ctype.h>
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
@@ -1476,15 +1477,31 @@ static int vbadump(const struct optstruct *opts)
     return 0;
 }
 
-static int comparesha(const char *dbname)
+static int comparesha(const char *diff)
 {
-	char info[32], buff[FILEBUFF], *sha;
+	char info[32], buff[FILEBUFF], *sha, *pt, *name;
 	const char *tokens[3];
 	FILE *fh;
 	int ret = 0, tokens_count;
 
+    name = strdup(diff);
+    if(!name) {
+	mprintf("!verifydiff: strdup() failed\n");
+	return -1;
+    }
+    if(!(pt = strrchr(name, '-')) || !isdigit(pt[1])) {
+	mprintf("!verifydiff: Invalid diff name\n");
+	free(name);
+	return -1;
+    }
+    *pt = 0;
+    if((pt = strrchr(name, *PATHSEP)))
+	pt++;
+    else
+	pt = name;
 
-    snprintf(info, sizeof(info), "%s.info", getdbname(dbname, buff, 32));
+    snprintf(info, sizeof(info), "%s.info", pt);
+    free(name);
 
     if(!(fh = fopen(info, "rb"))) {
 	mprintf("!verifydiff: Can't open %s\n", info);
@@ -1524,7 +1541,6 @@ static int comparesha(const char *dbname)
     fclose(fh);
     return ret;
 }
-
 
 static int rundiff(const struct optstruct *opts)
 {
