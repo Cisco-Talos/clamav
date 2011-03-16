@@ -1,3 +1,7 @@
+Wed Mar 16 15:53:42 CET 2011 (tk)
+---------------------------------
+ * sigtool: fix --verify-cdiff
+
 Tue Mar 15 17:56:59 CET 2011 (tk)
 ---------------------------------
  * sigtool: allow arbitrary names for --build
