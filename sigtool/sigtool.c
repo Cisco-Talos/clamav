@@ -78,11 +78,11 @@ static const struct dblist_s {
 } dblist[] = {
 
     /* special files */
+    { "info",  0 },
     { "cfg",  0 },
     { "ign",  0 },
     { "ign2",  0 },
     { "ftm",  0 },
-    { "info",  0 },
 
     /* databases */
     { "db",    1 },

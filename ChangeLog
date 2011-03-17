@@ -1,3 +1,7 @@
+Thu Mar 17 17:46:09 CET 2011 (tk)
+---------------------------------
+ * sigtool, freshclam: put .info on top of container to speed up loading
+
 Wed Mar 16 15:53:42 CET 2011 (tk)
 ---------------------------------
  * sigtool: fix --verify-cdiff

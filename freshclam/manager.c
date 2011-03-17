@@ -1388,6 +1388,13 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	}
     }
 
+    if(!err && !access(info, R_OK)) {
+	if(tar_addfile(fd, gzs, info) == -1) {
+	    logg("!buildcld: Can't add %s to .cld file\n", info);
+	    err = 1;
+	}
+    }
+
     if(!err && !access("daily.cfg", R_OK)) {
 	if(tar_addfile(fd, gzs, "daily.cfg") == -1) {
 	    logg("!buildcld: Can't add daily.cfg to .cld file\n");
@@ -1409,7 +1416,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     while((dent = readdir(dir))) {
 	if(dent->d_ino)
 	{
-	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, "daily.cfg"))
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, "daily.cfg") || !strcmp(dent->d_name, info))
 		continue;
 
 	    if(tar_addfile(fd, gzs, dent->d_name) == -1) {
