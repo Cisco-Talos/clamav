@@ -127,7 +127,7 @@
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
 	\item{Supports on-access scanning (Linux and FreeBSD only)}
-	\item{Detects over 850.000 viruses, worms and trojans, including
+	\item{Detects over 920.000 viruses, worms and trojans, including
 	      Microsoft Office macro viruses, mobile malware, and other threats}
 	\item{Built-in bytecode interpreter allows the ClamAV signature writers
 	      to create and distribute very complex detection routines and
@@ -1072,6 +1072,9 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
 	      will be reported only at the end of a scan. If an archive
 	      contains both a heuristically detected virus/phishing, and a real
 	      malware, the real malware will be reported.
+	\item \textbf{CL\_SCAN\_BLOCKMACROS}\\
+	      OLE2 containers, which contain VBA macros will be marked infected
+	      (Heuristics.OLE2.ContainsMacros).
     \end{itemize}
     All functions return \verb+CL_CLEAN+ when the file seems clean,
     \verb+CL_VIRUS+ when a virus is detected and another value on failure.
@@ -1080,7 +1083,7 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
 	    const char *virname;
 
 	if((ret = cl_scanfile("/tmp/test.exe", &virname, NULL, engine,
-	CL_STDOPT)) == CL_VIRUS) {
+	CL_SCAN_STDOPT)) == CL_VIRUS) {
 	    printf("Virus detected: %s\n", virname);
 	} else {
 	    printf("No virus detected.\n");

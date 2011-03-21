@@ -166,6 +166,11 @@ Allow heuristic match to take precedence. When enabled, if
 	      will be reported only at the end of a scan. If an archive
 	      contains both a heuristically detected virus/phishing, and a real
 	      malware, the real malware will be reported.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKMACROS</SPAN>
+<BR>
+OLE2 containers, which contain VBA macros will be marked infected
+	      (Heuristics.OLE2.ContainsMacros).
     
 </LI>
 </UL>
@@ -176,7 +181,7 @@ Allow heuristic match to take precedence. When enabled, if
 	    const char *virname;
 
 	if((ret = cl_scanfile("/tmp/test.exe", &amp;virname, NULL, engine,
-	CL_STDOPT)) == CL_VIRUS) {
+	CL_SCAN_STDOPT)) == CL_VIRUS) {
 	    printf("Virus detected: %s\n", virname);
 	} else {
 	    printf("No virus detected.\n");
@@ -213,7 +218,7 @@ Allow heuristic match to take precedence. When enabled, if
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2010-08-12
+2011-03-21
 </ADDRESS>
 </BODY>
 </HTML>
