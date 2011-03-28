@@ -55,10 +55,10 @@ Scan directories recursively. All the subdirectories in the given directory will
 Scan files and directories on other filesystems.
 .TP 
 \fB\-\-follow\-dir\-symlinks=[0/1(*)/2]\fR
-Follow directory symlinks. There are 3 options: 0 - never follow directory symlinks, 1 (default) - only follow directory symlinks, which are passed as direct arguments to clamscan. 2 - never follow directory symlinks.
+Follow directory symlinks. There are 3 options: 0 - never follow directory symlinks, 1 (default) - only follow directory symlinks, which are passed as direct arguments to clamscan. 2 - always follow directory symlinks.
 .TP 
 \fB\-\-follow\-file\-symlinks=[0/1(*)/2]\fR
-Follow file symlinks. There are 3 options: 0 - never follow file symlinks, 1 (default) - only follow file symlinks, which are passed as direct arguments to clamscan. 2 - never follow file symlinks.
+Follow file symlinks. There are 3 options: 0 - never follow file symlinks, 1 (default) - only follow file symlinks, which are passed as direct arguments to clamscan. 2 - always follow file symlinks.
 .TP 
 \fB\-\-bell\fR
 Sound bell on virus detection.
