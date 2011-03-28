@@ -72,6 +72,7 @@ typedef enum {
     CL_TYPE_HTML_UTF16,
     CL_TYPE_RTF,
     CL_TYPE_7Z,
+    CL_TYPE_SWF,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */

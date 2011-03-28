@@ -2326,6 +2326,11 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	        ret = cli_scanscript(ctx);
 	    break;
 
+	case CL_TYPE_SWF:
+	    /* FIXME: add dconf&co. */
+	    ret = cli_scanswf(ctx);
+	    break;
+
 	case CL_TYPE_RTF:
 	    ctx->container_type = CL_TYPE_RTF;
 	    ctx->container_size = sb.st_size;

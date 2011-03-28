@@ -1,3 +1,8 @@
+Mon Mar 28 20:24:40 CEST 2011 (tk)
+----------------------------------
+ * libclamav: add skeleton code for SWF parser
+ * libclamav/others.h: bump f-level
+
 Thu Mar 17 17:46:09 CET 2011 (tk)
 ---------------------------------
  * sigtool, freshclam: put .info on top of container to speed up loading
