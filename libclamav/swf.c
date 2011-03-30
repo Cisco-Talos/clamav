@@ -221,14 +221,69 @@ static const char *tagname(tag_id id)
     return NULL;
 }
 
+static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const char *obj, cli_ctx *ctx)
+{
+	int newfd, ret;
+	unsigned int bread, sum = 0;
+	char buff[FILEBUFF];
+	char *name;
+
+    if(!(name = cli_gentemp(ctx->engine->tmpdir)))
+	return CL_EMEM;
+
+    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	cli_errmsg("dumpscan: Can't create file %s\n", name);
+	free(name);
+	return CL_ECREAT;
+    }
+
+    while((bread = fmap_readn(map, buff, offset, sizeof(buff))) > 0) {
+	if(sum + bread >= size) {
+	    if(cli_writen(newfd, buff, size - sum) == -1) {
+		cli_errmsg("dumpscan: Can't write to %s\n", name);
+		cli_unlink(name);
+		free(name);
+		close(newfd);
+		return CL_EWRITE;
+	    }
+	    break;
+	} else {
+	    if(cli_writen(newfd, buff, bread) == -1) {
+		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
+		cli_unlink(name);
+		free(name);
+		close(newfd);
+		return CL_EWRITE;
+	    }
+	}
+	sum += bread;
+	offset += bread;
+    }
+    cli_dbgmsg("SWF: %s data extracted to %s\n", obj, name);
+    lseek(newfd, 0, SEEK_SET);
+    if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
+	cli_dbgmsg("cli_dumpscan: Infected with %s\n", *ctx->virname);
+
+    close(newfd);
+    if(!ctx->engine->keeptmp) {
+	if(cli_unlink(name)) {
+	    free(name);
+	    return CL_EUNLINK;
+	}
+    }
+    free(name);
+    return ret;
+}
+
 int cli_scanswf(cli_ctx *ctx)
 {
 	struct swf_file_hdr file_hdr;
 	int compressed = 0;
 	fmap_t *map = *ctx->fmap;
 	unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
+	const char *pt;
 	char get_c;
-	unsigned int fr, fps, foo, offset = 0, tag_hdr, tag_type, tag_len;
+	unsigned int val, fps, foo, offset = 0, tag_hdr, tag_type, tag_len;
 	unsigned long int bits;
 
 
@@ -262,8 +317,8 @@ int cli_scanswf(cli_ctx *ctx)
     GETBITS(foo, nbits); /* yMax */
 
     GETWORD(foo);
-    GETWORD(fr);
-    cli_dbgmsg("SWF: Frames total: %d\n", fr);
+    GETWORD(val);
+    cli_dbgmsg("SWF: Frames total: %d\n", val);
 
     while(offset < map->len) {
 	GETWORD(tag_hdr);
@@ -274,30 +329,15 @@ int cli_scanswf(cli_ctx *ctx)
 	if(tag_len == 0x3f)
 	    GETDWORD(tag_len);
 
-	cli_dbgmsg("SWF: %s\n", tagname(tag_type) ? tagname(tag_type) : "UNKNOWN TAG");
+	pt = tagname(tag_type);
+	cli_dbgmsg("SWF: %s\n", pt ? pt : "UNKNOWN TAG");
 	cli_dbgmsg("SWF: Tag length: %u\n", tag_len);
-	offset += tag_len;
-	continue;
+	if(!pt) {
+	    offset += tag_len;
+	    continue;
+	}
 
 	switch(tag_type) {
-	    case TAG_DOACTION:
-		break;
-
-	    case TAG_INITMOVIECLIP:
-		break;
-
-	    case TAG_PLACEOBJECT2:
-		break;
-
-	    case TAG_PLACEOBJECT3:
-		break;
-
-	    case TAG_DEFINEBUTTON2:
-		break;
-
-	    case TAG_SHOWFRAME:
-		break;
-
 	    case TAG_SCRIPTLIMITS: {
 		    unsigned int recursion, timeout;
 		GETWORD(recursion);
@@ -306,33 +346,52 @@ int cli_scanswf(cli_ctx *ctx)
 		break;
 	    }
 
-	    case TAG_PROTECT:
-		break;
-
-	    case TAG_ENABLEDEBUGGER:
-		break;
-
-	    case TAG_ENABLEDEBUGGER2:
-		break;
-
-	    case TAG_DEFINEMOVIECLIP:
-		break;
-
-	    case TAG_EXPORTASSETS:
-		break;
-
-	    case TAG_IMPORTASSETS:
-	    case TAG_IMPORTASSETS2:
-		break;
-
 	    case TAG_METADATA:
 		break;
 
 	    case TAG_FILEATTRIBUTES:
+		GETDWORD(val);
+		cli_dbgmsg("SWF: File attributes:\n");
+		if(val & SWF_ATTR_USENETWORK)
+		    cli_dbgmsg("    * Use network\n");
+		if(val & SWF_ATTR_RELATIVEURLS)
+		    cli_dbgmsg("    * Relative URLs\n");
+		if(val & SWF_ATTR_SUPPRESSCROSSDOMAINCACHE)
+		    cli_dbgmsg("    * Suppress cross domain cache\n");
+		if(val & SWF_ATTR_ACTIONSCRIPT3)
+		    cli_dbgmsg("    * ActionScript 3.0\n");
+		if(val & SWF_ATTR_HASMETADATA)
+		    cli_dbgmsg("    * Has metadata\n");
+		if(val & SWF_ATTR_USEDIRECTBLIT)
+		    cli_dbgmsg("    * Use hardware acceleration\n");
+		if(val & SWF_ATTR_USEGPU)
+		    cli_dbgmsg("    * Use GPU\n");
+		break;
+
+	    case TAG_DEFINEBITSJPEG3:
+		GETWORD(foo); /* CharacterID */
+		GETDWORD(val); /* AlphaDataOffset */
+		if(val) {
+		    if(dumpscan(map, offset, val, "Image", ctx) == CL_VIRUS)
+			return CL_VIRUS;
+		}
+		offset += tag_len - 6;
+		break;
+
+	    case TAG_DEFINEBINARYDATA:
+		GETWORD(foo); /* CharacterID */
+		GETDWORD(foo); /* Reserved */
+		if(tag_len > 6) {
+		    if(dumpscan(map, offset, tag_len - 6, "Binary", ctx) == CL_VIRUS)
+			return CL_VIRUS;
+		}
+		offset += tag_len - 6;
 		break;
 
 	    default:
-		break;
+		cli_dbgmsg("SWF: Unhandled tag\n");
+		offset += tag_len;
+		continue;
 	}
     }
 

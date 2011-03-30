@@ -1,3 +1,7 @@
+Wed Mar 30 16:02:00 CEST 2011 (tk)
+----------------------------------
+ * libclamav/swf.c: scan images and binary blobs
+
 Mon Mar 28 20:24:40 CEST 2011 (tk)
 ----------------------------------
  * libclamav: add skeleton code for SWF parser
