@@ -347,6 +347,11 @@ int cli_scanswf(cli_ctx *ctx)
 	    }
 
 	    case TAG_METADATA:
+		if(tag_len) {
+		    if(dumpscan(map, offset, tag_len, "Metadata", ctx) == CL_VIRUS)
+			return CL_VIRUS;
+		}
+		offset += tag_len;
 		break;
 
 	    case TAG_FILEATTRIBUTES:
