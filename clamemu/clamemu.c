@@ -36,6 +36,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     emu_vmm_t *v;
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
     v = cli_emu_vmm_new(pedata, sections, fd);
+    cli_emu_vmm_rebuild(v);
     cli_dbgmsg("emulation done ------------------------------------------------\n\n");
     cli_emu_vmm_free(v);
     return 0;

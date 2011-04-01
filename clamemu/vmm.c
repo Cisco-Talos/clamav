@@ -61,8 +61,10 @@ struct emu_vmm {
     unsigned lastused_page;
     unsigned lastused_page_idx;
     uint32_t imagebase;
+    uint32_t ep;
     page_t *page_flags;
     unsigned n_pages;
+    unsigned orig_pages;
     char *tempfile;
     int infd;
     int tmpfd;
@@ -81,6 +83,10 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	case 0x14e:
 	    break;
     }
+    if (pedata->opt32.Subsystem == 1) {
+	cli_dbgmsg("subsys is native, skipping\n");
+	return -1;
+    }
     if (pedata->opt32.SectionAlignment < 4096) {
 	if (pedata->opt32.FileAlignment != pedata->opt32.SectionAlignment)
 	    cli_dbgmsg("warning filealign and sectionalign mismatch, mapping probably incorrect: %d != %d\n",
@@ -93,6 +99,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
     for (i=0;i*4096 < sections[0].rva;i++) {
 	v->page_flags[i].file_offset = i * 4096 / MINALIGN;
 	v->page_flags[i].flag_rwx = 1 << flag_r;
+	v->page_flags[i].init = 1;
     }
     for (i=0;i < pedata->nsections; i++) {
 	const struct cli_exe_section *section = &sections[i];
@@ -103,7 +110,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	unsigned flag_rwx;
 	unsigned zeroinit;
 
-	if (i && sections[i].urva - sections[i-1].urva != sections[i-1].vsz) { 
+	if (i && sections[i].urva - sections[i-1].urva != sections[i-1].vsz) {
 	    cli_dbgmsg(" holes / overlapping / virtual disorder (broken executable)\n");
 	    return -1;
 	}
@@ -160,7 +167,6 @@ static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p)
 {
     unsigned nextidx = v->cached_idx + 1;
     cached_page_t *c = &v->cached[v->cached_idx];
-    v->cached_idx = nextidx >= 15 ? 0 : nextidx;
 
     if (c->dirty)
 	vmm_pageout(v, c, p);
@@ -168,6 +174,7 @@ static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p)
     c->flag_rwx = p->flag_rwx;
     c->dirty = 0;
     p->cached_page_idx = v->cached_idx + 1;
+    v->cached_idx = nextidx >= 15 ? 0 : nextidx;
     if (UNLIKELY(!p->init)) {
 	memset(c->data, 0, 4096);
     } else if (pread(p->modified ? v->tmpfd : v->infd, c->data, 4096, p->file_offset * MINALIGN) == -1) {
@@ -204,6 +211,10 @@ static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 
 static always_inline int vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint32_t len, uint8_t flags)
 {
+    if (len >= 4096) {
+	cli_warnmsg("unexpected read size");
+	return -EMU_ERR_GENERIC;
+    }
     /* caches at least 2 pages, so when we read an int32 that crosess page
      * boundary, we can do it fast */
     cached_page_t *p = vmm_cache_2page(v, va);
@@ -322,9 +333,10 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
     if (!v)
 	return NULL;
     v->imagebase = pedata->opt32.ImageBase;
+    v->ep = pedata->opt32.AddressOfEntryPoint;
     v->infd = fd;
     v->tmpfd = -1;
-    v->n_pages = (sections[pedata->nsections-1].rva + sections[pedata->nsections-1].vsz+4095) / 4096;
+    v->orig_pages = v->n_pages = (sections[pedata->nsections-1].rva + sections[pedata->nsections-1].vsz+4095) / 4096;
     v->page_flags = cli_calloc(v->n_pages, sizeof(*v->page_flags));
     if (!v->page_flags) {
 	cli_emu_vmm_free(v);
@@ -337,6 +349,90 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
 	return NULL;
     }
     return v;
+}
+
+int cli_emu_vmm_rebuild(emu_vmm_t *v)
+{
+    struct cli_exe_section *sections;
+    unsigned i, npages = 0, j = 0, k, nsections = 1, raw = 0, raw0;
+    char *data;
+    char *unpacked;
+    int unpfd = -1;
+
+    sections = cli_calloc(1, sizeof(*sections));
+    sections[0].raw = raw = 0;
+    sections[0].rva = 4096;
+    if (!v->tmpfd_written) {
+	cli_dbgmsg("executable not modified\n");
+    }
+
+    /* skip page 0, which is PE header */
+    for (i=1;i < v->n_pages;i++) {
+	if (v->page_flags[i].init || !i || v->page_flags[i-1].init) {
+	    npages++;
+	    continue;
+	}
+	sections[j].vsz = sections[j].rsz = npages * 4096;
+	raw += npages * 4096;
+	npages = 0;
+	j++;
+	nsections += 2;
+	sections = cli_realloc(sections, nsections * sizeof(*sections));
+	if (!sections)
+	    return -1;
+	sections[j].raw = 0;
+	sections[j].rsz = 0;
+	sections[j].rva = i * 4096;
+
+	for (k=i;k<v->n_pages && !v->page_flags[k].init;k++) {}
+	sections[j++].vsz = (k-i)*4096;
+
+	i = j;
+	sections[j].raw = raw;
+	sections[j].rva = i * 4096;
+    }
+    nsections++;
+    sections = cli_realloc(sections, nsections * sizeof(*sections));
+    if (!sections)
+	return -1;
+    raw += npages * 4096;
+    sections[j].vsz = sections[j].rsz = npages * 4096;
+    if (!sections[j].rsz)
+	j--;
+
+    data = cli_malloc(raw);
+    if (!data) {
+	return -1;
+    }
+    raw0 = raw;
+    raw = 0;
+    for (i=0;i<=j;i++) {
+	cached_page_t *p;
+	uint32_t rva;
+	if (!sections[i].rsz)
+	    continue;
+	rva = sections[i].rva;
+	for (k=0;k<(sections[i].vsz+4095) / 4096;k++) {
+	    /* bypass protections */
+	    p = vmm_cache_2page(v, rva);
+	    if (p)
+		memcpy(data + raw, p->data, 4096);
+	    else
+		memset(data + raw, 0, 4096);
+	    raw += 4096;
+	    rva += 4096;
+	}
+    }
+    if (raw != raw0)
+	cli_warnmsg("raw mismatch: %x != %x\n", raw, raw0);
+    cli_gentempfd(NULL, &unpacked, &unpfd);
+    if (unpfd != -1 && cli_rebuildpe(data, sections, j+1, v->imagebase, v->ep, 0, 0, unpfd)) {
+	cli_dbgmsg("rebuilt pe file to: %s\n", unpacked);
+	//unlink(unpack);
+	free(unpacked);
+    }
+
+    free(data);
 }
 
 void cli_emu_vmm_free(emu_vmm_t *v)
