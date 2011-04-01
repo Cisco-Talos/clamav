@@ -20,33 +20,39 @@
  *  MA 02110-1301, USA.
  */
 #include "emulator.h"
+#include "vmm.h"
 #include "others.h"
 #include "disasm-common.h"
 #include "disasm.h"
+#include "pe.h"
 #include <string.h>
 
-struct cli_emu {
-    emu_vmm_t *mem;
+
+/* TODO: make this portable to non-C99 compilers */
+#define DEFINE_REGS(first, last, bits, shift) \
+    [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
+
+struct access_desc {
+    uint32_t rw_mask;/* mask after shifting */
+    uint8_t  rw_shift;/* for AH/AL */
+    uint8_t  carry_bit;
+    uint8_t  sign_bit;/* carry_bit - 1 */
+    uint8_t  sub;
 };
 
-cli_emu_t* cli_emulator_new(emu_vmm_t *v)
-{
-    cli_emu_t *emu = cli_malloc(sizeof(*emu));
-    if (!emu)
-	return NULL;
-    emu->mem = v;
-    return emu;
-}
+static const struct access_desc reg_masks [] = {
+    DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
+    DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
+    DEFINE_REGS(REG_AH,  REG_BH,   8, 8),
+    DEFINE_REGS(REG_AL,  REG_BL,   8, 0),
+};
+#define MAXREG (sizeof(reg_masks) / sizeof(reg_masks[0]))
 
-int cli_emulator_step(cli_emu_t *emu)
-{
-    return -1;
-}
-
-void cli_emulator_free(cli_emu_t *emu)
-{
-    free(emu);
-}
+static const struct access_desc mem_desc [] = {
+    DEFINE_REGS(SIZED, SIZED, 32, 0),
+    DEFINE_REGS(SIZEW, SIZEW,  16, 0),
+    DEFINE_REGS(SIZEB, SIZEB,   8, 0)
+};
 
 struct DIS_mem_arg {
     enum X86REGS scale_reg;/**< register used as scale */
@@ -78,41 +84,42 @@ struct dis_arg {
 
 struct dis_instr {
     enum X86OPS opcode;
+    uint8_t operation_size;
+    uint8_t address_size;
+    uint8_t segment;
     struct dis_arg arg[3];
 };
 
+#define DISASM_CACHE_SIZE 256
+
+struct cli_emu {
+    emu_vmm_t *mem;
+    uint32_t eip;
+    uint32_t regs[MAXREG];
+    struct dis_instr cached_disasm[DISASM_CACHE_SIZE];
+};
+
+cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
+{
+    cli_emu_t *emu = cli_malloc(sizeof(*emu));
+    if (!emu)
+	return NULL;
+    emu->mem = v;
+    emu->eip = pedata->opt32.AddressOfEntryPoint;
+    memset(emu->cached_disasm, 0, sizeof(emu->cached_disasm));
+    /* TODO: init registers */
+    return emu;
+}
+
+void cli_emulator_free(cli_emu_t *emu)
+{
+    free(emu);
+}
+
 #define UNIMPLEMENTED_REG do { cli_dbgmsg("Unimplemented register access\n"); return -1; } while(0)
-
-/* TODO: make this portable to non-C99 compilers */
-#define DEFINE_REGS(first, last, bits, shift) \
-    [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
-
-struct access_desc {
-    uint32_t rw_mask;/* mask after shifting */
-    uint8_t  rw_shift;/* for AH/AL */
-    uint8_t  carry_bit;
-    uint8_t  sign_bit;/* carry_bit - 1 */
-    uint8_t  sub;
-};
-
-static const struct access_desc reg_masks [] = {
-    DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
-    DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
-    DEFINE_REGS(REG_AH,  REG_BH,   8, 8),
-    DEFINE_REGS(REG_AL,  REG_BL,   8, 0),
-};
-
-static const struct access_desc mem_desc [] = {
-    DEFINE_REGS(SIZED, SIZED, 32, 0),
-    DEFINE_REGS(SIZEW, SIZEW,  16, 0),
-    DEFINE_REGS(SIZEB, SIZEB,   8, 0)
-};
-
-static const int max_reg = sizeof(reg_masks) / sizeof(reg_masks[0]);
-
 static always_inline int get_reg(struct reg_desc *desc, enum X86REGS reg)
 {
-    if (reg >= max_reg)
+    if (reg >= MAXREG)
 	UNIMPLEMENTED_REG;
     desc->mask = reg_masks[reg].rw_mask;
     desc->shift = reg_masks[reg].rw_shift;
@@ -127,7 +134,7 @@ static always_inline int get_reg(struct reg_desc *desc, enum X86REGS reg)
  * @param[in] len max amount of bytes to disassemble
  * @return offset where disassembly ended*/
 static uint32_t
-DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset, uint32_t len)
+DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 {
     struct DISASM_RESULT res;
     unsigned i;
@@ -143,9 +150,9 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset, uint32_t 
 	return rc;
 
     next = cli_disasm_one(dis, sizeof(dis), &res, 1);
-    operation_size = res.opsize;
-    address_size = res.adsize;
-    segment = res.segment;
+    result->operation_size = res.opsize;
+    result->address_size = res.adsize;
+    result->segment = res.segment;
     result->opcode = (enum X86OPS) cli_readint16(&res.real_op);
     for (i=0;i<3;i++) {
 	enum DIS_SIZE size = (enum DIS_SIZE) res.arg[i][1];/* not valid for REG */
@@ -177,6 +184,36 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset, uint32_t 
     return offset + next - dis;
 }
 
+static inline uint32_t hash32shift(uint32_t key)
+{
+  key = ~key + (key << 15);
+  key = key ^ (key >> 12);
+  key = key + (key << 2);
+  key = key ^ (key >> 4);
+  key = (key + (key << 3)) + (key << 11);
+  key = key ^ (key >> 16);
+  return key;
+}
+
+static struct dis_instr* disasm(cli_emu_t *emu)
+{
+    struct dis_instr *instr;
+    uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
+    instr= &emu->cached_disasm[idx];
+    if (instr->opcode == OP_INVALID) {
+	DisassembleAt(emu->mem, instr, emu->eip);
+	/* TODO discard cache when writing to this page! */
+    }
+    return instr;
+}
+
+int cli_emulator_step(cli_emu_t *emu)
+{
+    struct dis_instr *instr = disasm(emu);
+    return -1;
+}
+
+
 #if 0
 -- old code
 
@@ -194,10 +231,9 @@ static struct emu_memory *emu_mem;
   \group_disasm
  * @param[out] result disassembly result
  * @param[in] offset start disassembling from this offset, in the current file
- * @param[in] len max amount of bytes to disassemble
  * @return offset where disassembly ended*/
 static inline uint32_t
-DisassembleAt(struct DIS_fixed* result, uint32_t offset, uint32_t len)
+DisassembleAt(struct DIS_fixed* result, uint32_t offset)
 {
     struct DISASM_RESULT res;
     unsigned i;
