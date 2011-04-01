@@ -1117,6 +1117,13 @@ int cli_scanpe(cli_ctx *ctx)
     pedata.overlays_sz = fsize - overlays;
     pedata.hdr_size = hdr_size;
 
+    if (ctx->engine->cb_emupe)
+	if (ctx->engine->cb_emupe(&pedata, exe_sections, map->fd, ctx->virname, ctx->cb_ctx) == CL_VIRUS) {
+	    cli_dbgmsg("emulator found virus: %s\n", ctx->virname);
+	    free(exe_sections);
+	    return CL_VIRUS;
+	}
+
     /* Bytecode BC_PE_ALL hook */
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {

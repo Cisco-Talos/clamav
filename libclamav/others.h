@@ -178,6 +178,8 @@ struct cli_dbinfo {
     struct cli_dbinfo *next;
 };
 
+typedef int (*clicb_emupe)(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, const char **virname, void *context);
+
 struct cl_engine {
     uint32_t refcount; /* reference counter */
     uint32_t sdb;
@@ -256,6 +258,8 @@ struct cl_engine {
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
+
+    clicb_emupe cb_emupe;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -591,4 +595,6 @@ typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
 int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 
 const char *cli_strerror(int errnum, char* buf, size_t len);
+
+void cli_set_pe_emulator(struct cl_engine *engine, clicb_emupe callback);
 #endif
