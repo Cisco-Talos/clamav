@@ -21,6 +21,9 @@
  */
 #include "emulator.h"
 #include "others.h"
+#include "disasm-common.h"
+#include "disasm.h"
+#include <string.h>
 
 struct cli_emu {
     emu_vmm_t *mem;
@@ -43,6 +46,135 @@ int cli_emulator_step(cli_emu_t *emu)
 void cli_emulator_free(cli_emu_t *emu)
 {
     free(emu);
+}
+
+struct DIS_mem_arg {
+    enum X86REGS scale_reg;/**< register used as scale */
+    enum X86REGS add_reg;/**< register used as displacemenet */
+    uint8_t scale;/**< scale as immediate number */
+    int32_t displacement;/**< displacement as immediate number */
+};
+
+enum operand {
+    OPERAND_CALC, /* just calculate, i.e. lea not mov */
+    OPERAND_READ, /* calculate and read from memory */
+    OPERAND_WRITEREG,
+    OPERAND_WRITEMEM
+};
+
+struct reg_desc {
+    uint32_t mask;
+    uint8_t  shift;
+    uint8_t  idx;
+};
+
+struct dis_arg {
+    enum operand op;
+    struct reg_desc scale_reg;
+    struct reg_desc add_reg;
+    uint32_t scale;
+    uint32_t displacement;
+};
+
+struct dis_instr {
+    enum X86OPS opcode;
+    struct dis_arg arg[3];
+};
+
+#define UNIMPLEMENTED_REG do { cli_dbgmsg("Unimplemented register access\n"); return -1; } while(0)
+
+/* TODO: make this portable to non-C99 compilers */
+#define DEFINE_REGS(first, last, bits, shift) \
+    [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
+
+struct access_desc {
+    uint32_t rw_mask;/* mask after shifting */
+    uint8_t  rw_shift;/* for AH/AL */
+    uint8_t  carry_bit;
+    uint8_t  sign_bit;/* carry_bit - 1 */
+    uint8_t  sub;
+};
+
+static const struct access_desc reg_masks [] = {
+    DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
+    DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
+    DEFINE_REGS(REG_AH,  REG_BH,   8, 8),
+    DEFINE_REGS(REG_AL,  REG_BL,   8, 0),
+};
+
+static const struct access_desc mem_desc [] = {
+    DEFINE_REGS(SIZED, SIZED, 32, 0),
+    DEFINE_REGS(SIZEW, SIZEW,  16, 0),
+    DEFINE_REGS(SIZEB, SIZEB,   8, 0)
+};
+
+static const int max_reg = sizeof(reg_masks) / sizeof(reg_masks[0]);
+
+static always_inline int get_reg(struct reg_desc *desc, enum X86REGS reg)
+{
+    if (reg >= max_reg)
+	UNIMPLEMENTED_REG;
+    desc->mask = reg_masks[reg].rw_mask;
+    desc->shift = reg_masks[reg].rw_shift;
+    desc->idx = reg - reg_masks[reg].sub;
+    return 0;
+}
+
+/** Disassembles one X86 instruction starting at the specified offset.
+  \group_disasm
+ * @param[out] result disassembly result
+ * @param[in] offset start disassembling from this offset, in the current file
+ * @param[in] len max amount of bytes to disassemble
+ * @return offset where disassembly ended*/
+static uint32_t
+DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset, uint32_t len)
+{
+    struct DISASM_RESULT res;
+    unsigned i;
+    uint8_t dis[32];
+    const uint8_t *next;
+    uint8_t operation_size, address_size;
+    uint8_t segment;
+    enum X86OPS x86_opcode;
+    int rc;
+
+    rc = cli_emu_vmm_read_x(v, offset, dis, sizeof(dis));
+    if (rc < 0)
+	return rc;
+
+    next = cli_disasm_one(dis, sizeof(dis), &res, 1);
+    operation_size = res.opsize;
+    address_size = res.adsize;
+    segment = res.segment;
+    result->opcode = (enum X86OPS) cli_readint16(&res.real_op);
+    for (i=0;i<3;i++) {
+	enum DIS_SIZE size = (enum DIS_SIZE) res.arg[i][1];/* not valid for REG */
+	struct dis_arg *arg = &result->arg[i];
+	switch ((enum DIS_ACCESS)res.arg[i][0]) {
+	    case ACCESS_MEM:
+		get_reg(&arg->scale_reg, (enum X86REGS)res.arg[i][2]);
+		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][3]);
+		arg->scale = res.arg[i][4];
+		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][6]);
+		break;
+	    case ACCESS_REG:
+		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][1]);
+		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
+		arg->scale = 0;
+		arg->displacement = 0;
+		break;
+	    default: {
+		if (cli_readint32((const uint32_t*)&res.arg[i][6]))
+		    cli_dbgmsg("truncating 64-bit immediate\n");
+		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
+		memset(&arg->add_reg, 0, sizeof(arg->add_reg));
+		arg->scale = 0;
+		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][2]);
+		break;
+	    }
+	}
+    }
+    return offset + next - dis;
 }
 
 #if 0
@@ -119,31 +251,6 @@ uint32_t emulate_disasm(struct DIS_fixed *instr, uint32_t eip)
 #define UNIMPLEMENTED_INSTRUCTION do { printf("Unimplemented instruction\n"); return -1;} while(0)
 #define NOSTACK do { printf("Stack overflowed\n"); return -1;} while(0)
 
-#define DEFINE_REGS(first, last, bits, shift) \
-    [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
-
-struct access_desc {
-    uint32_t rw_mask;/* mask after shifting */
-    uint8_t  rw_shift;/* for AH/AL */
-    uint8_t  carry_bit;
-    uint8_t  sign_bit;/* carry_bit - 1 */
-    uint8_t  sub;
-};
-
-static const struct access_desc reg_masks [] = {
-    DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
-    DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
-    DEFINE_REGS(REG_AH,  REG_BH,   8, 8),
-    DEFINE_REGS(REG_AL,  REG_BL,   8, 0),
-};
-
-static const struct access_desc mem_desc [] = {
-    DEFINE_REGS(SIZED, SIZED, 32, 0),
-    DEFINE_REGS(SIZEW, SIZEW,  16, 0),
-    DEFINE_REGS(SIZEB, SIZEB,   8, 0)
-};
-
-static const int max_reg = sizeof(reg_masks) / sizeof(reg_masks[0]);
 
 /* sign is wrong -> overflow */
 

@@ -505,7 +505,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.97-47-g6412b8d"
+#define VERSION "devel-clamav-0.97-48-ga8f9835"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
