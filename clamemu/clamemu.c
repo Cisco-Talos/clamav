@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 #include "clamav.h"
+#include "emulator.h"
 #include "vmm.h"
 #include "others.h"
 
@@ -34,8 +35,15 @@
 static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, const char **virname, void *context)
 {
     emu_vmm_t *v;
+    cli_emu_t *emu;
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
     v = cli_emu_vmm_new(pedata, sections, fd);
+    emu = cli_emulator_new(v);
+
+    while (!cli_emulator_step(emu)) {
+    }
+
+    cli_emulator_free(emu);
     cli_emu_vmm_rebuild(v);
     cli_dbgmsg("emulation done ------------------------------------------------\n\n");
     cli_emu_vmm_free(v);

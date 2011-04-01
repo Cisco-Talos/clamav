@@ -26,7 +26,9 @@ clamemu_SOURCES = \
     $(top_srcdir)/shared/optparser.h \
     clamemu.c\
     vmm.h\
-    vmm.c
+    vmm.c\
+    emulator.h\
+    emulator.c
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@

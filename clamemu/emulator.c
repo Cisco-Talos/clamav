@@ -1,7 +1,7 @@
 /*
  *  ClamAV PE emulator
  *
- *  Copyright (C) 2010, Sourcefire, Inc.
+ *  Copyright (C) 2010 - 2011, Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -19,6 +19,34 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#include "emulator.h"
+#include "others.h"
+
+struct cli_emu {
+    emu_vmm_t *mem;
+};
+
+cli_emu_t* cli_emulator_new(emu_vmm_t *v)
+{
+    cli_emu_t *emu = cli_malloc(sizeof(*emu));
+    if (!emu)
+	return NULL;
+    emu->mem = v;
+    return emu;
+}
+
+int cli_emulator_step(cli_emu_t *emu)
+{
+    return -1;
+}
+
+void cli_emulator_free(cli_emu_t *emu)
+{
+    free(emu);
+}
+
+#if 0
+-- old code
 
 #include "helpers.h"
 #include "emulate_min.h"
@@ -1346,3 +1374,4 @@ void emulate_debug_print(struct emu_state *state)
 	   state->reg_val[REG_ESP], state->reg_val[REG_EBP], state->reg_val[REG_ESI], state->reg_val[REG_EDI],
 	   state->eflags);
 }
+#endif

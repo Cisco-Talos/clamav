@@ -19,6 +19,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifndef VMM_H
+#define VMM_H
+
 #include "cltypes.h"
 struct emu_vmm;
 struct cli_exe_section;
@@ -55,3 +58,4 @@ int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va, uint32_t len);
 
 int cli_emu_vmm_rebuild(emu_vmm_t *v);
 void cli_emu_vmm_free(emu_vmm_t *v);
+#endif

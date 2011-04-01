@@ -78,7 +78,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_clamemu_OBJECTS = getopt.$(OBJEXT) optparser.$(OBJEXT) \
-	clamemu.$(OBJEXT) vmm.$(OBJEXT)
+	clamemu.$(OBJEXT) vmm.$(OBJEXT) emulator.$(OBJEXT)
 clamemu_OBJECTS = $(am_clamemu_OBJECTS)
 clamemu_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
@@ -283,7 +283,9 @@ clamemu_SOURCES = \
     $(top_srcdir)/shared/optparser.h \
     clamemu.c\
     vmm.h\
-    vmm.c
+    vmm.c\
+    emulator.h\
+    emulator.c
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 CLEANFILES = *.gcda *.gcno
@@ -391,6 +393,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamemu.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emulator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vmm.Po@am__quote@
