@@ -80,6 +80,7 @@ struct dis_arg {
     struct reg_desc add_reg;
     uint32_t scale;
     uint32_t displacement;
+    enum DIS_SIZE access_size;
 };
 
 struct dis_instr {
@@ -97,6 +98,8 @@ struct cli_emu {
     uint32_t eip;
     uint32_t regs[MAXREG];
     struct dis_instr cached_disasm[DISASM_CACHE_SIZE];
+    uint32_t reg_val[REG_EDI+1];
+    uint32_t reg_def[REG_EDI+1];
 };
 
 cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
@@ -157,6 +160,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     for (i=0;i<3;i++) {
 	enum DIS_SIZE size = (enum DIS_SIZE) res.arg[i][1];/* not valid for REG */
 	struct dis_arg *arg = &result->arg[i];
+	arg->access_size = (enum DIS_SIZE) res.arg[i][1];/* not valid for REG */
 	switch ((enum DIS_ACCESS)res.arg[i][0]) {
 	    case ACCESS_MEM:
 		get_reg(&arg->scale_reg, (enum X86REGS)res.arg[i][2]);
@@ -176,7 +180,18 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
 		memset(&arg->add_reg, 0, sizeof(arg->add_reg));
 		arg->scale = 0;
-		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][2]);
+		switch (arg->access_size) {
+		    case SIZEB:
+			arg->displacement = *(const int8_t*)&res.arg[i][2];
+			break;
+		    case SIZEW:
+			arg->displacement = cli_readint16((const int16_t*)&res.arg[i][2]);
+			break;
+		    case SIZED:
+		    default:
+			arg->displacement = cli_readint32((const int32_t*)&res.arg[i][2]);
+			break;
+		}
 		break;
 	    }
 	}
@@ -184,7 +199,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     return offset + next - dis;
 }
 
-static inline uint32_t hash32shift(uint32_t key)
+static always_inline uint32_t hash32shift(uint32_t key)
 {
   key = ~key + (key << 15);
   key = key ^ (key >> 12);
@@ -195,7 +210,7 @@ static inline uint32_t hash32shift(uint32_t key)
   return key;
 }
 
-static struct dis_instr* disasm(cli_emu_t *emu)
+static always_inline struct dis_instr* disasm(cli_emu_t *emu)
 {
     struct dis_instr *instr;
     uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
@@ -205,6 +220,34 @@ static struct dis_instr* disasm(cli_emu_t *emu)
 	/* TODO discard cache when writing to this page! */
     }
     return instr;
+}
+
+static always_inline uint32_t read_reg(const cli_emu_t *emu,
+				   const struct reg_desc *reg)
+{
+    return (emu->reg_val[reg->idx] & reg->mask) >> reg->shift;
+}
+
+static always_inline int read_operand(const cli_emu_t *emu,
+				      const struct dis_arg *arg, uint32_t *value)
+{
+    *value = arg->displacement + read_reg(emu, &arg->add_reg);
+    if (arg->scale)
+	*value += arg->scale * read_reg(emu, &arg->scale_reg);
+    if (arg->op == OPERAND_READ) {
+	switch (arg->access_size) {
+	    case SIZEB:
+		cli_emu_vmm_read8(emu->mem, *value, value);
+		break;
+	    case SIZEW:
+		cli_emu_vmm_read16(emu->mem, *value, value);
+		break;
+	    case SIZED:
+	    default:
+		cli_emu_vmm_read32(emu->mem, *value, value);
+		break;
+	}
+    }
 }
 
 int cli_emulator_step(cli_emu_t *emu)
