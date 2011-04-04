@@ -122,8 +122,10 @@ void cli_emulator_free(cli_emu_t *emu)
 #define UNIMPLEMENTED_REG do { cli_dbgmsg("Unimplemented register access\n"); return -1; } while(0)
 static always_inline int get_reg(struct reg_desc *desc, enum X86REGS reg)
 {
-    if (reg >= MAXREG)
+    if (reg >= MAXREG) {
 	UNIMPLEMENTED_REG;
+	desc->idx = ~0;
+    }
     desc->mask = reg_masks[reg].rw_mask;
     desc->shift = reg_masks[reg].rw_shift;
     desc->idx = reg - reg_masks[reg].sub;
@@ -170,8 +172,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		break;
 	    case ACCESS_REG:
 		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][1]);
-		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
-		arg->scale = 0;
+		arg->scale_reg.idx = ~0;
 		arg->displacement = 0;
 		break;
 	    default: {
@@ -225,15 +226,22 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
 static always_inline uint32_t read_reg(const cli_emu_t *emu,
 				   const struct reg_desc *reg)
 {
+    /* TODO: we could read directly at the right offset instead of shifting */
     return (emu->reg_val[reg->idx] & reg->mask) >> reg->shift;
+}
+
+static always_inline uint32_t calcreg(const cli_emu_t *emu, const struct dis_arg *arg)
+{
+    uint32_t value = arg->displacement + read_reg(emu, &arg->add_reg);
+    if (arg->scale_reg.idx != ~0)
+	value += arg->scale * read_reg(emu, &arg->scale_reg);
+    return value;
 }
 
 static always_inline int read_operand(const cli_emu_t *emu,
 				      const struct dis_arg *arg, uint32_t *value)
 {
-    *value = arg->displacement + read_reg(emu, &arg->add_reg);
-    if (arg->scale)
-	*value += arg->scale * read_reg(emu, &arg->scale_reg);
+    *value = calcreg(emu, arg);
     if (arg->op == OPERAND_READ) {
 	switch (arg->access_size) {
 	    case SIZEB:
@@ -246,6 +254,29 @@ static always_inline int read_operand(const cli_emu_t *emu,
 	    default:
 		cli_emu_vmm_read32(emu->mem, *value, value);
 		break;
+	}
+    }
+}
+
+static always_inline int write_operand(cli_emu_t *emu,
+				       const struct dis_arg *arg, uint32_t value)
+{
+    if (arg->op == OPERAND_WRITEREG) {
+	const struct reg_desc *reg = &arg->add_reg;
+	emu->reg_val[reg->idx] = (emu->reg_val[reg->idx] & (~reg->mask)) |
+	    ((value << reg->shift) & reg->mask);
+	return 0;
+    } else {
+	/* TODO: check for FS segment */
+	uint32_t addr = calcreg(emu, arg);
+	switch (arg->access_size) {
+	    case SIZEB:
+		return cli_emu_vmm_write8(emu->mem, addr, value);
+	    case SIZEW:
+		return cli_emu_vmm_write16(emu->mem, addr, value);
+	    case SIZED:
+	    default:
+		return cli_emu_vmm_write32(emu->mem, addr, value);
 	}
     }
 }
