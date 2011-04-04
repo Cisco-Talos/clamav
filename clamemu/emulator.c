@@ -73,16 +73,17 @@ enum operand {
     OPERAND_WRITEMEM
 };
 
-struct reg_desc {
+typedef struct {
     uint32_t mask;
     uint8_t  shift;
     uint8_t  idx;
     uint8_t  carry_bit;
     uint8_t  sign_bit;
-};
+} desc_t;
+
 #define DEFINE_MEM(first, last, bits) \
     [first ... last] = {~0u >> (32 - bits), 0, 0, bits, bits - 1}
-static const struct reg_desc mem_desc [] = {
+static const desc_t mem_desc [] = {
     DEFINE_MEM(SIZED, SIZED, 32),
     DEFINE_MEM(SIZEW, SIZEW, 16),
     DEFINE_MEM(SIZEB, SIZEB,  8)
@@ -90,8 +91,8 @@ static const struct reg_desc mem_desc [] = {
 
 
 struct dis_arg {
-    struct reg_desc scale_reg;
-    struct reg_desc add_reg;
+    desc_t scale_reg;
+    desc_t add_reg;
     uint32_t scale;
     uint32_t displacement;
     enum DIS_SIZE access_size;
@@ -142,10 +143,12 @@ void cli_emulator_free(cli_emu_t *emu)
 }
 
 #define UNIMPLEMENTED_REG do { cli_dbgmsg("Unimplemented register access\n"); return -1; } while(0)
-static always_inline int get_reg(struct reg_desc *desc, enum X86REGS reg)
+#define INVALID_SIZE do { printf("Invalid access size\n"); return -1; } while(0)
+static always_inline int get_reg(desc_t *desc, enum X86REGS reg)
 {
     if (reg >= MAXREG) {
-	UNIMPLEMENTED_REG;
+	if (reg != REG_INVALID)
+	    UNIMPLEMENTED_REG;
 	desc->idx = ~0;
     }
     desc->mask = reg_masks[reg].rw_mask;
@@ -192,6 +195,10 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		get_reg(&arg->scale_reg, (enum X86REGS)res.arg[i][2]);
 		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][3]);
 		arg->scale = res.arg[i][4];
+		if (arg->scale == 1 && res.arg[i][3] == REG_INVALID) {
+		    memcpy(&arg->add_reg, &arg->scale_reg, sizeof(arg->scale_reg));
+		    arg->scale_reg.idx = ~0;
+		}
 		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][6]);
 		arg->access_size = size; /* not valid for REG */
 		break;
@@ -205,7 +212,8 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		arg->access_size = SIZE_REL;
 		/* fall-through */
 	    default: {
-		if (cli_readint32((const uint32_t*)&res.arg[i][6]))
+		uint32_t c = cli_readint32((const uint32_t*)&res.arg[i][6]);
+		if (c && c != 0xffffffff)
 		    cli_dbgmsg("truncating 64-bit immediate\n");
 		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
 		memset(&arg->add_reg, 0, sizeof(arg->add_reg));
@@ -245,23 +253,24 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
     struct dis_instr *instr;
     uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
-    if (instr->opcode == OP_INVALID) {
+//    if (instr->opcode == OP_INVALID) {
 	instr->len = DisassembleAt(emu->mem, instr, emu->eip) - emu->eip;
 	/* TODO discard cache when writing to this page! */
-    }
+//    }
     return instr;
 }
 
 static always_inline uint32_t readreg(const cli_emu_t *emu,
-				       const struct reg_desc *reg)
+				       const desc_t *reg)
 {
     /* TODO: we could read directly at the right offset instead of shifting */
-    return (emu->reg_val[reg->idx] & reg->mask) >> reg->shift;
+    return reg->idx != ~0 ? (emu->reg_val[reg->idx] & reg->mask) >> reg->shift : 0;
+    /* TODO: make invalid reg a real offset that just returns 0 */
 }
 
 static always_inline int read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32_t *value)
 {
-    struct reg_desc desc;
+    desc_t desc;
     get_reg(&desc, reg);
     if (desc.idx == ~0)
 	return -1;
@@ -269,7 +278,7 @@ static always_inline int read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32
     return 0;
 }
 
-static always_inline int writereg(cli_emu_t *emu, const struct reg_desc *reg, uint32_t value)
+static always_inline int writereg(cli_emu_t *emu, const desc_t *reg, uint32_t value)
 {
     if (reg->idx == ~0)
 	return -1;
@@ -280,7 +289,7 @@ static always_inline int writereg(cli_emu_t *emu, const struct reg_desc *reg, ui
 
 static always_inline int write_reg(cli_emu_t *emu, enum X86REGS reg, uint32_t value)
 {
-    struct reg_desc desc;
+    desc_t desc;
     get_reg(&desc, reg);
     writereg(emu, &desc, value);
     return 0;
@@ -426,6 +435,76 @@ static int emu_std(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
+static const uint8_t pf_table[256] = {
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1
+};
+static const int inc_flags = (1 << bit_of) | (1 << bit_sf) | (1 << bit_zf)
+    | (1 << bit_af) | (1 << bit_pf);
+static inline void calc_flags_inc(cli_emu_t *state, int32_t a, const desc_t *desc)
+{
+    uint8_t sign_bit = desc->sign_bit;
+    uint8_t sf = (a >> sign_bit) & 1;
+    uint8_t zf = (a & desc->mask) == 0;
+    uint8_t of = zf;
+    state->eflags = (state->eflags & ~inc_flags) |
+	            (pf_table[(uint8_t)a] << bit_pf) |
+		    //TODO: af
+		    (zf << bit_zf) |
+		    (sf << bit_sf) |
+		    (of << bit_of)
+		    ;
+    state->eflags_def |= inc_flags;
+}
+
+static inline void calc_flags_dec(cli_emu_t *state, int32_t a, const desc_t *desc)
+{
+    uint8_t sign_bit = desc->sign_bit;
+    uint8_t sf = (a >> sign_bit) & 1;
+    uint8_t zf = (a & desc->mask) == 0;
+    uint8_t of = ((a+1) & desc->mask) == 0;
+    state->eflags = (state->eflags & ~inc_flags) |
+	            (pf_table[(uint8_t)a] << bit_pf) |
+		    //TODO: af
+		    (zf << bit_zf) |
+		    (sf << bit_sf) |
+		    (of << bit_of)
+		    ;
+    state->eflags_def |= inc_flags;
+}
+static int emu_inc(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg;
+    READ_OPERAND(reg, 0);
+    WRITE_RESULT(0, ++reg);
+    /* FIXME: inc byte ptr [addr] */
+    calc_flags_inc(state, reg, &instr->arg[0].add_reg);
+    return 0;
+}
+
+static int emu_dec(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg;
+    READ_OPERAND(reg, 0);
+    WRITE_RESULT(0, --reg);
+    /* FIXME: inc byte ptr [addr] */
+    calc_flags_dec(state, reg, &instr->arg[0].add_reg);
+    return 0;
+}
 // returns true if loop should not be entered
 static int emu_prefix_pre(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
 {
@@ -507,28 +586,35 @@ static int emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum 
     return 0;
 }
 
-static const uint8_t pf_table[256] = {
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
-    1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1
-};
 static const int arith_flags = (1 << bit_of) | (1 << bit_sf) | (1 << bit_zf)
     | (1 << bit_af) | (1 << bit_pf) | (1 << bit_cf);
 
-static always_inline void calc_flags_test(cli_emu_t *state, uint32_t result, const struct reg_desc *desc)
+static always_inline void calc_flags_addsub(cli_emu_t *state, int32_t a, int32_t b, const desc_t *desc, uint8_t is_sub)
+{
+    uint64_t result = is_sub ? (int64_t)a - (int64_t)b : (int64_t)a + (int64_t)b;
+
+    uint8_t sign_bit = desc->sign_bit;
+    uint8_t cf = ((result >> desc->carry_bit) & 1) ||
+	       (is_sub && (result > a));
+    uint8_t sf = (result >> sign_bit) & 1;
+    uint8_t zf = (result & desc->mask) == 0;
+
+    uint8_t a_sign = (a >> sign_bit) & 1;
+    uint8_t b_sign = ((b >> sign_bit) & 1) ^ is_sub;
+    uint8_t of = (a_sign == b_sign) && (a_sign != sf);
+
+    state->eflags = (state->eflags & ~arith_flags) |
+	            (cf << bit_cf) |
+	            (pf_table[(uint8_t)result] << bit_pf) |
+		    //TODO: af
+		    (zf << bit_zf) |
+		    (sf << bit_sf) |
+		    (of << bit_of);
+
+
+    state->eflags_def |= arith_flags;
+}
+static always_inline void calc_flags_test(cli_emu_t *state, uint32_t result, const desc_t *desc)
 {
     uint8_t sign_bit = desc->sign_bit;
     uint8_t sf = (result >> sign_bit) & 1;
@@ -556,6 +642,290 @@ static int emu_xor(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg1);
     return 0;
 }
+
+static int emu_shl(cli_emu_t *state, instr_t *instr)
+{
+    uint8_t largeshift;
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    const desc_t *desc =
+	(instr->arg[0].access_size == SIZE_INVALID) ?
+	&instr->arg[0].add_reg :
+	&mem_desc[instr->arg[0].access_size];
+    largeshift = reg2 >= desc->carry_bit;
+    reg2 &= 0x1f;
+
+    if (!reg2)
+	return 0;
+    uint64_t result = (uint64_t)reg1 << (uint8_t)reg2;
+    uint8_t cf = (result >> desc->carry_bit) & 1;
+    reg1 = result;
+    if (reg2 == 1) {
+	uint8_t of = ((result >> desc->sign_bit) & 1) ^ cf;
+	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
+			 (cf << bit_cf) |
+			 (of << bit_of);
+	state->eflags_def |= (1<<bit_cf) | (1<<bit_of);
+    } else {
+	state->eflags = (state->eflags & ~(1<< bit_cf)) |
+			 (cf << bit_cf);
+	state->eflags_def |= (1<<bit_cf);
+	//OF undefined for shift > 1
+	state->eflags_def &= ~(1<<bit_of);
+    }
+    if (largeshift)
+	state->eflags_def &= ~(1<<bit_cf);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_shr(cli_emu_t *state, instr_t *instr)
+{
+    uint8_t largeshift;
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    const desc_t *desc =
+	(instr->arg[0].access_size == SIZE_INVALID) ?
+	&instr->arg[0].add_reg :
+	&mem_desc[instr->arg[0].access_size];
+    largeshift = reg2 >= desc->carry_bit;
+    reg2 &= 0x1f;
+
+    if (!reg2)
+	return 0;
+    uint32_t result = reg1;
+    result >>= (uint8_t)(reg2 - 1);
+    uint8_t cf = (result & 1);
+    reg1 = result >> 1;
+    if (reg2 == 1) {
+	uint8_t of = ((result >> desc->sign_bit) & 1);
+	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
+			 (cf << bit_cf) |
+			 (of << bit_of);
+	state->eflags_def |= (1<<bit_cf) | (1<<bit_of);
+    } else {
+	state->eflags = (state->eflags & ~(1<< bit_cf)) |
+			 (cf << bit_cf);
+	state->eflags_def |= (1<<bit_cf);
+	//OF undefined for shift > 1
+	state->eflags_def &= ~(1<<bit_of);
+    }
+    if (largeshift)
+	state->eflags_def &= ~(1<<bit_cf);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+#define ROL(a,b,n) a = ( a << (b) ) | ( a >> (((n) - (b))) )
+#define ROR(a,b,n) a = ( a >> (b) ) | ( a << (((n) - (b))) )
+
+static int emu_rol(cli_emu_t *state, instr_t *instr)
+{
+    uint8_t largeshift;
+    uint32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    const desc_t *desc =
+	(instr->arg[0].access_size == SIZE_INVALID) ?
+	&instr->arg[0].add_reg :
+	&mem_desc[instr->arg[0].access_size];
+    largeshift = reg2 >= desc->carry_bit;
+
+    /* See Intel manual 4-312 Vol. 2B */
+    if (reg2 == 1)
+	state->eflags_def |= 1 << bit_of;//OF defined
+    else
+	state->eflags_def &= ~(1 << bit_of);//OF undef
+
+    reg2 &= 0x1f;
+    uint8_t msb;
+    uint8_t cf;
+    switch (desc->carry_bit) {
+	case 8:
+	    reg2 %= 8;
+	    if (!reg2)
+		return 0;
+	    ROL(reg1, reg2, 8);
+	    cf = reg1 & 1;
+	    msb = (reg1 >> 7)&1;
+	    break;
+	case 16:
+	    reg2 %= 16;
+	    if (!reg2)
+		return 0;
+	    ROL(reg1, reg2, 16);
+	    cf = reg1 & 1;
+	    msb = (reg1 >> 15)&1;
+	case 32:
+	    if (!reg2)
+		return 0;
+	    ROL(reg1, reg2, 32);
+	    cf = reg1 & 1;
+	    msb = (reg1 >> 31)&1;
+	    break;
+	default:
+	    INVALID_SIZE;
+    }
+
+    uint8_t of = msb ^ cf;
+    state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
+	(cf << bit_cf) |
+	(of << bit_of);
+
+    state->eflags_def |= (1 << bit_cf);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_ror(cli_emu_t *state, instr_t *instr)
+{
+    uint8_t largeshift;
+    uint32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    const desc_t *desc =
+	(instr->arg[0].access_size == SIZE_INVALID) ?
+	&instr->arg[0].add_reg :
+	&mem_desc[instr->arg[0].access_size];
+    largeshift = reg2 >= desc->carry_bit;
+
+    /* See Intel manual 4-312 Vol. 2B */
+    if (reg2 == 1)
+	state->eflags_def |= 1 << bit_of;//OF defined
+    else
+	state->eflags_def &= ~(1 << bit_of);//OF undef
+
+    reg2 &= 0x1f;
+    uint8_t msb, of;
+    switch (desc->carry_bit) {
+	case 8:
+	    reg2 %= 8;
+	    if (!reg2)
+		return 0;
+	    ROR(reg1, reg2, 8);
+	    msb = (reg1 >> 7)&1;
+	    of = msb ^ (reg1 >> 6)&1;
+	    break;
+	case 16:
+	    reg2 %= 16;
+	    if (!reg2)
+		return 0;
+	    ROR(reg1, reg2, 16);
+	    msb = (reg1 >> 15)&1;
+	    of = msb ^ (reg1 >> 14)&1;
+	case 32:
+	    if (!reg2)
+		return 0;
+	    ROR(reg1, reg2, 32);
+	    msb = (reg1 >> 31)&1;
+	    of = msb ^ (reg1 >> 30)&1;
+	    break;
+	default:
+	    INVALID_SIZE;
+    }
+
+    uint8_t cf = msb;
+    state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
+	(cf << bit_cf) |
+	(of << bit_of);
+
+    state->eflags_def |= (1 << bit_cf);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_and(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    reg1 &= reg2;
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_test(state, reg1, &instr->arg[0].add_reg);
+    else
+	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_or(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    reg1 |= reg2;
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_test(state, reg1, &instr->arg[0].add_reg);
+    else
+	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+static int emu_sub(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 1);
+    else
+	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
+    reg1 -= reg2;
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_cmp(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 1);
+    else
+	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
+    return 0;
+}
+
+static uint8_t always_inline emu_flags(const cli_emu_t *state, uint8_t bit)
+{
+    return (state->eflags >> bit) & 1;
+}
+static int emu_adc(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    reg1 += emu_flags(state, bit_cf);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 0);
+    else
+	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 0);
+    reg1 += reg2;
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
+static int emu_add(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 0);
+    else
+	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 0);
+    reg1 += reg2;
+    WRITE_RESULT(0, reg1);
+    return 0;
+}
+
 
 static int emu_loop(cli_emu_t *state, instr_t *instr)
 {
@@ -593,6 +963,40 @@ static int emu_jmp(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
+static int emu_call(cli_emu_t *state, instr_t *instr)
+{
+    uint32_t esp, size;
+    struct dis_arg *arg = &instr->arg[0];
+    size = instr->operation_size ? 2 : 4;
+    esp = state->reg_val[REG_ESP];
+    if (esp < size)
+	NOSTACK;
+    esp -= size;
+    state->reg_val[REG_ESP] = esp;
+    switch (size) {
+	case 2:
+	    // won't work on Sparc, but we don't have JIT there anyway, and
+	    // interpreter will work correctly
+	    *(uint16_t*)&state->stack[esp] = le16_to_host(state->eip&0xffff);
+	    break;
+	case 4:
+	    cli_writeint32(&state->stack[esp], state->eip);
+	    break;
+    }
+
+    if (arg->access_size == SIZE_REL) {
+	state->eip += arg->displacement;
+    } else {
+	int32_t value;
+	READ_OPERAND(value, 0);
+	state->eip = value;
+    }
+    if (instr->operation_size)
+	state->eip &= 0xffff;
+    return 0;
+}
+
+
 int cli_emulator_step(cli_emu_t *emu)
 {
     int rc;
@@ -607,6 +1011,12 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_POP:
 	    rc = emu_pop(emu, instr);
+	    break;
+	case OP_INC:
+	    rc = emu_inc(emu, instr);
+	    break;
+	case OP_DEC:
+	    rc = emu_dec(emu, instr);
 	    break;
 	case OP_CLD:
 	    rc = emu_cld(emu, instr);
@@ -635,11 +1045,96 @@ int cli_emulator_step(cli_emu_t *emu)
 	case OP_XOR:
 	    rc = emu_xor(emu, instr);
 	    break;
+	case OP_AND:
+	    rc = emu_and(emu, instr);
+	    break;
+	case OP_OR:
+	    rc = emu_or(emu, instr);
+	    break;
+	case OP_SUB:
+	    rc = emu_sub(emu, instr);
+	    break;
+	case OP_ADC:
+	    rc = emu_adc(emu, instr);
+	    break;
+	case OP_ADD:
+	    rc = emu_add(emu, instr);
+	    break;
+	case OP_SHL:
+	    rc = emu_shl(emu, instr);
+	    break;
+	case OP_SHR:
+	    rc = emu_shr(emu, instr);
+	    break;
+	case OP_ROL:
+	    rc = emu_rol(emu, instr);
+	    break;
+	case OP_ROR:
+	    rc = emu_ror(emu, instr);
+	    break;
 	case OP_LOOP:
 	    rc = emu_loop(emu, instr);
 	    break;
+	case OP_CMP:
+	    rc = emu_cmp(emu, instr);
+	    break;
 	case OP_JMP:
 	    rc = emu_jmp(emu, instr);
+	    break;
+	case OP_JO:
+	    rc = (emu_flags(emu, bit_of) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JNO:
+	    rc = (emu_flags(emu, bit_of) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JC:
+	    rc = (emu_flags(emu, bit_cf) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JNC:
+	    rc = (emu_flags(emu, bit_cf) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JZ:
+	    rc = (emu_flags(emu, bit_zf) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JNZ:
+	    rc = (emu_flags(emu, bit_zf) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JBE:
+	    rc = (emu_flags(emu, bit_cf) == 1 ||
+		    emu_flags(emu, bit_zf) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JA:
+	    rc = (emu_flags(emu, bit_cf) == 0 &&
+		    emu_flags(emu, bit_zf) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JS:
+	    rc = (emu_flags(emu, bit_sf) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JNS:
+	    rc = (emu_flags(emu, bit_sf) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JP:
+	    rc = (emu_flags(emu, bit_pf) == 1) && emu_jmp(emu, instr);
+	    break;
+	case OP_JNP:
+	    rc = (emu_flags(emu, bit_pf) == 0) && emu_jmp(emu, instr);
+	    break;
+	case OP_JL:
+	    rc = (emu_flags(emu, bit_sf) != emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    break;
+	case OP_JGE:
+	    rc = (emu_flags(emu, bit_sf) == emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    break;
+	case OP_JLE:
+	    rc = (emu_flags(emu, bit_zf) == 1 ||
+		    emu_flags(emu, bit_sf) != emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    break;
+	case OP_JG:
+	    rc = (emu_flags(emu, bit_zf) == 0 &&
+		    emu_flags(emu, bit_sf) == emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    break;
+	case OP_CALL:
+	    rc = emu_call(emu, instr);
 	    break;
 	default:
 	    return -1;
@@ -692,8 +1187,8 @@ DisassembleAt(instr_t* result, uint32_t offset)
     cl_debug();
     const uint8_t *next = cli_disasm_one(dis, sizeof(dis), &res, 1);
     result->x86_opcode = (enum X86OPS) cli_readint16(&res.real_op);
-    result->operation_size = (bool) res.opsize;
-    result->address_size = (bool) res.adsize;
+    result->operation_size = (uint8_t) res.opsize;
+    result->address_size = (uint8_t) res.adsize;
     result->segment = res.segment;
     for (i=0;i<3;i++) {
 	struct DIS_arg *arg = &result->arg[i];
@@ -946,7 +1441,7 @@ static int emu_lea(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static const bool pf_table[256] = {
+static const uint8_t pf_table[256] = {
     1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,
     0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
     0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
@@ -969,19 +1464,19 @@ static const int arith_flags = (1 << bit_of) | (1 << bit_sf) | (1 << bit_zf)
     | (1 << bit_af) | (1 << bit_pf) | (1 << bit_cf);
 
 
-void calc_flags_addsub(cli_emu_t *state, int32_t a, int32_t b, const struct access_desc *desc, bool is_sub)
+void calc_flags_addsub(cli_emu_t *state, int32_t a, int32_t b, const struct access_desc *desc, uint8_t is_sub)
 {
     uint64_t result = is_sub ? (int64_t)a - (int64_t)b : (int64_t)a + (int64_t)b;
 
     uint8_t sign_bit = desc->sign_bit;
-    bool cf = ((result >> desc->carry_bit) & 1) ||
+    uint8_t cf = ((result >> desc->carry_bit) & 1) ||
 	       (is_sub && (result > a));
-    bool sf = (result >> sign_bit) & 1;
-    bool zf = (result & desc->rw_mask) == 0;
+    uint8_t sf = (result >> sign_bit) & 1;
+    uint8_t zf = (result & desc->rw_mask) == 0;
 
-    bool a_sign = (a >> sign_bit) & 1;
-    bool b_sign = ((b >> sign_bit) & 1) ^ is_sub;
-    bool of = (a_sign == b_sign) && (a_sign != sf);
+    uint8_t a_sign = (a >> sign_bit) & 1;
+    uint8_t b_sign = ((b >> sign_bit) & 1) ^ is_sub;
+    uint8_t of = (a_sign == b_sign) && (a_sign != sf);
 
     state->eflags = (state->eflags & ~arith_flags) |
 	            (cf << bit_cf) |
@@ -998,7 +1493,7 @@ void calc_flags_addsub(cli_emu_t *state, int32_t a, int32_t b, const struct acce
 void calc_flags_test(cli_emu_t *state, uint32_t result, const struct access_desc *desc)
 {
     uint8_t sign_bit = desc->sign_bit;
-    bool sf = (result >> sign_bit) & 1;
+    uint8_t sf = (result >> sign_bit) & 1;
 
     /* OF = 0, CF = 0, SF, ZF, PF modified */
     state->eflags = (state->eflags & ~arith_flags) |
@@ -1016,9 +1511,9 @@ static const int inc_flags = (1 << bit_of) | (1 << bit_sf) | (1 << bit_zf)
 static inline void calc_flags_inc(cli_emu_t *state, int32_t a, enum X86REGS dest)
 {
     uint8_t sign_bit = reg_masks[dest].sign_bit;
-    bool sf = (a >> sign_bit) & 1;
-    bool zf = (a & reg_masks[dest].rw_mask) == 0;
-    bool of = zf;
+    uint8_t sf = (a >> sign_bit) & 1;
+    uint8_t zf = (a & reg_masks[dest].rw_mask) == 0;
+    uint8_t of = zf;
     state->eflags = (state->eflags & ~inc_flags) |
 	            (pf_table[(uint8_t)a] << bit_pf) |
 		    //TODO: af
@@ -1032,9 +1527,9 @@ static inline void calc_flags_inc(cli_emu_t *state, int32_t a, enum X86REGS dest
 static inline void calc_flags_dec(cli_emu_t *state, int32_t a, enum X86REGS dest)
 {
     uint8_t sign_bit = reg_masks[dest].sign_bit;
-    bool sf = (a >> sign_bit) & 1;
-    bool zf = (a & reg_masks[dest].rw_mask) == 0;
-    bool of = ((a+1) & reg_masks[dest].rw_mask) == 0;
+    uint8_t sf = (a >> sign_bit) & 1;
+    uint8_t zf = (a & reg_masks[dest].rw_mask) == 0;
+    uint8_t of = ((a+1) & reg_masks[dest].rw_mask) == 0;
     state->eflags = (state->eflags & ~inc_flags) |
 	            (pf_table[(uint8_t)a] << bit_pf) |
 		    //TODO: af
@@ -1061,7 +1556,7 @@ static int emu_xor(cli_emu_t *state, instr_t *instr)
 
 static int emu_shl(cli_emu_t *state, instr_t *instr)
 {
-    bool largeshift;
+    uint8_t largeshift;
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
@@ -1076,10 +1571,10 @@ static int emu_shl(cli_emu_t *state, instr_t *instr)
     if (!reg2)
 	return 0;
     uint64_t result = (uint64_t)reg1 << (uint8_t)reg2;
-    bool cf = (result >> desc->carry_bit) & 1;
+    uint8_t cf = (result >> desc->carry_bit) & 1;
     reg1 = result;
     if (reg2 == 1) {
-	bool of = ((result >> desc->sign_bit) & 1) ^ cf;
+	uint8_t of = ((result >> desc->sign_bit) & 1) ^ cf;
 	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 			 (cf << bit_cf) |
 			 (of << bit_of);
@@ -1099,7 +1594,7 @@ static int emu_shl(cli_emu_t *state, instr_t *instr)
 
 static int emu_shr(cli_emu_t *state, instr_t *instr)
 {
-    bool largeshift;
+    uint8_t largeshift;
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
@@ -1115,10 +1610,10 @@ static int emu_shr(cli_emu_t *state, instr_t *instr)
 	return 0;
     uint32_t result = reg1;
     result >>= (uint8_t)(reg2 - 1);
-    bool cf = (result & 1);
+    uint8_t cf = (result & 1);
     reg1 = result >> 1;
     if (reg2 == 1) {
-	bool of = ((result >> desc->sign_bit) & 1);
+	uint8_t of = ((result >> desc->sign_bit) & 1);
 	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 			 (cf << bit_cf) |
 			 (of << bit_of);
@@ -1141,7 +1636,7 @@ static int emu_shr(cli_emu_t *state, instr_t *instr)
 
 static int emu_rol(cli_emu_t *state, instr_t *instr)
 {
-    bool largeshift;
+    uint8_t largeshift;
     uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
@@ -1159,8 +1654,8 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 	state->eflags_def &= ~(1 << bit_of);//OF undef
 
     reg2 &= 0x1f;
-    bool msb;
-    bool cf;
+    uint8_t msb;
+    uint8_t cf;
     switch (desc->carry_bit) {
 	case 8:
 	    reg2 %= 8;
@@ -1188,7 +1683,7 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 	    INVALID_SIZE;
     }
 
-    bool of = msb ^ cf;
+    uint8_t of = msb ^ cf;
     state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 	(cf << bit_cf) |
 	(of << bit_of);
@@ -1200,7 +1695,7 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 
 static int emu_ror(cli_emu_t *state, instr_t *instr)
 {
-    bool largeshift;
+    uint8_t largeshift;
     uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
@@ -1218,7 +1713,7 @@ static int emu_ror(cli_emu_t *state, instr_t *instr)
 	state->eflags_def &= ~(1 << bit_of);//OF undef
 
     reg2 &= 0x1f;
-    bool msb, of;
+    uint8_t msb, of;
     switch (desc->carry_bit) {
 	case 8:
 	    reg2 %= 8;
@@ -1246,7 +1741,7 @@ static int emu_ror(cli_emu_t *state, instr_t *instr)
 	    INVALID_SIZE;
     }
 
-    bool cf = msb;
+    uint8_t cf = msb;
     state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 	(cf << bit_cf) |
 	(of << bit_of);
@@ -1337,7 +1832,7 @@ static int emu_cmp(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
     return 0;
 }
-static bool inline emu_flags(const cli_emu_t *state, uint8_t bit)
+static uint8_t inline emu_flags(const cli_emu_t *state, uint8_t bit)
 {
     return (state->eflags >> bit) & 1;
 }
@@ -1464,7 +1959,7 @@ static int emu_dec(cli_emu_t *state, instr_t *instr)
 }
 
 // returns true if loop should not be entered
-static bool emu_prefix_pre(cli_emu_t *state, bool ad16, bool repe_is_rep)
+static uint8_t emu_prefix_pre(cli_emu_t *state, uint8_t ad16, uint8_t repe_is_rep)
 {
     if (state->prefix_repe || state->prefix_repne) {
 	int32_t cnt;
@@ -1475,7 +1970,7 @@ static bool emu_prefix_pre(cli_emu_t *state, bool ad16, bool repe_is_rep)
     return false;
 }
 
-static bool emu_prefix_post(cli_emu_t *state, bool ad16, bool repe_is_rep)
+static uint8_t emu_prefix_post(cli_emu_t *state, uint8_t ad16, uint8_t repe_is_rep)
 {
     if (state->prefix_repe || state->prefix_repne) {
 	int32_t cnt;
