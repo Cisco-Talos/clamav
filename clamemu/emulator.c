@@ -134,6 +134,8 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		    memcpy(&arg->add_reg, &arg->scale_reg, sizeof(arg->scale_reg));
 		    arg->scale_reg.idx = REGIDX_INVALID;
 		}
+		if (arg->scale == 0)
+		    arg->scale_reg.idx = REGIDX_INVALID;
 		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][6]);
 		arg->access_size = size; /* not valid for REG */
 		break;
@@ -334,7 +336,7 @@ static int mem_push(cli_emu_t *state, const instr_t *instr, uint32_t value)
 #define MEM_PUSH(val) do { if (mem_push(state, instr, (val)) < 0) {\
     fprintf(stderr,"push failed\n");return -1;}} while(0)
 
-#define MEM_POP(val) do { if (mem_pop(state, instr, (val)) < 0) {\
+#define MEM_POP(val) do { if (mem_pop(state, instr->operation_size ? 2: 4, (val)) < 0) {\
     fprintf(stderr,"pop failed\n");return -1;}} while(0)
 
 static int emu_push(cli_emu_t *state, instr_t *instr)
@@ -346,12 +348,10 @@ static int emu_push(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static int mem_pop(cli_emu_t *state, const struct dis_instr *instr, int32_t *value)
+static int mem_pop(cli_emu_t *state, int size, int32_t *value)
 {
-    int32_t size;
     uint32_t esp;
 
-    size = instr->operation_size ? 2 : 4;
     esp = state->reg_val[REG_ESP];
     switch (size) {
 	case 2:
@@ -871,7 +871,20 @@ static int emu_ret(cli_emu_t *state, instr_t *instr)
 int cli_emulator_step(cli_emu_t *emu)
 {
     int rc;
-    struct dis_instr *instr = disasm(emu);
+    struct dis_instr *instr;
+    struct import_desc *import;
+
+    do {
+	import = cli_emu_vmm_get_import(emu->mem, emu->eip);
+	if (import) {
+	    if (import->handler(emu, import->description) < 0)
+		return -1;
+	    if (mem_pop(emu, 4, &emu->eip) == -1)
+		return -1;
+	}
+    } while (import);
+
+    instr = disasm(emu);
     if (!instr) {
 	printf("can't disasm\n");
 	return -1;

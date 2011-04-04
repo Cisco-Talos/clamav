@@ -32,6 +32,7 @@
 #include "pe.h"
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MINALIGN 512
 typedef struct {
@@ -70,78 +71,17 @@ struct emu_vmm {
     int infd;
     int tmpfd;
     uint32_t tmpfd_written;/* in MINALIGN blocks */
+    uint32_t imports_n;
+    struct import_desc *imports;
 };
 
-static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_exe_section *sections)
-{
-    unsigned i;
-    switch (pedata->file_hdr.Machine) {
-	default:
-	    cli_dbgmsg("emu: unhandled architecture\n");
-	    return -1;
-	case 0x14c:
-	case 0x14d:
-	case 0x14e:
-	    break;
-    }
-    if (pedata->opt32.Subsystem == 1) {
-	cli_dbgmsg("subsys is native, skipping\n");
-	return -1;
-    }
-    if (pedata->opt32.SectionAlignment < 4096) {
-	if (pedata->opt32.FileAlignment != pedata->opt32.SectionAlignment)
-	    cli_dbgmsg("warning filealign and sectionalign mismatch, mapping probably incorrect: %d != %d\n",
-		       pedata->opt32.FileAlignment, pedata->opt32.SectionAlignment);
-    }
-    if (pedata->opt32.FileAlignment < 512) {
-	cli_dbgmsg("File alignment too small: %d, mapping will be probably incorrect\n", pedata->opt32.FileAlignment);
-    }
-    /* map file header, if not overlapping */
-    for (i=0;i*4096 < sections[0].rva;i++) {
-	v->page_flags[i].file_offset = i * 4096 / MINALIGN;
-	v->page_flags[i].flag_rwx = 1 << flag_r;
-	v->page_flags[i].init = 1;
-    }
-    for (i=0;i < pedata->nsections; i++) {
-	const struct cli_exe_section *section = &sections[i];
-	uint32_t rva = section->rva;
-	uint32_t pages = (section->vsz + 4095) / 4096;
-	uint32_t raw = section->raw;
-	unsigned j;
-	unsigned flag_rwx;
-	unsigned zeroinit;
-
-	if (i && sections[i].urva - sections[i-1].urva != sections[i-1].vsz) {
-	    cli_dbgmsg(" holes / overlapping / virtual disorder (broken executable)\n");
-	    return -1;
-	}
-
-	zeroinit = section->chr & IMAGE_SCN_CNT_UNINITIALIZED_DATA;
-	/* r implies x, but not viceversa */
-	flag_rwx =
-	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
-	    ((section->chr & IMAGE_SCN_MEM_READ) ? ((1 << flag_r) | (1 << flag_x)): 0) |
-	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w): 0);
-	for (j=0;j<pages;j++) {
-	    uint32_t page = rva / 4096 + j;
-	    if (page >= v->n_pages) {
-		cli_dbgmsg("rva out of range: %x > %x\n", page*4096, v->n_pages*4096);
-		return -1;
-	    }
-	    v->page_flags[page].init = !zeroinit;
-	    /* 1 page can contain actually more than 1 section,
-	     * but offset must be MINALIGN aligned, if not this will not work */
-	    if (!zeroinit)
-		v->page_flags[page].file_offset = (raw + j*4096)/MINALIGN;
-	    v->page_flags[page].flag_rwx |= flag_rwx;
-	}
-	cli_dbgmsg("Mapped section RVA: %08x - %08x -> Raw: %08x%s - %08x, VA %08x - %08x\n",
-		   rva, rva + pages * 4096, raw, raw%MINALIGN ? " (rounded!)" : "",
-		   raw + pages*4096,
-		   v->imagebase + rva, v->imagebase + rva + pages*4096);
-    }
-    return 0;
-}
+struct IMAGE_IMPORT {
+    uint32_t OrigThunk;
+    uint32_t Time;
+    uint32_t Fwd;
+    uint32_t DllName;
+    uint32_t Thunk;
+};
 
 static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 {
@@ -228,12 +168,219 @@ static always_inline int vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint32
     return -EMU_ERR_VMM_READ;
 }
 
-int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
+char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen)
+{
+    const uint8_t *data, *end;
+    char *s;
+    cached_page_t *p;
+    if (maxlen > 4096)
+	maxlen = 4096;
+    p = vmm_cache_2page(v, va);
+    if (!p)
+	return NULL;
+    data = p->data + (va & 0xfff);
+    end = memchr(data, 0, maxlen);
+    if (!end)
+	end = data + maxlen;
+    s = malloc(end - data + 1);
+    if (!s)
+	return NULL;
+    memcpy(s, data, end - data);
+    s[end-data] = '\0';
+    return s;
+}
+
+#define EC32(x) (x) = le32_to_host(x) /* Convert little endian to host */
+/* we store our own data there */
+#define MAPPING_END 0xf0000000
+
+static int stub_handler(struct cli_emu *emu, const char *desc)
+{
+    printf("Called unhandled API %s\n", desc ? desc : "??");
+    return -1;
+}
+
+struct import_desc *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr)
+{
+    if (addr < MAPPING_END)
+	return NULL;
+    addr  = (addr - MAPPING_END)/4;
+    if (addr >= v->imports_n)
+	return NULL;
+    return &v->imports[addr];
+}
+
+static void emu_createstubcall(emu_vmm_t *v, uint32_t *called_addr, uint32_t ordinal, const char *dll, const char *func)
+{
+    char desc[1024];
+
+    if (func)
+	snprintf(desc, sizeof(desc)-1, "%s!%s", dll ? dll : "", func);
+    else
+	snprintf(desc, sizeof(desc)-1, "%s!%d", dll ? dll : "", ordinal);
+    desc[sizeof(desc)-1] = '\0';
+    *called_addr = MAPPING_END + v->imports_n * 4;
+    v->imports_n++;
+    v->imports = cli_realloc(v->imports, v->imports_n * sizeof(*v->imports));
+    v->imports[v->imports_n-1].handler = stub_handler;
+    v->imports[v->imports_n-1].description = strdup(desc);
+    /* TODO: free these on vmm_free */
+}
+
+static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_exe_section *sections)
+{
+    uint32_t base = pedata->opt32.ImageBase;
+    uint32_t va, size;
+    unsigned i;
+    switch (pedata->file_hdr.Machine) {
+	default:
+	    cli_dbgmsg("emu: unhandled architecture\n");
+	    return -1;
+	case 0x14c:
+	case 0x14d:
+	case 0x14e:
+	    break;
+    }
+    if (pedata->opt32.Subsystem == 1) {
+	cli_dbgmsg("subsys is native, skipping\n");
+	return -1;
+    }
+    if (pedata->opt32.SectionAlignment < 4096) {
+	if (pedata->opt32.FileAlignment != pedata->opt32.SectionAlignment)
+	    cli_dbgmsg("warning filealign and sectionalign mismatch, mapping probably incorrect: %d != %d\n",
+		       pedata->opt32.FileAlignment, pedata->opt32.SectionAlignment);
+    }
+    if (pedata->opt32.FileAlignment < 512) {
+	cli_dbgmsg("File alignment too small: %d, mapping will be probably incorrect\n", pedata->opt32.FileAlignment);
+    }
+    /* map file header, if not overlapping */
+    for (i=0;i*4096 < sections[0].rva;i++) {
+	v->page_flags[i].file_offset = i * 4096 / MINALIGN;
+	v->page_flags[i].flag_rwx = 1 << flag_r;
+	v->page_flags[i].init = 1;
+    }
+    for (i=0;i < pedata->nsections; i++) {
+	const struct cli_exe_section *section = &sections[i];
+	uint32_t rva = section->rva;
+	uint32_t pages = (section->vsz + 4095) / 4096;
+	uint32_t raw = section->raw;
+	unsigned j;
+	unsigned flag_rwx;
+	unsigned zeroinit;
+
+	if (i && sections[i].urva - sections[i-1].urva != sections[i-1].vsz) {
+	    cli_dbgmsg(" holes / overlapping / virtual disorder (broken executable)\n");
+	    return -1;
+	}
+
+	zeroinit = section->chr & IMAGE_SCN_CNT_UNINITIALIZED_DATA;
+	/* r implies x, but not viceversa */
+	flag_rwx =
+	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
+	    ((section->chr & IMAGE_SCN_MEM_READ) ? ((1 << flag_r) | (1 << flag_x)): 0) |
+	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w): 0);
+	for (j=0;j<pages;j++) {
+	    uint32_t page = rva / 4096 + j;
+	    if (page >= v->n_pages) {
+		cli_dbgmsg("rva out of range: %x > %x\n", page*4096, v->n_pages*4096);
+		return -1;
+	    }
+	    v->page_flags[page].init = !zeroinit;
+	    /* 1 page can contain actually more than 1 section,
+	     * but offset must be MINALIGN aligned, if not this will not work */
+	    if (!zeroinit)
+		v->page_flags[page].file_offset = (raw + j*4096)/MINALIGN;
+	    v->page_flags[page].flag_rwx |= flag_rwx;
+	}
+	cli_dbgmsg("Mapped section RVA: %08x - %08x -> Raw: %08x%s - %08x, VA %08x - %08x\n",
+		   rva, rva + pages * 4096, raw, raw%MINALIGN ? " (rounded!)" : "",
+		   raw + pages*4096,
+		   v->imagebase + rva, v->imagebase + rva + pages*4096);
+    }
+
+    va = base + pedata->opt32.DataDirectory[1].VirtualAddress;
+    size = pedata->opt32.DataDirectory[1].Size;
+    while (size >= sizeof(struct IMAGE_IMPORT)) {
+	struct IMAGE_IMPORT import;
+	char *dllname;
+
+	if (cli_emu_vmm_read_r(v, va, &import, sizeof(import)) < 0) {
+	    fprintf(stderr, "import descriptor out of image\n");
+	    return 1;
+	}
+
+	size -= sizeof(struct IMAGE_IMPORT);
+	va += sizeof(struct IMAGE_IMPORT);
+
+	if(!import.DllName) {
+	    break;
+	}
+	EC32(import.OrigThunk);
+	EC32(import.Fwd);
+	EC32(import.DllName);
+	EC32(import.Thunk);
+
+	dllname = cli_emu_vmm_read_string(v, base + import.DllName, 64);
+	if (!dllname) {
+	    fprintf(stderr, "error reading import dllname\n");
+	    return 1;
+	}
+	cli_dbgmsg("Imports from: %s\n", dllname);
+
+	/* TODO: lookup dll bindings */
+	uint32_t rva = import.OrigThunk;
+	if (!rva)
+	    rva = import.Thunk;
+	for(i=0;;i++, rva += 4) {
+	    uint32_t import_entry, called_addr = 0;
+	    if (cli_emu_vmm_read32(v, base + rva, &import_entry) < 0) {
+		fprintf(stderr,"corrupted imports, invalid import entry rva %x!\n", rva);
+		break;
+	    }
+	    EC32(import_entry);
+	    if (!import_entry)
+		break;/* end of imports for this DLL */
+	    if (import_entry & 0x80000000) {
+		cli_dbgmsg("import by ordinal %d from %s, not supported, replaced with stub!\n",
+			import_entry & 0xffff, dllname);
+		if (!called_addr)
+		    emu_createstubcall(v, &called_addr, import_entry&0xffff, dllname, NULL);
+	    } else {
+		char *func = cli_emu_vmm_read_string(v, base + import_entry + 2, 1024);
+		if (!func) {
+		    cli_dbgmsg("corrupted imports: unable to read import name at %x\n", import_entry+2);
+		    return 1;
+		} else {
+		    /*		    if (dll) {
+			called_addr = lookup_function(dll, funcname->data);
+			if (called_addr)
+		    	logDebug(emu, "Import %s bound to %x\n", (const char*)funcname->data, called_addr);
+			} else if (dll)
+	    		logInfo(emu,"Unable to find import %s in %s\n", (const char*)funcname->data,
+			(const char*)dllname->data);
+    			*/
+		}
+		if (!called_addr)
+		    emu_createstubcall(v, &called_addr, 0, dllname, func);
+		free(func);
+	    }
+	    cli_dbgmsg("%x <- %x\n", base + import.Thunk + 4*i, called_addr);
+	    if (cli_emu_vmm_write32(v, base + import.Thunk + 4*i, called_addr) < 0) {
+		fprintf(stderr, "Can't save imports\n");
+		return 1;
+	    }
+	}
+	free(dllname);
+    }
+    return 0;
+}
+
+int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
 {
    return vmm_read(v, va, value, len, 1 << flag_r);
 }
 
-int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
+int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
 {
     return vmm_read(v, va, value, len, 1 << flag_x);
 }
@@ -349,6 +496,7 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
 	return NULL;
     }
     v->lastused_page = ~0u;
+    v->imports_n = 0;
 
     if (map_pages(v, pedata, sections) == -1) {
 	cli_emu_vmm_free(v);
@@ -364,10 +512,11 @@ int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va)
     unsigned need_pages = (amount + 4095) / 4096;
     unsigned got_pages = 0;
     uint32_t start;
+    uint32_t v_end = (MAPPING_END - v->imagebase)/4096;
 
     start = v_page;
     while (got_pages < need_pages) {
-	if (!v_page) {
+	if (!v_page || v_page == v_end) {
 	    fprintf(stderr,"emu: out of virtual memory allocating %d pages\n", need_pages);
 	    return -1;
 	}
@@ -398,7 +547,7 @@ int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va)
     return cli_emu_vmm_prot_set(v, start, got_pages*4096, 0x7);
 }
 
-static int vmm_dirty(emu_vmm_t *v)
+int vmm_dirty(emu_vmm_t *v)
 {
     unsigned i;
     if (v->tmpfd_written)
