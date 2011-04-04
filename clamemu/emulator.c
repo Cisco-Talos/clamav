@@ -336,6 +336,25 @@ static int emu_mov(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
+static int emu_bswap(cli_emu_t *state, instr_t *instr)
+{
+    int32_t reg;
+    READ_OPERAND(reg, 0);
+    switch (instr->arg[0].access_size) {
+	case SIZEW:
+	    reg = cbswap16(reg);
+	    break;
+	case SIZED:
+	    reg = cbswap32(reg);
+	    break;
+	default:
+	    return -1;
+    }
+
+    WRITE_RESULT(0, reg);
+    return 0;
+}
+
 #define MEM_PUSH(val) do { if (mem_push(state, instr->operation_size ? 2 : 4, (val)) < 0) {\
     fprintf(stderr,"push failed\n");return -1;}} while(0)
 
@@ -1233,6 +1252,9 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_NOP:
 	    /* NOP is nop */
+	    break;
+	case OP_BSWAP:
+	    rc = emu_bswap(emu, instr);
 	    break;
 	case OP_PREFIX_REPE:
 	    emu->prefix_repe = 1;

@@ -50,6 +50,13 @@ static int cb_messagebox(struct cli_emu *emu, const char *desc, unsigned bytes)
     return 0;
 }
 
+static int cb_gettickcount(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    POP32(&emu->eip);
+    emu->reg_val[REG_EAX] = emu->tick++;
+    return 0;
+}
+
 static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     uint32_t rc;
@@ -65,7 +72,8 @@ const struct hook_desc user32_dll_hooks[] = {
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
-    {"ExitProcess", cb_exitprocess}
+    {"ExitProcess", cb_exitprocess},
+    {"GetTickCount", cb_gettickcount}
 };
 
 const struct hook_desc wsock32_dll_hooks[] = {

@@ -108,6 +108,7 @@ typedef struct dis_instr {
 struct cli_emu {
     emu_vmm_t *mem;
     uint32_t eip;
+    uint32_t tick;
     uint32_t eflags;
     uint32_t eflags_def;
     uint32_t regs[MAXREG];
