@@ -53,7 +53,7 @@ static const desc_t mem_desc [] = {
     DEFINE_MEM(SIZEB, SIZEB,  8)
 };
 
-static int mem_push(cli_emu_t *state, unsigned size, uint32_t value)
+int mem_push(cli_emu_t *state, unsigned size, uint32_t value)
 {
     int32_t esp;
 
@@ -351,7 +351,7 @@ static int emu_push(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static int mem_pop(cli_emu_t *state, int size, int32_t *value)
+int mem_pop(cli_emu_t *state, int size, int32_t *value)
 {
     uint32_t esp;
 
@@ -1033,6 +1033,7 @@ int cli_emulator_step(cli_emu_t *emu)
 	    rc = emu_ret(emu, instr);
 	    break;
 	default:
+	    cli_dbgmsg("opcode not yet implemented\n");
 	    return -1;
     }
     emu->prefix_repe = 0;

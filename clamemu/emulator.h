@@ -30,4 +30,7 @@ cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata);
 int cli_emulator_step(cli_emu_t *emu);
 void cli_emulator_free(cli_emu_t *emu);
 void cli_emulator_dbgstate(cli_emu_t *emu);
+int mem_push(cli_emu_t *state, unsigned size, uint32_t value);
+int mem_pop(cli_emu_t *state, int size, int32_t *value);
+
 #endif

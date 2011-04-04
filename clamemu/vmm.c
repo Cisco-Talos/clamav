@@ -274,7 +274,10 @@ static import_handler_t lookup_function(const struct dll_desc *dll, const char *
 	*bytes = ~0;
     else
 	*bytes = desc->bytes;
-    return bsearch(func, dll->hooks, *dll->hooks_n, sizeof(dll->hooks[0]), hook_cmp);
+    hook = bsearch(func, dll->hooks, *dll->hooks_n, sizeof(dll->hooks[0]), hook_cmp);
+    if (!hook)
+	return NULL;
+    return hook->callback;
 }
 
 static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_exe_section *sections)
