@@ -877,17 +877,16 @@ int cli_emulator_step(cli_emu_t *emu)
     struct dis_instr *instr;
     struct import_description *import;
 
-    do {
-	if (emu->eip == MAPPING_END) {
-	    cli_dbgmsg("emulated program exited\n");
-	    return 0;
-	}
-	import = cli_emu_vmm_get_import(emu->mem, emu->eip);
-	if (import) {
-	    if (import->handler(emu, import->description, import->bytes) < 0)
-		return -1;
-	}
-    } while (import);
+    if (emu->eip == MAPPING_END) {
+	cli_dbgmsg("emulated program exited\n");
+	return -2;
+    }
+    import = cli_emu_vmm_get_import(emu->mem, emu->eip);
+    if (import) {
+	if (import->handler(emu, import->description, import->bytes) < 0)
+	    return -1;
+	return 0;
+    }
 
     instr = disasm(emu);
     if (!instr) {

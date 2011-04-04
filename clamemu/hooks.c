@@ -50,12 +50,22 @@ static int cb_messagebox(struct cli_emu *emu, const char *desc, unsigned bytes)
     return 0;
 }
 
+static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t rc;
+    POP32(&emu->eip);
+    POP32(&rc);
+    printf("ExitProcess(%x)\n", rc);
+    emu->eip = MAPPING_END;
+    return 0;
+}
 
 const struct hook_desc user32_dll_hooks[] = {
     {"MessageBoxA", cb_messagebox}
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
+    {"ExitProcess", cb_exitprocess}
 };
 
 const struct hook_desc wsock32_dll_hooks[] = {
