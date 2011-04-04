@@ -662,6 +662,10 @@ uninstall-am: uninstall-binPROGRAMS
 	tags uninstall uninstall-am uninstall-binPROGRAMS
 
 
+# for testing only
+flagstest: flagstest.c flags.h
+	$(CC) -g -m32 $< -o $@ $(AM_CPPFLAGS)
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

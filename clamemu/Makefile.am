@@ -35,3 +35,7 @@ LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 
 CLEANFILES=*.gcda *.gcno
+
+# for testing only
+flagstest: flagstest.c flags.h
+	$(CC) -g -m32 $< -o $@ $(AM_CPPFLAGS)
