@@ -75,7 +75,6 @@ struct reg_desc {
 };
 
 struct dis_arg {
-    enum operand op;
     struct reg_desc scale_reg;
     struct reg_desc add_reg;
     uint32_t scale;
@@ -83,23 +82,27 @@ struct dis_arg {
     enum DIS_SIZE access_size;
 };
 
-struct dis_instr {
+typedef struct dis_instr {
     enum X86OPS opcode;
     uint8_t operation_size;
     uint8_t address_size;
     uint8_t segment;
+    uint8_t len;
     struct dis_arg arg[3];
-};
+} instr_t;
 
 #define DISASM_CACHE_SIZE 256
 
 struct cli_emu {
     emu_vmm_t *mem;
     uint32_t eip;
+    uint32_t eflags;
     uint32_t regs[MAXREG];
     struct dis_instr cached_disasm[DISASM_CACHE_SIZE];
     uint32_t reg_val[REG_EDI+1];
     uint32_t reg_def[REG_EDI+1];
+    uint8_t prefix_repe;
+    uint8_t prefix_repne;
 };
 
 cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
@@ -174,6 +177,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][1]);
 		arg->scale_reg.idx = ~0;
 		arg->displacement = 0;
+		arg->access_size = SIZE_INVALID;
 		break;
 	    default: {
 		if (cli_readint32((const uint32_t*)&res.arg[i][6]))
@@ -193,6 +197,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 			arg->displacement = cli_readint32((const int32_t*)&res.arg[i][2]);
 			break;
 		}
+		arg->access_size = SIZE_INVALID;
 		break;
 	    }
 	}
@@ -215,9 +220,9 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
 {
     struct dis_instr *instr;
     uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
-    instr= &emu->cached_disasm[idx];
+    instr = &emu->cached_disasm[idx];
     if (instr->opcode == OP_INVALID) {
-	DisassembleAt(emu->mem, instr, emu->eip);
+	instr->len = DisassembleAt(emu->mem, instr, emu->eip) - emu->eip;
 	/* TODO discard cache when writing to this page! */
     }
     return instr;
@@ -242,26 +247,23 @@ static always_inline int read_operand(const cli_emu_t *emu,
 				      const struct dis_arg *arg, uint32_t *value)
 {
     *value = calcreg(emu, arg);
-    if (arg->op == OPERAND_READ) {
-	switch (arg->access_size) {
-	    case SIZEB:
-		cli_emu_vmm_read8(emu->mem, *value, value);
-		break;
-	    case SIZEW:
-		cli_emu_vmm_read16(emu->mem, *value, value);
-		break;
-	    case SIZED:
-	    default:
-		cli_emu_vmm_read32(emu->mem, *value, value);
-		break;
-	}
+    switch (arg->access_size) {
+	case SIZE_INVALID:
+	    return 0;
+	case SIZEB:
+	    return cli_emu_vmm_read8(emu->mem, *value, value);
+	case SIZEW:
+	    return cli_emu_vmm_read16(emu->mem, *value, value);
+	case SIZED:
+	default:
+	    return cli_emu_vmm_read32(emu->mem, *value, value);
     }
 }
 
 static always_inline int write_operand(cli_emu_t *emu,
 				       const struct dis_arg *arg, uint32_t value)
 {
-    if (arg->op == OPERAND_WRITEREG) {
+    if (arg->access_size == SIZE_INVALID) {
 	const struct reg_desc *reg = &arg->add_reg;
 	emu->reg_val[reg->idx] = (emu->reg_val[reg->idx] & (~reg->mask)) |
 	    ((value << reg->shift) & reg->mask);
@@ -281,10 +283,52 @@ static always_inline int write_operand(cli_emu_t *emu,
     }
 }
 
+#define READ_OPERAND(value, op) do { \
+    if (read_operand(emu, &instr->arg[(op)], &(value)) == -1) \
+    return -1;\
+} while (0)
+
+#define WRITE_RESULT(op, value) do {\
+    if (write_operand(emu, &instr->arg[(op)], (value)) == -1) \
+    return -1;\
+} while (0)
+
+static int emu_mov(cli_emu_t *emu, instr_t *instr)
+{
+    //TODO: FS segment support, the rest of segments are equal anyway on win32
+    int32_t reg;
+    READ_OPERAND(reg, 1);
+    WRITE_RESULT(0, reg);
+    return 0;
+}
+
 int cli_emulator_step(cli_emu_t *emu)
 {
+    int rc;
     struct dis_instr *instr = disasm(emu);
-    return -1;
+    emu->eip += instr->len;
+    switch (instr->opcode) {
+	case OP_MOV:
+	    rc = emu_mov(emu, instr);
+	    break;
+	default:
+	    return -1;
+    }
+    emu->prefix_repe = 0;
+    emu->prefix_repne = 0;
+    return 0;
+}
+
+void cli_emulator_dbgstate(cli_emu_t *emu)
+{
+    printf("[cliemu               ] eip=0x%08x\n"
+	   "[cliemu               ] eax=0x%08x  ecx=0x%08x  edx=0x%08x  ebx=0x%08x\n"
+	   "[cliemu               ] esp=0x%08x  ebp=0x%08x  esi=0x%08x  edi=0x%08x\n"
+	   "[cliemu               ] eflags=0x%08x\n",
+	   emu->eip,
+	   emu->reg_val[REG_EAX], emu->reg_val[REG_ECX], emu->reg_val[REG_EDX], emu->reg_val[REG_EBX],
+	   emu->reg_val[REG_ESP], emu->reg_val[REG_EBP], emu->reg_val[REG_ESI], emu->reg_val[REG_EDI],
+	   emu->eflags);
 }
 
 

@@ -43,6 +43,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     emu = cli_emulator_new(v, pedata);
 
     while (!cli_emulator_step(emu)) {
+	cli_emulator_dbgstate(emu);
     }
 
     cli_emulator_free(emu);

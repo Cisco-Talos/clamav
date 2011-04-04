@@ -364,6 +364,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
     sections[0].rva = 4096;
     if (!v->tmpfd_written) {
 	cli_dbgmsg("executable not modified\n");
+	return 0;
     }
 
     /* skip page 0, which is PE header */
