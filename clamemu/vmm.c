@@ -65,6 +65,7 @@ struct emu_vmm {
     page_t *page_flags;
     unsigned n_pages;
     unsigned orig_pages;
+    unsigned first_free_page;
     char *tempfile;
     int infd;
     int tmpfd;
@@ -116,9 +117,10 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	}
 
 	zeroinit = section->chr & IMAGE_SCN_CNT_UNINITIALIZED_DATA;
+	/* r implies x, but not viceversa */
 	flag_rwx =
 	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
-	    ((section->chr & IMAGE_SCN_MEM_READ) ? (1 << flag_r): 0) |
+	    ((section->chr & IMAGE_SCN_MEM_READ) ? ((1 << flag_r) | (1 << flag_x)): 0) |
 	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w): 0);
 	for (j=0;j<pages;j++) {
 	    uint32_t page = rva / 4096 + j;
@@ -233,7 +235,7 @@ int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
 
 int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
 {
-    return vmm_read(v, v->imagebase + va, value, len, 1 << flag_x);
+    return vmm_read(v, va, value, len, 1 << flag_x);
 }
 
 int cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value)
@@ -298,16 +300,20 @@ int cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value)
 int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
 {
     uint32_t page = (va - v->imagebase) / 4096;
-    if (page >= v->n_pages) {
-	cli_dbgmsg("vmm_prot_set out of bounds: %x > %x\n", va, v->n_pages*4096);
-	return -EMU_ERR_GENERIC;
-    }
-    /* this also acts as allocation function, by default all pages are zeroinit
-     * anyway */
-    v->page_flags[page].flag_rwx = rwx;
+    len = (len + 4095) &~ 4095; /* align */
+    do {
+	if (page >= v->n_pages) {
+	    cli_dbgmsg("vmm_prot_set out of bounds: %x > %x\n", va, v->n_pages*4096);
+	    return -EMU_ERR_GENERIC;
+	}
+	/* this also acts as allocation function, by default all pages are zeroinit
+	 * anyway */
+	v->page_flags[page++].flag_rwx = rwx;
+	len -= 4096;
+    } while (len);
 }
 
-int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va, uint32_t len)
+int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va)
 {
     uint32_t page = (va - v->imagebase) / 4096;
     if (page >= v->n_pages) {
@@ -348,7 +354,48 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
 	cli_emu_vmm_free(v);
 	return NULL;
     }
+    v->first_free_page = v->n_pages + 1;/* leave one guard-page */
     return v;
+}
+
+int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va)
+{
+    uint32_t v_page = v->first_free_page;
+    unsigned need_pages = (amount + 4095) / 4096;
+    unsigned got_pages = 0;
+    uint32_t start;
+
+    start = v_page;
+    while (got_pages < need_pages) {
+	if (!v_page) {
+	    fprintf(stderr,"emu: out of virtual memory allocating %d pages\n", need_pages);
+	    return -1;
+	}
+	if (v_page < v->n_pages &&
+	    (v->page_flags[v_page].init || v->page_flags[v_page].flag_rwx)) {
+	    v_page++;
+	    got_pages = 0;
+	    start = v_page;
+	    continue;
+	}
+	got_pages++;
+	v_page++;
+    }
+    if (start + got_pages > v->n_pages) {
+	void *x;
+	v->n_pages = start + got_pages;
+	x = cli_realloc(v->page_flags, v->n_pages * sizeof(*v->page_flags));
+	if (!x) {
+	    fprintf(stderr,"out of mem allocating page flags (%d)\n", v->n_pages);
+	    return -1;
+	}
+	v->page_flags = x;
+    }
+    if (v->first_free_page == start)
+	v->first_free_page = start + got_pages + 1;/*leave 1 guard-page */
+    start = v->imagebase + start*4096;
+    *va = start;
+    return cli_emu_vmm_prot_set(v, start, got_pages*4096, 0x7);
 }
 
 static int vmm_dirty(emu_vmm_t *v)
@@ -460,3 +507,7 @@ void cli_emu_vmm_free(emu_vmm_t *v)
     free(v);
 }
 
+uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva)
+{
+    return v->imagebase + rva;
+}

@@ -53,9 +53,11 @@ int cli_emu_vmm_write16(emu_vmm_t *v, uint32_t va, uint32_t value);
 int cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value);
 int cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len);
 
+int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va);
 int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx);
-int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va, uint32_t len);
+int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va);
 
+uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva);
 int cli_emu_vmm_rebuild(emu_vmm_t *v);
 void cli_emu_vmm_free(emu_vmm_t *v);
 #endif

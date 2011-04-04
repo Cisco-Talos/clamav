@@ -31,6 +31,7 @@
 /* TODO: make this portable to non-C99 compilers */
 #define DEFINE_REGS(first, last, bits, shift) \
     [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
+#define REGIDX_INVALID 255
 
 struct access_desc {
     uint32_t rw_mask;/* mask after shifting */
@@ -108,7 +109,6 @@ typedef struct dis_instr {
 } instr_t;
 
 #define DISASM_CACHE_SIZE 256
-#define MAXSTACK 8128
 
 struct cli_emu {
     emu_vmm_t *mem;
@@ -121,18 +121,23 @@ struct cli_emu {
     uint32_t reg_def[REG_EDI+1];
     uint8_t prefix_repe;
     uint8_t prefix_repne;
-    uint8_t stack[MAXSTACK];
 };
 
 cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
 {
+    uint32_t stack, stackend, stacksize;
     cli_emu_t *emu = cli_malloc(sizeof(*emu));
     if (!emu)
 	return NULL;
     emu->mem = v;
-    emu->eip = pedata->opt32.AddressOfEntryPoint;
+    emu->eip = cli_emu_vmm_rva2va(v, pedata->opt32.AddressOfEntryPoint);
     memset(emu->cached_disasm, 0, sizeof(emu->cached_disasm));
-    emu->reg_val[REG_ESP] = MAXSTACK-4;
+
+    stacksize = pedata->opt32.SizeOfStackReserve;
+    cli_emu_vmm_alloc(v, stacksize, &stack);
+    stackend = (stack + stacksize + 4095) &~ 4095;/* align */
+    cli_dbgmsg("Mapped stack: %08x - %08x\n", stack, stackend);
+    emu->reg_val[REG_ESP] = stackend;
     /* TODO: init registers */
     return emu;
 }
@@ -149,7 +154,7 @@ static always_inline int get_reg(desc_t *desc, enum X86REGS reg)
     if (reg >= MAXREG) {
 	if (reg != REG_INVALID)
 	    UNIMPLEMENTED_REG;
-	desc->idx = ~0;
+	desc->idx = REGIDX_INVALID;
     }
     desc->mask = reg_masks[reg].rw_mask;
     desc->shift = reg_masks[reg].rw_shift;
@@ -197,14 +202,14 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		arg->scale = res.arg[i][4];
 		if (arg->scale == 1 && res.arg[i][3] == REG_INVALID) {
 		    memcpy(&arg->add_reg, &arg->scale_reg, sizeof(arg->scale_reg));
-		    arg->scale_reg.idx = ~0;
+		    arg->scale_reg.idx = REGIDX_INVALID;
 		}
 		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][6]);
 		arg->access_size = size; /* not valid for REG */
 		break;
 	    case ACCESS_REG:
 		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][1]);
-		arg->scale_reg.idx = ~0;
+		arg->scale_reg.idx = REGIDX_INVALID;
 		arg->displacement = 0;
 		arg->access_size = SIZE_INVALID;
 		break;
@@ -250,11 +255,14 @@ static always_inline uint32_t hash32shift(uint32_t key)
 
 static always_inline struct dis_instr* disasm(cli_emu_t *emu)
 {
+    int ret;
     struct dis_instr *instr;
     uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
 //    if (instr->opcode == OP_INVALID) {
-	instr->len = DisassembleAt(emu->mem, instr, emu->eip) - emu->eip;
+    if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
+	return NULL;
+	instr->len = ret - emu->eip;
 	/* TODO discard cache when writing to this page! */
 //    }
     return instr;
@@ -264,7 +272,7 @@ static always_inline uint32_t readreg(const cli_emu_t *emu,
 				       const desc_t *reg)
 {
     /* TODO: we could read directly at the right offset instead of shifting */
-    return reg->idx != ~0 ? (emu->reg_val[reg->idx] & reg->mask) >> reg->shift : 0;
+    return reg->idx != REGIDX_INVALID ? (emu->reg_val[reg->idx] & reg->mask) >> reg->shift : 0;
     /* TODO: make invalid reg a real offset that just returns 0 */
 }
 
@@ -272,7 +280,7 @@ static always_inline int read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32
 {
     desc_t desc;
     get_reg(&desc, reg);
-    if (desc.idx == ~0)
+    if (desc.idx == REGIDX_INVALID)
 	return -1;
     *value = readreg(emu, &desc);
     return 0;
@@ -280,7 +288,7 @@ static always_inline int read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32
 
 static always_inline int writereg(cli_emu_t *emu, const desc_t *reg, uint32_t value)
 {
-    if (reg->idx == ~0)
+    if (reg->idx == REGIDX_INVALID)
 	return -1;
     emu->reg_val[reg->idx] = (emu->reg_val[reg->idx] & (~reg->mask)) |
 	((value << reg->shift) & reg->mask);
@@ -298,7 +306,7 @@ static always_inline int write_reg(cli_emu_t *emu, enum X86REGS reg, uint32_t va
 static always_inline uint32_t calcreg(const cli_emu_t *emu, const struct dis_arg *arg)
 {
     uint32_t value = arg->displacement + readreg(emu, &arg->add_reg);
-    if (arg->scale_reg.idx != ~0)
+    if (arg->scale_reg.idx != REGIDX_INVALID)
 	value += arg->scale * readreg(emu, &arg->scale_reg);
     return value;
 }
@@ -351,13 +359,17 @@ static always_inline int write_operand(cli_emu_t *emu,
 }
 
 #define READ_OPERAND(value, op) do { \
-    if (read_operand(state, &instr->arg[(op)], &(value)) == -1) \
-    return -1;\
+    if (read_operand(state, &instr->arg[(op)], &(value)) < 0) {\
+	fprintf(stderr, "operand read failed\n");\
+	return -1;\
+    }\
 } while (0)
 
 #define WRITE_RESULT(op, value) do {\
-    if (write_operand(state, &instr->arg[(op)], (value)) == -1) \
-    return -1;\
+    if (write_operand(state, &instr->arg[(op)], (value)) < 0) {\
+	fprintf(stderr, "operand write failed\n");\
+	return -1;\
+    }\
 } while (0)
 
 #define NOSTACK do { printf("Stack overflowed\n"); return -1;} while(0)
@@ -371,52 +383,66 @@ static int emu_mov(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static int emu_push(cli_emu_t *state, instr_t *instr)
+static int mem_push(cli_emu_t *state, const instr_t *instr, uint32_t value)
 {
-    int32_t value, size, esp;
-
-    READ_OPERAND(value, 0);
+    int32_t size, esp;
     size = instr->operation_size ? 2 : 4;
 
     esp = state->reg_val[REG_ESP];
-    if (esp < size)
-	NOSTACK;
     esp -= size;
     state->reg_val[REG_ESP] = esp;
     switch (size) {
 	case 2:
-	    // TODO: won't work on Sparc
-	    *(uint16_t*)&state->stack[esp] = le16_to_host(value);
-	    break;
+	    return cli_emu_vmm_write16(state->mem, esp, value);
 	case 4:
-	    cli_writeint32(&state->stack[esp], value);
-	    break;
+	    return cli_emu_vmm_write32(state->mem, esp, value);
+	default:
+	    return -1;
     }
+}
+
+#define MEM_PUSH(val) do { if (mem_push(state, instr, (val)) < 0) {\
+    fprintf(stderr,"push failed\n");return -1;}} while(0)
+
+#define MEM_POP(val) do { if (mem_pop(state, instr, (val)) < 0) {\
+    fprintf(stderr,"pop failed\n");return -1;}} while(0)
+
+static int emu_push(cli_emu_t *state, instr_t *instr)
+{
+    int32_t value;
+
+    READ_OPERAND(value, 0);
+    MEM_PUSH(value);
     return 0;
 }
 
-static int emu_pop(cli_emu_t *state, struct dis_instr *instr)
+static int mem_pop(cli_emu_t *state, const struct dis_instr *instr, int32_t *value)
 {
-    int32_t value, size;
+    int32_t size;
     uint32_t esp;
 
     size = instr->operation_size ? 2 : 4;
     esp = state->reg_val[REG_ESP];
-    if (esp + size < esp)
-	NOSTACK;
     switch (size) {
 	case 2:
-	    // won't work on Sparc, but we don't have JIT there anyway, and
-	    // interpreter will work correctly
-	    value = *(uint16_t*)&state->stack[esp];
+	    if (cli_emu_vmm_read16(state->mem, esp, value) < 0)
+		return -1;
 	    break;
 	case 4:
-	    value = cli_readint32(&state->stack[esp]);
+	    if (cli_emu_vmm_read32(state->mem, esp, value) < 0)
+		return -1;
 	    break;
     }
 
     esp += size;
     state->reg_val[REG_ESP] = esp;
+    return 0;
+}
+
+static int emu_pop(cli_emu_t *state, struct dis_instr *instr)
+{
+    int32_t value;
+    MEM_POP(&value);
     WRITE_RESULT(0, value);
     return 0;
 }
@@ -967,22 +993,8 @@ static int emu_call(cli_emu_t *state, instr_t *instr)
 {
     uint32_t esp, size;
     struct dis_arg *arg = &instr->arg[0];
-    size = instr->operation_size ? 2 : 4;
-    esp = state->reg_val[REG_ESP];
-    if (esp < size)
-	NOSTACK;
-    esp -= size;
-    state->reg_val[REG_ESP] = esp;
-    switch (size) {
-	case 2:
-	    // won't work on Sparc, but we don't have JIT there anyway, and
-	    // interpreter will work correctly
-	    *(uint16_t*)&state->stack[esp] = le16_to_host(state->eip&0xffff);
-	    break;
-	case 4:
-	    cli_writeint32(&state->stack[esp], state->eip);
-	    break;
-    }
+
+    MEM_PUSH(state->eip);
 
     if (arg->access_size == SIZE_REL) {
 	state->eip += arg->displacement;
@@ -1001,6 +1013,10 @@ int cli_emulator_step(cli_emu_t *emu)
 {
     int rc;
     struct dis_instr *instr = disasm(emu);
+    if (!instr) {
+	printf("can't disasm\n");
+	return -1;
+    }
     emu->eip += instr->len;
     switch (instr->opcode) {
 	case OP_MOV:
