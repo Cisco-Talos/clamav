@@ -105,6 +105,7 @@ static always_inline int get_reg(desc_t *desc, enum X86REGS reg)
 	if (reg != REG_INVALID)
 	    UNIMPLEMENTED_REG;
 	desc->idx = REGIDX_INVALID;
+	return 0;
     }
     desc->mask = reg_masks[reg].rw_mask;
     desc->shift = reg_masks[reg].rw_shift;
@@ -1053,7 +1054,7 @@ void cli_emulator_dbgstate(cli_emu_t *emu)
 
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
-    if (bytes) {
+    if (bytes != 254) {
 	uint32_t esp;
 	printf("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
 	if (mem_pop(emu, 4, &emu->eip) < 0)
@@ -1062,6 +1063,7 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 	emu->reg_val[REG_EAX] = 0;
 	return 0;
     } else {
+	/* 254 - magic for varargs */
 	printf("Called varargs API %s\n", desc ? desc : "??");
 	return -1;
     }

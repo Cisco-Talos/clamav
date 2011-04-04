@@ -25,5 +25,9 @@ const struct hook_desc user32_dll_hooks[] = {
 
 const struct hook_desc kernel32_dll_hooks[] = {
 };
+
+const struct hook_desc wsock32_dll_hooks[] = {
+};
 const unsigned user32_dll_hooks_n = sizeof(user32_dll_hooks)/sizeof(user32_dll_hooks[0]);
 const unsigned kernel32_dll_hooks_n = sizeof(kernel32_dll_hooks)/sizeof(kernel32_dll_hooks[0]);
+const unsigned wsock32_dll_hooks_n = sizeof(wsock32_dll_hooks)/sizeof(wsock32_dll_hooks[0]);

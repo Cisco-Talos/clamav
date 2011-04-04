@@ -271,7 +271,7 @@ static import_handler_t lookup_function(const struct dll_desc *dll, const char *
     const struct hook_desc *hook;
     const struct import_desc *desc = bsearch(func, dll->imports, *dll->imports_n, sizeof(dll->imports[0]), function_cmp);
     if (!desc)
-	*bytes = 0;
+	*bytes = ~0;
     else
 	*bytes = desc->bytes;
     return bsearch(func, dll->hooks, *dll->hooks_n, sizeof(dll->hooks[0]), hook_cmp);
@@ -406,9 +406,10 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 		    if (dll) {
 			unsigned bytes;
 			import_handler_t hook = lookup_function(dll, func, &bytes);
-			if (!hook)
+			if (!hook && bytes != ~0)
 			    hook = hook_generic_stdcall;
-			emu_createimportcall(v, &called_addr, hook, bytes, dllname, func);
+			if (bytes != ~0)
+			    emu_createimportcall(v, &called_addr, hook, bytes, dllname, func);
 		    }
 		}
 		if (!called_addr)

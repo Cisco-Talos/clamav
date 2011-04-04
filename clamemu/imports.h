@@ -44,9 +44,11 @@ struct dll_desc {
 extern const struct dll_desc all_dlls[];
 extern const struct hook_desc user32_dll_hooks[];
 extern const struct hook_desc kernel32_dll_hooks[];
+extern const struct hook_desc wsock32_dll_hooks[];
 
 extern const unsigned all_dlls_n;
 extern const unsigned user32_dll_hooks_n;
 extern const unsigned kernel32_dll_hooks_n;
+extern const unsigned wsock32_dll_hooks_n;
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes);
 #endif
