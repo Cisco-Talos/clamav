@@ -615,9 +615,9 @@ static int emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum 
 static const int arith_flags = (1 << bit_of) | (1 << bit_sf) | (1 << bit_zf)
     | (1 << bit_af) | (1 << bit_pf) | (1 << bit_cf);
 
-static always_inline void calc_flags_addsub(cli_emu_t *state, int32_t a, int32_t b, const desc_t *desc, uint8_t is_sub)
+static always_inline void calc_flags_addsub(cli_emu_t *state, uint32_t a, uint32_t b, const desc_t *desc, uint8_t is_sub)
 {
-    uint64_t result = is_sub ? (int64_t)a - (int64_t)b : (int64_t)a + (int64_t)b;
+    uint64_t result = is_sub ? (uint64_t)a - (uint64_t)b : (uint64_t)a + (uint64_t)b;
 
     uint8_t sign_bit = desc->sign_bit;
     uint8_t cf = ((result >> desc->carry_bit) & 1) ||
@@ -1008,6 +1008,28 @@ static int emu_call(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
+static int emu_ret(cli_emu_t *state, instr_t *instr)
+{
+    uint32_t esp, size;
+    struct dis_arg *arg = &instr->arg[0];
+
+    MEM_POP(&state->eip);
+    esp = state->reg_val[REG_ESP];
+
+    if (arg->displacement) {
+	if (instr->address_size) {
+	    uint16_t sp = esp;
+	    sp += arg->displacement;
+	    esp = (esp & 0xffff00000) | sp;
+	}
+	else
+	    esp += arg->displacement;
+    }
+    state->reg_val[REG_ESP] = esp;
+    return 0;
+}
+
+
 
 int cli_emulator_step(cli_emu_t *emu)
 {
@@ -1151,6 +1173,9 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_CALL:
 	    rc = emu_call(emu, instr);
+	    break;
+	case OP_RETN:
+	    rc = emu_ret(emu, instr);
 	    break;
 	default:
 	    return -1;
