@@ -187,7 +187,7 @@ static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p)
 static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 {
     page_t *p;
-    uint32_t page = va / 4096;
+    uint32_t page = (va - v->imagebase)/ 4096;
     unsigned idx;
 
     if (v->lastused_page == page)
@@ -233,7 +233,7 @@ int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
 
 int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, uint8_t *value, uint32_t len)
 {
-    return vmm_read(v, va, value, len, 1 << flag_x);
+    return vmm_read(v, v->imagebase + va, value, len, 1 << flag_x);
 }
 
 int cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value)
@@ -297,7 +297,7 @@ int cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value)
 
 int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
 {
-    uint32_t page = va / 4096;
+    uint32_t page = (va - v->imagebase) / 4096;
     if (page >= v->n_pages) {
 	cli_dbgmsg("vmm_prot_set out of bounds: %x > %x\n", va, v->n_pages*4096);
 	return -EMU_ERR_GENERIC;
@@ -309,7 +309,7 @@ int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
 
 int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va, uint32_t len)
 {
-    uint32_t page = va / 4096;
+    uint32_t page = (va - v->imagebase) / 4096;
     if (page >= v->n_pages) {
 	cli_dbgmsg("vmm_prot_get out of bounds: %x > %x\n", va, v->n_pages*4096);
 	return -EMU_ERR_GENERIC;
@@ -351,6 +351,17 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
     return v;
 }
 
+static int vmm_dirty(emu_vmm_t *v)
+{
+    unsigned i;
+    if (v->tmpfd_written)
+	return 1;
+    for (i=0;i<15;i++)
+	if (v->cached[i].dirty)
+	    return 1;
+    return 0;
+}
+
 int cli_emu_vmm_rebuild(emu_vmm_t *v)
 {
     struct cli_exe_section *sections;
@@ -362,7 +373,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
     sections = cli_calloc(1, sizeof(*sections));
     sections[0].raw = raw = 0;
     sections[0].rva = 4096;
-    if (!v->tmpfd_written) {
+    if (!vmm_dirty(v)) {
 	cli_dbgmsg("executable not modified\n");
 	return 0;
     }
@@ -415,7 +426,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
 	rva = sections[i].rva;
 	for (k=0;k<(sections[i].vsz+4095) / 4096;k++) {
 	    /* bypass protections */
-	    p = vmm_cache_2page(v, rva);
+	    p = vmm_cache_2page(v, v->imagebase + rva);
 	    if (p)
 		memcpy(data + raw, p->data, 4096);
 	    else
