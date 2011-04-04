@@ -270,12 +270,12 @@ static always_inline int mem_read(const cli_emu_t *emu, uint32_t addr, enum DIS_
 	case SIZE_INVALID:
 	    return 0;
 	case SIZEB:
-	    return cli_emu_vmm_read8(emu->mem, *value, value);
+	    return cli_emu_vmm_read8(emu->mem, addr, value);
 	case SIZEW:
-	    return cli_emu_vmm_read16(emu->mem, *value, value);
+	    return cli_emu_vmm_read16(emu->mem, addr, value);
 	case SIZED:
 	default:
-	    return cli_emu_vmm_read32(emu->mem, *value, value);
+	    return cli_emu_vmm_read32(emu->mem, addr, value);
     }
 }
 
