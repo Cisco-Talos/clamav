@@ -1,7 +1,7 @@
 /*
  *  ClamAV bytecode emulator VMM
  *
- *  Copyright (C) r011 Sourcefire, Inc.
+ *  Copyright (C) 2011 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *

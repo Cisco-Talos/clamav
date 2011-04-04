@@ -53,6 +53,24 @@ static const desc_t mem_desc [] = {
     DEFINE_MEM(SIZEB, SIZEB,  8)
 };
 
+static int mem_push(cli_emu_t *state, unsigned size, uint32_t value)
+{
+    int32_t esp;
+
+    esp = state->reg_val[REG_ESP];
+    esp -= size;
+    state->reg_val[REG_ESP] = esp;
+    cli_dbgmsg("push %x -> %08x\n", value, esp);
+    switch (size) {
+	case 2:
+	    return cli_emu_vmm_write16(state->mem, esp, value);
+	case 4:
+	    return cli_emu_vmm_write32(state->mem, esp, value);
+	default:
+	    return -1;
+    }
+}
+
 cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
 {
     uint32_t stack, stackend, stacksize;
@@ -68,6 +86,8 @@ cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
     stackend = (stack + stacksize + 4095) &~ 4095;/* align */
     cli_dbgmsg("Mapped stack: %08x - %08x\n", stack, stackend);
     emu->reg_val[REG_ESP] = stackend;
+
+    mem_push(emu, 4, MAPPING_END);
     /* TODO: init registers */
     return emu;
 }
@@ -152,8 +172,8 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		uint32_t c = cli_readint32((const uint32_t*)&res.arg[i][6]);
 		if (c && c != 0xffffffff)
 		    cli_dbgmsg("truncating 64-bit immediate\n");
-		memset(&arg->scale_reg, 0, sizeof(arg->scale_reg));
-		memset(&arg->add_reg, 0, sizeof(arg->add_reg));
+		arg->scale_reg.idx = REGIDX_INVALID;
+		arg->add_reg.idx = REGIDX_INVALID;
 		arg->scale = 0;
 		switch (size) {
 		    case SIZEB:
@@ -315,25 +335,7 @@ static int emu_mov(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static int mem_push(cli_emu_t *state, const instr_t *instr, uint32_t value)
-{
-    int32_t size, esp;
-    size = instr->operation_size ? 2 : 4;
-
-    esp = state->reg_val[REG_ESP];
-    esp -= size;
-    state->reg_val[REG_ESP] = esp;
-    switch (size) {
-	case 2:
-	    return cli_emu_vmm_write16(state->mem, esp, value);
-	case 4:
-	    return cli_emu_vmm_write32(state->mem, esp, value);
-	default:
-	    return -1;
-    }
-}
-
-#define MEM_PUSH(val) do { if (mem_push(state, instr, (val)) < 0) {\
+#define MEM_PUSH(val) do { if (mem_push(state, instr->operation_size ? 2 : 4, (val)) < 0) {\
     fprintf(stderr,"push failed\n");return -1;}} while(0)
 
 #define MEM_POP(val) do { if (mem_pop(state, instr->operation_size ? 2: 4, (val)) < 0) {\
@@ -872,14 +874,16 @@ int cli_emulator_step(cli_emu_t *emu)
 {
     int rc;
     struct dis_instr *instr;
-    struct import_desc *import;
+    struct import_description *import;
 
     do {
+	if (emu->eip == MAPPING_END) {
+	    cli_dbgmsg("emulated program exited\n");
+	    return 0;
+	}
 	import = cli_emu_vmm_get_import(emu->mem, emu->eip);
 	if (import) {
-	    if (import->handler(emu, import->description) < 0)
-		return -1;
-	    if (mem_pop(emu, 4, &emu->eip) == -1)
+	    if (import->handler(emu, import->description, import->bytes) < 0)
 		return -1;
 	}
     } while (import);
@@ -1047,6 +1051,21 @@ void cli_emulator_dbgstate(cli_emu_t *emu)
 	   emu->eflags);
 }
 
+int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    if (bytes) {
+	uint32_t esp;
+	printf("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
+	if (mem_pop(emu, 4, &emu->eip) < 0)
+	    return -1;
+	emu->reg_val[REG_ESP] += bytes;
+	emu->reg_val[REG_EAX] = 0;
+	return 0;
+    } else {
+	printf("Called varargs API %s\n", desc ? desc : "??");
+	return -1;
+    }
+}
 
 #if 0
 -- old code

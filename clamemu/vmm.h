@@ -59,16 +59,18 @@ int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx);
 int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va);
 
 struct cli_emu;
-typedef int (*import_handler_t)(struct cli_emu *, const char *desc);
-
-struct import_desc {
+typedef int (*import_handler_t)(struct cli_emu *, const char *desc, unsigned bytes);
+struct import_description {
     import_handler_t handler;
     char *description;
+    unsigned bytes;
 };
 
-struct import_desc *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr);
+
+struct import_description *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr);
 
 uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva);
 int cli_emu_vmm_rebuild(emu_vmm_t *v);
 void cli_emu_vmm_free(emu_vmm_t *v);
+#define MAPPING_END 0xf0000000
 #endif

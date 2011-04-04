@@ -30,6 +30,7 @@
 #include "cltypes.h"
 #include "vmm.h"
 #include "pe.h"
+#include "imports.h"
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -72,7 +73,7 @@ struct emu_vmm {
     int tmpfd;
     uint32_t tmpfd_written;/* in MINALIGN blocks */
     uint32_t imports_n;
-    struct import_desc *imports;
+    struct import_description *imports;
 };
 
 struct IMAGE_IMPORT {
@@ -192,15 +193,14 @@ char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen)
 
 #define EC32(x) (x) = le32_to_host(x) /* Convert little endian to host */
 /* we store our own data there */
-#define MAPPING_END 0xf0000000
 
-static int stub_handler(struct cli_emu *emu, const char *desc)
+static int stub_handler(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     printf("Called unhandled API %s\n", desc ? desc : "??");
     return -1;
 }
 
-struct import_desc *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr)
+struct import_description *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr)
 {
     if (addr < MAPPING_END)
 	return NULL;
@@ -224,7 +224,57 @@ static void emu_createstubcall(emu_vmm_t *v, uint32_t *called_addr, uint32_t ord
     v->imports = cli_realloc(v->imports, v->imports_n * sizeof(*v->imports));
     v->imports[v->imports_n-1].handler = stub_handler;
     v->imports[v->imports_n-1].description = strdup(desc);
+    v->imports[v->imports_n-1].bytes = 0;
     /* TODO: free these on vmm_free */
+}
+
+static void emu_createimportcall(emu_vmm_t *v, uint32_t *called_addr, import_handler_t hook, unsigned bytes, const char *dll, const char *func)
+{
+    char desc[1024];
+    snprintf(desc, sizeof(desc)-1, "%s!%s", dll ? dll : "", func);
+    desc[sizeof(desc)-1] = '\0';
+
+    *called_addr = MAPPING_END + v->imports_n * 4;
+    v->imports_n++;
+    v->imports = cli_realloc(v->imports, v->imports_n * sizeof(*v->imports));
+    v->imports[v->imports_n-1].handler = hook;
+    v->imports[v->imports_n-1].description = strdup(desc);
+    v->imports[v->imports_n-1].bytes = bytes;
+    /* TODO: free these on vmm_free */
+}
+
+static int dll_cmp(const void* key, const void *b)
+{
+    const struct dll_desc *desc = (const struct dll_desc*)b;
+    return strcasecmp(key, desc->dllname);
+}
+
+static const struct dll_desc *lookup_dll(const char *name)
+{
+    return bsearch(name, all_dlls, all_dlls_n, sizeof(all_dlls[0]), dll_cmp);
+}
+
+static int function_cmp(const void* key, const void *b)
+{
+    const struct import_desc *desc = (const struct import_desc*)b;
+    return strcmp(key, desc->name);
+}
+
+static int hook_cmp(const void* key, const void *b)
+{
+    const struct hook_desc *desc = (const struct hook_desc*)b;
+    return strcmp(key, desc->name);
+}
+
+static import_handler_t lookup_function(const struct dll_desc *dll, const char *func, unsigned *bytes)
+{
+    const struct hook_desc *hook;
+    const struct import_desc *desc = bsearch(func, dll->imports, *dll->imports_n, sizeof(dll->imports[0]), function_cmp);
+    if (!desc)
+	*bytes = 0;
+    else
+	*bytes = desc->bytes;
+    return bsearch(func, dll->hooks, *dll->hooks_n, sizeof(dll->hooks[0]), hook_cmp);
 }
 
 static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_exe_section *sections)
@@ -332,6 +382,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	if (!rva)
 	    rva = import.Thunk;
 	for(i=0;;i++, rva += 4) {
+	    const struct dll_desc *dll;
 	    uint32_t import_entry, called_addr = 0;
 	    if (cli_emu_vmm_read32(v, base + rva, &import_entry) < 0) {
 		fprintf(stderr,"corrupted imports, invalid import entry rva %x!\n", rva);
@@ -340,6 +391,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	    EC32(import_entry);
 	    if (!import_entry)
 		break;/* end of imports for this DLL */
+	    dll = lookup_dll(dllname);
 	    if (import_entry & 0x80000000) {
 		cli_dbgmsg("import by ordinal %d from %s, not supported, replaced with stub!\n",
 			import_entry & 0xffff, dllname);
@@ -351,14 +403,13 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 		    cli_dbgmsg("corrupted imports: unable to read import name at %x\n", import_entry+2);
 		    return 1;
 		} else {
-		    /*		    if (dll) {
-			called_addr = lookup_function(dll, funcname->data);
-			if (called_addr)
-		    	logDebug(emu, "Import %s bound to %x\n", (const char*)funcname->data, called_addr);
-			} else if (dll)
-	    		logInfo(emu,"Unable to find import %s in %s\n", (const char*)funcname->data,
-			(const char*)dllname->data);
-    			*/
+		    if (dll) {
+			unsigned bytes;
+			import_handler_t hook = lookup_function(dll, func, &bytes);
+			if (!hook)
+			    hook = hook_generic_stdcall;
+			emu_createimportcall(v, &called_addr, hook, bytes, dllname, func);
+		    }
 		}
 		if (!called_addr)
 		    emu_createstubcall(v, &called_addr, 0, dllname, func);
@@ -496,7 +547,7 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
 	return NULL;
     }
     v->lastused_page = ~0u;
-    v->imports_n = 0;
+    v->imports_n = 1;
 
     if (map_pages(v, pedata, sections) == -1) {
 	cli_emu_vmm_free(v);
@@ -532,6 +583,7 @@ int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va)
     }
     if (start + got_pages > v->n_pages) {
 	void *x;
+	unsigned old_pages = v->n_pages;
 	v->n_pages = start + got_pages;
 	x = cli_realloc(v->page_flags, v->n_pages * sizeof(*v->page_flags));
 	if (!x) {
@@ -539,6 +591,7 @@ int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va)
 	    return -1;
 	}
 	v->page_flags = x;
+	memset(&v->page_flags[old_pages], 0, (v->n_pages - old_pages)*sizeof(*v->page_flags));
     }
     if (v->first_free_page == start)
 	v->first_free_page = start + got_pages + 1;/*leave 1 guard-page */

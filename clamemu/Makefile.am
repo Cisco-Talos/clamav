@@ -28,7 +28,9 @@ clamemu_SOURCES = \
     vmm.h\
     vmm.c\
     emulator.h\
-    emulator.c
+    emulator.c\
+    imports.c\
+    hooks.c
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
