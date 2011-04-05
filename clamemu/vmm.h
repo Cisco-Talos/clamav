@@ -137,7 +137,11 @@ static always_inline void cli_emu_vmm_read32(emu_vmm_t *v, uint32_t va, uint32_t
     *value = le32_to_host(a);
 }
 
-void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
+static always_inline void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
+{
+   vmm_read(v, va, value, len, 1 << flag_r);
+}
+
 void cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
 char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen);
 

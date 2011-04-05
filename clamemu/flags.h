@@ -69,7 +69,7 @@ struct access_desc {
 /* TODO: make this portable to non-C99 compilers */
 #define DEFINE_REGS(first, last, bits, shift) \
     [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
-#define REGIDX_INVALID 255
+#define REGIDX_INVALID (REG_EDI+1)
 static const struct access_desc reg_masks [] = {
     DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
     DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
@@ -113,8 +113,8 @@ struct cli_emu {
     uint32_t eflags_def;
     uint32_t regs[MAXREG];
     struct dis_instr cached_disasm[DISASM_CACHE_SIZE];
-    uint32_t reg_val[8];
-    uint32_t reg_def[8];
+    uint32_t reg_val[REG_EDI+2];
+    uint32_t reg_def[REG_EDI+2];
     uint8_t prefix_repe;
     uint8_t prefix_repne;
 };
@@ -176,6 +176,7 @@ static always_inline void calc_flags_addsub(cli_emu_t *state, uint32_t a, uint32
 
     state->eflags_def |= arith_flags;
 }
+
 static always_inline void calc_flags_test(cli_emu_t *state, uint32_t result, const desc_t *desc)
 {
     uint8_t sign_bit = desc->sign_bit;

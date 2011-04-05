@@ -370,11 +370,6 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
     return 0;
 }
 
-void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
-{
-   vmm_read(v, va, value, len, 1 << flag_r);
-}
-
 void cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
 {
     vmm_read(v, va, value, len, 1 << flag_x);
