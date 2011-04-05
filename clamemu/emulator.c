@@ -697,6 +697,17 @@ static always_inline void emu_and(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg1);
 }
 
+static always_inline void emu_test(cli_emu_t *state, instr_t *instr)
+{
+    uint32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_test(state, reg1, &instr->arg[0].add_reg);
+    else
+	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
+}
+
 static always_inline void emu_or(cli_emu_t *state, instr_t *instr)
 {
     uint32_t reg1, reg2;
@@ -1068,6 +1079,9 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_AND:
 	    emu_and(emu, instr);
+	    break;
+	case OP_TEST:
+	    emu_test(emu, instr);
 	    break;
 	case OP_OR:
 	    emu_or(emu, instr);

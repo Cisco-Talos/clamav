@@ -198,12 +198,28 @@ static int cb_virtualprotect(struct cli_emu *emu, const char *desc, unsigned byt
     return 0;
 }
 
+static const char *cmdline = "executab.exe";
+
+static int cb_getcommandline(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t lpcmdline;
+    unsigned n;
+    POP32(&emu->eip);
+    printf("GetCommandLineA()\n");
+    n = strlen(cmdline) + 1;
+    cli_emu_vmm_alloc(emu->mem, n, &lpcmdline);
+    cli_emu_vmm_write(emu->mem, lpcmdline, cmdline, n);
+    emu->reg_val[REG_EAX] = lpcmdline;
+    return 0;
+}
+
 const struct hook_desc user32_dll_hooks[] = {
     {"MessageBoxA", cb_messagebox}
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
     {"ExitProcess", cb_exitprocess},
+    {"GetCommandLineA", cb_getcommandline},
     {"GetProcAddress", cb_getprocaddress},
     {"GetTickCount", cb_gettickcount},
     {"LoadLibraryA", cb_loadlibrary},
