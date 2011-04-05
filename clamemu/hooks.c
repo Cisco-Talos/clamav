@@ -63,7 +63,7 @@ static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
     POP32(&emu->eip);
     POP32(&rc);
     printf("ExitProcess(%x)\n", rc);
-    emu->eip = MAPPING_END;
+    emu->eip = MAPPING_END - 0x42;
     return 0;
 }
 

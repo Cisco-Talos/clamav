@@ -318,6 +318,15 @@ static always_inline void emu_mov(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg);
 }
 
+static always_inline void emu_movzx(cli_emu_t *state, instr_t *instr)
+{
+    //TODO: FS segment support, the rest of segments are equal anyway on win32
+    uint32_t reg;
+    READ_OPERAND(reg, 1);
+    /* zero-extend already done by READ_OPERAND */
+    WRITE_RESULT(0, reg);
+}
+
 static always_inline void emu_bswap(cli_emu_t *state, instr_t *instr)
 {
     uint32_t reg;
@@ -1028,6 +1037,9 @@ int cli_emulator_step(cli_emu_t *emu)
     switch (instr->opcode) {
 	case OP_MOV:
 	    emu_mov(emu, instr);
+	    break;
+	case OP_MOVZX:
+	    emu_movzx(emu, instr);
 	    break;
 	case OP_PUSH:
 	    emu_push(emu, instr);
