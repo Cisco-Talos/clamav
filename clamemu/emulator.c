@@ -195,24 +195,13 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     return offset + next - dis;
 }
 
-static always_inline uint32_t hash32shift(uint32_t key)
-{
-  key = ~key + (key << 15);
-  key = key ^ (key >> 12);
-  key = key + (key << 2);
-  key = key ^ (key >> 4);
-  key = (key + (key << 3)) + (key << 11);
-  key = key ^ (key >> 16);
-  return key;
-}
-
 static always_inline struct dis_instr* disasm(cli_emu_t *emu)
 {
     int ret;
     struct dis_instr *instr;
-    uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
+    uint32_t idx = emu->eip & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
-    if (instr->opcode == OP_INVALID || instr->va != emu->eip) {
+    if (instr->va != emu->eip) {
 	if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
 	    return NULL;
 	instr->len = ret - emu->eip;
@@ -1061,15 +1050,17 @@ int cli_emulator_step(cli_emu_t *emu)
     struct dis_instr *instr;
     struct import_description *import;
 
-    if (emu->eip == MAPPING_END) {
-	cli_dbgmsg("emulated program exited\n");
-	return -2;
-    }
-    import = cli_emu_vmm_get_import(emu->mem, emu->eip);
-    if (import) {
-	if (import->handler(emu, import->description, import->bytes) < 0)
-	    return -1;
-	return 0;
+    if (emu->eip >= MAPPING_END) {
+	if (emu->eip == MAPPING_END) {
+	    cli_dbgmsg("emulated program exited\n");
+	    return -2;
+	}
+	import = cli_emu_vmm_get_import(emu->mem, emu->eip);
+	if (import) {
+	    if (import->handler(emu, import->description, import->bytes) < 0)
+		return -1;
+	    return 0;
+	}
     }
 
     instr = disasm(emu);
