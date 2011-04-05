@@ -67,6 +67,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     } else {
 	/* VMM raised exception */
 	printf("emulator raised exception\n");
+        cli_emulator_dbgstate(emu);
 	/* TODO: call SEH handler if one is installed */
     }
     gettimeofday(&tv1, NULL);

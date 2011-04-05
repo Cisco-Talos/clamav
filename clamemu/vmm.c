@@ -187,7 +187,7 @@ static void emu_createstubcall(emu_vmm_t *v, uint32_t *called_addr, uint32_t ord
     /* TODO: free these on vmm_free */
 }
 
-static void emu_createimportcall(emu_vmm_t *v, uint32_t *called_addr, import_handler_t hook, unsigned bytes, const char *dll, const char *func)
+void emu_createimportcall(emu_vmm_t *v, uint32_t *called_addr, import_handler_t hook, unsigned bytes, const char *dll, const char *func)
 {
     char desc[1024];
     snprintf(desc, sizeof(desc)-1, "%s!%s", dll ? dll : "", func);
@@ -208,7 +208,7 @@ static int dll_cmp(const void* key, const void *b)
     return strcasecmp(key, desc->dllname);
 }
 
-static const struct dll_desc *lookup_dll(const char *name)
+const struct dll_desc *lookup_dll(const char *name)
 {
     return bsearch(name, all_dlls, all_dlls_n, sizeof(all_dlls[0]), dll_cmp);
 }
@@ -225,7 +225,7 @@ static int hook_cmp(const void* key, const void *b)
     return strcmp(key, desc->name);
 }
 
-static import_handler_t lookup_function(const struct dll_desc *dll, const char *func, unsigned *bytes)
+import_handler_t lookup_function(const struct dll_desc *dll, const char *func, unsigned *bytes)
 {
     const struct hook_desc *hook;
     const struct import_desc *desc = bsearch(func, dll->imports, *dll->imports_n, sizeof(dll->imports[0]), function_cmp);
@@ -286,11 +286,11 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	}
 
 	zeroinit = section->chr & IMAGE_SCN_CNT_UNINITIALIZED_DATA;
-	/* r implies x, but not viceversa */
+	/* r -> x, and w -> x but not viceversa */
 	flag_rwx =
 	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
 	    ((section->chr & IMAGE_SCN_MEM_READ) ? ((1 << flag_r) | (1 << flag_x)): 0) |
-	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w): 0);
+	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w) | (1 << flag_r):  0);
 	for (j=0;j<pages;j++) {
 	    uint32_t page = rva / 4096 + j;
 	    if (page >= v->n_pages) {

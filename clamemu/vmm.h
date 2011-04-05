@@ -193,5 +193,8 @@ struct import_description *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t a
 uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva);
 int cli_emu_vmm_rebuild(emu_vmm_t *v);
 void cli_emu_vmm_free(emu_vmm_t *v);
+const struct dll_desc *lookup_dll(const char *name);
+import_handler_t lookup_function(const struct dll_desc *dll, const char *func, unsigned *bytes);
+void emu_createimportcall(emu_vmm_t *v, uint32_t *called_addr, import_handler_t hook, unsigned bytes, const char *dll, const char *func);
 #define MAPPING_END 0xf0000000
 #endif
