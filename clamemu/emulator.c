@@ -99,8 +99,8 @@ void cli_emulator_free(cli_emu_t *emu)
     free(emu);
 }
 
-#define UNIMPLEMENTED_REG(v) cli_emu_vmm_raise((v), -EMU_ERR_REG)
-#define INVALID_SIZE(v) cli_emu_vmm_raise((v), -EMU_ERR_SIZE)
+#define UNIMPLEMENTED_REG(v) cli_emu_vmm_raise((v), -EMU_ERR_REG, reg)
+#define INVALID_SIZE(v) cli_emu_vmm_raise((v), -EMU_ERR_SIZE, 0)
 
 static always_inline void get_reg(emu_vmm_t *mem, desc_t *desc, enum X86REGS reg)
 {
@@ -155,6 +155,9 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		    arg->scale_reg.idx = REGIDX_INVALID;
 		arg->displacement = cli_readint32((const uint32_t*)&res.arg[i][6]);
 		arg->access_size = size; /* not valid for REG */
+		if (result->segment == REG_FS)
+		    arg->displacement += v->fs_offset;
+
 		break;
 	    case ACCESS_REG:
 		get_reg(v, &arg->add_reg, (enum X86REGS)res.arg[i][1]);
@@ -219,14 +222,14 @@ static always_inline void read_reg(const cli_emu_t *emu, enum X86REGS reg, uint3
     desc_t desc;
     get_reg(emu->mem, &desc, reg);
     if (desc.idx == REGIDX_INVALID)
-	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG);
+	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG, desc.idx);
     *value = readreg(emu, &desc);
 }
 
 static always_inline void writereg(cli_emu_t *emu, const desc_t *reg, uint32_t value)
 {
     if (reg->idx == REGIDX_INVALID)
-	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG);
+	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG, reg->idx);
     emu->reg_val[reg->idx] = (emu->reg_val[reg->idx] & (~reg->mask)) |
 	((value << reg->shift) & reg->mask);
 }
@@ -262,7 +265,7 @@ static always_inline void mem_read(const cli_emu_t *emu, uint32_t addr, enum DIS
 	    cli_emu_vmm_read32(emu->mem, addr, value);
 	    break;
 	default:
-	    cli_emu_vmm_raise(emu->mem, -EMU_ERR_SIZE);
+	    cli_emu_vmm_raise(emu->mem, -EMU_ERR_SIZE, emu->eip);
 	    break;
     }
 }
@@ -287,7 +290,7 @@ static always_inline void mem_write(cli_emu_t *emu, uint32_t addr, enum DIS_SIZE
 	    cli_emu_vmm_write32(emu->mem, addr, value);
 	    break;
 	default:
-	    cli_emu_vmm_raise(emu->mem, -EMU_ERR_SIZE);
+	    cli_emu_vmm_raise(emu->mem, -EMU_ERR_SIZE, emu->eip);
 	    break;
     }
 }
@@ -877,7 +880,9 @@ static always_inline void emu_ret(cli_emu_t *state, instr_t *instr)
     uint32_t esp;
     struct dis_arg *arg = &instr->arg[0];
 
+    cli_dbgmsg("ret: esp = %x\n", state->reg_val[REG_ESP]);
     MEM_POP(&state->eip);
+    printf("ret: eip = %x\n", state->eip);
     esp = state->reg_val[REG_ESP];
 
     if (arg->displacement) {
@@ -890,6 +895,12 @@ static always_inline void emu_ret(cli_emu_t *state, instr_t *instr)
 	    esp += arg->displacement;
     }
     state->reg_val[REG_ESP] = esp;
+}
+
+static always_inline void emu_leave(cli_emu_t *state, instr_t *instr)
+{
+    state->reg_val[REG_ESP] = state->reg_val[REG_EBP];
+    MEM_POP(&state->reg_val[REG_EBP]);
 }
 
 static always_inline void emu_movsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, uint32_t add)
@@ -927,7 +938,9 @@ static always_inline void emu_pusha(cli_emu_t *state, instr_t *instr)
 	data[0] = le16_to_host(state->reg_val[REG_EDI]&0xffff);
 	data[1] = le16_to_host(state->reg_val[REG_ESI]&0xffff);
 	data[2] = le16_to_host(state->reg_val[REG_EBP]&0xffff);
+
 	data[3] = le16_to_host(state->reg_val[REG_ESP]&0xffff);
+
 	data[4] = le16_to_host(state->reg_val[REG_EBX]&0xffff);
 	data[5] = le16_to_host(state->reg_val[REG_EDX]&0xffff);
 	data[6] = le16_to_host(state->reg_val[REG_ECX]&0xffff);
@@ -1273,6 +1286,12 @@ int cli_emulator_step(cli_emu_t *emu)
 	case OP_BSWAP:
 	    emu_bswap(emu, instr);
 	    break;
+	case OP_INT3:
+	    cli_emu_vmm_raise(emu->mem, -EMU_ERR_INT3, emu->eip);
+	    break;
+	case OP_LEAVE:
+	    emu_leave(emu, instr);
+	    break;
 	case OP_PREFIX_REPE:
 	    emu->prefix_repe = 1;
 	    /* TODO: check if prefix is valid in next instr */
@@ -1321,5 +1340,164 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 	/* caller cleans up */
 	return 0;
     }
+}
+
+struct exception_record {
+    uint32_t ExceptionCode;
+    uint32_t ExceptionFlags;
+    uint32_t ExceptionRecord;
+    uint32_t ExceptionAddress;
+    uint32_t NumberParameters;
+    uint32_t ExceptionInformation[15];
+};
+
+typedef uint32_t DWORD;
+typedef uint8_t BYTE;
+
+typedef struct _FLOATING_SAVE_AREA {
+	DWORD	ControlWord;
+	DWORD	StatusWord;
+	DWORD	TagWord;
+	DWORD	ErrorOffset;
+	DWORD	ErrorSelector;
+	DWORD	DataOffset;
+	DWORD	DataSelector;
+	BYTE	RegisterArea[80];
+	DWORD	Cr0NpxState;
+} FLOATING_SAVE_AREA;
+typedef struct _CONTEXT {
+	DWORD	ContextFlags;
+	DWORD	Dr0;
+	DWORD	Dr1;
+	DWORD	Dr2;
+	DWORD	Dr3;
+	DWORD	Dr6;
+	DWORD	Dr7;
+	FLOATING_SAVE_AREA FloatSave;
+	DWORD	SegGs;
+	DWORD	SegFs;
+	DWORD	SegEs;
+	DWORD	SegDs;
+	DWORD	Edi;
+	DWORD	Esi;
+	DWORD	Ebx;
+	DWORD	Edx;
+	DWORD	Ecx;
+	DWORD	Eax;
+	DWORD	Ebp;
+	DWORD	Eip;
+	DWORD	SegCs;
+	DWORD	EFlags;
+	DWORD	Esp;
+	DWORD	SegSs;
+	BYTE	ExtendedRegisters[512];
+} CONTEXT;
+
+static const uint8_t seh_code[] = {
+    0xff, 0xd0,
+    0x83, 0xf8, 0x00,
+    0x75, 0x28,
+    0x8b, 0x44, 0x24, 0x08,
+    0x8b, 0xa0, 0xc4, 0x00, 0x00, 0x00,
+    0xff, 0xb0, 0xb8, 0x00, 0x00, 0x00,
+    0x89, 0xa0, 0xc4, 0x00, 0x00, 0x00,
+    0x8d, 0xa0, 0x9c, 0x00, 0x00, 0x00,
+    0x5f, 0x5e, 0x5b, 0x5a, 0x59, 0x58, 0x5d,
+    0x8b, 0x64, 0x24, 0x0c,
+    0xc3,
+    0x8b, 0x44, 0x24, 0x0c,
+    0x8b, 0x58, 0x04,
+    0x89, 0x5c, 0x24, 0x0c,
+    0x8b, 0x00,
+    0xeb, 0xc2
+};
+/*
+ * 00401000 <foo>:
+  401000:       ff d0                   call   *%eax
+  401002:       83 f8 00                cmp    $0x0,%eax
+  401005:       75 28                   jne    40102f <foo+0x2f>
+  401007:       8b 44 24 08             mov    0x8(%esp),%eax
+  40100b:       8b a0 c4 00 00 00       mov    0xc4(%eax),%esp
+  401011:       ff b0 b8 00 00 00       pushl  0xb8(%eax)
+  401017:       89 a0 c4 00 00 00       mov    %esp,0xc4(%eax)
+  40101d:       8d a0 9c 00 00 00       lea    0x9c(%eax),%esp
+  401023:       5f                      pop    %edi
+  401024:       5e                      pop    %esi
+  401025:       5b                      pop    %ebx
+  401026:       5a                      pop    %edx
+  401027:       59                      pop    %ecx
+  401028:       58                      pop    %eax
+  401029:       5d                      pop    %ebp
+  40102a:       8b 64 24 0c             mov    0xc(%esp),%esp
+  40102e:       c3                      ret    
+  40102f:       8b 44 24 0c             mov    0xc(%esp),%eax
+  401033:       8b 58 04                mov    0x4(%eax),%ebx
+  401036:       89 5c 24 0c             mov    %ebx,0xc(%esp)
+  40103a:       8b 00                   mov    (%eax),%eax
+  40103c:       eb c2                   jmp    401000 <foo>
+
+ */
+int cli_emulator_seh(cli_emu_t *emu, int rc)
+{
+    struct exception_record record;
+    CONTEXT context;
+    uint32_t recordaddr, contextaddr, seh_code_addr;
+    uint32_t seh_handler_addr, next_addr;
+
+    if (emu->in_seh) {
+	printf("exception raised while handling exception\n");
+	return -1;
+    }
+    emu->in_seh = 1;
+    cli_emu_vmm_read32(emu->mem, emu->mem->fs_offset, &seh_handler_addr);
+    if (!seh_handler_addr) {
+	emu->in_seh = 0;
+	return -1;
+    }
+    cli_emu_vmm_read32(emu->mem, seh_handler_addr, &next_addr);
+    cli_emu_vmm_read32(emu->mem, seh_handler_addr+4, &seh_handler_addr);
+
+    memset(&record, 0, sizeof(record));
+    memset(&context, 0, sizeof(context));
+    record.ExceptionAddress = emu->mem->except_addr;
+    switch (-rc) {
+	case EMU_ERR_VMM_READ:
+	case EMU_ERR_VMM_WRITE:
+	    record.ExceptionCode = 0xC0000005;
+	    break;
+	case EMU_ERR_INT3:
+	    record.ExceptionCode = 0x80000003;
+	    break;
+	default:
+	    record.ExceptionFlags = 1;
+	    record.ExceptionCode = 0xC000001D;
+	    break;
+    }
+    context.Edi = emu->reg_val[REG_EDI];
+    context.Esi = emu->reg_val[REG_ESI];
+    context.Ebx = emu->reg_val[REG_EBX];
+    context.Edx = emu->reg_val[REG_EDX];
+    context.Ecx = emu->reg_val[REG_ECX];
+    context.Eax = emu->reg_val[REG_EAX];
+    context.Ebp = emu->reg_val[REG_EBP];
+    context.Eip = emu->eip;
+    context.EFlags = emu->eflags;
+    context.Esp = emu->reg_val[REG_ESP];
+    cli_emu_vmm_alloc(emu->mem, 4096, &recordaddr);
+    cli_emu_vmm_write(emu->mem, recordaddr, &record, sizeof(record));
+    contextaddr = recordaddr + sizeof(record);
+    cli_emu_vmm_write(emu->mem, contextaddr, &context, sizeof(context));
+    seh_code_addr = contextaddr + sizeof(context);
+    cli_emu_vmm_write(emu->mem, seh_code_addr, seh_code, sizeof(seh_code));
+
+    mem_push(emu, 4, next_addr);/* dispatchercontext ??*/
+    mem_push(emu, 4, contextaddr);/* contextrecord */
+    mem_push(emu, 4, emu->reg_val[REG_ESP]);/* establisherframe */
+    mem_push(emu, 4, recordaddr);/* exceptionrecord */
+
+    emu->reg_val[REG_EAX] = seh_handler_addr;
+    emu->eip = seh_code_addr;
+    emu->in_seh = 0;
+    return 0;
 }
 

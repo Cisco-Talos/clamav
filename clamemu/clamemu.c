@@ -42,7 +42,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     uint64_t speed;
     emu_vmm_t *v = NULL;
     cli_emu_t *emu;
-    int rc;
+    int rc, done = 0;
     jmp_buf seh_handler;
 
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
@@ -60,16 +60,24 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 
     gettimeofday(&tv0, NULL);
 
+    i = 0;
+    do {
     if (!(rc = setjmp(seh_handler))) {
-	for (i=0;!cli_emulator_step(emu) && i < MAXEMU;i++) {
+	for (;!cli_emulator_step(emu) && i < MAXEMU;i++) {
 /*	    cli_emulator_dbgstate(emu);*/
 	}
+	done = 1;
     } else {
+	i++;
 	/* VMM raised exception */
 	printf("emulator raised exception\n");
         cli_emulator_dbgstate(emu);
-	/* TODO: call SEH handler if one is installed */
+	if (cli_emulator_seh(emu, rc) == -1) {
+	    printf("no handler\n");
+	    done = 1;
+	}
     }
+    } while(!done);
     gettimeofday(&tv1, NULL);
 
     cli_emulator_free(emu);

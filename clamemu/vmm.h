@@ -66,6 +66,8 @@ struct emu_vmm {
     uint32_t imports_n;
     struct import_description *imports;
     jmp_buf* seh_handler;
+    uint32_t fs_offset;
+    uint32_t except_addr;
 };
 
 struct cli_exe_section;
@@ -85,10 +87,11 @@ enum {
     EMU_ERR_VMM_WRITE,
     EMU_ERR_REG,
     EMU_ERR_SIZE,
+    EMU_ERR_INT3
 };
 
 emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, jmp_buf *seh_handler);
-void cli_emu_vmm_raise(emu_vmm_t *v, int err) NORETURN;
+void cli_emu_vmm_raise(emu_vmm_t *v, int err, uint32_t addr) NORETURN;
 cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va);
 
 static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
@@ -104,7 +107,7 @@ static always_inline void vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint3
 {
     if (len >= 4096) {
 	cli_warnmsg("unexpected read size");
-	cli_emu_vmm_raise(v, -EMU_ERR_GENERIC);
+	cli_emu_vmm_raise(v, -EMU_ERR_GENERIC, va);
     }
     /* caches at least 2 pages, so when we read an int32 that crosess page
      * boundary, we can do it fast */
@@ -113,7 +116,7 @@ static always_inline void vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint3
 	uint8_t *data = p->data + (va & 0xfff);
 	memcpy(value, data, len);
     } else
-	cli_emu_vmm_raise(v, -EMU_ERR_VMM_READ);
+	cli_emu_vmm_raise(v, -EMU_ERR_VMM_READ, va);
 }
 
 static always_inline void cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value)
@@ -155,7 +158,7 @@ static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const voi
 	memcpy(data, value, len);
 	p->dirty = 1;
     } else
-	cli_emu_vmm_raise(v, -EMU_ERR_VMM_WRITE);
+	cli_emu_vmm_raise(v, -EMU_ERR_VMM_WRITE, va);
 }
 
 static always_inline void cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t value)

@@ -118,8 +118,8 @@ struct cli_emu {
     uint32_t reg_def[REG_EDI+2];
     uint8_t prefix_repe;
     uint8_t prefix_repne;
+    uint8_t in_seh;
 };
-
 
 static inline void calc_flags_inc(cli_emu_t *state, int32_t a, const desc_t *desc)
 {

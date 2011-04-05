@@ -445,7 +445,9 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
 	cli_emu_vmm_free(v);
 	return NULL;
     }
-    v->first_free_page = v->n_pages + 1;/* leave one guard-page */
+    v->first_free_page = v->n_pages + 2;/* leave two guardpages */
+
+    cli_emu_vmm_alloc(v, 4096, &v->fs_offset);
     return v;
 }
 
@@ -607,9 +609,10 @@ uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva)
     return v->imagebase + rva;
 }
 
-void cli_emu_vmm_raise(emu_vmm_t *v, int err)
+void cli_emu_vmm_raise(emu_vmm_t *v, int err, uint32_t addr)
 {
-    cli_dbgmsg("VMM raised exception %d\n", err);
+    cli_dbgmsg("VMM raised exception %d at %x\n", err, addr);
+    v->except_addr = addr;
     longjmp(*v->seh_handler, err);
 }
 
