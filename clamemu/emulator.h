@@ -31,6 +31,6 @@ int cli_emulator_step(cli_emu_t *emu);
 void cli_emulator_free(cli_emu_t *emu);
 void cli_emulator_dbgstate(cli_emu_t *emu);
 void mem_push(cli_emu_t *state, unsigned size, uint32_t value);
-void mem_pop(cli_emu_t *state, int size, int32_t *value);
+void mem_pop(cli_emu_t *state, int size, uint32_t *value);
 
 #endif

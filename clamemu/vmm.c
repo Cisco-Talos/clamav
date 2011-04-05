@@ -31,6 +31,7 @@
 #include "vmm.h"
 #include "pe.h"
 #include "imports.h"
+#include "rebuildpe.h"
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -49,6 +50,9 @@ struct IMAGE_IMPORT {
     uint32_t DllName;
     uint32_t Thunk;
 };
+
+extern ssize_t pread (int, void *, size_t, off_t);
+extern ssize_t pwrite (int __fd, const void *, size_t, off_t);
 
 static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 {
@@ -220,7 +224,7 @@ static import_handler_t lookup_function(const struct dll_desc *dll, const char *
     const struct hook_desc *hook;
     const struct import_desc *desc = bsearch(func, dll->imports, *dll->imports_n, sizeof(dll->imports[0]), function_cmp);
     if (!desc)
-	*bytes = ~0;
+	*bytes = ~0u;
     else
 	*bytes = desc->bytes;
     hook = bsearch(func, dll->hooks, *dll->hooks_n, sizeof(dll->hooks[0]), hook_cmp);
@@ -352,9 +356,9 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 		    if (dll) {
 			unsigned bytes;
 			import_handler_t hook = lookup_function(dll, func, &bytes);
-			if (!hook && bytes != ~0)
+			if (!hook && bytes != ~0u)
 			    hook = hook_generic_stdcall;
-			if (bytes != ~0)
+			if (bytes != ~0u)
 			    emu_createimportcall(v, &called_addr, hook, bytes, dllname, func);
 		    }
 		}
@@ -389,6 +393,7 @@ int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
 	v->page_flags[page++].flag_rwx = rwx;
 	len -= 4096;
     } while (len);
+    return 0;
 }
 
 int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va)
@@ -575,6 +580,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
     }
 
     free(data);
+    return 0;
 }
 
 void cli_emu_vmm_free(emu_vmm_t *v)

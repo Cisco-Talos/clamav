@@ -40,7 +40,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     struct timeval tv0, tv1;
     unsigned long i = 0, delta;
     uint64_t speed;
-    emu_vmm_t *v;
+    emu_vmm_t *v = NULL;
     cli_emu_t *emu;
     int rc;
     jmp_buf seh_handler;
@@ -77,7 +77,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     delta = (tv1.tv_sec - tv0.tv_sec)*1000000 + (tv1.tv_usec - tv0.tv_usec);
     if (!delta) delta = 1;
     speed = (uint64_t)i*1000000 / delta;
-    printf("Emulated %d instructions in %.3fms: %u instr/s\n", i,
+    printf("Emulated %lu instructions in %.3fms: %u instr/s\n", i,
 	   delta/1000.0, (uint32_t) speed);
 
     cli_emu_vmm_free(v);
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     long double mb;
     const char *virname;
     int rc;
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     int fd;
 
     /* TODO: use getopt */

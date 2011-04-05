@@ -93,7 +93,6 @@ cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va);
 static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 {
     uint32_t page = (va - v->imagebase)/ 4096;
-    unsigned idx;
 
     if (LIKELY(v->lastused_page == page))
 	return &v->cached[v->lastused_page_idx];

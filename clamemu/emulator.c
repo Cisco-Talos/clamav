@@ -130,10 +130,6 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     unsigned i;
     uint8_t dis[32];
     const uint8_t *next;
-    uint8_t operation_size, address_size;
-    uint8_t segment;
-    enum X86OPS x86_opcode;
-    int rc;
 
     cli_emu_vmm_read_x(v, offset, dis, sizeof(dis));
 
@@ -316,14 +312,14 @@ static always_inline void write_operand(cli_emu_t *emu,
 static always_inline void emu_mov(cli_emu_t *state, instr_t *instr)
 {
     //TODO: FS segment support, the rest of segments are equal anyway on win32
-    int32_t reg;
+    uint32_t reg;
     READ_OPERAND(reg, 1);
     WRITE_RESULT(0, reg);
 }
 
 static always_inline void emu_bswap(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg;
+    uint32_t reg;
     READ_OPERAND(reg, 0);
     switch (instr->arg[0].access_size) {
 	case SIZEW:
@@ -345,13 +341,13 @@ static always_inline void emu_bswap(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_push(cli_emu_t *state, instr_t *instr)
 {
-    int32_t value;
+    uint32_t value;
 
     READ_OPERAND(value, 0);
     MEM_PUSH(value);
 }
 
-void mem_pop(cli_emu_t *state, int size, int32_t *value)
+void mem_pop(cli_emu_t *state, int size, uint32_t *value)
 {
     uint32_t esp;
 
@@ -371,7 +367,7 @@ void mem_pop(cli_emu_t *state, int size, int32_t *value)
 
 static always_inline void emu_pop(cli_emu_t *state, struct dis_instr *instr)
 {
-    int32_t value;
+    uint32_t value;
     MEM_POP(&value);
     WRITE_RESULT(0, value);
 }
@@ -390,7 +386,7 @@ static always_inline void emu_std(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_inc(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg;
+    uint32_t reg;
     READ_OPERAND(reg, 0);
     WRITE_RESULT(0, ++reg);
     /* FIXME: inc byte ptr [addr] */
@@ -399,7 +395,7 @@ static always_inline void emu_inc(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_dec(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg;
+    uint32_t reg;
     READ_OPERAND(reg, 0);
     WRITE_RESULT(0, --reg);
     /* FIXME: inc byte ptr [addr] */
@@ -409,7 +405,7 @@ static always_inline void emu_dec(cli_emu_t *state, instr_t *instr)
 static int emu_prefix_pre(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
 {
     if (state->prefix_repe || state->prefix_repne) {
-	int32_t cnt;
+	uint32_t cnt;
 	read_reg(state, ad16 ? REG_CX : REG_ECX, &cnt);
 	if (!cnt)
 	    return 1;
@@ -420,7 +416,7 @@ static int emu_prefix_pre(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
 static int emu_prefix_post(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
 {
     if (state->prefix_repe || state->prefix_repne) {
-	int32_t cnt;
+	uint32_t cnt;
 	read_reg(state, ad16 ? REG_CX : REG_ECX, &cnt);
 	cnt--;
 	write_reg(state, ad16 ? REG_CX : REG_ECX, cnt);
@@ -439,7 +435,7 @@ static int emu_prefix_post(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
 
 static always_inline void emu_lodsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
 {
-    int32_t esi;
+    uint32_t esi;
     uint32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
@@ -461,7 +457,7 @@ static always_inline void emu_lodsx(cli_emu_t *state, instr_t *instr, enum DIS_S
 
 static always_inline void emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
 {
-    int32_t edi;
+    uint32_t edi;
     uint32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
@@ -480,9 +476,9 @@ static always_inline void emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_S
     } while (emu_prefix_post(state, instr->address_size, 1));
 }
 
-static always_inline int emu_xor(cli_emu_t *state, instr_t *instr)
+static always_inline void emu_xor(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     reg1 ^= reg2;
@@ -497,7 +493,7 @@ static always_inline int emu_xor(cli_emu_t *state, instr_t *instr)
 static always_inline void emu_shl(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
@@ -534,7 +530,7 @@ static always_inline void emu_shl(cli_emu_t *state, instr_t *instr)
 static always_inline void emu_shr(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
@@ -658,7 +654,7 @@ static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 		return;
 	    ROR(reg1, reg2, 8);
 	    msb = (reg1 >> 7)&1;
-	    of = msb ^ (reg1 >> 6)&1;
+	    of = msb ^ ((reg1 >> 6)&1);
 	    break;
 	case 16:
 	    reg2 %= 16;
@@ -666,13 +662,13 @@ static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 		return;
 	    ROR(reg1, reg2, 16);
 	    msb = (reg1 >> 15)&1;
-	    of = msb ^ (reg1 >> 14)&1;
+	    of = msb ^ ((reg1 >> 14)&1);
 	case 32:
 	    if (!reg2)
 		return;
 	    ROR(reg1, reg2, 32);
 	    msb = (reg1 >> 31)&1;
-	    of = msb ^ (reg1 >> 30)&1;
+	    of = msb ^ ((reg1 >> 30)&1);
 	    break;
 	default:
 	    INVALID_SIZE(state->mem);
@@ -689,7 +685,7 @@ static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_and(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     reg1 &= reg2;
@@ -702,7 +698,7 @@ static always_inline void emu_and(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_or(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     reg1 |= reg2;
@@ -714,7 +710,7 @@ static always_inline void emu_or(cli_emu_t *state, instr_t *instr)
 }
 static always_inline void emu_sub(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     if (instr->arg[0].access_size == SIZE_INVALID)
@@ -727,7 +723,7 @@ static always_inline void emu_sub(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_cmp(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     if (instr->arg[0].access_size == SIZE_INVALID)
@@ -736,13 +732,13 @@ static always_inline void emu_cmp(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
 }
 
-static uint8_t always_inline emu_flags(const cli_emu_t *state, uint8_t bit)
+static always_inline uint8_t emu_flags(const cli_emu_t *state, uint8_t bit)
 {
     return (state->eflags >> bit) & 1;
 }
 static always_inline void emu_adc(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     reg1 += emu_flags(state, bit_cf);
@@ -756,7 +752,7 @@ static always_inline void emu_adc(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_add(cli_emu_t *state, instr_t *instr)
 {
-    int32_t reg1, reg2;
+    uint32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
     if (instr->arg[0].access_size == SIZE_INVALID)
@@ -770,7 +766,7 @@ static always_inline void emu_add(cli_emu_t *state, instr_t *instr)
 static always_inline int emu_loop(cli_emu_t *state, instr_t *instr)
 {
     uint32_t cnt;
-    read_reg(state, instr->address_size ? REG_CX : REG_ECX, (int32_t*)&cnt);
+    read_reg(state, instr->address_size ? REG_CX : REG_ECX, &cnt);
     if (--cnt) {
 	/* branch cond = 1 */
 	if (!instr->operation_size) {
@@ -793,7 +789,7 @@ static always_inline void emu_jmp(cli_emu_t *state, instr_t *instr)
     if (arg->access_size == SIZE_REL) {
 	state->eip += arg->displacement;
     } else {
-	int32_t value;
+	uint32_t value;
 	READ_OPERAND(value, 0);
 	state->eip = value;
     }
@@ -803,7 +799,6 @@ static always_inline void emu_jmp(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_call(cli_emu_t *state, instr_t *instr)
 {
-    uint32_t esp, size;
     struct dis_arg *arg = &instr->arg[0];
 
     MEM_PUSH(state->eip);
@@ -811,7 +806,7 @@ static always_inline void emu_call(cli_emu_t *state, instr_t *instr)
     if (arg->access_size == SIZE_REL) {
 	state->eip += arg->displacement;
     } else {
-	int32_t value;
+	uint32_t value;
 	READ_OPERAND(value, 0);
 	state->eip = value;
     }
@@ -821,7 +816,7 @@ static always_inline void emu_call(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_ret(cli_emu_t *state, instr_t *instr)
 {
-    uint32_t esp, size;
+    uint32_t esp;
     struct dis_arg *arg = &instr->arg[0];
 
     MEM_POP(&state->eip);
@@ -841,8 +836,8 @@ static always_inline void emu_ret(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_movsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, uint32_t add)
 {
-    int32_t esi, edi;
-    int32_t val;
+    uint32_t esi, edi;
+    uint32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
 	return;
@@ -939,9 +934,9 @@ static always_inline void emu_popa(cli_emu_t *state, instr_t *instr)
 static always_inline void emu_scasx(cli_emu_t *state, instr_t *instr,
 		     enum X86REGS reg, enum DIS_SIZE size, int8_t add)
 {
-    int32_t edi;
+    uint32_t edi;
     uint32_t src;
-    int32_t a;
+    uint32_t a;
 
     read_reg(state, instr->address_size ? REG_DI : REG_EDI, &edi);
     read_reg(state, reg, &a);
@@ -977,7 +972,7 @@ static always_inline void emu_clc(cli_emu_t *state, instr_t *instr)
 static always_inline void emu_xchg(cli_emu_t *state, instr_t *instr)
 {
     //TODO: FS segment support, the rest of segments are equal anyway on win32
-    int32_t reg0, reg1;
+    uint32_t reg0, reg1;
     READ_OPERAND(reg0, 0);
     READ_OPERAND(reg1, 1);
     WRITE_RESULT(0, reg1);
@@ -992,7 +987,6 @@ static always_inline void emu_lea(cli_emu_t *state, instr_t *instr)
 
 int cli_emulator_step(cli_emu_t *emu)
 {
-    int rc;
     struct dis_instr *instr;
     struct import_description *import;
 
@@ -1243,7 +1237,6 @@ void cli_emulator_dbgstate(cli_emu_t *emu)
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     if (bytes != 254) {
-	uint32_t esp;
 	cli_dbgmsg("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
 	mem_pop(emu, 4, &emu->eip);
 	emu->reg_val[REG_ESP] += bytes;
