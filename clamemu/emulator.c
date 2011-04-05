@@ -1292,7 +1292,7 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     if (bytes != 254) {
 	uint32_t esp;
-	printf("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
+	cli_dbgmsg("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
 	if (mem_pop(emu, 4, &emu->eip) < 0)
 	    return -1;
 	emu->reg_val[REG_ESP] += bytes;
@@ -1300,7 +1300,7 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 	return 0;
     } else {
 	/* 254 - magic for varargs */
-	printf("Called varargs API %s\n", desc ? desc : "??");
+	cli_dbgmsg("Called varargs API %s\n", desc ? desc : "??");
 	return -1;
     }
 }

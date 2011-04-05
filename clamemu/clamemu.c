@@ -27,13 +27,19 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/time.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 
+#define MAXEMU 10000000
+
 static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, const char **virname, void *context)
 {
+    struct timeval tv0, tv1;
+    unsigned long i = 0, delta;
+    uint64_t speed;
     emu_vmm_t *v;
     cli_emu_t *emu;
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
@@ -42,13 +48,21 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 	return -1;
     emu = cli_emulator_new(v, pedata);
 
-    while (!cli_emulator_step(emu)) {
-	cli_emulator_dbgstate(emu);
+    gettimeofday(&tv0, NULL);
+    for (i=0;!cli_emulator_step(emu) && i < MAXEMU;i++) {
+/*	cli_emulator_dbgstate(emu);*/
     }
+    gettimeofday(&tv1, NULL);
 
     cli_emulator_free(emu);
     cli_emu_vmm_rebuild(v);
     cli_dbgmsg("emulation done ------------------------------------------------\n\n");
+    delta = (tv1.tv_sec - tv0.tv_sec)*1000000 + (tv1.tv_usec - tv0.tv_usec);
+    if (!delta) delta = 1;
+    speed = (uint64_t)i*1000000 / delta;
+    printf("Emulated %d instructions in %.3fms: %u instr/s\n", i,
+	   delta/1000.0, (uint32_t) speed);
+
     cli_emu_vmm_free(v);
     return 0;
 }
@@ -96,7 +110,7 @@ int main(int argc, char *argv[])
 
 	/* scan file descriptor */
 	size = 0;
-	cl_debug();
+	/*cl_debug();*/
 	options = CL_SCAN_STDOPT &~ (CL_SCAN_HTML | CL_SCAN_ELF);
 	ret = cl_scandesc_callback(fd, &virname, &size, engine, CL_SCAN_STDOPT, argv[1]);
 	if (ret == CL_VIRUS) {
