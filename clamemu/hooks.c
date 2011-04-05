@@ -26,8 +26,8 @@
 #include "others.h"
 #include "flags.h"
 
-#define POP32(val) do { if (mem_pop(emu, 4, (val)) < 0) {cli_dbgmsg("pop failed\n"); return -1; }} while(0)
-#define POP16(val) do { if (mem_pop(emu, 2, (val)) < 0) {cli_dbgmsg("pop failed\n"); return -1; }} while(0)
+#define POP32(val) mem_pop(emu, 4, (val))
+#define POP16(val) mem_pop(emu, 2, (val))
 static int cb_messagebox(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     uint32_t utype, lpcaption, lptext, hwnd;

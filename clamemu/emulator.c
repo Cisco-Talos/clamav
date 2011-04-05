@@ -53,7 +53,7 @@ static const desc_t mem_desc [] = {
     DEFINE_MEM(SIZEB, SIZEB,  8)
 };
 
-int mem_push(cli_emu_t *state, unsigned size, uint32_t value)
+void mem_push(cli_emu_t *state, unsigned size, uint32_t value)
 {
     int32_t esp;
 
@@ -63,11 +63,13 @@ int mem_push(cli_emu_t *state, unsigned size, uint32_t value)
     cli_dbgmsg("push %x -> %08x\n", value, esp);
     switch (size) {
 	case 2:
-	    return cli_emu_vmm_write16(state->mem, esp, value);
+	    cli_emu_vmm_write16(state->mem, esp, value);
+	    break;
 	case 4:
-	    return cli_emu_vmm_write32(state->mem, esp, value);
+	    cli_emu_vmm_write32(state->mem, esp, value);
+	    break;
 	default:
-	    return -1;
+	    break;
     }
 }
 
@@ -97,22 +99,22 @@ void cli_emulator_free(cli_emu_t *emu)
     free(emu);
 }
 
-#define UNIMPLEMENTED_REG do { cli_dbgmsg("Unimplemented register access\n"); return -1; } while(0)
-#define INVALID_SIZE do { printf("Invalid access size\n"); return -1; } while(0)
-static always_inline int get_reg(desc_t *desc, enum X86REGS reg)
+#define UNIMPLEMENTED_REG(v) cli_emu_vmm_raise((v), -EMU_ERR_REG)
+#define INVALID_SIZE(v) cli_emu_vmm_raise((v), -EMU_ERR_SIZE)
+
+static always_inline void get_reg(emu_vmm_t *mem, desc_t *desc, enum X86REGS reg)
 {
     if (reg >= MAXREG) {
 	if (reg != REG_INVALID)
-	    UNIMPLEMENTED_REG;
+	    UNIMPLEMENTED_REG(mem);
 	desc->idx = REGIDX_INVALID;
-	return 0;
+	return;
     }
     desc->mask = reg_masks[reg].rw_mask;
     desc->shift = reg_masks[reg].rw_shift;
     desc->idx = reg - reg_masks[reg].sub;
     desc->carry_bit = reg_masks[reg].carry_bit;
     desc->sign_bit = reg_masks[reg].carry_bit;
-    return 0;
 }
 
 /** Disassembles one X86 instruction starting at the specified offset.
@@ -133,9 +135,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     enum X86OPS x86_opcode;
     int rc;
 
-    rc = cli_emu_vmm_read_x(v, offset, dis, sizeof(dis));
-    if (rc < 0)
-	return rc;
+    cli_emu_vmm_read_x(v, offset, dis, sizeof(dis));
 
     next = cli_disasm_one(dis, sizeof(dis), &res, 1);
     result->operation_size = res.opsize;
@@ -148,8 +148,8 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 	arg->access_size = SIZE_INVALID;
 	switch ((enum DIS_ACCESS)res.arg[i][0]) {
 	    case ACCESS_MEM:
-		get_reg(&arg->scale_reg, (enum X86REGS)res.arg[i][2]);
-		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][3]);
+		get_reg(v, &arg->scale_reg, (enum X86REGS)res.arg[i][2]);
+		get_reg(v, &arg->add_reg, (enum X86REGS)res.arg[i][3]);
 		arg->scale = res.arg[i][4];
 		if (arg->scale == 1 && res.arg[i][3] == REG_INVALID) {
 		    memcpy(&arg->add_reg, &arg->scale_reg, sizeof(arg->scale_reg));
@@ -161,7 +161,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
 		arg->access_size = size; /* not valid for REG */
 		break;
 	    case ACCESS_REG:
-		get_reg(&arg->add_reg, (enum X86REGS)res.arg[i][1]);
+		get_reg(v, &arg->add_reg, (enum X86REGS)res.arg[i][1]);
 		arg->scale_reg.idx = REGIDX_INVALID;
 		arg->displacement = 0;
 		arg->access_size = SIZE_INVALID;
@@ -219,29 +219,27 @@ static always_inline uint32_t readreg(const cli_emu_t *emu,
     /* TODO: make invalid reg a real offset that just returns 0 */
 }
 
-static always_inline int read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32_t *value)
+static always_inline void read_reg(const cli_emu_t *emu, enum X86REGS reg, uint32_t *value)
 {
     desc_t desc;
-    get_reg(&desc, reg);
+    get_reg(emu->mem, &desc, reg);
     if (desc.idx == REGIDX_INVALID)
-	return -1;
+	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG);
     *value = readreg(emu, &desc);
-    return 0;
 }
 
-static always_inline int writereg(cli_emu_t *emu, const desc_t *reg, uint32_t value)
+static always_inline void writereg(cli_emu_t *emu, const desc_t *reg, uint32_t value)
 {
     if (reg->idx == REGIDX_INVALID)
-	return -1;
+	cli_emu_vmm_raise(emu->mem, -EMU_ERR_REG);
     emu->reg_val[reg->idx] = (emu->reg_val[reg->idx] & (~reg->mask)) |
 	((value << reg->shift) & reg->mask);
-    return 0;
 }
 
 static always_inline int write_reg(cli_emu_t *emu, enum X86REGS reg, uint32_t value)
 {
     desc_t desc;
-    get_reg(&desc, reg);
+    get_reg(emu->mem, &desc, reg);
     writereg(emu, &desc, value);
     return 0;
 }
@@ -254,79 +252,75 @@ static always_inline uint32_t calcreg(const cli_emu_t *emu, const struct dis_arg
     return value;
 }
 
-static always_inline int mem_read(const cli_emu_t *emu, uint32_t addr, enum DIS_SIZE size, uint32_t *value)
+static always_inline void mem_read(const cli_emu_t *emu, uint32_t addr, enum DIS_SIZE size, uint32_t *value)
 {
     switch (size) {
 	case SIZE_INVALID:
-	    return 0;
+	    break;
 	case SIZEB:
-	    return cli_emu_vmm_read8(emu->mem, addr, value);
+	    cli_emu_vmm_read8(emu->mem, addr, value);
+	    break;
 	case SIZEW:
-	    return cli_emu_vmm_read16(emu->mem, addr, value);
+	    cli_emu_vmm_read16(emu->mem, addr, value);
+	    break;
 	case SIZED:
 	default:
-	    return cli_emu_vmm_read32(emu->mem, addr, value);
+	    cli_emu_vmm_read32(emu->mem, addr, value);
+	    break;
     }
 }
 
-static always_inline int read_operand(const cli_emu_t *emu,
+static always_inline void read_operand(const cli_emu_t *emu,
 				      const struct dis_arg *arg, uint32_t *value)
 {
     *value = calcreg(emu, arg);
-    return mem_read(emu, *value, arg->access_size, value);
+    mem_read(emu, *value, arg->access_size, value);
 }
 
-static always_inline int mem_write(cli_emu_t *emu, uint32_t addr, enum DIS_SIZE size, uint32_t value)
+static always_inline void mem_write(cli_emu_t *emu, uint32_t addr, enum DIS_SIZE size, uint32_t value)
 {
     switch (size) {
 	case SIZEB:
-	    return cli_emu_vmm_write8(emu->mem, addr, value);
+	    cli_emu_vmm_write8(emu->mem, addr, value);
+	    break;
 	case SIZEW:
-	    return cli_emu_vmm_write16(emu->mem, addr, value);
+	    cli_emu_vmm_write16(emu->mem, addr, value);
+	    break;
 	case SIZED:
+	    cli_emu_vmm_write32(emu->mem, addr, value);
+	    break;
 	default:
-	    return cli_emu_vmm_write32(emu->mem, addr, value);
+	    break;
     }
 }
 
-static always_inline int write_operand(cli_emu_t *emu,
+static always_inline void write_operand(cli_emu_t *emu,
 				       const struct dis_arg *arg, uint32_t value)
 {
     if (arg->access_size == SIZE_INVALID) {
-	return writereg(emu, &arg->add_reg, value);
+	writereg(emu, &arg->add_reg, value);
     } else {
 	/* TODO: check for FS segment */
 	uint32_t addr = calcreg(emu, arg);
-	return mem_write(emu, addr, arg->access_size, value);
+	mem_write(emu, addr, arg->access_size, value);
     }
 }
 
-#define READ_OPERAND(value, op) do { \
-    if (read_operand(state, &instr->arg[(op)], &(value)) < 0) {\
-	fprintf(stderr, "operand read failed\n");\
-	return -1;\
-    }\
-} while (0)
+#define READ_OPERAND(value, op) read_operand(state, &instr->arg[(op)], &(value))
 
-#define WRITE_RESULT(op, value) do {\
-    if (write_operand(state, &instr->arg[(op)], (value)) < 0) {\
-	fprintf(stderr, "operand write failed\n");\
-	return -1;\
-    }\
-} while (0)
+#define WRITE_RESULT(op, value) write_operand(state, &instr->arg[(op)], (value))
 
 #define NOSTACK do { printf("Stack overflowed\n"); return -1;} while(0)
 
-static int emu_mov(cli_emu_t *state, instr_t *instr)
+static void emu_mov(cli_emu_t *state, instr_t *instr)
 {
     //TODO: FS segment support, the rest of segments are equal anyway on win32
     int32_t reg;
     READ_OPERAND(reg, 1);
     WRITE_RESULT(0, reg);
-    return 0;
 }
 
-static int emu_bswap(cli_emu_t *state, instr_t *instr)
+static void emu_bswap(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg;
     READ_OPERAND(reg, 0);
@@ -338,89 +332,77 @@ static int emu_bswap(cli_emu_t *state, instr_t *instr)
 	    reg = cbswap32(reg);
 	    break;
 	default:
-	    return -1;
+	    break;
     }
 
     WRITE_RESULT(0, reg);
-    return 0;
 }
 
-#define MEM_PUSH(val) do { if (mem_push(state, instr->operation_size ? 2 : 4, (val)) < 0) {\
-    fprintf(stderr,"push failed\n");return -1;}} while(0)
+#define MEM_PUSH(val) mem_push(state, instr->operation_size ? 2 : 4, (val))
 
-#define MEM_POP(val) do { if (mem_pop(state, instr->operation_size ? 2: 4, (val)) < 0) {\
-    fprintf(stderr,"pop failed\n");return -1;}} while(0)
+#define MEM_POP(val) mem_pop(state, instr->operation_size ? 2: 4, (val))
 
-static int emu_push(cli_emu_t *state, instr_t *instr)
+static void emu_push(cli_emu_t *state, instr_t *instr)
 {
     int32_t value;
 
     READ_OPERAND(value, 0);
     MEM_PUSH(value);
-    return 0;
 }
 
-int mem_pop(cli_emu_t *state, int size, int32_t *value)
+void mem_pop(cli_emu_t *state, int size, int32_t *value)
 {
     uint32_t esp;
 
     esp = state->reg_val[REG_ESP];
     switch (size) {
 	case 2:
-	    if (cli_emu_vmm_read16(state->mem, esp, value) < 0)
-		return -1;
+	    cli_emu_vmm_read16(state->mem, esp, value);
 	    break;
 	case 4:
-	    if (cli_emu_vmm_read32(state->mem, esp, value) < 0)
-		return -1;
+	    cli_emu_vmm_read32(state->mem, esp, value);
 	    break;
     }
 
     esp += size;
     state->reg_val[REG_ESP] = esp;
-    return 0;
 }
 
-static int emu_pop(cli_emu_t *state, struct dis_instr *instr)
+static void emu_pop(cli_emu_t *state, struct dis_instr *instr)
 {
     int32_t value;
     MEM_POP(&value);
     WRITE_RESULT(0, value);
-    return 0;
 }
 
-static int emu_cld(cli_emu_t *state, struct dis_instr *instr)
+static void emu_cld(cli_emu_t *state, struct dis_instr *instr)
 {
     state->eflags &= ~(1 << bit_df);
     state->eflags_def |= 1 << bit_df;
-    return 0;
 }
 
-static int emu_std(cli_emu_t *state, instr_t *instr)
+static void emu_std(cli_emu_t *state, instr_t *instr)
 {
     state->eflags |= 1 << bit_df;
     state->eflags_def |= 1 << bit_df;
-    return 0;
 }
 
-static int emu_inc(cli_emu_t *state, instr_t *instr)
+static void emu_inc(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg;
     READ_OPERAND(reg, 0);
     WRITE_RESULT(0, ++reg);
     /* FIXME: inc byte ptr [addr] */
     calc_flags_inc(state, reg, &instr->arg[0].add_reg);
-    return 0;
 }
 
-static int emu_dec(cli_emu_t *state, instr_t *instr)
+static void emu_dec(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg;
     READ_OPERAND(reg, 0);
     WRITE_RESULT(0, --reg);
     /* FIXME: inc byte ptr [addr] */
     calc_flags_dec(state, reg, &instr->arg[0].add_reg);
-    return 0;
 }
 // returns 1 if loop should not be entered
 static int emu_prefix_pre(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
@@ -454,56 +436,50 @@ static int emu_prefix_post(cli_emu_t *state, int8_t ad16, int8_t repe_is_rep)
     return 0;
 }
 
-static int emu_lodsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
+static void emu_lodsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
 {
     int32_t esi;
     uint32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
-	return 0;
+	return;
     //TODO:address size
     do {
 	esi = state->reg_val[REG_ESI];
-	if (read_reg(state, REG_ESI, &esi) == -1 ||
-	    mem_read(state, esi, size, &val) == -1 ||
-	    write_reg(state, reg, val) == -1)
-	    return -1;
+	read_reg(state, REG_ESI, &esi);
+	mem_read(state, esi, size, &val);
+	write_reg(state, reg, val);
 	if (state->eflags & (1 << bit_df)) {
 	    esi -= add;
 	} else {
 	    esi += add;
 	}
-	if (write_reg(state, REG_ESI, esi) == -1)
-	    return -1;
+	write_reg(state, REG_ESI, esi);
     } while (emu_prefix_post(state, instr->address_size, 1));
-    return 0;
 }
 
-static int emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
+static void emu_stosx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, enum X86REGS reg, uint32_t add)
 {
     int32_t edi;
     uint32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
-	return 0;
+	return;
     //TODO:address size
     do {
-	if (read_reg(state, REG_EDI, &edi) == -1 ||
-	    read_reg(state, reg, &val) == -1 ||
-	    mem_write(state, edi, size, val) == -1)
-	    return -1;
+	read_reg(state, REG_EDI, &edi);
+	read_reg(state, reg, &val);
+	mem_write(state, edi, size, val);
 	if (state->eflags & (1 << bit_df)) {
 	    edi -= add;
 	} else {
 	    edi += add;
 	}
-	if (write_reg(state, REG_EDI, edi) == -1)
-	    return -1;
+	write_reg(state, REG_EDI, edi);
     } while (emu_prefix_post(state, instr->address_size, 1));
-    return 0;
 }
 
-static int emu_xor(cli_emu_t *state, instr_t *instr)
+static never_inline int emu_xor(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -515,10 +491,9 @@ static int emu_xor(cli_emu_t *state, instr_t *instr)
     else
 	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_shl(cli_emu_t *state, instr_t *instr)
+static void emu_shl(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
     int32_t reg1, reg2;
@@ -533,7 +508,7 @@ static int emu_shl(cli_emu_t *state, instr_t *instr)
     reg2 &= 0x1f;
 
     if (!reg2)
-	return 0;
+	return;
     uint64_t result = (uint64_t)reg1 << (uint8_t)reg2;
     uint8_t cf = (result >> desc->carry_bit) & 1;
     reg1 = result;
@@ -553,10 +528,9 @@ static int emu_shl(cli_emu_t *state, instr_t *instr)
     if (largeshift)
 	state->eflags_def &= ~(1<<bit_cf);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_shr(cli_emu_t *state, instr_t *instr)
+static void emu_shr(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
     int32_t reg1, reg2;
@@ -571,7 +545,7 @@ static int emu_shr(cli_emu_t *state, instr_t *instr)
     reg2 &= 0x1f;
 
     if (!reg2)
-	return 0;
+	return;
     uint32_t result = reg1;
     result >>= (uint8_t)(reg2 - 1);
     uint8_t cf = (result & 1);
@@ -592,13 +566,12 @@ static int emu_shr(cli_emu_t *state, instr_t *instr)
     if (largeshift)
 	state->eflags_def &= ~(1<<bit_cf);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
 #define ROL(a,b,n) a = ( a << (b) ) | ( a >> (((n) - (b))) )
 #define ROR(a,b,n) a = ( a >> (b) ) | ( a << (((n) - (b))) )
 
-static int emu_rol(cli_emu_t *state, instr_t *instr)
+static void emu_rol(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
     uint32_t reg1, reg2;
@@ -624,7 +597,7 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 	case 8:
 	    reg2 %= 8;
 	    if (!reg2)
-		return 0;
+		return;
 	    ROL(reg1, reg2, 8);
 	    cf = reg1 & 1;
 	    msb = (reg1 >> 7)&1;
@@ -632,19 +605,19 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 	case 16:
 	    reg2 %= 16;
 	    if (!reg2)
-		return 0;
+		return;
 	    ROL(reg1, reg2, 16);
 	    cf = reg1 & 1;
 	    msb = (reg1 >> 15)&1;
 	case 32:
 	    if (!reg2)
-		return 0;
+		return;
 	    ROL(reg1, reg2, 32);
 	    cf = reg1 & 1;
 	    msb = (reg1 >> 31)&1;
 	    break;
 	default:
-	    INVALID_SIZE;
+	    INVALID_SIZE(state->mem);
     }
 
     uint8_t of = msb ^ cf;
@@ -654,10 +627,9 @@ static int emu_rol(cli_emu_t *state, instr_t *instr)
 
     state->eflags_def |= (1 << bit_cf);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_ror(cli_emu_t *state, instr_t *instr)
+static void emu_ror(cli_emu_t *state, instr_t *instr)
 {
     uint8_t largeshift;
     uint32_t reg1, reg2;
@@ -682,7 +654,7 @@ static int emu_ror(cli_emu_t *state, instr_t *instr)
 	case 8:
 	    reg2 %= 8;
 	    if (!reg2)
-		return 0;
+		return;
 	    ROR(reg1, reg2, 8);
 	    msb = (reg1 >> 7)&1;
 	    of = msb ^ (reg1 >> 6)&1;
@@ -690,19 +662,19 @@ static int emu_ror(cli_emu_t *state, instr_t *instr)
 	case 16:
 	    reg2 %= 16;
 	    if (!reg2)
-		return 0;
+		return;
 	    ROR(reg1, reg2, 16);
 	    msb = (reg1 >> 15)&1;
 	    of = msb ^ (reg1 >> 14)&1;
 	case 32:
 	    if (!reg2)
-		return 0;
+		return;
 	    ROR(reg1, reg2, 32);
 	    msb = (reg1 >> 31)&1;
 	    of = msb ^ (reg1 >> 30)&1;
 	    break;
 	default:
-	    INVALID_SIZE;
+	    INVALID_SIZE(state->mem);
     }
 
     uint8_t cf = msb;
@@ -712,10 +684,9 @@ static int emu_ror(cli_emu_t *state, instr_t *instr)
 
     state->eflags_def |= (1 << bit_cf);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_and(cli_emu_t *state, instr_t *instr)
+static void emu_and(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -726,10 +697,9 @@ static int emu_and(cli_emu_t *state, instr_t *instr)
     else
 	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_or(cli_emu_t *state, instr_t *instr)
+static void emu_or(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -740,9 +710,8 @@ static int emu_or(cli_emu_t *state, instr_t *instr)
     else
 	calc_flags_test(state, reg1, &mem_desc[instr->arg[0].access_size]);
     WRITE_RESULT(0, reg1);
-    return 0;
 }
-static int emu_sub(cli_emu_t *state, instr_t *instr)
+static void emu_sub(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -753,10 +722,9 @@ static int emu_sub(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
     reg1 -= reg2;
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_cmp(cli_emu_t *state, instr_t *instr)
+static void emu_cmp(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -765,14 +733,13 @@ static int emu_cmp(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 1);
     else
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
-    return 0;
 }
 
 static uint8_t always_inline emu_flags(const cli_emu_t *state, uint8_t bit)
 {
     return (state->eflags >> bit) & 1;
 }
-static int emu_adc(cli_emu_t *state, instr_t *instr)
+static void emu_adc(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -784,10 +751,9 @@ static int emu_adc(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 0);
     reg1 += reg2;
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-static int emu_add(cli_emu_t *state, instr_t *instr)
+static void emu_add(cli_emu_t *state, instr_t *instr)
 {
     int32_t reg1, reg2;
     READ_OPERAND(reg1, 0);
@@ -798,15 +764,12 @@ static int emu_add(cli_emu_t *state, instr_t *instr)
 	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 0);
     reg1 += reg2;
     WRITE_RESULT(0, reg1);
-    return 0;
 }
 
-
-static int emu_loop(cli_emu_t *state, instr_t *instr)
+static never_inline int emu_loop(cli_emu_t *state, instr_t *instr)
 {
     uint32_t cnt;
-    if (read_reg(state, instr->address_size ? REG_CX : REG_ECX, (int32_t*)&cnt) == -1)
-	return -1;
+    read_reg(state, instr->address_size ? REG_CX : REG_ECX, (int32_t*)&cnt);
     if (--cnt) {
 	/* branch cond = 1 */
 	if (!instr->operation_size) {
@@ -823,7 +786,7 @@ static int emu_loop(cli_emu_t *state, instr_t *instr)
     return 0;
 }
 
-static int emu_jmp(cli_emu_t *state, instr_t *instr)
+static void emu_jmp(cli_emu_t *state, instr_t *instr)
 {
     struct dis_arg *arg = &instr->arg[0];
     if (arg->access_size == SIZE_REL) {
@@ -835,10 +798,9 @@ static int emu_jmp(cli_emu_t *state, instr_t *instr)
     }
     if (instr->operation_size)
 	state->eip &= 0xffff;
-    return 0;
 }
 
-static int emu_call(cli_emu_t *state, instr_t *instr)
+static void emu_call(cli_emu_t *state, instr_t *instr)
 {
     uint32_t esp, size;
     struct dis_arg *arg = &instr->arg[0];
@@ -854,10 +816,9 @@ static int emu_call(cli_emu_t *state, instr_t *instr)
     }
     if (instr->operation_size)
 	state->eip &= 0xffff;
-    return 0;
 }
 
-static int emu_ret(cli_emu_t *state, instr_t *instr)
+static void emu_ret(cli_emu_t *state, instr_t *instr)
 {
     uint32_t esp, size;
     struct dis_arg *arg = &instr->arg[0];
@@ -875,23 +836,21 @@ static int emu_ret(cli_emu_t *state, instr_t *instr)
 	    esp += arg->displacement;
     }
     state->reg_val[REG_ESP] = esp;
-    return 0;
 }
 
-static int emu_movsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, uint32_t add)
+static void emu_movsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, uint32_t add)
 {
     int32_t esi, edi;
     int32_t val;
 
     if (emu_prefix_pre(state, instr->address_size, 1))
-	return 0;
+	return;
     //TODO:address size
     do {
-	if (read_reg(state, REG_ESI, &esi) == -1 ||
-	    read_reg(state, REG_EDI, &edi) == -1 ||
-	    mem_read(state, esi, size, &val) == -1 ||
-	    mem_write(state, edi, size, val) == -1)
-	    return -1;
+	read_reg(state, REG_ESI, &esi);
+	read_reg(state, REG_EDI, &edi);
+	mem_read(state, esi, size, &val);
+	mem_write(state, edi, size, val);
 	if (state->eflags & (1 << bit_df)) {
 	    edi -= add;
 	    esi -= add;
@@ -899,14 +858,12 @@ static int emu_movsx(cli_emu_t *state, instr_t *instr, enum DIS_SIZE size, uint3
 	    edi += add;
 	    esi += add;
 	}
-	if (write_reg(state, REG_ESI, esi) == -1 ||
-	    write_reg(state, REG_EDI, edi) == -1)
-	    return -1;
+	write_reg(state, REG_ESI, esi);
+	write_reg(state, REG_EDI, edi);
     } while (emu_prefix_post(state, instr->address_size, 1));
-    return 0;
 }
 
-static int emu_pusha(cli_emu_t *state, instr_t *instr)
+static void emu_pusha(cli_emu_t *state, instr_t *instr)
 {
     uint32_t esp = state->reg_val[REG_ESP];
     if (instr->operation_size) {
@@ -921,8 +878,7 @@ static int emu_pusha(cli_emu_t *state, instr_t *instr)
 	data[5] = le16_to_host(state->reg_val[REG_EDX]&0xffff);
 	data[6] = le16_to_host(state->reg_val[REG_ECX]&0xffff);
 	data[7] = le16_to_host(state->reg_val[REG_EAX]&0xffff);
-	if (cli_emu_vmm_write(state->mem, esp, data, 16) < 0)
-	    return -1;
+	cli_emu_vmm_write(state->mem, esp, data, 16);
     } else {
 	uint32_t data[8];
 	/* 32 */
@@ -935,11 +891,9 @@ static int emu_pusha(cli_emu_t *state, instr_t *instr)
 	cli_writeint32(&data[5], state->reg_val[REG_EDX]);
 	cli_writeint32(&data[6], state->reg_val[REG_ECX]);
 	cli_writeint32(&data[7], state->reg_val[REG_EAX]);
-	if (cli_emu_vmm_write(state->mem, esp, data, 32) < 0)
-	    return -1;
+	cli_emu_vmm_write(state->mem, esp, data, 32);
     }
     state->reg_val[REG_ESP] = esp;
-    return 0;
 }
 
 static void write16reg(cli_emu_t *state, enum X86REGS reg, uint16_t val)
@@ -948,14 +902,13 @@ static void write16reg(cli_emu_t *state, enum X86REGS reg, uint16_t val)
     state->reg_val[reg] |= val;
 }
 
-static int emu_popa(cli_emu_t *state, instr_t *instr)
+static void emu_popa(cli_emu_t *state, instr_t *instr)
 {
     uint32_t esp = state->reg_val[REG_ESP];
     if (instr->operation_size) {
 	uint16_t data[8];
 	/* 16 */
-	if (cli_emu_vmm_read_r(state->mem, esp, data, 16) < 0)
-	    return -1;
+	cli_emu_vmm_read_r(state->mem, esp, data, 16);
 	write16reg(state, REG_EDI, le16_to_host(data[0]));
 	write16reg(state, REG_EDX, le16_to_host(data[1]));
 	write16reg(state, REG_ESI, le16_to_host(data[2]));
@@ -968,8 +921,7 @@ static int emu_popa(cli_emu_t *state, instr_t *instr)
     } else {
 	uint32_t data[8];
 	/* 32 */
-	if (cli_emu_vmm_read_r(state->mem, esp, data, 32) < 0)
-	    return -1;
+	cli_emu_vmm_read_r(state->mem, esp, data, 32);
 	cli_writeint32(&state->reg_val[REG_EDI], data[0]);
 	cli_writeint32(&state->reg_val[REG_EDX], data[1]);
 	cli_writeint32(&state->reg_val[REG_ESI], data[2]);
@@ -981,25 +933,23 @@ static int emu_popa(cli_emu_t *state, instr_t *instr)
 	esp += 32;
     }
     state->reg_val[REG_ESP] = esp;
-    return 0;
 }
 
-static int emu_scasx(cli_emu_t *state, instr_t *instr,
+static void emu_scasx(cli_emu_t *state, instr_t *instr,
 		     enum X86REGS reg, enum DIS_SIZE size, int8_t add)
 {
     int32_t edi;
     uint32_t src;
     int32_t a;
 
-    if (read_reg(state, instr->address_size ? REG_DI : REG_EDI, &edi) == -1 ||
-	read_reg(state, reg, &a) == -1)
-	return -1;
+    read_reg(state, instr->address_size ? REG_DI : REG_EDI, &edi);
+    read_reg(state, reg, &a);
     if (emu_prefix_pre(state, instr->address_size, 0))
-	return 0;
+	return;
     do {
 	desc_t reg_desc;
 	mem_read(state, edi, size, &src);
-	get_reg(&reg_desc, reg);
+	get_reg(state->mem, &reg_desc, reg);
 	calc_flags_addsub(state, a, src, &reg_desc, 1);
 	if (state->eflags & (1 << bit_df)) {
 	    edi -= add;
@@ -1010,23 +960,20 @@ static int emu_scasx(cli_emu_t *state, instr_t *instr,
 	    edi &= 0xffff;
     } while (emu_prefix_post(state, instr->address_size, 0));
     write_reg(state, instr->address_size ? REG_DI : REG_EDI, edi);
-    return 0;
 }
 
-static int emu_stc(cli_emu_t *state, instr_t *instr)
+static void emu_stc(cli_emu_t *state, instr_t *instr)
 {
     state->eflags |= 1 << bit_cf;
     state->eflags_def |= 1 << bit_cf;
-    return 0;
 }
 
-static int emu_clc(cli_emu_t *state, instr_t *instr)
+static void emu_clc(cli_emu_t *state, instr_t *instr)
 {
     state->eflags &= ~(1 << bit_cf);
     state->eflags_def |= 1 << bit_cf;
-    return 0;
 }
-static int emu_xchg(cli_emu_t *state, instr_t *instr)
+static void emu_xchg(cli_emu_t *state, instr_t *instr)
 {
     //TODO: FS segment support, the rest of segments are equal anyway on win32
     int32_t reg0, reg1;
@@ -1034,17 +981,15 @@ static int emu_xchg(cli_emu_t *state, instr_t *instr)
     READ_OPERAND(reg1, 1);
     WRITE_RESULT(0, reg1);
     WRITE_RESULT(1, reg0);
-    return 0;
 }
-static int emu_lea(cli_emu_t *state, instr_t *instr)
+static void emu_lea(cli_emu_t *state, instr_t *instr)
 {
     const struct dis_arg *arg = &instr->arg[1];
     uint32_t addr = calcreg(state, arg);
     WRITE_RESULT(0, addr);
-    return 0;
 }
 
-int cli_emulator_step(cli_emu_t *emu)
+static int cli_emulator_step1(cli_emu_t *emu)
 {
     int rc;
     struct dis_instr *instr;
@@ -1071,182 +1016,196 @@ int cli_emulator_step(cli_emu_t *emu)
     emu->eip += instr->len;
     switch (instr->opcode) {
 	case OP_MOV:
-	    rc = emu_mov(emu, instr);
+	    emu_mov(emu, instr);
 	    break;
 	case OP_PUSH:
-	    rc = emu_push(emu, instr);
+	    emu_push(emu, instr);
 	    break;
 	case OP_POP:
-	    rc = emu_pop(emu, instr);
+	    emu_pop(emu, instr);
 	    break;
 	case OP_INC:
-	    rc = emu_inc(emu, instr);
+	    emu_inc(emu, instr);
 	    break;
 	case OP_DEC:
-	    rc = emu_dec(emu, instr);
+	    emu_dec(emu, instr);
 	    break;
 	case OP_CLD:
-	    rc = emu_cld(emu, instr);
+	    emu_cld(emu, instr);
 	    break;
 	case OP_STD:
-	    rc = emu_std(emu, instr);
+	    emu_std(emu, instr);
 	    break;
 	case OP_LODSB:
-	    rc = emu_lodsx(emu, instr, SIZEB, REG_AL, 1);
+	    emu_lodsx(emu, instr, SIZEB, REG_AL, 1);
 	    break;
 	case OP_LODSW:
-	    rc = emu_lodsx(emu, instr, SIZEW, REG_AX, 2);
+	    emu_lodsx(emu, instr, SIZEW, REG_AX, 2);
 	    break;
 	case OP_LODSD:
-	    rc = emu_lodsx(emu, instr, SIZED, REG_EAX, 4);
+	    emu_lodsx(emu, instr, SIZED, REG_EAX, 4);
 	    break;
 	case OP_STOSB:
-	    rc = emu_stosx(emu, instr, SIZEB, REG_AL, 1);
+	    emu_stosx(emu, instr, SIZEB, REG_AL, 1);
 	    break;
 	case OP_STOSW:
-	    rc = emu_stosx(emu, instr, SIZEW, REG_AX, 2);
+	    emu_stosx(emu, instr, SIZEW, REG_AX, 2);
 	    break;
 	case OP_STOSD:
-	    rc = emu_stosx(emu, instr, SIZED, REG_EAX, 4);
+	    emu_stosx(emu, instr, SIZED, REG_EAX, 4);
 	    break;
 	case OP_MOVSB:
-	    rc = emu_movsx(emu, instr, SIZEB, 1);
+	    emu_movsx(emu, instr, SIZEB, 1);
 	    break;
 	case OP_MOVSW:
-	    rc = emu_movsx(emu, instr, SIZEW, 2);
+	    emu_movsx(emu, instr, SIZEW, 2);
 	    break;
 	case OP_MOVSD:
-	    rc = emu_movsx(emu, instr, SIZED, 4);
+	    emu_movsx(emu, instr, SIZED, 4);
 	    break;
 	case OP_XOR:
-	    rc = emu_xor(emu, instr);
+	    emu_xor(emu, instr);
 	    break;
 	case OP_AND:
-	    rc = emu_and(emu, instr);
+	    emu_and(emu, instr);
 	    break;
 	case OP_OR:
-	    rc = emu_or(emu, instr);
+	    emu_or(emu, instr);
 	    break;
 	case OP_SUB:
-	    rc = emu_sub(emu, instr);
+	    emu_sub(emu, instr);
 	    break;
 	case OP_ADC:
-	    rc = emu_adc(emu, instr);
+	    emu_adc(emu, instr);
 	    break;
 	case OP_ADD:
-	    rc = emu_add(emu, instr);
+	    emu_add(emu, instr);
 	    break;
 	case OP_SHL:
-	    rc = emu_shl(emu, instr);
+	    emu_shl(emu, instr);
 	    break;
 	case OP_SHR:
-	    rc = emu_shr(emu, instr);
+	    emu_shr(emu, instr);
 	    break;
 	case OP_ROL:
-	    rc = emu_rol(emu, instr);
+	    emu_rol(emu, instr);
 	    break;
 	case OP_ROR:
-	    rc = emu_ror(emu, instr);
+	    emu_ror(emu, instr);
 	    break;
 	case OP_LOOP:
-	    rc = emu_loop(emu, instr);
+	    emu_loop(emu, instr);
 	    break;
 	case OP_CMP:
-	    rc = emu_cmp(emu, instr);
+	    emu_cmp(emu, instr);
 	    break;
 	case OP_JMP:
-	    rc = emu_jmp(emu, instr);
+	    emu_jmp(emu, instr);
 	    break;
 	case OP_JO:
-	    rc = (emu_flags(emu, bit_of) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_of) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JNO:
-	    rc = (emu_flags(emu, bit_of) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_of) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JC:
-	    rc = (emu_flags(emu, bit_cf) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_cf) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JNC:
-	    rc = (emu_flags(emu, bit_cf) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_cf) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JZ:
-	    rc = (emu_flags(emu, bit_zf) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_zf) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JNZ:
-	    rc = (emu_flags(emu, bit_zf) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_zf) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JBE:
-	    rc = (emu_flags(emu, bit_cf) == 1 ||
-		    emu_flags(emu, bit_zf) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_cf) == 1 || emu_flags(emu, bit_zf) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JA:
-	    rc = (emu_flags(emu, bit_cf) == 0 &&
-		    emu_flags(emu, bit_zf) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_cf) == 0 && emu_flags(emu, bit_zf) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JS:
-	    rc = (emu_flags(emu, bit_sf) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_sf) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JNS:
-	    rc = (emu_flags(emu, bit_sf) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_sf) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JP:
-	    rc = (emu_flags(emu, bit_pf) == 1) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_pf) == 1)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JNP:
-	    rc = (emu_flags(emu, bit_pf) == 0) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_pf) == 0)
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JL:
-	    rc = (emu_flags(emu, bit_sf) != emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_sf) != emu_flags(emu, bit_of))
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JGE:
-	    rc = (emu_flags(emu, bit_sf) == emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_sf) == emu_flags(emu, bit_of))
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JLE:
-	    rc = (emu_flags(emu, bit_zf) == 1 ||
-		    emu_flags(emu, bit_sf) != emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_zf) == 1 ||
+		emu_flags(emu, bit_sf) != emu_flags(emu, bit_of))
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JG:
-	    rc = (emu_flags(emu, bit_zf) == 0 &&
-		    emu_flags(emu, bit_sf) == emu_flags(emu, bit_of)) && emu_jmp(emu, instr);
+	    if (emu_flags(emu, bit_zf) == 0 &&
+		    emu_flags(emu, bit_sf) == emu_flags(emu, bit_of))
+		emu_jmp(emu, instr);
 	    break;
 	case OP_CALL:
-	    rc = emu_call(emu, instr);
+	    emu_call(emu, instr);
 	    break;
 	case OP_RETN:
-	    rc = emu_ret(emu, instr);
+	    emu_ret(emu, instr);
 	    break;
 	case OP_PUSHAD:
-	    rc = emu_pusha(emu, instr);
+	    emu_pusha(emu, instr);
 	    break;
 	case OP_POPAD:
-	    rc = emu_popa(emu, instr);
+	    emu_popa(emu, instr);
 	    break;
 	case OP_LEA:
-	    rc = emu_lea(emu, instr);
+	    emu_lea(emu, instr);
 	    break;
 	case OP_XCHG:
-	    rc = emu_xchg(emu, instr);
+	    emu_xchg(emu, instr);
 	    break;
 	case OP_SCASB:
-	    rc = emu_scasx(emu, instr, REG_AL, SIZEB, 1);
+	    emu_scasx(emu, instr, REG_AL, SIZEB, 1);
 	    break;
 	case OP_SCASW:
-	    rc = emu_scasx(emu, instr, REG_AX, SIZEW, 2);
+	    emu_scasx(emu, instr, REG_AX, SIZEW, 2);
 	    break;
 	case OP_SCASD:
-	    rc = emu_scasx(emu, instr, REG_EAX, SIZED, 4);
+	    emu_scasx(emu, instr, REG_EAX, SIZED, 4);
 	    break;
 	case OP_CLC:
-	    rc = emu_clc(emu, instr);
+	    emu_clc(emu, instr);
 	    break;
 	case OP_STC:
-	    rc = emu_stc(emu, instr);
+	    emu_stc(emu, instr);
 	    break;
 	case OP_NOP:
 	    /* NOP is nop */
 	    break;
 	case OP_BSWAP:
-	    rc = emu_bswap(emu, instr);
+	    emu_bswap(emu, instr);
 	    break;
 	case OP_PREFIX_REPE:
 	    emu->prefix_repe = 1;
@@ -1268,6 +1227,17 @@ int cli_emulator_step(cli_emu_t *emu)
     return 0;
 }
 
+int cli_emulator_step(cli_emu_t *emu)
+{
+    int rc;
+    if (!(rc = setjmp(emu->mem->seh_handler)))
+	return cli_emulator_step1(emu);
+    /* VMM raised exception */
+    printf("emulator raised exception\n");
+    /* TODO: call SEH handler if one is installed */
+    return -1;
+}
+
 void cli_emulator_dbgstate(cli_emu_t *emu)
 {
     printf("[cliemu               ] eip=0x%08x\n"
@@ -1285,8 +1255,7 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
     if (bytes != 254) {
 	uint32_t esp;
 	cli_dbgmsg("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
-	if (mem_pop(emu, 4, &emu->eip) < 0)
-	    return -1;
+	mem_pop(emu, 4, &emu->eip);
 	emu->reg_val[REG_ESP] += bytes;
 	emu->reg_val[REG_EAX] = 0;
 	return 0;

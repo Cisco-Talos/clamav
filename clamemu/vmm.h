@@ -23,7 +23,50 @@
 #define VMM_H
 
 #include "cltypes.h"
-struct emu_vmm;
+#include "others.h"
+#include <string.h>
+#include <setjmp.h>
+#ifdef __GNUC__
+#define NORETURN __attribute__((noreturn))
+#else
+#define NORETURN
+#endif
+
+typedef struct {
+    unsigned file_offset:23;/* divided by 4k */
+    unsigned flag_rwx:3;
+    unsigned modified:1;/* 0 - original input file, 1 - stored in temporary file (modified} */
+    unsigned init:1;/* 1 - has real data, 0 - zeroinit */
+    unsigned cached_page_idx:4;/* 0 - not cached; 1-15 cache idx */
+} page_t;
+typedef struct {
+    uint8_t flag_rwx;
+    uint8_t dirty;
+    uint16_t reserved0;
+    uint32_t reserved1;
+    uint8_t data[4096];
+} cached_page_t;
+
+struct emu_vmm {
+    cached_page_t cached[15];
+    unsigned cached_idx;/* idx where we need to read new page (oldest page in LRU) */
+    unsigned lastused_page;
+    unsigned lastused_page_idx;
+    uint32_t imagebase;
+    uint32_t ep;
+    page_t *page_flags;
+    unsigned n_pages;
+    unsigned orig_pages;
+    unsigned first_free_page;
+    char *tempfile;
+    int infd;
+    int tmpfd;
+    uint32_t tmpfd_written;/* in MINALIGN blocks */
+    uint32_t imports_n;
+    struct import_description *imports;
+    jmp_buf seh_handler;
+};
+
 struct cli_exe_section;
 struct cli_pe_hook_data;
 
@@ -38,21 +81,96 @@ enum {
 enum {
     EMU_ERR_GENERIC=1,
     EMU_ERR_VMM_READ,
-    EMU_ERR_VMM_WRITE
+    EMU_ERR_VMM_WRITE,
+    EMU_ERR_REG,
+    EMU_ERR_SIZE,
 };
 
 emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd);
-int cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value);
-int cli_emu_vmm_read16(emu_vmm_t *v, uint32_t va, uint32_t *value);
-int cli_emu_vmm_read32(emu_vmm_t *v, uint32_t va, uint32_t *value);
-int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
-int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
+void cli_emu_vmm_raise(emu_vmm_t *v, int err) NORETURN;
+cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va);
+
+static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
+{
+    uint32_t page = (va - v->imagebase)/ 4096;
+    unsigned idx;
+
+    if (LIKELY(v->lastused_page == page))
+	return &v->cached[v->lastused_page_idx];
+    return cli_emu_vmm_cache_2page(v, va);
+}
+
+static always_inline void vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint32_t len, uint8_t flags)
+{
+    if (len >= 4096) {
+	cli_warnmsg("unexpected read size");
+	cli_emu_vmm_raise(v, -EMU_ERR_GENERIC);
+    }
+    /* caches at least 2 pages, so when we read an int32 that crosess page
+     * boundary, we can do it fast */
+    cached_page_t *p = vmm_cache_2page(v, va);
+    if (LIKELY(p && (p->flag_rwx & flags))) {
+	uint8_t *data = p->data + (va & 0xfff);
+	memcpy(value, data, len);
+    } else
+	cli_emu_vmm_raise(v, -EMU_ERR_VMM_READ);
+}
+
+static always_inline void cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value)
+{
+    uint8_t a;
+    vmm_read(v, va, &a, 1, 1 << flag_r);
+    *value = a;
+}
+
+static always_inline void cli_emu_vmm_read16(emu_vmm_t *v, uint32_t va, uint32_t *value)
+{
+    uint16_t a;
+    vmm_read(v, va, &a, 2, 1 << flag_r);
+    *value = le16_to_host(a);
+}
+
+static always_inline void cli_emu_vmm_read32(emu_vmm_t *v, uint32_t va, uint32_t *value)
+{
+    uint32_t a;
+    vmm_read(v, va, &a, 4, 1 << flag_r);
+    *value = le32_to_host(a);
+}
+
+void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
+void cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
 char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen);
 
-int cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t  value);
-int cli_emu_vmm_write16(emu_vmm_t *v, uint32_t va, uint32_t value);
-int cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value);
-int cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len);
+static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
+{
+    /* caches at least 2 pages, so when we read an int32 that crosess page
+     * boundary, we can do it fast */
+    cached_page_t *p = vmm_cache_2page(v, va);
+    if (LIKELY(p && (p->flag_rwx & (1 << flag_w)))) {
+	uint8_t *data = p->data + (va & 0xfff);
+	memcpy(data, value, len);
+	p->dirty = 1;
+    } else
+	cli_emu_vmm_raise(v, -EMU_ERR_VMM_WRITE);
+}
+
+static always_inline void cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t value)
+{
+    uint8_t a = value;
+    cli_emu_vmm_write(v, va, &a, 1);
+}
+
+static always_inline void cli_emu_vmm_write16(emu_vmm_t *v, uint32_t va, uint32_t value)
+{
+    uint16_t a = value;
+    cli_emu_vmm_write(v, va, &a, 2);
+}
+
+static always_inline void cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value)
+{
+    uint32_t a = value;
+    cli_emu_vmm_write(v, va, &a, 4);
+}
 
 int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va);
 int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx);
@@ -65,7 +183,6 @@ struct import_description {
     char *description;
     unsigned bytes;
 };
-
 
 struct import_description *cli_emu_vmm_get_import(const emu_vmm_t *v, uint32_t addr);
 

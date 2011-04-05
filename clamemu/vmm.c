@@ -36,45 +36,11 @@
 #include <unistd.h>
 
 #define MINALIGN 512
-typedef struct {
-    unsigned file_offset:23;/* divided by 4k */
-    unsigned flag_rwx:3;
-    unsigned modified:1;/* 0 - original input file, 1 - stored in temporary file (modified} */
-    unsigned init:1;/* 1 - has real data, 0 - zeroinit */
-    unsigned cached_page_idx:4;/* 0 - not cached; 1-15 cache idx */
-} page_t;
-
-typedef struct {
-    uint8_t flag_rwx;
-    uint8_t dirty;
-    uint16_t reserved0;
-    uint32_t reserved1;
-    uint8_t data[4096];
-} cached_page_t;
 
 #define IMAGE_SCN_CNT_UNINITIALIZED_DATA 128
 #define IMAGE_SCN_MEM_EXECUTE 0x20000000
 #define IMAGE_SCN_MEM_READ 0x40000000
 #define IMAGE_SCN_MEM_WRITE 0x80000000
-
-struct emu_vmm {
-    cached_page_t cached[15];
-    unsigned cached_idx;/* idx where we need to read new page (oldest page in LRU) */
-    unsigned lastused_page;
-    unsigned lastused_page_idx;
-    uint32_t imagebase;
-    uint32_t ep;
-    page_t *page_flags;
-    unsigned n_pages;
-    unsigned orig_pages;
-    unsigned first_free_page;
-    char *tempfile;
-    int infd;
-    int tmpfd;
-    uint32_t tmpfd_written;/* in MINALIGN blocks */
-    uint32_t imports_n;
-    struct import_description *imports;
-};
 
 struct IMAGE_IMPORT {
     uint32_t OrigThunk;
@@ -127,7 +93,7 @@ static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p)
     return c;
 }
 
-static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
+cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 {
     page_t *p;
     uint32_t page = (va - v->imagebase)/ 4096;
@@ -150,23 +116,6 @@ static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 	vmm_pagein(v, &v->page_flags[page+1]);
     /* now cache in the page we wanted */
     return vmm_pagein(v, p);
-}
-
-static always_inline int vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint32_t len, uint8_t flags)
-{
-    if (len >= 4096) {
-	cli_warnmsg("unexpected read size");
-	return -EMU_ERR_GENERIC;
-    }
-    /* caches at least 2 pages, so when we read an int32 that crosess page
-     * boundary, we can do it fast */
-    cached_page_t *p = vmm_cache_2page(v, va);
-    if (LIKELY(p && (p->flag_rwx & flags))) {
-	uint8_t *data = p->data + (va & 0xfff);
-	memcpy(value, data, len);
-	return 0;
-    }
-    return -EMU_ERR_VMM_READ;
 }
 
 char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen)
@@ -357,10 +306,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	struct IMAGE_IMPORT import;
 	char *dllname;
 
-	if (cli_emu_vmm_read_r(v, va, &import, sizeof(import)) < 0) {
-	    fprintf(stderr, "import descriptor out of image\n");
-	    return 1;
-	}
+	cli_emu_vmm_read_r(v, va, &import, sizeof(import));
 
 	size -= sizeof(struct IMAGE_IMPORT);
 	va += sizeof(struct IMAGE_IMPORT);
@@ -387,10 +333,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	for(i=0;;i++, rva += 4) {
 	    const struct dll_desc *dll;
 	    uint32_t import_entry, called_addr = 0;
-	    if (cli_emu_vmm_read32(v, base + rva, &import_entry) < 0) {
-		fprintf(stderr,"corrupted imports, invalid import entry rva %x!\n", rva);
-		break;
-	    }
+	    cli_emu_vmm_read32(v, base + rva, &import_entry);
 	    EC32(import_entry);
 	    if (!import_entry)
 		break;/* end of imports for this DLL */
@@ -420,83 +363,21 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 		free(func);
 	    }
 	    cli_dbgmsg("%x <- %x\n", base + import.Thunk + 4*i, called_addr);
-	    if (cli_emu_vmm_write32(v, base + import.Thunk + 4*i, called_addr) < 0) {
-		fprintf(stderr, "Can't save imports\n");
-		return 1;
-	    }
+	    cli_emu_vmm_write32(v, base + import.Thunk + 4*i, called_addr);
 	}
 	free(dllname);
     }
     return 0;
 }
 
-int cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
+void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
 {
-   return vmm_read(v, va, value, len, 1 << flag_r);
+   vmm_read(v, va, value, len, 1 << flag_r);
 }
 
-int cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
+void cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len)
 {
-    return vmm_read(v, va, value, len, 1 << flag_x);
-}
-
-int cli_emu_vmm_read8(emu_vmm_t *v, uint32_t va, uint32_t *value)
-{
-    uint8_t a;
-    int rc;
-    rc = vmm_read(v, va, &a, 1, 1 << flag_r);
-    *value = a;
-    return rc;
-}
-
-int cli_emu_vmm_read16(emu_vmm_t *v, uint32_t va, uint32_t *value)
-{
-    uint16_t a;
-    int rc;
-    rc = vmm_read(v, va, &a, 2, 1 << flag_r);
-    *value = le16_to_host(a);
-    return rc;
-}
-
-int cli_emu_vmm_read32(emu_vmm_t *v, uint32_t va, uint32_t *value)
-{
-    uint32_t a;
-    int rc;
-    rc = vmm_read(v, va, &a, 4, 1 << flag_r);
-    *value = le32_to_host(a);
-    return rc;
-}
-
-int cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
-{
-    /* caches at least 2 pages, so when we read an int32 that crosess page
-     * boundary, we can do it fast */
-    cached_page_t *p = vmm_cache_2page(v, va);
-    if (LIKELY(p && (p->flag_rwx & (1 << flag_w)))) {
-	uint8_t *data = p->data + (va & 0xfff);
-	memcpy(data, value, len);
-	p->dirty = 1;
-	return 0;
-    }
-    return -EMU_ERR_VMM_WRITE;
-}
-
-int cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t value)
-{
-    uint8_t a = value;
-    return cli_emu_vmm_write(v, va, &a, 1);
-}
-
-int cli_emu_vmm_write16(emu_vmm_t *v, uint32_t va, uint32_t value)
-{
-    uint16_t a = value;
-    return cli_emu_vmm_write(v, va, &a, 2);
-}
-
-int cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value)
-{
-    uint32_t a = value;
-    return cli_emu_vmm_write(v, va, &a, 4);
+    vmm_read(v, va, value, len, 1 << flag_x);
 }
 
 int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
@@ -717,3 +598,10 @@ uint32_t cli_emu_vmm_rva2va(emu_vmm_t *v, uint32_t rva)
 {
     return v->imagebase + rva;
 }
+
+void cli_emu_vmm_raise(emu_vmm_t *v, int err)
+{
+    cli_dbgmsg("VMM raised exception %d\n", err);
+    longjmp(v->seh_handler, err);
+}
+
