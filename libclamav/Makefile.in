@@ -158,7 +158,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
-	swf.h bignum.c bignum_class.h
+	swf.h jpeg.c jpeg.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
@@ -210,7 +210,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-ishield.lo libclamav_la-bytecode_api.lo \
 	libclamav_la-bytecode_api_decl.lo libclamav_la-cache.lo \
 	libclamav_la-bytecode_detect.lo libclamav_la-events.lo \
-	libclamav_la-swf.lo $(am__objects_1)
+	libclamav_la-swf.lo libclamav_la-jpeg.lo $(am__objects_1)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -664,7 +664,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
-	swf.h $(am__append_7)
+	swf.h jpeg.c jpeg.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -832,6 +832,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-inflate64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-is_tar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-ishield.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-jpeg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-js-norm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-line.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-lzma_iface.Plo@am__quote@
@@ -1736,6 +1737,14 @@ libclamav_la-swf.lo: swf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='swf.c' object='libclamav_la-swf.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-swf.lo `test -f 'swf.c' || echo '$(srcdir)/'`swf.c
+
+libclamav_la-jpeg.lo: jpeg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-jpeg.lo -MD -MP -MF $(DEPDIR)/libclamav_la-jpeg.Tpo -c -o libclamav_la-jpeg.lo `test -f 'jpeg.c' || echo '$(srcdir)/'`jpeg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-jpeg.Tpo $(DEPDIR)/libclamav_la-jpeg.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='jpeg.c' object='libclamav_la-jpeg.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-jpeg.lo `test -f 'jpeg.c' || echo '$(srcdir)/'`jpeg.c
 
 libclamav_la-bignum.lo: bignum.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c

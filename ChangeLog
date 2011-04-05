@@ -1,3 +1,7 @@
+Tue Apr  5 16:33:15 CEST 2011 (tk)
+----------------------------------
+ * libclamav: add basic JPEG validator
+
 Wed Mar 30 16:02:00 CEST 2011 (tk)
 ----------------------------------
  * libclamav/swf.c: scan images and binary blobs

@@ -2436,6 +2436,9 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_GRAPHICS:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_JPEG))
 		ret = cli_scanjpeg(desc, ctx);
+
+	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS)
+		ret = cli_parsejpeg(ctx);
 	    break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */

@@ -272,6 +272,10 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 	}
     }
     free(name);
+    if(ctx->img_validate && ret == CL_EPARSE) {
+	*ctx->virname = "Heuristics.SWF.SuspectImage";
+	return CL_VIRUS;
+    }
     return ret;
 }
 
@@ -377,8 +381,10 @@ int cli_scanswf(cli_ctx *ctx)
 		GETWORD(foo); /* CharacterID */
 		GETDWORD(val); /* AlphaDataOffset */
 		if(val) {
+		    ctx->img_validate = 1;
 		    if(dumpscan(map, offset, val, "Image", ctx) == CL_VIRUS)
 			return CL_VIRUS;
+		    ctx->img_validate = 0;
 		}
 		offset += tag_len - 6;
 		break;

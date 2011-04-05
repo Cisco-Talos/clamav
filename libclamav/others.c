@@ -212,6 +212,8 @@ const char *cl_strerror(int clerror)
 	    return "Can't verify database integrity";
 	case CL_EUNPACK:
 	    return "Can't unpack some data";
+	case CL_EPARSE: /* like CL_EFORMAT but reported outside magicscan() */
+	    return "Can't parse data";
 
 	/* I/O and memory errors */
 	case CL_EOPEN:

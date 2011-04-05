@@ -66,6 +66,7 @@ typedef enum {
     CL_EMAXSIZE,
     CL_EMAXFILES,
     CL_EFORMAT,
+    CL_EPARSE,
     CL_EBYTECODE,/* may be reported in testmode */
     CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
 
