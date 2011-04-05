@@ -42,7 +42,7 @@ static int cb_messagebox(struct cli_emu *emu, const char *desc, unsigned bytes)
     caption = cli_emu_vmm_read_string(emu->mem, lpcaption, 1024);
     text = cli_emu_vmm_read_string(emu->mem, lptext, 1024);
 
-    cli_dbgmsg("MessageBoxA(%x, caption='%s', text='%s', %d)\n", hwnd,
+    printf("MessageBoxA(%x, caption='%s', text='%s', %d)\n", hwnd,
 	   caption, text, utype);
 
     free(caption);
@@ -62,7 +62,7 @@ static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
     uint32_t rc;
     POP32(&emu->eip);
     POP32(&rc);
-    cli_dbgmsg("ExitProcess(%x)\n", rc);
+    printf("ExitProcess(%x)\n", rc);
     emu->eip = MAPPING_END;
     return 0;
 }

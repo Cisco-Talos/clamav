@@ -212,12 +212,13 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
     struct dis_instr *instr;
     uint32_t idx = hash32shift(emu->eip) & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
-//    if (instr->opcode == OP_INVALID) {
-    if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
-	return NULL;
+    if (instr->opcode == OP_INVALID || instr->va != emu->eip) {
+	if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
+	    return NULL;
 	instr->len = ret - emu->eip;
+	instr->va = emu->eip;
 	/* TODO discard cache when writing to this page! */
-//    }
+    }
     return instr;
 }
 

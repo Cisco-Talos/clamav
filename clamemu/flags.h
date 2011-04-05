@@ -103,6 +103,7 @@ typedef struct dis_instr {
     uint8_t segment;
     uint8_t len;
     struct dis_arg arg[3];
+    uint32_t va;
 } instr_t;
 
 struct cli_emu {
