@@ -784,6 +784,43 @@ static always_inline void emu_add(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg1);
 }
 
+static const int16_t mul_flags = (1 << bit_cf) | (1 << bit_of);
+static always_inline void emu_mul(cli_emu_t *state, instr_t *instr)
+{
+    uint32_t reg1, reg2;
+    uint64_t result;
+    int8_t of;
+    desc_t reg_eax, reg_edx;
+
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    switch (instr->arg[0].access_size) {
+	case SIZEB:
+	    write_reg(state, REG_AX, reg1 * reg2);
+	    of = reg1 & 0xff00 ? 1 : 0;
+	    break;
+	case SIZED:
+	    reg1 *= reg2;
+	    write_reg(state, REG_DX, reg1 >> 16);
+	    write_reg(state, REG_AX, reg1 & 0xffff);
+	    of = reg1 & 0xffff0000 ? 1 : 0;
+	    break;
+	case SIZEW:
+	    result = ((uint64_t)reg1) * reg2;
+	    write_reg(state, REG_EDX, result >> 32);
+	    write_reg(state, REG_EAX, result);
+	    of = (result >> 32) ? 1 : 0;
+	    break;
+    }
+
+    state->eflags = (state->eflags & ~mul_flags) |
+	(of << bit_of) |
+	(of << bit_cf);
+    state->eflags_def |= mul_flags;
+    /* TODO:sf,zf,af,pf undefined */
+}
+
 static always_inline int emu_loop(cli_emu_t *state, instr_t *instr)
 {
     uint32_t cnt;
@@ -1106,6 +1143,9 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_ADD:
 	    emu_add(emu, instr);
+	    break;
+	case OP_MUL:
+	    emu_mul(emu, instr);
 	    break;
 	case OP_SHL:
 	    emu_shl(emu, instr);

@@ -105,6 +105,7 @@ typedef struct dis_instr {
     struct dis_arg arg[3];
     uint32_t va;
 } instr_t;
+
 struct cli_emu {
     emu_vmm_t *mem;
     uint32_t eip;
