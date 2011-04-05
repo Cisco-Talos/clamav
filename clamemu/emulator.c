@@ -1245,7 +1245,10 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
     } else {
 	/* 254 - magic for varargs */
 	printf("Called varargs API %s\n", desc ? desc : "??");
-	return -1;
+	mem_pop(emu, 4, &emu->eip);
+	emu->reg_val[REG_EAX] = 0;
+	/* caller cleans up */
+	return 0;
     }
 }
 
