@@ -1237,14 +1237,14 @@ void cli_emulator_dbgstate(cli_emu_t *emu)
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     if (bytes != 254) {
-	cli_dbgmsg("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
+	printf("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
 	mem_pop(emu, 4, &emu->eip);
 	emu->reg_val[REG_ESP] += bytes;
 	emu->reg_val[REG_EAX] = 0;
 	return 0;
     } else {
 	/* 254 - magic for varargs */
-	cli_dbgmsg("Called varargs API %s\n", desc ? desc : "??");
+	printf("Called varargs API %s\n", desc ? desc : "??");
 	return -1;
     }
 }
