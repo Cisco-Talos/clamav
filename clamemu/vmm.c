@@ -69,6 +69,7 @@ static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 	p->file_offset = v->tmpfd_written;
 	v->tmpfd_written += 4096 / MINALIGN;
     }
+    p->cached_page_idx = 0;
     n = p->file_offset * MINALIGN;
     if (pwrite(v->tmpfd, c->data, 4096, n) != n) {
 	cli_dbgmsg("pwrite failed at %x: %s\n", n, strerror(errno));
@@ -76,16 +77,19 @@ static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
     }
 }
 
-static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p)
+static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p, uint32_t idx)
 {
     unsigned nextidx = v->cached_idx + 1;
     cached_page_t *c = &v->cached[v->cached_idx];
 
     if (c->dirty)
-	vmm_pageout(v, c, p);
+	vmm_pageout(v, c, &v->page_flags[idx]);
 
     c->flag_rwx = p->flag_rwx;
     c->dirty = 0;
+    c->pageidx = idx;
+    if (p->cached_page_idx)
+	cli_warnmsg("caching in already cached page\n");
     p->cached_page_idx = v->cached_idx + 1;
     v->cached_idx = nextidx >= 15 ? 0 : nextidx;
     if (UNLIKELY(!p->init)) {
@@ -116,10 +120,12 @@ cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 	return &v->cached[idx];
     }
     /* cache in 2nd page */
-    if (page+1 < v->n_pages)
-	vmm_pagein(v, &v->page_flags[page+1]);
+    if (page+1 < v->n_pages && !v->page_flags[page+1].cached_page_idx)
+	vmm_pagein(v, &v->page_flags[page+1], page+1);
     /* now cache in the page we wanted */
-    return vmm_pagein(v, p);
+    v->lastused_page = page;
+    v->lastused_page_idx = v->cached_idx;
+    return vmm_pagein(v, p, page);
 }
 
 char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen)

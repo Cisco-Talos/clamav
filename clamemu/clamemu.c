@@ -62,7 +62,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 
     if (!(rc = setjmp(seh_handler))) {
 	for (i=0;!cli_emulator_step(emu) && i < MAXEMU;i++) {
-	    /*	cli_emulator_dbgstate(emu);*/
+/*	    cli_emulator_dbgstate(emu);*/
 	}
     } else {
 	/* VMM raised exception */
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 
 	/* scan file descriptor */
 	size = 0;
-	cl_debug();
+	/*cl_debug();*/
 	options = CL_SCAN_STDOPT &~ (CL_SCAN_HTML | CL_SCAN_ELF);
 	ret = cl_scandesc_callback(fd, &virname, &size, engine, CL_SCAN_STDOPT, argv[1]);
 	if (ret == CL_VIRUS) {

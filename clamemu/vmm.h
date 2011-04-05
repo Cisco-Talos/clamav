@@ -39,11 +39,12 @@ typedef struct {
     unsigned init:1;/* 1 - has real data, 0 - zeroinit */
     unsigned cached_page_idx:4;/* 0 - not cached; 1-15 cache idx */
 } page_t;
+
 typedef struct {
     uint8_t flag_rwx;
     uint8_t dirty;
     uint16_t reserved0;
-    uint32_t reserved1;
+    uint32_t pageidx;
     uint8_t data[4096];
 } cached_page_t;
 

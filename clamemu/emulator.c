@@ -198,6 +198,7 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
     uint32_t idx = emu->eip & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
     if (instr->va != emu->eip) {
+	cli_dbgmsg("eip = %08x\n", emu->eip);
 	if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
 	    return NULL;
 	instr->len = ret - emu->eip;
