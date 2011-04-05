@@ -285,7 +285,6 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	    return -1;
 	}
 
-	zeroinit = section->chr & IMAGE_SCN_CNT_UNINITIALIZED_DATA;
 	/* r -> x, and w -> x but not viceversa */
 	flag_rwx =
 	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
@@ -297,6 +296,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 		cli_dbgmsg("rva out of range: %x > %x\n", page*4096, v->n_pages*4096);
 		return -1;
 	    }
+	    zeroinit = j*4096 > section->rsz;
 	    v->page_flags[page].init = !zeroinit;
 	    /* 1 page can contain actually more than 1 section,
 	     * but offset must be MINALIGN aligned, if not this will not work */
