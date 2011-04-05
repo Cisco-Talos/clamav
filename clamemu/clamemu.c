@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 
 	/* scan file descriptor */
 	size = 0;
-	/*cl_debug();*/
+	cl_debug();
 	options = CL_SCAN_STDOPT &~ (CL_SCAN_HTML | CL_SCAN_ELF);
 	ret = cl_scandesc_callback(fd, &virname, &size, engine, CL_SCAN_STDOPT, argv[1]);
 	if (ret == CL_VIRUS) {

@@ -110,13 +110,13 @@ static int cb_getprocaddress(struct cli_emu *emu, const char *desc, unsigned byt
 	    import_handler_t hook = lookup_function(dll, procname, &bytes);
 	    if (!hook)
 		hook = hook_generic_stdcall;
-	    if (bytes) {
+	    if (bytes != ~0u) {
 		emu_createimportcall(emu->mem, &called_addr, hook, bytes, "<loadmodule> ", procname);
 		emu->reg_val[REG_EAX] = called_addr;
 	    }
 	}
     }
-		printf("->%08x\n", called_addr);
+    printf("->%08x\n", called_addr);
 
     free(procname);
 

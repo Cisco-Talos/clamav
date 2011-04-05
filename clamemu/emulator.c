@@ -89,7 +89,7 @@ cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
     cli_dbgmsg("Mapped stack: %08x - %08x\n", stack, stackend);
     emu->reg_val[REG_ESP] = stackend;
 
-    mem_push(emu, 4, MAPPING_END);
+    mem_push(emu, 4, MAPPING_END-0x42);
     /* TODO: init registers */
     return emu;
 }
@@ -991,9 +991,13 @@ int cli_emulator_step(cli_emu_t *emu)
     struct dis_instr *instr;
     struct import_description *import;
 
-    if (emu->eip >= MAPPING_END) {
-	if (emu->eip == MAPPING_END) {
+    if (emu->eip >= MAPPING_END - 0x42) {
+	if (emu->eip == MAPPING_END - 0x42) {
 	    cli_dbgmsg("emulated program exited\n");
+	    return -2;
+	}
+	if (emu->eip < MAPPING_END+4) {
+	    cli_dbgmsg("emulated program jumped to first_import-4\n");
 	    return -2;
 	}
 	import = cli_emu_vmm_get_import(emu->mem, emu->eip);
