@@ -42,15 +42,32 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     uint64_t speed;
     emu_vmm_t *v;
     cli_emu_t *emu;
+    int rc;
+    jmp_buf seh_handler;
+
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
-    v = cli_emu_vmm_new(pedata, sections, fd);
+    if (!setjmp(seh_handler))
+	v = cli_emu_vmm_new(pedata, sections, fd, &seh_handler);
+    else {
+	fprintf(stderr,"exception raised during map_pages\n");
+	cli_emu_vmm_free(v);
+	v = NULL;
+    }
+
     if (!v)
 	return -1;
     emu = cli_emulator_new(v, pedata);
 
     gettimeofday(&tv0, NULL);
-    for (i=0;!cli_emulator_step(emu) && i < MAXEMU;i++) {
-/*	cli_emulator_dbgstate(emu);*/
+
+    if (!(rc = setjmp(seh_handler))) {
+	for (i=0;!cli_emulator_step(emu) && i < MAXEMU;i++) {
+	    /*	cli_emulator_dbgstate(emu);*/
+	}
+    } else {
+	/* VMM raised exception */
+	printf("emulator raised exception\n");
+	/* TODO: call SEH handler if one is installed */
     }
     gettimeofday(&tv1, NULL);
 

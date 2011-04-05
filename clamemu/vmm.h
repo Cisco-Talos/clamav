@@ -64,7 +64,7 @@ struct emu_vmm {
     uint32_t tmpfd_written;/* in MINALIGN blocks */
     uint32_t imports_n;
     struct import_description *imports;
-    jmp_buf seh_handler;
+    jmp_buf* seh_handler;
 };
 
 struct cli_exe_section;
@@ -86,7 +86,7 @@ enum {
     EMU_ERR_SIZE,
 };
 
-emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd);
+emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, jmp_buf *seh_handler);
 void cli_emu_vmm_raise(emu_vmm_t *v, int err) NORETURN;
 cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va);
 

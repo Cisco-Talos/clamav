@@ -105,7 +105,6 @@ typedef struct dis_instr {
     struct dis_arg arg[3];
     uint32_t va;
 } instr_t;
-
 struct cli_emu {
     emu_vmm_t *mem;
     uint32_t eip;
@@ -114,11 +113,12 @@ struct cli_emu {
     uint32_t eflags_def;
     uint32_t regs[MAXREG];
     struct dis_instr cached_disasm[DISASM_CACHE_SIZE];
-    uint32_t reg_val[REG_EDI+1];
-    uint32_t reg_def[REG_EDI+1];
+    uint32_t reg_val[8];
+    uint32_t reg_def[8];
     uint8_t prefix_repe;
     uint8_t prefix_repne;
 };
+
 
 static inline void calc_flags_inc(cli_emu_t *state, int32_t a, const desc_t *desc)
 {

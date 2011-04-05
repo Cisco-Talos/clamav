@@ -989,7 +989,7 @@ static void emu_lea(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, addr);
 }
 
-static int cli_emulator_step1(cli_emu_t *emu)
+int cli_emulator_step(cli_emu_t *emu)
 {
     int rc;
     struct dis_instr *instr;
@@ -1225,17 +1225,6 @@ static int cli_emulator_step1(cli_emu_t *emu)
     emu->prefix_repe = 0;
     emu->prefix_repne = 0;
     return 0;
-}
-
-int cli_emulator_step(cli_emu_t *emu)
-{
-    int rc;
-    if (!(rc = setjmp(emu->mem->seh_handler)))
-	return cli_emulator_step1(emu);
-    /* VMM raised exception */
-    printf("emulator raised exception\n");
-    /* TODO: call SEH handler if one is installed */
-    return -1;
 }
 
 void cli_emulator_dbgstate(cli_emu_t *emu)
