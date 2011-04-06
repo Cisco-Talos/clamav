@@ -262,7 +262,7 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 		}
 	    } else {
 		cli_warnmsg("SWF: Unknown image data\n");
-		*ctx->virname = "Heuristics.SWF.SuspectImage.C";
+		*ctx->virname = "Heuristics.SWF.SuspectImage.D";
 		ret = CL_VIRUS;
 	    }
 	    if(ret == CL_VIRUS) {
@@ -307,7 +307,7 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
     }
     free(name);
     if(ctx->img_validate && ret == CL_EPARSE) {
-	*ctx->virname = "Heuristics.SWF.SuspectImage.D";
+	*ctx->virname = "Heuristics.SWF.SuspectImage.E";
 	return CL_VIRUS;
     }
     return ret;
