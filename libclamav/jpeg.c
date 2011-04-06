@@ -53,10 +53,16 @@ int cli_parsejpeg(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_parsejpeg()\n");
 
-    if(fmap_readn(map, buff, offset, 3) != 3 || memcmp(buff, "\xff\xd8\xff",3))
+    if(fmap_readn(map, buff, offset, 4) != 4)
+	return CL_SUCCESS; /* Ignore */
+
+    if(!memcmp(buff, "\xff\xd8\xff", 3))
+	offset = 2;
+    else if(!memcmp(buff, "\xff\xd9\xff\xd8", 4))
+	offset = 4;
+    else
 	return CL_SUCCESS; /* Not a JPEG file */
 
-    offset = 2;
     while(1) {
 	segment++;
 	prev_marker = 0;

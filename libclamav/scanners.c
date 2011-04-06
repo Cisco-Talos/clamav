@@ -90,6 +90,8 @@
 #include "fmap.h"
 #include "cache.h"
 #include "events.h"
+#include "swf.h"
+#include "jpeg.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>

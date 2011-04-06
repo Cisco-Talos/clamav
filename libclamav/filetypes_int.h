@@ -154,6 +154,7 @@ static const char *ftypes_int[] = {
   "0:0:c771:CPIO OLD BINARY LE:CL_TYPE_ANY:CL_TYPE_CPIO_OLD:45",
   "0:0:435753:SWF (compressed):CL_TYPE_ANY:CL_TYPE_SWF:61",
   "0:0:465753:SWF (uncompressed):CL_TYPE_ANY:CL_TYPE_SWF:61",
+  "0:0:ffd9ffd8:JPEG (bad header):CL_TYPE_ANY:CL_TYPE_GRAPHICS:61",
   NULL
 };
 

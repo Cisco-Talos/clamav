@@ -48,6 +48,7 @@
 #include "cltypes.h"
 #include "swf.h"
 #include "clamav.h"
+#include "scanners.h"
 
 #define EC16(v)	le16_to_host(v)
 #define EC32(v)	le32_to_host(v)
@@ -221,9 +222,9 @@ static const char *tagname(tag_id id)
     return NULL;
 }
 
-static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const char *obj, cli_ctx *ctx)
+static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const char *obj, int version, cli_ctx *ctx)
 {
-	int newfd, ret;
+	int newfd, ret = CL_CLEAN;
 	unsigned int bread, sum = 0;
 	char buff[FILEBUFF];
 	char *name;
@@ -238,21 +239,54 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
     }
 
     while((bread = fmap_readn(map, buff, offset, sizeof(buff))) > 0) {
+	if(!sum && ctx->img_validate) {
+	    if(!memcmp(buff, "\xff\xd8", 2)) {
+		cli_dbgmsg("SWF: JPEG image data\n");
+	    } else if(!memcmp(buff, "\xff\xd9\xff\xd8", 4)) {
+		cli_dbgmsg("SWF: JPEG image data (erroneous header)\n");
+		if(version >= 8) {
+		    *ctx->virname = "Heuristics.SWF.SuspectImage.A";
+		    ret = CL_VIRUS;
+		}
+	    } else if(!memcmp(buff, "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", 8)) {
+		cli_dbgmsg("SWF: PNG image data\n");
+		if(version < 8) {
+		    *ctx->virname = "Heuristics.SWF.SuspectImage.B";
+		    ret = CL_VIRUS;
+		}
+	    } else if(!memcmp(buff, "\x47\x49\x46\x38\x39\x61", 6)) {
+		cli_dbgmsg("SWF: GIF89a image data\n");
+		if(version < 8) {
+		    *ctx->virname = "Heuristics.SWF.SuspectImage.C";
+		    ret = CL_VIRUS;
+		}
+	    } else {
+		cli_warnmsg("SWF: Unknown image data\n");
+		*ctx->virname = "Heuristics.SWF.SuspectImage.C";
+		ret = CL_VIRUS;
+	    }
+	    if(ret == CL_VIRUS) {
+		close(newfd);
+		cli_unlink(name);
+		free(name);
+		return ret;
+	    }
+	}
 	if(sum + bread >= size) {
 	    if(cli_writen(newfd, buff, size - sum) == -1) {
 		cli_errmsg("dumpscan: Can't write to %s\n", name);
+		close(newfd);
 		cli_unlink(name);
 		free(name);
-		close(newfd);
 		return CL_EWRITE;
 	    }
 	    break;
 	} else {
 	    if(cli_writen(newfd, buff, bread) == -1) {
 		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
+		close(newfd);
 		cli_unlink(name);
 		free(name);
-		close(newfd);
 		return CL_EWRITE;
 	    }
 	}
@@ -273,7 +307,7 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
     }
     free(name);
     if(ctx->img_validate && ret == CL_EPARSE) {
-	*ctx->virname = "Heuristics.SWF.SuspectImage";
+	*ctx->virname = "Heuristics.SWF.SuspectImage.D";
 	return CL_VIRUS;
     }
     return ret;
@@ -282,12 +316,11 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 int cli_scanswf(cli_ctx *ctx)
 {
 	struct swf_file_hdr file_hdr;
-	int compressed = 0;
 	fmap_t *map = *ctx->fmap;
 	unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
 	const char *pt;
 	char get_c;
-	unsigned int val, fps, foo, offset = 0, tag_hdr, tag_type, tag_len;
+	unsigned int val, foo, offset = 0, tag_hdr, tag_type, tag_len;
 	unsigned long int bits;
 
 
@@ -352,7 +385,7 @@ int cli_scanswf(cli_ctx *ctx)
 
 	    case TAG_METADATA:
 		if(tag_len) {
-		    if(dumpscan(map, offset, tag_len, "Metadata", ctx) == CL_VIRUS)
+		    if(dumpscan(map, offset, tag_len, "Metadata", file_hdr.version, ctx) == CL_VIRUS)
 			return CL_VIRUS;
 		}
 		offset += tag_len;
@@ -382,7 +415,7 @@ int cli_scanswf(cli_ctx *ctx)
 		GETDWORD(val); /* AlphaDataOffset */
 		if(val) {
 		    ctx->img_validate = 1;
-		    if(dumpscan(map, offset, val, "Image", ctx) == CL_VIRUS)
+		    if(dumpscan(map, offset, val, "Image", file_hdr.version, ctx) == CL_VIRUS)
 			return CL_VIRUS;
 		    ctx->img_validate = 0;
 		}
@@ -393,7 +426,7 @@ int cli_scanswf(cli_ctx *ctx)
 		GETWORD(foo); /* CharacterID */
 		GETDWORD(foo); /* Reserved */
 		if(tag_len > 6) {
-		    if(dumpscan(map, offset, tag_len - 6, "Binary", ctx) == CL_VIRUS)
+		    if(dumpscan(map, offset, tag_len - 6, "Binary", file_hdr.version, ctx) == CL_VIRUS)
 			return CL_VIRUS;
 		}
 		offset += tag_len - 6;
