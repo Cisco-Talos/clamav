@@ -2,8 +2,13 @@ aaaa ICON "res/clam.ico"
 
 #include "wx/msw/wx.rc"
 #include "../../../../libclamav/version.h"
+#ifndef REPO_VERSION
+#define __PLATFORM_H
+#include "clamav-config.h"
+#define REPO_VERSION VERSION
+#endif
 
-#define RES_VER_Q 0,96,4,0
+#define RES_VER_Q 3,1,0,0
 
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION RES_VER_Q

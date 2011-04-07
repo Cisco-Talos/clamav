@@ -6,7 +6,7 @@
 #define REPO_VERSION VERSION
 #endif
 
-#define RES_VER_Q 3,0,0,0
+#define RES_VER_Q 3,1,0,0
 #define RES_VER_S "ClamAV for Windows 3.0"
 #define RES_FNAME "clamav.dll"
 #define RES_NAME "interface"
