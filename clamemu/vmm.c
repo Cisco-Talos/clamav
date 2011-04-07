@@ -104,7 +104,7 @@ cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 
     if (v->lastused_page == page)
 	return &v->cached[v->lastused_page_idx];
-    if (UNLIKELY(page > v->n_pages))
+    if (UNLIKELY(page >= v->n_pages))
 	return NULL; /* out of bounds */
     p = &v->page_flags[page];
     idx = p->cached_page_idx;

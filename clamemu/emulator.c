@@ -142,9 +142,10 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     TEB teb;/* this is FS:0x00 here */
     LDR_DATA_TABLE_ENTRY *table = NULL;
     os_t OS;
-    uint32_t tebaddr, pebaddr, stacksize, size, va, i, tableaddr;
+    uint32_t pebaddr, stacksize, size, va, i, tableaddr;
 
     memset(&OS, 0, sizeof(OS));
+    memset(&teb, 0, sizeof(teb));
 
     /* TODO: we could map at fixed 0x7efdd000, but if we don't its easier to
      * detect if any apps are using that hardcoded address (malware mostly) */
@@ -156,7 +157,7 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     teb.NtTib.StackBase = teb.NtTib.StackLimit + stacksize;
     cli_dbgmsg("Mapped stack: %08x - %08x\n", teb.NtTib.StackLimit, teb.NtTib.StackLimit);
     teb.NtTib.Version = 7680;
-    teb.NtTib.Self = tebaddr;
+    teb.NtTib.Self = emu->mem->fs_offset;
 
     teb.ClientId.UniqueProcess = -1;
     teb.ClientId.UniqueThread = -2;
@@ -202,7 +203,6 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
 	dllname = cli_emu_vmm_read_string(emu->mem, pedata->opt32.ImageBase + import.DllName, 64);
 	if (!dllname)
 	    break;;
-	free(dllname);
 	dll = lookup_dll(dllname);
 
 	table[i].DllBase = map_dll(dll);
@@ -213,6 +213,7 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
 	table[i].TimeDateStamp = pedata->file_hdr.TimeDateStamp;
 
 	i++;
+	free(dllname);
     }
     if (i > 1) {
 	SetupList(&table[0].InLoadOrderLinks, sizeof(table[0]), i, tableaddr);
