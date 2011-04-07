@@ -32,6 +32,7 @@
 #include "pe.h"
 #include "imports.h"
 #include "rebuildpe.h"
+#include "structs.h"
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -42,14 +43,6 @@
 #define IMAGE_SCN_MEM_EXECUTE 0x20000000
 #define IMAGE_SCN_MEM_READ 0x40000000
 #define IMAGE_SCN_MEM_WRITE 0x80000000
-
-struct IMAGE_IMPORT {
-    uint32_t OrigThunk;
-    uint32_t Time;
-    uint32_t Fwd;
-    uint32_t DllName;
-    uint32_t Thunk;
-};
 
 extern ssize_t pread (int, void *, size_t, off_t);
 extern ssize_t pwrite (int __fd, const void *, size_t, off_t);

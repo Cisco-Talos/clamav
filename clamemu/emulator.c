@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2010 - 2011, Sourcefire, Inc.
  *
- *  Authors: Török Edvin
+ *  Authors: Török Edvin, aCaB
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -26,6 +26,7 @@
 #include "disasm.h"
 #include "pe.h"
 #include "flags.h"
+#include "structs.h"
 #include <string.h>
 
 
@@ -73,23 +74,156 @@ void mem_push(cli_emu_t *state, unsigned size, uint32_t value)
     }
 }
 
+typedef struct {
+    PEB peb;
+    PEB_LDR_DATA ldr_data;
+    RTL_USER_PROCESS_PARAMETERS params;
+    KUSER_SHARED_DATA userdata;
+    WCHAR unicode[1024];
+    uint32_t unicode_n;
+} os_t;
+
+static uint32_t offaddr(uint32_t base, const os_t *p1, const void *p2)
+{
+    return base + (char*)p2 - (char*)p1;
+}
+
+static int make_unicode_string(os_t *OS, uint32_t base, UNICODE_STRING *s, const char* str)
+{
+    WCHAR *w;
+    unsigned i;
+    unsigned len = strlen(str) + 1;
+
+    s->Length = s->MaximumLength = 2*len;
+    w = &OS->unicode[OS->unicode_n];
+    OS->unicode_n += s->Length;
+
+    if (OS->unicode_n > sizeof(OS->unicode))
+	return -1;
+    for (i=0;i<len;i++) {
+	w[2*i] = str[i];
+	w[2*i+1] = 0;
+    }
+    s->Buffer = offaddr(base, OS, w);
+    return 0;
+}
+
+#define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
+static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
+{
+    TEB teb;/* this is FS:0x00 here */
+    os_t OS;
+    uint32_t tebaddr, pebaddr, stacksize;
+
+    memset(&OS, 0, sizeof(OS));
+
+    /* TODO: we could map at fixed 0x7efdd000, but if we don't its easier to
+     * detect if any apps are using that hardcoded address (malware mostly) */
+    cli_emu_vmm_alloc(emu->mem, sizeof(OS), &pebaddr);
+
+    /* FILL in PEB / TEB here */
+    stacksize = PESALIGN(pedata->opt32.SizeOfStackReserve, 4096);
+    cli_emu_vmm_alloc(emu->mem, stacksize, &teb.NtTib.StackLimit);
+    teb.NtTib.StackBase = teb.NtTib.StackLimit + stacksize;
+    cli_dbgmsg("Mapped stack: %08x - %08x\n", teb.NtTib.StackLimit, teb.NtTib.StackLimit);
+    teb.NtTib.Version = 7680;
+    teb.NtTib.Self = tebaddr;
+
+    teb.ClientId.UniqueProcess = -1;
+    teb.ClientId.UniqueThread = -2;
+    teb.Peb = pebaddr;
+    teb.CurrentLocale = 1033;
+
+    memcpy(teb.StaticUnicodeBuffer, L"1337", 10);
+    teb.StaticUnicodeString.Buffer = emu->mem->fs_offset +(char*) &teb.StaticUnicodeBuffer - (char*)&teb;
+    teb.StaticUnicodeString.Length = 10;
+    teb.StaticUnicodeString.MaximumLength = sizeof(teb.StaticUnicodeBuffer);
+
+    /* WinXP */
+    OS.peb.OSMajorVersion = 5;
+    OS.peb.OSMinorVersion = 1;
+    OS.peb.OSBuildNumber = 2600;
+    OS.peb.OSPlatformId = 2;
+    OS.peb.Mutant = INVALID_HANDLE_VALUE;
+    OS.peb.NumberOfProcessors = 1;
+
+    OS.ldr_data.Length = sizeof(OS.ldr_data);
+    OS.ldr_data.Initialized = 1;
+    OS.ldr_data.SsHandle = 0;
+
+    OS.peb.LdrData = offaddr(pebaddr, &OS, &OS.ldr_data);
+
+    OS.peb.ProcessParameters = offaddr(pebaddr, &OS, &OS.params);
+    OS.params.AllocationSize = 4096;
+    OS.params.Size = sizeof(OS.params);
+    OS.params.Flags = PARAMS_ALREADY_NORMALIZED;
+    OS.params.ConsoleHandle = INVALID_HANDLE_VALUE;
+    OS.params.hStdInput = (HANDLE)3;
+    OS.params.hStdOutput = (HANDLE)7;
+    OS.params.hStdError = (HANDLE)11;
+    OS.params.CurrentDirectory.Handle = INVALID_HANDLE_VALUE;
+
+    OS.peb.ProcessHeap = HANDLE_HEAP;
+    OS.peb.EnvironmentUpdateCount = 1;
+
+    /* TODO: map at USER_SHARED_DATA? */
+    teb.SharedUserData = offaddr(pebaddr, &OS, &OS.userdata);
+    OS.userdata.TickCountMultiplier = 1;
+    OS.userdata.TickCount.High2Time = 0x1337;
+    OS.userdata.TickCount.High1Time = 0x1337;
+    OS.userdata.Cookie = 0x1337;
+    OS.userdata.NtProductType = NtProductWinNt;
+    OS.userdata.ProductTypeIsValid = TRUE;
+    OS.userdata.NtMajorVersion = OS.peb.OSMajorVersion;
+    OS.userdata.NtMinorVersion = OS.peb.OSMinorVersion;
+    OS.userdata.AlternativeArchitecture = StandardDesign;
+
+    OS.peb.ImageBaseAddress = (HMODULE)pedata->opt32.ImageBase;
+
+    /* end of PEB/TEB*/
+    cli_emu_vmm_write(emu->mem, emu->mem->fs_offset, &teb, sizeof(teb));
+    cli_emu_vmm_write(emu->mem, pebaddr, &OS, sizeof(OS));
+
+    /* init registers */
+    emu->reg_val[REG_ESP] = teb.NtTib.StackBase;
+    emu->reg_val[REG_EBP] = teb.NtTib.StackBase + 0x28;
+    emu->reg_val[REG_EBX] = emu->mem->fs_offset;
+    emu->reg_val[REG_EAX] = 0;
+
+    if (pedata->opt32.Subsystem == 1) {
+	/* subsys native */
+	/*FIXME:drivers take driverobject, registrypath*/
+
+    } else {
+	if (pedata->opt32.DllCharacteristics & 1) {
+	    uint32_t handle = OS.peb.ImageBaseAddress;
+	    uint32_t reason = DLL_PROCESS_ATTACH;
+	    uint32_t reserved = 0;
+	    /* DLL */
+	    mem_push(emu, 4, reserved);
+	    mem_push(emu, 4, reason);
+	    mem_push(emu, 4, handle);
+	} else {
+	    mem_push(emu, 4, teb.Peb);
+	}
+    }
+
+    mem_push(emu, 4, MAPPING_END-0x42);
+    return 0;
+}
+
 cli_emu_t* cli_emulator_new(emu_vmm_t *v, struct cli_pe_hook_data *pedata)
 {
     uint32_t stack, stackend, stacksize;
-    cli_emu_t *emu = cli_malloc(sizeof(*emu));
+    cli_emu_t *emu = cli_calloc(1, sizeof(*emu));
     if (!emu)
 	return NULL;
     emu->mem = v;
     emu->eip = cli_emu_vmm_rva2va(v, pedata->opt32.AddressOfEntryPoint);
     memset(emu->cached_disasm, 0, sizeof(emu->cached_disasm));
 
-    stacksize = pedata->opt32.SizeOfStackReserve;
-    cli_emu_vmm_alloc(v, stacksize, &stack);
-    stackend = (stack + stacksize + 4095) &~ 4095;/* align */
-    cli_dbgmsg("Mapped stack: %08x - %08x\n", stack, stackend);
-    emu->reg_val[REG_ESP] = stackend;
+    pe_setup(emu, pedata);
 
-    mem_push(emu, 4, MAPPING_END-0x42);
     /* TODO: init registers */
     return emu;
 }
@@ -1342,57 +1476,6 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
     }
 }
 
-struct exception_record {
-    uint32_t ExceptionCode;
-    uint32_t ExceptionFlags;
-    uint32_t ExceptionRecord;
-    uint32_t ExceptionAddress;
-    uint32_t NumberParameters;
-    uint32_t ExceptionInformation[15];
-};
-
-typedef uint32_t DWORD;
-typedef uint8_t BYTE;
-
-typedef struct _FLOATING_SAVE_AREA {
-	DWORD	ControlWord;
-	DWORD	StatusWord;
-	DWORD	TagWord;
-	DWORD	ErrorOffset;
-	DWORD	ErrorSelector;
-	DWORD	DataOffset;
-	DWORD	DataSelector;
-	BYTE	RegisterArea[80];
-	DWORD	Cr0NpxState;
-} FLOATING_SAVE_AREA;
-typedef struct _CONTEXT {
-	DWORD	ContextFlags;
-	DWORD	Dr0;
-	DWORD	Dr1;
-	DWORD	Dr2;
-	DWORD	Dr3;
-	DWORD	Dr6;
-	DWORD	Dr7;
-	FLOATING_SAVE_AREA FloatSave;
-	DWORD	SegGs;
-	DWORD	SegFs;
-	DWORD	SegEs;
-	DWORD	SegDs;
-	DWORD	Edi;
-	DWORD	Esi;
-	DWORD	Ebx;
-	DWORD	Edx;
-	DWORD	Ecx;
-	DWORD	Eax;
-	DWORD	Ebp;
-	DWORD	Eip;
-	DWORD	SegCs;
-	DWORD	EFlags;
-	DWORD	Esp;
-	DWORD	SegSs;
-	BYTE	ExtendedRegisters[512];
-} CONTEXT;
-
 static const uint8_t seh_code[] = {
     0xff, 0xd0,
     0x83, 0xf8, 0x00,
@@ -1439,7 +1522,7 @@ static const uint8_t seh_code[] = {
  */
 int cli_emulator_seh(cli_emu_t *emu, int rc)
 {
-    struct exception_record record;
+    EXCEPTION_REGISTRATION_RECORD record;
     CONTEXT context;
     uint32_t recordaddr, contextaddr, seh_code_addr;
     uint32_t seh_handler_addr, next_addr;
