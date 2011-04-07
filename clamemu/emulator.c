@@ -80,7 +80,7 @@ typedef struct {
     PEB_LDR_DATA ldr_data;
     RTL_USER_PROCESS_PARAMETERS params;
     KUSER_SHARED_DATA userdata;
-    WCHAR unicode[1024];
+    WCHAR unicode[512];
     uint32_t unicode_n;
 } os_t;
 
@@ -1284,6 +1284,7 @@ int cli_emulator_step(cli_emu_t *emu)
 	if (import) {
 	    if (import->handler(emu, import->description, import->bytes) < 0)
 		return -1;
+	    printf("=%d\n", emu->reg_val[REG_EAX]);
 	    return 0;
 	}
     }

@@ -407,6 +407,7 @@ int cli_emu_vmm_prot_get(emu_vmm_t *v, uint32_t va)
 
 emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, jmp_buf *seh_handler)
 {
+    uint32_t old;
     emu_vmm_t *v;
     if (le16_to_host(pedata->opt64.Magic) == 0x020b) {
 	cli_dbgmsg("PE32+ emulation not supported\n");
@@ -434,6 +435,9 @@ emu_vmm_t *cli_emu_vmm_new(struct cli_pe_hook_data *pedata, struct cli_exe_secti
     v->lastused_page = ~0u;
     v->imports_n = 1;
 
+    old = lseek(fd, 0, SEEK_CUR);
+    v->filesize = lseek(fd, 0, SEEK_END);
+    lseek(fd, old, SEEK_SET);
     if (map_pages(v, pedata, sections) == -1) {
 	cli_emu_vmm_free(v);
 	return NULL;

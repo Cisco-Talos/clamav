@@ -210,16 +210,137 @@ static int cb_getcommandline(struct cli_emu *emu, const char *desc, unsigned byt
     return 0;
 }
 
+static int cb_getmodulefilename(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t hmodule, lpfilename, nsize;
+    POP32(&emu->eip);
+    POP32(&hmodule);
+    POP32(&lpfilename);
+    POP32(&nsize);
+
+    printf("GetModuleFileName(%x, %x, %d)\n", hmodule, lpfilename, nsize);
+    if (hmodule)
+	return 0;/* not emulated yet */
+    if (strlen(cmdline) + 1 < nsize)
+	nsize = strlen(cmdline) + 1;
+
+    cli_emu_vmm_write(emu->mem, lpfilename, cmdline, nsize);
+    emu->reg_val[REG_EAX] = nsize;
+
+    return 0;
+}
+
+#define HANDLE_SELF 0x41
+
+static int cb_createfile(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t lpfilename, dwdesiredaccess, dwsharemode, lpsecurityattributes,
+	     dwcreationdisposition, dwflagsandattributes, htemplatefile;
+    char *filename;
+    POP32(&emu->eip);
+    POP32(&lpfilename);
+    POP32(&dwdesiredaccess);
+    POP32(&dwsharemode);
+    POP32(&lpsecurityattributes);
+    POP32(&dwcreationdisposition);
+    POP32(&dwflagsandattributes);
+    POP32(&htemplatefile);
+
+    filename =  cli_emu_vmm_read_string(emu->mem, lpfilename, 1024);
+    printf("CreateFileA(%s, %x, %x, %x, %x, %x, %x)\n",
+	   filename, dwdesiredaccess, dwsharemode, lpsecurityattributes,
+	   dwcreationdisposition, dwflagsandattributes, htemplatefile);
+    /* TODO: only opening self is supported for now */
+    if (!strcmp(filename, cmdline)) {
+	emu->reg_val[REG_EAX] = HANDLE_SELF;
+    } else {
+	emu->reg_val[REG_EAX] = -1;
+    }
+    free(filename);
+    return 0;
+}
+
+static int cb_getfilesize(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t hfile, lpfilesizehigh;
+    POP32(&emu->eip);
+    POP32(&hfile);
+    POP32(&lpfilesizehigh);
+
+    printf("GetFileSize(%x, %x)\n", hfile, lpfilesizehigh);
+    if (hfile == HANDLE_SELF) {
+	emu->reg_val[REG_EAX] = emu->mem->filesize;
+	if (lpfilesizehigh)
+	    cli_emu_vmm_write32(emu->mem, lpfilesizehigh, 0);
+    } else {
+	emu->reg_val[REG_EAX] = -1;
+    }
+    return 0;
+}
+
+static int cb_globalalloc(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t uflags, dwbytes, addr;
+    POP32(&emu->eip);
+    POP32(&uflags);
+    POP32(&dwbytes);
+
+    printf("GlobalAlloc(%x, %d)\n", uflags, dwbytes);
+    cli_emu_vmm_alloc(emu->mem, dwbytes, &addr);
+    emu->reg_val[REG_EAX] = addr;
+    return 0;
+}
+
+static uint32_t read_offset = 0; /* TODO: all these hooks need a context! */
+
+static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
+{
+    uint32_t hfile, lpbuffer, numberofbytestoread, lpnumberofbytesread, lpoverlapped;
+
+    POP32(&emu->eip);
+    POP32(&hfile);
+    POP32(&lpbuffer);
+    POP32(&numberofbytestoread);
+    POP32(&lpnumberofbytesread);
+    POP32(&lpoverlapped);
+
+    printf("ReadFile(%x, %x, %d, %x, %x)\n",
+	   hfile, lpbuffer, numberofbytestoread, lpnumberofbytesread, lpoverlapped);
+
+    if (hfile == HANDLE_SELF) {
+	char *data = cli_malloc(numberofbytestoread);
+	if (!data)
+	    return -1;
+	int32_t n = pread(emu->mem->infd, data, numberofbytestoread, read_offset);
+	if (n < 0) {
+	    free(data);
+	    return 0;
+	}
+	cli_emu_vmm_write32(emu->mem, lpnumberofbytesread, n);
+	cli_emu_vmm_write(emu->mem, lpbuffer, data, n);
+	free(data);
+	emu->reg_val[REG_EAX] = 1;
+    } else {
+	/* TODO: support other files */
+    }
+    return 0;
+}
+
 const struct hook_desc user32_dll_hooks[] = {
     {"MessageBoxA", cb_messagebox}
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
+    {"CreateFileA", cb_createfile},
     {"ExitProcess", cb_exitprocess},
     {"GetCommandLineA", cb_getcommandline},
+    {"GetFileSize", cb_getfilesize},
+    {"GetModuleFileNameA", cb_getmodulefilename},
     {"GetProcAddress", cb_getprocaddress},
     {"GetTickCount", cb_gettickcount},
+    {"GlobalAlloc", cb_globalalloc},
     {"LoadLibraryA", cb_loadlibrary},
+    {"ReadFile", cb_readfile},
     {"VirtualProtect", cb_virtualprotect}
 };
 

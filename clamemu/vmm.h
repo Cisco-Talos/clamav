@@ -68,6 +68,7 @@ struct emu_vmm {
     jmp_buf* seh_handler;
     uint32_t fs_offset;
     uint32_t except_addr;
+    uint32_t filesize;
 };
 
 struct cli_exe_section;
@@ -148,7 +149,7 @@ static always_inline void cli_emu_vmm_read_r(emu_vmm_t *v, uint32_t va, void *va
 void cli_emu_vmm_read_x(emu_vmm_t *v, uint32_t va, void *value, uint32_t len);
 char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen);
 
-static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
+static always_inline void cli_emu_vmm_write1(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
 {
     /* caches at least 2 pages, so when we read an int32 that crosess page
      * boundary, we can do it fast */
@@ -161,22 +162,33 @@ static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const voi
 	cli_emu_vmm_raise(v, -EMU_ERR_VMM_WRITE, va);
 }
 
+static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
+{
+    while (len >= 4096) {
+	cli_emu_vmm_write1(v, va, value, 4096);
+	len -= 4096;
+	va += 4096;
+	value += 4096;
+    }
+    cli_emu_vmm_write1(v, va, value, len);
+}
+
 static always_inline void cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t value)
 {
     uint8_t a = value;
-    cli_emu_vmm_write(v, va, &a, 1);
+    cli_emu_vmm_write1(v, va, &a, 1);
 }
 
 static always_inline void cli_emu_vmm_write16(emu_vmm_t *v, uint32_t va, uint32_t value)
 {
     uint16_t a = value;
-    cli_emu_vmm_write(v, va, &a, 2);
+    cli_emu_vmm_write1(v, va, &a, 2);
 }
 
 static always_inline void cli_emu_vmm_write32(emu_vmm_t *v, uint32_t va, uint32_t value)
 {
     uint32_t a = value;
-    cli_emu_vmm_write(v, va, &a, 4);
+    cli_emu_vmm_write1(v, va, &a, 4);
 }
 
 int cli_emu_vmm_alloc(emu_vmm_t *v, uint32_t amount, uint32_t *va);
