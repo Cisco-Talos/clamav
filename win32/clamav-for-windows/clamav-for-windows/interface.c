@@ -810,11 +810,11 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
     instance *inst = (instance *)pScanner;
 
     logg("*in Scan_ScanObject(pScanner = %p, pObjectPath = %S)\n", pScanner, pObjectPath);
-    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE) {
+    if((fhdl = CreateFileW(pObjectPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL)) == INVALID_HANDLE_VALUE) {
 	wchar_t *uncfname = uncpathw(pObjectPath);
 	if(!uncfname)
 	    FAIL(CL_EMEM, "uncpathw() failed");
-	fhdl = CreateFileW(uncfname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
+	fhdl = CreateFileW(uncfname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
 	logg("*Scan_ScanObject translating '%S' to '%S'\n", pObjectPath, uncfname);
 	free(uncfname);
 	if(fhdl == INVALID_HANDLE_VALUE)
