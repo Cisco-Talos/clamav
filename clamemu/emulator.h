@@ -33,5 +33,6 @@ void cli_emulator_dbgstate(cli_emu_t *emu);
 int cli_emulator_seh(cli_emu_t *emu, int rc);
 void mem_push(cli_emu_t *state, unsigned size, uint32_t value);
 void mem_pop(cli_emu_t *state, int size, uint32_t *value);
-
+#define LIBMAPPING (MAPPING_END+0x0f000000)
+uint32_t map_dll(const struct dll_desc *dll);
 #endif

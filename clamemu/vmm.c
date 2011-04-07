@@ -307,6 +307,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
     size = pedata->opt32.DataDirectory[1].Size;
     while (size >= sizeof(struct IMAGE_IMPORT)) {
 	struct IMAGE_IMPORT import;
+	const struct dll_desc *dll;
 	char *dllname;
 
 	cli_emu_vmm_read_r(v, va, &import, sizeof(import));
@@ -333,14 +334,13 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	uint32_t rva = import.OrigThunk;
 	if (!rva)
 	    rva = import.Thunk;
+	dll = lookup_dll(dllname);
 	for(i=0;;i++, rva += 4) {
-	    const struct dll_desc *dll;
 	    uint32_t import_entry, called_addr = 0;
 	    cli_emu_vmm_read32(v, base + rva, &import_entry);
 	    EC32(import_entry);
 	    if (!import_entry)
 		break;/* end of imports for this DLL */
-	    dll = lookup_dll(dllname);
 	    if (import_entry & 0x80000000) {
 		cli_dbgmsg("import by ordinal %d from %s, not supported, replaced with stub!\n",
 			import_entry & 0xffff, dllname);

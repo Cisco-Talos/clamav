@@ -27,6 +27,7 @@
 #include "pe.h"
 #include "flags.h"
 #include "structs.h"
+#include "imports.h"
 #include <string.h>
 
 
@@ -108,12 +109,40 @@ static int make_unicode_string(os_t *OS, uint32_t base, UNICODE_STRING *s, const
     return 0;
 }
 
+#define LIBMAPPING (MAPPING_END+0x0f000000)
+#define EC32(x) (x) = le32_to_host(x) /* Convert little endian to host */
+uint32_t map_dll(const struct dll_desc *dll)
+{
+    /*FIXME: this is not a real mapping, just a fake handle
+     * TODO: this should be a pointer to the mapped memory of a fake dll */
+    unsigned dll_idx = dll - &all_dlls[0];
+    return LIBMAPPING + dll_idx * 4;
+}
+
+static void SetupList(void *head, uint32_t element_size, uint32_t elements, uint32_t addr)
+{
+    unsigned i;
+    LIST_ENTRY *le = head;
+
+    le->Flink = le->Blink = addr;
+    for (i=0;i<elements;) {
+	uint32_t next_addr = addr + element_size;
+	le->Flink = next_addr;
+	i++;
+	le = (LIST_ENTRY*)((char*)head + element_size);
+	le->Blink = addr;
+	le->Flink = next_addr;
+	addr = next_addr;
+    }
+}
+
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
 {
     TEB teb;/* this is FS:0x00 here */
+    LDR_DATA_TABLE_ENTRY *table = NULL;
     os_t OS;
-    uint32_t tebaddr, pebaddr, stacksize;
+    uint32_t tebaddr, pebaddr, stacksize, size, va, i, tableaddr;
 
     memset(&OS, 0, sizeof(OS));
 
@@ -146,6 +175,53 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     OS.peb.OSPlatformId = 2;
     OS.peb.Mutant = INVALID_HANDLE_VALUE;
     OS.peb.NumberOfProcessors = 1;
+
+    va = pedata->opt32.ImageBase + pedata->opt32.DataDirectory[1].VirtualAddress;
+    size = pedata->opt32.DataDirectory[1].Size;
+    if (size) {
+	table = calloc(1 + size / sizeof(struct IMAGE_IMPORT),sizeof(*table));
+	cli_emu_vmm_alloc(emu->mem, sizeof(*table)*(1 + size/sizeof(struct IMAGE_IMPORT)), &tableaddr);
+    }
+    i = 1;
+    while (size >= sizeof(struct IMAGE_IMPORT)) {
+	struct IMAGE_IMPORT import;
+	const struct dll_desc *dll;
+	uint32_t dll_idx;
+	char *dllname;
+
+	cli_emu_vmm_read_r(emu->mem, va, &import, sizeof(import));
+	size -= sizeof(struct IMAGE_IMPORT);
+	va += sizeof(struct IMAGE_IMPORT);
+	if (!import.DllName)
+	    break;
+	EC32(import.OrigThunk);
+	EC32(import.Fwd);
+	EC32(import.DllName);
+	EC32(import.Thunk);
+
+	dllname = cli_emu_vmm_read_string(emu->mem, pedata->opt32.ImageBase + import.DllName, 64);
+	if (!dllname)
+	    break;;
+	free(dllname);
+	dll = lookup_dll(dllname);
+
+	table[i].DllBase = map_dll(dll);
+	table[i].EntryPoint = table[i].DllBase;
+	make_unicode_string(&OS, pebaddr, &table[i].FullDllName, dllname);/*FIXME: this is full path*/
+	make_unicode_string(&OS, pebaddr, &table[i].BaseDllName, dllname);
+	table[i].CheckSum = pedata->opt32.CheckSum;
+	table[i].TimeDateStamp = pedata->file_hdr.TimeDateStamp;
+
+	i++;
+    }
+    if (i > 1) {
+	SetupList(&table[0].InLoadOrderLinks, sizeof(table[0]), i, tableaddr);
+	SetupList(&table[0].InMemoryOrderLinks, sizeof(table[0]), i, tableaddr);
+	SetupList(&table[0].InInitializationOrderLinks, sizeof(table[0]), i, tableaddr);
+	memcpy(&OS.ldr_data.InMemoryOrderModuleList, &table[0].InMemoryOrderLinks, sizeof(LIST_ENTRY));
+	memcpy(&OS.ldr_data.InLoadOrderModuleList, &table[0].InLoadOrderLinks, sizeof(LIST_ENTRY));
+	memcpy(&OS.ldr_data.InInitializationOrderModuleList, &table[0].InInitializationOrderLinks, sizeof(LIST_ENTRY));
+    }
 
     OS.ldr_data.Length = sizeof(OS.ldr_data);
     OS.ldr_data.Initialized = 1;

@@ -67,7 +67,6 @@ static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
     return 0;
 }
 
-#define LIBMAPPING (MAPPING_END+0x0f000000)
 
 static int cb_loadlibrary(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
@@ -81,11 +80,9 @@ static int cb_loadlibrary(struct cli_emu *emu, const char *desc, unsigned bytes)
     dll = lookup_dll(filename);
     printf("LoadLibrary(%s)\n", filename);
     if (dll) {
-	unsigned dll_idx = dll - &all_dlls[0];
-	/* a fake handle
-	 * TODO: this should be a pointer to the mapped memory of a fake dll */
-	emu->reg_val[REG_EAX] = LIBMAPPING + dll_idx * 4;
+	emu->reg_val[REG_EAX] = map_dll(dll);
     }
+
     free(filename);
     return 0;
 }
