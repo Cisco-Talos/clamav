@@ -25,6 +25,12 @@
 #endif //__BORLANDC__
 
 #include "../../../../libclamav/version.h"
+#ifndef REPO_VERSION
+#define __PLATFORM_H
+#include "clamav-config.h"
+#define REPO_VERSION VERSION
+#endif
+
 #include "SigUIMain.h"
 #include "installdb.h"
 #include <wx/clipbrd.h>
@@ -350,7 +356,7 @@ static wxString GetExecPath()
 
 static wxFileSystemWatcher *watcher = 0;
 static bool watcher_deleted = false;
-void SigUIApp::OnEventLoopEnter(wxEventLoopBase *loop)
+void SigUIApp::OnEventLoopEnter(wxEventLoopBase *)
 {
     if (!watcher && !watcher_deleted) {
         watcher = new wxFileSystemWatcher();
