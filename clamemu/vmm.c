@@ -519,7 +519,8 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
 	cli_dbgmsg("executable not modified\n");
 	return 0;
     }
-
+    cli_dbgmsg("attempting rebuild\n");
+#if 0
     /* skip page 0, which is PE header */
     for (i=1;i < v->n_pages;i++) {
 	if (v->page_flags[i].init || !i || v->page_flags[i-1].init) {
@@ -541,14 +542,18 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
 	for (k=i;k<v->n_pages && !v->page_flags[k].init;k++) {}
 	sections[j++].vsz = (k-i)*4096;
 
-	i = j;
 	sections[j].raw = raw;
 	sections[j].rva = i * 4096;
     }
     nsections++;
     sections = cli_realloc(sections, nsections * sizeof(*sections));
-    if (!sections)
+    if (!sections) {
+	cli_dbgmsg("failed to allocate memory for %d sections\n", nsections);
 	return -1;
+    }
+#else
+    npages = v->n_pages;
+#endif
     raw += npages * 4096;
     sections[j].vsz = sections[j].rsz = npages * 4096;
     if (!sections[j].rsz)
@@ -556,6 +561,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
 
     data = cli_malloc(raw);
     if (!data) {
+	cli_dbgmsg("failed to allocate memory for %d bytes\n", raw);
 	return -1;
     }
     raw0 = raw;
@@ -585,6 +591,7 @@ int cli_emu_vmm_rebuild(emu_vmm_t *v)
 	//unlink(unpack);
 	free(unpacked);
     }
+    cli_dbgmsg("rebuild done");
 
     free(data);
     return 0;

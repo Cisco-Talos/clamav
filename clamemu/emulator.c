@@ -410,14 +410,14 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
     struct dis_instr *instr;
     uint32_t idx = emu->eip & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
-    if (instr->va != emu->eip) {
+//    if (instr->va != emu->eip) {
 	cli_dbgmsg("eip = %08x\n", emu->eip);
 	if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
 	    return NULL;
 	instr->len = ret - emu->eip;
 	instr->va = emu->eip;
 	/* TODO discard cache when writing to this page! */
-    }
+  //  }
     return instr;
 }
 
@@ -1539,6 +1539,7 @@ int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     if (bytes != 254) {
 	printf("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
+	cli_dbgmsg("Called stdcall API %s@%d\n", desc ? desc : "??", bytes);
 	mem_pop(emu, 4, &emu->eip);
 	emu->reg_val[REG_ESP] += bytes;
 	emu->reg_val[REG_EAX] = 0;

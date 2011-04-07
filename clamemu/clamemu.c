@@ -80,8 +80,8 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     } while(!done);
     gettimeofday(&tv1, NULL);
 
-    cli_emulator_free(emu);
     cli_emu_vmm_rebuild(v);
+    cli_emulator_free(emu);
     cli_dbgmsg("emulation done ------------------------------------------------\n\n");
     delta = (tv1.tv_sec - tv0.tv_sec)*1000000 + (tv1.tv_usec - tv0.tv_usec);
     if (!delta) delta = 1;
