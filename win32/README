@@ -9,7 +9,7 @@ To build the source code you will need:
 target just fine but it requires a decent amount of fiddling in order to
 compile the 64bit target; this configuration is therefore not supported.
 
-To run the binaries at least Windows 2000 is required.
+To run the binaries at least Windows XP is required.
 
 1- Getting the code
 
