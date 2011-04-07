@@ -57,7 +57,9 @@ if(F.FileExists(file_versionsta)) {
 		} else {
 			version = '#define REPO_VERSION "devel-' + version.replace(/[\r\n]+$/, '') + '"';
 		}
-	} catch (e) { }
+	} catch (e) {
+		W.Echo('WARNING: Error executing git: ' + e.message);
+	}
 	of = F.CreateTextFile(file_versionout, true);
 	if(!of) {
 		W.Echo('Cannot open '+file_versionout+' for writing');
