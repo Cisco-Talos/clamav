@@ -50,6 +50,7 @@ extern ssize_t pwrite (int __fd, const void *, size_t, off_t);
 static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 {
     uint32_t n;
+    int rc;
     /* page has been modified, need to write out to tempfile */
     p->init = 1;
     if (!p->modified) {
@@ -64,8 +65,9 @@ static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
     }
     p->cached_page_idx = 0;
     n = p->file_offset * MINALIGN;
-    if (pwrite(v->tmpfd, c->data, 4096, n) != n) {
-	cli_dbgmsg("pwrite failed at %x: %s\n", n, strerror(errno));
+    rc = pwrite(v->tmpfd, c->data, 4096, n);
+    if (rc != 4096) {
+	cli_dbgmsg("pwrite (%d,..)=%d failed at %x: %s\n", v->tmpfd, rc, n, strerror(errno));
 	return;
     }
 }
