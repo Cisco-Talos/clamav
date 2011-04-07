@@ -1,3 +1,7 @@
+Thu Apr  7 18:17:56 CEST 2011 (tk)
+----------------------------------
+ * libclamav: add PNG validator based on pngcheck
+
 Tue Apr  5 16:33:15 CEST 2011 (tk)
 ----------------------------------
  * libclamav: add basic JPEG validator

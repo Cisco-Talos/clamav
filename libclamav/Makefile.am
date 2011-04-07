@@ -366,7 +366,9 @@ libclamav_la_SOURCES = \
 	swf.c \
 	swf.h \
 	jpeg.c \
-	jpeg.h
+	jpeg.h \
+	png.c \
+	png.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

@@ -92,6 +92,7 @@
 #include "events.h"
 #include "swf.h"
 #include "jpeg.h"
+#include "png.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2441,6 +2442,9 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS)
 		ret = cli_parsejpeg(ctx);
+
+	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS && ret != CL_EPARSE)
+		ret = cli_parsepng(ctx);
 	    break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
