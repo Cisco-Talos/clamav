@@ -260,6 +260,7 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     /* end of PEB/TEB*/
     cli_emu_vmm_write(emu->mem, emu->mem->fs_offset, &teb, sizeof(teb));
     cli_emu_vmm_write(emu->mem, pebaddr, &OS, sizeof(OS));
+    /* TODO: make PEB RO? */
 
     /* init registers */
     emu->reg_val[REG_ESP] = teb.NtTib.StackBase;

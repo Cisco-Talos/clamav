@@ -297,7 +297,9 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	     * but offset must be MINALIGN aligned, if not this will not work */
 	    if (!zeroinit)
 		v->page_flags[page].file_offset = (raw + j*4096)/MINALIGN;
-	    v->page_flags[page].flag_rwx |= flag_rwx;
+	    /* allow writes during import resolving, import section may be
+	     * readonly! */
+	    v->page_flags[page].flag_rwx = (1 << flag_r) | (1 << flag_w);
 	}
 	cli_dbgmsg("Mapped section RVA: %08x - %08x -> Raw: %08x%s - %08x, VA %08x - %08x\n",
 		   rva, rva + pages * 4096, raw, raw%MINALIGN ? " (rounded!)" : "",
@@ -372,6 +374,30 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	}
 	free(dllname);
     }
+
+    /* set page protections now */
+    for (i=0;i<v->n_pages;i++)
+	v->page_flags[i].flag_rwx = 0;
+    cli_emu_vmm_prot_set(v, v->imagebase, sections[0].rva, 1 << flag_r);
+    for (i=0;i < pedata->nsections; i++) {
+	const struct cli_exe_section *section = &sections[i];
+	uint32_t rva = section->rva;
+	uint32_t pages = (section->vsz + 4095) / 4096;
+	unsigned flag_rwx;
+
+	/* r -> x, and w -> x but not viceversa */
+	flag_rwx =
+	    ((section->chr & IMAGE_SCN_MEM_EXECUTE) ? (1 << flag_x) : 0) |
+	    ((section->chr & IMAGE_SCN_MEM_READ) ? ((1 << flag_r) | (1 << flag_x)): 0) |
+	    ((section->chr & IMAGE_SCN_MEM_WRITE) ? (1 << flag_w) | (1 << flag_r):  0);
+	cli_emu_vmm_prot_set(v, v->imagebase + rva, pages*4096, flag_rwx);
+	cli_dbgmsg("%08x - %08x, %s%s%s\n",
+		   v->imagebase + rva, v->imagebase + rva + pages*4096,
+		   flag_rwx & (1 << flag_r) ? "r" : "-",
+		   flag_rwx & (1 << flag_w) ? "w" : "-",
+		   flag_rwx & (1 << flag_x) ? "x" : "-");
+    }
+
     return 0;
 }
 
@@ -385,12 +411,17 @@ int cli_emu_vmm_prot_set(emu_vmm_t *v, uint32_t va, uint32_t len, uint8_t rwx)
     uint32_t page = (va - v->imagebase) / 4096;
     len = (len + 4095) &~ 4095; /* align */
     do {
+	unsigned cached_page_idx;
 	if (page >= v->n_pages) {
 	    cli_dbgmsg("vmm_prot_set out of bounds: %x > %x\n", va, v->n_pages*4096);
 	    return -EMU_ERR_GENERIC;
 	}
 	/* this also acts as allocation function, by default all pages are zeroinit
 	 * anyway */
+	cached_page_idx = v->page_flags[page].cached_page_idx;
+	if (cached_page_idx) {
+	    v->cached[cached_page_idx-1].flag_rwx = rwx;
+	}
 	v->page_flags[page++].flag_rwx = rwx;
 	len -= 4096;
     } while (len);
