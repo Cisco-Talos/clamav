@@ -80,7 +80,7 @@ typedef struct {
     PEB_LDR_DATA ldr_data;
     RTL_USER_PROCESS_PARAMETERS params;
     KUSER_SHARED_DATA userdata;
-    WCHAR unicode[512];
+    WCHAR unicode[2048];
     uint32_t unicode_n;
 } os_t;
 
@@ -99,7 +99,7 @@ static int make_unicode_string(os_t *OS, uint32_t base, UNICODE_STRING *s, const
     w = &OS->unicode[OS->unicode_n];
     OS->unicode_n += s->Length;
 
-    if (OS->unicode_n > sizeof(OS->unicode))
+    if (2*OS->unicode_n > sizeof(OS->unicode))
 	return -1;
     for (i=0;i<len;i++) {
 	w[2*i] = str[i];
