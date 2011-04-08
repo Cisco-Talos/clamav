@@ -86,6 +86,7 @@ struct cli_dconf {
 #define DOC_CONF_SCRIPT 	0x8
 #define DOC_CONF_HTML_SKIPRAW	0x10
 #define DOC_CONF_JSNORM         0x20
+#define DOC_CONF_SWF		0x40
 
 /* Mail flags */
 #define MAIL_CONF_MBOX	    0x1

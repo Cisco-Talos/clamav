@@ -99,6 +99,7 @@ static struct dconf_module modules[] = {
     { "DOCUMENT",   "SCRIPT",	    DOC_CONF_SCRIPT,	    1 },
     { "DOCUMENT",   "HTMLSKIPRAW",  DOC_CONF_HTML_SKIPRAW,  1 },
     { "DOCUMENT",   "JSNORM",       DOC_CONF_JSNORM,        1 },
+    { "DOCUMENT",   "SWF",	    DOC_CONF_SWF,	    1 },
 
     { "MAIL",	    "MBOX",	    MAIL_CONF_MBOX,	    1 },
     { "MAIL",	    "TNEF",	    MAIL_CONF_TNEF,	    1 },
