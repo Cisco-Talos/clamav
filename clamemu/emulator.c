@@ -1054,6 +1054,20 @@ static always_inline void emu_adc(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg1);
 }
 
+static always_inline void emu_sbb(cli_emu_t *state, instr_t *instr)
+{
+    uint32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+    reg1 -= emu_flags(state, bit_cf);
+    if (instr->arg[0].access_size == SIZE_INVALID)
+	calc_flags_addsub(state, reg1, reg2, &instr->arg[0].add_reg, 1);
+    else
+	calc_flags_addsub(state, reg1, reg2, &mem_desc[instr->arg[0].access_size], 1);
+    reg1 -= reg2;
+    WRITE_RESULT(0, reg1);
+}
+
 static always_inline void emu_add(cli_emu_t *state, instr_t *instr)
 {
     uint32_t reg1, reg2;
@@ -1441,6 +1455,8 @@ int cli_emulator_step(cli_emu_t *emu)
 	case OP_ADC:
 	    emu_adc(emu, instr);
 	    break;
+	case OP_SBB:
+	    emu_sbb(emu, instr);
 	case OP_ADD:
 	    emu_add(emu, instr);
 	    break;
@@ -1470,6 +1486,11 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_JMP:
 	    emu_jmp(emu, instr);
+	    break;
+	case OP_JECXZ:
+	    if (!emu->reg_val[REG_ECX] ||
+		(instr->operation_size == 2 && !emu->reg_val[REG_CX]))
+		emu_jmp(emu, instr);
 	    break;
 	case OP_JO:
 	    if (emu_flags(emu, bit_of) == 1)
