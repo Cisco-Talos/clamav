@@ -378,7 +378,10 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
     /* set page protections now */
     for (i=0;i<v->n_pages;i++)
 	v->page_flags[i].flag_rwx = 0;
-    cli_emu_vmm_prot_set(v, v->imagebase, sections[0].rva, 1 << flag_r);
+    cli_emu_vmm_prot_set(v, v->imagebase, sections[0].rva, (1 << flag_r) | (1 << flag_x));
+    cli_dbgmsg("Mapped section RVA: %08x - %08x -> Raw: %08x%s - %08x, VA %08x - %08x r-x\n",
+	           0, sections[0].rva, 0, "", sections[0].rva,
+		   v->imagebase, v->imagebase + sections[0].rva);
     for (i=0;i < pedata->nsections; i++) {
 	const struct cli_exe_section *section = &sections[i];
 	uint32_t rva = section->rva;

@@ -790,6 +790,44 @@ static always_inline void emu_shr(cli_emu_t *state, instr_t *instr)
     WRITE_RESULT(0, reg1);
 }
 
+static always_inline void emu_sar(cli_emu_t *state, instr_t *instr)
+{
+    uint8_t largeshift;
+    uint32_t reg1, reg2;
+    READ_OPERAND(reg1, 0);
+    READ_OPERAND(reg2, 1);
+
+    const desc_t *desc =
+	(instr->arg[0].access_size == SIZE_INVALID) ?
+	&instr->arg[0].add_reg :
+	&mem_desc[instr->arg[0].access_size];
+    largeshift = reg2 >= desc->carry_bit;
+    reg2 &= 0x1f;
+
+    if (!reg2)
+	return;
+    int32_t result = reg1;
+    CLI_SAR(result, (uint8_t)(reg2-1));
+    uint8_t cf = (result & 1);
+    reg1 = CLI_SRS(result, 1);
+    if (reg2 == 1) {
+	uint8_t of = 0;
+	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
+			 (cf << bit_cf) |
+			 (of << bit_of);
+	state->eflags_def |= (1<<bit_cf) | (1<<bit_of);
+    } else {
+	state->eflags = (state->eflags & ~(1<< bit_cf)) |
+			 (cf << bit_cf);
+	state->eflags_def |= (1<<bit_cf);
+	//of undefined for shift > 1
+	state->eflags_def &= ~(1<<bit_of);
+    }
+    if (largeshift)
+	state->eflags_def &= ~(1<<bit_cf);
+    WRITE_RESULT(0, reg1);
+}
+
 #define ROL(a,b,n) a = ( a << (b) ) | ( a >> (((n) - (b))) )
 #define ROR(a,b,n) a = ( a >> (b) ) | ( a << (((n) - (b))) )
 
@@ -1379,6 +1417,9 @@ int cli_emulator_step(cli_emu_t *emu)
 	case OP_SHR:
 	    emu_shr(emu, instr);
 	    break;
+	case OP_SAR:
+	    emu_sar(emu, instr);
+	    break;
 	case OP_ROL:
 	    emu_rol(emu, instr);
 	    break;
@@ -1527,7 +1568,7 @@ int cli_emulator_step(cli_emu_t *emu)
 
 void cli_emulator_dbgstate(cli_emu_t *emu)
 {
-    printf("[cliemu               ] eip=0x%08x\n"
+    cli_dbgmsg("[cliemu               ] eip=0x%08x\n"
 	   "[cliemu               ] eax=0x%08x  ecx=0x%08x  edx=0x%08x  ebx=0x%08x\n"
 	   "[cliemu               ] esp=0x%08x  ebp=0x%08x  esi=0x%08x  edi=0x%08x\n"
 	   "[cliemu               ] eflags=0x%08x\n",
