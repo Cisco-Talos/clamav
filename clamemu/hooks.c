@@ -326,8 +326,16 @@ static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
     return 0;
 }
 
-const struct hook_desc user32_dll_hooks[] = {
-    {"MessageBoxA", cb_messagebox}
+const struct hook_desc advapi32_dll_hooks[] = {
+};
+
+const struct hook_desc comctl32_dll_hooks[] = {
+};
+
+const struct hook_desc comdlg32_dll_hooks[] = {
+};
+
+const struct hook_desc gdi32_dll_hooks[] = {
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
@@ -344,8 +352,48 @@ const struct hook_desc kernel32_dll_hooks[] = {
     {"VirtualProtect", cb_virtualprotect}
 };
 
+const struct hook_desc lz32_dll_hooks[] = {
+};
+
+const struct hook_desc mpr_dll_hooks[] = {
+};
+
+const struct hook_desc ole32_dll_hooks[] = {
+};
+
+const struct hook_desc oleaut32_dll_hooks[] = {
+};
+
+const struct hook_desc rpcrt4_dll_hooks[] = {
+};
+
+const struct hook_desc shell32_dll_hooks[] = {
+};
+
+const struct hook_desc user32_dll_hooks[] = {
+    {"MessageBoxA", cb_messagebox}
+};
+
+const struct hook_desc version_dll_hooks[] = {
+};
+
+const struct hook_desc winmm_dll_hooks[] = {
+};
+
 const struct hook_desc wsock32_dll_hooks[] = {
 };
-const unsigned user32_dll_hooks_n = sizeof(user32_dll_hooks)/sizeof(user32_dll_hooks[0]);
+const unsigned advapi32_dll_hooks_n = sizeof(advapi32_dll_hooks)/sizeof(advapi32_dll_hooks[0]);
+const unsigned comctl32_dll_hooks_n = sizeof(comctl32_dll_hooks)/sizeof(comctl32_dll_hooks[0]);
+const unsigned comdlg32_dll_hooks_n = sizeof(comdlg32_dll_hooks)/sizeof(comdlg32_dll_hooks[0]);
+const unsigned gdi32_dll_hooks_n = sizeof(gdi32_dll_hooks)/sizeof(gdi32_dll_hooks[0]);
 const unsigned kernel32_dll_hooks_n = sizeof(kernel32_dll_hooks)/sizeof(kernel32_dll_hooks[0]);
+const unsigned lz32_dll_hooks_n = sizeof(lz32_dll_hooks)/sizeof(lz32_dll_hooks[0]);
+const unsigned mpr_dll_hooks_n = sizeof(mpr_dll_hooks)/sizeof(mpr_dll_hooks[0]);
+const unsigned ole32_dll_hooks_n = sizeof(ole32_dll_hooks)/sizeof(ole32_dll_hooks[0]);
+const unsigned oleaut32_dll_hooks_n = sizeof(oleaut32_dll_hooks)/sizeof(oleaut32_dll_hooks[0]);
+const unsigned rpcrt4_dll_hooks_n = sizeof(rpcrt4_dll_hooks)/sizeof(rpcrt4_dll_hooks[0]);
+const unsigned shell32_dll_hooks_n = sizeof(shell32_dll_hooks)/sizeof(shell32_dll_hooks[0]);
+const unsigned user32_dll_hooks_n = sizeof(user32_dll_hooks)/sizeof(user32_dll_hooks[0]);
+const unsigned version_dll_hooks_n = sizeof(version_dll_hooks)/sizeof(version_dll_hooks[0]);
+const unsigned winmm_dll_hooks_n = sizeof(winmm_dll_hooks)/sizeof(winmm_dll_hooks[0]);
 const unsigned wsock32_dll_hooks_n = sizeof(wsock32_dll_hooks)/sizeof(wsock32_dll_hooks[0]);

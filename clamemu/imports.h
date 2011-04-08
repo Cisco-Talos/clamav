@@ -42,13 +42,37 @@ struct dll_desc {
 };
 
 extern const struct dll_desc all_dlls[];
-extern const struct hook_desc user32_dll_hooks[];
+extern const struct hook_desc advapi32_dll_hooks[];
+extern const struct hook_desc comctl32_dll_hooks[];
+extern const struct hook_desc comdlg32_dll_hooks[];
+extern const struct hook_desc gdi32_dll_hooks[];
 extern const struct hook_desc kernel32_dll_hooks[];
+extern const struct hook_desc lz32_dll_hooks[];
+extern const struct hook_desc mpr_dll_hooks[];
+extern const struct hook_desc ole32_dll_hooks[];
+extern const struct hook_desc oleaut32_dll_hooks[];
+extern const struct hook_desc rpcrt4_dll_hooks[];
+extern const struct hook_desc shell32_dll_hooks[];
+extern const struct hook_desc user32_dll_hooks[];
+extern const struct hook_desc version_dll_hooks[];
+extern const struct hook_desc winmm_dll_hooks[];
 extern const struct hook_desc wsock32_dll_hooks[];
 
 extern const unsigned all_dlls_n;
-extern const unsigned user32_dll_hooks_n;
+extern const unsigned advapi32_dll_hooks_n;
+extern const unsigned comctl32_dll_hooks_n;
+extern const unsigned comdlg32_dll_hooks_n;
+extern const unsigned gdi32_dll_hooks_n;
 extern const unsigned kernel32_dll_hooks_n;
+extern const unsigned lz32_dll_hooks_n;
+extern const unsigned mpr_dll_hooks_n;
+extern const unsigned ole32_dll_hooks_n;
+extern const unsigned oleaut32_dll_hooks_n;
+extern const unsigned rpcrt4_dll_hooks_n;
+extern const unsigned shell32_dll_hooks_n;
+extern const unsigned user32_dll_hooks_n;
+extern const unsigned version_dll_hooks_n;
+extern const unsigned winmm_dll_hooks_n;
 extern const unsigned wsock32_dll_hooks_n;
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes);
 #endif
