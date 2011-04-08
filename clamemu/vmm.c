@@ -47,10 +47,15 @@
 extern ssize_t pread (int, void *, size_t, off_t);
 extern ssize_t pwrite (int __fd, const void *, size_t, off_t);
 
-static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
+static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c)
 {
     uint32_t n;
     int rc;
+    page_t *p = &v->page_flags[c->pageidx];
+
+    p->cached_page_idx = 0;
+    if (!c->dirty)
+	return;
     /* page has been modified, need to write out to tempfile */
     p->init = 1;
     if (!p->modified) {
@@ -63,7 +68,6 @@ static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 	p->file_offset = v->tmpfd_written;
 	v->tmpfd_written += 4096 / MINALIGN;
     }
-    p->cached_page_idx = 0;
     n = p->file_offset * MINALIGN;
     rc = pwrite(v->tmpfd, c->data, 4096, n);
     if (rc != 4096) {
@@ -74,11 +78,11 @@ static never_inline void vmm_pageout(emu_vmm_t *v, cached_page_t *c, page_t *p)
 
 static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p, uint32_t idx)
 {
+    unsigned i;
     unsigned nextidx = v->cached_idx + 1;
     cached_page_t *c = &v->cached[v->cached_idx];
 
-    if (c->dirty)
-	vmm_pageout(v, c, &v->page_flags[idx]);
+    vmm_pageout(v, c);
 
     c->flag_rwx = p->flag_rwx;
     c->dirty = 0;
@@ -86,6 +90,7 @@ static always_inline cached_page_t *vmm_pagein(emu_vmm_t *v, page_t *p, uint32_t
     if (p->cached_page_idx)
 	cli_warnmsg("caching in already cached page\n");
     p->cached_page_idx = v->cached_idx + 1;
+
     v->cached_idx = nextidx >= 15 ? 0 : nextidx;
     if (UNLIKELY(!p->init)) {
 	memset(c->data, 0, 4096);
@@ -112,6 +117,7 @@ cached_page_t *cli_emu_vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 	idx--;
 	v->lastused_page = page;
 	v->lastused_page_idx = idx;
+/*	if (v->cached[idx].pageidx != page) abort();*/
 	return &v->cached[idx];
     }
     /* cache in 2nd page */

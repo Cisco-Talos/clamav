@@ -32,7 +32,15 @@ enum eflags {
     bit_tf = 8,
     bit_if = 9,
     bit_df = 10,
-    bit_of = 11
+    bit_of = 11,
+    bit_iopl = 12,
+    bit_nt = 14,
+    bit_rf = 16,
+    bit_vm = 17,
+    bit_ac = 18,
+    bit_vif = 19,
+    bit_vip = 20,
+    bit_id = 21
 };
 
 static const uint8_t pf_table[256] = {

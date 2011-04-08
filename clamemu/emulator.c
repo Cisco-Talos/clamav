@@ -287,6 +287,7 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     }
 
     mem_push(emu, 4, MAPPING_END-0x42);
+    emu->eflags = 0x2 | (1 << bit_if) | (3 << bit_iopl);
     return 0;
 }
 
@@ -572,6 +573,11 @@ static always_inline void emu_push(cli_emu_t *state, instr_t *instr)
     MEM_PUSH(value);
 }
 
+static always_inline void emu_pushf(cli_emu_t *state, instr_t *instr)
+{
+    MEM_PUSH(state->eflags&0xfcffff);
+}
+
 void mem_pop(cli_emu_t *state, int size, uint32_t *value)
 {
     uint32_t esp;
@@ -595,6 +601,30 @@ static always_inline void emu_pop(cli_emu_t *state, struct dis_instr *instr)
     uint32_t value;
     MEM_POP(&value);
     WRITE_RESULT(0, value);
+}
+
+/* IF, IOPL, RF, VIP, and VIF, and reserved bits can't be modified */
+static const int32_t popf_allowed =
+ (1 << bit_cf) |
+ (1 << bit_pf) |
+ (1 << bit_af) |
+ (1 << bit_zf) |
+ (1 << bit_sf) |
+ (1 << bit_tf) |
+ (1 << bit_df) |
+ (1 << bit_of) |
+ (1 << bit_nt) |
+ (1 << bit_ac) |
+ (1 << bit_id);
+
+static always_inline void emu_popf(cli_emu_t *state, struct dis_instr *instr)
+{
+    uint32_t value;
+    MEM_POP(&value);
+
+    state->eflags = (value & popf_allowed) |
+	(state->eflags & !popf_allowed);
+    state->eflags &= ~(1<<bit_vip) | (1<<bit_vif);
 }
 
 static always_inline void emu_cld(cli_emu_t *state, struct dis_instr *instr)
@@ -1347,6 +1377,12 @@ int cli_emulator_step(cli_emu_t *emu)
 	    break;
 	case OP_POP:
 	    emu_pop(emu, instr);
+	    break;
+	case OP_PUSHFD:
+	    emu_pushf(emu, instr);
+	    break;
+	case OP_POPFD:
+	    emu_popf(emu, instr);
 	    break;
 	case OP_INC:
 	    emu_inc(emu, instr);
