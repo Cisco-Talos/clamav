@@ -1176,7 +1176,6 @@ static always_inline void emu_ret(cli_emu_t *state, instr_t *instr)
 
     cli_dbgmsg("ret: esp = %x\n", state->reg_val[REG_ESP]);
     MEM_POP(&state->eip);
-    printf("ret: eip = %x\n", state->eip);
     esp = state->reg_val[REG_ESP];
 
     if (arg->displacement) {
@@ -1623,16 +1622,35 @@ int cli_emulator_step(cli_emu_t *emu)
     return 0;
 }
 
+static const char flags_display[] = "aVR-N--ODITSZ-A-P-C";
 void cli_emulator_dbgstate(cli_emu_t *emu)
 {
-    cli_dbgmsg("[cliemu               ] eip=0x%08x\n"
-	   "[cliemu               ] eax=0x%08x  ecx=0x%08x  edx=0x%08x  ebx=0x%08x\n"
-	   "[cliemu               ] esp=0x%08x  ebp=0x%08x  esi=0x%08x  edi=0x%08x\n"
-	   "[cliemu               ] eflags=0x%08x\n",
-	   emu->eip,
-	   emu->reg_val[REG_EAX], emu->reg_val[REG_ECX], emu->reg_val[REG_EDX], emu->reg_val[REG_EBX],
-	   emu->reg_val[REG_ESP], emu->reg_val[REG_EBP], emu->reg_val[REG_ESI], emu->reg_val[REG_EDI],
-	   emu->eflags);
+    char flags[sizeof(flags_display)];
+    uint32_t i, j;
+    uint32_t eflags = emu->eflags;
+
+    for (i=0,j=sizeof(flags_display)-2;i<sizeof(flags_display)-1;i++,j--) {
+	if (flags_display[i] == '-') {
+	    flags[i] = '-';
+	    continue;
+	}
+	if (eflags & (1 << j)) {
+	    flags[i] = flags_display[i];
+	}
+	else
+	    flags[i] = ' ';
+    }
+    flags[i] = '\0';
+
+    cli_dbgmsg("Register dump:\n"
+	       "EIP:%08x ESP:%08x EBP:%08x EFLAGS:%08x(%s)\n"
+	       "EAX:%08x EBX:%08x ECX:%08x EDX:%08x\n"
+	       "ESI:%08x EDI:%08x\n",
+	       emu->eip, emu->reg_val[REG_ESP], emu->reg_val[REG_EBP],
+	       eflags, flags,
+	       emu->reg_val[REG_EAX], emu->reg_val[REG_EBX],
+	       emu->reg_val[REG_ECX], emu->reg_val[REG_EDX],
+	       emu->reg_val[REG_ESI], emu->reg_val[REG_EDI]);
 }
 
 int hook_generic_stdcall(struct cli_emu *emu, const char *desc, unsigned bytes)

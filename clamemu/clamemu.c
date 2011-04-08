@@ -68,7 +68,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     do {
     if (!(rc = setjmp(seh_handler))) {
 	for (;!cli_emulator_step(emu) && i < MAXEMU;i++) {
-		/*cli_emulator_dbgstate(emu);*/
+		cli_emulator_dbgstate(emu);
 	}
 	done = 1;
     } else {
