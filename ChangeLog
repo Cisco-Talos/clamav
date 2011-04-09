@@ -1,3 +1,7 @@
+Sat Apr  9 03:56:17 CEST 2011 (acab)
+------------------------------------
+ libclamav/pe.c: reset corrupted status before bytecode hooks
+
 Thu Apr  7 18:17:56 CEST 2011 (tk)
 ----------------------------------
  * libclamav: add PNG validator based on pngcheck

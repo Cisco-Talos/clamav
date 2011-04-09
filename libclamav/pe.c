@@ -518,7 +518,7 @@ int cli_scanpe(cli_ctx *ctx)
 	uint32_t epsize;
 	ssize_t bytes, at;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, overlays = 0;
-	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
+	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0, corrupted_cur;
 	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
@@ -1346,6 +1346,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 
     /* !!!!!!!!!!!!!!    PACKERS START HERE    !!!!!!!!!!!!!! */
+    corrupted_cur = ctx->corrupted_input;
     ctx->corrupted_input = 2; /* caller will reset on return */
 
 
@@ -2271,6 +2272,12 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* to be continued ... */
+
+
+
+
+    /* !!!!!!!!!!!!!!    PACKERS END HERE    !!!!!!!!!!!!!! */
+    ctx->corrupted_input = corrupted_cur;
 
     /* Bytecode BC_PE_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
