@@ -34,7 +34,7 @@ The output directory for the binaries is either /win32/(Win32|x64)/Debug or
 
 Note: at the time of writing Batch Build is broken in VS10:
 https://connect.microsoft.com/VisualStudio/feedback/details/556158
-Use MSBuild instead
+Use MSBuild instead.
 
 
 4- Special notes
