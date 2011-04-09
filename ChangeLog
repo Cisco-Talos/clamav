@@ -1,3 +1,7 @@
+Sat Apr  9 17:20:35 CEST 2011 (acab)
+------------------------------------
+ * libclamav/pe_icons.c: don't sigbus on sparc (bb#2695)
+
 Sat Apr  9 03:56:17 CEST 2011 (acab)
 ------------------------------------
  * libclamav/pe.c: reset corrupted status before bytecode hooks (bb#2544)

@@ -29,8 +29,8 @@
 #include "others.h"
 
 
-#define EC32(x) le32_to_host(x)
-#define EC16(x) le16_to_host(x)
+#define READ32(x) cli_readint32(&(x))
+#define READ16(x) cli_readint16(&(x))
 #define USE_FLOATS
 #ifdef USE_FLOATS
 #define LABDIFF(x) labdiff(x)
@@ -1222,17 +1222,17 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	return CL_SUCCESS;
     }
 
-    if(EC32(bmphdr.sz) < sizeof(bmphdr)) {
+    if(READ32(bmphdr.sz) < sizeof(bmphdr)) {
 	cli_dbgmsg("parseicon: BMP header too small\n");
 	return CL_SUCCESS;
     }
 
     /* seek to the end of v4/v5 header */
-    icoff += EC32(bmphdr.sz);
+    icoff += READ32(bmphdr.sz);
 
-    width = EC32(bmphdr.w);
-    height = EC32(bmphdr.h) / 2;
-    depth = EC16(bmphdr.depth);
+    width = READ32(bmphdr.w);
+    height = READ32(bmphdr.h) / 2;
+    depth = READ16(bmphdr.depth);
     if(width > 256 || height > 256 || width < 16 || height < 16) {
 	cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
 	return CL_SUCCESS;
@@ -1308,7 +1308,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 		    have = 8;
 		}
 		have -= depth;
-		imagedata[(height - 1 - y) * width + x] = EC32(palette[(c >> have) & ((1<<depth)-1)]);
+		imagedata[(height - 1 - y) * width + x] = READ32(palette[(c >> have) & ((1<<depth)-1)]);
 	    }
 	    break;
 	}
