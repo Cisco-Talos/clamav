@@ -128,7 +128,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav\c++\llvm\include";"$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86";"$(SolutionDir)..\libclamav\c++\";"$(SolutionDir)llvmbuild\include"</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4065;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,7 +143,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav\c++\llvm\include";"$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86";"$(SolutionDir)..\libclamav\c++\";"$(SolutionDir)llvmbuild\include"</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4065;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -160,7 +160,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav\c++\llvm\include";"$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86";"$(SolutionDir)..\libclamav\c++\";"$(SolutionDir)llvmbuild\include"</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4065;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -179,7 +179,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav\c++\llvm\include";"$(SolutionDir)..\libclamav\c++\llvm\lib\Target\X86";"$(SolutionDir)..\libclamav\c++\";"$(SolutionDir)llvmbuild\include"</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
-      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4065;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
