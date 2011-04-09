@@ -1,3 +1,7 @@
+Sat Apr  9 03:56:17 CEST 2011 (acab)
+------------------------------------
+ libclamav/pe.c: reset corrupted status before bytecode hooks
+
 Thu Mar 17 17:46:09 CET 2011 (tk)
 ---------------------------------
  * sigtool, freshclam: put .info on top of container to speed up loading
