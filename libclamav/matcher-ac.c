@@ -1169,7 +1169,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     for(i = 0; i < length; i++)  {
 	current = current->trans[buffer[i]];
 
-	if(IS_FINAL(current)) {
+	if(UNLIKELY(IS_FINAL(current))) {
 	    faillist = NULL;
 	    patt = current->list;
 	    if(IS_LEAF(current)) {
