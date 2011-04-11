@@ -287,7 +287,7 @@ static int pe_setup(cli_emu_t *emu, struct cli_pe_hook_data *pedata)
     }
 
     mem_push(emu, 4, MAPPING_END-0x42);
-    emu->eflags = 0x2 | (1 << bit_if) | (3 << bit_iopl);
+    emu->eflags = 0x2 | (1 << bit_if) | (1 << bit_af) | (1 << bit_pf);
     return 0;
 }
 
