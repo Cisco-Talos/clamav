@@ -37,18 +37,20 @@
 #include "jpeg.h"
 #include "clamav.h"
 
+#define EC16(x) le16_to_host(x)
+
 #define GETBYTE(v)                                              \
     if(fmap_readn(map, &v, offset, sizeof(v)) == sizeof(v)) {   \
 	offset += sizeof(v);					\
     } else {							\
-	cli_errmsg("cli_parsejpeg: Can't read file\n");		\
-	return CL_EREAD;					\
+	cli_errmsg("cli_parse(jpeg|gif): Can't read file (corrupted?)\n");	\
+	return CL_EPARSE;					\
     }
 
 int cli_parsejpeg(cli_ctx *ctx)
 {
 	fmap_t *map = *ctx->fmap;
-	unsigned char marker, prev_marker, prev_segment = 0, v1, v2, buff[512];
+	unsigned char marker, prev_marker, prev_segment = 0, v1, v2, buff[8];
 	unsigned int offset = 0, i, len, comment = 0, segment = 0, app = 0;
 
     cli_dbgmsg("in cli_parsejpeg()\n");
@@ -200,5 +202,101 @@ int cli_parsejpeg(cli_ctx *ctx)
         }
 	prev_segment = marker;
     }
+    return CL_SUCCESS;
+}
+
+/* GIF */
+
+struct gif_screen_desc {
+    uint16_t width;
+    uint16_t height;
+    uint8_t flags;
+    uint8_t bgcolor;
+    uint8_t aspect;
+};
+
+struct gif_graphic_control_ext {
+    uint8_t blksize;
+    uint8_t flags;
+    uint16_t delaytime;
+    uint8_t tcoloridx;
+    uint8_t blkterm;
+};
+
+struct gif_image_desc {
+    uint16_t leftpos;
+    uint16_t toppos;
+    uint16_t width;
+    uint16_t height;
+    uint8_t flags;
+};
+
+int cli_parsegif(cli_ctx *ctx)
+{
+	fmap_t *map = *ctx->fmap;
+	unsigned char magic[6], v;
+	unsigned int offset = 0, have_gce = 0;
+	struct gif_screen_desc screen_desc;
+	struct gif_graphic_control_ext graphic_control_ext;
+	struct gif_image_desc image_desc;
+
+    cli_dbgmsg("in cli_parsegif()\n");
+
+    if(fmap_readn(map, magic, offset, 6) != 6)
+	return CL_SUCCESS; /* Ignore */
+
+    if(!memcmp(magic, "GIF87a", 6) || !memcmp(magic, "GIF89a", 6))
+	offset = 6;
+    else
+	return CL_SUCCESS; /* Not a GIF file */
+
+    if(fmap_readn(map, &screen_desc, offset, sizeof(screen_desc)) != sizeof(screen_desc)) {
+	cli_warnmsg("cli_parsegif: Can't read Logical Screen Descriptor block\n");
+	return CL_EPARSE;
+    }
+    offset += 7;
+
+    cli_dbgmsg("GIF: Screen size %ux%u, gctsize: %u\n", EC16(screen_desc.width), EC16(screen_desc.height), screen_desc.flags & 0x7);
+    if(screen_desc.flags & 0x80)
+	offset += 3 * (1 << ((screen_desc.flags & 0x7) + 1));
+
+    while(1) {
+	GETBYTE(v);
+	if(v == 0x21) {
+	    GETBYTE(v);
+	    if(v == 0xf9) {
+		if(fmap_readn(map, &graphic_control_ext, offset, sizeof(graphic_control_ext)) != sizeof(graphic_control_ext)) {
+		    cli_warnmsg("cli_parsegif: Can't read Graphic Control Extension block\n");
+		    return CL_EPARSE;
+		}
+		if(have_gce) {
+		    cli_warnmsg("cli_parsegif: Multiple Graphic Control Extension blocks not allowed\n");
+		    return CL_EPARSE;
+		}
+		have_gce = 1;
+		offset += sizeof(graphic_control_ext);
+		if(graphic_control_ext.blksize != 4 || graphic_control_ext.blkterm) {
+		    cli_warnmsg("cli_parsegif: Invalid Graphic Control Extension block\n");
+		    return CL_EPARSE;
+		}
+	    } else {
+		while(1) {
+		    GETBYTE(v);
+		    if(!v)
+			break;
+		    offset += v;
+		}
+	    }
+	} else if(v == 0x2c) {
+	    if(fmap_readn(map, &image_desc, offset, sizeof(image_desc)) != sizeof(image_desc)) {
+		cli_warnmsg("cli_parsegif: Can't read Image Descriptor block\n");
+		return CL_EPARSE;
+	    }
+	    offset += 9;
+	    cli_dbgmsg("GIF: Image size %ux%u, left pos: %u, top pos: %u\n", EC16(image_desc.width), EC16(image_desc.height), EC16(image_desc.leftpos), EC16(image_desc.toppos));
+	    break;
+	}
+    }
+
     return CL_SUCCESS;
 }

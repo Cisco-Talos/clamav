@@ -2445,6 +2445,9 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS && ret != CL_EPARSE)
 		ret = cli_parsepng(ctx);
+
+	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS && ret != CL_EPARSE)
+		ret = cli_parsegif(ctx);
 	    break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */

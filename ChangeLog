@@ -1,3 +1,7 @@
+Mon Apr 11 17:22:46 CEST 2011 (tk)
+----------------------------------
+ * libclamav: add basic GIF validator
+
 Sat Apr  9 17:20:35 CEST 2011 (acab)
 ------------------------------------
  * libclamav/pe_icons.c: don't sigbus on sparc (bb#2695)
