@@ -1176,6 +1176,8 @@ then
     AC_DEFINE([_REENTRANT],1,[thread safe])
 fi
 
+AC_CHECK_FUNCS([enable_extended_FILE_stdio])
+
 dnl Check for readdir_r and number of its arguments
 dnl Code from libwww/configure.in
 
