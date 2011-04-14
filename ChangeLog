@@ -1,3 +1,8 @@
+Thu Apr 14 21:29:36 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/others.c: make sure TLS key is initializer (bb #2588).
+    Thanks to Cameron Brown for the detailed analysis of the bug.
+
 Thu Apr 14 13:19:38 EEST 2011 (edwin)
 -------------------------------------
  * configure: check for enable_extended_FILE_stdio (bb #2542)
