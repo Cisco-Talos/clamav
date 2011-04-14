@@ -106,7 +106,7 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,7 +142,7 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,13 +155,9 @@
     <ResourceCompile Include="res\clamdscan.rc"/>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\clamdcom.c"/>
     <ClCompile Include="..\clamdscan\clamdscan.c"/>
     <ClCompile Include="..\clamdscan\client.c"/>
     <ClCompile Include="..\clamdscan\proto.c"/>
-    <ClCompile Include="..\shared\actions.c"/>
-    <ClCompile Include="..\shared\misc.c"/>
-    <ClCompile Include="..\shared\output.c"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamav.vcxproj">

@@ -427,6 +427,9 @@
 /* The archive extension */
 #define LT_LIBEXT "dll"
 
+/* The archive prefix */
+/* #undef LT_LIBPREFIX */
+
 /* Define to the extension used for runtime loadable modules, say, ".so". */
 #define LT_MODULE_EXT ".dll"
 
@@ -505,7 +508,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.97-75-gd955dc2"
+#define VERSION "devel-clamav-0.97-81-g226db71"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

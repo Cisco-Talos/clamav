@@ -183,6 +183,7 @@ my %CONF = (
     'USE_SYSLOG' => -1,
     'VERSION_SUFFIX' => '""',
     'WORDS_BIGENDIAN' => '0',
+    'LT_LIBPREFIX' => '-1',
     '_LARGEFILE_SOURCE' => -1,
     '_POSIX_PII_SOCKET' => -1,
     '_REENTRANT' => '1',

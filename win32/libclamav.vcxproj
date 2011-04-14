@@ -108,7 +108,7 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,7 +148,7 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

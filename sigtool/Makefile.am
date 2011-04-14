@@ -19,18 +19,6 @@
 bin_PROGRAMS = sigtool
 
 sigtool_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/cdiff.c \
-    $(top_srcdir)/shared/cdiff.h \
-    $(top_srcdir)/shared/tar.c \
-    $(top_srcdir)/shared/tar.h \
     vba.c \
     vba.h \
     sigtool.c
@@ -38,5 +26,5 @@ sigtool_SOURCES = \
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared_nothreads.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
 CLEANFILES=*.gcda *.gcno

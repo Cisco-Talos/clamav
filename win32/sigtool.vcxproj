@@ -155,10 +155,6 @@
     <ResourceCompile Include="res\sigtool.rc"/>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\cdiff.c"/>
-    <ClCompile Include="..\shared\misc.c"/>
-    <ClCompile Include="..\shared\output.c"/>
-    <ClCompile Include="..\shared\tar.c"/>
     <ClCompile Include="..\sigtool\sigtool.c"/>
     <ClCompile Include="..\sigtool\vba.c"/>
   </ItemGroup>
