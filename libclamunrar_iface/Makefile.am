@@ -17,6 +17,7 @@
 #  MA 02110-1301, USA.
 
 AM_CPPFLAGS = -I$(top_srcdir) $(LTDLINCL)
+AM_CFLAGS = @WERR_CFLAGS@
 EXTRA_DIST =
 EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map @top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
 if ENABLE_UNRAR
