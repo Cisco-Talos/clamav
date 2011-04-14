@@ -19,17 +19,7 @@
 
 bin_PROGRAMS = clamscan
 
-clamscan_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/actions.c \
-    $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
+clamscan_SOURCES =\
     clamscan.c \
     global.h \
     manager.c \
@@ -37,7 +27,7 @@ clamscan_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared_nothreads.la @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 
 CLEANFILES=*.gcda *.gcno
