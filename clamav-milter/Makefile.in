@@ -167,7 +167,7 @@ BUILD_CONFIGURE_FLAGS = @BUILD_CONFIGURE_FLAGS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
-CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//' -e 's/-Werror /-Werror -Wno-error=format-nonliteral /'`
+CFLAGS = @CFLAGS@
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
@@ -255,6 +255,8 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
+WERR_CFLAGS = @WERR_CFLAGS@
+WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -335,6 +337,7 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_builddir)/docs/man/clamav-milter.8
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@AM_CFLAGS = @WERR_CFLAGS_MILTER@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 CLEANFILES = *.gcda *.gcno
 all: all-am
