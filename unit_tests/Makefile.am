@@ -27,6 +27,7 @@ TESTS = $(programs) $(scripts)
 check_PROGRAMS = $(programs) check_clamd
 check_SCRIPTS = $(scripts)
 
+AM_CFLAGS=@WERR_CFLAGS@
 if HAVE_LIBCHECK
 check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
 		       check_jsnorm.c check_str.c check_regex.c\

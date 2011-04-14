@@ -10,6 +10,7 @@ clamdtop_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     clamdtop.c
 
+AM_CFLAGS=@WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
 clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 endif

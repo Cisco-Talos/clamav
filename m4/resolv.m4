@@ -18,13 +18,13 @@ if test $want_dns = yes; then
 	[
 	    AC_CACHE_CHECK([for dn_expand in std libs], [ac_cv_have_lresolv_std], [
 	    	ac_cv_have_lresolv_std='no'
-	        AC_LINK_IFELSE([
+	        AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
 int main() { return (long)dn_expand; }
-		],
+		])],
 		[
 		    ac_cv_have_lresolv_std='yes'
 		    ac_cv_have_lresolv=''
@@ -35,13 +35,13 @@ int main() { return (long)dn_expand; }
 	    LIBS=-lresolv
 	    AC_CACHE_CHECK([for dn_expand in -lresolv], [ac_cv_have_lresolv_lresolv], [
 		ac_cv_have_lresolv_lresolv='yes'
-		AC_LINK_IFELSE([
+		AC_LINK_IFELSE([AC_LANG_SOURCE([
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
 int main() { return (long)dn_expand; }
-    	     	],
+    	     	])],
 		[
 		    ac_cv_have_lresolv_lresolv='yes'
 		    ac_cv_have_lresolv=' -lresolv'

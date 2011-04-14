@@ -38,6 +38,8 @@ clamdscan_SOURCES = \
     proto.h \
     client.c \
     client.h
+
+AM_CFLAGS=@WERR_CFLAGS@
 endif
 
 

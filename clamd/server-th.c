@@ -963,7 +963,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 #ifdef C_SOLARIS
-#ifdef F_BADFD
+#ifdef HAVE_ENABLE_EXTENDED_FILE_STDIO
 	if (enable_extended_FILE_stdio(-1, -1) == -1) {
 	    logg("^Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
 	    rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;

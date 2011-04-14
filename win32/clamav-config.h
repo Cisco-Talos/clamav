@@ -23,9 +23,6 @@
 /* enable clamuko */
 /* #undef CLAMUKO */
 
-/* enable loading of unsigned bytecode */
-/* #undef CL_BCUNSIGNED */
-
 /* enable debugging */
 /* #undef CL_DEBUG */
 
@@ -176,6 +173,9 @@
 
 /* Define if you have the _dyld_func_lookup function. */
 /* #undef HAVE_DYLD */
+
+/* Define to 1 if you have the `enable_extended_FILE_stdio' function. */
+/* #undef HAVE_ENABLE_EXTENDED_FILE_STDIO */
 
 /* Define to 1 if the system has the type `error_t'. */
 /* #undef HAVE_ERROR_T */
@@ -505,7 +505,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.97-55-g03adf2a"
+#define VERSION "devel-clamav-0.97-75-gd955dc2"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

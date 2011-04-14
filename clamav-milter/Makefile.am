@@ -40,12 +40,12 @@ clamav_milter_SOURCES = \
     clamfi.h \
     clamav-milter.c
 man_MANS = $(top_builddir)/docs/man/clamav-milter.8
+AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
 endif
 endif
 
 DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//' -e 's/-Werror /-Werror -Wno-error=format-nonliteral /'`
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 CLEANFILES=*.gcda *.gcno

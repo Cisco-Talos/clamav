@@ -468,6 +468,8 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
+WERR_CFLAGS = @WERR_CFLAGS@
+WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -530,6 +532,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL) \
 	$(am__append_1)
+AM_CFLAGS = @WERR_CFLAGS@
 lib_LTLIBRARIES = $(am__append_3) libclamav.la
 EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
 	libclamav.map jsparse/generated/operators.h \
@@ -587,7 +590,7 @@ libclamav_internal_utils_la_SOURCES = str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_la_LDFLAGS = -static
-libclamav_internal_utils_la_CFLAGS = -fPIC -DPIC
+libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    str.h\
 				    md5.c\
@@ -607,7 +610,7 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_nothreads_la_LDFLAGS = -static
-libclamav_internal_utils_nothreads_la_CFLAGS = -DCL_NOTHREADS
+libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
@@ -616,7 +619,7 @@ libclamav_internal_utils_nothreads_la_CFLAGS = -DCL_NOTHREADS
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
+libclamav_la_CFLAGS = $(AM_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h

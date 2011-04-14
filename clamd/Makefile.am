@@ -58,6 +58,8 @@ clamd_SOURCES = \
     dazukofs.h \
     shared.h
 
+AM_CFLAGS=@WERR_CFLAGS@
+
 endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@

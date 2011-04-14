@@ -197,6 +197,8 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
+WERR_CFLAGS = @WERR_CFLAGS@
+WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -266,6 +268,7 @@ clambc_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     bcrun.c
 
+AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 CLEANFILES = *.gcda *.gcno
 all: all-am

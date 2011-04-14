@@ -307,6 +307,8 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
+WERR_CFLAGS = @WERR_CFLAGS@
+WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -376,6 +378,7 @@ scripts = check_freshclam.sh check_sigtool.sh check_unit_vg.sh check1_clamscan.s
 TESTS_ENVIRONMENT = export abs_srcdir=$(abs_srcdir) AWK=$(AWK); \
 	$(am__append_1)
 check_SCRIPTS = $(scripts)
+AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_LIBCHECK_FALSE@check_clamav_SOURCES = check_clamav_skip.c
 @HAVE_LIBCHECK_TRUE@check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
 @HAVE_LIBCHECK_TRUE@		       check_jsnorm.c check_str.c check_regex.c\

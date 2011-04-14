@@ -1,3 +1,7 @@
+Thu Apr 14 13:19:38 EEST 2011 (edwin)
+-------------------------------------
+ * configure: check for enable_extended_FILE_stdio (bb #2542)
+
 Mon Apr 11 17:22:46 CEST 2011 (tk)
 ----------------------------------
  * libclamav: add basic GIF validator
