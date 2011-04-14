@@ -815,7 +815,7 @@ AC_DEFUN([AC_LIB_FIND],
 		AS_IF([test "$have_header" = "yes"],[
 				LIBS="$LIBS $LIB[]NAME"
 				AC_MSG_CHECKING([linking with $1])
-				AC_LINK_IFELSE([$3],[
+				AC_LINK_IFELSE([AC_LANG_SOURCE([$3])],[
 					ac_cv_findlib_[]NAME[]_libs="$LIB[]NAME"
 					ac_cv_findlib_[]NAME[]_ltlibs="$LTLIB[]NAME"
 					ac_cv_findlib_[]NAME[]_inc="$INC[]NAME"
