@@ -23,7 +23,6 @@ clamconf_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 
-DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav\
 	      -DBUILD_CPPFLAGS="\"$(CPPFLAGS)\"" -DBUILD_CFLAGS="\"$(CFLAGS)\""\
 	      -DBUILD_CXXFLAGS="\"$(CXXFLAGS)\"" -DBUILD_LDFLAGS="\"$(LDFLAGS)\""\

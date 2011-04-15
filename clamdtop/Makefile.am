@@ -8,5 +8,4 @@ AM_CFLAGS=@WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
 clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/shared/libshared_minimal.la $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 endif
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 EXTRA_DIST = clamdtop.c
