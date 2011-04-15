@@ -59,6 +59,9 @@
 	bitpos = 8;								\
 	bitbuf = (unsigned int) get_c;						\
 	offset += sizeof(get_c);						\
+    } else {									\
+	cli_errmsg("cli_scanswf: INITBITS: Can't read file\n");			\
+	return CL_EREAD;							\
     }										\
 }
 
@@ -73,6 +76,9 @@
 	    bitbuf = (unsigned int) get_c;					\
 	    bitpos = 8;								\
 	    offset += sizeof(get_c);						\
+	} else {								\
+	    cli_errmsg("cli_scanswf: GETBITS: Can't read file\n");		\
+	    return CL_EREAD;							\
 	}									\
     }										\
     bitpos -= getbits_n;							\
@@ -86,10 +92,16 @@
     if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
 	getword_1 = (unsigned int) get_c;					\
 	offset += sizeof(get_c);						\
+    } else {									\
+	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
+	return CL_EREAD;							\
     }										\
     if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
 	getword_2 = (unsigned int) get_c;					\
 	offset += sizeof(get_c);						\
+    } else {									\
+	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
+	return CL_EREAD;							\
     }										\
     v = (uint16_t)(getword_1 & 0xff) | ((getword_2 & 0xff) << 8);		\
 }
@@ -124,6 +136,12 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     hdr->signature[0] = 'F';
     if(cli_writen(fd, hdr, sizeof(struct swf_file_hdr)) != sizeof(struct swf_file_hdr)) {
 	cli_errmsg("scancws: Can't write to file %s\n", tmpname);
+        close(fd);
+	if(cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EUNLINK;
+	}
+	free(tmpname);
 	return CL_EWRITE;
     }
 
