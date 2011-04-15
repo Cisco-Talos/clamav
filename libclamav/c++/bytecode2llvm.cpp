@@ -1831,28 +1831,117 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
 }
 
-struct bc_watchdog {
+static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t watchdog_cond = PTHREAD_COND_INITIALIZER;
+static int watchdog_running = 0;
+
+struct watchdog_item {
     volatile uint8_t* timeout;
-    struct timespec * abstimeout;
-    pthread_mutex_t   mutex;
-    pthread_cond_t    cond;
-    int finished;
+    struct timespec abstimeout;
+    struct watchdog_item *next;
 };
 
+static struct watchdog_item* watchdog_head = NULL;
+static struct watchdog_item* watchdog_tail = NULL;
+
+#define WATCHDOG_IDLE 10
 static void *bytecode_watchdog(void *arg)
 {
-    int ret = 0;
-    struct bc_watchdog *w = (struct bc_watchdog*)arg;
-    pthread_mutex_lock(&w->mutex);
-    while (!w->finished && ret != ETIMEDOUT) {
-	ret = pthread_cond_timedwait(&w->cond, &w->mutex, w->abstimeout);
-    }
-    pthread_mutex_unlock(&w->mutex);
-    if (ret == ETIMEDOUT) {
-	*w->timeout = 1;
+    struct timeval tv;
+    struct timespec out;
+
+    pthread_mutex_lock(&watchdog_mutex);
+    watchdog_running = 1;
+    if (cli_debug_flag)
+	cli_dbgmsg_internal("bytecode watchdog is running\n");
+    do {
+	struct watchdog_item *item;
+	gettimeofday(&tv, NULL);
+	out.tv_sec = tv.tv_sec + WATCHDOG_IDLE;
+	out.tv_nsec = tv.tv_usec*1000;
+	/* wait for some work, up to WATCHDOG_IDLE time */
+	while (watchdog_head == NULL &&
+	       pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
+				      &out) != ETIMEDOUT) {}
+	if (watchdog_head == NULL)
+	    break;
+	/* wait till timeout is reached on this item */
+	item = watchdog_head;
+	while (item == watchdog_head &&
+	       pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
+				      &item->abstimeout) != ETIMEDOUT) {}
+	if (item != watchdog_head)
+	    continue;/* got removed meanwhile */
+	/* timeout reached, signal it to bytecode */
+	*item->timeout = 1;
 	cli_warnmsg("[Bytecode JIT]: Bytecode run timed out, timeout flag set\n");
-    }
+	watchdog_head = item->next;
+	if (!watchdog_head)
+	    watchdog_tail = NULL;
+    } while (1);
+    watchdog_running = 0;
+    if (cli_debug_flag)
+	cli_dbgmsg_internal("bytecode watchdog quiting\n");
+    pthread_mutex_unlock(&watchdog_mutex);
     return NULL;
+}
+
+extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
+static void watchdog_disarm(struct watchdog_item *item)
+{
+    struct watchdog_item *q, *p = NULL;
+    if (!item)
+	return;
+    pthread_mutex_lock(&watchdog_mutex);
+    for (q=watchdog_head;q && q != item;p = q, q = q->next) {}
+    if (q == item) {
+	if (p)
+	    p->next = q->next;
+	if (q == watchdog_head)
+	    watchdog_head = q->next;
+	if (q == watchdog_tail)
+	    watchdog_tail = p;
+    }
+    pthread_mutex_unlock(&watchdog_mutex);
+}
+
+static int watchdog_arm(struct watchdog_item *item, int ms, volatile uint8_t *timeout)
+{
+    int rc = 0;
+    struct timeval tv0;
+
+    *timeout = 0;
+    item->timeout = timeout;
+    item->next = NULL;
+
+    gettimeofday(&tv0, NULL);
+    tv0.tv_usec += ms * 1000;
+    item->abstimeout.tv_sec = tv0.tv_sec + tv0.tv_usec/1000000;
+    item->abstimeout.tv_nsec = (tv0.tv_usec%1000000)*1000;
+
+    pthread_mutex_lock(&watchdog_mutex);
+    if (!watchdog_running) {
+	pthread_t thread;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	if ((rc = pthread_create(&thread, &attr, bytecode_watchdog, NULL))) {
+	    char buf[256];
+	    cli_errmsg("(watchdog) pthread_create failed: %s\n", cli_strerror(rc, buf, sizeof(buf)));
+	}
+	pthread_attr_destroy(&attr);
+    }
+    if (!rc) {
+	if (watchdog_tail)
+	    watchdog_tail->next = item;
+	watchdog_tail = item;
+	if (!watchdog_head)
+	    watchdog_head = item;
+    }
+    pthread_cond_signal(&watchdog_cond);
+    pthread_mutex_unlock(&watchdog_mutex);
+    return rc;
 }
 
 static int bytecode_execute(intptr_t code, struct cli_bc_ctx *ctx)
@@ -1870,15 +1959,12 @@ static int bytecode_execute(intptr_t code, struct cli_bc_ctx *ctx)
     return CL_EBYTECODE;
 }
 
-extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
 int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 		       const struct cli_bc_func *func)
 {
-    char buf[1024];
     int ret;
-    pthread_t thread;
     struct timeval tv0, tv1;
-    uint32_t timeoutus;
+    struct watchdog_item witem;
     // no locks needed here, since LLVM automatically acquires a JIT lock
     // if needed.
     void *code = bcs->engine->compiledFunctions[func];
@@ -1889,40 +1975,20 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 			func->numArgs);
 	return CL_EBYTECODE;
     }
-    gettimeofday(&tv0, NULL);
-    struct timespec abstime;
-
-    timeoutus = (ctx->bytecode_timeout%1000)*1000 + tv0.tv_usec;
-    abstime.tv_sec = tv0.tv_sec + ctx->bytecode_timeout/1000 + timeoutus/1000000;
-    abstime.tv_nsec = 1000*(timeoutus%1000000);
-    ctx->timeout = 0;
-
-    struct bc_watchdog w = {
-	&ctx->timeout,
-	&abstime,
-	PTHREAD_MUTEX_INITIALIZER,
-	PTHREAD_COND_INITIALIZER,
-	0
-    };
+    if (cli_debug_flag)
+	gettimeofday(&tv0, NULL);
 
     if (ctx->bytecode_timeout) {
 	/* only spawn if timeout is set.
 	 * we don't set timeout for selfcheck (see bb #2235) */
-	if ((ret = pthread_create(&thread, NULL, bytecode_watchdog, &w))) {
-	    cli_warnmsg("[Bytecode JIT]: Bytecode: failed to create new thread :%s!\n",
-			cli_strerror(ret, buf, sizeof(buf)));
+	if (watchdog_arm(&witem, ctx->bytecode_timeout, &ctx->timeout))
 	    return CL_EBYTECODE;
-	}
     }
 
     ret = bytecode_execute((intptr_t)code, ctx);
-    pthread_mutex_lock(&w.mutex);
-    w.finished = 1;
-    pthread_cond_signal(&w.cond);
-    pthread_mutex_unlock(&w.mutex);
-    if (ctx->bytecode_timeout) {
-	pthread_join(thread, NULL);
-    }
+
+    if (ctx->bytecode_timeout)
+	watchdog_disarm(&witem);
 
     if (cli_debug_flag) {
 	long diff;
