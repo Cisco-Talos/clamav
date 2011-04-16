@@ -467,7 +467,9 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 	FAIL(CL_EMEM, "add_instance failed");
     }
     unlock_engine();
-    inst->scanopts = CL_SCAN_STDOPT | CL_SCAN_PERFORMANCE_INFO;
+    inst->scanopts = CL_SCAN_STDOPT;
+    if (logg_verbose)
+	inst->scanopts |= CL_SCAN_PERFORMANCE_INFO;
     *ppScanner = (CClamAVScanner *)inst;
     logg("Created new instance %p\n", inst);
     WIN();
