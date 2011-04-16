@@ -38,7 +38,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include "shared/optparser.h"
-#include "shared/misc.h"
 #include "libclamav/others.h" /* for cli_rmdirs() */
 
 /* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
