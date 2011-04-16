@@ -1,3 +1,7 @@
+Sat Apr 16 18:56:40 CEST 2011 (acab)
+------------------------------------
+ * libclamav, shared: Preliminary win32 conversion to UTF8
+
 Thu Apr 14 21:29:36 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/others.c: make sure TLS key is initializer (bb #2588).
