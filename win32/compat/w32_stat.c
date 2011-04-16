@@ -159,7 +159,6 @@ w32_stat(const char *path, struct stat *buf) {
     len = GetFileAttributesExW(wpath, GetFileExInfoStandard, &attrs);
     free(wpath);
     if(!len) {
-	len = GetLastError();
 	errno = ENOENT;
 	return -1;
     }

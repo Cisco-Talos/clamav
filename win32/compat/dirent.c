@@ -69,7 +69,6 @@ DIR *opendir(const char *name) {
 
 struct dirent *readdir(DIR *dirp) {
     while(1) {
-	BOOL cant_convert;
 	if(dirp->dh == INVALID_HANDLE_VALUE) {
 	    if((dirp->dh = FindFirstFileW(dirp->entry, &dirp->wfd)) == INVALID_HANDLE_VALUE) {
 		errno = ENOENT;
@@ -81,13 +80,8 @@ struct dirent *readdir(DIR *dirp) {
 		return NULL;
 	    }
 	}
-	if(
-	    (!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) || cant_convert) &&
-	    (!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cAlternateFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) || cant_convert)
-	    ) {
-		/* FIXME: WARN HERE ! */
-		continue;
-	}
+	if(!WideCharToMultiByte(CP_UTF8, 0, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, NULL))
+	    continue;/* FIXME: WARN HERE ! */
 	dirp->ent.d_ino = dirp->wfd.ftCreationTime.dwLowDateTime ^ dirp->wfd.nFileSizeLow;
 	if(!dirp->ent.d_ino) dirp->ent.d_ino = 0x1337;
 	dirp->ent.d_type = (dirp->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DT_DIR : DT_REG;
