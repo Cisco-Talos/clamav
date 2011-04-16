@@ -2701,7 +2701,28 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
 	int fd, ret;
+#ifdef _WIN32
+	char utf8[PATH_MAX+1];
+	wchar_t tmpw[PATH_MAX+1];
 
+	while(1) {
+	    /* Try UTF8 input first */
+	    if(MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, tmpw, PATH_MAX)) {
+		/* XP acts funny on MB_ERR_INVALID_CHARS, so we translate back and compare */
+		if(WideCharToMultiByte(CP_UTF8, 0, tmpw, -1, utf8, PATH_MAX, NULL, NULL) && !strcmp(filename, utf8))
+		    break;
+	    }
+	    /* Then assume ACP */
+	    if(MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, filename, -1, tmpw, PATH_MAX)) {
+		if(WideCharToMultiByte(CP_UTF8, 0, tmpw, -1, utf8, PATH_MAX, NULL, NULL)) {
+		    filename = utf8;
+		    break;
+		}
+	    }
+	    cli_errmsg("cl_scanfile_callback: Can't translate %s to UTF-8\n", filename);
+	    return CL_EARG;
+	}
+#endif
     if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
