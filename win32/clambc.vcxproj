@@ -153,6 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\clambc\bcrun.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\clambc.rc"/>

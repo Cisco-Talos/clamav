@@ -153,6 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\clamconf\clamconf.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\clamconf.rc"/>

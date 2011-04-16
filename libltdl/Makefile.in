@@ -88,8 +88,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)" \
 	"$(DESTDIR)$(ltdlincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 dld_link_la_DEPENDENCIES =
-am__dirstamp = $(am__leading_dot)dirstamp
-am_dld_link_la_OBJECTS = loaders/dld_link.lo
+am_dld_link_la_OBJECTS = dld_link.lo
 dld_link_la_OBJECTS = $(am_dld_link_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -99,30 +98,29 @@ dld_link_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(dld_link_la_LDFLAGS) $(LDFLAGS) -o $@
 am__DEPENDENCIES_1 =
 dlopen_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_dlopen_la_OBJECTS = loaders/dlopen.lo
+am_dlopen_la_OBJECTS = dlopen.lo
 dlopen_la_OBJECTS = $(am_dlopen_la_OBJECTS)
 dlopen_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(dlopen_la_LDFLAGS) $(LDFLAGS) -o $@
 dyld_la_LIBADD =
-am_dyld_la_OBJECTS = loaders/dyld.lo
+am_dyld_la_OBJECTS = dyld.lo
 dyld_la_OBJECTS = $(am_dyld_la_OBJECTS)
 dyld_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(dyld_la_LDFLAGS) $(LDFLAGS) -o $@
-am_libltdl_la_OBJECTS = loaders/libltdl_la-preopen.lo \
-	libltdl_la-lt__alloc.lo libltdl_la-lt_dlloader.lo \
-	libltdl_la-lt_error.lo libltdl_la-ltdl.lo libltdl_la-slist.lo
+am_libltdl_la_OBJECTS = libltdl_la-preopen.lo libltdl_la-lt__alloc.lo \
+	libltdl_la-lt_dlloader.lo libltdl_la-lt_error.lo \
+	libltdl_la-ltdl.lo libltdl_la-slist.lo
 libltdl_la_OBJECTS = $(am_libltdl_la_OBJECTS)
 libltdl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libltdl_la_LDFLAGS) $(LDFLAGS) -o $@
 @INSTALL_LTDL_TRUE@am_libltdl_la_rpath = -rpath $(libdir)
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__objects_1 = loaders/libltdlc_la-preopen.lo \
-	libltdlc_la-lt__alloc.lo libltdlc_la-lt_dlloader.lo \
-	libltdlc_la-lt_error.lo libltdlc_la-ltdl.lo \
-	libltdlc_la-slist.lo
+am__objects_1 = libltdlc_la-preopen.lo libltdlc_la-lt__alloc.lo \
+	libltdlc_la-lt_dlloader.lo libltdlc_la-lt_error.lo \
+	libltdlc_la-ltdl.lo libltdlc_la-slist.lo
 am_libltdlc_la_OBJECTS = $(am__objects_1)
 libltdlc_la_OBJECTS = $(am_libltdlc_la_OBJECTS)
 libltdlc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -130,21 +128,21 @@ libltdlc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libltdlc_la_LDFLAGS) $(LDFLAGS) -o $@
 @CONVENIENCE_LTDL_TRUE@am_libltdlc_la_rpath =
 load_add_on_la_LIBADD =
-am_load_add_on_la_OBJECTS = loaders/load_add_on.lo
+am_load_add_on_la_OBJECTS = load_add_on.lo
 load_add_on_la_OBJECTS = $(am_load_add_on_la_OBJECTS)
 load_add_on_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(load_add_on_la_LDFLAGS) $(LDFLAGS) -o \
 	$@
 loadlibrary_la_LIBADD =
-am_loadlibrary_la_OBJECTS = loaders/loadlibrary.lo
+am_loadlibrary_la_OBJECTS = loadlibrary.lo
 loadlibrary_la_OBJECTS = $(am_loadlibrary_la_OBJECTS)
 loadlibrary_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(loadlibrary_la_LDFLAGS) $(LDFLAGS) -o \
 	$@
 shl_load_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_shl_load_la_OBJECTS = loaders/shl_load.lo
+am_shl_load_la_OBJECTS = shl_load.lo
 shl_load_la_OBJECTS = $(am_shl_load_la_OBJECTS)
 shl_load_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -495,120 +493,103 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-loaders/$(am__dirstamp):
-	@$(MKDIR_P) loaders
-	@: > loaders/$(am__dirstamp)
-loaders/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) loaders/$(DEPDIR)
-	@: > loaders/$(DEPDIR)/$(am__dirstamp)
-loaders/dld_link.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 dld_link.la: $(dld_link_la_OBJECTS) $(dld_link_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(dld_link_la_LINK)  $(dld_link_la_OBJECTS) $(dld_link_la_LIBADD) $(LIBS)
-loaders/dlopen.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 dlopen.la: $(dlopen_la_OBJECTS) $(dlopen_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(dlopen_la_LINK)  $(dlopen_la_OBJECTS) $(dlopen_la_LIBADD) $(LIBS)
-loaders/dyld.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 dyld.la: $(dyld_la_OBJECTS) $(dyld_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(dyld_la_LINK)  $(dyld_la_OBJECTS) $(dyld_la_LIBADD) $(LIBS)
-loaders/libltdl_la-preopen.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 libltdl.la: $(libltdl_la_OBJECTS) $(libltdl_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libltdl_la_LINK) $(am_libltdl_la_rpath) $(libltdl_la_OBJECTS) $(libltdl_la_LIBADD) $(LIBS)
-loaders/libltdlc_la-preopen.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 libltdlc.la: $(libltdlc_la_OBJECTS) $(libltdlc_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libltdlc_la_LINK) $(am_libltdlc_la_rpath) $(libltdlc_la_OBJECTS) $(libltdlc_la_LIBADD) $(LIBS)
-loaders/load_add_on.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 load_add_on.la: $(load_add_on_la_OBJECTS) $(load_add_on_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(load_add_on_la_LINK)  $(load_add_on_la_OBJECTS) $(load_add_on_la_LIBADD) $(LIBS)
-loaders/loadlibrary.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 loadlibrary.la: $(loadlibrary_la_OBJECTS) $(loadlibrary_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(loadlibrary_la_LINK)  $(loadlibrary_la_OBJECTS) $(loadlibrary_la_LIBADD) $(LIBS)
-loaders/shl_load.lo: loaders/$(am__dirstamp) \
-	loaders/$(DEPDIR)/$(am__dirstamp)
 shl_load.la: $(shl_load_la_OBJECTS) $(shl_load_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(shl_load_la_LINK)  $(shl_load_la_OBJECTS) $(shl_load_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f loaders/dld_link.$(OBJEXT)
-	-rm -f loaders/dld_link.lo
-	-rm -f loaders/dlopen.$(OBJEXT)
-	-rm -f loaders/dlopen.lo
-	-rm -f loaders/dyld.$(OBJEXT)
-	-rm -f loaders/dyld.lo
-	-rm -f loaders/libltdl_la-preopen.$(OBJEXT)
-	-rm -f loaders/libltdl_la-preopen.lo
-	-rm -f loaders/libltdlc_la-preopen.$(OBJEXT)
-	-rm -f loaders/libltdlc_la-preopen.lo
-	-rm -f loaders/load_add_on.$(OBJEXT)
-	-rm -f loaders/load_add_on.lo
-	-rm -f loaders/loadlibrary.$(OBJEXT)
-	-rm -f loaders/loadlibrary.lo
-	-rm -f loaders/shl_load.$(OBJEXT)
-	-rm -f loaders/shl_load.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dld_link.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dlopen.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dyld.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-lt__alloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-lt_dlloader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-lt_error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-ltdl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-preopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdl_la-slist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-lt__alloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-lt_dlloader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-lt_error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-ltdl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-preopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libltdlc_la-slist.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/dld_link.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/dlopen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/dyld.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/libltdl_la-preopen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/libltdlc_la-preopen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/load_add_on.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/loadlibrary.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@loaders/$(DEPDIR)/shl_load.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/load_add_on.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/loadlibrary.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shl_load.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ $<
+@am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-loaders/libltdl_la-preopen.lo: loaders/preopen.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT loaders/libltdl_la-preopen.lo -MD -MP -MF loaders/$(DEPDIR)/libltdl_la-preopen.Tpo -c -o loaders/libltdl_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) loaders/$(DEPDIR)/libltdl_la-preopen.Tpo loaders/$(DEPDIR)/libltdl_la-preopen.Plo
+dld_link.lo: loaders/dld_link.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dld_link.lo -MD -MP -MF $(DEPDIR)/dld_link.Tpo -c -o dld_link.lo `test -f 'loaders/dld_link.c' || echo '$(srcdir)/'`loaders/dld_link.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dld_link.Tpo $(DEPDIR)/dld_link.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/preopen.c' object='loaders/libltdl_la-preopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/dld_link.c' object='dld_link.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o loaders/libltdl_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dld_link.lo `test -f 'loaders/dld_link.c' || echo '$(srcdir)/'`loaders/dld_link.c
+
+dlopen.lo: loaders/dlopen.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dlopen.lo -MD -MP -MF $(DEPDIR)/dlopen.Tpo -c -o dlopen.lo `test -f 'loaders/dlopen.c' || echo '$(srcdir)/'`loaders/dlopen.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dlopen.Tpo $(DEPDIR)/dlopen.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/dlopen.c' object='dlopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dlopen.lo `test -f 'loaders/dlopen.c' || echo '$(srcdir)/'`loaders/dlopen.c
+
+dyld.lo: loaders/dyld.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dyld.lo -MD -MP -MF $(DEPDIR)/dyld.Tpo -c -o dyld.lo `test -f 'loaders/dyld.c' || echo '$(srcdir)/'`loaders/dyld.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dyld.Tpo $(DEPDIR)/dyld.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/dyld.c' object='dyld.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dyld.lo `test -f 'loaders/dyld.c' || echo '$(srcdir)/'`loaders/dyld.c
+
+libltdl_la-preopen.lo: loaders/preopen.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libltdl_la-preopen.lo -MD -MP -MF $(DEPDIR)/libltdl_la-preopen.Tpo -c -o libltdl_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libltdl_la-preopen.Tpo $(DEPDIR)/libltdl_la-preopen.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/preopen.c' object='libltdl_la-preopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libltdl_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
 
 libltdl_la-lt__alloc.lo: lt__alloc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libltdl_la-lt__alloc.lo -MD -MP -MF $(DEPDIR)/libltdl_la-lt__alloc.Tpo -c -o libltdl_la-lt__alloc.lo `test -f 'lt__alloc.c' || echo '$(srcdir)/'`lt__alloc.c
@@ -650,13 +631,13 @@ libltdl_la-slist.lo: slist.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libltdl_la-slist.lo `test -f 'slist.c' || echo '$(srcdir)/'`slist.c
 
-loaders/libltdlc_la-preopen.lo: loaders/preopen.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT loaders/libltdlc_la-preopen.lo -MD -MP -MF loaders/$(DEPDIR)/libltdlc_la-preopen.Tpo -c -o loaders/libltdlc_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) loaders/$(DEPDIR)/libltdlc_la-preopen.Tpo loaders/$(DEPDIR)/libltdlc_la-preopen.Plo
+libltdlc_la-preopen.lo: loaders/preopen.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libltdlc_la-preopen.lo -MD -MP -MF $(DEPDIR)/libltdlc_la-preopen.Tpo -c -o libltdlc_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libltdlc_la-preopen.Tpo $(DEPDIR)/libltdlc_la-preopen.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/preopen.c' object='loaders/libltdlc_la-preopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/preopen.c' object='libltdlc_la-preopen.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o loaders/libltdlc_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libltdlc_la-preopen.lo `test -f 'loaders/preopen.c' || echo '$(srcdir)/'`loaders/preopen.c
 
 libltdlc_la-lt__alloc.lo: lt__alloc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libltdlc_la-lt__alloc.lo -MD -MP -MF $(DEPDIR)/libltdlc_la-lt__alloc.Tpo -c -o libltdlc_la-lt__alloc.lo `test -f 'lt__alloc.c' || echo '$(srcdir)/'`lt__alloc.c
@@ -698,12 +679,35 @@ libltdlc_la-slist.lo: slist.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libltdlc_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libltdlc_la-slist.lo `test -f 'slist.c' || echo '$(srcdir)/'`slist.c
 
+load_add_on.lo: loaders/load_add_on.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT load_add_on.lo -MD -MP -MF $(DEPDIR)/load_add_on.Tpo -c -o load_add_on.lo `test -f 'loaders/load_add_on.c' || echo '$(srcdir)/'`loaders/load_add_on.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/load_add_on.Tpo $(DEPDIR)/load_add_on.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/load_add_on.c' object='load_add_on.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o load_add_on.lo `test -f 'loaders/load_add_on.c' || echo '$(srcdir)/'`loaders/load_add_on.c
+
+loadlibrary.lo: loaders/loadlibrary.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT loadlibrary.lo -MD -MP -MF $(DEPDIR)/loadlibrary.Tpo -c -o loadlibrary.lo `test -f 'loaders/loadlibrary.c' || echo '$(srcdir)/'`loaders/loadlibrary.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/loadlibrary.Tpo $(DEPDIR)/loadlibrary.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/loadlibrary.c' object='loadlibrary.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o loadlibrary.lo `test -f 'loaders/loadlibrary.c' || echo '$(srcdir)/'`loaders/loadlibrary.c
+
+shl_load.lo: loaders/shl_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT shl_load.lo -MD -MP -MF $(DEPDIR)/shl_load.Tpo -c -o shl_load.lo `test -f 'loaders/shl_load.c' || echo '$(srcdir)/'`loaders/shl_load.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/shl_load.Tpo $(DEPDIR)/shl_load.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loaders/shl_load.c' object='shl_load.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o shl_load.lo `test -f 'loaders/shl_load.c' || echo '$(srcdir)/'`loaders/shl_load.c
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
-	-rm -rf loaders/.libs loaders/_libs
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
 	test -z "$(includedir)" || $(MKDIR_P) "$(DESTDIR)$(includedir)"
@@ -859,8 +863,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f loaders/$(DEPDIR)/$(am__dirstamp)
-	-rm -f loaders/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -872,7 +874,7 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) loaders/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -918,7 +920,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) loaders/$(DEPDIR)
+	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

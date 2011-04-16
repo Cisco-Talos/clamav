@@ -155,9 +155,13 @@
     <ResourceCompile Include="res\clamdscan.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\clamdcom.c"/>
     <ClCompile Include="..\clamdscan\clamdscan.c"/>
     <ClCompile Include="..\clamdscan\client.c"/>
     <ClCompile Include="..\clamdscan\proto.c"/>
+    <ClCompile Include="..\shared\actions.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
+    <ClCompile Include="..\shared\output.c"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamav.vcxproj">

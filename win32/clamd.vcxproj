@@ -163,6 +163,8 @@
     <ClCompile Include="..\clamd\session.c"/>
     <ClCompile Include="..\clamd\tcpserver.c"/>
     <ClCompile Include="..\clamd\thrmgr.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
+    <ClCompile Include="..\shared\output.c"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamav.vcxproj">

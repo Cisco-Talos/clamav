@@ -159,6 +159,7 @@
     <ResourceCompile Include="res\freshclam.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\clamdcom.c"/>
     <ClCompile Include="..\freshclam\dns.c"/>
     <ClCompile Include="..\freshclam\execute.c"/>
     <ClCompile Include="..\freshclam\freshclam.c"/>
@@ -166,6 +167,10 @@
     <ClCompile Include="..\freshclam\mirman.c"/>
     <ClCompile Include="..\freshclam\nonblock.c"/>
     <ClCompile Include="..\freshclam\notify.c"/>
+    <ClCompile Include="..\shared\cdiff.c"/>
+    <ClCompile Include="..\shared\misc.c"/>
+    <ClCompile Include="..\shared\output.c"/>
+    <ClCompile Include="..\shared\tar.c"/>
     <ClCompile Include="compat\resolv.c"/>
     <ClCompile Include="compat\strptime.c"/>
   </ItemGroup>

@@ -21,6 +21,14 @@ if BUILD_CLAMD
 sbin_PROGRAMS = clamd
 
 clamd_SOURCES = \
+    $(top_srcdir)/shared/output.c \
+    $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/misc.c \
+    $(top_srcdir)/shared/misc.h \
     clamd.c \
     tcpserver.c \
     tcpserver.h \
@@ -54,7 +62,7 @@ AM_CFLAGS=@WERR_CFLAGS@
 
 endif
 
-LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared_threads.la @CLAMD_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 
 # it does support --help and --version but with the default config file
