@@ -1,3 +1,7 @@
+Sun Apr 17 16:09:28 CEST 2011 (acab)
+------------------------------------
+ * win32/compat: more UTF8 stuff. Things *appear* to be working ok now.
+
 Sat Apr 16 18:56:40 CEST 2011 (acab)
 ------------------------------------
  * libclamav, shared: Preliminary win32 conversion to UTF8

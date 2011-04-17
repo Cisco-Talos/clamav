@@ -21,6 +21,8 @@
 #include "dirent.h"
 #include "libgen.h"
 
+#include <malloc.h>
+
 /* 
     I GIVE UP! The CRT is b0rked and cannot be helped.
 
@@ -182,9 +184,15 @@ static int glob_add(const char *path, int *argc, char ***argv) {
 }
 
 void w32_glob(int *argc_ptr, char ***argv_ptr) {
-    char *cur = GetCommandLineA(), *begparm = NULL, *endparm = NULL;
+    wchar_t *wtmp = GetCommandLineW();
+    char *cur, *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
-    int argc = 0, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0;
+    int argc = 0, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0, linelen;
+
+    linelen = wcslen(wtmp);
+    cur = _alloca(linelen * 6 + 1);
+    if(!WideCharToMultiByte(CP_UTF8, 0, wtmp, -1, cur, linelen * 6 + 1, NULL, NULL))
+	cur = GetCommandLineA();
 
     do {
 	c = *cur;
@@ -254,7 +262,6 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
 	}
 	cur++;
     } while (c);
-
     if(argc) {
 	int i, argvlen = sizeof(*argv) * (argc + 1), argclen = 0;
 	argv = realloc(argv, argvlen + allarglen + argc);
