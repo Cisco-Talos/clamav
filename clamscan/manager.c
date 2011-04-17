@@ -71,7 +71,7 @@ dev_t procdev;
 /* FIXME: If possible, handle users correctly */
 static int checkaccess(const char *path, const char *username, int mode)
 {
-    return !_access(path, mode);
+    return !access(path, mode);
 }
 #else
 static int checkaccess(const char *path, const char *username, int mode)

@@ -39,6 +39,10 @@ int w32_stat(const char *path, struct stat *buf);
 #define lstat stat
 #define stat(path, buf) w32_stat(path, buf)
 
+int w32_access(const char *pathname, int mode);
+
+#define access(pathname, mode) w32_access(pathname, mode)
+
 wchar_t *uncpath(const char *path);
 int safe_open(const char *path, int flags, ... );
 

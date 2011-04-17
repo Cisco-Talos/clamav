@@ -148,13 +148,15 @@ int safe_open(const char *path, int flags, ... ) {
 }
 
 
-w32_stat(const char *path, struct stat *buf) {
+int w32_stat(const char *path, struct stat *buf) {
     int len;
     wchar_t *wpath = uncpath(path);
     WIN32_FILE_ATTRIBUTE_DATA attrs;
 
-    if(!wpath)
+    if(!wpath) {
+	errno = ENOMEM;
 	return -1;
+    }
 
     len = GetFileAttributesExW(wpath, GetFileExInfoStandard, &attrs);
     free(wpath);
@@ -175,4 +177,18 @@ w32_stat(const char *path, struct stat *buf) {
     buf->st_nlink = 1;
     buf->st_size = ((uint64_t)attrs.nFileSizeHigh << (sizeof(attrs.nFileSizeLow)*8)) | attrs.nFileSizeLow;
     return 0;
+}
+
+int w32_access(const char *pathname, int mode) {
+    wchar_t *wpath = uncpath(pathname);
+    int ret;
+
+    if(!wpath) {
+	errno = ENOMEM;
+	return -1;
+    }
+
+    ret = _waccess(wpath, mode);
+    free(wpath);
+    return ret;
 }
