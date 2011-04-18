@@ -262,23 +262,23 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 		cli_dbgmsg("SWF: JPEG image data\n");
 	    } else if(!memcmp(buff, "\xff\xd9\xff\xd8", 4)) {
 		cli_dbgmsg("SWF: JPEG image data (erroneous header)\n");
-		if(version >= 8) {
-		    *ctx->virname = "Heuristics.SWF.SuspectImage.A";
-		    ret = CL_VIRUS;
+		if(version >= 8 && SCAN_ALGO) {
+			*ctx->virname = "Heuristics.SWF.SuspectImage.A";
+			ret = CL_VIRUS;
 		}
 	    } else if(!memcmp(buff, "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", 8)) {
 		cli_dbgmsg("SWF: PNG image data\n");
-		if(version < 8) {
+		if(version < 8 && SCAN_ALGO) {
 		    *ctx->virname = "Heuristics.SWF.SuspectImage.B";
 		    ret = CL_VIRUS;
 		}
 	    } else if(!memcmp(buff, "\x47\x49\x46\x38\x39\x61", 6)) {
 		cli_dbgmsg("SWF: GIF89a image data\n");
-		if(version < 8) {
+		if(version < 8 && SCAN_ALGO) {
 		    *ctx->virname = "Heuristics.SWF.SuspectImage.C";
 		    ret = CL_VIRUS;
 		}
-	    } else {
+	    } else if(SCAN_ALGO) {
 		cli_warnmsg("SWF: Unknown image data\n");
 		*ctx->virname = "Heuristics.SWF.SuspectImage.D";
 		ret = CL_VIRUS;
@@ -324,7 +324,7 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 	}
     }
     free(name);
-    if(ctx->img_validate && ret == CL_EPARSE) {
+    if(ctx->img_validate && ret == CL_EPARSE && SCAN_ALGO) {
 	*ctx->virname = "Heuristics.SWF.SuspectImage.E";
 	return CL_VIRUS;
     }
