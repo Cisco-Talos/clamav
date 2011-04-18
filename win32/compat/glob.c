@@ -67,7 +67,7 @@
     #define wrapper.
 */
 
-static int glob_add(const char *path, int *argc, char ***argv) {
+static int glob_add(char *path, int *argc, char ***argv) {
     char *tail = strchr(path, '*'), *tailqmark;
     char *dup1, *dup2, *dir, *base, *taildirsep, *tailwldsep;
     struct dirent *de;
@@ -123,8 +123,11 @@ static int glob_add(const char *path, int *argc, char ***argv) {
     if(!tailwldsep)
 	tailwldsep = tail + taillen;
 
-    dup1 = strdup(path);
-    dup2 = strdup(path);
+    baselen = strlen(path) + 1;
+    dup1 = (char *)_alloca(baselen * 2);
+    memcpy(dup1, path, baselen);
+    dup2 = dup1 + baselen;
+    memcpy(dup2, path, baselen);
 
     if(!mergedir) {
 	dir = dirname(dup1);
@@ -177,8 +180,7 @@ static int glob_add(const char *path, int *argc, char ***argv) {
 	}
     }
     if(d) closedir(d);
-    free(dup1);
-    free(dup2);
+    _freea(dup1);
     free(path);
     return outlen;
 }

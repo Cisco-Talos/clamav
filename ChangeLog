@@ -1,3 +1,8 @@
+Mon Apr 18 17:23:10 CEST 2011 (acab)
+------------------------------------
+ * clamd, win32: Conversion to UTF8 is hopefully completefinal.
+		 See win32/README for important changes! (bb#2343)
+
 Sun Apr 17 16:09:28 CEST 2011 (acab)
 ------------------------------------
  * win32/compat: more UTF8 stuff. Things *appear* to be working ok now.

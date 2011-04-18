@@ -420,7 +420,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	case COMMAND_SCAN:
 	case COMMAND_CONTSCAN:
 	case COMMAND_MULTISCAN:
-	    dup_conn->filename = strdup(argument);
+	    dup_conn->filename = cli_strdup_to_utf8(argument);
 	    if (!dup_conn->filename) {
 		logg("!Failed to allocate memory for filename\n");
 		ret = -1;

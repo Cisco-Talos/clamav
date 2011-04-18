@@ -1,7 +1,26 @@
 ClamAV for Win32
 ----------------
 
-0- Requirements
+--- News ---
+
+Starting from version 0.98 the windows version of ClamAV requires all the
+input to be UTF-8 encoded.
+This affects:
+- the API, notably the cl_scanfile() function
+- clamd socket input, e.g. the commands SCAN, CONTSCAN, MUTLISCAN, etc.
+- clamd socket output, i.e replies to the above queries
+
+For legacy reasons ANSI (i.e. CP_ACP) input will still be accepted and
+processed as before, but with two important remarks:
+First, socket replies to ANSI queries will still be UTF-8 encoded.
+Second, ANSI sequences which are also valid UTF-8 sequences will be handled
+as UTF-8.
+
+As a side note, console output (stdin and stderr) will always be OEM encoded,
+even when redirected to a file.
+
+
+--- Requirements ---
 
 To build the source code you will need:
 - Git for windows with a git "shell"
@@ -11,7 +30,8 @@ compile the 64bit target; this configuration is therefore not supported.
 
 To run the binaries at least Windows XP is required.
 
-1- Getting the code
+
+--- Getting the code ---
 
 The win32 source code is merged in the ClamAV repository and is available
 via git.
@@ -19,14 +39,14 @@ Clone the repository with: git clone git://git.clamav.net/git/clamav-devel
 See http://www.clamav.net/download/sources for more info.
 
 
-2- Code configuration
+--- Code configuration ---
 
 After downloading the source code, minimal configuration is required:
 just run the win32/configure.bat script *from within the git shell*.
 Skip this step if you are building from an official release tarball.
 
 
-3- Compilation
+--- Compilation ---
 
 Open win32/ClamAV.sln in Visual Studio and build all.
 The output directory for the binaries is either /win32/(Win32|x64)/Debug or
@@ -37,24 +57,28 @@ https://connect.microsoft.com/VisualStudio/feedback/details/556158
 Use MSBuild instead.
 
 
-4- Special notes
+--- Special notes ---
 
 The ClamAV tools in win32 are the same as in unix, so refer to their respective
 manpage for general usage.
 The major differences are listed below:
 - Config files path search order:
-  1- The content of the registry key "HKEY_LOCAL_MACHINE/Software/ClamAV/ConfDir"
+  1- The content of the registry key
+     "HKEY_LOCAL_MACHINE/Software/ClamAV/ConfDir"
   2- The directory where libclamav.dll is located
   3- "C:\ClamAV"
 
 - Database files path search order:
-  1- The content of the registry key "HKEY_LOCAL_MACHINE/Software/ClamAV/DataDir"
-  2- The directory "database" inside the directory where libclamav.dll is located
+  1- The content of the registry key
+     "HKEY_LOCAL_MACHINE/Software/ClamAV/DataDir"
+  2- The directory "database" inside the directory where libclamav.dll is
+     located
   3- "C:\ClamAV\db"
 
 - Globbing
-Since the windows command prompt doesn't take care of wildcard expansion, minimal
-emulation of unix glob() is performed internally. It supports "*" and "?" only.
+Since the windows command prompt doesn't take care of wildcard expansion,
+minimal emulation of unix glob() is performed internally.
+It supports "*" and "?" only.
 
 - File paths
 Please always use the backslash as the path separator.
@@ -66,7 +90,7 @@ chunks; such builds won't be able to handle large databases.
 Just do yourself a favour and always build in release mode.
 
 
-5- Special thanks
+--- Special thanks ---
 
 Special thanks to Gianluigi Tiesi and Mark Pizzolato for their valuable help in
 coding and testing.

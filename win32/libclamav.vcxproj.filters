@@ -159,9 +159,6 @@
     <ClCompile Include="..\libclamav\matcher-bm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\matcher-md5.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\mbox.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -476,6 +473,27 @@
     </ClCompile>
     <ClCompile Include="3rdparty\zlib\gzwrite.c">
       <Filter>Source Files\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\png.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\jpeg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\swf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\matcher-hash.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\sha1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\events.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="compat\utf8_util.c">
+      <Filter>Source Files\compat</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

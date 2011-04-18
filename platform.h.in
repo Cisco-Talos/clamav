@@ -40,6 +40,8 @@ typedef	unsigned	int	in_addr_t;
 
 /* Nothing is safe in windows, not even open */
 #define safe_open open
+#define cli_to_utf8_maybe_alloc(x) (x)
+#define cli_strdup_to_utf8(x) strdup(x)
 #ifndef WORDS_BIGENDIAN
 #define WORDS_BIGENDIAN 0
 #endif

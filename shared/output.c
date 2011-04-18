@@ -450,7 +450,7 @@ void mprintf(const char *str, ...)
 	    break;
 	}
 	/* FIXME CHECK IT'S REALLY UTF8 */
-	nubuff = malloc(tmplen);
+	nubuff = (char *)malloc(tmplen);
 	if(!nubuff) {
 	    free(tmpw);
 	    break;

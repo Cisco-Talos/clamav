@@ -212,4 +212,5 @@ EXPORTS w32_strerror @44341 NONAME
 EXPORTS w32_strerror_r @44342 NONAME
 EXPORTS inet_addr @44343 NONAME
 EXPORTS fcntl @44344 NONAME
-
+EXPORTS cli_to_utf8_maybe_alloc @44345 NONAME
+EXPORTS cli_strdup_to_utf8 @44346 NONAME
