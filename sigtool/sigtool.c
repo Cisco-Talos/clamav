@@ -250,10 +250,10 @@ static int utf16decode(const struct optstruct *opts)
 	    if(write(fd2, decoded, strlen(decoded)) == -1) {
 		mprintf("!utf16decode: Can't write to file %s\n", newname);
 		free(decoded);
-		unlink(newname);
-		free(newname);
 		close(fd1);
 		close(fd2);
+		unlink(newname);
+		free(newname);
 		return -1;
 	    }
 	    free(decoded);
