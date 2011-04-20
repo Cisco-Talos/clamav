@@ -435,69 +435,6 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     return -2;
 }
 
-/*
-static const char *readblineraw(int fd, char *buf, int bufsize, int filesize, int *bread)
-{
-	char *pt;
-	int ret, end;
-
-    if(!*bread) {
-	if(bufsize < filesize)
-	    lseek(fd, 1 - bufsize, SEEK_END);
-	*bread = read(fd, buf, bufsize - 1);
-	if(!*bread || *bread == -1)
-	    return NULL;
-	buf[*bread] = 0;
-    }
-
-    pt = strrchr(buf, '\n');
-    if(!pt)
-	return NULL;
-    *pt = 0;
-    pt = strrchr(buf, '\n');
-    if(pt) {
-	return ++pt;
-    } else if(*bread == filesize) {
-	return buf;
-    } else {
-	*bread -= strlen(buf) + 1;
-	end = filesize - *bread;
-	if(end < bufsize) {
-	    if((ret = lseek(fd, 0, SEEK_SET)) != -1)
-		ret = read(fd, buf, end);
-	} else {
-	    if((ret = lseek(fd, end - bufsize + 1, SEEK_SET)) != -1)
-		ret = read(fd, buf, bufsize - 1);
-	}
-	if(!ret || ret == -1)
-	    return NULL;
-	buf[ret] = 0;
-	*bread += ret;
-	pt = strrchr(buf, '\n');
-	if(!pt)
-	    return buf;
-	*pt = 0;
-	pt = strrchr(buf, '\n');
-	if(pt)
-	    return ++pt;
-	else if(strlen(buf))
-	    return buf;
-	else 
-	    return NULL;
-    }
-}
-
-static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *bread)
-{
-	const char *line = readblineraw(fd, buf, bufsize, filesize, bread);
-
-    if(line)
-	cli_chomp(buf + (line - buf));
-
-    return line;
-}
-*/
-
 static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
 {
 	unsigned short bits = 0,temp = 0;
