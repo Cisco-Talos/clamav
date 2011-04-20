@@ -950,18 +950,18 @@ int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
 	if((uint32_t) (sum + bread) >= size) {
 	    if(write(newfd, buff, size - sum) == -1) {
 		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
+		close(newfd);
 		cli_unlink(name);
 		free(name);
-		close(newfd);
 		return CL_EWRITE;
 	    }
 	    break;
 	} else {
 	    if(write(newfd, buff, bread) == -1) {
 		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
+		close(newfd);
 		cli_unlink(name);
 		free(name);
-		close(newfd);
 		return CL_EWRITE;
 	    }
 	}
