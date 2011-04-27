@@ -20,6 +20,18 @@
 #ifndef __DNS_H
 #define __DNS_H
 
-char *txtquery(const char *domain, unsigned int *ttl);
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef HAVE_RESOLV_H
+#ifndef _WIN32
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#endif
+#include <resolv.h>
+#endif
+
+char *dnsquery(const char *domain, int qtype, unsigned int *ttl);
 
 #endif

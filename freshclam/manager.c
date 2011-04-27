@@ -212,7 +212,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	const char *hostpt;
 
     if(ip)
-	strcpy(ip, "???");
+	strcpy(ip, "UNKNOWN");
 
     if(proxy) {
 	hostpt = proxy;
@@ -1555,12 +1555,20 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
 	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32];
-	char extradbinfo[64], *extradnsreply = NULL;
+	char extradbinfo[64], *extradnsreply = NULL, squery[64];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
-	unsigned int can_whitelist = 0;
+	unsigned int can_whitelist = 0, mirror_stats = 0;
+#ifdef _WIN32
+	unsigned int w32 = 1;
+#else
+	unsigned int w32 = 0;
+#endif
 	int ctimeout, rtimeout;
 
+
+    if(cli_strbcasestr(hostname, ".clamav.net"))
+	mirror_stats = 1;
 
     snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
 
@@ -1602,7 +1610,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 #ifdef HAVE_RESOLV_H
     else if(!nodb && extra && !optget(opts, "no-dns")->enabled) {
 	snprintf(extradbinfo, sizeof(extradbinfo), "%s.cvd.clamav.net", dbname);
-	if((extradnsreply = txtquery(extradbinfo, NULL))) {
+	if((extradnsreply = dnsquery(extradbinfo, T_TXT, NULL))) {
 	    if((pt = cli_strtok(extradnsreply, 1, ":"))) {
 		    int rt;
 		    time_t ct;
@@ -1681,12 +1689,20 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    *signo += current->sigs;
+	    if(mirror_stats) {
+		snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, current->version, flevel, 1, w32, ip);
+		dnsquery(squery, T_A, NULL);
+	    }
 	    cl_cvdfree(current);
 	    return 1;
 	}
 
 	if(!remote) {
 	    logg("^Can't read %s header from %s (IP: %s)\n", cvdfile, hostname, ip);
+	    if(mirror_stats) {
+		snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, current->version + 1, flevel, 0, w32, ip);
+		dnsquery(squery, T_A, NULL);
+	    }
 	    cl_cvdfree(current);
 	    return 58;
 	}
@@ -1709,7 +1725,6 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	cl_cvdfree(current);
 	return 1;
     }
-
 
     if(current) {
 	currver = current->version;
@@ -1741,6 +1756,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     if(nodb) {
 	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
 	if(ret) {
+	    if(mirror_stats) {
+		snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0, flevel, 0, w32, ip);
+		dnsquery(squery, T_A, NULL);
+	    }
 	    memset(ip, 0, 16);
 	    free(newfile);
 	    return ret;
@@ -1759,6 +1778,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 		    llogerr = (j == maxattempts - 1);
 		ret = getpatch(dbname, tmpdir, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, llogerr, can_whitelist, opts);
 		if(ret == 52 || ret == 58) {
+		    if(mirror_stats) {
+			snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, i, flevel, 0, w32, ip);
+			dnsquery(squery, T_A, NULL);
+		    }
 		    memset(ip, 0, 16);
 		    continue;
 		} else {
@@ -1777,6 +1800,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    mirman_whitelist(mdat, 2);
 	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
 	    if(ret) {
+		if(mirror_stats) {
+		    snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0, flevel, 0, w32, ip);
+		    dnsquery(squery, T_A, NULL);
+		}
 		free(newfile);
 		return ret;
 	    }
@@ -1872,6 +1899,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     *signo += current->sigs;
+    if(mirror_stats) {
+	snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, current->version, flevel, 1, w32, ip);
+	dnsquery(squery, T_A, NULL);
+    }
     cl_cvdfree(current);
     return 0;
 }
@@ -2071,7 +2102,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
     if(optget(opts, "no-dns")->enabled) {
 	dnsreply = NULL;
     } else {
-	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
+	if((dnsreply = dnsquery(dnsdbinfo, T_TXT, &ttl))) {
 	    logg("*TTL: %d\n", ttl);
 
 	    if((pt = cli_strtok(dnsreply, 3, ":"))) {

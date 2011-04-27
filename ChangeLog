@@ -1,3 +1,7 @@
+Wed Apr 27 15:07:22 CEST 2011 (tk)
+----------------------------------
+ * freshclam: add mirror statistics mechanism
+
 Mon Apr 18 17:23:10 CEST 2011 (acab)
 ------------------------------------
  * clamd, win32: Conversion to UTF8 is hopefully completefinal.
