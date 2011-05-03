@@ -743,8 +743,8 @@ SDNode *SelectionDAG::FindModifiedNodeSlot(SDNode *N,
   return Node;
 }
 
-/// VerifyNode - Sanity check the given node.  Aborts if it is invalid.
-void SelectionDAG::VerifyNode(SDNode *N) {
+/// VerifyNodeCommon - Sanity check the given node.  Aborts if it is invalid.
+static void VerifyNodeCommon(SDNode *N) {
   switch (N->getOpcode()) {
   default:
     break;
@@ -776,6 +776,43 @@ void SelectionDAG::VerifyNode(SDNode *N) {
     break;
   }
   }
+}
+
+/// VerifySDNode - Sanity check the given SDNode.  Aborts if it is invalid.
+static void VerifySDNode(SDNode *N) {
+  // The SDNode allocators cannot be used to allocate nodes with fields that are
+  // not present in an SDNode!
+  assert(!isa<MemSDNode>(N) && "Bad MemSDNode!");
+  assert(!isa<ShuffleVectorSDNode>(N) && "Bad ShuffleVectorSDNode!");
+  assert(!isa<ConstantSDNode>(N) && "Bad ConstantSDNode!");
+  assert(!isa<ConstantFPSDNode>(N) && "Bad ConstantFPSDNode!");
+  assert(!isa<GlobalAddressSDNode>(N) && "Bad GlobalAddressSDNode!");
+  assert(!isa<FrameIndexSDNode>(N) && "Bad FrameIndexSDNode!");
+  assert(!isa<JumpTableSDNode>(N) && "Bad JumpTableSDNode!");
+  assert(!isa<ConstantPoolSDNode>(N) && "Bad ConstantPoolSDNode!");
+  assert(!isa<BasicBlockSDNode>(N) && "Bad BasicBlockSDNode!");
+  assert(!isa<SrcValueSDNode>(N) && "Bad SrcValueSDNode!");
+  assert(!isa<MDNodeSDNode>(N) && "Bad MDNodeSDNode!");
+  assert(!isa<RegisterSDNode>(N) && "Bad RegisterSDNode!");
+  assert(!isa<BlockAddressSDNode>(N) && "Bad BlockAddressSDNode!");
+  assert(!isa<EHLabelSDNode>(N) && "Bad EHLabelSDNode!");
+  assert(!isa<ExternalSymbolSDNode>(N) && "Bad ExternalSymbolSDNode!");
+  assert(!isa<CondCodeSDNode>(N) && "Bad CondCodeSDNode!");
+  assert(!isa<CvtRndSatSDNode>(N) && "Bad CvtRndSatSDNode!");
+  assert(!isa<VTSDNode>(N) && "Bad VTSDNode!");
+  assert(!isa<MachineSDNode>(N) && "Bad MachineSDNode!");
+
+  VerifyNodeCommon(N);
+}
+
+/// VerifyMachineNode - Sanity check the given MachineNode.  Aborts if it is
+/// invalid.
+static void VerifyMachineNode(SDNode *N) {
+  // The MachineNode allocators cannot be used to allocate nodes with fields
+  // that are not present in a MachineNode!
+  // Currently there are no such nodes.
+
+  VerifyNodeCommon(N);
 }
 
 /// getEVTAlignment - Compute the default alignment value for the
@@ -2295,7 +2332,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT) {
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -2535,7 +2572,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL,
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -2977,7 +3014,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -3045,7 +3082,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -4186,7 +4223,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, EVT VT,
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -4268,7 +4305,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, DebugLoc DL, SDVTList VTList,
   }
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifySDNode(N);
 #endif
   return SDValue(N, 0);
 }
@@ -4876,7 +4913,7 @@ SelectionDAG::getMachineNode(unsigned Opcode, DebugLoc DL, SDVTList VTs,
 
   AllNodes.push_back(N);
 #ifndef NDEBUG
-  VerifyNode(N);
+  VerifyMachineNode(N);
 #endif
   return N;
 }

@@ -294,6 +294,12 @@ namespace llvm {
       // MINGW_ALLOCA - MingW's __alloca call to do stack probing.
       MINGW_ALLOCA,
 
+      // Memory barrier
+      MEMBARRIER,
+      MFENCE,
+      SFENCE,
+      LFENCE,
+
       // ATOMADD64_DAG, ATOMSUB64_DAG, ATOMOR64_DAG, ATOMAND64_DAG, 
       // ATOMXOR64_DAG, ATOMNAND64_DAG, ATOMSWAP64_DAG - 
       // Atomic 64-bit binary operations.
@@ -305,12 +311,6 @@ namespace llvm {
       ATOMNAND64_DAG,
       ATOMSWAP64_DAG,
       
-      // Memory barrier
-      MEMBARRIER,
-      MFENCE,
-      SFENCE,
-      LFENCE
-
       // WARNING: Do not add anything in the end unless you want the node to
       // have memop! In fact, starting from ATOMADD64_DAG all opcodes will be
       // thought as target memory ops!
