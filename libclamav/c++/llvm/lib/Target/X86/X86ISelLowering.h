@@ -309,7 +309,7 @@ namespace llvm {
       ATOMXOR64_DAG,
       ATOMAND64_DAG,
       ATOMNAND64_DAG,
-      ATOMSWAP64_DAG,
+      ATOMSWAP64_DAG
       
       // WARNING: Do not add anything in the end unless you want the node to
       // have memop! In fact, starting from ATOMADD64_DAG all opcodes will be
