@@ -1,3 +1,7 @@
+Tue May  3 16:14:27 PDT 2011 (tk)
+---------------------------------
+ * sigtool/sigtool.c: fix formatting of hash dbs (bb#2765)
+
 Wed Apr 27 15:07:22 CEST 2011 (tk)
 ----------------------------------
  * freshclam: add mirror statistics mechanism

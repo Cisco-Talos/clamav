@@ -45,6 +45,7 @@
 #endif
 #include <dirent.h>
 #include <ctype.h>
+#include <libgen.h>
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
@@ -170,9 +171,9 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
 		    if((hash = cli_hashfile(opts->filename[i], type))) {
 			if(mdb)
-			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, hash, opts->filename[i]);
+			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, hash, basename(opts->filename[i]));
 			else
-			    mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, opts->filename[i]);
+			    mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, basename(opts->filename[i]));
 			free(hash);
 		    } else {
 			mprintf("!hashsig: Can't generate hash for %s\n", opts->filename[i]);
