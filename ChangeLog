@@ -1,3 +1,8 @@
+Wed May  4 14:07:12 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/c++/llvm/lib/Target/X86/X86InstrInfo.td: bb #2763
+ don't assert on AVX chips (Intel Core i5 and i7)
+
 Tue May  3 22:52:04 PDT 2011 (tk)
 ---------------------------------
  * sigtool: properly normalize html files (bb#2764)
