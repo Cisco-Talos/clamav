@@ -1,3 +1,7 @@
+Tue May  3 22:52:04 PDT 2011 (tk)
+---------------------------------
+ * sigtool: properly normalize html files (bb#2764)
+
 Tue May  3 16:14:27 PDT 2011 (tk)
 ---------------------------------
  * sigtool/sigtool.c: fix formatting of hash dbs (bb#2765)

@@ -625,8 +625,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	struct entity_conv conv;
 	unsigned char entity_val[HTML_STR_LENGTH+1];
 	size_t entity_val_length = 0;
-	const int dconf_entconv = dconf && dconf->phishing&PHISHING_CONF_ENTCONV;
-	const int dconf_js = dirname && dconf && dconf->doc&DOC_CONF_JSNORM; /* TODO */
+	const int dconf_entconv = dconf ? dconf->phishing&PHISHING_CONF_ENTCONV : 1;
+	const int dconf_js = dirname && (dconf ? dconf->doc&DOC_CONF_JSNORM : 1); /* TODO */
 	/* dconf for phishing engine sets scanContents, so no need for a flag here */
 	struct parser_state *js_state = NULL;
 	const unsigned char *js_begin = NULL, *js_end = NULL;
