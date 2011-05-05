@@ -304,23 +304,31 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     return 0;
 }
 
-int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
+int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	   const struct cl_engine *engine,
 	   unsigned int options, const struct optstruct *opts, int odesc, int stream)
 {
-	int ret;
+    int ret, fd = conn->scanfd;
 	const char *virname;
 	struct stat statbuf;
 	struct cb_context context;
-	char fdstr[32];
+	char fdstr[32], *reply_fdstr;
 
-	if (stream)
-	    strncpy(fdstr, "stream", sizeof(fdstr));
-	else
+	if (stream) {
+	    struct sockaddr_in sa;
+	    socklen_t salen = sizeof(sa);
+	    if(getpeername(conn->sd, (struct sockaddr *)&sa, &salen) || salen > sizeof(sa) || sa.sin_family != AF_INET)
+		strncpy(fdstr, "instream(local)", sizeof(fdstr));
+	    else
+		snprintf(fdstr, sizeof(fdstr), "instream(%s@%u)", inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
+	    reply_fdstr = "stream";
+	} else {
 	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	    reply_fdstr = fdstr;
+	}
 	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
 		logg("%s: Not a regular file. ERROR\n", fdstr);
-		if (conn_reply(conn, fdstr, "Not a regular file", "ERROR") == -1)
+		if (conn_reply(conn, reply_fdstr, "Not a regular file", "ERROR") == -1)
 		    return CL_ETIMEOUT;
 		return -1;
 	}
@@ -337,7 +345,7 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	}
 
 	if(ret == CL_VIRUS) {
-		if (conn_reply_virus(conn, fdstr, virname) == -1)
+		if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
 		    ret = CL_ETIMEOUT;
 		if(context.virsize)
 		    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);
@@ -345,13 +353,13 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 		    logg("%s: %s(%s:%llu) FOUND\n", fdstr, virname, context.virhash, context.virsize);
 		else
 		    logg("%s: %s FOUND\n", fdstr, virname);
-		virusaction(fdstr, virname, opts);
+		virusaction(reply_fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
-		if (conn_reply(conn, fdstr, cl_strerror(ret), "ERROR") == -1)
+		if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
 		    ret = CL_ETIMEOUT;
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
 	} else {
-		if (conn_reply_single(conn, fdstr, "OK") == CL_ETIMEOUT)
+		if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
 		    ret = CL_ETIMEOUT;
 		if(logok)
 			logg("%s: OK\n", fdstr);

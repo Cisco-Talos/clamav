@@ -1,3 +1,7 @@
+Thu May  5 01:07:57 CEST 2011 (acab)
+------------------------------------
+ * clamd: log request ip address for instream scans #bb2592
+
 Wed May  4 14:07:12 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/c++/llvm/lib/Target/X86/X86InstrInfo.td: bb #2763
