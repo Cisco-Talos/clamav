@@ -1637,6 +1637,7 @@ libclamav.pc
 platform.h
 docs/man/clamav-milter.8
 docs/man/clamav-milter.conf.5
+docs/man/clambc.1
 docs/man/clamconf.1
 docs/man/clamd.8
 docs/man/clamd.conf.5
