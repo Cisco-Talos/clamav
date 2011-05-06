@@ -273,6 +273,21 @@ ssize_t w32_recv(int sockfd, void *buf, size_t len, int flags) {
     return (ssize_t)ret;
 }
 
+int w32_getpeername(int s, struct sockaddr *name, int *namelen)
+{
+    int ret = getpeername((SOCKET)s, name, namelen);
+    if (ret == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return ret;
+}
+
+char *w32_inet_ntoa(struct sockaddr_in in)
+{
+    return inet_ntoa(in);
+}
+
 int w32_closesocket(int sockfd) {
     if(closesocket((SOCKET)sockfd) == SOCKET_ERROR) {
 	wsock2errno();

@@ -11,6 +11,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+/* this shouldn't be part of win32 proj at all, but its easier to exclude here
+ * */
+#ifndef _WIN32
+
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -318,4 +322,4 @@ void PointerTracking::print(raw_ostream &OS, const Module* M) const {
     }
   }
 }
-
+#endif
