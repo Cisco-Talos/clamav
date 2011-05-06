@@ -312,7 +312,8 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	const char *virname;
 	struct stat statbuf;
 	struct cb_context context;
-	char fdstr[32], *reply_fdstr;
+	char fdstr[32];
+	const char*reply_fdstr;
 
 	if (stream) {
 	    struct sockaddr_in sa;
