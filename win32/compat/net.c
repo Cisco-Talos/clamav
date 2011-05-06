@@ -283,7 +283,7 @@ int w32_getpeername(int s, struct sockaddr *name, int *namelen)
     return ret;
 }
 
-char *w32_inet_ntoa(struct sockaddr_in in)
+char *w32_inet_ntoa(struct in_addr in)
 {
     return inet_ntoa(in);
 }
