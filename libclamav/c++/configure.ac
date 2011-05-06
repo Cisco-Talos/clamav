@@ -59,8 +59,8 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn" -a "$llvmver" != "2.8rc"; then
-	AC_MSG_ERROR([LLVM 2.8 or 2.8svn required, but "$llvmver" found])
+    if test "$llvmver" != "2.9"; then
+	AC_MSG_ERROR([LLVM 2.9 required, but "$llvmver" found])
     fi
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])

@@ -1,3 +1,7 @@
+Fri May  6 16:16:00 EEST 2011 (edwin)
+------------------------------------
+ * libclamav/c++: add support for building with external LLVM 2.9, and drop external 2.8 support
+
 Thu May  5 01:07:57 CEST 2011 (acab)
 ------------------------------------
  * clamd: log request ip address for instream scans #bb2592

@@ -30,8 +30,14 @@
 #include "llvm/Analysis/DebugInfo.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/Analysis/LiveValues.h"
+//#include "llvm/Analysis/LiveValues.h"
+//
+#ifdef LLVM29
+#include "llvm/Analysis/ValueTracking.h"
+#include "PointerTracking.h"
+#else
 #include "llvm/Analysis/PointerTracking.h"
+#endif
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
@@ -54,13 +60,22 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Support/Debug.h"
 
+#ifndef LLVM28
 #define LLVM28
+#endif
 #ifdef LLVM28
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
 #else
 #define DEFINEPASS(passname) passname() : FunctionPass(&ID)
 #endif
+
 using namespace llvm;
+#ifndef LLVM29
+static Value *GetUnderlyingObject(Value *P, TargetData *TD)
+{
+    return P->getUnderlyingObject();
+}
+#endif
 namespace {
 
   class PtrVerifier : public FunctionPass {
@@ -275,7 +290,7 @@ namespace {
       if (BaseMap.count(P)) {
         return BaseMap[Ptr] = BaseMap[P];
       }
-      Value *P2 = P->getUnderlyingObject();
+      Value *P2 = GetUnderlyingObject(P, TD);
       if (P2 != P) {
         Value *V = getPointerBase(P2);
         return BaseMap[Ptr] = V;
@@ -334,7 +349,7 @@ namespace {
 	  }
       }
       if (LoadInst *LI = dyn_cast<LoadInst>(Base)) {
-	  Value *V = LI->getPointerOperand()->stripPointerCasts()->getUnderlyingObject();
+	  Value *V = GetUnderlyingObject(LI->getPointerOperand()->stripPointerCasts(), TD);
 	  if (Argument *A = dyn_cast<Argument>(V)) {
 	      if (A->getArgNo() == 0) {
 		  // pointers from hidden ctx are trusted to be at least the
