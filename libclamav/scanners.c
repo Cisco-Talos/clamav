@@ -2701,7 +2701,7 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
 	int fd, ret;
-	char *fname = cli_to_utf8_maybe_alloc(filename);
+	const char *fname = cli_to_utf8_maybe_alloc(filename);
 
     if(!fname)
 	    return CL_EARG;
@@ -2710,7 +2710,7 @@ int cl_scanfile_callback(const char *filename, const char **virname, unsigned lo
 	return CL_EOPEN;
 
     if(fname != filename)
-	free(fname);
+	free((void*)fname);
 
     ret = cl_scandesc_callback(fd, virname, scanned, engine, scanoptions, context);
     close(fd);
