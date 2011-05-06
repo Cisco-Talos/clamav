@@ -20,6 +20,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\c++\PointerTracking.cpp"/>
     <ClCompile Include="..\libclamav\c++\detect.cpp"/>
     <ClCompile Include="..\libclamav\c++\bytecode2llvm.cpp"/>
     <ClCompile Include="..\libclamav\c++\ClamBCRTChecks.cpp"/>

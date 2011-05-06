@@ -33,10 +33,11 @@ if BUILD_EXTERNAL_LLVM
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28
+libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28 -DLLVM29
 libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
 libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
 noinst_LTLIBRARIES = libclamavcxx.la
+libclamavcxx_la_SOURCES += PointerTracking.cpp
 
 else
 AM_CPPFLAGS += $(LLVM_INCLUDES) $(LLVM_DEFS)

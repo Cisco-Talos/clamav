@@ -15370,8 +15370,8 @@ if test "${with_system_llvm+set}" = set; then :
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.8" -a "$llvmver" != "2.8svn" -a "$llvmver" != "2.8rc"; then
-	as_fn_error $? "LLVM 2.8 or 2.8svn required, but \"$llvmver\" found" "$LINENO" 5
+    if test "$llvmver" != "2.9"; then
+	as_fn_error $? "LLVM 2.9 required, but \"$llvmver\" found" "$LINENO" 5
     fi
     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
 

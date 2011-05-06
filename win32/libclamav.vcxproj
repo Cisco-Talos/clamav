@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -332,7 +333,7 @@
     <ClCompile Include="compat\net.c"/>
     <ClCompile Include="compat\random.c"/>
     <ClCompile Include="compat\snprintf.c"/>
-    <ClCompile Include="compat\utf8_util.c" />
+    <ClCompile Include="compat\utf8_util.c"/>
     <ClCompile Include="compat\w32_errno.c"/>
     <ClCompile Include="compat\w32_stat.c"/>
   </ItemGroup>
