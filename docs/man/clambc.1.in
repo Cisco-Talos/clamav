@@ -1,0 +1,34 @@
+.TH CLAMBC "1" "April 2010" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH NAME
+clambc \- Bytecode Testing Tool
+.SH SYNOPSIS
+.PP
+clambc <file> [function] [param1 ...]
+.SH DESCRIPTION
+.TP
+\fB\-\-help\fR                 \fB\-h\fR
+Show help
+.TP
+\fB\-\-version\fR              \fB\-V\fR
+Show version
+.TP
+\fB\-\-info\fR                 \fB\-i\fR
+Print information about bytecode
+.TP
+\fB\-\-printsrc\fR             \fB\-p\fR
+Print bytecode source
+.TP
+\fB\-\-trace\fR <level>
+Set bytecode trace level 0..7 (default 7)
+.TP
+\fB\-\-no\-trace\-showsource\fR
+Don't show source line during tracing
+.TP
+file
+file to test
+.SH "CREDITS"
+Please check the full documentation for credits.
+.PP
+Clam AntiVirus Bytecode Testing Tool 0.96
+By The ClamAV Team: http://www.clamav.net/team
+(C) 2009 Sourcefire, Inc.
