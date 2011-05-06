@@ -831,7 +831,8 @@ private:
 		    ostr << operand << " " ;
 		    V->print(ostr);
 		    Ty->print(ostr);
-		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+		    M->dump();
+		    cli_dbgmsg_internal("[Bytecode JIT]: operand %d: %s\n", operand,ostr.str().c_str());
 		}
 		llvm_report_error("(libclamav) Type mismatch converting operand");
 	    }
