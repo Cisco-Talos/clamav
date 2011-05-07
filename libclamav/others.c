@@ -272,19 +272,6 @@ int cl_init(unsigned int initoptions)
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
-	const char *zlibver = zlibVersion();
-	int cmp = cli_bcapi_version_compare(NULL, zlibver, strlen(zlibver),
-					    ZLIB_VERSION, strlen(ZLIB_VERSION));
-	if (cmp) {
-	    cli_dbgmsg("zlib version at runtime: %s, compile time: %s\n",
-		       zlibver, ZLIB_VERSION);
-	}
-	if (cmp < 0) {
-	    cli_warnmsg("zlib version at runtime is older than compile time: %s < %s\n",
-			zlibver, ZLIB_VERSION);
-	    cli_infomsg(NULL, "Make sure zlib is built as shared library, and that the new zlib library is installed in the proper place\n");
-	}
-
     {
 	unrar_main_header_t x;
 	if (((char*)&x.flags - (char*)&x) != 3) {
