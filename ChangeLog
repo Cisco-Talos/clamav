@@ -1,3 +1,7 @@
+Sat May  7 18:05:23 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: better detection for encrypted PDFs (bb #2448)
+
 Fri May  6 16:16:00 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/c++: add support for building with external LLVM 2.9, and drop external 2.8 support

@@ -362,7 +362,9 @@ libclamav_la_SOURCES = \
 	bytecode_detect.h\
 	builtin_bytecodes.h\
 	events.c\
-	events.h
+	events.h \
+	arc4.c \
+	arc4.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
