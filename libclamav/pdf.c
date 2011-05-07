@@ -52,6 +52,9 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "str.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
+#include "md5.h"
+#include "arc4.h"
+#include "sha256.h"
 
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
@@ -96,6 +99,11 @@ struct pdf_struct {
     cli_ctx *ctx;
     const char *dir;
     unsigned files;
+    uint32_t enc_objid;
+    char *fileID;
+    unsigned fileIDlen;
+    char *key;
+    unsigned keylen;
 };
 
 static const char *findNextNonWSBack(const char *q, const char *start)
@@ -793,7 +801,7 @@ static struct pdfname_action pdfname_actions[] = {
     {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
     {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER},
     {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE},
-    {"Standard", OBJ_FILTER_CRYPT, STATE_FILTER, STATE_FILTER},
+    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER},
     {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE},
     {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
     {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
@@ -975,7 +983,8 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	if ((obj->flags & (1 << act->set_objflag)) &&
 	    act->from_state == STATE_FILTER &&
 	    act->to_state == STATE_FILTER &&
-	    act->set_objflag != OBJ_FILTER_CRYPT) {
+	    act->set_objflag != OBJ_FILTER_CRYPT &&
+	    act->set_objflag != OBJ_FILTER_STANDARD) {
 	    filters++;
 	}
     }
@@ -987,6 +996,409 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (obj->flags & (1 << OBJ_FILTER_UNKNOWN))
 	pdfobj_flag(pdf, obj, UNKNOWN_FILTER);
     cli_dbgmsg("cli_pdf: %u %u obj flags: %02x\n", obj->id>>8, obj->id&0xff, obj->flags);
+}
+
+static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
+{
+    const char *q, *q2;
+    uint32_t objid;
+
+    if (len >= 16 && !strncmp(enc, "/EncryptMetadata", 16)) {
+	q = cli_memstr(enc+16, len-16, "/Encrypt", 8);
+	if (!q)
+	    return;
+	len -= q - enc;
+	enc = q;
+    }
+    q = enc + 8;
+    len -= 8;
+    q2 = pdf_nextobject(q, len);
+    if (!q2 || !isdigit(*q2))
+	return;
+    objid = atoi(q2) << 8;
+    len -= q2 - q;
+    q = q2;
+    q2 = pdf_nextobject(q, len);
+    if (!q2 || !isdigit(*q2))
+	return;
+    objid |= atoi(q2) & 0xff;
+    len -= q2 - q;
+    q = q2;
+    q2 = pdf_nextobject(q, len);
+    if (!q2 || *q2 != 'R')
+	return;
+    cli_dbgmsg("cli_pdf: Encrypt dictionary in obj %d %d\n", objid>>8, objid&0xff);
+    pdf->enc_objid = objid;
+}
+
+static const char *pdf_getdict(const char *q0, int* len, const char *key)
+{
+    const char *q;
+
+    q = cli_memstr(q0, *len, key, strlen(key));
+    if (!q) {
+	cli_dbgmsg("cli_pdf: %s not found in dict\n", key);
+	return NULL;
+    }
+    *len -= q - q0;
+    q0 = q;
+    q = pdf_nextobject(q0 + 1, *len - 1);
+    if (!q) {
+	cli_dbgmsg("cli_pdf: %s is invalid in dict\n", key);
+	return NULL;
+    }
+    if (q[-1] == '<')
+	q--;
+    *len -= q - q0;
+    return q;
+}
+
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen)
+{
+    char *s, *s0;
+    const char *start, *q, *end;
+    if (slen)
+	*slen = 0;
+    q = pdf_getdict(q0, &len, key);
+    if (!q)
+	return NULL;
+    if (*q == '(') {
+	int paren = 1;
+	start = ++q;
+	for (;paren > 0 && len > 0; q++) {
+	    switch (*q) {
+		case '(':
+		    paren++;
+		    break;
+		case ')':
+		    paren--;
+		    break;
+		case '\\':
+		    q++;
+		    len--;
+		    break;
+		default:
+		    break;
+	    }
+	}
+	q--;
+	len  = q - start;
+	s0 = s = cli_malloc(len + 1);
+	if (!s)
+	    return NULL;
+	end = start + len;
+	for (q = start;q < end;q++) {
+	    if (*q != '\\') {
+		*s++ = *q;
+	    } else {
+		q++;
+		switch (*q) {
+		    case 'n':
+			*s++ = '\n';
+			break;
+		    case 'r':
+			*s++ = '\r';
+			break;
+		    case 't':
+			*s++ = '\t';
+			break;
+		    case 'b':
+			*s++ = '\b';
+			break;
+		    case 'f':
+			*s++ = '\f';
+			break;
+		    case '(':/* fall-through */
+		    case ')':/* fall-through */
+		    case '\\':
+			*s++ = *q;
+			break;
+		    case '\n':
+			/* ignore */
+			break;
+		    case '\r':
+			/* ignore */
+			if (q+1 < end && q[1] == '\n')
+			    q++;
+			break;
+		    case '0':
+		    case '1':
+		    case '2':
+		    case '3':
+		    case '4':
+		    case '5':
+		    case '6':
+		    case '7':
+		    case '8':
+		    case '9':
+			/* octal escape */
+			if (q+2 < end)
+			    q++;
+			*s++ = 64*(q[0] - '0')+
+			      8*(q[1] - '0')+
+			        (q[2] - '0');
+			break;
+		    default:
+			/* ignore */
+			q--;
+			break;
+		}
+	    }
+	}
+	*s++ = '\0';
+	if (slen)
+	    *slen = s - s0 - 1;
+	return s0;
+    }
+    if (*q == '<') {
+	start = ++q;
+	q = memchr(q+1, '>', len);
+	if (!q)
+	    return NULL;
+	s = cli_malloc((q - start)/2 + 1);
+	cli_hex2str_to(start, s, q - start);
+	s[(q-start)/2] = '\0';
+	if (slen)
+	    *slen = (q - start)/2;
+	return s;
+    }
+    cli_dbgmsg("cli_pdf: %s is invalid string in dict\n", key);
+    return NULL;
+}
+
+static int pdf_readint(const char *q0, int len, const char *key)
+{
+    const char *q  = pdf_getdict(q0, &len, key);
+    if (!q)
+	return -1;
+    return atoi(q);
+}
+
+static int pdf_readbool(const char *q0, int len, const char *key, int Default)
+{
+    const char *q  = pdf_getdict(q0, &len, key);
+    if (!q || len < 5)
+	return Default;
+    if (!strncmp(q, "true", 4))
+	return 1;
+    if (!strncmp(q, "false", 5))
+	return 0;
+    cli_dbgmsg("cli_pdf: invalid value for %s bool\n", key);
+    return Default;
+}
+
+static const char *key_padding =
+"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4e\x56\xff\xfa\x01\x08"
+"\x2e\x2e\x00\xB6\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A";
+
+static void dbg_printhex(const char *msg, const char *hex, unsigned len)
+{
+    if (cli_debug_flag) {
+	char *kh = cli_str2hex(hex, len);
+	cli_dbgmsg("cli_pdf: %s: %s\n", msg, kh);
+	free(kh);
+    }
+}
+
+static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
+				const char *U, int32_t P, int EM,
+				unsigned length, unsigned oulen)
+{
+    unsigned i;
+    uint8_t result[16];
+    char data[32];
+    cli_md5_ctx md5;
+    struct arc4_state arc4;
+    unsigned password_empty = 0;
+
+    dbg_printhex("U: ", U, 32);
+    dbg_printhex("O: ", O, 32);
+    if (R == 5) {
+	uint8_t result2[32];
+	SHA256_CTX sha256;
+	/* supplement to ISO3200, 3.5.2 Algorithm 3.11 */
+	sha256_init(&sha256);
+	/* user validation salt */
+	sha256_update(&sha256, U+32, 8);
+	sha256_final(&sha256, result2);
+	dbg_printhex("Computed U", result2, 32);
+	if (!memcmp(result2, U, 32)) {
+	    password_empty = 1;
+	    /* Algorithm 3.2a could be used to recover encryption key */
+	}
+    } else {
+	/* 7.6.3.3 Algorithm 2 */
+	cli_md5_init(&md5);
+	/* empty password, password == padding */
+	cli_md5_update(&md5, key_padding, 32);
+	cli_md5_update(&md5, O, 32);
+	P = le32_to_host(P);
+	cli_md5_update(&md5, &P, 4);
+	cli_md5_update(&md5, pdf->fileID, pdf->fileIDlen);
+	if (R >= 4 && !EM) {
+	    uint32_t v = 0xFFFFFFFF;
+	    cli_md5_update(&md5, &v, 4);
+	}
+	cli_md5_final(result, &md5);
+	if (R >= 3) {
+	    if (length > 128)
+		length = 128;
+	    for (i=0;i<50;i++) {
+		cli_md5_init(&md5);
+		cli_md5_update(&md5, result, length/8);
+		cli_md5_final(result, &md5);
+	    }
+	}
+	if (R == 2)
+	    length = 40;
+	pdf->keylen = length / 8;
+	pdf->key = cli_malloc(pdf->keylen);
+	if (!pdf->key)
+	    return;
+	memcpy(pdf->key, result, pdf->keylen);
+	dbg_printhex("md5", result, 32);
+	dbg_printhex("Candidate encryption key", pdf->key, pdf->keylen);
+
+	/* 7.6.3.3 Algorithm 6 */
+	if (R == 2) {
+	    /* 7.6.3.3 Algorithm 4 */
+	    memcpy(data, key_padding, 32);
+	    arc4_init(&arc4, pdf->key, pdf->keylen);
+	    arc4_apply(&arc4, data, 32);
+	    dbg_printhex("computed U", data, 32);
+	    if (!memcmp(data, U, 32))
+		password_empty = 1;
+	} else if (R >= 3) {
+	    unsigned len = pdf->keylen;
+	    /* 7.6.3.3 Algorithm 5 */
+	    cli_md5_init(&md5);
+	    cli_md5_update(&md5, key_padding, 32);
+	    cli_md5_update(&md5, pdf->fileID, pdf->fileIDlen);
+	    cli_md5_final(result, &md5);
+	    memcpy(data, pdf->key, len);
+	    arc4_init(&arc4, data, len);
+	    arc4_apply(&arc4, result, 16);
+	    for (i=1;i<=19;i++) {
+		unsigned j;
+		for (j=0;j<len;j++)
+		    data[j] = pdf->key[j] ^ i;
+		arc4_init(&arc4, data, len);
+		arc4_apply(&arc4, result, 16);
+	    }
+	    dbg_printhex("computed U", result, 16);
+	    if (!memcmp(result, U, 16))
+		password_empty = 1;
+	} else {
+	    cli_dbgmsg("cli_pdf: invalid revision %d\n", R);
+	}
+    }
+    if (password_empty) {
+	cli_dbgmsg("cli_pdf: user password is empty\n");
+	/* The key we computed above is the key used to encrypt the streams.
+	 * We could decrypt it now if we wanted to */
+	pdf->flags |= 1 << DECRYPTABLE_PDF;
+    } else {
+	cli_dbgmsg("cli_pdf: user/owner password would be required for decryption\n");
+	/* the key is not valid, we would need the user or the owner password to
+	 * decrypt */
+    }
+}
+
+static void pdf_handle_enc(struct pdf_struct *pdf)
+{
+    struct pdf_obj *obj;
+    uint32_t len, required_flags, n, R, P, length, EM, i, oulen;
+    char *O, *U;
+    const char *q, *q2;
+
+    if (pdf->enc_objid == ~0u || !pdf->fileID)
+	return;
+    obj = find_obj(pdf, pdf->objs, pdf->enc_objid);
+    required_flags = (1 << OBJ_HASFILTERS) | (1 << OBJ_FILTER_STANDARD);
+    if (!(obj->flags & required_flags))
+	return;
+    len = obj_size(pdf, obj, 1);
+    q = pdf->map + obj->start;
+
+    O = U = NULL;
+    do {
+	EM = pdf_readbool(q, len, "/EncryptMetadata", 1);
+
+	q2 = cli_memstr(q, len, "/Standard", 9);
+	if (!q2) {
+	    cli_dbgmsg("cli_pdf: /Standard not found\n");
+	    break;
+	}
+	len -= q2-q;
+	q = q2;
+
+	R = pdf_readint(q, len, "/R");
+	if (R == ~0u) {
+	    cli_dbgmsg("cli_pdf: invalid R\n");
+	    break;
+	}
+
+	if (R < 5)
+	    oulen = 32;
+	else
+	    oulen = 48;
+
+	n = 0;
+	O = pdf_readstring(q, len, "/O", &n);
+	if (!O || n < oulen) {
+	    cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
+	    if (O)
+		dbg_printhex("invalid O", O, n);
+	    break;
+	}
+	if (n > oulen) {
+	    for (i=oulen;i<n;i++)
+		if (O[i])
+		    break;
+	    if (i != n) {
+		dbg_printhex("too long O", O, n);
+		break;
+	    }
+	}
+
+	n = 0;
+	U = pdf_readstring(q, len, "/U", &n);
+	if (!U || n < oulen) {
+	    cli_dbgmsg("cli_pdf: invalid U: %d\n", n);
+	    if (U)
+		dbg_printhex("invalid U", U, n);
+	    break;
+	}
+	if (n > oulen) {
+	    for (i=oulen;i<n;i++)
+		if (U[i])
+		    break;
+	    if (i != n) {
+		dbg_printhex("too long U", U, n);
+		break;
+	    }
+	}
+	P = pdf_readint(q, len, "/P");
+	if (P == ~0u) {
+	    cli_dbgmsg("cli_pdf: invalid P\n");
+	    break;
+	}
+	length = pdf_readint(q, len, "/Length");
+	if (length == ~0u)
+	    length = 40;
+	if (length < 40) {
+	    cli_dbgmsg("cli_pdf: invalid length: %d\n", length);
+	    length = 40;
+	}
+	cli_dbgmsg("cli_pdf: Encrypt R: %d, P %x, length: %d\n", R, P, length);
+	if (length % 8) {
+	    cli_dbgmsg("cli_pdf: wrong key length, not multiple of 8\n");
+	    break;
+	}
+	check_user_password(pdf, R, O, U, P, EM, length, oulen);
+    } while (0);
+    free(O);
+    free(U);
 }
 
 int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
@@ -1005,6 +1417,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     memset(&pdf, 0, sizeof(pdf));
     pdf.ctx = ctx;
     pdf.dir = dir;
+    pdf.enc_objid = ~0u;
 
     pdfver = start = fmap_need_off_once(map, offset, versize);
 
@@ -1062,15 +1475,18 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	    pdf.flags |= 1 << BAD_PDF_TRAILER;
 	    cli_dbgmsg("cli_pdf: startxref not found\n");
 	} else {
+	    const char *enc;
 	    for (t=q;t > eofmap; t--) {
 		if (memcmp(t,"trailer",7) == 0)
 		    break;
 	    }
-	    if (t > eofmap) {
-		if (cli_memstr(t, q-t, "/Encrypt", 8)) {
-		    pdf.flags |= 1 << ENCRYPTED_PDF;
-		    cli_dbgmsg("cli_pdf: encrypted pdf found, stream will probably fail to decompress!\n");
-		}
+
+	    enc = cli_memstr(eofmap, bytesleft, "/Encrypt", 8);
+	    if (enc) {
+		pdf.flags |= 1 << ENCRYPTED_PDF;
+		cli_dbgmsg("cli_pdf: encrypted pdf found, stream will probably fail to decompress!\n");
+		pdf_parse_encrypt(&pdf, enc, eof - enc);
+		pdf.fileID = pdf_readstring(eofmap, bytesleft, "/ID", &pdf.fileIDlen);
 	    }
 	    q += 9;
 	    while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
@@ -1115,7 +1531,20 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	pdf_parseobj(&pdf, obj);
     }
 
-    rc = run_pdf_hooks(&pdf, PDF_PHASE_PARSED, -1, -1);
+    pdf_handle_enc(&pdf);
+
+    if (DETECT_ENCRYPTED &&
+	(pdf.flags & (1 << ENCRYPTED_PDF)) &&
+	!(pdf.flags & (1 << DECRYPTABLE_PDF))) {
+	/* It is encrypted, and a password/key needs to be supplied to decrypt.
+	 * This doesn't trigger for PDFs that are encrypted but don't need
+	 * a password to decrypt */
+	*ctx->virname = "Encrypted.PDF";
+	rc = CL_VIRUS;
+    }
+
+    if (!rc)
+	rc = run_pdf_hooks(&pdf, PDF_PHASE_PARSED, -1, -1);
     /* extract PDF objs */
     for (i=0;!rc && i<pdf.nobjs;i++) {
 	struct pdf_obj *obj = &pdf.objs[i];
@@ -1152,6 +1581,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
+    free(pdf.fileID);
+    free(pdf.key);
     /* PDF hooks may abort, don't return CL_BREAK to caller! */
     return rc == CL_BREAK ? CL_CLEAN : rc;
 }

@@ -369,7 +369,9 @@ libclamav_la_SOURCES = \
 	jpeg.c \
 	jpeg.h \
 	png.c \
-	png.h
+	png.h \
+	arc4.c \
+	arc4.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

@@ -166,6 +166,7 @@
     <ResourceCompile Include="res\libclamav.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\arc4.c"/>
     <ClCompile Include="..\libclamav\png.c"/>
     <ClCompile Include="..\libclamav\jpeg.c"/>
     <ClCompile Include="..\libclamav\swf.c"/>
