@@ -1,3 +1,8 @@
+Tue May 10 21:25:37 CEST 2011 (tk)
+----------------------------------
+ * sigtool: add support for building unsigned dbs (--unsigned)
+ * libclamav: handle unsigned db files (.cud)
+
 Sat May  7 18:05:23 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/pdf.c: better detection for encrypted PDFs (bb #2448)

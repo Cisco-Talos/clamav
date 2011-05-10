@@ -37,7 +37,7 @@ struct cli_dbio {
     SHA256_CTX sha256ctx;
 };
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename, unsigned int chkonly);
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly);
 int cli_cvdunpack(const char *file, const char *dir);
 
 #endif

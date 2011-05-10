@@ -24,6 +24,8 @@
 #include "clamav-config.h"
 #endif
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -116,7 +118,7 @@ static char *getdbname(const char *str, char *dst, int dstlen)
 {
 	int len = strlen(str);
 
-    if(cli_strbcasestr(str, ".cvd") || cli_strbcasestr(str, ".cld"))
+    if(cli_strbcasestr(str, ".cvd") || cli_strbcasestr(str, ".cld") || cli_strbcasestr(str, ".cud"))
 	len -= 4;
 
     if(dst) {
@@ -474,18 +476,20 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	    }
 	}
     }
-    rewind(fh);
-    sha256_init(&ctx);
-    while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
-	sha256_update(&ctx, buffer, bytes);
-    sha256_final(&ctx, digest);
-    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
-	mprintf("!writeinfo: Can't get digital signature from remote server\n");
-	fclose(fh);
-	return -1;
+    if(!optget(opts, "unsigned")->enabled) {
+	rewind(fh);
+	sha256_init(&ctx);
+	while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
+	    sha256_update(&ctx, buffer, bytes);
+	sha256_final(&ctx, digest);
+	if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
+	    mprintf("!writeinfo: Can't get digital signature from remote server\n");
+	    fclose(fh);
+	    return -1;
+	}
+	fprintf(fh, "DSIG:%s\n", pt);
+	free(pt);
     }
-    fprintf(fh, "DSIG:%s\n", pt);
-    free(pt);
     fclose(fh);
     return 0;
 }
@@ -643,7 +647,7 @@ static int build(const struct optstruct *opts)
 	free(x[i]);		    \
     free(x);
 
-    if(!optget(opts, "server")->enabled) {
+    if(!optget(opts, "server")->enabled && !optget(opts, "unsigned")->enabled) {
 	mprintf("!build: --server is required for --build\n");
 	return -1;
     }
@@ -741,11 +745,11 @@ static int build(const struct optstruct *opts)
 
     /* try to read cvd header of current database */
     if(opts->filename) {
-	if(cli_strbcasestr(opts->filename[0], ".cvd") || cli_strbcasestr(opts->filename[0], ".cld")) {
+	if(cli_strbcasestr(opts->filename[0], ".cvd") || cli_strbcasestr(opts->filename[0], ".cld") || cli_strbcasestr(opts->filename[0], ".cud")) {
 	    strncpy(olddb, opts->filename[0], sizeof(olddb));
 	    olddb[sizeof(olddb)-1]='\0';
 	} else {
-	    mprintf("!build: Not a CVD/CLD file\n");
+	    mprintf("!build: Not a CVD/CLD/CUD file\n");
 	    FREE_LS(dblist2);
 	    return -1;
 	}
@@ -755,6 +759,8 @@ static int build(const struct optstruct *opts)
 	snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cvd", localdbdir ? localdbdir : pt, dbname);
 	if(access(olddb, R_OK))
 	    snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cld", localdbdir ? localdbdir : pt, dbname);
+	if(access(olddb, R_OK))
+	    snprintf(olddb, sizeof(olddb), "%s"PATHSEP"%s.cud", localdbdir ? localdbdir : pt, dbname);
 	free(pt);
     }
 
@@ -916,15 +922,19 @@ static int build(const struct optstruct *opts)
     sprintf(header + strlen(header), "%s:", pt);
     free(pt);
 
-    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 1))) {
-	mprintf("!build: Can't get digital signature from remote server\n");
-	fclose(fh);
-	unlink(tarfile);
-	free(tarfile);
-	return -1;
+    if(!optget(opts, "unsigned")->enabled) {
+	if(!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 1))) {
+	    mprintf("!build: Can't get digital signature from remote server\n");
+	    fclose(fh);
+	    unlink(tarfile);
+	    free(tarfile);
+	    return -1;
+	}
+	sprintf(header + strlen(header), "%s:", pt);
+	free(pt);
+    } else {
+	sprintf(header + strlen(header), "X:");
     }
-    sprintf(header + strlen(header), "%s:", pt);
-    free(pt);
 
     /* add builder */
     strcat(header, builder);
@@ -981,6 +991,9 @@ static int build(const struct optstruct *opts)
     free(tarfile);
 
     mprintf("Created %s\n", newcvd);
+
+    if(optget(opts, "unsigned")->enabled)
+	return 0;
 
     if(!oldcvd || optget(opts, "no-cdiff")->enabled) {
 	mprintf("Skipping .cdiff creation\n");
@@ -2726,6 +2739,7 @@ static void help(void)
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
+    mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --datadir=DIR				Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");

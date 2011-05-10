@@ -57,6 +57,12 @@ Print a CVD information and verify MD5 and a digital signature.
 \fB\-b, \-\-build\fR
 Build a CVD file. \-s, \-\-server is required.
 .TP 
+\fB\-b, \-\-no\-cdiff\fR
+Don't create a .cdiff file when building a new database file.
+.TP 
+\fB\-b, \-\-unsigned\fR
+Create a database file without digital signatures (.cua).
+.TP 
 \fB\-\-server\fR
 ClamAV Signing Service address (for virus database maintainers only).
 .TP 

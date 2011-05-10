@@ -488,7 +488,7 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
+static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
 {
 	struct cl_cvd *cvd;
 	char *md5, head[513];
@@ -510,7 +510,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
     if(cvdpt)
 	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
 
-    if(cld) {
+    if(skipsig) {
 	cl_cvdfree(cvd);
 	return CL_SUCCESS;
     }
@@ -562,7 +562,7 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int cld, const char *filename, unsigned int chkonly)
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly)
 {
 	struct cl_cvd cvd, dupcvd;
 	FILE *dupfs;
@@ -576,32 +576,34 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     cli_dbgmsg("in cli_cvdload()\n");
 
     /* verify */
-    if((ret = cli_cvdverify(fs, &cvd, cld)))
+    if((ret = cli_cvdverify(fs, &cvd, dbtype)))
 	return ret;
 
-    /* check for duplicate db */
-    dupname = cli_strdup(filename);
-    if(!dupname)
-	return CL_EMEM;
-    dupname[strlen(dupname) - 2] = (cld ? 'v' : 'l');
-    if(!access(dupname, R_OK) && (dupfs = fopen(dupname, "rb"))) {
-	if((ret = cli_cvdverify(dupfs, &dupcvd, !cld))) {
+    if(dbtype <= 1) {
+	/* check for duplicate db */
+	dupname = cli_strdup(filename);
+	if(!dupname)
+	    return CL_EMEM;
+	dupname[strlen(dupname) - 2] = (dbtype == 1 ? 'v' : 'l');
+	if(!access(dupname, R_OK) && (dupfs = fopen(dupname, "rb"))) {
+	    if((ret = cli_cvdverify(dupfs, &dupcvd, !dbtype))) {
+		fclose(dupfs);
+		free(dupname);
+		return ret;
+	    }
 	    fclose(dupfs);
-	    free(dupname);
-	    return ret;
+	    if(dupcvd.version > cvd.version) {
+		cli_warnmsg("Detected duplicate databases %s and %s. The %s database is older and will not be loaded, you should manually remove it from the database directory.\n", filename, dupname, filename);
+		free(dupname);
+		return CL_SUCCESS;
+	    } else if(dupcvd.version == cvd.version && !dbtype) {
+		cli_warnmsg("Detected duplicate databases %s and %s, please manually remove one of them\n", filename, dupname);
+		free(dupname);
+		return CL_SUCCESS;
+	    }
 	}
-	fclose(dupfs);
-	if(dupcvd.version > cvd.version) {
-	    cli_warnmsg("Detected duplicate databases %s and %s. The %s database is older and will not be loaded, you should manually remove it from the database directory.\n", filename, dupname, filename);
-	    free(dupname);
-	    return CL_SUCCESS;
-	} else if(dupcvd.version == cvd.version && !cld) {
-	    cli_warnmsg("Detected duplicate databases %s and %s, please manually remove one of them\n", filename, dupname);
-	    free(dupname);
-	    return CL_SUCCESS;
-	}
+	free(dupname);
     }
-    free(dupname);
 
     if(strstr(filename, "daily.")) {
 	time(&s_time);
@@ -631,7 +633,10 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 
     cfd = fileno(fs);
     dbio.chkonly = 0;
-    ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
+    if(dbtype == 2)
+	ret = cli_tgzload(cfd, engine, signo, options | CL_DB_UNSIGNED, &dbio, NULL);
+    else
+	ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
     if(ret != CL_SUCCESS)
 	return ret;
 
@@ -645,8 +650,12 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	return CL_EMALFDB;
 
     dbio.chkonly = chkonly;
-    options |= CL_DB_SIGNED;
-    ret = cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL, &dbio, dbinfo);
+    if(dbtype == 2)
+	options |= CL_DB_UNSIGNED;
+    else
+	options |= CL_DB_SIGNED | CL_DB_OFFICIAL;
+
+    ret = cli_tgzload(cfd, engine, signo, options, &dbio, dbinfo);
 
     while(engine->dbinfo) {
 	dbinfo = engine->dbinfo;

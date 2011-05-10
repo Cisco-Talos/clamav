@@ -1696,7 +1696,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
     sha256_init(&ctx);
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
-	if(!strncmp(buffer, "DSIG:", 5)) {
+	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
 	    sha256_final(&ctx, hash);
 	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
@@ -1775,7 +1775,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	last = new;
     }
 
-    if(!dsig) {
+    if(!(options & CL_DB_UNSIGNED) && !dsig) {
 	cli_errmsg("cli_loadinfo: Digital signature not found\n");
 	return CL_EMALFDB;
     }
@@ -2381,6 +2381,9 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
 	ret = cli_cvdload(fs, engine, signo, options, 1, filename, 0);
+
+    } else if(cli_strbcasestr(dbname, ".cud")) {
+	ret = cli_cvdload(fs, engine, signo, options, 2, filename, 0);
 
     } else if(cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
 	ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);
