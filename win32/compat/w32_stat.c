@@ -141,6 +141,12 @@ int safe_open(const char *path, int flags, ... ) {
     return ret;
 }
 
+static time_t FileTimeToUnixTime(FILETIME t)
+{
+	LONGLONG ll = ((LONGLONG)t.dwHighDateTime << 32) | t.dwLowDateTime;
+	ll -= 116444736000000000;
+	return (time_t)(ll/10000000);
+}
 
 w32_stat(const char *path, struct stat *buf) {
     int len;
@@ -162,12 +168,13 @@ w32_stat(const char *path, struct stat *buf) {
     buf->st_uid = 0;
     buf->st_gid = 0;
     buf->st_ino = 1;
-    buf->st_atime = ((time_t)attrs.ftLastAccessTime.dwHighDateTime<<32) | attrs.ftLastAccessTime.dwLowDateTime;
-    buf->st_ctime = ((time_t)attrs.ftCreationTime.dwHighDateTime<<32) | attrs.ftCreationTime.dwLowDateTime;
-    buf->st_mtime = ((time_t)attrs.ftLastWriteTime.dwHighDateTime<<32) | attrs.ftLastWriteTime.dwLowDateTime;
+    buf->st_atime = FileTimeToUnixTime(attrs.ftLastAccessTime);
+    buf->st_ctime = FileTimeToUnixTime(attrs.ftCreationTime);
+    buf->st_mtime = FileTimeToUnixTime(attrs.ftLastWriteTime);
     buf->st_mode = (attrs.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? S_IRUSR: S_IRWXU;
     buf->st_mode |= (attrs.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? _S_IFDIR :  _S_IFREG;
     buf->st_nlink = 1;
     buf->st_size = ((uint64_t)attrs.nFileSizeHigh << (sizeof(attrs.nFileSizeLow)*8)) | attrs.nFileSizeLow;
     return 0;
 }
+
