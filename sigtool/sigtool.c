@@ -764,7 +764,7 @@ static int build(const struct optstruct *opts)
 	free(pt);
     }
 
-    if(!(oldcvd = cl_cvdhead(olddb))) {
+    if(!(oldcvd = cl_cvdhead(olddb)) && !optget(opts, "unsigned")->enabled) {
 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s (wait 3 s)\n", olddb);
 	sleep(3);
     }
