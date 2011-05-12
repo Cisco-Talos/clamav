@@ -1,3 +1,7 @@
+Thu May 12 13:01:56 CEST 2011 (tk)
+----------------------------------
+ * freshclam/manager.c: fix return code of Rfc2822DateTime() (bb#2809)
+
 Sat May  7 18:05:23 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/pdf.c: better detection for encrypted PDFs (bb #2448)
