@@ -1,3 +1,7 @@
+Thu May 12 13:01:56 CEST 2011 (tk)
+----------------------------------
+ * freshclam/manager.c: fix return code of Rfc2822DateTime() (bb#2809)
+
 Tue May 10 21:25:37 CEST 2011 (tk)
 ----------------------------------
  * sigtool: add support for building unsigned dbs (--unsigned)

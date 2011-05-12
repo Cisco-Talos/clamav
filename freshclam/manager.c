@@ -697,7 +697,8 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     gmt = gmtime(&mtime);
     if (!gmt) {
 	logg("gmtime: %s\n", strerror(errno));
-	return "";
+	strcpy(buf, "ERROR");
+	return -1;
     }
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
 }
