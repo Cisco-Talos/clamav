@@ -1314,6 +1314,8 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
     if (pdf->enc_objid == ~0u || !pdf->fileID)
 	return;
     obj = find_obj(pdf, pdf->objs, pdf->enc_objid);
+    if (!obj)
+	return;
     required_flags = (1 << OBJ_HASFILTERS) | (1 << OBJ_FILTER_STANDARD);
     if (!(obj->flags & required_flags))
 	return;
