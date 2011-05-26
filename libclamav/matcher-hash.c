@@ -148,6 +148,7 @@ static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int ke
     while(l1 < r1) {
 	if(hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
 	    r1--;
+	    if(l1 == r1) break;
 	    memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
 	    tmpv = szh->virusnames[l1];
 	    memcpy(&szh->hash_array[keylen * l1], &szh->hash_array[keylen * r1], keylen);
