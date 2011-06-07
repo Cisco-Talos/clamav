@@ -1314,6 +1314,8 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
     if (pdf->enc_objid == ~0u || !pdf->fileID)
 	return;
     obj = find_obj(pdf, pdf->objs, pdf->enc_objid);
+    if (!obj)
+	return;
     required_flags = (1 << OBJ_HASFILTERS) | (1 << OBJ_FILTER_STANDARD);
     if (!(obj->flags & required_flags))
 	return;
@@ -1539,7 +1541,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	/* It is encrypted, and a password/key needs to be supplied to decrypt.
 	 * This doesn't trigger for PDFs that are encrypted but don't need
 	 * a password to decrypt */
-	*ctx->virname = "Encrypted.PDF";
+	*ctx->virname = "Heuristics.Encrypted.PDF";
 	rc = CL_VIRUS;
     }
 
