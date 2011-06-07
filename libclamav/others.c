@@ -242,6 +242,8 @@ const char *cl_strerror(int clerror)
 	    return "Can't map file into memory";
 	case CL_EMEM:
 	    return "Can't allocate memory";
+	case CL_ETIMEOUT:
+	    return "Time limit reached";
 	/* internal (needed for debug messages) */
 	case CL_EMAXREC:
 	    return "CL_EMAXREC";
