@@ -1438,9 +1438,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	cli_dbgmsg("Phishcheck:Checking url %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
-	if(!strcmp(urls->realLink.data,urls->displayLink.data))
-		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
-
 	if(!isURL(urls->realLink.data, 0)) {
 		cli_dbgmsg("Real 'url' is not url:%s\n",urls->realLink.data);
 		return CL_PHISH_CLEAN;
@@ -1455,6 +1452,9 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return rc;
 	    }
 	}
+
+	if(!strcmp(urls->realLink.data,urls->displayLink.data))
+		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
 
 	if (urls->displayLink.data[0] == '\0') {
 	    return CL_PHISH_CLEAN;
