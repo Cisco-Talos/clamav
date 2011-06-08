@@ -189,7 +189,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	unsigned int i, folders = 0;
 	struct cab_file *file, *lfile = NULL;
 	struct cab_folder *folder, *lfolder = NULL;
-	struct cab_hdr hdr;
+	struct cab_hdr *hdr;
 	struct cab_hdr_opt hdr_opt;
 	struct cab_folder_hdr folder_hdr;
 	struct cab_file_hdr file_hdr;
@@ -199,18 +199,17 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	int ret;
 	off_t resfold = 0, rsize;
 
-
-    if(lseek(map->fd, offset, SEEK_SET) == -1) {
-	cli_errmsg("cab_open: Can't lseek to %u (offset)\n", (unsigned int) offset);
-	return CL_ESEEK;
-    }
-
-    if(cli_readn(map->fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
+    if(!(hdr=fmap_need_off(map, offset, sizeof(*hdr)))) {
 	cli_dbgmsg("cab_open: Can't read cabinet header\n");
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
-    if(EC32(hdr.signature) != 0x4643534d) {
+    if(lseek(map->fd, offset + sizeof(*hdr), SEEK_SET) == -1) {
+	cli_errmsg("cab_open: Can't lseek to %u (offset)\n", (unsigned int) offset);
+	return CL_ESEEK;
+    }
+
+    if(EC32(hdr->signature) != 0x4643534d) {
 	cli_dbgmsg("cab_open: Incorrect CAB signature\n");
 	return CL_EFORMAT;
     } else {
@@ -225,14 +224,14 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 
     memset(cab, 0, sizeof(struct cab_archive));
 
-    cab->length = EC32(hdr.cbCabinet);
+    cab->length = EC32(hdr->cbCabinet);
     cli_dbgmsg("CAB: Cabinet length: %u\n", cab->length);
     if((off_t) cab->length > rsize) {
 	cli_dbgmsg("CAB: Truncating file size from %lu to %lu\n", (unsigned long int) cab->length, (unsigned long int) rsize);
 	cab->length = (uint32_t) rsize;
     }
 
-    cab->nfolders = EC16(hdr.cFolders);
+    cab->nfolders = EC16(hdr->cFolders);
     if(!cab->nfolders) {
 	cli_dbgmsg("cab_open: No folders in cabinet (fake cab?)\n");
 	return CL_EFORMAT;
@@ -244,7 +243,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	}
     }
 
-    cab->nfiles = EC16(hdr.cFiles);
+    cab->nfiles = EC16(hdr->cFiles);
     if(!cab->nfiles) {
 	cli_dbgmsg("cab_open: No files in cabinet (fake cab?)\n");
 	return CL_EFORMAT;
@@ -256,9 +255,9 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	}
     }
 
-    cli_dbgmsg("CAB: File format version: %u.%u\n", hdr.versionMajor, hdr.versionMinor);
+    cli_dbgmsg("CAB: File format version: %u.%u\n", hdr->versionMajor, hdr->versionMinor);
 
-    cab->flags = EC16(hdr.flags);
+    cab->flags = EC16(hdr->flags);
     if(cab->flags & 0x0004) {
 	if(cli_readn(map->fd, &hdr_opt, sizeof(hdr_opt)) != sizeof(hdr_opt)) {
 	    cli_dbgmsg("cab_open: Can't read file header (fake cab?)\n");
@@ -370,7 +369,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
     cli_dbgmsg("CAB: Recorded folders: %u\n", folders);
 
     /* files */
-    if(cab->nfolders != folders && lseek(map->fd, EC16(hdr.coffFiles), SEEK_SET) == -1) {
+    if(cab->nfolders != folders && lseek(map->fd, EC16(hdr->coffFiles), SEEK_SET) == -1) {
 	cli_dbgmsg("cab_open: Can't lseek to hdr.coffFiles\n");
 	cab_free(cab);
 	return CL_EFORMAT;
