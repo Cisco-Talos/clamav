@@ -53,6 +53,7 @@ struct cab_state {
 struct cab_file {
     off_t offset;
     char *name;
+    fmap_t *map;
     uint32_t length;
     int error;
     int lread;
