@@ -23,6 +23,7 @@
 
 #include <sys/types.h>
 #include "cltypes.h"
+#include "fmap.h"
 
 #define CAB_BLOCKMAX 65535
 #define CAB_INPUTMAX (CAB_BLOCKMAX + 6144)
@@ -72,7 +73,7 @@ struct cab_folder {
     uint16_t nblocks;
 };
 
-int cab_open(int fd, off_t offset, struct cab_archive *cab);
+int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab);
 int cab_extract(struct cab_file *file, const char *name);
 void cab_free(struct cab_archive *cab);
 

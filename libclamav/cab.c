@@ -184,7 +184,7 @@ void cab_free(struct cab_archive *cab)
     }
 }
 
-int cab_open(int fd, off_t offset, struct cab_archive *cab)
+int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 {
 	unsigned int i, folders = 0;
 	struct cab_file *file, *lfile = NULL;
@@ -200,12 +200,12 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	off_t resfold = 0, rsize;
 
 
-    if(lseek(fd, offset, SEEK_SET) == -1) {
+    if(lseek(map->fd, offset, SEEK_SET) == -1) {
 	cli_errmsg("cab_open: Can't lseek to %u (offset)\n", (unsigned int) offset);
 	return CL_ESEEK;
     }
 
-    if(cli_readn(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
+    if(cli_readn(map->fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
 	cli_dbgmsg("cab_open: Can't read cabinet header\n");
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
@@ -217,8 +217,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	cli_dbgmsg("CAB: -------------- Cabinet file ----------------\n");
     }
 
-    if(fstat(fd, &sb) == -1) {
-	cli_errmsg("cab_open: Can't fstat descriptor %d\n", fd);
+    if(fstat(map->fd, &sb) == -1) {
+	cli_errmsg("cab_open: Can't fstat descriptor %d\n", map->fd);
 	return CL_ESTAT;
     }
     rsize = sb.st_size;
@@ -260,7 +260,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     cab->flags = EC16(hdr.flags);
     if(cab->flags & 0x0004) {
-	if(cli_readn(fd, &hdr_opt, sizeof(hdr_opt)) != sizeof(hdr_opt)) {
+	if(cli_readn(map->fd, &hdr_opt, sizeof(hdr_opt)) != sizeof(hdr_opt)) {
 	    cli_dbgmsg("cab_open: Can't read file header (fake cab?)\n");
 	    return CL_EFORMAT; /* most likely a corrupted file */
 	}
@@ -270,7 +270,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	cab->resdata = hdr_opt.cbCFData;
 
 	if(cab->reshdr) {
-	    if(lseek(fd, cab->reshdr, SEEK_CUR) == -1) {
+	    if(lseek(map->fd, cab->reshdr, SEEK_CUR) == -1) {
 		cli_dbgmsg("cab_open: Can't lseek to %u (fake cab?)\n", cab->reshdr);
 		return CL_EFORMAT; /* most likely a corrupted file */
 	    }
@@ -279,7 +279,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(cab->flags & 0x0001) { /* preceding cabinet */
 	/* name */
-	pt = cab_readstr(fd, &ret);
+	pt = cab_readstr(map->fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
@@ -288,7 +288,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	    cli_dbgmsg("CAB: Preceding cabinet name: %s\n", pt);
 	free(pt);
 	/* info */
-	pt = cab_readstr(fd, &ret);
+	pt = cab_readstr(map->fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
@@ -300,7 +300,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(cab->flags & 0x0002) { /* next cabinet */
 	/* name */
-	pt = cab_readstr(fd, &ret);
+	pt = cab_readstr(map->fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
@@ -309,7 +309,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
 	free(pt);
 	/* info */
-	pt = cab_readstr(fd, &ret);
+	pt = cab_readstr(map->fd, &ret);
 	if(ret)
 	    return ret;
 	if(cab_chkname(pt, 0))
@@ -321,13 +321,13 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     /* folders */
     for(i = 0; i < cab->nfolders; i++) {
-	if(cli_readn(fd, &folder_hdr, sizeof(folder_hdr)) != sizeof(folder_hdr)) {
+	if(cli_readn(map->fd, &folder_hdr, sizeof(folder_hdr)) != sizeof(folder_hdr)) {
 	    cli_dbgmsg("cab_open: Can't read header for folder %u\n", i);
 	    break;
 	}
 
 	if(resfold) {
-	    if(lseek(fd, resfold, SEEK_CUR) == -1) {
+	    if(lseek(map->fd, resfold, SEEK_CUR) == -1) {
 		cli_dbgmsg("cab_open: Can't lseek to %u (resfold)\n", (unsigned int) resfold);
 		break;
 	    }
@@ -370,13 +370,13 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
     cli_dbgmsg("CAB: Recorded folders: %u\n", folders);
 
     /* files */
-    if(cab->nfolders != folders && lseek(fd, EC16(hdr.coffFiles), SEEK_SET) == -1) {
+    if(cab->nfolders != folders && lseek(map->fd, EC16(hdr.coffFiles), SEEK_SET) == -1) {
 	cli_dbgmsg("cab_open: Can't lseek to hdr.coffFiles\n");
 	cab_free(cab);
 	return CL_EFORMAT;
     }
     for(i = 0; i < cab->nfiles; i++) {
-	if(cli_readn(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+	if(cli_readn(map->fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	    cli_dbgmsg("cab_open: Can't read file %u header\n", i);
 	    break;
 	}
@@ -389,14 +389,14 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	}
 
 	file->cab = cab;
-	file->fd = fd;
+	file->fd = map->fd;
 	file->offset = EC32(file_hdr.uoffFolderStart);
 	file->length = EC32(file_hdr.cbFile);
 	file->attribs = EC32(file_hdr.attribs);
 	fidx = EC32(file_hdr.iFolder);
 	file->error = CL_SUCCESS;
 
-	file->name = cab_readstr(fd, &ret);
+	file->name = cab_readstr(map->fd, &ret);
 	if(ret) {
 	    free(file);
 	    continue;

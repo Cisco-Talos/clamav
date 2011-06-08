@@ -717,7 +717,7 @@ static int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 
     cli_dbgmsg("in cli_scanmscab()\n");
 
-    if((ret = cab_open((*ctx->fmap)->fd, sfx_offset, &cab)))
+    if((ret = cab_open(*ctx->fmap, sfx_offset, &cab)))
 	return ret;
 
     for(file = cab.files; file; file = file->next) {
