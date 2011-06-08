@@ -1,3 +1,8 @@
+Wed Jun  8 14:57:40 CEST 2011 (acab)
+------------------------------------
+ * libclamav/nsis, libclamav/chmunpack.[ch], libclamav/scanners.c:
+	don't remap in NSIS, CHM (bb#2838)
+
 Thu May 26 14:17:52 CEST 2011 (acab)
 ------------------------------------
  * libclamav/matcher-hash.c: in hm_sort don't swap an item with itself (bb#2818)

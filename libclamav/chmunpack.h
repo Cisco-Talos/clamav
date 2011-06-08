@@ -115,7 +115,7 @@ typedef struct chm_metadata_tag {
 	uint16_t chunk_entries;
 } chm_metadata_t;
 
-int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
+int cli_chm_open(const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
 int cli_chm_prepare_file(chm_metadata_t *metadata);
 int cli_chm_extract_file(char *dirname, chm_metadata_t *metadata, cli_ctx *ctx);
 void cli_chm_close(chm_metadata_t *metadata);

@@ -486,7 +486,7 @@ static int read_sys_reset_table(chm_metadata_t *metadata, lzx_reset_table_t *lzx
 /* This section interfaces to the mspack files. As such, this is a */
 /* little bit dirty compared to my usual code */
 
-static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *dirname, cli_ctx *ctx)
+static int chm_decompress_stream(chm_metadata_t *metadata, const char *dirname, cli_ctx *ctx)
 {
 	lzx_content_t lzx_content;
 	lzx_reset_table_t lzx_reset_table;
@@ -555,13 +555,13 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	length &= -lzx_control.reset_interval;
 	
 	cli_dbgmsg("Compressed offset: %lu\n", (unsigned long int) lzx_content.offset);
-	if ((uint64_t) lseek(fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
+	if ((uint64_t) lseek(metadata->map->fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
 		goto abort;
 	}
 
 	memset(&file, 0, sizeof(struct cab_file));
 	file.max_size = ctx->engine->maxfilesize;
-	stream = lzx_init(fd, tmpfd, window_bits,
+	stream = lzx_init(metadata->map->fd, tmpfd, window_bits,
 			lzx_control.reset_interval / LZX_FRAME_SIZE,
 			4096, length, &file, NULL);
 	if (!stream) {
@@ -608,7 +608,6 @@ void cli_chm_close(chm_metadata_t *metadata)
 	if (metadata->ufd >= 0) {
 		close(metadata->ufd);
 	}
-	funmap(metadata->map);
 }
 
 int cli_chm_extract_file(char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
@@ -659,7 +658,7 @@ int cli_chm_prepare_file(chm_metadata_t *metadata)
 	return retval;
 }
 
-int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
+int cli_chm_open(const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
 	struct stat statbuf;
 	int retval;
@@ -670,20 +669,10 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 		return retval;
 	}
 
-	if (fstat(fd, &statbuf) == 0) {
-		if (statbuf.st_size < CHM_ITSF_MIN_LEN) {
-			return CL_ESTAT;
-		}
-		metadata->m_length = statbuf.st_size;
-		metadata->map = fmap(fd, 0, metadata->m_length);
-		if (!metadata->map) {
-			return CL_EMAP;
-		}
-	} else {
-	    char err[128];
-	    cli_warnmsg("fstat() failed: %s\n", cli_strerror(errno, err, sizeof(err)));
-	    return CL_ESTAT;
-	}
+	metadata->map = *ctx->fmap;
+	if(metadata->map->len < CHM_ITSF_MIN_LEN)
+		return CL_ESTAT;
+	metadata->m_length = metadata->map->len;
 
 	if (!itsf_read_header(metadata)) {
 		goto abort;
@@ -730,7 +719,7 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 		goto abort;
 	}
 	
-	metadata->ufd = chm_decompress_stream(fd, metadata, dirname, ctx);
+	metadata->ufd = chm_decompress_stream(metadata, dirname, ctx);
 	if (metadata->ufd == -1) {
 		goto abort;
 	}
@@ -743,6 +732,5 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 	return CL_SUCCESS;
 
 abort:
-	funmap(metadata->map);
 	return CL_EFORMAT;
 }
