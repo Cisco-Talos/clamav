@@ -705,7 +705,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
+static int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 {
 	char *tempname;
 	int ret;
@@ -717,7 +717,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 
     cli_dbgmsg("in cli_scanmscab()\n");
 
-    if((ret = cab_open(desc, sfx_offset, &cab)))
+    if((ret = cab_open((*ctx->fmap)->fd, sfx_offset, &cab)))
 	return ret;
 
     for(file = cab.files; file; file = file->next) {
@@ -1928,7 +1928,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    ctx->container_type = CL_TYPE_MSCAB;
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    cli_dbgmsg("CAB/CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanmscab(map->fd, ctx, fpt->offset);
+			    nret = cli_scanmscab(ctx, fpt->offset);
 			}
 			break;
 		    case CL_TYPE_ARJSFX:
@@ -2311,7 +2311,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_MSCAB;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
-		ret = cli_scanmscab(desc, ctx, 0);
+		ret = cli_scanmscab(ctx, 0);
 	    break;
 
 	case CL_TYPE_HTML:
