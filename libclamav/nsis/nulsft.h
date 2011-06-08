@@ -22,5 +22,5 @@
 #define __NSIS_H
 
 #include "others.h"
-int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset);
+int cli_scannulsft(cli_ctx *ctx, off_t offset);
 #endif
