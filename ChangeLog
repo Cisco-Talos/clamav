@@ -1,3 +1,7 @@
+Thu Jun  9 08:22:31 CEST 2011 (acab)
+------------------------------------
+ * libclamav/mew.c: harden boundary check on e8/e9 fixup
+
 Thu May 26 14:17:52 CEST 2011 (acab)
 ------------------------------------
  * libclamav/matcher-hash.c: in hm_sort don't swap an item with itself (bb#2818)
