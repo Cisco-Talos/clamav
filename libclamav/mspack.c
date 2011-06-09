@@ -124,7 +124,7 @@ static const unsigned short mszip_bit_mask_tab[17] = {
 } while (0)
 
 static int mszip_read_input(struct mszip_stream *zip) {
-  int nread = zip->read_cb ? zip->read_cb(zip->file, zip->inbuf, (int)zip->inbuf_size) : cli_readn(zip->fd, zip->inbuf, (int)zip->inbuf_size);
+  int nread = zip->read_cb(zip->file, zip->inbuf, (int)zip->inbuf_size);
   if (nread < 0) {
     if (zip->file->error == CL_BREAK)
       return zip->error = CL_BREAK;
@@ -580,8 +580,7 @@ static int mszip_flush_window(struct mszip_stream *zip,
   return 0;
 }
 
-struct mszip_stream *mszip_init(int fd,
-				  int ofd,
+struct mszip_stream *mszip_init(int ofd,
 				  int input_buffer_size,
 				  int repair_mode,
 				  struct cab_file *file,
@@ -605,7 +604,6 @@ struct mszip_stream *mszip_init(int fd,
   }
 
   /* initialise decompression state */
-  zip->fd	       = fd;
   zip->ofd	       = ofd;
   zip->wflag	       = 1;
   zip->inbuf_size      = input_buffer_size;
@@ -769,7 +767,7 @@ void mszip_free(struct mszip_stream *zip) {
 } while (0)
 
 static int lzx_read_input(struct lzx_stream *lzx) {
-  int bread = lzx->read_cb ? lzx->read_cb(lzx->file, &lzx->inbuf[0], (int)lzx->inbuf_size) : cli_readn(lzx->fd, &lzx->inbuf[0], (int)lzx->inbuf_size);
+  int bread = lzx->read_cb(lzx->file, &lzx->inbuf[0], (int)lzx->inbuf_size);
   if (bread < 0) {
     if (lzx->file->error == CL_BREAK)
       return lzx->error = CL_BREAK;
@@ -1004,8 +1002,7 @@ static void lzx_reset_state(struct lzx_stream *lzx) {
 
 /*-------- main LZX code --------*/
 
-struct lzx_stream *lzx_init(int fd,
-			      int ofd,
+struct lzx_stream *lzx_init(int ofd,
 			      int window_bits,
 			      int reset_interval,
 			      int input_buffer_size,
@@ -1055,7 +1052,6 @@ struct lzx_stream *lzx_init(int fd,
   }
 
   /* initialise decompression state */
-  lzx->fd              = fd;
   lzx->ofd	       = ofd;
   lzx->wflag	       = 1;
   lzx->offset          = 0;
@@ -1602,7 +1598,7 @@ void lzx_free(struct lzx_stream *lzx) {
 } while (0)
 
 static int qtm_read_input(struct qtm_stream *qtm) {
-  int nread = qtm->read_cb ? qtm->read_cb(qtm->file, &qtm->inbuf[0], (int)qtm->inbuf_size) : cli_readn(qtm->fd, &qtm->inbuf[0], (int)qtm->inbuf_size);
+  int nread = qtm->read_cb(qtm->file, &qtm->inbuf[0], (int)qtm->inbuf_size);
   if (nread < 0) {
     if (qtm->file->error == CL_BREAK)
       return qtm->error = CL_BREAK;
@@ -1728,7 +1724,7 @@ static void qtm_init_model(struct qtm_model *model,
 
 /*-------- main Quantum code --------*/
 
-struct qtm_stream *qtm_init(int fd, int ofd,
+struct qtm_stream *qtm_init(int ofd,
 			      int window_bits, int input_buffer_size,
 			      struct cab_file *file,
 			      int (*read_cb)(struct cab_file *, unsigned char *, int))
@@ -1779,7 +1775,6 @@ struct qtm_stream *qtm_init(int fd, int ofd,
   }
 
   /* initialise decompression state */
-  qtm->fd	   = fd;
   qtm->ofd	   = ofd;
   qtm->wflag	   = 1;
   qtm->inbuf_size  = input_buffer_size;

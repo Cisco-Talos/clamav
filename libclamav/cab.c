@@ -588,13 +588,13 @@ static int cab_unstore(struct cab_file *file)
 	file->cab->state->cmethod = file->folder->cmethod;		\
 	switch(file->folder->cmethod & 0x000f) {			\
 	    case 0x0001:						\
-		file->cab->state->stream = (struct mszip_stream *) mszip_init(-1, file->ofd, 4096, 1, file, &cab_read);				\
+		file->cab->state->stream = (struct mszip_stream *) mszip_init(file->ofd, 4096, 1, file, &cab_read);				\
 		break;							\
 	    case 0x0002:						\
-		file->cab->state->stream = (struct qtm_stream *) qtm_init(-1, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);									\
+		file->cab->state->stream = (struct qtm_stream *) qtm_init(file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);									\
 		break;							\
 	    case 0x0003:						\
-		file->cab->state->stream = (struct lzx_stream *) lzx_init(-1, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
+		file->cab->state->stream = (struct lzx_stream *) lzx_init(file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
 	}								\
 	if((file->folder->cmethod & 0x000f) && !file->cab->state->stream) { \
 	    close(file->ofd);						\

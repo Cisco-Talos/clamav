@@ -55,7 +55,6 @@
 #endif
 
 struct mszip_stream {
-  int fd;		    /* input file descriptor */
   int ofd;                  /* output file descriptor */
 
   /* inflate() will call this whenever the window should be emptied. */
@@ -88,8 +87,7 @@ struct mszip_stream {
 
 };
 
-struct mszip_stream *mszip_init(int fd,
-				  int ofd,
+struct mszip_stream *mszip_init(int ofd,
 				  int input_buffer_size,
 				  int repair_mode,
 				  struct cab_file *file,
@@ -118,7 +116,6 @@ struct qtm_model {
 };
 
 struct qtm_stream {
-  int fd;                   /* input file descriptor */
   int ofd;                  /* output file descriptor */
 
   unsigned char *window;          /* decoding window                         */
@@ -176,8 +173,7 @@ struct qtm_stream {
 
 };
 
-extern struct qtm_stream *qtm_init(int fd,
-				     int ofd,
+extern struct qtm_stream *qtm_init(int ofd,
 				     int window_bits,
 				     int input_buffer_size,
 				     struct cab_file *file,
@@ -218,7 +214,6 @@ void qtm_free(struct qtm_stream *qtm);
 #define LZX_FRAME_SIZE (32768) /* the size of a frame in LZX */
 
 struct lzx_stream {
-  int fd;			  /* input file descriptor                   */
   int ofd;			  /* output file descriptor                  */
 
   off_t   offset;                 /* number of bytes actually output         */
@@ -280,8 +275,7 @@ struct lzx_stream {
 
 };
 
-struct lzx_stream *lzx_init(int fd,
-			      int ofd,
+struct lzx_stream *lzx_init(int ofd,
 			      int window_bits,
 			      int reset_interval,
 			      int input_buffer_size,
