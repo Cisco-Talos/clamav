@@ -226,8 +226,6 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
-WERR_CFLAGS = @WERR_CFLAGS@
-WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -298,7 +296,6 @@ top_srcdir = @top_srcdir@
 @HAVE_CURSES_TRUE@    $(top_srcdir)/shared/misc.h \
 @HAVE_CURSES_TRUE@    clamdtop.c
 
-@HAVE_CURSES_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
 @HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 EXTRA_DIST = clamdtop.c

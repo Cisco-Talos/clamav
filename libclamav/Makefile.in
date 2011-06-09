@@ -157,9 +157,8 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
-	bytecode_detect.h builtin_bytecodes.h events.c events.h \
-	arc4.c arc4.h bignum.c \
-	bignum_class.h
+	bytecode_detect.h builtin_bytecodes.h events.c events.h arc4.c \
+	arc4.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
@@ -468,8 +467,6 @@ THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
-WERR_CFLAGS = @WERR_CFLAGS@
-WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -532,7 +529,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL) \
 	$(am__append_1)
-AM_CFLAGS = @WERR_CFLAGS@
 lib_LTLIBRARIES = $(am__append_3) libclamav.la
 EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
 	libclamav.map jsparse/generated/operators.h \
@@ -590,7 +586,7 @@ libclamav_internal_utils_la_SOURCES = str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_la_LDFLAGS = -static
-libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC
+libclamav_internal_utils_la_CFLAGS = -fPIC -DPIC
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    str.h\
 				    md5.c\
@@ -610,7 +606,7 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_nothreads_la_LDFLAGS = -static
-libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS
+libclamav_internal_utils_nothreads_la_CFLAGS = -DCL_NOTHREADS
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
@@ -619,7 +615,7 @@ libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS = $(AM_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
+libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h
@@ -667,8 +663,8 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
-	bytecode_detect.h builtin_bytecodes.h events.c events.h \
-	arc4.c arc4.h $(am__append_7)
+	bytecode_detect.h builtin_bytecodes.h events.c events.h arc4.c \
+	arc4.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -1733,7 +1729,6 @@ libclamav_la-events.lo: events.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
 
-
 libclamav_la-arc4.lo: arc4.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-arc4.lo -MD -MP -MF $(DEPDIR)/libclamav_la-arc4.Tpo -c -o libclamav_la-arc4.lo `test -f 'arc4.c' || echo '$(srcdir)/'`arc4.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-arc4.Tpo $(DEPDIR)/libclamav_la-arc4.Plo
@@ -1741,6 +1736,7 @@ libclamav_la-arc4.lo: arc4.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='arc4.c' object='libclamav_la-arc4.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-arc4.lo `test -f 'arc4.c' || echo '$(srcdir)/'`arc4.c
+
 libclamav_la-bignum.lo: bignum.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-bignum.Tpo $(DEPDIR)/libclamav_la-bignum.Plo
