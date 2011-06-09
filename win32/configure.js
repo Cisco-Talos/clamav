@@ -55,7 +55,12 @@ if(F.FileExists(file_versionsta)) {
 			W.Echo('WARNING: git describe returned ' + git.ExitCode);
 			version = '';
 		} else {
-			version = '#define REPO_VERSION "devel-' + version.replace(/[\r\n]+$/, '') + '"';
+                        version = version.replace(/[\r\n]+$/, '');
+                        if(version.match(/^clamav-([^-]+)$/))
+				version = RegExp.$1;
+                        else
+				version = 'devel-' + version;
+			version = '#define REPO_VERSION "' + version + '"';
 		}
 	} catch (e) {
 		W.Echo('WARNING: Error executing git: ' + e.message);
