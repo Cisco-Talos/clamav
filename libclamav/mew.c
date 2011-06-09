@@ -656,26 +656,24 @@ int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32
 		new_eax = var08;
 	} while (new_eax < var28);
 
-    	if (special) {
+    	while(special) {
 		uint32_t loc_ecx;
 		/* let's fix calls */
-		loc_ecx = 0;
 		cli_dbgmsg("MEWlen: %08x ? %08x\n", new_edx, pushed_edx);
 
-		if (!CLI_ISCONTAINED(orgsource, size_sum, pushed_esi, pushed_edx))
-			return -1;
-		do {
+		if (pushed_edx < 5 || !CLI_ISCONTAINED(orgsource, size_sum, pushed_esi, pushed_edx))
+		    return 0; /* No point in full failing just because we can't fixxup the calls */
+
+		for(loc_ecx = 0; loc_ecx < pushed_edx - 5; loc_ecx++) {
 			/* 0xe8, 0xe9 call opcodes */
 			if (pushed_esi[loc_ecx] == '\xe8' || pushed_esi[loc_ecx] == '\xe9')
 			{
 				char *adr = (char *)(pushed_esi + loc_ecx + 1);
-				loc_ecx++;
-				
-				cli_writeint32(adr, EC32(CE32((uint32_t)cli_readint32(adr)))-loc_ecx);
+
+				cli_writeint32(adr, EC32(CE32((uint32_t)cli_readint32(adr)))-loc_ecx-1);
 				loc_ecx += 4;
-			} else 
-				loc_ecx++;
-		} while (loc_ecx != pushed_edx);
+			}
+		}
 		return 0; /*pushed_edx;*/
 	}
     } while (mainloop);
