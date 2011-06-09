@@ -32,6 +32,8 @@ struct cab_archive {
     struct cab_folder *folders, *actfol;
     struct cab_file *files;
     struct cab_state *state;
+    fmap_t *map;
+    off_t cur_offset;
     uint32_t length;
     uint16_t nfolders;
     uint16_t nfiles;
@@ -53,11 +55,9 @@ struct cab_state {
 struct cab_file {
     off_t offset;
     char *name;
-    fmap_t *map;
     uint32_t length;
     int error;
     int lread;
-    int fd;
     int ofd;
     struct cab_folder *folder;
     struct cab_file *next;

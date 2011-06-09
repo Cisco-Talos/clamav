@@ -377,8 +377,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	}
 
 	file->cab = cab;
-	file->fd = map->fd;
-	file->map = map;
+	cab->map = map;
 	file->offset = EC32(file_hdr->uoffFolderStart);
 	file->length = EC32(file_hdr->cbFile);
 	file->attribs = EC32(file_hdr->attribs);
@@ -449,29 +448,26 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
     return CL_SUCCESS;
 }
 
-static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
+static int cab_read_block(struct cab_file *file)
 {
-	struct cab_block_hdr block_hdr;
+	struct cab_block_hdr *block_hdr;
+	struct cab_state *state = file->cab->state;
 
-
-    if(cli_readn(fd, &block_hdr, sizeof(block_hdr)) != sizeof(block_hdr)) {
+    if(!(block_hdr = fmap_need_off_once(file->cab->map, file->cab->cur_offset, sizeof(*block_hdr)))) {
 	cli_dbgmsg("cab_read_block: Can't read block header\n");
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
-    if(resdata && lseek(fd, (off_t) resdata, SEEK_CUR) == -1) {
-	cli_dbgmsg("cab_read_block: lseek failed\n");
-	return CL_EFORMAT; /* most likely a corrupted file */
-    }
+    file->cab->cur_offset += sizeof(*block_hdr) + file->cab->resdata;
+    state->blklen = EC16(block_hdr->cbData);
+    state->outlen = EC16(block_hdr->cbUncomp);
 
-    state->blklen = EC16(block_hdr.cbData);
-    state->outlen = EC16(block_hdr.cbUncomp);
-
-    if(cli_readn(fd, state->block, state->blklen) != state->blklen) {
+    if(fmap_readn(file->cab->map, state->block, file->cab->cur_offset, state->blklen) != state->blklen) {
 	cli_dbgmsg("cab_read_block: Can't read block data\n");
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
+    file->cab->cur_offset += state->blklen;
     state->pt = state->end = state->block;
     state->end += state->blklen;
 
@@ -505,7 +501,7 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 	    if(file->cab->state->blknum++ >= file->folder->nblocks)
 		break;
 
-	    file->error = cab_read_block(file->fd, file->cab->state, file->cab->resdata);
+	    file->error = cab_read_block(file);
 	    if(file->error)
 		return -1;
 
@@ -527,9 +523,9 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
     return file->lread = bytes - todo;
 }
 
-static int cab_unstore(struct cab_file *file, int bytes)
+static int cab_unstore(struct cab_file *file)
 {
-	int todo, bread;
+	int todo, bread, bytes = file->length;
 	unsigned char buff[4096];
 
 
@@ -548,7 +544,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	    bread = sizeof(buff);
 
 	if((bread = cab_read(file, buff, bread)) == -1) {
-	    cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
+	    cli_dbgmsg("cab_unstore: cab_read failed\n");
 	    return file->error;
 	} else if(cli_writen(file->ofd, buff, bread) != bread) {
 	    cli_warnmsg("cab_unstore: Can't write %d bytes to descriptor %d\n", bread, file->ofd);
@@ -582,11 +578,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	    free(file->cab->state);					\
 	    file->cab->state = NULL;					\
 	}								\
-	if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {	\
-	    cli_dbgmsg("cab_extract: Can't lseek to %u\n", (unsigned int) file->folder->offset);							\
-	    close(file->ofd);						\
-	    return CL_EFORMAT; /* truncated file? */			\
-	}								\
+	file->cab->cur_offset = file->folder->offset;			\
 	file->cab->state = (struct cab_state *) cli_calloc(1, sizeof(struct cab_state));								\
 	if(!file->cab->state) {						\
 	    cli_errmsg("cab_extract: Can't allocate memory for internal state\n");									\
@@ -596,13 +588,13 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	file->cab->state->cmethod = file->folder->cmethod;		\
 	switch(file->folder->cmethod & 0x000f) {			\
 	    case 0x0001:						\
-		file->cab->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);				\
+		file->cab->state->stream = (struct mszip_stream *) mszip_init(-1, file->ofd, 4096, 1, file, &cab_read);				\
 		break;							\
 	    case 0x0002:						\
-		file->cab->state->stream = (struct qtm_stream *) qtm_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);									\
+		file->cab->state->stream = (struct qtm_stream *) qtm_init(-1, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);									\
 		break;							\
 	    case 0x0003:						\
-		file->cab->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
+		file->cab->state->stream = (struct lzx_stream *) lzx_init(-1, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
 	}								\
 	if((file->folder->cmethod & 0x000f) && !file->cab->state->stream) { \
 	    close(file->ofd);						\
@@ -655,7 +647,7 @@ int cab_extract(struct cab_file *file, const char *name)
 		cli_dbgmsg("cab_extract: Stored file larger than archive itself, trimming down\n");
 		file->length = file->cab->length;
 	    }
-	    ret = cab_unstore(file, file->length);
+	    ret = cab_unstore(file);
 	    break;
 
 	case 0x0001: /* MSZIP */
