@@ -60,4 +60,22 @@ int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len);
 void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint);
 void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
+
+static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
+{
+    if(at >= m->len) {
+	*lenout = 0;
+	return NULL;
+    }
+    if(len > m->len - at)
+	len = m->len - at;
+    *lenout = len;
+    return fmap_need_off_once(m, at, len);
+}
+
+static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, size_t len, size_t *lenout)
+{
+    return fmap_need_off_once_len(m, (char*)ptr - (char*)m - m->hdrsz, len, lenout);
+}
+
 #endif
