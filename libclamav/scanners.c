@@ -670,7 +670,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 }
 #endif
 
-static int cli_scanszdd(int desc, cli_ctx *ctx)
+static int cli_scanszdd(cli_ctx *ctx)
 {
 	int ofd, ret;
 	char *tmpname;
@@ -683,8 +683,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    lseek(desc, 0, SEEK_SET);
-    ret = cli_msexpand(desc, ofd, ctx);
+    ret = cli_msexpand(ctx, ofd);
 
     if(ret != CL_SUCCESS) { /* CL_VIRUS or some error */
 	close(ofd);
@@ -2304,7 +2303,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MSSZDD:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD))
-		ret = cli_scanszdd(desc, ctx);
+		ret = cli_scanszdd(ctx);
 	    break;
 
 	case CL_TYPE_MSCAB:

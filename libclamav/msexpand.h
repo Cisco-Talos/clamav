@@ -23,6 +23,6 @@
 
 #include "others.h"
 
-int cli_msexpand(int fd, int ofd, cli_ctx *ctx);
+int cli_msexpand(cli_ctx *ctx, int ofd);
 
 #endif

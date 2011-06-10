@@ -33,6 +33,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "msexpand.h"
+#include "fmap.h"
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -72,12 +73,13 @@ struct msexp_hdr {
 #define RW_SIZE 2048
 
 #define READBYTES				\
-    ret = cli_readn(fd, rbuff, RW_SIZE);		\
-    if(ret == -1)				\
-	return CL_EREAD;			\
-    if(!ret)					\
+    rbytes = MIN(RW_SIZE, map->len - cur_off);  \
+    if(!rbytes)					\
 	break;					\
-    rbytes = (unsigned int) ret;		\
+    rbuff = fmap_need_off_once(map, cur_off, rbytes); \
+    if(!rbuff)					\
+	return CL_EREAD;			\
+    cur_off += rbytes;				\
     r = 0;
 
 #define WRITEBYTES				\
@@ -85,31 +87,35 @@ struct msexp_hdr {
     if(ret == -1 || (unsigned int) ret != w)	\
 	return CL_EWRITE;			\
     wbytes += w;				\
-    if(wbytes >= EC32(hdr.fsize))		\
+    if(wbytes >= fsize)				\
 	return CL_SUCCESS;			\
     w = 0;
 
 
-int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
+int cli_msexpand(cli_ctx *ctx, int ofd)
 {
-	struct msexp_hdr hdr;
+	struct msexp_hdr *hdr;
 	uint8_t i, mask, bits;
-	unsigned char buff[B_SIZE], rbuff[RW_SIZE], wbuff[RW_SIZE];
+	unsigned char buff[B_SIZE], wbuff[RW_SIZE];
+	const unsigned char *rbuff;
 	unsigned int j = B_SIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
+	fmap_t *map = *ctx->fmap;
+	off_t cur_off = sizeof(*hdr);
+	unsigned int fsize;
 	int ret;
 
-
-    if(cli_readn(fd, &hdr, sizeof(hdr)) == -1)
+    if(!(hdr = fmap_need_off_once(map, 0, sizeof(*hdr))))
 	return CL_EREAD;
 
-    if(EC32(hdr.magic1) != MAGIC1 || EC32(hdr.magic2) != MAGIC2 || EC16(hdr.magic3) != MAGIC3) {
+    if(EC32(hdr->magic1) != MAGIC1 || EC32(hdr->magic2) != MAGIC2 || EC16(hdr->magic3) != MAGIC3) {
 	cli_dbgmsg("MSEXPAND: Not supported file format\n");
 	return CL_EFORMAT;
     }
 
-    cli_dbgmsg("MSEXPAND: File size from header: %u\n", EC32(hdr.fsize));
+    fsize = EC32(hdr->fsize);
+    cli_dbgmsg("MSEXPAND: File size from header: %u\n", fsize);
 
-    if(cli_checklimits("MSEXPAND", ctx, EC32(hdr.fsize), 0, 0)!=CL_CLEAN)
+    if(cli_checklimits("MSEXPAND", ctx, fsize, 0, 0)!=CL_CLEAN)
         return CL_SUCCESS;
 
     memset(buff, 0, B_SIZE);
