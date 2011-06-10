@@ -1531,7 +1531,7 @@ static int cli_scanuuencoded(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanmail(int desc, cli_ctx *ctx)
+static int cli_scanmail(cli_ctx *ctx)
 {
 	char *dir;
 	int ret;
@@ -1552,7 +1552,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     /*
      * Extract the attachments into the temporary directory
      */
-    if((ret = cli_mbox(dir, desc, ctx))) {
+    if((ret = cli_mbox(dir, ctx))) {
 	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
@@ -2022,7 +2022,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 		ctx->container_size = map->len;
 		if(SCAN_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX)) {
 		    *dettype = CL_TYPE_MAIL;
-		    nret = cli_scanmail(map->fd, ctx);
+		    nret = cli_scanmail(ctx);
 		}
 		ctx->container_type = current_container_type;
 		ctx->container_size = current_container_size;
@@ -2341,7 +2341,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_MAIL;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
-		ret = cli_scanmail(desc, ctx);
+		ret = cli_scanmail(ctx);
 	    break;
 
 	case CL_TYPE_TNEF:
