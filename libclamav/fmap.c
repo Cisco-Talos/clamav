@@ -682,6 +682,8 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
     char *src;
 
+    if(at == m->len)
+	return 0;
     if(at > m->len)
 	return -1;
     if(len > m->len - at)
