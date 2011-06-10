@@ -23,6 +23,6 @@
 
 #include "others.h"
 
-int cli_scanrtf(int desc, cli_ctx *ctx);
+int cli_scanrtf(cli_ctx *ctx);
 
 #endif
