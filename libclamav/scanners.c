@@ -558,7 +558,7 @@ static int cli_scangzip(cli_ctx *ctx)
 
 
 #ifndef HAVE_BZLIB_H
-static int cli_scanbzip(int desc, cli_ctx *ctx) {
+static int cli_scanbzip(cli_ctx *ctx) {
     cli_warnmsg("cli_scanbzip: bzip2 support not compiled in\n");
     return CL_CLEAN;
 }
@@ -566,102 +566,94 @@ static int cli_scanbzip(int desc, cli_ctx *ctx) {
 #else
 
 #ifdef NOBZ2PREFIX
-#define BZ2_bzReadOpen bzReadOpen
-#define BZ2_bzReadClose bzReadClose
-#define BZ2_bzRead bzRead
+#define BZ2_bzDecompressInit bzDecompressInit
+#define BZ2_bzDecompress bzDecompress
+#define BZ2_bzDecompressEnd bzDecompressEnd
 #endif
 
-static int cli_scanbzip(int desc, cli_ctx *ctx)
+static int cli_scanbzip(cli_ctx *ctx)
 {
-	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
-	unsigned long int size = 0;
-	char *buff;
-	FILE *fs;
-	char *tmpname;
-	BZFILE *bfd;
+    int ret = CL_CLEAN, fd, rc;
+    unsigned long int size = 0;
+    char *tmpname;
+    bz_stream strm;
+    size_t off = 0;
+    size_t avail;
+    char buf[FILEBUFF];
 
-
-    if((fs = fdopen(dup(desc), "rb")) == NULL) {
-	cli_dbgmsg("Bzip: Can't open descriptor %d.\n", desc);
-	return CL_EOPEN;
-    }
-
-    if((bfd = BZ2_bzReadOpen(&bzerror, fs, 0, 0, NULL, 0)) == NULL) {
-	cli_dbgmsg("Bzip: Can't initialize bzip2 library (descriptor: %d).\n", desc);
-	fclose(fs);
+    memset(&strm, 0, sizeof(strm));
+    strm.next_out = buf;
+    strm.avail_out = sizeof(buf);
+    rc = BZ2_bzDecompressInit(&strm, 0, 0);
+    if (BZ_OK != rc) {
+	cli_dbgmsg("Bzip: DecompressInit failed: %d\n", rc);
 	return CL_EOPEN;
     }
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
 	cli_dbgmsg("Bzip: Can't generate temporary file.\n");
-	BZ2_bzReadClose(&bzerror, bfd);
-	fclose(fs);
+	BZ2_bzDecompressEnd(&strm);
 	return ret;
     }
 
-    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	cli_dbgmsg("Bzip: Unable to malloc %u bytes.\n", FILEBUFF);
-	close(fd);
-	if(!ctx->engine->keeptmp) {
-	    if (cli_unlink(tmpname)) {
-	    	free(tmpname);
-		fclose(fs);
-		BZ2_bzReadClose(&bzerror, bfd);
-		return CL_EUNLINK;
+    do {
+	if (!strm.avail_in) {
+	    strm.next_in = (void*)fmap_need_off_once_len(*ctx->fmap, off, FILEBUFF, &avail);
+	    strm.avail_in = avail;
+	    off += avail;
+	    if (!strm.avail_in) {
+		cli_dbgmsg("Bzip: premature end of compressed stream\n");
+		break;
 	    }
 	}
-	free(tmpname);	
-	fclose(fs);
-	BZ2_bzReadClose(&bzerror, bfd);
-	return CL_EMEM;
-    }
 
-    while((bytes = BZ2_bzRead(&bzerror, bfd, buff, FILEBUFF)) > 0) {
-	size += bytes;
-
-	if(cli_checklimits("Bzip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
+	rc = BZ2_bzDecompress(&strm);
+	if (BZ_OK != rc && BZ_STREAM_END != rc) {
+	    cli_dbgmsg("Bzip: decompress error: %d\n", rc);
 	    break;
-
-	if(cli_writen(fd, buff, bytes) != bytes) {
-	    cli_dbgmsg("Bzip: Can't write to file.\n");
-	    BZ2_bzReadClose(&bzerror, bfd);
-	    close(fd);
-	    if(!ctx->engine->keeptmp) {
-		if (cli_unlink(tmpname)) {
-		    free(tmpname);
-		    free(buff);
-		    fclose(fs);
-		    return CL_EUNLINK;
-		}
-	    }
-	    free(tmpname);	
-	    free(buff);
-	    fclose(fs);
-	    return CL_EWRITE;
 	}
-    }
 
-    free(buff);
-    BZ2_bzReadClose(&bzerror, bfd);
+	if (!strm.avail_out || BZ_STREAM_END == rc) {
+	    size += sizeof(buf) - strm.avail_out;
+
+	    if(cli_checklimits("Bzip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
+		break;
+
+	    if(cli_writen(fd, buf, sizeof(buf) - strm.avail_out) != sizeof(buf) - strm.avail_out) {
+		cli_dbgmsg("Bzip: Can't write to file.\n");
+		BZ2_bzDecompressEnd(&strm);
+		close(fd);
+		if(!ctx->engine->keeptmp) {
+		    if (cli_unlink(tmpname)) {
+			free(tmpname);
+			return CL_EUNLINK;
+		    }
+		}
+		free(tmpname);
+		return CL_EWRITE;
+	    }
+	    strm.next_out = buf;
+	    strm.avail_out = sizeof(buf);
+	}
+    } while (BZ_STREAM_END != rc);
+
+    BZ2_bzDecompressEnd(&strm);
 
     if(ret == CL_VIRUS) {
 	close(fd);
 	if(!ctx->engine->keeptmp)
 	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-	free(tmpname);	
-	fclose(fs);
+	free(tmpname);
 	return ret;
     }
 
-    lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("Bzip: Infected with %s\n", *ctx->virname);
     }
     close(fd);
     if(!ctx->engine->keeptmp)
 	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-    free(tmpname);	
-    fclose(fs);
+    free(tmpname);
 
     return ret;
 }
@@ -2199,7 +2191,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	else if(ret == CL_CLEAN) {
 	    if(ctx->recursion != ctx->engine->maxreclevel)
 		cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */
-	    else 
+	    else
 		emax_reached(ctx);
 	}
 
@@ -2274,7 +2266,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_BZ:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
-		ret = cli_scanbzip(desc, ctx);
+		ret = cli_scanbzip(ctx);
 	    break;
 
 	case CL_TYPE_ARJ:
