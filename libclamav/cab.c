@@ -252,14 +252,13 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	resfold = hdr_opt->cbCFFolder;
 	cab->resdata = hdr_opt->cbCFData;
 
+	cur_offset += sizeof(*hdr_opt) + cab->reshdr;
 	if(cab->reshdr) {
 	    if(cab->reshdr >= rsize) {
 		cli_dbgmsg("cab_open: Can't lseek to %u (fake cab?)\n", cab->reshdr);
 		return CL_EFORMAT; /* most likely a corrupted file */
 	    }
-	    cur_offset = cab->reshdr;
-	} else
-	    cur_offset += sizeof(*hdr_opt);
+	}
     }
 
     if(cab->flags & 0x0001) { /* preceding cabinet */
