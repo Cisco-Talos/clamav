@@ -324,7 +324,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     return ret;
 }
 
-static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
+static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int ret = CL_CLEAN, rc, file = 0;
 	arj_metadata_t metadata;
@@ -342,10 +342,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	return CL_ETMPDIR;
     }
 
-    if(sfx_offset)
-	lseek(desc, sfx_offset, SEEK_SET);
-
-    ret = cli_unarj_open(desc, dir);
+    ret = cli_unarj_open(*ctx->fmap, dir, &metadata, sfx_offset);
     if (ret != CL_SUCCESS) {
 	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
@@ -356,7 +353,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     
    do {
         metadata.filename = NULL;
-	ret = cli_unarj_prepare_file(desc, dir, &metadata);
+	ret = cli_unarj_prepare_file(dir, &metadata);
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
@@ -370,7 +367,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		free(metadata.filename);
 	    continue;
 	}
-	ret = cli_unarj_extract_file(desc, dir, &metadata);
+	ret = cli_unarj_extract_file(dir, &metadata);
 	if (metadata.ofd >= 0) {
 	    lseek(metadata.ofd, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
@@ -1935,7 +1932,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    ctx->container_type = CL_TYPE_ARJ;
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanarj(map->fd, ctx, fpt->offset, &lastrar);
+			    nret = cli_scanarj(ctx, fpt->offset, &lastrar);
 			}
 			break;
 
@@ -2284,7 +2281,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_ARJ;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
-		ret = cli_scanarj(desc, ctx, 0, NULL);
+		ret = cli_scanarj(ctx, 0, NULL);
 	    break;
 
         case CL_TYPE_NULSFT:

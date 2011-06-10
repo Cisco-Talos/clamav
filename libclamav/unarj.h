@@ -23,6 +23,7 @@
 #ifndef __UNARJ_H
 #define __UNARJ_H
 
+#include "fmap.h"
 typedef struct arj_metadata_tag {
 	char *filename;
 	uint32_t comp_size;
@@ -30,10 +31,12 @@ typedef struct arj_metadata_tag {
 	int encrypted;
 	int ofd;
 	uint8_t method;
+	fmap_t *map;
+	size_t offset;
 } arj_metadata_t;
 
-int cli_unarj_open(int fd, const char *dirname);
-int cli_unarj_prepare_file(int fd, const char *dirname, arj_metadata_t *metadata);
-int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata);
+int cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off);
+int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata);
+int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata);
 
 #endif

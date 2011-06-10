@@ -141,7 +141,10 @@ typedef struct arj_file_hdr_tag {
 
 typedef struct arj_decode_tag {
 	unsigned char *text;
-	int fd;
+	fmap_t *map;
+	size_t offset;
+	const uint8_t *buf;
+	const void *bufend;
 	uint16_t blocksize;
 	uint16_t bit_buf;
 	int bit_count;
@@ -164,13 +167,20 @@ static int fill_buf(arj_decode_t *decode_data, int n)
 		decode_data->bit_buf |= decode_data->sub_bit_buf << (n -= decode_data->bit_count);
 		if (decode_data->comp_size != 0) {
 			decode_data->comp_size--;
-			if (cli_readn(decode_data->fd, &decode_data->sub_bit_buf, 1) != 1) {
+			if (decode_data->buf == decode_data->bufend) {
+			    size_t len;
+			    decode_data->buf = fmap_need_off_once_len(decode_data->map, decode_data->offset, 8192, &len);
+			    if (!decode_data->buf || !len) {
 				/* the file is most likely corrupted, so
 				 * we return CL_EFORMAT instead of CL_EREAD
 				 */
 				decode_data->status = CL_EFORMAT;
 				return CL_EFORMAT;
+			    }
+			    decode_data->bufend = decode_data->buf + len;
 			}
+			decode_data->sub_bit_buf = *decode_data->buf++;
+			decode_data->offset++;
 		} else {
 			decode_data->sub_bit_buf = 0;
 		}
@@ -529,7 +539,7 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 	return j;
 }
 
-static int decode(int fd, arj_metadata_t *metadata)
+static int decode(arj_metadata_t *metadata)
 {
 	int ret;
 
@@ -542,11 +552,13 @@ static int decode(int fd, arj_metadata_t *metadata)
 	if (!decode_data.text) {
 		return CL_EMEM;
 	}
-	decode_data.fd = fd;
+	decode_data.map = metadata->map;
+	decode_data.offset = metadata->offset;
 	decode_data.comp_size = metadata->comp_size;
 	ret = decode_start(&decode_data);
 	if (ret != CL_SUCCESS) {
 		free(decode_data.text);
+		metadata->offset = decode_data.offset;
 		return ret;
 	}
 	decode_data.status = CL_SUCCESS;
@@ -559,6 +571,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 				out_ptr = 0;
 				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 					free(decode_data.text);
+					metadata->offset = decode_data.offset;
 					return CL_EWRITE;
 				}
 			}
@@ -584,6 +597,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 						out_ptr = 0;
 						if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 							free(decode_data.text);
+							metadata->offset = decode_data.offset;
 							return CL_EWRITE;
 						}
 					}
@@ -595,14 +609,16 @@ static int decode(int fd, arj_metadata_t *metadata)
 		}
 		if (decode_data.status != CL_SUCCESS) {
 			free(decode_data.text);
+			metadata->offset = decode_data.offset;
 			return decode_data.status;
 		}
 	}
 	if (out_ptr != 0) {
 		write_text(metadata->ofd, decode_data.text, out_ptr);
 	}
-	
+
 	free(decode_data.text);
+	metadata->offset = decode_data.offset;
 	return CL_SUCCESS;
 }
 
@@ -653,7 +669,7 @@ static uint16_t decode_len(arj_decode_t *decode_data)
 	return c;
 }
 
-static int decode_f(int fd, arj_metadata_t *metadata)
+static int decode_f(arj_metadata_t *metadata)
 {
 	int ret;
 
@@ -667,25 +683,29 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 	if (!decode_data.text) {
 		return CL_EMEM;
 	}
-	decode_data.fd = fd;
+	decode_data.map = metadata->map;
+	decode_data.offset = metadata->offset;
 	decode_data.comp_size = metadata->comp_size;
 	ret = init_getbits(&decode_data);
 	if (ret != CL_SUCCESS) {
+	        metadata->offset = decode_data.offset;
 		return ret;
 	}
-    	decode_data.getlen = decode_data.getbuf = 0;
+	decode_data.getlen = decode_data.getbuf = 0;
 	decode_data.status = CL_SUCCESS;
-	
+
 	while (count < metadata->orig_size) {
 		chr = decode_len(&decode_data);
 		if (decode_data.status != CL_SUCCESS) {
 			free(decode_data.text);
+			metadata->offset = decode_data.offset;
 			return decode_data.status;
-		}		
+		}
 		if (chr == 0) {
 			ARJ_GETBITS(dd, chr, CHAR_BIT);
 			if (decode_data.status != CL_SUCCESS) {
 				free(decode_data.text);
+				metadata->offset = decode_data.offset;
 				return decode_data.status;
 			}
 			decode_data.text[out_ptr] = (unsigned char) chr;
@@ -694,6 +714,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 				out_ptr = 0;
 				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 					free(decode_data.text);
+					metadata->offset = decode_data.offset;
 					return CL_EWRITE;
 				}
 			}
@@ -703,6 +724,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 			pos = decode_ptr(&decode_data);
 			if (decode_data.status != CL_SUCCESS) {
 				free(decode_data.text);
+				metadata->offset = decode_data.offset;
 				return decode_data.status;
 			}
 			if ((i = out_ptr - pos - 1) < 0) {
@@ -718,6 +740,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 					out_ptr = 0;
 					if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 						free(decode_data.text);
+						metadata->offset = decode_data.offset;
 						return CL_EWRITE;
 					}
 				}
@@ -730,26 +753,28 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 	if (out_ptr != 0) {
 		write_text(metadata->ofd, decode_data.text, out_ptr);
 	}
-	
-	free(decode_data.text);
-	return CL_SUCCESS;
-}	
 
-static uint32_t arj_unstore(int ifd, int ofd, uint32_t len)
+	free(decode_data.text);
+	metadata->offset = decode_data.offset;
+	return CL_SUCCESS;
+}
+
+static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 {
-	unsigned char data[8192];
-	uint32_t count, rem;
+	const unsigned char *data;
+	uint32_t rem;
 	unsigned int todo;
+	size_t count;
 
 	cli_dbgmsg("in arj_unstore\n");
 	rem = len;
 
 	while (rem > 0) {
 		todo = (unsigned int) MIN(8192, rem);
-		count = cli_readn(ifd, data, todo);
-		if (count != todo) {
-			return len-rem;
-		}
+		data = fmap_need_off_once_len(metadata->map, metadata->offset, todo, &count);
+		if (!data)
+		    return len - rem;
+		metadata->offset += count;
 		if (cli_writen(ofd, data, count) != count) {
 			return len-rem-count;
 		}
@@ -758,14 +783,15 @@ static uint32_t arj_unstore(int ifd, int ofd, uint32_t len)
 	return len;
 }
 
-static int is_arj_archive(int fd)
+static int is_arj_archive(arj_metadata_t *metadata)
 {
 	const char header_id[2] = {0x60, 0xea};
-	char mark[2];
-	
-	if (cli_readn(fd, &mark[0], 2) != 2) {
-		return FALSE;
-	}
+	const char *mark;
+
+	mark = fmap_need_off_once(metadata->map, metadata->offset, 2);
+	if (!mark)
+	    return FALSE;
+	metadata->offset += 2;
 	if (memcmp(&mark[0], &header_id[0], 2) == 0) {
 		return TRUE;
 	}
@@ -773,18 +799,19 @@ static int is_arj_archive(int fd)
 	return FALSE;
 }
 
-static int arj_read_main_header(int fd)
+static int arj_read_main_header(arj_metadata_t *metadata)
 {
 	uint16_t header_size, count;
 	uint32_t crc;
 	arj_main_hdr_t main_hdr;
-	char *filename, *comment;
+	const char *filename, *comment;
 	off_t header_offset;
 
-	if (cli_readn(fd, &header_size, 2) != 2) {
-		return FALSE;
-	}
-	header_offset = lseek(fd, 0, SEEK_CUR);
+	if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
+	    return FALSE;
+
+	metadata->offset += 2;
+	header_offset = metadata->offset;
 	header_size = le16_to_host(header_size);
 	cli_dbgmsg("Header Size: %d\n", header_size);
 	if (header_size == 0) {
@@ -795,11 +822,10 @@ static int arj_read_main_header(int fd)
 		cli_dbgmsg("arj_read_header: invalid header_size: %u\n ", header_size);
 		return FALSE;
 	}
-	
-	if (cli_readn(fd, &main_hdr, 30) != 30) {
-		return FALSE;
-	}
-	
+	if (fmap_readn(metadata->map, &main_hdr, metadata->offset, 30) != 30)
+	    return FALSE;
+	metadata->offset += 30;
+
 	cli_dbgmsg("ARJ Main File Header\n");
 	cli_dbgmsg("First Header Size: %d\n", main_hdr.first_hdr_size);
 	cli_dbgmsg("Version: %d\n", main_hdr.version);
@@ -814,86 +840,50 @@ static int arj_read_main_header(int fd)
 		return FALSE;
 	}
 	if (main_hdr.first_hdr_size > 30) {
-		if (lseek(fd, main_hdr.first_hdr_size - 30, SEEK_CUR) == -1) {
-			return FALSE;
-		}
+	    metadata->offset += main_hdr.first_hdr_size - 30;
 	}
 
-	filename = (char *) cli_malloc(header_size);
-	if (!filename) {
+	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+	if (!filename)
 		return FALSE;
-	}
-	for (count=0 ; count < header_size ; count++) {
-		if (cli_readn(fd, &filename[count], 1) != 1) {
-			free(filename);
-			return FALSE;
-		}
-		if (filename[count] == '\0') {
-			break;
-		}
-	}
-	if (count == header_size) {
-		free(filename);
+	metadata->offset += strlen(filename) + 1;
+
+	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+	if (!comment)
 		return FALSE;
-	}
-	comment = (char *) cli_malloc(header_size);
-	if (!comment) {
-		free(filename);
-		return FALSE;
-	}
-	for (count=0 ; count < header_size ; count++) {
-		if (cli_readn(fd, &comment[count], 1) != 1) {
-			free(filename);
-			free(comment);
-			return FALSE;
-		}
-		if (comment[count] == '\0') {
-			break;
-		}
-	}
-	if (count == header_size) {
-		free(filename);
-		free(comment);
-		return FALSE;
-	}
+	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);
-	
-	free(filename);
-	free(comment);
-	
-	if (cli_readn(fd, &crc, 4) != 4) {
-		return FALSE;
-	}
-	
+
+	metadata->offset += 4; /* crc */
 	/* Skip past any extended header data */
 	for (;;) {
-		if (cli_readn(fd, &count, 2) != 2) {
+	        const uint16_t *countp = fmap_need_off_once(metadata->map, metadata->offset, 2);
+		if (!countp)
 			return FALSE;
-		}
-		count = le16_to_host(count);
+		count = cli_readint16(countp);
+		metadata->offset += 2;
 		cli_dbgmsg("Extended header size: %d\n", count);
 		if (count == 0) {
 			break;
 		}
 		/* Skip extended header + 4byte CRC */
-		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) == -1) {
-			return FALSE;
-		}
+		metadata->offset += count + 4;
 	}
 	return TRUE;
 }
 
-static int arj_read_file_header(int fd, arj_metadata_t *metadata)
+static int arj_read_file_header(arj_metadata_t *metadata)
 {
 	uint16_t header_size, count;
-	char *filename, *comment;
+	const char *filename, *comment;
 	arj_file_hdr_t file_hdr;
-	
-	if (cli_readn(fd, &header_size, 2) != 2) {
-		return CL_EFORMAT;
-	}
+
+	if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
+	    return CL_EFORMAT;
 	header_size = le16_to_host(header_size);
+	metadata->offset += 2;
+
 	cli_dbgmsg("Header Size: %d\n", header_size);
 	if (header_size == 0) {
 		/* End of archive */
@@ -903,13 +893,14 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 		cli_dbgmsg("arj_read_file_header: invalid header_size: %u\n ", header_size);
 		return CL_EFORMAT;
 	}
-	
-	if (cli_readn(fd, &file_hdr, 30) != 30) {
+
+	if (fmap_readn(metadata->map, &file_hdr, metadata->offset, 30) != 30) {
 		return CL_EFORMAT;
 	}
+	metadata->offset += 30;
 	file_hdr.comp_size = le32_to_host(file_hdr.comp_size);
 	file_hdr.orig_size = le32_to_host(file_hdr.orig_size);
-	
+
 	cli_dbgmsg("ARJ File Header\n");
 	cli_dbgmsg("First Header Size: %d\n", file_hdr.first_hdr_size);
 	cli_dbgmsg("Version: %d\n", file_hdr.version);
@@ -929,84 +920,42 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 
 	/* Note: this skips past any extended file start position data (multi-volume) */
 	if (file_hdr.first_hdr_size > 30) {
-		if (lseek(fd, file_hdr.first_hdr_size - 30, SEEK_CUR) == -1) {
-			return CL_EFORMAT;
-		}
+	    metadata->offset += file_hdr.first_hdr_size - 30;
 	}
 
-	filename = (char *) cli_malloc(header_size);
-	if (!filename) {
-		return CL_EMEM;
-	}
-	for (count=0 ; count < header_size ; count++) {
-		if (cli_readn(fd, &filename[count], 1) != 1) {
-			free(filename);
-			return CL_EFORMAT;
-		}
-		if (filename[count] == '\0') {
-			break;
-		}
-	}
-	if (count == header_size) {
-		free(filename);
-		return CL_EFORMAT;
-	}
+	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+	if (!filename)
+		return FALSE;
+	metadata->offset += strlen(filename) + 1;
 
-	comment = (char *) cli_malloc(header_size);
-	if (!comment) {
-		free(filename);
-		return CL_EFORMAT;
-	}
-	for (count=0 ; count < header_size ; count++) {
-		if (cli_readn(fd, &comment[count], 1) != 1) {
-			free(filename);
-			free(comment);
-			return CL_EFORMAT;
-		}
-		if (comment[count] == '\0') {
-			break;
-		}
-	}
-	if (count == header_size) {
-		free(filename);
-		free(comment);
-		return CL_EFORMAT;
-	}
+	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+	if (!comment)
+		return FALSE;
+	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);
 	metadata->filename = cli_strdup(filename);
 
-	free(filename);
-	free(comment);
-
 	/* Skip CRC */
-	if (lseek(fd, (off_t) 4, SEEK_CUR) == -1) {
-		if(metadata->filename)
-		    free(metadata->filename);
-		metadata->filename = NULL;
-		return CL_EFORMAT;
-	}
-	
+	metadata->offset += 4;
+
 	/* Skip past any extended header data */
 	for (;;) {
-		if (cli_readn(fd, &count, 2) != 2) {
+	        const uint16_t *countp = fmap_need_off_once(metadata->map, metadata->offset, 2);
+		if (!countp) {
 			if(metadata->filename)
 			    free(metadata->filename);
 			metadata->filename = NULL;
 			return CL_EFORMAT;
 		}
-		count = le16_to_host(count);
+		count = cli_readint16(countp);
+		metadata->offset += 2;
 		cli_dbgmsg("Extended header size: %d\n", count);
 		if (count == 0) {
 			break;
 		}
 		/* Skip extended header + 4byte CRC */
-		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) == -1) {
-			if(metadata->filename)
-			    free(metadata->filename);
-			metadata->filename = NULL;
-			return CL_EFORMAT;
-		}
+		metadata->offset += count + 4;
 	}
 	metadata->comp_size = file_hdr.comp_size;
 	metadata->orig_size = file_hdr.orig_size;
@@ -1016,61 +965,58 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 	if (!metadata->filename) {
 		return CL_EMEM;
 	}
-	
-	return CL_SUCCESS;
+
+        return CL_SUCCESS;
 }
 
-int cli_unarj_open(int fd, const char *dirname)
+int cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off)
 {
-
 	cli_dbgmsg("in cli_unarj_open\n");
-
-	if (!is_arj_archive(fd)) {
+	metadata->map = map;
+	metadata->offset = off;
+	if (!is_arj_archive(metadata)) {
 		cli_dbgmsg("Not in ARJ format\n");
 		return CL_EFORMAT;
 	}
-	if (!arj_read_main_header(fd)) {
+	if (!arj_read_main_header(metadata)) {
 		cli_dbgmsg("Failed to read main header\n");
 		return CL_EFORMAT;
 	}
 	return CL_SUCCESS;
 }
 
-int cli_unarj_prepare_file(int fd, const char *dirname, arj_metadata_t *metadata)
+int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
 {
 	cli_dbgmsg("in cli_unarj_prepare_file\n");
-	if (!metadata || !dirname || (fd < 0)) {
+	if (!metadata || !dirname) {
 		return CL_ENULLARG;
 	}
 	/* Each file is preceeded by the ARJ file marker */
-	if (!is_arj_archive(fd)) {
+	if (!is_arj_archive(metadata)) {
 		cli_dbgmsg("Not in ARJ format\n");
 		return CL_EFORMAT;
 	}
-	return arj_read_file_header(fd, metadata);
+	return arj_read_file_header(metadata);
 }
 
-int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata)
+int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
 {
 	off_t offset;
 	int ret = CL_SUCCESS;
 	char filename[1024];
-	
+
 	cli_dbgmsg("in cli_unarj_extract_file\n");
-	if (!metadata || !dirname || (fd < 0)) {
+	if (!metadata || !dirname) {
 		return CL_ENULLARG;
 	}
 
 	if (metadata->encrypted) {
 		cli_dbgmsg("PASSWORDed file (skipping)\n");
-		offset = lseek(fd, 0, SEEK_CUR) + metadata->comp_size;
-		cli_dbgmsg("Target offset: %lu\n", (unsigned long int) offset);
-		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return CL_ESEEK;
-		}
+		metadata->offset += metadata->comp_size;
+		cli_dbgmsg("Target offset: %lu\n", (unsigned long int) metadata->offset);
 		return CL_SUCCESS;
 	}
-	
+
 	snprintf(filename, 1024, "%s"PATHSEP"file.uar", dirname);
 	cli_dbgmsg("Filename: %s\n", filename);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
@@ -1079,7 +1025,7 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 	}
 	switch (metadata->method) {
 		case 0:
-			ret = arj_unstore(fd, metadata->ofd, metadata->comp_size);
+			ret = arj_unstore(metadata, metadata->ofd, metadata->comp_size);
 			if (ret != metadata->comp_size) {
 				ret = CL_EWRITE;
 			} else {
@@ -1089,10 +1035,10 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 		case 1:
 		case 2:
 		case 3:
-			ret = decode(fd, metadata);
+			ret = decode(metadata);
 			break;
 		case 4:
-			ret = decode_f(fd, metadata);
+			ret = decode_f(metadata);
 			break;
 		default:
 			ret = CL_EFORMAT;
