@@ -63,14 +63,16 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
+    const void *p;
     if(at >= m->len) {
 	*lenout = 0;
 	return NULL;
     }
     if(len > m->len - at)
 	len = m->len - at;
-    *lenout = len;
-    return fmap_need_off_once(m, at, len);
+    p = fmap_need_off_once(m, at, len);
+    *lenout = p ? len : -1;
+    return p;
 }
 
 static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, size_t len, size_t *lenout)
