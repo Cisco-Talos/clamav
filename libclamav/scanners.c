@@ -2385,28 +2385,28 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_CPIO_OLD;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
-		ret = cli_scancpio_old(desc, ctx);
+		ret = cli_scancpio_old(ctx);
 	    break;
 
 	case CL_TYPE_CPIO_ODC:
 	    ctx->container_type = CL_TYPE_CPIO_ODC;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
-		ret = cli_scancpio_odc(desc, ctx);
+		ret = cli_scancpio_odc(ctx);
 	    break;
 
 	case CL_TYPE_CPIO_NEWC:
 	    ctx->container_type = CL_TYPE_CPIO_NEWC;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
-		ret = cli_scancpio_newc(desc, ctx, 0);
+		ret = cli_scancpio_newc(ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_CRC:
 	    ctx->container_type = CL_TYPE_CPIO_CRC;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
-		ret = cli_scancpio_newc(desc, ctx, 1);
+		ret = cli_scancpio_newc(ctx, 1);
 	    break;
 
 	case CL_TYPE_BINHEX:

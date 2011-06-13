@@ -913,31 +913,26 @@ int cli_rmdirs(const char *dirname)
 }
 #endif
 
-int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
+int cli_dumpscan(fmap_t *map, off_t offset, size_t size, cli_ctx *ctx)
 {
-	int newfd, bread, sum = 0, ret;
-	char buff[FILEBUFF];
+	int newfd, sum = 0, ret;
+	ssize_t bread;
 	char *name;
-
-    if(offset) {
-	if(lseek(fd, offset, SEEK_SET) == -1) {
-	    cli_dbgmsg("cli_dumpscan: Can't lseek to %u\n", (unsigned int) offset);
-	    return CL_EFORMAT; /* most likely because of corrupted file */
-	}
-    }
+	const char *buff;
 
     if(!(name = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
-    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY|O_EXCL, S_IRWXU)) < 0) {
 	cli_errmsg("cli_dumpscan: Can't create file %s\n", name);
 	free(name);
 	return CL_ECREAT;
     }
 
-    while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
+    while (( buff = fmap_need_off_once_len(map, offset, FILEBUFF, &bread) )) {
+	offset += bread;
 	if((uint32_t) (sum + bread) >= size) {
-	    if(write(newfd, buff, size - sum) == -1) {
+	    if(cli_writen(newfd, buff, size - sum) == -1) {
 		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
 		close(newfd);
 		cli_unlink(name);
@@ -946,7 +941,7 @@ int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
 	    }
 	    break;
 	} else {
-	    if(write(newfd, buff, bread) == -1) {
+	    if(cli_writen(newfd, buff, bread) == -1) {
 		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
 		close(newfd);
 		cli_unlink(name);
