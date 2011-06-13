@@ -2447,7 +2447,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_SIS;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
-		ret = cli_scansis(desc, ctx);
+		ret = cli_scansis(ctx);
 	    break;
 
 	case CL_TYPE_BINARY_DATA:

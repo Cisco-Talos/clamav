@@ -23,6 +23,6 @@
 
 #include "others.h"
 
-int cli_scansis(int desc, cli_ctx *ctx);
+int cli_scansis(cli_ctx *ctx);
 
 #endif
