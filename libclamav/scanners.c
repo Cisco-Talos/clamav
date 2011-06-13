@@ -1538,13 +1538,15 @@ static int cli_scanmail(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scan_structured(int desc, cli_ctx *ctx)
+static int cli_scan_structured(cli_ctx *ctx)
 {
 	char buf[8192];
 	int result = 0;
 	unsigned int cc_count = 0;
 	unsigned int ssn_count = 0;
 	int done = 0;
+	fmap_t *map = *ctx->fmap;
+	size_t pos = 0;
 	int (*ccfunc)(const unsigned char *buffer, int length);
 	int (*ssnfunc)(const unsigned char *buffer, int length);
 
@@ -1584,7 +1586,8 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 	    ssnfunc = NULL;
     }
 
-    while(!done && ((result = cli_readn(desc, buf, 8191)) > 0)) {
+    while(!done && ((result = fmap_readn(map, buf, pos, 8191)) > 0)) {
+	pos += result;
 	if((cc_count += ccfunc((const unsigned char *)buf, result)) >= ctx->engine->min_cc_count)
 	    done = 1;
 
@@ -2460,7 +2463,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 		/* TODO: consider calling this from cli_scanscript() for
 		 * a normalised text
 		 */
-		ret = cli_scan_structured(desc, ctx);
+		ret = cli_scan_structured(ctx);
 	    break;
 
 	default:
