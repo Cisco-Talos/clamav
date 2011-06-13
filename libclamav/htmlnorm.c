@@ -1722,36 +1722,29 @@ int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,
 	return retval;
 }
 
-int html_screnc_decode(int fd, const char *dirname)
+int html_screnc_decode(fmap_t *map, const char *dirname)
 {
-	int fd_tmp, count, retval=FALSE;
+	int count, retval=FALSE;
 	unsigned char *line, tmpstr[6];
 	unsigned char *ptr, filename[1024];
-	FILE *stream_in;
 	int ofd;
 	struct screnc_state screnc_state;
+	m_area_t m_area;
 
-	lseek(fd, 0, SEEK_SET);
-	fd_tmp = dup(fd);
-	if (fd_tmp < 0) {
-		return FALSE;
-	}
-	stream_in = fdopen(fd_tmp, "r");
-	if (!stream_in) {
-		close(fd_tmp);
-		return FALSE;
-	}
+	memset(&m_area, 0, sizeof(m_area));
+	m_area.length = map->len;
+	m_area.offset = 0;
+	m_area.map = map;
 
 	snprintf((char*)filename, 1024, "%s"PATHSEP"screnc.html", dirname);
 	ofd = open((const char*)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 
 	if (ofd < 0) {
 		cli_dbgmsg("open failed: %s\n", filename);
-		fclose(stream_in);
 		return FALSE;
 	}
 
-	while ((line = cli_readchunk(stream_in, NULL, 8192)) != NULL) {
+	while ((line = cli_readchunk(NULL, &m_area, 8192)) != NULL) {
 		ptr = (unsigned char*)strstr((char*)line, "#@~^");
 		if (ptr) {
 			break;
@@ -1768,7 +1761,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	do {
 		if (! *ptr) {
 			free(line);
-			ptr = line = cli_readchunk(stream_in, NULL, 8192);
+			ptr = line = cli_readchunk(NULL, &m_area, 8192);
 			if (!line) {
 				goto abort;
 			}
@@ -1795,7 +1788,7 @@ int html_screnc_decode(int fd, const char *dirname)
 		cli_writen(ofd, ptr, strlen((const char*)ptr));
 		free(line);
 		if (screnc_state.length) {
-			ptr = line = cli_readchunk(stream_in, NULL, 8192);
+			ptr = line = cli_readchunk(NULL, &m_area, 8192);
 		}
 	}
 	cli_writen(ofd, "</script>",strlen("</script>"));
@@ -1804,7 +1797,6 @@ int html_screnc_decode(int fd, const char *dirname)
 	retval = TRUE;
 
 abort:
-	fclose(stream_in);
 	close(ofd);
 	return retval;
 }

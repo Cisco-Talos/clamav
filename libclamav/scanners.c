@@ -1313,7 +1313,7 @@ static int cli_scanmschm(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanscrenc(int desc, cli_ctx *ctx)
+static int cli_scanscrenc(cli_ctx *ctx)
 {
 	char *tempname;
 	int ret = CL_CLEAN;
@@ -1329,7 +1329,7 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    if (html_screnc_decode(desc, tempname))
+    if (html_screnc_decode(*ctx->fmap, tempname))
 	ret = cli_scandir(tempname, ctx);
 
     if(!ctx->engine->keeptmp)
@@ -2416,7 +2416,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_SCRENC:
 	    if(DCONF_OTHER & OTHER_CONF_SCRENC)
-		ret = cli_scanscrenc(desc, ctx);
+		ret = cli_scanscrenc(ctx);
 	    break;
 
 	case CL_TYPE_RIFF:

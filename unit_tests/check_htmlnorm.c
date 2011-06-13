@@ -149,9 +149,13 @@ END_TEST
 START_TEST(test_screnc_nullterminate)
 {
 	int fd = open_testfile("input/screnc_test");
+	fmap_t *map;
 
 	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
-	fail_unless(html_screnc_decode(fd, dir) == 1, "html_screnc_decode failed");
+	map = fmap(fd, 0, 0);
+	fail_unless(!!map, "fmap failed");
+	fail_unless(html_screnc_decode(map, dir) == 1, "html_screnc_decode failed");
+	funmap(map);
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 	close(fd);
 }
