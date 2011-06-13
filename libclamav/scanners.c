@@ -1226,7 +1226,7 @@ static int cli_scanole2(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
+static int cli_scantar(cli_ctx *ctx, unsigned int posix)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1244,7 +1244,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_untar(dir, desc, posix, ctx);
+    ret = cli_untar(dir, posix, ctx);
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -2371,14 +2371,14 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ctx->container_type = CL_TYPE_POSIX_TAR;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
-		ret = cli_scantar(desc, ctx, 1);
+		ret = cli_scantar(ctx, 1);
 	    break;
 
 	case CL_TYPE_OLD_TAR:
 	    ctx->container_type = CL_TYPE_OLD_TAR;
 	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
-		ret = cli_scantar(desc, ctx, 0);
+		ret = cli_scantar(ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_OLD:

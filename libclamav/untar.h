@@ -41,6 +41,6 @@
 
 #include "others.h"
 
-int cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx);
+int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx);
 
 #endif
