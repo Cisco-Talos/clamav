@@ -1363,50 +1363,24 @@ static int cli_scanjpeg(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scancryptff(int desc, cli_ctx *ctx)
+static int cli_scancryptff(cli_ctx *ctx)
 {
 	int ret = CL_CLEAN, ndesc;
-	unsigned int length, i;
-	unsigned char *src = NULL, *dest = NULL;
+	unsigned int i;
+	const unsigned char *src;
+	unsigned char *dest = NULL;
 	char *tempfile;
-	struct stat sb;
+	size_t pos;
+	ssize_t bread;
 
-
-    if(fstat(desc, &sb) == -1) {
-	cli_errmsg("CryptFF: Can't fstat descriptor %d\n", desc);
-	return CL_ESTAT;
-    }
 
     /* Skip the CryptFF file header */
-    if(lseek(desc, 0x10, SEEK_SET) < 0) {
-	cli_errmsg("CryptFF: Can't lseek descriptor %d\n", desc);
-	return ret;
-    }
+    pos = 0x10;
 
-    length = sb.st_size  - 0x10;
- 
-    if((dest = (unsigned char *) cli_malloc(length)) == NULL) {
+    if((dest = (unsigned char *) cli_malloc(FILEBUFF)) == NULL) {
 	cli_dbgmsg("CryptFF: Can't allocate memory\n");
         return CL_EMEM;
     }
-
-    if((src = (unsigned char *) cli_malloc(length)) == NULL) {
-	cli_dbgmsg("CryptFF: Can't allocate memory\n");
-	free(dest);
-        return CL_EMEM;
-    }
-
-    if((unsigned int) read(desc, src, length) != length) {
-	cli_dbgmsg("CryptFF: Can't read from descriptor %d\n", desc);
-	free(dest);
-	free(src);
-	return CL_EREAD;
-    }
-
-    for(i = 0; i < length; i++)
-	dest[i] = src[i] ^ (unsigned char) 0xff;
-
-    free(src);
 
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
 	free(dest);
@@ -1420,12 +1394,16 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 	return CL_ECREAT;
     }
 
-    if(write(ndesc, dest, length) == -1) {
-	cli_dbgmsg("CryptFF: Can't write to descriptor %d\n", ndesc);
-	free(dest);
-	close(ndesc);
-	free(tempfile);
-	return CL_EWRITE;
+    for(; src = fmap_need_off_once_len(*ctx->fmap, pos, FILEBUFF, &bread); pos += bread) {
+	for (i=0;i<bread;i++)
+	    dest[i] = src[i] ^ (unsigned char) 0xff;
+	if(cli_writen(ndesc, dest, bread) == -1) {
+	    cli_dbgmsg("CryptFF: Can't write to descriptor %d\n", ndesc);
+	    free(dest);
+	    close(ndesc);
+	    free(tempfile);
+	    return CL_EWRITE;
+	}
     }
 
     free(dest);
@@ -2447,7 +2425,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_CRYPTFF:
 	    if(DCONF_OTHER & OTHER_CONF_CRYPTFF)
-		ret = cli_scancryptff(desc, ctx);
+		ret = cli_scancryptff(ctx);
 	    break;
 
 	case CL_TYPE_ELF:
