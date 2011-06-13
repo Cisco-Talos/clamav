@@ -1471,7 +1471,7 @@ static int cli_scanpdf(cli_ctx *ctx, off_t offset)
     return ret;
 }
 
-static int cli_scantnef(int desc, cli_ctx *ctx)
+static int cli_scantnef(cli_ctx *ctx)
 {
 	int ret;
 	char *dir = cli_gentemp(ctx->engine->tmpdir);
@@ -1485,7 +1485,7 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_tnef(dir, desc, ctx);
+    ret = cli_tnef(dir, ctx);
 
     if(ret == CL_CLEAN)
 	ret = cli_scandir(dir, ctx);
@@ -2338,7 +2338,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_TNEF:
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_TNEF))
-		ret = cli_scantnef(desc, ctx);
+		ret = cli_scantnef(ctx);
 	    break;
 
 	case CL_TYPE_UUENCODED:
