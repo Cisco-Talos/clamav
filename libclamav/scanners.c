@@ -2016,7 +2016,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     }
 
     if(ret == CL_VIRUS)
-	cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, map->fd);
+	cli_dbgmsg("%s found\n", *ctx->virname);
 
     return ret;
 }
@@ -2516,7 +2516,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	        ret = cli_scanscript(ctx);
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (ctx->container_type == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
 		lseek(desc, 0, SEEK_SET);
-		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL);
+		ret = cli_fmap_scandesc(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);
 	    }
 	    perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);
 	    break;
