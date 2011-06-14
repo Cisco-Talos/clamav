@@ -197,10 +197,6 @@ static int spamsisnames(fmap_t *map, size_t pos, uint16_t langs, const char **al
 
   const uint32_t len = sizeof(uint32_t) * langs * 2;
 
-  if (!(lens = cli_malloc(sizeof(uint32_t) * langs * 2))) {
-    cli_dbgmsg("SIS: OOM\n");
-    return 0;
-  }
   if (!(lens = fmap_need_off(map, pos, len))) {
     cli_dbgmsg("SIS: Unable to read lengths and pointers\n");
     return 1;
