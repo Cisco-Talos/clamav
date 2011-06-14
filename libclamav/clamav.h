@@ -200,22 +200,18 @@ extern int cl_engine_free(struct cl_engine *engine);
 
 /* CALLBACKS */
 
+/* I certainly wish I could declare the callback protoes stable and
+   move on to better things. But real life crossed my way enough times
+   already and what looked perfect had to evolve somehow.
+   So all I can say is I'll try my best not to break these things in the long run.
+   But I just can't guarantee that won't happen (again). */
 
-typedef cl_error_t (*clcb_pre_scan)(int fd, void *context);
-/* PRE-SCAN
-Input:
-fd      = File descriptor which is about to be scanned
-context = Opaque application provided data
+typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
+/* PRE-CACHE
+   Called for each processed file (both the entry level - AKA 'outer' - file and
+   inner files - those generated when processing archive and container files), before
+   the actual scanning takes place.
 
-Output:
-CL_CLEAN = File is scanned
-CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
-CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
-*/
-extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback);
-
-typedef cl_error_t (*clcb_file_type)(int fd, const char *type, void *context);
-/* FILE-TYPE
 Input:
 fd      = File descriptor which is about to be scanned
 type    = File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE")
@@ -226,10 +222,31 @@ CL_CLEAN = File is scanned
 CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
 CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
 */
-extern void cl_engine_set_clcb_file_type(struct cl_engine *engine, clcb_file_type callback);
+extern void cl_engine_set_clcb_file_type(struct cl_engine *engine, clcb_pre_cache callback);
+
+typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
+/* PRE-SCAN
+   Called for each NEW file (inner and outer) before the scanning takes place. This is
+   roughly the the same as clcb_before_cache, but it is affected by clean file caching.
+   This means that it won't be called if a clean cached file (inner or outer) is
+   scanned a second time.
+
+Input:
+fd      = File descriptor which is about to be scanned
+type    = File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE")
+context = Opaque application provided data
+
+Output:
+CL_CLEAN = File is scanned
+CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
+CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
+*/
+extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback);
 
 typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, void *context);
 /* POST-SCAN
+   Called for each processed file (inner and outer), after the scanning is complete.
+
 Input:
 fd      = File descriptor which is was scanned
 result  = The scan result for the file
