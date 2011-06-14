@@ -355,7 +355,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	unlock_engine();
 	FAIL(CL_EMEM, "Not enough memory for a new engine");
     }
-    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
+    cl_engine_set_clcb_file_type(engine, prescan_cb);
     cl_engine_set_clcb_post_scan(engine, postscan_cb);
     
     minimal_definitions = bLoadMinDefs;

@@ -1068,6 +1068,10 @@ void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callbac
     engine->cb_pre_scan = callback;
 }
 
+void cl_engine_set_clcb_file_type(struct cl_engine *engine, clcb_file_type callback) {
+    engine->cb_file_type = callback;
+}
+
 void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback) {
     engine->cb_post_scan = callback;
 }

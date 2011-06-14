@@ -201,8 +201,21 @@ extern int cl_engine_free(struct cl_engine *engine);
 /* CALLBACKS */
 
 
-typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
+typedef cl_error_t (*clcb_pre_scan)(int fd, void *context);
 /* PRE-SCAN
+Input:
+fd      = File descriptor which is about to be scanned
+context = Opaque application provided data
+
+Output:
+CL_CLEAN = File is scanned
+CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
+CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
+*/
+extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback);
+
+typedef cl_error_t (*clcb_file_type)(int fd, const char *type, void *context);
+/* FILE-TYPE
 Input:
 fd      = File descriptor which is about to be scanned
 type    = File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE")
@@ -213,8 +226,7 @@ CL_CLEAN = File is scanned
 CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
 CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
 */
-extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback);
-
+extern void cl_engine_set_clcb_file_type(struct cl_engine *engine, clcb_file_type callback);
 
 typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, void *context);
 /* POST-SCAN

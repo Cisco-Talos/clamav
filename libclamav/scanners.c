@@ -2071,41 +2071,41 @@ static void emax_reached(cli_ctx *ctx) {
 #define ret_from_magicscan(retcode) do {							\
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);			\
     if(ctx->engine->cb_post_scan) {								\
-	perf_start(ctx, PERFT_POSTCB);                                                         \
+	perf_start(ctx, PERFT_POSTCB);                                                          \
 	switch(ctx->engine->cb_post_scan(desc, retcode, retcode == CL_VIRUS && ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {		\
 	case CL_BREAK:										\
-	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");			\
-	    perf_stop(ctx, PERFT_POSTCB);                                                      \
+	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n");	        \
+	    perf_stop(ctx, PERFT_POSTCB);                                                       \
 	    return CL_CLEAN;									\
 	case CL_VIRUS:										\
-	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");			\
+	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by post_scan callback\n");		\
 	    if(ctx->virname)									\
 		*ctx->virname = "Detected.By.Callback";						\
-	    perf_stop(ctx, PERFT_POSTCB);                                                      \
+	    perf_stop(ctx, PERFT_POSTCB);                                                       \
 	    return CL_VIRUS;									\
 	case CL_CLEAN:										\
 	    break;										\
 	default:										\
-	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");	\
+	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from post_scan callback\n"); \
 	}											\
-	perf_stop(ctx, PERFT_POSTCB);                                                          \
-    }\
+	perf_stop(ctx, PERFT_POSTCB);                                                           \
+    }												\
     return retcode;										\
     } while(0)
 
 
-#define CALL_PRESCAN_CB(type_name)	                                                     \
-    if(ctx->engine->cb_pre_scan) {		                                             \
+#define CALL_FILETYPE_CB(type_name)	                                                     \
+    if(ctx->engine->cb_file_type) {		                                             \
 	perf_start(ctx, PERFT_PRECB);                                                        \
-	switch(ctx->engine->cb_pre_scan(desc, (type_name), ctx->cb_ctx)) {                   \
+	switch(ctx->engine->cb_file_type(desc, (type_name), ctx->cb_ctx)) {		     \
 	case CL_BREAK:                                                                       \
-	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");                \
+	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by file_type callback\n");	     \
 	    funmap(*ctx->fmap);                                                              \
 	    ctx->fmap--;                                                                     \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
 	    ret_from_magicscan(CL_CLEAN);                                                    \
 	case CL_VIRUS:                                                                       \
-	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");                \
+	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by file_type callback\n");      \
 	    if(ctx->virname)                                                                 \
 		*ctx->virname = "Detected.By.Callback";                                      \
 	    funmap(*ctx->fmap);                                                              \
@@ -2115,7 +2115,7 @@ static void emax_reached(cli_ctx *ctx) {
 	case CL_CLEAN:                                                                       \
 	    break;                                                                           \
 	default:                                                                             \
-	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");     \
+	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from file_type callback\n"); \
 	}                                                                                    \
 	perf_stop(ctx, PERFT_PRECB);                                                         \
     }
@@ -2179,6 +2179,28 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     }
     perf_stop(ctx, PERFT_MAP);
 
+    if(ctx->engine->cb_pre_scan) {
+	switch(ctx->engine->cb_pre_scan(desc, ctx->cb_ctx)) {
+	case CL_BREAK:
+	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by pre_scan callback\n");
+	    funmap(*ctx->fmap);
+	    ctx->fmap--;
+	    ret_from_magicscan(CL_CLEAN);
+	case CL_VIRUS:
+	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by pre_scan callback\n");
+	    if(ctx->virname)
+		*ctx->virname = "Detected.By.Callback";
+	    funmap(*ctx->fmap);
+	    ctx->fmap--;
+	    perf_stop(ctx, PERFT_PRECB);
+	    ret_from_magicscan(CL_VIRUS);
+	case CL_CLEAN:
+	    break;
+	default:
+	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from pre_scan callback\n");
+	}
+    }
+
     perf_start(ctx, PERFT_CACHE);
     if(cache_check(hash, ctx) == CL_CLEAN) {
 	funmap(*ctx->fmap);
@@ -2197,7 +2219,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 
-	CALL_PRESCAN_CB("CL_TYPE_BINARY_DATA");
+	CALL_FILETYPE_CB("CL_TYPE_BINARY_DATA");
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	else if(ret == CL_CLEAN) {
@@ -2225,7 +2247,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	ret_from_magicscan(CL_EREAD);
     }
 
-    CALL_PRESCAN_CB(cli_ftname(type));
+    CALL_FILETYPE_CB(cli_ftname(type));
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(!ctx->sha_collect && type==CL_TYPE_MSEXE) ctx->sha_collect = 1;

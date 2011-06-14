@@ -253,6 +253,7 @@ struct cl_engine {
 
     /* Callback(s) */
     clcb_pre_scan cb_pre_scan;
+    clcb_file_type cb_file_type;
     clcb_post_scan cb_post_scan;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
