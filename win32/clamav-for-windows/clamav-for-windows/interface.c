@@ -250,8 +250,8 @@ BOOL interface_setup(void) {
     return TRUE;
 }
 
-static int sigload_callback(const char *type, const char *name, void *context) {
-    if(minimal_definitions && strcmp(type, "fp"))
+static int sigload_callback(const char *type, const char *name, unsigned int custom, void *context) {
+    if(minimal_definitions && (custom || strcmp(type, "fp")))
 	return 1;
     return 0;
 }

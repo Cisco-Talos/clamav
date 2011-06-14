@@ -261,11 +261,12 @@ CL_VIRUS = Blacklisted by callback - scan result is set to CL_VIRUS
 extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
 
-typedef int (*clcb_sigload)(const char *type, const char *name, void *context);
+typedef int (*clcb_sigload)(const char *type, const char *name, unsigned int custom, void *context);
 /* SIGNATURE LOAD
 Input:
 type = The signature type (e.g. "db", "ndb", "mdb", etc.)
 name = The virus name
+custom = The signature is official (custom == 0) or custom (custom != 0)
 context = Opaque application provided data
 
 Output:

@@ -573,7 +573,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	if(engine->ignored && cli_chkign(engine->ignored, start, buffer_cpy))
 	    continue;
 
-	if(engine->cb_sigload && engine->cb_sigload("db", start, engine->cb_sigload_ctx)) {
+	if(engine->cb_sigload && engine->cb_sigload("db", start, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loaddb: skipping %s due to callback\n", start);
 	    continue;
 	}
@@ -652,7 +652,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
 	    continue;
 
-	if(engine->cb_sigload && engine->cb_sigload("idb", tokens[0], engine->cb_sigload_ctx)) {
+	if(engine->cb_sigload && engine->cb_sigload("idb", tokens[0], options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loadidb: skipping %s due to callback\n", tokens[0]);
 	    continue;
 	}
@@ -926,7 +926,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
 	    continue;
 
-	if(!sdb && engine->cb_sigload && engine->cb_sigload("ndb", virname, engine->cb_sigload_ctx)) {
+	if(!sdb && engine->cb_sigload && engine->cb_sigload("ndb", virname, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loadndb: skipping %s due to callback\n", virname);
 	    continue;
 	}
@@ -1235,7 +1235,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     if (chkign && cli_chkign(engine->ignored, virname, buffer_cpy))
 	return CL_SUCCESS;
 
-    if(engine->cb_sigload && engine->cb_sigload("ldb", virname, engine->cb_sigload_ctx)) {
+    if(engine->cb_sigload && engine->cb_sigload("ldb", virname, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
 	(*sigs)--;
 	return CL_SUCCESS;
@@ -1443,7 +1443,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return CL_SUCCESS;
     }
 
-    if(engine->cb_sigload && engine->cb_sigload("cbc", dbname, engine->cb_sigload_ctx)) {
+    if(engine->cb_sigload && engine->cb_sigload("cbc", dbname, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	cli_dbgmsg("cli_loadcbc: skipping %s due to callback\n", dbname);
 	return CL_SUCCESS;
     }
@@ -1948,7 +1948,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 		dot = dbname;
 	    else
 		dot++;
-	    if(engine->cb_sigload(dot, pt, engine->cb_sigload_ctx)) {
+	    if(engine->cb_sigload(dot, pt, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 		cli_dbgmsg("cli_loadhash: skipping %s (%s) due to callback\n", pt, dot);
 	        continue;
 	    }
@@ -2090,7 +2090,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 	}
 
-	if(engine->cb_sigload && engine->cb_sigload("md", new->virname, engine->cb_sigload_ctx)) {
+	if(engine->cb_sigload && engine->cb_sigload("md", new->virname, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loadmd: skipping %s due to callback\n", new->virname);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
@@ -2230,7 +2230,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    continue;
 	}
 
-	if(engine->cb_sigload && engine->cb_sigload("cdb", new->virname, engine->cb_sigload_ctx)) {
+	if(engine->cb_sigload && engine->cb_sigload("cdb", new->virname, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	    cli_dbgmsg("cli_loadcdb: skipping %s due to callback\n", new->virname);
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
