@@ -144,7 +144,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
     memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
     fmap_unlock;
-    m->fd = fd;
+    m->_fd = fd;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
     m->offset = offset;
@@ -283,7 +283,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		if(fmap_bitmap[j] & FM_MASK_SEEN) {
 		    /* page we've seen before: check mtime */
 		    struct stat st;
-		    if(fstat(m->fd, &st)) {
+		    if(fstat(m->_fd, &st)) {
 			cli_warnmsg("fmap_readpage: fstat failed\n");
 			return 1;
 		    }
@@ -298,7 +298,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    eintr_off = 0;
 	    while(readsz) {
 		ssize_t got;
-		got=pread(m->fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+		got=pread(m->_fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
 
 		if(got < 0 && errno == EINTR)
 		    continue;
@@ -585,7 +585,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	free(m);
 	return NULL;
     }
-    m->fd = fd;
+    m->_fd = fd;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
     m->offset = offset;
@@ -705,4 +705,12 @@ static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
 
 static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
+}
+
+int fmap_fd(fmap_t *m)
+{
+    /* This will return -1 when once custom mapping is be used */
+    int fd = m->_fd;
+    lseek(fd, 0, SEEK_SET);
+    return fd;
 }

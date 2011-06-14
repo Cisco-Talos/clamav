@@ -29,7 +29,7 @@
 #include "cltypes.h"
 
 typedef struct {
-    int fd;
+    int _fd;
     unsigned short dumb;
     unsigned short dont_cache_flag;
     time_t mtime;
@@ -79,5 +79,7 @@ static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, siz
 {
     return fmap_need_off_once_len(m, (char*)ptr - (char*)m - m->hdrsz, len, lenout);
 }
+
+int fmap_fd(fmap_t *m);
 
 #endif

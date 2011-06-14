@@ -191,7 +191,6 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
-	lseek(desc, 0, SEEK_SET);
 	ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	if(ret != CL_VIRUS) {
 	    *ctx->virname = "Heuristics.Encrypted.RAR";
@@ -411,11 +410,10 @@ static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
     char *tmpname;
     gzFile gz;
 
-    fd = dup(map->fd);
+    fd = dup(fmap_fd(map));
     if(fd < 0)
 	return CL_EDUP;
 
-    lseek(fd, 0, SEEK_SET);
     if(!(gz = gzdopen(fd, "rb"))) {
 	close(fd);
 	return CL_EOPEN;
@@ -683,7 +681,6 @@ static int cli_scanszdd(cli_ctx *ctx)
     }
 
     cli_dbgmsg("MSEXPAND: Decompressed into %s\n", tmpname);
-    lseek(ofd, 0, SEEK_SET);
     ret = cli_magic_scandesc(ofd, ctx);
     close(ofd);
     if(!ctx->engine->keeptmp)
@@ -1001,7 +998,6 @@ static int cli_scanhtml(cli_ctx *ctx)
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
 		    if (ret == CL_CLEAN) {
-			    lseek(fd, 0, SEEK_SET);
 			    ret = cli_scandesc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
 		    }
 		    close(fd);
@@ -1287,7 +1283,6 @@ static int cli_scanmschm(cli_ctx *ctx)
 	}
 	ret = cli_chm_extract_file(dir, &metadata, ctx);
 	if (ret == CL_SUCCESS) {
-	    lseek(metadata.ofd, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
 	    close(metadata.ofd);
 	    if (rc == CL_VIRUS) {
@@ -1408,7 +1403,6 @@ static int cli_scancryptff(cli_ctx *ctx)
 
     free(dest);
 
-    lseek(ndesc, 0, SEEK_SET);
 
     cli_dbgmsg("CryptFF: Scanning decrypted data\n");
 
@@ -1667,7 +1661,6 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
     }
 
     ctx->recursion++;
-    lseek(fd, 0, SEEK_SET);
     corrupted_input = ctx->corrupted_input;
     ctx->corrupted_input = 1;
     ret = cli_magic_scandesc(fd, ctx);
@@ -1879,7 +1872,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    ctx->container_type = CL_TYPE_RAR;
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanrar(map->fd, ctx, fpt->offset, &lastrar);
+			    nret = cli_scanrar(fmap_fd(map), ctx, fpt->offset, &lastrar);
 			}
 			break;
 
@@ -2097,8 +2090,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	size_t current_container_size = ctx->container_size, hashed_size;
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
-	int desc = (*ctx->fmap)->fd;
 	const char *filetype;
+	int desc = fmap_fd(*ctx->fmap);/* TODO: port the rest to fmap, and keep this just for pre/post callbacks */
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -2168,7 +2161,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(!ctx->sha_collect && type==CL_TYPE_MSEXE) ctx->sha_collect = 1;
 #endif
-    lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
     ctx->hook_lsig_matches = cli_bitset_init();
     if (!ctx->hook_lsig_matches) {
@@ -2183,7 +2175,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    ret_from_magicscan(ret);
 	}
-	lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
     }
 
     ctx->recursion++;
@@ -2447,7 +2438,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     ctx->recursion++;
-    lseek(desc, 0, SEEK_SET);
     switch(type) {
 	/* bytecode hooks triggered by a lsig must be a hook
 	 * called from one of the functions here */
@@ -2459,7 +2449,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(ctx);
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (ctx->container_type == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
-		lseek(desc, 0, SEEK_SET);
 		ret = cli_fmap_scandesc(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);
 	    }
 	    perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);

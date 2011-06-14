@@ -450,7 +450,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 #endif
 
     if (ctx->engine->cb_hash)
-	ctx->engine->cb_hash(ctx->fmap[0]->fd, size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
+	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
 
     return CL_VIRUS;
 }
