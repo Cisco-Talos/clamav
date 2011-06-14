@@ -131,8 +131,8 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     return m;
 }
 
-cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
-			       clcb_pread pread_cb, int use_aging)
+extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
+				      clcb_pread pread_cb, int use_aging)
 {
     unsigned int pages, mapsz, hdrsz;
     cl_fmap_t *m;
@@ -571,11 +571,32 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
+static void unmap_none(fmap_t *m) {}
+
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
+{
+    cl_fmap_t *m = cli_calloc(1, sizeof(*m));
+    if (!m) {
+	cli_warnmsg("fmap: map allocation failed\n");
+	return NULL;
+    }
+    m->data = start;
+    m->len = len;
+    m->unmap = unmap_none;
+    m->need = mem_need;
+    m->need_offstr = mem_need_offstr;
+    m->gets = mem_gets;
+    m->unneed_off = mem_unneed_off;
+}
+
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
     unsigned int pages, mapsz, hdrsz;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
+    const void *data;
+    HANDLE fh;
+    HANDLE mh;
 
     *empty = 0;
     if(fstat(fd, &st)) {
@@ -600,40 +621,30 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
 
-    if(!(m = (fmap_t *)cli_calloc(1, sizeof(fmap_t)))) {
-	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
-	return NULL;
-    }
-    if((m->fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
+    if((fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
 	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
-	free(m);
 	return NULL;
     }
-    if(!(m->mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
+    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
 	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
-	free(m);
+	CloseHandle(fh);
 	return NULL;
     }
-    if(!(m->data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
+    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
 	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
-	CloseHandle(m->mh);
-	free(m);
+	CloseHandle(mh);
+	CloseHandle(fh);
 	return NULL;
     }
-    m->dumb = dumb;
-    m->mtime = st.st_mtime;
-    m->offset = offset;
-    m->len = len;
-    m->pages = pages;
-    m->hdrsz = hdrsz;
-    m->pgsz = pgsz;
-    m->paged = 0;
-    m->dont_cache_flag = 0;
+    if(!(m = cl_fmap_open_memory(data, len))) {
+	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
+	CloseHandle(mh);
+	CloseHandle(fh);
+	return NULL;
+    }
+    m->fh = fh;
+    m->mh = mh;
     m->unmap = unmap_win32;
-    m->need = mem_need;
-    m->need_offstr = mem_need_offstr;
-    m->gets = mem_gets;
-    m->unneed_off = mem_unneed_off;
     return m;
 }
 
