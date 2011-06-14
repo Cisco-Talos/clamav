@@ -34,16 +34,25 @@ struct cl_fmap;
 typedef cl_fmap_t fmap_t;
 
 struct cl_fmap {
-    int _fd;
-    unsigned short dumb;
-    unsigned short dont_cache_flag;
+    /* handle interface */
+    void *handle;
+    clcb_pread pread_cb;
+
+    /* internal */
     time_t mtime;
-    size_t offset;
-    size_t len;
     unsigned int pages;
     unsigned int hdrsz;
     unsigned int pgsz;
     unsigned int paged;
+    unsigned short dumb;
+    unsigned short dont_cache_flag;
+
+    /* memory interface */
+    void *data;
+
+    /* common interface */
+    size_t offset;
+    size_t len;
 
     /* vtable for implementation */
     void        (*unmap)(fmap_t*);
@@ -54,7 +63,6 @@ struct cl_fmap {
 #ifdef _WIN32
     HANDLE fh;
     HANDLE mh;
-    void *data;
 #endif
     uint32_t placeholder_for_bitmap;
 };

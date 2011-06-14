@@ -98,6 +98,7 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 static void unmap_mmap(fmap_t *m);
 static void unmap_malloc(fmap_t *m);
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset);
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
@@ -105,6 +106,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;
+    void *handle = (void*)(ssize_t)fd;
 
     *empty = 0;
     if(fstat(fd, &st)) {
@@ -150,7 +152,8 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
     memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
     fmap_unlock;
-    m->_fd = fd;
+    m->handle = handle;
+    m->pread_cb = pread_cb;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
     m->offset = offset;
@@ -168,6 +171,10 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     return m;
 }
 
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
+{
+    return pread((int)(ssize_t)handle, buf, count, offset);
+}
 
 static void fmap_aging(fmap_t *m) {
 #ifdef ANONYMOUS_MAP
@@ -289,27 +296,31 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 	if(force_read) {
 	    /* we have some pending reads to perform */
-	    unsigned int j;
-	    for(j=first_page; j<page; j++) {
-		if(fmap_bitmap[j] & FM_MASK_SEEN) {
-		    /* page we've seen before: check mtime */
-		    struct stat st;
-		    if(fstat(m->_fd, &st)) {
-			cli_warnmsg("fmap_readpage: fstat failed\n");
-			return 1;
+	    if (m->pread_cb == pread_cb) {
+		unsigned int j;
+		int _fd = (int)(ssize_t)m->handle;
+		for(j=first_page; j<page; j++) {
+		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
+			/* page we've seen before: check mtime */
+			struct stat st;
+			char err[256];
+			if(fstat(_fd, &st)) {
+			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+			    return 1;
+			}
+			if(m->mtime != st.st_mtime) {
+			    cli_warnmsg("fmap_readpage: file changed as we read it\n");
+			    return 1;
+			}
+			break;
 		    }
-		    if(m->mtime != st.st_mtime) {
-			cli_warnmsg("fmap_readpage: file changed as we read it\n");
-			return 1;
-		    }
-		    break;
 		}
 	    }
 
 	    eintr_off = 0;
 	    while(readsz) {
 		ssize_t got;
-		got=pread(m->_fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+		got=m->pread_cb(m->handle, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
 
 		if(got < 0 && errno == EINTR)
 		    continue;
@@ -562,7 +573,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
 
-    if(!(m = (fmap_t *)cli_malloc(sizeof(fmap_t)))) {
+    if(!(m = (fmap_t *)cli_calloc(1, sizeof(fmap_t)))) {
 	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
 	return NULL;
     }
@@ -582,7 +593,6 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	free(m);
 	return NULL;
     }
-    m->_fd = fd;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
     m->offset = offset;
@@ -676,8 +686,12 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
 
 int fmap_fd(fmap_t *m)
 {
-    /* This will return -1 when once custom mapping is be used */
-    int fd = m->_fd;
+    int fd;
+    if (m->pread_cb != pread_cb) {
+	cli_warnmsg("fmap: trying to retrieve descriptor from something that is not\n");
+	return -1;
+    }
+    fd = (int)(ssize_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;
 }
