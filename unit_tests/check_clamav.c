@@ -190,6 +190,8 @@ static void init_testfiles(void)
     fail_unless(!!d, "opendir");
     if (!d)
 	return;
+    testfiles = NULL;
+    testfiles_n = 0;
     while ((dirent = readdir(d))) {
 	if (strncmp(dirent->d_name, "clam", 4))
 	    continue;
@@ -210,19 +212,25 @@ static void free_testfiles(void)
 	free(testfiles[i]);
     }
     free(testfiles);
+    testfiles = NULL;
+    testfiles_n = 0;
 }
 
 static struct cl_engine *g_engine;
+static int inited = 0;
 
 static void engine_setup(void)
 {
     unsigned int sigs = 0;
+    const char *hdb = OBJDIR"/clamav.hdb";
 
     init_testfiles();
-    fail_unless(cl_init(CL_INIT_DEFAULT) == 0, "cl_init");
+    if (!inited)
+	fail_unless(cl_init(CL_INIT_DEFAULT) == 0, "cl_init");
+    inited = 1;
     g_engine = cl_engine_new();
     fail_unless(!!g_engine, "engine");
-    fail_unless(cl_load(OBJDIR"/clamav.hdb", g_engine, &sigs, CL_DB_STDOPT) == 0, "cl_load");
+    fail_unless_fmt(cl_load(hdb, g_engine, &sigs, CL_DB_STDOPT) == 0, "cl_load %s", hdb);
     fail_unless(sigs == 1, "sigs");
     fail_unless(cl_engine_compile(g_engine) == 0, "cl_engine_compile");
 }
@@ -244,7 +252,7 @@ START_TEST (test_cl_scanmap_callback_handle)
     char file[256];
     struct stat st;
     const char *virname = NULL;
-    unsigned long int scanned;
+    unsigned long int scanned = 0;
     cl_fmap_t *map;
     int ret;
 
@@ -258,10 +266,12 @@ START_TEST (test_cl_scanmap_callback_handle)
     map = cl_fmap_open_handle(&fd, 0, st.st_size, pread_cb, 1);
     fail_unless(!!map, "cl_fmap_open_handle");
 
+    cli_dbgmsg("scanning (handle) %s\n", file);
     ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (handle) %s\n", file);
+
     fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-    fail_unless(scanned > 0, "scanned");
-    fail_unless_fmt(!strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     close(fd);
 }
 END_TEST
@@ -272,7 +282,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     char file[256];
     struct stat st;
     const char *virname = NULL;
-    unsigned long int scanned;
+    unsigned long int scanned = 0;
     cl_fmap_t *map;
     int ret;
     void *mem;
@@ -291,10 +301,11 @@ START_TEST (test_cl_scanmap_callback_mem)
     map = cl_fmap_open_memory(mem, st.st_size);
     fail_unless(!!map, "cl_fmap_open_mem");
 
+    cli_dbgmsg("scanning (mem) %s\n", file);
     ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (mem) %s\n", file);
     fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-    fail_unless(scanned > 0, "scanned %d for %s", scanned, virname);
-    fail_unless_fmt(!strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     close(fd);
 
     munmap(mem, st.st_size);

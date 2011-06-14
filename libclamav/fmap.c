@@ -642,6 +642,7 @@ static void unmap_none(fmap_t *m) {}
 
 extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 {
+    int pgsz = cli_getpagesize();
     cl_fmap_t *m = cli_calloc(1, sizeof(*m));
     if (!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
@@ -649,20 +650,25 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
     }
     m->data = start;
     m->len = len;
+    m->pgsz = pgsz;
+    m->pages = fmap_align_items(len, pgsz);
     m->unmap = unmap_none;
     m->need = mem_need;
     m->need_offstr = mem_need_offstr;
     m->gets = mem_gets;
     m->unneed_off = mem_unneed_off;
+    return m;
 }
 
 
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN32 */
-    if(!CLI_ISCONTAINED(0, m->len, at, len))
+    if(!len) {
 	return NULL;
+    }
+    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+	return NULL;
+    }
 
-    if(!len)
-	return NULL;
     return (void *)((char *)m->data + at);
 }
 

@@ -2549,7 +2549,7 @@ static int cli_map_scandesc(cl_fmap_t *map, cli_ctx *ctx)
 
     ret = magic_scandesc(ctx, CL_TYPE_ANY);
 
-    *ctx->fmap--;
+    ctx->fmap--;
     return ret;
 }
 

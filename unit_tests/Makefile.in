@@ -1097,7 +1097,7 @@ check10_clamd_hg.sh: $(FILES)
 $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
-check_clamav.o: check_clamav.c $(top_builddir)/test/clam.exe clamav.hdb
+check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 
 clamav.hdb: input/clamav.hdb
 	cp $< $@
