@@ -50,6 +50,114 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
 #ifndef _WIN32
 /* vvvvv POSIX STUFF BELOW vvvvv */
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset);
+
+/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
+   which may in turn prevent some mmap constants to be defined */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
+    unsigned int pages, mapsz, hdrsz;
+    unsigned short dumb = 1;
+    int pgsz = cli_getpagesize();
+    struct stat st;
+    fmap_t *m;
+    void *handle = (void*)(ssize_t)fd;
+
+    *empty = 0;
+    if(fstat(fd, &st)) {
+	cli_warnmsg("fmap: fstat failed\n");
+	return NULL;
+    }
+
+    if(!len) len = st.st_size - offset; /* bound checked later */
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
+	return NULL;
+    }
+    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+	cli_warnmsg("fmap: attempted oof mapping\n");
+	return NULL;
+    }
+    m = cl_fmap_open_handle((void*)(ssize_t)fd, offset, len, pread_cb, 1);
+    if (!m)
+	return NULL;
+    m->mtime = st.st_mtime;
+    m->handle_is_fd = 1;
+    return m;
+}
+#else
+/* vvvvv WIN32 STUFF BELOW vvvvv */
+static void unmap_win32(fmap_t *m) { /* WIN32 */
+    UnmapViewOfFile(m->data);
+    CloseHandle(m->mh);
+    free((void *)m);
+}
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
+    unsigned int pages, mapsz, hdrsz;
+    int pgsz = cli_getpagesize();
+    struct stat st;
+    fmap_t *m;
+    const void *data;
+    HANDLE fh;
+    HANDLE mh;
+
+    *empty = 0;
+    if(fstat(fd, &st)) {
+	cli_warnmsg("fmap: fstat failed\n");
+	return NULL;
+    }
+    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
+	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
+	return NULL;
+    }
+    if(!len) len = st.st_size - offset; /* bound checked later */
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
+	return NULL;
+    }
+    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+	cli_warnmsg("fmap: attempted oof mapping\n");
+	return NULL;
+    }
+
+    pages = fmap_align_items(len, pgsz);
+    hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
+
+    if((fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
+	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
+	return NULL;
+    }
+    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
+	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
+	CloseHandle(fh);
+	return NULL;
+    }
+    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
+	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
+	CloseHandle(mh);
+	CloseHandle(fh);
+	return NULL;
+    }
+    if(!(m = cl_fmap_open_memory(data, len))) {
+	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
+	CloseHandle(mh);
+	CloseHandle(fh);
+	return NULL;
+    }
+    m->handle = (void*)(ssize_t)fd;
+    m->handle_is_fd = 1;
+    m->fh = fh;
+    m->mh = mh;
+    m->unmap = unmap_win32;
+    return m;
+}
+#endif /* _WIN32 */
+
+/* vvvvv SHARED STUFF BELOW vvvvv */
 
 #define FM_MASK_COUNT 0x3fffffff
 #define FM_MASK_PAGED 0x40000000
@@ -88,48 +196,12 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define fmap_bitmap (&m->placeholder_for_bitmap)
 
-/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
-   which may in turn prevent some mmap constants to be defined */
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
-
 static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock);
 static void handle_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 static void unmap_mmap(fmap_t *m);
 static void unmap_malloc(fmap_t *m);
-static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset);
-
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
-    unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
-    int pgsz = cli_getpagesize();
-    struct stat st;
-    fmap_t *m;
-    void *handle = (void*)(ssize_t)fd;
-
-    *empty = 0;
-    if(fstat(fd, &st)) {
-	cli_warnmsg("fmap: fstat failed\n");
-	return NULL;
-    }
-
-    if(!len) len = st.st_size - offset; /* bound checked later */
-    if(!len) {
-	cli_dbgmsg("fmap: attempted void mapping\n");
-	*empty = 1;
-	return NULL;
-    }
-    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
-	cli_warnmsg("fmap: attempted oof mapping\n");
-	return NULL;
-    }
-    m = cl_fmap_open_handle((void*)(ssize_t)fd, offset, len, pread_cb, 1);
-    if (!m)
-	return NULL;
-    m->mtime = st.st_mtime;
-    return m;
-}
 
 extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
 				      clcb_pread pread_cb, int use_aging)
@@ -280,7 +352,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
     fmap_lock;
     for(i=0; i<count; i++) { /* prefault */
-    	/* Not worth checking if the page is already paged, just ping each */
+	/* Not worth checking if the page is already paged, just ping each */
 	/* Also not worth reusing the loop below */
 	volatile char faultme;
 	faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
@@ -324,7 +396,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 	if(force_read) {
 	    /* we have some pending reads to perform */
-	    if (m->pread_cb == pread_cb) {
+	    if (m->handle_is_fd) {
 		unsigned int j;
 		int _fd = (int)(ssize_t)m->handle;
 		for(j=first_page; j<page; j++) {
@@ -559,14 +631,9 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     return dst;
 }
 
-/* ^^^^^ POSIX STUFF AVOVE ^^^^^ */
+/* vvvvv MEMORY STUFF BELOW vvvvv */
 
-#else /* _WIN32 */
-
-/* vvvvv WIN32 STUFF BELOW vvvvv */
-
-static void unmap_win32(fmap_t *m);
-static const void *mem_need(fmap_t *m, size_t at, size_t len);
+static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock);
 static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
@@ -589,72 +656,8 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
     m->unneed_off = mem_unneed_off;
 }
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
-    unsigned int pages, mapsz, hdrsz;
-    int pgsz = cli_getpagesize();
-    struct stat st;
-    fmap_t *m;
-    const void *data;
-    HANDLE fh;
-    HANDLE mh;
 
-    *empty = 0;
-    if(fstat(fd, &st)) {
-	cli_warnmsg("fmap: fstat failed\n");
-	return NULL;
-    }
-    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
-	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
-	return NULL;
-    }
-    if(!len) len = st.st_size - offset; /* bound checked later */
-    if(!len) {
-	cli_dbgmsg("fmap: attempted void mapping\n");
-	*empty = 1;
-	return NULL;
-    }
-    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
-	cli_warnmsg("fmap: attempted oof mapping\n");
-	return NULL;
-    }
-
-    pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
-
-    if((fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
-	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
-	return NULL;
-    }
-    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
-	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
-	CloseHandle(fh);
-	return NULL;
-    }
-    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
-	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
-	CloseHandle(mh);
-	CloseHandle(fh);
-	return NULL;
-    }
-    if(!(m = cl_fmap_open_memory(data, len))) {
-	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
-	CloseHandle(mh);
-	CloseHandle(fh);
-	return NULL;
-    }
-    m->fh = fh;
-    m->mh = mh;
-    m->unmap = unmap_win32;
-    return m;
-}
-
-static void unmap_win32(fmap_t *m) { /* WIN32 */
-    UnmapViewOfFile(m->data);
-    CloseHandle(m->mh);
-    free((void *)m);
-}
-
-static const void *mem_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
+static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN32 */
     if(!CLI_ISCONTAINED(0, m->len, at, len))
 	return NULL;
 
@@ -664,7 +667,6 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
 }
 
 static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
-}
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
@@ -700,11 +702,6 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     return dst;
 }
 
-#endif /* _WIN32 */
-
-
-/* vvvvv SHARED STUFF BELOW vvvvv */
-
 fmap_t *fmap(int fd, off_t offset, size_t len) {
     int unused;
     return fmap_check_empty(fd, offset, len, &unused);
@@ -725,7 +722,7 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
 int fmap_fd(fmap_t *m)
 {
     int fd;
-    if (m->pread_cb != pread_cb) {
+    if (!m->handle_is_fd) {
 	cli_warnmsg("fmap: trying to retrieve descriptor from something that is not\n");
 	return -1;
     }

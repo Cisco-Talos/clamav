@@ -46,9 +46,10 @@ struct cl_fmap {
     unsigned int paged;
     unsigned short aging;
     unsigned short dont_cache_flag;
+    unsigned short handle_is_fd;
 
     /* memory interface */
-    void *data;
+    const void *data;
 
     /* common interface */
     size_t offset;
