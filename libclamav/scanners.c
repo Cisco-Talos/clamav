@@ -2536,7 +2536,24 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return cl_scandesc_callback(desc, virname, scanned, engine, scanoptions, NULL);
 }
 
-int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
+static int cli_map_scandesc(cl_fmap_t *map, cli_ctx *ctx)
+{
+    int ret;
+
+    if (map->len <= 5) {
+	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) map->len);
+	return CL_CLEAN;
+    }
+    ctx->fmap++;
+    *ctx->fmap = map;
+
+    ret = magic_scandesc(ctx, CL_TYPE_ANY);
+
+    *ctx->fmap--;
+    return ret;
+}
+
+static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
     cli_ctx ctx;
     int rc;
@@ -2576,7 +2593,7 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
 #endif
 
     cli_logg_setup(&ctx);
-    rc = cli_magic_scandesc(desc, &ctx);
+    rc = map ? cli_map_scandesc(map, &ctx) : cli_magic_scandesc(desc, &ctx);
 
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
@@ -2585,6 +2602,16 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
     cli_logg_unsetup();
     perf_done(&ctx);
     return rc;
+}
+
+int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
+{
+    return scan_common(desc, NULL, virname, scanned, engine, scanoptions, context);
+}
+
+int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
+{
+    return scan_common(-1, map, virname, scanned, engine, scanoptions, context);
 }
 
 int cli_found_possibly_unwanted(cli_ctx* ctx)
