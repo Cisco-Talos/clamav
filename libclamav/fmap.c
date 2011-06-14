@@ -526,6 +526,12 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 
 /* vvvvv WIN32 STUFF BELOW vvvvv */
 
+static void unmap_win32(fmap_t *m);
+static const void *mem_need(fmap_t *m, size_t at, size_t len);
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
+static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
+static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
+
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
     unsigned int pages, mapsz, hdrsz;
     unsigned short dumb = 1;
@@ -586,16 +592,21 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
     m->pgsz = pgsz;
     m->paged = 0;
     m->dont_cache_flag = 0;
+    m->unmap = unmap_win32;
+    m->need = mem_need;
+    m->need_offstr = mem_need_offstr;
+    m->gets = mem_gets;
+    m->unneed_off = mem_unneed_off;
     return m;
 }
 
-void funmap(fmap_t *m) { /* WIN32 */
+static void unmap_win32(fmap_t *m) { /* WIN32 */
     UnmapViewOfFile(m->data);
     CloseHandle(m->mh);
     free((void *)m);
 }
 
-static void *fmap_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
+static const void *mem_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
     if(!CLI_ISCONTAINED(0, m->len, at, len))
 	return NULL;
 
@@ -604,24 +615,10 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
     return (void *)((char *)m->data + at);
 }
 
-void *fmap_need_off(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    return fmap_need(m, at, len);
-}
-void *fmap_need_off_once(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    return fmap_need(m, at, len);
-}
-void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
-    return fmap_need(m, (char *)ptr - (char *)m->data, len);
-}
-void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
-    return fmap_need(m, (char *)ptr - (char *)m->data, len);
-}
-void fmap_unneed_off(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-}
-void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
 }
 
-void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) { /* WIN32 */
+static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
 
     if(!len_hint || len_hint > m->len - at)
@@ -635,12 +632,7 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) { /* WIN32 */
     return NULL;
 }
 
-void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) { /* WIN32 */
-    size_t at = (char *)ptr - (char *)m->data;
-    return fmap_need_offstr(m, at, len_hint);
-}
-
-void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
+static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     char *src = (char *)m->data + *at, *endptr = NULL;
     size_t len = MIN(max_len-1, m->len - *at);
 
