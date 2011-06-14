@@ -113,10 +113,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
     }
-    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
-	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
-	return NULL;
-    }
+
     if(!len) len = st.st_size - offset; /* bound checked later */
     if(!len) {
 	cli_dbgmsg("fmap: attempted void mapping\n");
@@ -127,35 +124,66 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
 	cli_warnmsg("fmap: attempted oof mapping\n");
 	return NULL;
     }
+    m = cl_fmap_open_handle((void*)(ssize_t)fd, offset, len, pread_cb, 1);
+    if (!m)
+	return NULL;
+    m->mtime = st.st_mtime;
+    return m;
+}
+
+cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
+			       clcb_pread pread_cb, int use_aging)
+{
+    unsigned int pages, mapsz, hdrsz;
+    cl_fmap_t *m;
+    int pgsz = cli_getpagesize();
+
+    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
+	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
+	return NULL;
+    }
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	return NULL;
+    }
+    if (offset >= len) {
+	cli_warnmsg("fmap: attempted oof mapping\n");
+	return NULL;
+    }
 
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(fmap_t) + (pages-1) * sizeof(uint32_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
     mapsz = pages * pgsz + hdrsz;
-    fmap_lock;
+
+#ifndef ANONYMOUS_MAP
+    use_aging = 0;
+#endif
 #ifdef ANONYMOUS_MAP
-    if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
-	m = NULL;
-    } else {
-	dumb = 0;
+    if (use_aging) {
+	fmap_lock;
+	if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
+	    m = NULL;
+	} else {
 #if HAVE_MADVISE
-	madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+	    madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
 #endif /* madvise */
+	    /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
+	    memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
+	}
+	fmap_unlock;
     }
-#else /* ! ANONYMOUS_MAP */
-    m = (fmap_t *)cli_malloc(mapsz);
 #endif /* ANONYMOUS_MAP */
+    if (!use_aging) {
+	m = (fmap_t *)cli_malloc(mapsz);
+	memset(m, 0, hdrsz);
+    }
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
-	fmap_unlock;
 	return NULL;
     }
-    /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
-    memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
-    fmap_unlock;
     m->handle = handle;
     m->pread_cb = pread_cb;
-    m->dumb = dumb;
-    m->mtime = st.st_mtime;
+    m->aging = use_aging;
     m->offset = offset;
     m->len = len;
     m->pages = pages;
@@ -163,7 +191,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     m->pgsz = pgsz;
     m->paged = 0;
     m->dont_cache_flag = 0;
-    m->unmap = dumb ? unmap_malloc : unmap_mmap;
+    m->unmap = use_aging ? unmap_mmap : unmap_malloc;
     m->need = handle_need;
     m->need_offstr = handle_need_offstr;
     m->gets = handle_gets;
@@ -178,7 +206,7 @@ static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 
 static void fmap_aging(fmap_t *m) {
 #ifdef ANONYMOUS_MAP
-    if(m->dumb) return;
+    if(!m->aging) return;
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
 	unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme)/sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
 
@@ -413,7 +441,7 @@ static void fmap_unneed_page(fmap_t *m, unsigned int page) {
 
 static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
-    if(m->dumb) return;
+    if(!m->aging) return;
     if(!len) {
 	cli_warnmsg("fmap_unneed: attempted void unneed\n");
 	return;
@@ -545,7 +573,6 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
     unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     fmap_t *m;

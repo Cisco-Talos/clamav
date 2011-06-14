@@ -44,7 +44,7 @@ struct cl_fmap {
     unsigned int hdrsz;
     unsigned int pgsz;
     unsigned int paged;
-    unsigned short dumb;
+    unsigned short aging;
     unsigned short dont_cache_flag;
 
     /* memory interface */
