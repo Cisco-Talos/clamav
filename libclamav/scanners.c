@@ -2069,16 +2069,12 @@ static void emax_reached(cli_ctx *ctx) {
 	switch(ctx->engine->cb_pre_scan(desc, (type_name), ctx->cb_ctx)) {                   \
 	case CL_BREAK:                                                                       \
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");                \
-	    funmap(*ctx->fmap);                                                              \
-	    ctx->fmap--;                                                                     \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
 	    ret_from_magicscan(CL_CLEAN);                                                    \
 	case CL_VIRUS:                                                                       \
 	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");                \
 	    if(ctx->virname)                                                                 \
 		*ctx->virname = "Detected.By.Callback";                                      \
-	    funmap(*ctx->fmap);                                                              \
-	    ctx->fmap--;                                                                     \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
 	    ret_from_magicscan(CL_VIRUS);                                                    \
 	case CL_CLEAN:                                                                       \
@@ -2091,35 +2087,20 @@ static void emax_reached(cli_ctx *ctx) {
 
 
 
-static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
+static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 {
 	int ret = CL_CLEAN;
 	cli_file_t dettype = 0;
-	struct stat sb;
 	uint8_t typercg = 1;
 	cli_file_t current_container_type = ctx->container_type;
 	size_t current_container_size = ctx->container_size, hashed_size;
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
+	int desc = (*ctx->fmap)->fd;
 
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if(ctx->sha_collect>0) ctx->sha_collect = 0;
-#endif
-
-    cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
 	emax_reached(ctx);
-	ret_from_magicscan(CL_CLEAN);
-    }
-
-    if(fstat(desc, &sb) == -1) {
-	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
-	ret_from_magicscan(CL_ESTAT);
-    }
-
-    if(sb.st_size <= 5) {
-	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) sb.st_size);
 	ret_from_magicscan(CL_CLEAN);
     }
 
@@ -2133,25 +2114,13 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	ret_from_magicscan(CL_EMALFDB);
     }
 
-    if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN) {
+    if(cli_updatelimits(ctx, (*ctx->fmap)->len)!=CL_CLEAN) {
 	emax_reached(ctx);
         ret_from_magicscan(CL_CLEAN);
     }
 
-    ctx->fmap++;
-    perf_start(ctx, PERFT_MAP);
-    if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
-	cli_errmsg("CRITICAL: fmap() failed\n");
-	ctx->fmap--;
-	perf_stop(ctx, PERFT_MAP);
-	ret_from_magicscan(CL_EMEM);
-    }
-    perf_stop(ctx, PERFT_MAP);
-
     perf_start(ctx, PERFT_CACHE);
     if(cache_check(hash, ctx) == CL_CLEAN) {
-	funmap(*ctx->fmap);
-	ctx->fmap--;
 	perf_stop(ctx, PERFT_CACHE);
 	ret_from_magicscan(CL_CLEAN);
     }
@@ -2177,8 +2146,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	}
 
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	funmap(*ctx->fmap);
-	ctx->fmap--;
 	ret_from_magicscan(ret);
     }
 
@@ -2188,8 +2155,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     perf_stop(ctx, PERFT_FT);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
-	funmap(*ctx->fmap);
-	ctx->fmap--;
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(CL_EREAD);
     }
@@ -2204,15 +2169,12 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     ctx->hook_lsig_matches = cli_bitset_init();
     if (!ctx->hook_lsig_matches) {
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	ctx->fmap--;
 	ret_from_magicscan(CL_EMEM);
     }
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype, hash)) == CL_VIRUS) {
 	    ret = cli_checkfp(hash, hashed_size, ctx);
-	    funmap(*ctx->fmap);
-	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    ret_from_magicscan(ret);
@@ -2222,20 +2184,19 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
     ctx->recursion++;
     perf_nested_start(ctx, PERFT_CONTAINER, PERFT_SCAN);
+    ctx->container_size = (*ctx->fmap)->len;
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
 
 	case CL_TYPE_RAR:
 	    ctx->container_type = CL_TYPE_RAR;
-	    ctx->container_size = sb.st_size;
 	    if(have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_ZIP:
 	    ctx->container_type = CL_TYPE_ZIP;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
 		ret = cli_unzip(ctx);
 	    break;
@@ -2252,21 +2213,18 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_ARJ:
 	    ctx->container_type = CL_TYPE_ARJ;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
 		ret = cli_scanarj(ctx, 0, NULL);
 	    break;
 
         case CL_TYPE_NULSFT:
 	    ctx->container_type = CL_TYPE_NULSFT;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
 		ret = cli_scannulsft(ctx, 0);
 	    break;
 
         case CL_TYPE_AUTOIT:
 	    ctx->container_type = CL_TYPE_AUTOIT;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
 		ret = cli_scanautoit(ctx, 23);
 	    break;
@@ -2278,7 +2236,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MSCAB:
 	    ctx->container_type = CL_TYPE_MSCAB;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
 		ret = cli_scanmscab(ctx, 0);
 	    break;
@@ -2305,14 +2262,12 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_RTF:
 	    ctx->container_type = CL_TYPE_RTF;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_DOC & DOC_CONF_RTF))
 		ret = cli_scanrtf(ctx);
 	    break;
 
 	case CL_TYPE_MAIL:
 	    ctx->container_type = CL_TYPE_MAIL;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
 		ret = cli_scanmail(ctx);
 	    break;
@@ -2329,63 +2284,54 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MSCHM:
 	    ctx->container_type = CL_TYPE_MSCHM;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CHM))
 		ret = cli_scanmschm(ctx);
 	    break;
 
 	case CL_TYPE_MSOLE2:
 	    ctx->container_type = CL_TYPE_MSOLE2;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
 		ret = cli_scanole2(ctx);
 	    break;
 
 	case CL_TYPE_7Z:
 	    ctx->container_type = CL_TYPE_7Z;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
 		ret = cli_7unz(desc, ctx);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:
 	    ctx->container_type = CL_TYPE_POSIX_TAR;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(ctx, 1);
 	    break;
 
 	case CL_TYPE_OLD_TAR:
 	    ctx->container_type = CL_TYPE_OLD_TAR;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
 		ret = cli_scantar(ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_OLD:
 	    ctx->container_type = CL_TYPE_CPIO_OLD;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_old(ctx);
 	    break;
 
 	case CL_TYPE_CPIO_ODC:
 	    ctx->container_type = CL_TYPE_CPIO_ODC;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_odc(ctx);
 	    break;
 
 	case CL_TYPE_CPIO_NEWC:
 	    ctx->container_type = CL_TYPE_CPIO_NEWC;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_newc(ctx, 0);
 	    break;
 
 	case CL_TYPE_CPIO_CRC:
 	    ctx->container_type = CL_TYPE_CPIO_CRC;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
 		ret = cli_scancpio_newc(ctx, 1);
 	    break;
@@ -2421,7 +2367,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
 	    ctx->container_type = CL_TYPE_PDF;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(ctx, 0);
 	    break;
@@ -2448,7 +2393,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_SIS:
 	    ctx->container_type = CL_TYPE_SIS;
-	    ctx->container_size = sb.st_size;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
 		ret = cli_scansis(ctx);
 	    break;
@@ -2476,15 +2420,13 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
     if(ret == CL_VIRUS) {
 	ret = cli_checkfp(hash, hashed_size, ctx);
-	funmap(*ctx->fmap);
-	ctx->fmap--;
 	cli_bitset_free(ctx->hook_lsig_matches);
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(ret);
     }
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-	if(sb.st_size > 1048576) {
+	if((*ctx->fmap)->len > 1048576) {
 	    cli_dbgmsg("cli_magic_scandesc: Not checking for embedded PEs (zip file > 1 MB)\n");
 	    typercg = 0;
 	}
@@ -2494,8 +2436,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	if(cli_scanraw(ctx, type, typercg, &dettype, hash) == CL_VIRUS) {
 	    ret =  cli_checkfp(hash, hashed_size, ctx);
-	    funmap(*ctx->fmap);
-	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    ret_from_magicscan(ret);
@@ -2539,8 +2479,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     if(ret == CL_VIRUS)
 	ret = cli_checkfp(hash, hashed_size, ctx);
     ctx->recursion--;
-    funmap(*ctx->fmap);
-    ctx->fmap--;
     cli_bitset_free(ctx->hook_lsig_matches);
     ctx->hook_lsig_matches = old_hook_lsig_matches;
 
@@ -2562,12 +2500,42 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
-    return magic_scandesc(desc, ctx, CL_TYPE_ANY);
+    struct stat sb;
+    int ret;
+
+#ifdef HAVE__INTERNAL__SHA_COLLECT
+    if(ctx->sha_collect>0) ctx->sha_collect = 0;
+#endif
+    cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
+    if(fstat(desc, &sb) == -1) {
+	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
+	ret_from_magicscan(CL_ESTAT);
+    }
+    if(sb.st_size <= 5) {
+	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) sb.st_size);
+	return CL_CLEAN;
+    }
+
+    ctx->fmap++;
+    perf_start(ctx, PERFT_MAP);
+    if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
+	cli_errmsg("CRITICAL: fmap() failed\n");
+	ctx->fmap--;
+	perf_stop(ctx, PERFT_MAP);
+	return CL_EMEM;
+    }
+    perf_stop(ctx, PERFT_MAP);
+
+    ret = magic_scandesc(ctx, CL_TYPE_ANY);
+
+    funmap(*ctx->fmap);
+    ctx->fmap--;
+    return ret;
 }
 
-int cli_magic_scandesc_type(int desc, cli_ctx *ctx, cli_file_t type)
+int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type)
 {
-    return magic_scandesc(desc, ctx, type);
+    return magic_scandesc(ctx, type);
 }
 
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
