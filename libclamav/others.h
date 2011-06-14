@@ -252,6 +252,7 @@ struct cl_engine {
     mpool_t *mempool;
 
     /* Callback(s) */
+    clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
     clcb_sigload cb_sigload;
@@ -290,6 +291,7 @@ struct cl_settings {
     char *pua_cats;
 
     /* callbacks */
+    clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
     clcb_sigload cb_sigload;

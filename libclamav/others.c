@@ -560,6 +560,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->bytecode_mode = engine->bytecode_mode;
     settings->pua_cats = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
 
+    settings->cb_pre_cache = engine->cb_pre_cache;
     settings->cb_pre_scan = engine->cb_pre_scan;
     settings->cb_post_scan = engine->cb_post_scan;
     settings->cb_sigload = engine->cb_sigload;
@@ -605,6 +606,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
 	engine->pua_cats = NULL;
     }
 
+    engine->cb_pre_cache = settings->cb_pre_cache;
     engine->cb_pre_scan = settings->cb_pre_scan;
     engine->cb_post_scan = settings->cb_post_scan;
     engine->cb_sigload = settings->cb_sigload;
@@ -1057,6 +1059,10 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 		return FALSE;
 	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
+}
+
+void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback) {
+    engine->cb_pre_cache = callback;
 }
 
 void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback) {

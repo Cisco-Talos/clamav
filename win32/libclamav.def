@@ -39,6 +39,7 @@ EXPORTS cl_engine_set_clcb_sigload @31
 EXPORTS cl_scanfile_callback @32
 EXPORTS cl_set_clcb_msg @33
 EXPORTS cl_engine_set_clcb_hash @34
+EXPORTS cl_engine_set_clcb_pre_cache @35
 
 
 ; path variables
