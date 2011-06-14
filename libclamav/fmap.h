@@ -26,9 +26,14 @@
 #endif
 
 #include <time.h>
+#include <string.h>
 #include "cltypes.h"
+#include "clamav.h"
 
-typedef struct {
+struct cl_fmap;
+typedef cl_fmap_t fmap_t;
+
+struct cl_fmap {
     int _fd;
     unsigned short dumb;
     unsigned short dont_cache_flag;
@@ -39,27 +44,89 @@ typedef struct {
     unsigned int hdrsz;
     unsigned int pgsz;
     unsigned int paged;
+
+    /* vtable for implementation */
+    void        (*unmap)(fmap_t*);
+    const void* (*need)(fmap_t*, size_t at, size_t len, int lock);
+    const void* (*need_offstr)(fmap_t*, size_t at, size_t len_hint);
+    const void* (*gets)(fmap_t*, char *dst, size_t *at, size_t max_len);
+    void        (*unneed_off)(fmap_t*, size_t at, size_t len);
 #ifdef _WIN32
     HANDLE fh;
     HANDLE mh;
     void *data;
 #endif
     uint32_t placeholder_for_bitmap;
-} fmap_t;
+};
 
 fmap_t *fmap(int fd, off_t offset, size_t len);
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty);
-void funmap(fmap_t *m);
-void *fmap_need_off(fmap_t *m, size_t at, size_t len);
-void *fmap_need_off_once(fmap_t *m, size_t at, size_t len);
-void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len);
-void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len);
-void fmap_unneed_off(fmap_t *m, size_t at, size_t len);
-void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len);
-int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len);
-void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint);
-void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint);
-void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
+
+static inline void funmap(fmap_t *m)
+{
+    m->unmap(m);
+}
+
+static inline const void *fmap_need_off(fmap_t *m, size_t at, size_t len)
+{
+    return m->need(m, at, len, 1);
+}
+
+static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
+{
+    return m->need(m, at, len, 0);
+}
+
+static inline const void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len)
+{
+    return m->need(m, (char *)ptr - (char *)m - m->hdrsz, len, 1);
+}
+
+static inline const void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len)
+{
+    return m->need(m, (char *)ptr - (char *)m - m->hdrsz, len, 0);
+}
+
+static inline void fmap_unneed_off(fmap_t *m, size_t at, size_t len)
+{
+    m->unneed_off(m, at, len);
+}
+
+static inline void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len)
+{
+    fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
+}
+
+static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
+{
+    const void *src;
+
+    if(at == m->len)
+	return 0;
+    if(at > m->len)
+	return -1;
+    if(len > m->len - at)
+	len = m->len - at;
+    src = fmap_need_off_once(m, at, len);
+    if(!src)
+	return -1;
+    memcpy(dst, src, len);
+    return len;
+}
+
+static inline const void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint)
+{
+    return m->need_offstr(m, (char *)ptr - (char *)m - m->hdrsz, len_hint);
+}
+
+static inline const void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint)
+{
+    return m->need_offstr(m, at, len_hint);
+}
+
+static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
+    return m->gets(m, dst, at, max_len);
+}
 
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
@@ -71,7 +138,7 @@ static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t le
     if(len > m->len - at)
 	len = m->len - at;
     p = fmap_need_off_once(m, at, len);
-    *lenout = p ? len : -1;
+    *lenout = p ? len : 0;
     return p;
 }
 
@@ -80,6 +147,7 @@ static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, siz
     return fmap_need_off_once_len(m, (char*)ptr - (char*)m - m->hdrsz, len, lenout);
 }
 
+/* deprecated */
 int fmap_fd(fmap_t *m);
 
 #endif

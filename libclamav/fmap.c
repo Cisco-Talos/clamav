@@ -92,6 +92,12 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
    which may in turn prevent some mmap constants to be defined */
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
+static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock);
+static void handle_unneed_off(fmap_t *m, size_t at, size_t len);
+static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint);
+static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
+static void unmap_mmap(fmap_t *m);
+static void unmap_malloc(fmap_t *m);
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
@@ -154,6 +160,11 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     m->pgsz = pgsz;
     m->paged = 0;
     m->dont_cache_flag = 0;
+    m->unmap = dumb ? unmap_malloc : unmap_mmap;
+    m->need = handle_need;
+    m->need_offstr = handle_need_offstr;
+    m->gets = handle_gets;
+    m->unneed_off = handle_unneed_off;
     return m;
 }
 
@@ -343,7 +354,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 }
 
 
-static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
+static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
     unsigned int first_page, last_page, lock_count;
     char *ret;
 
@@ -371,23 +382,6 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
     return (void *)ret;
 }
 
-void *fmap_need_off(fmap_t *m, size_t at, size_t len) {
-    return fmap_need(m, at, len, 1);
-}
-void *fmap_need_off_once(fmap_t *m, size_t at, size_t len) {
-    return fmap_need(m, at, len, 0);
-}
-void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len) {
-    return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len) {
-    return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) {
-    size_t at = (char *)ptr - (char *)m - m->hdrsz;
-    return fmap_need_offstr(m, at, len_hint);
-}
-
 static void fmap_unneed_page(fmap_t *m, unsigned int page) {
     uint32_t s = fmap_bitmap[page];
 
@@ -406,7 +400,7 @@ static void fmap_unneed_page(fmap_t *m, unsigned int page) {
     return;
 }
 
-void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
+static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
     if(m->dumb) return;
     if(!len) {
@@ -427,23 +421,21 @@ void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
     }
 }
 
-void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) {
-    fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-
-void funmap(fmap_t *m) {
+static void unmap_mmap(fmap_t *m)
+{
 #ifdef ANONYMOUS_MAP
-    if(!m->dumb) {
-	size_t len = m->pages * m->pgsz + m->hdrsz;
-	fmap_lock;
-	munmap((void *)m, len);
-	fmap_unlock;
-    } else
+    size_t len = m->pages * m->pgsz + m->hdrsz;
+    fmap_lock;
+    munmap((void *)m, len);
+    fmap_unlock;
 #endif
-	free((void *)m);
 }
 
-void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
+static void unmap_malloc(fmap_t *m) {
+    free((void *)m);
+}
+
+static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     unsigned int i, first_page, last_page;
     void *ptr = (void *)((char *)m + m->hdrsz + at);
 
@@ -482,8 +474,7 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     return NULL;
 }
 
-
-void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
+static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     unsigned int i, first_page, last_page;
     char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
     size_t len = MIN(max_len-1, m->len - *at), fullen = len;
@@ -677,22 +668,6 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
 fmap_t *fmap(int fd, off_t offset, size_t len) {
     int unused;
     return fmap_check_empty(fd, offset, len, &unused);
-}
-
-int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
-    char *src;
-
-    if(at == m->len)
-	return 0;
-    if(at > m->len)
-	return -1;
-    if(len > m->len - at)
-	len = m->len - at;
-    src = fmap_need_off_once(m, at, len);
-    if(!src)
-	return -1;
-    memcpy(dst, src, len);
-    return len;
 }
 
 static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
