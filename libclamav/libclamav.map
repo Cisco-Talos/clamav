@@ -35,6 +35,9 @@ CLAMAV_PUBLIC {
     cl_statinidir;
     cl_countsigs;
     cl_strerror;
+    cl_fmap_open_handle;
+    cl_fmap_open_memory;
+    cl_scanmap_callback;
 };
 CLAMAV_PRIVATE {
   global:
