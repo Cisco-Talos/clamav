@@ -256,7 +256,7 @@ bool SigUICopy::copySignatures(const wxString &staging)
     return OK;
 }
 
-int SigUICopy::sigprogress(const char* WXUNUSED(type), const char* WXUNUSED(name), void *context)
+int SigUICopy::sigprogress(const char* WXUNUSED(type), const char* WXUNUSED(name), unsigned int WXUNUSED(custom), void *context)
 {
     SigUICopy *p = (SigUICopy*)context;
     if (++p->cnt % 1000)

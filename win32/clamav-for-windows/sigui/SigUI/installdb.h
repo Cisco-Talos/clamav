@@ -40,7 +40,7 @@ class SigUICopy
 		bool copySignatures(const wxString &staging);
 		bool loadDB(const wxString& dir);
 		bool canceled(void);
-		static int sigprogress(const char *type, const char *name, void *context);
+		static int sigprogress(const char *type, const char *name, unsigned int custom, void *context);
 };
 
 #endif

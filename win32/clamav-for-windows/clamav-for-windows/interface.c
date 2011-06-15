@@ -28,6 +28,58 @@
 #include "clscanapi.h"
 #include "interface.h"
 
+const char *types[] = {
+"HTML",
+"HTML_UTF16",
+"MSEXE",
+"GRAPHICS",
+"TEXT_ASCII",
+"TEXT_UTF8",
+"TEXT_UTF16LE",
+"TEXT_UTF16BE",
+"PDF",
+"SCRIPT",
+"RTF",
+"RIFF",
+"MSCHM",
+"MSCAB",
+"MSOLE2",
+"MSSZDD",
+"ZIP",
+"RAR",
+"7Z",
+"BZ",
+"GZ",
+"ARJ",
+"ZIPSFX",
+"RARSFX",
+"CABSFX",
+"ARJSFX",
+"NULSFT",
+"AUTOIT",
+"ISHIELD_MSI",
+"SFX",
+"BINHEX",
+"MAIL",
+"TNEF",
+"BINARY_DATA",
+"CRYPTFF",
+"UUENCODED",
+"SCRENC",
+"POSIX_TAR",
+"OLD_TAR",
+"ELF",
+"MACHO",
+"MACHO_UNIBIN",
+"SIS",
+"SWF",
+"CPIO_OLD",
+"CPIO_ODC",
+"CPIO_NEWC",
+"CPIO_CRC",
+NULL
+};
+
 int WINAPI SHCreateDirectoryExA(HWND, LPCTSTR, SECURITY_ATTRIBUTES *); /* cannot include Shlobj.h due to DATADIR collision */
 
 #define FMT(s) "!"__FUNCTION__": "s"\n"
@@ -55,6 +107,7 @@ typedef struct {
     CLAM_SCAN_CALLBACK scancb;
     void *scancb_ctx;
     unsigned int scanopts;
+    _int64 *filetype;
 } instance;
 
 struct {
@@ -73,6 +126,7 @@ BOOL minimal_definitions = FALSE;
 #define lock_instances()(WaitForSingleObject(instance_mutex, INFINITE) == WAIT_FAILED)
 #define unlock_instances() do {ReleaseMutex(instance_mutex);} while(0)
 
+cl_error_t filetype_cb(int fd, const char *detected_file_type, void *context);
 cl_error_t prescan_cb(int fd, const char *detected_file_type, void *context);
 cl_error_t postscan_cb(int fd, int result, const char *virname, void *context);
 
@@ -250,8 +304,8 @@ BOOL interface_setup(void) {
     return TRUE;
 }
 
-static int sigload_callback(const char *type, const char *name, void *context) {
-    if(minimal_definitions && strcmp(type, "fp"))
+static int sigload_callback(const char *type, const char *name, unsigned int custom, void *context) {
+    if(minimal_definitions && (custom || strcmp(type, "fp")))
 	return 1;
     return 0;
 }
@@ -355,7 +409,8 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	unlock_engine();
 	FAIL(CL_EMEM, "Not enough memory for a new engine");
     }
-    cl_engine_set_clcb_pre_cache(engine, prescan_cb);
+    cl_engine_set_clcb_pre_cache(engine, filetype_cb);
+    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
     cl_engine_set_clcb_post_scan(engine, postscan_cb);
     
     minimal_definitions = bLoadMinDefs;
@@ -449,7 +504,7 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
     INFN();
     if(!ppScanner)
 	FAIL(CL_ENULLARG, "NULL pScanner");
-    inst = calloc(1, sizeof(*inst));
+    inst = (instance *)calloc(1, sizeof(*inst));
     if(!inst)
 	FAIL(CL_EMEM, "CreateInstance: OOM");
     if(lock_engine()) {
@@ -887,7 +942,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     perf = GetTickCount();
     res = cl_scandesc_callback(fd, &virname, NULL, engine, inst->scanopts, &sctx);
 
-    do {
+    if(!inst->filetype) do {
 	CLAM_SCAN_INFO si;
 	CLAM_ACTION act;
 	DWORD cbperf;
@@ -935,7 +990,7 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     if(res == CL_VIRUS) {
 	logg("Scan_ScanObjectByHandle (instance %p): file is INFECTED with %s\n", inst, virname);
 	if(pInfoList) {
-	    CLAM_SCAN_INFO_LIST *infolist = calloc(1, sizeof(CLAM_SCAN_INFO_LIST) + sizeof(CLAM_SCAN_INFO) + MAX_VIRNAME_LEN * 2);
+	    CLAM_SCAN_INFO_LIST *infolist = (CLAM_SCAN_INFO_LIST *)calloc(1, sizeof(CLAM_SCAN_INFO_LIST) + sizeof(CLAM_SCAN_INFO) + MAX_VIRNAME_LEN * 2);
 	    PCLAM_SCAN_INFO scaninfo;
 	    wchar_t *wvirname;
 	    if(!infolist)
@@ -967,6 +1022,16 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
     WIN();
 }
 
+int CLAMAPI Scan_GetFileType(HANDLE hFile, _int64 *filetype) {
+    instance *inst;
+    int status, ret = Scan_CreateInstance((CClamAVScanner **)&inst);
+    if(ret != CLAMAPI_SUCCESS)
+	return ret;
+    inst->filetype = filetype;
+    ret = Scan_ScanObjectByHandle((CClamAVScanner *)inst, hFile, &status, NULL);
+    Scan_DestroyInstance((CClamAVScanner *)inst);
+    return ret;
+}
 
 int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST pInfoList) {
     logg("*in Scan_DeleteScanInfo(pScanner = %p, pInfoList = %p)\n", pScanner, pInfoList);
@@ -989,6 +1054,33 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
+cl_error_t filetype_cb(int fd, const char *type, void *context) {
+    struct scan_ctx *sctx = (struct scan_ctx *)context;
+    if(sctx && sctx->inst && sctx->inst->filetype) {
+	int i=0;
+	if(strncmp(type, "CL_TYPE_", 8)) {
+	    for(i=0; types[i]; i++) {
+		if(!strcmp(&type[8], types[i]))
+		    break;
+	    }
+	    if(!types[i]) i = -1;
+	} else
+	    i = -1;
+	if(i<0) {
+	    sctx->inst->filetype[0] = -1;
+	    sctx->inst->filetype[1] = -1;
+	} else if(i<64) {
+	    sctx->inst->filetype[0] = 1LL << i;
+	    sctx->inst->filetype[1] = 0;
+	} else {
+	    sctx->inst->filetype[0] = 0;
+	    sctx->inst->filetype[1] = 1LL << (i-64);
+	}
+	return CL_BREAK;
+    }
+    return CL_CLEAN;
+}
+
 cl_error_t prescan_cb(int fd, const char *type, void *context) {
     struct scan_ctx *sctx = (struct scan_ctx *)context;
     char tmpf[4096];
@@ -1003,6 +1095,9 @@ cl_error_t prescan_cb(int fd, const char *type, void *context) {
 	return CL_CLEAN;
     }
     inst = sctx->inst;
+    if(inst && inst->filetype)
+	return CL_CLEAN; /* Just in case, this shouldn't happen */
+
     logg("*in prescan_cb with clamav context %p, instance %p, fd %d, type %s)\n", context, inst, fd, type);
     if(strncmp(type, "CL_TYPE_", 8) ||
        (strcmp(&type[8], "BINARY_DATA") &&
@@ -1105,10 +1200,13 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	logg("!postscan_cb called with NULL clamav context\n");
 	return CL_CLEAN;
     }
+    inst = sctx->inst;
+    if(inst && inst->filetype)
+	return CL_CLEAN; /* No callback, we are just filetyping */
+
     if(fd == sctx->entryfd)
 	return CL_CLEAN; /* Moved to after cl_scandesc returns due to heuristic results not being yet set in magicscan */
 
-    inst = sctx->inst;
     si.cbSize = sizeof(si);
     si.flags = 0;
     si.scanPhase = SCAN_PHASE_POSTSCAN;

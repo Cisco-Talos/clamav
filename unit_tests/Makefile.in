@@ -1102,8 +1102,12 @@ check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 clamav.hdb: input/clamav.hdb
 	cp $< $@
 
+check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 check_clamd.sh: $(top_builddir)/test/clam.exe check_clamd
 check_clamscan.sh: $(top_builddir)/test/clam.exe
+
+clamav.hdb: input/clamav.hdb
+	cp $< $@
 
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))

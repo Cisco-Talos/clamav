@@ -146,12 +146,90 @@ END_TEST
 START_TEST (test_cl_cvdparse)
 END_TEST
 
+static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
+static struct cl_engine *g_engine;
+
 /* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options) */
 START_TEST (test_cl_scandesc)
+{
+    const char *virname = NULL;
+    char file[256];
+    unsigned long size;
+    unsigned long int scanned = 0;
+    int ret;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+    cli_dbgmsg("scanning (scandesc) %s\n", file);
+    ret = cl_scandesc(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
+    cli_dbgmsg("scan end (scandesc) %s\n", file);
+
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    close(fd);
+}
 END_TEST
 
 /* int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options) */
 START_TEST (test_cl_scanfile)
+{
+    const char *virname = NULL;
+    char file[256];
+    unsigned long size;
+    unsigned long int scanned = 0;
+    int ret;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+    close(fd);
+
+    cli_dbgmsg("scanning (scanfile) %s\n", file);
+    ret = cl_scanfile(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
+    cli_dbgmsg("scan end (scanfile) %s\n", file);
+
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+}
+END_TEST
+
+START_TEST (test_cl_scanfile_callback)
+{
+    const char *virname = NULL;
+    char file[256];
+    unsigned long size;
+    unsigned long int scanned = 0;
+    int ret;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+    close(fd);
+
+    cli_dbgmsg("scanning (scanfile_cb) %s\n", file);
+    /* TODO: test callbacks */
+    ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (scanfile_cb) %s\n", file);
+
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+}
+END_TEST
+
+START_TEST (test_cl_scandesc_callback)
+{
+    const char *virname = NULL;
+    char file[256];
+    unsigned long size;
+    unsigned long int scanned = 0;
+    int ret;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+
+    cli_dbgmsg("scanning (scandesc_cb) %s\n", file);
+    /* TODO: test callbacks */
+    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (scandesc_cb) %s\n", file);
+
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    close(fd);
+}
 END_TEST
 
 /* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
@@ -180,6 +258,7 @@ END_TEST
 
 static char **testfiles = NULL;
 static unsigned testfiles_n = 0;
+static const expected_testfiles = 46;
 
 static void init_testfiles(void)
 {
@@ -201,6 +280,7 @@ static void init_testfiles(void)
 	testfiles[i-1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
+    fail_unless_fmt(testfiles_n == expected_testfiles, "testfiles: %d != %d", testfiles_n, expected_testfiles);
 
     closedir(d);
 }
@@ -216,7 +296,6 @@ static void free_testfiles(void)
     testfiles_n = 0;
 }
 
-static struct cl_engine *g_engine;
 static int inited = 0;
 
 static void engine_setup(void)
@@ -334,8 +413,6 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_retflevel);
     tcase_add_test(tc_cl, test_cl_cvdhead);
     tcase_add_test(tc_cl, test_cl_cvdparse);
-    tcase_add_test(tc_cl, test_cl_scandesc);
-    tcase_add_test(tc_cl, test_cl_scanfile);
     tcase_add_test(tc_cl, test_cl_load);
     tcase_add_test(tc_cl, test_cl_cvdverify);
     tcase_add_test(tc_cl, test_cl_statinidir);
@@ -345,9 +422,13 @@ static Suite *test_cl_suite(void)
 
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture (tc_cl_scan, engine_setup, engine_teardown);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, 16);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, 16);
-
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expected_testfiles);
+    
     return s;
 }
 
@@ -690,6 +771,7 @@ int main(void)
     srunner_add_suite(sr, test_matchers_suite());
     srunner_add_suite(sr, test_htmlnorm_suite());
     srunner_add_suite(sr, test_bytecode_suite());
+
 
     srunner_set_log(sr, "test.log");
     if(freopen("test-stderr.log","w+",stderr) == NULL) {
