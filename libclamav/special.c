@@ -47,7 +47,8 @@
 
 int cli_check_mydoom_log(cli_ctx *ctx)
 {
-	uint32_t *record, check, key;
+	const uint32_t *record;
+	uint32_t check, key;
 	fmap_t *map = *ctx->fmap;
 	unsigned int blocks = map->len / (8*4);
 
@@ -258,103 +259,85 @@ static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 		return le32_to_host(value);
 }
 
-static int riff_read_chunk(int fd, int big_endian, int rec_level)
+static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_level)
 {
-	uint32_t chunk_id;
+	const uint32_t *buf;
 	uint32_t chunk_size;
-	int length;
-	uint32_t list_type;
-	off_t offset, cur_offset;
+	off_t cur_offset = *offset;
 
 	if (rec_level > 1000) {
 		cli_dbgmsg("riff_read_chunk: recursion level exceeded\n");
 		return 0;
 	}
-	
-	length = sizeof(uint32_t);
-	if (cli_readn(fd, &chunk_id, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &chunk_size, length) != length) {
-		return 0;
-	}
-	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
-	if(!memcmp(&chunk_id, "anih", 4) && chunk_size != 36)
+	if(!(buf = fmap_need_off_once(map, cur_offset, 4*2)))
+	    return 0;
+	cur_offset += 4*2;
+	chunk_size = riff_endian_convert_32(buf[1], big_endian);
+
+	if(!memcmp(buf, "anih", 4) && chunk_size != 36)
 	    return 2;
 
-	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+	if (memcmp(buf, "RIFF", 4) == 0) {
 		return 0;
-	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+	} else if (memcmp(buf, "RIFX", 4) == 0) {
 		return 0;
 	}
 	
-	if ((memcmp(&chunk_id, "LIST", 4) == 0) ||
-		 (memcmp(&chunk_id, "PROP", 4) == 0) ||
-		 (memcmp(&chunk_id, "FORM", 4) == 0) ||
-		 (memcmp(&chunk_id, "CAT ", 4) == 0)) {
-		if (cli_readn(fd, &list_type, sizeof(list_type)) != sizeof(list_type)) {
+	if ((memcmp(buf, "LIST", 4) == 0) ||
+		 (memcmp(buf, "PROP", 4) == 0) ||
+		 (memcmp(buf, "FORM", 4) == 0) ||
+		 (memcmp(buf, "CAT ", 4) == 0)) {
+		if (!fmap_need_ptr_once(map, buf+2, 4)) {
 			cli_dbgmsg("riff_read_chunk: read list type failed\n");
 			return 0;
 		}
-		return riff_read_chunk(fd, big_endian, ++rec_level);	
+		*offset = cur_offset+4;
+		return riff_read_chunk(map, offset, big_endian, ++rec_level);
 	}
 	
-	cur_offset = lseek(fd, 0, SEEK_CUR);
-	offset = cur_offset + chunk_size;
-	/* Check for odd alignment */
-	if ((offset & 0x01) == 1) {
-		offset++;
-	}
-	if (offset < cur_offset) {
+	*offset = cur_offset + chunk_size + (chunk_size&1);
+	if (*offset < cur_offset) {
 		return 0;
 	}
+	/* FIXME: WTF!?
 	if (lseek(fd, offset, SEEK_SET) != offset) {
 		return 2;
 	}
+	*/
 	return 1;
 }
 
-int cli_check_riff_exploit(int fd)
+int cli_check_riff_exploit(cli_ctx *ctx)
 {
-	uint32_t chunk_id;
-	uint32_t chunk_size;
-	uint32_t form_type;
-	int length, big_endian, retval;
+	const uint32_t *buf;
+	int big_endian, retval;
 	off_t offset;
+	fmap_t *map = *ctx->fmap;
 	
 	cli_dbgmsg("in cli_check_riff_exploit()\n");
 
-	length = sizeof(uint32_t);
-	if (cli_readn(fd, &chunk_id, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &chunk_size, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &form_type, length) != length) {
-		return 0;
-	}
-	
-	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+	if(!(buf = fmap_need_off_once(map, 0, 4*3)))
+	    return 0;
+
+	if (memcmp(buf, "RIFF", 4) == 0) {
 		big_endian = FALSE;
-	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+	} else if (memcmp(buf, "RIFX", 4) == 0) {
 		big_endian = TRUE;
 	} else {
 		/* Not a RIFF file */
 		return 0;
 	}
 
-	if (memcmp(&form_type, "ACON", 4) != 0) {
+	if (memcmp(&buf[2], "ACON", 4) != 0) {
 		/* Only scan MS animated icon files */
 		/* There is a *lot* of broken software out there that produces bad RIFF files */
 		return 0;
 	}
 
-	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
-
+	offset = 4*3;
 	do {
-		retval = riff_read_chunk(fd, big_endian, 1);
+		retval = riff_read_chunk(map, &offset, big_endian, 1);
 	} while (retval == 1);
 
 	return retval;

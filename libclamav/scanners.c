@@ -1334,11 +1334,11 @@ static int cli_scanscrenc(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanriff(int desc, cli_ctx *ctx)
+static int cli_scanriff(cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
 
-    if(cli_check_riff_exploit(desc) == 2) {
+    if(cli_check_riff_exploit(ctx) == 2) {
 	ret = CL_VIRUS;
 	*ctx->virname = "Heuristics.Exploit.W32.MS05-002";
     }
@@ -2343,7 +2343,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_RIFF:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_RIFF))
-		ret = cli_scanriff(desc, ctx);
+		ret = cli_scanriff(ctx);
 	    break;
 
 	case CL_TYPE_GRAPHICS:
@@ -2393,6 +2393,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    break;
 
 	case CL_TYPE_BINARY_DATA:
+	case CL_TYPE_TEXT_UTF16BE:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
 		ret = cli_check_mydoom_log(ctx);
 	    break;
