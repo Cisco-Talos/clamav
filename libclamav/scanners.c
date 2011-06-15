@@ -2394,7 +2394,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_BINARY_DATA:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
-		ret = cli_check_mydoom_log(desc, ctx);
+		ret = cli_check_mydoom_log(ctx);
 	    break;
 
 	case CL_TYPE_TEXT_ASCII:
