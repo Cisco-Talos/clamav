@@ -136,6 +136,10 @@ typedef struct _CLAM_SCAN_INFO {
     /* Presence: ALWAYS */
     const wchar_t *pInnerObjectPath;
 
+    /** File type **/
+    /* Presence; SCAN_PHASE_POSTSCAN */
+    _int64 filetype[2];
+
 } CLAM_SCAN_INFO, *PCLAM_SCAN_INFO;
 /* NOTE: all the objects within the above structure are guaranteed to be available and
  *       valid until the callback returns (SCAN_PHASE_PRESCAN and SCAN_PHASE_POSTSCAN) or

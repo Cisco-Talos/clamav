@@ -29,55 +29,54 @@
 #include "interface.h"
 
 const char *types[] = {
-"HTML",
-"HTML_UTF16",
-"MSEXE",
-"GRAPHICS",
-"TEXT_ASCII",
-"TEXT_UTF8",
-"TEXT_UTF16LE",
-"TEXT_UTF16BE",
-"PDF",
-"SCRIPT",
-"RTF",
-"RIFF",
-"MSCHM",
-"MSCAB",
-"MSOLE2",
-"MSSZDD",
-"ZIP",
-"RAR",
-"7Z",
-"BZ",
-"GZ",
-"ARJ",
-"ZIPSFX",
-"RARSFX",
-"CABSFX",
-"ARJSFX",
-"NULSFT",
-"AUTOIT",
-"ISHIELD_MSI",
-"SFX",
-"BINHEX",
-"MAIL",
-"TNEF",
-"BINARY_DATA",
-"CRYPTFF",
-"UUENCODED",
-"SCRENC",
-"POSIX_TAR",
-"OLD_TAR",
-"ELF",
-"MACHO",
-"MACHO_UNIBIN",
-"SIS",
-"SWF",
-"CPIO_OLD",
-"CPIO_ODC",
-"CPIO_NEWC",
-"CPIO_CRC",
-NULL
+    "HTML",		/*  0 */
+    "HTML_UTF16",	/*  1 */
+    "MSEXE",		/*  2 */
+    "GRAPHICS",		/*  3 */
+    "TEXT_ASCII",	/*  4 */
+    "TEXT_UTF8",	/*  5 */
+    "TEXT_UTF16LE",	/*  6 */
+    "TEXT_UTF16BE",	/*  7 */
+    "PDF",		/*  8 */
+    "SCRIPT",		/*  9 */
+    "RTF",		/* 10 */
+    "RIFF",		/* 11 */
+    "MSCHM",		/* 12 */
+    "MSCAB",		/* 13 */
+    "MSOLE2",		/* 14 */
+    "MSSZDD",		/* 15 */
+    "ZIP",		/* 16 */
+    "RAR",		/* 17 */
+    "7Z",		/* 18 */
+    "BZ",		/* 19 */
+    "GZ",		/* 20 */
+    "ARJ",		/* 21 */
+    "ZIPSFX",		/* 22 */
+    "RARSFX",		/* 23 */
+    "CABSFX",		/* 24 */
+    "ARJSFX",		/* 25 */
+    "NULSFT",		/* 26 */
+    "AUTOIT",		/* 27 */
+    "ISHIELD_MSI",	/* 28 */
+    "SFX",		/* 29 */
+    "BINHEX",		/* 30 */
+    "MAIL",		/* 31 */
+    "TNEF",		/* 32 */
+    "BINARY_DATA",	/* 33 */
+    "CRYPTFF",		/* 34 */
+    "UUENCODED",	/* 35 */
+    "SCRENC",		/* 36 */
+    "POSIX_TAR",	/* 37 */
+    "OLD_TAR",		/* 38 */
+    "ELF",		/* 39 */
+    "MACHO",		/* 40 */
+    "MACHO_UNIBIN",	/* 41 */
+    "SIS",		/* 42 */
+    "SWF",		/* 43 */
+    "CPIO_ODC",		/* 44 */
+    "CPIO_NEWC",	/* 45 */
+    "CPIO_CRC",		/* 46 */
+    NULL
 };
 
 int WINAPI SHCreateDirectoryExA(HWND, LPCTSTR, SECURITY_ATTRIBUTES *); /* cannot include Shlobj.h due to DATADIR collision */
@@ -1054,28 +1053,33 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
+
+static void ftype_bits(const char *type, _int64 *filetype) {
+    int i;
+    if(strncmp(type, "CL_TYPE_", 8)) {
+	for(i=0; types[i]; i++) {
+	    if(!strcmp(&type[8], types[i]))
+		break;
+	}
+	if(!types[i]) i = -1;
+    } else
+	i = -1;
+    if(i<0) {
+	filetype[0] = 0;
+	filetype[1] = 0;
+    } else if(i<64) {
+	filetype[0] = 1LL << i;
+	filetype[1] = 0;
+    } else {
+	filetype[0] = 0;
+	filetype[1] = 1LL << (i-64);
+    }
+}
+
 cl_error_t filetype_cb(int fd, const char *type, void *context) {
     struct scan_ctx *sctx = (struct scan_ctx *)context;
     if(sctx && sctx->inst && sctx->inst->filetype) {
-	int i=0;
-	if(strncmp(type, "CL_TYPE_", 8)) {
-	    for(i=0; types[i]; i++) {
-		if(!strcmp(&type[8], types[i]))
-		    break;
-	    }
-	    if(!types[i]) i = -1;
-	} else
-	    i = -1;
-	if(i<0) {
-	    sctx->inst->filetype[0] = -1;
-	    sctx->inst->filetype[1] = -1;
-	} else if(i<64) {
-	    sctx->inst->filetype[0] = 1LL << i;
-	    sctx->inst->filetype[1] = 0;
-	} else {
-	    sctx->inst->filetype[0] = 0;
-	    sctx->inst->filetype[1] = 1LL << (i-64);
-	}
+	ftype_bits(type, sctx->inst->filetype);
 	return CL_BREAK;
     }
     return CL_CLEAN;
@@ -1099,15 +1103,7 @@ cl_error_t prescan_cb(int fd, const char *type, void *context) {
 	return CL_CLEAN; /* Just in case, this shouldn't happen */
 
     logg("*in prescan_cb with clamav context %p, instance %p, fd %d, type %s)\n", context, inst, fd, type);
-    if(strncmp(type, "CL_TYPE_", 8) ||
-       (strcmp(&type[8], "BINARY_DATA") &&
-	strcmp(&type[8], "ANY") &&
-	strcmp(&type[8], "MSEXE") &&
-	strcmp(&type[8], "MSCAB") &&
-	strcmp(&type[8], "OLE2")
-	)
-       ) logg("*prescan_cb: skipping scan of type %s\n", type);
-
+    ftype_bits(type, si.filetype);
     si.cbSize = sizeof(si);
     si.flags = 0;
     si.scanPhase = (fd == sctx->entryfd) ? SCAN_PHASE_INITIAL : SCAN_PHASE_PRESCAN;
