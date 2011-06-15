@@ -137,7 +137,7 @@ typedef struct _CLAM_SCAN_INFO {
     const wchar_t *pInnerObjectPath;
 
     /** File type **/
-    /* Presence; SCAN_PHASE_POSTSCAN */
+    /* Presence; SCAN_PHASE_PRESCAN */
     _int64 filetype[2];
 
 } CLAM_SCAN_INFO, *PCLAM_SCAN_INFO;
