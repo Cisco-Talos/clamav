@@ -405,7 +405,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		} else {
 		    bread = fread(dbio->readpt, 1, dbio->readsize, dbio->fs);
 		    if(!bread && ferror(dbio->fs)) {
-			cli_errmsg("cli_dbgets: gzread() failed\n");
+			cli_errmsg("cli_dbgets: fread() failed\n");
 			return NULL;
 		    }
 		}
