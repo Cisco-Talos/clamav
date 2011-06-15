@@ -257,7 +257,7 @@ END_TEST
 
 static char **testfiles = NULL;
 static unsigned testfiles_n = 0;
-static const expected_testfiles = 46;
+static const int expected_testfiles = 46;
 
 static void init_testfiles(void)
 {
