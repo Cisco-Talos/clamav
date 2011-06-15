@@ -387,7 +387,7 @@ AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_LIBCHECK_TRUE@		       check_disasm.c check_uniq.c check_matchers.c\
 @HAVE_LIBCHECK_TRUE@		       check_htmlnorm.c check_bytecode.c
 
-@HAVE_LIBCHECK_TRUE@check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
+@HAVE_LIBCHECK_TRUE@check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 @HAVE_LIBCHECK_TRUE@check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 @HAVE_LIBCHECK_FALSE@check_clamd_SOURCES = check_clamav_skip.c
 @HAVE_LIBCHECK_TRUE@check_clamd_SOURCES = check_clamd.c checks_common.h
@@ -1097,8 +1097,12 @@ check10_clamd_hg.sh: $(FILES)
 $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
+check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 check_clamd.sh: $(top_builddir)/test/clam.exe check_clamd
 check_clamscan.sh: $(top_builddir)/test/clam.exe
+
+clamav.hdb: input/clamav.hdb
+	cp $< $@
 
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
