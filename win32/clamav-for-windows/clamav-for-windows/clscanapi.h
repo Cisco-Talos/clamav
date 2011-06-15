@@ -255,6 +255,12 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
 
 /*
+ * Returns the outer file type as an _int64[2] for the give HANDLE
+ * Scan is not performed and no callback is invoked
+ */
+ int CLAMAPI Scan_GetFileType(HANDLE hFile, _int64 *filetype);
+
+/*
  * MANDATORY SUPPORT
  * Destroy memory allocated when malicious objects are found during scan
  * INPUT @param pScanner : opaque object

@@ -222,7 +222,7 @@ CL_CLEAN = File is scanned
 CL_BREAK = Whitelisted by callback - file is skipped and marked as clean
 CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected
 */
-extern void cl_engine_set_clcb_file_type(struct cl_engine *engine, clcb_pre_cache callback);
+extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback);
 
 typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
 /* PRE-SCAN
