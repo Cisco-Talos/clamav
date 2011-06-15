@@ -241,6 +241,21 @@ static void engine_teardown(void)
     cl_engine_free(g_engine);
 }
 
+static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
+{
+    int fd;
+    struct stat st;
+
+    fail_unless(i < testfiles_n);
+    snprintf(file, fsize, OBJDIR"/../test/%s", testfiles[i]);
+
+    fd = open(file, O_RDONLY);
+    fail_unless(fd > 0, "open");
+    fail_unless(fstat(fd, &st) == 0, "fstat");
+    *size = st.st_size;
+    return fd;
+}
+
 static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
     return pread(*((int*)handle), buf, count, offset);
@@ -248,22 +263,16 @@ static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 
 START_TEST (test_cl_scanmap_callback_handle)
 {
-    int fd;
-    char file[256];
-    struct stat st;
     const char *virname = NULL;
     unsigned long int scanned = 0;
     cl_fmap_t *map;
     int ret;
+    char file[256];
+    unsigned long size;
 
-    fail_unless(_i < testfiles_n);
-    snprintf(file, sizeof(file), OBJDIR"/../test/%s", testfiles[_i]);
-
-    fd = open(file, O_RDONLY);
-    fail_unless(fd > 0, "open");
-    fail_unless(fstat(fd, &st) == 0, "fstat");
+    int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
-    map = cl_fmap_open_handle(&fd, 0, st.st_size, pread_cb, 1);
+    map = cl_fmap_open_handle(&fd, 0, size, pread_cb, 1);
     fail_unless(!!map, "cl_fmap_open_handle");
 
     cli_dbgmsg("scanning (handle) %s\n", file);
@@ -278,27 +287,21 @@ END_TEST
 
 START_TEST (test_cl_scanmap_callback_mem)
 {
-    int fd;
-    char file[256];
-    struct stat st;
     const char *virname = NULL;
     unsigned long int scanned = 0;
     cl_fmap_t *map;
     int ret;
     void *mem;
+    unsigned long size;
+    char file[256];
 
-    fail_unless(_i < testfiles_n);
-    snprintf(file, sizeof(file), OBJDIR"/../test/%s", testfiles[_i]);
+    int fd = get_test_file(_i, file, sizeof(file), &size);
 
-    fd = open(file, O_RDONLY);
-    fail_unless(fd > 0, "open");
-    fail_unless(fstat(fd, &st) == 0, "fstat");
-
-    mem = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    mem = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     fail_unless(mem != MAP_FAILED, "mmap");
 
     /* intentionally use different way than scanners.c for testing */
-    map = cl_fmap_open_memory(mem, st.st_size);
+    map = cl_fmap_open_memory(mem, size);
     fail_unless(!!map, "cl_fmap_open_mem");
 
     cli_dbgmsg("scanning (mem) %s\n", file);
@@ -308,7 +311,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     close(fd);
 
-    munmap(mem, st.st_size);
+    munmap(mem, size);
 }
 END_TEST
 
