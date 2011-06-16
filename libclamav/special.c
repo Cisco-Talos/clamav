@@ -92,38 +92,32 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     return CL_VIRUS;
 }
 
-static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
+static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
 {
-	unsigned char bim[5];
+	const unsigned char *buf;
 	uint16_t id, ntmp;
 	uint8_t nlength;
 	uint32_t size;
-	off_t offset;
+	off_t offset = *off;
 	int retval;
+	fmap_t *map = *ctx->fmap;
 
-	if (cli_readn(fd, bim, 4) != 4) {
+	if(!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
 		cli_dbgmsg("read bim failed\n");
 		return -1;
 	}
-
-	if (memcmp(bim, "8BIM", 4) != 0) {
-		bim[4] = '\0';
-		cli_dbgmsg("missed 8bim: %s\n", bim);
+	if (memcmp(buf, "8BIM", 4) != 0) {
+		cli_dbgmsg("missed 8bim\n");
 		return -1;
 	}
 
-	if (cli_readn(fd, &id, 2) != 2) {
-		return -1;
-	}
-	id = special_endian_convert_16(id);
+	id = (uint16_t)buf[4] | ((uint16_t)buf[5]<<8);
 	cli_dbgmsg("ID: 0x%.4x\n", id);
-	if (cli_readn(fd, &nlength, 1) != 1) {
-		return -1;
-	}
+	nlength = buf[6];
 	ntmp = nlength + ((((uint16_t)nlength)+1) & 0x01);
-	lseek(fd, ntmp, SEEK_CUR);
-	
-	if (cli_readn(fd, &size, 4) != 4) {
+	offset += 4 + 2 + 1 + ntmp;
+
+	if (fmap_readn(map, &size, offset, 4) != 4) {
 		return -1;
 	}
 	size = special_endian_convert_32(size);
@@ -133,49 +127,46 @@ static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
 	if ((size & 0x01) == 1) {
 		size++;
 	}
+
+	*off = offset + 4 + size;
 	/* Is it a thumbnail image */
 	if ((id != 0x0409) && (id != 0x040c)) {
 		/* No - Seek past record */
-		lseek(fd, size, SEEK_CUR);
 		return 0;
 	}
 
 	cli_dbgmsg("found thumbnail\n");
-	/* Check for thumbmail image */
-	offset = lseek(fd, 0, SEEK_CUR);
-
 	/* Jump past header */
-	lseek(fd, 28, SEEK_CUR);
+	offset += 4 + 28;
 
-	retval = cli_check_jpeg_exploit(fd, ctx);
+	retval = cli_check_jpeg_exploit(ctx, offset);
 	if (retval == 1) {
 		cli_dbgmsg("Exploit found in thumbnail\n");
 	}
-	lseek(fd, offset+size, SEEK_SET);
-
 	return retval;
 }
 
-static int jpeg_check_photoshop(int fd, cli_ctx *ctx)
+static int jpeg_check_photoshop(cli_ctx *ctx, off_t offset)
 {
 	int retval;
-	unsigned char buffer[14];
-	off_t old, new;
+	const unsigned char *buffer;
+	off_t old;
+	fmap_t *map = *ctx->fmap;
 
-	if (cli_readn(fd, buffer, 14) != 14) {
+	if(!(buffer = fmap_need_off_once(map, offset, 14))) {
 		return 0;
 	}
 
 	if (memcmp(buffer, "Photoshop 3.0", 14) != 0) {
 		return 0;
 	}
+	offset += 14;
 
 	cli_dbgmsg("Found Photoshop segment\n");
 	do {
-		old = lseek(fd, 0, SEEK_CUR);
-		retval = jpeg_check_photoshop_8bim(fd, ctx);
-		new = lseek(fd, 0, SEEK_CUR);
-		if(new <= old)
+		old = offset;
+		retval = jpeg_check_photoshop_8bim(ctx, &offset);
+		if(offset <= old)
 			break;
 	} while (retval == 0);
 
@@ -185,35 +176,33 @@ static int jpeg_check_photoshop(int fd, cli_ctx *ctx)
 	return retval;
 }
 
-int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
+int cli_check_jpeg_exploit(cli_ctx *ctx, off_t offset)
 {
-	unsigned char buffer[4];
-	off_t offset;
+	const unsigned char *buffer;
 	int retval;
-
+	fmap_t *map = *ctx->fmap;
 
 	cli_dbgmsg("in cli_check_jpeg_exploit()\n");
 	if(ctx->recursion > ctx->engine->maxreclevel)
 	    return CL_EMAXREC;
 
-	if (cli_readn(fd, buffer, 2) != 2) {
+	if(!(buffer = fmap_need_off_once(map, offset, 2)))
 		return 0;
-	}
-
 	if ((buffer[0] != 0xff) || (buffer[1] != 0xd8)) {
 		return 0;
 	}
-
+	offset += 2;
 	for (;;) {
-		if ((retval=cli_readn(fd, buffer, 4)) != 4) {
+		off_t new_off;
+		if(!(buffer = fmap_need_off_once(map, offset, 4))) {
 			return 0;
 		}
 		/* Check for multiple 0xFF values, we need to skip them */
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xff)) {
-			lseek(fd, -3, SEEK_CUR);
+			offset++;
 			continue;
 		}
-
+		offset += 4;
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xfe)) {
 			if (buffer[2] == 0x00) {
 				if ((buffer[3] == 0x00) || (buffer[3] == 0x01)) {
@@ -229,25 +218,22 @@ int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
 			return 0;
 		}
 
-		offset = ((unsigned int) buffer[2] << 8) + buffer[3];
-		if (offset < 2) {
+		new_off = ((unsigned int) buffer[2] << 8) + buffer[3];
+		if (new_off < 2) {
 			return -1;
 		}
-		offset -= 2;
-		offset += lseek(fd, 0, SEEK_CUR);
+		new_off -= 2;
+		new_off += offset;
 
 		if (buffer[1] == 0xed) {
 			/* Possible Photoshop file */
 			ctx->recursion++;
-			retval=jpeg_check_photoshop(fd, ctx);
+			retval=jpeg_check_photoshop(ctx, offset);
 			ctx->recursion--;
 			if (retval != 0)
 				return retval;
 		}
-
-		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return -1;
-		}
+		offset = new_off;
 	}
 }
 

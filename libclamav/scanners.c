@@ -1346,11 +1346,11 @@ static int cli_scanriff(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanjpeg(int desc, cli_ctx *ctx)
+static int cli_scanjpeg(cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
 
-    if(cli_check_jpeg_exploit(desc, ctx) == 1) {
+	if(cli_check_jpeg_exploit(ctx, 0) == 1) {
 	ret = CL_VIRUS;
 	*ctx->virname = "Heuristics.Exploit.W32.MS04-028";
     }
@@ -2348,7 +2348,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_GRAPHICS:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_JPEG))
-		ret = cli_scanjpeg(desc, ctx);
+		ret = cli_scanjpeg(ctx);
 
 	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS)
 		ret = cli_parsejpeg(ctx);
