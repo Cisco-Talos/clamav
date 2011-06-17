@@ -187,6 +187,7 @@ CLAMAV_PRIVATE {
     cli_printcxxver;
     cli_detect_environment;
     cli_disasm_one;
+    cli_utf16_to_utf8;
   local:
     *;
 };

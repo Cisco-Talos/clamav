@@ -603,8 +603,10 @@ char *cli_utf16_to_utf8(const char *utf16, size_t length)
     char *s2 = cli_malloc(needed);
     if (!s2)
 	return NULL;
-
-    for (i=0,j=0;i<length && j<needed;i += 2) {
+    i = 0;
+    if (utf16[0] == '\xff' && utf16[1] == '\xfe')
+	i += 2;/* skip BOM */
+    for (j=0;i<length && j<needed;i += 2) {
 	uint16_t c = cli_readint16(&utf16[i]);
 	if (c < 0x80) {
 	    s2[j++] = c;
@@ -620,19 +622,21 @@ char *cli_utf16_to_utf8(const char *utf16, size_t length)
 	} else if (c < 0xdc00 && i+3 < length) {
 	    uint16_t c2;
 	    /* UTF16 high+low surrogate */
-	    c = c - 0xd800 + 1;
+	    c = c - 0xd800 + 0x40;
 	    c2 = cli_readint16(&utf16[i+2]);
 	    c2 -= 0xdc00;
-	    s2[j] = 0xf0 | (c >> 7);
-	    s2[j+1] = 0x80 | ((c >> 1) & 0x3f);
-	    s2[j+2] = 0x80 | ((c&1) << 5) | (c2 >> 5);
+	    s2[j] = 0xf0 | (c >> 8);
+	    s2[j+1] = 0x80 | ((c >> 2) & 0x3f);
+	    s2[j+2] = 0x80 | ((c&3) << 4) | (c2 >> 6);
 	    s2[j+3] = 0x80 | (c2 & 0x3f);
 	    j += 4;
 	    i += 2;
 	} else {
 	    cli_dbgmsg("UTF16 surrogate encountered at wrong pos\n");
 	    /* invalid char */
-	    s2[j++] = '_';
+	    s2[j++] = 0xef;
+	    s2[j++] = 0xbf;
+	    s2[j++] = 0xbd;
 	}
     }
     if (j >= needed)

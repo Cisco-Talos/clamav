@@ -400,7 +400,6 @@ static Suite *test_cl_suite(void)
     Suite *s = suite_create("cl_api");
     TCase *tc_cl = tcase_create("cl_dup");
     TCase *tc_cl_scan = tcase_create("cl_scan");
-
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_dup);
