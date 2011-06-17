@@ -257,7 +257,8 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->pread_cb = pread_cb;
     m->aging = use_aging;
     m->offset = offset;
-    m->len = len;
+    m->len = len;/* m->nested_offset + m->len = m->real_len */
+    m->real_len = len;
     m->pages = pages;
     m->hdrsz = hdrsz;
     m->pgsz = pgsz;
@@ -451,8 +452,8 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    pptr = (char *)m + page * m->pgsz + m->hdrsz;
 	    first_page = page;
 	}
-	if((page == m->pages - 1) && (m->len % m->pgsz))
-	    readsz += m->len % m->pgsz;
+	if((page == m->pages - 1) && (m->real_len % m->pgsz))
+	    readsz += m->real_len % m->pgsz;
 	else
 	    readsz += m->pgsz;
 	if(lock) /* lock requested: set paged, lock page and set lock count to 1 */
@@ -472,7 +473,9 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
     if(!len)
 	return NULL;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len))
+    at += m->nested_offset;
+
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len))
 	return NULL;
 
     fmap_aging(m);
@@ -519,7 +522,7 @@ static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
 	return;
     }
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
 	cli_warnmsg("fmap: attempted oof unneed\n");
 	return;
     }
@@ -550,10 +553,10 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     unsigned int i, first_page, last_page;
     void *ptr = (void *)((char *)m + m->hdrsz + at);
 
-    if(!len_hint || len_hint > m->len - at)
-	len_hint = m->len - at;
+    if(!len_hint || len_hint > m->real_len - at)
+	len_hint = m->real_len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
 	return NULL;
 
     fmap_aging(m);
@@ -588,9 +591,9 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     unsigned int i, first_page, last_page;
     char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
-    size_t len = MIN(max_len-1, m->len - *at), fullen = len;
+    size_t len = MIN(max_len-1, m->real_len - *at), fullen = len;
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
+    if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
 	return NULL;
 
     fmap_aging(m);
@@ -650,6 +653,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
     }
     m->data = start;
     m->len = len;
+    m->real_len = len;
     m->pgsz = pgsz;
     m->pages = fmap_align_items(len, pgsz);
     m->unmap = unmap_none;
@@ -665,7 +669,8 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN
     if(!len) {
 	return NULL;
     }
-    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+    at += m->nested_offset;
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
 	return NULL;
     }
 
@@ -677,10 +682,10 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
 
-    if(!len_hint || len_hint > m->len - at)
-	len_hint = m->len - at;
+    if(!len_hint || len_hint > m->real_len - at)
+	len_hint = m->real_len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
 	return NULL;
 
     if(memchr(ptr, 0, len_hint))
@@ -690,9 +695,9 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
 
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     char *src = (char *)m->data + *at, *endptr = NULL;
-    size_t len = MIN(max_len-1, m->len - *at);
+    size_t len = MIN(max_len-1, m->real_len - *at);
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
+    if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
 	return NULL;
 
     if((endptr = memchr(src, '\n', len))) {

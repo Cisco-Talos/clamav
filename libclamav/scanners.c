@@ -2537,20 +2537,48 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return cl_scandesc_callback(desc, virname, scanned, engine, scanoptions, NULL);
 }
 
-static int cli_map_scandesc(cl_fmap_t *map, cli_ctx *ctx)
+/* length = 0, till the end */
+int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 {
+    off_t old_off = map->nested_offset;
+    size_t old_len = map->len;
     int ret;
 
-    if (map->len <= 5) {
-	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) map->len);
+    cli_dbgmsg("cli_map_scandesc: [%ld, +%ld), [%ld, +%ld)\n",
+	       old_off, old_len, offset, length);
+    if (offset < 0 || offset >= length) {
+	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+	return CL_CLEAN;
+    }
+
+    if (!length) length = old_len - offset;
+    if (length > old_len - offset) {
+	cli_dbgmsg("Data truncated: %ld -> %ld\n",
+		   length, old_len - offset);
+	length = old_len - offset;
+    }
+
+    if (length <= 5) {
+	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) length);
 	return CL_CLEAN;
     }
     ctx->fmap++;
     *ctx->fmap = map;
-
-    ret = magic_scandesc(ctx, CL_TYPE_ANY);
+    /* can't change offset because then we'd have to discard/move cached
+     * data, instead use another offset to reuse the already cached data */
+    map->nested_offset += offset;
+    map->len = length;
+    map->real_len = map->nested_offset + length;
+    if (CLI_ISCONTAINED(old_off, old_len, map->nested_offset, map->len)) {
+	ret = magic_scandesc(ctx, CL_TYPE_ANY);
+    } else {
+	cli_warnmsg("internal map error: %ld, %ld; %ld, %ld\n", old_off, old_off + old_len,
+		    map->offset,map->nested_offset+map->len);
+    }
 
     ctx->fmap--;
+    map->nested_offset = old_off;
+    map->len = old_len;
     return ret;
 }
 
@@ -2594,7 +2622,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 #endif
 
     cli_logg_setup(&ctx);
-    rc = map ? cli_map_scandesc(map, &ctx) : cli_magic_scandesc(desc, &ctx);
+    rc = map ? cli_map_scandesc(map, 0, map->len, &ctx) : cli_magic_scandesc(desc, &ctx);
 
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
