@@ -50,5 +50,6 @@ char *cli_unescape(const char *str);
 struct text_buffer;
 int  cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
 int cli_hexnibbles(char *str, int len);
+char *cli_utf16_to_utf8(const char *utf16, size_t length);
 
 #endif
