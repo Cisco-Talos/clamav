@@ -2582,6 +2582,18 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     return ret;
 }
 
+int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
+{
+    int ret;
+    fmap_t *map = cl_fmap_open_memory(buffer, length);
+    if (!map) {
+	return CL_EMAP;
+    }
+    ret = cli_map_scandesc(map, 0, length, ctx);
+    cl_fmap_close(map);
+    return ret;
+}
+
 static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context)
 {
     cli_ctx ctx;

@@ -656,7 +656,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
     m->real_len = len;
     m->pgsz = pgsz;
     m->pages = fmap_align_items(len, pgsz);
-    m->unmap = unmap_none;
+    m->unmap = unmap_malloc;
     m->need = mem_need;
     m->need_offstr = mem_need_offstr;
     m->gets = mem_gets;
@@ -740,4 +740,9 @@ int fmap_fd(fmap_t *m)
     fd = (int)(ssize_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;
+}
+
+extern void cl_fmap_close(cl_fmap_t *map)
+{
+    funmap(map);
 }
