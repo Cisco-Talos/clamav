@@ -86,7 +86,7 @@
 #include "cpio.h"
 #include "macho.h"
 #include "ishield.h"
-#include "7z.h"
+#include "7z_iface.h"
 #include "fmap.h"
 #include "cache.h"
 #include "events.h"
@@ -2292,7 +2292,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_7Z:
 	    ctx->container_type = CL_TYPE_7Z;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
-		ret = cli_7unz(desc, ctx);
+		ret = cli_7unz(ctx);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:

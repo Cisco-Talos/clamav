@@ -1,10 +1,14 @@
 /* LzmaDec.h -- LZMA Decoder
-2008-10-04 : Igor Pavlov : Public domain */
+2009-02-07 : Igor Pavlov : Public domain */
 
-#ifndef __LZMADEC_H
-#define __LZMADEC_H
+#ifndef __LZMA_DEC_H
+#define __LZMA_DEC_H
 
 #include "Types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* #define _LZMA_PROB32 */
 /* _LZMA_PROB32 can increase the speed on some CPUs,
@@ -219,5 +223,9 @@ Returns:
 SRes LzmaDecode(Byte *dest, SizeT *destLen, const Byte *src, SizeT *srcLen,
     const Byte *propData, unsigned propSize, ELzmaFinishMode finishMode,
     ELzmaStatus *status, ISzAlloc *alloc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
