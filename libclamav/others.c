@@ -642,7 +642,7 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
         /* if the remaining scansize is too small... */
         if(ctx->engine->maxscansize-ctx->scansize<needed) {
 	    /* ... we tell the caller to skip this file */
-	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, (unsigned long int) ctx->engine->maxscansize, (unsigned long int) ctx->scansize, needed);
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int) ctx->engine->maxscansize, (unsigned long int) ctx->scansize, needed);
 	    ret = CL_EMAXSIZE;
 	}
     }
