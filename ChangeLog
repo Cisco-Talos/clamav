@@ -1,3 +1,7 @@
+Sat Jun 18 17:44:42 CEST 2011 (acab)
+------------------------------------
+ * clamav-milter: add config option "SupportMultipleRecipients" (bb#2879)
+
 Thu Jun  9 08:22:31 CEST 2011 (acab)
 ------------------------------------
  * libclamav/mew.c: harden boundary check on e8/e9 fixup

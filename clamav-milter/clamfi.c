@@ -58,6 +58,7 @@ static char *rejectfmt = NULL;
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
 char xvirushdr[255];
 char *viraction = NULL;
+int multircpt = 1;
 
 #define LOGINF_NONE 0
 #define LOGINF_BASIC 1
@@ -75,6 +76,7 @@ struct CLAMFI {
     char *msg_subj;
     char *msg_date;
     char *msg_id;
+    char **recipients;
     int local;
     int main;
     int alt;
@@ -84,6 +86,7 @@ struct CLAMFI {
     unsigned int gotbody;
     unsigned int scanned_count;
     unsigned int status_count;
+    unsigned int nrecipients;
     uint32_t sendme;
     char buffer[CLAMFIBUFSZ];
 };
@@ -137,6 +140,13 @@ static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
     if(cf->msg_subj) free(cf->msg_subj);
     if(cf->msg_date) free(cf->msg_date);
     if(cf->msg_id) free(cf->msg_id);
+    if(multircpt && cf->nrecipients) {
+	while(cf->nrecipients) {
+	    cf->nrecipients--;
+	    free(cf->recipients[cf->nrecipients]);
+	}
+	free(cf->recipients);
+    }
     smfi_setpriv(ctx, NULL);
     free(cf);
 }
@@ -273,6 +283,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     struct CLAMFI *cf;
     char *reply;
     int len, ret;
+    unsigned int crcpt;
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
@@ -322,15 +333,25 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	if(loginfected & LOGCLN_FULL) {
 	    const char *id = smfi_getsymval(ctx, "{i}");
 	    const char *from = smfi_getsymval(ctx, "{mail_addr}");
-	    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
 	    const char *msg_subj = makesanehdr(cf->msg_subj);
 	    const char *msg_date = makesanehdr(cf->msg_date);
 	    const char *msg_id = makesanehdr(cf->msg_id);
-	    logg("~Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, to, msg_subj, msg_id, msg_date);
+	    if(multircpt && cf->nrecipients) {
+		for(crcpt = 0; crcpt < cf->nrecipients; crcpt++)
+		    logg("~Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, cf->recipients[crcpt], msg_subj, msg_id, msg_date);
+	    } else {
+		const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+		logg("~Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, to ? to : HDR_UNAVAIL, msg_subj, msg_id, msg_date);
+	    }
 	} else if(loginfected & LOGCLN_BASIC) {
 	    const char *from = smfi_getsymval(ctx, "{mail_addr}");
-	    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
-	    logg("~Clean message from <%s> to <%s>\n", from, to);
+	    if(multircpt && cf->nrecipients) {
+		for(crcpt = 0; crcpt < cf->nrecipients; crcpt++)
+		    logg("~Clean message from <%s> to <%s>\n", from, cf->recipients[crcpt]);
+	    } else {
+		const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+		logg("~Clean message from <%s> to <%s>\n", from, to ? to : HDR_UNAVAIL);
+	    }
 	}
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
@@ -341,6 +362,8 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    reply[len-7] = '\0';
 	    vir = strrchr(reply, ' ');
 	    if(vir) {
+		unsigned int have_multi = (multircpt != 0 && cf->nrecipients);
+		unsigned int lst_rcpt = (have_multi * (cf->nrecipients - 1)) + 1;
 		vir++;
 
 		if(rejectfmt)
@@ -353,76 +376,78 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 		    add_x_header(ctx, msg, cf->scanned_count, cf->status_count);
 		}
 
-		if(loginfected || viraction) {
-		    const char *from = smfi_getsymval(ctx, "{mail_addr}");
-		    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+		for(crcpt = 0; crcpt < lst_rcpt; crcpt++) {
+		    if(loginfected || viraction) {
+			const char *from = smfi_getsymval(ctx, "{mail_addr}");
+			const char *to = have_multi ? cf->recipients[crcpt] : smfi_getsymval(ctx, "{rcpt_addr}");
 
-		    if(!from) from = HDR_UNAVAIL;
-		    if(!to) to = HDR_UNAVAIL;
-		    if((loginfected & LOGINF_FULL) || viraction) {
-			const char *id = smfi_getsymval(ctx, "{i}");
-			const char *msg_subj = makesanehdr(cf->msg_subj);
-			const char *msg_date = makesanehdr(cf->msg_date);
-			const char *msg_id = makesanehdr(cf->msg_id);
+			if(!from) from = HDR_UNAVAIL;
+			if(!to) to = HDR_UNAVAIL;
+			if((loginfected & LOGINF_FULL) || viraction) {
+			    const char *id = smfi_getsymval(ctx, "{i}");
+			    const char *msg_subj = makesanehdr(cf->msg_subj);
+			    const char *msg_date = makesanehdr(cf->msg_date);
+			    const char *msg_id = makesanehdr(cf->msg_id);
 
-			if(!id) id = HDR_UNAVAIL;
+			    if(!id) id = HDR_UNAVAIL;
 			
-			if(loginfected & LOGINF_FULL)
-			    logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
+			    if(loginfected & LOGINF_FULL)
+				logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
 
-			if(viraction) {
-			    char er[256];
-			    char *e_id = strdup(id);
-			    char *e_from = strdup(from);
-			    char *e_to = strdup(to);
-			    char *e_msg_subj = strdup(msg_subj);
-			    char *e_msg_date = strdup(msg_date);
-			    char *e_msg_id = strdup(msg_id);
-			    pid_t pid;
+			    if(viraction) {
+				char er[256];
+				char *e_id = strdup(id);
+				char *e_from = strdup(from);
+				char *e_to = strdup(to);
+				char *e_msg_subj = strdup(msg_subj);
+				char *e_msg_date = strdup(msg_date);
+				char *e_msg_id = strdup(msg_id);
+				pid_t pid;
 
-			    logg("*VirusEvent: about to execute '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
+				logg("*VirusEvent: about to execute '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
 
-			    pthread_mutex_lock(&virusaction_lock);
-			    pid = fork();
-			    if(!pid) {
-				char * args[9]; /* avoid element is not computable at load time warns */
-				args[0]= viraction;
-				args[1] = vir;
-				args[2] = e_id;
-				args[3] = e_from;
-				args[4] = e_to;
-				args[5] = e_msg_subj;
-				args[6] = e_msg_id;
-				args[7] = e_msg_date;
-				args[8] = NULL;
-				exit(execvp(viraction, args));
-			    } else if(pid > 0) {
-				int wret;
-				pthread_mutex_unlock(&virusaction_lock);
-				while((wret = waitpid(pid, &ret, 0)) == -1 && errno == EINTR);
-				if(wret<0)
-				    logg("!VirusEvent: waitpid() failed: %s\n", cli_strerror(errno, er, sizeof(er)));
-				else {
-				    if(WIFEXITED(ret))
-					logg("*VirusEvent: child exited with code %d\n", WEXITSTATUS(ret));
-				    else if(WIFSIGNALED(ret))
-					logg("*VirusEvent: child killed by signal %d\n", WTERMSIG(ret));
-				    else
-					logg("*VirusEvent: child lost\n");
+				pthread_mutex_lock(&virusaction_lock);
+				pid = fork();
+				if(!pid) {
+				    char * args[9]; /* avoid element is not computable at load time warns */
+				    args[0]= viraction;
+				    args[1] = vir;
+				    args[2] = e_id;
+				    args[3] = e_from;
+				    args[4] = e_to;
+				    args[5] = e_msg_subj;
+				    args[6] = e_msg_id;
+				    args[7] = e_msg_date;
+				    args[8] = NULL;
+				    exit(execvp(viraction, args));
+				} else if(pid > 0) {
+				    int wret;
+				    pthread_mutex_unlock(&virusaction_lock);
+				    while((wret = waitpid(pid, &ret, 0)) == -1 && errno == EINTR);
+				    if(wret<0)
+					logg("!VirusEvent: waitpid() failed: %s\n", cli_strerror(errno, er, sizeof(er)));
+				    else {
+					if(WIFEXITED(ret))
+					    logg("*VirusEvent: child exited with code %d\n", WEXITSTATUS(ret));
+					else if(WIFSIGNALED(ret))
+					    logg("*VirusEvent: child killed by signal %d\n", WTERMSIG(ret));
+					else
+					    logg("*VirusEvent: child lost\n");
+				    }
+				} else {
+				    logg("!VirusEvent: fork failed: %s\n", cli_strerror(errno, er, sizeof(er)));
 				}
-			    } else {
-				logg("!VirusEvent: fork failed: %s\n", cli_strerror(errno, er, sizeof(er)));
+				free(e_id);
+				free(e_from);
+				free(e_to);
+				free(e_msg_subj);
+				free(e_msg_date);
+				free(e_msg_id);
 			    }
-			    free(e_id);
-			    free(e_from);
-			    free(e_to);
-			    free(e_msg_subj);
-			    free(e_msg_date);
-			    free(e_msg_id);
 			}
+			if(loginfected & LOGINF_BASIC)
+			    logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		    }
-		    if(loginfected & LOGINF_BASIC)
-			logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		}
 	    }
 	}
@@ -665,6 +690,10 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     cf->all_whitelisted = 1;
     cf->gotbody = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
+    if(multircpt) {
+	cf->recipients = NULL;
+	cf->nrecipients = 0;
+    }
     if(addxvirus==1) {
 	cf->scanned_count = 0;
 	cf->status_count = 0;
@@ -683,6 +712,24 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv) {
 
     if(cf->all_whitelisted)
 	cf->all_whitelisted &= whitelisted(argv[0], 0);
+
+    if(multircpt) {
+	void *new_rcpt = realloc(cf->recipients, (cf->nrecipients + 1) * sizeof(*(cf->recipients)));
+	unsigned int rcpt_cnt;
+	if(!new_rcpt) {
+	    logg("!Failed to allocate array for new recipient\n");
+	    nullify(ctx, cf, CF_ANY);
+	    return FailAction;
+	}
+	cf->recipients = new_rcpt;
+	rcpt_cnt = cf->nrecipients++;
+	if(!(cf->recipients[rcpt_cnt] = strdup(argv[0]))) {
+	    logg("!Failed to allocate space for new recipient\n");
+	    nullify(ctx, cf, CF_ANY);
+	    return FailAction;
+	}
+    }
+
     return SMFIS_CONTINUE;
 }
 

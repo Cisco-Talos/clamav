@@ -228,6 +228,17 @@ See LogInfected for possible values and caveats.
 Useful in debugging but drastically increases the log size.
 .br
 Default: disabled
+.TP
+\fBSupportMultipleRecipients BOOL\fR
+This option affects the behaviour of LogInfected, LogClean and VirusAction  when a message with multiple recipients is scanned:
+.br
+If SupportMultipleRecipients is off (the default) then one single log entry is generated for the message and, in case the message is determined to be malicious, the command indicated by VirusAction is executed just once. In both cases only the last recipient is reported.
+.br
+If SupportMultipleRecipients is on then one line is logged for each recipient and the command indicated by VirusAction is also executed once for each recipient.
+.br
+Note: although it's probably a good idea to enable this option, the default value is currently set to off for legacy reasons.
+.br
+Default: no
 .SH "NOTES"
 .LP 
 All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.

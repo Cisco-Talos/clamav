@@ -241,6 +241,8 @@ int main(int argc, char **argv) {
 	    addxvirus = 2;
 	}
     }
+
+    multircpt = optget(opts, "SupportMultipleRecipients")->enabled;
     
     if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");

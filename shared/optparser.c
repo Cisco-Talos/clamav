@@ -462,6 +462,8 @@ const struct clam_option __clam_options[] = {
 
     { "LogClean", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows to tune what is logged when no threat is found in a scanned message.\nSee LogInfected for possible values and caveats.\nUseful in debugging but drastically increases the log size.", "Basic" },
 
+    { "SupportMultipleRecipients", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "This option affects the behaviour of LogInfected, LogClean and VirusAction\nwhen a message with multiple recipients is scanned:\nIf SupportMultipleRecipients is off (the default)\nthen one single log entry is generated for the message and, in case the\nmessage is determined to be malicious, the command indicated by VirusAction\nis executed just once. In both cases only the last recipient is reported.\nIf SupportMultipleRecipients is on:\nthen one line is logged for each recipient and the command indicated\nby VirusAction is also executed once for each recipient.\n\nNote: although it's probably a good idea to enable this option, the default value\nis currently set to off for legacy reasons.", "yes" },
+
     /* Deprecated milter options */
 
     { "ArchiveBlockEncrypted", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },

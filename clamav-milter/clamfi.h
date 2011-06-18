@@ -27,6 +27,7 @@
 extern uint64_t maxfilesize;
 extern int addxvirus;
 extern char xvirushdr[255];
+extern int multircpt;
 
 
 sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len);
