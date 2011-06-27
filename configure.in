@@ -1631,6 +1631,7 @@ test/Makefile
 unit_tests/Makefile
 clamdtop/Makefile
 clambc/Makefile
+clamemu/Makefile
 Makefile
 clamav-config
 libclamav.pc

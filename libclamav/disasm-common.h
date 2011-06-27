@@ -331,7 +331,9 @@ enum DIS_SIZE {
   SIZEF,/**< 6-byte access (seg+reg pair)*/
   SIZEQ,/**< Quadword access */
   SIZET,/**< 10-byte access */
-  SIZEPTR /** ptr */
+  SIZEPTR, /** ptr */
+  SIZE_INVALID,
+  SIZE_REL
 };
 
 /** X86 registers */

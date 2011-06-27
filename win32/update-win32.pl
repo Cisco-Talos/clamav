@@ -145,6 +145,7 @@ my %CONF = (
     'HAVE_SYS_PARAM_H' => -1,
     'HAVE_SYS_SELECT_H' => -1,
     'HAVE_SYS_STAT_H' => '1',
+    'HAVE_SYS_TIMES_H' => -1,
     'HAVE_SYS_TYPES_H' => '1',
     'HAVE_SYS_UIO_H' => -1,
     'HAVE_TERMIOS_H' => -1,

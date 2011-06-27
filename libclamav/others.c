@@ -1087,3 +1087,8 @@ void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback)
 {
     engine->cb_hash = callback;
 }
+
+void cli_set_pe_emulator(struct cl_engine *engine, clicb_emupe callback)
+{
+    engine->cb_emupe = callback;
+}

@@ -184,6 +184,8 @@ CLAMAV_PRIVATE {
     cli_printcxxver;
     cli_detect_environment;
     cli_disasm_one;
+    cli_set_pe_emulator;
+    cli_rebuildpe;
   local:
     *;
 };
