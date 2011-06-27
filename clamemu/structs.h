@@ -1,11 +1,24 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#ifdef _WIN32
-#error "TODO: figure out how to make this work on win32, we obviously can't include both this header file and"
-       "original windows headers because pointer sizes will be different (on win64 at least)"
-#endif
 #include <stdint.h>
+
+#ifdef _WIN32
+/* ugly hack: avoid including windows.h, we should probably just rename all the structs/types
+in this file as to not conflict with windows.h, by prefixing them with EMU_ */
+#define _WINDOWS_
+#define _WINSOCK2API_
+#define _WS2TCPIP_H_
+#define __W32_ERRNO_H
+#define __NET_H
+#define NOPAGESIZE
+typedef int ssize_t;
+#define TRUE 1
+#define FALSE 0
+int _stdcall lstrcmpiA(LPCSTR, LPCSTR);
+//#error "TODO: figure out how to make this work on win32, we obviously can't include both this header file and"
+       ////"original windows headers because pointer sizes will be different (on win64 at least)"
+#endif
 
 typedef uint64_t UINT64;
 typedef int64_t INT64;

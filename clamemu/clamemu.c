@@ -28,7 +28,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -80,7 +82,6 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     cli_emu_t *emu;
     int rc, done = 0;
     jmp_buf seh_handler;
-    uint32_t eip_save;
     unsigned char result[16];
     struct stat sb;
     char filename1[128];
@@ -114,6 +115,8 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 		 result[10], result[11], result[12], result[13], result[14],
 		 result[15]);
 
+	cli_dbgmsg("Writing disasm to %s, emulation trace to %s, and further debug messages to %s\n",
+		filename1, filename2, filename3);
 
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
     if (!setjmp(seh_handler))

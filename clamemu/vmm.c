@@ -26,16 +26,18 @@
  *  - rely on OS's page cache for the rest, no need to duplicate that cache
  *  management here
  */
-
+#include "structs.h"
 #include "cltypes.h"
 #include "vmm.h"
 #include "pe.h"
 #include "imports.h"
 #include "rebuildpe.h"
-#include "structs.h"
+
 #include <errno.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #define MINALIGN 512
 
@@ -206,7 +208,11 @@ void emu_createimportcall(emu_vmm_t *v, uint32_t *called_addr, import_handler_t 
 static int dll_cmp(const void* key, const void *b)
 {
     const struct dll_desc *desc = (const struct dll_desc*)b;
+#ifndef _WIN32
     return strcasecmp(key, desc->dllname);
+#else
+	return lstrcmpiA(key, desc->dllname);
+#endif
 }
 
 const struct dll_desc *lookup_dll(const char *name)
@@ -319,6 +325,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	struct IMAGE_IMPORT import;
 	const struct dll_desc *dll;
 	char *dllname;
+	uint32_t rva;
 
 	cli_emu_vmm_read_r(v, va, &import, sizeof(import));
 
@@ -341,7 +348,7 @@ static int map_pages(emu_vmm_t *v, struct cli_pe_hook_data *pedata, struct cli_e
 	cli_dbgmsg("Imports from: %s\n", dllname);
 
 	/* TODO: lookup dll bindings */
-	uint32_t rva = import.OrigThunk;
+	rva = import.OrigThunk;
 	if (!rva)
 	    rva = import.Thunk;
 	dll = lookup_dll(dllname);
@@ -662,3 +669,17 @@ void cli_emu_vmm_raise(emu_vmm_t *v, int err, uint32_t addr)
     longjmp(*v->seh_handler, err);
 }
 
+#ifdef _WIN32
+//no pread, pwrite
+ssize_t pread(int fd, void *buf, size_t count, off_t offset)
+{
+	lseek(fd, offset, SEEK_SET);
+	return read(fd, buf, count);
+}
+ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
+{
+	lseek(fd, offset, SEEK_SET);
+	return write(fd, buf, count);
+}
+
+#endif

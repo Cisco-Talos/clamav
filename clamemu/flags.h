@@ -74,16 +74,32 @@ struct access_desc {
     uint8_t  sub;
 };
 
-/* TODO: make this portable to non-C99 compilers */
+#define REGIDX_INVALID (REG_EDI+1)
+#ifdef __GNUC__
 #define DEFINE_REGS(first, last, bits, shift) \
     [first ... last] = {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
-#define REGIDX_INVALID (REG_EDI+1)
 static const struct access_desc reg_masks [] = {
     DEFINE_REGS(REG_EAX, REG_EDI, 32, 0),
     DEFINE_REGS(REG_AX,  REG_DI,  16, 0),
     DEFINE_REGS(REG_AH,  REG_BH,   8, 8),
     DEFINE_REGS(REG_AL,  REG_BL,   8, 0),
 };
+#else
+/* compiler doesn't support C99, all compilers should! */
+#define DEFINE_REG(first, bits, shift) \
+    {(~0u >> (32 - bits)) << shift, shift, bits, bits - 1, first - REG_EAX}
+static const struct access_desc reg_masks [] = {
+	DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0),
+	DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0), DEFINE_REG(REG_EAX, 32, 0),
+	DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0),
+	DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0), DEFINE_REG(REG_AX, 16, 0),
+	DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8),
+	DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8), DEFINE_REG(REG_AH, 8, 8),
+	DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), 
+	DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), DEFINE_REG(REG_AL, 8, 0), 
+};
+#endif
+
 
 #define MAXREG (sizeof(reg_masks) / sizeof(reg_masks[0]))
 #define DISASM_CACHE_SIZE 256

@@ -129,6 +129,14 @@ EXPORTS cli_fmap_scandesc @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME
+EXPORTS cli_rebuildpe @45000 NONAME
+EXPORTS cli_set_pe_emulator @45001 NONAME
+EXPORTS cli_debug_flag @45002 NONAME
+EXPORTS cli_dbgmsg_internal @45003 NONAME
+EXPORTS cli_disasm_one @45004 NONAME
+EXPORTS cli_warnmsg @45005 NONAME
+EXPORTS cli_realloc @45006 NONAME
+
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

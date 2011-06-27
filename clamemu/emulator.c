@@ -19,6 +19,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#include "structs.h"
 #include "emulator.h"
 #include "vmm.h"
 #include "others.h"
@@ -26,7 +27,7 @@
 #include "disasm.h"
 #include "pe.h"
 #include "flags.h"
-#include "structs.h"
+
 #include "imports.h"
 #include <string.h>
 
@@ -47,6 +48,7 @@ enum operand {
     OPERAND_WRITEMEM
 };
 
+#ifdef __GNUC__
 #define DEFINE_MEM(first, last, bits) \
     [first ... last] = {~0u >> (32 - bits), 0, 0, bits, bits - 1}
 static const desc_t mem_desc [] = {
@@ -54,6 +56,18 @@ static const desc_t mem_desc [] = {
     DEFINE_MEM(SIZEW, SIZEW, 16),
     DEFINE_MEM(SIZEB, SIZEB,  8)
 };
+#else
+/* not a C99 compiler, :( */
+#define DEFINE_MEM(bits) \
+    {~0u >> (32 - bits), 0, 0, bits, bits - 1}
+
+static const desc_t mem_desc [] = {
+	DEFINE_MEM(8),
+	DEFINE_MEM(16),
+	DEFINE_MEM(32)
+};
+
+#endif
 
 void mem_push(cli_emu_t *state, unsigned size, uint32_t value)
 {
@@ -759,12 +773,15 @@ static always_inline void emu_xor(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_shl(cli_emu_t *state, instr_t *instr)
 {
-    uint8_t largeshift;
+	const desc_t * desc;
+    uint8_t largeshift, cf, of;
     uint32_t reg1, reg2;
+	uint64_t result;
+
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
-    const desc_t *desc =
+    desc =
 	(instr->arg[0].access_size == SIZE_INVALID) ?
 	&instr->arg[0].add_reg :
 	&mem_desc[instr->arg[0].access_size];
@@ -773,11 +790,11 @@ static always_inline void emu_shl(cli_emu_t *state, instr_t *instr)
 
     if (!reg2)
 	return;
-    uint64_t result = (uint64_t)reg1 << (uint8_t)reg2;
-    uint8_t cf = (result >> desc->carry_bit) & 1;
+    result = (uint64_t)reg1 << (uint8_t)reg2;
+    cf = (result >> desc->carry_bit) & 1;
     reg1 = result;
     if (reg2 == 1) {
-	uint8_t of = ((result >> desc->sign_bit) & 1) ^ cf;
+	of = ((result >> desc->sign_bit) & 1) ^ cf;
 	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 			 (cf << bit_cf) |
 			 (of << bit_of);
@@ -796,12 +813,13 @@ static always_inline void emu_shl(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_shr(cli_emu_t *state, instr_t *instr)
 {
-    uint8_t largeshift;
-    uint32_t reg1, reg2;
+	const desc_t *desc;
+    uint8_t largeshift, cf, of;
+    uint32_t reg1, reg2, result;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
-    const desc_t *desc =
+    desc =
 	(instr->arg[0].access_size == SIZE_INVALID) ?
 	&instr->arg[0].add_reg :
 	&mem_desc[instr->arg[0].access_size];
@@ -810,12 +828,12 @@ static always_inline void emu_shr(cli_emu_t *state, instr_t *instr)
 
     if (!reg2)
 	return;
-    uint32_t result = reg1;
+    result = reg1;
     result >>= (uint8_t)(reg2 - 1);
-    uint8_t cf = (result & 1);
+    cf = (result & 1);
     reg1 = result >> 1;
     if (reg2 == 1) {
-	uint8_t of = ((result >> desc->sign_bit) & 1);
+	of = ((result >> desc->sign_bit) & 1);
 	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 			 (cf << bit_cf) |
 			 (of << bit_of);
@@ -834,12 +852,13 @@ static always_inline void emu_shr(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_sar(cli_emu_t *state, instr_t *instr)
 {
+	const desc_t *desc;
     uint8_t largeshift;
-    uint32_t reg1, reg2;
+    uint32_t reg1, reg2, result, cf, of;
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
-    const desc_t *desc =
+    desc =
 	(instr->arg[0].access_size == SIZE_INVALID) ?
 	&instr->arg[0].add_reg :
 	&mem_desc[instr->arg[0].access_size];
@@ -848,12 +867,12 @@ static always_inline void emu_sar(cli_emu_t *state, instr_t *instr)
 
     if (!reg2)
 	return;
-    int32_t result = reg1;
+    result = reg1;
     CLI_SAR(result, (uint8_t)(reg2-1));
-    uint8_t cf = (result & 1);
+    cf = (result & 1);
     reg1 = CLI_SRS(result, 1);
     if (reg2 == 1) {
-	uint8_t of = 0;
+	of = 0;
 	state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 			 (cf << bit_cf) |
 			 (of << bit_of);
@@ -875,12 +894,16 @@ static always_inline void emu_sar(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_rol(cli_emu_t *state, instr_t *instr)
 {
+	const desc_t *desc;
     uint8_t largeshift;
+	uint8_t msb;
+    uint8_t cf, of;    
     uint32_t reg1, reg2;
+
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
-    const desc_t *desc =
+    desc =
 	(instr->arg[0].access_size == SIZE_INVALID) ?
 	&instr->arg[0].add_reg :
 	&mem_desc[instr->arg[0].access_size];
@@ -893,8 +916,6 @@ static always_inline void emu_rol(cli_emu_t *state, instr_t *instr)
 	state->eflags_def &= ~(1 << bit_of);//OF undef
 
     reg2 &= 0x1f;
-    uint8_t msb;
-    uint8_t cf;
     switch (desc->carry_bit) {
 	case 8:
 	    reg2 %= 8;
@@ -922,7 +943,7 @@ static always_inline void emu_rol(cli_emu_t *state, instr_t *instr)
 	    INVALID_SIZE(state->mem);
     }
 
-    uint8_t of = msb ^ cf;
+    of = msb ^ cf;
     state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 	(cf << bit_cf) |
 	(of << bit_of);
@@ -933,12 +954,15 @@ static always_inline void emu_rol(cli_emu_t *state, instr_t *instr)
 
 static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 {
+	const desc_t *desc;
     uint8_t largeshift;
+	uint8_t msb, of, cf;
     uint32_t reg1, reg2;
+
     READ_OPERAND(reg1, 0);
     READ_OPERAND(reg2, 1);
 
-    const desc_t *desc =
+    desc =
 	(instr->arg[0].access_size == SIZE_INVALID) ?
 	&instr->arg[0].add_reg :
 	&mem_desc[instr->arg[0].access_size];
@@ -951,7 +975,6 @@ static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 	state->eflags_def &= ~(1 << bit_of);//OF undef
 
     reg2 &= 0x1f;
-    uint8_t msb, of;
     switch (desc->carry_bit) {
 	case 8:
 	    reg2 %= 8;
@@ -979,7 +1002,7 @@ static always_inline void emu_ror(cli_emu_t *state, instr_t *instr)
 	    INVALID_SIZE(state->mem);
     }
 
-    uint8_t cf = msb;
+    cf = msb;
     state->eflags = (state->eflags & ~((1<< bit_cf) | (1 << bit_of))) |
 	(cf << bit_cf) |
 	(of << bit_of);

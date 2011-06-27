@@ -127,12 +127,12 @@ static int cb_getprocaddress(struct cli_emu *emu, const char *desc, unsigned byt
 }
 
 enum {
-    PAGE_EXECUTE=0x10,
-    PAGE_EXECUTE_READ=0x20,
-    PAGE_EXECUTE_READWRITE=0x40,
-    PAGE_NOACCESS=0x01,
-    PAGE_READONLY=0x02,
-    PAGE_READWRITE=0x04,
+    EMU_PAGE_EXECUTE=0x10,
+    EMU_PAGE_EXECUTE_READ=0x20,
+    EMU_PAGE_EXECUTE_READWRITE=0x40,
+    EMU_PAGE_NOACCESS=0x01,
+    EMU_PAGE_READONLY=0x02,
+    EMU_PAGE_READWRITE=0x04,
 };
 
 static int cb_virtualprotect(struct cli_emu *emu, const char *desc, unsigned bytes)
@@ -153,24 +153,24 @@ static int cb_virtualprotect(struct cli_emu *emu, const char *desc, unsigned byt
     rwx = cli_emu_vmm_prot_get(emu->mem, lpaddress);
     switch (rwx) {
 	case 0:
-	    rwx = PAGE_NOACCESS;
+	    rwx = EMU_PAGE_NOACCESS;
 	    break;
 	case 1:
-	    rwx = PAGE_READONLY;
+	    rwx = EMU_PAGE_READONLY;
 	    break;
 	case 2:
 	case 3:
-	    rwx = PAGE_READWRITE;
+	    rwx = EMU_PAGE_READWRITE;
 	    break;
 	case 4:
-	    rwx = PAGE_EXECUTE;
+	    rwx = EMU_PAGE_EXECUTE;
 	    break;
 	case 5:
-	    rwx = PAGE_EXECUTE_READ;
+	    rwx = EMU_PAGE_EXECUTE_READ;
 	    break;
 	case 6:
 	case 7:
-	    rwx = PAGE_EXECUTE_READWRITE;
+	    rwx = EMU_PAGE_EXECUTE_READWRITE;
 	    break;
     }
     if (!(cli_emu_vmm_prot_get(emu->mem, lpoldprotect) & (1 << flag_w)))
@@ -178,22 +178,22 @@ static int cb_virtualprotect(struct cli_emu *emu, const char *desc, unsigned byt
     cli_emu_vmm_write32(emu->mem, lpoldprotect, rwx);
 
     switch (newprotect) {
-	case PAGE_NOACCESS:
+	case EMU_PAGE_NOACCESS:
 	    rwx = 0;
 	    break;
-	case PAGE_READONLY:
+	case EMU_PAGE_READONLY:
 	    rwx = 1 << flag_r;
 	    break;
-	case PAGE_READWRITE:
+	case EMU_PAGE_READWRITE:
 	    rwx = (1 << flag_r) | (1 << flag_w);
 	    break;
-	case PAGE_EXECUTE:
+	case EMU_PAGE_EXECUTE:
 	    rwx = 1 << flag_x;
 	    break;
-	case PAGE_EXECUTE_READ:
+	case EMU_PAGE_EXECUTE_READ:
 	    rwx = (1 << flag_r) | (1 << flag_x);
 	    break;
-	case PAGE_EXECUTE_READWRITE:
+	case EMU_PAGE_EXECUTE_READWRITE:
 	    rwx = 7;
 	    break;
     }
@@ -310,6 +310,7 @@ static uint32_t read_offset = 0; /* TODO: all these hooks need a context! */
 static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
 {
     uint32_t hfile, lpbuffer, numberofbytestoread, lpnumberofbytesread, lpoverlapped;
+	int32_t n;
 
     POP32(&emu->eip);
     POP32(&hfile);
@@ -327,7 +328,7 @@ static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
 	char *data = cli_malloc(numberofbytestoread);
 	if (!data)
 	    return -1;
-	int32_t n = pread(emu->mem->infd, data, numberofbytestoread, read_offset);
+	n = pread(emu->mem->infd, data, numberofbytestoread, read_offset);
 	if (n < 0) {
 	    free(data);
 	    return 0;
@@ -343,15 +344,19 @@ static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
 }
 
 const struct hook_desc advapi32_dll_hooks[] = {
+	{NULL, NULL}
 };
 
 const struct hook_desc comctl32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc comdlg32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc gdi32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc kernel32_dll_hooks[] = {
@@ -369,21 +374,27 @@ const struct hook_desc kernel32_dll_hooks[] = {
 };
 
 const struct hook_desc lz32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc mpr_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc ole32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc oleaut32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc rpcrt4_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc shell32_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc user32_dll_hooks[] = {
@@ -391,12 +402,15 @@ const struct hook_desc user32_dll_hooks[] = {
 };
 
 const struct hook_desc version_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc winmm_dll_hooks[] = {
+		{NULL, NULL}
 };
 
 const struct hook_desc wsock32_dll_hooks[] = {
+		{NULL, NULL}
 };
 const unsigned advapi32_dll_hooks_n = sizeof(advapi32_dll_hooks)/sizeof(advapi32_dll_hooks[0]);
 const unsigned comctl32_dll_hooks_n = sizeof(comctl32_dll_hooks)/sizeof(comctl32_dll_hooks[0]);

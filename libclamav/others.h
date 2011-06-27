@@ -493,11 +493,13 @@ void cli_dbgmsg_internal(const char *str, ...);
 #endif
 
 #ifdef _WIN32
+#ifndef NOPAGESIZE
 static inline int cli_getpagesize(void) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwPageSize;
 }
+#endif
 #else /* ! _WIN32 */
 #if HAVE_SYSCONF_SC_PAGESIZE
 static inline int cli_getpagesize(void) { return sysconf(_SC_PAGESIZE); }

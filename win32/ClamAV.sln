@@ -64,6 +64,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamunrar_iface", "libcl
 		{B1406D09-59CE-4EEA-9F08-FECCF3A7A4A7} = {B1406D09-59CE-4EEA-9F08-FECCF3A7A4A7}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamemu", "clamemu.vcxproj", "{0DDB2393-0816-4961-9713-116AE3E2EE8D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -192,6 +194,14 @@ Global
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|Win32.Build.0 = Release|Win32
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|x64.ActiveCfg = Release|x64
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|x64.Build.0 = Release|x64
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Debug|Win32.Build.0 = Debug|Win32
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Debug|x64.ActiveCfg = Debug|x64
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Debug|x64.Build.0 = Debug|x64
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Release|Win32.ActiveCfg = Release|Win32
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Release|Win32.Build.0 = Release|Win32
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Release|x64.ActiveCfg = Release|x64
+		{0DDB2393-0816-4961-9713-116AE3E2EE8D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -106,13 +106,14 @@ static always_inline cached_page_t *vmm_cache_2page(emu_vmm_t *v, uint32_t va)
 
 static always_inline void vmm_read(emu_vmm_t *v, uint32_t va, void *value, uint32_t len, uint8_t flags)
 {
+	cached_page_t *p;
     if (len >= 4096) {
 	cli_warnmsg("unexpected read size");
 	cli_emu_vmm_raise(v, -EMU_ERR_GENERIC, va);
     }
     /* caches at least 2 pages, so when we read an int32 that crosess page
      * boundary, we can do it fast */
-    cached_page_t *p = vmm_cache_2page(v, va);
+    p = vmm_cache_2page(v, va);
     if (LIKELY(p && (p->flag_rwx & flags))) {
 	uint8_t *data = p->data + (va & 0xfff);
 	memcpy(value, data, len);
@@ -168,7 +169,7 @@ static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const voi
 	cli_emu_vmm_write1(v, va, value, 4096);
 	len -= 4096;
 	va += 4096;
-	value += 4096;
+	(char*)value += 4096;
     }
     cli_emu_vmm_write1(v, va, value, len);
 }
