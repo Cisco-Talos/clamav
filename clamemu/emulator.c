@@ -413,15 +413,27 @@ static always_inline struct dis_instr* disasm(cli_emu_t *emu)
     struct dis_instr *instr;
     uint32_t idx = emu->eip & (DISASM_CACHE_SIZE-1);
     instr = &emu->cached_disasm[idx];
-//    if (instr->va != emu->eip) {
-	cli_dbgmsg("eip = %08x\n", emu->eip);
+    /* TODO: is caching working correctly here ? */
+    if (instr->va != emu->eip) {
+/*	cli_dbgmsg("eip = %08x\n", emu->eip); */
 	if ((ret = DisassembleAt(emu->mem, instr, emu->eip)) < 0)
 	    return NULL;
 	instr->len = ret - emu->eip;
 	instr->va = emu->eip;
 	/* TODO discard cache when writing to this page! */
-  //  }
+  }
     return instr;
+}
+
+void cli_emu_disasm(cli_emu_t *emu, unsigned count)
+{
+    unsigned i;
+    struct dis_instr *instr;
+
+    for (i=0;i<count;i++) {
+     instr = disasm(emu);
+     emu->eip += instr->len;
+    }
 }
 
 static always_inline uint32_t readreg(const cli_emu_t *emu,
@@ -1367,7 +1379,7 @@ int cli_emulator_step(cli_emu_t *emu)
 	if (import) {
 	    if (import->handler(emu, import->description, import->bytes) < 0)
 		return -1;
-	    printf("=%d\n", emu->reg_val[REG_EAX]);
+	    cli_dbgmsg("=%d\n", emu->reg_val[REG_EAX]);
 	    return 0;
 	}
     }

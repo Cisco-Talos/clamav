@@ -36,6 +36,19 @@
 #define MAXEMU 10000000
 
 static int topfd;
+static void spam_disasm(int fd, uint32_t ep, long len)
+{
+    char *data = cli_malloc(len);
+    if (!data)
+	return;
+    len = pread(fd, data, len, ep);
+    if (len > 0) {
+    }
+    free(data);
+}
+
+/* TODO: fmap this */
+
 static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, const char **virname, void *context)
 {
     struct timeval tv0, tv1;
@@ -45,6 +58,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     cli_emu_t *emu;
     int rc, done = 0;
     jmp_buf seh_handler;
+    uint32_t eip_save;
 
     if (fd != topfd)
 	return 0;
@@ -60,22 +74,29 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 
     if (!v)
 	return -1;
+    cli_dbgmsg("disasm dump ---\n");
+    emu = cli_emulator_new(v, pedata);
+    cli_emu_disasm(emu, 1024);
+    cli_emulator_free(emu);
+    cli_dbgmsg("disasm end ---\n");
+
     emu = cli_emulator_new(v, pedata);
 
     gettimeofday(&tv0, NULL);
 
     i = 0;
+    cli_dbgmsg("emulation start ------------------------------------------------\n\n");
     do {
     if (!(rc = setjmp(seh_handler))) {
 	for (;!cli_emulator_step(emu) && i < MAXEMU;i++) {
-		cli_emulator_dbgstate(emu);
+//		cli_emulator_dbgstate(emu);
 	}
 	done = 1;
     } else {
 	i++;
 	/* VMM raised exception */
 	printf("emulator raised exception\n");
-        cli_emulator_dbgstate(emu);
+//        cli_emulator_dbgstate(emu);
 	if (cli_emulator_seh(emu, rc) == -1) {
 	    printf("no handler\n");
 	    done = 1;
