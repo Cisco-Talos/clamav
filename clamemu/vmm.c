@@ -223,13 +223,13 @@ const struct dll_desc *lookup_dll(const char *name)
 static int function_cmp(const void* key, const void *b)
 {
     const struct import_desc *desc = (const struct import_desc*)b;
-    return strcmp(key, desc->name);
+    return desc->name ? strcmp(key, desc->name) : -1;
 }
 
 static int hook_cmp(const void* key, const void *b)
 {
     const struct hook_desc *desc = (const struct hook_desc*)b;
-    return strcmp(key, desc->name);
+    return desc->name ? strcmp(key, desc->name) : -1;
 }
 
 import_handler_t lookup_function(const struct dll_desc *dll, const char *func, unsigned *bytes)

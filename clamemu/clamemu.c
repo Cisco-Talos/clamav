@@ -131,11 +131,15 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     if (!v)
 	return -1;
     cli_dbgmsg("disasm dump ---\n");
-    freopen(filename1, "w", stderr);
-    emu = cli_emulator_new(v, pedata);
-    cli_emu_disasm(emu, 1024);
-    cli_emulator_free(emu);
-    freopen(filename3, "w", stderr);
+    if (!setjmp(seh_handler)) {
+	freopen(filename1, "w", stderr);
+	emu = cli_emulator_new(v, pedata);
+	cli_emu_disasm(emu, 1024);
+	cli_emulator_free(emu);
+	freopen(filename3, "w", stderr);
+    } else {
+	/* ignore, we disasm just what we can */
+    }
     cli_dbgmsg("disasm end ---\n");
 
     emu = cli_emulator_new(v, pedata);
