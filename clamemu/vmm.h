@@ -165,13 +165,14 @@ static always_inline void cli_emu_vmm_write1(emu_vmm_t *v, uint32_t va, const vo
 
 static always_inline void cli_emu_vmm_write(emu_vmm_t *v, uint32_t va, const void *value, uint32_t len)
 {
+    const char *val = value;
     while (len >= 4096) {
-	cli_emu_vmm_write1(v, va, value, 4096);
+	cli_emu_vmm_write1(v, va, val, 4096);
 	len -= 4096;
 	va += 4096;
-	(char*)value += 4096;
+	val += 4096;
     }
-    cli_emu_vmm_write1(v, va, value, len);
+    cli_emu_vmm_write1(v, va, val, len);
 }
 
 static always_inline void cli_emu_vmm_write8(emu_vmm_t *v, uint32_t va, uint32_t value)
