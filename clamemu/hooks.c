@@ -44,6 +44,8 @@ static int cb_messagebox(struct cli_emu *emu, const char *desc, unsigned bytes)
 
     printf("MessageBoxA(%x, caption='%s', text='%s', %d)\n", hwnd,
 	   caption, text, utype);
+    cli_dbgmsg("MessageBoxA(%x, caption='%s', text='%s', %d)\n", hwnd,
+	   caption, text, utype);
 
     free(caption);
     free(text);
@@ -63,6 +65,7 @@ static int cb_exitprocess(struct cli_emu *emu, const char *desc, unsigned bytes)
     POP32(&emu->eip);
     POP32(&rc);
     printf("ExitProcess(%x)\n", rc);
+    cli_dbgmsg("ExitProcess(%x)\n", rc);
     emu->eip = MAPPING_END - 0x42;
     return 0;
 }
@@ -79,6 +82,7 @@ static int cb_loadlibrary(struct cli_emu *emu, const char *desc, unsigned bytes)
     filename = cli_emu_vmm_read_string(emu->mem, lpfilename, 1024);
     dll = lookup_dll(filename);
     printf("LoadLibrary(%s)\n", filename);
+    cli_dbgmsg("LoadLibrary(%s)\n", filename);
     if (dll) {
 	emu->reg_val[REG_EAX] = map_dll(dll);
     }
@@ -99,6 +103,7 @@ static int cb_getprocaddress(struct cli_emu *emu, const char *desc, unsigned byt
 
     procname = cli_emu_vmm_read_string(emu->mem, lpprocname, 1024);
     printf("GetProcAddress(%x,%s)\n", hmodule, procname);
+    cli_dbgmsg("GetProcAddress(%x,%s)\n", hmodule, procname);
     if (hmodule >= LIBMAPPING && procname) {
 	dll_idx = (hmodule - LIBMAPPING)/4;
 	if (dll_idx < all_dlls_n) {
@@ -114,6 +119,7 @@ static int cb_getprocaddress(struct cli_emu *emu, const char *desc, unsigned byt
 	}
     }
     printf("->%08x\n", called_addr);
+    cli_dbgmsg("->%08x\n", called_addr);
 
     free(procname);
 
@@ -143,6 +149,7 @@ static int cb_virtualprotect(struct cli_emu *emu, const char *desc, unsigned byt
     POP32(&lpoldprotect);
 
     printf("VirtualProtect(%08x, %x, %x, %x)\n", lpaddress, size, newprotect, lpoldprotect);
+    cli_dbgmsg("VirtualProtect(%08x, %x, %x, %x)\n", lpaddress, size, newprotect, lpoldprotect);
     rwx = cli_emu_vmm_prot_get(emu->mem, lpaddress);
     switch (rwx) {
 	case 0:
@@ -203,6 +210,7 @@ static int cb_getcommandline(struct cli_emu *emu, const char *desc, unsigned byt
     unsigned n;
     POP32(&emu->eip);
     printf("GetCommandLineA()\n");
+    cli_dbgmsg("GetCommandLineA()\n");
     n = strlen(cmdline) + 1;
     cli_emu_vmm_alloc(emu->mem, n, &lpcmdline);
     cli_emu_vmm_write(emu->mem, lpcmdline, cmdline, n);
@@ -219,6 +227,7 @@ static int cb_getmodulefilename(struct cli_emu *emu, const char *desc, unsigned 
     POP32(&nsize);
 
     printf("GetModuleFileName(%x, %x, %d)\n", hmodule, lpfilename, nsize);
+    cli_dbgmsg("GetModuleFileName(%x, %x, %d)\n", hmodule, lpfilename, nsize);
     if (hmodule)
 	return 0;/* not emulated yet */
     if (strlen(cmdline) + 1 < nsize)
@@ -250,6 +259,9 @@ static int cb_createfile(struct cli_emu *emu, const char *desc, unsigned bytes)
     printf("CreateFileA(%s, %x, %x, %x, %x, %x, %x)\n",
 	   filename, dwdesiredaccess, dwsharemode, lpsecurityattributes,
 	   dwcreationdisposition, dwflagsandattributes, htemplatefile);
+    cli_dbgmsg("CreateFileA(%s, %x, %x, %x, %x, %x, %x)\n",
+	   filename, dwdesiredaccess, dwsharemode, lpsecurityattributes,
+	   dwcreationdisposition, dwflagsandattributes, htemplatefile);
     /* TODO: only opening self is supported for now */
     if (!strcmp(filename, cmdline)) {
 	emu->reg_val[REG_EAX] = HANDLE_SELF;
@@ -268,6 +280,7 @@ static int cb_getfilesize(struct cli_emu *emu, const char *desc, unsigned bytes)
     POP32(&lpfilesizehigh);
 
     printf("GetFileSize(%x, %x)\n", hfile, lpfilesizehigh);
+    cli_dbgmsg("GetFileSize(%x, %x)\n", hfile, lpfilesizehigh);
     if (hfile == HANDLE_SELF) {
 	emu->reg_val[REG_EAX] = emu->mem->filesize;
 	if (lpfilesizehigh)
@@ -286,6 +299,7 @@ static int cb_globalalloc(struct cli_emu *emu, const char *desc, unsigned bytes)
     POP32(&dwbytes);
 
     printf("GlobalAlloc(%x, %d)\n", uflags, dwbytes);
+    cli_dbgmsg("GlobalAlloc(%x, %d)\n", uflags, dwbytes);
     cli_emu_vmm_alloc(emu->mem, dwbytes, &addr);
     emu->reg_val[REG_EAX] = addr;
     return 0;
@@ -305,6 +319,8 @@ static int cb_readfile(struct cli_emu *emu, const char *desc, unsigned bytes)
     POP32(&lpoverlapped);
 
     printf("ReadFile(%x, %x, %d, %x, %x)\n",
+	   hfile, lpbuffer, numberofbytestoread, lpnumberofbytesread, lpoverlapped);
+    cli_dbgmsg("ReadFile(%x, %x, %d, %x, %x)\n",
 	   hfile, lpbuffer, numberofbytestoread, lpnumberofbytesread, lpoverlapped);
 
     if (hfile == HANDLE_SELF) {
