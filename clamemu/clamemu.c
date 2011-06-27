@@ -23,6 +23,7 @@
 #include "emulator.h"
 #include "vmm.h"
 #include "others.h"
+#include "md5.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -48,6 +49,27 @@ static void spam_disasm(int fd, uint32_t ep, long len)
 }
 
 /* TODO: fmap this */
+static int md5_file(int fd, unsigned char result[16], unsigned size)
+{
+    cli_md5_ctx ctx;
+    unsigned i;
+    char buf[BUFSIZ];
+
+    cli_md5_init(&ctx);
+
+    for (i=0;i<size;) {
+	int rc = pread(fd, buf, sizeof(buf), i);
+	if (rc <= 0) {
+	    perror("pread");
+	    return -1;
+	}
+	i += rc;
+	cli_md5_update(&ctx, buf, rc);
+    }
+
+    cli_md5_final(result, &ctx);
+    return 0;
+}
 
 static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sections, int fd, const char **virname, void *context)
 {
@@ -59,9 +81,40 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     int rc, done = 0;
     jmp_buf seh_handler;
     uint32_t eip_save;
+    unsigned char result[16];
+    struct stat sb;
+    char filename1[128];
+    char filename2[128];
+    char filename3[128];
 
     if (fd != topfd)
 	return 0;
+
+    if (fstat(fd, &sb) == -1)
+	return 0;
+    if (md5_file(fd, result, sb.st_size) == -1)
+	return 0;
+    snprintf(filename1, sizeof(filename1),
+		 "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x.disasm",
+		 result[0], result[1], result[2], result[3], result[4],
+		 result[5], result[6], result[7], result[8], result[9],
+		 result[10], result[11], result[12], result[13], result[14],
+		 result[15]);
+
+    snprintf(filename2, sizeof(filename2),
+		 "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x.emulate",
+		 result[0], result[1], result[2], result[3], result[4],
+		 result[5], result[6], result[7], result[8], result[9],
+		 result[10], result[11], result[12], result[13], result[14],
+		 result[15]);
+    snprintf(filename3, sizeof(filename3),
+		 "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x.debug",
+		 result[0], result[1], result[2], result[3], result[4],
+		 result[5], result[6], result[7], result[8], result[9],
+		 result[10], result[11], result[12], result[13], result[14],
+		 result[15]);
+
+
     cli_dbgmsg("emulating -----------------------------------------------------\n\n");
     if (!setjmp(seh_handler))
 	v = cli_emu_vmm_new(pedata, sections, fd, &seh_handler);
@@ -75,9 +128,11 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
     if (!v)
 	return -1;
     cli_dbgmsg("disasm dump ---\n");
+    freopen(filename1, "w", stderr);
     emu = cli_emulator_new(v, pedata);
     cli_emu_disasm(emu, 1024);
     cli_emulator_free(emu);
+    freopen(filename3, "w", stderr);
     cli_dbgmsg("disasm end ---\n");
 
     emu = cli_emulator_new(v, pedata);
@@ -86,6 +141,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 
     i = 0;
     cli_dbgmsg("emulation start ------------------------------------------------\n\n");
+    freopen(filename2, "w", stderr);
     do {
     if (!(rc = setjmp(seh_handler))) {
 	for (;!cli_emulator_step(emu) && i < MAXEMU;i++) {
@@ -107,6 +163,7 @@ static int emupe(struct cli_pe_hook_data *pedata, struct cli_exe_section *sectio
 
     cli_emu_vmm_rebuild(v);
     cli_emulator_free(emu);
+    freopen(filename3, "w", stderr);
     cli_dbgmsg("emulation done ------------------------------------------------\n\n");
     delta = (tv1.tv_sec - tv0.tv_sec)*1000000 + (tv1.tv_usec - tv0.tv_usec);
     if (!delta) delta = 1;
