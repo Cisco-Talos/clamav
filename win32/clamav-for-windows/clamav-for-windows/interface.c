@@ -115,6 +115,7 @@ struct {
 } *instances = NULL;
 unsigned int ninsts_total = 0;
 unsigned int ninsts_avail = 0;
+unsigned int official_sigs, custom_sigs;
 HANDLE instance_mutex;
 
 BOOL minimal_definitions = FALSE;
@@ -306,6 +307,10 @@ BOOL interface_setup(void) {
 static int sigload_callback(const char *type, const char *name, unsigned int custom, void *context) {
     if(minimal_definitions && (custom || strcmp(type, "fp")))
 	return 1;
+    if(custom)
+	custom_sigs++;
+    else if(strcmp(type, "fp"))
+	official_sigs++;
     return 0;
 }
 
@@ -361,6 +366,7 @@ static int load_db(void) {
     INFN();
 
     cl_engine_set_clcb_sigload(engine, sigload_callback, NULL);
+    official_sigs = custom_sigs = 0;
     if((ret = cl_load(dbdir, engine, &signo, CL_DB_STDOPT & ~CL_DB_PHISHING & ~CL_DB_PHISHING_URLS)) != CL_SUCCESS) {
 	cl_engine_free(engine);
 	engine = NULL;
@@ -380,6 +386,21 @@ static int load_db(void) {
     touch_last_update(signo);
 
     WIN();
+}
+
+int CLAMAPI Scan_HaveSigs(unsigned int *official, unsigned int *custom) {
+    int ret;
+    if(lock_engine())
+	FAIL(-1, "failed to lock engine");
+    if(!engine) {
+	unlock_engine();
+	FAIL(-1, "No engine available");
+    }
+    ret = ((official_sigs + custom_sigs) > 0);
+    if(official) *official = official_sigs;
+    if(custom) *custom = custom_sigs;
+    unlock_engine();
+    return ret;
 }
 
 static void free_engine_and_unlock(void) {

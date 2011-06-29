@@ -261,8 +261,18 @@ int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int
 /*
  * Returns the outer file type as an _int64[2] for the give HANDLE
  * Scan is not performed and no callback is invoked
+ * INPUT @param hFile : file handle whose type is to be determined
+ * OUTPUT @param filetype : result array (_int64[2])
  */
  int CLAMAPI Scan_GetFileType(HANDLE hFile, _int64 *filetype);
+
+/*
+ * Checks if any meaningful signature is loaded
+ * Returns 0 (false), 1 (true) or -1 (error)
+ * OUTPUT @param official : set to the number of official signatures loaded, unless NULL
+ * OUTPUT @param custom : set to the number of custom signatures loaded, unless NULL
+ */
+ int CLAMAPI Scan_HaveSigs(unsigned int *official, unsigned int *custom);
 
 /*
  * MANDATORY SUPPORT
