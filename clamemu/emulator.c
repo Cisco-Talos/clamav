@@ -359,7 +359,7 @@ DisassembleAt(emu_vmm_t *v, struct dis_instr* result, uint32_t offset)
     const uint8_t *next;
 
     cli_emu_vmm_read_x(v, offset, dis, sizeof(dis));
-
+    memset(&res, 0, sizeof(res));
     next = cli_disasm_one(dis, sizeof(dis), &res, 1);
     result->operation_size = res.opsize;
     result->address_size = res.adsize;
@@ -446,6 +446,10 @@ void cli_emu_disasm(cli_emu_t *emu, unsigned count)
 
     for (i=0;i<count;i++) {
      instr = disasm(emu);
+     if (!instr) {
+	 cli_dbgmsg("disasm failed\n");
+	 break;
+     }
      emu->eip += instr->len;
     }
 }

@@ -136,20 +136,48 @@ char* cli_emu_vmm_read_string(emu_vmm_t *v, uint32_t va, uint32_t maxlen)
     const uint8_t *data, *end;
     char *s;
     cached_page_t *p;
+    size_t left;
+
     if (maxlen > 4096)
 	maxlen = 4096;
+
+    s = cli_malloc(maxlen);
+
     p = vmm_cache_2page(v, va);
     if (!p)
 	return NULL;
     data = p->data + (va & 0xfff);
-    end = memchr(data, 0, maxlen);
-    if (!end)
-	end = data + maxlen;
-    s = malloc(end - data + 1);
-    if (!s)
-	return NULL;
-    memcpy(s, data, end - data);
-    s[end-data] = '\0';
+    left = 0x1000 - (va&0xfff);
+    if (left > maxlen)
+	left = maxlen;
+    end = memchr(data, 0, left);
+    if (!end) {
+	char *s2;
+	memcpy(s, data, left);
+	s2 = s + left;
+	va += left;
+	maxlen -= left;
+	if (maxlen) {
+	    p = vmm_cache_2page(v, va);
+	    data = p->data + (va & 0xfff);
+	    left = 0x1000 - (va&0xfff);
+	    if (left > maxlen)
+		left = maxlen;
+	    end = memchr(data, 0, left);
+	    if (!end)
+		end = data + left;
+	    memcpy(s2, data, end-data);
+	    s2 += end-data;
+	    *s2++ = '\0';
+	    s = cli_realloc(s, s2-s);
+	}
+    } else {
+	s = malloc(end - data + 1);
+	if (!s)
+	    return NULL;
+	memcpy(s, data, end - data);
+	s[end-data] = '\0';
+    }
     return s;
 }
 
