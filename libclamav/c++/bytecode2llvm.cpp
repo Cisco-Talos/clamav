@@ -1876,25 +1876,28 @@ INITIALIZE_PASS_END(RuntimeLimits, "rl" ,"Runtime Limits", false, false)
 
 static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t watchdog_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t watchdog_cond2 = PTHREAD_COND_INITIALIZER;
 static int watchdog_running = 0;
 
 struct watchdog_item {
     volatile uint8_t* timeout;
     struct timespec abstimeout;
     struct watchdog_item *next;
+    int in_use;
 };
 
 static struct watchdog_item* watchdog_head = NULL;
 static struct watchdog_item* watchdog_tail = NULL;
 
+extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
 #define WATCHDOG_IDLE 10
 static void *bytecode_watchdog(void *arg)
 {
     struct timeval tv;
     struct timespec out;
-
+    int ret;
+    char err[128];
     pthread_mutex_lock(&watchdog_mutex);
-    watchdog_running = 1;
     if (cli_debug_flag)
 	cli_dbgmsg_internal("bytecode watchdog is running\n");
     do {
@@ -1903,16 +1906,35 @@ static void *bytecode_watchdog(void *arg)
 	out.tv_sec = tv.tv_sec + WATCHDOG_IDLE;
 	out.tv_nsec = tv.tv_usec*1000;
 	/* wait for some work, up to WATCHDOG_IDLE time */
-	while (watchdog_head == NULL &&
-	       pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
-				      &out) != ETIMEDOUT) {}
+	while (watchdog_head == NULL) {
+	    ret = pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
+					 &out);
+	    if (ret == ETIMEDOUT)
+		break;
+	    if (ret) {
+		cli_warnmsg("bytecode_watchdog: cond_timedwait(1) failed: %s\n",
+			    cli_strerror(ret, err, sizeof(err)));
+		break;
+	    }
+	}
 	if (watchdog_head == NULL)
 	    break;
 	/* wait till timeout is reached on this item */
 	item = watchdog_head;
-	while (item == watchdog_head &&
-	       pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
-				      &item->abstimeout) != ETIMEDOUT) {}
+	while (item == watchdog_head) {
+	    item->in_use = 1;
+	    ret = pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
+					 &item->abstimeout);
+	    if (ret == ETIMEDOUT)
+		break;
+	    if (ret) {
+		cli_warnmsg("bytecode_watchdog: cond_timedwait(2) failed: %s\n",
+			    cli_strerror(ret, err, sizeof(err)));
+		break;
+	    }
+	}
+	item->in_use = 0;
+	pthread_cond_signal(&watchdog_cond2);
 	if (item != watchdog_head)
 	    continue;/* got removed meanwhile */
 	/* timeout reached, signal it to bytecode */
@@ -1929,7 +1951,6 @@ static void *bytecode_watchdog(void *arg)
     return NULL;
 }
 
-extern "C" const char *cli_strerror(int errnum, char* buf, size_t len);
 static void watchdog_disarm(struct watchdog_item *item)
 {
     struct watchdog_item *q, *p = NULL;
@@ -1945,6 +1966,12 @@ static void watchdog_disarm(struct watchdog_item *item)
 	if (q == watchdog_tail)
 	    watchdog_tail = p;
     }
+    /* don't remove the item from the list until the watchdog is sleeping on
+     * item, or it'll wake up on uninit data */
+    while (item->in_use) {
+	pthread_cond_signal(&watchdog_cond);
+	pthread_cond_wait(&watchdog_cond2, &watchdog_mutex);
+    }
     pthread_mutex_unlock(&watchdog_mutex);
 }
 
@@ -1956,6 +1983,7 @@ static int watchdog_arm(struct watchdog_item *item, int ms, volatile uint8_t *ti
     *timeout = 0;
     item->timeout = timeout;
     item->next = NULL;
+    item->in_use = 0;
 
     gettimeofday(&tv0, NULL);
     tv0.tv_usec += ms * 1000;
@@ -1973,6 +2001,8 @@ static int watchdog_arm(struct watchdog_item *item, int ms, volatile uint8_t *ti
 	    char buf[256];
 	    cli_errmsg("(watchdog) pthread_create failed: %s\n", cli_strerror(rc, buf, sizeof(buf)));
 	}
+	if (!rc)
+	    watchdog_running = 1;
 	pthread_attr_destroy(&attr);
     }
     if (!rc) {
