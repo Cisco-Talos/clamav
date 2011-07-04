@@ -2030,6 +2030,13 @@ static void emax_reached(cli_ctx *ctx) {
 #define LINESTR(x) #x
 #define LINESTR2(x) LINESTR(x)
 #define __AT__  " at line "LINESTR2(__LINE__)
+
+#define early_ret_from_magicscan(retcode) \
+    do {\
+	cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", retcode, __AT__);\
+	return retcode;                                                                         \
+    } while(0)
+
 #define ret_from_magicscan(retcode) \
     do {											\
 	cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__); 			\
@@ -2052,6 +2059,11 @@ static void emax_reached(cli_ctx *ctx) {
 		cli_warnmsg("cli_magic_scandesc: ignoring bad return code from post_scan callback\n");	\
 	    }											\
 	    perf_stop(ctx, PERFT_POSTCB);							\
+	}											\
+	if (retcode == CL_CLEAN && cache_clean) {                                               \
+	    perf_start(ctx, PERFT_CACHE);                                                       \
+	    cache_add(hash, hashed_size, ctx);                                                  \
+	    perf_stop(ctx, PERFT_CACHE);							\
 	}											\
 	return retcode;										\
     } while(0)
@@ -2091,27 +2103,28 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
+	int cache_clean = 0;
 	int desc = fmap_fd(*ctx->fmap);/* TODO: port the rest to fmap, and keep this just for pre/post callbacks */
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
 	emax_reached(ctx);
-	ret_from_magicscan(CL_CLEAN);
+	early_ret_from_magicscan(CL_CLEAN);
     }
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
-	ret_from_magicscan(CL_ENULLARG);
+	early_ret_from_magicscan(CL_ENULLARG);
     }
 
     if(!(ctx->engine->dboptions & CL_DB_COMPILED)) {
 	cli_errmsg("CRITICAL: engine not compiled\n");
-	ret_from_magicscan(CL_EMALFDB);
+	early_ret_from_magicscan(CL_EMALFDB);
     }
 
     if(cli_updatelimits(ctx, (*ctx->fmap)->len)!=CL_CLEAN) {
 	emax_reached(ctx);
-        ret_from_magicscan(CL_CLEAN);
+        early_ret_from_magicscan(CL_CLEAN);
     }
 
     perf_start(ctx, PERFT_FT);
@@ -2121,7 +2134,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	ret_from_magicscan(CL_EREAD);
+	early_ret_from_magicscan(CL_EREAD);
     }
     filetype = cli_ftname(type);
     CALL_PRESCAN_CB(cb_pre_cache);
@@ -2129,7 +2142,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     perf_start(ctx, PERFT_CACHE);
     if(cache_check(hash, ctx) == CL_CLEAN) {
 	perf_stop(ctx, PERFT_CACHE);
-	ret_from_magicscan(CL_CLEAN);
+	early_ret_from_magicscan(CL_CLEAN);
     }
     perf_stop(ctx, PERFT_CACHE);
     hashed_size = (*ctx->fmap)->len;
@@ -2143,11 +2156,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 
 	CALL_PRESCAN_CB(cb_pre_scan);
+	/* ret_from_magicscan can be used below here*/
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	else if(ret == CL_CLEAN) {
 	    if(ctx->recursion != ctx->engine->maxreclevel)
-		cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */
+		cache_clean = 1; /* Only cache if limits are not reached */
 	    else
 		emax_reached(ctx);
 	}
@@ -2157,6 +2171,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     CALL_PRESCAN_CB(cb_pre_scan);
+    /* ret_from_magicscan can be used below here*/
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(!ctx->sha_collect && type==CL_TYPE_MSEXE) ctx->sha_collect = 1;
@@ -2483,9 +2498,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
 	case CL_CLEAN:
-	    perf_start(ctx, PERFT_CACHE);
-	    cache_add(hash, hashed_size, ctx);
-	    perf_stop(ctx, PERFT_CACHE);
+	    cache_clean = 1;
 	    ret_from_magicscan(CL_CLEAN);
 	default:
 	    ret_from_magicscan(ret);
@@ -2503,11 +2516,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
     if(fstat(desc, &sb) == -1) {
 	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
-	ret_from_magicscan(CL_ESTAT);
+	early_ret_from_magicscan(CL_ESTAT);
     }
     if(sb.st_size <= 5) {
 	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) sb.st_size);
-	return CL_CLEAN;
+	early_ret_from_magicscan(CL_CLEAN);
     }
 
     ctx->fmap++;
@@ -2516,7 +2529,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_errmsg("CRITICAL: fmap() failed\n");
 	ctx->fmap--;
 	perf_stop(ctx, PERFT_MAP);
-	return CL_EMEM;
+	early_ret_from_magicscan(CL_EMEM);
     }
     perf_stop(ctx, PERFT_MAP);
 
