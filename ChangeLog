@@ -1,3 +1,7 @@
+Thu Jul 14 12:20:04 CEST 2011 (acab)
+------------------------------------
+ * clamav-milter/clamfi.c: fix typo in error message (bb#3040)
+
 Thu Jul 14 12:07:04 CEST 2011 (acab)
 ------------------------------------
  * libclamav/lzma_iface.c: shut up huge alloc warns for 7z/lzma (bb#2913)

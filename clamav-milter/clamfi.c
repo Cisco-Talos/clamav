@@ -557,7 +557,7 @@ int init_actions(struct optstruct *opts) {
 	else if(!strcasecmp(opt->strarg, "Full"))
 	    loginfected |= LOGCLN_FULL;
 	else if(strcasecmp(opt->strarg, "Off")) {
-	    logg("!Invalid setting %s for option LogInfected\n", opt->strarg);
+	    logg("!Invalid setting %s for option LogClean\n", opt->strarg);
 	    return 1;
 	}
     }
