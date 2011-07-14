@@ -58,9 +58,13 @@ test_start() {
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
 EOF
     port=331$1
-    if test "x$RANDOM" != "x"; then
-	port=1`expr 100 + \( $RANDOM % 899 \)`$1
-    fi
+    tries=0
+    while nc -z localhost $port 2>/dev/null
+	do rand=` ( echo $$ ; time ps 2>&1 ; date ) | cksum | cut -f1 -d" " `
+	port=1`expr 100 + \( $rand % 899 \)`$1
+	[ $tries -gt 100 ] && echo Giving up, too many ports open && exit 1
+	tries=`expr $tries + 1`
+    done
     cat <<EOF >test-clamd.conf
 LogFile `pwd`/clamd-test.log
 LogFileMaxSize 0
