@@ -393,7 +393,7 @@ AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_LIBCHECK_TRUE@check_clamd_SOURCES = check_clamd.c checks_common.h
 @HAVE_LIBCHECK_TRUE@check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
 @HAVE_LIBCHECK_TRUE@check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
-CLEANFILES = lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied
+CLEANFILES = lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb
 EXTRA_DIST = .split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
 @ENABLE_COVERAGE_TRUE@LCOV_OUTPUT = lcov.out
 @ENABLE_COVERAGE_TRUE@LCOV_HTML = lcov_html

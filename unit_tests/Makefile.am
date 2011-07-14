@@ -56,7 +56,7 @@ $(top_builddir)/test/clam.exe:
 quick-check:
 	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied
+CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb
 EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
