@@ -3485,7 +3485,7 @@ AM_BACKSLASH='\'
 $as_echo "#define PACKAGE PACKAGE_NAME" >>confdefs.h
 
 
-VERSION="0.97.1"
+VERSION="devel-`date +%Y%m%d`"
 
 cat >>confdefs.h <<_ACEOF
 #define VERSION "$VERSION"
