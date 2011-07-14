@@ -1,3 +1,7 @@
+Thu Jul 14 12:29:17 EEST 2011 (edwin)
+------------------------------------
+ * libclamav/pdf.c: fix encrypted pdf detection (bb #2988)
+
 Thu Jul 14 12:20:04 CEST 2011 (acab)
 ------------------------------------
  * clamav-milter/clamfi.c: fix typo in error message (bb#3040)

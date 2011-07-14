@@ -1325,6 +1325,11 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
     O = U = NULL;
     do {
 	EM = pdf_readbool(q, len, "/EncryptMetadata", 1);
+	P = pdf_readint(q, len, "/P");
+	if (P == ~0u) {
+	    cli_dbgmsg("cli_pdf: invalid P\n");
+	    break;
+	}
 
 	q2 = cli_memstr(q, len, "/Standard", 9);
 	if (!q2) {
@@ -1379,11 +1384,6 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 		dbg_printhex("too long U", U, n);
 		break;
 	    }
-	}
-	P = pdf_readint(q, len, "/P");
-	if (P == ~0u) {
-	    cli_dbgmsg("cli_pdf: invalid P\n");
-	    break;
 	}
 	length = pdf_readint(q, len, "/Length");
 	if (length == ~0u)
