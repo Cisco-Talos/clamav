@@ -1,3 +1,7 @@
+Tue Jul 19 18:30:53 CEST 2011 (acab)
+------------------------------------
+ * libclamav/autoit.c: avoid dumping uninit data on autoit failure (bb#3051)
+
 Thu Jul 14 12:29:17 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: fix encrypted pdf detection (bb #2988)
