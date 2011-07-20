@@ -10,6 +10,15 @@ Thu Jul 14 12:07:04 CEST 2011 (acab)
 ------------------------------------
  * libclamav/lzma_iface.c: shut up huge alloc warns for 7z/lzma (bb#2913)
 
+Thu Jun 30 14:24:34 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: fix use of unaddressable data in
+ bytecode_watchdog. Thanks to Michael Scheidell for providing feedback on this bug.
+
+Tue Jun 7 12:03:19 EEST 2011 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: fix safebrowsing detection on certain URLs
+
 Thu Jun  9 09:10:49 CEST 2011 (tk)
 ----------------------------------
  * V 0.97.1
