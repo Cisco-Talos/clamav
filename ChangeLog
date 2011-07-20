@@ -14,9 +14,19 @@ Thu Jul 14 12:07:04 CEST 2011 (acab)
 ------------------------------------
  * libclamav/lzma_iface.c: shut up huge alloc warns for 7z/lzma (bb#2913)
 
+Thu Jun 30 14:24:34 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/c++/bytecode2llvm.cpp: fix use of unaddressable data in
+ bytecode_watchdog. Thanks to Michael Scheidell for providing feedback on this bug.
+
 Sat Jun 18 17:44:42 CEST 2011 (acab)
 ------------------------------------
  * clamav-milter: add config option "SupportMultipleRecipients" (bb#2879)
+ 
+Tue Jun 7 12:03:19 EEST 2011 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: fix safebrowsing detection on certain URLs
+
 
 Thu Jun  9 08:22:31 CEST 2011 (acab)
 ------------------------------------
@@ -11272,7 +11282,7 @@ Sat Jun 17 21:17:20 CEST 2006 (tk)
 Fri Jun 16 16:03:45 CEST 2006 (tk)
 ----------------------------------
   * libclamav/readdb.c: fix small memory leak in cl_free()
-			Patch by Török Edvin <edwintorok*gmail.com>
+			Patch by Tï¿½rï¿½k Edvin <edwintorok*gmail.com>
 
 Fri Jun 16 11:16:35 CEST 2006 (tk)
 ----------------------------------
@@ -15123,7 +15133,7 @@ Sat Aug  7 14:10:57 BST 2004 (njh)
 Sat Aug  7 01:33:14 CEST 2004 (tk)
 ----------------------------------
   * libclamav: matcher-bm: fix node sorting (false negative example provided
-	       by René Bellora <rbellora*tecnoaccion.com.ar>)
+	       by Renï¿½ Bellora <rbellora*tecnoaccion.com.ar>)
 
 Fri Aug  6 11:09:22 BST 2004 (njh)
 ----------------------------------
@@ -16222,7 +16232,7 @@ Sat Apr 10 21:28:40 CEST 2004 (tk)
 Sat Apr 10 08:02:20 BST 2004 (njh)
 ----------------------------------
   * docs/man/clamav-milter.8:	Clarified --force-scan (thanks to
-	Søren Thing Andersen <soeren*thing.dk>)
+	Sï¿½ren Thing Andersen <soeren*thing.dk>)
 
 Fri Apr  9 09:50:52 BST 2004 (njh)
 ----------------------------------
@@ -17399,7 +17409,7 @@ Wed Jan 14 10:09:30 GMT 2004 (njh)
 Wed Jan 14 04:44:03 CET 2004 (tk)
 ---------------------------------
   * libclamav: reversed zziplib patch from 20031224 (due to a problem reported
-	       by René Bellora <rbellora*tecnoaccion.com.ar>)
+	       by Renï¿½ Bellora <rbellora*tecnoaccion.com.ar>)
   * freshclam: display a warning if the engine is outdated
   * docs: manual page updates
 
@@ -17480,7 +17490,7 @@ Sat Jan  3 11:30:38 CET 2004 (tk)
 ---------------------------------
   * libclamav: fixed handling of multipart signatures (broken since Dec 2).
 	       The bug was introduced by _me_ and not by the Thomas Lamy's
-	       patch. Problem found and reported by René Bellora
+	       patch. Problem found and reported by Renï¿½ Bellora
 	       <rbellora*tecnoaccion.com.ar>, Jean-Christophe Heger
 	       <jcheger*acytec.com> and Tomasz Papszun <tomek*clamav.net>.
 	       Many thanks !
@@ -17562,7 +17572,7 @@ Fri Dec 12 21:07:49 CET 2003 (tk)
 Fri Dec 12 18:47:10 CET 2003 (tk)
 ---------------------------------
   * clamd: clamuko - fixed a segmentation fault after database update. Problem
-	   reported by Anders Herbjørnsen <andersh*gar.no>. Also now clamuko
+	   reported by Anders Herbjï¿½rnsen <andersh*gar.no>. Also now clamuko
 	   is always stopped before (and restarted after) db update to
 	   protect against a potential split with Dazuko.
   * libclamav: scanners: added missing braces in a logical block (thanks to
@@ -17789,7 +17799,7 @@ Tue Nov 11 22:47:37 CET 2003 (tk)
   * docs/manpages: updated
   * docs/clamdoc.pdf: rewritten
   * docs/Turkish: included Turish clamdoc.pdf translation by yavuz kaya and
-		  Ýbrahim erken
+		  ï¿½brahim erken
 
 Tue Nov 11 13:51:23 IST 2003 (njh)
 ----------------------------------
@@ -18255,7 +18265,7 @@ Wed Jun 25 03:07:10 CEST 2003
   * freshclam: switch to a mirror when downloaded md5 check sum doesn't
 	       match the database (errno 54, man freshclam)
   * freshclam: mirrors.txt - added clamav.rulez.pl mirror managed by
-	       £ukasz Jaros³aw Mozer <lukasz*netx.waw.pl>
+	       ï¿½ukasz Jarosï¿½aw Mozer <lukasz*netx.waw.pl>
   * clamd, libclamav, clamscan: fixed a bug introduced in 0.60 - closedir(dd)
 				was called even when dd was not correctly opened
   * libclamav: mbox - patch for a segfault with some nasty messages which
