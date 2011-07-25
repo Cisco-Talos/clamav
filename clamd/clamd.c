@@ -440,10 +440,10 @@ int main(int argc, char **argv)
 	    enum bytecode_security s;
 	    if (!strcmp(opt->strarg, "TrustSigned")) {
 		s = CL_BYTECODE_TRUST_SIGNED;
-		logg("Bytecode: Security mode set to \"TrustSigned\".\n");
+		logg("#Bytecode: Security mode set to \"TrustSigned\".\n");
 	    } else if (!strcmp(opt->strarg, "Paranoid")) {
 		s = CL_BYTECODE_TRUST_NOTHING;
-		logg("Bytecode: Security mode set to \"Paranoid\".\n");
+		logg("#Bytecode: Security mode set to \"Paranoid\".\n");
 	    } else {
 		logg("!Unable to parse bytecode security setting:%s\n",
 		    opt->strarg);
@@ -451,14 +451,14 @@ int main(int argc, char **argv)
 		break;
 	    }
 	    if ((ret = cl_engine_set_num(engine, CL_ENGINE_BYTECODE_SECURITY, s))) {
-		logg("Invalid bytecode security setting %s: %s\n", opt->strarg, cl_strerror(ret));
+		logg("^Invalid bytecode security setting %s: %s\n", opt->strarg, cl_strerror(ret));
 		ret = 1;
 		break;
 	    }
 	}
 	if((opt = optget(opts,"BytecodeUnsigned"))->enabled) {
 	    dboptions |= CL_DB_BYTECODE_UNSIGNED;
-	    logg("Bytecode: Enabled support for unsigned bytecode.\n");
+	    logg("#Bytecode: Enabled support for unsigned bytecode.\n");
 	}
 	if((opt = optget(opts,"BytecodeMode"))->enabled) {
 	    enum bytecode_mode mode;
@@ -476,7 +476,7 @@ int main(int argc, char **argv)
 	    cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 	}
     } else
-	logg("Bytecode support disabled.\n");
+	logg("#Bytecode support disabled.\n");
 
     if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
