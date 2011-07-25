@@ -1,3 +1,7 @@
+Mon Jul 25 16:42:31 CEST 2011 (tk)
+----------------------------------
+ * V 0.97.2
+
 Mon Jul 25 14:33:59 CEST 2011 (acab)
 ------------------------------------
  * libclamav/matcher-hash.c: off by one read in cli_hm_scan (bb#2818)
