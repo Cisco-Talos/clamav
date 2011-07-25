@@ -2,6 +2,52 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.97.2
+------
+
+ClamAV 0.97.2 fixes problems with the bytecode engine, Safebrowsing detection,
+hash matcher, and other minor issues. Please see the ChangeLog file for
+details.
+
+*** Announcement ***
+
+The ClamAV project is launching a new service called "Third Party web
+interface". It will allow selected individuals/organizations to publish
+ClamAV Virus Databases (CVD) through the ClamAV mirror network.
+
+If you choose to publish your signatures through our Third Party
+web interface you will benefit from the following:
+
+- before publishing the signatures, we will test them for
+  false positives against our false positive file collection.
+- before publishing the signatures, we'll verify that the latest two major
+  versions of ClamAV can load them correctly.
+- the signatures will be digitally signed and packaged into a single
+  .cvd compressed file.
+- there will be no ".UNOFFICIAL" suffix in the detection names.
+- a custom prefix will be added to the detection names, identifying the
+  organization which published the signature.
+- updates will be distributed both as full CVD files and cdiff
+  incremental updates. Users will benefit from lower network traffic.
+- the .cvd and .cdiff files will be distributed through the
+  ClamAV mirror network.
+- the service should result in faster remediation of false positives.
+- ClamAV users will be able to download the third party databases
+  using freshclam, by adding a single line to freshclam.conf, what
+  should make signature maintenance significantly easier.
+
+The service is still in beta, you are welcome to contact Luca Gibelli
+<luca*clamav.net> if you intend to join the beta program.
+
+We especially welcome those who already distribute their own unofficial
+signatures to join. A list of databases distributed by the new service
+will be available at http://www.clamav.net/download/cvd/3rdparty
+
+We will be happy to answer any questions you might have.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
 
 0.97.1
 ------
