@@ -219,7 +219,7 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
     keylen = hashlen[type];
 
     l = 0;
-    r = szh->items;
+    r = szh->items - 1;
     while(l <= r) {
 	size_t c = (l + r) / 2;
 	int res = hm_cmp(digest, &szh->hash_array[keylen * c], keylen);

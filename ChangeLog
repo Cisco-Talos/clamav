@@ -1,3 +1,7 @@
+Mon Jul 25 14:33:59 CEST 2011 (acab)
+------------------------------------
+ * libclamav/matcher-hash.c: off by one read in cli_hm_scan (bb#2818)
+
 Thu Jul 14 12:29:17 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: fix encrypted pdf detection (bb #2988)
