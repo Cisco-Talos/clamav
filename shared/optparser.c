@@ -376,7 +376,7 @@ const struct clam_option __clam_options[] = {
 
     { "CompressLocalDatabase", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "By default freshclam will keep the local databases (.cld) uncompressed to\nmake their handling faster. With this option you can enable the compression.\nThe change will take effect with the next database update.", "" },
 
-    { "ExtraDatabase", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Download additional database. This option can be used multiple times.", "dbname1\ndbname2" },
+    { "ExtraDatabase", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Download an additional 3rd party signature database distributed through\nthe ClamAV mirrors. Here you can find a list of available databases:\nhttp://www.clamav.net/download/cvd/3rdparty\nThis option can be used multiple times.", "dbname1\ndbname2" },
 
     { "DatabaseCustomURL", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "With this option you can provide custom sources (http:// or file://) for database files.\nThis option can be used multiple times.", "http://myserver.com/mysigs.ndb\nfile:///mnt/nfs/local.hdb" },
 
