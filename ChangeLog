@@ -1,3 +1,7 @@
+Mon Jul 25 16:09:19 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: fix opcode 20 error (bb #3100)
+
 Mon Jul 25 14:33:59 CEST 2011 (acab)
 ------------------------------------
  * libclamav/matcher-hash.c: off by one read in cli_hm_scan (bb#2818)

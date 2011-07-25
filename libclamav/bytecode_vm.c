@@ -741,6 +741,12 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    DEFINE_OP_BC_RET_N(OP_BC_RET*5+3, uint32_t, READ32, WRITE32);
 	    DEFINE_OP_BC_RET_N(OP_BC_RET*5+4, uint64_t, READ64, WRITE64);
 
+	    DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5, uint8_t, (void), (void));
+	    DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+1, uint8_t, (void), (void));
+	    DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+2, uint8_t, (void), (void));
+	    DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+3, uint8_t, (void), (void));
+	    DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+4, uint8_t, (void), (void));
+
 	    DEFINE_ICMPOP(OP_BC_ICMP_EQ, res = (op0 == op1));
 	    DEFINE_ICMPOP(OP_BC_ICMP_NE, res = (op0 != op1));
 	    DEFINE_ICMPOP(OP_BC_ICMP_UGT, res = (op0 > op1));
