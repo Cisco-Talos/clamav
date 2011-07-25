@@ -1,3 +1,7 @@
+Mon Jul 25 14:33:59 CEST 2011 (acab)
+------------------------------------
+ * libclamav/matcher-hash.c: off by one read in cli_hm_scan (bb#2818)
+
 Tue Jul 19 18:30:53 CEST 2011 (acab)
 ------------------------------------
  * libclamav/autoit.c: avoid dumping uninit data on autoit failure (bb#3051)
