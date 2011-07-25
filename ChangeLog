@@ -1,3 +1,7 @@
+Mon Jul 25 16:09:19 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: fix opcode 20 error (bb #3100)
+
 Thu Sep 15 14:44:11 CEST 2011 (tk)
 ----------------------------------
  * freshclam: fix pidfile removal (bb#3499)
