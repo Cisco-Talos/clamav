@@ -275,13 +275,13 @@ const struct clam_option __clam_options[] = {
 
     { "AlgorithmicDetection", "algorithmic-detection", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "In some cases (eg. complex malware, exploits in graphic files, and others),\nClamAV uses special algorithms to provide accurate detection. This option\ncontrols the algorithmic detection.", "yes" },
 
-    { "ScanPE", "scan-pe", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "PE stands for Portable Executable - it's an executable file format used\nin all 32- and 64-bit versions of Windows operating systems. This option\nallows ClamAV to perform a deeper analysis of executable files and it's also\nrequired for decompression of popular executable packers such as UPX or FSG.", "yes" },
+    { "ScanPE", "scan-pe", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "PE stands for Portable Executable - it's an executable file format used\nin all 32- and 64-bit versions of Windows operating systems. This option\nallows ClamAV to perform a deeper analysis of executable files and it's also\nrequired for decompression of popular executable packers such as UPX or FSG.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
 
-    { "ScanELF", "scan-elf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Executable and Linking Format is a standard format for UN*X executables.\nThis option allows you to control the scanning of ELF files.", "yes" },
+    { "ScanELF", "scan-elf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Executable and Linking Format is a standard format for UN*X executables.\nThis option allows you to control the scanning of ELF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
 
     { "DetectBrokenExecutables", "detect-broken", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled clamav will try to detect broken executables\n(both PE and ELF) and mark them as Broken.Executable.", "yes" },
 
-    { "ScanMail", "scan-mail", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the built in email scanner.", "yes" },
+    { "ScanMail", "scan-mail", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the built in email scanner.\nIf you turn off this option, the original files will still be scanned, but\nwithout parsing individual messages/attachments.", "yes" },
 
     { "ScanPartialMessages", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Scan RFC1341 messages split over many emails. You will need to\nperiodically clean up $TemporaryDirectory/clamav-partial directory.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
 
@@ -305,15 +305,15 @@ const struct clam_option __clam_options[] = {
 
     { "StructuredSSNFormatStripped", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxxyyzzzz", "no" },
 
-    { "ScanHTML", "scan-html", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Perform HTML/JavaScript/ScriptEncoder normalisation and decryption.", "yes" },
+    { "ScanHTML", "scan-html", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Perform HTML/JavaScript/ScriptEncoder normalisation and decryption.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
 
-    { "ScanOLE2", "scan-ole2", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.", "yes" },
+    { "ScanOLE2", "scan-ole2", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
 
     { "OLE2BlockMacros", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled OLE2 files with VBA macros, which were not\ndetected by signatures will be marked as \"Heuristics.OLE2.ContainsMacros\".", "no" },
 
-    { "ScanPDF", "scan-pdf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within PDF files.", "yes" },
+    { "ScanPDF", "scan-pdf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within PDF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout decoding and additional processing.", "yes" },
 
-    { "ScanArchive", "scan-archive", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.", "yes" },
+    { "ScanArchive", "scan-archive", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes" },
 
     { "ArchiveBlockEncrypted", "block-encrypted", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
 

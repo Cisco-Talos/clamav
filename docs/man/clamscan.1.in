@@ -115,7 +115,7 @@ This option sets the lowest number of Social Security Numbers found in a file to
 This option sets the lowest number of Credit Card numbers found in a file to generate a detect (default: 3).
 .TP 
 \fB\-\-scan\-mail[=yes(*)/no]\fR
-Scan mail files.
+Scan mail files. If you turn off this option, the original files will still be scanned, but without parsing individual messages/attachments.
 .TP 
 \fB\-\-phishing\-sigs[=yes(*)/no]\fR
 Use the signature-based phishing detection.
@@ -136,22 +136,22 @@ Block cloaked URLs (might lead to some false positives).
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP 
 \fB\-\-scan\-pe[=yes(*)/no]\fR
-PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG.
+PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. If you turn off this option, the original files will still be scanned but without additional processing.
 .TP 
 \fB\-\-scan\-elf[=yes(*)/no]\fR
-Executable and Linking Format is a standard format for UN*X executables. This option controls the ELF support.
+Executable and Linking Format is a standard format for UN*X executables. This option controls the ELF support. If you turn it off, the original files will still be scanned but without additional processing.
 .TP 
 \fB\-\-scan\-ole2[=yes(*)/no]\fR
-Scan Microsoft Office documents and .msi files.
+Scan Microsoft Office documents and .msi files. If you turn off this option, the original files will still be scanned but without additional processing.
 .TP 
 \fB\-\-scan\-pdf[=yes(*)/no]\fR
-Scan within PDF files.
+Scan within PDF files. If you turn off this option, the original files will still be scanned, but without decoding and additional processing.
 .TP 
 \fB\-\-scan\-html[=yes(*)/no]\fR
-Detect, normalize/decrypt and scan HTML files and embedded scripts.
+Detect, normalize/decrypt and scan HTML files and embedded scripts. If you turn off this option, the original files will still be scanned, but without additional processing.
 .TP 
 \fB\-\-scan\-archive[=yes(*)/no]\fR
-Scan archives supported by libclamav.
+Scan archives supported by libclamav. If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
 .TP 
 \fB\-\-detect\-broken[=yes/no(*)]\fR
 Mark broken executables as viruses (Broken.Executable).
