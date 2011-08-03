@@ -1598,7 +1598,7 @@ static int maxlinelen(const char *file)
 	return -1;
     }
 
-    return nmax;
+    return nmax + 1;
 }
 
 static int compare(const char *oldpath, const char *newpath, FILE *diff)

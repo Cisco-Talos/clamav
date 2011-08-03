@@ -1,4 +1,8 @@
-Mon Jul 25 16:42:31 CEST 2011 (tk)
+Wed Aug  3 15:41:28 CEST 2011 (tk)
+----------------------------------
+ * sigtool/sigtool.c: fix calculation of max signature length
+
+Tue Aug  2 17:03:33 CEST 2011 (tk)
 ----------------------------------
  * V 0.97.2
 
