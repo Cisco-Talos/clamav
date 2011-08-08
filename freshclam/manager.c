@@ -2173,100 +2173,21 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
+    if((opt = optget(opts, "update-db"))->enabled) {
+	    const char *u_dnsreply;
+	    int u_extra;
 
-	if(newver)
-	    free(newver);
-
-	mirman_write("mirrors.dat", dbdir, &mdat);
-	mirman_free(&mdat);
-	cli_rmdirs(updtmpdir);
-	return ret;
-
-    } else if(ret == 0)
-	updated = 1;
-
-    /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
-
-	if(newver)
-	    free(newver);
-
-	mirman_write("mirrors.dat", dbdir, &mdat);
-	mirman_free(&mdat);
-	cli_rmdirs(updtmpdir);
-	return ret;
-
-    } else if(ret == 0)
-	updated = 1;
-
-    /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if(!optget(opts, "SafeBrowsing")->enabled) {
-	    const char *safedb = NULL;
-
-	if(!access("safebrowsing.cvd", R_OK))
-	    safedb = "safebrowsing.cvd";
-	else if(!access("safebrowsing.cld", R_OK))
-            safedb = "safebrowsing.cld";
-
-	if(safedb) {
-	    if(unlink(safedb))
-		logg("^SafeBrowsing is disabled but can't remove old %s\n", safedb);
-	    else
-		logg("*%s removed\n", safedb);
-	}
-    } else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
-
-	if(newver)
-	    free(newver);
-
-	mirman_write("mirrors.dat", dbdir, &mdat);
-	mirman_free(&mdat);
-	cli_rmdirs(updtmpdir);
-	return ret;
-    } else if(ret == 0)
-	updated = 1;
-
-    if(!optget(opts, "Bytecode")->enabled) {
-	    const char *dbname = NULL;
-
-	if(!access("bytecode.cvd", R_OK))
-	    dbname = "bytecode.cvd";
-	else if(!access("bytecode.cld", R_OK))
-            dbname = "bytecode.cld";
-
-	if(dbname) {
-	    if(unlink(dbname))
-		logg("^Bytecode is disabled but can't remove old %s\n", dbname);
-	    else
-		logg("*%s removed\n", dbname);
-	}
-    } else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
-	if(dnsreply)
-	    free(dnsreply);
-
-	if(newver)
-	    free(newver);
-
-	mirman_write("mirrors.dat", dbdir, &mdat);
-	mirman_free(&mdat);
-	cli_rmdirs(updtmpdir);
-	return ret;
-    } else if(ret == 0)
-	updated = 1;
-    if(dnsreply)
-	free(dnsreply);
-
-    /* handle extra dbs */
-    if((opt = optget(opts, "ExtraDatabase"))->enabled) {
 	while(opt) {
-	    if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, NULL, localip, outdated, &mdat, logerr, 1)) > 50) {
+	    if(!strcmp(opt->strarg, "main") || !strcmp(opt->strarg, "daily") || !strcmp(opt->strarg, "safebrowsing") || !strcmp(opt->strarg, "bytecode")) {
+		u_dnsreply = dnsreply;
+		u_extra = 0;
+	    } else {
+		u_dnsreply = NULL;
+		u_extra = 1;
+	    }
+	    if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, u_dnsreply, localip, outdated, &mdat, logerr, u_extra)) > 50) {
+		if(dnsreply)
+		    free(dnsreply);
 		if(newver)
 		    free(newver);
 		mirman_write("mirrors.dat", dbdir, &mdat);
@@ -2275,9 +2196,109 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 		return ret;
 	    } else if(ret == 0)
 		updated = 1;
+
 	    opt = opt->nextarg;
 	}
+
+    } else {
+	if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	    if(dnsreply)
+		free(dnsreply);
+	    if(newver)
+		free(newver);
+	    mirman_write("mirrors.dat", dbdir, &mdat);
+	    mirman_free(&mdat);
+	    cli_rmdirs(updtmpdir);
+	    return ret;
+	} else if(ret == 0)
+	    updated = 1;
+
+	/* if ipaddr[0] != 0 it will use it to connect to the web host */
+	if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	    if(dnsreply)
+		free(dnsreply);
+	    if(newver)
+		free(newver);
+	    mirman_write("mirrors.dat", dbdir, &mdat);
+	    mirman_free(&mdat);
+	    cli_rmdirs(updtmpdir);
+	    return ret;
+	} else if(ret == 0)
+	    updated = 1;
+
+	if(!optget(opts, "SafeBrowsing")->enabled) {
+		const char *safedb = NULL;
+
+	    if(!access("safebrowsing.cvd", R_OK))
+		safedb = "safebrowsing.cvd";
+	    else if(!access("safebrowsing.cld", R_OK))
+		safedb = "safebrowsing.cld";
+
+	    if(safedb) {
+		if(unlink(safedb))
+		    logg("^SafeBrowsing is disabled but can't remove old %s\n", safedb);
+		else
+		    logg("*%s removed\n", safedb);
+	    }
+	} else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	    if(dnsreply)
+		free(dnsreply);
+	    if(newver)
+		free(newver);
+	    mirman_write("mirrors.dat", dbdir, &mdat);
+	    mirman_free(&mdat);
+	    cli_rmdirs(updtmpdir);
+	    return ret;
+	} else if(ret == 0)
+	    updated = 1;
+
+	if(!optget(opts, "Bytecode")->enabled) {
+		const char *dbname = NULL;
+
+	    if(!access("bytecode.cvd", R_OK))
+		dbname = "bytecode.cvd";
+	    else if(!access("bytecode.cld", R_OK))
+		dbname = "bytecode.cld";
+
+	    if(dbname) {
+		if(unlink(dbname))
+		    logg("^Bytecode is disabled but can't remove old %s\n", dbname);
+		else
+		    logg("*%s removed\n", dbname);
+	    }
+	} else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	    if(dnsreply)
+		free(dnsreply);
+	    if(newver)
+		free(newver);
+	    mirman_write("mirrors.dat", dbdir, &mdat);
+	    mirman_free(&mdat);
+	    cli_rmdirs(updtmpdir);
+	    return ret;
+	} else if(ret == 0)
+	    updated = 1;
+
+	/* handle extra dbs */
+	if((opt = optget(opts, "ExtraDatabase"))->enabled) {
+	    while(opt) {
+		if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, NULL, localip, outdated, &mdat, logerr, 1)) > 50) {
+		    if(dnsreply)
+			free(dnsreply);
+		    if(newver)
+			free(newver);
+		    mirman_write("mirrors.dat", dbdir, &mdat);
+		    mirman_free(&mdat);
+		    cli_rmdirs(updtmpdir);
+		    return ret;
+		} else if(ret == 0)
+		    updated = 1;
+		opt = opt->nextarg;
+	    }
+	}
     }
+
+    if(dnsreply)
+	free(dnsreply);
 
     mirman_write("mirrors.dat", dbdir, &mdat);
     mirman_free(&mdat);

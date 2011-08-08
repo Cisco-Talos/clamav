@@ -1,3 +1,7 @@
+Mon Aug  8 11:32:31 CEST 2011 (tk)
+----------------------------------
+ * freshclam: add new option --update-db
+
 Wed Aug  3 15:41:28 CEST 2011 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix calculation of max signature length

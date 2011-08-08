@@ -73,6 +73,9 @@ Print mirror details from mirrors.dat (cache file for the mirror manager).
 .TP
 \fB\-\-submit\-stats[=/path/to/clamd.conf]\fR
 Upload detection statistics to the ClamAV Project (see freshclam.conf(5):SubmitDetectionStats for more details). No database update will be performed. This option only works in the interactive mode.
+.TP
+\fB\-\-update\-db=DBNAME\fR
+With this option you can limit updates to a subset of database files. The DBNAME should be "main", "daily", "bytecode", "safebrowsing" or one of the 3rd party database names. This option can be used multiple times.
 .SH "EXAMPLES"
 .LP 
 .TP 

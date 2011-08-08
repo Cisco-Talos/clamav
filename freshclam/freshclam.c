@@ -160,6 +160,7 @@ static void help(void)
     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
     mprintf("    --list-mirrors                       print mirrors from mirrors.dat\n");
     mprintf("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
+    mprintf("    --update-db=DBNAME                   only update database DBNAME\n");
 
     mprintf("\n");
 }
