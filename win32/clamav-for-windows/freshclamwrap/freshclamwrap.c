@@ -237,7 +237,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     struct my_f spam;
     char command[8192], *ptr;
     int updated_files = 0;
-    wchar_t *cmdl = GetCommandLineW();
+    char *cmdl = GetCommandLineA();
 
     //DebugBreak();
 
@@ -253,7 +253,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /* Log file */
     flog_open(datadir);
 
-    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"", datadir, datadir);
+    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"%s", datadir, datadir, (cmdl && strstr(cmdl, " --mindefs=1")) ? " --update-db=daily" : "");
     command[sizeof(command)-1] = '\0';
 
     /* Connect to master */
