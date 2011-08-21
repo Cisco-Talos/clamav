@@ -1265,7 +1265,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    memcpy(data, key_padding, 32);
 	    arc4_init(&arc4, pdf->key, pdf->keylen);
 	    arc4_apply(&arc4, data, 32);
-	    dbg_printhex("computed U", data, 32);
+	    dbg_printhex("computed U (R2)", data, 32);
 	    if (!memcmp(data, U, 32))
 		password_empty = 1;
 	} else if (R >= 3) {
@@ -1285,7 +1285,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 		arc4_init(&arc4, data, len);
 		arc4_apply(&arc4, result, 16);
 	    }
-	    dbg_printhex("computed U", result, 16);
+	    dbg_printhex("fileID", pdf->fileID, pdf->fileIDlen);
+	    dbg_printhex("computed U (R>=3)", result, 16);
 	    if (!memcmp(result, U, 16))
 		password_empty = 1;
 	} else {
@@ -1329,6 +1330,13 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	if (P == ~0u) {
 	    cli_dbgmsg("cli_pdf: invalid P\n");
 	    break;
+	}
+	length = pdf_readint(q, len, "/Length");
+	if (length == ~0u)
+	    length = 40;
+	if (length < 40) {
+	    cli_dbgmsg("cli_pdf: invalid length: %d\n", length);
+	    length = 40;
 	}
 
 	q2 = cli_memstr(q, len, "/Standard", 9);
@@ -1384,13 +1392,6 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 		dbg_printhex("too long U", U, n);
 		break;
 	    }
-	}
-	length = pdf_readint(q, len, "/Length");
-	if (length == ~0u)
-	    length = 40;
-	if (length < 40) {
-	    cli_dbgmsg("cli_pdf: invalid length: %d\n", length);
-	    length = 40;
 	}
 	cli_dbgmsg("cli_pdf: Encrypt R: %d, P %x, length: %d\n", R, P, length);
 	if (length % 8) {
