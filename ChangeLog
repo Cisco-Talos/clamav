@@ -1,3 +1,7 @@
+Sun Aug 21 17:05:24 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/pdf.c:  fix incorrect blocking of some encrypted PDF with empty user passwords. (bb #3364)
+
 Wed Aug  3 15:41:28 CEST 2011 (tk)
 ----------------------------------
  * sigtool/sigtool.c: fix calculation of max signature length
