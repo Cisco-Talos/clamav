@@ -655,7 +655,7 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "archive-verbose")->enabled) {
 	cl_engine_set_clcb_meta(engine, meta);
-	cl_engine_set_clcb_pre_scan(engine, pre);
+	cl_engine_set_clcb_pre_cache(engine, pre);
 	cl_engine_set_clcb_post_scan(engine, post);
     }
 
