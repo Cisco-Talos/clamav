@@ -258,6 +258,7 @@ struct cl_engine {
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
+    clcb_meta cb_meta;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;

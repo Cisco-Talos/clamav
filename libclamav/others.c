@@ -1087,3 +1087,8 @@ void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback)
 {
     engine->cb_hash = callback;
 }
+
+void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
+{
+    engine->cb_meta = callback;
+}

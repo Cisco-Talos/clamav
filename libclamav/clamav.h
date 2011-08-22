@@ -303,6 +303,12 @@ extern void cl_set_clcb_msg(clcb_msg callback);
 typedef void (*clcb_hash)(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *context);
 extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback);
 
+/* Archive member metadata callback. Return CL_VIRUS to blacklist, CL_CLEAN to
+ * continue scanning */
+typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_container, const char *filename,
+			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
+extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback);
+
 struct cl_stat {
     char *dir;
     struct stat *stattab;

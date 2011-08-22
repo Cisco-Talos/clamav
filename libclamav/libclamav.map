@@ -12,6 +12,7 @@ CLAMAV_PUBLIC {
     cl_engine_set_str;
     cl_engine_get_str;
     cl_engine_set_clcb_hash;
+    cl_engine_set_clcb_meta;
     cl_set_clcb_msg;
     cl_engine_set_clcb_pre_scan;
     cl_engine_set_clcb_post_scan;
