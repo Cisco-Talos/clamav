@@ -195,6 +195,7 @@ void help(void)
     mprintf("    --help                -h             Print this help screen\n");
     mprintf("    --version             -V             Print version number\n");
     mprintf("    --verbose             -v             Be verbose\n");
+    mprintf("    --archive-verbose     -a             Show filenames inside scanned archives\n");
     mprintf("    --debug                              Enable libclamav's debug messages\n");
     mprintf("    --quiet                              Only output error messages\n");
     mprintf("    --stdout                             Write to stdout instead of stderr\n");

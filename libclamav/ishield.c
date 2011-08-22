@@ -343,6 +343,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
     off_t coff = off;
     struct IS_CABSTUFF c = { NULL, -1, 0, 0 };
     fmap_t *map = *ctx->fmap;
+    unsigned fc = 0;
 
     while(ret == CL_CLEAN) {
 	fname = fmap_need_offstr(map, coff, 2048);
@@ -371,6 +372,10 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 	) break;
 
 	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);
+	if(cli_matchmeta(ctx, fname, fsize, fsize, 0, fc++, 0, NULL) == CL_VIRUS) {
+	    ret = CL_VIRUS;
+	    break;
+	}
 	sz -= (data - fname) + fsize;
 
 	if(!strncasecmp(fname, "data", 4)) {

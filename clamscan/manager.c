@@ -120,12 +120,104 @@ static int checkaccess(const char *path, const char *username, int mode)
 }
 #endif
 
+struct metachain {
+    char **chains;
+    unsigned lastadd;
+    unsigned lastvir;
+    unsigned level;
+    unsigned n;
+};
+
+static cl_error_t pre(int fd, const char *type, void *context)
+{
+    struct metachain *c = context;
+    if (c) {
+	c->level++;
+    }
+    return CL_CLEAN;
+}
+
+static int print_chain(struct metachain *c, char *str, unsigned len)
+{
+    unsigned i;
+    unsigned na = 0;
+    for (i=0;i<c->n-1;i++) {
+	unsigned int n = strlen(c->chains[i]);
+	if (na)
+	    str[na++] = '!';
+	if (n + na + 2 > len)
+	    break;
+	memcpy(str + na, c->chains[i], n);
+	na += n;
+    }
+    str[na] = '\0';
+    str[len-1] = '\0';
+    return i == c->n-1 ? 0 : 1;
+}
+
+static cl_error_t post(int fd, int result, const char *virname, void *context)
+{
+    struct metachain *c = context;
+    if (c && c->n) {
+	char str[128];
+	int toolong = print_chain(c, str, sizeof(str));
+	if (c->level == c->lastadd && !virname)
+	    free(c->chains[--c->n]);
+	if (virname && !c->lastvir)
+	    c->lastvir = c->level;
+    }
+    if (c)
+	c->level--;
+    return CL_CLEAN;
+}
+
+static cl_error_t meta(const char* container_type, unsigned long fsize_container, const char *filename,
+		       unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context)
+{
+    int na = 0;
+    char prev[128];
+    struct metachain *c = context;
+    const char *type = !strncmp(container_type,"CL_TYPE_",8) ? container_type + 8 : container_type;
+    unsigned n = strlen(type) + 1 + strlen(filename) + 1;
+    char *chain;
+    char **chains;
+    int toolong;
+
+    if (!c)
+	return CL_CLEAN;
+    chain = malloc(n);
+    if (!chain)
+	return CL_CLEAN;
+    if (!strcmp(type, "ANY"))
+	snprintf(chain, n,"%s", filename);
+    else
+	snprintf(chain, n,"%s:%s", type, filename);
+    if (c->lastadd != c->level) {
+	n = c->n + 1;
+	chains = realloc(c->chains, n * sizeof(*chains));
+	if (!chains) {
+	    free(chain);
+	    return CL_CLEAN;
+	}
+	c->chains = chains;
+	c->n = n;
+	c->lastadd = c->level;
+    } else {
+	free(c->chains[c->n-1]);
+    }
+    c->chains[c->n-1] = chain;
+    toolong = print_chain(c, prev, sizeof(prev));
+    logg("*Scanning %s%s!%s\n", prev,toolong ? "..." : "", chain);
+    return CL_CLEAN;
+}
+
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
-	int ret = 0, fd, included, printclean = 1;
+	int ret = 0, fd, included, printclean = 1, i;
 	const struct optstruct *opt;
 	const char *virname;
 	struct stat sb;
+	struct metachain chain;
 
     if((opt = optget(opts, "exclude"))->enabled) {
 	while(opt) {
@@ -181,6 +273,14 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 	}
 #endif
 
+    memset(&chain, 0, sizeof(chain));
+    if(optget(opts, "archive-verbose")->enabled) {
+	chain.chains = malloc(sizeof(*chain.chains));
+	if (chain.chains) {
+	    chain.chains[0] = strdup(filename);
+	    chain.n = 1;
+	}
+    }
     logg("*Scanning %s\n", filename);
 
     if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1) {
@@ -189,7 +289,16 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 	return;
     }
 
-    if((ret = cl_scandesc(fd, &virname, &info.blocks, engine, options)) == CL_VIRUS) {
+
+    if((ret = cl_scandesc_callback(fd, &virname, &info.blocks, engine, options, &chain)) == CL_VIRUS) {
+	if(optget(opts, "archive-verbose")->enabled) {
+	    if (chain.n > 1) {
+		char str[128];
+		int toolong = print_chain(&chain, str, sizeof(str));
+		logg("~%s%s!(%d)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.n-1], virname);
+	    } else if (chain.lastvir)
+		logg("~%s!(%d): %s FOUND\n", filename, chain.lastvir-1, virname);
+	}
 	logg("~%s: %s FOUND\n", filename, virname);
 	info.files++;
 	info.ifiles++;
@@ -207,6 +316,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 	info.errors++;
     }
 
+    for (i=0;i<chain.n;i++)
+	free(chain.chains[i]);
+    free(chain.chains);
     close(fd);
 
     if(ret == CL_VIRUS && action)
@@ -539,6 +651,12 @@ int scanmanager(const struct optstruct *opts)
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	cl_engine_free(engine);
 	return 2;
+    }
+
+    if(optget(opts, "archive-verbose")->enabled) {
+	cl_engine_set_clcb_meta(engine, meta);
+	cl_engine_set_clcb_pre_scan(engine, pre);
+	cl_engine_set_clcb_post_scan(engine, post);
     }
 
     /* set limits */

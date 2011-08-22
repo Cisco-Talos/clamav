@@ -824,6 +824,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
     if (ctx->engine && ctx->engine->cb_meta)
 	if (ctx->engine->cb_meta(cli_ftname(ctx->container_type), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
 	    cli_dbgmsg("inner file blacklisted by callback: %s\n", fname);
+	    *ctx->virname = "Detected.By.Callback";
 	    return CL_VIRUS;
 	}
 

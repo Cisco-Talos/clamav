@@ -134,6 +134,8 @@ const struct clam_option __clam_options[] = {
     { NULL, "trace", 't', TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},
 
+    { NULL, "archive-verbose", 'a', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+
     /* cmdline only - deprecated */
     { NULL, "bytecode-trust-all", 't', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
     { NULL, "http-proxy", 0, TYPE_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
