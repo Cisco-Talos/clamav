@@ -19,13 +19,13 @@ THROTTLE=30
 ##################### END CONFIGURATION #####################
 
 # Do not touch anything below this line, unless you know what you are doing
-trap "signalClamd HUP" SIGHUP
-trap "signalClamd TERM" SIGTERM
-trap "signalClamd USR2" SIGUSR2
+trap "signalClamd HUP" HUP
+trap "signalClamd TERM" TERM
+trap "signalClamd USR2" USR2
 
 getPid() {
 	PIDFILE=`grep ^PidFile $CLAMDCONF | sed -e 's/^PidFile\s*//'`
-	if [ -z "PIDFILE" ]
+	if [ -z "$PIDFILE" ]
 	then
 		# missing PidFile directive
 		echo "Please enable the PidFile directive in $CLAMDCONF. See man clamd.conf for more info."
