@@ -1267,7 +1267,7 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
     }
 }
 
-CLAMAPI void Scan_ReloadDatabase(void) {
+CLAMAPI void Scan_ReloadDatabase(BOOL bLoadMinDefs) {
     if(InterlockedIncrement(&reload_waiters)==1) {
 	int reload_ok = 0;
 	logg("*Scan_ReloadDatabase: Database reload requested received, waiting for idle state\n");
@@ -1316,6 +1316,7 @@ CLAMAPI void Scan_ReloadDatabase(void) {
 
 	    logg("Scan_ReloadDatabase: Destroying old engine\n");
 	    cl_engine_free(engine);
+	    minimal_definitions = bLoadMinDefs;
 	    logg("Scan_ReloadDatabase: Loading new engine\n");
 
 	    // NEW STUFF //

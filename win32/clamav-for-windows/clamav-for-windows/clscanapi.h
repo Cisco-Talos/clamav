@@ -328,8 +328,9 @@ CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
 
 /*
  * Reload the virus database
+ * INPUT @param bLoadMinDefs : full/minimal defininition selector
  */
-CLAMAPI void Scan_ReloadDatabase(void);
+CLAMAPI void Scan_ReloadDatabase(BOOL bLoadMinDefs);
 
 #ifdef __cplusplus
 }; /* extern "C" */
