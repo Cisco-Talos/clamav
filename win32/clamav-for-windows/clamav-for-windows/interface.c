@@ -184,7 +184,7 @@ DWORD WINAPI monitor_thread(VOID *p) {
 	    continue;
 
 	logg("monitor_thread: reload requested!\n");
-	Scan_ReloadDatabase();
+	Scan_ReloadDatabase(minimal_definitions);
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &last_chk_time); /* FIXME: small race here */
     }
