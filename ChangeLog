@@ -1,3 +1,7 @@
+Mon Sep 12 16:29:22 CEST 2011 (tk)
+----------------------------------
+ * freshclam: add new option PrivateMirror (bb#3058)
+
 Sun Aug 21 17:05:24 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/pdf.c:  fix incorrect blocking of some encrypted PDF with empty user passwords. (bb #3364)

@@ -412,6 +412,51 @@ int main(int argc, char **argv)
 	return 0;
     }
 
+    if((opt = optget(opts, "PrivateMirror"))->enabled) {
+	    struct optstruct *dbm, *opth;
+
+	dbm = (struct optstruct *) optget(opts, "DatabaseMirror");
+	dbm->active = dbm->enabled = 1;
+	do {
+	    if(dbm->strarg)
+		free(dbm->strarg);
+	    dbm->strarg = strdup(opt->strarg);
+	    if(!dbm->strarg) {
+		logg("!strdup() failed\n");
+		optfree(opts);
+		return 75;
+	    }
+	    if(!dbm->nextarg) {
+		dbm->nextarg = (struct optstruct *) calloc(1, sizeof(struct optstruct));
+		if(!dbm->nextarg) {
+		    logg("!calloc() failed\n");
+		    optfree(opts);
+		    return 75;
+		}
+	    }
+	    opth = dbm;
+	    dbm = dbm->nextarg;
+	} while((opt = opt->nextarg));
+
+	opth->nextarg = NULL;
+	while(dbm) {
+	    free(dbm->name);
+	    free(dbm->cmd);
+	    free(dbm->strarg);
+	    opth = dbm;
+	    dbm = dbm->nextarg;
+	    free(opth);
+	}
+
+	/* disable DNS db checks */
+	opth = (struct optstruct *) optget(opts, "no-dns");
+	opth->active = opth->enabled = 1;
+
+	/* disable scripted updates */
+	opth = (struct optstruct *) optget(opts, "ScriptedUpdates");
+	opth->active = opth->enabled = 0;
+    }
+
     *updtmpdir = 0;
 
 #ifdef _WIN32

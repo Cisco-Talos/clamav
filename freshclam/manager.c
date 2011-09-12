@@ -813,7 +813,7 @@ static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile,
     }
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-	logg("%cCVD file not found on remote server\n", logerr ? '!' : '^');
+	logg("%c%s not found on remote server\n", logerr ? '!' : '^', cvdfile);
 	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return NULL;
     }
@@ -1558,8 +1558,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
-	int ret, ims = -1;
-	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32];
+	int ret, ims = -1, hascld = 0;
+	char *pt, cvdfile[32], cldfile[32], localname[32], *tmpdir = NULL, *newfile, *newfile2, newdb[32];
 	char extradbinfo[64], *extradnsreply = NULL, squery[64];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), remote_flevel = 0, maxattempts;
@@ -1576,6 +1576,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	mirror_stats = 1;
 
     snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
+    snprintf(cldfile, sizeof(cldfile), "%s.cld", dbname);
 
     if(!(current = currentdb(dbname, localname))) {
 	nodb = 1;
@@ -1688,8 +1689,14 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     rtimeout = optget(opts, "ReceiveTimeout")->numarg;
 
     if(!nodb && !newver) {
-
-	remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	if(optget(opts, "PrivateMirror")->enabled) {
+	    remote = remote_cvdhead(cldfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	    if(remote)
+		hascld = 1;
+	    else
+		remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	} else
+	    remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
@@ -1759,7 +1766,15 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     newfile = cli_gentemp(updtmpdir);
     if(nodb) {
-	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+	if(optget(opts, "PrivateMirror")->enabled) {
+	    ret = 0;
+	    if(hascld)
+		ret = getcvd(cldfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+	    if(ret || !hascld)
+		ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+	} else
+	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+
 	if(ret) {
 	    if(mirror_stats && strlen(ip)) {
 		snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0, flevel, 0, w32, ip);
@@ -2166,7 +2181,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
     if((opt = optget(opts, "LocalIPAddress"))->enabled)
 	localip = opt->strarg;
 
-    if(optget(opts, "HTTPProxyServer")->enabled)
+    if(optget(opts, "HTTPProxyServer")->enabled || optget(opts, "PrivateMirror")->enabled)
 	mirman_read("mirrors.dat", &mdat, 0);
     else
 	mirman_read("mirrors.dat", &mdat, 1);

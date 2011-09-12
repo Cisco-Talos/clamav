@@ -111,6 +111,11 @@ With this option you can provide custom sources (http:// or file://) for databas
 .br 
 Default: no custom URLs
 .TP 
+\fBPrivateMirror STR\fR
+This option allows you to easily point freshclam to private mirrors. If PrivateMirror is set, freshclam does not attempt to use DNS to determine whether its databases are out-of-date, instead it will use the If-Modified-Since request or directly check the headers of the remote database files. For each database, freshclam first attempts to download the CLD file. If that fails, it tries to download the CVD file. This option overrides DatabaseMirror, DNSDatabaseInfo and ScriptedUpdates. It can be used multiple times to provide fall-back mirrors.
+.br 
+Default: disabled
+.TP 
 \fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUMBER\fR
 Use given proxy server and TCP port for database downloads.
 .TP 

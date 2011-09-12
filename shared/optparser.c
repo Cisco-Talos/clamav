@@ -371,6 +371,8 @@ const struct clam_option __clam_options[] = {
 
     { "DatabaseMirror", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least two entries: db.XY.clamav.net (or db.XY.ipv6.clamav.net\nfor IPv6) and database.clamav.net (in this order). Please replace XY with your\ncountry code (see http://www.iana.org/cctld/cctld-whois.htm).\ndatabase.clamav.net is a round-robin record which points to our most reliable\nmirrors. It's used as a fall back in case db.XY.clamav.net is not working.", "db.XY.clamav.net\ndatabase.clamav.net" },
 
+    { "PrivateMirror", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "This option allows you to easily point freshclam to private mirrors.\nIf PrivateMirror is set, freshclam does not attempt to use DNS\nto determine whether its databases are out-of-date, instead it will\nuse the If-Modified-Since request or directly check the headers of the\nremote database files. For each database, freshclam first attempts\nto download the CLD file. If that fails, it tries to download the\nCVD file. This option overrides DatabaseMirror, DNSDatabaseInfo\nand Scripted Updates. It can be used multiple times to provide\nfall-back mirrors.", "mirror1.mynetwork.com\nmirror2.mynetwork.com" },
+
     { "MaxAttempts", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_FRESHCLAM, "This option defines how many attempts freshclam should make before giving up.", "5" },
 
     { "ScriptedUpdates", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option you can control scripted updates. It's highly recommended to keep them enabled.", "yes" },
