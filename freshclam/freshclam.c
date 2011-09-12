@@ -418,6 +418,12 @@ int main(int argc, char **argv)
 	dbm = (struct optstruct *) optget(opts, "DatabaseMirror");
 	dbm->active = dbm->enabled = 1;
 	do {
+	    if(cli_strbcasestr(opt->strarg, ".clamav.net")) {
+		logg("!PrivateMirror: *.clamav.net is not allowed in this mode\n");
+		optfree(opts);
+		return 45;
+	    }
+
 	    if(dbm->strarg)
 		free(dbm->strarg);
 	    dbm->strarg = strdup(opt->strarg);
