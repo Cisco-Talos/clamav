@@ -29,53 +29,54 @@
 #include "interface.h"
 
 const char *types[] = {
-    "HTML",		/*  0 */
-    "HTML_UTF16",	/*  1 */
-    "MSEXE",		/*  2 */
-    "GRAPHICS",		/*  3 */
-    "TEXT_ASCII",	/*  4 */
-    "TEXT_UTF8",	/*  5 */
-    "TEXT_UTF16LE",	/*  6 */
-    "TEXT_UTF16BE",	/*  7 */
-    "PDF",		/*  8 */
-    "SCRIPT",		/*  9 */
-    "RTF",		/* 10 */
-    "RIFF",		/* 11 */
-    "MSCHM",		/* 12 */
-    "MSCAB",		/* 13 */
-    "MSOLE2",		/* 14 */
-    "MSSZDD",		/* 15 */
-    "ZIP",		/* 16 */
-    "RAR",		/* 17 */
-    "7Z",		/* 18 */
-    "BZ",		/* 19 */
-    "GZ",		/* 20 */
-    "ARJ",		/* 21 */
-    "ZIPSFX",		/* 22 */
-    "RARSFX",		/* 23 */
-    "CABSFX",		/* 24 */
-    "ARJSFX",		/* 25 */
-    "NULSFT",		/* 26 */
-    "AUTOIT",		/* 27 */
-    "ISHIELD_MSI",	/* 28 */
-    "SFX",		/* 29 */
-    "BINHEX",		/* 30 */
-    "MAIL",		/* 31 */
-    "TNEF",		/* 32 */
-    "BINARY_DATA",	/* 33 */
-    "CRYPTFF",		/* 34 */
-    "UUENCODED",	/* 35 */
-    "SCRENC",		/* 36 */
-    "POSIX_TAR",	/* 37 */
-    "OLD_TAR",		/* 38 */
-    "ELF",		/* 39 */
-    "MACHO",		/* 40 */
-    "MACHO_UNIBIN",	/* 41 */
-    "SIS",		/* 42 */
-    "SWF",		/* 43 */
-    "CPIO_ODC",		/* 44 */
-    "CPIO_NEWC",	/* 45 */
-    "CPIO_CRC",		/* 46 */
+    "<<rsvd>>"		/*  0 */
+    "MSEXE",		/*  1 */
+    "HTML",		/*  2 */
+    "HTML_UTF16",	/*  3 */
+    "GRAPHICS",		/*  4 */
+    "TEXT_ASCII",	/*  5 */
+    "TEXT_UTF8",	/*  6 */
+    "TEXT_UTF16LE",	/*  7 */
+    "TEXT_UTF16BE",	/*  8 */
+    "PDF",		/*  9 */
+    "SCRIPT",		/* 10 */
+    "RTF",		/* 11 */
+    "RIFF",		/* 12 */
+    "MSCHM",		/* 13 */
+    "MSCAB",		/* 14 */
+    "MSOLE2",		/* 15 */
+    "MSSZDD",		/* 16 */
+    "ZIP",		/* 17 */
+    "RAR",		/* 18 */
+    "7Z",		/* 19 */
+    "BZ",		/* 20 */
+    "GZ",		/* 21 */
+    "ARJ",		/* 22 */
+    "ZIPSFX",		/* 23 */
+    "RARSFX",		/* 24 */
+    "CABSFX",		/* 25 */
+    "ARJSFX",		/* 26 */
+    "NULSFT",		/* 27 */
+    "AUTOIT",		/* 28 */
+    "ISHIELD_MSI",	/* 29 */
+    "SFX",		/* 30 */
+    "BINHEX",		/* 31 */
+    "MAIL",		/* 32 */
+    "TNEF",		/* 33 */
+    "BINARY_DATA",	/* 34 */
+    "CRYPTFF",		/* 35 */
+    "UUENCODED",	/* 36 */
+    "SCRENC",		/* 37 */
+    "POSIX_TAR",	/* 38 */
+    "OLD_TAR",		/* 39 */
+    "ELF",		/* 40 */
+    "MACHO",		/* 41 */
+    "MACHO_UNIBIN",	/* 42 */
+    "SIS",		/* 43 */
+    "SWF",		/* 44 */
+    "CPIO_ODC",		/* 45 */
+    "CPIO_NEWC",	/* 46 */
+    "CPIO_CRC",		/* 47 */
     NULL
 };
 
@@ -1081,7 +1082,7 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
 static void ftype_bits(const char *type, _int64 *filetype) {
     int i;
     if(!strncmp(type, "CL_TYPE_", 8)) {
-	for(i=0; types[i]; i++) {
+	for(i=1; types[i]; i++) {
 	    if(!strcmp(&type[8], types[i]))
 		break;
 	}
