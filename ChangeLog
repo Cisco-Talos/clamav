@@ -1,3 +1,7 @@
+Thu Sep 15 14:44:11 CEST 2011 (tk)
+----------------------------------
+ * freshclam: fix pidfile removal (bb#3499)
+
 Sun Aug 21 17:05:24 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/pdf.c:  fix incorrect blocking of some encrypted PDF with empty user passwords. (bb #3364)
