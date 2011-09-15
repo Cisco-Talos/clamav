@@ -65,6 +65,7 @@ extern int active_children;
 static short foreground = 1;
 char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
+const char *pidfile = NULL;
 
 static void sighandler(int sig) {
 
@@ -103,7 +104,9 @@ static void sighandler(int sig) {
 	default:
 	    if(*updtmpdir)
 		cli_rmdirs(updtmpdir);
-	    logg("Update process interrupted\n");
+	    if(pidfile)
+		unlink(pidfile);
+	    logg("Update process terminated\n");
 	    exit(2);
     }
 
@@ -224,7 +227,7 @@ static void msg_callback(enum cl_msg severity, const char *fullmsg, const char *
 int main(int argc, char **argv)
 {
 	int ret = 52, retcl;
-	const char *cfgfile, *arg = NULL, *pidfile = NULL;
+	const char *cfgfile, *arg = NULL;
 	char *pt;
 	struct optstruct *opts;
 	const struct optstruct *opt;

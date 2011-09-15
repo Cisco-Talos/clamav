@@ -1,3 +1,7 @@
+Thu Sep 15 14:44:11 CEST 2011 (tk)
+----------------------------------
+ * freshclam: fix pidfile removal (bb#3499)
+
 Mon Sep 12 16:29:22 CEST 2011 (tk)
 ----------------------------------
  * freshclam: add new option PrivateMirror (bb#3058)
