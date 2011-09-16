@@ -441,7 +441,7 @@ int load_regex_matcher(struct cl_engine *engine,struct regex_matcher* matcher,FI
 		if(functionality_level_check(buffer))
 			continue;
 
-		if(engine->cb_sigload && engine->cb_sigload("phishing", buffer, options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+		if(engine->cb_sigload && engine->cb_sigload("phishing", buffer, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 			cli_dbgmsg("load_regex_matcher: skipping %s due to callback\n", buffer);
 			continue;
 		}

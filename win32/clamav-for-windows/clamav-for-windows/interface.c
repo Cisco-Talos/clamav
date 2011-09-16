@@ -306,11 +306,14 @@ BOOL interface_setup(void) {
 }
 
 static int sigload_callback(const char *type, const char *name, unsigned int custom, void *context) {
-    if(minimal_definitions && (custom || strcmp(type, "fp")))
+    logg("*in Sigload_cb(%s, %s, %u, %p) - MinDef:%u, Off: %u, Cust: %u\n", type, name, custom, context, minimal_definitions, official_sigs, custom_sigs);
+    if(!strcmp(type, "fp"))
+	return 0;
+    if(minimal_definitions && !custom)
 	return 1;
     if(custom)
 	custom_sigs++;
-    else if(strcmp(type, "fp"))
+    else
 	official_sigs++;
     return 0;
 }
@@ -392,11 +395,12 @@ static int load_db(void) {
 int CLAMAPI Scan_HaveSigs(unsigned int *official, unsigned int *custom) {
     int ret;
     if(lock_engine())
-	FAIL(-1, "failed to lock engine");
+	FAIL(CL_ELOCK, "failed to lock engine");
     if(!engine) {
 	unlock_engine();
-	FAIL(-1, "No engine available");
+	FAIL(CL_ESTATE, "Engine unavailable");
     }
+    logg("*in HaveSigs - Off: %u, Cst: %u\n", official_sigs, custom_sigs); 
     ret = ((official_sigs + custom_sigs) > 0);
     if(official) *official = official_sigs;
     if(custom) *custom = custom_sigs;

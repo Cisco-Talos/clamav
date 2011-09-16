@@ -1,3 +1,9 @@
+Fri Sep 16 12:47:10 CEST 2011 (acab)
+------------------------------------
+ * libclamav: properly pass custom flag to sigload_cb
+ * c4w: honor custom sigs in mindefs
+   (bb#3509 + bb#3510)
+
 Thu Sep 15 14:44:11 CEST 2011 (tk)
 ----------------------------------
  * freshclam: fix pidfile removal (bb#3499)
