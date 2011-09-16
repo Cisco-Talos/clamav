@@ -193,7 +193,7 @@ static int qcompare(const void *a, const void *b)
 }
 #endif
 
-static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, int attempt)
 {
 	int socketfd, port, ret;
 	unsigned int ips = 0, ignored = 0, i;
@@ -264,6 +264,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
     if(ipv4end != -1 && ipv4start != -1 && ipv4end - ipv4start + 1 > 1)
 	qsort(&addrs[ipv4start], ipv4end - ipv4start + 1, sizeof(struct addrinfo *), qcompare);
+
+    if(attempt > 1)
+	loadbal = 0;
 
     for(i = 0; i < addrnum; ) {
 	    void *addr;
@@ -587,7 +590,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	entries++;
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
-	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, optget(opts, "LocalIPAddress")->strarg, optget(opts, "ConnectTimeout")->numarg, NULL, 0, 0);
+	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, optget(opts, "LocalIPAddress")->strarg, optget(opts, "ConnectTimeout")->numarg, NULL, 0, 0, 1);
 	    if(sd < 0) {
 		logg("!SubmitDetectionStats: Can't connect to server\n");
 		ret = 52;
@@ -703,7 +706,7 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
 }
 
-static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
+static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, int attempt)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[46], *ch, *tmp;
 	int bread, cnt, sd;
@@ -772,9 +775,9 @@ static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile,
     memset(ipaddr, 0, sizeof(ipaddr));
 
     if(ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist, attempt);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist, attempt);
 
     if(sd < 0) {
 	return NULL;
@@ -1066,16 +1069,16 @@ static int getfile_mirman(const char *srcfile, const char *destfile, const char 
     return 0;
 }
 
-static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const char *ims, const struct optstruct *opts)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const char *ims, const struct optstruct *opts, int attempt)
 {
 	int ret, sd;
 	char ipaddr[46];
 
     memset(ipaddr, 0, sizeof(ipaddr));
     if(ip && ip[0]) /* use ip to connect */
-	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
+	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist, attempt);
     else
-	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
+	sd = wwwconnect(hostname, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist, attempt);
 
     if(sd < 0)
 	return 52;
@@ -1096,7 +1099,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     return ret;
 }
 
-static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts)
+static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, int attempt)
 {
 	struct cl_cvd *cvd;
 	int ret;
@@ -1104,7 +1107,7 @@ static int getcvd(const char *cvdfile, const char *newfile, const char *hostname
 
     logg("*Retrieving http://%s/%s\n", hostname, cvdfile);
 
-    if((ret = getfile(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL, opts))) {
+    if((ret = getfile(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL, opts, attempt))) {
         logg("%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, hostname);
         unlink(newfile);
         return ret;
@@ -1169,7 +1172,7 @@ static int chdir_tmp(const char *dbname, const char *tmpdir)
     return 0;
 }
 
-static int getpatch(const char *dbname, const char *tmpdir, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts)
+static int getpatch(const char *dbname, const char *tmpdir, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, int attempt)
 {
 	char *tempname, patch[32], olddir[512];
 	int ret, fd;
@@ -1187,7 +1190,7 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", dbname, version);
 
     logg("*Retrieving http://%s/%s\n", hostname, patch);
-    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL, opts))) {
+    if((ret = getfile(patch, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist, NULL, opts, attempt))) {
 	if(ret == 53)
 	    logg("Empty script %s, need to download entire database\n", patch);
 	else
@@ -1553,7 +1556,7 @@ static int checkdbdir(void)
 
 extern int sigchld_wait;
 
-static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra)
+static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra, int attempt)
 {
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
@@ -1690,13 +1693,13 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     if(!nodb && !newver) {
 	if(optget(opts, "PrivateMirror")->enabled) {
-	    remote = remote_cvdhead(cldfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	    remote = remote_cvdhead(cldfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist, attempt);
 	    if(remote)
 		hascld = 1;
 	    else
-		remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+		remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist, attempt);
 	} else
-	    remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	    remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist, attempt);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
@@ -1743,24 +1746,6 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	cl_cvdfree(current);
     }
 
-    /*
-    if(ipaddr[0]) {
-	hostfd = wwwconnect(ipaddr, proxy, port, NULL, localip);
-    } else {
-	hostfd = wwwconnect(hostname, proxy, port, ipaddr, localip);
-	if(!ip[0])
-	    strcpy(ip, ipaddr);
-    }
-
-    if(hostfd < 0) {
-	if(ipaddr[0])
-	    logg("Connection with %s (IP: %s) failed.\n", hostname, ipaddr);
-	else
-	    logg("Connection with %s failed.\n", hostname);
-	return 52;
-    };
-    */
-
     if(!optget(opts, "ScriptedUpdates")->enabled)
 	nodb = 1;
 
@@ -1769,11 +1754,11 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(optget(opts, "PrivateMirror")->enabled) {
 	    ret = 0;
 	    if(hascld)
-		ret = getcvd(cldfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+		ret = getcvd(cldfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts, attempt);
 	    if(ret || !hascld)
-		ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+		ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts, attempt);
 	} else
-	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts, attempt);
 
 	if(ret) {
 	    if(mirror_stats && strlen(ip)) {
@@ -1792,11 +1777,11 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	tmpdir = cli_gentemp(updtmpdir);
 	maxattempts = optget(opts, "MaxAttempts")->numarg;
 	for(i = currver + 1; i <= newver; i++) {
-	    for(j = 0; j < maxattempts; j++) {
+	    for(j = 1; j <= maxattempts; j++) {
 		    int llogerr = logerr;
 		if(logerr)
-		    llogerr = (j == maxattempts - 1);
-		ret = getpatch(dbname, tmpdir, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, llogerr, can_whitelist, opts);
+		    llogerr = (j == maxattempts);
+		ret = getpatch(dbname, tmpdir, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat, llogerr, can_whitelist, opts, attempt == 1 ? j : attempt);
 		if(ret == 52 || ret == 58) {
 		    if(mirror_stats && strlen(ip)) {
 			snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, i, flevel, 0, w32, ip);
@@ -1818,7 +1803,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    if(ret != 53)
 		logg("^Incremental update failed, trying to download %s\n", cvdfile);
 	    mirman_whitelist(mdat, 2);
-	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts);
+	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist, opts, attempt);
 	    if(ret) {
 		if(mirror_stats && strlen(ip)) {
 		    snprintf(squery, sizeof(squery), "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0, flevel, 0, w32, ip);
@@ -1984,7 +1969,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	    Rfc2822DateTime(mtime, sb.st_mtime);
 
 	newfile = cli_gentemp(updtmpdir);
-	ret = getfile(rpath, newfile, host, NULL, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, NULL, logerr, 0, *mtime ? mtime : NULL, opts);
+	ret = getfile(rpath, newfile, host, NULL, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, NULL, logerr, 0, *mtime ? mtime : NULL, opts, 1);
 	if(ret == 1) {
 	    logg("%s is up to date (version: custom database)\n", dbname);
 	    unlink(newfile);
@@ -2087,10 +2072,10 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
     return 0;
 }
 
-int downloadmanager(const struct optstruct *opts, const char *hostname, int logerr)
+int downloadmanager(const struct optstruct *opts, const char *hostname, int attempt)
 {
 	time_t currtime;
-	int ret, updated = 0, outdated = 0, signo = 0;
+	int ret, updated = 0, outdated = 0, signo = 0, logerr;
 	unsigned int ttl;
 	char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const struct optstruct *opt;
@@ -2098,6 +2083,8 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
 #endif
+
+    logerr = (optget(opts, "MaxAttempts")->numarg == attempt);
 
     pt = cli_gentemp(dbdir);
     if(!pt)
@@ -2200,7 +2187,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 		u_dnsreply = NULL;
 		u_extra = 1;
 	    }
-	    if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, u_dnsreply, localip, outdated, &mdat, logerr, u_extra)) > 50) {
+	    if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, u_dnsreply, localip, outdated, &mdat, logerr, u_extra, attempt)) > 50) {
 		if(dnsreply)
 		    free(dnsreply);
 		if(newver)
@@ -2216,7 +2203,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 	}
 
     } else {
-	if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0, attempt)) > 50) {
 	    if(dnsreply)
 		free(dnsreply);
 	    if(newver)
@@ -2229,7 +2216,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 	    updated = 1;
 
 	/* if ipaddr[0] != 0 it will use it to connect to the web host */
-	if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0, attempt)) > 50) {
 	    if(dnsreply)
 		free(dnsreply);
 	    if(newver)
@@ -2255,7 +2242,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 		else
 		    logg("*%s removed\n", safedb);
 	    }
-	} else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	} else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0, attempt)) > 50) {
 	    if(dnsreply)
 		free(dnsreply);
 	    if(newver)
@@ -2281,7 +2268,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 		else
 		    logg("*%s removed\n", dbname);
 	    }
-	} else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0)) > 50) {
+	} else if((ret = updatedb("bytecode", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr, 0, attempt)) > 50) {
 	    if(dnsreply)
 		free(dnsreply);
 	    if(newver)
@@ -2296,7 +2283,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 	/* handle extra dbs */
 	if((opt = optget(opts, "ExtraDatabase"))->enabled) {
 	    while(opt) {
-		if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, NULL, localip, outdated, &mdat, logerr, 1)) > 50) {
+		if((ret = updatedb(opt->strarg, hostname, ipaddr, &signo, opts, NULL, localip, outdated, &mdat, logerr, 1, attempt)) > 50) {
 		    if(dnsreply)
 			free(dnsreply);
 		    if(newver)

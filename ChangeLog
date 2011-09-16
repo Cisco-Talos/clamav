@@ -1,3 +1,7 @@
+Fri Sep 16 16:17:52 CEST 2011 (tk)
+----------------------------------
+ * freshclam: disable load balancing in further download attempts
+
 Fri Sep 16 12:47:10 CEST 2011 (acab)
 ------------------------------------
  * libclamav: properly pass custom flag to sigload_cb

@@ -170,7 +170,7 @@ static void help(void)
 
 static int download(const struct optstruct *opts, const char *cfgfile)
 {
-	int ret = 0, try = 0, maxattempts = 0;
+	int ret = 0, try = 1, maxattempts = 0;
 	const struct optstruct *opt;
 
 
@@ -182,12 +182,12 @@ static int download(const struct optstruct *opts, const char *cfgfile)
 	return 56;
     } else {
 	while(opt) {
-	    ret = downloadmanager(opts, opt->strarg, try == maxattempts - 1);
+	    ret = downloadmanager(opts, opt->strarg, try);
 #ifndef _WIN32
 	    alarm(0);
 #endif
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
-		if(try < maxattempts - 1) {
+		if(try < maxattempts) {
 		    logg("Trying again in 5 secs...\n");
 		    try++;
 		    sleep(5);
@@ -198,7 +198,6 @@ static int download(const struct optstruct *opts, const char *cfgfile)
 		    if(!opt) {
 			logg("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n", cfgfile);
 		    }
-		    try = 0;
 		}
 
 	    } else {
