@@ -1920,7 +1920,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	newfile = newfile2;
 	sigchld_wait = 0;/* we need to wait() for the child ourselves */
 	if (test_database_wrap(newfile, newdb, optget(opts, "Bytecode")->enabled)) {
-	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    logg("!Failed to load new database\n");
 	    unlink(newfile);
 	    free(newfile);
 	    return 55;
@@ -2094,7 +2094,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	newfile = newfile2;
 	sigchld_wait = 0;/* we need to wait() for the child ourselves */
 	if (test_database_wrap(newfile, dbname, optget(opts, "Bytecode")->enabled)) {
-	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    logg("!Failed to load new database\n");
 	    unlink(newfile);
 	    free(newfile);
 	    return 55;
