@@ -193,7 +193,7 @@ static int qcompare(const void *a, const void *b)
 }
 #endif
 
-static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, int attempt)
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, unsigned int attempt)
 {
 	int socketfd, port, ret;
 	unsigned int ips = 0, ignored = 0, i;
@@ -706,7 +706,7 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
 }
 
-static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, int attempt)
+static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, unsigned int attempt)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[46], *ch, *tmp;
 	int bread, cnt, sd;
@@ -1069,7 +1069,7 @@ static int getfile_mirman(const char *srcfile, const char *destfile, const char 
     return 0;
 }
 
-static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const char *ims, const struct optstruct *opts, int attempt)
+static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const char *ims, const struct optstruct *opts, unsigned int attempt)
 {
 	int ret, sd;
 	char ipaddr[46];
@@ -1099,7 +1099,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     return ret;
 }
 
-static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, int attempt)
+static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, unsigned int attempt)
 {
 	struct cl_cvd *cvd;
 	int ret;
@@ -1172,7 +1172,7 @@ static int chdir_tmp(const char *dbname, const char *tmpdir)
     return 0;
 }
 
-static int getpatch(const char *dbname, const char *tmpdir, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, int attempt)
+static int getpatch(const char *dbname, const char *tmpdir, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist, const struct optstruct *opts, unsigned int attempt)
 {
 	char *tempname, patch[32], olddir[512];
 	int ret, fd;
@@ -1556,7 +1556,7 @@ static int checkdbdir(void)
 
 extern int sigchld_wait;
 
-static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra, int attempt)
+static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr, int extra, unsigned int attempt)
 {
 	struct cl_cvd *current, *remote;
 	const struct optstruct *opt;
@@ -1857,7 +1857,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	newfile = newfile2;
 	sigchld_wait = 0;/* we need to wait() for the child ourselves */
 	if (test_database_wrap(newfile, newdb, optget(opts, "Bytecode")->enabled)) {
-	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    logg("!Failed to load new database\n");
 	    unlink(newfile);
 	    free(newfile);
 	    return 55;
@@ -2031,7 +2031,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	newfile = newfile2;
 	sigchld_wait = 0;/* we need to wait() for the child ourselves */
 	if (test_database_wrap(newfile, dbname, optget(opts, "Bytecode")->enabled)) {
-	    logg("!Failed to load new database: %s\n", cl_strerror(ret));
+	    logg("!Failed to load new database\n");
 	    unlink(newfile);
 	    free(newfile);
 	    return 55;
@@ -2072,7 +2072,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
     return 0;
 }
 
-int downloadmanager(const struct optstruct *opts, const char *hostname, int attempt)
+int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned int attempt)
 {
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0, logerr;
