@@ -2189,7 +2189,6 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	funmap(*ctx->fmap);
 	ctx->fmap--;
-	ctx->hook_lsig_matches = old_hook_lsig_matches;
 	ret_from_magicscan(CL_EREAD);
     }
     filetype = cli_ftname(type);
