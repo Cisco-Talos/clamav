@@ -306,7 +306,6 @@ BOOL interface_setup(void) {
 }
 
 static int sigload_callback(const char *type, const char *name, unsigned int custom, void *context) {
-    logg("*in Sigload_cb(%s, %s, %u, %p) - MinDef:%u, Off: %u, Cust: %u\n", type, name, custom, context, minimal_definitions, official_sigs, custom_sigs);
     if(!strcmp(type, "fp"))
 	return 0;
     if(minimal_definitions && !custom)
@@ -383,7 +382,7 @@ static int load_db(void) {
 	FAIL(ret, "Failed to compile engine: %s", cl_strerror(ret));
     }
 
-    logg("load_db: loaded %d signatures\n", signo);
+    logg("load_db: loaded %d signatures (%u official, %u custom)\n", signo, official_sigs, custom_sigs); 
     if (!mpool_getstats(engine, &used, &total))
 	logg("load_db: memory %.3f MB / %.3f MB\n", used/(1024*1024.0), total/(1024*1024.0));
 
@@ -400,7 +399,6 @@ int CLAMAPI Scan_HaveSigs(unsigned int *official, unsigned int *custom) {
 	unlock_engine();
 	FAIL(CL_ESTATE, "Engine unavailable");
     }
-    logg("*in HaveSigs - Off: %u, Cst: %u\n", official_sigs, custom_sigs); 
     ret = ((official_sigs + custom_sigs) > 0);
     if(official) *official = official_sigs;
     if(custom) *custom = custom_sigs;
