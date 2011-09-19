@@ -361,6 +361,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		loadbal = 0;
 		i = 0;
 	    } else i++;
+	    mirman_update(addr, rp->ai_family, mdat, 2);
 	    continue;
 	} else {
 	    if(mdat) {

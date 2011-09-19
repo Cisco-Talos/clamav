@@ -1,3 +1,8 @@
+Mon Sep 19 13:44:36 CEST 2011 (tk)
+----------------------------------
+ * freshclam: re-enable short-time blacklisting of mirrors on
+	      connection errors
+
 Fri Sep 16 16:17:52 CEST 2011 (tk)
 ----------------------------------
  * freshclam: disable load balancing in further download attempts

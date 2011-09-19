@@ -51,7 +51,7 @@
 #endif
 
 #define IGNORE_LONG	3 * 86400
-#define IGNORE_SHORT	1800
+#define IGNORE_SHORT	6 * 3600
 
 void mirman_free(struct mirdat *mdat)
 {
