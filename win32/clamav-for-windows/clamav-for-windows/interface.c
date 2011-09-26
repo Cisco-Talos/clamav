@@ -29,7 +29,7 @@
 #include "interface.h"
 
 const char *types[] = {
-    "<<rsvd>>"		/*  0 */
+    "<<rsvd>>",		/*  0 */
     "MSEXE",		/*  1 */
     "HTML",		/*  2 */
     "HTML_UTF16",	/*  3 */

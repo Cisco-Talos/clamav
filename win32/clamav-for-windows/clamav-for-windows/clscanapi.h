@@ -259,7 +259,7 @@ int CLAMAPI Scan_ScanObject(CClamAVScanner *pScanner, const wchar_t *pObjectPath
 int CLAMAPI Scan_ScanObjectByHandle(CClamAVScanner *pScanner, HANDLE object, int *pScanStatus, PCLAM_SCAN_INFO_LIST *pInfoList);
 
 /*
- * Returns the outer file type as an _int64[2] for the give HANDLE
+ * Returns the outer file type as an _int64[2] for the given HANDLE
  * Scan is not performed and no callback is invoked
  * INPUT @param hFile : file handle whose type is to be determined
  * OUTPUT @param filetype : result array (_int64[2])
