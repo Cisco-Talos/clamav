@@ -1141,11 +1141,14 @@ static int cvdinfo(const struct optstruct *opts)
 	mprintf("Digital signature: %s\n", cvd->dsig);
     }
     cl_cvdfree(cvd);
-    if((ret = cl_cvdverify(pt))) {
+    if(cli_strbcasestr(pt, ".cud"))
+	mprintf("Verification: Unsigned container\n");
+    else if((ret = cl_cvdverify(pt))) {
 	mprintf("!cvdinfo: Verification: %s\n", cl_strerror(ret));
 	return -1;
-    }
-    mprintf("Verification OK.\n");
+    } else
+	mprintf("Verification OK.\n");
+
     return 0;
 }
 
