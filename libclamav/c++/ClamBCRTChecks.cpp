@@ -59,6 +59,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Support/Debug.h"
+#include "llvm30_compat.h"
 
 #ifndef LLVM28
 #define LLVM28
@@ -76,7 +77,12 @@ static Value *GetUnderlyingObject(Value *P, TargetData *TD)
     return P->getUnderlyingObject();
 }
 #endif
-namespace {
+namespace llvm {
+    class PtrVerifier;
+
+#ifdef LLVM30
+  void initializePtrVerifierPass(PassRegistry&);
+#endif
 
   class PtrVerifier : public FunctionPass {
   private:
@@ -84,7 +90,11 @@ namespace {
     CallGraphNode *rootNode;
   public:
     static char ID;
-    DEFINEPASS(PtrVerifier), rootNode(0) {}
+    DEFINEPASS(PtrVerifier), rootNode(0) {
+#ifdef LLVM30
+	initializePtrVerifierPass(*PassRegistry::getPassRegistry());
+#endif
+    }
 
     virtual bool runOnFunction(Function &F) {
       DEBUG(errs() << "Running on " << F.getName() << "\n");
@@ -163,11 +173,11 @@ namespace {
         insns.pop_back();
         DEBUG(dbgs() << "checking " << *II << "\n");
         if (LoadInst *LI = dyn_cast<LoadInst>(II)) {
-          const Type *Ty = LI->getType();
+          constType *Ty = LI->getType();
           valid &= validateAccess(LI->getPointerOperand(),
                                   TD->getTypeAllocSize(Ty), LI);
         } else if (StoreInst *SI = dyn_cast<StoreInst>(II)) {
-          const Type *Ty = SI->getOperand(0)->getType();
+          constType *Ty = SI->getOperand(0)->getType();
           valid &= validateAccess(SI->getPointerOperand(),
                                   TD->getTypeAllocSize(Ty), SI);
         } else if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(II)) {
@@ -222,7 +232,7 @@ namespace {
 	DEBUG(F.dump());
         ClamBCModule::stop("Verification found errors!", &F);
 	// replace function with call to abort
-        std::vector<const Type*>args;
+        std::vector<constType*>args;
         FunctionType* abrtTy = FunctionType::get(
           Type::getVoidTy(F.getContext()),args,false);
         Constant *func_abort =
@@ -296,12 +306,12 @@ namespace {
         return BaseMap[Ptr] = V;
       }
 
-      const Type *P8Ty =
+      constType *P8Ty =
         PointerType::getUnqual(Type::getInt8Ty(Ptr->getContext()));
       if (PHINode *PN = dyn_cast<PHINode>(Ptr)) {
         BasicBlock::iterator It = PN;
         ++It;
-        PHINode *newPN = PHINode::Create(P8Ty, ".verif.base", &*It);
+        PHINode *newPN = PHINode::Create(P8Ty, HINT(PN->getNumIncomingValues()) ".verif.base", &*It);
         Changed = true;
         BaseMap[Ptr] = newPN;
 
@@ -338,13 +348,13 @@ namespace {
     Value* getPointerBounds(Value *Base) {
       if (BoundsMap.count(Base))
         return BoundsMap[Base];
-      const Type *I64Ty =
+      constType *I64Ty =
         Type::getInt64Ty(Base->getContext());
 #ifndef CLAMBC_COMPILER
       // first arg is hidden ctx
       if (Argument *A = dyn_cast<Argument>(Base)) {
 	  if (A->getArgNo() == 0) {
-	      const Type *Ty = cast<PointerType>(A->getType())->getElementType();
+	      constType *Ty = cast<PointerType>(A->getType())->getElementType();
 	      return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
 	  }
       }
@@ -354,7 +364,7 @@ namespace {
 	      if (A->getArgNo() == 0) {
 		  // pointers from hidden ctx are trusted to be at least the
 		  // size they say they are
-		  const Type *Ty = cast<PointerType>(LI->getType())->getElementType();
+		  constType *Ty = cast<PointerType>(LI->getType())->getElementType();
 		  return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
 	      }
 	  }
@@ -363,7 +373,7 @@ namespace {
       if (PHINode *PN = dyn_cast<PHINode>(Base)) {
         BasicBlock::iterator It = PN;
         ++It;
-        PHINode *newPN = PHINode::Create(I64Ty, ".verif.bounds", &*It);
+        PHINode *newPN = PHINode::Create(I64Ty, HINT(PN->getNumIncomingValues()) ".verif.bounds", &*It);
         Changed = true;
         BoundsMap[Base] = newPN;
 
@@ -396,7 +406,7 @@ namespace {
         }
       }
 
-      const Type *Ty;
+      constType *Ty;
       Value *V = PT->computeAllocationCountValue(Base, Ty);
       if (!V) {
 	  Base = Base->stripPointerCasts();
@@ -481,7 +491,7 @@ namespace {
       unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
       //verifyFunction(*BB->getParent());
       if (!AbrtBB) {
-        std::vector<const Type*>args;
+        std::vector<constType*>args;
         FunctionType* abrtTy = FunctionType::get(
           Type::getVoidTy(BB->getContext()),args,false);
         args.push_back(Type::getInt32Ty(BB->getContext()));
@@ -492,7 +502,7 @@ namespace {
         Constant *func_rterr =
           BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error", rterrTy);
         AbrtBB = BasicBlock::Create(BB->getContext(), "", BB->getParent());
-        PN = PHINode::Create(Type::getInt32Ty(BB->getContext()),"",
+        PN = PHINode::Create(Type::getInt32Ty(BB->getContext()),HINT(1) "",
                                       AbrtBB);
         if (MDDbgKind) {
           CallInst *RtErrCall = CallInst::Create(func_rterr, PN, "", AbrtBB);
@@ -534,7 +544,7 @@ namespace {
                                        locationid), BB);
 
       TerminatorInst *TI = BB->getTerminator();
-      SCEVExpander expander(*SE);
+      SCEVExpander expander(*SE OPT("SCEVexpander"));
       Value *IdxV = expander.expandCodeFor(Idx, Limit->getType(), TI);
 /*      if (isa<PointerType>(IdxV->getType())) {
         IdxV = new PtrToIntInst(IdxV, Idx->getType(), "", TI);
@@ -564,8 +574,8 @@ namespace {
       if (const SCEVZeroExtendExpr *ZR = dyn_cast<SCEVZeroExtendExpr>(RHS))
         RHS = ZR->getOperand();
 
-      const Type* LTy = SE->getEffectiveSCEVType(LHS->getType());
-      const Type *RTy = SE->getEffectiveSCEVType(RHS->getType());
+      constType* LTy = SE->getEffectiveSCEVType(LHS->getType());
+      constType *RTy = SE->getEffectiveSCEVType(RHS->getType());
       if (SE->getTypeSizeInBits(RTy) > SE->getTypeSizeInBits(LTy))
         LTy = RTy;
       LHS = SE->getNoopOrZeroExtend(LHS, LTy);
@@ -651,7 +661,7 @@ namespace {
           }
         }
 
-        const Type *I64Ty =
+        constType *I64Ty =
           Type::getInt64Ty(Base->getContext());
         const SCEV *SLen = SE->getSCEV(Length);
         const SCEV *OffsetP = SE->getMinusSCEV(SE->getSCEV(Pointer),
@@ -713,13 +723,23 @@ namespace {
                             ConstantInt::get(Type::getInt32Ty(Pointer->getContext()),
                                              size), I);
     }
-
   };
   char PtrVerifier::ID;
 
 }
+#ifdef LLVM30
+INITIALIZE_PASS_BEGIN(PtrVerifier, "", "", false, false)
+INITIALIZE_PASS_DEPENDENCY(TargetData)
+INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+INITIALIZE_AG_DEPENDENCY(CallGraph)
+INITIALIZE_PASS_DEPENDENCY(PointerTracking)
+INITIALIZE_PASS_END(PtrVerifier, "clambcrtchecks", "ClamBC RTchecks", false, false)
+#endif
+
 
 llvm::Pass *createClamBCRTChecks()
 {
   return new PtrVerifier();
 }
+

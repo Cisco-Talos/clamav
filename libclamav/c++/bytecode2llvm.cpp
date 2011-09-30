@@ -87,7 +87,12 @@ extern "C" {
 void LLVMInitializeX86AsmPrinter();
 void LLVMInitializePowerPCAsmPrinter();
 }
+#include "llvm30_compat.h"
+#ifdef LLVM30
+#include "llvm/Support/TargetSelect.h"
+#else
 #include "llvm/Target/TargetSelect.h"
+#endif
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/TargetFolder.h"
@@ -405,10 +410,14 @@ public:
 
 class LLVMTypeMapper {
 private:
+#ifdef LLVM30
+    std::vector<Type*> TypeMap;
+#else
     std::vector<PATypeHolder> TypeMap;
+#endif
     LLVMContext &Context;
     unsigned numTypes;
-    const Type *getStatic(uint16_t ty)
+    constType *getStatic(uint16_t ty)
     {
 	if (!ty)
 	    return Type::getVoidTy(Context);
@@ -431,7 +440,7 @@ public:
     TimerWrapper irgenTimer;
 
     LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
-		   unsigned count, const Type *Hidden=0) : Context(Context), numTypes(count),
+		   unsigned count, constType *Hidden=0) : Context(Context), numTypes(count),
     pmTimer("Function passes"),irgenTimer("IR generation")
     {
 	TypeMap.reserve(count);
@@ -439,22 +448,40 @@ public:
 	// invalidated, so we must use a TypeHolder to an Opaque type as a
 	// start.
 	for (unsigned i=0;i<count;i++) {
+#ifdef LLVM30
+	    TypeMap.push_back(0);
+#else
 	    TypeMap.push_back(OpaqueType::get(Context));
+#endif
 	}
-	std::vector<const Type*> Elts;
 	for (unsigned i=0;i<count;i++) {
 	    const struct cli_bc_type *type = &types[i];
-	    Elts.clear();
-	    unsigned n = type->kind == DArrayType ? 1 : type->numElements;
-	    for (unsigned j=0;j<n;j++) {
-		Elts.push_back(get(type->containedTypes[j]));
-	    }
-	    const Type *Ty;
-	    switch (type->kind) {
-		case DFunctionType:
+
+	    constType *Ty = buildType(type, types, Hidden, 0);
+#ifdef LLVM30
+	    TypeMap[i] = Ty;
+#else
+	    // Make the opaque type a concrete type, doing recursive type
+	    // unification if needed.
+	    cast<OpaqueType>(TypeMap[i].get())->refineAbstractTypeTo(Ty);
+#endif
+	}
+    }
+
+    constType *buildType(const struct cli_bc_type *type, const struct cli_bc_type *types, constType *Hidden,
+			 int recursive)
+    {
+	std::vector<constType*> Elts;
+	unsigned n = type->kind == DArrayType ? 1 : type->numElements;
+	for (unsigned j=0;j<n;j++) {
+	    Elts.push_back(get(type->containedTypes[j], types, Hidden));
+	}
+	constType *Ty;
+	switch (type->kind) {
+	    case DFunctionType:
 		{
 		    assert(Elts.size() > 0 && "Function with no return type?");
-		    const Type *RetTy = Elts[0];
+		    constType *RetTy = Elts[0];
 		    if (Hidden)
 			Elts[0] = Hidden;
 		    else
@@ -462,38 +489,43 @@ public:
 		    Ty = FunctionType::get(RetTy, Elts, false);
 		    break;
 		}
-		case DPointerType:
-		    if (!PointerType::isValidElementType(Elts[0]))
-			Ty = PointerType::getUnqual(Type::getInt8Ty(Context));
-		    else
-			Ty = PointerType::getUnqual(Elts[0]);
-		    break;
-		case DStructType:
-		    Ty = StructType::get(Context, Elts);
-		    break;
-		case DPackedStructType:
-		    Ty = StructType::get(Context, Elts, true);
-		    break;
-		case DArrayType:
-		    Ty = ArrayType::get(Elts[0], type->numElements);
-		    break;
-		default:
-		    llvm_unreachable("type->kind");
-	    }
-	    // Make the opaque type a concrete type, doing recursive type
-	    // unification if needed.
-	    cast<OpaqueType>(TypeMap[i].get())->refineAbstractTypeTo(Ty);
+	    case DPointerType:
+		if (!PointerType::isValidElementType(Elts[0]))
+		    Ty = PointerType::getUnqual(Type::getInt8Ty(Context));
+		else
+		    Ty = PointerType::getUnqual(Elts[0]);
+		break;
+	    case DStructType:
+	    case DPackedStructType:
+		Ty = StructType::get(Context, Elts, type->kind == DPackedStructType);
+		break;
+	    case DArrayType:
+		Ty = ArrayType::get(Elts[0], type->numElements);
+		break;
+	    default:
+		llvm_unreachable("type->kind");
 	}
+	return Ty;
     }
 
-    const Type *get(uint16_t ty)
+    constType *get(uint16_t ty, const struct cli_bc_type *types, constType *Hidden)
     {
 	ty &= 0x7fff;
 	if (ty < 69)
 	    return getStatic(ty);
 	ty -= 69;
 	assert(ty < numTypes && "TypeID out of range");
+#ifdef LLVM30
+	Type *Ty = TypeMap[ty];
+	if (Ty)
+	    return Ty;
+	assert(types && Hidden || "accessing not-yet-built type");
+	Ty = buildType(&types[ty], types, Hidden, 1);
+	TypeMap[ty] = Ty;
+	return Ty;
+#else
 	return TypeMap[ty].get();
+#endif
     }
 };
 
@@ -629,7 +661,7 @@ public:
 	if (needsTimeoutCheck.empty())
 	    return false;
 	DEBUG(errs() << "needs timeoutcheck:\n");
-	std::vector<const Type*>args;
+	std::vector<constType*>args;
 	FunctionType* abrtTy = FunctionType::get(
 	    Type::getVoidTy(F.getContext()),args,false);
 	Constant *func_abort =
@@ -662,7 +694,7 @@ public:
 	    BasicBlock *BB = *I;
 	    Builder.SetInsertPoint(BB, BB->getTerminator());
 	    // store-load barrier: will be a no-op on x86 but not other arches
-	    Builder.CreateCall(LSBarrier, MBArgs, MBArgs+5);
+	    Builder.CreateCall(LSBarrier, ARRAYREF(Value*, MBArgs, MBArgs+5));
 	    // Load Flag that tells us we timed out (first byte in bc_ctx)
 	    Value *Cond = Builder.CreateLoad(Flag, true);
 	    BasicBlock *newBB = SplitBlock(BB, BB->getTerminator(), this);
@@ -788,7 +820,7 @@ private:
 
     std::vector<Value*> globals;
     DenseMap<unsigned, unsigned> GVoffsetMap;
-    DenseMap<unsigned, const Type*> GVtypeMap;
+    DenseMap<unsigned, constType*> GVtypeMap;
     Value **Values;
     unsigned numLocals;
     unsigned numArgs;
@@ -796,7 +828,7 @@ private:
 
     struct CommonFunctions *CF;
 
-    Value *getOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
+    Value *getOperand(const struct cli_bc_func *func, constType *Ty, operand_t operand)
     {
 	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
 	if (operand < func->numValues)
@@ -809,7 +841,7 @@ private:
 	return convertOperand(func, map[w], operand);
     }
 
-    Value *convertOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
+    Value *convertOperand(const struct cli_bc_func *func, constType *Ty, operand_t operand)
     {
 	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
 	if (operand < func->numArgs)
@@ -883,7 +915,7 @@ private:
 	assert(operand < func->numConstants && "Constant out of range");
 	uint64_t *c = &func->constants[operand];
 	uint64_t v;
-	const Type *Ty;
+	constType *Ty;
 	switch (w) {
 	    case 0:
 	    case 1:
@@ -928,14 +960,14 @@ private:
 	Builder.SetInsertPoint(OkBB);
     }
 
-    const Type* mapType(uint16_t typeID)
+    constType* mapType(uint16_t typeID)
     {
-	return TypeMap->get(typeID&0x7fffffff);
+	return TypeMap->get(typeID&0x7fffffff, NULL, NULL);
     }
 
-    Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
+    Constant *buildConstant(constType *Ty, uint64_t *components, unsigned &c)
     {
-        if (const PointerType *PTy = dyn_cast<PointerType>(Ty)) {
+        if (constPointerType *PTy = dyn_cast<PointerType>(Ty)) {
           Value *idxs[1] = {
 	      ConstantInt::get(Type::getInt64Ty(Context), components[c++])
 	  };
@@ -944,17 +976,17 @@ private:
 	      return ConstantPointerNull::get(PTy);
 	  assert(idx < globals.size());
 	  GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
-	  const Type *IP8Ty = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
+	  Type *IP8Ty = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
 	  Constant *C = ConstantExpr::getPointerCast(GV, IP8Ty);
 	  //TODO: check constant bounds here
 	  return ConstantExpr::getPointerCast(
-	      ConstantExpr::getInBoundsGetElementPtr(C, idxs, 1),
+	      ConstantExpr::getInBoundsGetElementPtr(C, ARRAYREF(Value*, idxs, 1)),
 	      PTy);
         }
 	if (isa<IntegerType>(Ty)) {
 	    return ConstantInt::get(Ty, components[c++]);
 	}
-	if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty)) {
+	if (constArrayType *ATy = dyn_cast<ArrayType>(Ty)) {
 	   std::vector<Constant*> elements;
 	   elements.reserve(ATy->getNumElements());
 	   for (unsigned i=0;i<ATy->getNumElements();i++) {
@@ -962,7 +994,7 @@ private:
 	   }
 	   return ConstantArray::get(ATy, elements);
 	}
-	if (const StructType *STy = dyn_cast<StructType>(Ty)) {
+	if (constStructType *STy = dyn_cast<StructType>(Ty)) {
 	   std::vector<Constant*> elements;
 	   elements.reserve(STy->getNumElements());
 	   for (unsigned i=0;i<STy->getNumElements();i++) {
@@ -990,9 +1022,11 @@ public:
 	}
     }
 
+#ifndef LLVM30
     template <typename InputIterator>
-    Value* createGEP(Value *Base, const Type *ETy, InputIterator Start, InputIterator End) {
-	const Type *Ty = GetElementPtrInst::getIndexedType(Base->getType(), Start, End);
+#endif
+    Value* createGEP(Value *Base, constType *ETy, ARRAYREFPARAM(Value*,InputIterator Start,InputIterator End,ARef)) {
+	constType *Ty = GetElementPtrInst::getIndexedType(Base->getType(),ARRAYREFP(Start,End,ARef));
 	if (!Ty || (ETy && (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy))))) {
 	    if (cli_debug_flag) {
 		std::string str;
@@ -1005,7 +1039,11 @@ public:
 		ostr << " base: " << *Base << ";";
 		Base->getType()->print(ostr);
 		ostr << "\n indices: ";
+#ifdef LLVM30
+		for (ArrayRef<Value*>::iterator I=ARef.begin(); I != ARef.end(); I++) {
+#else
 		for (InputIterator I=Start; I != End; I++) {
+#endif
 		    ostr << **I << ", ";
 		}
 		ostr << "\n";
@@ -1015,14 +1053,16 @@ public:
 	    }
 	    return 0;
 	}
-	return Builder.CreateGEP(Base, Start, End);
+	return Builder.CreateGEP(Base,ARRAYREFP(Start,End,ARef));
     }
 
+#ifndef LLVM30
     template <typename InputIterator>
-    bool createGEP(unsigned dest, Value *Base, InputIterator Start, InputIterator End) {
+#endif
+    bool createGEP(unsigned dest, Value *Base, ARRAYREFPARAM(Value*,InputIterator Start,InputIterator End,ARef)) {
 	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
-	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
-	Value *V = createGEP(Base, ETy, Start, End);
+	constType *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
+	Value *V = createGEP(Base, ETy, ARRAYREFP(Start,End,ARef));
 	if (!V) {
 	    if (cli_debug_flag)
 		cli_dbgmsg_internal("[Bytecode JIT] @%d\n", dest);
@@ -1060,7 +1100,7 @@ public:
 	    }
 	    Vals[j] = V;
 	}
-	MDNode *N = MDNode::get(Context, Vals, node->numelements);
+	MDNode *N = MDNode::get(Context, ARRAYREF(Value*,Vals, node->numelements));
 	delete[] Vals;
 	mdnodes[i] = N;
 	return N;
@@ -1125,7 +1165,7 @@ public:
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
-	    const Type *Ty = apiMap.get(cli_globals[i].type);
+	    constType *Ty = apiMap.get(cli_globals[i].type, NULL, NULL);
 	    /*if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
 		Ty = PointerType::getUnqual(ATy->getElementType());*/
 	    GVtypeMap[id] = Ty;
@@ -1133,14 +1173,14 @@ public:
 
 	// The hidden ctx param to all functions
 	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
-	const Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(Context), maxh));
+	constType *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(Context), maxh));
 
 	globals.reserve(bc->num_globals);
 	BitVector FakeGVs;
 	FakeGVs.resize(bc->num_globals);
 	globals.push_back(0);
 	for (unsigned i=1;i<bc->num_globals;i++) {
-	    const Type *Ty = mapType(bc->globaltys[i]);
+	    constType *Ty = mapType(bc->globaltys[i]);
 
 	    // TODO: validate number of components against type_components
 	    unsigned c = 0;
@@ -1163,12 +1203,12 @@ public:
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    // Create LLVM IR Function
 	    const struct cli_bc_func *func = &bc->funcs[j];
-	    std::vector<const Type*> argTypes;
+	    std::vector<constType*> argTypes;
 	    argTypes.push_back(HiddenCtx);
 	    for (unsigned a=0;a<func->numArgs;a++) {
 		argTypes.push_back(mapType(func->types[a]));
 	    }
-	    const Type *RetTy = mapType(func->returnType);
+	    constType *RetTy = mapType(func->returnType);
 	    FunctionType *FTy =  FunctionType::get(RetTy, argTypes,
 							 false);
 	    Functions[j] = Function::Create(FTy, Function::InternalLinkage,
@@ -1181,7 +1221,7 @@ public:
 	    Functions[j]->addFnAttr(Attribute::constructStackAlignmentFromInt(16));
 #endif
 	}
-	const Type *I32Ty = Type::getInt32Ty(Context);
+	constType *I32Ty = Type::getInt32Ty(Context);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -1229,19 +1269,19 @@ public:
 			ConstantInt::get(Type::getInt32Ty(Context), 0),
 			Idx
 		    };
-		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idxs, Idxs+2);
-		    const Type *Ty = GVtypeMap[g];
+		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, ARRAYREF(Value*, Idxs, Idxs+2));
+		    constType *Ty = GVtypeMap[g];
 		    Ty = PointerType::getUnqual(PointerType::getUnqual(Ty));
 		    Value *Cast = Builder.CreateBitCast(GEP, Ty);
 		    Value *SpecialGV = Builder.CreateLoad(Cast);
-		    const Type *IP8Ty = Type::getInt8Ty(Context);
+		    constType *IP8Ty = Type::getInt8Ty(Context);
 		    IP8Ty = PointerType::getUnqual(IP8Ty);
 		    SpecialGV = Builder.CreateBitCast(SpecialGV, IP8Ty);
 		    SpecialGV->setName("g"+Twine(g-_FIRST_GLOBAL)+"_");
 		    Value *C[] = {
 			ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])
 		    };
-		    globals[i] = createGEP(SpecialGV, 0, C, C+1);
+		    globals[i] = createGEP(SpecialGV, 0, ARRAYREF(Value*,C, C+1));
 		    if (!globals[i]) {
 			if (cli_debug_flag) {
 			    std::string str;
@@ -1381,21 +1421,21 @@ public:
 			case OP_BC_TRUNC:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
-			    const Type *Ty = mapType(func->types[inst->dest]);
+			    constType *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateTrunc(Src,  Ty));
 			    break;
 			}
 			case OP_BC_ZEXT:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
-			    const Type *Ty = mapType(func->types[inst->dest]);
+			    constType *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateZExt(Src,  Ty));
 			    break;
 			}
 			case OP_BC_SEXT:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
-			    const Type *Ty = mapType(func->types[inst->dest]);
+			    constType *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateSExt(Src,  Ty));
 			    break;
 			}
@@ -1459,7 +1499,7 @@ public:
 			case OP_BC_COPY:
 			{
 			    Value *Dest = Values[inst->u.binop[1]];
-			    const PointerType *PTy = cast<PointerType>(Dest->getType());
+			    constPointerType *PTy = cast<PointerType>(Dest->getType());
 			    Op0 = convertOperand(func, PTy->getElementType(), inst->u.binop[0]);
 			    PTy = PointerType::getUnqual(Op0->getType());
 			    Dest = Builder.CreateBitCast(Dest, PTy);
@@ -1475,7 +1515,7 @@ public:
 				operand_t op = inst->u.ops.ops[a];
 				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
 			    }
-			    CallInst *CI = Builder.CreateCall(DestF, args.begin(), args.end());
+			    CallInst *CI = Builder.CreateCall(DestF, ARRAYREF(Value*, args.begin(), args.end()));
 			    CI->setCallingConv(CallingConv::Fast);
 			    CI->setDoesNotThrow(true);
 			    if (CI->getType()->getTypeID() != Type::VoidTyID)
@@ -1497,7 +1537,7 @@ public:
 				operand_t op = inst->u.ops.ops[a];
 				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
 			    }
-			    CallInst *CI = Builder.CreateCall(DestF, args.begin(), args.end());
+			    CallInst *CI = Builder.CreateCall(DestF, ARRAYREFVECTOR(Value*, args));
 			    CI->setDoesNotThrow(true);
 			    Store(inst->dest, CI);
 			    }
@@ -1505,11 +1545,11 @@ public:
 			}
 			case OP_BC_GEP1:
 			{
-			    const Type *SrcTy = mapType(inst->u.three[0]);
+			    constType *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Op = GEPOperand(Op);
-			    if (!createGEP(inst->dest, V, &Op, &Op+1))
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1)))
 				return 0;
 			    break;
 			}
@@ -1517,11 +1557,11 @@ public:
 			{
 			    Value *Ops[2];
 			    Ops[0] = ConstantInt::get(Type::getInt32Ty(Context), 0);
-			    const Type *SrcTy = mapType(inst->u.three[0]);
+			    constType *SrcTy = mapType(inst->u.three[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Ops[1] = GEPOperand(Ops[1]);
-			    if (!createGEP(inst->dest, V, Ops, Ops+2))
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2)))
 				return 0;
 			    break;
 			}
@@ -1529,14 +1569,14 @@ public:
 			{
 			    std::vector<Value*> Idxs;
 			    assert(inst->u.ops.numOps > 2);
-			    const Type *SrcTy = mapType(inst->u.ops.ops[0]);
+			    constType *SrcTy = mapType(inst->u.ops.ops[0]);
 			    Value *V = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
 			    for (unsigned a=2;a<inst->u.ops.numOps;a++) {
 				Value *Op = convertOperand(func, I32Ty, inst->u.ops.ops[a]);
 				Op = GEPOperand(Op);
 				Idxs.push_back(Op);
 			    }
-			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
+			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs)))
 				return 0;
 			    break;
 			}
@@ -1544,7 +1584,7 @@ public:
 			{
 			    Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
 			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
-			    const Type *VPTy = PointerType::getUnqual(V->getType());
+			    constType *VPTy = PointerType::getUnqual(V->getType());
 			    if (VPTy != Dest->getType())
 				Dest = Builder.CreateBitCast(Dest, VPTy);
 			    Builder.CreateStore(V, Dest);
@@ -1564,8 +1604,15 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+#ifdef LLVM30
+			    CallInst *c = Builder.CreateCall5(CF->FMemset, Dst, Val, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1),
+								ConstantInt::get(Type::getInt1Ty(Context), 0)
+								);
+#else
 			    CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
+#endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    UpgradeCall(c, CF->FMemset);
@@ -1578,8 +1625,15 @@ public:
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+#ifdef LLVM30
+			    CallInst *c = Builder.CreateCall5(CF->FMemcpy, Dst, Src, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1),
+								ConstantInt::get(Type::getInt1Ty(Context), 0)
+								);
+#else
 			    CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
+#endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    UpgradeCall(c, CF->FMemcpy);
@@ -1592,8 +1646,14 @@ public:
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+#ifdef LLVM30
+			    CallInst *c = Builder.CreateCall5(CF->FMemmove, Dst, Src, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1),
+								ConstantInt::get(Type::getInt1Ty(Context), 0));
+#else
 			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
+#endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    UpgradeCall(c, CF->FMemmove);
@@ -1710,7 +1770,7 @@ public:
 	    AddStackProtect(F);
 	}
 	delete TypeMap;
-	std::vector<const Type*> args;
+	std::vector<constType*> args;
 	args.clear();
 	args.push_back(HiddenCtx);
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
@@ -1733,7 +1793,7 @@ public:
 	     JE=F->arg_end(); J != JE; ++JE) {
 	    Args.push_back(&*J);
 	}
-	CallInst *CI = CallInst::Create(Functions[0], Args.begin(), Args.end(), "", BB);
+	CallInst *CI = CallInst::Create(Functions[0], ARRAYREFVECTOR(Value*, Args), "", BB);
 	CI->setCallingConv(CallingConv::Fast);
 	ReturnInst::Create(Context, CI, BB);
 
@@ -1790,15 +1850,23 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     EE->InstallLazyFunctionCreator(noUnknownFunctions);
     EE->getPointerToFunction(CF->FHandler);
 
-    std::vector<const Type*> args;
+    std::vector<constType*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
+#ifdef LLVM30
+    args.push_back(Type::getInt1Ty(Context));
+#endif
     FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
-					 "llvm.memset.i32", M);
+#ifdef LLVM30
+					 "llvm.memset.p0i8.i32",
+#else
+					 "llvm.memset.i32",
+#endif
+					 M);
     CF->FMemset->setDoesNotThrow();
     CF->FMemset->setDoesNotCapture(1, true);
 
@@ -1807,15 +1875,28 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
+#ifdef LLVM30
+    args.push_back(Type::getInt1Ty(Context));
+#endif
     FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-					  "llvm.memmove.i32", M);
+#ifdef LLVM30
+					  "llvm.memmove.p0i8.i32",
+#else
+					  "llvm.memmove.i32",
+#endif
+					  M);
     CF->FMemmove->setDoesNotThrow();
     CF->FMemmove->setDoesNotCapture(1, true);
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-					 "llvm.memcpy.i32", M);
+#ifdef LLVM30
+					 "llvm.memcpy.p0i8.p0i8.i32",
+#else
+					 "llvm.memcpy.i32",
+#endif
+					 M);
     CF->FMemcpy->setDoesNotThrow();
     CF->FMemcpy->setDoesNotCapture(1, true);
 
@@ -2146,13 +2227,13 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	//TODO: create a wrapper that calls pthread_getspecific
 	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
-	const Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
+	constType *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
 
 	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes, HiddenCtx);
 	Function **apiFuncs = new Function *[cli_apicall_maxapi];
 	for (unsigned i=0;i<cli_apicall_maxapi;i++) {
 	    const struct cli_apicall *api = &cli_apicalls[i];
-	    const FunctionType *FTy = cast<FunctionType>(apiMap.get(69+api->type));
+	    constFunctionType *FTy = cast<FunctionType>(apiMap.get(69+api->type, NULL, NULL));
 	    Function *F = Function::Create(FTy, Function::ExternalLinkage,
 					   api->name, M);
 	    void *dest;

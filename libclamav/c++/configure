@@ -617,6 +617,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+BUILD_LLVM3_FALSE
+BUILD_LLVM3_TRUE
 BUILD_EXTERNAL_LLVM_FALSE
 BUILD_EXTERNAL_LLVM_TRUE
 NO_MISSING_FIELD_INITIALIZERS
@@ -15370,7 +15372,8 @@ if test "${with_system_llvm+set}" = set; then :
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.9"; then
+    if test "$llvmver" != "2.9" && test "$llvmver" != "3.0svn" &&
+	test "$llvmver" != "3.0"; then
 	as_fn_error $? "LLVM 2.9 required, but \"$llvmver\" found" "$LINENO" 5
     fi
     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
@@ -15629,6 +15632,14 @@ else
   BUILD_EXTERNAL_LLVM_FALSE=
 fi
 
+ if test -n "$llvmconfig" && test "$llvmver" != "2.9"; then
+  BUILD_LLVM3_TRUE=
+  BUILD_LLVM3_FALSE='#'
+else
+  BUILD_LLVM3_TRUE='#'
+  BUILD_LLVM3_FALSE=
+fi
+
 
 ac_config_files="$ac_config_files Makefile"
 
@@ -15780,6 +15791,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_EXTERNAL_LLVM_TRUE}" && test -z "${BUILD_EXTERNAL_LLVM_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_EXTERNAL_LLVM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LLVM3_TRUE}" && test -z "${BUILD_LLVM3_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LLVM3\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

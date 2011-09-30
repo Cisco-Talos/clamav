@@ -59,7 +59,8 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.9"; then
+    if test "$llvmver" != "2.9" && test "$llvmver" != "3.0svn" &&
+	test "$llvmver" != "3.0"; then
 	AC_MSG_ERROR([LLVM 2.9 required, but "$llvmver" found])
     fi
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
@@ -222,6 +223,7 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
+AM_CONDITIONAL(BUILD_LLVM3, [test -n "$llvmconfig" && test "$llvmver" != "2.9"])
 
 AC_OUTPUT([
     Makefile

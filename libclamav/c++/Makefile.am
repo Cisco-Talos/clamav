@@ -27,17 +27,22 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp\
 			  ClamBCRTChecks.cpp\
 			  ClamBCModule.h\
 			  ClamBCDiagnostics.h\
-			  detect.cpp
+			  detect.cpp\
+			  llvm30_compat.h
 if BUILD_EXTERNAL_LLVM
 #$(LLVM_CONFIG): build-llvm
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
 libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28 -DLLVM29
+if BUILD_LLVM3
+libclamavcxx_la_CXXFLAGS += -DLLVM30
+endif
 libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
 libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
 noinst_LTLIBRARIES = libclamavcxx.la
 libclamavcxx_la_SOURCES += PointerTracking.cpp
+libclamavcxx_la_SOURCES += PointerTracking.h
 
 else
 AM_CPPFLAGS += $(LLVM_INCLUDES) $(LLVM_DEFS)

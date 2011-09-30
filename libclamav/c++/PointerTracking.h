@@ -32,6 +32,7 @@
 #include "llvm/Instructions.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/PredIteratorCache.h"
+#include "llvm30_compat.h"
 
 namespace llvm {
   class DominatorTree;
@@ -48,6 +49,10 @@ namespace llvm {
     AlwaysTrue,// always true with above constraints
     Unknown // it can sometimes be true, sometimes false, or it is undecided
   };
+
+#ifdef LLVM30
+  void initializePointerTrackingPass(PassRegistry&);
+#endif
 
   class PointerTracking : public FunctionPass {
   public:
@@ -98,7 +103,7 @@ namespace llvm {
     virtual bool runOnFunction(Function &F);
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
     void print(raw_ostream &OS, const Module* = 0) const;
-    Value *computeAllocationCountValue(Value *P, const Type *&Ty) const;
+    Value *computeAllocationCountValue(Value *P, constType *&Ty) const;
   private:
     Function *FF;
     TargetData *TD;
@@ -124,8 +129,8 @@ namespace llvm {
     Value *getConditionToReach(BasicBlock *A,
                                BasicBlock *B,
                                bool &negated);
-    const SCEV *computeAllocationCount(Value *P, const Type *&Ty) const;
-    const SCEV *computeAllocationCountForType(Value *P, const Type *Ty) const;
+    const SCEV *computeAllocationCount(Value *P, constType *&Ty) const;
+    const SCEV *computeAllocationCountForType(Value *P, constType *Ty) const;
   };
 }
 #endif

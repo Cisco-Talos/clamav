@@ -34,8 +34,15 @@ using namespace llvm;
 namespace llvm {
     void initializePointerTrackingPass(llvm::PassRegistry&);
 };
-INITIALIZE_PASS(PointerTracking, "pointertracking",
-                "Track pointer bounds", false, true);
+INITIALIZE_PASS_BEGIN(PointerTracking, "pointertracking",
+                "Track pointer bounds", false, true)
+INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+INITIALIZE_PASS_DEPENDENCY(LoopInfo)
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+INITIALIZE_PASS_END(PointerTracking, "pointertracking",
+                "Track pointer bounds", false, true)
+
 char PointerTracking::ID = 0;
 PointerTracking::PointerTracking() : FunctionPass(ID) {
     initializePointerTrackingPass(*PassRegistry::getPassRegistry());
@@ -60,21 +67,21 @@ void PointerTracking::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool PointerTracking::doInitialization(Module &M) {
-  const Type *PTy = Type::getInt8PtrTy(M.getContext());
+  constType *PTy = Type::getInt8PtrTy(M.getContext());
 
   // Find calloc(i64, i64) or calloc(i32, i32).
   callocFunc = M.getFunction("calloc");
   if (callocFunc) {
-    const FunctionType *Ty = callocFunc->getFunctionType();
+    constFunctionType *Ty = callocFunc->getFunctionType();
 
-    std::vector<const Type*> args, args2;
+    std::vector<constType*> args, args2;
     args.push_back(Type::getInt64Ty(M.getContext()));
     args.push_back(Type::getInt64Ty(M.getContext()));
     args2.push_back(Type::getInt32Ty(M.getContext()));
     args2.push_back(Type::getInt32Ty(M.getContext()));
-    const FunctionType *Calloc1Type =
+    constFunctionType *Calloc1Type =
       FunctionType::get(PTy, args, false);
-    const FunctionType *Calloc2Type =
+    constFunctionType *Calloc2Type =
       FunctionType::get(PTy, args2, false);
     if (Ty != Calloc1Type && Ty != Calloc2Type)
       callocFunc = 0; // Give up
@@ -83,16 +90,16 @@ bool PointerTracking::doInitialization(Module &M) {
   // Find realloc(i8*, i64) or realloc(i8*, i32).
   reallocFunc = M.getFunction("realloc");
   if (reallocFunc) {
-    const FunctionType *Ty = reallocFunc->getFunctionType();
-    std::vector<const Type*> args, args2;
+    constFunctionType *Ty = reallocFunc->getFunctionType();
+    std::vector<constType*> args, args2;
     args.push_back(PTy);
     args.push_back(Type::getInt64Ty(M.getContext()));
     args2.push_back(PTy);
     args2.push_back(Type::getInt32Ty(M.getContext()));
 
-    const FunctionType *Realloc1Type =
+    constFunctionType *Realloc1Type =
       FunctionType::get(PTy, args, false);
-    const FunctionType *Realloc2Type =
+    constFunctionType *Realloc2Type =
       FunctionType::get(PTy, args2, false);
     if (Ty != Realloc1Type && Ty != Realloc2Type)
       reallocFunc = 0; // Give up
@@ -103,7 +110,7 @@ bool PointerTracking::doInitialization(Module &M) {
 // Calculates the number of elements allocated for pointer P,
 // the type of the element is stored in Ty.
 const SCEV *PointerTracking::computeAllocationCount(Value *P,
-                                                    const Type *&Ty) const {
+                                                    constType *&Ty) const {
   Value *V = P->stripPointerCasts();
   if (AllocaInst *AI = dyn_cast<AllocaInst>(V)) {
     Value *arraySize = AI->getArraySize();
@@ -114,7 +121,7 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
 
   if (CallInst *CI = extractMallocCall(V)) {
     Value *arraySize = getMallocArraySize(CI, TD);
-    const Type* AllocTy = getMallocAllocatedType(CI);
+    constType* AllocTy = getMallocAllocatedType(CI);
     if (!AllocTy || !arraySize) return SE->getCouldNotCompute();
     Ty = AllocTy;
     // arraySize elements of type Ty.
@@ -155,7 +162,7 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
   return SE->getCouldNotCompute();
 }
 
-Value *PointerTracking::computeAllocationCountValue(Value *P, const Type *&Ty) const 
+Value *PointerTracking::computeAllocationCountValue(Value *P, constType *&Ty) const 
 {
   Value *V = P->stripPointerCasts();
   if (AllocaInst *AI = dyn_cast<AllocaInst>(V)) {
@@ -206,9 +213,9 @@ Value *PointerTracking::computeAllocationCountValue(Value *P, const Type *&Ty) c
 
 // Calculates the number of elements of type Ty allocated for P.
 const SCEV *PointerTracking::computeAllocationCountForType(Value *P,
-                                                           const Type *Ty)
+                                                           constType *Ty)
   const {
-    const Type *elementTy;
+    constType *elementTy;
     const SCEV *Count = computeAllocationCount(P, elementTy);
     if (isa<SCEVCouldNotCompute>(Count))
       return Count;

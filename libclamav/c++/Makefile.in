@@ -51,15 +51,17 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_EXTERNAL_LLVM_TRUE@am__append_1 = PointerTracking.cpp
-@BUILD_EXTERNAL_LLVM_FALSE@am__append_2 = $(LLVM_INCLUDES) $(LLVM_DEFS)
-@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_3 = libllvmx86codegen.la
+@BUILD_EXTERNAL_LLVM_TRUE@@BUILD_LLVM3_TRUE@am__append_1 = -DLLVM30
+@BUILD_EXTERNAL_LLVM_TRUE@am__append_2 = PointerTracking.cpp \
+@BUILD_EXTERNAL_LLVM_TRUE@	PointerTracking.h
+@BUILD_EXTERNAL_LLVM_FALSE@am__append_3 = $(LLVM_INCLUDES) $(LLVM_DEFS)
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_4 = libllvmx86codegen.la
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_5 = libllvmx86codegen.la
-@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_6 = libllvmpowerpccodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_6 = libllvmx86codegen.la
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_7 = libllvmpowerpccodegen.la
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_8 = libllvmpowerpccodegen.la
-@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@am__append_9 = $(TBLGENFILES)
+@BUILD_EXTERNAL_LLVM_FALSE@@BUILD_PPC_TRUE@am__append_9 = libllvmpowerpccodegen.la
+@BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@am__append_10 = $(TBLGENFILES)
 @BUILD_EXTERNAL_LLVM_FALSE@@MAINTAINER_MODE_TRUE@noinst_PROGRAMS = tblgen$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -84,7 +86,8 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__libclamavcxx_la_SOURCES_DIST = bytecode2llvm.cpp \
 	ClamBCRTChecks.cpp ClamBCModule.h ClamBCDiagnostics.h \
-	detect.cpp PointerTracking.cpp
+	detect.cpp llvm30_compat.h PointerTracking.cpp \
+	PointerTracking.h
 @BUILD_EXTERNAL_LLVM_TRUE@am__objects_1 =  \
 @BUILD_EXTERNAL_LLVM_TRUE@	libclamavcxx_la-PointerTracking.lo
 am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo \
@@ -965,34 +968,37 @@ LLVM_INCLUDES = -I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. \
-	-I$(top_builddir)/../../ $(am__append_2)
+	-I$(top_builddir)/../../ $(am__append_3)
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS = -I m4
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
-	ClamBCModule.h ClamBCDiagnostics.h detect.cpp $(am__append_1)
+	ClamBCModule.h ClamBCDiagnostics.h detect.cpp llvm30_compat.h \
+	$(am__append_2)
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
 #$(LLVM_CONFIG): build-llvm
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28 -DLLVM29
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) \
+@BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_CXXFLAGS@ -fexceptions \
+@BUILD_EXTERNAL_LLVM_TRUE@	-DLLVM28 -DLLVM29 $(am__append_1)
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LDFLAGS = -no-undefined
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmcodegen.la \
-@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la $(am__append_4) \
-@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_7)
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la $(am__append_5) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_8)
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ \
-@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_4) $(am__append_7)
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_5) $(am__append_8)
 @BUILD_EXTERNAL_LLVM_FALSE@noinst_LTLIBRARIES = libclamavcxx.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la libllvmcodegen.la \
-@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la $(am__append_5) \
-@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_8)
+@BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la $(am__append_6) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_9)
 @BUILD_EXTERNAL_LLVM_TRUE@noinst_LTLIBRARIES = libclamavcxx.la \
-@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_5) $(am__append_8)
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_6) $(am__append_9)
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LIBADD = libllvmjit.la \
-@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_3) $(am__append_6) \
+@BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_4) $(am__append_7) \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmcodegen.la libllvmsystem.la
 @BUILD_EXTERNAL_LLVM_FALSE@LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 @BUILD_EXTERNAL_LLVM_FALSE@unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@ -DGTEST_HAS_TR1_TUPLE=0
@@ -1004,7 +1010,7 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 
 # Rule to rerun LLVM's configure if it changed, before building anything else
 # LLVM
-@BUILD_EXTERNAL_LLVM_FALSE@BUILT_SOURCES = $(am__append_9) \
+@BUILD_EXTERNAL_LLVM_FALSE@BUILT_SOURCES = $(am__append_10) \
 @BUILD_EXTERNAL_LLVM_FALSE@	llvm/config.status
 @BUILD_EXTERNAL_LLVM_FALSE@EXTRA_DIST = $(top_srcdir)/llvm llvmcheck.sh $(TBLGENFILES)
 @BUILD_EXTERNAL_LLVM_FALSE@libllvmsystem_la_LDFLAGS = @THREAD_LIBS@
