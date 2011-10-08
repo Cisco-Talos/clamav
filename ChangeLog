@@ -1,3 +1,7 @@
+Sat Oct  8 12:19:49 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/pdf.c: flag and dump PDF objects with /Launch (bb #3514)
+
 Sat Oct  8 12:10:13 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/bytecode.c,bytecode_api.c: fix recursion level crash (bb #3706).
