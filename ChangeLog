@@ -1,3 +1,7 @@
+Sat Oct  8 12:10:13 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c,bytecode_api.c: fix recursion level crash (bb #3706).
+
 Mon Sep 19 13:44:36 CEST 2011 (tk)
 ----------------------------------
  * freshclam: re-enable short-time blacklisting of mirrors on
