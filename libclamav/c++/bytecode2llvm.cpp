@@ -1073,7 +1073,7 @@ public:
 	    // Have an alloca -> some instruction uses its address otherwise
 	    // mem2reg would have converted it to an SSA register.
 	    // Enable stack protector for this function.
-#ifndef LLVM29
+#if !defined(LLVM29) || defined(LLVM30)
 	    // LLVM 2.9 has broken SSP, it does a 'mov 0x28, $rax', which tries
 	    // to read from the address 0x28 and crashes
 	    F->addFnAttr(Attribute::StackProtectReq);
@@ -1082,7 +1082,7 @@ public:
 	// always add stackprotect attribute (bb #2239), so we know this
 	// function was verified. If there is no alloca it won't actually add
 	// stack protector in emitted code so this won't slow down the app.
-#ifndef LLVM29
+#if !defined(LLVM29) || defined(LLVM30)
 	F->addFnAttr(Attribute::StackProtect);
 #endif
     }
