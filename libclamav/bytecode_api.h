@@ -102,7 +102,8 @@ enum pdf_flag {
     BAD_STREAMLEN,
     ENCRYPTED_PDF,
     LINEARIZED_PDF, /* not bad, just as flag */
-    DECRYPTABLE_PDF
+    DECRYPTABLE_PDF,
+    HAS_LAUNCHACTION
 };
 
 /** PDF obj flags */
@@ -128,7 +129,8 @@ enum pdf_objflags {
     OBJ_IMAGE,
     OBJ_TRUNCATED,
     OBJ_FORCEDUMP,
-    OBJ_FILTER_STANDARD
+    OBJ_FILTER_STANDARD,
+    OBJ_LAUNCHACTION
 };
 
 #ifdef __CLAMBC__

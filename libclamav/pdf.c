@@ -281,6 +281,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case HAS_OPENACTION:
 	    s = "has /OpenAction";
 	    break;
+	case HAS_LAUNCHACTION:
+	    s = "has /LaunchAction";
+	    break;
 	case BAD_STREAMLEN:
 	    s = "bad /Length, too small";
 	    break;
@@ -493,7 +496,7 @@ static int find_length(struct pdf_struct *pdf,
     return length;
 }
 
-#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION))
+#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION) | (1 << OBJ_LAUNCHACTION))
 
 static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj, int binary)
 {
@@ -771,6 +774,7 @@ enum objstate {
     STATE_JAVASCRIPT,
     STATE_OPENACTION,
     STATE_LINEARIZED,
+    STATE_LAUNCHACTION,
     STATE_ANY /* for actions table below */
 };
 
@@ -811,7 +815,8 @@ static struct pdfname_action pdfname_actions[] = {
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE},
     {"S", OBJ_DICT, STATE_NONE, STATE_S},
     {"Type", OBJ_DICT, STATE_NONE, STATE_NONE},
-    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION}
+    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION},
+    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -946,6 +951,8 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
 	}
+	if (objstate == STATE_LAUNCHACTION)
+	    pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
 	if (dict_length > 0 && (objstate == STATE_JAVASCRIPT ||
 	    objstate == STATE_OPENACTION)) {
 	    if (objstate == STATE_OPENACTION)
