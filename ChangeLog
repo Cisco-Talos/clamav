@@ -1,3 +1,7 @@
+Sat Oct  8 12:10:13 EEST 2011 (edwin)
+-------------------------------------
+ * libclamav/bytecode.c,bytecode_api.c: fix recursion level crash (bb #3706).
+
 Mon Jul 25 16:09:19 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/bytecode_vm.c: fix opcode 20 error (bb #3100)

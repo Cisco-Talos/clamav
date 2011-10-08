@@ -2686,7 +2686,9 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		    cli_dbgmsg("Bytecode %u unpacked file\n", bc->id);
 		lseek(fd, 0, SEEK_SET);
 		cli_dbgmsg("***** Scanning unpacked file ******\n");
+		cctx->recursion++;
 		ret = cli_magic_scandesc(fd, cctx);
+		cctx->recursion--;
 		if (!cctx || !cctx->engine->keeptmp)
 		    if (ftruncate(fd, 0) == -1)
 			cli_dbgmsg("ftruncate failed on %d\n", fd);
