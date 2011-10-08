@@ -873,6 +873,9 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
     }
 }
 
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen);
+static int pdf_readint(const char *q0, int len, const char *key);
+static const char *pdf_getdict(const char *q0, int* len, const char *key);
 static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     /* enough to hold common pdf names, we don't need all the names */
@@ -948,8 +951,17 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
 	handle_pdfname(pdf, obj, pdfname, escapes, &objstate);
 	if (objstate == STATE_LINEARIZED) {
+	    long trailer_end, trailer;
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
+	    trailer_end = pdf_readint(q, dict_length, "/H");
+	    trailer = trailer_end - 1024;
+	    if (trailer < 0) trailer = 0;
+	    q2 = pdf->map + trailer;
+	    cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %d - %d\n", trailer, trailer_end);
+	    pdf->fileID = pdf_readstring(q2, trailer_end - trailer, "/ID", &pdf->fileIDlen);
+	    if (pdf->fileID)
+		cli_dbgmsg("found fileID\n");
 	}
 	if (objstate == STATE_LAUNCHACTION)
 	    pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
@@ -1319,14 +1331,17 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
     char *O, *U;
     const char *q, *q2;
 
-    if (pdf->enc_objid == ~0u || !pdf->fileID)
+    if (pdf->enc_objid == ~0u)
 	return;
+    if (!pdf->fileID) {
+	cli_dbgmsg("cli_pdf: pdf_handle_enc no file ID\n");
+	return;
+    }
     obj = find_obj(pdf, pdf->objs, pdf->enc_objid);
-    if (!obj)
+    if (!obj) {
+	cli_dbgmsg("cli_pdf: can't find encrypted object %d %d\n", pdf->enc_objid>>8, pdf->enc_objid&0xff);
 	return;
-    required_flags = (1 << OBJ_HASFILTERS) | (1 << OBJ_FILTER_STANDARD);
-    if (!(obj->flags & required_flags))
-	return;
+    }
     len = obj_size(pdf, obj, 1);
     q = pdf->map + obj->start;
 
@@ -1338,21 +1353,25 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	    cli_dbgmsg("cli_pdf: invalid P\n");
 	    break;
 	}
-	length = pdf_readint(q, len, "/Length");
-	if (length == ~0u)
-	    length = 40;
-	if (length < 40) {
-	    cli_dbgmsg("cli_pdf: invalid length: %d\n", length);
-	    length = 40;
-	}
 
 	q2 = cli_memstr(q, len, "/Standard", 9);
 	if (!q2) {
 	    cli_dbgmsg("cli_pdf: /Standard not found\n");
 	    break;
 	}
-	len -= q2-q;
-	q = q2;
+	/* we can have both of these:
+	* /AESV2/Length /Standard/Length
+	* /Length /Standard
+	* make sure we don't mistake AES's length for Standard's */
+	length = pdf_readint(q2, len - (q2 - q), "/Length");
+	if (length == ~0u)
+	    length = pdf_readint(q, len, "/Length");
+	if (length == ~0u)
+	    length = 40;
+	if (length < 40) {
+	    cli_dbgmsg("cli_pdf: invalid length: %d\n", length);
+	    length = 40;
+	}
 
 	R = pdf_readint(q, len, "/R");
 	if (R == ~0u) {
