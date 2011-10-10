@@ -958,7 +958,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    trailer = trailer_end - 1024;
 	    if (trailer < 0) trailer = 0;
 	    q2 = pdf->map + trailer;
-	    cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %d - %d\n", trailer, trailer_end);
+	    cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %ld - %ld\n", trailer, trailer_end);
 	    pdf->fileID = pdf_readstring(q2, trailer_end - trailer, "/ID", &pdf->fileIDlen);
 	    if (pdf->fileID)
 		cli_dbgmsg("found fileID\n");

@@ -1,6 +1,6 @@
 {
        glibc-tls
-       Memcheck:Free
+       Memcheck:Leak
        fun:*
        fun:_dl_allocate_tls
 }

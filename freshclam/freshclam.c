@@ -50,6 +50,7 @@
 #include "clamav.h"
 
 #include "libclamav/others.h"
+#include "libclamav/str.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
