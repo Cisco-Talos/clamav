@@ -848,6 +848,7 @@ with_user
 with_group
 enable_clamav
 enable_debug
+with_version
 enable_no_cache
 enable_dns_fix
 enable_bigstack
@@ -1559,6 +1560,7 @@ Optional Packages:
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
+  --with-version=STR    use custom version string (dev only)
   --with-dbdir=path	  path to virus database directory
   --with-libncurses-prefix[=DIR]  search for libncurses in DIR/include and DIR/lib
   --without-libncurses-prefix     don't search for libncurses in includedir and libdir
@@ -3362,11 +3364,6 @@ $as_echo "#define PACKAGE PACKAGE_NAME" >>confdefs.h
 
 
 VERSION="devel-`date +%Y%m%d`"
-
-cat >>confdefs.h <<_ACEOF
-#define VERSION "$VERSION"
-_ACEOF
-
 
 LC_CURRENT=7
 LC_REVISION=11
@@ -17460,6 +17457,13 @@ $as_echo "#define NDEBUG 1" >>confdefs.h
 
 fi
 
+
+# Check whether --with-version was given.
+if test "${with_version+set}" = set; then :
+  withval=$with_version; VERSION="$withval"
+fi
+
+
 # Check whether --enable-no-cache was given.
 if test "${enable_no_cache+set}" = set; then :
   enableval=$enable_no_cache; enable_nocache=$enableval
@@ -19177,6 +19181,11 @@ $as_echo "disabled" >&6; }
     fi
 fi
 
+
+
+cat >>confdefs.h <<_ACEOF
+#define VERSION "$VERSION"
+_ACEOF
 
 
 cat >>confdefs.h <<_ACEOF
