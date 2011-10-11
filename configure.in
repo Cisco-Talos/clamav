@@ -44,7 +44,6 @@ AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 dnl change this on a release
 dnl VERSION="devel-`date +%Y%m%d`"
 VERSION="0.97.2"
-AC_DEFINE_UNQUOTED([VERSION],"$VERSION",[Version number of package])
 
 LC_CURRENT=7
 LC_REVISION=11
@@ -856,6 +855,10 @@ else
   AC_DEFINE([NDEBUG],1,[disable assertions])
 fi
 
+AC_ARG_WITH([version], 
+[  --with-version=STR	  use custom version string (dev only)],
+VERSION="$withval", )
+
 AC_ARG_ENABLE([no-cache],
 [  --enable-no-cache	  use "Cache-Control: no-cache" in freshclam],
 enable_nocache=$enableval, enable_nocache="no")
@@ -1528,6 +1531,7 @@ AC_MSG_RESULT([$have_signed_rightshift_extended]);
 
 AC_C_FDPASSING
 
+AC_DEFINE_UNQUOTED([VERSION],"$VERSION",[Version number of package])
 AC_DEFINE_UNQUOTED([VERSION_SUFFIX],"$VERSION_SUFFIX",[Version suffix for package])
 
 AC_ARG_ENABLE(clamdtop,
