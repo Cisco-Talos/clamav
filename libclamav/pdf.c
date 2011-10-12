@@ -955,13 +955,15 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
 	    trailer_end = pdf_readint(q, dict_length, "/H");
-	    trailer = trailer_end - 1024;
-	    if (trailer < 0) trailer = 0;
-	    q2 = pdf->map + trailer;
-	    cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %ld - %ld\n", trailer, trailer_end);
-	    pdf->fileID = pdf_readstring(q2, trailer_end - trailer, "/ID", &pdf->fileIDlen);
-	    if (pdf->fileID)
-		cli_dbgmsg("found fileID\n");
+	    if (trailer_end > 0) {
+		trailer = trailer_end - 1024;
+		if (trailer < 0) trailer = 0;
+		q2 = pdf->map + trailer;
+		cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %ld - %ld\n", trailer, trailer_end);
+		pdf->fileID = pdf_readstring(q2, trailer_end - trailer, "/ID", &pdf->fileIDlen);
+		if (pdf->fileID)
+		    cli_dbgmsg("found fileID\n");
+	    }
 	}
 	if (objstate == STATE_LAUNCHACTION)
 	    pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
@@ -1054,6 +1056,10 @@ static const char *pdf_getdict(const char *q0, int* len, const char *key)
 {
     const char *q;
 
+    if (*len <= 0) {
+	cli_dbgmsg("cli_pdf: bad length %d\n", *len);
+	return NULL;
+    }
     q = cli_memstr(q0, *len, key, strlen(key));
     if (!q) {
 	cli_dbgmsg("cli_pdf: %s not found in dict\n", key);
