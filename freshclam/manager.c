@@ -1388,21 +1388,25 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	err = 1;
     } else {
 	if(tar_addfile(fd, gzs, "COPYING") == -1) {
-	    logg("!buildcld: Can't add COPYING to .cld file\n");
+	    logg("!buildcld: Can't add COPYING to new %s.cld - please check if there is enough disk space available\n", dbname);
+	    if(!strcmp(dbname, "main") || !strcmp(dbname, "safebrowsing"))
+		logg("Updates to main.cvd or safebrowsing.cvd may require 200MB of disk space or more\n");
 	    err = 1;
 	}
     }
 
     if(!err && !access(info, R_OK)) {
 	if(tar_addfile(fd, gzs, info) == -1) {
-	    logg("!buildcld: Can't add %s to .cld file\n", info);
+	    logg("!buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", info, dbname);
+	    if(!strcmp(dbname, "main") || !strcmp(dbname, "safebrowsing"))
+		logg("Updates to main.cvd or safebrowsing.cvd may require 200MB of disk space or more\n");
 	    err = 1;
 	}
     }
 
     if(!err && !access("daily.cfg", R_OK)) {
 	if(tar_addfile(fd, gzs, "daily.cfg") == -1) {
-	    logg("!buildcld: Can't add daily.cfg to .cld file\n");
+	    logg("!buildcld: Can't add daily.cfg to new %s.cld - please check if there is enough disk space available\n", dbname);
 	    err = 1;
 	}
     }
@@ -1425,7 +1429,9 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 		continue;
 
 	    if(tar_addfile(fd, gzs, dent->d_name) == -1) {
-		logg("!buildcld: Can't add %s to .cld file\n", dent->d_name);
+		logg("!buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", dent->d_name, dbname);
+		if(!strcmp(dbname, "main") || !strcmp(dbname, "safebrowsing"))
+		    logg("Updates to main.cvd or safebrowsing.cvd may require 200MB of disk space or more\n");
 		CHDIR_ERR(cwd);
 		if(gzs)
 		    gzclose(gzs);
