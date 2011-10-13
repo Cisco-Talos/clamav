@@ -955,7 +955,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
 	    trailer_end = pdf_readint(q, dict_length, "/H");
-	    if (trailer_end > 0) {
+	    if (trailer_end > 0 && trailer_end < pdf->size) {
 		trailer = trailer_end - 1024;
 		if (trailer < 0) trailer = 0;
 		q2 = pdf->map + trailer;
