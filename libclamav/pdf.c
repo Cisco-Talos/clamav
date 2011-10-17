@@ -1090,7 +1090,7 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
     if (*q == '(') {
 	int paren = 1;
 	start = ++q;
-	for (;paren > 0 && len > 0; q++) {
+	for (;paren > 0 && len > 0; q++,len--) {
 	    switch (*q) {
 		case '(':
 		    paren++;
