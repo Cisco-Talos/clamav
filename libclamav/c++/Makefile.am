@@ -37,7 +37,7 @@ libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DL
 libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
 libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
 noinst_LTLIBRARIES = libclamavcxx.la
-libclamavcxx_la_SOURCES += PointerTracking.cpp
+libclamavcxx_la_SOURCES += PointerTracking.cpp PointerTracking.h
 
 else
 AM_CPPFLAGS += $(LLVM_INCLUDES) $(LLVM_DEFS)

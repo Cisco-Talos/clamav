@@ -51,7 +51,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_EXTERNAL_LLVM_TRUE@am__append_1 = PointerTracking.cpp
+@BUILD_EXTERNAL_LLVM_TRUE@am__append_1 = PointerTracking.cpp PointerTracking.h
 @BUILD_EXTERNAL_LLVM_FALSE@am__append_2 = $(LLVM_INCLUDES) $(LLVM_DEFS)
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_3 = libllvmx86codegen.la
 @BUILD_EXTERNAL_LLVM_FALSE@@BUILD_X86_TRUE@am__append_4 = libllvmx86codegen.la
@@ -84,7 +84,7 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__libclamavcxx_la_SOURCES_DIST = bytecode2llvm.cpp \
 	ClamBCRTChecks.cpp ClamBCModule.h ClamBCDiagnostics.h \
-	detect.cpp PointerTracking.cpp
+	detect.cpp PointerTracking.cpp PointerTracking.h
 @BUILD_EXTERNAL_LLVM_TRUE@am__objects_1 =  \
 @BUILD_EXTERNAL_LLVM_TRUE@	libclamavcxx_la-PointerTracking.lo
 am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo \
