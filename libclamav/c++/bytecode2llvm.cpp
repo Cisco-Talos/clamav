@@ -674,9 +674,11 @@ public:
         AbrtC->setDoesNotThrow(true);
         new UnreachableInst(F.getContext(), AbrtBB);
 	IRBuilder<false> Builder(F.getContext());
+
+	Value *Flag = F.arg_begin();
+#ifndef LLVM30
 	Function *LSBarrier = Intrinsic::getDeclaration(F.getParent(),
 							Intrinsic::memory_barrier);
-	Value *Flag = F.arg_begin();
 	Value *MBArgs[] = {
 	    ConstantInt::getFalse(F.getContext()),
 	    ConstantInt::getFalse(F.getContext()),
@@ -684,6 +686,7 @@ public:
 	    ConstantInt::getFalse(F.getContext()),
 	    ConstantInt::getFalse(F.getContext())
 	};
+#endif
 	verifyFunction(F);
 	BasicBlock *BB = &F.getEntryBlock();
 	Builder.SetInsertPoint(BB, BB->getTerminator());
@@ -693,8 +696,12 @@ public:
 	     E=needsTimeoutCheck.end(); I != E; ++I) {
 	    BasicBlock *BB = *I;
 	    Builder.SetInsertPoint(BB, BB->getTerminator());
+#ifdef LLVM30
+	    Builder.CreateFence(Release);
+#else
 	    // store-load barrier: will be a no-op on x86 but not other arches
 	    Builder.CreateCall(LSBarrier, ARRAYREF(Value*, MBArgs, MBArgs+5));
+#endif
 	    // Load Flag that tells us we timed out (first byte in bc_ctx)
 	    Value *Cond = Builder.CreateLoad(Flag, true);
 	    BasicBlock *newBB = SplitBlock(BB, BB->getTerminator(), this);
