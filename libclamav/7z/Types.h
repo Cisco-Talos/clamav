@@ -40,6 +40,9 @@ EXTERN_C_BEGIN
 #define SZ_ERROR_ARCHIVE 16
 #define SZ_ERROR_NO_ARCHIVE 17
 
+/* ACAB */
+#define SZ_ERROR_ENCRYPTED 18
+
 typedef int SRes;
 
 #ifdef _WIN32

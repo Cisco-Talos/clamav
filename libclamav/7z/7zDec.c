@@ -270,6 +270,10 @@ static SRes CheckSupportedFolder(const CSzFolder *f)
 {
   if (f->NumCoders < 1 || f->NumCoders > 4)
     return SZ_ERROR_UNSUPPORTED;
+
+  if (f->Coders[0].MethodID == 0x06F10701) /* ACAB */
+    return SZ_ERROR_ENCRYPTED;
+
   if (!IS_SUPPORTED_CODER(&f->Coders[0]))
     return SZ_ERROR_UNSUPPORTED;
   if (f->NumCoders == 1)

@@ -101,6 +101,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	UInt32 i, blockIndex = 0xFFFFFFFF;
 	Byte *outBuffer = 0;
 	size_t outBufferSize = 0;
+	unsigned int encrypted = 0;
 
 	for (i = 0; i < db.db.NumFiles; i++) {
 	    size_t offset = 0;
@@ -136,14 +137,23 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    for(j=0; j<newnamelen; j++) /* FIXME */
 		name[j] = utf16name[j];
 	    cli_dbgmsg("cli_7unz: extracting %s\n", name);
-	    if(cli_matchmeta(ctx, name, 0, f->Size, 0, i, f->CrcDefined ? f->Crc : 0, NULL)) {
+
+	    res = SzArEx_Extract(&db, &lookStream.s, i, &blockIndex, &outBuffer, &outBufferSize, &offset, &outSizeProcessed, &allocImp, &allocTempImp);
+	    if(res == SZ_ERROR_ENCRYPTED) {
+		encrypted = 1;
+		if(DETECT_ENCRYPTED) {
+		    cli_dbgmsg("cli_7unz: Encrypted files found in archive.\n");
+		    *ctx->virname = "Heuristics.Encrypted.7Zip";
+		    found = CL_VIRUS;
+		    break;
+		}
+	    }
+	    if(cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
 		found = CL_VIRUS;
 		break;
 	    }
-
-	    res = SzArEx_Extract(&db, &lookStream.s, i, &blockIndex, &outBuffer, &outBufferSize, &offset, &outSizeProcessed, &allocImp, &allocTempImp);
 	    if (res != SZ_OK)
-		break;
+		cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
 	    else {
 		if((found = cli_gentempfd(NULL, &name, &fd)))
 		    break;
