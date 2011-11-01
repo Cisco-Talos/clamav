@@ -1902,6 +1902,15 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			}
 			break;
 
+		    case CL_TYPE_7ZSFX:
+			if(type != CL_TYPE_7Z && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
+			    ctx->container_type = CL_TYPE_7Z;
+			    ctx->container_size = map->len - fpt->offset; /* not precise */
+			    cli_dbgmsg("7Zip-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_7unz(ctx, fpt->offset);
+			}
+			break;
+
 		    case CL_TYPE_NULSFT:
 		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) && fpt->offset > 4) {
 			    ctx->container_type = CL_TYPE_NULSFT;
@@ -2307,7 +2316,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_7Z:
 	    ctx->container_type = CL_TYPE_7Z;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
-		ret = cli_7unz(ctx);
+		ret = cli_7unz(ctx, 0);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:

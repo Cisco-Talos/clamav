@@ -1,3 +1,7 @@
+Tue Nov  1 12:26:46 CET 2011 (acab)
+-----------------------------------
+ * libclamav: Add 7z SFX support (b#3063)
+
 Thu Jun  9 08:22:31 CEST 2011 (acab)
 ------------------------------------
  * libclamav/mew.c: harden boundary check on e8/e9 fixup

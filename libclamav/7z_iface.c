@@ -71,13 +71,14 @@ static SRes FileInStream_fmap_Seek(void *pp, Int64 *pos, ESzSeek origin) {
 }
 
 #define UTFBUFSZ 256
-int cli_7unz (cli_ctx *ctx) {
+int cli_7unz (cli_ctx *ctx, size_t offset) {
     CFileInStream archiveStream;
     CLookToRead lookStream;
     CSzArEx db;
     SRes res;
     UInt16 utf16buf[UTFBUFSZ], *utf16name = utf16buf;
     int namelen = UTFBUFSZ, found = CL_CLEAN;
+    Int64 begin_of_archive = offset;
 
     /* Replacement for 
        FileInStream_CreateVTable(&archiveStream); */
@@ -88,6 +89,9 @@ int cli_7unz (cli_ctx *ctx) {
 
     LookToRead_CreateVTable(&lookStream, False);
   
+    if(archiveStream.s.Seek(&archiveStream.s, &begin_of_archive, SZ_SEEK_SET) != 0)
+	return CL_CLEAN;
+
     lookStream.realStream = &archiveStream.s;
     LookToRead_Init(&lookStream);
 

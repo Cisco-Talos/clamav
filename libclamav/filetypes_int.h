@@ -155,6 +155,7 @@ static const char *ftypes_int[] = {
   "0:0:435753:SWF (compressed):CL_TYPE_ANY:CL_TYPE_SWF:62",
   "0:0:465753:SWF (uncompressed):CL_TYPE_ANY:CL_TYPE_SWF:62",
   "0:0:ffd9ffd8:JPEG (bad header):CL_TYPE_ANY:CL_TYPE_GRAPHICS:62",
+  "1:*:377abcaf271c:7zip-SFX:CL_TYPE_ANY:CL_TYPE_7ZSFX",
   NULL
 };
 
