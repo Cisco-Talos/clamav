@@ -2506,7 +2506,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 		continue;
 	    
 	    while(res_sz>4) { /* look for version_info - NOT RESUMABLE (expecting exactly one versioninfo) */
-		uint32_t vinfo_sz, vinfo_val_sz;
+		uint32_t vinfo_sz, vinfo_val_sz, got_varfileinfo = 0;
 
 		vinfo_sz = vinfo_val_sz = cli_readint32(vptr);
 		vinfo_sz &= 0xffff;
@@ -2535,7 +2535,14 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 		    if(sfi_sz > vinfo_sz)
 			break; /* the content is larger than the container */
 
-		    /* expecting stringfileinfo to always precede varfileinfo */
+		    if(!got_varfileinfo && sfi_sz > 6 + 0x18 && !memcmp(vptr+6, "V\0a\0r\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x18)) {
+			/* skip varfileinfo as it sometimes appear before stringtableinfo */
+			vptr += sfi_sz;
+			vinfo_sz -= sfi_sz;
+			got_varfileinfo = 1;
+			continue;
+		    }
+
 		    if(sfi_sz <= 6 + 0x1e || memcmp(vptr+6, "S\0t\0r\0i\0n\0g\0F\0i\0l\0e\0I\0n\0f\0o\0\0\0", 0x1e)) {
 			/* - there should be enough room for the header(6) and the key "StringFileInfo"(1e)
 			 * - the key should match */
