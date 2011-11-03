@@ -1,3 +1,8 @@
+Fri Nov  4 00:52:21 CET 2011 (acab)
+-----------------------------------
+ * libclamav/pe.c: parse vinfo where varfileinfo occours before stringfileinfo
+		   (bb#3062)
+
 Mon Oct 10 14:41:48 CEST 2011 (tk)
 ----------------------------------
  * freshclam/manager.c: fix error when compiling without DNS support (bb#3056)
