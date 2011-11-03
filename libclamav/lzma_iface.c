@@ -27,6 +27,8 @@
 #include "lzma_iface.h"
 
 void *__lzma_wrap_alloc(void *unused, size_t size) { 
+    if(!size || size > CLI_MAX_ALLOCATION)
+	return NULL;
     unused = unused;
     return cli_malloc(size);
 }
