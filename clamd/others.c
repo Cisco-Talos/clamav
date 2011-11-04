@@ -723,7 +723,7 @@ void detstats_print(int desc, char term)
     pthread_mutex_unlock(&detstats_lock);
 }
 
-#ifdef CLAMUKO
+#if 0 /* CLAMUKO */
 int clamuko_checkowner(int pid, const struct optstruct *opts)
 {
 	char path[32];

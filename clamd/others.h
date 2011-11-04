@@ -86,7 +86,7 @@ void detstats_clear(void);
 void detstats_add(const char *virname, const char *fname, unsigned int fsize, const char *md5);
 void detstats_print(int desc, char term);
 
-#ifdef CLAMUKO
+#if 0 /* CLAMUKO */
 int clamuko_checkowner(int pid, const struct optstruct *opts);
 #endif
 

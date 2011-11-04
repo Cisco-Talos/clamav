@@ -44,18 +44,6 @@ clamd_SOURCES = \
     scanner.h \
     others.c \
     others.h \
-    clamuko.c \
-    clamuko.h \
-    clamukofs.c \
-    clamukofs.h \
-    dazukoio_compat12.c \
-    dazukoio_compat12.h \
-    dazukoio.c \
-    dazukoio.h \
-    dazuko_xp.h \
-    dazukoio_xp.h \
-    dazukofs.c \
-    dazukofs.h \
     shared.h
 
 AM_CFLAGS=@WERR_CFLAGS@

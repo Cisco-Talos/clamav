@@ -52,7 +52,6 @@
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
-#include "clamuko.h"
 #include "others.h"
 #include "shared.h"
 #include "libclamav/others.h"
@@ -60,6 +59,8 @@
 #include "libclamav/cltypes.h"
 
 #define BUFFSIZE 1024
+
+#undef CLAMUKO /* FIXME */
 
 int progexit = 0;
 pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
