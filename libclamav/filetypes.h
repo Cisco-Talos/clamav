@@ -85,6 +85,7 @@ typedef enum {
     CL_TYPE_NULSFT, /* on the fly */
     CL_TYPE_AUTOIT,
     CL_TYPE_ISHIELD_MSI,
+    CL_TYPE_ISO9660,
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 

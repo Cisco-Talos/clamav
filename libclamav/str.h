@@ -51,4 +51,11 @@ struct text_buffer;
 int  cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
 int cli_hexnibbles(char *str, int len);
 
+typedef enum {
+    UTF16_BE, /* Force big endian */
+    UTF16_LE, /* Force little endian */
+    UTF16_BOM /* Use BOM if available otherwise assume big endian */
+} utf16_type;
+char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type);
+
 #endif

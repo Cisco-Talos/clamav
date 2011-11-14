@@ -1,3 +1,7 @@
+Mon Nov 14 21:22:26 CET 2011 (acab)
+-----------------------------------
+ * libclamav: add preliminary support for iso9660 image files
+
 Fri Nov  4 00:52:21 CET 2011 (acab)
 -----------------------------------
  * libclamav/pe.c: parse vinfo where varfileinfo occours before stringfileinfo

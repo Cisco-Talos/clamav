@@ -370,6 +370,8 @@ libclamav_la_SOURCES = \
 	jpeg.h \
 	png.c \
 	png.h \
+	iso9660.c \
+	iso9660.h \
 	arc4.c \
 	arc4.h
 
