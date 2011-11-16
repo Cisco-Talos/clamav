@@ -83,14 +83,14 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/misc.h clamd.c tcpserver.c tcpserver.h \
 	localserver.c localserver.h session.c session.h thrmgr.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
-	others.h shared.h
+	others.h shared.h fan.c fan-syscalllib.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	others.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	others.$(OBJEXT) fan.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_$(V))
@@ -316,7 +316,9 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    scanner.h \
 @BUILD_CLAMD_TRUE@    others.c \
 @BUILD_CLAMD_TRUE@    others.h \
-@BUILD_CLAMD_TRUE@    shared.h
+@BUILD_CLAMD_TRUE@    shared.h \
+@BUILD_CLAMD_TRUE@    fan.c \
+@BUILD_CLAMD_TRUE@    fan-syscalllib.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
@@ -429,6 +431,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@

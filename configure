@@ -836,7 +836,7 @@ enable_unrar
 enable_getaddrinfo
 enable_ipv6
 enable_dns
-enable_clamuko
+enable_fanotify
 enable_milter
 with_system_tommath
 with_iconv
@@ -1518,7 +1518,7 @@ Optional Features:
   --disable-ipv6          disable IPv6 support
   --disable-dns           disable support for database verification through
                           DNS
-  --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)
+  --disable-fanotify	  disable fanotify support (Linux only)
   --enable-milter	  build clamav-milter
   --disable-pthreads      disable POSIX threads support
   --disable-cr		  don't link with C reentrant library (BSD)
@@ -17107,11 +17107,11 @@ fi
 
 
 
-# Check whether --enable-clamuko was given.
-if test "${enable_clamuko+set}" = set; then :
-  enableval=$enable_clamuko; want_clamuko=$enableval
+# Check whether --enable-fanotify was given.
+if test "${enable_fanotify+set}" = set; then :
+  enableval=$enable_fanotify; want_fanotify=$enableval
 else
-  want_clamuko="yes"
+  want_fanotify="yes"
 fi
 
 
@@ -17622,9 +17622,14 @@ $as_echo "#define C_LINUX 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
+	if test "$want_fanotify" = "yes"; then
+	    ac_fn_c_check_header_mongrel "$LINENO" "linux/fanotify.h" "ac_cv_header_linux_fanotify_h" "$ac_includes_default"
+if test "x$ac_cv_header_linux_fanotify_h" = xyes; then :
 
-$as_echo "#define CLAMUKO 1" >>confdefs.h
+$as_echo "#define FANOTIFY 1" >>confdefs.h
+
+fi
+
 
 	fi
     fi
@@ -17636,11 +17641,6 @@ $as_echo "#define C_KFREEBSD_GNU 1" >>confdefs.h
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       if test "$want_clamuko" = "yes"; then
-
-$as_echo "#define CLAMUKO 1" >>confdefs.h
-
-       fi
     fi
     ;;
 solaris*)
@@ -17660,11 +17660,6 @@ freebsd[45]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-
-$as_echo "#define CLAMUKO 1" >>confdefs.h
-
-	fi
     fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -17674,11 +17669,6 @@ freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-
-$as_echo "#define CLAMUKO 1" >>confdefs.h
-
-	fi
     fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -17688,11 +17678,6 @@ dragonfly*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-
-$as_echo "#define CLAMUKO 1" >>confdefs.h
-
-	fi
     fi
 
 $as_echo "#define C_BSD 1" >>confdefs.h
@@ -26143,15 +26128,15 @@ fi
 
 
 
-   $as_echo_n "              clamuko     : "
-   if test "x$want_clamuko" = "xno"; then :
-  $as_echo "$want_clamuko (disabled)"
-elif test "x$want_clamuko" = "xyes"; then :
-  $as_echo "$want_clamuko"
-elif test "x$want_clamuko" = "x"; then :
-  $as_echo "$want_clamuko"
+   $as_echo_n "              fanotify    : "
+   if test "x$want_fanotify" = "xno"; then :
+  $as_echo "$want_fanotify (disabled)"
+elif test "x$want_fanotify" = "xyes"; then :
+  $as_echo "$want_fanotify"
+elif test "x$want_fanotify" = "x"; then :
+  $as_echo "$want_fanotify"
 else
-  $as_echo "$want_clamuko ($want_clamuko)"
+  $as_echo "$want_fanotify ($want_fanotify)"
 fi
 
 if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then

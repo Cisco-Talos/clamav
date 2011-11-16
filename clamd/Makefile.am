@@ -44,7 +44,9 @@ clamd_SOURCES = \
     scanner.h \
     others.c \
     others.h \
-    shared.h
+    shared.h \
+    fan.c \
+    fan-syscalllib.h
 
 AM_CFLAGS=@WERR_CFLAGS@
 

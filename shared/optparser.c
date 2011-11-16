@@ -329,23 +329,15 @@ const struct clam_option __clam_options[] = {
 
     { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXFILES, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "10000" },
 
-    { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
+    { "ScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },
 
-    { "ClamukoScannerCount", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD, "The number of scanner threads that will be started (DazukoFS only).\nHaving multiple scanner threads allows Clamuko to serve multiple\nprocesses simultaneously. This is particularly beneficial on SMP machines.", "3" },
+    { "OnAccessIncludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (including all files and directories\ninside it), which should be scanned on access. This option can\nbe used multiple times.", "/home\n/students" },
 
-    { "ClamukoScanOnOpen", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get opened by the system.", "yes" },
+    { "OnAccessExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times.", "/home/bofh\n/root" },
 
-    { "ClamukoScanOnClose", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get closed by the system.", "yes" },
+    { "OnAccessExcludeUID", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line).", "0" },
 
-    { "ClamukoScanOnExec", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get executed by the system.", "yes" },
-
-    { "ClamukoIncludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (together will all files and directories\ninside this directory) which should be scanned on-access. This option can\nbe used multiple times.", "/home\n/students" },
-
-    { "ClamukoExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times.", "/home/bofh\n/root" },
-
-    { "ClamukoExcludeUID", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line).", "0" },
-
-    { "ClamukoMaxFileSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned.", "5M" },
+    { "OnAccessMaxFileSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M" },
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
     { "DevACOnly", "dev-ac-only", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
@@ -430,6 +422,15 @@ const struct clam_option __clam_options[] = {
     { "ArchiveBlockMax", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ArchiveLimitMemoryUsage", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "MailFollowURLs", "mail-follow-urls", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoScannerCount", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoScanOnOpen", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoScanOnClose", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoScanOnExec", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoIncludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoExcludeUID", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ClamukoMaxFileSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
 
     /* Milter specific options */
 

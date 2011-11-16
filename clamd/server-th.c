@@ -49,6 +49,7 @@
 #include "shared/output.h"
 #include "shared/optparser.h"
 
+#include "fan.h"
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
@@ -59,8 +60,6 @@
 #include "libclamav/cltypes.h"
 
 #define BUFFSIZE 1024
-
-#undef CLAMUKO /* FIXME */
 
 int progexit = 0;
 pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -710,9 +709,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	unsigned int selfchk;
 	threadpool_t *thr_pool;
 
-#ifdef CLAMUKO
-	pthread_t clamuko_pid;
-	pthread_attr_t clamuko_attr;
+#ifdef FANOTIFY
+	pthread_t fan_pid;
+	pthread_attr_t fan_attr;
 	struct thrarg *tharg = NULL; /* shut up gcc */
 #endif
 
@@ -1005,24 +1004,24 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*MaxQueue set to: %d\n", max_queue);
     acceptdata.max_queue = max_queue;
 
-    if(optget(opts, "ClamukoScanOnAccess")->enabled)
-#ifdef CLAMUKO
+    if(optget(opts, "ScanOnAccess")->enabled)
+#ifdef FANOTIFY
     {
         do {
-	    if(pthread_attr_init(&clamuko_attr)) break;
-	    pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
+	    if(pthread_attr_init(&fan_attr)) break;
+	    pthread_attr_setdetachstate(&fan_attr, PTHREAD_CREATE_JOINABLE);
 	    if(!(tharg = (struct thrarg *) malloc(sizeof(struct thrarg)))) break;
 	    tharg->opts = opts;
 	    tharg->engine = engine;
 	    tharg->options = options;
-	    if(!pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg)) break;
+	    if(!pthread_create(&fan_pid, &fan_attr, fan_th, tharg)) break;
 	    free(tharg);
 	    tharg=NULL;
 	} while(0);
-	if (!tharg) logg("!Unable to start Clamuko\n");
+	if (!tharg) logg("!Unable to start on-access scan\n");
     }
 #else
-	logg("Clamuko is not available.\n");
+	logg("!On-access scan is not available\n");
 #endif
 
 #ifndef	_WIN32
@@ -1285,11 +1284,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef CLAMUKO
-	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
-		logg("Stopping and restarting Clamuko.\n");
-		pthread_kill(clamuko_pid, SIGUSR1);
-		pthread_join(clamuko_pid, NULL);
+#ifdef FANOTIFY
+	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
+		logg("Restarting on-access scan\n");
+		pthread_kill(fan_pid, SIGUSR1);
+		pthread_join(fan_pid, NULL);
 	    }
 #endif
 	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
@@ -1304,10 +1303,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    reload = 0;
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef CLAMUKO
-	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+#ifdef FANOTIFY
+	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		tharg->engine = engine;
-		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+		pthread_create(&fan_pid, &fan_attr, fan_th, tharg);
 	    }
 #endif
 	    time(&start_time);
@@ -1331,11 +1330,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
      */
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
-#ifdef CLAMUKO
-    if(optget(opts, "ClamukoScanOnAccess")->enabled) {
-	logg("Stopping Clamuko.\n");
-	pthread_kill(clamuko_pid, SIGUSR1);
-	pthread_join(clamuko_pid, NULL);
+#ifdef FANOTIFY
+    if(optget(opts, "ScanOnAccess")->enabled) {
+	logg("Stopping on-access scan\n");
+	pthread_kill(fan_pid, SIGUSR1);
+	pthread_join(fan_pid, NULL);
     }
 #endif
     if(engine) {

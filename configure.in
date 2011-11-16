@@ -730,9 +730,9 @@ fi
 
 AC_C_DNS
 
-AC_ARG_ENABLE([clamuko],
-[  --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)],
-want_clamuko=$enableval, want_clamuko="yes")
+AC_ARG_ENABLE([fanotify],
+[  --disable-fanotify	  disable fanotify support (Linux only)],
+want_fanotify=$enableval, want_fanotify="yes")
 
 dnl AC_FUNC_SETPGRP does not work when cross compiling
 dnl Instead, assume we will have a prototype for setpgrp if cross compiling.
@@ -952,8 +952,8 @@ linux*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
+	if test "$want_fanotify" = "yes"; then
+	    AC_CHECK_HEADER([linux/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
 	fi
     fi
     ;;
@@ -962,9 +962,6 @@ kfreebsd*-gnu)
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       if test "$want_clamuko" = "yes"; then
-           AC_DEFINE([CLAMUKO],1,[enable clamuko])
-       fi
     fi
     ;;
 solaris*)
@@ -982,9 +979,6 @@ freebsd[[45]]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
-	fi
     fi
     AC_DEFINE([C_BSD],1,[os is freebsd 4 or 5])
     ;;
@@ -992,9 +986,6 @@ freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
-	fi
     fi
     AC_DEFINE([C_BSD],1,[os is freebsd 6])
     ;;
@@ -1002,9 +993,6 @@ dragonfly*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
-	fi
     fi
     AC_DEFINE([C_BSD],1,[os is dragonfly])
     ;;
@@ -1676,7 +1664,7 @@ else
     check_libs="$CHECK_LIBS"
 fi
 CL_MSG_STATUS([check       ],[$check_libs],[$enable_check_ut])
-CL_MSG_STATUS([clamuko     ],[$want_clamuko],[$want_clamuko])
+CL_MSG_STATUS([fanotify    ],[$want_fanotify],[$want_fanotify])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then
     CL_MSG_STATUS([fdpassing   ],[$have_fdpass],[$want_fdpassing])
 else

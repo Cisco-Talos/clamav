@@ -1,3 +1,7 @@
+Wed Nov 16 15:57:24 CET 2011 (tk)
+---------------------------------
+ * clamd: initial support for on-access scanner using fanotify (bb#2236)
+
 Mon Nov 14 21:22:26 CET 2011 (acab)
 -----------------------------------
  * libclamav: add preliminary support for iso9660 image files

@@ -18,9 +18,6 @@
 /* name of the clamav user */
 #undef CLAMAVUSER
 
-/* enable clamuko */
-#undef CLAMUKO
-
 /* enable debugging */
 #undef CL_DEBUG
 
@@ -86,6 +83,9 @@
 
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
+
+/* use fanotify */
+#undef FANOTIFY
 
 /* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
 #undef FDPASS_NEED_XOPEN

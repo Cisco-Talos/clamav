@@ -723,14 +723,14 @@ void detstats_print(int desc, char term)
     pthread_mutex_unlock(&detstats_lock);
 }
 
-#if 0 /* CLAMUKO */
-int clamuko_checkowner(int pid, const struct optstruct *opts)
+#ifdef FANOTIFY
+int fan_checkowner(int pid, const struct optstruct *opts)
 {
 	char path[32];
 	struct stat sb;
 	const struct optstruct *opt;
 
-    if(!(opt = optget(opts, "ClamukoExcludeUID"))->enabled)
+    if(!(opt = optget(opts, "OnAccessExcludeUID"))->enabled)
 	return 0;
 
     snprintf(path, sizeof(path), "/proc/%u", pid);
