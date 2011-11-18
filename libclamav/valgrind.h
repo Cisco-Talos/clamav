@@ -112,6 +112,7 @@
 #undef PLAT_ppc32_aix5
 #undef PLAT_x86_darwin
 #undef PLAT_amd64_darwin
+#undef PLAT_x86_win32
 #undef PLAT_x86_linux
 #undef PLAT_amd64_linux
 #undef PLAT_ppc32_linux
@@ -126,6 +127,8 @@
 #  define PLAT_x86_darwin 1
 #elif defined(__APPLE__) && defined(__x86_64__)
 #  define PLAT_amd64_darwin 1
+#elif defined(__MINGW32__) || defined(__CYGWIN32__) || defined(_WIN32) && defined(_M_IX86)
+#  define PLAT_x86_win32 1
 #elif defined(__linux__) && defined(__i386__)
 #  define PLAT_x86_linux 1
 #elif defined(__linux__) && defined(__x86_64__)
@@ -201,7 +204,8 @@
 
 /* ------------------------- x86-{linux,darwin} ---------------- */
 
-#if defined(PLAT_x86_linux)  ||  defined(PLAT_x86_darwin)
+#if defined(PLAT_x86_linux)  ||  defined(PLAT_x86_darwin)  \
+    ||  (defined(PLAT_x86_win32) && defined(__GNUC__))
 
 typedef
    struct { 
@@ -251,7 +255,62 @@ typedef
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* call-noredir *%EAX */                     \
                      "xchgl %%edx,%%edx\n\t"
-#endif /* PLAT_x86_linux || PLAT_x86_darwin */
+#endif /* PLAT_x86_linux || PLAT_x86_darwin || (PLAT_x86_win32 && __GNUC__) */
+
+/* ------------------------- x86-Win32 ------------------------- */
+
+#if defined(PLAT_x86_win32) && !defined(__GNUC__)
+
+typedef
+   struct { 
+      unsigned int nraddr; /* where's the code? */
+   }
+   OrigFn;
+
+#if defined(_MSC_VER)
+
+#define __SPECIAL_INSTRUCTION_PREAMBLE                            \
+                     __asm rol edi, 3  __asm rol edi, 13          \
+                     __asm rol edi, 29 __asm rol edi, 19
+
+#define VALGRIND_DO_CLIENT_REQUEST(                               \
+        _zzq_rlval, _zzq_default, _zzq_request,                   \
+        _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5)    \
+  { volatile uintptr_t _zzq_args[6];                              \
+    volatile unsigned int _zzq_result;                            \
+    _zzq_args[0] = (uintptr_t)(_zzq_request);                     \
+    _zzq_args[1] = (uintptr_t)(_zzq_arg1);                        \
+    _zzq_args[2] = (uintptr_t)(_zzq_arg2);                        \
+    _zzq_args[3] = (uintptr_t)(_zzq_arg3);                        \
+    _zzq_args[4] = (uintptr_t)(_zzq_arg4);                        \
+    _zzq_args[5] = (uintptr_t)(_zzq_arg5);                        \
+    __asm { __asm lea eax, _zzq_args __asm mov edx, _zzq_default  \
+            __SPECIAL_INSTRUCTION_PREAMBLE                        \
+            /* %EDX = client_request ( %EAX ) */                  \
+            __asm xchg ebx,ebx                                    \
+            __asm mov _zzq_result, edx                            \
+    }                                                             \
+    _zzq_rlval = _zzq_result;                                     \
+  }
+
+#define VALGRIND_GET_NR_CONTEXT(_zzq_rlval)                       \
+  { volatile OrigFn* _zzq_orig = &(_zzq_rlval);                   \
+    volatile unsigned int __addr;                                 \
+    __asm { __SPECIAL_INSTRUCTION_PREAMBLE                        \
+            /* %EAX = guest_NRADDR */                             \
+            __asm xchg ecx,ecx                                    \
+            __asm mov __addr, eax                                 \
+    }                                                             \
+    _zzq_orig->nraddr = __addr;                                   \
+  }
+
+#define VALGRIND_CALL_NOREDIR_EAX ERROR
+
+#else
+#error Unsupported compiler.
+#endif
+
+#endif /* PLAT_x86_win32 */
 
 /* ------------------------ amd64-{linux,darwin} --------------- */
 
@@ -753,10 +812,11 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       _argvec[1] = (unsigned long)(arg1);                         \
       __asm__ volatile(                                           \
+         "subl $12, %%esp\n\t"                                    \
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $4, %%esp\n"                                       \
+         "addl $16, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -773,11 +833,12 @@ typedef
       _argvec[1] = (unsigned long)(arg1);                         \
       _argvec[2] = (unsigned long)(arg2);                         \
       __asm__ volatile(                                           \
+         "subl $8, %%esp\n\t"                                     \
          "pushl 8(%%eax)\n\t"                                     \
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $8, %%esp\n"                                       \
+         "addl $16, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -795,12 +856,13 @@ typedef
       _argvec[2] = (unsigned long)(arg2);                         \
       _argvec[3] = (unsigned long)(arg3);                         \
       __asm__ volatile(                                           \
+         "subl $4, %%esp\n\t"                                     \
          "pushl 12(%%eax)\n\t"                                    \
          "pushl 8(%%eax)\n\t"                                     \
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $12, %%esp\n"                                      \
+         "addl $16, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -845,6 +907,7 @@ typedef
       _argvec[4] = (unsigned long)(arg4);                         \
       _argvec[5] = (unsigned long)(arg5);                         \
       __asm__ volatile(                                           \
+         "subl $12, %%esp\n\t"                                    \
          "pushl 20(%%eax)\n\t"                                    \
          "pushl 16(%%eax)\n\t"                                    \
          "pushl 12(%%eax)\n\t"                                    \
@@ -852,7 +915,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $20, %%esp\n"                                      \
+         "addl $32, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -873,6 +936,7 @@ typedef
       _argvec[5] = (unsigned long)(arg5);                         \
       _argvec[6] = (unsigned long)(arg6);                         \
       __asm__ volatile(                                           \
+         "subl $8, %%esp\n\t"                                     \
          "pushl 24(%%eax)\n\t"                                    \
          "pushl 20(%%eax)\n\t"                                    \
          "pushl 16(%%eax)\n\t"                                    \
@@ -881,7 +945,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $24, %%esp\n"                                      \
+         "addl $32, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -904,6 +968,7 @@ typedef
       _argvec[6] = (unsigned long)(arg6);                         \
       _argvec[7] = (unsigned long)(arg7);                         \
       __asm__ volatile(                                           \
+         "subl $4, %%esp\n\t"                                     \
          "pushl 28(%%eax)\n\t"                                    \
          "pushl 24(%%eax)\n\t"                                    \
          "pushl 20(%%eax)\n\t"                                    \
@@ -913,7 +978,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $28, %%esp\n"                                      \
+         "addl $32, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -972,6 +1037,7 @@ typedef
       _argvec[8] = (unsigned long)(arg8);                         \
       _argvec[9] = (unsigned long)(arg9);                         \
       __asm__ volatile(                                           \
+         "subl $12, %%esp\n\t"                                    \
          "pushl 36(%%eax)\n\t"                                    \
          "pushl 32(%%eax)\n\t"                                    \
          "pushl 28(%%eax)\n\t"                                    \
@@ -983,7 +1049,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $36, %%esp\n"                                      \
+         "addl $48, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -1009,6 +1075,7 @@ typedef
       _argvec[9] = (unsigned long)(arg9);                         \
       _argvec[10] = (unsigned long)(arg10);                       \
       __asm__ volatile(                                           \
+         "subl $8, %%esp\n\t"                                     \
          "pushl 40(%%eax)\n\t"                                    \
          "pushl 36(%%eax)\n\t"                                    \
          "pushl 32(%%eax)\n\t"                                    \
@@ -1021,7 +1088,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $40, %%esp\n"                                      \
+         "addl $48, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -1049,6 +1116,7 @@ typedef
       _argvec[10] = (unsigned long)(arg10);                       \
       _argvec[11] = (unsigned long)(arg11);                       \
       __asm__ volatile(                                           \
+         "subl $4, %%esp\n\t"                                     \
          "pushl 44(%%eax)\n\t"                                    \
          "pushl 40(%%eax)\n\t"                                    \
          "pushl 36(%%eax)\n\t"                                    \
@@ -1062,7 +1130,7 @@ typedef
          "pushl 4(%%eax)\n\t"                                     \
          "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $44, %%esp\n"                                      \
+         "addl $48, %%esp\n"                                      \
          : /*out*/   "=a" (_res)                                  \
          : /*in*/    "a" (&_argvec[0])                            \
          : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
@@ -1125,6 +1193,78 @@ typedef
 #define __CALLER_SAVED_REGS /*"rax",*/ "rcx", "rdx", "rsi",       \
                             "rdi", "r8", "r9", "r10", "r11"
 
+/* This is all pretty complex.  It's so as to make stack unwinding
+   work reliably.  See bug 243270.  The basic problem is the sub and
+   add of 128 of %rsp in all of the following macros.  If gcc believes
+   the CFA is in %rsp, then unwinding may fail, because what's at the
+   CFA is not what gcc "expected" when it constructs the CFIs for the
+   places where the macros are instantiated.
+
+   But we can't just add a CFI annotation to increase the CFA offset
+   by 128, to match the sub of 128 from %rsp, because we don't know
+   whether gcc has chosen %rsp as the CFA at that point, or whether it
+   has chosen some other register (eg, %rbp).  In the latter case,
+   adding a CFI annotation to change the CFA offset is simply wrong.
+
+   So the solution is to get hold of the CFA using
+   __builtin_dwarf_cfa(), put it in a known register, and add a
+   CFI annotation to say what the register is.  We choose %rbp for
+   this (perhaps perversely), because:
+
+   (1) %rbp is already subject to unwinding.  If a new register was
+       chosen then the unwinder would have to unwind it in all stack
+       traces, which is expensive, and
+
+   (2) %rbp is already subject to precise exception updates in the
+       JIT.  If a new register was chosen, we'd have to have precise
+       exceptions for it too, which reduces performance of the
+       generated code.
+
+   However .. one extra complication.  We can't just whack the result
+   of __builtin_dwarf_cfa() into %rbp and then add %rbp to the
+   list of trashed registers at the end of the inline assembly
+   fragments; gcc won't allow %rbp to appear in that list.  Hence
+   instead we need to stash %rbp in %r15 for the duration of the asm,
+   and say that %r15 is trashed instead.  gcc seems happy to go with
+   that.
+
+   Oh .. and this all needs to be conditionalised so that it is
+   unchanged from before this commit, when compiled with older gccs
+   that don't support __builtin_dwarf_cfa.  Furthermore, since
+   this header file is freestanding, it has to be independent of
+   config.h, and so the following conditionalisation cannot depend on
+   configure time checks.
+
+   Although it's not clear from
+   'defined(__GNUC__) && defined(__GCC_HAVE_DWARF2_CFI_ASM)',
+   this expression excludes Darwin.
+   .cfi directives in Darwin assembly appear to be completely
+   different and I haven't investigated how they work.
+
+   For even more entertainment value, note we have to use the
+   completely undocumented __builtin_dwarf_cfa(), which appears to
+   really compute the CFA, whereas __builtin_frame_address(0) claims
+   to but actually doesn't.  See
+   https://bugs.kde.org/show_bug.cgi?id=243270#c47
+*/
+#if defined(__GNUC__) && defined(__GCC_HAVE_DWARF2_CFI_ASM)
+#  define __FRAME_POINTER                                         \
+      ,"r"(__builtin_dwarf_cfa())
+#  define VALGRIND_CFI_PROLOGUE                                   \
+      "movq %%rbp, %%r15\n\t"                                     \
+      "movq %2, %%rbp\n\t"                                        \
+      ".cfi_remember_state\n\t"                                   \
+      ".cfi_def_cfa rbp, 0\n\t"
+#  define VALGRIND_CFI_EPILOGUE                                   \
+      "movq %%r15, %%rbp\n\t"                                     \
+      ".cfi_restore_state\n\t"
+#else
+#  define __FRAME_POINTER
+#  define VALGRIND_CFI_PROLOGUE
+#  define VALGRIND_CFI_EPILOGUE
+#endif
+
+
 /* These CALL_FN_ macros assume that on amd64-linux, sizeof(unsigned
    long) == 8. */
 
@@ -1156,13 +1296,15 @@ typedef
       volatile unsigned long _res;                                \
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1175,14 +1317,16 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       _argvec[1] = (unsigned long)(arg1);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 8(%%rax), %%rdi\n\t"                               \
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1196,15 +1340,17 @@ typedef
       _argvec[1] = (unsigned long)(arg1);                         \
       _argvec[2] = (unsigned long)(arg2);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 16(%%rax), %%rsi\n\t"                              \
          "movq 8(%%rax), %%rdi\n\t"                               \
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1219,6 +1365,7 @@ typedef
       _argvec[2] = (unsigned long)(arg2);                         \
       _argvec[3] = (unsigned long)(arg3);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 24(%%rax), %%rdx\n\t"                              \
          "movq 16(%%rax), %%rsi\n\t"                              \
@@ -1226,9 +1373,10 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1244,6 +1392,7 @@ typedef
       _argvec[3] = (unsigned long)(arg3);                         \
       _argvec[4] = (unsigned long)(arg4);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 32(%%rax), %%rcx\n\t"                              \
          "movq 24(%%rax), %%rdx\n\t"                              \
@@ -1252,9 +1401,10 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1271,6 +1421,7 @@ typedef
       _argvec[4] = (unsigned long)(arg4);                         \
       _argvec[5] = (unsigned long)(arg5);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 40(%%rax), %%r8\n\t"                               \
          "movq 32(%%rax), %%rcx\n\t"                              \
@@ -1280,9 +1431,10 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1300,6 +1452,7 @@ typedef
       _argvec[5] = (unsigned long)(arg5);                         \
       _argvec[6] = (unsigned long)(arg6);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "movq 48(%%rax), %%r9\n\t"                               \
          "movq 40(%%rax), %%r8\n\t"                               \
@@ -1308,11 +1461,12 @@ typedef
          "movq 16(%%rax), %%rsi\n\t"                              \
          "movq 8(%%rax), %%rdi\n\t"                               \
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
-         "addq $128,%%rsp\n\t"                                    \
          VALGRIND_CALL_NOREDIR_RAX                                \
+         "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1332,7 +1486,8 @@ typedef
       _argvec[6] = (unsigned long)(arg6);                         \
       _argvec[7] = (unsigned long)(arg7);                         \
       __asm__ volatile(                                           \
-         "subq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_PROLOGUE                                    \
+         "subq $136,%%rsp\n\t"                                    \
          "pushq 56(%%rax)\n\t"                                    \
          "movq 48(%%rax), %%r9\n\t"                               \
          "movq 40(%%rax), %%r8\n\t"                               \
@@ -1343,10 +1498,11 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $8, %%rsp\n"                                       \
-         "addq $128,%%rsp\n\t"                                    \
+         "addq $136,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1367,6 +1523,7 @@ typedef
       _argvec[7] = (unsigned long)(arg7);                         \
       _argvec[8] = (unsigned long)(arg8);                         \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "pushq 64(%%rax)\n\t"                                    \
          "pushq 56(%%rax)\n\t"                                    \
@@ -1380,9 +1537,10 @@ typedef
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $16, %%rsp\n"                                      \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1404,7 +1562,8 @@ typedef
       _argvec[8] = (unsigned long)(arg8);                         \
       _argvec[9] = (unsigned long)(arg9);                         \
       __asm__ volatile(                                           \
-         "subq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_PROLOGUE                                    \
+         "subq $136,%%rsp\n\t"                                    \
          "pushq 72(%%rax)\n\t"                                    \
          "pushq 64(%%rax)\n\t"                                    \
          "pushq 56(%%rax)\n\t"                                    \
@@ -1417,10 +1576,11 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $24, %%rsp\n"                                      \
-         "addq $128,%%rsp\n\t"                                    \
+         "addq $136,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1443,6 +1603,7 @@ typedef
       _argvec[9] = (unsigned long)(arg9);                         \
       _argvec[10] = (unsigned long)(arg10);                       \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "pushq 80(%%rax)\n\t"                                    \
          "pushq 72(%%rax)\n\t"                                    \
@@ -1458,9 +1619,10 @@ typedef
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $32, %%rsp\n"                                      \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1484,7 +1646,8 @@ typedef
       _argvec[10] = (unsigned long)(arg10);                       \
       _argvec[11] = (unsigned long)(arg11);                       \
       __asm__ volatile(                                           \
-         "subq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_PROLOGUE                                    \
+         "subq $136,%%rsp\n\t"                                    \
          "pushq 88(%%rax)\n\t"                                    \
          "pushq 80(%%rax)\n\t"                                    \
          "pushq 72(%%rax)\n\t"                                    \
@@ -1499,10 +1662,11 @@ typedef
          "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $40, %%rsp\n"                                      \
-         "addq $128,%%rsp\n\t"                                    \
+         "addq $136,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1527,6 +1691,7 @@ typedef
       _argvec[11] = (unsigned long)(arg11);                       \
       _argvec[12] = (unsigned long)(arg12);                       \
       __asm__ volatile(                                           \
+         VALGRIND_CFI_PROLOGUE                                    \
          "subq $128,%%rsp\n\t"                                    \
          "pushq 96(%%rax)\n\t"                                    \
          "pushq 88(%%rax)\n\t"                                    \
@@ -1544,9 +1709,10 @@ typedef
          VALGRIND_CALL_NOREDIR_RAX                                \
          "addq $48, %%rsp\n"                                      \
          "addq $128,%%rsp\n\t"                                    \
+         VALGRIND_CFI_EPILOGUE                                    \
          : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -4159,24 +4325,77 @@ typedef
           VG_USERREQ__STACK_CHANGE     = 0x1503,
 
           /* Wine support */
-          VG_USERREQ__LOAD_PDB_DEBUGINFO = 0x1601
+          VG_USERREQ__LOAD_PDB_DEBUGINFO = 0x1601,
+
+          /* Querying of debug info. */
+          VG_USERREQ__MAP_IP_TO_SRCLOC = 0x1701
    } Vg_ClientRequest;
 
 #if !defined(__GNUC__)
 #  define __extension__ /* */
 #endif
 
+
+/*
+ * VALGRIND_DO_CLIENT_REQUEST_EXPR(): a C expression that invokes a Valgrind
+ * client request and whose value equals the client request result.
+ */
+
+#if defined(NVALGRIND)
+
+#define VALGRIND_DO_CLIENT_REQUEST_EXPR(                               \
+        _zzq_default, _zzq_request,                                    \
+        _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5)         \
+   (_zzq_default)
+
+#else /*defined(NVALGRIND)*/
+
+#if defined(_MSC_VER)
+
+#define VALGRIND_DO_CLIENT_REQUEST_EXPR(                                \
+        _zzq_default, _zzq_request,                                     \
+        _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5)          \
+   (vg_VALGRIND_DO_CLIENT_REQUEST_EXPR((uintptr_t)(_zzq_default),       \
+        (_zzq_request), (uintptr_t)(_zzq_arg1), (uintptr_t)(_zzq_arg2), \
+        (uintptr_t)(_zzq_arg3), (uintptr_t)(_zzq_arg4),                 \
+        (uintptr_t)(_zzq_arg5)))
+
+static __inline unsigned
+vg_VALGRIND_DO_CLIENT_REQUEST_EXPR(uintptr_t _zzq_default,
+                                   unsigned _zzq_request, uintptr_t _zzq_arg1,
+                                   uintptr_t _zzq_arg2, uintptr_t _zzq_arg3,
+                                   uintptr_t _zzq_arg4, uintptr_t _zzq_arg5)
+{
+    unsigned _zzq_rlval;
+    VALGRIND_DO_CLIENT_REQUEST(_zzq_rlval, _zzq_default, _zzq_request,
+                      _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5);
+    return _zzq_rlval;
+}
+
+#else /*defined(_MSC_VER)*/
+
+#define VALGRIND_DO_CLIENT_REQUEST_EXPR(                               \
+        _zzq_default, _zzq_request,                                    \
+        _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5)         \
+   (__extension__({unsigned int _zzq_rlval;                            \
+    VALGRIND_DO_CLIENT_REQUEST(_zzq_rlval, _zzq_default, _zzq_request, \
+                _zzq_arg1, _zzq_arg2, _zzq_arg3, _zzq_arg4, _zzq_arg5) \
+    _zzq_rlval;                                                        \
+   }))
+
+#endif /*defined(_MSC_VER)*/
+
+#endif /*defined(NVALGRIND)*/
+
+
 /* Returns the number of Valgrinds this code is running under.  That
    is, 0 if running natively, 1 if running under Valgrind, 2 if
    running under Valgrind which is running under another Valgrind,
    etc. */
-#define RUNNING_ON_VALGRIND  __extension__                        \
-   ({unsigned int _qzz_res;                                       \
-    VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0 /* if not */,          \
-                               VG_USERREQ__RUNNING_ON_VALGRIND,   \
-                               0, 0, 0, 0, 0);                    \
-    _qzz_res;                                                     \
-   })
+#define RUNNING_ON_VALGRIND                                           \
+    VALGRIND_DO_CLIENT_REQUEST_EXPR(0 /* if not */,                   \
+                                    VG_USERREQ__RUNNING_ON_VALGRIND,  \
+                                    0, 0, 0, 0, 0)                    \
 
 
 /* Discard translation of code in the range [_qzz_addr .. _qzz_addr +
@@ -4184,7 +4403,7 @@ typedef
    since it provides a way to make sure valgrind will retranslate the
    invalidated area.  Returns no value. */
 #define VALGRIND_DISCARD_TRANSLATIONS(_qzz_addr,_qzz_len)         \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__DISCARD_TRANSLATIONS,  \
                                _qzz_addr, _qzz_len, 0, 0, 0);     \
@@ -4203,38 +4422,64 @@ typedef
 
 #else /* NVALGRIND */
 
+#if !defined(_MSC_VER)
 /* Modern GCC will optimize the static routine out if unused,
    and unused attribute will shut down warnings about it.  */
 static int VALGRIND_PRINTF(const char *format, ...)
    __attribute__((format(__printf__, 1, 2), __unused__));
+#endif
 static int
+#if defined(_MSC_VER)
+__inline
+#endif
 VALGRIND_PRINTF(const char *format, ...)
 {
    unsigned long _qzz_res;
    va_list vargs;
    va_start(vargs, format);
+#if defined(_MSC_VER)
+   VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,
+                              VG_USERREQ__PRINTF_VALIST_BY_REF,
+                              (uintptr_t)format,
+                              (uintptr_t)&vargs,
+                              0, 0, 0);
+#else
    VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,
                               VG_USERREQ__PRINTF_VALIST_BY_REF,
                               (unsigned long)format,
                               (unsigned long)&vargs, 
                               0, 0, 0);
+#endif
    va_end(vargs);
    return (int)_qzz_res;
 }
 
+#if !defined(_MSC_VER)
 static int VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
    __attribute__((format(__printf__, 1, 2), __unused__));
+#endif
 static int
+#if defined(_MSC_VER)
+__inline
+#endif
 VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 {
    unsigned long _qzz_res;
    va_list vargs;
    va_start(vargs, format);
+#if defined(_MSC_VER)
+   VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,
+                              VG_USERREQ__PRINTF_BACKTRACE_VALIST_BY_REF,
+                              (uintptr_t)format,
+                              (uintptr_t)&vargs,
+                              0, 0, 0);
+#else
    VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,
                               VG_USERREQ__PRINTF_BACKTRACE_VALIST_BY_REF,
                               (unsigned long)format,
                               (unsigned long)&vargs, 
                               0, 0, 0);
+#endif
    va_end(vargs);
    return (int)_qzz_res;
 }
@@ -4407,7 +4652,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
    Ignored if addr == 0.
 */
 #define VALGRIND_MALLOCLIKE_BLOCK(addr, sizeB, rzB, is_zeroed)    \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MALLOCLIKE_BLOCK,      \
                                addr, sizeB, rzB, is_zeroed, 0);   \
@@ -4417,7 +4662,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
    Ignored if addr == 0.
 */
 #define VALGRIND_FREELIKE_BLOCK(addr, rzB)                        \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__FREELIKE_BLOCK,        \
                                addr, rzB, 0, 0, 0);               \
@@ -4425,7 +4670,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Create a memory pool. */
 #define VALGRIND_CREATE_MEMPOOL(pool, rzB, is_zeroed)             \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__CREATE_MEMPOOL,        \
                                pool, rzB, is_zeroed, 0, 0);       \
@@ -4433,7 +4678,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Destroy a memory pool. */
 #define VALGRIND_DESTROY_MEMPOOL(pool)                            \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__DESTROY_MEMPOOL,       \
                                pool, 0, 0, 0, 0);                 \
@@ -4441,7 +4686,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Associate a piece of memory with a memory pool. */
 #define VALGRIND_MEMPOOL_ALLOC(pool, addr, size)                  \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MEMPOOL_ALLOC,         \
                                pool, addr, size, 0, 0);           \
@@ -4449,7 +4694,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Disassociate a piece of memory from a memory pool. */
 #define VALGRIND_MEMPOOL_FREE(pool, addr)                         \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MEMPOOL_FREE,          \
                                pool, addr, 0, 0, 0);              \
@@ -4457,7 +4702,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Disassociate any pieces outside a particular range. */
 #define VALGRIND_MEMPOOL_TRIM(pool, addr, size)                   \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MEMPOOL_TRIM,          \
                                pool, addr, size, 0, 0);           \
@@ -4465,7 +4710,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Resize and/or move a piece associated with a memory pool. */
 #define VALGRIND_MOVE_MEMPOOL(poolA, poolB)                       \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MOVE_MEMPOOL,          \
                                poolA, poolB, 0, 0, 0);            \
@@ -4473,7 +4718,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Resize and/or move a piece associated with a memory pool. */
 #define VALGRIND_MEMPOOL_CHANGE(pool, addrA, addrB, size)         \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__MEMPOOL_CHANGE,        \
                                pool, addrA, addrB, size, 0);      \
@@ -4502,7 +4747,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 /* Unmark the piece of memory associated with a stack id as being a
    stack. */
 #define VALGRIND_STACK_DEREGISTER(id)                             \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__STACK_DEREGISTER,      \
                                id, 0, 0, 0, 0);                   \
@@ -4510,7 +4755,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Change the start and end address of the stack id. */
 #define VALGRIND_STACK_CHANGE(id, start, end)                     \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__STACK_CHANGE,          \
                                id, start, end, 0, 0);             \
@@ -4518,10 +4763,21 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 
 /* Load PDB debug info for Wine PE image_map. */
 #define VALGRIND_LOAD_PDB_DEBUGINFO(fd, ptr, total_size, delta)   \
-   {unsigned int _qzz_res;                                        \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
                                VG_USERREQ__LOAD_PDB_DEBUGINFO,    \
                                fd, ptr, total_size, delta, 0);    \
+   }
+
+/* Map a code address to a source file name and line number.  buf64
+   must point to a 64-byte buffer in the caller's address space.  The
+   result will be dumped in there and is guaranteed to be zero
+   terminated.  If no info is found, the first byte is set to zero. */
+#define VALGRIND_MAP_IP_TO_SRCLOC(addr, buf64)                    \
+   {unsigned int __attribute__((unused)) _qzz_res;                \
+    VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0,                       \
+                               VG_USERREQ__MAP_IP_TO_SRCLOC,      \
+                               addr, buf64, 0, 0, 0);             \
    }
 
 
