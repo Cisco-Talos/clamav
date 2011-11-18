@@ -486,6 +486,7 @@ void mpool_destroy(struct MP *mp) {
   VirtualFree(mp, 0, MEM_RELEASE);
 #endif
   spam("Map destroyed @%p\n", mp);
+  VALGRIND_DESTROY_MEMPOOL(mp);
 }
 
 void mpool_flush(struct MP *mp) {
