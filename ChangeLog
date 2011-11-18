@@ -1,3 +1,7 @@
+Fri Nov 18 15:23:50 CET 2011 (tk)
+---------------------------------
+ * libclamav/scanners.c: use lsigs when scanning vba data (bb#3922)
+
 Fri Nov 18 15:48:59 EET 2011 (edwin)
 -----------------------------------
  * libclamav/matcher-hash.c: Fix SIGBUS on PA-RISC (big-endian) architectures (bb #3894).
