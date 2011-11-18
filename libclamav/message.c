@@ -1202,9 +1202,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			} else
 				/*
 				 * Some virus attachments don't say how they've
-				 * been encoded. We assume base64
+				 * been encoded. We assume base64.
+				 * RFC says encoding should be 7-bit.
 				 */
-				messageSetEncoding(m, "base64");
+				messageSetEncoding(m, "7-bit");
 		}
 #endif
 
