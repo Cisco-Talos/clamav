@@ -61,6 +61,7 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 #endif
 
 #include "mpool.h"
+#include "memcheck.h"
 
 #undef CL_DEBUG /* bb#2222 */
 
@@ -439,12 +440,6 @@ struct MP *mpool_create() {
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.u.mpm.usize = sizeof(struct MPMAP);
   mp.u.mpm.size = sz - sizeof(mp);
-#ifndef _WIN32
-  if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
-#else
-  if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
-#endif
-    return NULL;
   if (FRAGSBITS > 255) {
       cli_errmsg("At most 255 frags possible!\n");
       return NULL;
@@ -453,10 +448,18 @@ struct MP *mpool_create() {
       cli_errmsg("fragsz[0] too small!\n");
       return NULL;
   }
+#ifndef _WIN32
+  if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+#else
+  if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
+#endif
+    return NULL;
 #ifdef CL_DEBUG
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
   memcpy(mpool_p, &mp, sizeof(mp));
+  VALGRIND_CREATE_MEMPOOL(mpool_p, 0, 0);
+  VALGRIND_MAKE_MEM_NOACCESS(mpool_p+1, sz - sizeof(mp));
   spam("Map created @%p->%p - size %u out of %u - voidptr=%u\n", mpool_p, (char *)mpool_p + mp.u.mpm.size, mp.u.mpm.usize, mp.u.mpm.size, SIZEOF_VOID_P);
   return mpool_p;
 }
@@ -468,9 +471,7 @@ void mpool_destroy(struct MP *mp) {
   while((mpm = mpm_next)) {
     mpmsize = mpm->size;
     mpm_next = mpm->next;
-#ifdef CL_DEBUG
-    memset(mpm, FREEPOISON, mpmsize);
-#endif
+    VALGRIND_MAKE_MEM_NOACCESS(mpm, mpmsize);
 #ifndef _WIN32
     munmap((void *)mpm, mpmsize);
 #else
@@ -478,9 +479,7 @@ void mpool_destroy(struct MP *mp) {
 #endif
   }
   mpmsize = mp->u.mpm.size;
-#ifdef CL_DEBUG
-  memset(mp, FREEPOISON, mpmsize + sizeof(*mp));
-#endif
+  VALGRIND_MAKE_MEM_NOACCESS(mp, mpmsize + sizeof(*mp));
 #ifndef _WIN32
   munmap((void *)mp, mpmsize + sizeof(*mp));
 #else
@@ -501,9 +500,7 @@ void mpool_flush(struct MP *mp) {
 	mpm_next = mpm->next;
 	mused = align_to_pagesize(mp, mpm->usize);
 	if(mused < mpm->size) {
-#ifdef CL_DEBUG
-	    memset((char *)mpm + mused, FREEPOISON, mpm->size - mused);
-#endif
+	    VALGRIND_MAKE_MEM_NOACCESS((char*)mpm + mused, mpm->size - mused);
 #ifndef _WIN32
 	    munmap((char *)mpm + mused, mpm->size - mused);
 #else
@@ -516,9 +513,7 @@ void mpool_flush(struct MP *mp) {
 
     mused = align_to_pagesize(mp, mp->u.mpm.usize + sizeof(*mp));
     if (mused < mp->u.mpm.size + sizeof(*mp)) {
-#ifdef CL_DEBUG
-	memset((char *)mp + mused, FREEPOISON, mp->u.mpm.size + sizeof(*mp) - mused);
-#endif
+	VALGRIND_MAKE_MEM_NOACCESS((char*)mp + mused, mp->u.mpm.size + sizeof(*mp) - mused);
 #ifndef _WIN32
 	munmap((char *)mp + mused, mp->u.mpm.size + sizeof(*mp) - mused);
 #else
@@ -536,7 +531,7 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
   size_t sum_used = 0, sum_total = 0;
   const struct MPMAP *mpm;
   const mpool_t *mp;
-  
+
   /* checking refcount is not necessary, but safer */
   if (!eng || !eng->refcount)
     return -1;
@@ -558,7 +553,7 @@ static inline unsigned align_increase(unsigned size, unsigned a)
     return size + a - 1;
 }
 
-static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned align, const char *dbg)
+static void* allocate_aligned(struct MP* mp, struct MPMAP *mpm, unsigned long size, unsigned align, const char *dbg)
 {
     /* We could always align the size to maxalign (8), however that wastes
      * space.
@@ -576,6 +571,8 @@ static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned al
 #ifdef CL_DEBUG
     assert(p_aligned + size <= mpm->size);
 #endif
+
+    VALGRIND_MEMPOOL_ALLOC(mp, f, needed - (p_aligned - p));
     f->u.a.sbits = sbits;
     f->u.a.padding = p_aligned - p;
 
@@ -588,6 +585,7 @@ static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned al
     f->magic = MPOOLMAGIC;
     memset(&f->u.a.fake, ALLOCPOISON, size);
 #endif
+    VALGRIND_CHECK_MEM_IS_ADDRESSABLE(&f->u.a.fake, size);
     return &f->u.a.fake;
 }
 
@@ -610,6 +608,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     mp->avail[sbits] = f->u.next.ptr;
     /* we always have enough space for this, align_increase ensured that */
     f = (struct FRAG*)(alignto((unsigned long)f + FRAG_OVERHEAD, align)-FRAG_OVERHEAD);
+    VALGRIND_MEMPOOL_ALLOC(mp, f, from_bits(sbits) - ((char*)f - (char*)fold));
     f->u.a.sbits = sbits;
     f->u.a.padding = (char*)f - (char*)fold;
 #ifdef CL_DEBUG
@@ -619,7 +618,6 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     spam("malloc @%p size %u (freed) origsize %u overhead %u\n", f, f->u.a.padding + FRAG_OVERHEAD + size, size, needed - size);
     return &f->u.a.fake;
   }
-
   if (!(needed = from_bits(sbits))) {
     cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
@@ -628,7 +626,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   /* Case 2: We have nuff room available for this frag already */
   while(mpm) {
     if(mpm->size - mpm->usize >= needed)
-	return allocate_aligned(mpm, size, align, "hole");
+	return allocate_aligned(mp, mpm, size, align, "hole");
     mpm = mpm->next;
   }
 
@@ -654,15 +652,20 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   mpm->usize = sizeof(*mpm);
   mpm->next = mp->u.mpm.next;
   mp->u.mpm.next = mpm;
-  return allocate_aligned(mpm, size, align, "new map");
+  VALGRIND_MAKE_MEM_NOACCESS(mpm+1, mpm->size - mpm->usize);
+  return allocate_aligned(mp, mpm, size, align, "new map");
 }
 
-static void *allocbase_fromfrag(struct FRAG *f)
+static void *allocbase_fromfrag(struct MP *mp, struct FRAG *f)
 {
+    char *result;
 #ifdef CL_DEBUG
     assert(f->u.a.padding < 8);
 #endif
-    return (char*)f - f->u.a.padding;
+    result = (char*)f - f->u.a.padding;
+    VALGRIND_CHECK_MEM_IS_ADDRESSABLE(f, from_bits(f->u.a.sbits) - f->u.a.padding);
+    VALGRIND_MEMPOOL_FREE(mp, f);
+    return result;
 }
 
 void mpool_free(struct MP *mp, void *ptr) {
@@ -676,11 +679,13 @@ void mpool_free(struct MP *mp, void *ptr) {
 
   spam("free @%p\n", f);
   sbits = f->u.a.sbits;
-  f = allocbase_fromfrag(f);
+  f = allocbase_fromfrag(mp, f);
 #ifdef CL_DEBUG
+  VALGRIND_MAKE_MEM_UNDEFINED(f, from_bits(sbits));
   memset(f, FREEPOISON, from_bits(sbits));
+  VALGRIND_MAKE_MEM_UNDEFINED(f, from_bits(sbits));
 #endif
-
+  VALGRIND_MAKE_MEM_UNDEFINED(f, sizeof(*f));
   f->u.next.ptr = mp->avail[sbits];
   mp->avail[sbits] = f;
 }
@@ -709,10 +714,12 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   if (csize >= size && (!f->u.a.sbits || from_bits(f->u.a.sbits-1)-FRAG_OVERHEAD-f->u.a.padding < size)) {
     spam("free @%p\n", f);
     spam("malloc @%p size %u (self) origsize %u overhead %u\n", f, size + FRAG_OVERHEAD + f->u.a.padding, size, csize-size+FRAG_OVERHEAD+f->u.a.padding);
+    VALGRIND_MEMPOOL_CHANGE(mp, f, f, size + FRAG_OVERHEAD);
     return ptr;
   }
   if (!(new_ptr = mpool_malloc(mp, size)))
     return NULL;
+  VALGRIND_CHECK_MEM_IS_ADDRESSABLE(ptr, csize);
   memcpy(new_ptr, ptr, csize <= size ? csize : size);
   mpool_free(mp, ptr);
   return new_ptr;
