@@ -1,3 +1,7 @@
+Fri Nov 18 15:48:59 EET 2011 (edwin)
+-----------------------------------
+ * libclamav/matcher-hash.c: Fix SIGBUS on PA-RISC (big-endian) architectures (bb #3894).
+
 Wed Nov 16 15:57:24 CET 2011 (tk)
 ---------------------------------
  * clamd: initial support for on-access scanner using fanotify (bb#2236)

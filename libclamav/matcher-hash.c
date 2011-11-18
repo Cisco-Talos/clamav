@@ -127,10 +127,14 @@ static const unsigned int hashlen[] = {
 
 
 static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int keylen) {
+#if WORDS_BIGENDIAN == 0
     uint32_t i = *(uint32_t *)itm, r = *(uint32_t *)ref;
     if(i!=r)
 	return (i<r) * 2 -1;
     return memcmp(&itm[4], &ref[4], keylen - 4);
+#else
+    return memcmp(itm, ref, keylen);
+#endif
 }
 
 static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int keylen) {
