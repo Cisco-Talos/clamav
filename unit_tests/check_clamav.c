@@ -148,6 +148,7 @@ END_TEST
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
 static struct cl_engine *g_engine;
 
+#ifdef CHECK_HAVE_LOOPS
 /* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options) */
 START_TEST (test_cl_scandesc)
 {
@@ -230,6 +231,7 @@ START_TEST (test_cl_scandesc_callback)
     close(fd);
 }
 END_TEST
+#endif
 
 /* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
 START_TEST (test_cl_load)
@@ -361,10 +363,12 @@ static Suite *test_cl_suite(void)
 
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture (tc_cl_scan, engine_setup, engine_teardown);
+#ifdef CHECK_HAVE_LOOPS
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expected_testfiles);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expected_testfiles);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expected_testfiles);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expected_testfiles);
+#endif
 
     return s;
 }
