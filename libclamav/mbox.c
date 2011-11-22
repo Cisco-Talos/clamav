@@ -2897,7 +2897,7 @@ rfc1341(message *m, const char *dir)
 			time(&now);
 			for(n = 1; n <= t; n++) {
 				char filename[NAME_MAX + 1];
-				const struct dirent *dent;
+				struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 				union {
 					struct dirent d;

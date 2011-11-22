@@ -105,7 +105,7 @@ static void
 dir(const char *dirname)
 {
 	int i, nmachines;
-	const struct dirent *dirent;
+	struct dirent *dirent;
 	struct machine *m;
 	DIR *d = opendir(dirname);
 	char **results;

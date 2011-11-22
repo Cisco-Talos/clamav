@@ -2698,7 +2698,7 @@ const char *cl_retdbdir(void)
 int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 {
 	DIR *dd;
-	const struct dirent *dent;
+	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 	union {
 	    struct dirent d;
