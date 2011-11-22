@@ -54,13 +54,14 @@ static void *needblock(const iso9660_t *iso, unsigned int block, int temp) {
 static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len) {
     char *tmpf;
     int fd, ret;
-    if(cli_gentempfd(NULL, &tmpf, &fd) != CL_SUCCESS)
+    if(cli_gentempfd(iso->ctx->engine->tmpdir, &tmpf, &fd) != CL_SUCCESS)
 	return CL_ETMPFILE;
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while(len) {
 	void *buf = needblock(iso, block, 1);
-	if(cli_writen(fd, buf, iso->blocksz) != iso->blocksz) {
+	unsigned int todo = MIN(len, iso->blocksz);
+	if(cli_writen(fd, buf, todo) != todo) {
 	    close(fd);
 	    ret = cli_unlink(tmpf);
 	    free(tmpf);
@@ -68,7 +69,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
 		return CL_EUNLINK;
 	    return CL_EWRITE;
 	}
-	len -= MIN(len, iso->blocksz);
+	len -= todo;
 	block++;
     }
 

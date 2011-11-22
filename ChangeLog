@@ -1,3 +1,7 @@
+Tue Nov 22 19:07:47 CET 2011 (acab)
+-----------------------------------
+ * libclamav/io9660.c: properly dump to temp file
+
 Fri Nov 18 15:23:50 CET 2011 (tk)
 ---------------------------------
  * libclamav/scanners.c: use lsigs when scanning vba data (bb#3922)
