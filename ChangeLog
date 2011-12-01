@@ -1,3 +1,7 @@
+Thu Dec  1 15:07:49 CET 2011 (tk)
+---------------------------------
+ * libclamav/readdb.c: allow comments in all db files (bb#3930)
+
 Fri Nov 18 15:23:50 CET 2011 (tk)
 ---------------------------------
  * libclamav/scanners.c: use lsigs when scanning vba data (bb#3922)
