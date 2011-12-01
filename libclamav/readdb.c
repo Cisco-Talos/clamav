@@ -556,6 +556,8 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
 	cli_chomp(buffer);
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
@@ -902,6 +904,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
 
 	if(!phish)
 	    if(!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
@@ -1393,6 +1397,8 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    return CL_EMEM;
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
 	sigs++;
 	cli_chomp(buffer);
 
@@ -1575,6 +1581,8 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	} else {
 	    if(!cli_dbgets(buffer, FILEBUFF, fs, dbio))
 		break;
+	    if(buffer[0] == '#')
+		continue;
 	    cli_chomp(buffer);
 	}
 	line++;
@@ -1812,6 +1820,8 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
 	cli_chomp(buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', IGN_MAX_TOKENS + 1, tokens);
@@ -1901,6 +1911,8 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
+	if(buffer[0] == '#')
+	    continue;
 	cli_chomp(buffer);
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);

@@ -1,3 +1,7 @@
+Thu Dec  1 15:07:49 CET 2011 (tk)
+---------------------------------
+ * libclamav/readdb.c: allow comments in all db files (bb#3930)
+
 Tue Nov 22 19:07:47 CET 2011 (acab)
 -----------------------------------
  * libclamav/io9660.c: properly dump to temp file
