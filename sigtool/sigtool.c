@@ -2763,7 +2763,7 @@ static void help(void)
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
-    mprintf("    --compare=OLD NEW			Show diff between OLD and NEW files in cdiff format\n");
+    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in cdiff format\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("    --verify-cdiff=DIFF CVD/CLD            Verify DIFF against CVD/CLD\n");
     mprintf("\n");
