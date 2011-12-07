@@ -83,7 +83,7 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/misc.h clamd.c tcpserver.c tcpserver.h \
 	localserver.c localserver.h session.c session.h thrmgr.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
-	others.h shared.h fan.c fan-syscalllib.h
+	others.h shared.h fan.c fan.h fan-syscalllib.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
@@ -318,6 +318,7 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    others.h \
 @BUILD_CLAMD_TRUE@    shared.h \
 @BUILD_CLAMD_TRUE@    fan.c \
+@BUILD_CLAMD_TRUE@    fan.h \
 @BUILD_CLAMD_TRUE@    fan-syscalllib.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
