@@ -71,7 +71,7 @@
 #include "libclamav/readdb.h"
 #include "libclamav/others.h"
 
-#define MAX_DEL_LOOKAHEAD   200
+#define MAX_DEL_LOOKAHEAD   5000
 
 static const struct dblist_s {
     const char *ext;
