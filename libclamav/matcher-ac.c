@@ -357,9 +357,9 @@ static int ac_maketrans(struct cli_matcher *root)
 		if (list) {
 		    while (list->next) list = list->next;
 		    list->next = child->fail->list;
-		}
+		} else
+		    child->list = child->fail->list;
 		child->trans = child->fail->trans;
-		child->fail = NULL;
 	    } else {
 		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
@@ -470,7 +470,9 @@ void cli_ac_free(struct cli_matcher *root)
 	mpool_free(root->mempool, root->ac_reloff);
 
     for(i = 0; i < root->ac_nodes; i++) {
-	if(!IS_LEAF(root->ac_nodetable[i]) && root->ac_nodetable[i]->fail)
+	if(!IS_LEAF(root->ac_nodetable[i]) &&
+	   root->ac_nodetable[i]->fail &&
+	   root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans)
 	    mpool_free(root->mempool, root->ac_nodetable[i]->trans);
 	mpool_free(root->mempool, root->ac_nodetable[i]);
     }
@@ -1180,11 +1182,13 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	current = current->trans[buffer[i]];
 
 	if(UNLIKELY(IS_FINAL(current))) {
+	    struct cli_ac_patt *faillist = current->fail->list;
 	    patt = current->list;
 	    while(patt) {
 		if(patt->partno > mdata->min_partno) {
-		    patt = NULL;
-		    break;
+		    patt = faillist;
+		    faillist = NULL;
+		    continue;
 		}
 		bp = i + 1 - patt->depth;
 		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
