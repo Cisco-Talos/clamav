@@ -9,8 +9,12 @@
 #include <libkern/OSAtomic.h>
 #include <libkern/OSMalloc.h>
 #include <sys/sysctl.h>
+#include <sys/systm.h>
 #include <sys/kauth.h>
 #include <sys/vnode.h>
+#include <sys/uio.h>
+#include <sys/conf.h>
+#include <miscfs/devfs/devfs.h>
 
 #pragma mark ***** Global Resources
 /* These declarations are required to allocate memory and create locks.
@@ -776,6 +780,74 @@ SYSCTL_OID(
 
 static boolean_t gRegisteredOID = FALSE;
 
+
+/* /dev/clamauth handling */
+
+static int ca_devidx = -1;
+static void *ca_devnode = NULL;
+
+static int ca_open(dev_t dev, int flag, int devtype, proc_t p)
+{
+    return ENOENT;
+}
+
+static int ca_close(dev_t dev, int flag, int devtype, proc_t p)
+{
+    return ENOENT;
+}
+
+static int ca_read(dev_t dev, uio_t uio, int ioflag)
+{
+    return EBADF;
+}
+
+static int ca_write(dev_t dev, uio_t uio, int ioflag)
+{
+    return EBADF;
+}
+
+static int ca_ioctl(dev_t dev, u_long cmd, caddr_t addr, int flag, proc_t p)
+{
+    return EBADF;
+}
+
+static int ca_select(dev_t dev, int flag, void * wql, proc_t p)
+{
+    return EBADF;
+}
+
+static struct cdevsw clamauth_cdevsw = {
+    ca_open,
+    ca_close,
+    ca_read,
+    ca_write,
+    ca_ioctl,
+    eno_stop,
+    eno_reset,
+    NULL,
+    ca_select,
+    eno_mmap,
+    eno_strat,
+    eno_getc,
+    eno_putc,
+    0
+};
+
+static int ca_remove(void)
+{
+    if(ca_devnode)
+        devfs_remove(ca_devnode);
+
+    if(ca_devidx != -1) {
+        if(cdevsw_remove(ca_devidx, &clamauth_cdevsw) != ca_devidx) {
+            printf("ClamAuth: cdevsw_remove() failed\n");
+            return KERN_FAILURE;
+        }
+    }
+
+    return KERN_SUCCESS;
+}
+
 #pragma mark ***** Start/Stop
 
 /* Prototypes for our entry points */
@@ -789,7 +861,18 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_start(kmod_info_t * ki, void * 
     #pragma unused(d)
     kern_return_t   err;
 
+    ca_devidx = cdevsw_add(-1, &clamauth_cdevsw);
+    if(ca_devidx == -1) {
+        printf("ClamAuth: cdevsw_add() failed\n");
+        return KERN_FAILURE;
+    }
 
+    ca_devnode = devfs_make_node(makedev(ca_devidx, 0), DEVFS_CHAR, UID_ROOT, GID_WHEEL, 0660, "clamauth");
+    if(!ca_devnode) {
+        printf("ClamAuth: Can't create /dev/clamauth\n");
+        return ca_remove();
+    }    
+    
     /* Allocate our global resources, needed in order to allocate memory 
      * and locks throughout the rest of the program.
      */
@@ -834,6 +917,7 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_stop(kmod_info_t * ki, void * d
 {
     #pragma unused(ki)
     #pragma unused(d)
+    int ret;
 
     /* Remove our sysctl handler.  This prevents more threads entering the 
      * handler and trying to change the configuration.  There is still a 
@@ -849,6 +933,9 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_stop(kmod_info_t * ki, void * d
         sysctl_unregister_oid(&sysctl__kern_com_apple_dts_kext_ClamAuth);
         gRegisteredOID = FALSE;
     }
+
+    /* remove the character device */
+    ret = ca_remove();
 
     /* Shut down the scope listen, if any.  Not that we lock gConfigurationLock 
      * because RemoveListener requires it to be locked.  Further note that 
@@ -880,5 +967,5 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_stop(kmod_info_t * ki, void * d
     }
     
     printf("ClamAuth_stop: ClamAV kernel driver removed\n");
-    return KERN_SUCCESS;
+    return ret;
 }
