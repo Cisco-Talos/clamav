@@ -20,9 +20,6 @@
 /* name of the clamav user */
 #define CLAMAVUSER "clamav"
 
-/* enable clamuko */
-/* #undef CLAMUKO */
-
 /* enable debugging */
 /* #undef CL_DEBUG */
 
@@ -88,6 +85,9 @@
 
 /* "default FD_SETSIZE value" */
 #define DEFAULT_FD_SETSIZE 1024
+
+/* use fanotify */
+/* #undef FANOTIFY */
 
 /* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
 /* #undef FDPASS_NEED_XOPEN */
@@ -508,7 +508,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.97-233-g583cd65"
+#define VERSION "devel-clamav-0.97-253-g374be10"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
