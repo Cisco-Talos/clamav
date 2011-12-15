@@ -105,6 +105,8 @@ struct pdf_struct {
     unsigned enc_method_stream;
     unsigned enc_method_string;
     unsigned enc_method_embeddedfile;
+    const char *CF;
+    long CF_n;
     const char *map;
     off_t size;
     off_t offset;
@@ -708,6 +710,9 @@ static enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *ob
     return pdf->enc_method_string;
 }
 
+static const char *pdf_getdict(const char *q0, int* len, const char *key);
+static char *pdf_readval(const char *q, int len, const char *key);
+static enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     char fullname[NAME_MAX + 1];
@@ -801,8 +806,20 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
 	    flate_in = start + p_stream;
 	    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
+		enum enc_method enc = get_enc_method(pdf, obj);
+		if (obj->flags & (1 << OBJ_FILTER_CRYPT)) {
+		    int len = p_stream;
+		    const char *q = pdf_getdict(start, &len, "/DecodeParams");
+		    enc = ENC_IDENTITY;
+		    if (q && pdf->CF) {
+			char *name = pdf_readval(q, len, "/Name");
+			cli_dbgmsg("cli_pdf: Crypt filter %s\n", name);
+			if (name && strcmp(name, "/Identity"))
+			    enc = parse_enc_method(pdf->CF, pdf->CF_n, name, enc); 
+		    }
+		}
 		decrypted = decrypt_any(pdf, obj->id, flate_in, &length,
-					get_enc_method(pdf, obj));
+					enc);
 		if (!decrypted)
 		    cli_warnmsg("cli_pdf:decrypt_any: malloc failed\n");
 		else
@@ -1084,7 +1101,6 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 
 static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen);
 static int pdf_readint(const char *q0, int len, const char *key);
-static const char *pdf_getdict(const char *q0, int* len, const char *key);
 
 static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
 {
@@ -1689,22 +1705,22 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	    pdf->enc_method_string = ENC_V2;
 	    pdf->enc_method_embeddedfile = ENC_V2;
 	} else if (R == 4 || R == 5) {
-	    const char *CF;
 	    EM = pdf_readbool(q, len, "/EncryptMetadata", 1);
 	    StmF = pdf_readval(q, len, "/StmF");
 	    StrF = pdf_readval(q, len, "/StrF");
 	    EFF = pdf_readval(q, len, "/EFF");
 	    n = len;
-	    CF = pdf_getdict(q, &n, "/CF");
+	    pdf->CF = pdf_getdict(q, &n, "/CF");
+	    pdf->CF_n = n;
 	    if (StmF)
 		cli_dbgmsg("cli_pdf: StmF: %s\n", StmF);
 	    if (StrF)
 		cli_dbgmsg("cli_pdf: StrF: %s\n", StrF);
 	    if (EFF)
 		cli_dbgmsg("cli_pdf: EFF: %s\n", EFF);
-	    pdf->enc_method_stream = parse_enc_method(CF, n, StmF, ENC_IDENTITY);
-	    pdf->enc_method_string = parse_enc_method(CF, n, StrF, ENC_IDENTITY);
-	    pdf->enc_method_embeddedfile = parse_enc_method(CF, n, EFF, pdf->enc_method_stream);
+	    pdf->enc_method_stream = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
+	    pdf->enc_method_string = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
+	    pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
 
 	    cli_dbgmsg("cli_pdf: EncryptMetadata: %s\n",
 		       EM ? "true" : "false");
