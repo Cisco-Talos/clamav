@@ -1,3 +1,8 @@
+Thu Dec 15 18:34:03 EET 2011 (edwin)
+------------------------------------
+ * libclamav/pdf.c: scan inside encrypted PDF streams and strings when user
+		    password is empty (bb #2794).
+
 Fri Dec  9 16:41:05 CET 2011 (tk)
 ---------------------------------
  * libclamav/matcher.c: add new offset modifier SEx (bb#4008)
