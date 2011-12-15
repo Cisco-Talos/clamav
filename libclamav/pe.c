@@ -59,6 +59,7 @@
 #include "special.h"
 #include "ishield.h"
 #include "sha1.h"
+#include "asn1.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -2640,13 +2641,111 @@ int cli_scanpe(cli_ctx *ctx) {
 	if(overlays < fsize - optional_hdr32.DataDirectory[4].Size) {
 	    hlen = fsize - hsize - optional_hdr32.DataDirectory[4].Size;
 	    hptr = fmap_need_off_once(map, hsize, hlen);
-	    SHA1Update(&sha1, hptr, exe_sections[i].rsz);
+	    SHA1Update(&sha1, hptr, hlen);
 	}
 	SHA1Final(&sha1, shash1);
 
 	for(i=0; i<sizeof(shash1); i++)
 	    sprintf(&shatxt[i*2], "%02x", shash1[i]);
 	cli_errmsg("Autheticode: %s\n", shatxt);
+
+
+	{
+	    struct cli_asn1 asn1;
+	    unsigned int old_hlen, success;
+	    void *old_next;
+	    uint8_t crt_sha1[SHA1_HASH_SIZE];
+
+	    hlen = optional_hdr32.DataDirectory[4].Size;
+	    hlen -= 8;
+	    hptr = fmap_need_off_once(map, hsize + 8, hlen);
+	    do {
+		if(asn1_expect_objtype(map, hptr, &hlen, &asn1, 0x30)) /* SEQUENCE */
+		    break;
+		hlen = asn1.size;
+		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - pkcs7 signedData */
+		    break;
+		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /* [0] */
+		    break;
+		hlen = asn1.size;
+		if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x30)) /* SEQUENCE */
+		    break;
+		hlen = asn1.size;
+		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
+		    break;
+
+		if(!asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x31)) { /* SET OF DigestAlgorithmIdentifier */
+		    success = 0;
+		    old_hlen = hlen;
+		    old_next = asn1.next;
+
+		    hlen = asn1.size;
+		    if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x30)) /* SEQUENCE */
+			break;
+		    asn1.next = asn1.content;
+		    hlen = asn1.size;
+		    while(hlen) {
+			if(asn1_get_obj(map, asn1.next, &hlen, &asn1))
+			    break;
+			if(asn1.type == 0x05 && asn1.size == 0) { /* NULL or */
+			    success++;
+			    break;
+			}
+			if(asn1.type != 0x06) /* Algo ID */
+			    break;
+			if(asn1.size == 5 && fmap_need_ptr_once(map, asn1.content, 5) && !memcmp(asn1.content, "\x2b\x0e\x03\x02\x1a", 5)) /* but only sha1 */
+			    if(!success)
+				success++;
+		    }
+		    if(success < 2)
+			break;
+		    hlen = old_hlen;
+		    asn1.next = old_next;
+		} else
+		    break;
+
+		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x30)) /* SEQUENCE */
+		    break;
+
+		if(ms_asn1_get_sha1(map, asn1.content, asn1.size, crt_sha1))
+		    break;
+
+		for(i=0; i<sizeof(crt_sha1); i++)
+		    sprintf(&shatxt[i*2], "%02x", crt_sha1[i]);
+		cli_errmsg("CRT sha: %s\n", shatxt);
+
+		if(memcmp(crt_sha1, shash1, sizeof(crt_sha1)))
+		    break;
+
+		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /* certificates */
+		    break;
+
+		old_hlen = hlen;
+		old_next = asn1.next;
+		hlen = asn1.size;
+		asn1.next = asn1.content;
+		success = 1;
+		while(hlen) {
+		    if(!asn1_get_x509(map, &asn1.next, &hlen))
+			continue;
+		    success = 0;
+		    break;
+		}
+		if(!success)
+		    break;
+
+		hlen = old_hlen;
+		if(asn1_get_obj(map, old_next, &hlen, &asn1))
+		    break;
+		if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &hlen, &asn1)) /* crls - unused shouldn't be present */
+		    break;
+
+		if(asn1.type != 0x31) /* signerInfos */
+		    break;
+
+		cli_errmsg("good %u - %p\n", hlen, asn1.next);
+	    } while(0);
+	}
 
 	free(exe_sections);
 	return ret;
