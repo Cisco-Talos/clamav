@@ -131,7 +131,8 @@ static const char *findNextNonWSBack(const char *q, const char *start)
     return q;
 }
 
-static int find_stream_bounds(const char *start, off_t bytesleft, off_t bytesleft2, off_t *stream, off_t *endstream)
+static int find_stream_bounds(const char *start, off_t bytesleft, off_t bytesleft2, off_t *stream, off_t *endstream,
+			      int newline_hack)
 {
     const char *q2, *q;
     if ((q2 = cli_memstr(start, bytesleft, "stream", 6))) {
@@ -139,9 +140,11 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
 	bytesleft -= q2 - start;
 	if (bytesleft < 0)
 	    return 0;
-	if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa')
+	if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa') {
 	    q2 += 2;
-	if (q2[0] == '\xa')
+	    if (newline_hack && q2[0] == '\xa')
+		q2++;
+	} else if (q2[0] == '\xa')
 	    q2++;
 	*stream = q2 - start;
 	bytesleft2 -= q2 - start;
@@ -210,7 +213,7 @@ static int pdf_findobj(struct pdf_struct *pdf)
 	if (!q2)
 	    q2 = pdf->map + pdf->size;
 	bytesleft -= q2 - q;
-	if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream)) {
+	if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream, 1)) {
 	    obj->flags |= 1 << OBJ_STREAM;
 	    q2 = q-1 + p_endstream + 9;
 	    bytesleft -= q2 - q + 1;
@@ -758,7 +761,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	off_t length;
 	find_stream_bounds(start, pdf->size - obj->start,
 			   pdf->size - obj->start,
-			   &p_stream, &p_endstream);
+			   &p_stream, &p_endstream,
+			   pdf->enc_method_stream <= ENC_IDENTITY &&
+			   pdf->enc_method_embeddedfile <= ENC_IDENTITY);
 	if (p_stream && p_endstream) {
 	    const char *flate_in;
 	    long ascii_decoded_size = 0;
