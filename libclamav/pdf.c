@@ -818,12 +818,16 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 			    enc = parse_enc_method(pdf->CF, pdf->CF_n, name, enc); 
 		    }
 		}
-		decrypted = decrypt_any(pdf, obj->id, flate_in, &length,
-					enc);
-		if (!decrypted)
-		    cli_warnmsg("cli_pdf:decrypt_any: malloc failed\n");
-		else
-		    flate_in = decrypted;
+		if (cli_memstr(start, p_stream, "/XRef", 5))
+		    cli_dbgmsg("cli_pdf: cross reference stream, skipping\n");
+		else {
+		    decrypted = decrypt_any(pdf, obj->id, flate_in, &length,
+					    enc);
+		    if (!decrypted)
+			cli_warnmsg("cli_pdf:decrypt_any: malloc failed\n");
+		    else
+			flate_in = decrypted;
+		}
 	    }
 
 	    if (obj->flags & (1 << OBJ_FILTER_AH)) {
