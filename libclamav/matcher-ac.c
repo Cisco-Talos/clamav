@@ -1646,15 +1646,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		newspecial->type = AC_SPECIAL_WHITE;
 	    */
 	    } else {
+		newspecial->num = 1;
 		for(i = 0; i < strlen(pt); i++)
 		    if(pt[i] == '|')
 			newspecial->num++;
-
-		if(!newspecial->num) {
-		    error = CL_EMALFDB;
-		    break;
-		} else
-		    newspecial->num++;
 
 		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
 		    newspecial->type = AC_SPECIAL_ALT_CHAR;
@@ -1669,13 +1664,21 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		}
 
 		for(i = 0; i < newspecial->num; i++) {
-		    if(!(h = cli_strtok(pt, i, "|"))) {
-			error = CL_EMALFDB;
-			break;
-		    }
+			unsigned int clen;
 
-		    if(!(c = (char*)cli_mpool_hex2str(root->mempool, h))) {
+		    if(newspecial->num == 1) {
+			c = (char *) cli_mpool_hex2str(root->mempool, pt);
+			clen = strlen(pt) / 2;
+		    } else {
+			if(!(h = cli_strtok(pt, i, "|"))) {
+			    error = CL_EMEM;
+			    break;
+			}
+			c = (char *) cli_mpool_hex2str(root->mempool, h);
+			clen = strlen(h) / 2;
 			free(h);
+		    }
+		    if(!c) {
 			error = CL_EMALFDB;
 			break;
 		    }
@@ -1694,19 +1697,17 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
 				error = CL_EMEM;
 				free(c);
-				free(h);
 				break;
 			    }
 			    specialpt->next->str = (unsigned char *) c;
-			    specialpt->next->len = strlen(h) / 2;
+			    specialpt->next->len = clen;
 			} else {
 			    newspecial->str = (unsigned char *) c;
-			    newspecial->len = strlen(h) / 2;
+			    newspecial->len = clen;
 			}
 		    }
-		    free(h);
 		}
-		if(newspecial->type == AC_SPECIAL_ALT_CHAR)
+		if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
 		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
 
 		if(error)

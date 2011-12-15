@@ -1,3 +1,8 @@
+Thu Dec 15 21:40:57 CET 2011 (tk)
+---------------------------------
+ * libclamav/matcher-ac.c: improve negation of single elements - handle
+			   !(xx) (bb#4052)
+
 Thu Dec 15 18:34:03 EET 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: scan inside encrypted PDF streams and strings when user
