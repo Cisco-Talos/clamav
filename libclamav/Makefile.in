@@ -159,7 +159,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
 	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h asn1.c asn.h bignum.c bignum_class.h
+	arc4.h asn1.c asn1.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
@@ -673,7 +673,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
 	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h asn1.c asn.h $(am__append_7)
+	arc4.h asn1.c asn1.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf

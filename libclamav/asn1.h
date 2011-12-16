@@ -1,6 +1,7 @@
 #ifndef __ASN1_H
 #define __ASN1_H
 
+#include <stdio.h>
 #include <time.h>
 
 #include "fmap.h"
@@ -21,5 +22,6 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, uint8_t sh
 int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time);
 int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size);
 int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size);
+int asn1_parse_mscat(FILE *f);
 
 #endif

@@ -375,7 +375,7 @@ libclamav_la_SOURCES = \
 	arc4.c \
 	arc4.h \
 	asn1.c \
-	asn.h
+	asn1.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

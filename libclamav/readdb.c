@@ -59,6 +59,7 @@
 #include "md5.h"
 #include "sha256.h"
 #include "dsig.h"
+#include "asn1.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -2351,6 +2352,16 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
+/*     fmap_t *map; */
+
+/* fmap(int fd, off_t offset, size_t len); */
+
+    return 0;
+
+
+}
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -2474,10 +2485,12 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
     } else if(cli_strbcasestr(dbname, ".cdb")) {
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
+    } else if(cli_strbcasestr(dbname, ".cat")) {
+	ret = cli_loadmscat(fs, engine, options, dbio);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
-    }
+    } 
 
     if(ret) {
 	cli_errmsg("Can't load %s: %s\n", filename, cl_strerror(ret));
