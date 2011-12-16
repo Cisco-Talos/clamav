@@ -21,11 +21,16 @@
 #ifndef __FMAP_H
 #define __FMAP_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include <time.h>
+
 #include "cltypes.h"
 
 typedef struct {
