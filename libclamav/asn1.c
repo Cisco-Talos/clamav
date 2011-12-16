@@ -395,7 +395,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
 	if(asn1_get_obj(map, obj.next, &tbs.size, &obj))
 	    return 1;
 	if(obj.type <= 0xa0 + avail || obj.type > 0xa3) {
-	    cli_dbgmsg("asn1_get_x509: found type %02x in extensions, expecting a1, a2 or a3\n");
+	    cli_dbgmsg("asn1_get_x509: found type %02x in extensions, expecting a1, a2 or a3\n", obj.type);
 	    return 1;
 	}
 	avail = obj.type - 0xa0;
@@ -428,66 +428,57 @@ int asn1_parse_mscat(FILE *f) {
     fmap_t *map;
     void *next;
 
+    cli_dbgmsg("in asn1_parse_mscat\n");
     if(!(map = fmap(fileno(f), 0, 0)))
 	return 1;
+
     do {
 	if(!(next = fmap_need_off_once(map, 0, 1))) {
-	    cli_errmsg("asn1_parse_mscat: failed to read cat\n");
+	    cli_dbgmsg("asn1_parse_mscat: failed to read cat\n");
 	    break;
 	}
 	size = map->len;
-	if(asn1_expect_objtype(map, next, &size, &asn1, 0x30)) { /* SEQUENCE */
-	    cli_errmsg("asn1_parse_mscat: \n");
+	if(asn1_expect_objtype(map, next, &size, &asn1, 0x30)) /* SEQUENCE */
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7\n");
 	    break;
 	}
-    } while(0);
-    /* do { */
-    /* 	if(asn1_expect_objtype(map, hptr, &hlen, &asn1, 0x30)) /\* SEQUENCE *\/ */
-    /* 	    break; */
-    /* 		hlen = asn1.size; */
-    /* 		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /\* OBJECT 1.2.840.113549.1.7.2 - pkcs7 signedData *\/ */
-    /* 		    break; */
-    /* 		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /\* [0] *\/ */
-    /* 		    break; */
-    /* 		hlen = asn1.size; */
-    /* 		if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x30)) /\* SEQUENCE *\/ */
-    /* 		    break; */
-    /* 		hlen = asn1.size; */
-    /* 		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x02, 1, "\x01")) /\* INTEGER - VERSION 1 *\/ */
-    /* 		    break; */
+	size = asn1.size;
+	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+	    break;
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* [0] - content */
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data in pkcs#7\n");
+	    break;
+	}
+	size = asn1.size;
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* SEQUENCE */
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data in signedData\n");
+	    break;
+	}
+	size = asn1.size;
+	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
+	    break;
 
-    /* 		if(!asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x31)) { /\* SET OF DigestAlgorithmIdentifier *\/ */
-    /* 		    success = 0; */
-    /* 		    old_hlen = hlen; */
-    /* 		    old_next = asn1.next; */
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x31)) /* SET OF DigestAlgorithmIdentifier */
+	    break;
 
-    /* 		    hlen = asn1.size; */
-    /* 		    if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x30)) /\* SEQUENCE *\/ */
-    /* 			break; */
-    /* 		    asn1.next = asn1.content; */
-    /* 		    hlen = asn1.size; */
-    /* 		    while(hlen) { */
-    /* 			if(asn1_get_obj(map, asn1.next, &hlen, &asn1)) */
-    /* 			    break; */
-    /* 			if(asn1.type == 0x05 && asn1.size == 0) { /\* NULL or *\/ */
-    /* 			    success++; */
-    /* 			    break; */
-    /* 			} */
-    /* 			if(asn1.type != 0x06) /\* Algo ID *\/ */
-    /* 			    break; */
-    /* 			if(asn1.size == 5 && fmap_need_ptr_once(map, asn1.content, 5) && !memcmp(asn1.content, "\x2b\x0e\x03\x02\x1a", 5)) /\* but only sha1 *\/ */
-    /* 			    if(!success) */
-    /* 				success++; */
-    /* 		    } */
-    /* 		    if(success < 2) */
-    /* 			break; */
-    /* 		    hlen = old_hlen; */
-    /* 		    asn1.next = old_next; */
-    /* 		} else */
-    /* 		    break; */
+	if(asn1_expect_algo(map, &asn1.content, &asn1.size, 5, "\x2b\x0e\x03\x02\x1a")) /* DigestAlgorithmIdentifier[0] == sha1 */
+	    break;
+	if(asn1.size) {
+	    cli_dbgmsg("asn1_parse_mscat: only one digestAlgorithmIdentifier is allowed\n");
+	    break;
+	}
 
-    /* 		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x30)) /\* SEQUENCE *\/ */
-    /* 		    break; */
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* SEQUENCE */
+	    break;
+
+	/* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
+	 * or a single SPC_INDIRECT_DATA_OBJID
 
     /* 		if(ms_asn1_get_sha1(map, asn1.content, asn1.size, crt_sha1)) */
     /* 		    break; */
@@ -526,6 +517,78 @@ int asn1_parse_mscat(FILE *f) {
     /* 		    break; */
 
     /* 		cli_errmsg("good %u - %p\n", hlen, asn1.next); */
-    /* 	    } while(0); */
+    } while(0);
     return 1;
-	}
+}
+
+/* 
+
+  EMBEDDED
+-.--------.-
+SEQ {
+        OID = SPC_INDIRECT_DATA_OBJID,
+        [0] SEQ {
+                SEQ {
+                        OID = SPC_PE_IMAGE_DATA_OBJID,
+                        [stuff]
+                },
+                SEQ {
+                        SEQ {
+                                OID = 1.3.14.3.2.26,
+                                NULL
+                        },
+                        VALUE = fe5723301b5567ced2cc882797560d682f9cc43c
+                }
+        },
+}
+
+
+  CAT FILE
+-.--------.-
+SEQ {
+        OID = szOID_CTL,
+        [0] SEQ {
+                SEQ {
+                        OID = szOID_CATALOG_LIST,
+                },      
+                VALUE = USEFUL?!,
+                DATE ...
+                SEQ {
+                        OID = szOID_CATALOG_LIST_MEMBER,
+                        NULL,
+                },
+                SEQ {
+                        SEQ {
+                                VALUE = hash(wide)
+                                SET {
+                                        SEQ { 
+                                                OID = CAT_NAMEVALUE_OBJID,
+                                                SET {
+                                                        SEQ { k = v }
+                                                }
+                                        }, DO NOT WANT!
+                                        SEQ {
+                                                OID = SPC_INDIRECT_DATA_OBJID.
+                                                SET {
+                                                        SEQ {
+                                                                OID = 1.3.6.1.4.1.311.2.1.25(ANY) || 1.3.6.1.4.1.311.2.1.15(PE)
+                                                                [2] 80 ---
+                                                        },
+                                                        SEQ {
+                                                                SEQ {
+                                                                        OID = 1.3.14.3.2.26
+                                                                        NULL,
+                                                                },
+                                                                VALUE = hash
+                                                        },
+                                                        SEQ {
+                                                                OID = CAT_MEMBERINFO_OBJID
+                                                                SET { SEQ {} }
+
+                                                        }
+                                                } DO WANT
+                                        }
+                                }
+                        }
+
+*/

@@ -2353,13 +2353,8 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 }
 
 static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
-/*     fmap_t *map; */
-
-/* fmap(int fd, off_t offset, size_t len); */
-
+    asn1_parse_mscat(fs);
     return 0;
-
-
 }
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
