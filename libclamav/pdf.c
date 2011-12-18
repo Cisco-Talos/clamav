@@ -583,6 +583,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
     unsigned char iv[16];
     unsigned len = *length;
     unsigned char pad, i;
+    int nrounds;
 
     cli_dbgmsg("cli_pdf: aes_decrypt: key length: %d, data length: %d\n", key_n, *length);
     if (key_n > 32) {
@@ -600,7 +601,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
     } else
 	memset(iv, 0, sizeof(iv));
 
-    int nrounds = rijndaelSetupDecrypt(rk, key, key_n*8);
+    nrounds = rijndaelSetupDecrypt(rk, key, key_n*8);
     while (len >= 16) {
 	unsigned i;
 	rijndaelDecrypt(rk, nrounds, in, q);
