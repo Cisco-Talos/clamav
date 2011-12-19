@@ -3165,7 +3165,7 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
 	if(options & CL_COUNTSIGS_UNOFFICIAL)
 	    (*sigs)++;
 
-    } else if(cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg")) {
+    } else if(cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg") || cli_strbcasestr(dbname, ".cat")) {
 	/* ignore */
 
     } else if((options & CL_COUNTSIGS_UNOFFICIAL) && CLI_DBEXT(dbname)) {

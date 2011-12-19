@@ -108,6 +108,39 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
     return 0;
 }
 
+int asn1_expect_sha1rsa(fmap_t *map, void **asn1data, unsigned int *asn1len) {
+    struct cli_asn1 obj;
+    unsigned int avail;
+    int ret;
+    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, 0x30))) /* SEQUENCE */
+	return ret;
+    avail = obj.size;
+    *asn1data = obj.next;
+
+    if(asn1_get_obj(map, obj.content, &avail, &obj))
+	return 1;
+    if(obj.type != 0x06 || (obj.size != 5 && obj.size != 9)) {
+	cli_dbgmsg("asn1_expect_sha1rsa: expecting OID with size 5 or 9, got %02x with size %u\n", obj.type, obj.size);
+	return 1;
+    }
+    if(!fmap_need_ptr_once(map, obj.content, obj.size)) {
+	cli_dbgmsg("asn1_expect_sha1rsa: failed to read OID\n");
+	return 1;
+    }
+
+    if((obj.size == 5 && memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5)) || (obj.size == 9 && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 5))) {
+	cli_dbgmsg("asn1_expect_sha1rsa: OID mismatch\n");
+	return 1;
+    }
+    if((ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
+	return ret;
+    if(avail) {
+	cli_dbgmsg("asn1_expect_sha1rsa: extra data found in SEQUENCE\n");
+	return 1;
+    }
+    return 0;
+}
+
 int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned int emb, uint8_t sha1[SHA1_HASH_SIZE], unsigned int *type) {
     /* ret
      * 0 - success
@@ -396,7 +429,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
     if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
 	return 1;
 
-    if(asn1_expect_algo(map, &obj.next, &tbs.size, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05")) /* algo = sha1WithRSAEncryption */
+    if(asn1_expect_sha1rsa(map, &obj.next, &tbs.size)) /* algo = sha1WithRSAEncryption */
        return 1;
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
@@ -433,7 +466,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
 	avail = obj.type - 0xa0;
     }
 
-    if(asn1_expect_algo(map, &tbs.next, &crt.size, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05")) /* signature algo = sha1WithRSAEncryption */
+    if(asn1_expect_sha1rsa(map, &tbs.next, &crt.size)) /* signature algo = sha1WithRSAEncryption */
        return 1;
 
     if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
@@ -565,7 +598,7 @@ int asn1_parse_mscat(FILE *f) {
 	    }
 	    while(tag.size) {
 		struct cli_asn1 tagval;
-		unsigned int tsize, tsize2;
+		unsigned int tsize, tsize2, hashtype;
 		uint8_t sha1[SHA1_HASH_SIZE];
 		void *tagc;
 		int i;
@@ -581,12 +614,13 @@ int asn1_parse_mscat(FILE *f) {
 		    tag.size = 1;
 		    break;
 		}
-		i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, NULL);
+		i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, &hashtype);
 		if(!i) {
 		    char sha1txt[SHA1_HASH_SIZE*2+1];
+
 		    for(i=0;i<SHA1_HASH_SIZE; i++)
 			sprintf(&sha1txt[i*2], "%02x", sha1[i]);
-		    cli_dbgmsg("asn1_parse_cat: found hash %s\n", sha1txt);
+		    cli_dbgmsg("asn1_parse_cat: found hash %s (type %s)\n", sha1txt, hashtype ? "PE" : "CAB");
 		} else if(i==1){
 		    /* expect to hit here on CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2) */
 		} else {
@@ -638,7 +672,9 @@ int asn1_parse_mscat(FILE *f) {
 	    break;
 	}
 	cli_errmsg("asn1: parsing ok\n");
-
+	return 0;
     } while(0);
+
+    cli_errmsg("asn1: epic parsing fail\n");
     return 1;
 }
