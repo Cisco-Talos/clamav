@@ -2707,7 +2707,7 @@ int cli_scanpe(cli_ctx *ctx) {
 		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x30)) /* SEQUENCE */
 		    break;
 
-		if(ms_asn1_get_sha1(map, asn1.content, asn1.size, crt_sha1))
+		if(ms_asn1_get_sha1(map, asn1.content, asn1.size, 1, crt_sha1, NULL))
 		    break;
 
 		for(i=0; i<sizeof(crt_sha1); i++)

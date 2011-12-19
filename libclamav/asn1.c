@@ -108,48 +108,80 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
     return 0;
 }
 
-int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, uint8_t sha1[SHA1_HASH_SIZE]) {
-    struct cli_asn1 obj;
+int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned int emb, uint8_t sha1[SHA1_HASH_SIZE], unsigned int *type) {
+    /* ret
+     * 0 - success
+     * 1 - unexpected obj (ok for cat)
+     * 2 - severe
+     */
+    struct cli_asn1 obj, obj2;
+    unsigned int avail2;
 
-    if(asn1_expect_obj(map, asn1data, &avail, &obj, 0x06, 10, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04")) /* OBJECT 1.3.6.1.4.1.311.2.1.4 - SPC_INDIRECT_DATA_OBJID */
+    /* Manual parsing to avoid spamming */
+    if(asn1_expect_objtype(map, asn1data, &avail, &obj, 0x06))
+	return 2;
+    if(obj.size != 10)
 	return 1;
-
-    if(asn1_get_obj(map, obj.next, &avail, &obj))
-	return 1;
-    if(obj.type != 0xa0 && obj.type != 0x31) {
-	cli_dbgmsg("ms_asn1_get_sha1: expected [0] or SET - got %02x\n", obj.type);
-	return 1;
+    if(!fmap_need_ptr_once(map, obj.content, 10)) {
+	cli_dbgmsg("ms_asn1_get_sha1: failed to read content\n");
+	return 2;
     }
+    if(memcmp(obj.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04", 10)) /* OBJECT 1.3.6.1.4.1.311.2.1.4 - SPC_INDIRECT_DATA_OBJID */
+	return 1;
+
+    if(asn1_expect_objtype(map, obj.next, &avail, &obj, emb ? 0xa0 : 0x31))
+	return 2;
 
     avail = obj.size;
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x30)) /* SEQUENCE */
-	return 1;
+	return 2;
 
     avail = obj.size;
-    if(asn1_get_obj(map, obj.content, &avail, &obj)) /* data - contains an objid 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 for embedded or detached */
-	return 1;
+    if(asn1_get_obj(map, obj.content, &avail, &obj)) /* data - contains an objid 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 */
+	return 2;
+    avail2 = obj.size;
+    if(asn1_expect_objtype(map, obj.content, &avail2, &obj2, 0x06)) /* OBJECT */
+	return 2;
+    if(obj2.size != 10) {
+	cli_dbgmsg("ms_asn1_get_sha1: expected data object size 10, got %u\n", obj2.size);
+	return 2;
+    }
+    if(!fmap_need_ptr_once(map, obj2.content, 10)) {
+	cli_dbgmsg("ms_asn1_get_sha1: failed to read data content\n");
+	return 2;
+    }
+    if(!memcmp(obj2.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x0f", 10)) {
+	/* SPC_PE_IMAGE_DATA_OBJID */
+	if(type) *type = 1;
+    } else if (!emb && !memcmp(obj2.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19", 10)) {
+	/* SPC_CAB_DATA_OBJID */
+	if(type) *type = 0;
+    } else {
+	cli_dbgmsg("ms_asn1_get_sha1: data object id mismatch\n");
+	return 2;
+    }
 
     if(asn1_expect_objtype(map, obj.next, &avail, &obj, 0x30)) /* messageDigest */
-	return 1;
+	return 2;
 
     avail = obj.size;
     if(asn1_expect_algo(map, &obj.content, &avail, 5, "\x2b\x0e\x03\x02\x1a")) /* objid 1.3.14.3.2.26 - sha1 */
-       return 1;
+       return 2;
 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x04))
-	return 1;
+	return 2;
     if(avail) {
 	cli_dbgmsg("ms_asn1_get_sha1: found unexpected extra data\n");
-	return 1;
+	return 2;
     }
     if(obj.size != SHA1_HASH_SIZE) {
 	cli_dbgmsg("ms_asn1_get_sha1: expected sha1 lenght(%u), but got %u\n", SHA1_HASH_SIZE, obj.size);
-	return 1;
+	return 2;
     }
 
     if(!fmap_need_ptr_once(map, obj.content, SHA1_HASH_SIZE)) {
 	cli_dbgmsg("ms_asn1_get_sha1: failed to read sha1 content\n");
-	return 1;
+	return 2;
     }
     memcpy(sha1, obj.content, SHA1_HASH_SIZE);
 
@@ -423,8 +455,8 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
 
 
 int asn1_parse_mscat(FILE *f) {
-    struct cli_asn1 asn1;
-    unsigned int size;
+    struct cli_asn1 asn1, deep, deeper;
+    unsigned int size, dsize;
     fmap_t *map;
     void *next;
 
@@ -474,21 +506,114 @@ int asn1_parse_mscat(FILE *f) {
 	    break;
 	}
 
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* SEQUENCE */
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* SEQUENCE - contentInfo */
+	    break;
+	/* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
+	 * or a single SPC_INDIRECT_DATA_OBJID */
+	if(asn1_expect_obj(map, asn1.content, &asn1.size, &deep, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+	    break;
+	if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, 0xa0))
+	    break;
+	if(asn1.size) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CTL\n");
+	    break;
+	}
+	dsize = deep.size;
+	if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
+	    break;
+	if(dsize) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CTL content\n");
+	    break;
+	}
+
+	dsize = deep.size;
+	if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
+	    break;
+	if(asn1_expect_obj(map, deep.content, &deep.size, &deeper, 0x06, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01")) /* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 */
+	    break;
+	if(deep.size) {
+	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CATALOG_LIST content\n");
+	    break;
+	}
+	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x4)) /* List ID */
+	    break;
+	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x17)) /* Effective date - WTF?! */
+	    break;
+	if(asn1_expect_algo(map, &deep.next, &dsize, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02")) /* szOID_CATALOG_LIST_MEMBER */
+	    break;
+	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) /* hashes here */
+	    break;
+	while(deep.size) {
+	    struct cli_asn1 tag;
+	    if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x30)) {
+		deep.size = 1;
+		break;
+	    }
+	    deep.content = deeper.next;
+	    if(asn1_expect_objtype(map, deeper.content, &deeper.size, &tag, 0x04)) { /* TAG NAME */
+		deep.size = 1;
+		break;
+	    }
+	    if(asn1_expect_objtype(map, tag.next, &deeper.size, &tag, 0x31)) { /* set */
+		deep.size = 1;
+		break;
+	    }
+	    if(deeper.size) {
+		cli_dbgmsg("asn1_parse_mscat: found extra data in tag\n");
+		deep.size = 1;
+		break;
+	    }
+	    while(tag.size) {
+		struct cli_asn1 tagval;
+		unsigned int tsize, tsize2;
+		uint8_t sha1[SHA1_HASH_SIZE];
+		void *tagc;
+		int i;
+
+		if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval, 0x30)) {
+		    tag.size = 1;
+		    break;
+		}
+		tag.content = tagval.next;
+		tsize = tsize2 = tagval.size;
+		tagc = tagval.content;
+		if(asn1_expect_objtype(map, tagval.content, &tsize, &tagval, 0x06)) {
+		    tag.size = 1;
+		    break;
+		}
+		i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, NULL);
+		if(!i) {
+		    char sha1txt[SHA1_HASH_SIZE*2+1];
+		    for(i=0;i<SHA1_HASH_SIZE; i++)
+			sprintf(&sha1txt[i*2], "%02x", sha1[i]);
+		    cli_dbgmsg("asn1_parse_cat: found hash %s\n", sha1txt);
+		} else if(i==1){
+		    /* expect to hit here on CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2) */
+		} else {
+		    tag.size = 1;
+		    cli_dbgmsg("asn1_parse_mscat: bad field in tag value\n");
+		    break;
+		}
+		if(asn1_expect_objtype(map, tagval.next, &tsize, &tagval, 0x31)) {
+		    tag.size = 1;
+		    break;
+		}
+		if(tsize) {
+		    tag.size = 1;
+		    cli_dbgmsg("asn1_parse_mscat: extra data in value\n");
+		    break;
+		}
+	    }
+	    if(tag.size) {
+		deep.size = 1;
+		break;
+	    }
+	}
+	if(deep.size)
 	    break;
 
-	/* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
-	 * or a single SPC_INDIRECT_DATA_OBJID
-
-    /* 		if(ms_asn1_get_sha1(map, asn1.content, asn1.size, crt_sha1)) */
-    /* 		    break; */
-
-    /* 		for(i=0; i<sizeof(crt_sha1); i++) */
-    /* 		    sprintf(&shatxt[i*2], "%02x", crt_sha1[i]); */
-    /* 		cli_errmsg("CRT sha: %s\n", shatxt); */
-
-    /* 		if(memcmp(crt_sha1, shash1, sizeof(crt_sha1))) */
-    /* 		    break; */
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* certificates */
+	    break;
 
     /* 		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /\* certificates *\/ */
     /* 		    break; */
@@ -517,6 +642,8 @@ int asn1_parse_mscat(FILE *f) {
     /* 		    break; */
 
     /* 		cli_errmsg("good %u - %p\n", hlen, asn1.next); */
+	cli_errmsg("asn1: parsing ok\n");
+
     } while(0);
     return 1;
 }
@@ -592,3 +719,4 @@ SEQ {
                         }
 
 */
+
