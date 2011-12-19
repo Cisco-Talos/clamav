@@ -615,108 +615,30 @@ int asn1_parse_mscat(FILE *f) {
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* certificates */
 	    break;
 
-    /* 		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /\* certificates *\/ */
-    /* 		    break; */
+	dsize = asn1.size;
+	while(dsize) {
+	    if(asn1_get_x509(map, &asn1.content, &dsize)) {
+		dsize = 1;
+		break;
+	    }
+	}
+	if(dsize)
+	    break;
 
-    /* 		old_hlen = hlen; */
-    /* 		old_next = asn1.next; */
-    /* 		hlen = asn1.size; */
-    /* 		asn1.next = asn1.content; */
-    /* 		success = 1; */
-    /* 		while(hlen) { */
-    /* 		    if(!asn1_get_x509(map, &asn1.next, &hlen)) */
-    /* 			continue; */
-    /* 		    success = 0; */
-    /* 		    break; */
-    /* 		} */
-    /* 		if(!success) */
-    /* 		    break; */
-
-    /* 		hlen = old_hlen; */
-    /* 		if(asn1_get_obj(map, old_next, &hlen, &asn1)) */
-    /* 		    break; */
-    /* 		if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &hlen, &asn1)) /\* crls - unused shouldn't be present *\/ */
-    /* 		    break; */
-
-    /* 		if(asn1.type != 0x31) /\* signerInfos *\/ */
-    /* 		    break; */
-
-    /* 		cli_errmsg("good %u - %p\n", hlen, asn1.next); */
+	if(asn1_get_obj(map, asn1.next, &size, &asn1))
+	    break;
+	if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &size, &asn1)) /* crls - unused shouldn't be present */
+	    break;
+	if(asn1.type != 0x31) { /* signerInfos */
+	    cli_dbgmsg("asn1_parse_mscat: unexpected type %02x for signerInfos\n", asn1.type);
+	    break;
+	}
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: unexpected extra data after signerInfos\n");
+	    break;
+	}
 	cli_errmsg("asn1: parsing ok\n");
 
     } while(0);
     return 1;
 }
-
-/* 
-
-  EMBEDDED
--.--------.-
-SEQ {
-        OID = SPC_INDIRECT_DATA_OBJID,
-        [0] SEQ {
-                SEQ {
-                        OID = SPC_PE_IMAGE_DATA_OBJID,
-                        [stuff]
-                },
-                SEQ {
-                        SEQ {
-                                OID = 1.3.14.3.2.26,
-                                NULL
-                        },
-                        VALUE = fe5723301b5567ced2cc882797560d682f9cc43c
-                }
-        },
-}
-
-
-  CAT FILE
--.--------.-
-SEQ {
-        OID = szOID_CTL,
-        [0] SEQ {
-                SEQ {
-                        OID = szOID_CATALOG_LIST,
-                },      
-                VALUE = USEFUL?!,
-                DATE ...
-                SEQ {
-                        OID = szOID_CATALOG_LIST_MEMBER,
-                        NULL,
-                },
-                SEQ {
-                        SEQ {
-                                VALUE = hash(wide)
-                                SET {
-                                        SEQ { 
-                                                OID = CAT_NAMEVALUE_OBJID,
-                                                SET {
-                                                        SEQ { k = v }
-                                                }
-                                        }, DO NOT WANT!
-                                        SEQ {
-                                                OID = SPC_INDIRECT_DATA_OBJID.
-                                                SET {
-                                                        SEQ {
-                                                                OID = 1.3.6.1.4.1.311.2.1.25(ANY) || 1.3.6.1.4.1.311.2.1.15(PE)
-                                                                [2] 80 ---
-                                                        },
-                                                        SEQ {
-                                                                SEQ {
-                                                                        OID = 1.3.14.3.2.26
-                                                                        NULL,
-                                                                },
-                                                                VALUE = hash
-                                                        },
-                                                        SEQ {
-                                                                OID = CAT_MEMBERINFO_OBJID
-                                                                SET { SEQ {} }
-
-                                                        }
-                                                } DO WANT
-                                        }
-                                }
-                        }
-
-*/
-
