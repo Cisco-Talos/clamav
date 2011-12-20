@@ -129,7 +129,10 @@ int asn1_expect_sha1rsa(fmap_t *map, void **asn1data, unsigned int *asn1len) {
     }
 
     if((obj.size == 5 && memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5)) || (obj.size == 9 && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9))) {
-	cli_dbgmsg("asn1_expect_sha1rsa: OID mismatch\n");
+	if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04", 9))
+	    cli_dbgmsg("asn1_expect_sha1rsa: md5 based cryptography is not supported\n");
+	else
+	    cli_dbgmsg("asn1_expect_sha1rsa: OID mismatch\n");
 	return 1;
     }
     if((ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
@@ -671,6 +674,49 @@ int asn1_parse_mscat(FILE *f) {
 	    cli_dbgmsg("asn1_parse_mscat: unexpected extra data after signerInfos\n");
 	    break;
 	}
+	size = asn1.size;
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: only one signerInfo shall be present\n");
+	    break;
+	}
+	size = asn1.size;
+	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* Version = 1 */
+	    break;
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+	    break;
+	dsize = asn1.size;
+	if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
+	    break;
+	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x02)) /* serial */
+	    break;
+	if(dsize) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside issuerAndSerialNumber\n");
+	    break;
+	}
+	if(asn1_expect_algo(map, &asn1.next, &size, 5, "\x2b\x0e\x03\x02\x1a")) /* digestAlgorithm == sha1 */
+	    break;
+
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
+	    break;
+
+	if(asn1_expect_algo(map, &asn1.next, &size, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01")) /* digestEncryptionAlgorithm == sha1 */
+	    break;
+
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
+	    break;
+
+	if(size) {
+	    if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) /* unauthenticatedAttributes */
+		break;
+	}
+
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside signerInfo\n");
+	    break;
+	}
+
 	cli_errmsg("asn1: parsing ok\n");
 	return 0;
     } while(0);
