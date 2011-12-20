@@ -128,7 +128,7 @@ int asn1_expect_sha1rsa(fmap_t *map, void **asn1data, unsigned int *asn1len) {
 	return 1;
     }
 
-    if((obj.size == 5 && memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5)) || (obj.size == 9 && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 5))) {
+    if((obj.size == 5 && memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5)) || (obj.size == 9 && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9))) {
 	cli_dbgmsg("asn1_expect_sha1rsa: OID mismatch\n");
 	return 1;
     }
