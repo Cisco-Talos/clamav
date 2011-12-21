@@ -2,6 +2,17 @@
 #include "others.h"
 #include "bignum.h"
 
+static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
+    SHA1Context ctx;
+    if(!fmap_need_ptr_once(map, data, len)) {
+	cli_dbgmsg("map_sha1: failed to read hash data\n");
+	return 1;
+    }
+    SHA1Init(&ctx);
+    SHA1Update(&ctx, data, len);
+    SHA1Final(&ctx, sha1);
+    return 0;
+}
 
 int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj) {
     unsigned int asn1_sz = *asn1len;
@@ -109,7 +120,7 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
 }
 
 
-int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len) {
+static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, cli_crt_hashtype *hashtype) {
     struct cli_asn1 obj;
     unsigned int avail;
     int ret;
@@ -128,8 +139,13 @@ int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len) {
 	cli_dbgmsg("asn1_expect_rsa: failed to read OID\n");
 	return 1;
     }
-
-    if((obj.size == 5 && memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5)) || (obj.size == 9 && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9) && memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04", 9))) {
+    if(obj.size == 5 && !memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5))
+	*hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa */
+    else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9))
+	*hashtype = CLI_SHA1RSA; /* Current sha1rsa */
+    else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04", 9))
+	*hashtype = CLI_MD5RSA;
+    else {
 	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
 	return 1;
     }
@@ -326,10 +342,9 @@ int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time
     return 0;
 }
 
-int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size) {
+int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
     struct cli_asn1 obj;
     unsigned int avail, avail2;
-    mp_int n, e;
 
     if(asn1_expect_objtype(map, *asn1data, size, &obj, 0x30)) /* subjectPublicKeyInfo */
 	return 1;
@@ -378,7 +393,7 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot read n\n");
 	return 1;
     }
-    if(mp_init(&n) || mp_read_signed_bin(&n, obj.content, avail2)) {
+    if(mp_read_signed_bin(&x509->n, obj.content, avail2)) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert n to big number\n");
 	return 1;
     }
@@ -397,17 +412,17 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot read e\n");
 	return 1;
     }
-    if(mp_init(&e) || mp_read_signed_bin(&n, obj.content, obj.size)) {
+    if(mp_read_signed_bin(&x509->e, obj.content, obj.size)) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert e to big number\n");
 	return 1;
     }
     return 0;
 }
 
-int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
+int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
     struct cli_asn1 crt, tbs, obj;
     unsigned int avail;
-    time_t not_before, not_after;
+    cli_crt_hashtype hashtype1, hashtype2;
     void *next;
 
     if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
@@ -430,19 +445,21 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
     if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
 	return 1;
 
-    if(asn1_expect_rsa(map, &obj.next, &tbs.size)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+    if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
        return 1;
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
+	return 1;
+    if(map_sha1(map, obj.content, obj.size, x509->issuer))
 	return 1;
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* validity */
 	return 1;
     avail = obj.size;
     next = obj.content;
-    if(asn1_get_time(map, &next, &avail, &not_before)) /* notBefore */
+    if(asn1_get_time(map, &next, &avail, &x509->not_before)) /* notBefore */
 	return 1;
-    if(asn1_get_time(map, &next, &avail, &not_after)) /* notAfter */
+    if(asn1_get_time(map, &next, &avail, &x509->not_after)) /* notAfter */
 	return 1;
     if(avail) {
 	cli_dbgmsg("asn1_get_x509: found unexpected extra data in validity\n");
@@ -452,7 +469,9 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
 	return 1;
 
-    if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size))
+    if(map_sha1(map, obj.content, obj.size, x509->subject))
+	return 1;
+    if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, x509))
        return 1;
 
     avail = 0;
@@ -467,8 +486,13 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size) {
 	avail = obj.type - 0xa0;
     }
 
-    if(asn1_expect_rsa(map, &tbs.next, &crt.size)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+    if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
        return 1;
+
+    if(hashtype1 != hashtype2) {
+	cli_dbgmsg("asn1_get_x509: found conglicting rsa hash types\n");
+	return 1;
+    }
 
     if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
 	return 1;
@@ -652,10 +676,13 @@ int asn1_parse_mscat(FILE *f) {
 
 	dsize = asn1.size;
 	while(dsize) {
-	    if(asn1_get_x509(map, &asn1.content, &dsize)) {
+	    cli_crt x509;
+	    cli_crt_init(&x509);
+	    if(asn1_get_x509(map, &asn1.content, &dsize, &x509)) {
 		dsize = 1;
 		break;
 	    }
+	    cli_crt_clear(&x509);
 	}
 	if(dsize)
 	    break;
@@ -687,6 +714,21 @@ int asn1_parse_mscat(FILE *f) {
 	dsize = asn1.size;
 	if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
 	    break;
+
+    {
+	SHA1Context foo;
+	uint8_t hash[SHA1_HASH_SIZE * 2 + 1];
+	int i;
+	if(!fmap_need_ptr_once(map, deep.content, deep.size))
+	    return 1;
+	SHA1Init (&foo);
+	SHA1Update (&foo, deep.content, deep.size);
+	SHA1Final (&foo, &hash[SHA1_HASH_SIZE]);
+	for(i=0; i<SHA1_HASH_SIZE; i++)
+	    sprintf(&hash[i*2],"%02x", hash[SHA1_HASH_SIZE+i]);
+	cli_errmsg("final:: %s\n", hash);
+    }
+
 	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x02)) /* serial */
 	    break;
 	if(dsize) {

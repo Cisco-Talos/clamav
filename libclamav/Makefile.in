@@ -159,7 +159,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
 	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h asn1.c asn1.h bignum.c bignum_class.h
+	arc4.h crtmgr.c crtmgr.h asn1.c asn1.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
@@ -213,7 +213,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-bytecode_detect.lo libclamav_la-events.lo \
 	libclamav_la-swf.lo libclamav_la-jpeg.lo libclamav_la-png.lo \
 	libclamav_la-iso9660.lo libclamav_la-arc4.lo \
-	libclamav_la-asn1.lo $(am__objects_1)
+	libclamav_la-crtmgr.lo libclamav_la-asn1.lo $(am__objects_1)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -673,7 +673,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
 	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
 	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h asn1.c asn1.h $(am__append_7)
+	arc4.h crtmgr.c crtmgr.h asn1.c asn1.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -824,6 +824,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-chmunpack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cpio.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-crtmgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dconf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-disasm.Plo@am__quote@
@@ -1782,6 +1783,14 @@ libclamav_la-arc4.lo: arc4.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='arc4.c' object='libclamav_la-arc4.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-arc4.lo `test -f 'arc4.c' || echo '$(srcdir)/'`arc4.c
+
+libclamav_la-crtmgr.lo: crtmgr.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-crtmgr.lo -MD -MP -MF $(DEPDIR)/libclamav_la-crtmgr.Tpo -c -o libclamav_la-crtmgr.lo `test -f 'crtmgr.c' || echo '$(srcdir)/'`crtmgr.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-crtmgr.Tpo $(DEPDIR)/libclamav_la-crtmgr.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='crtmgr.c' object='libclamav_la-crtmgr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-crtmgr.lo `test -f 'crtmgr.c' || echo '$(srcdir)/'`crtmgr.c
 
 libclamav_la-asn1.lo: asn1.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-asn1.lo -MD -MP -MF $(DEPDIR)/libclamav_la-asn1.Tpo -c -o libclamav_la-asn1.lo `test -f 'asn1.c' || echo '$(srcdir)/'`asn1.c

@@ -374,6 +374,8 @@ libclamav_la_SOURCES = \
 	iso9660.h \
 	arc4.c \
 	arc4.h \
+	crtmgr.c \
+	crtmgr.h \
 	asn1.c \
 	asn1.h
 
