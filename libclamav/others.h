@@ -44,6 +44,7 @@
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "events.h"
+#include "crtmgr.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -250,6 +251,9 @@ struct cl_engine {
 
     /* Used for memory pools */
     mpool_t *mempool;
+
+    /* crtmgr stuff */
+    crtmgr cmgr;
 
     /* Callback(s) */
     clcb_pre_cache cb_pre_cache;

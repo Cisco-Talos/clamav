@@ -496,6 +496,19 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 
     if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
 	return 1;
+    if(obj.size > 513) {
+	cli_dbgmsg("asn1_get_x509: signature too long\n");
+	return 1;
+    }
+    if(!fmap_need_ptr_once(map, obj.content, obj.size)) {
+	cli_dbgmsg("asn1_get_x509: cannot read signature\n");
+	return 1;
+    }
+    if(mp_read_signed_bin(&x509->sig, obj.content, obj.size)) {
+	cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
+	return 1;
+    }
+
     if(crt.size) {
 	cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
 	return 1;
@@ -512,7 +525,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 
 
 
-int asn1_parse_mscat(FILE *f) {
+int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
     struct cli_asn1 asn1, deep, deeper;
     unsigned int size, dsize;
     fmap_t *map;
@@ -682,6 +695,7 @@ int asn1_parse_mscat(FILE *f) {
 		dsize = 1;
 		break;
 	    }
+	    crtmgr_add(cmgr, &x509);
 	    cli_crt_clear(&x509);
 	}
 	if(dsize)

@@ -23,6 +23,6 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned i
 int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time);
 int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509);
 int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509);
-int asn1_parse_mscat(FILE *f);
+int asn1_parse_mscat(FILE *f, crtmgr *c);
 
 #endif
