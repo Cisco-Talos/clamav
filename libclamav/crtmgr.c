@@ -5,6 +5,8 @@
 #include "crtmgr.h"
 #include "others.h"
 
+/* TODO split certs into verified and tbs */
+
 int cli_crt_init(cli_crt *x509) {
     int ret;
     if((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
@@ -20,7 +22,7 @@ void cli_crt_clear(cli_crt *x509) {
     mp_clear_multi(&x509->n, &x509->e, &x509->sig, NULL);
 }
 
-static cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
+cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts;
     while(i) {
 	if(x509->not_before == i->not_before && x509->not_after == i->not_after && !memcmp(x509->subject, i->subject, sizeof(i->subject))) {
@@ -102,33 +104,48 @@ int crtmgr_verify(crtmgr *m, cli_crt *x509) {
 	    if(*d != 1) /* block type 1 */
 		continue;
 
-	    siglen -= 1; /* sizeof(x) */
-	    for(j=1; j<siglen-2; j++) /* upto sizeof(x) - 2 */
+	    siglen -= 1; /* 0xff padding */
+	    for(j=1; j<siglen-2; j++)
 		if(d[j] != 0xff)
 		    break;
 	    if(j == siglen - 2)
 		continue;
-	    if(d[j] != 0)
+	    if(d[j] != 0) /* 0x00 separator */
 		continue;
 
 	    j++;
 	    siglen -= j; /* asn1 size */
 
+	    /* SEQ { SEQ { OID, NULL }, OCTET STRING */
 	    if(siglen < 2 || d[j] != 0x30 || d[j+1] + 2 != siglen)
 		continue;
 	    siglen -= 2;
 	    j+=2;
 
-	    if(siglen <2 || d[j] != 0x30 || (hashlen = d[j+1]) != 9) {/* FIXME - md5 */
-		cli_errmsg("crtmgr_verify: ACAB HERE MD5 MISSING!!!\n");
+	    if(siglen <2 || d[j] != 0x30)
 		continue;
-	    }
+
+	    hashlen = d[j+1];
+
 	    siglen -= 2;
 	    j+=2;
-	    if(siglen < hashlen || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", hashlen)) {
-		cli_errmsg("crtmgr_verify: ACAB HERE MD5 MISSING!!!\n");
+	    if(siglen < hashlen)
+		continue;
+	    if(hashlen == 9) {
+		if(x509->hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
+		    cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
+		    continue;
+		}
+	    } else if(hashlen == 12) {
+		if(x509->hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
+		    cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
+		    continue;
+		}
+	    } else {
+		cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
 		continue;
 	    }
+
 	    siglen -= hashlen;
 	    j += hashlen;
 	    hashlen = x509->hashtype == CLI_SHA1RSA ? SHA1_HASH_SIZE : 16;
@@ -140,15 +157,11 @@ int crtmgr_verify(crtmgr *m, cli_crt *x509) {
 		continue;
 	    if(memcmp(&d[j], x509->tbshash, hashlen))
 		continue;
-	    /* SEQ { SEQ { OID, NULL }, OCTET STRING */
-	    {
-		char buf[1024];
-		mp_toradix_n(&x, buf, 16, sizeof(buf));
-		cli_dbgmsg("crtmgr_verify: %u, %u, %u, %s\n", siglen, d[j+1], hashlen, buf);
-	    }
+	    mp_clear(&x);
 	    return 0;
 	}
     }
+    mp_clear(&x);
     return 1;
 }
 

@@ -715,8 +715,8 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		dsize = 1;
 		break;
 	    }
-	    crtmgr_add(cmgr, &x509);
-	    crtmgr_verify(cmgr, &x509);
+	    if(!crtmgr_lookup(cmgr, &x509) && crtmgr_verify(cmgr, &x509))
+		crtmgr_add(cmgr, &x509);
 	    cli_crt_clear(&x509);
 	}
 	if(dsize)
