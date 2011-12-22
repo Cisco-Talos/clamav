@@ -1,4 +1,5 @@
 #include "asn1.h"
+#include "md5.h"
 #include "others.h"
 #include "bignum.h"
 
@@ -11,6 +12,18 @@ static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1
     SHA1Init(&ctx);
     SHA1Update(&ctx, data, len);
     SHA1Final(&ctx, sha1);
+    return 0;
+}
+
+static int map_md5(fmap_t *map, void *data, unsigned int len, uint8_t *md5) {
+    cli_md5_ctx ctx;
+    if(!fmap_need_ptr_once(map, data, len)) {
+	cli_dbgmsg("map_md5: failed to read hash data\n");
+	return 1;
+    }
+    cli_md5_init(&ctx);
+    cli_md5_update(&ctx, data, len);
+    cli_md5_final(md5, &ctx);
     return 0;
 }
 
@@ -422,15 +435,18 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
 
 int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
     struct cli_asn1 crt, tbs, obj;
-    unsigned int avail;
+    unsigned int avail, tbssize;
     cli_crt_hashtype hashtype1, hashtype2;
+    uint8_t *tbsdata;
     void *next;
 
     if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
 	return 1;
 
+    tbsdata = crt.content;
     if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
 	return 1;
+    tbssize = (uint8_t *)tbs.next - tbsdata;
 
     if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) /* [0] */
 	return 1;
@@ -494,6 +510,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 	cli_dbgmsg("asn1_get_x509: found conglicting rsa hash types\n");
 	return 1;
     }
+    x509->hashtype = hashtype1;
 
     if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
 	return 1;
@@ -509,11 +526,13 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 	cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
 	return 1;
     }
-
     if(crt.size) {
 	cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
 	return 1;
     }
+
+    if((x509->hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509->tbshash)) || (x509->hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509->tbshash))))
+	return 1;
 
     *asn1data = crt.next;
     return 0;
@@ -697,6 +716,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		break;
 	    }
 	    crtmgr_add(cmgr, &x509);
+	    crtmgr_verify(cmgr, &x509);
 	    cli_crt_clear(&x509);
 	}
 	if(dsize)
