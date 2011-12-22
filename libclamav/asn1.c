@@ -14,6 +14,7 @@ static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1
     return 0;
 }
 
+
 int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj) {
     unsigned int asn1_sz = *asn1len;
     unsigned int readbytes = MIN(6, asn1_sz), i;
@@ -142,9 +143,9 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
     if(obj.size == 5 && !memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5))
 	*hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa */
     else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9))
-	*hashtype = CLI_SHA1RSA; /* Current sha1rsa */
+	*hashtype = CLI_SHA1RSA; /* Current sha1rsa 1.2.840.113549.1.1.5 */
     else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04", 9))
-	*hashtype = CLI_MD5RSA;
+	*hashtype = CLI_MD5RSA; /* MD5 1.2.840.113549.1.1.5 */
     else {
 	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
 	return 1;
@@ -393,7 +394,7 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot read n\n");
 	return 1;
     }
-    if(mp_read_signed_bin(&x509->n, obj.content, avail2)) {
+    if(mp_read_unsigned_bin(&x509->n, obj.content, avail2)) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert n to big number\n");
 	return 1;
     }
@@ -412,7 +413,7 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot read e\n");
 	return 1;
     }
-    if(mp_read_signed_bin(&x509->e, obj.content, obj.size)) {
+    if(mp_read_unsigned_bin(&x509->e, obj.content, obj.size)) {
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert e to big number\n");
 	return 1;
     }
@@ -504,7 +505,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 	cli_dbgmsg("asn1_get_x509: cannot read signature\n");
 	return 1;
     }
-    if(mp_read_signed_bin(&x509->sig, obj.content, obj.size)) {
+    if(mp_read_unsigned_bin(&x509->sig, obj.content, obj.size)) {
 	cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
 	return 1;
     }
