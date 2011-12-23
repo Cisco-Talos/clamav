@@ -56,6 +56,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "arc4.h"
 #include "rijndael.h"
 #include "sha256.h"
+#include "textnorm.h"
 
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
@@ -514,7 +515,7 @@ static int find_length(struct pdf_struct *pdf,
     return length;
 }
 
-#define DUMP_MASK ((1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION) | (1 << OBJ_LAUNCHACTION))
+#define DUMP_MASK ((1 << OBJ_CONTENTS) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION) | (1 << OBJ_LAUNCHACTION))
 
 static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj, int binary)
 {
@@ -712,6 +713,74 @@ static enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *ob
     if (obj->flags & (1 << OBJ_STREAM))
 	return pdf->enc_method_stream;
     return pdf->enc_method_string;
+}
+
+enum cstate {
+    CSTATE_NONE,
+    CSTATE_TJ,
+    CSTATE_TJ_PAROPEN
+};
+
+static void process(struct text_norm_state *s, enum cstate *st, const char *buf, int length, int fout)
+{
+    do {
+	switch (*st) {
+	    case CSTATE_NONE:
+		if (*buf == '[') *st = CSTATE_TJ;
+		else {
+		    const char *nl = memchr(buf, '\n', length);
+		    if (!nl)
+			return;
+		    length -= nl - buf;
+		    buf = nl;
+		}
+		break;
+	    case CSTATE_TJ:
+		if (*buf == '(') *st = CSTATE_TJ_PAROPEN;
+		break;
+	    case CSTATE_TJ_PAROPEN:
+		if (*buf == ')') *st = CSTATE_TJ;
+		else {
+		    if (text_normalize_buffer(s, buf, 1) != 1) {
+			cli_writen(fout, s->out, s->out_pos);
+			text_normalize_reset(s);
+		    }
+		}
+		break;
+	}
+	buf++;
+	length--;
+    } while (length > 0);
+}
+
+static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
+{
+    struct text_norm_state s;
+    char fullname[1024];
+    char outbuff[BUFSIZ];
+    char inbuf[BUFSIZ];
+    int fout, n;
+    enum cstate st = CSTATE_NONE;
+
+    snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u_c", pdf->dir, (pdf->files-1));
+    fout = open(fullname,O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+    if (fout < 0) {
+	char err[128];
+	cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
+	return CL_ETMPFILE;
+    }
+
+    text_normalize_init(&s, outbuff, sizeof(outbuff));
+    while (1) {
+	n = cli_readn(fd, inbuf, sizeof(inbuf));
+	if (n <= 0)
+	    break;
+	process(&s, &st, inbuf, n, fout);
+    }
+    cli_writen(fout, s.out, s.out_pos);
+
+    close(fout);
+    return CL_SUCCESS;
 }
 
 static const char *pdf_getdict(const char *q0, int* len, const char *key);
@@ -993,6 +1062,13 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (rc2 == CL_VIRUS)
 		rc = rc2;
 	}
+	if (rc == CL_CLEAN && (obj->flags & (1 << OBJ_CONTENTS))) {
+	    lseek(fout, 0, SEEK_SET);
+	    cli_dbgmsg("cli_pdf: dumping contents %u %u\n", obj->id>>8, obj->id&0xff);
+	    rc2 = pdf_scan_contents(fout, pdf);
+	    if (rc2 == CL_VIRUS)
+		rc = rc2;
+	}
     }
     close(fout);
     free(ascii_decoded);
@@ -1011,6 +1087,7 @@ enum objstate {
     STATE_OPENACTION,
     STATE_LINEARIZED,
     STATE_LAUNCHACTION,
+    STATE_CONTENTS,
     STATE_ANY /* for actions table below */
 };
 
@@ -1052,7 +1129,9 @@ static struct pdfname_action pdfname_actions[] = {
     {"S", OBJ_DICT, STATE_NONE, STATE_S},
     {"Type", OBJ_DICT, STATE_NONE, STATE_NONE},
     {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION},
-    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION}
+    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION},
+    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE},
+    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -1165,7 +1244,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     /* enough to hold common pdf names, we don't need all the names */
     char pdfname[64];
-    const char *q2, *q3;
+    const char *q2, *q3, *q4;
     const char *q = obj->start + pdf->map;
     const char *dict, *start;
     off_t dict_length;
@@ -1203,8 +1282,23 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	bytesleft--;
 	q = q2;
     } while (!q3 || q3[1] != '>');
+    q = q3 + 2;
+    q4 = NULL;
+    /* find real end of dictionary (in case of nested one)*/
+    do {
+	q2 = pdf_nextobject(q, bytesleft);
+	bytesleft -= q2 -q;
+	if (!q2 || bytesleft < 0) {
+	    break;
+	}
+	q4 = memchr(q-1, '>', q2-q+1);
+	q2++;
+	bytesleft--;
+	q = q2;
+    } while (!q4 || q4[1] != '>');
+    if (!q4) q4 = q3;
     obj->flags |= 1 << OBJ_DICT;
-    dict_length = q3 - dict;
+    dict_length = q4 - dict;
 
     /*  process pdf names */
     for (q = dict;dict_length > 0;) {
@@ -1253,8 +1347,10 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	}
 	if (objstate == STATE_LAUNCHACTION)
 	    pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
-	if (dict_length > 0 && (objstate == STATE_JAVASCRIPT ||
-	    objstate == STATE_OPENACTION)) {
+	if (dict_length > 0 &&
+	    (objstate == STATE_JAVASCRIPT ||
+	     objstate == STATE_OPENACTION ||
+	     objstate == STATE_CONTENTS)) {
 	    if (objstate == STATE_OPENACTION)
 		pdfobj_flag(pdf, obj, HAS_OPENACTION);
 	    q2 = pdf_nextobject(q, dict_length);
@@ -1272,8 +1368,10 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 				   objid >> 8, objid&0xff);
 			obj2 = find_obj(pdf, obj, objid);
 			if (obj2) {
-			    enum pdf_objflags flag = objstate == STATE_JAVASCRIPT ?
-				OBJ_JAVASCRIPT : OBJ_OPENACTION;
+			    enum pdf_objflags flag =
+				objstate == STATE_JAVASCRIPT ? OBJ_JAVASCRIPT :
+				objstate == STATE_OPENACTION ? OBJ_OPENACTION :
+				OBJ_CONTENTS;
 			    obj2->flags |= 1 << flag;
 			    obj->flags &= ~(1 << flag);
 			} else {
