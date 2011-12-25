@@ -2727,8 +2727,9 @@ int cli_scanpe(cli_ctx *ctx) {
 		success = 1;
 		while(hlen) {
 		    cli_crt x509;
-		    if(!asn1_get_x509(map, &asn1.next, &hlen, &x509))
-			continue;
+		    /* FIXME, new proto */
+		    /* if(!asn1_get_x509(map, &asn1.next, &hlen, &x509)) */
+		    /* 	continue; */
 		    success = 0;
 		    break;
 		}

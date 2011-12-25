@@ -2353,7 +2353,6 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 }
 
 static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
-    crtmgr_add_roots(&engine->cmgr);
     asn1_parse_mscat(fs, &engine->cmgr);
     return 0;
 }

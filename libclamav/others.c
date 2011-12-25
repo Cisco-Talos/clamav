@@ -351,7 +351,8 @@ struct cl_engine *cl_engine_new(void)
 	return NULL;
     }
 
-    new->cmgr.crts = NULL;
+    crtmgr_init(&new->cmgr);
+    crtmgr_add_roots(&new->cmgr);
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;

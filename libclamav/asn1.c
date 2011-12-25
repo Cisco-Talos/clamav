@@ -48,7 +48,7 @@ int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_
     data+=2;
     if(i & 0x80) {
 	if(i == 0x80) {
-	    /* FIXME: double NULL terminated */
+	    /* Not allowed in DER */
 	    cli_dbgmsg("asn1_get_obj: unsupported indefinite length object\n");
 	    return 1;
 	}
@@ -433,15 +433,22 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
     return 0;
 }
 
-int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
+int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
     struct cli_asn1 crt, tbs, obj;
-    unsigned int avail, tbssize;
+    unsigned int avail, tbssize, issuersize;
     cli_crt_hashtype hashtype1, hashtype2;
+    cli_crt x509;
     uint8_t *tbsdata;
-    void *next;
+    void *next, *issuer;
+
+    if(cli_crt_init(&x509))
+	return 1;
+
+    /* FIXME cli_crt_clear(&x509) on error path */
 
     if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
 	return 1;
+    *asn1data = crt.next;
 
     tbsdata = crt.content;
     if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
@@ -467,16 +474,17 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
 	return 1;
-    if(map_sha1(map, obj.content, obj.size, x509->issuer))
-	return 1;
+    issuer = obj.content;
+    issuersize = obj.size;
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* validity */
 	return 1;
     avail = obj.size;
     next = obj.content;
-    if(asn1_get_time(map, &next, &avail, &x509->not_before)) /* notBefore */
+
+    if(asn1_get_time(map, &next, &avail, &x509.not_before)) /* notBefore */
 	return 1;
-    if(asn1_get_time(map, &next, &avail, &x509->not_after)) /* notAfter */
+    if(asn1_get_time(map, &next, &avail, &x509.not_after)) /* notAfter */
 	return 1;
     if(avail) {
 	cli_dbgmsg("asn1_get_x509: found unexpected extra data in validity\n");
@@ -485,15 +493,22 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 
     if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
 	return 1;
-
-    if(map_sha1(map, obj.content, obj.size, x509->subject))
+    if(map_sha1(map, obj.content, obj.size, x509.subject))
 	return 1;
-    if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, x509))
+    if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509))
        return 1;
+
+    if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) { /* FIXME lookup on other or blindly add? */
+	cli_dbgmsg("asn1_get_x509: certificate already exists\n");
+	return 0;
+    }
+
+    if(map_sha1(map, issuer, issuersize, x509.issuer))
+	return 1;
 
     avail = 0;
     while(tbs.size) {
-	/* extensions */
+	/* FIXME parse extensions */
 	if(asn1_get_obj(map, obj.next, &tbs.size, &obj))
 	    return 1;
 	if(obj.type <= 0xa0 + avail || obj.type > 0xa3) {
@@ -507,10 +522,10 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
        return 1;
 
     if(hashtype1 != hashtype2) {
-	cli_dbgmsg("asn1_get_x509: found conglicting rsa hash types\n");
+	cli_dbgmsg("asn1_get_x509: found conflicting rsa hash types\n");
 	return 1;
     }
-    x509->hashtype = hashtype1;
+    x509.hashtype = hashtype1;
 
     if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
 	return 1;
@@ -522,7 +537,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 	cli_dbgmsg("asn1_get_x509: cannot read signature\n");
 	return 1;
     }
-    if(mp_read_unsigned_bin(&x509->sig, obj.content, obj.size)) {
+    if(mp_read_unsigned_bin(&x509.sig, obj.content, obj.size)) {
 	cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
 	return 1;
     }
@@ -531,10 +546,14 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x50
 	return 1;
     }
 
-    if((x509->hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509->tbshash)) || (x509->hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509->tbshash))))
+    /* FIXME skip hashing if we have the cert already */
+    if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || (x509.hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509.tbshash))))
 	return 1;
 
-    *asn1data = crt.next;
+    if(crtmgr_add(other, &x509))
+	return 1;
+
+    cli_crt_clear(&x509);
     return 0;
 }
 
@@ -655,6 +674,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		break;
 	    }
 	    while(tag.size) {
+		/* FIXME this should be delayed till after the cert is verified */
 		struct cli_asn1 tagval;
 		unsigned int tsize, tsize2, hashtype;
 		uint8_t sha1[SHA1_HASH_SIZE];
@@ -708,19 +728,41 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 
 	dsize = asn1.size;
-	while(dsize) {
-	    cli_crt x509;
-	    cli_crt_init(&x509);
-	    if(asn1_get_x509(map, &asn1.content, &dsize, &x509)) {
-		dsize = 1;
-		break;
+	if(dsize) {
+	    crtmgr newcerts;
+	    crtmgr_init(&newcerts);
+	    while(dsize) {
+		if(asn1_get_x509(map, &asn1.content, &dsize, cmgr, &newcerts)) {
+		    dsize = 1;
+		    break;
+		}
 	    }
-	    if(!crtmgr_lookup(cmgr, &x509) && crtmgr_verify(cmgr, &x509))
-		crtmgr_add(cmgr, &x509);
-	    cli_crt_clear(&x509);
+	    if(dsize)
+		break;
+	    if(newcerts.crts) {
+		unsigned int orig = newcerts.items;
+		cli_crt *x509 = newcerts.crts;
+		cli_dbgmsg("------------------------\n");
+		while(x509) {
+		    if(!crtmgr_verify(cmgr, x509)) {
+			if(crtmgr_add(cmgr, x509)) {
+			    /* FIXME handle error */
+			}
+			crtmgr_del(&newcerts, x509);
+			x509 = newcerts.crts;
+			continue;
+		    }
+		    x509 = x509->next;
+		}
+		if(newcerts.items)
+		    cli_errmsg("asn1_parse_mscat: got %u certs, %u left unverified\n", orig, newcerts.items);
+		for(x509 = newcerts.crts; x509; ) {
+		    cli_crt *next = x509->next;
+		    crtmgr_del(&newcerts, x509);
+		    x509 = next;
+		}
+	    }
 	}
-	if(dsize)
-	    break;
 
 	if(asn1_get_obj(map, asn1.next, &size, &asn1))
 	    break;
@@ -750,7 +792,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
 	    break;
 
-    {
+	if(0){
 	SHA1Context foo;
 	uint8_t hash[SHA1_HASH_SIZE * 2 + 1];
 	int i;
@@ -790,7 +832,6 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 
-	cli_errmsg("asn1: parsing ok\n");
 	return 0;
     } while(0);
 

@@ -25,13 +25,16 @@ typedef struct cli_crt_t {
 
 typedef struct {
     cli_crt *crts;
+    unsigned int items;
 } crtmgr;
 
 
 int cli_crt_init(cli_crt *x509);
 void cli_crt_clear(cli_crt *x509);
+void crtmgr_init(crtmgr *m);
 int crtmgr_add(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
+void crtmgr_del(crtmgr *m, cli_crt *x509);
 int crtmgr_verify(crtmgr *m, cli_crt *x509);
 int crtmgr_add_roots(crtmgr *m);
 

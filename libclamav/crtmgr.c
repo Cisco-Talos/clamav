@@ -25,11 +25,12 @@ void cli_crt_clear(cli_crt *x509) {
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts;
     while(i) {
-	if(x509->not_before == i->not_before && x509->not_after == i->not_after && !memcmp(x509->subject, i->subject, sizeof(i->subject))) {
-	    if(mp_cmp(&x509->n, &i->n) || mp_cmp(&x509->e, &i->e))
-		cli_dbgmsg("crtmgr_add: conflicting pk for the same cert\n");
+	if(/*x509->not_before == i->not_before &&
+	     x509->not_after == i->not_after && */
+	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+	   !mp_cmp(&x509->n, &i->n) &&
+	   !mp_cmp(&x509->e, &i->e)) 
 	    return i;
-	}
 	i = i->next;
     }
     return NULL;
@@ -37,24 +38,29 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
 
 int crtmgr_add(crtmgr *m, cli_crt *x509) {
     cli_crt *i = crtmgr_lookup(m, x509);
+    int ret;
 
     if(i)
 	return 0;
+
     i = cli_malloc(sizeof(*i));
     if(!i)
 	return 1;
 
-    if(mp_init_multi(&i->n, &i->e, &i->sig, NULL)) {
+    if((ret = mp_init_multi(&i->n, &i->e, &i->sig, NULL))) {
+	cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
 	free(i);
 	return 1;
     }
-    if(mp_copy(&x509->n, &i->n) || mp_copy(&x509->e, &i->e) || mp_copy(&x509->sig, &i->sig)) {
+    if((ret = mp_copy(&x509->n, &i->n)) || (ret = mp_copy(&x509->e, &i->e)) || (ret = mp_copy(&x509->sig, &i->sig))) {
+	cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
 	cli_crt_clear(i);
 	free(i);
 	return 1;
     }
     memcpy(i->subject, x509->subject, sizeof(i->subject));
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
+    memcpy(i->tbshash, x509->tbshash, sizeof(i->tbshash));
     i->not_before = x509->not_before;
     i->not_after = x509->not_after;
     i->hashtype = x509->hashtype;
@@ -75,22 +81,46 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	}
 	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s\n", subject, issuer, mod, exp);
     }
+    m->items++;
     return 0;
 }
 
+void crtmgr_init(crtmgr *m) {
+    m->crts = NULL;
+    m->items = 0;
+}
+
+void crtmgr_del(crtmgr *m, cli_crt *x509) {
+    cli_crt *i;
+    for(i = m->crts; i; i = i->next) {
+	if(i==x509) {
+	    if(i->prev) 
+		i->prev->next = i->next;
+	    else
+		m->crts = i->next;
+	    if(i->next)
+		i->next->prev = i->prev;
+	    cli_crt_clear(x509);
+	    free(x509);
+	    m->items--;
+	    return;
+	}
+    }
+}
 
 int crtmgr_verify(crtmgr *m, cli_crt *x509) {
     uint8_t d[513];
     cli_crt *i = m->crts;
     mp_int x;
-    int ret, j, siglen = mp_unsigned_bin_size(&x509->sig), hashlen;
+    int ret, j, ref_siglen = mp_unsigned_bin_size(&x509->sig), hashlen;
 
     if((ret = mp_init(&x))) {
 	cli_errmsg("crtmgr_verify: mp_init failed with %d\n", ret);
 	return 1;
     }
     for(i = m->crts; i; i = i->next) {
-	if(!memcmp(x509->issuer, i->subject, sizeof(i->subject)) && siglen == mp_unsigned_bin_size(&i->n)) {
+	int siglen = mp_unsigned_bin_size(&i->n);
+	if(!memcmp(x509->issuer, i->subject, sizeof(i->subject)) && MAX(siglen, ref_siglen) - MIN(siglen, ref_siglen) <= 1) {
 	    if((ret = mp_exptmod(&x509->sig, &i->e, &i->n, &x))) {
 		cli_warnmsg("crtmgr_verify: verification failed: mp_exptmod failed with %d\n", ret);
 		continue;
@@ -166,6 +196,7 @@ int crtmgr_verify(crtmgr *m, cli_crt *x509) {
 }
 
 
+/* DC=com, DC=microsoft, CN=Microsoft Root Certificate Authority */
 const uint8_t MSCA_SUBJECT[] = "\x11\x3b\xd8\x6b\xed\xde\xbc\xd4\xc5\xf1\x0a\xa0\x7a\xb2\x02\x6b\x98\x2f\x4b\x92";
 const uint8_t MSCA_MOD[] = "\
 \x00\xf3\x5d\xfa\x80\x67\xd4\x5a\xa7\xa9\x0c\x2c\x90\x20\xd0\
@@ -205,10 +236,67 @@ const uint8_t MSCA_MOD[] = "\
 \xce\xc1\x35";
 const uint8_t MSCA_EXP[] = "\x01\x00\x01";
 
+/* OU=Copyright (c) 1997 Microsoft Corp., OU=Microsoft Corporation, CN=Microsoft Root Authority */
+const uint8_t MSA_SUBJECT[] = "\xad\xf7\x98\x77\x06\x5e\xf3\x05\xeb\x95\xb5\x6d\xbc\xa9\xe6\x3e\x9a\xb4\x0d\x3b";
+const uint8_t MSA_MOD[] = "\
+\x00\xa9\x02\xbd\xc1\x70\xe6\x3b\xf2\x4e\x1b\x28\x9f\x97\x78\
+\x5e\x30\xea\xa2\xa9\x8d\x25\x5f\xf8\xfe\x95\x4c\xa3\xb7\xfe\
+\x9d\xa2\x20\x3e\x7c\x51\xa2\x9b\xa2\x8f\x60\x32\x6b\xd1\x42\
+\x64\x79\xee\xac\x76\xc9\x54\xda\xf2\xeb\x9c\x86\x1c\x8f\x9f\
+\x84\x66\xb3\xc5\x6b\x7a\x62\x23\xd6\x1d\x3c\xde\x0f\x01\x92\
+\xe8\x96\xc4\xbf\x2d\x66\x9a\x9a\x68\x26\x99\xd0\x3a\x2c\xbf\
+\x0c\xb5\x58\x26\xc1\x46\xe7\x0a\x3e\x38\x96\x2c\xa9\x28\x39\
+\xa8\xec\x49\x83\x42\xe3\x84\x0f\xbb\x9a\x6c\x55\x61\xac\x82\
+\x7c\xa1\x60\x2d\x77\x4c\xe9\x99\xb4\x64\x3b\x9a\x50\x1c\x31\
+\x08\x24\x14\x9f\xa9\xe7\x91\x2b\x18\xe6\x3d\x98\x63\x14\x60\
+\x58\x05\x65\x9f\x1d\x37\x52\x87\xf7\xa7\xef\x94\x02\xc6\x1b\
+\xd3\xbf\x55\x45\xb3\x89\x80\xbf\x3a\xec\x54\x94\x4e\xae\xfd\
+\xa7\x7a\x6d\x74\x4e\xaf\x18\xcc\x96\x09\x28\x21\x00\x57\x90\
+\x60\x69\x37\xbb\x4b\x12\x07\x3c\x56\xff\x5b\xfb\xa4\x66\x0a\
+\x08\xa6\xd2\x81\x56\x57\xef\xb6\x3b\x5e\x16\x81\x77\x04\xda\
+\xf6\xbe\xae\x80\x95\xfe\xb0\xcd\x7f\xd6\xa7\x1a\x72\x5c\x3c\
+\xca\xbc\xf0\x08\xa3\x22\x30\xb3\x06\x85\xc9\xb3\x20\x77\x13\
+\x85\xdf";
+const uint8_t MSA_EXP[] = "\x01\x00\x01";
+
+
+/* C=ZA, ST=Western Cape, L=Durbanville, O=Thawte, OU=Thawte Certification, CN=Thawte Timestamping CA */
+const uint8_t THAW_SUBJECT[] = "\x9a\x02\x27\x8e\x9c\xb1\x28\x76\xc4\x7a\xb0\xbc\x75\xdd\x69\x4e\x72\xd1\xb2\xbc";
+const uint8_t THAW_MOD[] = "\
+\x00\xd6\x2b\x58\x78\x61\x45\x86\x53\xea\x34\x7b\x51\x9c\xed\
+\xb0\xe6\x2e\x18\x0e\xfe\xe0\x5f\xa8\x27\xd3\xb4\xc9\xe0\x7c\
+\x59\x4e\x16\x0e\x73\x54\x60\xc1\x7f\xf6\x9f\x2e\xe9\x3a\x85\
+\x24\x15\x3c\xdb\x47\x04\x63\xc3\x9e\xc4\x94\x1a\x5a\xdf\x4c\
+\x7a\xf3\xd9\x43\x1d\x3c\x10\x7a\x79\x25\xdb\x90\xfe\xf0\x51\
+\xe7\x30\xd6\x41\x00\xfd\x9f\x28\xdf\x79\xbe\x94\xbb\x9d\xb6\
+\x14\xe3\x23\x85\xd7\xa9\x41\xe0\x4c\xa4\x79\xb0\x2b\x1a\x8b\
+\xf2\xf8\x3b\x8a\x3e\x45\xac\x71\x92\x00\xb4\x90\x41\x98\xfb\
+\x5f\xed\xfa\xb7\x2e\x8a\xf8\x88\x37";
+const uint8_t THAW_EXP[] = "\x01\x00\x01";
+
+
+/* C=US, O=VeriSign, Inc., OU=Class 3 Public Primary Certification Authority */
+const uint8_t VER_SUBJECT[] = "\x29\xdb\xd4\xb8\x8f\x78\x5f\x33\x41\x92\x87\xe1\xaf\x46\x50\xe1\x77\xa4\x6f\xc0";
+const uint8_t VER_MOD[] = "\
+\x00\xc9\x5c\x59\x9e\xf2\x1b\x8a\x01\x14\xb4\x10\xdf\x04\x40\
+\xdb\xe3\x57\xaf\x6a\x45\x40\x8f\x84\x0c\x0b\xd1\x33\xd9\xd9\
+\x11\xcf\xee\x02\x58\x1f\x25\xf7\x2a\xa8\x44\x05\xaa\xec\x03\
+\x1f\x78\x7f\x9e\x93\xb9\x9a\x00\xaa\x23\x7d\xd6\xac\x85\xa2\
+\x63\x45\xc7\x72\x27\xcc\xf4\x4c\xc6\x75\x71\xd2\x39\xef\x4f\
+\x42\xf0\x75\xdf\x0a\x90\xc6\x8e\x20\x6f\x98\x0f\xf8\xac\x23\
+\x5f\x70\x29\x36\xa4\xc9\x86\xe7\xb1\x9a\x20\xcb\x53\xa5\x85\
+\xe7\x3d\xbe\x7d\x9a\xfe\x24\x45\x33\xdc\x76\x15\xed\x0f\xa2\
+\x71\x64\x4c\x65\x2e\x81\x68\x45\xa7";
+const uint8_t VER_EXP[] = "\x01\x00\x01";
+
+
 int crtmgr_add_roots(crtmgr *m) {
     cli_crt msca;
     if(cli_crt_init(&msca))
 	return 1;
+
+    /* FIXME proper error check and error path cleanup */
+
     memset(msca.issuer, '\xca', sizeof(msca.issuer));
     memcpy(msca.subject, MSCA_SUBJECT, sizeof(msca.subject));
     if(mp_read_unsigned_bin(&msca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&msca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
@@ -217,7 +305,36 @@ int crtmgr_add_roots(crtmgr *m) {
     }
     msca.not_before = 989450362; /* May  9 23:19:22 2001 GMT */
     msca.not_after = 1620602293; /* May  9 23:28:13 2021 GMT */
-    return crtmgr_add(m, &msca);
+    crtmgr_add(m, &msca);
+
+    memcpy(msca.subject, MSA_SUBJECT, sizeof(msca.subject));
+    if(mp_read_unsigned_bin(&msca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&msca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
+	cli_crt_clear(&msca);
+	return 1;
+    }
+    msca.not_before = 852879600; /* Jan 10 07:00:00 1997 GMT */
+    msca.not_after = 1609398000; /* Dec 31 07:00:00 2020 GMT */
+    crtmgr_add(m, &msca);
+
+    memcpy(msca.subject, THAW_SUBJECT, sizeof(msca.subject));
+    if(mp_read_unsigned_bin(&msca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&msca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
+	cli_crt_clear(&msca);
+	return 1;
+    }
+    msca.not_before = 852076800; /* Jan 01 00:00:00 1997 GMT */
+    msca.not_after = 1609459199; /* Dec 31 23:59:59 2020 GMT */
+    crtmgr_add(m, &msca);
+
+    memcpy(msca.subject, VER_SUBJECT, sizeof(msca.subject));
+    if(mp_read_unsigned_bin(&msca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&msca.e, VER_EXP, sizeof(VER_EXP)-1)) {
+	cli_crt_clear(&msca);
+	return 1;
+    }
+    msca.not_before = 822873600; /* Jan 29 00:00:00 1996 GMT */
+    msca.not_after = 1848787199; /* Aug  1 23:59:59 2028 GMT */
+    crtmgr_add(m, &msca);
+
+    return 0;
 }
 
 /* typedef struct { */
