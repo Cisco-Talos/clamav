@@ -566,7 +566,9 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *mast
 
 int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
     struct cli_asn1 asn1, deep, deeper;
-    unsigned int size, dsize;
+    uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], *message, *attrs;
+    unsigned int size, dsize, message_size, attrs_size;
+    int got_digest = 0;
     fmap_t *map;
     void *next;
 
@@ -580,6 +582,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 	size = map->len;
+
 	if(asn1_expect_objtype(map, next, &size, &asn1, 0x30)) /* SEQUENCE */
 	    break;
 	if(size) {
@@ -636,6 +639,9 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 
+	message = deep.content;
+	message_size = deep.size;
+
 	dsize = deep.size;
 	if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
 	    break;
@@ -677,7 +683,6 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		/* FIXME this should be delayed till after the cert is verified */
 		struct cli_asn1 tagval;
 		unsigned int tsize, tsize2, hashtype;
-		uint8_t sha1[SHA1_HASH_SIZE];
 		void *tagc;
 		int i;
 
@@ -744,7 +749,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		cli_crt *x509 = newcerts.crts;
 		cli_dbgmsg("------------------------\n");
 		while(x509) {
-		    if(!crtmgr_verify(cmgr, x509)) {
+		    if(!crtmgr_verify_crt(cmgr, x509)) {
 			if(crtmgr_add(cmgr, x509)) {
 			    /* FIXME handle error */
 			}
@@ -791,20 +796,8 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	dsize = asn1.size;
 	if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
 	    break;
-
-	if(0){
-	SHA1Context foo;
-	uint8_t hash[SHA1_HASH_SIZE * 2 + 1];
-	int i;
-	if(!fmap_need_ptr_once(map, deep.content, deep.size))
-	    return 1;
-	SHA1Init (&foo);
-	SHA1Update (&foo, deep.content, deep.size);
-	SHA1Final (&foo, &hash[SHA1_HASH_SIZE]);
-	for(i=0; i<SHA1_HASH_SIZE; i++)
-	    sprintf(&hash[i*2],"%02x", hash[SHA1_HASH_SIZE+i]);
-	cli_errmsg("final:: %s\n", hash);
-    }
+	if(map_sha1(map, deep.content, deep.size, issuer))
+	    break;
 
 	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x02)) /* serial */
 	    break;
@@ -815,8 +808,90 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	if(asn1_expect_algo(map, &asn1.next, &size, 5, "\x2b\x0e\x03\x02\x1a")) /* digestAlgorithm == sha1 */
 	    break;
 
+	attrs = asn1.next;
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
 	    break;
+	attrs_size = (uint8_t *)(asn1.next) - attrs;
+
+	dsize = asn1.size;
+	deep.next = asn1.content;
+	while(dsize) {
+	    struct cli_asn1 cobj;
+	    int content;
+	    if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) { /* attribute */
+		dsize = 1;
+		break;
+	    }
+	    if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x06)) { /* attribute type */
+		dsize = 1;
+		break;
+	    }
+	    if(deeper.size != 9)
+		continue;
+	    if(!fmap_need_ptr_once(map, deeper.content, deeper.size)) {
+		cli_dbgmsg("asn1_parse_mscat: failed to read authenticated attribute\n");
+		dsize = 1;
+		break;
+	    }
+	    if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03", 9))
+		content = 0; /* contentType */
+	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04", 9))
+		content = 1; /* messageDigest */
+	    else
+		continue;
+	    if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, 0x31)) { /* set - contents */
+		dsize = 1;
+		break;
+	    }
+	    if(deep.size) {
+		cli_dbgmsg("asn1_parse_mscat: extra data in authenticated attributes\n");
+		dsize = 1;
+		break;
+	    }
+
+	    if(got_digest & (1<<content)) {
+		cli_dbgmsg("asn1_parse_mscat: contentType or messageDigest appear twice\n");
+		dsize = 1;
+		break;
+	    }
+
+	    if(content == 0) { /* contentType */
+		/* FIXME CHECK THE ACTUAL CONTENT TYPE MATCHES */
+		if(asn1_expect_obj(map, deeper.content, &deeper.size, &cobj, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) { /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+		    dsize = 1;
+		    break;
+		}
+		got_digest |= 1;
+	    } else { /* messageDigest */
+		if(asn1_expect_objtype(map, deeper.content, &deeper.size, &cobj, 0x04)) {
+		    dsize = 1;
+		    break;
+		}
+		if(cobj.size != SHA1_HASH_SIZE) {
+		    cli_dbgmsg("asn1_parse_mscat: messageDigest attribute has got the wrong size (%u)\n", cobj.size);
+		    dsize = 1;
+		    break;
+		}
+		if(!fmap_need_ptr_once(map, cobj.content, SHA1_HASH_SIZE)) {
+		    cli_dbgmsg("asn1_parse_mscat: failed to read authenticated attribute\n");
+		    dsize = 1;
+		    break;
+		}
+		memcpy(md, cobj.content, SHA1_HASH_SIZE);
+		got_digest |= 2;
+	    }
+	    if(deeper.size) {
+		cli_dbgmsg("asn1_parse_mscat: extra data in authenticated attribute\n");
+		dsize = 1;
+		break;
+	    }
+	}
+	if(dsize)
+	    break;
+	if(got_digest != 3) {
+	    cli_dbgmsg("asn1_parse_mscat: contentType or messageDigest are missing\n");
+	    break;
+	}
 
 	if(asn1_expect_algo(map, &asn1.next, &size, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01")) /* digestEncryptionAlgorithm == sha1 */
 	    break;
@@ -824,8 +899,36 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
 	    break;
 
+	if(map_sha1(map, message, message_size, sha1))
+	    break;
+	if(memcmp(sha1, md, sizeof(sha1))) {
+	    cli_dbgmsg("asn1_parse_mscat: messageDigest mismatch\n");
+	    break;
+	}
+
+	{ 
+	    SHA1Context ctx;
+	    if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
+		cli_dbgmsg("map_sha1: failed to read authenticatedAttributes\n");
+		return 1;
+	    }
+	    SHA1Init(&ctx);
+	    SHA1Update(&ctx, "\x31", 1);
+	    SHA1Update(&ctx, attrs + 1, attrs_size - 1); /* FIXME UNDERFLOW */
+	    SHA1Final(&ctx, sha1);
+	}
+	{
+
+	    fmap_need_ptr_once(map, asn1.content, asn1.size);
+	    if(!crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1)) {
+		cli_errmsg("verified!!!\n");
+	    }
+	}
+
 	if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) /* unauthenticatedAttributes */
 	    break;
+
+	/* FIXME : COUNTERSIG verification and timestampinging */
 
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside signerInfo\n");

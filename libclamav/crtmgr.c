@@ -108,93 +108,142 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
     }
 }
 
-int crtmgr_verify(crtmgr *m, cli_crt *x509) {
+
+static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash) {
+    int keylen = mp_unsigned_bin_size(&x509->n), siglen = mp_unsigned_bin_size(sig);
+    int ret, j, hashlen;
     uint8_t d[513];
-    cli_crt *i = m->crts;
     mp_int x;
-    int ret, j, ref_siglen = mp_unsigned_bin_size(&x509->sig), hashlen;
 
     if((ret = mp_init(&x))) {
-	cli_errmsg("crtmgr_verify: mp_init failed with %d\n", ret);
+	cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
 	return 1;
     }
-    for(i = m->crts; i; i = i->next) {
-	int siglen = mp_unsigned_bin_size(&i->n);
-	if(!memcmp(x509->issuer, i->subject, sizeof(i->subject)) && MAX(siglen, ref_siglen) - MIN(siglen, ref_siglen) <= 1) {
-	    if((ret = mp_exptmod(&x509->sig, &i->e, &i->n, &x))) {
-		cli_warnmsg("crtmgr_verify: verification failed: mp_exptmod failed with %d\n", ret);
-		continue;
-	    }
-	    if(mp_unsigned_bin_size(&x) != siglen - 1)
-		continue;
-	    if((ret = mp_to_unsigned_bin(&x, d))) {
-		cli_warnmsg("crtmgr_verify: mp_unsigned_bin_size failed with %d\n", ret);
-		continue;
-	    }
-	    if(*d != 1) /* block type 1 */
-		continue;
 
-	    siglen -= 1; /* 0xff padding */
-	    for(j=1; j<siglen-2; j++)
-		if(d[j] != 0xff)
-		    break;
-	    if(j == siglen - 2)
-		continue;
-	    if(d[j] != 0) /* 0x00 separator */
-		continue;
-
-	    j++;
-	    siglen -= j; /* asn1 size */
-
-	    /* SEQ { SEQ { OID, NULL }, OCTET STRING */
-	    if(siglen < 2 || d[j] != 0x30 || d[j+1] + 2 != siglen)
-		continue;
-	    siglen -= 2;
-	    j+=2;
-
-	    if(siglen <2 || d[j] != 0x30)
-		continue;
-
-	    hashlen = d[j+1];
-
-	    siglen -= 2;
-	    j+=2;
-	    if(siglen < hashlen)
-		continue;
-	    if(hashlen == 9) {
-		if(x509->hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
-		    cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
-		    continue;
-		}
-	    } else if(hashlen == 12) {
-		if(x509->hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
-		    cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
-		    continue;
-		}
-	    } else {
-		cli_errmsg("crtmgr_verify: ACAB - CRYPTO MISSING?\n");
-		continue;
-	    }
-
-	    siglen -= hashlen;
-	    j += hashlen;
-	    hashlen = x509->hashtype == CLI_SHA1RSA ? SHA1_HASH_SIZE : 16;
-	    if(siglen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
-		continue;
-	    siglen -= 2;
-	    j+=2;
-	    if(siglen != hashlen)
-		continue;
-	    if(memcmp(&d[j], x509->tbshash, hashlen))
-		continue;
-	    mp_clear(&x);
-	    return 0;
+    do {
+	if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
+	    break;
+	if((ret = mp_exptmod(sig, &x509->e, &x509->n, &x))) {
+	    cli_warnmsg("crtmgr_rsa_verify: verification failed: mp_exptmod failed with %d\n", ret);
+	    break;
 	}
-    }
+	if(mp_unsigned_bin_size(&x) != keylen - 1)
+	    break;
+	if((ret = mp_to_unsigned_bin(&x, d))) {
+	    cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
+	    break;
+	}
+	if(*d != 1) /* block type 1 */
+	    break;
+
+	keylen -= 1; /* 0xff padding */
+	for(j=1; j<keylen-2; j++)
+	    if(d[j] != 0xff)
+		break;
+	if(j == keylen - 2)
+	    break;
+	if(d[j] != 0) /* 0x00 separator */
+	    break;
+
+	j++;
+	keylen -= j; /* asn1 size */
+
+	/* SEQ { SEQ { OID, NULL }, OCTET STRING */
+	if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
+	    break;
+	keylen -= 2;
+	j+=2;
+
+	if(keylen <2 || d[j] != 0x30)
+	    break;
+
+	hashlen = d[j+1];
+
+	keylen -= 2;
+	j+=2;
+	if(keylen < hashlen)
+	    break;
+	if(hashlen == 9) {
+	    if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
+		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		break;
+	    }
+	} else if(hashlen == 12) {
+	    if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
+		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		break;
+	    }
+	} else {
+	    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+	    break;
+	}
+
+	keylen -= hashlen;
+	j += hashlen;
+	hashlen = (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16;
+	if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
+	    break;
+	keylen -= 2;
+	j+=2;
+	if(keylen != hashlen)
+	    break;
+	if(memcmp(&d[j], refhash, hashlen))
+	    break;
+
+	mp_clear(&x);
+	return 0;
+
+    } while(0);
+
     mp_clear(&x);
     return 1;
 }
 
+
+int crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
+    cli_crt *i = m->crts;
+
+    for(i = m->crts; i; i = i->next) {
+	if(!memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
+	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash))
+	    return 0;
+    }
+    return 1;
+}
+
+int crtmgr_verify_pkcs7(crtmgr *m, uint8_t *issuer, void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash) {
+    cli_crt *i;
+    mp_int sig;
+    int ret;
+
+    /* FIXME: add check on serial ? */
+
+    if(signature_len < 1024/8 || signature_len > 4096/8+1) {
+	cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
+       return 1;
+    }
+    if((ret = mp_init(&sig))) {
+	cli_errmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
+	return 1;
+    }
+
+    if((ret=mp_read_unsigned_bin(&sig, signature, signature_len))) {
+	cli_warnmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
+	return 1;
+    }
+
+    ret = 1;
+    for(i = m->crts; i; i = i->next) {
+	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
+	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
+	    ret = 0;
+	    break;
+	}
+    }
+    mp_clear(&sig);
+    return ret;
+
+}
 
 /* DC=com, DC=microsoft, CN=Microsoft Root Certificate Authority */
 const uint8_t MSCA_SUBJECT[] = "\x11\x3b\xd8\x6b\xed\xde\xbc\xd4\xc5\xf1\x0a\xa0\x7a\xb2\x02\x6b\x98\x2f\x4b\x92";
@@ -291,80 +340,48 @@ const uint8_t VER_EXP[] = "\x01\x00\x01";
 
 
 int crtmgr_add_roots(crtmgr *m) {
-    cli_crt msca;
-    if(cli_crt_init(&msca))
+    cli_crt ca;
+    if(cli_crt_init(&ca))
 	return 1;
 
     /* FIXME proper error check and error path cleanup */
 
-    memset(msca.issuer, '\xca', sizeof(msca.issuer));
-    memcpy(msca.subject, MSCA_SUBJECT, sizeof(msca.subject));
-    if(mp_read_unsigned_bin(&msca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&msca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
-	cli_crt_clear(&msca);
+    memset(ca.issuer, '\xca', sizeof(ca.issuer));
+    memcpy(ca.subject, MSCA_SUBJECT, sizeof(ca.subject));
+    if(mp_read_unsigned_bin(&ca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
+	cli_crt_clear(&ca);
 	return 1;
     }
-    msca.not_before = 989450362; /* May  9 23:19:22 2001 GMT */
-    msca.not_after = 1620602293; /* May  9 23:28:13 2021 GMT */
-    crtmgr_add(m, &msca);
+    ca.not_before = 989450362; /* May  9 23:19:22 2001 GMT */
+    ca.not_after = 1620602293; /* May  9 23:28:13 2021 GMT */
+    crtmgr_add(m, &ca);
 
-    memcpy(msca.subject, MSA_SUBJECT, sizeof(msca.subject));
-    if(mp_read_unsigned_bin(&msca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&msca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
-	cli_crt_clear(&msca);
+    memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
+    if(mp_read_unsigned_bin(&ca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
+	cli_crt_clear(&ca);
 	return 1;
     }
-    msca.not_before = 852879600; /* Jan 10 07:00:00 1997 GMT */
-    msca.not_after = 1609398000; /* Dec 31 07:00:00 2020 GMT */
-    crtmgr_add(m, &msca);
+    ca.not_before = 852879600; /* Jan 10 07:00:00 1997 GMT */
+    ca.not_after = 1609398000; /* Dec 31 07:00:00 2020 GMT */
+    crtmgr_add(m, &ca);
 
-    memcpy(msca.subject, THAW_SUBJECT, sizeof(msca.subject));
-    if(mp_read_unsigned_bin(&msca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&msca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
-	cli_crt_clear(&msca);
+    memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
+    if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
+	cli_crt_clear(&ca);
 	return 1;
     }
-    msca.not_before = 852076800; /* Jan 01 00:00:00 1997 GMT */
-    msca.not_after = 1609459199; /* Dec 31 23:59:59 2020 GMT */
-    crtmgr_add(m, &msca);
+    ca.not_before = 852076800; /* Jan 01 00:00:00 1997 GMT */
+    ca.not_after = 1609459199; /* Dec 31 23:59:59 2020 GMT */
+    crtmgr_add(m, &ca);
 
-    memcpy(msca.subject, VER_SUBJECT, sizeof(msca.subject));
-    if(mp_read_unsigned_bin(&msca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&msca.e, VER_EXP, sizeof(VER_EXP)-1)) {
-	cli_crt_clear(&msca);
+    memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
+    if(mp_read_unsigned_bin(&ca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&ca.e, VER_EXP, sizeof(VER_EXP)-1)) {
+	cli_crt_clear(&ca);
 	return 1;
     }
-    msca.not_before = 822873600; /* Jan 29 00:00:00 1996 GMT */
-    msca.not_after = 1848787199; /* Aug  1 23:59:59 2028 GMT */
-    crtmgr_add(m, &msca);
+    ca.not_before = 822873600; /* Jan 29 00:00:00 1996 GMT */
+    ca.not_after = 1848787199; /* Aug  1 23:59:59 2028 GMT */
+    crtmgr_add(m, &ca);
 
     return 0;
 }
-
-/* typedef struct { */
-/*     cli_crt *certs; */
-/*     unsigned int ncerts; */
-/* } *crtmgr;  */
-
-/*     /\* if(mp_init(&n) || mp_read_signed_bin(&n, obj.content, obj.size)) *\/ */
-
-
-/* void crt_destroy(cli_crt *crt) { */
-/*     mp_clear_multi(&crt->n, &crt->e); */
-/*     free(crt); */
-/* } */
-
-/* void crt_set_issuer(cli_crt *crt, const char issuer[SHA1_HASH_SIZE]) { */
-/*     memcpy(crt->issuer, issuer, sizeof(issuer)); */
-/* } */
-
-/* int crt_set_rsa(cli_crt *crt, int exp, void *bn, unsigned int bn_len) { */
-/*     if(mp_read_signed_bin(exp ? &crt->e : &crt->n, bn, bn_len)) */
-/* 	return 1; */
-/*     return 0; */
-/* } */
-
-/* void crt_set_validity(cli_crt *crt, int before, time_t t) { */
-/*     if(before) */
-/* 	crt->not_before = t; */
-/*     else */
-/* 	crt->not_after = t; */
-/* } */
-
-

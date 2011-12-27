@@ -35,7 +35,9 @@ void crtmgr_init(crtmgr *m);
 int crtmgr_add(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
 void crtmgr_del(crtmgr *m, cli_crt *x509);
-int crtmgr_verify(crtmgr *m, cli_crt *x509);
+int crtmgr_verify_crt(crtmgr *m, cli_crt *x509);
+int crtmgr_verify_pkcs7(crtmgr *m, uint8_t *issuer, void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash);
 int crtmgr_add_roots(crtmgr *m);
+
 
 #endif
