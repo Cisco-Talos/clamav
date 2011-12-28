@@ -124,7 +124,7 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
 
     if((ret = asn1_expect_obj(map, obj.content, &avail, &obj, 0x06, algo_size, algo))) /* ALGO */
 	return ret;
-    if((ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
+    if(avail && (ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
 	return ret;
     if(avail) {
 	cli_dbgmsg("asn1_expect_algo: extra data found in SEQUENCE\n");
@@ -568,7 +568,8 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], *message, *attrs;
     unsigned int size, dsize, message_size, attrs_size;
-    int got_digest = 0;
+    SHA1Context ctx;
+    int result;
     fmap_t *map;
     void *next;
 
@@ -682,7 +683,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    while(tag.size) {
 		/* FIXME this should be delayed till after the cert is verified */
 		struct cli_asn1 tagval;
-		unsigned int tsize, tsize2, hashtype;
+		unsigned int tsize, tsize2, shatype;
 		void *tagc;
 		int i;
 
@@ -697,13 +698,13 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		    tag.size = 1;
 		    break;
 		}
-		i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, &hashtype);
+		i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, &shatype);
 		if(!i) {
 		    char sha1txt[SHA1_HASH_SIZE*2+1];
 
 		    for(i=0;i<SHA1_HASH_SIZE; i++)
 			sprintf(&sha1txt[i*2], "%02x", sha1[i]);
-		    cli_dbgmsg("asn1_parse_cat: found hash %s (type %s)\n", sha1txt, hashtype ? "PE" : "CAB");
+		    cli_dbgmsg("asn1_parse_cat: found hash %s (type %s)\n", sha1txt, shatype ? "PE" : "CAB");
 		} else if(i==1){
 		    /* expect to hit here on CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2) */
 		} else {
@@ -812,9 +813,14 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
 	    break;
 	attrs_size = (uint8_t *)(asn1.next) - attrs;
+	if(attrs_size < 2) {
+	    cli_dbgmsg("asn1_parse_mscat: authenticatedAttributes size is too small\n");
+	    break;
+	}
 
 	dsize = asn1.size;
 	deep.next = asn1.content;
+	result = 0;
 	while(dsize) {
 	    struct cli_asn1 cobj;
 	    int content;
@@ -849,7 +855,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		break;
 	    }
 
-	    if(got_digest & (1<<content)) {
+	    if(result & (1<<content)) {
 		cli_dbgmsg("asn1_parse_mscat: contentType or messageDigest appear twice\n");
 		dsize = 1;
 		break;
@@ -861,7 +867,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		    dsize = 1;
 		    break;
 		}
-		got_digest |= 1;
+		result |= 1;
 	    } else { /* messageDigest */
 		if(asn1_expect_objtype(map, deeper.content, &deeper.size, &cobj, 0x04)) {
 		    dsize = 1;
@@ -878,7 +884,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		    break;
 		}
 		memcpy(md, cobj.content, SHA1_HASH_SIZE);
-		got_digest |= 2;
+		result |= 2;
 	    }
 	    if(deeper.size) {
 		cli_dbgmsg("asn1_parse_mscat: extra data in authenticated attribute\n");
@@ -888,7 +894,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	}
 	if(dsize)
 	    break;
-	if(got_digest != 3) {
+	if(result != 3) {
 	    cli_dbgmsg("asn1_parse_mscat: contentType or messageDigest are missing\n");
 	    break;
 	}
@@ -906,34 +912,224 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 
-	{ 
-	    SHA1Context ctx;
-	    if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
-		cli_dbgmsg("map_sha1: failed to read authenticatedAttributes\n");
-		return 1;
-	    }
-	    SHA1Init(&ctx);
-	    SHA1Update(&ctx, "\x31", 1);
-	    SHA1Update(&ctx, attrs + 1, attrs_size - 1); /* FIXME UNDERFLOW */
-	    SHA1Final(&ctx, sha1);
+	if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
+	    cli_dbgmsg("asn1_parse_mscat: failed to read authenticatedAttributes\n");
+	    break;
 	}
-	{
 
-	    fmap_need_ptr_once(map, asn1.content, asn1.size);
-	    if(!crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1)) {
-		cli_errmsg("verified!!!\n");
-	    }
+	SHA1Init(&ctx);
+	SHA1Update(&ctx, "\x31", 1);
+	SHA1Update(&ctx, attrs + 1, attrs_size - 1);
+	SHA1Final(&ctx, sha1);
+
+	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
+	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
+	    break;
 	}
+	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1)) {
+	    cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
+	    break;
+	}
+	if(map_sha1(map, asn1.content, asn1.size, md))
+	    break;
+
+	/* if(!size) */
+	    return 0; /* FIXME NO TIMESTAMP/COUNTERSIG */
 
 	if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) /* unauthenticatedAttributes */
 	    break;
-
-	/* FIXME : COUNTERSIG verification and timestampinging */
 
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside signerInfo\n");
 	    break;
 	}
+
+	size = asn1.size;
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
+	    break;
+	}
+
+	size = asn1.size;
+	/* 1.2.840.113549.1.9.6 - counterSignature */
+	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"))
+	    break;
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x31))
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature\n");
+	    break;
+	}
+
+	size = asn1.size;
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
+	    break;
+	}
+
+	size = asn1.size;
+	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* Version = 1*/
+	    break;
+
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+	    break;
+
+	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x30)) /* issuer */
+	    break;
+	if(map_sha1(map, deep.content, deep.size, issuer))
+	    break;
+
+	if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, 0x02)) /* serial */
+	    break;
+	if(asn1.size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature issuer\n");
+	    break;
+	}
+
+	if(asn1_expect_algo(map, &asn1.next, &size, 5, "\x2b\x0e\x03\x02\x1a")) {/* digestAlgorithm == sha1 */
+	    cli_errmsg("MEH\n");
+	    break;
+	}
+
+	attrs = asn1.next;
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
+	    break;
+	attrs_size = (uint8_t *)(asn1.next) - attrs;
+	if(attrs_size < 2) {
+	    cli_dbgmsg("asn1_parse_mscat: countersignature authenticatedAttributes are too small\n");
+	    break;
+	}
+	result = 0;
+	dsize = asn1.size;
+	deep.next = asn1.content;
+	while(dsize) {
+	    int content;
+	    if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) { /* attribute */
+		dsize = 1;
+		break;
+	    }
+	    if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x06)) { /* attribute type */
+		dsize = 1;
+		break;
+	    }
+	    if(deeper.size != 9)
+		continue;
+
+	    if(!fmap_need_ptr_once(map, deeper.content, 9)) {
+		dsize = 1;
+		break;
+	    }
+	    if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03", 9))
+		content = 0; /* contentType */
+	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04", 9))
+		content = 1; /* messageDigest */
+	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05", 9))
+		content = 2; /* signingTime */
+	    else
+		continue;
+	    if(result & (1<<content)) {
+		cli_dbgmsg("asn1_parse_mscat: duplicate field in countersignature\n");
+		dsize = 1;
+		break;
+	    }
+	    result |= (1<<content);
+	    if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, 0x31)) { /* attribute type */
+	    	dsize = 1;
+	    	break;
+	    }
+	    if(deep.size) {
+		cli_dbgmsg("asn1_parse_mscat: extra data in countersignature value\n");
+		dsize = 1;
+		break;
+	    }
+	    deep.size = deeper.size;
+	    switch(content) {
+	    case 0:  /* contentType = pkcs7-data */
+		if(asn1_expect_obj(map, deeper.content, &deep.size, &deeper, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"))
+		    deep.size = 1;
+		else if(deep.size)
+		    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
+		break;
+	    case 1:  /* messageDigest = sha1(encryptedDigest) */
+		if(asn1_expect_obj(map, deeper.content, &deep.size, &deeper, 0x04, SHA1_HASH_SIZE, md)) {
+		    deep.size = 1;
+		    cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
+		} else if(deep.size)
+		    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature message-digest\n");
+		break;
+	    case 2:  /* signingTime */
+		{
+		    time_t sigdate;
+		    if(asn1_get_time(map, &deeper.content, &deep.size, &sigdate))
+			deep.size = 1;
+		    else if(deep.size)
+			cli_dbgmsg("asn1_parse_mscat: extra data in countersignature signing-time\n");
+		    break;
+		}
+	    }
+	    if(deep.size) {
+		dsize = 1;
+		break;
+	    }
+	}
+	if(dsize)
+	    break;
+	if(result != 7) {
+	    cli_dbgmsg("asn1_parse_mscat: some important attributes are missing in countersignature\n");
+	    break;
+	}
+
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* digestEncryptionAlgorithm == sha1 */
+	    break;
+	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x06)) /* digestEncryptionAlgorithm == sha1 */
+	    break;
+	if(deep.size != 9) {
+	    cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
+	    break;
+	}
+	if(!fmap_need_ptr_once(map, deep.content, 9)) {
+	    cli_dbgmsg("asn1_parse_mscat: cannot read digestEncryptionAlgorithm in countersignature\n");
+	    break;
+	}
+	if(memcmp(deep.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01", 9) && memcmp(deep.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9)) {
+	    cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
+	    break;
+	}
+	if(asn1.size && asn1_expect_obj(map, deep.next, &asn1.size, &deep, 0x05, 0, NULL))
+	    break;
+	if(asn1.size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
+	    break;
+	}
+
+	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
+	    break;
+	if(size) {
+	    cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature\n");
+	    break;
+	}
+	if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
+	    cli_dbgmsg("asn1_parse_mscat: failed to read authenticatedAttributes\n");
+	    return 1;
+	}
+	SHA1Init(&ctx);
+	SHA1Update(&ctx, "\x31", 1);
+	SHA1Update(&ctx, attrs + 1, attrs_size - 1);
+	SHA1Final(&ctx, sha1);
+	
+	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
+	    cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
+	    break;
+	}
+	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1)) {
+	    cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
+	    break;
+	}
+
 
 	return 0;
     } while(0);
