@@ -58,6 +58,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "sha256.h"
 #include "textnorm.h"
 
+
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
  *Save the file being worked on in tmp */
@@ -121,6 +122,17 @@ struct pdf_struct {
     char *key;
     unsigned keylen;
 };
+
+/* define this to be noisy about things that we can't parse properly */
+/*#define NOISY*/
+
+#ifdef NOISY
+#define noisy_msg(pdf, ...) cli_infomsg(pdf->ctx, __VA_ARGS__)
+#define noisy_warnmsg cli_warnmsg
+#else
+#define noisy_msg (void)
+#define noisy_warnmsg (void)
+#endif
 
 static const char *findNextNonWSBack(const char *q, const char *start)
 {
@@ -416,10 +428,18 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		else
 		    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
 			       (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
+		if(stream.msg)
+		    noisy_warnmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
+			       (unsigned long)nbytes,
+			       stream.msg, obj->id>>8, obj->id&0xff);
+		else
+		    noisy_warnmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
+			       (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
 		/* mark stream as bad only if not encrypted */
 		inflateEnd(&stream);
 		if (!nbytes) {
 		    cli_dbgmsg("cli_pdf: dumping raw stream (probably encrypted)\n");
+		    noisy_warnmsg("cli_pdf: dumping raw stream, probably encrypted and we failed to decrypt'n");
 		    if (filter_writen(pdf, obj, fout, buf, len, sum) != len) {
 			cli_errmsg("cli_pdf: failed to write output file\n");
 			return CL_EWRITE;
@@ -593,6 +613,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
     }
     if (len < 32) {
 	cli_dbgmsg("cli_pdf: aes_decrypt: len is <32: %d\n", len);
+	noisy_warnmsg("cli_pdf: aes_decrypt: len is <32: %d\n", len);
 	return;
     }
     if (has_iv) {
@@ -618,6 +639,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
 	pad = q[-1];
 	if (pad > 0x10) {
 	    cli_dbgmsg("cli_pdf: aes_decrypt: bad pad: %x (extra len: %d)\n", pad, len-16);
+	    noisy_warnmsg("cli_pdf: aes_decrypt: bad pad: %x (extra len: %d)\n", pad, len-16);
 	    *length -= len;
 	    return;
 	}
@@ -625,6 +647,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
 	for (i=1;i<pad;i++) {
 	    if (q[i] != pad) {
 		cli_dbgmsg("cli_pdf: aes_decrypt: bad pad: %x != %x\n",q[i],pad);
+		noisy_warnmsg("cli_pdf: aes_decrypt: bad pad: %x != %x\n",q[i],pad);
 		*length -= len;
 		return;
 	    }
@@ -644,14 +667,18 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
     cli_md5_ctx md5;
     struct arc4_state arc4;
 
-    if (!length || !*length || !in)
+    if (!length || !*length || !in) {
+	noisy_warnmsg("decrypt failed for obj %u %u\n", id>>8, id&0xff);
 	return NULL;
+    }
     n = pdf->keylen + 5;
     if (enc_method == ENC_AESV2)
 	n += 4;
     key = cli_malloc(n);
-    if (!key)
+    if (!key) {
+	noisy_warnmsg("decrypt_any: malloc failed\n");
 	return NULL;
+    }
 
     memcpy(key, pdf->key, pdf->keylen);
     q = key + pdf->keylen;
@@ -672,8 +699,10 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
 	n = 16;
 
     q = cli_malloc(*length);
-    if (!q)
+    if (!q) {
+	noisy_warnmsg("decrypt_any: malloc failed\n");
 	return NULL;
+    }
 
     switch (enc_method) {
 	case ENC_V2:
@@ -681,26 +710,33 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
 	    memcpy(q, in, *length);
 	    arc4_init(&arc4, result, n);
 	    arc4_apply(&arc4, q, *length);
+	    noisy_msg(pdf, "decrypted ARC4 data\n");
 	    break;
 	case ENC_AESV2:
 	    cli_dbgmsg("cli_pdf: enc is aesv2\n");
 	    aes_decrypt(in, length, q, result, n, 1);
+	    noisy_msg(pdf, "decrypted AES(v2) data\n");
 	    break;
 	case ENC_AESV3:
 	    cli_dbgmsg("cli_pdf: enc is aesv3\n");
 	    aes_decrypt(in, length, q, pdf->key, pdf->keylen, 1);
+	    noisy_msg(pdf, "decrypted AES(v3) data\n");
 	    break;
 	case ENC_IDENTITY:
 	    cli_dbgmsg("cli_pdf: enc is identity\n");
 	    memcpy(q, in, *length);
+	    noisy_msg(pdf, "identity encryption\n");
 	    break;
 	case ENC_NONE:
 	    cli_dbgmsg("cli_pdf: enc is none\n");
+	    noisy_msg(pdf, "encryption is none\n");
 	    free(q);
 	    return NULL;
 	case ENC_UNKNOWN:
 	    cli_dbgmsg("cli_pdf: enc is unknown\n");
 	    free(q);
+	    noisy_warnmsg("decrypt_any: unknown encryption method for obj %u %u\n",
+		       id>>8,id&0xff);
 	    return NULL;
     }
     return q;
@@ -759,7 +795,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     char fullname[1024];
     char outbuff[BUFSIZ];
     char inbuf[BUFSIZ];
-    int fout, n;
+    int fout, n, rc;
     enum cstate st = CSTATE_NONE;
 
     snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u_c", pdf->dir, (pdf->files-1));
@@ -779,8 +815,13 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     }
     cli_writen(fout, s.out, s.out_pos);
 
+    lseek(fout, 0, SEEK_SET);
+    rc = cli_magic_scandesc(fout, pdf->ctx);
     close(fout);
-    return CL_SUCCESS;
+    if (!pdf->ctx->engine->keeptmp)
+	if (cli_unlink(fullname) && rc != CL_VIRUS)
+	    rc = CL_EUNLINK;
+    return rc;
 }
 
 static const char *pdf_getdict(const char *q0, int* len, const char *key);
@@ -847,6 +888,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (length > pdf->size || obj->start + p_stream + length > pdf->size) {
 		cli_dbgmsg("cli_pdf: length out of file: %ld + %ld > %ld\n",
 			   p_stream, length, pdf->size);
+		noisy_warnmsg("length out of file, truncated: %ld + %ld > %ld\n",
+			   p_stream, length, pdf->size);
 		length = pdf->size - (obj->start + p_stream);
 	    }
 	    if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && length <= 0) {
@@ -898,9 +941,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		else {
 		    decrypted = decrypt_any(pdf, obj->id, flate_in, &length,
 					    enc);
-		    if (!decrypted)
-			cli_warnmsg("cli_pdf:decrypt_any: malloc failed\n");
-		    else
+		    if (decrypted)
 			flate_in = decrypted;
 		}
 	    }
@@ -949,7 +990,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
 		    rc = CL_EWRITE;
 	    }
-	}
+	} else
+	    noisy_warnmsg("cannot find stream bounds for obj %u %u\n", obj->id>>8, obj->id&0xff);
+
     } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
 	const char *q2;
 	const char *q = pdf->map+obj->start;
@@ -1001,8 +1044,10 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		cli_dbgmsg("cli_pdf: encrypted string\n");
 		decrypted = decrypt_any(pdf, obj->id, out, &n,
 					pdf->enc_method_string);
-		if (decrypted)
+		if (decrypted) {
+		    noisy_msg(pdf, "decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
 		    out = decrypted;
+		}
 	    }
 	    if (filter_writen(pdf, obj, fout, out, n, &sum) != n) {
 		rc = CL_EWRITE;
@@ -1024,8 +1069,10 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		out++;
 		n--;
 		decrypted = decrypt_any(pdf, obj->id, out, &n, pdf->enc_method_string);
-		if (decrypted)
+		if (decrypted) {
+		    noisy_msg(pdf, "decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
 		    out = decrypted;
+		}
 	    }
 	    decoded = cli_malloc(n);
 	    if (!decoded) {
@@ -1068,6 +1115,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    rc2 = pdf_scan_contents(fout, pdf);
 	    if (rc2 == CL_VIRUS)
 		rc = rc2;
+	    noisy_msg(pdf, "extracted text from obj %u %u\n", obj->id>>8, obj->id&0xff);
 	}
     }
     close(fout);
@@ -1634,6 +1682,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    n = UE ? strlen(UE) : 0;
 	    if (n != 32) {
 		cli_dbgmsg("cli_pdf: UE length is not 32: %d\n", n);
+		noisy_warnmsg("cli_pdf: UE length is not 32: %d\n", n);
 	    } else {
 		pdf->keylen = 32;
 		pdf->key = cli_malloc(32);
@@ -1708,15 +1757,18 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 		password_empty = 1;
 	} else {
 	    cli_dbgmsg("cli_pdf: invalid revision %d\n", R);
+	    noisy_warnmsg("cli_pdf: invalid revision %d\n", R);
 	}
     }
     if (password_empty) {
 	cli_dbgmsg("cli_pdf: user password is empty\n");
+	noisy_msg(pdf, "cli_pdf: encrypted PDF found, user password is empty, will attempt to decrypt\n");
 	/* The key we computed above is the key used to encrypt the streams.
 	 * We could decrypt it now if we wanted to */
 	pdf->flags |= 1 << DECRYPTABLE_PDF;
     } else {
 	cli_dbgmsg("cli_pdf: user/owner password would be required for decryption\n");
+	noisy_warnmsg("cli_pdf: encrypted PDF found, user password is NOT empty, cannot decrypt!\n");
 	/* the key is not valid, we would need the user or the owner password to
 	 * decrypt */
     }
@@ -1759,11 +1811,13 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	return;
     if (!pdf->fileID) {
 	cli_dbgmsg("cli_pdf: pdf_handle_enc no file ID\n");
+	noisy_warnmsg("cli_pdf: pdf_handle_enc no file ID\n");
 	return;
     }
     obj = find_obj(pdf, pdf->objs, pdf->enc_objid);
     if (!obj) {
 	cli_dbgmsg("cli_pdf: can't find encrypted object %d %d\n", pdf->enc_objid>>8, pdf->enc_objid&0xff);
+	noisy_warnmsg("cli_pdf: can't find encrypted object %d %d\n", pdf->enc_objid>>8, pdf->enc_objid&0xff);
 	return;
     }
     len = obj_size(pdf, obj, 1);
@@ -1778,12 +1832,14 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	P = pdf_readint(q, len, "/P");
 	if (P == ~0u) {
 	    cli_dbgmsg("cli_pdf: invalid P\n");
+	    noisy_warnmsg("cli_pdf: invalid P\n");
 	    break;
 	}
 
 	q2 = cli_memstr(q, len, "/Standard", 9);
 	if (!q2) {
 	    cli_dbgmsg("cli_pdf: /Standard not found\n");
+	    noisy_warnmsg("cli_pdf: /Standard not found\n");
 	    break;
 	}
 	/* we can have both of these:
@@ -1801,6 +1857,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	R = pdf_readint(q, len, "/R");
 	if (R == ~0u) {
 	    cli_dbgmsg("cli_pdf: invalid R\n");
+	    noisy_warnmsg("cli_pdf: invalid R\n");
 	    break;
 	}
 
@@ -1847,6 +1904,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	O = pdf_readstring(q, len, "/O", &n);
 	if (!O || n < oulen) {
 	    cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
+	    cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
 	    if (O)
 		dbg_printhex("invalid O", O, n);
 	    break;
@@ -1857,6 +1915,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 		    break;
 	    if (i != n) {
 		dbg_printhex("too long O", O, n);
+		noisy_warnmsg("too long O", O, n);
 		break;
 	    }
 	}
@@ -1865,6 +1924,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	U = pdf_readstring(q, len, "/U", &n);
 	if (!U || n < oulen) {
 	    cli_dbgmsg("cli_pdf: invalid U: %d\n", n);
+	    noisy_warnmsg("cli_pdf: invalid U: %d\n", n);
 	    if (U)
 		dbg_printhex("invalid U", U, n);
 	    break;
@@ -1881,6 +1941,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	cli_dbgmsg("cli_pdf: Encrypt R: %d, P %x, length: %d\n", R, P, length);
 	if (length % 8) {
 	    cli_dbgmsg("cli_pdf: wrong key length, not multiple of 8\n");
+	    noisy_warnmsg("cli_pdf: wrong key length, not multiple of 8\n");
 	    break;
 	}
 	check_user_password(pdf, R, O, U, P, EM, UE, length, oulen);
@@ -1919,6 +1980,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     pdfver = cli_memstr(pdfver, versize, "%PDF-", 5);
     if (!pdfver) {
 	cli_dbgmsg("cli_pdf: no PDF- header found\n");
+	noisy_warnmsg("cli_pdf: no PDF- header found\n");
 	return CL_SUCCESS;
     }
     /* Check for PDF-1.[0-9]. Although 1.7 is highest now, allow for future
