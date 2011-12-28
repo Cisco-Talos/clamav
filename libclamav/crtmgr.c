@@ -111,7 +111,7 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
 
 static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash) {
     int keylen = mp_unsigned_bin_size(&x509->n), siglen = mp_unsigned_bin_size(sig);
-    int ret, j, hashlen;
+    int ret, j, objlen, hashlen = (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16;
     uint8_t d[513];
     mp_int x;
 
@@ -119,6 +119,8 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 	cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
 	return 1;
     }
+
+    memset(d, '\xcc', sizeof(d));
 
     do {
 	if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
@@ -148,45 +150,49 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 	j++;
 	keylen -= j; /* asn1 size */
 
-	/* SEQ { SEQ { OID, NULL }, OCTET STRING */
-	if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
-	    break;
-	keylen -= 2;
-	j+=2;
-
-	if(keylen <2 || d[j] != 0x30)
-	    break;
-
-	hashlen = d[j+1];
-
-	keylen -= 2;
-	j+=2;
 	if(keylen < hashlen)
 	    break;
-	if(hashlen == 9) {
-	    if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
-		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+	if(keylen > hashlen) {
+	    /* hash is asn1 der encoded */
+	    /* SEQ { SEQ { OID, NULL }, OCTET STRING */
+	    if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
 		break;
-	    }
-	} else if(hashlen == 12) {
-	    if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
-		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-		break;
-	    }
-	} else {
-	    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-	    break;
-	}
+	    keylen -= 2;
+	    j+=2;
 
-	keylen -= hashlen;
-	j += hashlen;
-	hashlen = (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16;
-	if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
-	    break;
-	keylen -= 2;
-	j+=2;
-	if(keylen != hashlen)
-	    break;
+	    if(keylen <2 || d[j] != 0x30)
+		break;
+
+	    objlen = d[j+1];
+
+	    keylen -= 2;
+	    j+=2;
+	    if(keylen < objlen)
+		break;
+	    if(objlen == 9) {
+		if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
+		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		    break;
+		}
+	    } else if(objlen == 12) {
+		if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
+		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		    break;
+		}
+	    } else {
+		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		break;
+	    }
+
+	    keylen -= objlen;
+	    j += objlen;
+	    if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
+		break;
+	    keylen -= 2;
+	    j+=2;
+	    if(keylen != hashlen)
+		break;
+	}
 	if(memcmp(&d[j], refhash, hashlen))
 	    break;
 
