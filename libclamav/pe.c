@@ -2663,18 +2663,18 @@ int cli_scanpe(cli_ctx *ctx) {
 		if(asn1_expect_objtype(map, hptr, &hlen, &asn1, 0x30)) /* SEQUENCE */
 		    break;
 		hlen = asn1.size;
-		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - pkcs7 signedData */
+		if(asn1_expect_obj(map, &asn1.content, &hlen, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - pkcs7 signedData */
 		    break;
-		if(asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0xa0)) /* [0] */
+		if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0xa0)) /* [0] */
 		    break;
 		hlen = asn1.size;
 		if(asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x30)) /* SEQUENCE */
 		    break;
 		hlen = asn1.size;
-		if(asn1_expect_obj(map, asn1.content, &hlen, &asn1, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
+		if(asn1_expect_obj(map, &asn1.content, &hlen, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
 		    break;
 
-		if(!asn1_expect_objtype(map, asn1.next, &hlen, &asn1, 0x31)) { /* SET OF DigestAlgorithmIdentifier */
+		if(!asn1_expect_objtype(map, asn1.content, &hlen, &asn1, 0x31)) { /* SET OF DigestAlgorithmIdentifier */
 		    success = 0;
 		    old_hlen = hlen;
 		    old_next = asn1.next;

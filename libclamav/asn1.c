@@ -92,24 +92,26 @@ int asn1_expect_objtype(fmap_t *map, void *asn1data, unsigned int *asn1len, stru
     return 0;
 }
 
-int asn1_expect_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj, uint8_t type, unsigned int size, const void *content) {
-    int ret = asn1_expect_objtype(map, asn1data, asn1len, obj, type);
+int asn1_expect_obj(fmap_t *map, void **asn1data, unsigned int *asn1len, uint8_t type, unsigned int size, const void *content) {
+    struct cli_asn1 obj;
+    int ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, type);
     if(ret)
 	return ret;
-    if(obj->size != size) {
-	cli_dbgmsg("asn1_expect_obj: expected size %u, got %u\n", size, obj->size);
+    if(obj.size != size) {
+	cli_dbgmsg("asn1_expect_obj: expected size %u, got %u\n", size, obj.size);
 	return 1;
     }
     if(size) {
-	if(!fmap_need_ptr_once(map, obj->content, size)) {
+	if(!fmap_need_ptr_once(map, obj.content, size)) {
 	    cli_dbgmsg("asn1_expect_obj: failed to read content\n");
 	    return 1;
 	}
-	if(memcmp(obj->content, content, size)) {
+	if(memcmp(obj.content, content, size)) {
 	    cli_dbgmsg("asn1_expect_obj: content mismatch\n");
 	    return 1;
 	}
     }
+    *asn1data = obj.next;
     return 0;
 }
 
@@ -122,9 +124,9 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
     avail = obj.size;
     *asn1data = obj.next;
 
-    if((ret = asn1_expect_obj(map, obj.content, &avail, &obj, 0x06, algo_size, algo))) /* ALGO */
+    if((ret = asn1_expect_obj(map, &obj.content, &avail, 0x06, algo_size, algo))) /* ALGO */
 	return ret;
-    if(avail && (ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
+    if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, 0x05, 0, NULL))) /* NULL */
 	return ret;
     if(avail) {
 	cli_dbgmsg("asn1_expect_algo: extra data found in SEQUENCE\n");
@@ -163,7 +165,7 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
 	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
 	return 1;
     }
-    if((ret = asn1_expect_obj(map, obj.next, &avail, &obj, 0x05, 0, NULL))) /* NULL */
+    if((ret = asn1_expect_obj(map, &obj.next, &avail, 0x05, 0, NULL))) /* NULL */
 	return ret;
     if(avail) {
 	cli_dbgmsg("asn1_expect_rsa: extra data found in SEQUENCE\n");
@@ -459,7 +461,7 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *mast
 	return 1;
     avail = obj.size;
     next = obj.next;
-    if(asn1_expect_obj(map, obj.content, &avail, &obj, 0x02, 1, "\x02")) /* version 3 only */
+    if(asn1_expect_obj(map, &obj.content, &avail, 0x02, 1, "\x02")) /* version 3 only */
 	return 1;
     if(avail) {
 	cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
@@ -592,9 +594,9 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 	size = asn1.size;
-	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
 	    break;
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* [0] - content */
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0xa0)) /* [0] - content */
 	    break;
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: found extra data in pkcs#7\n");
@@ -608,10 +610,10 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 	size = asn1.size;
-	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
 	    break;
 
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x31)) /* SET OF DigestAlgorithmIdentifier */
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31)) /* SET OF DigestAlgorithmIdentifier */
 	    break;
 
 	if(asn1_expect_algo(map, &asn1.content, &asn1.size, 5, "\x2b\x0e\x03\x02\x1a")) /* DigestAlgorithmIdentifier[0] == sha1 */
@@ -625,9 +627,9 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	/* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
 	 * or a single SPC_INDIRECT_DATA_OBJID */
-	if(asn1_expect_obj(map, asn1.content, &asn1.size, &deep, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+	if(asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
 	    break;
-	if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, 0xa0))
+	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0xa0))
 	    break;
 	if(asn1.size) {
 	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CTL\n");
@@ -647,7 +649,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	dsize = deep.size;
 	if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
 	    break;
-	if(asn1_expect_obj(map, deep.content, &deep.size, &deeper, 0x06, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01")) /* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 */
+	if(asn1_expect_obj(map, &deep.content, &deep.size, 0x06, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01")) /* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 */
 	    break;
 	if(deep.size) {
 	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CATALOG_LIST content\n");
@@ -791,9 +793,9 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 	size = asn1.size;
-	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* Version = 1 */
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* Version = 1 */
 	    break;
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
 	    break;
 	dsize = asn1.size;
 	if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
@@ -864,7 +866,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 
 	    if(content == 0) { /* contentType */
 		/* FIXME CHECK THE ACTUAL CONTENT TYPE MATCHES */
-		if(asn1_expect_obj(map, deeper.content, &deeper.size, &cobj, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) { /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+		if(asn1_expect_obj(map, &deeper.content, &deeper.size, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) { /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
 		    dsize = 1;
 		    break;
 		}
@@ -955,9 +957,9 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 
 	size = asn1.size;
 	/* 1.2.840.113549.1.9.6 - counterSignature */
-	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"))
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"))
 	    break;
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x31))
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31))
 	    break;
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature\n");
@@ -973,10 +975,10 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	}
 
 	size = asn1.size;
-	if(asn1_expect_obj(map, asn1.content, &size, &asn1, 0x02, 1, "\x01")) /* Version = 1*/
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* Version = 1*/
 	    break;
 
-	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
 	    break;
 
 	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x30)) /* issuer */
@@ -1015,7 +1017,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    cli_dbgmsg("asn1_parse_mscat: unknown digest oid in countersignature\n");
 	    break;
 	}
-	if(asn1.size && asn1_expect_obj(map, deep.next, &asn1.size, &deep, 0x05, 0, NULL))
+	if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, 0x05, 0, NULL))
 	    break;
 	if(asn1.size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature oid\n");
@@ -1076,13 +1078,13 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    deep.size = deeper.size;
 	    switch(content) {
 	    case 0:  /* contentType = pkcs7-data */
-		if(asn1_expect_obj(map, deeper.content, &deep.size, &deeper, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"))
+		if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"))
 		    deep.size = 1;
 		else if(deep.size)
 		    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
 		break;
 	    case 1:  /* messageDigest */
-		if(asn1_expect_obj(map, deeper.content, &deep.size, &deeper, 0x04, (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16, md)) {
+		if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x04, (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16, md)) {
 		    deep.size = 1;
 		    cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
 		} else if(deep.size)
@@ -1127,7 +1129,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
 	    break;
 	}
-	if(asn1.size && asn1_expect_obj(map, deep.next, &asn1.size, &deep, 0x05, 0, NULL))
+	if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, 0x05, 0, NULL))
 	    break;
 	if(asn1.size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
