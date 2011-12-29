@@ -2353,7 +2353,20 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 }
 
 static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
-    asn1_parse_mscat(fs, &engine->cmgr);
+    fmap_t *map;
+    void *base;
+
+    if(!(map = fmap(fileno(fs), 0, 0)))
+	return 1;
+
+    if(!(base = fmap_need_off_once(map, 0, 1))) {
+	cli_dbgmsg("cli_loadmscat: failed to read from cat file\n");
+	funmap(map);
+	return 1;
+    }
+
+    asn1_parse_mscat(map, base, map->len, engine, 1);
+    funmap(map);
     return 0;
 }
 
