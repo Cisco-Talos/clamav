@@ -2650,6 +2650,7 @@ int cli_scanpe(cli_ctx *ctx) {
 	cli_errmsg("Autheticode: %s\n", shatxt);
 
 
+#if 0
 	{
 	    struct cli_asn1 asn1;
 	    unsigned int old_hlen, success;
@@ -2748,6 +2749,7 @@ int cli_scanpe(cli_ctx *ctx) {
 		cli_errmsg("good %u - %p\n", hlen, asn1.next);
 	    } while(0);
 	}
+#endif
 
 	free(exe_sections);
 	return ret;

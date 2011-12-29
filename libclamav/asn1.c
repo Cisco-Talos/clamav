@@ -62,6 +62,12 @@
 #define lenof(x) (sizeof((x))-1)
 /* --------------------------------------------------------------------------- OIDS */
 
+struct cli_asn1 {
+    uint8_t type;
+    unsigned int size;
+    void *content;
+    void *next;
+};
 
 static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
     SHA1Context ctx;
@@ -88,7 +94,7 @@ static int map_md5(fmap_t *map, void *data, unsigned int len, uint8_t *md5) {
 }
 
 
-int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj) {
+static int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj) {
     unsigned int asn1_sz = *asn1len;
     unsigned int readbytes = MIN(6, asn1_sz), i;
     uint8_t *data;
@@ -141,7 +147,7 @@ int asn1_get_obj(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_
     return 0;
 }
 
-int asn1_expect_objtype(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj, uint8_t type) {
+static int asn1_expect_objtype(fmap_t *map, void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj, uint8_t type) {
     int ret = asn1_get_obj(map, asn1data, asn1len, obj);
     if(ret)
 	return ret;
@@ -152,7 +158,7 @@ int asn1_expect_objtype(fmap_t *map, void *asn1data, unsigned int *asn1len, stru
     return 0;
 }
 
-int asn1_expect_obj(fmap_t *map, void **asn1data, unsigned int *asn1len, uint8_t type, unsigned int size, const void *content) {
+static int asn1_expect_obj(fmap_t *map, void **asn1data, unsigned int *asn1len, uint8_t type, unsigned int size, const void *content) {
     struct cli_asn1 obj;
     int ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, type);
     if(ret)
@@ -175,7 +181,7 @@ int asn1_expect_obj(fmap_t *map, void **asn1data, unsigned int *asn1len, uint8_t
     return 0;
 }
 
-int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsigned int algo_size, const void *algo) {
+static int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsigned int algo_size, const void *algo) {
     struct cli_asn1 obj;
     unsigned int avail;
     int ret;
@@ -234,7 +240,7 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
     return 0;
 }
 
-int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned int emb, uint8_t sha1[SHA1_HASH_SIZE], unsigned int *type) {
+static int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned int emb, uint8_t sha1[SHA1_HASH_SIZE], unsigned int *type) {
     /* ret
      * 0 - success
      * 1 - unexpected obj (ok for cat)
@@ -263,6 +269,7 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned i
 	return 2;
 
     avail = obj.size;
+    /* FIXME wat?! */
     if(asn1_get_obj(map, obj.content, &avail, &obj)) /* data - contains an objid 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 */
 	return 2;
     avail2 = obj.size;
@@ -322,7 +329,7 @@ static int asn1_getnum(const char *s) {
     return (s[0] - '0')*10 + (s[1] - '0');
 }
 
-int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time) {
+static int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time) {
     struct cli_asn1 obj;
     int ret = asn1_get_obj(map, *asn1data, size, &obj);
     unsigned int len;
@@ -418,7 +425,7 @@ int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time
     return 0;
 }
 
-int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
+static int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_crt *x509) {
     struct cli_asn1 obj;
     unsigned int avail, avail2;
 
@@ -495,7 +502,7 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
     return 0;
 }
 
-int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
+static int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
     struct cli_asn1 crt, tbs, obj;
     unsigned int avail, tbssize, issuersize;
     cli_crt_hashtype hashtype1, hashtype2;
