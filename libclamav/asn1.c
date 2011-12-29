@@ -3,6 +3,66 @@
 #include "others.h"
 #include "bignum.h"
 
+/* --------------------------------------------------------------------------- OIDS */
+#define OID_1_3_14_3_2_26 "\x2b\x0e\x03\x02\x1a"
+#define OID_sha1 OID_1_3_14_3_2_26
+
+#define OID_1_3_14_3_2_29 "\x2b\x0e\x03\x02\x1d"
+#define OID_sha1WithRSA OID_1_3_14_3_2_29
+
+#define OID_1_2_840_113549_1_1_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01"
+#define OID_rsaEncryption OID_1_2_840_113549_1_1_1
+
+#define OID_1_2_840_113549_1_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04"
+#define OID_md5WithRSAEncryption OID_1_2_840_113549_1_1_4
+
+#define OID_1_2_840_113549_1_1_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05"
+#define OID_sha1WithRSAEncryption OID_1_2_840_113549_1_1_5
+
+#define OID_1_2_840_113549_1_7_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"
+#define OID_pkcs7_data OID_1_2_840_113549_1_7_1
+
+#define OID_1_2_840_113549_1_7_2 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02"
+#define OID_signedData OID_1_2_840_113549_1_7_2
+
+#define OID_1_2_840_113549_1_9_3 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03"
+#define OID_contentType OID_1_2_840_113549_1_9_3
+
+#define OID_1_2_840_113549_1_9_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04"
+#define OID_messageDigest OID_1_2_840_113549_1_9_4
+
+#define OID_1_2_840_113549_1_9_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05"
+#define OID_signingTime OID_1_2_840_113549_1_9_5
+
+#define OID_1_2_840_113549_2_5 "\x2a\x86\x48\x86\xf7\x0d\x02\x05"
+#define OID_md5 OID_1_2_840_113549_2_5
+
+#define OID_1_2_840_113549_1_9_6 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"
+#define OID_countersignature OID_1_2_840_113549_1_9_6
+
+
+#define OID_1_3_6_1_4_1_311_2_1_4 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04"
+#define OID_SPC_INDIRECT_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_4
+
+#define OID_1_3_6_1_4_1_311_2_1_15 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x0f"
+#define OID_SPC_PE_IMAGE_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_15
+
+#define OID_1_3_6_1_4_1_311_2_1_25 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19"
+#define OID_SPC_CAB_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_25
+
+#define OID_1_3_6_1_4_1_311_10_1 "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01"
+#define OID_szOID_CTL OID_1_3_6_1_4_1_311_10_1
+
+#define OID_1_3_6_1_4_1_311_12_1_1 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01"
+#define OID_szOID_CATALOG_LIST OID_1_3_6_1_4_1_311_12_1_1
+
+#define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
+#define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
+
+#define lenof(x) (sizeof((x))-1)
+/* --------------------------------------------------------------------------- OIDS */
+
+
 static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
     SHA1Context ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
@@ -135,64 +195,6 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
     return 0;
 }
 
-#define OID_1_3_14_3_2_26 "\x2b\x0e\x03\x02\x1a"
-#define OID_sha1 OID_1_3_14_3_2_26
-
-#define OID_1_3_14_3_2_29 "\x2b\x0e\x03\x02\x1d"
-#define OID_sha1WithRSA OID_1_3_14_3_2_29
-
-
-#define OID_1_2_840_113549_1_1_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01"
-#define OID_rsaEncryption OID_1_2_840_113549_1_1_1
-
-#define OID_1_2_840_113549_1_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04"
-#define OID_md5WithRSAEncryption OID_1_2_840_113549_1_1_4
-
-#define OID_1_2_840_113549_1_1_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05"
-#define OID_sha1WithRSAEncryption OID_1_2_840_113549_1_1_5
-
-#define OID_1_2_840_113549_1_7_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"
-#define OID_pkcs7_data OID_1_2_840_113549_1_7_1
-
-#define OID_1_2_840_113549_1_7_2 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02"
-#define OID_signedData OID_1_2_840_113549_1_7_2
-
-#define OID_1_2_840_113549_1_9_3 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03"
-#define OID_contentType OID_1_2_840_113549_1_9_3
-
-#define OID_1_2_840_113549_1_9_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04"
-#define OID_messageDigest OID_1_2_840_113549_1_9_4
-
-#define OID_1_2_840_113549_1_9_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05"
-#define OID_signingTime OID_1_2_840_113549_1_9_5
-
-                                 
-#define OID_1_2_840_113549_2_5 "\x2a\x86\x48\x86\xf7\x0d\x02\x05"
-#define OID_md5 OID_1_2_840_113549_2_5
-
-#define OID_1_2_840_113549_1_9_6 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"
-#define OID_countersignature OID_1_2_840_113549_1_9_6
-
-
-#define OID_1_3_6_1_4_1_311_2_1_4 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04"
-#define OID_SPC_INDIRECT_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_4
-
-#define OID_1_3_6_1_4_1_311_2_1_15 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x0f"
-#define OID_SPC_PE_IMAGE_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_15
-
-#define OID_1_3_6_1_4_1_311_2_1_25 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19"
-#define OID_SPC_CAB_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_25
-
-#define OID_1_3_6_1_4_1_311_10_1 "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01"
-#define OID_szOID_CTL OID_1_3_6_1_4_1_311_10_1
-
-#define OID_1_3_6_1_4_1_311_12_1_1 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01"
-#define OID_szOID_CATALOG_LIST OID_1_3_6_1_4_1_311_12_1_1
-
-#define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
-#define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
-
-#define lenof(x) (sizeof((x))-1)
 
 static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, cli_crt_hashtype *hashtype) {
     struct cli_asn1 obj;
@@ -504,117 +506,123 @@ int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmgr *mast
     if(cli_crt_init(&x509))
 	return 1;
 
-    /* FIXME cli_crt_clear(&x509) on error path */
+    do {
+	if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
+	    break;
+	*asn1data = crt.next;
 
-    if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
-	return 1;
-    *asn1data = crt.next;
+	tbsdata = crt.content;
+	if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
+	    break;
+	tbssize = (uint8_t *)tbs.next - tbsdata;
 
-    tbsdata = crt.content;
-    if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
-	return 1;
-    tbssize = (uint8_t *)tbs.next - tbsdata;
-
-    if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) /* [0] */
-	return 1;
-    avail = obj.size;
-    next = obj.next;
-    if(asn1_expect_obj(map, &obj.content, &avail, 0x02, 1, "\x02")) /* version 3 only */
-	return 1;
-    if(avail) {
-	cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
-	return 1;
-    }
-
-    if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
-	return 1;
-
-    if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
-       return 1;
-
-    if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
-	return 1;
-    issuer = obj.content;
-    issuersize = obj.size;
-
-    if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* validity */
-	return 1;
-    avail = obj.size;
-    next = obj.content;
-
-    if(asn1_get_time(map, &next, &avail, &x509.not_before)) /* notBefore */
-	return 1;
-    if(asn1_get_time(map, &next, &avail, &x509.not_after)) /* notAfter */
-	return 1;
-    if(avail) {
-	cli_dbgmsg("asn1_get_x509: found unexpected extra data in validity\n");
-	return 1;
-    }
-
-    if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
-	return 1;
-    if(map_sha1(map, obj.content, obj.size, x509.subject))
-	return 1;
-    if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509))
-       return 1;
-
-    if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) { /* FIXME lookup on other or blindly add? */
-	cli_dbgmsg("asn1_get_x509: certificate already exists\n");
-	return 0;
-    }
-
-    if(map_sha1(map, issuer, issuersize, x509.issuer))
-	return 1;
-
-    avail = 0;
-    while(tbs.size) {
-	/* FIXME parse extensions */
-	if(asn1_get_obj(map, obj.next, &tbs.size, &obj))
-	    return 1;
-	if(obj.type <= 0xa0 + avail || obj.type > 0xa3) {
-	    cli_dbgmsg("asn1_get_x509: found type %02x in extensions, expecting a1, a2 or a3\n", obj.type);
-	    return 1;
+	if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) /* [0] */
+	    break;
+	avail = obj.size;
+	next = obj.next;
+	if(asn1_expect_obj(map, &obj.content, &avail, 0x02, 1, "\x02")) /* version 3 only */
+	    break;
+	if(avail) {
+	    cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
+	    break;
 	}
-	avail = obj.type - 0xa0;
-    }
 
-    if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
-       return 1;
+	if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
+	    break;
 
-    if(hashtype1 != hashtype2) {
-	cli_dbgmsg("asn1_get_x509: found conflicting rsa hash types\n");
-	return 1;
-    }
-    x509.hashtype = hashtype1;
+	if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+	    break;
 
-    if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
-	return 1;
-    if(obj.size > 513) {
-	cli_dbgmsg("asn1_get_x509: signature too long\n");
-	return 1;
-    }
-    if(!fmap_need_ptr_once(map, obj.content, obj.size)) {
-	cli_dbgmsg("asn1_get_x509: cannot read signature\n");
-	return 1;
-    }
-    if(mp_read_unsigned_bin(&x509.sig, obj.content, obj.size)) {
-	cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
-	return 1;
-    }
-    if(crt.size) {
-	cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
-	return 1;
-    }
+	if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
+	    break;
+	issuer = obj.content;
+	issuersize = obj.size;
 
-    /* FIXME skip hashing if we have the cert already */
-    if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || (x509.hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509.tbshash))))
-	return 1;
+	if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* validity */
+	    break;
+	avail = obj.size;
+	next = obj.content;
 
-    if(crtmgr_add(other, &x509))
-	return 1;
+	if(asn1_get_time(map, &next, &avail, &x509.not_before)) /* notBefore */
+	    break;
+	if(asn1_get_time(map, &next, &avail, &x509.not_after)) /* notAfter */
+	    break;
+	if(avail) {
+	    cli_dbgmsg("asn1_get_x509: found unexpected extra data in validity\n");
+	    break;
+	}
 
+	if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
+	    break;
+	if(map_sha1(map, obj.content, obj.size, x509.subject))
+	    break;
+	if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509))
+	    break;
+
+	if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
+	    cli_dbgmsg("asn1_get_x509: certificate already exists\n");
+	    cli_crt_clear(&x509);
+	    return 0;
+	}
+
+	if(map_sha1(map, issuer, issuersize, x509.issuer))
+	    break;
+
+	avail = 0;
+	while(tbs.size) {
+	    /* FIXME parse extensions */
+	    if(asn1_get_obj(map, obj.next, &tbs.size, &obj)) {
+		tbs.size = 1;
+		break;
+	    }
+	    if(obj.type <= 0xa0 + avail || obj.type > 0xa3) {
+		cli_dbgmsg("asn1_get_x509: found type %02x in extensions, expecting a1, a2 or a3\n", obj.type);
+		tbs.size = 1;
+		break;
+	    }
+	    avail = obj.type - 0xa0;
+	}
+	if(tbs.size)
+	    break;
+
+	if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+	    break;
+
+	if(hashtype1 != hashtype2) {
+	    cli_dbgmsg("asn1_get_x509: found conflicting rsa hash types\n");
+	    break;
+	}
+	x509.hashtype = hashtype1;
+
+	if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
+	    break;
+	if(obj.size > 513) {
+	    cli_dbgmsg("asn1_get_x509: signature too long\n");
+	    break;
+	}
+	if(!fmap_need_ptr_once(map, obj.content, obj.size)) {
+	    cli_dbgmsg("asn1_get_x509: cannot read signature\n");
+	    break;
+	}
+	if(mp_read_unsigned_bin(&x509.sig, obj.content, obj.size)) {
+	    cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
+	    break;
+	}
+	if(crt.size) {
+	    cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
+	    break;
+	}
+
+	if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || (x509.hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509.tbshash))))
+	    break;
+
+	if(crtmgr_add(other, &x509))
+	    break;
+	cli_crt_clear(&x509);
+	return 0;
+    } while(0);
     cli_crt_clear(&x509);
-    return 0;
+    return 1;
 }
 
 
