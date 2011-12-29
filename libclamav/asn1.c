@@ -135,6 +135,64 @@ int asn1_expect_algo(fmap_t *map, void **asn1data, unsigned int *asn1len, unsign
     return 0;
 }
 
+#define OID_1_3_14_3_2_26 "\x2b\x0e\x03\x02\x1a"
+#define OID_sha1 OID_1_3_14_3_2_26
+
+#define OID_1_3_14_3_2_29 "\x2b\x0e\x03\x02\x1d"
+#define OID_sha1WithRSA OID_1_3_14_3_2_29
+
+
+#define OID_1_2_840_113549_1_1_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01"
+#define OID_rsaEncryption OID_1_2_840_113549_1_1_1
+
+#define OID_1_2_840_113549_1_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04"
+#define OID_md5WithRSAEncryption OID_1_2_840_113549_1_1_4
+
+#define OID_1_2_840_113549_1_1_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05"
+#define OID_sha1WithRSAEncryption OID_1_2_840_113549_1_1_5
+
+#define OID_1_2_840_113549_1_7_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"
+#define OID_pkcs7_data OID_1_2_840_113549_1_7_1
+
+#define OID_1_2_840_113549_1_7_2 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02"
+#define OID_signedData OID_1_2_840_113549_1_7_2
+
+#define OID_1_2_840_113549_1_9_3 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03"
+#define OID_contentType OID_1_2_840_113549_1_9_3
+
+#define OID_1_2_840_113549_1_9_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04"
+#define OID_messageDigest OID_1_2_840_113549_1_9_4
+
+#define OID_1_2_840_113549_1_9_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05"
+#define OID_signingTime OID_1_2_840_113549_1_9_5
+
+                                 
+#define OID_1_2_840_113549_2_5 "\x2a\x86\x48\x86\xf7\x0d\x02\x05"
+#define OID_md5 OID_1_2_840_113549_2_5
+
+#define OID_1_2_840_113549_1_9_6 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"
+#define OID_countersignature OID_1_2_840_113549_1_9_6
+
+
+#define OID_1_3_6_1_4_1_311_2_1_4 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04"
+#define OID_SPC_INDIRECT_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_4
+
+#define OID_1_3_6_1_4_1_311_2_1_15 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x0f"
+#define OID_SPC_PE_IMAGE_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_15
+
+#define OID_1_3_6_1_4_1_311_2_1_25 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19"
+#define OID_SPC_CAB_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_25
+
+#define OID_1_3_6_1_4_1_311_10_1 "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01"
+#define OID_szOID_CTL OID_1_3_6_1_4_1_311_10_1
+
+#define OID_1_3_6_1_4_1_311_12_1_1 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01"
+#define OID_szOID_CATALOG_LIST OID_1_3_6_1_4_1_311_12_1_1
+
+#define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
+#define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
+
+#define lenof(x) (sizeof((x))-1)
 
 static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, cli_crt_hashtype *hashtype) {
     struct cli_asn1 obj;
@@ -147,7 +205,7 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
 
     if(asn1_get_obj(map, obj.content, &avail, &obj))
 	return 1;
-    if(obj.type != 0x06 || (obj.size != 5 && obj.size != 9)) {
+    if(obj.type != 0x06 || (obj.size != lenof(OID_sha1WithRSA) && obj.size != lenof(OID_sha1WithRSAEncryption))) { /* lenof(OID_sha1WithRSAEncryption) = lenof(OID_md5WithRSAEncryption) = 9 */
 	cli_dbgmsg("asn1_expect_rsa: expecting OID with size 5 or 9, got %02x with size %u\n", obj.type, obj.size);
 	return 1;
     }
@@ -155,11 +213,11 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
 	cli_dbgmsg("asn1_expect_rsa: failed to read OID\n");
 	return 1;
     }
-    if(obj.size == 5 && !memcmp(obj.content, "\x2b\x0e\x03\x02\x1d", 5))
+    if(obj.size == lenof(OID_sha1WithRSA) && !memcmp(obj.content, OID_sha1WithRSA, lenof(OID_sha1WithRSA)))
 	*hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa 1.3.14.3.2.29 */
-    else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9))
+    else if(obj.size == lenof(OID_sha1WithRSAEncryption) && !memcmp(obj.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption)))
 	*hashtype = CLI_SHA1RSA; /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
-    else if(obj.size == 9 && !memcmp(obj.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04", 9))
+    else if(obj.size == lenof(OID_md5WithRSAEncryption) && !memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
 	*hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
     else {
 	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
@@ -186,13 +244,13 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned i
     /* Manual parsing to avoid spamming */
     if(asn1_expect_objtype(map, asn1data, &avail, &obj, 0x06))
 	return 2;
-    if(obj.size != 10)
+    if(obj.size != lenof(OID_SPC_INDIRECT_DATA_OBJID))
 	return 1;
-    if(!fmap_need_ptr_once(map, obj.content, 10)) {
+    if(!fmap_need_ptr_once(map, obj.content, lenof(OID_SPC_INDIRECT_DATA_OBJID))) {
 	cli_dbgmsg("ms_asn1_get_sha1: failed to read content\n");
 	return 2;
     }
-    if(memcmp(obj.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04", 10)) /* OBJECT 1.3.6.1.4.1.311.2.1.4 - SPC_INDIRECT_DATA_OBJID */
+    if(memcmp(obj.content, OID_SPC_INDIRECT_DATA_OBJID, lenof(OID_SPC_INDIRECT_DATA_OBJID))) /* OBJECT 1.3.6.1.4.1.311.2.1.4 - SPC_INDIRECT_DATA_OBJID */
 	return 1;
 
     if(asn1_expect_objtype(map, obj.next, &avail, &obj, emb ? 0xa0 : 0x31))
@@ -208,18 +266,18 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned i
     avail2 = obj.size;
     if(asn1_expect_objtype(map, obj.content, &avail2, &obj2, 0x06)) /* OBJECT */
 	return 2;
-    if(obj2.size != 10) {
+    if(obj2.size != lenof(OID_SPC_PE_IMAGE_DATA_OBJID)) {
 	cli_dbgmsg("ms_asn1_get_sha1: expected data object size 10, got %u\n", obj2.size);
 	return 2;
     }
-    if(!fmap_need_ptr_once(map, obj2.content, 10)) {
+    if(!fmap_need_ptr_once(map, obj2.content, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
 	cli_dbgmsg("ms_asn1_get_sha1: failed to read data content\n");
 	return 2;
     }
-    if(!memcmp(obj2.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x0f", 10)) {
+    if(!memcmp(obj2.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
 	/* SPC_PE_IMAGE_DATA_OBJID */
 	if(type) *type = 1;
-    } else if (!emb && !memcmp(obj2.content, "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19", 10)) {
+    } else if (!emb && !memcmp(obj2.content, OID_SPC_CAB_DATA_OBJID, lenof(OID_SPC_CAB_DATA_OBJID))) {
 	/* SPC_CAB_DATA_OBJID */
 	if(type) *type = 0;
     } else {
@@ -231,7 +289,7 @@ int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned i
 	return 2;
 
     avail = obj.size;
-    if(asn1_expect_algo(map, &obj.content, &avail, 5, "\x2b\x0e\x03\x02\x1a")) /* objid 1.3.14.3.2.26 - sha1 */
+    if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
        return 2;
 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x04))
@@ -367,7 +425,7 @@ int asn1_get_rsa_pubkey(fmap_t *map, void **asn1data, unsigned int *size, cli_cr
     *asn1data = obj.next;
 
     avail = obj.size;
-    if(asn1_expect_algo(map, &obj.content, &avail, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01")) /* rsaEncryption */
+    if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* rsaEncryption */
        return 1;
 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x03)) /* BIT STRING - subjectPublicKey */
@@ -594,7 +652,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 	size = asn1.size;
-	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x02")) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, lenof(OID_signedData), OID_signedData)) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
 	    break;
 	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0xa0)) /* [0] - content */
 	    break;
@@ -616,7 +674,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31)) /* SET OF DigestAlgorithmIdentifier */
 	    break;
 
-	if(asn1_expect_algo(map, &asn1.content, &asn1.size, 5, "\x2b\x0e\x03\x02\x1a")) /* DigestAlgorithmIdentifier[0] == sha1 */
+	if(asn1_expect_algo(map, &asn1.content, &asn1.size, lenof(OID_sha1), OID_sha1)) /* DigestAlgorithmIdentifier[0] == sha1 */
 	    break;
 	if(asn1.size) {
 	    cli_dbgmsg("asn1_parse_mscat: only one digestAlgorithmIdentifier is allowed\n");
@@ -627,7 +685,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	/* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
 	 * or a single SPC_INDIRECT_DATA_OBJID */
-	if(asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+	if(asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, lenof(OID_szOID_CTL), OID_szOID_CTL)) /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
 	    break;
 	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0xa0))
 	    break;
@@ -649,7 +707,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	dsize = deep.size;
 	if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
 	    break;
-	if(asn1_expect_obj(map, &deep.content, &deep.size, 0x06, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x01")) /* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 */
+	if(asn1_expect_obj(map, &deep.content, &deep.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST)) /* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 */
 	    break;
 	if(deep.size) {
 	    cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CATALOG_LIST content\n");
@@ -659,7 +717,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x17)) /* Effective date - WTF?! */
 	    break;
-	if(asn1_expect_algo(map, &deep.next, &dsize, 10, "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02")) /* szOID_CATALOG_LIST_MEMBER */
+	if(asn1_expect_algo(map, &deep.next, &dsize, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /* szOID_CATALOG_LIST_MEMBER */
 	    break;
 	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) /* hashes here */
 	    break;
@@ -809,7 +867,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside issuerAndSerialNumber\n");
 	    break;
 	}
-	if(asn1_expect_algo(map, &asn1.next, &size, 5, "\x2b\x0e\x03\x02\x1a")) /* digestAlgorithm == sha1 */
+	if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_sha1), OID_sha1)) /* digestAlgorithm == sha1 */
 	    break;
 
 	attrs = asn1.next;
@@ -835,16 +893,16 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		dsize = 1;
 		break;
 	    }
-	    if(deeper.size != 9)
+	    if(deeper.size != lenof(OID_contentType))
 		continue;
-	    if(!fmap_need_ptr_once(map, deeper.content, deeper.size)) {
+	    if(!fmap_need_ptr_once(map, deeper.content, lenof(OID_contentType))) {
 		cli_dbgmsg("asn1_parse_mscat: failed to read authenticated attribute\n");
 		dsize = 1;
 		break;
 	    }
-	    if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03", 9))
+	    if(!memcmp(deeper.content, OID_contentType, lenof(OID_contentType)))
 		content = 0; /* contentType */
-	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04", 9))
+	    else if(!memcmp(deeper.content, OID_messageDigest, lenof(OID_messageDigest)))
 		content = 1; /* messageDigest */
 	    else
 		continue;
@@ -866,7 +924,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 
 	    if(content == 0) { /* contentType */
 		/* FIXME CHECK THE ACTUAL CONTENT TYPE MATCHES */
-		if(asn1_expect_obj(map, &deeper.content, &deeper.size, 0x06, 9, "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01")) { /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
+		if(asn1_expect_obj(map, &deeper.content, &deeper.size, 0x06, lenof(OID_szOID_CTL), OID_szOID_CTL)) { /* szOID_CTL - 1.3.6.1.4.1.311.10.1 */
 		    dsize = 1;
 		    break;
 		}
@@ -902,7 +960,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	}
 
-	if(asn1_expect_algo(map, &asn1.next, &size, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01")) /* digestEncryptionAlgorithm == sha1 */
+	if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* digestEncryptionAlgorithm == sha1 */
 	    break;
 
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
@@ -957,7 +1015,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 
 	size = asn1.size;
 	/* 1.2.840.113549.1.9.6 - counterSignature */
-	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"))
+	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, lenof(OID_countersignature), OID_countersignature))
 	    break;
 	if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31))
 	    break;
@@ -997,7 +1055,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x06))
 	    break;
-	if(deep.size != 5 && deep.size != 8) {
+	if(deep.size != lenof(OID_sha1) && deep.size != lenof(OID_md5)) {
 	    cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size\n");
 	    break;
 	}
@@ -1005,11 +1063,11 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read digestAlgorithm OID\n");
 	    break;
 	}
-	if(deep.size == 5 && !memcmp(deep.content, "\x2b\x0e\x03\x02\x1a", 5)) {
+	if(deep.size == lenof(OID_sha1) && !memcmp(deep.content, OID_sha1, lenof(OID_sha1))) {
 	    hashtype = CLI_SHA1RSA;
 	    if(map_sha1(map, message, message_size, md))
 		break;
-	} else if(deep.size == 8 && !memcmp(deep.content, "\x2a\x86\x48\x86\xf7\x0d\x02\x05", 8)) {
+	} else if(deep.size == lenof(OID_md5) && !memcmp(deep.content, OID_md5, lenof(OID_md5))) {
 	    hashtype = CLI_MD5RSA;
 	    if(map_md5(map, message, message_size, md))
 		break;
@@ -1045,18 +1103,18 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 		dsize = 1;
 		break;
 	    }
-	    if(deeper.size != 9)
+	    if(deeper.size != lenof(OID_contentType)) /* lenof(contentType) = lenof(messageDigest) = lenof(signingTime) = 9 */
 		continue;
 
-	    if(!fmap_need_ptr_once(map, deeper.content, 9)) {
+	    if(!fmap_need_ptr_once(map, deeper.content, lenof(OID_contentType))) {
 		dsize = 1;
 		break;
 	    }
-	    if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x03", 9))
+	    if(!memcmp(deeper.content, OID_contentType, lenof(OID_contentType)))
 		content = 0; /* contentType */
-	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x04", 9))
+	    else if(!memcmp(deeper.content, OID_messageDigest, lenof(OID_messageDigest)))
 		content = 1; /* messageDigest */
-	    else if(!memcmp(deeper.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x05", 9))
+	    else if(!memcmp(deeper.content, OID_signingTime, lenof(OID_signingTime)))
 		content = 2; /* signingTime */
 	    else
 		continue;
@@ -1078,7 +1136,7 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    deep.size = deeper.size;
 	    switch(content) {
 	    case 0:  /* contentType = pkcs7-data */
-		if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x06, 9, "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"))
+		if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x06, lenof(OID_pkcs7_data), OID_pkcs7_data))
 		    deep.size = 1;
 		else if(deep.size)
 		    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
@@ -1116,16 +1174,16 @@ int asn1_parse_mscat(FILE *f, crtmgr *cmgr) {
 	    break;
 	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x06)) /* digestEncryptionAlgorithm == sha1 */
 	    break;
-	if(deep.size != 9) {
+	if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
 	    cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
 	    break;
 	}
-	if(!fmap_need_ptr_once(map, deep.content, 9)) {
+	if(!fmap_need_ptr_once(map, deep.content, lenof(OID_rsaEncryption))) {
 	    cli_dbgmsg("asn1_parse_mscat: cannot read digestEncryptionAlgorithm in countersignature\n");
 	    break;
 	}
 	/* rsaEncryption or sha1withRSAEncryption */
-	if(memcmp(deep.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01", 9) && memcmp(deep.content, "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05", 9)) {
+	if(memcmp(deep.content, OID_rsaEncryption, lenof(OID_rsaEncryption)) && memcmp(deep.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption))) {
 	    cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
 	    break;
 	}
