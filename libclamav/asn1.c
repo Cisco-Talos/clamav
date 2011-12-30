@@ -657,7 +657,7 @@ static int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmg
     return 1;
 }
 
-static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr *cmgr, int embedded, void *hashes, unsigned int *hashes_size) {
+static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr *cmgr, int embedded, void **hashes, unsigned int *hashes_size) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
@@ -713,7 +713,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	   (embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID))
 	   )
 	    break;
-	
+
 	if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0xa0))
 	    break;
 	if(asn1.size) {
@@ -727,8 +727,8 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	    cli_dbgmsg("asn1_parse_mscat: found extra data in content\n");
 	    break;
 	}
-	message = deep.content;
-	message_size = deep.size;
+	*hashes = deep.content;
+	*hashes_size = deep.size;
 
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* certificates */
 	    break;
@@ -762,11 +762,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 		}
 		if(newcerts.items)
 		    cli_errmsg("asn1_parse_mscat: got %u certs, %u left unverified\n", orig, newcerts.items);
-		for(x509 = newcerts.crts; x509; ) {
-		    cli_crt *next = x509->next;
-		    crtmgr_del(&newcerts, x509);
-		    x509 = next;
-		}
+		crtmgr_free(&newcerts);
 	    }
 	}
 
@@ -907,7 +903,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
 	    break;
 
-	if(map_sha1(map, message, message_size, sha1))
+	if(map_sha1(map, *hashes, *hashes_size, sha1))
 	    break;
 	if(memcmp(sha1, md, sizeof(sha1))) {
 	    cli_dbgmsg("asn1_parse_mscat: messageDigest mismatch\n");
@@ -1158,7 +1154,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	    cli_md5_update(&ctx, attrs + 1, attrs_size - 1);
 	    cli_md5_final(sha1, &ctx);
 	}
-	
+
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
 	    break;
@@ -1183,10 +1179,42 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
     return asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &hashes_size);
 }
 
-int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine) {
-    void *hashes;
-    unsigned int hashes_size;
-    return asn1_parse_mscat(map, start, size, &engine->cmgr, 1, &hashes, &hashes_size);
+int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, const struct cl_engine *engine, uint8_t *computed_sha1) {
+    unsigned int content_size;
+    struct cli_asn1 c;
+    void *content;
+    crtmgr certs;
+    int ret;
+
+    crtmgr_init(&certs);
+    if(crtmgr_add_roots(&certs)) {
+	/* FIXME: do smthng here */
+	crtmgr_free(&certs);
+	return CL_CLEAN;
+    }
+    ret = asn1_parse_mscat(map, start, size, &certs, 1, &content, &content_size);
+    crtmgr_free(&certs);
+    if(ret)
+	return CL_VIRUS; /* FIXME */
+
+    if(asn1_expect_objtype(map, content, &content_size, &c, 0x30))
+	return CL_VIRUS;
+    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
+	return CL_VIRUS;
+    if(asn1_expect_objtype(map, c.next, &content_size, &c, 0x30))
+	return CL_VIRUS;
+    if(content_size) {
+	cli_dbgmsg("asn1_check_mscat: extra data in content\n");
+	return CL_VIRUS;
+    }
+    if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1))
+	return CL_VIRUS;
+
+    if(asn1_expect_obj(map, &c.content, &c.size, 0x04, SHA1_HASH_SIZE, computed_sha1))
+	return CL_VIRUS;
+
+    cli_dbgmsg("asn1_check_mscat: file with valid authenicode signature, whitelisted\n");
+    return CL_CLEAN;
 }
 
 	    /* dsize = deep.size; */

@@ -128,6 +128,10 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
     }
 }
 
+void crtmgr_free(crtmgr *m) {
+    while(m->items)
+	crtmgr_del(m, m->crts);
+}
 
 static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash) {
     int keylen = mp_unsigned_bin_size(&x509->n), siglen = mp_unsigned_bin_size(sig);
