@@ -1164,83 +1164,46 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	    break;
 	}
 
-
+	cli_dbgmsg("asn1_parse_mscat: catalog succesfully parsed\n");
 	return 0;
     } while(0);
 
-    cli_errmsg("asn1: epic parsing fail\n");
+    cli_dbgmsg("asn1_parse_mscat: failed to parse catalog\n");
     return 1;
 }
-
 
 int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine) {
     void *hashes;
     unsigned int hashes_size;
-    return asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &hashes_size);
-}
-
-int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, const struct cl_engine *engine, uint8_t *computed_sha1) {
-    unsigned int content_size;
     struct cli_asn1 c;
-    void *content;
-    crtmgr certs;
-    int ret;
 
-    crtmgr_init(&certs);
-    if(crtmgr_add_roots(&certs)) {
-	/* FIXME: do smthng here */
-	crtmgr_free(&certs);
-	return CL_CLEAN;
+    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &hashes_size))
+	return 1;
+
+    if(asn1_expect_objtype(map, hashes, &hashes_size, &c, 0x30))
+	return 1;
+    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST))
+	return 1;
+    if(c.size) {
+	cli_dbgmsg("asn1_load_mscat: found extra data in szOID_CATALOG_LIST content\n");
+	return 1;
     }
-    ret = asn1_parse_mscat(map, start, size, &certs, 1, &content, &content_size);
-    crtmgr_free(&certs);
-    if(ret)
-	return CL_VIRUS; /* FIXME */
-
-    if(asn1_expect_objtype(map, content, &content_size, &c, 0x30))
-	return CL_VIRUS;
-    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
-	return CL_VIRUS;
-    if(asn1_expect_objtype(map, c.next, &content_size, &c, 0x30))
-	return CL_VIRUS;
-    if(content_size) {
-	cli_dbgmsg("asn1_check_mscat: extra data in content\n");
-	return CL_VIRUS;
-    }
-    if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1))
-	return CL_VIRUS;
-
-    if(asn1_expect_obj(map, &c.content, &c.size, 0x04, SHA1_HASH_SIZE, computed_sha1))
-	return CL_VIRUS;
-
-    cli_dbgmsg("asn1_check_mscat: file with valid authenicode signature, whitelisted\n");
-    return CL_CLEAN;
-}
-
-	    /* dsize = deep.size; */
-	    /* if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30)) */
-	    /* 	break; */
-	    /* if(asn1_expect_obj(map, &deep.content, &deep.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST)) /\* szOID_CATALOG_LIST - 1.3.6.1.4.1.311.12.1.1 *\/ */
-	    /* 	break; */
-	    /* if(deep.size) { */
-	    /* 	cli_dbgmsg("asn1_parse_mscat: found extra data in szOID_CATALOG_LIST content\n"); */
-	    /* 	break; */
-	    /* } */
-	    /* if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x4)) /\* List ID *\/ */
-	    /* 	break; */
-	    /* if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x17)) /\* Effective date - WTF?! *\/ */
-	    /* 	break; */
-	    /* if(asn1_expect_algo(map, &deep.next, &dsize, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /\* szOID_CATALOG_LIST_MEMBER *\/ */
-	    /* 	break; */
-	    /* if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) /\* hashes here *\/ */
-	    /* 	break; */
-	    /* while(deep.size) { */
-	    /* 	struct cli_asn1 tag; */
-	    /* 	if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x30)) { */
-	    /* 	    deep.size = 1; */
-	    /* 	    break; */
-	    /* 	} */
-	    /* 	deep.content = deeper.next; */
+    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x4)) /* List ID */
+	return 1;
+    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x17)) /* Effective date - WTF?! */
+	return 1;
+    if(asn1_expect_algo(map, &c.next, &hashes_size, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /* szOID_CATALOG_LIST_MEMBER */
+	return 1;
+    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x30)) /* hashes here */
+	return 1;
+    cli_errmsg("ACAB: %u\n", hashes_size);
+    while(c.size) {
+	struct cli_asn1 tag;
+	if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x30)) {
+	    c.size = 1;
+	    break;
+	}
+	c.content = tag.next;
 	    /* 	if(asn1_expect_objtype(map, deeper.content, &deeper.size, &tag, 0x04)) { /\* TAG NAME *\/ */
 	    /* 	    deep.size = 1; */
 	    /* 	    break; */
@@ -1300,6 +1263,46 @@ int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, const struct c
 	    /* 	    deep.size = 1; */
 	    /* 	    break; */
 	    /* 	} */
-	    /* } */
-	    /* if(deep.size) */
-	    /* 	break; */
+    }
+    if(c.size)
+	return 1;
+    return 0;
+}
+
+int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, const struct cl_engine *engine, uint8_t *computed_sha1) {
+    unsigned int content_size;
+    struct cli_asn1 c;
+    void *content;
+    crtmgr certs;
+    int ret;
+
+    crtmgr_init(&certs);
+    if(crtmgr_add_roots(&certs)) {
+	/* FIXME: do smthng here */
+	crtmgr_free(&certs);
+	return CL_CLEAN;
+    }
+    ret = asn1_parse_mscat(map, start, size, &certs, 1, &content, &content_size);
+    crtmgr_free(&certs);
+    if(ret)
+	return CL_VIRUS; /* FIXME */
+
+    if(asn1_expect_objtype(map, content, &content_size, &c, 0x30))
+	return CL_VIRUS;
+    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
+	return CL_VIRUS;
+    if(asn1_expect_objtype(map, c.next, &content_size, &c, 0x30))
+	return CL_VIRUS;
+    if(content_size) {
+	cli_dbgmsg("asn1_check_mscat: extra data in content\n");
+	return CL_VIRUS;
+    }
+    if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1))
+	return CL_VIRUS;
+
+    if(asn1_expect_obj(map, &c.content, &c.size, 0x04, SHA1_HASH_SIZE, computed_sha1))
+	return CL_VIRUS;
+
+    cli_dbgmsg("asn1_check_mscat: file with valid authenicode signature, whitelisted\n");
+    return CL_CLEAN;
+}

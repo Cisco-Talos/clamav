@@ -2365,7 +2365,8 @@ static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int option
 	return 1;
     }
 
-    asn1_load_mscat(map, base, map->len, engine);
+    if(asn1_load_mscat(map, base, map->len, engine))
+	cli_errmsg("BIG FAIL\n");
     funmap(map);
     return 0;
 }
