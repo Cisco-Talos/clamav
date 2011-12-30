@@ -2653,7 +2653,7 @@ int cli_scanpe(cli_ctx *ctx) {
 	hlen = optional_hdr32.DataDirectory[4].Size;
 	hlen -= 8;
 	hptr = fmap_need_off_once(map, hsize + 8, hlen);
-	asn1_parse_mscat(map, hptr, hlen - 4, ctx->engine, 0);
+	asn1_check_mscat(map, hptr, hlen - 4, ctx->engine);
 #if 0
 	{
 	    struct cli_asn1 asn1;
