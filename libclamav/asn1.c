@@ -266,86 +266,6 @@ static int asn1_expect_rsa(fmap_t *map, void **asn1data, unsigned int *asn1len, 
     return 0;
 }
 
-static int ms_asn1_get_sha1(fmap_t *map, void *asn1data, unsigned int avail, unsigned int emb, uint8_t sha1[SHA1_HASH_SIZE], unsigned int *type) {
-    /* ret
-     * 0 - success
-     * 1 - unexpected obj (ok for cat)
-     * 2 - severe
-     */
-    struct cli_asn1 obj, obj2;
-    unsigned int avail2;
-
-    /* Manual parsing to avoid spamming */
-    if(asn1_expect_objtype(map, asn1data, &avail, &obj, 0x06))
-	return 2;
-    if(obj.size != lenof(OID_SPC_INDIRECT_DATA_OBJID))
-	return 1;
-    if(!fmap_need_ptr_once(map, obj.content, lenof(OID_SPC_INDIRECT_DATA_OBJID))) {
-	cli_dbgmsg("ms_asn1_get_sha1: failed to read content\n");
-	return 2;
-    }
-    if(memcmp(obj.content, OID_SPC_INDIRECT_DATA_OBJID, lenof(OID_SPC_INDIRECT_DATA_OBJID))) /* OBJECT 1.3.6.1.4.1.311.2.1.4 - SPC_INDIRECT_DATA_OBJID */
-	return 1;
-
-    if(asn1_expect_objtype(map, obj.next, &avail, &obj, emb ? 0xa0 : 0x31))
-	return 2;
-
-    avail = obj.size;
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x30)) /* SEQUENCE */
-	return 2;
-
-    avail = obj.size;
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x30)) /* data - contains an objid 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 */
-	return 2;
-    avail2 = obj.size;
-    if(asn1_expect_objtype(map, obj.content, &avail2, &obj2, 0x06)) /* OBJECT */
-	return 2;
-    if(obj2.size != lenof(OID_SPC_PE_IMAGE_DATA_OBJID)) {
-	cli_dbgmsg("ms_asn1_get_sha1: expected data object size 10, got %u\n", obj2.size);
-	return 2;
-    }
-    if(!fmap_need_ptr_once(map, obj2.content, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
-	cli_dbgmsg("ms_asn1_get_sha1: failed to read data content\n");
-	return 2;
-    }
-    if(!memcmp(obj2.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
-	/* SPC_PE_IMAGE_DATA_OBJID */
-	if(type) *type = 1;
-    } else if (!emb && !memcmp(obj2.content, OID_SPC_CAB_DATA_OBJID, lenof(OID_SPC_CAB_DATA_OBJID))) {
-	/* SPC_CAB_DATA_OBJID */
-	if(type) *type = 0;
-    } else {
-	cli_dbgmsg("ms_asn1_get_sha1: data object id mismatch\n");
-	return 2;
-    }
-
-    if(asn1_expect_objtype(map, obj.next, &avail, &obj, 0x30)) /* messageDigest */
-	return 2;
-
-    avail = obj.size;
-    if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
-       return 2;
-
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x04))
-	return 2;
-    if(avail) {
-	cli_dbgmsg("ms_asn1_get_sha1: found unexpected extra data\n");
-	return 2;
-    }
-    if(obj.size != SHA1_HASH_SIZE) {
-	cli_dbgmsg("ms_asn1_get_sha1: expected sha1 lenght(%u), but got %u\n", SHA1_HASH_SIZE, obj.size);
-	return 2;
-    }
-
-    if(!fmap_need_ptr_once(map, obj.content, SHA1_HASH_SIZE)) {
-	cli_dbgmsg("ms_asn1_get_sha1: failed to read sha1 content\n");
-	return 2;
-    }
-    memcpy(sha1, obj.content, SHA1_HASH_SIZE);
-
-    return 0;
-}
-
 static int asn1_getnum(const char *s) {
     if(s[0] < '0' || s[0] >'9' || s[1] < '0' || s[1] > '9') {
 	cli_dbgmsg("asn1_getnum: expecting digits, found '%c%c'\n", s[0], s[1]);
@@ -1173,14 +1093,13 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 }
 
 int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine) {
-    void *hashes;
-    unsigned int hashes_size;
     struct cli_asn1 c;
+    void *hashes;
 
-    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &hashes_size))
+    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &size))
 	return 1;
 
-    if(asn1_expect_objtype(map, hashes, &hashes_size, &c, 0x30))
+    if(asn1_expect_objtype(map, hashes, &size, &c, 0x30))
 	return 1;
     if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST))
 	return 1;
@@ -1188,83 +1107,156 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 	cli_dbgmsg("asn1_load_mscat: found extra data in szOID_CATALOG_LIST content\n");
 	return 1;
     }
-    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x4)) /* List ID */
+    if(asn1_expect_objtype(map, c.next, &size, &c, 0x4)) /* List ID */
 	return 1;
-    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x17)) /* Effective date - WTF?! */
+    if(asn1_expect_objtype(map, c.next, &size, &c, 0x17)) /* Effective date - WTF?! */
 	return 1;
-    if(asn1_expect_algo(map, &c.next, &hashes_size, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /* szOID_CATALOG_LIST_MEMBER */
+    if(asn1_expect_algo(map, &c.next, &size, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /* szOID_CATALOG_LIST_MEMBER */
 	return 1;
-    if(asn1_expect_objtype(map, c.next, &hashes_size, &c, 0x30)) /* hashes here */
+    if(asn1_expect_objtype(map, c.next, &size, &c, 0x30)) /* hashes here */
 	return 1;
-    cli_errmsg("ACAB: %u\n", hashes_size);
-    while(c.size) {
+    /* [0] is next but we don't care as it's really descriptives stuff */
+
+    size = c.size;
+    c.next = c.content;
+    while(size) {
 	struct cli_asn1 tag;
-	if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x30)) {
-	    c.size = 1;
+	if(asn1_expect_objtype(map, c.next, &size, &c, 0x30)) {
+	    size = 1;
 	    break;
 	}
-	c.content = tag.next;
-	    /* 	if(asn1_expect_objtype(map, deeper.content, &deeper.size, &tag, 0x04)) { /\* TAG NAME *\/ */
-	    /* 	    deep.size = 1; */
-	    /* 	    break; */
-	    /* 	} */
-	    /* 	if(asn1_expect_objtype(map, tag.next, &deeper.size, &tag, 0x31)) { /\* set *\/ */
-	    /* 	    deep.size = 1; */
-	    /* 	    break; */
-	    /* 	} */
-	    /* 	if(deeper.size) { */
-	    /* 	    cli_dbgmsg("asn1_parse_mscat: found extra data in tag\n"); */
-	    /* 	    deep.size = 1; */
-	    /* 	    break; */
-	    /* 	} */
-	    /* 	while(tag.size) { */
-	    /* 	    /\* FIXME this should be delayed till after the cert is verified *\/ */
-	    /* 	    struct cli_asn1 tagval; */
-	    /* 	    unsigned int tsize, tsize2, shatype; */
-	    /* 	    void *tagc; */
-	    /* 	    int i; */
+	if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x04)) { /* TAG NAME */
+	    size = 1;
+	    break;
+	}
+	if(asn1_expect_objtype(map, tag.next, &c.size, &tag, 0x31)) { /* set */
+	    size = 1;
+	    break;
+	}
+	if(c.size) {
+	    cli_dbgmsg("asn1_load_mscat: found extra data in tag\n");
+	    size = 1;
+	    break;
+	}
+	while(tag.size) {
+	    struct cli_asn1 tagval1, tagval2, tagval3;
+	    int hashtype;
 
-	    /* 	    if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval, 0x30)) { */
-	    /* 		tag.size = 1; */
-	    /* 		break; */
-	    /* 	    } */
-	    /* 	    tag.content = tagval.next; */
-	    /* 	    tsize = tsize2 = tagval.size; */
-	    /* 	    tagc = tagval.content; */
-	    /* 	    if(asn1_expect_objtype(map, tagval.content, &tsize, &tagval, 0x06)) { */
-	    /* 		tag.size = 1; */
-	    /* 		break; */
-	    /* 	    } */
-	    /* 	    i = ms_asn1_get_sha1(map, tagc, tsize2, 0, sha1, &shatype); */
-	    /* 	    if(!i) { */
-	    /* 		char sha1txt[SHA1_HASH_SIZE*2+1]; */
+	    if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, 0x30)) {
+		tag.size = 1;
+		break;
+	    }
+	    tag.content = tagval1.next;
 
-	    /* 		for(i=0;i<SHA1_HASH_SIZE; i++) */
-	    /* 		    sprintf(&sha1txt[i*2], "%02x", sha1[i]); */
-	    /* 		cli_dbgmsg("asn1_parse_cat: found hash %s (type %s)\n", sha1txt, shatype ? "PE" : "CAB"); */
-	    /* 	    } else if(i==1){ */
-	    /* 		/\* expect to hit here on CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2) *\/ */
-	    /* 	    } else { */
-	    /* 		tag.size = 1; */
-	    /* 		cli_dbgmsg("asn1_parse_mscat: bad field in tag value\n"); */
-	    /* 		break; */
-	    /* 	    } */
-	    /* 	    if(asn1_expect_objtype(map, tagval.next, &tsize, &tagval, 0x31)) { */
-	    /* 		tag.size = 1; */
-	    /* 		break; */
-	    /* 	    } */
-	    /* 	    if(tsize) { */
-	    /* 		tag.size = 1; */
-	    /* 		cli_dbgmsg("asn1_parse_mscat: extra data in value\n"); */
-	    /* 		break; */
-	    /* 	    } */
-	    /* 	} */
-	    /* 	if(tag.size) { */
-	    /* 	    deep.size = 1; */
-	    /* 	    break; */
-	    /* 	} */
+	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x06)) {
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval2.size != lenof(OID_SPC_INDIRECT_DATA_OBJID))
+		continue;
+
+	    if(!fmap_need_ptr_once(map, tagval2.content, lenof(OID_SPC_INDIRECT_DATA_OBJID))) {
+		tag.size = 1;
+		break;
+	    }
+	    if(memcmp(tagval2.content, OID_SPC_INDIRECT_DATA_OBJID, lenof(OID_SPC_INDIRECT_DATA_OBJID)))
+		continue; /* stuff like CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2).. */
+
+	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x31)) {
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval1.size) {
+		cli_dbgmsg("asn1_load_mscat: found extra data in tag value\n");
+		tag.size = 1;
+		break;
+	    }
+
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval1, 0x30)) {
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval2.size) {
+		cli_dbgmsg("asn1_load_mscat: found extra data in SPC_INDIRECT_DATA_OBJID tag\n");
+		tag.size = 1;
+		break;
+	    }
+
+	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x30)) {
+		tag.size = 1;
+		break;
+	    }
+
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x06)) { /* shall have an obj 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 inside */
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval3.size != lenof(OID_SPC_PE_IMAGE_DATA_OBJID)) { /* lenof(OID_SPC_PE_IMAGE_DATA_OBJID) = lenof(OID_SPC_CAB_DATA_OBJID) = 10*/
+		cli_dbgmsg("asn1_load_mscat: bad hash type size\n");
+		tag.size = 1;
+		break;
+	    }
+	    if(!fmap_need_ptr_once(map, tagval3.content, tagval3.size)) {
+		cli_dbgmsg("asn1_load_mscat: cannot read hash type\n");
+		tag.size = 1;
+		break;
+	    }
+	    if(!memcmp(tagval3.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
+		hashtype = 1;
+	    } else if(!memcmp(tagval3.content, OID_SPC_CAB_DATA_OBJID, lenof(OID_SPC_CAB_DATA_OBJID))) {
+		hashtype = 0;
+	    } else {
+		cli_dbgmsg("asn1_load_mscat: unexpected hash type\n");
+		tag.size = 1;
+		break;
+	    }
+
+	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x30)) {
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval1.size) {
+		cli_dbgmsg("asn1_load_mscat: found extra data after hash\n");
+		tag.size = 1;
+		break;
+	    }
+
+	    if(asn1_expect_algo(map, &tagval2.content, &tagval2.size, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
+		break;
+
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x04)) {
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval2.size) {
+		cli_dbgmsg("asn1_load_mscat: found extra data in hash\n");
+		tag.size = 1;
+		break;
+	    }
+	    if(tagval3.size != SHA1_HASH_SIZE) {
+		cli_dbgmsg("asn1_load_mscat: bad hash size %u\n", tagval3.size);
+		tag.size = 1;
+		break;
+	    }
+	    if(!fmap_need_ptr_once(map, tagval3.content, SHA1_HASH_SIZE)) {
+		cli_dbgmsg("asn1_load_mscat: cannot read hash\n");
+		tag.size = 1;
+		break;
+	    }
+	    {
+		char sha1[SHA1_HASH_SIZE*2+1];
+		int i;
+		for(i=0;i<SHA1_HASH_SIZE; i++)
+		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
+		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, hashtype ? "PE" : "CAB");
+	    }
+	}
+	if(tag.size) {
+	    size = 1;
+	    break;
+	}
     }
-    if(c.size)
+    if(size)
 	return 1;
     return 0;
 }
