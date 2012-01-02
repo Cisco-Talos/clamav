@@ -28,6 +28,7 @@
 #include "sha1.h"
 #include "md5.h"
 #include "bignum.h"
+#include "matcher-hash.h"
 
 /* --------------------------------------------------------------------------- OIDS */
 #define OID_1_3_14_3_2_26 "\x2b\x0e\x03\x02\x1a"
@@ -1094,12 +1095,14 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 
 int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine) {
     struct cli_asn1 c;
-    void *hashes;
+    char sha1[SHA1_HASH_SIZE*2+1], *virname;
+    struct cli_matcher *db;
+    int i;
 
-    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &hashes, &size))
+    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &c.next, &size))
 	return 1;
 
-    if(asn1_expect_objtype(map, hashes, &size, &c, 0x30))
+    if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
 	return 1;
     if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST))
 	return 1;
@@ -1201,11 +1204,11 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 		tag.size = 1;
 		break;
 	    }
-	    if(!memcmp(tagval3.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
+	    if(!memcmp(tagval3.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID)))
+		hashtype = 2;
+	    else if(!memcmp(tagval3.content, OID_SPC_CAB_DATA_OBJID, lenof(OID_SPC_CAB_DATA_OBJID)))
 		hashtype = 1;
-	    } else if(!memcmp(tagval3.content, OID_SPC_CAB_DATA_OBJID, lenof(OID_SPC_CAB_DATA_OBJID))) {
-		hashtype = 0;
-	    } else {
+	    else {
 		cli_dbgmsg("asn1_load_mscat: unexpected hash type\n");
 		tag.size = 1;
 		break;
@@ -1243,12 +1246,35 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 		tag.size = 1;
 		break;
 	    }
-	    {
-		char sha1[SHA1_HASH_SIZE*2+1];
-		int i;
-		for(i=0;i<SHA1_HASH_SIZE; i++)
-		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
-		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, hashtype ? "PE" : "CAB");
+
+	    /* FIXME make a bin hashloader api */
+	    for(i=0;i<SHA1_HASH_SIZE; i++)
+		sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
+	    cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
+	    virname = cli_mpool_virname(engine->mempool, "CAT", 1);
+	    if(!virname) {
+		/* FIXME FAIL HERE */
+		tag.size = 1;
+		break;
+	    }
+
+	    if(!engine->hm_fp) {
+		if(!(engine->hm_fp = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
+		    /* FIXME FAIL HERE */
+		    tag.size = 1;;
+		    break;
+		}
+#ifdef USE_MPOOL
+		engine->hm_fp->mempool = engine->mempool;
+#endif
+	    }
+
+
+	    /* FIXME CHECK DUPES!! */
+	    if((i = hm_addhash(engine->hm_fp, sha1, hashtype, virname))) {
+		cli_errmsg("asn1_load_mscat: failed to add hash\n");
+		mpool_free(engine->mempool, (void *)virname);
+		break;
 	    }
 	}
 	if(tag.size) {
