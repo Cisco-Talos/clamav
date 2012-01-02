@@ -1897,13 +1897,31 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	const char *pt, *virname;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
-	struct cli_matcher *db = NULL;
+	struct cli_matcher *db;
 	unsigned long size;
 
 
     if(mode == MD5_MDB) {
 	size_field = 0;
 	md5_field = 1;
+	db = engine->hm_hdb;
+    } else if(mode == MD5_MDB)
+	db = engine->hm_mdb;
+    else
+	db = engine->hm_fp;
+
+    if(!db) {
+	if(!(db = mpool_calloc(engine->mempool, 1, sizeof(*db))))
+	    return CL_EMEM;
+#ifdef USE_MPOOL
+	db->mempool = engine->mempool;
+#endif
+	if(mode == MD5_HDB)
+	    engine->hm_hdb = db;
+	else if(mode == MD5_MDB)
+	    engine->hm_mdb = db;
+	else
+	    engine->hm_fp = db;
     }
 
     if(engine->ignored)
@@ -1973,31 +1991,8 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    break;
 	}
 
-	if(mode == MD5_HDB)
-	    db = engine->hm_hdb;
-	else if(mode == MD5_MDB)
-	    db = engine->hm_mdb;
-	else
-	    db = engine->hm_fp;
-
-	if(!db) {
-	    if(!(db = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
-		ret = CL_EMEM;
-		break;
-	    }
-#ifdef USE_MPOOL
-	    db->mempool = engine->mempool;
-#endif
-	    if(mode == MD5_HDB)
-		engine->hm_hdb = db;
-	    else if(mode == MD5_MDB)
-		engine->hm_mdb = db;
-	    else
-		engine->hm_fp = db;
-	}
-
 	if((ret = hm_addhash(db, tokens[md5_field], size, virname))) {
-	    cli_errmsg("cli_loadhash: Malformed MD5 string at line %u\n", line);
+	    cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
 	    mpool_free(engine->mempool, (void *)virname);
 	    break;
 	}
