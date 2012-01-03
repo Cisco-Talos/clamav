@@ -103,7 +103,12 @@ static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1
 	return 1;
     }
     SHA1Init(&ctx);
-    SHA1Update(&ctx, data, len);
+    while(len) {
+	unsigned int todo = MIN(len, map->pgsz);
+	SHA1Update(&ctx, data, todo);
+	data = (uint8_t *)data + todo;
+	len -= todo;
+    }
     SHA1Final(&ctx, sha1);
     return 0;
 }
@@ -115,7 +120,12 @@ static int map_md5(fmap_t *map, void *data, unsigned int len, uint8_t *md5) {
 	return 1;
     }
     cli_md5_init(&ctx);
-    cli_md5_update(&ctx, data, len);
+    while(len) {
+	unsigned int todo = MIN(len, map->pgsz);
+	cli_md5_update(&ctx, data, len);
+	data = (uint8_t *)data + todo;
+	len -= todo;
+    }
     cli_md5_final(md5, &ctx);
     return 0;
 }
@@ -823,7 +833,10 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
 	    break;
-
+	if(asn1.size > 513) {
+	    cli_dbgmsg("asn1_parse_mscat: encryptedDigest too long\n");
+	    break;
+	}
 	if(map_sha1(map, *hashes, *hashes_size, sha1))
 	    break;
 	if(memcmp(sha1, md, sizeof(sha1))) {
@@ -1054,6 +1067,10 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
 	    break;
+	if(asn1.size > 513) {
+	    cli_dbgmsg("asn1_parse_mscat: countersignature encryptedDigest too long\n");
+	    break;
+	}
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature\n");
 	    break;
@@ -1177,7 +1194,7 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 		cli_dbgmsg("asn1_load_mscat: bad hash type size\n");
 		return 1;
 	    }
-	    if(!fmap_need_ptr_once(map, tagval3.content, tagval3.size)) {
+	    if(!fmap_need_ptr_once(map, tagval3.content, lenof(OID_SPC_PE_IMAGE_DATA_OBJID))) {
 		cli_dbgmsg("asn1_load_mscat: cannot read hash type\n");
 		return 1;
 	    }
@@ -1217,7 +1234,7 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 
 	    if(cli_debug_flag) {
 		char sha1[SHA1_HASH_SIZE*2+1];
-		for(i=0;i<SHA1_HASH_SIZE; i++)
+		for(i=0;i<SHA1_HASH_SIZE;i++)
 		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
 		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
 	    }
