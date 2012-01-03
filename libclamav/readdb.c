@@ -1991,7 +1991,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    break;
 	}
 
-	if((ret = hm_addhash(db, tokens[md5_field], size, virname))) {
+	if((ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
 	    cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
 	    mpool_free(engine->mempool, (void *)virname);
 	    break;

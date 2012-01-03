@@ -48,7 +48,8 @@ struct cli_hash_patt {
     struct cli_htu32 sizehashes[CLI_HASH_AVAIL_TYPES];
 };
 
-int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const char *virusname);
+int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname);
+int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_TYPE type, uint32_t size, const char *virusname);
 void hm_flush(struct cli_matcher *root);
 int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type);
 int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size);

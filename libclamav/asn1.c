@@ -1095,7 +1095,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 
 int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine) {
     struct cli_asn1 c;
-    char sha1[SHA1_HASH_SIZE*2+1], *virname;
+    char *virname;
     struct cli_matcher *db;
     int i;
 
@@ -1124,85 +1124,62 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
     c.next = c.content;
     while(size) {
 	struct cli_asn1 tag;
-	if(asn1_expect_objtype(map, c.next, &size, &c, 0x30)) {
-	    size = 1;
-	    break;
-	}
-	if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x04)) { /* TAG NAME */
-	    size = 1;
-	    break;
-	}
-	if(asn1_expect_objtype(map, tag.next, &c.size, &tag, 0x31)) { /* set */
-	    size = 1;
-	    break;
-	}
+	if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
+	    return 1;
+	if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x04)) /* TAG NAME */
+	    return 1;
+	if(asn1_expect_objtype(map, tag.next, &c.size, &tag, 0x31)) /* set */
+	    return 1;
 	if(c.size) {
 	    cli_dbgmsg("asn1_load_mscat: found extra data in tag\n");
-	    size = 1;
-	    break;
+	    return 1;
 	}
 	while(tag.size) {
 	    struct cli_asn1 tagval1, tagval2, tagval3;
 	    int hashtype;
 
-	    if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, 0x30)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, 0x30))
+		return 1;
 	    tag.content = tagval1.next;
 
-	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x06)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x06))
+		return 1;
 	    if(tagval2.size != lenof(OID_SPC_INDIRECT_DATA_OBJID))
 		continue;
 
 	    if(!fmap_need_ptr_once(map, tagval2.content, lenof(OID_SPC_INDIRECT_DATA_OBJID))) {
-		tag.size = 1;
-		break;
+		cli_dbgmsg("asn1_load_mscat: cannot read SPC_INDIRECT_DATA\n");
+		return 1;
 	    }
 	    if(memcmp(tagval2.content, OID_SPC_INDIRECT_DATA_OBJID, lenof(OID_SPC_INDIRECT_DATA_OBJID)))
 		continue; /* stuff like CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2).. */
 
-	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x31)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x31))
+		return 1;
 	    if(tagval1.size) {
 		cli_dbgmsg("asn1_load_mscat: found extra data in tag value\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 
-	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval1, 0x30)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval1, 0x30))
+		return 1;
 	    if(tagval2.size) {
 		cli_dbgmsg("asn1_load_mscat: found extra data in SPC_INDIRECT_DATA_OBJID tag\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 
-	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x30)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x30))
+		return 1;
 
-	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x06)) { /* shall have an obj 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 inside */
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x06)) /* shall have an obj 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 inside */
+		return 1;
 	    if(tagval3.size != lenof(OID_SPC_PE_IMAGE_DATA_OBJID)) { /* lenof(OID_SPC_PE_IMAGE_DATA_OBJID) = lenof(OID_SPC_CAB_DATA_OBJID) = 10*/
 		cli_dbgmsg("asn1_load_mscat: bad hash type size\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 	    if(!fmap_need_ptr_once(map, tagval3.content, tagval3.size)) {
 		cli_dbgmsg("asn1_load_mscat: cannot read hash type\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 	    if(!memcmp(tagval3.content, OID_SPC_PE_IMAGE_DATA_OBJID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID)))
 		hashtype = 2;
@@ -1210,84 +1187,66 @@ int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engin
 		hashtype = 1;
 	    else {
 		cli_dbgmsg("asn1_load_mscat: unexpected hash type\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 
-	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x30)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x30))
+		return 1;
 	    if(tagval1.size) {
 		cli_dbgmsg("asn1_load_mscat: found extra data after hash\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 
 	    if(asn1_expect_algo(map, &tagval2.content, &tagval2.size, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
-		break;
+		return 1;
 
-	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x04)) {
-		tag.size = 1;
-		break;
-	    }
+	    if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x04))
+		return 1;
 	    if(tagval2.size) {
 		cli_dbgmsg("asn1_load_mscat: found extra data in hash\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 	    if(tagval3.size != SHA1_HASH_SIZE) {
 		cli_dbgmsg("asn1_load_mscat: bad hash size %u\n", tagval3.size);
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 	    if(!fmap_need_ptr_once(map, tagval3.content, SHA1_HASH_SIZE)) {
 		cli_dbgmsg("asn1_load_mscat: cannot read hash\n");
-		tag.size = 1;
-		break;
+		return 1;
 	    }
 
-	    /* FIXME make a bin hashloader api */
-	    for(i=0;i<SHA1_HASH_SIZE; i++)
-		sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
-	    cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
-	    virname = cli_mpool_virname(engine->mempool, "CAT", 1);
-	    if(!virname) {
-		/* FIXME FAIL HERE */
-		tag.size = 1;
-		break;
+	    if(cli_debug_flag) {
+		char sha1[SHA1_HASH_SIZE*2+1];
+		for(i=0;i<SHA1_HASH_SIZE; i++)
+		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
+		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
 	    }
+	    /* FIXME might as well use a static buf */
+	    virname = cli_mpool_virname(engine->mempool, "CAT", 1);
+	    if(!virname)
+		return 1;
 
 	    if(!engine->hm_fp) {
 		if(!(engine->hm_fp = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
-		    /* FIXME FAIL HERE */
 		    tag.size = 1;;
-		    break;
+		    return 1;
 		}
 #ifdef USE_MPOOL
 		engine->hm_fp->mempool = engine->mempool;
 #endif
 	    }
 
-
-	    /* FIXME CHECK DUPES!! */
-	    if((i = hm_addhash(engine->hm_fp, sha1, hashtype, virname))) {
+	    if(hm_addhash_bin(engine->hm_fp, tagval3.content, CLI_HASH_SHA1, hashtype, virname)) {
 		cli_errmsg("asn1_load_mscat: failed to add hash\n");
 		mpool_free(engine->mempool, (void *)virname);
-		break;
+		return 1;
 	    }
 	}
-	if(tag.size) {
-	    size = 1;
-	    break;
-	}
     }
-    if(size)
-	return 1;
     return 0;
 }
 
-int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, const struct cl_engine *engine, uint8_t *computed_sha1) {
+int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, uint8_t *computed_sha1) {
     unsigned int content_size;
     struct cli_asn1 c;
     void *content;

@@ -26,26 +26,23 @@
 #include <stdlib.h>
 
 
-int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const char *virusname) {
-    const struct cli_htu32_element *item;
-    struct cli_sz_hash *szh;
-    struct cli_htu32 *ht;
+int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname) {
     enum CLI_HASH_TYPE type;
-    uint8_t binhash[32];
-    int hashlen, i;
+    char binhash[32];
+    int hlen;
 
-    if(!root || !hash) {
-	cli_errmsg("hm_addhash: NULL root or hash\n");
+    if(!root || !strhash) {
+	cli_errmsg("hm_addhash_str: NULL root or hash\n");
 	return CL_ENULLARG;
     }
 
     if(!size || size == (uint32_t)-1) {
-	cli_errmsg("hm_addhash: null or invalid size (%u)\n", size);
+	cli_errmsg("hm_addhash_str: null or invalid size (%u)\n", size);
 	return CL_EARG;
     }
 
-    hashlen = strlen(hash);
-    switch(hashlen) {
+    hlen = strlen(strhash);
+    switch(hlen) {
     case 32:
 	type = CLI_HASH_MD5;
 	break;
@@ -56,15 +53,30 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	type = CLI_HASH_SHA256;
 	break;
     default:
-	cli_errmsg("hm_addhash: invalid hash %s -- FIXME!\n", hash);
+	cli_errmsg("hm_addhash_str: invalid hash %s -- FIXME!\n", strhash);
 	return CL_EARG;
     }
-    if(cli_hex2str_to(hash, (char *)binhash, hashlen)) {
-	cli_errmsg("hm_addhash: invalid hash %s\n", hash);
+    if(cli_hex2str_to(strhash, (char *)binhash, hlen)) {
+	cli_errmsg("hm_addhash_str: invalid hash %s\n", strhash);
 	return CL_EARG;
     }
 
-    hashlen /= 2;
+    return hm_addhash_bin(root, binhash, type, size, virusname);
+}
+
+static const unsigned int hashlen[] = {
+    16, /* CLI_HASH_MD5 */
+    20, /* CLI_HASH_SHA1 */
+    32, /* CLI_HASH_SHA256 */
+};
+
+int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_TYPE type, uint32_t size, const char *virusname) {
+    const unsigned int hlen = hashlen[type];
+    const struct cli_htu32_element *item;
+    struct cli_sz_hash *szh;
+    struct cli_htu32 *ht;
+    int i;
+
     ht = &root->hm.sizehashes[type];
     if(!root->hm.sizehashes[type].capacity) {
 	i = cli_htu32_init(ht, 64, root->mempool);
@@ -76,7 +88,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	struct cli_htu32_element htitem;
 	szh = mpool_calloc(root->mempool, 1, sizeof(*szh));
 	if(!szh) {
-	    cli_errmsg("hm_addhash: failed to allocate size hash\n");
+	    cli_errmsg("hm_addhash_bin: failed to allocate size hash\n");
 	    return CL_EMEM;
 	}
 
@@ -84,7 +96,7 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 	htitem.data.as_ptr = szh;
 	i = cli_htu32_insert(ht, &htitem, root->mempool);
 	if(i) {
-	    cli_errmsg("ht_addhash: failed to add item to hashtab");
+	    cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
 	    mpool_free(root->mempool, szh);
 	    return i;
 	}
@@ -93,9 +105,9 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 
     szh->items++;
 
-    szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hashlen * szh->items);
+    szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hlen * szh->items);
     if(!szh->hash_array) {
-	cli_errmsg("ht_add: failed to grow hash array to %u entries\n", szh->items);
+	cli_errmsg("hm_addhash_bin: failed to grow hash array to %u entries\n", szh->items);
 	szh->items=0;
 	mpool_free(root->mempool, szh->virusnames);
 	szh->virusnames = NULL;
@@ -104,26 +116,18 @@ int hm_addhash(struct cli_matcher *root, const char *hash, uint32_t size, const 
 
     szh->virusnames = mpool_realloc2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
     if(!szh->virusnames) {
-	cli_errmsg("ht_add: failed to grow virusname array to %u entries\n", szh->items);
+	cli_errmsg("hm_addhash_bin: failed to grow virusname array to %u entries\n", szh->items);
 	szh->items=0;
 	mpool_free(root->mempool, szh->hash_array);
 	szh->hash_array = NULL;
 	return CL_EMEM;
     }
 
-    memcpy(&szh->hash_array[(szh->items-1) * hashlen], binhash, hashlen);
+    memcpy(&szh->hash_array[(szh->items-1) * hlen], binhash, hlen);
     szh->virusnames[(szh->items-1)] = virusname;
     
     return 0;
 }
-
-
-
-static const unsigned int hashlen[] = {
-    16, /* CLI_HASH_MD5 */
-    20, /* CLI_HASH_SHA1 */
-    32, /* CLI_HASH_SHA256 */
-};
 
 
 static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int keylen) {
