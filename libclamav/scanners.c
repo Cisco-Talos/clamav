@@ -2051,7 +2051,7 @@ static void emax_reached(cli_ctx *ctx) {
 	cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__); 			\
 	if(ctx->engine->cb_post_scan) {								\
 	    perf_start(ctx, PERFT_POSTCB);							\
-	    switch(ctx->engine->cb_post_scan(desc, retcode, retcode == CL_VIRUS && ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {	\
+	    switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, retcode == CL_VIRUS && ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {	\
 	    case CL_BREAK:									\
 		cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n"); 	\
 		perf_stop(ctx, PERFT_POSTCB);							\
@@ -2081,7 +2081,7 @@ static void emax_reached(cli_ctx *ctx) {
 #define CALL_PRESCAN_CB(scanfn)	                                                     \
     if(ctx->engine->scanfn) {				\
 	perf_start(ctx, PERFT_PRECB);                                                        \
-	switch(ctx->engine->scanfn(desc, filetype, ctx->cb_ctx)) {	\
+	switch(ctx->engine->scanfn(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {	\
 	case CL_BREAK:                                                                       \
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by "#scanfn" callback\n");                \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
@@ -2113,7 +2113,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0;
-	int desc = fmap_fd(*ctx->fmap);/* TODO: port the rest to fmap, and keep this just for pre/post callbacks */
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -2167,7 +2166,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	CALL_PRESCAN_CB(cb_pre_scan);
 	/* ret_from_magicscan can be used below here*/
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
-	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, fmap_fd(*ctx->fmap));
 	else if(ret == CL_CLEAN) {
 	    if(ctx->recursion != ctx->engine->maxreclevel)
 		cache_clean = 1; /* Only cache if limits are not reached */
@@ -2210,8 +2209,42 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_RAR:
 	    ctx->container_type = CL_TYPE_RAR;
-	    if(have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
+	    if(have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+		char *tmpname = NULL;
+		int desc = fmap_fd(*ctx->fmap);
+		if (desc == -1) {
+		    size_t pos = 0, len;
+
+		    cli_dbgmsg("fmap not backed by file, dumping ...\n");
+		    if ((ret = cli_gentempfd(((cli_ctx*)ctx)->engine->tmpdir, &tmpname, &desc)) != CL_SUCCESS) {
+			cli_dbgmsg("fmap_fd: failed to generate temporary file.\n");
+			break;
+		    }
+		    do {
+			char *b;
+
+			len = 0;
+			b = fmap_need_off_once_len(*ctx->fmap, pos, BUFSIZ, &len);
+			pos += len;
+			if (b && len > 0) {
+			    if (cli_writen(desc, b, len) != len) {
+				close(desc);
+				unlink(tmpname);
+				cli_warnmsg("fmap_fd_dump: write failed\n");
+				ret = CL_EWRITE;
+				break;
+			    }
+			}
+		    } while (len > 0);
+		    lseek(desc, 0, SEEK_SET);
+		}
 		ret = cli_scanrar(desc, ctx, 0, NULL);
+		if (tmpname) {
+		    close(desc);
+		    unlink(tmpname);
+		    free(tmpname);
+		}
+	    }
 	    break;
 
 	case CL_TYPE_ZIP:
@@ -2505,7 +2538,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_EMAXREC:
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
-	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
+	    cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
 	case CL_CLEAN:
 	    cache_clean = 1;
 	    ret_from_magicscan(CL_CLEAN);

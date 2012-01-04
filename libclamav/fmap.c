@@ -732,11 +732,9 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
 
 int fmap_fd(fmap_t *m)
 {
-    int fd;
-    if (!m->handle_is_fd) {
-	cli_warnmsg("fmap: trying to retrieve descriptor from something that is not\n");
+    int fd, ret;
+    if (!m->handle_is_fd)
 	return -1;
-    }
     fd = (int)(ssize_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;
