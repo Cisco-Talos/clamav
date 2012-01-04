@@ -181,7 +181,6 @@ CLAMAV_PRIVATE {
     cli_bytecode_debug;
     cli_hex2ui;
     fmap;
-    funmap;
     cli_bytecode_context_set_trace;
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;
