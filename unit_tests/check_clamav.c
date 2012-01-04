@@ -391,6 +391,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
     fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     close(fd);
+    cl_fmap_close(map);
 
     munmap(mem, size);
 }
