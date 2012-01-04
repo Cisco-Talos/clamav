@@ -11,6 +11,7 @@
 #include <check.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/mman.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
@@ -336,12 +337,71 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     return fd;
 }
 
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
+{
+    return pread(*((int*)handle), buf, count, offset);
+}
+
+START_TEST (test_cl_scanmap_callback_handle)
+{
+    const char *virname = NULL;
+    unsigned long int scanned = 0;
+    cl_fmap_t *map;
+    int ret;
+    char file[256];
+    unsigned long size;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+    /* intentionally use different way than scanners.c for testing */
+    map = cl_fmap_open_handle(&fd, 0, size, pread_cb, 1);
+    fail_unless(!!map, "cl_fmap_open_handle");
+
+    cli_dbgmsg("scanning (handle) %s\n", file);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (handle) %s\n", file);
+
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    close(fd);
+}
+END_TEST
+
+START_TEST (test_cl_scanmap_callback_mem)
+{
+    const char *virname = NULL;
+    unsigned long int scanned = 0;
+    cl_fmap_t *map;
+    int ret;
+    void *mem;
+    unsigned long size;
+    char file[256];
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+
+    mem = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    fail_unless(mem != MAP_FAILED, "mmap");
+
+    /* intentionally use different way than scanners.c for testing */
+    map = cl_fmap_open_memory(mem, size);
+    fail_unless(!!map, "cl_fmap_open_mem");
+
+    cli_dbgmsg("scanning (mem) %s\n", file);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    cli_dbgmsg("scan end (mem) %s\n", file);
+    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+    close(fd);
+
+    munmap(mem, size);
+}
+END_TEST
+
+
 static Suite *test_cl_suite(void)
 {
     Suite *s = suite_create("cl_api");
     TCase *tc_cl = tcase_create("cl_dup");
     TCase *tc_cl_scan = tcase_create("cl_scan");
-
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_dup);
@@ -368,8 +428,9 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expected_testfiles);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expected_testfiles);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expected_testfiles);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expected_testfiles);
 #endif
-
     return s;
 }
 
@@ -723,5 +784,6 @@ int main(void)
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);
+
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

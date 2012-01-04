@@ -23,8 +23,8 @@
 
 #include "others.h"
 
-int cli_scancpio_old(int fd, cli_ctx *ctx);
-int cli_scancpio_odc(int fd, cli_ctx *ctx);
-int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc);
+int cli_scancpio_old(cli_ctx *ctx);
+int cli_scancpio_odc(cli_ctx *ctx);
+int cli_scancpio_newc(cli_ctx *ctx, int crc);
 
 #endif

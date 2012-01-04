@@ -1,3 +1,11 @@
+Thu Nov  3 22:42:28 CET 2011 (acab)
+-----------------------------------
+ * libclamav/lzma_iface.c: stfu on (but still refuse) big lzma allocs
+
+Tue Nov  1 12:26:46 CET 2011 (acab)
+-----------------------------------
+ * libclamav: Add 7z SFX support (b#3063)
+
 Thu Dec 15 21:40:57 CET 2011 (tk)
 ---------------------------------
  * libclamav/matcher-ac.c: improve negation of single elements - handle

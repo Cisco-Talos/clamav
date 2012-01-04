@@ -139,27 +139,26 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
 	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
 	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
-	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
-	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
-	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
-	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/Archive/7z/7zIn.c \
-	7z/Archive/7z/7zIn.h 7z/Archive/7z/7zDecode.c \
-	7z/Archive/7z/7zDecode.h 7z/Archive/7z/7zItem.c \
-	7z/Archive/7z/7zItem.h 7z/Archive/7z/7zHeader.c \
-	7z/Archive/7z/7zHeader.h 7z/Archive/7z/7zExtract.c \
-	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
-	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
-	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
-	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
-	fmap.h perflogging.c perflogging.h default.h sha256.c sha256.h \
-	sha1.c sha1.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
-	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
-	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
-	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h rijndael.c rijndael.h bignum.c bignum_class.h
+	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
+	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
+	7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c 7z/7zFile.c 7z/7zFile.h \
+	7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h 7z/Bcj2.c 7z/Bcj2.h \
+	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
+	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
+	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h explode.c explode.h \
+	textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
+	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
+	uniq.h version.c version.h mpool.c mpool.h filtering.h \
+	filtering.c fmap.c fmap.h perflogging.c perflogging.h \
+	default.h sha256.c sha256.h sha1.c sha1.h bignum.h bytecode.c \
+	bytecode.h bytecode_vm.c bytecode_priv.h clambc.h cpio.c \
+	cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
+	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
+	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
+	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \
+	events.c events.h swf.c swf.h jpeg.c jpeg.h png.c png.h \
+	iso9660.c iso9660.h arc4.c arc4.h rijndael.c rijndael.h \
+	bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher-hash.lo \
@@ -193,13 +192,14 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-regex_suffix.lo libclamav_la-mspack.lo \
 	libclamav_la-cab.lo libclamav_la-entconv.lo \
 	libclamav_la-hashtab.lo libclamav_la-dconf.lo \
-	libclamav_la-LzmaDec.lo libclamav_la-lzma_iface.lo \
-	libclamav_la-7z.lo libclamav_la-7zFile.lo \
-	libclamav_la-7zStream.lo libclamav_la-7zCrc.lo \
-	libclamav_la-7zBuf.lo libclamav_la-Bcj2.lo libclamav_la-Bra.lo \
-	libclamav_la-Bra86.lo libclamav_la-7zIn.lo \
-	libclamav_la-7zDecode.lo libclamav_la-7zItem.lo \
-	libclamav_la-7zHeader.lo libclamav_la-7zExtract.lo \
+	libclamav_la-lzma_iface.lo libclamav_la-7z_iface.lo \
+	libclamav_la-7zAlloc.lo libclamav_la-7zBuf.lo \
+	libclamav_la-7zBuf2.lo libclamav_la-7zCrc.lo \
+	libclamav_la-7zDec.lo libclamav_la-7zFile.lo \
+	libclamav_la-7zIn.lo libclamav_la-7zStream.lo \
+	libclamav_la-Bcj2.lo libclamav_la-Bra.lo libclamav_la-Bra86.lo \
+	libclamav_la-Lzma2Dec.lo libclamav_la-LzmaDec.lo \
+	libclamav_la-Ppmd7.lo libclamav_la-Ppmd7Dec.lo \
 	libclamav_la-explode.lo libclamav_la-textnorm.lo \
 	libclamav_la-dlp.lo libclamav_la-js-norm.lo \
 	libclamav_la-uniq.lo libclamav_la-version.lo \
@@ -653,27 +653,26 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
 	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
 	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
-	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
-	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
-	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
-	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/Archive/7z/7zIn.c \
-	7z/Archive/7z/7zIn.h 7z/Archive/7z/7zDecode.c \
-	7z/Archive/7z/7zDecode.h 7z/Archive/7z/7zItem.c \
-	7z/Archive/7z/7zItem.h 7z/Archive/7z/7zHeader.c \
-	7z/Archive/7z/7zHeader.h 7z/Archive/7z/7zExtract.c \
-	7z/Archive/7z/7zExtract.h explode.c explode.h textnorm.c \
-	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
-	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
-	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
-	fmap.h perflogging.c perflogging.h default.h sha256.c sha256.h \
-	sha1.c sha1.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
-	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
-	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	bytecode_hooks.h cache.c cache.h bytecode_detect.c \
-	bytecode_detect.h builtin_bytecodes.h events.c events.h swf.c \
-	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h rijndael.c rijndael.h $(am__append_7)
+	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
+	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
+	7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c 7z/7zFile.c 7z/7zFile.h \
+	7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h 7z/Bcj2.c 7z/Bcj2.h \
+	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
+	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
+	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h explode.c explode.h \
+	textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
+	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
+	uniq.h version.c version.h mpool.c mpool.h filtering.h \
+	filtering.c fmap.c fmap.h perflogging.c perflogging.h \
+	default.h sha256.c sha256.h sha1.c sha1.h bignum.h bytecode.c \
+	bytecode.h bytecode_vm.c bytecode_priv.h clambc.h cpio.c \
+	cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
+	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
+	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
+	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \
+	events.c events.h swf.c swf.h jpeg.c jpeg.h png.c png.h \
+	iso9660.c iso9660.h arc4.c arc4.h rijndael.c rijndael.h \
+	$(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -793,20 +792,22 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-regfree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-str.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-strlcpy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7z.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zAlloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zBuf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zBuf2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zCrc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zDecode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zExtract.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zDec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zFile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zHeader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zIn.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zItem.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7zStream.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-7z_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bcj2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bra.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Bra86.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Lzma2Dec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-LzmaDec.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Ppmd7.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Ppmd7Dec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-arc4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-aspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-autoit.Plo@am__quote@
@@ -1447,14 +1448,6 @@ libclamav_la-dconf.lo: dconf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-dconf.lo `test -f 'dconf.c' || echo '$(srcdir)/'`dconf.c
 
-libclamav_la-LzmaDec.lo: 7z/LzmaDec.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-LzmaDec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-LzmaDec.Tpo -c -o libclamav_la-LzmaDec.lo `test -f '7z/LzmaDec.c' || echo '$(srcdir)/'`7z/LzmaDec.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-LzmaDec.Tpo $(DEPDIR)/libclamav_la-LzmaDec.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/LzmaDec.c' object='libclamav_la-LzmaDec.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-LzmaDec.lo `test -f '7z/LzmaDec.c' || echo '$(srcdir)/'`7z/LzmaDec.c
-
 libclamav_la-lzma_iface.lo: lzma_iface.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-lzma_iface.lo -MD -MP -MF $(DEPDIR)/libclamav_la-lzma_iface.Tpo -c -o libclamav_la-lzma_iface.lo `test -f 'lzma_iface.c' || echo '$(srcdir)/'`lzma_iface.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-lzma_iface.Tpo $(DEPDIR)/libclamav_la-lzma_iface.Plo
@@ -1463,29 +1456,37 @@ libclamav_la-lzma_iface.lo: lzma_iface.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-lzma_iface.lo `test -f 'lzma_iface.c' || echo '$(srcdir)/'`lzma_iface.c
 
-libclamav_la-7z.lo: 7z.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7z.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7z.Tpo -c -o libclamav_la-7z.lo `test -f '7z.c' || echo '$(srcdir)/'`7z.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7z.Tpo $(DEPDIR)/libclamav_la-7z.Plo
+libclamav_la-7z_iface.lo: 7z_iface.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7z_iface.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7z_iface.Tpo -c -o libclamav_la-7z_iface.lo `test -f '7z_iface.c' || echo '$(srcdir)/'`7z_iface.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7z_iface.Tpo $(DEPDIR)/libclamav_la-7z_iface.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z.c' object='libclamav_la-7z.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z_iface.c' object='libclamav_la-7z_iface.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7z.lo `test -f '7z.c' || echo '$(srcdir)/'`7z.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7z_iface.lo `test -f '7z_iface.c' || echo '$(srcdir)/'`7z_iface.c
 
-libclamav_la-7zFile.lo: 7z/7zFile.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zFile.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zFile.Tpo -c -o libclamav_la-7zFile.lo `test -f '7z/7zFile.c' || echo '$(srcdir)/'`7z/7zFile.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zFile.Tpo $(DEPDIR)/libclamav_la-7zFile.Plo
+libclamav_la-7zAlloc.lo: 7z/7zAlloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zAlloc.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zAlloc.Tpo -c -o libclamav_la-7zAlloc.lo `test -f '7z/7zAlloc.c' || echo '$(srcdir)/'`7z/7zAlloc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zAlloc.Tpo $(DEPDIR)/libclamav_la-7zAlloc.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zFile.c' object='libclamav_la-7zFile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zAlloc.c' object='libclamav_la-7zAlloc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zFile.lo `test -f '7z/7zFile.c' || echo '$(srcdir)/'`7z/7zFile.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zAlloc.lo `test -f '7z/7zAlloc.c' || echo '$(srcdir)/'`7z/7zAlloc.c
 
-libclamav_la-7zStream.lo: 7z/7zStream.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zStream.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zStream.Tpo -c -o libclamav_la-7zStream.lo `test -f '7z/7zStream.c' || echo '$(srcdir)/'`7z/7zStream.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zStream.Tpo $(DEPDIR)/libclamav_la-7zStream.Plo
+libclamav_la-7zBuf.lo: 7z/7zBuf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zBuf.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zBuf.Tpo -c -o libclamav_la-7zBuf.lo `test -f '7z/7zBuf.c' || echo '$(srcdir)/'`7z/7zBuf.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zBuf.Tpo $(DEPDIR)/libclamav_la-7zBuf.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zStream.c' object='libclamav_la-7zStream.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zBuf.c' object='libclamav_la-7zBuf.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zStream.lo `test -f '7z/7zStream.c' || echo '$(srcdir)/'`7z/7zStream.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zBuf.lo `test -f '7z/7zBuf.c' || echo '$(srcdir)/'`7z/7zBuf.c
+
+libclamav_la-7zBuf2.lo: 7z/7zBuf2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zBuf2.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zBuf2.Tpo -c -o libclamav_la-7zBuf2.lo `test -f '7z/7zBuf2.c' || echo '$(srcdir)/'`7z/7zBuf2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zBuf2.Tpo $(DEPDIR)/libclamav_la-7zBuf2.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zBuf2.c' object='libclamav_la-7zBuf2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zBuf2.lo `test -f '7z/7zBuf2.c' || echo '$(srcdir)/'`7z/7zBuf2.c
 
 libclamav_la-7zCrc.lo: 7z/7zCrc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zCrc.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zCrc.Tpo -c -o libclamav_la-7zCrc.lo `test -f '7z/7zCrc.c' || echo '$(srcdir)/'`7z/7zCrc.c
@@ -1495,13 +1496,37 @@ libclamav_la-7zCrc.lo: 7z/7zCrc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zCrc.lo `test -f '7z/7zCrc.c' || echo '$(srcdir)/'`7z/7zCrc.c
 
-libclamav_la-7zBuf.lo: 7z/7zBuf.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zBuf.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zBuf.Tpo -c -o libclamav_la-7zBuf.lo `test -f '7z/7zBuf.c' || echo '$(srcdir)/'`7z/7zBuf.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zBuf.Tpo $(DEPDIR)/libclamav_la-7zBuf.Plo
+libclamav_la-7zDec.lo: 7z/7zDec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zDec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zDec.Tpo -c -o libclamav_la-7zDec.lo `test -f '7z/7zDec.c' || echo '$(srcdir)/'`7z/7zDec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zDec.Tpo $(DEPDIR)/libclamav_la-7zDec.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zBuf.c' object='libclamav_la-7zBuf.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zDec.c' object='libclamav_la-7zDec.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zBuf.lo `test -f '7z/7zBuf.c' || echo '$(srcdir)/'`7z/7zBuf.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zDec.lo `test -f '7z/7zDec.c' || echo '$(srcdir)/'`7z/7zDec.c
+
+libclamav_la-7zFile.lo: 7z/7zFile.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zFile.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zFile.Tpo -c -o libclamav_la-7zFile.lo `test -f '7z/7zFile.c' || echo '$(srcdir)/'`7z/7zFile.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zFile.Tpo $(DEPDIR)/libclamav_la-7zFile.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zFile.c' object='libclamav_la-7zFile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zFile.lo `test -f '7z/7zFile.c' || echo '$(srcdir)/'`7z/7zFile.c
+
+libclamav_la-7zIn.lo: 7z/7zIn.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zIn.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zIn.Tpo -c -o libclamav_la-7zIn.lo `test -f '7z/7zIn.c' || echo '$(srcdir)/'`7z/7zIn.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zIn.Tpo $(DEPDIR)/libclamav_la-7zIn.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zIn.c' object='libclamav_la-7zIn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zIn.lo `test -f '7z/7zIn.c' || echo '$(srcdir)/'`7z/7zIn.c
+
+libclamav_la-7zStream.lo: 7z/7zStream.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zStream.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zStream.Tpo -c -o libclamav_la-7zStream.lo `test -f '7z/7zStream.c' || echo '$(srcdir)/'`7z/7zStream.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zStream.Tpo $(DEPDIR)/libclamav_la-7zStream.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/7zStream.c' object='libclamav_la-7zStream.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zStream.lo `test -f '7z/7zStream.c' || echo '$(srcdir)/'`7z/7zStream.c
 
 libclamav_la-Bcj2.lo: 7z/Bcj2.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Bcj2.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Bcj2.Tpo -c -o libclamav_la-Bcj2.lo `test -f '7z/Bcj2.c' || echo '$(srcdir)/'`7z/Bcj2.c
@@ -1527,45 +1552,37 @@ libclamav_la-Bra86.lo: 7z/Bra86.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Bra86.lo `test -f '7z/Bra86.c' || echo '$(srcdir)/'`7z/Bra86.c
 
-libclamav_la-7zIn.lo: 7z/Archive/7z/7zIn.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zIn.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zIn.Tpo -c -o libclamav_la-7zIn.lo `test -f '7z/Archive/7z/7zIn.c' || echo '$(srcdir)/'`7z/Archive/7z/7zIn.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zIn.Tpo $(DEPDIR)/libclamav_la-7zIn.Plo
+libclamav_la-Lzma2Dec.lo: 7z/Lzma2Dec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Lzma2Dec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Lzma2Dec.Tpo -c -o libclamav_la-Lzma2Dec.lo `test -f '7z/Lzma2Dec.c' || echo '$(srcdir)/'`7z/Lzma2Dec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-Lzma2Dec.Tpo $(DEPDIR)/libclamav_la-Lzma2Dec.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Archive/7z/7zIn.c' object='libclamav_la-7zIn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Lzma2Dec.c' object='libclamav_la-Lzma2Dec.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zIn.lo `test -f '7z/Archive/7z/7zIn.c' || echo '$(srcdir)/'`7z/Archive/7z/7zIn.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Lzma2Dec.lo `test -f '7z/Lzma2Dec.c' || echo '$(srcdir)/'`7z/Lzma2Dec.c
 
-libclamav_la-7zDecode.lo: 7z/Archive/7z/7zDecode.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zDecode.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zDecode.Tpo -c -o libclamav_la-7zDecode.lo `test -f '7z/Archive/7z/7zDecode.c' || echo '$(srcdir)/'`7z/Archive/7z/7zDecode.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zDecode.Tpo $(DEPDIR)/libclamav_la-7zDecode.Plo
+libclamav_la-LzmaDec.lo: 7z/LzmaDec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-LzmaDec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-LzmaDec.Tpo -c -o libclamav_la-LzmaDec.lo `test -f '7z/LzmaDec.c' || echo '$(srcdir)/'`7z/LzmaDec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-LzmaDec.Tpo $(DEPDIR)/libclamav_la-LzmaDec.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Archive/7z/7zDecode.c' object='libclamav_la-7zDecode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/LzmaDec.c' object='libclamav_la-LzmaDec.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zDecode.lo `test -f '7z/Archive/7z/7zDecode.c' || echo '$(srcdir)/'`7z/Archive/7z/7zDecode.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-LzmaDec.lo `test -f '7z/LzmaDec.c' || echo '$(srcdir)/'`7z/LzmaDec.c
 
-libclamav_la-7zItem.lo: 7z/Archive/7z/7zItem.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zItem.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zItem.Tpo -c -o libclamav_la-7zItem.lo `test -f '7z/Archive/7z/7zItem.c' || echo '$(srcdir)/'`7z/Archive/7z/7zItem.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zItem.Tpo $(DEPDIR)/libclamav_la-7zItem.Plo
+libclamav_la-Ppmd7.lo: 7z/Ppmd7.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Ppmd7.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Ppmd7.Tpo -c -o libclamav_la-Ppmd7.lo `test -f '7z/Ppmd7.c' || echo '$(srcdir)/'`7z/Ppmd7.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-Ppmd7.Tpo $(DEPDIR)/libclamav_la-Ppmd7.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Archive/7z/7zItem.c' object='libclamav_la-7zItem.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Ppmd7.c' object='libclamav_la-Ppmd7.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zItem.lo `test -f '7z/Archive/7z/7zItem.c' || echo '$(srcdir)/'`7z/Archive/7z/7zItem.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Ppmd7.lo `test -f '7z/Ppmd7.c' || echo '$(srcdir)/'`7z/Ppmd7.c
 
-libclamav_la-7zHeader.lo: 7z/Archive/7z/7zHeader.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zHeader.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zHeader.Tpo -c -o libclamav_la-7zHeader.lo `test -f '7z/Archive/7z/7zHeader.c' || echo '$(srcdir)/'`7z/Archive/7z/7zHeader.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zHeader.Tpo $(DEPDIR)/libclamav_la-7zHeader.Plo
+libclamav_la-Ppmd7Dec.lo: 7z/Ppmd7Dec.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Ppmd7Dec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Ppmd7Dec.Tpo -c -o libclamav_la-Ppmd7Dec.lo `test -f '7z/Ppmd7Dec.c' || echo '$(srcdir)/'`7z/Ppmd7Dec.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-Ppmd7Dec.Tpo $(DEPDIR)/libclamav_la-Ppmd7Dec.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Archive/7z/7zHeader.c' object='libclamav_la-7zHeader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Ppmd7Dec.c' object='libclamav_la-Ppmd7Dec.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zHeader.lo `test -f '7z/Archive/7z/7zHeader.c' || echo '$(srcdir)/'`7z/Archive/7z/7zHeader.c
-
-libclamav_la-7zExtract.lo: 7z/Archive/7z/7zExtract.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-7zExtract.lo -MD -MP -MF $(DEPDIR)/libclamav_la-7zExtract.Tpo -c -o libclamav_la-7zExtract.lo `test -f '7z/Archive/7z/7zExtract.c' || echo '$(srcdir)/'`7z/Archive/7z/7zExtract.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-7zExtract.Tpo $(DEPDIR)/libclamav_la-7zExtract.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='7z/Archive/7z/7zExtract.c' object='libclamav_la-7zExtract.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-7zExtract.lo `test -f '7z/Archive/7z/7zExtract.c' || echo '$(srcdir)/'`7z/Archive/7z/7zExtract.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Ppmd7Dec.lo `test -f '7z/Ppmd7Dec.c' || echo '$(srcdir)/'`7z/Ppmd7Dec.c
 
 libclamav_la-explode.lo: explode.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-explode.lo -MD -MP -MF $(DEPDIR)/libclamav_la-explode.Tpo -c -o libclamav_la-explode.lo `test -f 'explode.c' || echo '$(srcdir)/'`explode.c

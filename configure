@@ -16546,9 +16546,9 @@ $as_echo "$ac_cv_libbz2_libs" >&6; }
     test -z "$LIBBZ2_PREFIX" || LDFLAGS="$LDFLAGS -L$LIBBZ2_PREFIX/$acl_libdirstem";
 
     have_bzprefix="no"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for BZ2_bzReadOpen in -lbz2" >&5
-$as_echo_n "checking for BZ2_bzReadOpen in -lbz2... " >&6; }
-if ${ac_cv_lib_bz2_BZ2_bzReadOpen+:} false; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for BZ2_bzDecompressInit in -lbz2" >&5
+$as_echo_n "checking for BZ2_bzDecompressInit in -lbz2... " >&6; }
+if ${ac_cv_lib_bz2_BZ2_bzDecompressInit+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -16562,27 +16562,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char BZ2_bzReadOpen ();
+char BZ2_bzDecompressInit ();
 int
 main ()
 {
-return BZ2_bzReadOpen ();
+return BZ2_bzDecompressInit ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_bz2_BZ2_bzReadOpen=yes
+  ac_cv_lib_bz2_BZ2_bzDecompressInit=yes
 else
-  ac_cv_lib_bz2_BZ2_bzReadOpen=no
+  ac_cv_lib_bz2_BZ2_bzDecompressInit=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bz2_BZ2_bzReadOpen" >&5
-$as_echo "$ac_cv_lib_bz2_BZ2_bzReadOpen" >&6; }
-if test "x$ac_cv_lib_bz2_BZ2_bzReadOpen" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bz2_BZ2_bzDecompressInit" >&5
+$as_echo "$ac_cv_lib_bz2_BZ2_bzDecompressInit" >&6; }
+if test "x$ac_cv_lib_bz2_BZ2_bzDecompressInit" = xyes; then :
   have_bzprefix="yes"
 fi
 

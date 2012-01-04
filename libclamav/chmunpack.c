@@ -111,6 +111,14 @@ static int chm_read_data(fmap_t *map, char *dest, off_t offset, off_t len)
     return TRUE;
 }
 
+/* Read callback for lzx compressed data */
+static int chm_readn(struct cab_file *file, unsigned char *buffer, int bytes) {
+    int ret = fmap_readn(file->cab->map, buffer, file->cab->cur_offset, bytes);
+    if(ret > 0)
+	file->cab->cur_offset += ret;
+    return ret;
+}
+
 static uint64_t chm_copy_file_data(int ifd, int ofd, uint64_t len)
 {
 	unsigned char data[8192];
@@ -495,6 +503,7 @@ static int chm_decompress_stream(chm_metadata_t *metadata, const char *dirname, 
 	struct lzx_stream * stream;
 	char filename[1024];
 	struct cab_file file;
+	struct cab_archive cab;
 	
 	snprintf(filename, 1024, "%s"PATHSEP"clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
@@ -555,15 +564,15 @@ static int chm_decompress_stream(chm_metadata_t *metadata, const char *dirname, 
 	length &= -lzx_control.reset_interval;
 	
 	cli_dbgmsg("Compressed offset: %lu\n", (unsigned long int) lzx_content.offset);
-	if ((uint64_t) lseek(metadata->map->fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
-		goto abort;
-	}
 
 	memset(&file, 0, sizeof(struct cab_file));
 	file.max_size = ctx->engine->maxfilesize;
-	stream = lzx_init(metadata->map->fd, tmpfd, window_bits,
+	file.cab = &cab;
+	cab.map = metadata->map;
+	cab.cur_offset = lzx_content.offset;
+	stream = lzx_init(tmpfd, window_bits,
 			lzx_control.reset_interval / LZX_FRAME_SIZE,
-			4096, length, &file, NULL);
+			4096, length, &file, chm_readn);
 	if (!stream) {
 		cli_dbgmsg("lzx_init failed\n");
 		goto abort;

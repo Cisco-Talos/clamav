@@ -493,24 +493,23 @@ static void cleanup_stack(struct stack* stack,struct rtf_state* state,cli_ctx* c
 		state.cb_end(&state,ctx);\
 	tableDestroy(actiontable);\
 	cleanup_stack(&stack,&state,ctx);\
-	free(buff);\
         if(!ctx->engine->keeptmp)\
 		cli_rmdirs(tempname);\
 	free(tempname);\
 	free(stack.states);
 
-int cli_scanrtf(int desc, cli_ctx *ctx)
+int cli_scanrtf(cli_ctx *ctx)
 {
 	char* tempname;
 	const unsigned char* ptr;
 	const unsigned char* ptr_end;
-	unsigned char* buff;
 	int ret = CL_CLEAN;
 	struct rtf_state state;
 	struct stack stack;
 	ssize_t bread;
 	table_t* actiontable;
 	uint8_t main_symbols[256];
+	size_t offset = 0;
 
 	cli_dbgmsg("in cli_scanrtf()\n");
 
@@ -528,19 +527,12 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 	if(!stack.states)
 		return CL_EMEM;
 
-	buff = cli_malloc(BUFF_SIZE);
-	if(!buff) {
-		free(stack.states);
-		return CL_EMEM;
-	}
-
 	if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	    return CL_EMEM;
 
 	if(mkdir(tempname, 0700)) {
 	    	cli_dbgmsg("ScanRTF -> Can't create temporary directory %s\n", tempname);
 		free(stack.states);
-		free(buff);
 		free(tempname);
 		return CL_ETMPDIR;
 	}
@@ -549,7 +541,6 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 	if((ret = load_actions(actiontable))) {
 		cli_dbgmsg("RTF: Unable to load rtf action table\n");
 		free(stack.states);
-		free(buff);
 		if(!ctx->engine->keeptmp)
 			cli_rmdirs(tempname);
 		free(tempname);
@@ -559,10 +550,9 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 
 	init_rtf_state(&state);
 
-	while(( bread = cli_readn(desc, buff, BUFF_SIZE) ) > 0) {
-		ptr = buff;
-		ptr_end = buff + bread;
-		while(ptr < ptr_end) {
+	for (offset = 0; ptr = fmap_need_off_once_len(*ctx->fmap, offset, BUFF_SIZE, &bread); offset += bread) {
+	    ptr_end = ptr + bread;
+	    while(ptr < ptr_end) {
 			switch(state.parse_state) {
 				case PARSE_MAIN: 
 					switch(*ptr++) {
@@ -617,7 +607,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 							}
 					}
 					break;
-				case PARSE_CONTROL_:					
+				case PARSE_CONTROL_:
 					if(isalpha(*ptr))  {
 						state.parse_state = PARSE_CONTROL_WORD;
 						state.controlword_cnt = 0;

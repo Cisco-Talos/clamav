@@ -208,6 +208,48 @@ START_TEST (test_base64)
     messageDestroy(m);
 }
 END_TEST
+
+static struct {
+    const char* u16;
+    const char* u8;
+} u16_tests[] = {
+    {"\x74\x00\x65\x00\x73\x00\x74\x00\x00\x00", "test"},
+    {"\xff\xfe\x00",""},
+    {"\x80\x00\x00","\xc2\x80"},
+    {"\xff\x07\x00","\xdf\xbf"},
+    {"\x00\x08\x00","\xe0\xa0\x80"},
+    {"\xff\x0f\x00","\xe0\xbf\xbf"},
+    {"\x00\x10\x00","\xe1\x80\x80"},
+    {"\xff\xcf\x00","\xec\xbf\xbf"},
+    {"\x00\xd0\x00","\xed\x80\x80"},
+    {"\xff\xd7\x00","\xed\x9f\xbf"},
+    {"\x00\xe0\x00","\xee\x80\x80"},
+    {"\xff\xff\x00","\xef\xbf\xbf"},
+    {"\x00\xd8\x00\xdc\x00","\xf0\x90\x80\x80"},
+    {"\xbf\xd8\xff\xdf\x00","\xf0\xbf\xbf\xbf"},
+    {"\xc0\xd8\x00\xdc\x00","\xf1\x80\x80\x80"},
+    {"\xbf\xdb\xff\xdf\x00","\xf3\xbf\xbf\xbf"},
+    {"\xc0\xdb\x00\xdc\x00","\xf4\x80\x80\x80"},
+    {"\xff\xdb\xff\xdf\x00","\xf4\x8f\xbf\xbf"},
+    {"\x00\xdc\x00\xd8\x00","\xef\xbf\xbd\xef\xbf\xbd"}
+};
+
+static unsigned u16_len(const char *s)
+{
+    unsigned i;
+    for (i=0;s[i] || s[i+1];i+=2) {}
+    return i;
+}
+
+START_TEST(test_u16_u8)
+{
+    char *result = cli_utf16_to_utf8(u16_tests[_i].u16, u16_len(u16_tests[_i].u16), UTF16_LE);
+    fail_unless(!!result, "cli_utf16_to_utf8 non-null");
+    fail_unless_fmt(!strcmp(result, u16_tests[_i].u8), "utf16_to_8 %d failed, expected: %s, got %s", _i, u16_tests[_i].u8, result);
+    free(result);
+}
+END_TEST
+
 #endif
 
 Suite *test_str_suite(void)
@@ -232,6 +274,9 @@ Suite *test_str_suite(void)
     tc_str = tcase_create("str functions");
     suite_add_tcase (s, tc_str);
     tcase_add_test(tc_str, hex2str);
+#ifdef CHECK_HAVE_LOOPS
+    tcase_add_loop_test(tc_str, test_u16_u8, 0, sizeof(u16_tests)/sizeof(u16_tests[0]));
+#endif
 
     tc_decodeline = tcase_create("decodeline");
     suite_add_tcase (s, tc_decodeline);

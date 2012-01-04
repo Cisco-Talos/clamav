@@ -50,6 +50,6 @@ typedef enum {
 #include "uuencode.h"
 
 size_t	strstrip(char *s);	/* remove trailing white space */
-int	cli_mbox(const char *dir, int desc, cli_ctx *ctx);
+int	cli_mbox(const char *dir, cli_ctx *ctx);
 
 #endif /* __MBOX_H */

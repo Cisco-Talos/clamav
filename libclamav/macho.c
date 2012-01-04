@@ -552,7 +552,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
 	cli_dbgmsg("UNIBIN: Binary %u of %u\n", i + 1, fat_header.nfats);
 	cli_dbgmsg("UNIBIN: File offset: %u\n", fat_arch.offset);
 	cli_dbgmsg("UNIBIN: File size: %u\n", fat_arch.size);
-	ret = cli_dumpscan(map->fd, fat_arch.offset, fat_arch.size, ctx);
+	ret = cli_map_scandesc(map, fat_arch.offset, fat_arch.size, ctx);
 	if(ret == CL_VIRUS)
 	    break;
     }

@@ -26,7 +26,9 @@
 #include "filetypes.h"
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx);
-int cli_magic_scandesc_type(int desc, cli_ctx *ctx, cli_file_t type);
+int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type);
+int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx);
+int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx);
 int cli_found_possibly_unwanted(cli_ctx* ctx);
 
 #endif

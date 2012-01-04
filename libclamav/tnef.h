@@ -23,6 +23,6 @@
 
 #include "others.h"
 
-int cli_tnef(const char *dir, int desc, cli_ctx *ctx);
+int cli_tnef(const char *dir, cli_ctx *ctx);
 
 #endif

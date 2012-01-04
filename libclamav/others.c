@@ -915,65 +915,6 @@ int cli_rmdirs(const char *dirname)
 }
 #endif
 
-int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
-{
-	int newfd, bread, sum = 0, ret;
-	char buff[FILEBUFF];
-	char *name;
-
-    if(offset) {
-	if(lseek(fd, offset, SEEK_SET) == -1) {
-	    cli_dbgmsg("cli_dumpscan: Can't lseek to %u\n", (unsigned int) offset);
-	    return CL_EFORMAT; /* most likely because of corrupted file */
-	}
-    }
-
-    if(!(name = cli_gentemp(ctx->engine->tmpdir)))
-	return CL_EMEM;
-
-    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-	cli_errmsg("cli_dumpscan: Can't create file %s\n", name);
-	free(name);
-	return CL_ECREAT;
-    }
-
-    while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
-	if((uint32_t) (sum + bread) >= size) {
-	    if(write(newfd, buff, size - sum) == -1) {
-		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
-		close(newfd);
-		cli_unlink(name);
-		free(name);
-		return CL_EWRITE;
-	    }
-	    break;
-	} else {
-	    if(write(newfd, buff, bread) == -1) {
-		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
-		close(newfd);
-		cli_unlink(name);
-		free(name);
-		return CL_EWRITE;
-	    }
-	}
-	sum += bread;
-    }
-    cli_dbgmsg("DUMP&SCAN: File extracted to %s\n", name);
-    lseek(newfd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
-	cli_dbgmsg("cli_dumpscan: Infected with %s\n", *ctx->virname);
-
-    close(newfd);
-    if(!ctx->engine->keeptmp) {
-	if(cli_unlink(name)) {
-	    free(name);
-	    return CL_EUNLINK;
-	}
-    }
-    free(name);
-    return ret;
-}
-
 /* Implement a generic bitset, trog@clamav.net */
 
 #define BITS_PER_CHAR (8)

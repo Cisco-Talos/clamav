@@ -281,36 +281,39 @@ libclamav_la_SOURCES = \
 	hashtab.h \
 	dconf.c \
 	dconf.h \
-	7z/LzmaDec.c \
-	7z/LzmaDec.h \
-	7z/Types.h \
 	lzma_iface.c \
 	lzma_iface.h \
-	7z.c \
-	7z.h \
-	7z/7zFile.c \
-	7z/7zFile.h \
-	7z/7zStream.c \
-	7z/CpuArch.h \
-	7z/7zCrc.c \
-	7z/7zCrc.h \
+	7z_iface.c \
+	7z_iface.h \
+	7z/7z.h \
+	7z/7zAlloc.c \
+	7z/7zAlloc.h \
 	7z/7zBuf.c \
 	7z/7zBuf.h \
+	7z/7zBuf2.c \
+	7z/7zCrc.c \
+	7z/7zCrc.h \
+	7z/7zDec.c \
+	7z/7zFile.c \
+	7z/7zFile.h \
+	7z/7zIn.c \
+	7z/7zStream.c \
+	7z/7zVersion.h \
 	7z/Bcj2.c \
 	7z/Bcj2.h \
 	7z/Bra.c \
 	7z/Bra.h \
 	7z/Bra86.c \
-	7z/Archive/7z/7zIn.c \
-	7z/Archive/7z/7zIn.h \
-	7z/Archive/7z/7zDecode.c \
-	7z/Archive/7z/7zDecode.h \
-	7z/Archive/7z/7zItem.c \
-	7z/Archive/7z/7zItem.h \
-	7z/Archive/7z/7zHeader.c \
-	7z/Archive/7z/7zHeader.h \
-	7z/Archive/7z/7zExtract.c \
-	7z/Archive/7z/7zExtract.h \
+	7z/CpuArch.h \
+	7z/Lzma2Dec.c \
+	7z/Lzma2Dec.h \
+	7z/LzmaDec.c \
+	7z/LzmaDec.h \
+	7z/Ppmd.h \
+	7z/Ppmd7.c \
+	7z/Ppmd7.h \
+	7z/Ppmd7Dec.c \
+	7z/Types.h \
 	explode.c \
 	explode.h \
 	textnorm.c \

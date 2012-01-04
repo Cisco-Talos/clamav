@@ -44,6 +44,11 @@ check_clamav_SOURCES = check_clamav_skip.c
 endif
 
 check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
+
+clamav.hdb: input/clamav.hdb
+	cp $< $@
+
+check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 check_clamd.sh: $(top_builddir)/test/clam.exe check_clamd
 check_clamscan.sh: $(top_builddir)/test/clam.exe
 

@@ -242,22 +242,12 @@ static const char *tagname(tag_id id)
 
 static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const char *obj, int version, cli_ctx *ctx)
 {
-	int newfd, ret = CL_CLEAN;
-	unsigned int bread, sum = 0;
-	char buff[FILEBUFF];
-	char *name;
+    int ret = CL_CLEAN;
+    char buff[16];
 
-    if(!(name = cli_gentemp(ctx->engine->tmpdir)))
-	return CL_EMEM;
-
-    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-	cli_errmsg("dumpscan: Can't create file %s\n", name);
-	free(name);
-	return CL_ECREAT;
-    }
-
-    while((bread = fmap_readn(map, buff, offset, sizeof(buff))) > 0) {
-	if(!sum && ctx->img_validate) {
+    memset(buff, 0, sizeof(buff));
+    fmap_readn(map, buff, offset, sizeof(buff));
+    if(ctx->img_validate) {
 	    if(!memcmp(buff, "\xff\xd8", 2)) {
 		cli_dbgmsg("SWF: JPEG image data\n");
 	    } else if(!memcmp(buff, "\xff\xd9\xff\xd8", 4)) {
@@ -284,46 +274,10 @@ static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const c
 		ret = CL_VIRUS;
 	    }
 	    if(ret == CL_VIRUS) {
-		close(newfd);
-		cli_unlink(name);
-		free(name);
 		return ret;
 	    }
-	}
-	if(sum + bread >= size) {
-	    if(cli_writen(newfd, buff, size - sum) == -1) {
-		cli_errmsg("dumpscan: Can't write to %s\n", name);
-		close(newfd);
-		cli_unlink(name);
-		free(name);
-		return CL_EWRITE;
-	    }
-	    break;
-	} else {
-	    if(cli_writen(newfd, buff, bread) == -1) {
-		cli_errmsg("cli_dumpscan: Can't write to %s\n", name);
-		close(newfd);
-		cli_unlink(name);
-		free(name);
-		return CL_EWRITE;
-	    }
-	}
-	sum += bread;
-	offset += bread;
     }
-    cli_dbgmsg("SWF: %s data extracted to %s\n", obj, name);
-    lseek(newfd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
-	cli_dbgmsg("cli_dumpscan: Infected with %s\n", *ctx->virname);
-
-    close(newfd);
-    if(!ctx->engine->keeptmp) {
-	if(cli_unlink(name)) {
-	    free(name);
-	    return CL_EUNLINK;
-	}
-    }
-    free(name);
+    ret = cli_map_scandesc(map, offset, size, ctx);
     if(ctx->img_validate && ret == CL_EPARSE && SCAN_ALGO) {
 	*ctx->virname = "Heuristics.SWF.SuspectImage.E";
 	return CL_VIRUS;
