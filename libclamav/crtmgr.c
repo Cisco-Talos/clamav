@@ -43,25 +43,48 @@ void cli_crt_clear(cli_crt *x509) {
 }
 
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
-    cli_crt *i = m->crts;
-    while(i) {
-	if(/*x509->not_before == i->not_before &&
-	     x509->not_after == i->not_after && */
-	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+    cli_crt *i;
+    for(i = m->crts; i; i = i->next) {
+	if(x509->not_before >= i->not_before &&
+	   x509->not_after <= i->not_after && !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
 	   !mp_cmp(&x509->n, &i->n) &&
-	   !mp_cmp(&x509->e, &i->e)) 
+	   !mp_cmp(&x509->e, &i->e)) {
 	    return i;
-	i = i->next;
+	}
     }
     return NULL;
 }
 
 int crtmgr_add(crtmgr *m, cli_crt *x509) {
-    cli_crt *i = crtmgr_lookup(m, x509);
-    int ret;
+    cli_crt *i;
+    int ret = 0;
 
-    if(i)
-	return 0;
+    for(i = m->crts; i; i = i->next) {
+	if(!memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+	   !mp_cmp(&x509->n, &i->n) &&
+	   !mp_cmp(&x509->e, &i->e)) {
+	    if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
+		/* Already same or broader */
+		return 0;
+	    }
+
+	    if(i->not_before > x509->not_before && i->not_before <= x509->not_after) {
+		/* Extend left */
+		i->not_before = x509->not_before;
+		ret = 1;
+	    }
+	    if(i->not_after >= x509->not_before && i->not_after < x509->not_after) {
+		/* Extend right */
+		i->not_after = x509->not_after;
+		ret = 1;
+	    }
+	    if(ret) {
+		cli_errmsg("existing crt extended\n");
+		return 0;
+	    } else 
+		cli_errmsg("crt meh\n");
+	}
+    }
 
     i = cli_malloc(sizeof(*i));
     if(!i)
@@ -90,7 +113,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	m->crts->prev = i;
     m->crts = i;
 
-    {
+    if(cli_debug_flag) {
 	char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], mod[1024], exp[1024];
 	int j;
 	mp_toradix_n(&i->n, mod, 16, sizeof(mod));
@@ -99,7 +122,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	    sprintf(&issuer[j*2], "%02x", i->issuer[j]);
 	    sprintf(&subject[j*2], "%02x", i->subject[j]);
 	}
-	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s\n", subject, issuer, mod, exp);
+	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s %lu->%lu\n", subject, issuer, mod, exp, (unsigned long)i->not_before, (unsigned long)i->not_after);
     }
     m->items++;
     return 0;
@@ -143,8 +166,6 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 	cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
 	return 1;
     }
-
-    memset(d, '\xcc', sizeof(d));
 
     do {
 	if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
@@ -382,8 +403,8 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 989450362; /* May  9 23:19:22 2001 GMT */
-    ca.not_after = 1620602293; /* May  9 23:28:13 2021 GMT */
+    ca.not_before = 0;
+    ca.not_after = (-1U)>>1;
     crtmgr_add(m, &ca);
 
     memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
@@ -391,8 +412,8 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 852879600; /* Jan 10 07:00:00 1997 GMT */
-    ca.not_after = 1609398000; /* Dec 31 07:00:00 2020 GMT */
+    ca.not_before = 0;
+    ca.not_after = (-1U)>>1;
     crtmgr_add(m, &ca);
 
     memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
@@ -400,8 +421,8 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 852076800; /* Jan 01 00:00:00 1997 GMT */
-    ca.not_after = 1609459199; /* Dec 31 23:59:59 2020 GMT */
+    ca.not_before = 0;
+    ca.not_after = (-1U)>>1;
     crtmgr_add(m, &ca);
 
     memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
@@ -409,9 +430,10 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 822873600; /* Jan 29 00:00:00 1996 GMT */
-    ca.not_after = 1848787199; /* Aug  1 23:59:59 2028 GMT */
+    ca.not_before = 0;
+    ca.not_after = (-1U)>>1;
     crtmgr_add(m, &ca);
 
+    cli_crt_clear(&ca);
     return 0;
 }

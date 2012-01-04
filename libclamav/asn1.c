@@ -285,7 +285,7 @@ static int asn1_getnum(const char *s) {
     return (s[0] - '0')*10 + (s[1] - '0');
 }
 
-static int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *time) {
+static int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_t *tm) {
     struct cli_asn1 obj;
     int ret = asn1_get_obj(map, *asn1data, size, &obj);
     unsigned int len;
@@ -331,12 +331,13 @@ static int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_
 	    t.tm_year = 2000 + n;
 	ptr += 2;
     }
+    t.tm_year -= 1900;
     n = asn1_getnum(ptr);
     if(n<1 || n>12) {
 	cli_dbgmsg("asn1_get_time: invalid month %u\n", n);
 	return 1;
     }
-    t.tm_mon = n;
+    t.tm_mon = n - 1;
     ptr+=2;
 
     n = asn1_getnum(ptr);
@@ -376,7 +377,7 @@ static int asn1_get_time(fmap_t *map, void **asn1data, unsigned int *size, time_
 	return 1;
     }
 
-    *time = mktime(&t);
+    *tm = mktime(&t);
     *asn1data = obj.next;
     return 0;
 }
@@ -510,6 +511,10 @@ static int asn1_get_x509(fmap_t *map, void **asn1data, unsigned int *size, crtmg
 	    break;
 	if(asn1_get_time(map, &next, &avail, &x509.not_after)) /* notAfter */
 	    break;
+	if(x509.not_before >= x509.not_after) {
+	    cli_dbgmsg("asn1_get_x509: bad validity\n");
+	    break;
+	}
 	if(avail) {
 	    cli_dbgmsg("asn1_get_x509: found unexpected extra data in validity\n");
 	    break;
@@ -677,9 +682,8 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	    if(dsize)
 		break;
 	    if(newcerts.crts) {
-		unsigned int orig = newcerts.items;
 		cli_crt *x509 = newcerts.crts;
-		cli_dbgmsg("------------------------\n");
+		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
 		    if(!crtmgr_verify_crt(cmgr, x509)) {
 			if(crtmgr_add(cmgr, x509)) {
@@ -692,7 +696,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 		    x509 = x509->next;
 		}
 		if(newcerts.items)
-		    cli_errmsg("asn1_parse_mscat: got %u certs, %u left unverified\n", orig, newcerts.items);
+		    cli_errmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
 		crtmgr_free(&newcerts);
 	    }
 	}
@@ -865,8 +869,10 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	message = asn1.content;
 	message_size = asn1.size;
 
-	if(!size)
-	    return 0; /* FIXME NO TIMESTAMP/COUNTERSIG */
+	if(!size) {
+	    cli_dbgmsg("asn1_parse_mscat: countersignature is missing\n");
+	    break;
+	}
 
 	if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) /* unauthenticatedAttributes */
 	    break;
@@ -1077,7 +1083,7 @@ static int asn1_parse_mscat(fmap_t *map, void *start, unsigned int size, crtmgr 
 	}
 	if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read authenticatedAttributes\n");
-	    return 1;
+	    break;
 	}
 
 	if(hashtype == CLI_SHA1RSA) {

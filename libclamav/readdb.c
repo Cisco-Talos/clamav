@@ -2982,6 +2982,8 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, root);
     }
 
+    crtmgr_free(&engine->cmgr);
+
     while(engine->cdb) {
 	struct cli_cdb *pt = engine->cdb;
 	engine->cdb = pt->next;
