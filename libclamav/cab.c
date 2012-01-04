@@ -37,8 +37,8 @@
 #include "mspack.h"
 #include "cab.h"
 
-#define EC32(x) le32_to_host(x) /* Convert little endian to host */
-#define EC16(x) le16_to_host(x)
+#define EC32(x) cli_readint32(&x) /* Convert little endian to host */
+#define EC16(x) cli_readint16(&x)
 
 /* hard limits */
 #define CAB_FOLDER_LIMIT    5000
