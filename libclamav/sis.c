@@ -43,8 +43,8 @@
 #include "scanners.h"
 #include "sis.h"
 
-#define EC32(x) le32_to_host(x)
-#define EC16(x) le16_to_host(x)
+#define EC32(x) cli_readint32(&(x))
+#define EC16(x) cli_readint16(&(x))
 
 static int real_scansis(cli_ctx *, const char *);
 static int real_scansis9x(cli_ctx *, const char *);
@@ -80,9 +80,9 @@ int cli_scansis(cli_ctx *ctx) {
   }
 
   cli_dbgmsg("SIS: UIDS %x %x %x - %x\n", EC32(uid[0]), EC32(uid[1]), EC32(uid[2]), EC32(uid[3]));
-  if (uid[2]==EC32(0x10000419))
+  if (uid[2]==le32_to_host(0x10000419))
     i=real_scansis(ctx, tmpd);
-  else if(uid[0]==EC32(0x10201a7a)) {
+  else if(uid[0]==le32_to_host(0x10201a7a)) {
     i=real_scansis9x(ctx, tmpd);
   }
 
