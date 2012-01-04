@@ -357,9 +357,9 @@ static int ac_maketrans(struct cli_matcher *root)
 		if (list) {
 		    while (list->next) list = list->next;
 		    list->next = child->fail->list;
-		}
+		} else
+		    child->list = child->fail->list;
 		child->trans = child->fail->trans;
-		child->fail = NULL;
 	    } else {
 		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
@@ -470,7 +470,9 @@ void cli_ac_free(struct cli_matcher *root)
 	mpool_free(root->mempool, root->ac_reloff);
 
     for(i = 0; i < root->ac_nodes; i++) {
-	if(!IS_LEAF(root->ac_nodetable[i]) && root->ac_nodetable[i]->fail)
+	if(!IS_LEAF(root->ac_nodetable[i]) &&
+	   root->ac_nodetable[i]->fail &&
+	   root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans)
 	    mpool_free(root->mempool, root->ac_nodetable[i]->trans);
 	mpool_free(root->mempool, root->ac_nodetable[i]);
     }
@@ -1180,11 +1182,13 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	current = current->trans[buffer[i]];
 
 	if(UNLIKELY(IS_FINAL(current))) {
+	    struct cli_ac_patt *faillist = current->fail->list;
 	    patt = current->list;
 	    while(patt) {
 		if(patt->partno > mdata->min_partno) {
-		    patt = NULL;
-		    break;
+		    patt = faillist;
+		    faillist = NULL;
+		    continue;
 		}
 		bp = i + 1 - patt->depth;
 		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
@@ -1642,15 +1646,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		newspecial->type = AC_SPECIAL_WHITE;
 	    */
 	    } else {
+		newspecial->num = 1;
 		for(i = 0; i < strlen(pt); i++)
 		    if(pt[i] == '|')
 			newspecial->num++;
-
-		if(!newspecial->num) {
-		    error = CL_EMALFDB;
-		    break;
-		} else
-		    newspecial->num++;
 
 		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
 		    newspecial->type = AC_SPECIAL_ALT_CHAR;
@@ -1665,13 +1664,21 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		}
 
 		for(i = 0; i < newspecial->num; i++) {
-		    if(!(h = cli_strtok(pt, i, "|"))) {
-			error = CL_EMALFDB;
-			break;
-		    }
+			unsigned int clen;
 
-		    if(!(c = (char*)cli_mpool_hex2str(root->mempool, h))) {
+		    if(newspecial->num == 1) {
+			c = (char *) cli_mpool_hex2str(root->mempool, pt);
+			clen = strlen(pt) / 2;
+		    } else {
+			if(!(h = cli_strtok(pt, i, "|"))) {
+			    error = CL_EMEM;
+			    break;
+			}
+			c = (char *) cli_mpool_hex2str(root->mempool, h);
+			clen = strlen(h) / 2;
 			free(h);
+		    }
+		    if(!c) {
 			error = CL_EMALFDB;
 			break;
 		    }
@@ -1690,19 +1697,17 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
 				error = CL_EMEM;
 				free(c);
-				free(h);
 				break;
 			    }
 			    specialpt->next->str = (unsigned char *) c;
-			    specialpt->next->len = strlen(h) / 2;
+			    specialpt->next->len = clen;
 			} else {
 			    newspecial->str = (unsigned char *) c;
-			    newspecial->len = strlen(h) / 2;
+			    newspecial->len = clen;
 			}
 		    }
-		    free(h);
 		}
-		if(newspecial->type == AC_SPECIAL_ALT_CHAR)
+		if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
 		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
 
 		if(error)

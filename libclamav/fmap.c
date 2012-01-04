@@ -50,6 +50,114 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
 #ifndef _WIN32
 /* vvvvv POSIX STUFF BELOW vvvvv */
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset);
+
+/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
+   which may in turn prevent some mmap constants to be defined */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
+    unsigned int pages, mapsz, hdrsz;
+    unsigned short dumb = 1;
+    int pgsz = cli_getpagesize();
+    struct stat st;
+    fmap_t *m;
+    void *handle = (void*)(ssize_t)fd;
+
+    *empty = 0;
+    if(fstat(fd, &st)) {
+	cli_warnmsg("fmap: fstat failed\n");
+	return NULL;
+    }
+
+    if(!len) len = st.st_size - offset; /* bound checked later */
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
+	return NULL;
+    }
+    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+	cli_warnmsg("fmap: attempted oof mapping\n");
+	return NULL;
+    }
+    m = cl_fmap_open_handle((void*)(ssize_t)fd, offset, len, pread_cb, 1);
+    if (!m)
+	return NULL;
+    m->mtime = st.st_mtime;
+    m->handle_is_fd = 1;
+    return m;
+}
+#else
+/* vvvvv WIN32 STUFF BELOW vvvvv */
+static void unmap_win32(fmap_t *m) { /* WIN32 */
+    UnmapViewOfFile(m->data);
+    CloseHandle(m->mh);
+    free((void *)m);
+}
+
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
+    unsigned int pages, mapsz, hdrsz;
+    int pgsz = cli_getpagesize();
+    struct stat st;
+    fmap_t *m;
+    const void *data;
+    HANDLE fh;
+    HANDLE mh;
+
+    *empty = 0;
+    if(fstat(fd, &st)) {
+	cli_warnmsg("fmap: fstat failed\n");
+	return NULL;
+    }
+    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
+	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
+	return NULL;
+    }
+    if(!len) len = st.st_size - offset; /* bound checked later */
+    if(!len) {
+	cli_dbgmsg("fmap: attempted void mapping\n");
+	*empty = 1;
+	return NULL;
+    }
+    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+	cli_warnmsg("fmap: attempted oof mapping\n");
+	return NULL;
+    }
+
+    pages = fmap_align_items(len, pgsz);
+    hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
+
+    if((fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
+	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
+	return NULL;
+    }
+    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
+	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
+	CloseHandle(fh);
+	return NULL;
+    }
+    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
+	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
+	CloseHandle(mh);
+	CloseHandle(fh);
+	return NULL;
+    }
+    if(!(m = cl_fmap_open_memory(data, len))) {
+	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
+	CloseHandle(mh);
+	CloseHandle(fh);
+	return NULL;
+    }
+    m->handle = (void*)(ssize_t)fd;
+    m->handle_is_fd = 1;
+    m->fh = fh;
+    m->mh = mh;
+    m->unmap = unmap_win32;
+    return m;
+}
+#endif /* _WIN32 */
+
+/* vvvvv SHARED STUFF BELOW vvvvv */
 
 #define FM_MASK_COUNT 0x3fffffff
 #define FM_MASK_PAGED 0x40000000
@@ -88,34 +196,29 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define fmap_bitmap (&m->placeholder_for_bitmap)
 
-/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
-   which may in turn prevent some mmap constants to be defined */
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock);
+static void handle_unneed_off(fmap_t *m, size_t at, size_t len);
+static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint);
+static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
+static void unmap_mmap(fmap_t *m);
+static void unmap_malloc(fmap_t *m);
 
-
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
+extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
+				      clcb_pread pread_cb, int use_aging)
+{
     unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
+    cl_fmap_t *m;
     int pgsz = cli_getpagesize();
-    struct stat st;
-    fmap_t *m;
 
-    *empty = 0;
-    if(fstat(fd, &st)) {
-	cli_warnmsg("fmap: fstat failed\n");
-	return NULL;
-    }
     if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
 	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
 	return NULL;
     }
-    if(!len) len = st.st_size - offset; /* bound checked later */
     if(!len) {
 	cli_dbgmsg("fmap: attempted void mapping\n");
-	*empty = 1;
 	return NULL;
     }
-    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+    if (offset >= len) {
 	cli_warnmsg("fmap: attempted oof mapping\n");
 	return NULL;
     }
@@ -123,44 +226,60 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(fmap_t) + (pages-1) * sizeof(uint32_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
     mapsz = pages * pgsz + hdrsz;
-    fmap_lock;
+
+#ifndef ANONYMOUS_MAP
+    use_aging = 0;
+#endif
 #ifdef ANONYMOUS_MAP
-    if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
-	m = NULL;
-    } else {
-	dumb = 0;
+    if (use_aging) {
+	fmap_lock;
+	if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
+	    m = NULL;
+	} else {
 #if HAVE_MADVISE
-	madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+	    madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
 #endif /* madvise */
+	    /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
+	    memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
+	}
+	fmap_unlock;
     }
-#else /* ! ANONYMOUS_MAP */
-    m = (fmap_t *)cli_malloc(mapsz);
 #endif /* ANONYMOUS_MAP */
+    if (!use_aging) {
+	m = (fmap_t *)cli_malloc(mapsz);
+	memset(m, 0, hdrsz);
+    }
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
-	fmap_unlock;
 	return NULL;
     }
-    /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
-    memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
-    fmap_unlock;
-    m->fd = fd;
-    m->dumb = dumb;
-    m->mtime = st.st_mtime;
+    m->handle = handle;
+    m->pread_cb = pread_cb;
+    m->aging = use_aging;
     m->offset = offset;
-    m->len = len;
+    m->len = len;/* m->nested_offset + m->len = m->real_len */
+    m->real_len = len;
     m->pages = pages;
     m->hdrsz = hdrsz;
     m->pgsz = pgsz;
     m->paged = 0;
     m->dont_cache_flag = 0;
+    m->unmap = use_aging ? unmap_mmap : unmap_malloc;
+    m->need = handle_need;
+    m->need_offstr = handle_need_offstr;
+    m->gets = handle_gets;
+    m->unneed_off = handle_unneed_off;
     return m;
 }
 
+static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
+{
+    return pread((int)(ssize_t)handle, buf, count, offset);
+}
 
 static void fmap_aging(fmap_t *m) {
 #ifdef ANONYMOUS_MAP
-    if(m->dumb) return;
+    if(!m->aging) return;
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
 	unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme)/sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
 
@@ -234,7 +353,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
     fmap_lock;
     for(i=0; i<count; i++) { /* prefault */
-    	/* Not worth checking if the page is already paged, just ping each */
+	/* Not worth checking if the page is already paged, just ping each */
 	/* Also not worth reusing the loop below */
 	volatile char faultme;
 	faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
@@ -278,27 +397,31 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 	if(force_read) {
 	    /* we have some pending reads to perform */
-	    unsigned int j;
-	    for(j=first_page; j<page; j++) {
-		if(fmap_bitmap[j] & FM_MASK_SEEN) {
-		    /* page we've seen before: check mtime */
-		    struct stat st;
-		    if(fstat(m->fd, &st)) {
-			cli_warnmsg("fmap_readpage: fstat failed\n");
-			return 1;
+	    if (m->handle_is_fd) {
+		unsigned int j;
+		int _fd = (int)(ssize_t)m->handle;
+		for(j=first_page; j<page; j++) {
+		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
+			/* page we've seen before: check mtime */
+			struct stat st;
+			char err[256];
+			if(fstat(_fd, &st)) {
+			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+			    return 1;
+			}
+			if(m->mtime != st.st_mtime) {
+			    cli_warnmsg("fmap_readpage: file changed as we read it\n");
+			    return 1;
+			}
+			break;
 		    }
-		    if(m->mtime != st.st_mtime) {
-			cli_warnmsg("fmap_readpage: file changed as we read it\n");
-			return 1;
-		    }
-		    break;
 		}
 	    }
 
 	    eintr_off = 0;
 	    while(readsz) {
 		ssize_t got;
-		got=pread(m->fd, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+		got=m->pread_cb(m->handle, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
 
 		if(got < 0 && errno == EINTR)
 		    continue;
@@ -329,8 +452,8 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    pptr = (char *)m + page * m->pgsz + m->hdrsz;
 	    first_page = page;
 	}
-	if((page == m->pages - 1) && (m->len % m->pgsz))
-	    readsz += m->len % m->pgsz;
+	if((page == m->pages - 1) && (m->real_len % m->pgsz))
+	    readsz += m->real_len % m->pgsz;
 	else
 	    readsz += m->pgsz;
 	if(lock) /* lock requested: set paged, lock page and set lock count to 1 */
@@ -343,14 +466,16 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 }
 
 
-static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
+static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
     unsigned int first_page, last_page, lock_count;
     char *ret;
 
     if(!len)
 	return NULL;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len))
+    at += m->nested_offset;
+
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len))
 	return NULL;
 
     fmap_aging(m);
@@ -371,23 +496,6 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
     return (void *)ret;
 }
 
-void *fmap_need_off(fmap_t *m, size_t at, size_t len) {
-    return fmap_need(m, at, len, 1);
-}
-void *fmap_need_off_once(fmap_t *m, size_t at, size_t len) {
-    return fmap_need(m, at, len, 0);
-}
-void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len) {
-    return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len) {
-    return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) {
-    size_t at = (char *)ptr - (char *)m - m->hdrsz;
-    return fmap_need_offstr(m, at, len_hint);
-}
-
 static void fmap_unneed_page(fmap_t *m, unsigned int page) {
     uint32_t s = fmap_bitmap[page];
 
@@ -406,15 +514,15 @@ static void fmap_unneed_page(fmap_t *m, unsigned int page) {
     return;
 }
 
-void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
+static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
-    if(m->dumb) return;
+    if(!m->aging) return;
     if(!len) {
 	cli_warnmsg("fmap_unneed: attempted void unneed\n");
 	return;
     }
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
 	cli_warnmsg("fmap: attempted oof unneed\n");
 	return;
     }
@@ -427,30 +535,28 @@ void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
     }
 }
 
-void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) {
-    fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
-}
-
-void funmap(fmap_t *m) {
+static void unmap_mmap(fmap_t *m)
+{
 #ifdef ANONYMOUS_MAP
-    if(!m->dumb) {
-	size_t len = m->pages * m->pgsz + m->hdrsz;
-	fmap_lock;
-	munmap((void *)m, len);
-	fmap_unlock;
-    } else
+    size_t len = m->pages * m->pgsz + m->hdrsz;
+    fmap_lock;
+    munmap((void *)m, len);
+    fmap_unlock;
 #endif
-	free((void *)m);
 }
 
-void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
+static void unmap_malloc(fmap_t *m) {
+    free((void *)m);
+}
+
+static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     unsigned int i, first_page, last_page;
     void *ptr = (void *)((char *)m + m->hdrsz + at);
 
-    if(!len_hint || len_hint > m->len - at)
-	len_hint = m->len - at;
+    if(!len_hint || len_hint > m->real_len - at)
+	len_hint = m->real_len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
 	return NULL;
 
     fmap_aging(m);
@@ -482,13 +588,12 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     return NULL;
 }
 
-
-void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
+static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     unsigned int i, first_page, last_page;
     char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
-    size_t len = MIN(max_len-1, m->len - *at), fullen = len;
+    size_t len = MIN(max_len-1, m->real_len - *at), fullen = len;
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
+    if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
 	return NULL;
 
     fmap_aging(m);
@@ -529,114 +634,58 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     return dst;
 }
 
-/* ^^^^^ POSIX STUFF AVOVE ^^^^^ */
+/* vvvvv MEMORY STUFF BELOW vvvvv */
 
-#else /* _WIN32 */
+static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock);
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
+static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
+static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
-/* vvvvv WIN32 STUFF BELOW vvvvv */
+static void unmap_none(fmap_t *m) {}
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
-    unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
+{
     int pgsz = cli_getpagesize();
-    struct stat st;
-    fmap_t *m;
-
-    *empty = 0;
-    if(fstat(fd, &st)) {
-	cli_warnmsg("fmap: fstat failed\n");
+    cl_fmap_t *m = cli_calloc(1, sizeof(*m));
+    if (!m) {
+	cli_warnmsg("fmap: map allocation failed\n");
 	return NULL;
     }
-    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
-	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
-	return NULL;
-    }
-    if(!len) len = st.st_size - offset; /* bound checked later */
-    if(!len) {
-	cli_dbgmsg("fmap: attempted void mapping\n");
-	*empty = 1;
-	return NULL;
-    }
-    if(!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
-	cli_warnmsg("fmap: attempted oof mapping\n");
-	return NULL;
-    }
-
-    pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
-
-    if(!(m = (fmap_t *)cli_malloc(sizeof(fmap_t)))) {
-	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
-	return NULL;
-    }
-    if((m->fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
-	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
-	free(m);
-	return NULL;
-    }
-    if(!(m->mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
-	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
-	free(m);
-	return NULL;
-    }
-    if(!(m->data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
-	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
-	CloseHandle(m->mh);
-	free(m);
-	return NULL;
-    }
-    m->fd = fd;
-    m->dumb = dumb;
-    m->mtime = st.st_mtime;
-    m->offset = offset;
+    m->data = start;
     m->len = len;
-    m->pages = pages;
-    m->hdrsz = hdrsz;
+    m->real_len = len;
     m->pgsz = pgsz;
-    m->paged = 0;
-    m->dont_cache_flag = 0;
+    m->pages = fmap_align_items(len, pgsz);
+    m->unmap = unmap_malloc;
+    m->need = mem_need;
+    m->need_offstr = mem_need_offstr;
+    m->gets = mem_gets;
+    m->unneed_off = mem_unneed_off;
     return m;
 }
 
-void funmap(fmap_t *m) { /* WIN32 */
-    UnmapViewOfFile(m->data);
-    CloseHandle(m->mh);
-    free((void *)m);
-}
 
-static void *fmap_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    if(!CLI_ISCONTAINED(0, m->len, at, len))
+static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN32 */
+    if(!len) {
 	return NULL;
+    }
+    at += m->nested_offset;
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
+	return NULL;
+    }
 
-    if(!len)
-	return NULL;
     return (void *)((char *)m->data + at);
 }
 
-void *fmap_need_off(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    return fmap_need(m, at, len);
-}
-void *fmap_need_off_once(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-    return fmap_need(m, at, len);
-}
-void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
-    return fmap_need(m, (char *)ptr - (char *)m->data, len);
-}
-void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
-    return fmap_need(m, (char *)ptr - (char *)m->data, len);
-}
-void fmap_unneed_off(fmap_t *m, size_t at, size_t len) { /* WIN32 */
-}
-void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) { /* WIN32 */
-}
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
 
-void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) { /* WIN32 */
+static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
 
-    if(!len_hint || len_hint > m->len - at)
-	len_hint = m->len - at;
+    if(!len_hint || len_hint > m->real_len - at)
+	len_hint = m->real_len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
+    if(!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
 	return NULL;
 
     if(memchr(ptr, 0, len_hint))
@@ -644,16 +693,11 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) { /* WIN32 */
     return NULL;
 }
 
-void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) { /* WIN32 */
-    size_t at = (char *)ptr - (char *)m->data;
-    return fmap_need_offstr(m, at, len_hint);
-}
-
-void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
+static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     char *src = (char *)m->data + *at, *endptr = NULL;
-    size_t len = MIN(max_len-1, m->len - *at);
+    size_t len = MIN(max_len-1, m->real_len - *at);
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
+    if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
 	return NULL;
 
     if((endptr = memchr(src, '\n', len))) {
@@ -669,28 +713,9 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
     return dst;
 }
 
-#endif /* _WIN32 */
-
-
-/* vvvvv SHARED STUFF BELOW vvvvv */
-
 fmap_t *fmap(int fd, off_t offset, size_t len) {
     int unused;
     return fmap_check_empty(fd, offset, len, &unused);
-}
-
-int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
-    char *src;
-
-    if(at > m->len)
-	return -1;
-    if(len > m->len - at)
-	len = m->len - at;
-    src = fmap_need_off_once(m, at, len);
-    if(!src)
-	return -1;
-    memcpy(dst, src, len);
-    return len;
 }
 
 static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
@@ -703,4 +728,19 @@ static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
 
 static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
+}
+
+int fmap_fd(fmap_t *m)
+{
+    int fd, ret;
+    if (!m->handle_is_fd)
+	return -1;
+    fd = (int)(ssize_t)m->handle;
+    lseek(fd, 0, SEEK_SET);
+    return fd;
+}
+
+extern void cl_fmap_close(cl_fmap_t *map)
+{
+    funmap(map);
 }

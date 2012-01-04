@@ -96,6 +96,7 @@ static const struct ftmap_s {
     { "CL_TYPE_AUTOIT",		CL_TYPE_AUTOIT		},
     { "CL_TYPE_ISHIELD_MSI",	CL_TYPE_ISHIELD_MSI	},
     { "CL_TYPE_7Z",		CL_TYPE_7Z		},
+    { "CL_TYPE_7ZSFX",		CL_TYPE_7ZSFX		},
     { "CL_TYPE_SWF",		CL_TYPE_SWF		},
     { "CL_TYPE_ISO9660",	CL_TYPE_ISO9660		},
     { NULL,			CL_TYPE_IGNORED		}

@@ -245,7 +245,15 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 	    offdata[1] = atoi(&offcpy[3]);
 
 	} else if(offcpy[0] == 'S') {
-	    if(!strncmp(offstr, "SL+", 3)) {
+	    if(offcpy[1] == 'E') {
+		if(!cli_isnumber(&offcpy[2])) {
+		    cli_errmsg("cli_caloff: Invalid section number\n");
+		    return CL_EMALFDB;
+		}
+		offdata[0] = CLI_OFF_SE;
+		offdata[3] = atoi(&offcpy[2]);
+
+	    } else if(!strncmp(offstr, "SL+", 3)) {
 		offdata[0] = CLI_OFF_SL_PLUS;
 		if(!cli_isnumber(&offcpy[3])) {
 		    cli_errmsg("cli_caloff: Invalid offset value\n");
@@ -303,12 +311,11 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 
     } else {
 	/* calculate relative offsets */
-	if(info->status == -1) {
-	    *offset_min = CLI_OFF_NONE;
-	    if(offset_max)
-		*offset_max = CLI_OFF_NONE;
+	*offset_min = CLI_OFF_NONE;
+	if(offset_max)
+	    *offset_max = CLI_OFF_NONE;
+	if(info->status == -1)
 	    return CL_SUCCESS;
-	}
 
 	switch(offdata[0]) {
 	    case CLI_OFF_EOF_MINUS:
@@ -333,6 +340,16 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 		else
 		    *offset_min = info->exeinfo.section[offdata[3]].raw + offdata[1];
 		break;
+
+	    case CLI_OFF_SE:
+		if(offdata[3] >= info->exeinfo.nsections) {
+		    *offset_min = CLI_OFF_NONE;
+		} else {
+		    *offset_min = info->exeinfo.section[offdata[3]].raw;
+		    *offset_max = *offset_min + info->exeinfo.section[offdata[3]].rsz + offdata[2];
+		}
+		break;
+
 	    case CLI_OFF_VERSION:
 		*offset_min = *offset_max = CLI_OFF_ANY;
 		break;
@@ -341,12 +358,8 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 		return CL_EARG;
 	}
 
-	if(offset_max) {
-	    if(*offset_min != CLI_OFF_NONE)
-		*offset_max = *offset_min + offdata[2];
-	    else
-		*offset_max = CLI_OFF_NONE;
-	}
+	if(offset_max && *offset_max == CLI_OFF_NONE && *offset_min != CLI_OFF_NONE)
+	    *offset_max = *offset_min + offdata[2];
     }
 
     return CL_SUCCESS;
@@ -450,7 +463,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 #endif
 
     if (ctx->engine->cb_hash)
-	ctx->engine->cb_hash(ctx->fmap[0]->fd, size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
+	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
 
     return CL_VIRUS;
 }
@@ -559,7 +572,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 		if(memcmp(ctx->handlertype_hash, hash, 16)) {
 		    ctx->recursion++;
 		    memcpy(ctx->handlertype_hash, hash, 16);
-		    if(cli_magic_scandesc_type(map->fd, ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
+		    if(cli_magic_scandesc_type(ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
 			ctx->recursion--;
 			return CL_VIRUS;
 		    }

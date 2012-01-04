@@ -262,7 +262,7 @@ int crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     return 1;
 }
 
-int crtmgr_verify_pkcs7(crtmgr *m, uint8_t *issuer, void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash) {
+int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash) {
     cli_crt *i;
     mp_int sig;
     int ret;

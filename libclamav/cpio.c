@@ -94,17 +94,18 @@ static void sanitname(char *name)
     }
 }
 
-int cli_scancpio_old(int fd, cli_ctx *ctx)
+int cli_scancpio_old(cli_ctx *ctx)
 {
 	struct cpio_hdr_old hdr_old;
 	char name[513];
 	unsigned int file = 0, trailer = 0;
 	uint32_t filesize, namesize, hdr_namesize;
 	int ret, conv;
-	off_t pos;
+	off_t pos = 0;
 
 
-    while(read(fd, &hdr_old, sizeof(hdr_old)) == sizeof(hdr_old)) {
+    while(fmap_readn(*ctx->fmap, &hdr_old, pos, sizeof(hdr_old)) == sizeof(hdr_old)) {
+	pos += sizeof(hdr_old);
 	if(!hdr_old.magic && trailer)
 	    return CL_SUCCESS;
 
@@ -122,10 +123,11 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	if(hdr_old.namesize) {
 	    hdr_namesize = EC16(hdr_old.namesize, conv);
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if(read(fd, name, namesize) != namesize) {
+	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
+	    pos += namesize;
 	    name[namesize - 1] = 0;
 	    sanitname(name);
 	    cli_dbgmsg("CPIO: Name: %s\n", name);
@@ -135,9 +137,9 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	    if(namesize < hdr_namesize) {
 		if(hdr_namesize % 2)
 		    hdr_namesize++;
-		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+		pos += hdr_namesize - namesize;
 	    } else if(hdr_namesize % 2)
-		lseek(fd, 1, SEEK_CUR);
+		pos++;
 	}
 	filesize = (uint32_t) (EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
 	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
@@ -147,7 +149,6 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
 	    return CL_VIRUS;
 
-	pos = lseek(fd, 0, SEEK_CUR);
 
 	if((EC16(hdr_old.mode, conv) & 0170000) != 0100000) {
 	    cli_dbgmsg("CPIO: Not a regular file, skipping\n");
@@ -156,7 +157,7 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	    if(ret == CL_EMAXFILES) {
 		return ret;
 	    } else if(ret == CL_SUCCESS) {
-		ret = cli_dumpscan(fd, 0, filesize, ctx);
+		ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
 		if(ret == CL_VIRUS)
 		    return ret;
 	    }
@@ -164,24 +165,24 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	if(filesize % 2)
 	    filesize++;
 
-	lseek(fd, pos + filesize, SEEK_SET);
+	pos += filesize;
     }
 
     return CL_CLEAN;
 }
 
-int cli_scancpio_odc(int fd, cli_ctx *ctx)
+int cli_scancpio_odc(cli_ctx *ctx)
 {
 	struct cpio_hdr_odc hdr_odc;
 	char name[513], buff[12];
 	unsigned int file = 0, trailer = 0;
 	uint32_t filesize, namesize, hdr_namesize;
 	int ret;
-	off_t pos;
+	off_t pos = 0;
 
 
-    while(read(fd, &hdr_odc, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
-
+    while(fmap_readn(*ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
+	pos += sizeof(hdr_odc);
 	if(!hdr_odc.magic[0] && trailer)
 	    return CL_SUCCESS;
 
@@ -200,10 +201,11 @@ int cli_scancpio_odc(int fd, cli_ctx *ctx)
 	}
 	if(hdr_namesize) {
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if(read(fd, name, namesize) != namesize) {
+	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
+	    pos += namesize;
 	    name[namesize - 1] = 0;
 	    sanitname(name);
 	    cli_dbgmsg("CPIO: Name: %s\n", name);
@@ -211,7 +213,7 @@ int cli_scancpio_odc(int fd, cli_ctx *ctx)
 		trailer = 1;
 
 	    if(namesize < hdr_namesize)
-		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+		pos += hdr_namesize - namesize;
 	}
 
 	strncpy(buff, hdr_odc.filesize, 11);
@@ -227,35 +229,34 @@ int cli_scancpio_odc(int fd, cli_ctx *ctx)
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
 	    return CL_VIRUS;
 
-	pos = lseek(fd, 0, SEEK_CUR);
 
 	ret = cli_checklimits("cli_scancpio_odc", ctx, filesize, 0, 0);
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_dumpscan(fd, 0, filesize, ctx);
+	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}
 
-	lseek(fd, pos + filesize, SEEK_SET);
+	pos += filesize;
     }
 
     return CL_CLEAN;
 }
 
-int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
+int cli_scancpio_newc(cli_ctx *ctx, int crc)
 {
 	struct cpio_hdr_newc hdr_newc;
 	char name[513], buff[9];
 	unsigned int file = 0, trailer = 0;
 	uint32_t filesize, namesize, hdr_namesize, pad;
 	int ret;
-	off_t pos;
+	off_t pos = 0;
 
 
-    while(read(fd, &hdr_newc, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
-
+    while(fmap_readn(*ctx->fmap, &hdr_newc, pos, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
+	pos += sizeof(hdr_newc);
 	if(!hdr_newc.magic[0] && trailer)
 	    return CL_SUCCESS;
 
@@ -274,10 +275,11 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	}
 	if(hdr_namesize) {
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if(read(fd, name, namesize) != namesize) {
+	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
+	    pos += namesize;
 	    name[namesize - 1] = 0;
 	    sanitname(name);
 	    cli_dbgmsg("CPIO: Name: %s\n", name);
@@ -288,9 +290,9 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	    if(namesize < hdr_namesize) {
 		if(pad)
 		    hdr_namesize += pad;
-		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+		pos += hdr_namesize - namesize;
 	    } else if(pad)
-		lseek(fd, pad, SEEK_CUR);
+		pos += pad;
 	}
 
 	strncpy(buff, hdr_newc.filesize, 8);
@@ -306,13 +308,12 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS)
 	    return CL_VIRUS;
 
-	pos = lseek(fd, 0, SEEK_CUR);
 
 	ret = cli_checklimits("cli_scancpio_newc", ctx, filesize, 0, 0);
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_dumpscan(fd, 0, filesize, ctx);
+	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}
@@ -320,7 +321,7 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	if((pad = filesize % 4))
 	    filesize += (4 - pad);
 
-	lseek(fd, pos + filesize, SEEK_SET);
+	pos += filesize;
     }
 
     return CL_CLEAN;

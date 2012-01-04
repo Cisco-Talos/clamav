@@ -161,6 +161,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
 #define CLI_OFF_SX_PLUS     6
 #define CLI_OFF_VERSION     7
 #define CLI_OFF_MACRO       8
+#define CLI_OFF_SE	    9
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 

@@ -1,5 +1,5 @@
 /* 7zStream.c -- 7z Stream functions
-2008-11-23 : Igor Pavlov : Public domain */
+2010-03-11 : Igor Pavlov : Public domain */
 
 #include <string.h>
 
@@ -39,7 +39,7 @@ SRes LookInStream_SeekTo(ILookInStream *stream, UInt64 offset)
 
 SRes LookInStream_LookRead(ILookInStream *stream, void *buf, size_t *size)
 {
-  void *lookBuf;
+  const void *lookBuf;
   if (*size == 0)
     return SZ_OK;
   RINOK(stream->Look(stream, &lookBuf, size));
@@ -66,7 +66,7 @@ SRes LookInStream_Read(ILookInStream *stream, void *buf, size_t size)
   return LookInStream_Read2(stream, buf, size, SZ_ERROR_INPUT_EOF);
 }
 
-static SRes LookToRead_Look_Lookahead(void *pp, void **buf, size_t *size)
+static SRes LookToRead_Look_Lookahead(void *pp, const void **buf, size_t *size)
 {
   SRes res = SZ_OK;
   CLookToRead *p = (CLookToRead *)pp;
@@ -84,7 +84,7 @@ static SRes LookToRead_Look_Lookahead(void *pp, void **buf, size_t *size)
   return res;
 }
 
-static SRes LookToRead_Look_Exact(void *pp, void **buf, size_t *size)
+static SRes LookToRead_Look_Exact(void *pp, const void **buf, size_t *size)
 {
   SRes res = SZ_OK;
   CLookToRead *p = (CLookToRead *)pp;

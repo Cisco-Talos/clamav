@@ -78,6 +78,9 @@ Unpack a local CVD file (main or daily) to current directory.
 \fB\-\-diff=OLD NEW, \-d OLD NEW\fR
 Create a diff file for OLD and NEW CVDs/INCDIRs.
 .TP 
+\fB\-\-compare=OLD NEW, \-c OLD NEW\fR
+This command will compare two text files and print differences in a cdiff format.
+.TP 
 \fB\-\-run\-cdiff=FILE, \-r FILE\fR
 Execute update script FILE in current directory.
 .TP 

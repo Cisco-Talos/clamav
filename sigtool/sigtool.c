@@ -73,7 +73,7 @@
 #include "libclamav/readdb.h"
 #include "libclamav/others.h"
 
-#define MAX_DEL_LOOKAHEAD   200
+#define MAX_DEL_LOOKAHEAD   5000
 
 static const struct dblist_s {
     const char *ext;
@@ -1781,6 +1781,15 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     return 0;
 }
 
+static int compareone(const struct optstruct *opts)
+{
+    if(!opts->filename) {
+	mprintf("!makediff: --compare requires two arguments\n");
+	return -1;
+    }
+    return compare(optget(opts,"compare")->strarg, opts->filename[0], stdout);
+}
+
 static int dircopy(const char *src, const char *dest)
 {
 	DIR *dd;
@@ -2754,6 +2763,7 @@ static void help(void)
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
+    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in cdiff format\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("    --verify-cdiff=DIFF CVD/CLD            Verify DIFF against CVD/CLD\n");
     mprintf("\n");
@@ -2837,6 +2847,8 @@ int main(int argc, char **argv)
 	ret = vbadump(opts);
     else if(optget(opts, "diff")->enabled)
 	ret = makediff(opts);
+    else if(optget(opts, "compare")->enabled)
+	ret = compareone(opts);
     else if(optget(opts, "run-cdiff")->enabled)
 	ret = rundiff(opts);
     else if(optget(opts, "verify-cdiff")->enabled) {

@@ -37,6 +37,10 @@ CLAMAV_PUBLIC {
     cl_statinidir;
     cl_countsigs;
     cl_strerror;
+    cl_fmap_open_handle;
+    cl_fmap_open_memory;
+    cl_scanmap_callback;
+    cl_fmap_close;
 };
 CLAMAV_PRIVATE {
   global:
@@ -177,7 +181,6 @@ CLAMAV_PRIVATE {
     cli_bytecode_debug;
     cli_hex2ui;
     fmap;
-    funmap;
     cli_bytecode_context_set_trace;
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;
@@ -185,6 +188,7 @@ CLAMAV_PRIVATE {
     cli_printcxxver;
     cli_detect_environment;
     cli_disasm_one;
+    cli_utf16_to_utf8;
   local:
     *;
 };

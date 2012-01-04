@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2011 Sourcefire, Inc.
  *
  *  Authors: aCaB
  *
@@ -18,8 +18,8 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __7Z_H
-#define __7Z_H
+#ifndef __7Z_IFACE_H
+#define __7Z_IFACE_H
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -27,6 +27,6 @@
 
 #include "others.h"
 
-int cli_7unz (int, cli_ctx *);
+int cli_7unz (cli_ctx *, size_t);
 
 #endif

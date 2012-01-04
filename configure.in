@@ -581,7 +581,7 @@ then
     test -z "$LIBBZ2_PREFIX" || LDFLAGS="$LDFLAGS -L$LIBBZ2_PREFIX/$acl_libdirstem";
 
     have_bzprefix="no"
-    AC_CHECK_LIB([bz2], [BZ2_bzReadOpen], [have_bzprefix="yes"])
+    AC_CHECK_LIB([bz2], [BZ2_bzDecompressInit], [have_bzprefix="yes"])
     if test "x$have_bzprefix" = "xno"; then
         AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])
     fi

@@ -24,7 +24,7 @@
 #include "others.h"
 #include "fmap.h"
 
-int asn1_load_mscat(fmap_t *map, void *start, unsigned int size, struct cl_engine *engine);
-int asn1_check_mscat(fmap_t *map, void *start, unsigned int size, uint8_t *computed_sha1);
+int asn1_load_mscat(fmap_t *map, const void *start, unsigned int size, struct cl_engine *engine);
+int asn1_check_mscat(fmap_t *map, const void *start, unsigned int size, uint8_t *computed_sha1);
 
 #endif

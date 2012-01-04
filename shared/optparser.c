@@ -118,6 +118,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "vba", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "vba-hex", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "diff", 'd', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "compare", 'c', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "run-cdiff", 'r', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "verify-cdiff", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "defaultcolors", 'd', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDTOP, "", "" },

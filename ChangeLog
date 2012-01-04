@@ -1,3 +1,25 @@
+Thu Nov  3 22:42:28 CET 2011 (acab)
+-----------------------------------
+ * libclamav/lzma_iface.c: stfu on (but still refuse) big lzma allocs
+
+Tue Nov  1 12:26:46 CET 2011 (acab)
+-----------------------------------
+ * libclamav: Add 7z SFX support (b#3063)
+
+Thu Dec 15 21:40:57 CET 2011 (tk)
+---------------------------------
+ * libclamav/matcher-ac.c: improve negation of single elements - handle
+			   !(xx) (bb#4052)
+
+Thu Dec 15 18:34:03 EET 2011 (edwin)
+------------------------------------
+ * libclamav/pdf.c: scan inside encrypted PDF streams and strings when user
+		    password is empty (bb #2794).
+
+Fri Dec  9 16:41:05 CET 2011 (tk)
+---------------------------------
+ * libclamav/matcher.c: add new offset modifier SEx (bb#4008)
+
 Thu Dec  1 15:07:49 CET 2011 (tk)
 ---------------------------------
  * libclamav/readdb.c: allow comments in all db files (bb#3930)

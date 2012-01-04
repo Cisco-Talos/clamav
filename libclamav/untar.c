@@ -57,28 +57,32 @@ octal(const char *str)
 }
 
 int
-cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
+cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 {
 	int size = 0, ret, fout=-1;
 	int in_block = 0;
 	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
+	size_t pos = 0;
 
-	cli_dbgmsg("In untar(%s, %d)\n", dir, desc);
+	cli_dbgmsg("In untar(%s)\n", dir);
 
 	for(;;) {
-		char block[BLOCKSIZE];
-		const int nread = cli_readn(desc, block, (unsigned int)sizeof(block));
+	        const char *block;
+		ssize_t nread;
 
-		if(!in_block && nread == 0)
+		block = fmap_need_off_once_len(*ctx->fmap, pos, BLOCKSIZE, &nread); 
+
+		if(!in_block && !nread)
 			break;
 
-		if(nread < 0) {
+		if(!block) {
 			if(fout>=0)
 				close(fout);
 			cli_errmsg("cli_untar: block read error\n");
 			return CL_EREAD;
 		}
+		pos += nread;
 
 		if(!in_block) {
 			char type;
@@ -169,13 +173,13 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			if(skipEntry) {
 				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
-				
+
 				if(nskip < 0) {
 					cli_dbgmsg("cli_untar: got nagative skip size, giving up\n");
 					return CL_CLEAN;
 				}
 				cli_dbgmsg("cli_untar: skipping entry\n");
-				lseek(desc, nskip, SEEK_CUR);
+				pos += nskip;
 				continue;
 			}
 
@@ -211,7 +215,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 		}
 		if (size == 0)
 			in_block = 0;
-        }	
+        }
 	if(fout>=0) {
 		lseek(fout, 0, SEEK_SET);
 		ret = cli_magic_scandesc(fout, ctx);

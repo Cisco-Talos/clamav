@@ -43,22 +43,22 @@
 #include "scanners.h"
 #include "sis.h"
 
-#define EC32(x) le32_to_host(x)
-#define EC16(x) le16_to_host(x)
+#define EC32(x) cli_readint32(&(x))
+#define EC16(x) cli_readint16(&(x))
 
-static int real_scansis(FILE *, cli_ctx *, const char *);
-static int real_scansis9x(FILE *, cli_ctx *, const char *);
+static int real_scansis(cli_ctx *, const char *);
+static int real_scansis9x(cli_ctx *, const char *);
 
 /*************************************************
        This is the wrapper to the old and new
             format handlers - see below.
  *************************************************/
 
-int cli_scansis(int desc, cli_ctx *ctx) {
-  FILE *f;
-  int i;
+int cli_scansis(cli_ctx *ctx) {
   char *tmpd;
+  unsigned int i;
   uint32_t uid[4];
+  fmap_t *map = *ctx->fmap;
 
   cli_dbgmsg("in scansis()\n");
 
@@ -72,40 +72,24 @@ int cli_scansis(int desc, cli_ctx *ctx) {
   if (ctx->engine->keeptmp)
     cli_dbgmsg("SIS: Extracting files to %s\n", tmpd);
 
-  if ((i=dup(desc))==-1) {
-    cli_dbgmsg("SIS: dup() failed\n");
-    cli_rmdirs(tmpd);
-    free(tmpd);
-    return CL_EDUP;
-  }
-  if (!(f=fdopen(i, "rb"))) {
-    cli_dbgmsg("SIS: fdopen() failed\n");
-    close(i);
-    cli_rmdirs(tmpd);
-    free(tmpd);
-    return CL_EOPEN;
-  }
-  rewind(f);
-  if (fread(uid, 16, 1, f)!=1) {
+  if (fmap_readn(map, &uid, 0, 16) != 16) {
     cli_dbgmsg("SIS: unable to read UIDs\n");
     cli_rmdirs(tmpd);
     free(tmpd);
-    fclose(f);
     return CL_EREAD;
   }
 
   cli_dbgmsg("SIS: UIDS %x %x %x - %x\n", EC32(uid[0]), EC32(uid[1]), EC32(uid[2]), EC32(uid[3]));
-  if (uid[2]==EC32(0x10000419))
-    i=real_scansis(f, ctx, tmpd);
-  else if(uid[0]==EC32(0x10201a7a)) {
-    i=real_scansis9x(f, ctx, tmpd);
+  if (uid[2]==le32_to_host(0x10000419))
+    i=real_scansis(ctx, tmpd);
+  else if(uid[0]==le32_to_host(0x10201a7a)) {
+    i=real_scansis9x(ctx, tmpd);
   }
 
   if (!ctx->engine->keeptmp)
     cli_rmdirs(tmpd);
 
   free(tmpd);
-  fclose(f);
   return i;
 }
 
@@ -141,11 +125,12 @@ enum {
 #define GETD(VAR) \
   if (sleft<4) { \
     memcpy(buff, buff+smax-sleft, sleft); \
-    if ((smax=fread(buff+sleft,1,BUFSIZ-sleft,f)+sleft)<4) { \
+    if ((smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft)+sleft)<4) { \
       cli_dbgmsg("SIS: EOF\n"); \
       free(alangs); \
       return CL_CLEAN; \
     } \
+    pos += smax - sleft;\
     sleft=smax; \
   } \
   VAR = cli_readint32(&buff[smax-sleft]); \
@@ -155,12 +140,13 @@ enum {
 #define GETD2(VAR) {\
   if (sleft<4) { \
     memcpy(buff, buff+smax-sleft, sleft); \
-    if ((smax=fread(buff+sleft,1,BUFSIZ-sleft,f)+sleft)<4) { \
+    if ((smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft)+sleft)<4) { \
       cli_dbgmsg("SIS: EOF\n"); \
       free(alangs); \
       free(ptrs); \
       return CL_CLEAN; \
     } \
+    pos += smax - sleft;\
     sleft=smax; \
   } \
   VAR = cli_readint32(&buff[smax-sleft]); \
@@ -175,14 +161,15 @@ enum {
       free(alangs); \
       return CL_CLEAN; \
     } \
-    fseek(f, (N)-sleft, SEEK_CUR); \
-    sleft=smax=fread(buff,1,BUFSIZ,f); \
+    pos += (N)-sleft;\
+    sleft=smax=fmap_readn(map, buff, pos,BUFSIZ); \
+    pos += smax;\
   }
 
 const char *sislangs[] = {"UNKNOWN", "UK English","French", "German", "Spanish", "Italian", "Swedish", "Danish", "Norwegian", "Finnish", "American", "Swiss French", "Swiss German", "Portuguese", "Turkish", "Icelandic", "Russian", "Hungarian", "Dutch", "Belgian Flemish", "Australian English", "Belgian French", "Austrian German", "New Zealand English", "International French", "Czech", "Slovak", "Polish", "Slovenian", "Taiwanese Chinese", "Hong Kong Chinese", "PRC Chinese", "Japanese", "Thai", "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Tagalog", "Belarussian", "Bengali", "Bulgarian", "Burmese", "Catalan", "Croation", "Canadian English", "International English", "South African English", "Estonian", "Farsi", "Canadian French", "Gaelic", "Georgian", "Greek", "Cyprus Greek", "Gujarati", "Hebrew", "Hindi", "Indonesian", "Irish", "Swiss Italian", "Kannada", "Kazakh", "Kmer", "Korean", "Lao", "Latvian", "Lithuanian", "Macedonian", "Malay", "Malayalam", "Marathi", "Moldovian", "Mongolian", "Norwegian Nynorsk", "Brazilian Portuguese", "Punjabi", "Romanian", "Serbian", "Sinhalese", "Somali", "International Spanish", "American Spanish", "Swahili", "Finland Swedish", "Reserved", "Tamil", "Telugu", "Tibetan", "Tigrinya", "Cyprus Turkish", "Turkmen", "Ukrainian", "Urdu", "Reserved", "Vietnamese", "Welsh", "Zulu", "Other"};
 #define MAXLANG (sizeof(sislangs)/sizeof(sislangs[0]))
 
-static char *getsistring(FILE *f, uint32_t ptr, uint32_t len) {
+static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len) {
   char *name;
   uint32_t i;
 
@@ -193,8 +180,7 @@ static char *getsistring(FILE *f, uint32_t ptr, uint32_t len) {
     cli_dbgmsg("SIS: OOM\n");
     return NULL;
   }
-  fseek(f, ptr, SEEK_SET);
-  if (fread(name, len, 1, f)!=1) {
+  if (fmap_readn(map, name, ptr, len) != len) {
     cli_dbgmsg("SIS: Unable to read string\n");
     free(name);
     return NULL;
@@ -204,33 +190,31 @@ static char *getsistring(FILE *f, uint32_t ptr, uint32_t len) {
   return name;
 }
 
-static int spamsisnames(FILE *f, uint16_t langs, const char **alangs) {
-  uint32_t *lens, *ptrs;
+static int spamsisnames(fmap_t *map, size_t pos, uint16_t langs, const char **alangs) {
+  const uint32_t *ptrs;
+  const uint32_t *lens;
   unsigned int j;
 
-  if (!(lens = cli_malloc(sizeof(uint32_t) * langs * 2))) {
-    cli_dbgmsg("SIS: OOM\n");
-    return 0;
-  }
-  if (fread(lens, sizeof(uint32_t) * langs * 2, 1, f)!=1) {
+  const uint32_t len = sizeof(uint32_t) * langs * 2;
+
+  if (!(lens = fmap_need_off(map, pos, len))) {
     cli_dbgmsg("SIS: Unable to read lengths and pointers\n");
-    free(lens);
     return 1;
   }
   ptrs=&lens[langs];
 
   for (j=0; j<langs; j++) {
-    char *name = getsistring(f,EC32(ptrs[j]),EC32(lens[j]));
+    char *name = getsistring(map,EC32(ptrs[j]),EC32(lens[j]));
     if (name) {
       cli_dbgmsg("\t%s (%s - @%x, len %d)\n", name, alangs[j], EC32(ptrs[j]), EC32(lens[j]));
       free(name);
     }
   }
-  free(lens);
+  fmap_unneed_off(map, pos, len);
   return 1;
 }
 
-static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
+static int real_scansis(cli_ctx *ctx, const char *tmpd) {
   struct {
     uint16_t filesum;
     uint16_t langs;
@@ -257,11 +241,13 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
     uint32_t nspace;
   } sis;
   const char **alangs;
-  uint16_t *llangs;
+  const uint16_t *llangs;
   unsigned int i, sleft=0, smax=0, umped=0;
   uint8_t compd, buff[BUFSIZ];
+  size_t pos;
+  fmap_t *map = *ctx->fmap;
 
-  if (fread(&sis,sizeof(sis),1,f)!=1) {
+  if (fmap_readn(map, &sis, 16, sizeof(sis)) != sizeof(sis)) {
     cli_dbgmsg("SIS: Unable to read header\n");
     return CL_CLEAN;
   }
@@ -284,31 +270,26 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
     cli_dbgmsg("SIS: Too many or too few languages found\n");
     return CL_CLEAN;
   }
-  fseek(f, sis.plangs, SEEK_SET);
-  if (!(llangs=cli_malloc(sis.langs * sizeof(uint16_t)))) {
-    cli_dbgmsg("SIS: OOM\n");
-    return CL_CLEAN;
-  }
-  if (fread(llangs, sis.langs * sizeof(uint16_t), 1, f)!=1) {
+
+  pos = sis.plangs;
+
+  if (!(llangs = fmap_need_off_once(map, pos, sis.langs * sizeof(uint16_t)))) {
     cli_dbgmsg("SIS: Unable to read languages\n");
-    free(llangs);
     return CL_CLEAN;
   }
+  pos += sis.langs * sizeof(uint16_t);
   if (!(alangs=cli_malloc(sis.langs * sizeof(char *)))) {
     cli_dbgmsg("SIS: OOM\n");
-    free(llangs);
     return CL_CLEAN;
   }
   for (i = 0; i< sis.langs; i++)
     alangs[i]=EC32(llangs[i])<MAXLANG ? sislangs[EC32(llangs[i])] : sislangs[0];
-  free(llangs);
 
   if (!sis.pnames) {
     cli_dbgmsg("SIS: Application without a name?\n");
   } else {
-    fseek(f, sis.pnames, SEEK_SET);
     cli_dbgmsg("SIS: Application name:\n");
-    if (!spamsisnames(f, sis.langs, alangs)) {
+    if (!spamsisnames(map, sis.pnames, sis.langs, alangs)) {
       free(alangs);
       return CL_EMEM;
     }
@@ -317,9 +298,8 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
   if (!sis.pcaps) {
     cli_dbgmsg("SIS: Application without capabilities?\n");
   } else {
-    fseek(f, sis.pcaps, SEEK_SET);
     cli_dbgmsg("SIS: Provides:\n");
-    if (!spamsisnames(f, sis.langs, alangs)) {
+    if (!spamsisnames(map, sis.pcaps, sis.langs, alangs)) {
       free(alangs);
       return CL_EMEM;
     }
@@ -336,13 +316,14 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	uint16_t verlo;
 	uint32_t versub;
       } dep;
-      
-      fseek(f, sis.pdeps + i*(sizeof(dep) + sis.langs*2*sizeof(uint32_t)), SEEK_SET);
-      if (fread(&dep, sizeof(dep), 1, f)!=1) {
+
+      pos = sis.pdeps + i*(sizeof(dep) + sis.langs*2*sizeof(uint32_t));
+      if (fmap_readn(map, &dep, pos, sizeof(dep)) != sizeof(dep)) {
 	cli_dbgmsg("SIS: Unable to read dependencies\n");
       } else {
+	pos += sizeof(dep);
 	cli_dbgmsg("\tUID: %x v. %d.%d.%d\n\taka:\n", EC32(dep.uid), EC16(dep.verhi), EC16(dep.verlo), EC32(dep.versub));
-	if (!spamsisnames(f, sis.langs, alangs)) {
+	if (!spamsisnames(map, pos, sis.langs, alangs)) {
 	  free(alangs);
 	  return CL_EMEM;
 	}
@@ -353,7 +334,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
   compd = !(sis.flags & 0x0008);
   cli_dbgmsg("SIS: Package is%s compressed\n", (compd)?"":" not");
 
-  fseek(f, sis.pfiles, SEEK_SET);
+  pos = sis.pfiles;
   for (i=0; i<sis.files; i++) {
     uint32_t pkgtype, fcount=1;
     uint32_t j;
@@ -411,16 +392,14 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	sftype = "unknown";
       }
       cli_dbgmsg("SIS: File details:\n\tOptions: %d\n\tType: %s\n", options, sftype);
-      fpos = ftell(f);
-      if ((fn=getsistring(f, psname, ssname))) {
+      if ((fn=getsistring(map, psname, ssname))) {
 	cli_dbgmsg("\tOriginal filename: %s\n", fn);
 	free(fn);
       }
-      if ((fn=getsistring(f, pdname, sdname))) {
+      if ((fn=getsistring(map,  pdname, sdname))) {
 	cli_dbgmsg("\tInstalled to: %s\n", fn);
 	free(fn);
       }
-      fseek(f,fpos,SEEK_SET);
 
       if (!(ptrs=cli_malloc(fcount*sizeof(uint32_t)*3))) {
 	cli_dbgmsg("\tOOM\n");
@@ -435,15 +414,15 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	GETD2(ptrs[j]);
       for (j=0; j<fcount; j++)
 	GETD2(olens[j]);
-      
+
       if (ftype!=FTnull) {
 	char ofn[1024];
 	int fd;
 
-	fpos = ftell(f);
-
 	for (j=0; j<fcount; j++) {
-	  void *comp, *decomp;
+	  void *decomp;
+	  const void *comp;
+	  const void *decompp = NULL;
 	  uLongf olen;
 
 	  if (!lens[j]) {
@@ -452,16 +431,9 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	  }
 	  if (cli_checklimits("sis", ctx,lens[j], 0, 0)!=CL_CLEAN) continue;
 	  cli_dbgmsg("\tUnpacking lang#%d - ptr:%x csize:%x osize:%x\n", j, ptrs[j], lens[j], olens[j]);
-	  if (!(comp=cli_malloc(lens[j]))) {
-	    cli_dbgmsg("\tOOM\n");
-	    free(ptrs);
-	    free(alangs);
-	    return CL_CLEAN;
-	  }
-	  fseek(f,ptrs[j],SEEK_SET);
-	  if (fread(comp, lens[j], 1, f)!=1) {
+
+	  if (!(comp = fmap_need_off_once(map, ptrs[j], lens[j]))) {
 	    cli_dbgmsg("\tSkipping ghost or otherwise out of archive file\n");
-	    free(comp);
 	    continue;
 	  }
 	  if (compd) {
@@ -470,27 +442,24 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    else if (cli_checklimits("sis", ctx, olens[j], 0, 0)==CL_CLEAN)
 	      olen=olens[j];
 	    else {
-	      free(comp);
 	      continue;
 	    }
-	      
+
 	    if (!(decomp=cli_malloc(olen))) {
 	      cli_dbgmsg("\tOOM\n");
-	      free(comp);
 	      free(ptrs);
 	      free(alangs);
 	      return CL_CLEAN;
 	    }
 	    if (uncompress(decomp, &olen, comp, lens[j])!=Z_OK) {
 	      cli_dbgmsg("\tUnpacking failure\n");
-	      free(comp);
 	      free(decomp);
 	      continue;
 	    }
-	    free(comp);
+	    decompp = decomp;
 	  } else {
 	    olen = lens[j];
-	    decomp = comp;
+	    decompp = comp;
 	  }
 	  snprintf(ofn, 1024, "%s"PATHSEP"sis%02d", tmpd, umped);
 	  ofn[1023]='\0';
@@ -501,7 +470,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    free(alangs);
 	    return CL_ECREAT;
 	  }
-	  if (cli_writen(fd, decomp, olen)!=(int)olen) {
+	  if (cli_writen(fd, decompp, olen)!=(int)olen) {
 	    close(fd);
 	    free(decomp);
 	    free(ptrs);
@@ -518,7 +487,6 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	  close(fd);
 	  umped++;
 	}
-	fseek(f,fpos,SEEK_SET);
       }
       free(ptrs);
       fcount=2*sizeof(uint32_t);
@@ -571,7 +539,8 @@ const char *sisfields[] = {"Invalid", "String", "Array", "Compressed", "Version"
 #define HERE printf("here\n"),abort();
 
 struct SISTREAM {
-  FILE *f;
+  fmap_t *map;
+  size_t pos;
   uint8_t buff[BUFSIZ];
   uint32_t smax;
   uint32_t sleft;
@@ -582,10 +551,13 @@ struct SISTREAM {
 
 static inline int getd(struct SISTREAM *s, uint32_t *v) {
   if (s->sleft<4) {
+    int nread;
     memcpy(s->buff, s->buff + s->smax - s->sleft, s->sleft);
-    if ((s->sleft=s->smax=fread(&s->buff[s->sleft], 1, BUFSIZ - s->sleft, s->f) + s->sleft)<4) {
+    nread = fmap_readn(s->map, &s->buff[s->sleft], s->pos, BUFSIZ - s->sleft);
+    if ((s->sleft=s->smax=nread + s->sleft)<4) {
       return 1;
     }
+    s->pos += nread;
   }
   *v = cli_readint32(&s->buff[s->smax - s->sleft]);
   s->sleft-=4;
@@ -596,7 +568,7 @@ static inline int getsize(struct SISTREAM *s) {
   uint32_t *fsize = &s->fsize[s->level];
   if(getd(s, fsize) || !*fsize || (*fsize)>>31 || (s->level && *fsize > s->fsize[s->level-1] * 2)) return 1;
   /* To handle crafted archives we allow the content to overflow the container but only up to 2 times the container size */
-  s->fnext[s->level] = ftell(s->f) - s->sleft + *fsize;
+  s->fnext[s->level] = s->pos - s->sleft + *fsize;
   return 0;
 }
 
@@ -621,7 +593,7 @@ static inline int skip(struct SISTREAM *s, uint32_t size) {
     seekto = size - s->sleft;
     if (seekto<0) /* in case sizeof(long)==sizeof(uint32_t) */
       return 1;
-    fseek(s->f, seekto, SEEK_CUR);
+    s->pos += seekto;
     /*     s->sleft = s->smax = fread(s->buff,1,BUFSIZ,s->f); */
     s->sleft = s->smax = 0;
   }
@@ -633,19 +605,20 @@ static inline int skipthis(struct SISTREAM *s) {
 }
 
 static inline void seeknext(struct SISTREAM *s) {
-  fseek(s->f, s->fnext[s->level], SEEK_SET);
+  s->pos = s->fnext[s->level];
   /*   s->sleft = s->smax = fread(s->buff,1,BUFSIZ,s->f); */
   s->sleft = s->smax = 0;
 }
 
 
-static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
+static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
   struct SISTREAM stream;
   struct SISTREAM *s = &stream;
   uint32_t field, optst[]={T_CONTROLLERCHECKSUM, T_DATACHECKSUM, T_COMPRESSED};
   unsigned int i;
 
-  s->f = f;
+  s->map = *ctx->fmap;
+  s->pos = 0;
   s->smax = 0;
   s->sleft = 0;
   s->level = 0;
@@ -691,7 +664,7 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 
 	  s->level++;
 	  while (s->fsize[s->level-1] && !getsize(s)) { /* FOREACH DATA::ARRAY::DATAUNIT[x]::ARRAY::FILEDATA */
-	    uint32_t usize, usizeh;
+	    uint32_t usize, usizeh, len;
 	    void *src, *dst;
 	    char tempf[1024];
 	    uLongf uusize;
@@ -710,15 +683,18 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	      cli_dbgmsg("SIS: File is%s compressed - size %x -> %x\n", (field)?"":" not", s->fsize[s->level], usize);
 	      snprintf(tempf, 1024, "%s"PATHSEP"sis9x%02d", tmpd, i++);
 	      tempf[1023]='\0';
-	      fseek(s->f, -(long)s->sleft, SEEK_CUR);
+	      s->pos -= (long)s->sleft;
 	      s->sleft = s->smax = 0;
 
 	      if (cli_checklimits("sis", ctx,ALIGN4(s->fsize[s->level]), 0, 0)!=CL_CLEAN) break;
 	      if (!(src=cli_malloc(ALIGN4(s->fsize[s->level])))) break;
-	      if (fread(src, ALIGN4(s->fsize[s->level]),1,s->f) != 1) {
+
+	      len = ALIGN4(s->fsize[s->level]);
+	      if (fmap_readn(s->map, src, s->pos, len) != len) {
 		free(src);
 		break;
 	      }
+	      s->pos += len;
 
 	      if(field) { /* compressed */
 		int zresult;

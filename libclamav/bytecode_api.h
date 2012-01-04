@@ -130,7 +130,9 @@ enum pdf_objflags {
     OBJ_TRUNCATED,
     OBJ_FORCEDUMP,
     OBJ_FILTER_STANDARD,
-    OBJ_LAUNCHACTION
+    OBJ_LAUNCHACTION,
+    OBJ_PAGE,
+    OBJ_CONTENTS
 };
 
 #ifdef __CLAMBC__

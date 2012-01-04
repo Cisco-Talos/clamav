@@ -365,6 +365,42 @@ extern const char *cl_retver(void);
 /* others */
 extern const char *cl_strerror(int clerror);
 
+/* custom data scanning */
+struct cl_fmap;
+typedef struct cl_fmap cl_fmap_t;
+
+/* handle - the handle passed to cl_fmap_open_handle, its meaning is up to the
+ *    callback's implementation
+ * buf, count, offset - read 'count' bytes starting at 'offset' into the buffer 'buf'
+ * Thread safety: it is guaranteed that only one callback is executing for a specific handle at
+ * any time, but there might be multiple callbacks executing for different
+ * handle at the same time.
+ */
+typedef ssize_t (*clcb_pread)(void* handle, void *buf, size_t count, off_t offset);
+
+/* Open a map for scanning custom data accessed by a handle and pread (lseek +
+ * read)-like interface. For example a WIN32 HANDLE.
+ * By default fmap will use aging to discard old data, unless you tell it not
+ * to.
+ * The handle will be passed to the callback each time.
+ */
+extern cl_fmap_t *cl_fmap_open_handle(void* handle, size_t offset, size_t len,
+				      clcb_pread, int use_aging);
+
+/* Open a map for scanning custom data, where the data is already in memory,
+ * either in the form of a buffer, a memory mapped file, etc.
+ * Note that the memory [start, start+len) must be the _entire_ file,
+ * you can't give it parts of a file and expect detection to work.
+ */
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
+
+/* Releases resources associated with the map, you should release any resources
+ * you hold only after (handles, maps) calling this function */
+extern void cl_fmap_close(cl_fmap_t*);
+
+/* Scan custom data */
+extern int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
+
 #ifdef __cplusplus
 }
 #endif

@@ -45,76 +45,79 @@
 #define special_endian_convert_16(v) be16_to_host(v)
 #define special_endian_convert_32(v) be32_to_host(v)
 
-int cli_check_mydoom_log(int desc, cli_ctx *ctx)
+int cli_check_mydoom_log(cli_ctx *ctx)
 {
-	uint32_t record[8], check;
-	int i, retval=CL_VIRUS, j;
+	const uint32_t *record;
+	uint32_t check, key;
+	fmap_t *map = *ctx->fmap;
+	unsigned int blocks = map->len / (8*4);
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");
+    if(blocks<2)
+	return CL_CLEAN;
+    if(blocks>5)
+	blocks = 5;
 
-    /* Check upto the first five records in the file */
-    for (j=0 ; j<5 ; j++) {
-	if (cli_readn(desc, &record, 32) != 32) {
-	    break;
-	}
-	if(!j && record[0] == 0xffffffff) /* bb#1241 */
+    record = fmap_need_off_once(map, 0, 8*4*blocks);
+    if(!record)
+	return CL_CLEAN;
+    while(blocks) { /* This wasn't probably intended but that's what the current code does anyway */
+	if(record[--blocks] == 0xffffffff)
 	    return CL_CLEAN;
-
-	/* Decode the key */
-	record[0] = ~ntohl(record[0]);
-	cli_dbgmsg("Mydoom: key: %d\n", record[0]);
-	check = 0;
-	for (i=1 ; i<8; i++) {
-	    record[i] = ntohl(record[i]) ^ record[0];
-	    check += record[i];
-	}
-	cli_dbgmsg("Mydoom: check: %d\n", ~check);
-	if ((~check) != record[0]) {
-	    return CL_CLEAN;
-	}
     }
 
-    if (j < 2) {
-	retval = CL_CLEAN;
-    } else if (retval==CL_VIRUS) {
-	*ctx->virname = "Heuristics.Worm.Mydoom.M.log";
-    }
+    key = ~be32_to_host(record[0]);
+    check = (be32_to_host(record[1])^key) +
+	(be32_to_host(record[2])^key) +
+	(be32_to_host(record[3])^key) +
+	(be32_to_host(record[4])^key) +
+	(be32_to_host(record[5])^key) +
+	(be32_to_host(record[6])^key) +
+	(be32_to_host(record[7])^key);
+    if ((~check) != key)
+	return CL_CLEAN;
 
-    return retval;
+    key = ~be32_to_host(record[8]);
+    check = (be32_to_host(record[9])^key) +
+	(be32_to_host(record[10])^key) +
+	(be32_to_host(record[11])^key) +
+	(be32_to_host(record[12])^key) +
+	(be32_to_host(record[13])^key) +
+	(be32_to_host(record[14])^key) +
+	(be32_to_host(record[15])^key);
+    if ((~check) != key)
+	return CL_CLEAN;
+
+    *ctx->virname = "Heuristics.Worm.Mydoom.M.log";
+    return CL_VIRUS;
 }
 
-static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
+static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
 {
-	unsigned char bim[5];
+	const unsigned char *buf;
 	uint16_t id, ntmp;
 	uint8_t nlength;
 	uint32_t size;
-	off_t offset;
+	off_t offset = *off;
 	int retval;
+	fmap_t *map = *ctx->fmap;
 
-	if (cli_readn(fd, bim, 4) != 4) {
+	if(!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
 		cli_dbgmsg("read bim failed\n");
 		return -1;
 	}
-
-	if (memcmp(bim, "8BIM", 4) != 0) {
-		bim[4] = '\0';
-		cli_dbgmsg("missed 8bim: %s\n", bim);
+	if (memcmp(buf, "8BIM", 4) != 0) {
+		cli_dbgmsg("missed 8bim\n");
 		return -1;
 	}
 
-	if (cli_readn(fd, &id, 2) != 2) {
-		return -1;
-	}
-	id = special_endian_convert_16(id);
+	id = (uint16_t)buf[4] | ((uint16_t)buf[5]<<8);
 	cli_dbgmsg("ID: 0x%.4x\n", id);
-	if (cli_readn(fd, &nlength, 1) != 1) {
-		return -1;
-	}
+	nlength = buf[6];
 	ntmp = nlength + ((((uint16_t)nlength)+1) & 0x01);
-	lseek(fd, ntmp, SEEK_CUR);
-	
-	if (cli_readn(fd, &size, 4) != 4) {
+	offset += 4 + 2 + 1 + ntmp;
+
+	if (fmap_readn(map, &size, offset, 4) != 4) {
 		return -1;
 	}
 	size = special_endian_convert_32(size);
@@ -124,49 +127,46 @@ static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
 	if ((size & 0x01) == 1) {
 		size++;
 	}
+
+	*off = offset + 4 + size;
 	/* Is it a thumbnail image */
 	if ((id != 0x0409) && (id != 0x040c)) {
 		/* No - Seek past record */
-		lseek(fd, size, SEEK_CUR);
 		return 0;
 	}
 
 	cli_dbgmsg("found thumbnail\n");
-	/* Check for thumbmail image */
-	offset = lseek(fd, 0, SEEK_CUR);
-
 	/* Jump past header */
-	lseek(fd, 28, SEEK_CUR);
+	offset += 4 + 28;
 
-	retval = cli_check_jpeg_exploit(fd, ctx);
+	retval = cli_check_jpeg_exploit(ctx, offset);
 	if (retval == 1) {
 		cli_dbgmsg("Exploit found in thumbnail\n");
 	}
-	lseek(fd, offset+size, SEEK_SET);
-
 	return retval;
 }
 
-static int jpeg_check_photoshop(int fd, cli_ctx *ctx)
+static int jpeg_check_photoshop(cli_ctx *ctx, off_t offset)
 {
 	int retval;
-	unsigned char buffer[14];
-	off_t old, new;
+	const unsigned char *buffer;
+	off_t old;
+	fmap_t *map = *ctx->fmap;
 
-	if (cli_readn(fd, buffer, 14) != 14) {
+	if(!(buffer = fmap_need_off_once(map, offset, 14))) {
 		return 0;
 	}
 
 	if (memcmp(buffer, "Photoshop 3.0", 14) != 0) {
 		return 0;
 	}
+	offset += 14;
 
 	cli_dbgmsg("Found Photoshop segment\n");
 	do {
-		old = lseek(fd, 0, SEEK_CUR);
-		retval = jpeg_check_photoshop_8bim(fd, ctx);
-		new = lseek(fd, 0, SEEK_CUR);
-		if(new <= old)
+		old = offset;
+		retval = jpeg_check_photoshop_8bim(ctx, &offset);
+		if(offset <= old)
 			break;
 	} while (retval == 0);
 
@@ -176,35 +176,33 @@ static int jpeg_check_photoshop(int fd, cli_ctx *ctx)
 	return retval;
 }
 
-int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
+int cli_check_jpeg_exploit(cli_ctx *ctx, off_t offset)
 {
-	unsigned char buffer[4];
-	off_t offset;
+	const unsigned char *buffer;
 	int retval;
-
+	fmap_t *map = *ctx->fmap;
 
 	cli_dbgmsg("in cli_check_jpeg_exploit()\n");
 	if(ctx->recursion > ctx->engine->maxreclevel)
 	    return CL_EMAXREC;
 
-	if (cli_readn(fd, buffer, 2) != 2) {
+	if(!(buffer = fmap_need_off_once(map, offset, 2)))
 		return 0;
-	}
-
 	if ((buffer[0] != 0xff) || (buffer[1] != 0xd8)) {
 		return 0;
 	}
-
+	offset += 2;
 	for (;;) {
-		if ((retval=cli_readn(fd, buffer, 4)) != 4) {
+		off_t new_off;
+		if(!(buffer = fmap_need_off_once(map, offset, 4))) {
 			return 0;
 		}
 		/* Check for multiple 0xFF values, we need to skip them */
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xff)) {
-			lseek(fd, -3, SEEK_CUR);
+			offset++;
 			continue;
 		}
-
+		offset += 4;
 		if ((buffer[0] == 0xff) && (buffer[1] == 0xfe)) {
 			if (buffer[2] == 0x00) {
 				if ((buffer[3] == 0x00) || (buffer[3] == 0x01)) {
@@ -220,25 +218,22 @@ int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
 			return 0;
 		}
 
-		offset = ((unsigned int) buffer[2] << 8) + buffer[3];
-		if (offset < 2) {
+		new_off = ((unsigned int) buffer[2] << 8) + buffer[3];
+		if (new_off < 2) {
 			return -1;
 		}
-		offset -= 2;
-		offset += lseek(fd, 0, SEEK_CUR);
+		new_off -= 2;
+		new_off += offset;
 
 		if (buffer[1] == 0xed) {
 			/* Possible Photoshop file */
 			ctx->recursion++;
-			retval=jpeg_check_photoshop(fd, ctx);
+			retval=jpeg_check_photoshop(ctx, offset);
 			ctx->recursion--;
 			if (retval != 0)
 				return retval;
 		}
-
-		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return -1;
-		}
+		offset = new_off;
 	}
 }
 
@@ -250,103 +245,85 @@ static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 		return le32_to_host(value);
 }
 
-static int riff_read_chunk(int fd, int big_endian, int rec_level)
+static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_level)
 {
-	uint32_t chunk_id;
+	const uint32_t *buf;
 	uint32_t chunk_size;
-	int length;
-	uint32_t list_type;
-	off_t offset, cur_offset;
+	off_t cur_offset = *offset;
 
 	if (rec_level > 1000) {
 		cli_dbgmsg("riff_read_chunk: recursion level exceeded\n");
 		return 0;
 	}
-	
-	length = sizeof(uint32_t);
-	if (cli_readn(fd, &chunk_id, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &chunk_size, length) != length) {
-		return 0;
-	}
-	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
 
-	if(!memcmp(&chunk_id, "anih", 4) && chunk_size != 36)
+	if(!(buf = fmap_need_off_once(map, cur_offset, 4*2)))
+	    return 0;
+	cur_offset += 4*2;
+	chunk_size = riff_endian_convert_32(buf[1], big_endian);
+
+	if(!memcmp(buf, "anih", 4) && chunk_size != 36)
 	    return 2;
 
-	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+	if (memcmp(buf, "RIFF", 4) == 0) {
 		return 0;
-	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+	} else if (memcmp(buf, "RIFX", 4) == 0) {
 		return 0;
 	}
 	
-	if ((memcmp(&chunk_id, "LIST", 4) == 0) ||
-		 (memcmp(&chunk_id, "PROP", 4) == 0) ||
-		 (memcmp(&chunk_id, "FORM", 4) == 0) ||
-		 (memcmp(&chunk_id, "CAT ", 4) == 0)) {
-		if (cli_readn(fd, &list_type, sizeof(list_type)) != sizeof(list_type)) {
+	if ((memcmp(buf, "LIST", 4) == 0) ||
+		 (memcmp(buf, "PROP", 4) == 0) ||
+		 (memcmp(buf, "FORM", 4) == 0) ||
+		 (memcmp(buf, "CAT ", 4) == 0)) {
+		if (!fmap_need_ptr_once(map, buf+2, 4)) {
 			cli_dbgmsg("riff_read_chunk: read list type failed\n");
 			return 0;
 		}
-		return riff_read_chunk(fd, big_endian, ++rec_level);	
+		*offset = cur_offset+4;
+		return riff_read_chunk(map, offset, big_endian, ++rec_level);
 	}
 	
-	cur_offset = lseek(fd, 0, SEEK_CUR);
-	offset = cur_offset + chunk_size;
-	/* Check for odd alignment */
-	if ((offset & 0x01) == 1) {
-		offset++;
-	}
-	if (offset < cur_offset) {
+	*offset = cur_offset + chunk_size + (chunk_size&1);
+	if (*offset < cur_offset) {
 		return 0;
 	}
+	/* FIXME: WTF!?
 	if (lseek(fd, offset, SEEK_SET) != offset) {
 		return 2;
 	}
+	*/
 	return 1;
 }
 
-int cli_check_riff_exploit(int fd)
+int cli_check_riff_exploit(cli_ctx *ctx)
 {
-	uint32_t chunk_id;
-	uint32_t chunk_size;
-	uint32_t form_type;
-	int length, big_endian, retval;
+	const uint32_t *buf;
+	int big_endian, retval;
 	off_t offset;
+	fmap_t *map = *ctx->fmap;
 	
 	cli_dbgmsg("in cli_check_riff_exploit()\n");
 
-	length = sizeof(uint32_t);
-	if (cli_readn(fd, &chunk_id, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &chunk_size, length) != length) {
-		return 0;
-	}
-	if (cli_readn(fd, &form_type, length) != length) {
-		return 0;
-	}
-	
-	if (memcmp(&chunk_id, "RIFF", 4) == 0) {
+	if(!(buf = fmap_need_off_once(map, 0, 4*3)))
+	    return 0;
+
+	if (memcmp(buf, "RIFF", 4) == 0) {
 		big_endian = FALSE;
-	} else if (memcmp(&chunk_id, "RIFX", 4) == 0) {
+	} else if (memcmp(buf, "RIFX", 4) == 0) {
 		big_endian = TRUE;
 	} else {
 		/* Not a RIFF file */
 		return 0;
 	}
 
-	if (memcmp(&form_type, "ACON", 4) != 0) {
+	if (memcmp(&buf[2], "ACON", 4) != 0) {
 		/* Only scan MS animated icon files */
 		/* There is a *lot* of broken software out there that produces bad RIFF files */
 		return 0;
 	}
 
-	chunk_size = riff_endian_convert_32(chunk_size, big_endian);
-
+	offset = 4*3;
 	do {
-		retval = riff_read_chunk(fd, big_endian, 1);
+		retval = riff_read_chunk(map, &offset, big_endian, 1);
 	} while (retval == 1);
 
 	return retval;

@@ -90,7 +90,6 @@ EXPORTS cli_bytecode_destroy @44225 NONAME
 EXPORTS cli_bytecode_context_destroy @44226 NONAME
 EXPORTS cli_bytecode_context_getresult_int @44227 NONAME
 EXPORTS cli_bytecode_run @44228 NONAME
-EXPORTS funmap @44229 NONAME
 EXPORTS cli_bytecode_context_setfile @44230 NONAME
 EXPORTS fmap @44231 NONAME
 EXPORTS cli_bytecode_context_setparam_int @44232 NONAME
