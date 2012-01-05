@@ -325,7 +325,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque) {
     unsigned int err = 0;
     uint32_t type, type_offs, name, name_offs, lang, lang_offs;
-    uint8_t *resdir, *type_entry, *name_entry, *lang_entry ;
+    const uint8_t *resdir, *type_entry, *name_entry, *lang_entry ;
     uint16_t type_cnt, name_cnt, lang_cnt;
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
@@ -389,7 +389,7 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
 }
 
 static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned char *digest) {
-    void *hashme;
+    const void *hashme;
     cli_md5_ctx md5;
 
     if (s->rsz > CLI_MAX_ALLOCATION) {
@@ -411,8 +411,8 @@ static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned
 
 static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats) {
     unsigned int err = 0, i;
-    uint8_t *resdir;
-    uint8_t *entry, *oentry;
+    const uint8_t *resdir;
+    const uint8_t *entry, *oentry;
     uint16_t named, unnamed;
     uint32_t rawaddr = cli_rawaddr(rva, exe_sections, nsections, &err, fsize, hdr_size);
     uint32_t entries;
@@ -481,7 +481,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
 			rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
 			if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
 				uint32_t isz = cli_readint32(resdir+4);
-				uint8_t *str;
+				const uint8_t *str;
 				rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
 				if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
 					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
@@ -519,8 +519,9 @@ int cli_scanpe(cli_ctx *ctx)
 	ssize_t bytes, at;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, overlays = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0, corrupted_cur;
-	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
-	char *src = NULL, *dest = NULL;
+	int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
+	const char *src = NULL;
+	char *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
 	uint32_t valign, falign, hdr_size, j;
@@ -1247,19 +1248,19 @@ int cli_scanpe(cli_ctx *ctx)
 
 	if(vsize >= 0x612c && rsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
 		int bw = rsize < 0x7000 ? rsize : 0x7000;
-		char *tbuff;
+		const char *tbuff;
 
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
 		    *ctx->virname = dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A";
 		    free(exe_sections);
 		    return CL_VIRUS;
-		} 
+		}
 	    }
 
 	} else if(rsize >= 0x7000 && vsize >= 0x7000 && ((vsize & 0xff) == 0xed)) {
 		int bw = rsize < 0x8000 ? rsize : 0x8000;
-		char *tbuff;
+		const char *tbuff;
 
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
@@ -1274,7 +1275,7 @@ int cli_scanpe(cli_ctx *ctx)
     /* W32.Polipos.A */
     while(polipos && !dll && nsections > 2 && nsections < 13 && e_lfanew <= 0x800 && (EC16(optional_hdr32.Subsystem) == 2 || EC16(optional_hdr32.Subsystem) == 3) && EC16(file_hdr.Machine) == 0x14c && optional_hdr32.SizeOfStackReserve >= 0x80000) {
 	uint32_t jump, jold, *jumps = NULL;
-	uint8_t *code;
+	const uint8_t *code;
 	unsigned int xsjs = 0;
 
 	if(exe_sections[0].rsz > CLI_MAX_ALLOCATION) break;
@@ -1367,10 +1368,11 @@ int cli_scanpe(cli_ctx *ctx)
     /* MEW support */
     if (found && (DCONF & PE_CONF_MEW) && epsize>=16 && epbuff[0]=='\xe9') {
 	uint32_t fileoffset;
-	char *tbuff;
+	const char *tbuff;
 
 	fileoffset = (vep + cli_readint32(epbuff + 1) + 5);
 	while (fileoffset == 0x154 || fileoffset == 0x158) {
+	    char *src;
 	    uint32_t offdiff, uselzma;
 
 	    cli_dbgmsg ("MEW: found MEW characteristics %08X + %08X + 5 = %08X\n", 
@@ -1543,7 +1545,8 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     
-    while(found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\x87' && epbuff[1] == '\x25') {
+    while(found  && (DCONF & PE_CONF_FSG) && epbuff[0] == '\x87' && epbuff[1] == '\x25') {
+	const char *dst;
 
 	/* FSG v2.0 support - thanks to aCaB ! */
 
@@ -1572,28 +1575,28 @@ int cli_scanpe(cli_ctx *ctx)
 	    return CL_ESEEK;
 	}
 
-	dest = src + newedx - exe_sections[i + 1].rva;
-	if(newedx < exe_sections[i + 1].rva || !CLI_ISCONTAINED(src, ssize, dest, 4)) {
+	dst = src + newedx - exe_sections[i + 1].rva;
+	if(newedx < exe_sections[i + 1].rva || !CLI_ISCONTAINED(src, ssize, dst, 4)) {
 	    cli_dbgmsg("FSG: New ESP out of bounds\n");
 	    break;
 	}
 
-	newedx = cli_readint32(dest) - EC32(optional_hdr32.ImageBase);
+	newedx = cli_readint32(dst) - EC32(optional_hdr32.ImageBase);
 	if(!CLI_ISCONTAINED(exe_sections[i + 1].rva, exe_sections[i + 1].rsz, newedx, 4)) {
 	    cli_dbgmsg("FSG: New ESP (%x) is wrong\n", newedx);
 	    break;
 	}
  
-	dest = src + newedx - exe_sections[i + 1].rva;
-	if(!CLI_ISCONTAINED(src, ssize, dest, 32)) {
+	dst = src + newedx - exe_sections[i + 1].rva;
+	if(!CLI_ISCONTAINED(src, ssize, dst, 32)) {
 	    cli_dbgmsg("FSG: New stack out of bounds\n");
 	    break;
 	}
 
-	newedi = cli_readint32(dest) - EC32(optional_hdr32.ImageBase);
-	newesi = cli_readint32(dest + 4) - EC32(optional_hdr32.ImageBase);
-	newebx = cli_readint32(dest + 16) - EC32(optional_hdr32.ImageBase);
-	newedx = cli_readint32(dest + 20);
+	newedi = cli_readint32(dst) - EC32(optional_hdr32.ImageBase);
+	newesi = cli_readint32(dst + 4) - EC32(optional_hdr32.ImageBase);
+	newebx = cli_readint32(dst + 16) - EC32(optional_hdr32.ImageBase);
+	newedx = cli_readint32(dst + 20);
 
 	if(newedi != exe_sections[i].rva) {
 	    cli_dbgmsg("FSG: Bad destination buffer (edi is %x should be %x)\n", newedi, exe_sections[i].rva);
@@ -1615,7 +1618,6 @@ int cli_scanpe(cli_ctx *ctx)
 
 	if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
 	    free(exe_sections);
-	    free(src);
 	    return CL_EMEM;
 	}
 
@@ -1630,7 +1632,7 @@ int cli_scanpe(cli_ctx *ctx)
 	/* FSG support - v. 1.33 (thx trog for the many samples) */
 
 	int sectcnt = 0;
-	char *support;
+	const char *support;
 	uint32_t newesi, newedi, oldep, gp, t;
 	struct cli_exe_section *sections;
 
@@ -1733,7 +1735,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 	int sectcnt = 0;
 	uint32_t gp, t = cli_rawaddr(cli_readint32(epbuff+1) - EC32(optional_hdr32.ImageBase), NULL, 0 , &err, fsize, hdr_size);
-	char *support;
+	const char *support;
 	uint32_t newesi = cli_readint32(epbuff+11) - EC32(optional_hdr32.ImageBase);
 	uint32_t newedi = cli_readint32(epbuff+6) - EC32(optional_hdr32.ImageBase);
 	uint32_t oldep = vep - exe_sections[i + 1].rva;
@@ -2124,6 +2126,7 @@ int cli_scanpe(cli_ctx *ctx)
        memcmp(epbuff+0x68, "\xe8\x00\x00\x00\x00\x58\x2d\x6d\x00\x00\x00\x50\x60\x33\xc9\x50\x58\x50\x50", 19) == 0)  {
 	uint32_t head = exe_sections[nsections - 1].raw;
         uint8_t *packer;
+	char *src;
 
 	ssize = 0;
 	for(i=0 ; ; i++) {
@@ -2178,6 +2181,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* ASPACK support */
     while((DCONF & PE_CONF_ASPACK) && ep+58+0x70e < fsize && !memcmp(epbuff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
+	char *src;
 
         if(epsize<0x3bf || memcmp(epbuff+0x3b9, "\x68\x00\x00\x00\x00\xc3",6)) break;
 	ssize = 0;
@@ -2214,7 +2218,7 @@ int cli_scanpe(cli_ctx *ctx)
 	uint32_t eprva = vep;
 	uint32_t start_of_stuff, rep = ep;
 	unsigned int nowinldr;
-	char *nbuff;
+	const char *nbuff;
 
 	src=epbuff;
 	if (*epbuff=='\xe9') { /* bitched headers */
@@ -2471,7 +2475,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 
     while(dirs[2].Size) {
 	struct vinfo_list vlist;
-	uint8_t *vptr, *baseptr;
+	const uint8_t *vptr, *baseptr;
     	uint32_t rva, res_sz;
 
 	memset(&vlist, 0, sizeof(vlist));
@@ -2555,7 +2559,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 
 		    while(sfi_sz > 6) { /* enum all stringtables - RESUMABLE */
 			uint32_t st_sz = cli_readint32(vptr) & 0xffff;
-			uint8_t *next_vptr = vptr + st_sz;
+			const uint8_t *next_vptr = vptr + st_sz;
 			uint32_t next_sfi_sz = sfi_sz - st_sz;
 
 			if(st_sz > sfi_sz || st_sz <= 24) {

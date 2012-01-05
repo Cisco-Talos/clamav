@@ -396,7 +396,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
         SHA1Context sha1;
         SHA256_CTX sha256;
         fmap_t *map;
-        char *ptr;
+        const char *ptr;
         uint8_t shash1[SHA1_HASH_SIZE*2+1];
         uint8_t shash256[SHA256_HASH_SIZE*2+1];
 	int have_sha1, have_sha256;
@@ -610,7 +610,7 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 
 int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
- 	unsigned char *buff;
+	const unsigned char *buff;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes, compute_hash[CLI_HASH_AVAIL_TYPES];
 	unsigned int i = 0, bm_offmode = 0;
 	uint32_t maxpatlen, offset = 0;
@@ -760,7 +760,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    }
 
 	    if(hdb) {
-		void *data = buff + maxpatlen * (offset!=0);
+		const void *data = buff + maxpatlen * (offset!=0);
 		uint32_t data_len = bytes - maxpatlen * (offset!=0);
 
 		if(compute_hash[CLI_HASH_MD5])

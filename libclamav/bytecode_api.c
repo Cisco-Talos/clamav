@@ -534,7 +534,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 {
     unsigned i;
-    char *p;
+    const char *p;
     int32_t result;
 
     if ((radix != 10 && radix != 16) || !ctx->fmap)
@@ -705,7 +705,7 @@ uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t id)
     return ctx->file_size - b->read_cursor;
 }
 
-uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
+const uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b || size > cli_bcapi_buffer_pipe_read_avail(ctx, id) || !size)
@@ -843,7 +843,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
     b->stream.avail_in = avail_in_orig =
 	cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
 
-    b->stream.next_in = cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+    b->stream.next_in = (void*)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
 						       b->stream.avail_in);
 
     b->stream.avail_out = avail_out_orig =
@@ -959,7 +959,7 @@ static struct bc_jsnorm *get_jsnorm(struct cli_bc_ctx *ctx, int32_t id)
 int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
 {
     unsigned avail;
-    unsigned char *in;
+    const unsigned char *in;
     cli_ctx *cctx = ctx->ctx;
     struct bc_jsnorm *b = get_jsnorm(ctx, id);
     if (!b || b->from == -1 || !b->state)
@@ -1448,7 +1448,7 @@ uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t objidx)
     return ctx->pdf_objs[objidx+1].start - ctx->pdf_objs[objidx].start - 4;
 }
 
-uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uint32_t amount)
+const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uint32_t amount)
 {
     uint32_t size = cli_bcapi_pdf_getobjsize(ctx, objidx);
     if (amount > size)

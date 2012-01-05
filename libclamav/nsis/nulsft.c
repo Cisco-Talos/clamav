@@ -70,7 +70,7 @@ struct nsis_st {
   struct CLI_LZMA lz;
 /*   z_stream z; */
   nsis_z_stream z;
-  unsigned char *freeme;
+  const unsigned char *freeme;
   fmap_t *map;
   char ofn[1024];
 };
@@ -183,7 +183,7 @@ static int nsis_decomp(struct nsis_st *n) {
 }
 
 static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
-  unsigned char *ibuf;
+  const unsigned char *ibuf;
   uint32_t size, loops;
   int ret, gotsome=0;
   unsigned char obuf[BUFSIZ];
@@ -258,7 +258,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       }
       
       n->nsis.avail_in = size;
-      n->nsis.next_in = ibuf;
+      n->nsis.next_in = (void*)ibuf;
       n->nsis.next_out = obuf;
       n->nsis.avail_out = BUFSIZ;
       loops=0;
@@ -325,7 +325,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	close(n->ofd);
 	return CL_EREAD;
       }
-      n->nsis.next_in = n->freeme;
+      n->nsis.next_in = (void*)n->freeme;
       n->nsis.avail_in = n->asz;
     }
 

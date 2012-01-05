@@ -120,12 +120,12 @@ nsp1:00435A5A                 push    8000h
 
 
 /* real_unpack(start_of_stuff, dest, malloc, free); */
-uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, uint32_t base, uint32_t ep, int file) {
+uint32_t unspack(const char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, uint32_t base, uint32_t ep, int file) {
   uint8_t c = *start_of_stuff;
   uint32_t i,firstbyte,tre,allocsz,tablesz,dsize,ssize;
   uint16_t *table;
   char *dst = dest;
-  char *src = start_of_stuff+0xd;
+  const char *src = start_of_stuff+0xd;
   struct cli_exe_section section;
   
   if (c>=0xe1) return 1;
@@ -170,7 +170,7 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
 }
 
 
-uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint32_t allocsz, uint32_t firstbyte, char *src, uint32_t ssize, char *dst, uint32_t dsize) {
+uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint32_t allocsz, uint32_t firstbyte, const char *src, uint32_t ssize, char *dst, uint32_t dsize) {
   struct UNSP read_struct;
   uint32_t i = (0x300<<((allocsz+tre)&0xff)) + 0x736;
 

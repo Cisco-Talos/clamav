@@ -108,9 +108,9 @@ typedef struct chm_metadata_tag {
 	int ofd;
 	uint32_t num_chunks;
 	off_t chunk_offset;
-	char *chunk_data;
-	char *chunk_current;
-	char *chunk_end;
+	const char *chunk_data;
+	const char *chunk_current;
+	const char *chunk_end;
 	fmap_t *map;
 	uint16_t chunk_entries;
 } chm_metadata_t;

@@ -155,11 +155,12 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
     return cli_texttype(buf, buflen);
 }
 
-int is_tar(unsigned char *buf, unsigned int nbytes);
+int is_tar(const unsigned char *buf, unsigned int nbytes);
 
 cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 {
-	unsigned char *buff, *decoded;
+	const unsigned char *buff;
+	unsigned char *decoded;
 	int bread = MIN(map->len, MAGIC_BUFFER_SIZE), sret;
 	cli_file_t ret = CL_TYPE_BINARY_DATA;
 	struct cli_matcher *root;

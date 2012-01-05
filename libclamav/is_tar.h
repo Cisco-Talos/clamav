@@ -44,4 +44,4 @@ union record {
 /* The magic field is filled with this if uname and gname are valid. */
 #define	TMAGIC		"ustar  "	/* 7 chars and a null */
 
-int is_tar(unsigned char *buf, unsigned int nbytes);
+int is_tar(const unsigned char *buf, unsigned int nbytes);

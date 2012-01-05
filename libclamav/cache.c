@@ -703,7 +703,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 
     cli_md5_init(&md5);
     while(todo) {
-	void *buf;
+	const void *buf;
 	size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
 	if(!(buf = fmap_need_off_once(map, at, readme)))
 	    return CL_VIRUS;

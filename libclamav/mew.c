@@ -64,7 +64,7 @@
 /* northfox does this shitty way,
  * this should be done with just a bswap
  */
-static char *lzma_bswap_4861dc(struct lzmastate *p, char *old_edx)
+static const char *lzma_bswap_4861dc(struct lzmastate *p, const char *old_edx)
 {
 	/* dumb_dump_start
 	 *
@@ -99,7 +99,7 @@ static char *lzma_bswap_4861dc(struct lzmastate *p, char *old_edx)
 	return p->p0;
 }
 
-static uint32_t lzma_486248 (struct lzmastate *p, char **old_ecx, char *src, uint32_t size)
+static uint32_t lzma_486248 (struct lzmastate *p,const char **old_ecx, char *src, uint32_t size)
 {
 	uint32_t loc_esi, loc_edi, loc_eax, loc_ecx, ret;
 	if (!CLI_ISCONTAINED(src, size, *old_ecx, 4) || !CLI_ISCONTAINED(src, size, p->p0, 1))
@@ -152,11 +152,11 @@ static uint32_t lzma_486248 (struct lzmastate *p, char **old_ecx, char *src, uin
 
 }
 
-static uint32_t lzma_48635C(uint8_t znaczek, char **old_ecx, struct lzmastate *p, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_48635C(uint8_t znaczek, const char **old_ecx, struct lzmastate *p, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_esi = (znaczek&0xff) >> 7, /* msb */
 		loc_ebx, ret;
-	char *loc_edi;
+	const char *loc_edi;
 	znaczek <<= 1;
 	ret = loc_esi << 9;
 	loc_edi = *old_ecx;
@@ -196,10 +196,10 @@ static uint32_t lzma_48635C(uint8_t znaczek, char **old_ecx, struct lzmastate *p
 	return 0;
 }
 
-static uint32_t lzma_4862e0 (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_4862e0 (struct lzmastate *p, const char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_ebx, loc_esi, stack_ecx, ret;
-	char *loc_edi;
+	const char *loc_edi;
 
 	loc_ebx = *old_edx;
 	ret = 1;
@@ -229,10 +229,10 @@ static uint32_t lzma_4862e0 (struct lzmastate *p, char **old_ecx, uint32_t *old_
 }
 
 /* old_edx - write only */
-static uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, char  **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, const char  **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t ret;
-	char *loc_esi = *old_ecx;
+	const char *loc_esi = *old_ecx;
 
 	if ((ret = lzma_486248 (p, old_ecx, src, size)) == 0xffffffff)
 		return -1;
@@ -274,7 +274,7 @@ static uint32_t lzma_4863da (uint32_t var0, struct lzmastate *p, char  **old_ecx
 static uint32_t lzma_486204 (struct lzmastate *p, uint32_t old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t loc_esi, loc_edi, loc_ebx, loc_eax;
-	char *loc_edx;
+	const char *loc_edx;
 	loc_esi = p->p1;
 	loc_edi = p->p2;
 	loc_eax = 0;
@@ -311,11 +311,11 @@ static uint32_t lzma_486204 (struct lzmastate *p, uint32_t old_edx, uint32_t *re
 	return 0;
 }
 
-static uint32_t lzma_48631a (struct lzmastate *p, char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
+static uint32_t lzma_48631a (struct lzmastate *p, const char **old_ecx, uint32_t *old_edx, uint32_t *retval, char *src, uint32_t size)
 {
 	uint32_t copy1, copy2;
 	uint32_t loc_esi, loc_edi, ret;
-	char *loc_ebx;
+	const char *loc_ebx;
 
 	copy1 = *old_edx;
 	loc_edi = 0;
@@ -347,7 +347,7 @@ static uint32_t lzma_48631a (struct lzmastate *p, char **old_ecx, uint32_t *old_
 }
 
 
-int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32_t special)
+int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, uint32_t special)
 {
 	uint32_t var08, var0C, var10, var14, var20, var24, var28, var34;
 	struct lzmastate var40;
@@ -355,8 +355,12 @@ int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32
 	int i, mainloop;
 
 	char var1, var30;
-	char *source = buf, *dest, *new_ebx, *new_ecx, *var0C_ecxcopy, *var2C;
-	char *pushed_esi = NULL, *pushed_ebx = NULL;
+	const char *source = buf;
+	char *dest, *new_ebx;
+	const char *new_ecx, *var0C_ecxcopy;
+	const char *var2C;
+	char *pushed_esi = NULL;
+	const char *pushed_ebx = NULL;
 	uint32_t pushed_edx=0;
 
 	uint32_t loc_esi, loc_edi;
@@ -774,8 +778,10 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
 	char *source = src + dsize + off;
-	char *lesi = source + 12, *ledi;
-	char *f1, *f2;
+	const char *lesi = source + 12;
+	char *ledi;
+	const char *f1;
+	char *f2;
 	int i;
 	struct cli_exe_section *section = NULL;
 	uint32_t vma = base + vadd, size_sum = ssize + dsize;

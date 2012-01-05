@@ -193,7 +193,7 @@ static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86
 
 /* Extracts the content of MSI based IS */
 int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
-    uint8_t *buf;
+    const uint8_t *buf;
     unsigned int fcount, scanned = 0;
     int ret;
     fmap_t *map = *ctx->fmap;
@@ -337,7 +337,8 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
 
 /* Extract the content of older (non-MSI) IS */
 int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
-    char *fname, *path, *version, *strsz, *eostr, *data;
+    const char *fname, *path, *version, *strsz, *data;
+    char *eostr;
     int ret = CL_CLEAN;
     long fsize;
     off_t coff = off;
@@ -436,7 +437,8 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 
 /* Utility func to scan a fd @ a given offset and size */
 static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize) {
-    char *fname, *buf;
+    char *fname;
+    const char *buf;
     int ofd, ret = CL_CLEAN;
     fmap_t *map = *ctx->fmap;
 
@@ -486,7 +488,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     char hash[33], *hdr;
     fmap_t *map = *ctx->fmap;
 
-    struct IS_HDR *h1;
+    const struct IS_HDR *h1;
     struct IS_OBJECTS *objs;
     /* struct IS_INSTTYPEHDR *typehdr; -- UNUSED */
 
@@ -675,7 +677,8 @@ static void md5str(uint8_t *sum) {
 #define IS_CABBUFSZ 65536
 
 static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
-    uint8_t *inbuf, *outbuf;
+    const uint8_t *inbuf;
+    uint8_t *outbuf;
     char *tempfile;
     int ofd, ret = CL_CLEAN;
     z_stream z;

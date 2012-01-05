@@ -56,7 +56,7 @@ static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
 
-static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
+static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
   char name[1024], obuf[BUFSIZ];
   char *tempfile = name;
   int of, ret=CL_CLEAN;
@@ -134,7 +134,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 
     memset(&strm, 0, sizeof(strm));
 
-    *next_in = src;
+    *next_in = (void*) src;
     *next_out = obuf;
     *avail_in = csize;
     *avail_out = sizeof(obuf);
@@ -216,7 +216,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 
   case ALG_IMPLODE: {
     struct xplstate strm;
-    strm.next_in = src;
+    strm.next_in = (void*)src;
     strm.next_out = (uint8_t *)obuf;
     strm.avail_in = csize;
     strm.avail_out = sizeof(obuf);
@@ -297,8 +297,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int detect_encrypted) {
-  uint8_t *lh, *zip;
+static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, const uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int detect_encrypted) {
+  const uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
 
@@ -323,7 +323,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   }
   if(ctx->engine->cdb || cli_debug_flag) {
       uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
-      char *src;
+      const char *src;
       if(nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
 	  memcpy(name, zip, nsize);
 	  name[nsize]='\0';
@@ -416,7 +416,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   char name[256];
   int last = 0;
-  uint8_t *ch;
+  const uint8_t *ch;
 
   if(!(ch = fmap_need_off(map, coff, SIZEOF_CH)) || CH_magic != 0x02014b50) {
       if(ch) fmap_unneed_ptr(map, ch, SIZEOF_CH);
@@ -433,7 +433,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   }
   if(cli_debug_flag && !last) {
       unsigned int size = (CH_flen>=sizeof(name))?sizeof(name)-1:CH_flen;
-      char *src = fmap_need_off_once(map, coff, size);
+      const char *src = fmap_need_off_once(map, coff, size);
       if(src) {
 	  memcpy(name, src, size);
 	  name[size]='\0';
@@ -467,7 +467,8 @@ int cli_unzip(cli_ctx *ctx) {
   int ret=CL_CLEAN;
   uint32_t fsize, lhoff = 0, coff = 0;
   fmap_t *map = *ctx->fmap;
-  char *tmpd, *ptr;
+  char *tmpd;
+  const char *ptr;
 
   cli_dbgmsg("in cli_unzip\n");
   fsize = (uint32_t)map->len;

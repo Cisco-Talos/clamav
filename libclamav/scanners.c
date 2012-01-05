@@ -488,7 +488,7 @@ static int cli_scangzip(cli_ctx *ctx)
 
     while (at < map->len) {
 	unsigned int bytes = MIN(map->len - at, map->pgsz);
-	if(!(z.next_in = fmap_need_off_once(map, at, bytes))) {
+	if(!(z.next_in = (void*)fmap_need_off_once(map, at, bytes))) {
 	    cli_dbgmsg("GZip: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
 	    inflateEnd(&z);
 	    close(fd);
@@ -1050,7 +1050,7 @@ static int cli_scanhtml(cli_ctx *ctx)
 
 static int cli_scanscript(cli_ctx *ctx)
 {
-	unsigned char *buff;
+	const unsigned char *buff;
 	unsigned char* normalized;
 	struct text_norm_state state;
 	char *tmpname = NULL;
@@ -1147,7 +1147,8 @@ static int cli_scanscript(cli_ctx *ctx)
 
 static int cli_scanhtml_utf16(cli_ctx *ctx)
 {
-	char *tempname, *decoded, *buff;
+	char *tempname, *decoded;
+	const char *buff;
 	int ret = CL_CLEAN, fd, bytes;
 	size_t at = 0;
 	fmap_t *map = *ctx->fmap;
@@ -1640,7 +1641,7 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0, todo;
-	char *buff;
+	const char *buff;
 	char *tmpname;
 	fmap_t *map = *ctx->fmap;
 	unsigned int corrupted_input;
@@ -2261,7 +2262,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 			break;
 		    }
 		    do {
-			char *b;
+			const char *b;
 
 			len = 0;
 			b = fmap_need_off_once_len(*ctx->fmap, pos, BUFSIZ, &len);

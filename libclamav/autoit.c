@@ -176,7 +176,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 *********************/
 
 
-static int ea05(cli_ctx *ctx, uint8_t *base, char *tmpd) {
+static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   uint8_t b[300], comp;
   uint32_t s, m4sum=0;
   int i, ret;
@@ -480,7 +480,7 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
  autoit3 EA06 handler 
 *********************/
 
-static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
+static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   uint8_t b[600], comp, script, *buf;
   uint32_t s;
   int i, ret;
@@ -916,7 +916,7 @@ static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
 *********************/
 
 int cli_scanautoit(cli_ctx *ctx, off_t offset) {
-  uint8_t *version;
+  const uint8_t *version;
   int r;
   char *tmpd;
   fmap_t *map = *ctx->fmap;
