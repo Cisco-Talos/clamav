@@ -379,8 +379,8 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	cab->map = map;
 	file->offset = EC32(file_hdr->uoffFolderStart);
 	file->length = EC32(file_hdr->cbFile);
-	file->attribs = EC32(file_hdr->attribs);
-	fidx = EC32(file_hdr->iFolder);
+	file->attribs = EC16(file_hdr->attribs);
+	fidx = EC16(file_hdr->iFolder);
 	file->error = CL_SUCCESS;
 
 	file->name = cab_readstr(map, &cur_offset, &ret);
