@@ -336,6 +336,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     *size = st.st_size;
     return fd;
 }
+#ifdef CHECK_HAVE_LOOPS
 
 static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
@@ -396,7 +397,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     munmap(mem, size);
 }
 END_TEST
-
+#endif
 
 static Suite *test_cl_suite(void)
 {
