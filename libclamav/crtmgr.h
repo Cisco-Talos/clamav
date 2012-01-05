@@ -39,6 +39,9 @@ typedef struct cli_crt_t {
     time_t not_before;
     time_t not_after;
     cli_crt_hashtype hashtype;
+    int certSign;
+    int codeSign;
+    int timeSign;
     struct cli_crt_t *prev;
     struct cli_crt_t *next;
 } cli_crt;

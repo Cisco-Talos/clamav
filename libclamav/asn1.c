@@ -425,7 +425,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x02)) /* INTEGER - mod */
 	return 1;
     if(obj.size < 1024/8 || obj.size > 4096/8+1) {
-	cli_dbgmsg("asn1_get_rsa_pubkey: modulus has got an unsupported length (%u)\n",  obj.size * 8);
+	cli_dbgmsg("asn1_get_rsa_pubkey: modulus has got an unsupported length (%u)\n",	 obj.size * 8);
 	return 1;
     }
     avail2 = obj.size;
@@ -527,15 +527,6 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 	if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509))
 	    break;
 
-	if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
-	    cli_dbgmsg("asn1_get_x509: certificate already exists\n");
-	    cli_crt_clear(&x509);
-	    return 0;
-	}
-
-	if(map_sha1(map, issuer, issuersize, x509.issuer))
-	    break;
-
 	avail = 0;
 	while(tbs.size) {
 	    /* FIXME parse extensions */
@@ -549,8 +540,146 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 		break;
 	    }
 	    avail = obj.type - 0xa0;
+	    if(obj.type == 0xa3) {
+		struct cli_asn1 exts;
+		if(asn1_expect_objtype(map, obj.content, &obj.size, &exts, 0x30)) {
+		    tbs.size = 1;
+		    break;
+		}
+		if(obj.size) {
+		    cli_dbgmsg("asn1_get_x509: found unexpected extra data in extensions\n");
+		    break;
+		}
+		while(exts.size) {
+		    struct cli_asn1 ext, id, value;
+		    int crit = 0;
+		    if(asn1_expect_objtype(map, exts.content, &exts.size, &ext, 0x30)) {
+			exts.size = 1;
+			break;
+		    }
+		    exts.content = ext.next;
+		    if(asn1_expect_objtype(map, ext.content, &ext.size, &id, 0x06)) {
+			exts.size = 1;
+			break;
+		    }
+		    if(asn1_get_obj(map, id.next, &ext.size, &value)) {
+			exts.size = 1;
+			break;
+		    }
+		    if(value.type == 0x01) {
+			if(value.size != 1) {
+			    cli_dbgmsg("asn1_get_x509: found boolean with wrong length\n");
+			    exts.size = 1;
+			    break;
+			}
+			if(!fmap_need_ptr_once(map, value.content, 1)) {
+			    cli_dbgmsg("asn1_get_x509: cannot read critical flag\n");
+			    exts.size = 1;
+			    break;
+			}
+			crit = (uint8_t *)(value.content);
+			if(asn1_get_obj(map, value.next, &ext.size, &value)) {
+			    exts.size = 1;
+			    break;
+			}
+		    }
+		    if(value.type != 0x04) {
+			cli_dbgmsg("asn1_get_x509: bad extension value type %u\n", value.type);
+			exts.size = 1;
+			break;
+		    }
+		    if(ext.size) {
+			cli_dbgmsg("asn1_get_x509: extra data in extension\n");
+			exts.size = 1;
+			break;
+		    }
+		    if(!crit)
+			continue;
+		    if(id.size == 3) {
+			if(!fmap_need_ptr_once(map, id.content, 3)) {
+			    exts.size = 1;
+			    break;
+			}
+			if(!memcmp("\x55\x1d\x0f", id.content, 3)) {
+			    /* KeyUsage 2.5.29.15 */
+			    uint8_t *keyusage = value.content;
+			    uint32_t usage;
+			    if(value.size < 4 || value.size > 5) {
+				cli_dbgmsg("asn1_get_x509: bad KeyUsage\n");
+				exts.size = 1;
+				break;
+			    }
+			    if(!fmap_need_ptr_once(map, value.content, value.size)) {
+				exts.size = 1;
+				break;
+			    }
+			    if(keyusage[0] != 0x03 || keyusage[1] != value.size - 2 || keyusage[2] > 7) {
+				cli_dbgmsg("asn1_get_x509: bad KeyUsage\n");
+				exts.size = 1;
+				break;
+			    }
+			    usage = keyusage[3];
+			    if(value.size == 5) {
+				usage <<= 8;
+				usage |= keyusage[4];
+			    }
+			    usage >>= keyusage[2];
+			    x509.certSign = (usage & (1<<5) != 0);
+			    continue;
+			}
+			if(!memcmp("\x55\x1d\x25", id.content, 3)) {
+			    /* ExtKeyUsage 2.5.29.37 */
+			    struct cli_asn1 keypurp;
+			    if(asn1_expect_objtype(map, value.content, &value.size, &keypurp, 0x30)) {
+				exts.size = 1;
+				break;
+			    }
+			    if(value.size) {
+				cli_dbgmsg("asn1_get_x509: extra data in ExtKeyUsage\n");
+				exts.size = 1;
+				break;
+			    }
+			    ext.next = keypurp.content;
+			    while(keypurp.size) {
+				if(asn1_expect_objtype(map, ext.next, &keypurp.size, &ext, 0x06)) {
+				    exts.size = 1;
+				    break;
+				}
+				if(ext.size != 8)
+				    continue;
+				if(!fmap_need_ptr_once(map, value.content, 8)) {
+				    exts.size = 1;
+				    break;
+				}
+				if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x03", value.content, 8)) /* id_kp_codeSigning */
+				    x509.codeSign = 1;
+				else if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x08", value.content, 8)) /* id_kp_timeStamping */
+				    x509.timeSign = 1;
+			    }
+			    continue;
+			}
+		    }
+		    /* { */
+		    /* 	uint8_t *asd = id.content; */
+		    /* 	cli_errmsg("ACAB: %u.%u.%u %u\n", asd[0], asd[1], asd[2], id.size); */
+		    /* } */
+		}
+		if(exts.size) {
+		    tbs.size = 1;
+		    break;
+		}
+	    }
 	}
 	if(tbs.size)
+	    break;
+
+	if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
+	    cli_dbgmsg("asn1_get_x509: certificate already exists\n");
+	    cli_crt_clear(&x509);
+	    return 0;
+	}
+
+	if(map_sha1(map, issuer, issuersize, x509.issuer))
 	    break;
 
 	if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
@@ -1002,8 +1131,8 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
 	    }
 	    result |= (1<<content);
 	    if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, 0x31)) { /* attribute type */
-	    	dsize = 1;
-	    	break;
+		dsize = 1;
+		break;
 	    }
 	    if(deep.size) {
 		cli_dbgmsg("asn1_parse_mscat: extra data in countersignature value\n");

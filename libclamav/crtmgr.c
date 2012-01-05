@@ -35,6 +35,7 @@ int cli_crt_init(cli_crt *x509) {
     }
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
+    x509->certSign = x509->codeSign = x509->timeSign = 0;
     return 0;
 }
 
@@ -46,7 +47,11 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     for(i = m->crts; i; i = i->next) {
 	if(x509->not_before >= i->not_before &&
-	   x509->not_after <= i->not_after && !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+	   x509->not_after <= i->not_after &&
+	   (i->certSign | x509->certSign) == i->certSign &&
+	   (i->codeSign | x509->codeSign) == i->codeSign &&
+	   (i->timeSign | x509->timeSign) == i->timeSign &&
+	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
 	   !mp_cmp(&x509->n, &i->n) &&
 	   !mp_cmp(&x509->e, &i->e)) {
 	    return i;
@@ -65,9 +70,8 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	   !mp_cmp(&x509->e, &i->e)) {
 	    if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
 		/* Already same or broader */
-		return 0;
+		ret = 1;
 	    }
-
 	    if(i->not_before > x509->not_before && i->not_before <= x509->not_after) {
 		/* Extend left */
 		i->not_before = x509->not_before;
@@ -78,11 +82,11 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 		i->not_after = x509->not_after;
 		ret = 1;
 	    }
-	    if(ret) {
-		cli_errmsg("existing crt extended\n");
-		return 0;
-	    } else 
-		cli_errmsg("crt meh\n");
+	    if(!ret)
+		continue;
+	    i->certSign |= x509->certSign;
+	    i->codeSign |= x509->codeSign;
+	    i->timeSign |= x509->timeSign;
 	}
     }
 
@@ -107,6 +111,9 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     i->not_before = x509->not_before;
     i->not_after = x509->not_after;
     i->hashtype = x509->hashtype;
+    i->certSign = x509->certSign;
+    i->codeSign = x509->codeSign;
+    i->timeSign = x509->timeSign;
     i->next = m->crts;
     i->prev = NULL;
     if(m->crts)
@@ -405,6 +412,9 @@ int crtmgr_add_roots(crtmgr *m) {
     }
     ca.not_before = 0;
     ca.not_after = (-1U)>>1;
+    ca.certSign = 1;
+    ca.codeSign = 1;
+    ca.timeSign = 1;
     crtmgr_add(m, &ca);
 
     memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
@@ -412,17 +422,6 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 0;
-    ca.not_after = (-1U)>>1;
-    crtmgr_add(m, &ca);
-
-    memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
-    if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
-	cli_crt_clear(&ca);
-	return 1;
-    }
-    ca.not_before = 0;
-    ca.not_after = (-1U)>>1;
     crtmgr_add(m, &ca);
 
     memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
@@ -430,8 +429,16 @@ int crtmgr_add_roots(crtmgr *m) {
 	cli_crt_clear(&ca);
 	return 1;
     }
-    ca.not_before = 0;
-    ca.not_after = (-1U)>>1;
+    ca.timeSign = 0;
+    crtmgr_add(m, &ca);
+
+    memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
+    if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
+	cli_crt_clear(&ca);
+	return 1;
+    }
+    ca.codeSign = 0;
+    ca.timeSign = 1;
     crtmgr_add(m, &ca);
 
     cli_crt_clear(&ca);
