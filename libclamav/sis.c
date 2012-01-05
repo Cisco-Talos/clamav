@@ -420,7 +420,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
 	int fd;
 
 	for (j=0; j<fcount; j++) {
-	  void *decomp;
+	  void *decomp = NULL;
 	  const void *comp;
 	  const void *decompp = NULL;
 	  uLongf olen;
