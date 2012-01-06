@@ -107,12 +107,12 @@ static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
 	 :(const char*)ptr - (const char*)m - m->hdrsz;
 }
 
-static inline const void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len)
+static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
 {
     return m->need(m, fmap_ptr2off(m, ptr), len, 1);
 }
 
-static inline const void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len)
+static inline const void *fmap_need_ptr_once(fmap_t *m, const void *ptr, size_t len)
 {
     return m->need(m, fmap_ptr2off(m, ptr), len, 0);
 }
@@ -122,7 +122,7 @@ static inline void fmap_unneed_off(fmap_t *m, size_t at, size_t len)
     m->unneed_off(m, at, len);
 }
 
-static inline void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len)
+static inline void fmap_unneed_ptr(fmap_t *m, const void *ptr, size_t len)
 {
     fmap_unneed_off(m, fmap_ptr2off(m, ptr), len);
 }
@@ -144,7 +144,7 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
     return len;
 }
 
-static inline const void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint)
+static inline const void *fmap_need_str(fmap_t *m, const void *ptr, size_t len_hint)
 {
     return m->need_offstr(m, fmap_ptr2off(m, ptr), len_hint);
 }

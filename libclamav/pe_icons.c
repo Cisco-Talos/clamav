@@ -88,7 +88,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_cb, &gicons);
 	
     for(curicon=0; curicon<gicons.cnt; curicon++) {
-	uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(gicons.rvas[curicon], exe_sections, nsections, &err, map->len, hdr_size), 16);
+	const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(gicons.rvas[curicon], exe_sections, nsections, &err, map->len, hdr_size), 16);
 	if(grp && !err) {
 	    uint32_t gsz = cli_readint32(grp + 4);
 	    if(gsz>6) {
@@ -1192,9 +1192,10 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	unsigned int important;
     } bmphdr;
     struct icomtr metrics;
-    unsigned char *rawimage;
+    const unsigned char *rawimage;
     const char *tempd;
-    uint32_t *palette = NULL, *imagedata;
+    const uint32_t *palette = NULL;
+    uint32_t *imagedata;
     unsigned int scanlinesz, andlinesz;
     unsigned int width, height, depth, x, y;
     unsigned int err, scalemode = 2, enginesize;
@@ -1210,12 +1211,12 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
 
     /* read the bitmap header */
-    if(err || !(imagedata = fmap_need_off_once(map, icoff, 4))) {
+    if(err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
 	cli_dbgmsg("parseicon: offset to icon is out of file\n");
 	return CL_SUCCESS;
     }
 
-    rva = cli_readint32(imagedata);
+    rva = cli_readint32(rawimage);
     icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
     if(err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
 	cli_dbgmsg("parseicon: bmp header is out of file\n");

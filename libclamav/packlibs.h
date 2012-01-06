@@ -28,8 +28,8 @@
 #include "cltypes.h"
 #include "rebuildpe.h"
 
-int cli_unfsg(char *, char *, int, int, char **, char **);
+int cli_unfsg(const char *, char *, int, int, const char **, char **);
 
-int unmew(char *, char *, int, int, char **, char **);
+int unmew(const char *, char *, int, int, const char **, char **);
 
 #endif

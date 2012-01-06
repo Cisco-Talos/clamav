@@ -283,7 +283,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
     return CL_CLEAN;
   }
   for (i = 0; i< sis.langs; i++)
-    alangs[i]=EC32(llangs[i])<MAXLANG ? sislangs[EC32(llangs[i])] : sislangs[0];
+    alangs[i]=EC16(llangs[i])<MAXLANG ? sislangs[EC16(llangs[i])] : sislangs[0];
 
   if (!sis.pnames) {
     cli_dbgmsg("SIS: Application without a name?\n");
@@ -420,7 +420,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
 	int fd;
 
 	for (j=0; j<fcount; j++) {
-	  void *decomp;
+	  void *decomp = NULL;
 	  const void *comp;
 	  const void *decompp = NULL;
 	  uLongf olen;

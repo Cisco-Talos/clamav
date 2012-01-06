@@ -96,7 +96,7 @@ struct cli_asn1 {
     const void *next;
 };
 
-static int map_sha1(fmap_t *map, void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
+static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
     SHA1Context ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_sha1: failed to read hash data\n");
@@ -464,7 +464,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     unsigned int avail, tbssize, issuersize;
     cli_crt_hashtype hashtype1, hashtype2;
     cli_crt x509;
-    uint8_t *tbsdata;
+    const uint8_t *tbsdata;
     const void *next, *issuer;
 
     if(cli_crt_init(&x509))
@@ -577,7 +577,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 			    exts.size = 1;
 			    break;
 			}
-			crit = (uint8_t *)(value.content);
+			crit = ((uint8_t *)(value.content))[0];
 			if(asn1_get_obj(map, value.next, &ext.size, &value)) {
 			    exts.size = 1;
 			    break;
@@ -602,7 +602,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 			}
 			if(!memcmp("\x55\x1d\x0f", id.content, 3)) {
 			    /* KeyUsage 2.5.29.15 */
-			    uint8_t *keyusage = value.content;
+			    const uint8_t *keyusage = value.content;
 			    uint32_t usage;
 			    if(value.size < 4 || value.size > 5) {
 				cli_dbgmsg("asn1_get_x509: bad KeyUsage\n");
@@ -624,7 +624,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 				usage |= keyusage[4];
 			    }
 			    usage >>= keyusage[2];
-			    x509.certSign = (usage & (1<<5) != 0);
+			    x509.certSign = ((usage & (1<<5)) != 0);
 			    continue;
 			}
 			if(!memcmp("\x55\x1d\x25", id.content, 3)) {
@@ -724,7 +724,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
 static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
     struct cli_asn1 asn1, deep, deeper;
-    uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], *message, *attrs;
+    uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE];
+    const uint8_t *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
     SHA1Context ctx;

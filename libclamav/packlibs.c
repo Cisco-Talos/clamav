@@ -27,7 +27,7 @@
 #include "pe.h"
 #include "packlibs.h"
 
-static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
+static int doubledl(const char **scur, uint8_t *mydlptr, const char *buffer, uint32_t buffersize)
 {
   unsigned char mydl = *mydlptr;
   unsigned char olddl = mydl;
@@ -45,10 +45,11 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
 }
 
 
-int cli_unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
+int cli_unfsg(const char *source, char *dest, int ssize, int dsize, const char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
   uint32_t backbytes, backsize, oldback = 0;
-  char *csrc = source, *cdst = dest;
+  const char *csrc = source;
+  char *cdst = dest;
   int oob, lostbit = 1;
 
   if (ssize<=0 || dsize<=0) return -1;
@@ -170,10 +171,11 @@ int cli_unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, cha
   return 0;
 }
 
-int unmew(char *source, char *dest, int ssize, int dsize, char **endsrc, char **enddst) {
+int unmew(const char *source, char *dest, int ssize, int dsize, const char **endsrc, char **enddst) {
   uint8_t mydl=0x80;
   uint32_t myeax_backbytes, myecx_backsize, oldback = 0;
-  char *csrc = source, *cdst = dest;
+  const char *csrc = source;
+  char *cdst = dest;
   int oob, lostbit = 1;
 
   *cdst++=*csrc++;

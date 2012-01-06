@@ -656,7 +656,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 				bodyIsEmpty = TRUE;
 			} else {
 				char *ptr;
-				char *lookahead;
+				const char *lookahead;
 
 				if(fullline == NULL) {
 					char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
@@ -3212,7 +3212,8 @@ usefulHeader(int commandNumber, const char *cmd)
 static char *
 getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
 {
-    char *src, *cursrc, *curbuf;
+    const char *src, *cursrc;
+    char *curbuf;
     size_t i;
     size_t input_len = MIN(map->len - *at, buffer_len + 1);
     src = cursrc = fmap_need_off_once(map, *at, input_len);

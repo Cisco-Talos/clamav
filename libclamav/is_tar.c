@@ -32,7 +32,7 @@ static int from_oct(int digs, char *where);
  *	1 for old UNIX tar file,
  *	2 for Unix Std (POSIX) tar file.
  */
-int is_tar(unsigned char *buf, unsigned int nbytes)
+int is_tar(const unsigned char *buf, unsigned int nbytes)
 {
 	union record *header = (union record *)buf;
 	int	i;

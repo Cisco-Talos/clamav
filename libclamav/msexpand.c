@@ -94,7 +94,7 @@ struct msexp_hdr {
 
 int cli_msexpand(cli_ctx *ctx, int ofd)
 {
-	struct msexp_hdr *hdr;
+	const struct msexp_hdr *hdr;
 	uint8_t i, mask, bits;
 	unsigned char buff[B_SIZE], wbuff[RW_SIZE];
 	const unsigned char *rbuff;

@@ -116,7 +116,7 @@ static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, u
 
 /* PE from UPX */
 
-static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic, uint32_t dend)
+static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic, uint32_t dend)
 {
   char *imports, *sections=NULL, *pehdr=NULL, *newbuf;
   unsigned int sectcnt=0, upd=1;
@@ -259,7 +259,7 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
 
 /* [doubleebx] */
 
-static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
+static int doubleebx(const char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 {
   uint32_t oldebx = *myebx;
 
@@ -276,7 +276,7 @@ static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 
 /* [inflate] */
 
-int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
   uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0xd5,0};
@@ -351,7 +351,7 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
   return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
   uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x11c,0x124,0};
@@ -433,7 +433,7 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
   return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
   uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x128,0x130,0};
@@ -522,7 +522,7 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
   return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflatelzma(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep) {
+int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep) {
   struct CLI_LZMA l;
   uint32_t magic[]={0xb16,0xb1e,0};
   unsigned char fake_lzmahdr[5];

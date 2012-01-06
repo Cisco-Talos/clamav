@@ -95,7 +95,8 @@ struct cab_block_hdr
 static char *cab_readstr(fmap_t *map, off_t *offset, int *ret)
 {
 	int i;
-	char *str, *retstr;
+	const char *str;
+	char *retstr;
 
     if(!(str = fmap_need_offstr(map, *offset, 256))) {
 	*ret = CL_EFORMAT;
@@ -181,8 +182,8 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	unsigned int i, folders = 0;
 	struct cab_file *file, *lfile = NULL;
 	struct cab_folder *folder, *lfolder = NULL;
-	struct cab_hdr *hdr;
-	struct cab_hdr_opt *hdr_opt;
+	const struct cab_hdr *hdr;
+	const struct cab_hdr_opt *hdr_opt;
 	uint16_t fidx;
 	uint32_t coffFiles;
 	char *pt;
@@ -305,7 +306,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 
     /* folders */
     for(i = 0; i < cab->nfolders; i++) {
-	struct cab_folder_hdr *folder_hdr;
+	const struct cab_folder_hdr *folder_hdr;
 
 	if(!(folder_hdr = fmap_need_off_once(map, cur_offset, sizeof(*folder_hdr)))) {
 	    cli_dbgmsg("cab_open: Can't read header for folder %u\n", i);
@@ -360,7 +361,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	cur_offset = coffFiles;
     }
     for(i = 0; i < cab->nfiles; i++) {
-	struct cab_file_hdr *file_hdr;
+	const struct cab_file_hdr *file_hdr;
 
 	if(!(file_hdr = fmap_need_off_once(map, cur_offset, sizeof(*file_hdr)))) {
 	    cli_dbgmsg("cab_open: Can't read file %u header\n", i);
@@ -379,8 +380,8 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 	cab->map = map;
 	file->offset = EC32(file_hdr->uoffFolderStart);
 	file->length = EC32(file_hdr->cbFile);
-	file->attribs = EC32(file_hdr->attribs);
-	fidx = EC32(file_hdr->iFolder);
+	file->attribs = EC16(file_hdr->attribs);
+	fidx = EC16(file_hdr->iFolder);
 	file->error = CL_SUCCESS;
 
 	file->name = cab_readstr(map, &cur_offset, &ret);
@@ -449,7 +450,7 @@ int cab_open(fmap_t *map, off_t offset, struct cab_archive *cab)
 
 static int cab_read_block(struct cab_file *file)
 {
-	struct cab_block_hdr *block_hdr;
+	const struct cab_block_hdr *block_hdr;
 	struct cab_state *state = file->cab->state;
 
     if(!(block_hdr = fmap_need_off_once(file->cab->map, file->cab->cur_offset, sizeof(*block_hdr)))) {

@@ -276,7 +276,7 @@ static void print_ole2_header(ole2_header_t *hdr)
 static int ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t blockno)
 {
 	off_t offset, offend;
-	void *pblock;
+	const void *pblock;
 
 	if (blockno < 0) {
 		return FALSE;
@@ -872,7 +872,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	int hdr_size, ret=CL_CLEAN;
 	unsigned int file_count=0;
 	unsigned long scansize, scansize2;
-	void *phdr;
+	const void *phdr;
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 

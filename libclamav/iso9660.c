@@ -37,7 +37,7 @@ typedef struct {
 } iso9660_t;
 
 
-static void *needblock(const iso9660_t *iso, unsigned int block, int temp) {
+static const void *needblock(const iso9660_t *iso, unsigned int block, int temp) {
     cli_ctx *ctx = iso->ctx;
     size_t loff;
     unsigned int blocks_per_sect = (2048 / iso->blocksz);
@@ -59,7 +59,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while(len) {
-	void *buf = needblock(iso, block, 1);
+	const void *buf = needblock(iso, block, 1);
 	unsigned int todo = MIN(len, iso->blocksz);
 	if(cli_writen(fd, buf, todo) != todo) {
 	    close(fd);
@@ -88,7 +88,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     return ret;
 }
 
-static char *iso_string(iso9660_t *iso, void *src, unsigned int len) {
+static char *iso_string(iso9660_t *iso, const void *src, unsigned int len) {
     if(iso->joliet) {
 	char *utf8;
 	if(len > sizeof(iso->buf))
@@ -120,7 +120,7 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
     }
 
     for(; len && ret == CL_CLEAN; block++, len -= MIN(len, iso->blocksz)) {
-	uint8_t *dir, *dir_orig;
+	const uint8_t *dir, *dir_orig;
 	unsigned int dirsz;
 
 	if(iso->dir_blocks.count > 1024) {
@@ -205,7 +205,7 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 }
 
 int cli_scaniso(cli_ctx *ctx, size_t offset) {
-    uint8_t *privol, *next;
+    const uint8_t *privol, *next;
     iso9660_t iso;
     int i;
 

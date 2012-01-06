@@ -25,8 +25,6 @@
 #include "crtmgr.h"
 #include "others.h"
 
-/* TODO split certs into verified and tbs */
-
 int cli_crt_init(cli_crt *x509) {
     int ret;
     if((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {

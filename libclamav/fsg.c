@@ -46,7 +46,7 @@
 #include "packlibs.h"
 #include "fsg.h"
 
-int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
+int unfsg_200(const char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
   struct cli_exe_section section; /* Yup, just one ;) */
   
   if ( cli_unfsg(source, dest, ssize, dsize, NULL, NULL) ) return -1;
@@ -64,8 +64,9 @@ int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint
 }
 
 
-int unfsg_133(char *source, char *dest, int ssize, int dsize, struct cli_exe_section *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
-  char *tsrc=source, *tdst=dest;
+int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_exe_section *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
+  const char *tsrc=source;
+  char *tdst=dest;
   int i, upd=1, offs=0, lastsz=dsize;
 
   for (i = 0 ; i <= sectcount ; i++) {

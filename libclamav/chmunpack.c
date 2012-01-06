@@ -105,7 +105,7 @@ typedef struct lzx_content_tag {
 /* Read in a block of data from either the mmap area or the given fd */
 static int chm_read_data(fmap_t *map, char *dest, off_t offset, off_t len)
 {
-    void *src = fmap_need_off_once(map, offset, len);
+    const void *src = fmap_need_off_once(map, offset, len);
     if(!src) return FALSE;
     memcpy(dest, src, len);
     return TRUE;
@@ -233,10 +233,10 @@ static int itsp_read_header(chm_metadata_t *metadata, off_t offset)
 	return TRUE;
 }
 
-static uint64_t read_enc_int(char **start, char *end)
+static uint64_t read_enc_int(const char **start, const char *end)
 {
 	uint64_t retval=0;
-	char *current;
+	const char *current;
 	
 	current = *start;
 	
@@ -258,7 +258,7 @@ static uint64_t read_enc_int(char **start, char *end)
 /* Read control entries */
 static int read_control_entries(chm_metadata_t *metadata)
 {
-	char *name;
+	const char *name;
 	uint64_t name_len, section, offset, length;
 
 	while (metadata->chunk_entries--) {
