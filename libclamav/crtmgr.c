@@ -142,7 +142,7 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     for(i = m->crts; i; i = i->next) {
 	if(i==x509) {
-	    if(i->prev) 
+	    if(i->prev)
 		i->prev->next = i->next;
 	    else
 		m->crts = i->next;
@@ -256,15 +256,18 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 }
 
 
-int crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
+cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts;
 
     for(i = m->crts; i; i = i->next) {
-	if(i->certSign && !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
+	if(i->certSign &&
+	   (x509->codeSign & i->codeSign) == x509->codeSign &&
+	   (x509->timeSign & i->timeSign) == x509->timeSign &&
+	   !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
 	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash))
-	    return 0;
+	    return i;
     }
-    return 1;
+    return NULL;
 }
 
 int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
@@ -300,7 +303,6 @@ int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature,
     }
     mp_clear(&sig);
     return ret;
-
 }
 
 /* DC=com, DC=microsoft, CN=Microsoft Root Certificate Authority */
@@ -402,45 +404,51 @@ int crtmgr_add_roots(crtmgr *m) {
     if(cli_crt_init(&ca))
 	return 1;
 
-    /* FIXME proper error check and error path cleanup */
+    do {
+	memset(ca.issuer, '\xca', sizeof(ca.issuer));
+	memcpy(ca.subject, MSCA_SUBJECT, sizeof(ca.subject));
+	if(mp_read_unsigned_bin(&ca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
+	    cli_errmsg("crtmgr_add_roots: failed to read MSCA key\n");
+	    break;
+	}
+	ca.not_before = 0;
+	ca.not_after = (-1U)>>1;
+	ca.certSign = 1;
+	ca.codeSign = 1;
+	ca.timeSign = 1;
+	if(crtmgr_add(m, &ca))
+	    break;
 
-    memset(ca.issuer, '\xca', sizeof(ca.issuer));
-    memcpy(ca.subject, MSCA_SUBJECT, sizeof(ca.subject));
-    if(mp_read_unsigned_bin(&ca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
-	cli_crt_clear(&ca);
-	return 1;
-    }
-    ca.not_before = 0;
-    ca.not_after = (-1U)>>1;
-    ca.certSign = 1;
-    ca.codeSign = 1;
-    ca.timeSign = 1;
-    crtmgr_add(m, &ca);
+	memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
+	if(mp_read_unsigned_bin(&ca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
+	    cli_errmsg("crtmgr_add_roots: failed to read MSA key\n");
+	    break;
+	}
+	if(crtmgr_add(m, &ca))
+	    break;
 
-    memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
-    if(mp_read_unsigned_bin(&ca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
-	cli_crt_clear(&ca);
-	return 1;
-    }
-    crtmgr_add(m, &ca);
+	memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
+	if(mp_read_unsigned_bin(&ca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&ca.e, VER_EXP, sizeof(VER_EXP)-1)) {
+	    cli_errmsg("crtmgr_add_roots: failed to read VER key\n");
+	    break;
+	}
+	ca.timeSign = 0;
+	if(crtmgr_add(m, &ca))
+	    break;
 
-    memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
-    if(mp_read_unsigned_bin(&ca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&ca.e, VER_EXP, sizeof(VER_EXP)-1)) {
-	cli_crt_clear(&ca);
-	return 1;
-    }
-    ca.timeSign = 0;
-    crtmgr_add(m, &ca);
-
-    memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
-    if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
-	cli_crt_clear(&ca);
-	return 1;
-    }
-    ca.codeSign = 0;
-    ca.timeSign = 1;
-    crtmgr_add(m, &ca);
+	memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
+	if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
+	    cli_errmsg("crtmgr_add_roots: failed to read THAW key\n");
+	    break;
+	}
+	ca.codeSign = 0;
+	ca.timeSign = 1;
+	if(crtmgr_add(m, &ca))
+	    break;
+	return 0;
+    } while(0);
 
     cli_crt_clear(&ca);
-    return 0;
+    crtmgr_free(m);
+    return 1;
 }

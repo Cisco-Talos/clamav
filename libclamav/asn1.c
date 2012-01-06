@@ -529,7 +529,6 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
 	avail = 0;
 	while(tbs.size) {
-	    /* FIXME parse extensions */
 	    if(asn1_get_obj(map, obj.next, &tbs.size, &obj)) {
 		tbs.size = 1;
 		break;
@@ -542,6 +541,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 	    avail = obj.type - 0xa0;
 	    if(obj.type == 0xa3) {
 		struct cli_asn1 exts;
+		int have_ext_key = 0;
 		if(asn1_expect_objtype(map, obj.content, &obj.size, &exts, 0x30)) {
 		    tbs.size = 1;
 		    break;
@@ -621,6 +621,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 		    if(!memcmp("\x55\x1d\x25", id.content, 3)) {
 			/* ExtKeyUsage 2.5.29.37 */
 			struct cli_asn1 keypurp;
+			have_ext_key = 1;
 			if(asn1_expect_objtype(map, value.content, &value.size, &keypurp, 0x30)) {
 			    exts.size = 1;
 			    break;
@@ -656,7 +657,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 			    exts.size = 1;
 			    break;
 			}
-			if(!constr.size) 
+			if(!constr.size)
 			    x509.certSign = 0;
 			else {
 			    if(asn1_expect_objtype(map, constr.content, &constr.size, &ext, 0x01)) {
@@ -680,10 +681,13 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 		    tbs.size = 1;
 		    break;
 		}
+		if(!have_ext_key)
+		    x509.codeSign = x509.timeSign = 1;
 	    }
 	}
 	if(tbs.size)
 	    break;
+
 
 	if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
 	    cli_dbgmsg("asn1_get_x509: certificate already exists\n");
@@ -827,7 +831,10 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
 		cli_crt *x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
-		    if(!crtmgr_verify_crt(cmgr, x509)) {
+		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
+		    if(parent) {
+			x509->codeSign &= parent->codeSign;
+			x509->timeSign &= parent->timeSign;
 			if(crtmgr_add(cmgr, x509)) {
 			    /* FIXME handle error */
 			}
