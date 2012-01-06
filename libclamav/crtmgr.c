@@ -33,7 +33,7 @@ int cli_crt_init(cli_crt *x509) {
     }
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
-    x509->certSign = x509->codeSign = x509->timeSign = -1;
+    x509->certSign = x509->codeSign = x509->timeSign = 0;
     return 0;
 }
 
@@ -127,7 +127,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	    sprintf(&issuer[j*2], "%02x", i->issuer[j]);
 	    sprintf(&subject[j*2], "%02x", i->subject[j]);
 	}
-	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s %lu->%lu\n", subject, issuer, mod, exp, (unsigned long)i->not_before, (unsigned long)i->not_after);
+	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s %lu->%lu %s%s%s\n", subject, issuer, mod, exp, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
     }
     m->items++;
     return 0;
@@ -267,12 +267,10 @@ int crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     return 1;
 }
 
-int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash) {
+int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
     cli_crt *i;
     mp_int sig;
     int ret;
-
-    /* FIXME: add check on serial ? */
 
     if(signature_len < 1024/8 || signature_len > 4096/8+1) {
 	cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
@@ -290,6 +288,10 @@ int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature,
 
     ret = 1;
     for(i = m->crts; i; i = i->next) {
+	if(vrfytype == VRFY_CODE && !i->codeSign)
+	    continue;
+	if(vrfytype == VRFY_TIME && !i->timeSign)
+	    continue;
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
 	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
 	    ret = 0;

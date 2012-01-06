@@ -638,13 +638,13 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 			    }
 			    if(ext.size != 8)
 				continue;
-			    if(!fmap_need_ptr_once(map, value.content, 8)) {
+			    if(!fmap_need_ptr_once(map, ext.content, 8)) {
 				exts.size = 1;
 				break;
 			    }
-			    if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x03", value.content, 8)) /* id_kp_codeSigning */
+			    if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x03", ext.content, 8)) /* id_kp_codeSigning */
 				x509.codeSign = 1;
-			    else if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x08", value.content, 8)) /* id_kp_timeStamping */
+			    else if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x08", ext.content, 8)) /* id_kp_timeStamping */
 				x509.timeSign = 1;
 			}
 			continue;
@@ -1004,7 +1004,7 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1)) {
+	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE)) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
 	    break;
 	}
@@ -1245,7 +1245,7 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
 	    cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, hashtype, sha1)) {
+	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
 	    break;
 	}

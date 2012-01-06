@@ -27,7 +27,7 @@
 #include "sha1.h"
 
 typedef enum { CLI_SHA1RSA, CLI_MD5RSA } cli_crt_hashtype;
-
+typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
 
 typedef struct cli_crt_t {
     uint8_t subject[SHA1_HASH_SIZE];
@@ -60,7 +60,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
 void crtmgr_del(crtmgr *m, cli_crt *x509);
 int crtmgr_verify_crt(crtmgr *m, cli_crt *x509);
-int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash);
+int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype);
 int crtmgr_add_roots(crtmgr *m);
 
 
