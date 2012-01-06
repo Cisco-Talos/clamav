@@ -33,7 +33,7 @@ int cli_crt_init(cli_crt *x509) {
     }
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
-    x509->certSign = x509->codeSign = x509->timeSign = 0;
+    x509->certSign = x509->codeSign = x509->timeSign = -1;
     return 0;
 }
 
@@ -260,7 +260,7 @@ int crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts;
 
     for(i = m->crts; i; i = i->next) {
-	if(!memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
+	if(i->certSign && !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
 	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash))
 	    return 0;
     }
