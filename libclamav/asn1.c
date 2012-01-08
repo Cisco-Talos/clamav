@@ -1435,12 +1435,12 @@ int asn1_check_mscat(fmap_t *map, size_t offset, unsigned int size, uint8_t *com
     if(crtmgr_add_roots(&certs)) {
 	/* FIXME: do smthng here */
 	crtmgr_free(&certs);
-	return CL_CLEAN;
+	return CL_VIRUS;
     }
     ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size);
     crtmgr_free(&certs);
     if(ret)
-	return CL_VIRUS; /* FIXME */
+	return CL_VIRUS;
 
     if(asn1_expect_objtype(map, content, &content_size, &c, 0x30))
 	return CL_VIRUS;

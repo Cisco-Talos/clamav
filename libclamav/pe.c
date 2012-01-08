@@ -2666,7 +2666,7 @@ static int sort_sects(const void *first, const void *second) {
     return (a->raw - b->raw);
 }
 
-int cli_checkfp_pe(cli_ctx *ctx, uint8_t authsha1[SHA1_HASH_SIZE]) {
+int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     uint16_t e_magic; /* DOS signature ("MZ") */
     uint16_t nsections;
     uint32_t e_lfanew; /* address of new exe header */
@@ -2833,7 +2833,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t authsha1[SHA1_HASH_SIZE]) {
     }
 
     if(at < fsize) {
-	hlen = at - fsize;
+	hlen = fsize - at;
 	if(dirs[4].Size > hlen) {
 	    free(exe_sections);
 	    return CL_EFORMAT;
@@ -2848,7 +2848,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t authsha1[SHA1_HASH_SIZE]) {
 
     if(cli_debug_flag) {
 	char shatxt[SHA1_HASH_SIZE*2+1];
-	for(i=0; i<sizeof(authsha1); i++)
+	for(i=0; i<SHA1_HASH_SIZE; i++)
 	    sprintf(&shatxt[i*2], "%02x", authsha1[i]);
 	cli_errmsg("Autheticode: %s\n", shatxt);
     }
@@ -2860,8 +2860,5 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t authsha1[SHA1_HASH_SIZE]) {
     if(hlen < 12)
 	return CL_VIRUS;
     hlen -= 12;
-    asn1_check_mscat(map, at, hlen, authsha1);
-
-    /* FIXME */
-    return CL_EFORMAT;
+    return asn1_check_mscat(map, at + 8, hlen, authsha1);
 }

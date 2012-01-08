@@ -412,7 +412,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size, *ctx->virname ? *ctx->virname : "Name");
 
     map = *ctx->fmap;
-    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size);
+    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) | cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
     have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size);
     if(have_sha1 || have_sha256) {
 	if((ptr = fmap_need_off_once(map, 0, size))) {
@@ -422,6 +422,10 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
 		if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS){
 		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+		    return CL_CLEAN;
+		}
+		if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS){
+		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection via catalog file\n");
 		    return CL_CLEAN;
 		}
 	    }
@@ -436,6 +440,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	    }
 	}
     }
+
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
         if((ptr = fmap_need_off_once(map, 0, size))) {
@@ -462,6 +467,16 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
 #endif
 
+    switch(cli_checkfp_pe(ctx, shash1)) {
+    case CL_CLEAN:
+	cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
+	return CL_CLEAN;
+    case CL_VIRUS:
+	if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+	    cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
+	    return CL_CLEAN;
+	}
+    }
     if (ctx->engine->cb_hash)
 	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx);
 
