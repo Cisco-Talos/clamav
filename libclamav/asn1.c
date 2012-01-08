@@ -850,7 +850,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    x509 = x509->next;
 		}
 		if(newcerts.items)
-		    cli_errmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
+		    cli_dbgmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
 		crtmgr_free(&newcerts);
 	    }
 	}
@@ -1415,7 +1415,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
 	    }
 
 	    if(hm_addhash_bin(engine->hm_fp, tagval3.content, CLI_HASH_SHA1, hashtype, virname)) {
-		cli_errmsg("asn1_load_mscat: failed to add hash\n");
+		cli_warnmsg("asn1_load_mscat: failed to add hash\n");
 		mpool_free(engine->mempool, (void *)virname);
 		return 1;
 	    }
@@ -1431,9 +1431,9 @@ int asn1_check_mscat(fmap_t *map, size_t offset, unsigned int size, uint8_t *com
     crtmgr certs;
     int ret;
 
+    cli_dbgmsg("in asn1_check_mscat (offset: %lu)\n", offset);
     crtmgr_init(&certs);
     if(crtmgr_add_roots(&certs)) {
-	/* FIXME: do smthng here */
 	crtmgr_free(&certs);
 	return CL_VIRUS;
     }
