@@ -757,10 +757,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
 	if(asn1_expect_objtype(map, message, &size, &asn1, 0x30)) /* SEQUENCE */
 	    break;
-	if(size) {
-	    cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7 %u\n", size);
-	    break;
-	}
+	/* if(size) { */
+	/*     cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7 %u\n", size); */
+	/*     break; */
+	/* } */
 	size = asn1.size;
 	if(asn1_expect_obj(map, &asn1.content, &size, 0x06, lenof(OID_signedData), OID_signedData)) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
 	    break;

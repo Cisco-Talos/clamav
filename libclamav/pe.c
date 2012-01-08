@@ -2760,7 +2760,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 	    falign = 0x200;
     }
 
-    hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
+    hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
 
     for(i = 0; i < nsections; i++) {
 	exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
@@ -2857,8 +2857,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     if(!hlen)
 	return CL_VIRUS;
 
-    if(hlen < 12)
+    if(hlen < 8)
 	return CL_VIRUS;
-    hlen -= 12;
+    hlen -= 8;
     return asn1_check_mscat(map, at + 8, hlen, authsha1);
 }
