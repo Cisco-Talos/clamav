@@ -1,3 +1,11 @@
+Sun Jan  8 19:26:06 CET 2012 (acab)
+-----------------------------------
+ * libclamav: add preliminary support for MS Authenticode signatures,
+	      both embedded and from cat files. Ideally, for windows
+	      users, it should be sufficient to add the option
+              -d %WINDIR%\system32\{F750E6C3-38EE-11D1-85E5-00C04FC295EE}
+	      to clamscan.
+
 Thu Nov  3 22:42:28 CET 2011 (acab)
 -----------------------------------
  * libclamav/lzma_iface.c: stfu on (but still refuse) big lzma allocs
