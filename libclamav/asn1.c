@@ -738,7 +738,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return 1;
 }
 
-static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
+static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE];
     const uint8_t *message, *attrs;
@@ -750,7 +750,12 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
     cli_dbgmsg("in asn1_parse_mscat\n");
 
     do {
-	if(asn1_expect_objtype(map, start, &size, &asn1, 0x30)) /* SEQUENCE */
+	if(!(message = fmap_need_off_once(map, offset, 1))) {
+	    cli_dbgmsg("asn1_parse_mscat: failed to read pkcs#7 entry\n");
+	    break;
+	}
+
+	if(asn1_expect_objtype(map, message, &size, &asn1, 0x30)) /* SEQUENCE */
 	    break;
 	if(size) {
 	    cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7 %u\n", size);
@@ -1265,13 +1270,14 @@ static int asn1_parse_mscat(fmap_t *map, const void *start, unsigned int size, c
     return 1;
 }
 
-int asn1_load_mscat(fmap_t *map, const void *start, unsigned int size, struct cl_engine *engine) {
+int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     struct cli_asn1 c;
     char *virname;
+    unsigned int size;
     struct cli_matcher *db;
     int i;
 
-    if(asn1_parse_mscat(map, start, size, &engine->cmgr, 0, &c.next, &size))
+    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size))
 	return 1;
 
     if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
@@ -1418,7 +1424,7 @@ int asn1_load_mscat(fmap_t *map, const void *start, unsigned int size, struct cl
     return 0;
 }
 
-int asn1_check_mscat(fmap_t *map, const void *start, unsigned int size, uint8_t *computed_sha1) {
+int asn1_check_mscat(fmap_t *map, size_t offset, unsigned int size, uint8_t *computed_sha1) {
     unsigned int content_size;
     struct cli_asn1 c;
     const void *content;
@@ -1431,7 +1437,7 @@ int asn1_check_mscat(fmap_t *map, const void *start, unsigned int size, uint8_t 
 	crtmgr_free(&certs);
 	return CL_CLEAN;
     }
-    ret = asn1_parse_mscat(map, start, size, &certs, 1, &content, &content_size);
+    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size);
     crtmgr_free(&certs);
     if(ret)
 	return CL_VIRUS; /* FIXME */

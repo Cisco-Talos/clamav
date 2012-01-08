@@ -2349,18 +2349,11 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
     fmap_t *map;
-    void *base;
 
     if(!(map = fmap(fileno(fs), 0, 0)))
 	return 1;
 
-    if(!(base = fmap_need_off_once(map, 0, 1))) {
-	cli_dbgmsg("cli_loadmscat: failed to read from cat file\n");
-	funmap(map);
-	return 1;
-    }
-
-    if(asn1_load_mscat(map, base, map->len, engine))
+    if(asn1_load_mscat(map, engine))
 	cli_errmsg("BIG FAIL\n");
     funmap(map);
     return 0;
