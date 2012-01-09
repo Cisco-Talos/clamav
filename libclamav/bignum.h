@@ -57,9 +57,10 @@ extern "C" {
 
 #endif
 
-#if 0
-Don't enable this, some old gcc's have broken udivti3.
-Also divisions get translated into libcalls, not worth using this mode.
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+/*Don't enable this everywhere , some old gcc's have broken udivti3.
+Also divisions get translated into libcalls, not worth using this mode.*/
+
 /* detect 64-bit mode if possible */
 #if defined(__x86_64__) 
    #if !(defined(MP_64BIT) && defined(MP_16BIT) && defined(MP_8BIT))
