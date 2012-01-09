@@ -21,12 +21,8 @@ typedef fp_int mp_int;
 #define mp_to_unsigned_bin(a,b) (fp_to_unsigned_bin(a,b), 0)
 #define mp_read_radix fp_read_radix
 #define mp_exptmod fp_exptmod
-#define mp_get_int(a) cli_readint32(a)
-
-static void mp_set_int(fp_int *a, int b)
-{
-    fp_read_unsigned_bin(a, (char*)&b, sizeof(b));
-}
+#define mp_get_int(a) ((a)->used > 0 ? (a)->dp[0] : 0)
+#define mp_set_int(a, b) fp_set(a, b)
 #define mp_mul_2d fp_mul_2d
 #define mp_clear(x)
 #endif
