@@ -50,6 +50,7 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
 	   (i->codeSign | x509->codeSign) == i->codeSign &&
 	   (i->timeSign | x509->timeSign) == i->timeSign &&
 	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+	   !memcmp(x509->serial, i->serial, sizeof(i->subject)) &&
 	   !mp_cmp(&x509->n, &i->n) &&
 	   !mp_cmp(&x509->e, &i->e)) {
 	    return i;
@@ -64,6 +65,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 
     for(i = m->crts; i; i = i->next) {
 	if(!memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+	   !memcmp(x509->serial, i->subject, sizeof(i->serial)) &&
 	   !mp_cmp(&x509->n, &i->n) &&
 	   !mp_cmp(&x509->e, &i->e)) {
 	    if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
@@ -104,6 +106,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	return 1;
     }
     memcpy(i->subject, x509->subject, sizeof(i->subject));
+    memcpy(i->serial, x509->serial, sizeof(i->serial));
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
     memcpy(i->tbshash, x509->tbshash, sizeof(i->tbshash));
     i->not_before = x509->not_before;
@@ -270,7 +273,7 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     return NULL;
 }
 
-int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
+int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
     cli_crt *i;
     mp_int sig;
     int ret;
@@ -296,6 +299,7 @@ int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const void *signature,
 	if(vrfytype == VRFY_TIME && !i->timeSign)
 	    continue;
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
+	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
 	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
 	    ret = 0;
 	    break;

@@ -493,6 +493,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
 	if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
 	    break;
+	if(map_sha1(map, obj.content, obj.size, x509.serial))
+	    break;
 
 	if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
 	    break;
@@ -740,7 +742,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
 static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
     struct cli_asn1 asn1, deep, deeper;
-    uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE];
+    uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
     const uint8_t *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
@@ -887,6 +889,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
 	if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x02)) /* serial */
 	    break;
+	if(map_sha1(map, deep.content, deep.size, serial))
+	    break;
 	if(dsize) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside issuerAndSerialNumber\n");
 	    break;
@@ -1016,7 +1020,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE)) {
+	if(crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE)) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
 	    break;
 	}
@@ -1077,6 +1081,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
 	if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, 0x02)) /* serial */
 	    break;
+	if(map_sha1(map, deep.content, deep.size, serial))
+	    break;
+
 	if(asn1.size) {
 	    cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature issuer\n");
 	    break;
@@ -1257,7 +1264,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
+	if(crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
 	    break;
 	}
