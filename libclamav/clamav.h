@@ -376,7 +376,7 @@ typedef struct cl_fmap cl_fmap_t;
  * any time, but there might be multiple callbacks executing for different
  * handle at the same time.
  */
-typedef ssize_t (*clcb_pread)(void* handle, void *buf, size_t count, off_t offset);
+typedef off_t (*clcb_pread)(void* handle, void *buf, size_t count, off_t offset);
 
 /* Open a map for scanning custom data accessed by a handle and pread (lseek +
  * read)-like interface. For example a WIN32 HANDLE.

@@ -166,6 +166,16 @@
     <ResourceCompile Include="res\libclamav.rc"/>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\7z_iface.c"/>
+    <ClCompile Include="..\libclamav\7z\7zDec.c"/>
+    <ClCompile Include="..\libclamav\7z\7zAlloc.c"/>
+    <ClCompile Include="..\libclamav\7z\Ppmd7Dec.c"/>
+    <ClCompile Include="..\libclamav\asn1.c"/>
+    <ClCompile Include="..\libclamav\7z\7zBuf2.c"/>
+    <ClCompile Include="..\libclamav\7z\Ppmd7.c"/>
+    <ClCompile Include="..\libclamav\7z\7zIn.c"/>
+    <ClCompile Include="..\libclamav\7z\Lzma2Dec.c"/>
+    <ClCompile Include="..\libclamav\crtmgr.c"/>
     <ClCompile Include="..\libclamav\rijndael.c"/>
     <ClCompile Include="..\libclamav\iso9660.c"/>
     <ClCompile Include="..\libclamav\arc4.c"/>
@@ -183,16 +193,10 @@
     <ClCompile Include="..\libclamav\scanners.c"/>
     <ClCompile Include="..\libclamav\qsort.c"/>
     <ClCompile Include="..\libclamav\rebuildpe.c"/>
-    <ClCompile Include="..\libclamav\7z.c"/>
     <ClCompile Include="..\libclamav\7z\7zBuf.c"/>
     <ClCompile Include="..\libclamav\7z\7zCrc.c"/>
     <ClCompile Include="..\libclamav\7z\7zFile.c"/>
     <ClCompile Include="..\libclamav\7z\7zStream.c"/>
-    <ClCompile Include="..\libclamav\7z\Archive\7z\7zDecode.c"/>
-    <ClCompile Include="..\libclamav\7z\Archive\7z\7zExtract.c"/>
-    <ClCompile Include="..\libclamav\7z\Archive\7z\7zHeader.c"/>
-    <ClCompile Include="..\libclamav\7z\Archive\7z\7zIn.c"/>
-    <ClCompile Include="..\libclamav\7z\Archive\7z\7zItem.c"/>
     <ClCompile Include="..\libclamav\7z\Bcj2.c"/>
     <ClCompile Include="..\libclamav\7z\Bra.c"/>
     <ClCompile Include="..\libclamav\7z\Bra86.c"/>
