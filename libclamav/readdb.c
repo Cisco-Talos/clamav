@@ -1904,9 +1904,9 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if(mode == MD5_MDB) {
 	size_field = 0;
 	md5_field = 1;
-	db = engine->hm_hdb;
-    } else if(mode == MD5_MDB)
 	db = engine->hm_mdb;
+    } else if(mode == MD5_HDB)
+	db = engine->hm_hdb;
     else
 	db = engine->hm_fp;
 
