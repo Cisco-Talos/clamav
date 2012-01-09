@@ -78,8 +78,8 @@
 #define UPX_LZMA1 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x55\x57\x56\x53\x83"
 #define UPX_LZMA2 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x90\x90\x55\x57\x56"
 
-#define EC32(x) cli_readint32(&(x)) /* Convert little endian to host */
-#define EC16(x) cli_readint16(&(x))
+#define EC32(x) ((uint32_t)cli_readint32(&(x))) /* Convert little endian to host */
+#define EC16(x) ((uint16_t)cli_readint16(&(x)))
 /* lower and upper bondary alignment (size vs offset) */
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
