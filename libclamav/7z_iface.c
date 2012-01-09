@@ -40,8 +40,10 @@ static SRes FileInStream_fmap_Read(void *pp, void *buf, size_t *size) {
 	return 0;
 
     read_sz = fmap_readn(p->file.fmap, buf, p->s.curpos, *size);
-    if(read_sz < 0)
+    if(read_sz < 0) {
+	*size = 0;
 	return SZ_ERROR_READ;
+    }
 
     p->s.curpos += read_sz;
 
@@ -120,22 +122,27 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    if(cli_checklimits("7unz", ctx, f->Size, 0, 0))
 		continue;
 
-	    newnamelen = SzArEx_GetFileNameUtf16(&db, i, NULL);
-	    if (newnamelen > namelen) {
-		if(namelen > UTFBUFSZ)
-		    free(utf16name);
-		utf16name = cli_malloc(newnamelen*2);
-		if(!utf16name) {
-		    found = CL_EMEM;
-		    break;
+	    if (!db.FileNameOffsets)
+		newnamelen = 0; /* no filename */
+	    else {
+		newnamelen = SzArEx_GetFileNameUtf16(&db, i, NULL);
+		if (newnamelen > namelen) {
+		    if(namelen > UTFBUFSZ)
+			free(utf16name);
+		    utf16name = cli_malloc(newnamelen*2);
+		    if(!utf16name) {
+			found = CL_EMEM;
+			break;
+		    }
+		    namelen = newnamelen;
 		}
-		namelen = newnamelen;
+		SzArEx_GetFileNameUtf16(&db, i, utf16name);
 	    }
-	    SzArEx_GetFileNameUtf16(&db, i, utf16name);
-		
+
 	    name = (char *)utf16name;
 	    for(j=0; j<newnamelen; j++) /* FIXME */
 		name[j] = utf16name[j];
+	    name[j] = 0;
 	    cli_dbgmsg("cli_7unz: extracting %s\n", name);
 
 	    res = SzArEx_Extract(&db, &lookStream.s, i, &blockIndex, &outBuffer, &outBufferSize, &offset, &outSizeProcessed, &allocImp, &allocTempImp);

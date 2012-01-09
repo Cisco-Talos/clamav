@@ -162,6 +162,8 @@ typedef struct arj_decode_tag {
 
 static int fill_buf(arj_decode_t *decode_data, int n)
 {
+        if (decode_data->status == CL_EFORMAT)
+	    return CL_EFORMAT;
 	decode_data->bit_buf = (decode_data->bit_buf << n) & 0xFFFF;
 	while (n > decode_data->bit_count) {
 		decode_data->bit_buf |= decode_data->sub_bit_buf << (n -= decode_data->bit_count);
