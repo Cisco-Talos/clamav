@@ -135,12 +135,12 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
 	return NULL;
     }
-    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
+    if(!(mh = CreateFileMapping(fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
 	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
 	CloseHandle(fh);
 	return NULL;
     }
-    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
+    if(!(data = MapViewOfFile(mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
 	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
 	CloseHandle(mh);
 	CloseHandle(fh);
