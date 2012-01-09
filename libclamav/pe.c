@@ -2685,6 +2685,9 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     fmap_t *map = *ctx->fmap;
     SHA1Context sha1;
 
+    if(!(DCONF & PE_CONF_CATALOG))
+	return CL_EFORMAT;
+
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic))
 	return CL_EFORMAT;
 
