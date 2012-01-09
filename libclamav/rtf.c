@@ -506,7 +506,7 @@ int cli_scanrtf(cli_ctx *ctx)
 	int ret = CL_CLEAN;
 	struct rtf_state state;
 	struct stack stack;
-	ssize_t bread;
+	size_t bread;
 	table_t* actiontable;
 	uint8_t main_symbols[256];
 	size_t offset = 0;

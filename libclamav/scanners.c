@@ -1399,7 +1399,7 @@ static int cli_scancryptff(cli_ctx *ctx)
 	unsigned char *dest = NULL;
 	char *tempfile;
 	size_t pos;
-	ssize_t bread;
+	size_t bread;
 
 
     /* Skip the CryptFF file header */
