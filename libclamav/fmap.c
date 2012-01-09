@@ -50,7 +50,11 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
 #ifndef _WIN32
 /* vvvvv POSIX STUFF BELOW vvvvv */
-static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset);
+static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
+{
+    return pread((int)(ssize_t)handle, buf, count, offset);
+}
+
 
 /* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
    which may in turn prevent some mmap constants to be defined */
@@ -270,11 +274,6 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->gets = handle_gets;
     m->unneed_off = handle_unneed_off;
     return m;
-}
-
-static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
-{
-    return pread((int)(ssize_t)handle, buf, count, offset);
 }
 
 static void fmap_aging(fmap_t *m) {
