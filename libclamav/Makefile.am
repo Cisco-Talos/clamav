@@ -341,7 +341,10 @@ libclamav_la_SOURCES = \
 	sha256.h\
 	sha1.c\
 	sha1.h\
+	bignum.c\
 	bignum.h\
+	bignum_fast.h\
+	bignum_superclass.h\
 	bytecode.c\
 	bytecode.h\
 	bytecode_vm.c\
@@ -384,11 +387,6 @@ libclamav_la_SOURCES = \
 	asn1.c \
 	asn1.h
 
-if !LINK_TOMMATH
-libclamav_la_SOURCES += bignum.c \
-		     bignum_class.h
-endif
-
 .PHONY: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
@@ -413,7 +411,7 @@ version.h.tmp:
 
 lib_LTLIBRARIES += libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
-EXTRA_DIST += regex/engine.c libclamav.map \
+EXTRA_DIST += regex/engine.c fp_sqr_comba.c fp_mul_comba.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
 COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno

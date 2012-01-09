@@ -758,28 +758,6 @@ AC_ARG_ENABLE([milter],
 [  --enable-milter	  build clamav-milter],
 have_milter=$enableval, have_milter="no")
 
-have_system_tommath=no
-AC_ARG_WITH([system-tommath],
-[  --with-system-tommath	link against system libtommath (default = no, use bundled)],
-[
-	case "$withval" in
-	yes)
-		AC_CHECK_LIB([tommath], [mp_mul_2d],
-			[
-				AC_DEFINE([HAVE_SYSTEM_TOMMATH], 1, [link against system-wide libtommath])
-				LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -ltommath"
-				have_system_tommath=yes
-			],
-			[AC_MSG_WARN([****** Option --with-system-tommath was given but libtommath does not seem to be available, using bundled files instead])]
-		)
-	;;
-	no) ;;
-	*) AC_MSG_ERROR([--with-system-tommath does not take an argument]) ;;
-	esac
-])
-AM_CONDITIONAL([LINK_TOMMATH], test "x$have_system_tommath" = "xyes")
-
-
 dnl we need to try to link with iconv, otherwise there could be a 
 dnl mismatch between a 32-bit and 64-bit lib. Detect this at configure time.
 dnl we need to check after zlib/bzip2, because they can change the include path
