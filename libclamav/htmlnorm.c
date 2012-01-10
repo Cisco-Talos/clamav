@@ -191,6 +191,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 		    ptr = m_area->buffer + m_area->offset;
 		start = ptr;
 		end = ptr - m_area->offset + m_area->length;
+
 		if (start >= end) {
 			free(chunk);
 			return NULL;
@@ -217,6 +218,10 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 			}
 			if(m_area->map)
 			    ptr = (unsigned char *)fmap_need_ptr_once(m_area->map, ptr, end - ptr);
+			if (!ptr) {
+			    cli_warnmsg("fmap inconsistency\n");
+			    ptr = end;
+			}
 			/* we have unknown number of NULL chars,
 			 * copy char-by-char and skip them */
 			while((ptr < end) && (chunk_len < max_len-1)) {

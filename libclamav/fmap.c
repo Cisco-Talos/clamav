@@ -473,7 +473,6 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
 	return NULL;
 
     at += m->nested_offset;
-
     if(!CLI_ISCONTAINED(0, m->real_len, at, len))
 	return NULL;
 
