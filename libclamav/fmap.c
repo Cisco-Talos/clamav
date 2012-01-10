@@ -49,16 +49,16 @@ static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al);
 static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
 #ifndef _WIN32
+/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
+   which may in turn prevent some mmap constants to be defined */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+
 /* vvvvv POSIX STUFF BELOW vvvvv */
 static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
     return pread((int)(ssize_t)handle, buf, count, offset);
 }
 
-
-/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
-   which may in turn prevent some mmap constants to be defined */
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
