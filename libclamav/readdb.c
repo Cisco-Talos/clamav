@@ -2350,8 +2350,10 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
     fmap_t *map;
 
-    if(!(map = fmap(fileno(fs), 0, 0)))
-	return 1;
+    if(!(map = fmap(fileno(fs), 0, 0))) {
+	cli_warnmsg("Can't map cat: %s\n", dbname);
+	return 0;
+    }
 
     if(asn1_load_mscat(map, engine))
 	cli_errmsg("Failed to load certificates from cat: %s\n", dbname);
