@@ -2347,14 +2347,14 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-static int cli_loadmscat(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
+static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
     fmap_t *map;
 
     if(!(map = fmap(fileno(fs), 0, 0)))
 	return 1;
 
     if(asn1_load_mscat(map, engine))
-	cli_errmsg("BIG FAIL\n");
+	cli_errmsg("Failed to load certificates from cat: %s\n", dbname);
     funmap(map);
     return 0;
 }
@@ -2483,7 +2483,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".cdb")) {
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
     } else if(cli_strbcasestr(dbname, ".cat")) {
-	ret = cli_loadmscat(fs, engine, options, dbio);
+	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
