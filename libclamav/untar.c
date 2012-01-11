@@ -69,7 +69,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
 	for(;;) {
 	        const char *block;
-		ssize_t nread;
+		size_t nread;
 
 		block = fmap_need_off_once_len(*ctx->fmap, pos, BLOCKSIZE, &nread); 
 

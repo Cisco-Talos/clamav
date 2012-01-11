@@ -1399,7 +1399,7 @@ static int cli_scancryptff(cli_ctx *ctx)
 	unsigned char *dest = NULL;
 	char *tempfile;
 	size_t pos;
-	ssize_t bread;
+	size_t bread;
 
 
     /* Skip the CryptFF file header */
@@ -2103,6 +2103,8 @@ static void emax_reached(cli_ctx *ctx) {
 		if(ctx->virname)								\
 		    *ctx->virname = "Detected.By.Callback";					\
 		perf_stop(ctx, PERFT_POSTCB);							\
+		if (retcode != CL_VIRUS)                                                        \
+		    return cli_checkfp(hash, hashed_size, ctx);                                 \
 		return CL_VIRUS;								\
 	    case CL_CLEAN:									\
 		break;										\
@@ -2133,7 +2135,7 @@ static void emax_reached(cli_ctx *ctx) {
 	    if(ctx->virname)                                                                 \
 		*ctx->virname = "Detected.By.Callback";                                      \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
-	    ret_from_magicscan(CL_VIRUS);                                                    \
+	    ret_from_magicscan(cli_checkfp(hash, hashed_size, ctx));                          \
 	case CL_CLEAN:                                                                       \
 	    break;                                                                           \
 	default:                                                                             \
@@ -2186,6 +2188,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	early_ret_from_magicscan(CL_EREAD);
     }
     filetype = cli_ftname(type);
+    hashed_size = 0;
     CALL_PRESCAN_CB(cb_pre_cache);
 
     perf_start(ctx, PERFT_CACHE);

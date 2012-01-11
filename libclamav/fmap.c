@@ -49,16 +49,16 @@ static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al);
 static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
 #ifndef _WIN32
+/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
+   which may in turn prevent some mmap constants to be defined */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+
 /* vvvvv POSIX STUFF BELOW vvvvv */
 static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
     return pread((int)(ssize_t)handle, buf, count, offset);
 }
 
-
-/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
-   which may in turn prevent some mmap constants to be defined */
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
@@ -135,12 +135,12 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
 	return NULL;
     }
-    if(!(mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
+    if(!(mh = CreateFileMapping(fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
 	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
 	CloseHandle(fh);
 	return NULL;
     }
-    if(!(data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
+    if(!(data = MapViewOfFile(mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
 	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
 	CloseHandle(mh);
 	CloseHandle(fh);
@@ -473,7 +473,6 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock) {
 	return NULL;
 
     at += m->nested_offset;
-
     if(!CLI_ISCONTAINED(0, m->real_len, at, len))
 	return NULL;
 

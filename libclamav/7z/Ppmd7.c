@@ -49,6 +49,11 @@ typedef struct CPpmd7_Node_
   CPpmd7_Node_Ref Prev;
 } CPpmd7_Node;
 
+union NodeOrRef {
+    CPpmd7_Node node;
+    CPpmd7_Node_Ref ref;
+};
+
 #ifdef PPMD_32BIT
   #define NODE(ptr) (ptr)
 #else
@@ -165,7 +170,7 @@ static void GlueFreeBlocks(CPpmd7 *p)
       CPpmd7_Node *node = NODE(next);
       node->Next = n;
       n = NODE(n)->Prev = next;
-      next = *(const CPpmd7_Node_Ref *)node;
+      next = ((const union NodeOrRef *)node)->ref;
       node->Stamp = 0;
       node->NU = (UInt16)nu;
     }

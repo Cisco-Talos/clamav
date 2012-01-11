@@ -70,6 +70,7 @@ static struct dconf_module modules[] = {
     { "PE",	    "MEW",	    PE_CONF_MEW,	    1 },
     { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 },
     { "PE",	    "ASPACK",	    PE_CONF_ASPACK,	    1 },
+    { "PE",	    "CATALOG",	    PE_CONF_CATALOG,	    1 },
 
     { "ELF",	    NULL,	    0x1,		    1 },
 

@@ -2685,6 +2685,9 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     fmap_t *map = *ctx->fmap;
     SHA1Context sha1;
 
+    if(!(DCONF & PE_CONF_CATALOG))
+	return CL_EFORMAT;
+
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic))
 	return CL_EFORMAT;
 
@@ -2739,6 +2742,9 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 	hdr_size = EC32(optional_hdr64.SizeOfHeaders);
 	dirs = optional_hdr64.DataDirectory;
     }
+
+    if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && dirs[4].Size < 8)
+	return CL_BREAK;
 
     fsize = map->len;
 
@@ -2854,9 +2860,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     }
 
     hlen = dirs[4].Size;
-    if(!hlen)
-	return CL_VIRUS;
-
     if(hlen < 8)
 	return CL_VIRUS;
     hlen -= 8;

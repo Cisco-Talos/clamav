@@ -102,9 +102,9 @@ static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
 
 static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
 {
-    return m->data ?
+    return (m->data ?
 	  (const char*)ptr - (const char*)m->data
-	 :(const char*)ptr - (const char*)m - m->hdrsz;
+	 :(const char*)ptr - (const char*)m - m->hdrsz) - m->nested_offset;
 }
 
 static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
