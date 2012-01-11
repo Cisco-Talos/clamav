@@ -341,10 +341,6 @@ libclamav_la_SOURCES = \
 	sha256.h\
 	sha1.c\
 	sha1.h\
-	bignum.c\
-	bignum.h\
-	bignum_fast.h\
-	bignum_superclass.h\
 	bytecode.c\
 	bytecode.h\
 	bytecode_vm.c\
@@ -387,6 +383,89 @@ libclamav_la_SOURCES = \
 	asn1.c \
 	asn1.h
 
+libclamav_la_SOURCES += bignum.h\
+	bignum_fast.h\
+        tomsfastmath/addsub/fp_add.c\
+        tomsfastmath/addsub/fp_add_d.c\
+        tomsfastmath/addsub/fp_addmod.c\
+        tomsfastmath/addsub/fp_cmp.c\
+        tomsfastmath/addsub/fp_cmp_d.c\
+        tomsfastmath/addsub/fp_cmp_mag.c\
+        tomsfastmath/addsub/fp_sub.c\
+        tomsfastmath/addsub/fp_sub_d.c\
+        tomsfastmath/addsub/fp_submod.c\
+        tomsfastmath/addsub/s_fp_add.c\
+        tomsfastmath/addsub/s_fp_sub.c\
+        tomsfastmath/bin/fp_radix_size.c\
+        tomsfastmath/bin/fp_read_radix.c\
+        tomsfastmath/bin/fp_read_signed_bin.c\
+        tomsfastmath/bin/fp_read_unsigned_bin.c\
+        tomsfastmath/bin/fp_reverse.c\
+        tomsfastmath/bin/fp_s_rmap.c\
+        tomsfastmath/bin/fp_signed_bin_size.c\
+        tomsfastmath/bin/fp_to_signed_bin.c\
+        tomsfastmath/bin/fp_to_unsigned_bin.c\
+        tomsfastmath/bin/fp_toradix.c\
+        tomsfastmath/bin/fp_unsigned_bin_size.c\
+        tomsfastmath/bit/fp_cnt_lsb.c\
+        tomsfastmath/bit/fp_count_bits.c\
+        tomsfastmath/bit/fp_div_2.c\
+        tomsfastmath/bit/fp_div_2d.c\
+        tomsfastmath/bit/fp_lshd.c\
+        tomsfastmath/bit/fp_mod_2d.c\
+        tomsfastmath/bit/fp_rshd.c\
+        tomsfastmath/divide/fp_div.c\
+        tomsfastmath/divide/fp_div_d.c\
+        tomsfastmath/divide/fp_mod.c\
+        tomsfastmath/divide/fp_mod_d.c\
+        tomsfastmath/exptmod/fp_2expt.c\
+        tomsfastmath/exptmod/fp_exptmod.c\
+        tomsfastmath/misc/fp_ident.c\
+        tomsfastmath/misc/fp_set.c\
+        tomsfastmath/mont/fp_montgomery_calc_normalization.c\
+        tomsfastmath/mont/fp_montgomery_reduce.c\
+        tomsfastmath/mont/fp_montgomery_setup.c\
+        tomsfastmath/mul/fp_mul.c\
+        tomsfastmath/mul/fp_mul_comba.c\
+        tomsfastmath/mul/fp_mul_2.c\
+        tomsfastmath/mul/fp_mul_2d.c\
+        tomsfastmath/mul/fp_mul_comba_12.c\
+        tomsfastmath/mul/fp_mul_comba_17.c\
+        tomsfastmath/mul/fp_mul_comba_20.c\
+        tomsfastmath/mul/fp_mul_comba_24.c\
+        tomsfastmath/mul/fp_mul_comba_28.c\
+        tomsfastmath/mul/fp_mul_comba_3.c\
+        tomsfastmath/mul/fp_mul_comba_32.c\
+        tomsfastmath/mul/fp_mul_comba_4.c\
+        tomsfastmath/mul/fp_mul_comba_48.c\
+        tomsfastmath/mul/fp_mul_comba_6.c\
+        tomsfastmath/mul/fp_mul_comba_64.c\
+        tomsfastmath/mul/fp_mul_comba_7.c\
+        tomsfastmath/mul/fp_mul_comba_8.c\
+        tomsfastmath/mul/fp_mul_comba_9.c\
+        tomsfastmath/mul/fp_mul_comba_small_set.c\
+        tomsfastmath/mul/fp_mul_d.c\
+        tomsfastmath/mul/fp_mulmod.c\
+        tomsfastmath/numtheory/fp_invmod.c\
+        tomsfastmath/sqr/fp_sqr.c\
+        tomsfastmath/sqr/fp_sqr_comba_12.c\
+        tomsfastmath/sqr/fp_sqr_comba_17.c\
+        tomsfastmath/sqr/fp_sqr_comba_20.c\
+        tomsfastmath/sqr/fp_sqr_comba_24.c\
+        tomsfastmath/sqr/fp_sqr_comba_28.c\
+        tomsfastmath/sqr/fp_sqr_comba_3.c\
+        tomsfastmath/sqr/fp_sqr_comba_32.c\
+        tomsfastmath/sqr/fp_sqr_comba_4.c\
+        tomsfastmath/sqr/fp_sqr_comba_48.c\
+        tomsfastmath/sqr/fp_sqr_comba_6.c\
+        tomsfastmath/sqr/fp_sqr_comba_64.c\
+        tomsfastmath/sqr/fp_sqr_comba_7.c\
+        tomsfastmath/sqr/fp_sqr_comba_8.c\
+        tomsfastmath/sqr/fp_sqr_comba_9.c\
+        tomsfastmath/sqr/fp_sqr_comba_generic.c\
+        tomsfastmath/sqr/fp_sqr_comba_small_set.c\
+	tomsfastmath/sqr/fp_sqrmod.c
+
 .PHONY: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
@@ -411,7 +490,7 @@ version.h.tmp:
 
 lib_LTLIBRARIES += libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
-EXTRA_DIST += regex/engine.c fp_sqr_comba.c fp_mul_comba.c libclamav.map \
+EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
 COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno

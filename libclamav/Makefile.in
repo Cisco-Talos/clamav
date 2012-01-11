@@ -156,16 +156,64 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-mpool.lo libclamav_la-filtering.lo \
 	libclamav_la-fmap.lo libclamav_la-perflogging.lo \
 	libclamav_la-sha256.lo libclamav_la-sha1.lo \
-	libclamav_la-bignum.lo libclamav_la-bytecode.lo \
-	libclamav_la-bytecode_vm.lo libclamav_la-cpio.lo \
-	libclamav_la-macho.lo libclamav_la-ishield.lo \
-	libclamav_la-bytecode_api.lo libclamav_la-bytecode_api_decl.lo \
-	libclamav_la-cache.lo libclamav_la-bytecode_detect.lo \
-	libclamav_la-events.lo libclamav_la-swf.lo \
-	libclamav_la-jpeg.lo libclamav_la-png.lo \
+	libclamav_la-bytecode.lo libclamav_la-bytecode_vm.lo \
+	libclamav_la-cpio.lo libclamav_la-macho.lo \
+	libclamav_la-ishield.lo libclamav_la-bytecode_api.lo \
+	libclamav_la-bytecode_api_decl.lo libclamav_la-cache.lo \
+	libclamav_la-bytecode_detect.lo libclamav_la-events.lo \
+	libclamav_la-swf.lo libclamav_la-jpeg.lo libclamav_la-png.lo \
 	libclamav_la-iso9660.lo libclamav_la-arc4.lo \
 	libclamav_la-rijndael.lo libclamav_la-crtmgr.lo \
-	libclamav_la-asn1.lo
+	libclamav_la-asn1.lo libclamav_la-fp_add.lo \
+	libclamav_la-fp_add_d.lo libclamav_la-fp_addmod.lo \
+	libclamav_la-fp_cmp.lo libclamav_la-fp_cmp_d.lo \
+	libclamav_la-fp_cmp_mag.lo libclamav_la-fp_sub.lo \
+	libclamav_la-fp_sub_d.lo libclamav_la-fp_submod.lo \
+	libclamav_la-s_fp_add.lo libclamav_la-s_fp_sub.lo \
+	libclamav_la-fp_radix_size.lo libclamav_la-fp_read_radix.lo \
+	libclamav_la-fp_read_signed_bin.lo \
+	libclamav_la-fp_read_unsigned_bin.lo \
+	libclamav_la-fp_reverse.lo libclamav_la-fp_s_rmap.lo \
+	libclamav_la-fp_signed_bin_size.lo \
+	libclamav_la-fp_to_signed_bin.lo \
+	libclamav_la-fp_to_unsigned_bin.lo libclamav_la-fp_toradix.lo \
+	libclamav_la-fp_unsigned_bin_size.lo \
+	libclamav_la-fp_cnt_lsb.lo libclamav_la-fp_count_bits.lo \
+	libclamav_la-fp_div_2.lo libclamav_la-fp_div_2d.lo \
+	libclamav_la-fp_lshd.lo libclamav_la-fp_mod_2d.lo \
+	libclamav_la-fp_rshd.lo libclamav_la-fp_div.lo \
+	libclamav_la-fp_div_d.lo libclamav_la-fp_mod.lo \
+	libclamav_la-fp_mod_d.lo libclamav_la-fp_2expt.lo \
+	libclamav_la-fp_exptmod.lo libclamav_la-fp_ident.lo \
+	libclamav_la-fp_set.lo \
+	libclamav_la-fp_montgomery_calc_normalization.lo \
+	libclamav_la-fp_montgomery_reduce.lo \
+	libclamav_la-fp_montgomery_setup.lo libclamav_la-fp_mul.lo \
+	libclamav_la-fp_mul_comba.lo libclamav_la-fp_mul_2.lo \
+	libclamav_la-fp_mul_2d.lo libclamav_la-fp_mul_comba_12.lo \
+	libclamav_la-fp_mul_comba_17.lo \
+	libclamav_la-fp_mul_comba_20.lo \
+	libclamav_la-fp_mul_comba_24.lo \
+	libclamav_la-fp_mul_comba_28.lo libclamav_la-fp_mul_comba_3.lo \
+	libclamav_la-fp_mul_comba_32.lo libclamav_la-fp_mul_comba_4.lo \
+	libclamav_la-fp_mul_comba_48.lo libclamav_la-fp_mul_comba_6.lo \
+	libclamav_la-fp_mul_comba_64.lo libclamav_la-fp_mul_comba_7.lo \
+	libclamav_la-fp_mul_comba_8.lo libclamav_la-fp_mul_comba_9.lo \
+	libclamav_la-fp_mul_comba_small_set.lo \
+	libclamav_la-fp_mul_d.lo libclamav_la-fp_mulmod.lo \
+	libclamav_la-fp_invmod.lo libclamav_la-fp_sqr.lo \
+	libclamav_la-fp_sqr_comba_12.lo \
+	libclamav_la-fp_sqr_comba_17.lo \
+	libclamav_la-fp_sqr_comba_20.lo \
+	libclamav_la-fp_sqr_comba_24.lo \
+	libclamav_la-fp_sqr_comba_28.lo libclamav_la-fp_sqr_comba_3.lo \
+	libclamav_la-fp_sqr_comba_32.lo libclamav_la-fp_sqr_comba_4.lo \
+	libclamav_la-fp_sqr_comba_48.lo libclamav_la-fp_sqr_comba_6.lo \
+	libclamav_la-fp_sqr_comba_64.lo libclamav_la-fp_sqr_comba_7.lo \
+	libclamav_la-fp_sqr_comba_8.lo libclamav_la-fp_sqr_comba_9.lo \
+	libclamav_la-fp_sqr_comba_generic.lo \
+	libclamav_la-fp_sqr_comba_small_set.lo \
+	libclamav_la-fp_sqrmod.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -491,7 +539,8 @@ AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL) \
 AM_CFLAGS = @WERR_CFLAGS@
 lib_LTLIBRARIES = $(am__append_3) libclamav.la
 EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
-	fp_sqr_comba.c fp_mul_comba.c libclamav.map \
+	tomsfastmath/sqr/fp_sqr_comba.c \
+	tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	jsparse/generated/operators.h jsparse/generated/keywords.h \
 	jsparse/future_reserved_words.list jsparse/keywords.list \
 	jsparse/special_keywords.list jsparse/operators.gperf
@@ -579,256 +628,115 @@ libclamav_la_CFLAGS = $(AM_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h
-libclamav_la_SOURCES = \
-	clamav.h \
-        matcher-ac.c \
-        matcher-ac.h \
-        matcher-bm.c \
-        matcher-bm.h \
-        matcher-hash.c \
-        matcher-hash.h \
-        matcher.c \
-        matcher.h \
-        others.c \
-        others.h \
-        readdb.c \
-	readdb.h \
-	cvd.c \
-	cvd.h \
-	dsig.c \
-	dsig.h \
-	scanners.c \
-	scanners.h \
-	textdet.c \
-	textdet.h \
-	filetypes.c \
-	filetypes.h \
-	filetypes_int.h \
-	rtf.c \
-	rtf.h \
-	blob.c \
-	blob.h \
-	mbox.c \
-	mbox.h \
-	message.c \
-	message.h \
-	table.c \
-	table.h \
-	text.c \
-	text.h \
-	ole2_extract.c \
-	ole2_extract.h \
-	vba_extract.c \
-	vba_extract.h \
-	cltypes.h \
-	msexpand.c \
-	msexpand.h \
-	pe.c \
-	pe.h \
-	pe_icons.c \
-	pe_icons.h \
-	disasm.c \
-	disasm.h \
-	disasm-common.h \
-	disasmpriv.h \
-	upx.c \
-	upx.h \
-	htmlnorm.c \
-	htmlnorm.h \
-	chmunpack.c \
-	chmunpack.h \
-	rebuildpe.c \
-	rebuildpe.h \
-	petite.c \
-	petite.h \
-	wwunpack.c \
-	wwunpack.h \
-	unsp.c \
-	unsp.h \
-	aspack.c \
-	aspack.h \
-	packlibs.c \
-	packlibs.h \
-	fsg.c \
-	fsg.h \
-	mew.c \
-	mew.h \
-	upack.c \
-	upack.h \
-	line.c \
-	line.h \
-	untar.c \
-	untar.h \
-	unzip.c \
-	unzip.h \
-	inflate64.c \
-	inflate64.h \
-	inffixed64.h \
-	inflate64_priv.h \
-	special.c \
-	special.h \
-	binhex.c \
-	binhex.h \
-	is_tar.c \
-	is_tar.h \
-	tnef.c \
-	tnef.h \
-	autoit.c \
-	autoit.h \
-	unarj.c \
-	unarj.h \
-	nsis/bzlib.c \
-	nsis/bzlib_private.h \
-	nsis/nsis_bzlib.h \
-	nsis/nulsft.c \
-	nsis/nulsft.h \
-	nsis/infblock.c \
-	nsis/nsis_zconf.h \
-	nsis/nsis_zlib.h \
-	nsis/nsis_zutil.h \
-	pdf.c \
-	pdf.h \
-	spin.c \
-	spin.h \
-	yc.c \
-	yc.h \
-	elf.c \
-	elf.h \
-	execs.h \
-	sis.c \
-	sis.h \
-	uuencode.c \
-	uuencode.h \
-	phishcheck.c \
-	phishcheck.h \
-	phish_domaincheck_db.c \
-	phish_domaincheck_db.h \
-	phish_whitelist.c \
-	phish_whitelist.h \
-	iana_cctld.h \
-	iana_tld.h \
-	regex_list.c \
-	regex_list.h \
-	regex_suffix.c \
-	regex_suffix.h \
-	mspack.c \
-	mspack.h \
-	cab.c \
-	cab.h \
-	entconv.c \
-	entconv.h \
-	entitylist.h \
-	encoding_aliases.h \
-	hashtab.c \
-	hashtab.h \
-	dconf.c \
-	dconf.h \
-	lzma_iface.c \
-	lzma_iface.h \
-	7z_iface.c \
-	7z_iface.h \
-	7z/7z.h \
-	7z/7zAlloc.c \
-	7z/7zAlloc.h \
-	7z/7zBuf.c \
-	7z/7zBuf.h \
-	7z/7zBuf2.c \
-	7z/7zCrc.c \
-	7z/7zCrc.h \
-	7z/7zDec.c \
-	7z/7zFile.c \
-	7z/7zFile.h \
-	7z/7zIn.c \
-	7z/7zStream.c \
-	7z/7zVersion.h \
-	7z/Bcj2.c \
-	7z/Bcj2.h \
-	7z/Bra.c \
-	7z/Bra.h \
-	7z/Bra86.c \
-	7z/CpuArch.h \
-	7z/Lzma2Dec.c \
-	7z/Lzma2Dec.h \
-	7z/LzmaDec.c \
-	7z/LzmaDec.h \
-	7z/Ppmd.h \
-	7z/Ppmd7.c \
-	7z/Ppmd7.h \
-	7z/Ppmd7Dec.c \
-	7z/Types.h \
-	explode.c \
-	explode.h \
-	textnorm.c \
-	textnorm.h \
-	dlp.c \
-	dlp.h \
-	jsparse/js-norm.c \
-	jsparse/js-norm.h \
-	jsparse/lexglobal.h \
-	jsparse/textbuf.h \
-	uniq.c \
-	uniq.h \
-	version.c\
-	version.h\
-	mpool.c\
-	mpool.h \
-	filtering.h\
-	filtering.c\
-	fmap.c \
-	fmap.h \
-	perflogging.c\
-	perflogging.h\
-	default.h\
-	sha256.c\
-	sha256.h\
-	sha1.c\
-	sha1.h\
-	bignum.c\
-	bignum.h\
-	bignum_fast.h\
-	bignum_superclass.h\
-	bytecode.c\
-	bytecode.h\
-	bytecode_vm.c\
-	bytecode_priv.h\
-	clambc.h \
-	cpio.c \
-	cpio.h \
-	macho.c \
-	macho.h \
-	ishield.c \
-	ishield.h \
-	type_desc.h \
-	bcfeatures.h \
-	bytecode_api.c \
-	bytecode_api_decl.c \
-	bytecode_api.h \
-	bytecode_api_impl.h \
-	bytecode_hooks.h \
-	cache.c \
-	cache.h \
-	bytecode_detect.c \
-	bytecode_detect.h\
-	builtin_bytecodes.h\
-	events.c\
-	events.h \
-	swf.c \
-	swf.h \
-	jpeg.c \
-	jpeg.h \
-	png.c \
-	png.h \
-	iso9660.c \
-	iso9660.h \
-	arc4.c \
-	arc4.h \
-	rijndael.c \
-	rijndael.h \
-	crtmgr.c \
-	crtmgr.h \
-	asn1.c \
-	asn1.h
-
+libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
+	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
+	others.c others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
+	scanners.c scanners.h textdet.c textdet.h filetypes.c \
+	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
+	mbox.h message.c message.h table.c table.h text.c text.h \
+	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
+	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
+	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
+	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
+	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
+	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
+	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
+	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
+	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
+	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
+	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
+	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
+	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
+	uuencode.c uuencode.h phishcheck.c phishcheck.h \
+	phish_domaincheck_db.c phish_domaincheck_db.h \
+	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
+	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
+	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
+	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
+	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
+	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
+	7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c 7z/7zFile.c 7z/7zFile.h \
+	7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h 7z/Bcj2.c 7z/Bcj2.h \
+	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
+	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
+	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h explode.c explode.h \
+	textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
+	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
+	uniq.h version.c version.h mpool.c mpool.h filtering.h \
+	filtering.c fmap.c fmap.h perflogging.c perflogging.h \
+	default.h sha256.c sha256.h sha1.c sha1.h bytecode.c \
+	bytecode.h bytecode_vm.c bytecode_priv.h clambc.h cpio.c \
+	cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
+	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
+	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
+	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \
+	events.c events.h swf.c swf.h jpeg.c jpeg.h png.c png.h \
+	iso9660.c iso9660.h arc4.c arc4.h rijndael.c rijndael.h \
+	crtmgr.c crtmgr.h asn1.c asn1.h bignum.h bignum_fast.h \
+	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
+	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
+	tomsfastmath/addsub/fp_cmp_d.c \
+	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
+	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
+	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
+	tomsfastmath/bin/fp_radix_size.c \
+	tomsfastmath/bin/fp_read_radix.c \
+	tomsfastmath/bin/fp_read_signed_bin.c \
+	tomsfastmath/bin/fp_read_unsigned_bin.c \
+	tomsfastmath/bin/fp_reverse.c tomsfastmath/bin/fp_s_rmap.c \
+	tomsfastmath/bin/fp_signed_bin_size.c \
+	tomsfastmath/bin/fp_to_signed_bin.c \
+	tomsfastmath/bin/fp_to_unsigned_bin.c \
+	tomsfastmath/bin/fp_toradix.c \
+	tomsfastmath/bin/fp_unsigned_bin_size.c \
+	tomsfastmath/bit/fp_cnt_lsb.c tomsfastmath/bit/fp_count_bits.c \
+	tomsfastmath/bit/fp_div_2.c tomsfastmath/bit/fp_div_2d.c \
+	tomsfastmath/bit/fp_lshd.c tomsfastmath/bit/fp_mod_2d.c \
+	tomsfastmath/bit/fp_rshd.c tomsfastmath/divide/fp_div.c \
+	tomsfastmath/divide/fp_div_d.c tomsfastmath/divide/fp_mod.c \
+	tomsfastmath/divide/fp_mod_d.c tomsfastmath/exptmod/fp_2expt.c \
+	tomsfastmath/exptmod/fp_exptmod.c tomsfastmath/misc/fp_ident.c \
+	tomsfastmath/misc/fp_set.c \
+	tomsfastmath/mont/fp_montgomery_calc_normalization.c \
+	tomsfastmath/mont/fp_montgomery_reduce.c \
+	tomsfastmath/mont/fp_montgomery_setup.c \
+	tomsfastmath/mul/fp_mul.c tomsfastmath/mul/fp_mul_comba.c \
+	tomsfastmath/mul/fp_mul_2.c tomsfastmath/mul/fp_mul_2d.c \
+	tomsfastmath/mul/fp_mul_comba_12.c \
+	tomsfastmath/mul/fp_mul_comba_17.c \
+	tomsfastmath/mul/fp_mul_comba_20.c \
+	tomsfastmath/mul/fp_mul_comba_24.c \
+	tomsfastmath/mul/fp_mul_comba_28.c \
+	tomsfastmath/mul/fp_mul_comba_3.c \
+	tomsfastmath/mul/fp_mul_comba_32.c \
+	tomsfastmath/mul/fp_mul_comba_4.c \
+	tomsfastmath/mul/fp_mul_comba_48.c \
+	tomsfastmath/mul/fp_mul_comba_6.c \
+	tomsfastmath/mul/fp_mul_comba_64.c \
+	tomsfastmath/mul/fp_mul_comba_7.c \
+	tomsfastmath/mul/fp_mul_comba_8.c \
+	tomsfastmath/mul/fp_mul_comba_9.c \
+	tomsfastmath/mul/fp_mul_comba_small_set.c \
+	tomsfastmath/mul/fp_mul_d.c tomsfastmath/mul/fp_mulmod.c \
+	tomsfastmath/numtheory/fp_invmod.c tomsfastmath/sqr/fp_sqr.c \
+	tomsfastmath/sqr/fp_sqr_comba_12.c \
+	tomsfastmath/sqr/fp_sqr_comba_17.c \
+	tomsfastmath/sqr/fp_sqr_comba_20.c \
+	tomsfastmath/sqr/fp_sqr_comba_24.c \
+	tomsfastmath/sqr/fp_sqr_comba_28.c \
+	tomsfastmath/sqr/fp_sqr_comba_3.c \
+	tomsfastmath/sqr/fp_sqr_comba_32.c \
+	tomsfastmath/sqr/fp_sqr_comba_4.c \
+	tomsfastmath/sqr/fp_sqr_comba_48.c \
+	tomsfastmath/sqr/fp_sqr_comba_6.c \
+	tomsfastmath/sqr/fp_sqr_comba_64.c \
+	tomsfastmath/sqr/fp_sqr_comba_7.c \
+	tomsfastmath/sqr/fp_sqr_comba_8.c \
+	tomsfastmath/sqr/fp_sqr_comba_9.c \
+	tomsfastmath/sqr/fp_sqr_comba_generic.c \
+	tomsfastmath/sqr/fp_sqr_comba_small_set.c \
+	tomsfastmath/sqr/fp_sqrmod.c
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -968,7 +876,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-asn1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-aspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-autoit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bignum.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-binhex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bytecode.Plo@am__quote@
@@ -994,6 +901,84 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filetypes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-filtering.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_2expt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_add.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_add_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_addmod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_cmp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_cmp_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_cmp_mag.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_cnt_lsb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_count_bits.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_div.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_div_2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_div_2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_div_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_exptmod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_ident.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_invmod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_lshd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mod_2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mod_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_montgomery_calc_normalization.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_montgomery_reduce.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_montgomery_setup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_2d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_12.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_17.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_20.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_24.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_28.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_3.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_4.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_48.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_6.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_7.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_8.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_9.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_comba_small_set.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mul_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_mulmod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_radix_size.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_read_radix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_read_signed_bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_read_unsigned_bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_reverse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_rshd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_s_rmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_set.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_signed_bin_size.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_12.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_17.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_20.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_24.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_28.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_3.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_4.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_48.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_6.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_7.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_8.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_9.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_generic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqr_comba_small_set.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sqrmod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sub.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_sub_d.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_submod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_to_signed_bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_to_unsigned_bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_toradix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hashtab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-htmlnorm.Plo@am__quote@
@@ -1036,6 +1021,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-regex_suffix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-rijndael.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-rtf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-s_fp_add.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-s_fp_sub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-scanners.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-sha1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-sha256.Plo@am__quote@
@@ -1838,14 +1825,6 @@ libclamav_la-sha1.lo: sha1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-sha1.lo `test -f 'sha1.c' || echo '$(srcdir)/'`sha1.c
 
-libclamav_la-bignum.lo: bignum.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-bignum.Tpo $(DEPDIR)/libclamav_la-bignum.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bignum.c' object='libclamav_la-bignum.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c
-
 libclamav_la-bytecode.lo: bytecode.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bytecode.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bytecode.Tpo -c -o libclamav_la-bytecode.lo `test -f 'bytecode.c' || echo '$(srcdir)/'`bytecode.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-bytecode.Tpo $(DEPDIR)/libclamav_la-bytecode.Plo
@@ -1989,6 +1968,646 @@ libclamav_la-asn1.lo: asn1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='asn1.c' object='libclamav_la-asn1.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-asn1.lo `test -f 'asn1.c' || echo '$(srcdir)/'`asn1.c
+
+libclamav_la-fp_add.lo: tomsfastmath/addsub/fp_add.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_add.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_add.Tpo -c -o libclamav_la-fp_add.lo `test -f 'tomsfastmath/addsub/fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_add.Tpo $(DEPDIR)/libclamav_la-fp_add.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_add.c' object='libclamav_la-fp_add.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_add.lo `test -f 'tomsfastmath/addsub/fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add.c
+
+libclamav_la-fp_add_d.lo: tomsfastmath/addsub/fp_add_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_add_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_add_d.Tpo -c -o libclamav_la-fp_add_d.lo `test -f 'tomsfastmath/addsub/fp_add_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_add_d.Tpo $(DEPDIR)/libclamav_la-fp_add_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_add_d.c' object='libclamav_la-fp_add_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_add_d.lo `test -f 'tomsfastmath/addsub/fp_add_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add_d.c
+
+libclamav_la-fp_addmod.lo: tomsfastmath/addsub/fp_addmod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_addmod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_addmod.Tpo -c -o libclamav_la-fp_addmod.lo `test -f 'tomsfastmath/addsub/fp_addmod.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_addmod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_addmod.Tpo $(DEPDIR)/libclamav_la-fp_addmod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_addmod.c' object='libclamav_la-fp_addmod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_addmod.lo `test -f 'tomsfastmath/addsub/fp_addmod.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_addmod.c
+
+libclamav_la-fp_cmp.lo: tomsfastmath/addsub/fp_cmp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_cmp.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_cmp.Tpo -c -o libclamav_la-fp_cmp.lo `test -f 'tomsfastmath/addsub/fp_cmp.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_cmp.Tpo $(DEPDIR)/libclamav_la-fp_cmp.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_cmp.c' object='libclamav_la-fp_cmp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_cmp.lo `test -f 'tomsfastmath/addsub/fp_cmp.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp.c
+
+libclamav_la-fp_cmp_d.lo: tomsfastmath/addsub/fp_cmp_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_cmp_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_cmp_d.Tpo -c -o libclamav_la-fp_cmp_d.lo `test -f 'tomsfastmath/addsub/fp_cmp_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_cmp_d.Tpo $(DEPDIR)/libclamav_la-fp_cmp_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_cmp_d.c' object='libclamav_la-fp_cmp_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_cmp_d.lo `test -f 'tomsfastmath/addsub/fp_cmp_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp_d.c
+
+libclamav_la-fp_cmp_mag.lo: tomsfastmath/addsub/fp_cmp_mag.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_cmp_mag.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_cmp_mag.Tpo -c -o libclamav_la-fp_cmp_mag.lo `test -f 'tomsfastmath/addsub/fp_cmp_mag.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp_mag.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_cmp_mag.Tpo $(DEPDIR)/libclamav_la-fp_cmp_mag.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_cmp_mag.c' object='libclamav_la-fp_cmp_mag.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_cmp_mag.lo `test -f 'tomsfastmath/addsub/fp_cmp_mag.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_cmp_mag.c
+
+libclamav_la-fp_sub.lo: tomsfastmath/addsub/fp_sub.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sub.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sub.Tpo -c -o libclamav_la-fp_sub.lo `test -f 'tomsfastmath/addsub/fp_sub.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_sub.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sub.Tpo $(DEPDIR)/libclamav_la-fp_sub.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_sub.c' object='libclamav_la-fp_sub.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sub.lo `test -f 'tomsfastmath/addsub/fp_sub.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_sub.c
+
+libclamav_la-fp_sub_d.lo: tomsfastmath/addsub/fp_sub_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sub_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sub_d.Tpo -c -o libclamav_la-fp_sub_d.lo `test -f 'tomsfastmath/addsub/fp_sub_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_sub_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sub_d.Tpo $(DEPDIR)/libclamav_la-fp_sub_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_sub_d.c' object='libclamav_la-fp_sub_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sub_d.lo `test -f 'tomsfastmath/addsub/fp_sub_d.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_sub_d.c
+
+libclamav_la-fp_submod.lo: tomsfastmath/addsub/fp_submod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_submod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_submod.Tpo -c -o libclamav_la-fp_submod.lo `test -f 'tomsfastmath/addsub/fp_submod.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_submod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_submod.Tpo $(DEPDIR)/libclamav_la-fp_submod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/fp_submod.c' object='libclamav_la-fp_submod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_submod.lo `test -f 'tomsfastmath/addsub/fp_submod.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_submod.c
+
+libclamav_la-s_fp_add.lo: tomsfastmath/addsub/s_fp_add.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-s_fp_add.lo -MD -MP -MF $(DEPDIR)/libclamav_la-s_fp_add.Tpo -c -o libclamav_la-s_fp_add.lo `test -f 'tomsfastmath/addsub/s_fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/s_fp_add.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-s_fp_add.Tpo $(DEPDIR)/libclamav_la-s_fp_add.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/s_fp_add.c' object='libclamav_la-s_fp_add.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-s_fp_add.lo `test -f 'tomsfastmath/addsub/s_fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/s_fp_add.c
+
+libclamav_la-s_fp_sub.lo: tomsfastmath/addsub/s_fp_sub.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-s_fp_sub.lo -MD -MP -MF $(DEPDIR)/libclamav_la-s_fp_sub.Tpo -c -o libclamav_la-s_fp_sub.lo `test -f 'tomsfastmath/addsub/s_fp_sub.c' || echo '$(srcdir)/'`tomsfastmath/addsub/s_fp_sub.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-s_fp_sub.Tpo $(DEPDIR)/libclamav_la-s_fp_sub.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/addsub/s_fp_sub.c' object='libclamav_la-s_fp_sub.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-s_fp_sub.lo `test -f 'tomsfastmath/addsub/s_fp_sub.c' || echo '$(srcdir)/'`tomsfastmath/addsub/s_fp_sub.c
+
+libclamav_la-fp_radix_size.lo: tomsfastmath/bin/fp_radix_size.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_radix_size.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_radix_size.Tpo -c -o libclamav_la-fp_radix_size.lo `test -f 'tomsfastmath/bin/fp_radix_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_radix_size.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_radix_size.Tpo $(DEPDIR)/libclamav_la-fp_radix_size.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_radix_size.c' object='libclamav_la-fp_radix_size.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_radix_size.lo `test -f 'tomsfastmath/bin/fp_radix_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_radix_size.c
+
+libclamav_la-fp_read_radix.lo: tomsfastmath/bin/fp_read_radix.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_read_radix.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_read_radix.Tpo -c -o libclamav_la-fp_read_radix.lo `test -f 'tomsfastmath/bin/fp_read_radix.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_radix.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_read_radix.Tpo $(DEPDIR)/libclamav_la-fp_read_radix.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_read_radix.c' object='libclamav_la-fp_read_radix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_read_radix.lo `test -f 'tomsfastmath/bin/fp_read_radix.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_radix.c
+
+libclamav_la-fp_read_signed_bin.lo: tomsfastmath/bin/fp_read_signed_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_read_signed_bin.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_read_signed_bin.Tpo -c -o libclamav_la-fp_read_signed_bin.lo `test -f 'tomsfastmath/bin/fp_read_signed_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_signed_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_read_signed_bin.Tpo $(DEPDIR)/libclamav_la-fp_read_signed_bin.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_read_signed_bin.c' object='libclamav_la-fp_read_signed_bin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_read_signed_bin.lo `test -f 'tomsfastmath/bin/fp_read_signed_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_signed_bin.c
+
+libclamav_la-fp_read_unsigned_bin.lo: tomsfastmath/bin/fp_read_unsigned_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_read_unsigned_bin.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_read_unsigned_bin.Tpo -c -o libclamav_la-fp_read_unsigned_bin.lo `test -f 'tomsfastmath/bin/fp_read_unsigned_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_unsigned_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_read_unsigned_bin.Tpo $(DEPDIR)/libclamav_la-fp_read_unsigned_bin.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_read_unsigned_bin.c' object='libclamav_la-fp_read_unsigned_bin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_read_unsigned_bin.lo `test -f 'tomsfastmath/bin/fp_read_unsigned_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_read_unsigned_bin.c
+
+libclamav_la-fp_reverse.lo: tomsfastmath/bin/fp_reverse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_reverse.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_reverse.Tpo -c -o libclamav_la-fp_reverse.lo `test -f 'tomsfastmath/bin/fp_reverse.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_reverse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_reverse.Tpo $(DEPDIR)/libclamav_la-fp_reverse.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_reverse.c' object='libclamav_la-fp_reverse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_reverse.lo `test -f 'tomsfastmath/bin/fp_reverse.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_reverse.c
+
+libclamav_la-fp_s_rmap.lo: tomsfastmath/bin/fp_s_rmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_s_rmap.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_s_rmap.Tpo -c -o libclamav_la-fp_s_rmap.lo `test -f 'tomsfastmath/bin/fp_s_rmap.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_s_rmap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_s_rmap.Tpo $(DEPDIR)/libclamav_la-fp_s_rmap.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_s_rmap.c' object='libclamav_la-fp_s_rmap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_s_rmap.lo `test -f 'tomsfastmath/bin/fp_s_rmap.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_s_rmap.c
+
+libclamav_la-fp_signed_bin_size.lo: tomsfastmath/bin/fp_signed_bin_size.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_signed_bin_size.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_signed_bin_size.Tpo -c -o libclamav_la-fp_signed_bin_size.lo `test -f 'tomsfastmath/bin/fp_signed_bin_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_signed_bin_size.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_signed_bin_size.Tpo $(DEPDIR)/libclamav_la-fp_signed_bin_size.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_signed_bin_size.c' object='libclamav_la-fp_signed_bin_size.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_signed_bin_size.lo `test -f 'tomsfastmath/bin/fp_signed_bin_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_signed_bin_size.c
+
+libclamav_la-fp_to_signed_bin.lo: tomsfastmath/bin/fp_to_signed_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_to_signed_bin.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_to_signed_bin.Tpo -c -o libclamav_la-fp_to_signed_bin.lo `test -f 'tomsfastmath/bin/fp_to_signed_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_to_signed_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_to_signed_bin.Tpo $(DEPDIR)/libclamav_la-fp_to_signed_bin.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_to_signed_bin.c' object='libclamav_la-fp_to_signed_bin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_to_signed_bin.lo `test -f 'tomsfastmath/bin/fp_to_signed_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_to_signed_bin.c
+
+libclamav_la-fp_to_unsigned_bin.lo: tomsfastmath/bin/fp_to_unsigned_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_to_unsigned_bin.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_to_unsigned_bin.Tpo -c -o libclamav_la-fp_to_unsigned_bin.lo `test -f 'tomsfastmath/bin/fp_to_unsigned_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_to_unsigned_bin.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_to_unsigned_bin.Tpo $(DEPDIR)/libclamav_la-fp_to_unsigned_bin.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_to_unsigned_bin.c' object='libclamav_la-fp_to_unsigned_bin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_to_unsigned_bin.lo `test -f 'tomsfastmath/bin/fp_to_unsigned_bin.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_to_unsigned_bin.c
+
+libclamav_la-fp_toradix.lo: tomsfastmath/bin/fp_toradix.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_toradix.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_toradix.Tpo -c -o libclamav_la-fp_toradix.lo `test -f 'tomsfastmath/bin/fp_toradix.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_toradix.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_toradix.Tpo $(DEPDIR)/libclamav_la-fp_toradix.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_toradix.c' object='libclamav_la-fp_toradix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_toradix.lo `test -f 'tomsfastmath/bin/fp_toradix.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_toradix.c
+
+libclamav_la-fp_unsigned_bin_size.lo: tomsfastmath/bin/fp_unsigned_bin_size.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_unsigned_bin_size.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Tpo -c -o libclamav_la-fp_unsigned_bin_size.lo `test -f 'tomsfastmath/bin/fp_unsigned_bin_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_unsigned_bin_size.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Tpo $(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bin/fp_unsigned_bin_size.c' object='libclamav_la-fp_unsigned_bin_size.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_unsigned_bin_size.lo `test -f 'tomsfastmath/bin/fp_unsigned_bin_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_unsigned_bin_size.c
+
+libclamav_la-fp_cnt_lsb.lo: tomsfastmath/bit/fp_cnt_lsb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_cnt_lsb.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_cnt_lsb.Tpo -c -o libclamav_la-fp_cnt_lsb.lo `test -f 'tomsfastmath/bit/fp_cnt_lsb.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_cnt_lsb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_cnt_lsb.Tpo $(DEPDIR)/libclamav_la-fp_cnt_lsb.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_cnt_lsb.c' object='libclamav_la-fp_cnt_lsb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_cnt_lsb.lo `test -f 'tomsfastmath/bit/fp_cnt_lsb.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_cnt_lsb.c
+
+libclamav_la-fp_count_bits.lo: tomsfastmath/bit/fp_count_bits.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_count_bits.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_count_bits.Tpo -c -o libclamav_la-fp_count_bits.lo `test -f 'tomsfastmath/bit/fp_count_bits.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_count_bits.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_count_bits.Tpo $(DEPDIR)/libclamav_la-fp_count_bits.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_count_bits.c' object='libclamav_la-fp_count_bits.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_count_bits.lo `test -f 'tomsfastmath/bit/fp_count_bits.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_count_bits.c
+
+libclamav_la-fp_div_2.lo: tomsfastmath/bit/fp_div_2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_div_2.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_div_2.Tpo -c -o libclamav_la-fp_div_2.lo `test -f 'tomsfastmath/bit/fp_div_2.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_div_2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_div_2.Tpo $(DEPDIR)/libclamav_la-fp_div_2.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_div_2.c' object='libclamav_la-fp_div_2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_div_2.lo `test -f 'tomsfastmath/bit/fp_div_2.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_div_2.c
+
+libclamav_la-fp_div_2d.lo: tomsfastmath/bit/fp_div_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_div_2d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_div_2d.Tpo -c -o libclamav_la-fp_div_2d.lo `test -f 'tomsfastmath/bit/fp_div_2d.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_div_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_div_2d.Tpo $(DEPDIR)/libclamav_la-fp_div_2d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_div_2d.c' object='libclamav_la-fp_div_2d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_div_2d.lo `test -f 'tomsfastmath/bit/fp_div_2d.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_div_2d.c
+
+libclamav_la-fp_lshd.lo: tomsfastmath/bit/fp_lshd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_lshd.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_lshd.Tpo -c -o libclamav_la-fp_lshd.lo `test -f 'tomsfastmath/bit/fp_lshd.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_lshd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_lshd.Tpo $(DEPDIR)/libclamav_la-fp_lshd.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_lshd.c' object='libclamav_la-fp_lshd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_lshd.lo `test -f 'tomsfastmath/bit/fp_lshd.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_lshd.c
+
+libclamav_la-fp_mod_2d.lo: tomsfastmath/bit/fp_mod_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mod_2d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mod_2d.Tpo -c -o libclamav_la-fp_mod_2d.lo `test -f 'tomsfastmath/bit/fp_mod_2d.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_mod_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mod_2d.Tpo $(DEPDIR)/libclamav_la-fp_mod_2d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_mod_2d.c' object='libclamav_la-fp_mod_2d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mod_2d.lo `test -f 'tomsfastmath/bit/fp_mod_2d.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_mod_2d.c
+
+libclamav_la-fp_rshd.lo: tomsfastmath/bit/fp_rshd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_rshd.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_rshd.Tpo -c -o libclamav_la-fp_rshd.lo `test -f 'tomsfastmath/bit/fp_rshd.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_rshd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_rshd.Tpo $(DEPDIR)/libclamav_la-fp_rshd.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/bit/fp_rshd.c' object='libclamav_la-fp_rshd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_rshd.lo `test -f 'tomsfastmath/bit/fp_rshd.c' || echo '$(srcdir)/'`tomsfastmath/bit/fp_rshd.c
+
+libclamav_la-fp_div.lo: tomsfastmath/divide/fp_div.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_div.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_div.Tpo -c -o libclamav_la-fp_div.lo `test -f 'tomsfastmath/divide/fp_div.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_div.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_div.Tpo $(DEPDIR)/libclamav_la-fp_div.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/divide/fp_div.c' object='libclamav_la-fp_div.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_div.lo `test -f 'tomsfastmath/divide/fp_div.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_div.c
+
+libclamav_la-fp_div_d.lo: tomsfastmath/divide/fp_div_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_div_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_div_d.Tpo -c -o libclamav_la-fp_div_d.lo `test -f 'tomsfastmath/divide/fp_div_d.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_div_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_div_d.Tpo $(DEPDIR)/libclamav_la-fp_div_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/divide/fp_div_d.c' object='libclamav_la-fp_div_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_div_d.lo `test -f 'tomsfastmath/divide/fp_div_d.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_div_d.c
+
+libclamav_la-fp_mod.lo: tomsfastmath/divide/fp_mod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mod.Tpo -c -o libclamav_la-fp_mod.lo `test -f 'tomsfastmath/divide/fp_mod.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_mod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mod.Tpo $(DEPDIR)/libclamav_la-fp_mod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/divide/fp_mod.c' object='libclamav_la-fp_mod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mod.lo `test -f 'tomsfastmath/divide/fp_mod.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_mod.c
+
+libclamav_la-fp_mod_d.lo: tomsfastmath/divide/fp_mod_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mod_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mod_d.Tpo -c -o libclamav_la-fp_mod_d.lo `test -f 'tomsfastmath/divide/fp_mod_d.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_mod_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mod_d.Tpo $(DEPDIR)/libclamav_la-fp_mod_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/divide/fp_mod_d.c' object='libclamav_la-fp_mod_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mod_d.lo `test -f 'tomsfastmath/divide/fp_mod_d.c' || echo '$(srcdir)/'`tomsfastmath/divide/fp_mod_d.c
+
+libclamav_la-fp_2expt.lo: tomsfastmath/exptmod/fp_2expt.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_2expt.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_2expt.Tpo -c -o libclamav_la-fp_2expt.lo `test -f 'tomsfastmath/exptmod/fp_2expt.c' || echo '$(srcdir)/'`tomsfastmath/exptmod/fp_2expt.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_2expt.Tpo $(DEPDIR)/libclamav_la-fp_2expt.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/exptmod/fp_2expt.c' object='libclamav_la-fp_2expt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_2expt.lo `test -f 'tomsfastmath/exptmod/fp_2expt.c' || echo '$(srcdir)/'`tomsfastmath/exptmod/fp_2expt.c
+
+libclamav_la-fp_exptmod.lo: tomsfastmath/exptmod/fp_exptmod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_exptmod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_exptmod.Tpo -c -o libclamav_la-fp_exptmod.lo `test -f 'tomsfastmath/exptmod/fp_exptmod.c' || echo '$(srcdir)/'`tomsfastmath/exptmod/fp_exptmod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_exptmod.Tpo $(DEPDIR)/libclamav_la-fp_exptmod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/exptmod/fp_exptmod.c' object='libclamav_la-fp_exptmod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_exptmod.lo `test -f 'tomsfastmath/exptmod/fp_exptmod.c' || echo '$(srcdir)/'`tomsfastmath/exptmod/fp_exptmod.c
+
+libclamav_la-fp_ident.lo: tomsfastmath/misc/fp_ident.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_ident.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_ident.Tpo -c -o libclamav_la-fp_ident.lo `test -f 'tomsfastmath/misc/fp_ident.c' || echo '$(srcdir)/'`tomsfastmath/misc/fp_ident.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_ident.Tpo $(DEPDIR)/libclamav_la-fp_ident.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/misc/fp_ident.c' object='libclamav_la-fp_ident.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_ident.lo `test -f 'tomsfastmath/misc/fp_ident.c' || echo '$(srcdir)/'`tomsfastmath/misc/fp_ident.c
+
+libclamav_la-fp_set.lo: tomsfastmath/misc/fp_set.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_set.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_set.Tpo -c -o libclamav_la-fp_set.lo `test -f 'tomsfastmath/misc/fp_set.c' || echo '$(srcdir)/'`tomsfastmath/misc/fp_set.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_set.Tpo $(DEPDIR)/libclamav_la-fp_set.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/misc/fp_set.c' object='libclamav_la-fp_set.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_set.lo `test -f 'tomsfastmath/misc/fp_set.c' || echo '$(srcdir)/'`tomsfastmath/misc/fp_set.c
+
+libclamav_la-fp_montgomery_calc_normalization.lo: tomsfastmath/mont/fp_montgomery_calc_normalization.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_montgomery_calc_normalization.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_montgomery_calc_normalization.Tpo -c -o libclamav_la-fp_montgomery_calc_normalization.lo `test -f 'tomsfastmath/mont/fp_montgomery_calc_normalization.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_calc_normalization.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_montgomery_calc_normalization.Tpo $(DEPDIR)/libclamav_la-fp_montgomery_calc_normalization.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mont/fp_montgomery_calc_normalization.c' object='libclamav_la-fp_montgomery_calc_normalization.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_montgomery_calc_normalization.lo `test -f 'tomsfastmath/mont/fp_montgomery_calc_normalization.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_calc_normalization.c
+
+libclamav_la-fp_montgomery_reduce.lo: tomsfastmath/mont/fp_montgomery_reduce.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_montgomery_reduce.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_montgomery_reduce.Tpo -c -o libclamav_la-fp_montgomery_reduce.lo `test -f 'tomsfastmath/mont/fp_montgomery_reduce.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_reduce.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_montgomery_reduce.Tpo $(DEPDIR)/libclamav_la-fp_montgomery_reduce.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mont/fp_montgomery_reduce.c' object='libclamav_la-fp_montgomery_reduce.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_montgomery_reduce.lo `test -f 'tomsfastmath/mont/fp_montgomery_reduce.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_reduce.c
+
+libclamav_la-fp_montgomery_setup.lo: tomsfastmath/mont/fp_montgomery_setup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_montgomery_setup.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_montgomery_setup.Tpo -c -o libclamav_la-fp_montgomery_setup.lo `test -f 'tomsfastmath/mont/fp_montgomery_setup.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_setup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_montgomery_setup.Tpo $(DEPDIR)/libclamav_la-fp_montgomery_setup.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mont/fp_montgomery_setup.c' object='libclamav_la-fp_montgomery_setup.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_montgomery_setup.lo `test -f 'tomsfastmath/mont/fp_montgomery_setup.c' || echo '$(srcdir)/'`tomsfastmath/mont/fp_montgomery_setup.c
+
+libclamav_la-fp_mul.lo: tomsfastmath/mul/fp_mul.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul.Tpo -c -o libclamav_la-fp_mul.lo `test -f 'tomsfastmath/mul/fp_mul.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul.Tpo $(DEPDIR)/libclamav_la-fp_mul.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul.c' object='libclamav_la-fp_mul.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul.lo `test -f 'tomsfastmath/mul/fp_mul.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul.c
+
+libclamav_la-fp_mul_comba.lo: tomsfastmath/mul/fp_mul_comba.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba.Tpo -c -o libclamav_la-fp_mul_comba.lo `test -f 'tomsfastmath/mul/fp_mul_comba.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba.c' object='libclamav_la-fp_mul_comba.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba.lo `test -f 'tomsfastmath/mul/fp_mul_comba.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba.c
+
+libclamav_la-fp_mul_2.lo: tomsfastmath/mul/fp_mul_2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_2.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_2.Tpo -c -o libclamav_la-fp_mul_2.lo `test -f 'tomsfastmath/mul/fp_mul_2.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_2.Tpo $(DEPDIR)/libclamav_la-fp_mul_2.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_2.c' object='libclamav_la-fp_mul_2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_2.lo `test -f 'tomsfastmath/mul/fp_mul_2.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_2.c
+
+libclamav_la-fp_mul_2d.lo: tomsfastmath/mul/fp_mul_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_2d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_2d.Tpo -c -o libclamav_la-fp_mul_2d.lo `test -f 'tomsfastmath/mul/fp_mul_2d.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_2d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_2d.Tpo $(DEPDIR)/libclamav_la-fp_mul_2d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_2d.c' object='libclamav_la-fp_mul_2d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_2d.lo `test -f 'tomsfastmath/mul/fp_mul_2d.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_2d.c
+
+libclamav_la-fp_mul_comba_12.lo: tomsfastmath/mul/fp_mul_comba_12.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_12.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_12.Tpo -c -o libclamav_la-fp_mul_comba_12.lo `test -f 'tomsfastmath/mul/fp_mul_comba_12.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_12.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_12.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_12.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_12.c' object='libclamav_la-fp_mul_comba_12.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_12.lo `test -f 'tomsfastmath/mul/fp_mul_comba_12.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_12.c
+
+libclamav_la-fp_mul_comba_17.lo: tomsfastmath/mul/fp_mul_comba_17.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_17.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_17.Tpo -c -o libclamav_la-fp_mul_comba_17.lo `test -f 'tomsfastmath/mul/fp_mul_comba_17.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_17.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_17.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_17.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_17.c' object='libclamav_la-fp_mul_comba_17.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_17.lo `test -f 'tomsfastmath/mul/fp_mul_comba_17.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_17.c
+
+libclamav_la-fp_mul_comba_20.lo: tomsfastmath/mul/fp_mul_comba_20.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_20.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_20.Tpo -c -o libclamav_la-fp_mul_comba_20.lo `test -f 'tomsfastmath/mul/fp_mul_comba_20.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_20.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_20.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_20.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_20.c' object='libclamav_la-fp_mul_comba_20.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_20.lo `test -f 'tomsfastmath/mul/fp_mul_comba_20.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_20.c
+
+libclamav_la-fp_mul_comba_24.lo: tomsfastmath/mul/fp_mul_comba_24.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_24.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_24.Tpo -c -o libclamav_la-fp_mul_comba_24.lo `test -f 'tomsfastmath/mul/fp_mul_comba_24.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_24.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_24.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_24.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_24.c' object='libclamav_la-fp_mul_comba_24.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_24.lo `test -f 'tomsfastmath/mul/fp_mul_comba_24.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_24.c
+
+libclamav_la-fp_mul_comba_28.lo: tomsfastmath/mul/fp_mul_comba_28.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_28.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_28.Tpo -c -o libclamav_la-fp_mul_comba_28.lo `test -f 'tomsfastmath/mul/fp_mul_comba_28.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_28.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_28.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_28.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_28.c' object='libclamav_la-fp_mul_comba_28.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_28.lo `test -f 'tomsfastmath/mul/fp_mul_comba_28.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_28.c
+
+libclamav_la-fp_mul_comba_3.lo: tomsfastmath/mul/fp_mul_comba_3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_3.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_3.Tpo -c -o libclamav_la-fp_mul_comba_3.lo `test -f 'tomsfastmath/mul/fp_mul_comba_3.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_3.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_3.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_3.c' object='libclamav_la-fp_mul_comba_3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_3.lo `test -f 'tomsfastmath/mul/fp_mul_comba_3.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_3.c
+
+libclamav_la-fp_mul_comba_32.lo: tomsfastmath/mul/fp_mul_comba_32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_32.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_32.Tpo -c -o libclamav_la-fp_mul_comba_32.lo `test -f 'tomsfastmath/mul/fp_mul_comba_32.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_32.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_32.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_32.c' object='libclamav_la-fp_mul_comba_32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_32.lo `test -f 'tomsfastmath/mul/fp_mul_comba_32.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_32.c
+
+libclamav_la-fp_mul_comba_4.lo: tomsfastmath/mul/fp_mul_comba_4.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_4.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_4.Tpo -c -o libclamav_la-fp_mul_comba_4.lo `test -f 'tomsfastmath/mul/fp_mul_comba_4.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_4.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_4.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_4.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_4.c' object='libclamav_la-fp_mul_comba_4.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_4.lo `test -f 'tomsfastmath/mul/fp_mul_comba_4.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_4.c
+
+libclamav_la-fp_mul_comba_48.lo: tomsfastmath/mul/fp_mul_comba_48.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_48.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_48.Tpo -c -o libclamav_la-fp_mul_comba_48.lo `test -f 'tomsfastmath/mul/fp_mul_comba_48.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_48.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_48.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_48.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_48.c' object='libclamav_la-fp_mul_comba_48.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_48.lo `test -f 'tomsfastmath/mul/fp_mul_comba_48.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_48.c
+
+libclamav_la-fp_mul_comba_6.lo: tomsfastmath/mul/fp_mul_comba_6.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_6.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_6.Tpo -c -o libclamav_la-fp_mul_comba_6.lo `test -f 'tomsfastmath/mul/fp_mul_comba_6.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_6.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_6.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_6.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_6.c' object='libclamav_la-fp_mul_comba_6.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_6.lo `test -f 'tomsfastmath/mul/fp_mul_comba_6.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_6.c
+
+libclamav_la-fp_mul_comba_64.lo: tomsfastmath/mul/fp_mul_comba_64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_64.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_64.Tpo -c -o libclamav_la-fp_mul_comba_64.lo `test -f 'tomsfastmath/mul/fp_mul_comba_64.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_64.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_64.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_64.c' object='libclamav_la-fp_mul_comba_64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_64.lo `test -f 'tomsfastmath/mul/fp_mul_comba_64.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_64.c
+
+libclamav_la-fp_mul_comba_7.lo: tomsfastmath/mul/fp_mul_comba_7.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_7.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_7.Tpo -c -o libclamav_la-fp_mul_comba_7.lo `test -f 'tomsfastmath/mul/fp_mul_comba_7.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_7.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_7.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_7.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_7.c' object='libclamav_la-fp_mul_comba_7.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_7.lo `test -f 'tomsfastmath/mul/fp_mul_comba_7.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_7.c
+
+libclamav_la-fp_mul_comba_8.lo: tomsfastmath/mul/fp_mul_comba_8.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_8.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_8.Tpo -c -o libclamav_la-fp_mul_comba_8.lo `test -f 'tomsfastmath/mul/fp_mul_comba_8.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_8.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_8.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_8.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_8.c' object='libclamav_la-fp_mul_comba_8.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_8.lo `test -f 'tomsfastmath/mul/fp_mul_comba_8.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_8.c
+
+libclamav_la-fp_mul_comba_9.lo: tomsfastmath/mul/fp_mul_comba_9.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_9.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_9.Tpo -c -o libclamav_la-fp_mul_comba_9.lo `test -f 'tomsfastmath/mul/fp_mul_comba_9.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_9.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_9.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_9.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_9.c' object='libclamav_la-fp_mul_comba_9.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_9.lo `test -f 'tomsfastmath/mul/fp_mul_comba_9.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_9.c
+
+libclamav_la-fp_mul_comba_small_set.lo: tomsfastmath/mul/fp_mul_comba_small_set.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_comba_small_set.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_comba_small_set.Tpo -c -o libclamav_la-fp_mul_comba_small_set.lo `test -f 'tomsfastmath/mul/fp_mul_comba_small_set.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_small_set.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_comba_small_set.Tpo $(DEPDIR)/libclamav_la-fp_mul_comba_small_set.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_comba_small_set.c' object='libclamav_la-fp_mul_comba_small_set.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_comba_small_set.lo `test -f 'tomsfastmath/mul/fp_mul_comba_small_set.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_comba_small_set.c
+
+libclamav_la-fp_mul_d.lo: tomsfastmath/mul/fp_mul_d.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mul_d.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mul_d.Tpo -c -o libclamav_la-fp_mul_d.lo `test -f 'tomsfastmath/mul/fp_mul_d.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_d.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mul_d.Tpo $(DEPDIR)/libclamav_la-fp_mul_d.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mul_d.c' object='libclamav_la-fp_mul_d.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mul_d.lo `test -f 'tomsfastmath/mul/fp_mul_d.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mul_d.c
+
+libclamav_la-fp_mulmod.lo: tomsfastmath/mul/fp_mulmod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_mulmod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_mulmod.Tpo -c -o libclamav_la-fp_mulmod.lo `test -f 'tomsfastmath/mul/fp_mulmod.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mulmod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_mulmod.Tpo $(DEPDIR)/libclamav_la-fp_mulmod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/mul/fp_mulmod.c' object='libclamav_la-fp_mulmod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_mulmod.lo `test -f 'tomsfastmath/mul/fp_mulmod.c' || echo '$(srcdir)/'`tomsfastmath/mul/fp_mulmod.c
+
+libclamav_la-fp_invmod.lo: tomsfastmath/numtheory/fp_invmod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_invmod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_invmod.Tpo -c -o libclamav_la-fp_invmod.lo `test -f 'tomsfastmath/numtheory/fp_invmod.c' || echo '$(srcdir)/'`tomsfastmath/numtheory/fp_invmod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_invmod.Tpo $(DEPDIR)/libclamav_la-fp_invmod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/numtheory/fp_invmod.c' object='libclamav_la-fp_invmod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_invmod.lo `test -f 'tomsfastmath/numtheory/fp_invmod.c' || echo '$(srcdir)/'`tomsfastmath/numtheory/fp_invmod.c
+
+libclamav_la-fp_sqr.lo: tomsfastmath/sqr/fp_sqr.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr.Tpo -c -o libclamav_la-fp_sqr.lo `test -f 'tomsfastmath/sqr/fp_sqr.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr.Tpo $(DEPDIR)/libclamav_la-fp_sqr.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr.c' object='libclamav_la-fp_sqr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr.lo `test -f 'tomsfastmath/sqr/fp_sqr.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr.c
+
+libclamav_la-fp_sqr_comba_12.lo: tomsfastmath/sqr/fp_sqr_comba_12.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_12.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_12.Tpo -c -o libclamav_la-fp_sqr_comba_12.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_12.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_12.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_12.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_12.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_12.c' object='libclamav_la-fp_sqr_comba_12.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_12.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_12.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_12.c
+
+libclamav_la-fp_sqr_comba_17.lo: tomsfastmath/sqr/fp_sqr_comba_17.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_17.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_17.Tpo -c -o libclamav_la-fp_sqr_comba_17.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_17.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_17.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_17.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_17.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_17.c' object='libclamav_la-fp_sqr_comba_17.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_17.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_17.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_17.c
+
+libclamav_la-fp_sqr_comba_20.lo: tomsfastmath/sqr/fp_sqr_comba_20.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_20.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_20.Tpo -c -o libclamav_la-fp_sqr_comba_20.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_20.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_20.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_20.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_20.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_20.c' object='libclamav_la-fp_sqr_comba_20.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_20.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_20.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_20.c
+
+libclamav_la-fp_sqr_comba_24.lo: tomsfastmath/sqr/fp_sqr_comba_24.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_24.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_24.Tpo -c -o libclamav_la-fp_sqr_comba_24.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_24.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_24.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_24.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_24.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_24.c' object='libclamav_la-fp_sqr_comba_24.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_24.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_24.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_24.c
+
+libclamav_la-fp_sqr_comba_28.lo: tomsfastmath/sqr/fp_sqr_comba_28.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_28.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_28.Tpo -c -o libclamav_la-fp_sqr_comba_28.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_28.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_28.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_28.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_28.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_28.c' object='libclamav_la-fp_sqr_comba_28.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_28.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_28.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_28.c
+
+libclamav_la-fp_sqr_comba_3.lo: tomsfastmath/sqr/fp_sqr_comba_3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_3.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_3.Tpo -c -o libclamav_la-fp_sqr_comba_3.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_3.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_3.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_3.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_3.c' object='libclamav_la-fp_sqr_comba_3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_3.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_3.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_3.c
+
+libclamav_la-fp_sqr_comba_32.lo: tomsfastmath/sqr/fp_sqr_comba_32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_32.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_32.Tpo -c -o libclamav_la-fp_sqr_comba_32.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_32.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_32.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_32.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_32.c' object='libclamav_la-fp_sqr_comba_32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_32.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_32.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_32.c
+
+libclamav_la-fp_sqr_comba_4.lo: tomsfastmath/sqr/fp_sqr_comba_4.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_4.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_4.Tpo -c -o libclamav_la-fp_sqr_comba_4.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_4.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_4.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_4.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_4.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_4.c' object='libclamav_la-fp_sqr_comba_4.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_4.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_4.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_4.c
+
+libclamav_la-fp_sqr_comba_48.lo: tomsfastmath/sqr/fp_sqr_comba_48.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_48.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_48.Tpo -c -o libclamav_la-fp_sqr_comba_48.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_48.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_48.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_48.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_48.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_48.c' object='libclamav_la-fp_sqr_comba_48.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_48.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_48.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_48.c
+
+libclamav_la-fp_sqr_comba_6.lo: tomsfastmath/sqr/fp_sqr_comba_6.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_6.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_6.Tpo -c -o libclamav_la-fp_sqr_comba_6.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_6.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_6.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_6.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_6.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_6.c' object='libclamav_la-fp_sqr_comba_6.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_6.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_6.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_6.c
+
+libclamav_la-fp_sqr_comba_64.lo: tomsfastmath/sqr/fp_sqr_comba_64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_64.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_64.Tpo -c -o libclamav_la-fp_sqr_comba_64.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_64.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_64.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_64.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_64.c' object='libclamav_la-fp_sqr_comba_64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_64.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_64.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_64.c
+
+libclamav_la-fp_sqr_comba_7.lo: tomsfastmath/sqr/fp_sqr_comba_7.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_7.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_7.Tpo -c -o libclamav_la-fp_sqr_comba_7.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_7.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_7.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_7.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_7.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_7.c' object='libclamav_la-fp_sqr_comba_7.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_7.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_7.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_7.c
+
+libclamav_la-fp_sqr_comba_8.lo: tomsfastmath/sqr/fp_sqr_comba_8.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_8.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_8.Tpo -c -o libclamav_la-fp_sqr_comba_8.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_8.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_8.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_8.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_8.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_8.c' object='libclamav_la-fp_sqr_comba_8.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_8.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_8.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_8.c
+
+libclamav_la-fp_sqr_comba_9.lo: tomsfastmath/sqr/fp_sqr_comba_9.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_9.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_9.Tpo -c -o libclamav_la-fp_sqr_comba_9.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_9.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_9.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_9.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_9.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_9.c' object='libclamav_la-fp_sqr_comba_9.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_9.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_9.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_9.c
+
+libclamav_la-fp_sqr_comba_generic.lo: tomsfastmath/sqr/fp_sqr_comba_generic.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_generic.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_generic.Tpo -c -o libclamav_la-fp_sqr_comba_generic.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_generic.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_generic.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_generic.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_generic.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_generic.c' object='libclamav_la-fp_sqr_comba_generic.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_generic.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_generic.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_generic.c
+
+libclamav_la-fp_sqr_comba_small_set.lo: tomsfastmath/sqr/fp_sqr_comba_small_set.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqr_comba_small_set.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqr_comba_small_set.Tpo -c -o libclamav_la-fp_sqr_comba_small_set.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_small_set.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_small_set.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqr_comba_small_set.Tpo $(DEPDIR)/libclamav_la-fp_sqr_comba_small_set.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqr_comba_small_set.c' object='libclamav_la-fp_sqr_comba_small_set.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqr_comba_small_set.lo `test -f 'tomsfastmath/sqr/fp_sqr_comba_small_set.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqr_comba_small_set.c
+
+libclamav_la-fp_sqrmod.lo: tomsfastmath/sqr/fp_sqrmod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_sqrmod.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_sqrmod.Tpo -c -o libclamav_la-fp_sqrmod.lo `test -f 'tomsfastmath/sqr/fp_sqrmod.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqrmod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_sqrmod.Tpo $(DEPDIR)/libclamav_la-fp_sqrmod.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tomsfastmath/sqr/fp_sqrmod.c' object='libclamav_la-fp_sqrmod.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_sqrmod.lo `test -f 'tomsfastmath/sqr/fp_sqrmod.c' || echo '$(srcdir)/'`tomsfastmath/sqr/fp_sqrmod.c
 
 libclamav_internal_utils_la-str.lo: str.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-str.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-str.Tpo -c -o libclamav_internal_utils_la-str.lo `test -f 'str.c' || echo '$(srcdir)/'`str.c

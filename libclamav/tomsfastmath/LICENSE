@@ -1,0 +1,7 @@
+TomsFastMath is public domain.
+
+Note some ideas were borrowed from LibTomMath and OpenSSL.  All of the code is original or ported
+from LibTomMath [no code was ported from OpenSSL].  As such the origins and status of this code
+are both public domain.
+
+-- Tom St Denis
