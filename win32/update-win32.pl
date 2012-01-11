@@ -196,7 +196,8 @@ my %CONF = (
     'restrict' => -1,
     'socklen_t' => -1,
     'HAVE_UNAME_SYSCALL' => -1,
-    'HAVE__INTERNAL__SHA_COLLECT' => -1
+    'HAVE__INTERNAL__SHA_COLLECT' => -1,
+    'FANOTIFY' => -1
     );
 
 
