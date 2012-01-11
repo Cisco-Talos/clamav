@@ -2351,12 +2351,12 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
     fmap_t *map;
 
     if(!(map = fmap(fileno(fs), 0, 0))) {
-	cli_warnmsg("Can't map cat: %s\n", dbname);
+	cli_dbgmsg("Can't map cat: %s\n", dbname);
 	return 0;
     }
 
     if(asn1_load_mscat(map, engine))
-	cli_errmsg("Failed to load certificates from cat: %s\n", dbname);
+	cli_dbgmsg("Failed to load certificates from cat: %s\n", dbname);
     funmap(map);
     return 0;
 }
