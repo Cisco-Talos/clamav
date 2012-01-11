@@ -144,9 +144,6 @@ CLAMAV_PRIVATE {
     mpool_destroy;
     mpool_free;
     mpool_getstats;
-    mp_init;
-    mp_read_radix;
-    mp_clear;
     cli_versig;
     cli_versig2;
     cli_filecopy;
