@@ -12,7 +12,7 @@
 
 */
 
-#include <tfm.h>
+#include "bignum_fast.h"
 
 #if defined(TFM_PRESCOTT) && defined(TFM_SSE2)
    #undef TFM_SSE2

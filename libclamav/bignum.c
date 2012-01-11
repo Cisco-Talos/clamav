@@ -1099,7 +1099,7 @@ void fp_gcd(fp_int *a, fp_int *b, fp_int *c)
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "tfm.h"
+#include "bignum_fast.h"
 
 const char *fp_ident(void)
 {
