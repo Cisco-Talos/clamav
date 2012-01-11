@@ -52,7 +52,7 @@ typedef struct CPpmd7_Node_
 union NodeOrRef {
     CPpmd7_Node node;
     CPpmd7_Node_Ref ref;
-}
+};
 
 #ifdef PPMD_32BIT
   #define NODE(ptr) (ptr)
