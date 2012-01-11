@@ -411,7 +411,7 @@ int crtmgr_add_roots(crtmgr *m) {
     do {
 	memset(ca.issuer, '\xca', sizeof(ca.issuer));
 	memcpy(ca.subject, MSCA_SUBJECT, sizeof(ca.subject));
-	memset(ca.serial, 0, sizeof(ca.serial));
+	memset(ca.serial, '\xca', sizeof(ca.serial));
 	if(mp_read_unsigned_bin(&ca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
 	    cli_errmsg("crtmgr_add_roots: failed to read MSCA key\n");
 	    break;
