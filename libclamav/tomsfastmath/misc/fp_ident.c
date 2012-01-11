@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "tfm.h"
+#include "bignum_fast.h"
 
 const char *fp_ident(void)
 {
