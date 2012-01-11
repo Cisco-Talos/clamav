@@ -55,8 +55,8 @@
 #define TFM_MUL24
 #define TFM_MUL28
 #define TFM_MUL32
-#define TFM_MUL48
-#define TFM_MUL64
+/*#define TFM_MUL48
+#define TFM_MUL64*/
 
 #if 0
 #define TFM_SQR3
@@ -72,8 +72,8 @@
 #define TFM_SQR24
 #define TFM_SQR28
 #define TFM_SQR32
-#define TFM_SQR48
-#define TFM_SQR64
+/*#define TFM_SQR48
+#define TFM_SQR64*/
 
 /* do we want some overflow checks
    Not required if you make sure your numbers are within range (e.g. by default a modulus for fp_exptmod() can only be upto 2048 bits long)
