@@ -646,8 +646,6 @@ CLAMD_LIBS
 LIBCLAMAV_LIBS
 CFGDIR
 DBDIR
-LINK_TOMMATH_FALSE
-LINK_TOMMATH_TRUE
 ENABLE_UNRAR_FALSE
 ENABLE_UNRAR_TRUE
 LIBBZ2_PREFIX
@@ -838,7 +836,6 @@ enable_ipv6
 enable_dns
 enable_fanotify
 enable_milter
-with_system_tommath
 with_iconv
 enable_pthreads
 enable_cr
@@ -1556,7 +1553,6 @@ Optional Packages:
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
-  --with-system-tommath	link against system libtommath (default = no, use bundled)
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
@@ -17203,80 +17199,6 @@ else
 fi
 
 
-have_system_tommath=no
-
-# Check whether --with-system-tommath was given.
-if test "${with_system_tommath+set}" = set; then :
-  withval=$with_system_tommath;
-	case "$withval" in
-	yes)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for mp_mul_2d in -ltommath" >&5
-$as_echo_n "checking for mp_mul_2d in -ltommath... " >&6; }
-if ${ac_cv_lib_tommath_mp_mul_2d+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ltommath  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char mp_mul_2d ();
-int
-main ()
-{
-return mp_mul_2d ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_tommath_mp_mul_2d=yes
-else
-  ac_cv_lib_tommath_mp_mul_2d=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_tommath_mp_mul_2d" >&5
-$as_echo "$ac_cv_lib_tommath_mp_mul_2d" >&6; }
-if test "x$ac_cv_lib_tommath_mp_mul_2d" = xyes; then :
-
-
-$as_echo "#define HAVE_SYSTEM_TOMMATH 1" >>confdefs.h
-
-				LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -ltommath"
-				have_system_tommath=yes
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** Option --with-system-tommath was given but libtommath does not seem to be available, using bundled files instead" >&5
-$as_echo "$as_me: WARNING: ****** Option --with-system-tommath was given but libtommath does not seem to be available, using bundled files instead" >&2;}
-
-fi
-
-	;;
-	no) ;;
-	*) as_fn_error $? "--with-system-tommath does not take an argument" "$LINENO" 5 ;;
-	esac
-
-fi
-
- if test "x$have_system_tommath" = "xyes"; then
-  LINK_TOMMATH_TRUE=
-  LINK_TOMMATH_FALSE='#'
-else
-  LINK_TOMMATH_TRUE='#'
-  LINK_TOMMATH_FALSE=
-fi
-
-
-
 
 # Check whether --with-iconv was given.
 if test "${with_iconv+set}" = set; then :
@@ -21022,10 +20944,6 @@ if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${LINK_TOMMATH_TRUE}" && test -z "${LINK_TOMMATH_FALSE}"; then
-  as_fn_error $? "conditional \"LINK_TOMMATH\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CLAMD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23645,10 +23563,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${LINK_TOMMATH_TRUE}" && test -z "${LINK_TOMMATH_FALSE}"; then
-  as_fn_error $? "conditional \"LINK_TOMMATH\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
