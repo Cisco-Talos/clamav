@@ -747,6 +747,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
     SHA1Context ctx;
+    cli_crt *x509;
     int result;
 
     cli_dbgmsg("in asn1_parse_mscat\n");
@@ -835,22 +836,23 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    if(dsize)
 		break;
 	    if(newcerts.crts) {
-		cli_crt *x509 = newcerts.crts;
+		x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
 		    if(parent) {
 			x509->codeSign &= parent->codeSign;
 			x509->timeSign &= parent->timeSign;
-			if(crtmgr_add(cmgr, x509)) {
-			    /* FIXME handle error */
-			}
+			if(crtmgr_add(cmgr, x509))
+			    break;
 			crtmgr_del(&newcerts, x509);
 			x509 = newcerts.crts;
 			continue;
 		    }
 		    x509 = x509->next;
 		}
+		if(x509)
+		    break;
 		if(newcerts.items)
 		    cli_dbgmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
 		crtmgr_free(&newcerts);
@@ -1020,7 +1022,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE)) {
+	if(!(x509 = crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE))) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
 	    break;
 	}
@@ -1193,6 +1195,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 			deep.size = 1;
 		    else if(deep.size)
 			cli_dbgmsg("asn1_parse_mscat: extra data in countersignature signing-time\n");
+		    else if(sigdate < x509->not_before || sigdate > x509->not_after) {
+			cli_dbgmsg("asn1_parse_mscat: countersignature timestamp outside cert validity\n");
+			deep.size = 1;
+		    }
 		    break;
 		}
 	    }
@@ -1264,7 +1270,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
 	    break;
 	}
-	if(crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
+	if(!crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
 	    cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
 	    break;
 	}
@@ -1279,7 +1285,6 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
 int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     struct cli_asn1 c;
-    char *virname;
     unsigned int size;
     struct cli_matcher *db;
     int i;
@@ -1406,11 +1411,6 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
 		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
 		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
 	    }
-	    /* FIXME might as well use a static buf */
-	    virname = cli_mpool_virname(engine->mempool, "CAT", 1);
-	    if(!virname)
-		return 1;
-
 	    if(!engine->hm_fp) {
 		if(!(engine->hm_fp = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
 		    tag.size = 1;;
@@ -1420,10 +1420,8 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
 		engine->hm_fp->mempool = engine->mempool;
 #endif
 	    }
-
-	    if(hm_addhash_bin(engine->hm_fp, tagval3.content, CLI_HASH_SHA1, hashtype, virname)) {
+	    if(hm_addhash_bin(engine->hm_fp, tagval3.content, CLI_HASH_SHA1, hashtype, NULL)) {
 		cli_warnmsg("asn1_load_mscat: failed to add hash\n");
-		mpool_free(engine->mempool, (void *)virname);
 		return 1;
 	    }
 	}

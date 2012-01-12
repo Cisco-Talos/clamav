@@ -87,6 +87,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	    i->certSign |= x509->certSign;
 	    i->codeSign |= x509->codeSign;
 	    i->timeSign |= x509->timeSign;
+	    return 0;
 	}
     }
 
@@ -260,39 +261,45 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 
 
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
-    cli_crt *i = m->crts;
+    cli_crt *i = m->crts, *best = NULL;
+    int score = 0;
 
     for(i = m->crts; i; i = i->next) {
 	if(i->certSign &&
-	   (x509->codeSign & i->codeSign) == x509->codeSign &&
-	   (x509->timeSign & i->timeSign) == x509->timeSign &&
 	   !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
-	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash))
-	    return i;
+	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash)) {
+	    int curscore;
+	    if((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign)
+		return i;
+	    curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
+	    if(curscore > score) {
+		best = i;
+		score = curscore;
+	    }
+	}
     }
-    return NULL;
+    return best;
 }
 
-int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
+cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype) {
     cli_crt *i;
     mp_int sig;
     int ret;
 
     if(signature_len < 1024/8 || signature_len > 4096/8+1) {
 	cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
-       return 1;
+	return NULL;
     }
     if((ret = mp_init(&sig))) {
 	cli_errmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
-	return 1;
+	return NULL;
     }
 
     if((ret=mp_read_unsigned_bin(&sig, signature, signature_len))) {
 	cli_warnmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
-	return 1;
+	return NULL;
     }
 
-    ret = 1;
     for(i = m->crts; i; i = i->next) {
 	if(vrfytype == VRFY_CODE && !i->codeSign)
 	    continue;
@@ -300,13 +307,11 @@ int crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial,
 	    continue;
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
 	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
-	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
-	    ret = 0;
+	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash))
 	    break;
-	}
     }
     mp_clear(&sig);
-    return ret;
+    return i;
 }
 
 /* DC=com, DC=microsoft, CN=Microsoft Root Certificate Authority */
