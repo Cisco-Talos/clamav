@@ -479,9 +479,13 @@ static inline void html_tag_contents_append(struct tag_contents *cont, const uns
             if (mbchar && (c < 0x80 || mbchar >= 0x10000)) {
                 if (mbchar == 0xE38082 || mbchar == 0xEFBC8E
                     || mbchar == 0xEFB992 ||
-                    mbchar == 0xA143 || mbchar == 0xA144 ||
-                    mbchar == 0xA14F) {
+                    mbchar == 0xA1 && (c == 0x43 || c == 0x44 || c == 0x4F)) {
                     cont->contents[i++] = '.';
+                    if (mbchar == 0xA1) {
+                        --i;
+                        mbchar = 0;
+                        continue;
+                    }
                 } else {
                     uint8_t c0 = mbchar >> 16;
                     uint8_t c1 = (mbchar >> 8)&0xff;
@@ -659,6 +663,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	const unsigned char *js_begin = NULL, *js_end = NULL;
 	struct tag_contents contents;
         uint32_t mbchar = 0;
+        uint32_t mbchar2 = 0;
 
 	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
 	contents.pos = 0;
@@ -781,11 +786,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 if (*ptr < 0x80 || mbchar >= 0x10000) {
                                     if (mbchar == 0xE38082 || mbchar == 0xEFBC8E
                                         || mbchar == 0xEFB992 ||
-                                        mbchar == 0xA143 || mbchar == 0xA144 ||
-                                        mbchar == 0xA14F) {
+                                        mbchar == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F)) {
                                         /* bb #4097 */
                                         html_output_c(file_buff_o2, '.');
                                         html_output_c(file_buff_text, '.');
+                                        if (mbchar == 0xA1) {
+                                            ptr++;
+                                            mbchar = 0;
+                                            continue;
+                                        }
                                     } else {
                                         uint8_t c0 = mbchar >> 16;
                                         uint8_t c1 = (mbchar >> 8)&0xff;
@@ -1072,11 +1081,45 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						ptr++;
 					}
 				} else {
+                                    if (mbchar2 && (*ptr < 0x80 || mbchar2 >= 0x10000)) {
+                                        if (mbchar2 == 0xE38082 || mbchar2 == 0xEFBC8E
+                                            || mbchar2 == 0xEFB992 ||
+                                            mbchar2 == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F)) {
+                                            html_output_c(file_buff_o2, '.');
+                                            if (tag_val_length < HTML_STR_LENGTH)
+						tag_val[tag_val_length++] = '.';
+                                            if (mbchar2 == 0xA1) {
+                                                ptr++;
+                                                mbchar2 = 0;
+                                                continue;
+                                            }
+                                        } else {
+                                            uint8_t c0 = mbchar2 >> 16;
+                                            uint8_t c1 = (mbchar2 >> 8)&0xff;
+                                            uint8_t c2 = (mbchar2 & 0xff);
+                                            if (c0)
+                                                html_output_c(file_buff_o2, c0);
+                                            if (c0 || c1)
+                                                html_output_c(file_buff_o2, c1);
+                                            html_output_c(file_buff_o2, c2);
+                                            if (c0 && tag_val_length < HTML_STR_LENGTH)
+						tag_val[tag_val_length++] = c0;
+                                            if ((c0 || c1) && tag_val_length < HTML_STR_LENGTH)
+						tag_val[tag_val_length++] = c1;
+                                            if (tag_val_length < HTML_STR_LENGTH)
+						tag_val[tag_val_length++] = c2;
+					}
+                                        mbchar2 = 0;
+                                    }
+                                    if (*ptr >= 0x80)
+                                        mbchar2 = (mbchar2 << 8) | *ptr;
+                                    else {
 					html_output_c(file_buff_o2, tolower(*ptr));
 					if (tag_val_length < HTML_STR_LENGTH) {
 						tag_val[tag_val_length++] = *ptr;
 					}
-					ptr++;
+                                    }
+				    ptr++;
 				}
 
 				if (*ptr == '\\') {
