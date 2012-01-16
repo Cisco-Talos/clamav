@@ -78,8 +78,11 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 	if(u16 < 0xff) {
 		assert((uint8_t)u16 != 0);
 		*out++ = (uint8_t)u16;
-	} else {
-		size_t i;
+	} else if (u16 == 0x3002 || u16 == 0xFF0E || u16 == 0xFE52) {
+            /* bb #4097 */
+                *out++ = '.';
+        } else {
+                size_t i;
 		/* normalize only >255 to speed up */
 		if(limit <=  8) {
 			/* not enough space available */
