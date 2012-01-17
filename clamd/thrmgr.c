@@ -35,6 +35,7 @@
 #include "others.h"
 #include "mpool.h"
 #include "server.h"
+#include "libclamav/others.h"
 
 #ifdef HAVE_MALLINFO
 #include <malloc.h>
@@ -467,7 +468,15 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
 #if defined(C_BIGSTACK)
 	pthread_attr_getstacksize(&(threadpool->pool_attr), &stacksize);
 	stacksize = stacksize + 64 * 1024;
-	if (stacksize < 1048576) stacksize = 1048576; /* at least 1MB please */
+	if (stacksize < 1048576) /* at least 1MB please */
+#if defined(C_HPUX) && defined(USE_MPOOL)
+		/* Set aside one cli_pagesize() for the stack's pthread header,
+		 * giving a 1M region to fit a 1M large-page */
+		if(cli_getpagesize() < 1048576)
+			stacksize = 1048576 - cli_getpagesize();
+		else
+#endif
+		stacksize = 1048576;
 	logg("Set stacksize to %lu\n", (unsigned long int) stacksize);
 	pthread_attr_setstacksize(&(threadpool->pool_attr), stacksize);
 #endif

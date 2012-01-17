@@ -1,3 +1,8 @@
+Tue Jan 17 11:15:57 CET 2012 (acab)
+-----------------------------------
+ * misc: performance improvement for HP-UX PA-RISC - patch from 
+	 Michael Pelletier <michael.v.pelletier*raytheon.com> (bb#3926)
+
 Sun Jan  8 19:26:06 CET 2012 (acab)
 -----------------------------------
  * libclamav: add preliminary support for MS Authenticode signatures,

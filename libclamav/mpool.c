@@ -64,7 +64,11 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 
 #undef CL_DEBUG /* bb#2222 */
 
+#ifdef C_HPUX
+#define MIN_FRAGSIZE 1048576	/* Goes with LDFLAGS=-Wl,+pd,1M */
+#else
 #define MIN_FRAGSIZE 262144
+#endif
 
 #if SIZEOF_VOID_P==8
 static const unsigned int fragsz[] = {

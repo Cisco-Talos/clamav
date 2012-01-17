@@ -17684,6 +17684,9 @@ hpux*)
 
 $as_echo "#define C_HPUX 1" >>confdefs.h
 
+    if test "$have_mempool" = "yes"; then
+	LDFLAGS="$LDFLAGS -Wl,+pd,1M"
+    fi
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then

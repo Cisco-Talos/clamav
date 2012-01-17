@@ -1035,6 +1035,9 @@ hpux*)
 	TH_SAFE="-thread-safe"
     fi
     AC_DEFINE([C_HPUX],1,[os is hpux])
+    if test "$have_mempool" = "yes"; then
+	LDFLAGS="$LDFLAGS -Wl,+pd,1M"
+    fi
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
