@@ -550,7 +550,7 @@ int cli_scanrtf(cli_ctx *ctx)
 
 	init_rtf_state(&state);
 
-	for (offset = 0; ptr = fmap_need_off_once_len(*ctx->fmap, offset, BUFF_SIZE, &bread); offset += bread) {
+	for (offset = 0; (ptr = fmap_need_off_once_len(*ctx->fmap, offset, BUFF_SIZE, &bread)) && bread; offset += bread) {
 	    ptr_end = ptr + bread;
 	    while(ptr < ptr_end) {
 			switch(state.parse_state) {
