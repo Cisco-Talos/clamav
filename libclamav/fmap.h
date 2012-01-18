@@ -131,7 +131,7 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
 {
     const void *src;
 
-    if(at == m->len)
+    if(at == m->len || !len)
 	return 0;
     if(at > m->len)
 	return -1;
