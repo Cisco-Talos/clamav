@@ -774,7 +774,7 @@ static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 	while (rem > 0) {
 		todo = (unsigned int) MIN(8192, rem);
 		data = fmap_need_off_once_len(metadata->map, metadata->offset, todo, &count);
-		if (!data)
+		if (!data || !count)
 		    return len - rem;
 		metadata->offset += count;
 		if (cli_writen(ofd, data, count) != count) {
