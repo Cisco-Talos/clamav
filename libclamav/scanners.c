@@ -1422,7 +1422,7 @@ static int cli_scancryptff(cli_ctx *ctx)
 	return CL_ECREAT;
     }
 
-    for(; src = fmap_need_off_once_len(*ctx->fmap, pos, FILEBUFF, &bread); pos += bread) {
+    for(; (src = fmap_need_off_once_len(*ctx->fmap, pos, FILEBUFF, &bread)) && bread; pos += bread) {
 	for (i=0;i<bread;i++)
 	    dest[i] = src[i] ^ (unsigned char) 0xff;
 	if(cli_writen(ndesc, dest, bread) == -1) {
