@@ -827,6 +827,8 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
 static const char *pdf_getdict(const char *q0, int* len, const char *key);
 static char *pdf_readval(const char *q, int len, const char *key);
 static enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def);
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape);
+
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     char fullname[NAME_MAX + 1];
@@ -1002,91 +1004,53 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    break;
 
       do {
+        char *js = NULL;
+        off_t js_len = 0;
 
 	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
 	if (!q2)
 	    break;
 	bytesleft -= q2 - q;
-	do {
-	q2++;
-	bytesleft--;
-	q = pdf_nextobject(q2, bytesleft);
-	if (!q)
-	    break;
-	bytesleft -= q - q2;
-	q2 = q;
-	} while (*q == '/');
-	if (!q)
-	    break;
+        q = q2 + 11;
 
-	if (*q == '(') {
-	    const char *out, *q2, *end;
-	    long n = bytesleft;
-	    q++;
-	    n--;
-	    out = q;
-	    end = q + n;
+        js = pdf_readstring(q, bytesleft,  "/JS", NULL, &q2, !(pdf->flags & (1<<DECRYPTABLE_PDF)));
+        bytesleft -= q2 - q;
+        q = q2;
 
-	    do {
-		q2 = memchr(q, ')', n);
-		if (q2) {
-		    q2++;
-		    n -= q2 - q;
-		    q = q2;
-		}
-	    } while (n > 0 && q2 && q2[-2] == '\\');
-	    if (q2)
-		end = q2-1;
-	    n = end - out;
-	    bytesleft -= q - out;
-
-	    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
-		cli_dbgmsg("cli_pdf: encrypted string\n");
-		decrypted = decrypt_any(pdf, obj->id, out, &n,
+        if (js) {
+            const char *out = js;
+            js_len = strlen(js);
+            if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
+                cli_dbgmsg("cli_pdf: encrypted string\n");
+		decrypted = decrypt_any(pdf, obj->id, js, &js_len,
 					pdf->enc_method_string);
 		if (decrypted) {
 		    noisy_msg(pdf, "decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
 		    out = decrypted;
 		}
 	    }
-	    if (filter_writen(pdf, obj, fout, out, n, &sum) != n) {
+
+	    if (filter_writen(pdf, obj, fout, out, js_len, &sum) != js_len) {
 		rc = CL_EWRITE;
+                free(js);
 		break;
 	    }
+            free(js);
 	    cli_dbgmsg("bytesleft: %d\n", bytesleft);
-	} else if (*q == '<') {
-	    char *decoded;
-	    const char *out;
-	    long n;
-	    q2 = memchr(q+1, '>', bytesleft);
-	    if (!q2) q2 = q + bytesleft;
-	    n = q2 - q;
-	    out = q;
-	    q += n;
-	    bytesleft -= n;
-	    n--;
-	    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
-		out++;
-		n--;
-		decrypted = decrypt_any(pdf, obj->id, out, &n, pdf->enc_method_string);
-		if (decrypted) {
-		    noisy_msg(pdf, "decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
-		    out = decrypted;
-		}
-	    }
-	    decoded = cli_malloc(n);
-	    if (!decoded) {
-		rc = CL_EMEM;
-		break;
-	    }
-	    cli_hex2str_to(out, decoded, n-1);
-	    decoded[n-1] = '\0';
-	    cli_dbgmsg("cli_pdf: found hexadecimal encoded javascript in %u %u obj\n",
-		       obj->id>>8, obj->id&0xff);
-	    pdfobj_flag(pdf, obj, HEX_JAVASCRIPT);
-	    filter_writen(pdf, obj, fout, decoded, n-1, &sum);
-	    free(decoded);
-	}
+
+            q2 = pdf_nextobject(q, bytesleft);
+            if (!q2) q2 = q + bytesleft - 1;
+            /* non-conforming PDFs that don't escape ) properly */
+            const char *q3 = memchr(q, ')', bytesleft);
+            if (q3 && q3 < q2) q2 = q3;
+            while (q2 > q && q2[-1] == ' ') q2--;
+            if (q2 > q) {
+                q--;
+                filter_writen(pdf, obj, fout, q, q2 - q, &sum);
+                q++;
+            }
+        }
+
       } while (bytesleft > 0);
     } else {
 	off_t bytesleft = obj_size(pdf, obj, 0);
@@ -1236,7 +1200,6 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
     }
 }
 
-static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen);
 static int pdf_readint(const char *q0, int len, const char *key);
 
 static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
@@ -1280,7 +1243,7 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
 	char *newID;
 	pdf->flags |= 1 << ENCRYPTED_PDF;
 	pdf_parse_encrypt(pdf, enc, s + length - enc);
-	newID = pdf_readstring(s, length, "/ID", &pdf->fileIDlen);
+	newID = pdf_readstring(s, length, "/ID", &pdf->fileIDlen, NULL, 0);
 	if (newID) {
 	    free(pdf->fileID);
 	    pdf->fileID = newID;
@@ -1477,12 +1440,14 @@ static const char *pdf_getdict(const char *q0, int* len, const char *key)
     return q;
 }
 
-static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen)
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape)
 {
     char *s, *s0;
     const char *start, *q, *end;
     if (slen)
 	*slen = 0;
+    if (qend)
+        *qend = q0;
     q = pdf_getdict(q0, &len, key);
     if (!q)
 	return NULL;
@@ -1505,12 +1470,18 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 		    break;
 	    }
 	}
+        if (qend)
+            *qend = q;
 	q--;
 	len  = q - start;
 	s0 = s = cli_malloc(len + 1);
 	if (!s)
 	    return NULL;
 	end = start + len;
+        if (noescape) {
+            memcpy(s0, start, len);
+            s = s0 + len;
+        } else {
 	for (q = start;q < end;q++) {
 	    if (*q != '\\') {
 		*s++ = *q;
@@ -1564,11 +1535,13 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 			break;
 		    default:
 			/* ignore */
-			q--;
+                        *s++ = '\\';
+                        q--;
 			break;
 		}
 	    }
 	}
+        }
 	*s++ = '\0';
 	if (slen)
 	    *slen = s - s0 - 1;
@@ -1579,6 +1552,8 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 	q = memchr(q+1, '>', len);
 	if (!q)
 	    return NULL;
+        if (qend)
+            *qend = q;
 	s = cli_malloc((q - start)/2 + 1);
 	cli_hex2str_to(start, s, q - start);
 	s[(q-start)/2] = '\0';
@@ -1893,7 +1868,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 		length = 128;
 	    else {
 		n = 0;
-		UE = pdf_readstring(q, len, "/UE", &n);
+		UE = pdf_readstring(q, len, "/UE", &n, NULL, 0);
 		length = 256;
 	    }
 	}
@@ -1901,7 +1876,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	    length = 40;
 
 	n = 0;
-	O = pdf_readstring(q, len, "/O", &n);
+	O = pdf_readstring(q, len, "/O", &n, NULL, 0);
 	if (!O || n < oulen) {
 	    cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
 	    cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
@@ -1921,7 +1896,7 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	}
 
 	n = 0;
-	U = pdf_readstring(q, len, "/U", &n);
+	U = pdf_readstring(q, len, "/U", &n, NULL, 0);
 	if (!U || n < oulen) {
 	    cli_dbgmsg("cli_pdf: invalid U: %d\n", n);
 	    noisy_warnmsg("cli_pdf: invalid U: %d\n", n);
