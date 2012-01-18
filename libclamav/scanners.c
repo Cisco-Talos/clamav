@@ -2643,6 +2643,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 {
     off_t old_off = map->nested_offset;
     size_t old_len = map->len;
+    size_t old_real_len = map->real_len;
     int ret;
 
     cli_dbgmsg("cli_map_scandesc: [%ld, +%ld), [%ld, +%ld)\n",
@@ -2680,6 +2681,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     ctx->fmap--;
     map->nested_offset = old_off;
     map->len = old_len;
+    map->real_len = old_real_len;
     return ret;
 }
 
