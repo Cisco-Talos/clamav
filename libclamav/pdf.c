@@ -438,13 +438,8 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		/* mark stream as bad only if not encrypted */
 		inflateEnd(&stream);
 		if (!nbytes) {
-		    cli_dbgmsg("cli_pdf: dumping raw stream (probably encrypted)\n");
-		    noisy_warnmsg("cli_pdf: dumping raw stream, probably encrypted and we failed to decrypt'n");
-		    if (filter_writen(pdf, obj, fout, buf, len, sum) != len) {
-			cli_errmsg("cli_pdf: failed to write output file\n");
-			return CL_EWRITE;
-		    }
 		    pdfobj_flag(pdf, obj, BAD_FLATESTART);
+                    return CL_EFORMAT;
 		} else {
 		    pdfobj_flag(pdf, obj, BAD_FLATE);
 		}
@@ -870,8 +865,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     do {
     if (obj->flags & (1 << OBJ_STREAM)) {
 	const char *start = pdf->map + obj->start;
+        const char *flate_orig;
 	off_t p_stream = 0, p_endstream = 0;
-	off_t length;
+	off_t length, flate_orig_length;
 	find_stream_bounds(start, pdf->size - obj->start,
 			   pdf->size - obj->start,
 			   &p_stream, &p_endstream,
@@ -924,7 +920,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (!length)
 		length = size;
 
-	    flate_in = start + p_stream;
+	    flate_orig = flate_in = start + p_stream;
+            flate_orig_length = length;
 	    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
 		enum enc_method enc = get_enc_method(pdf, obj);
 		if (obj->flags & (1 << OBJ_FILTER_CRYPT)) {
@@ -988,6 +985,18 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (obj->flags & (1 << OBJ_FILTER_FLATE)) {
 		cli_dbgmsg("cli_pdf: deflate len %ld (orig %ld)\n", ascii_decoded_size, (long)orig_length);
 		rc = filter_flatedecode(pdf, obj, flate_in, ascii_decoded_size, fout, &sum);
+                if (rc == CL_EFORMAT) {
+                    if (decrypted) {
+                        flate_in = flate_orig;
+                        ascii_decoded_size = flate_orig_length;
+                    }
+		    cli_dbgmsg("cli_pdf: dumping raw stream (probably encrypted)\n");
+		    noisy_warnmsg("cli_pdf: dumping raw stream, probably encrypted and we failed to decrypt'n");
+		    if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size) {
+			cli_errmsg("cli_pdf: failed to write output file\n");
+			return CL_EWRITE;
+		    }
+                }
 	    } else {
 		if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
 		    rc = CL_EWRITE;
@@ -1006,6 +1015,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
       do {
         char *js = NULL;
         off_t js_len = 0;
+        const char *q3;
 
 	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
 	if (!q2)
@@ -1041,7 +1051,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
             q2 = pdf_nextobject(q, bytesleft);
             if (!q2) q2 = q + bytesleft - 1;
             /* non-conforming PDFs that don't escape ) properly */
-            const char *q3 = memchr(q, ')', bytesleft);
+            q3 = memchr(q, ')', bytesleft);
             if (q3 && q3 < q2) q2 = q3;
             while (q2 > q && q2[-1] == ' ') q2--;
             if (q2 > q) {
