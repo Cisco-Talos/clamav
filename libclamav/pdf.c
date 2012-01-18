@@ -1034,7 +1034,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		    n -= q2 - q;
 		    q = q2;
 		}
-	    } while (n > 0 && q2 && q2[-1] == '\\');
+	    } while (n > 0 && q2 && q2[-2] == '\\');
 	    if (q2)
 		end = q2-1;
 	    n = end - out;
