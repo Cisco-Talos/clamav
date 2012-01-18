@@ -64,8 +64,10 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
 	size_t pos = 0;
+        char zero[BLOCKSIZE];
 
 	cli_dbgmsg("In untar(%s)\n", dir);
+        memset(zero, 0, sizeof(zero));
 
 	for(;;) {
 	        const char *block;
@@ -75,6 +77,9 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
 		if(!in_block && !nread)
 			break;
+
+                if (!nread)
+                    block = zero;
 
 		if(!block) {
 			if(fout>=0)
@@ -202,12 +207,17 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
 			in_block = 1;
 		} else { /* write or continue writing file contents */
-			const int nbytes = size>512? 512:size;
-			const int nwritten = (int)write(fout, block, (size_t)nbytes);
+                        int nbytes, nwritten;
+                        char err[128];
+
+			nbytes = size>512? 512:size;
+                        if (nread && nread < nbytes)
+                            nbytes = nread;
+			nwritten = (int)cli_writen(fout, block, (size_t)nbytes);
 
 			if(nwritten != nbytes) {
-				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
-					nwritten, fullname);
+				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?): %s\n",
+					nwritten, fullname, cli_strerror(errno, err, sizeof(err)));
 				close(fout);
 				return CL_EWRITE;
 			}
