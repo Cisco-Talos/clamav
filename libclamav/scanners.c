@@ -2648,7 +2648,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 
     cli_dbgmsg("cli_map_scandesc: [%ld, +%ld), [%ld, +%ld)\n",
 	       old_off, old_len, offset, length);
-    if (offset < 0 || offset >= length) {
+    if (offset < 0 || offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
