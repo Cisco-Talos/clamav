@@ -862,7 +862,6 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
 	    if ((fullname = cli_ppt_vba_read(fd, ctx))) {
-		hasmacros++;
 		if(cli_scandir(fullname, ctx) == CL_VIRUS) {
 		    ret = CL_VIRUS;
 		}
@@ -889,7 +888,6 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    for (i = 0; i < vba_project->count; i++) {
 		cli_dbgmsg("VBADir: Decompress WM project macro:%d key:%d length:%d\n", i, vba_project->key[i], vba_project->length[i]);
 		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
-		hasmacros++;
 		if(!data) {
 			cli_dbgmsg("VBADir: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
 		} else {

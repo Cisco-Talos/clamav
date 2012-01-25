@@ -1,3 +1,7 @@
+Wed Jan 25 18:56:44 CET 2012 (tk)
+---------------------------------
+ * libclamav: fix macro detection in OLE2BlockMacros (bb#4269)
+
 Thu Dec  1 15:07:49 CET 2011 (tk)
 ---------------------------------
  * libclamav/readdb.c: allow comments in all db files (bb#3930)
