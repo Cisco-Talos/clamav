@@ -1,3 +1,7 @@
+Tue Feb  7 23:23:48 CET 2012 (tk)
+---------------------------------
+ * libclamav: fix bytecode whitelisting
+
 Wed Jan 25 18:56:44 CET 2012 (tk)
 ---------------------------------
  * libclamav: fix macro detection in OLE2BlockMacros (bb#4269)

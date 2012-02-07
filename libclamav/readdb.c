@@ -1196,7 +1196,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
   } while(0);
 
 #define LDB_TOKENS 67
-static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy)
+static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
@@ -1218,8 +1218,11 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     if (chkpua && cli_chkpua(virname, engine->pua_cats, options))
 	    return CL_SUCCESS;
 
-    if (chkign && cli_chkign(engine->ignored, virname, buffer_cpy))
+    if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy ? buffer_cpy : virname)) {
+	if(skip)
+	    *skip = 1;
 	return CL_SUCCESS;
+    }
 
     if(engine->cb_sigload && engine->cb_sigload("ldb", virname, engine->cb_sigload_ctx)) {
 	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
@@ -1388,8 +1391,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    strcpy(buffer_cpy, buffer);
 	ret = load_oneldb(buffer,
 			  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
-			  !!engine->ignored,
-			  engine, options, dbname, line, &sigs, 0, buffer_cpy);
+			  engine, options, dbname, line, &sigs, 0, buffer_cpy, NULL);
 	if (ret)
 	    break;
     }
@@ -1415,7 +1417,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
     char buf[4096];
-    int rc;
+    int rc, skip = 0;
     struct cli_all_bc *bcs = &engine->bcs;
     struct cli_bc *bc;
     unsigned sigs = 0;
@@ -1476,7 +1478,6 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     bc->id = bcs->count;/* must set after _load, since load zeroes */
     if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
 	cli_infomsg(NULL, "bytecode %u -> %s\n", bc->id, dbname);
-    sigs++;
     if (bc->kind == BC_LOGICAL || bc->lsig) {
         unsigned oldsigs = sigs;
 	if (!bc->lsig) {
@@ -1484,11 +1485,16 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    return CL_EMALFDB;
 	}
 	cli_dbgmsg("Bytecode %s(%u) has logical signature: %s\n", dbname, bc->id, bc->lsig);
-	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bcs->count, NULL);
+	rc = load_oneldb(bc->lsig, 0, engine, options, dbname, 0, &sigs, bcs->count, NULL, &skip);
 	if (rc != CL_SUCCESS) {
 	    cli_errmsg("Problem parsing logical signature %s for bytecode %s: %s\n",
 		       bc->lsig, dbname, cl_strerror(rc));
 	    return rc;
+	}
+	if (skip) {
+	    cli_bytecode_destroy(bc);
+	    bcs->count--;
+	    return CL_SUCCESS;
 	}
         if (sigs != oldsigs) {
           /* compiler ensures Engine field in lsig matches the one in bytecode,
@@ -1497,6 +1503,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
           return CL_EMALFDB;
         }
     }
+    sigs++;
     if (bc->kind != BC_LOGICAL) {
 	if (bc->lsig) {
 	    /* runlsig will only flip a status bit, not report a match,
