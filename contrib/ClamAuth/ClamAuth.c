@@ -29,7 +29,7 @@ static lck_grp_t *  gLockGroup = NULL;
 struct AuthEvent {
     UInt32 pid;
     UInt32 action;
-    char path[MAXPATHLEN + 1];
+    char path[1024];
 };
 
 #define EVENTQSIZE 64
@@ -71,6 +71,11 @@ struct AuthEventQueue gEventQueue;
 static lck_mtx_t *gEventQueueLock = NULL;
 static SInt32 gEventCount = 0;
 
+#define MAX_PREFIX_NUM 10
+#define MAX_PREFIX_LEN 128
+static char gPrefixTable[MAX_PREFIX_NUM][MAX_PREFIX_LEN];
+static unsigned int gPrefixCount = 0;
+
 static int CreateVnodePath(vnode_t vp, char **vpPathPtr)
     /* Creates a full path for a vnode.  vp may be NULL, in which 
      * case the returned path is NULL (that is, no memory is allocated).
@@ -105,7 +110,7 @@ static int CreateVnodePath(vnode_t vp, char **vpPathPtr)
 /* Some scopes (for example KAUTH_SCOPE_VNODE) are called a /lot/.  Thus, 
  * it's a good idea to avoid taking mutexes in your listener if at all 
  * possible.  Thus, we use non-blocking synchronisation to protect the 
- * global data that's accessed by our listener (gPrefix and gListenerScope).  
+ * global data that's accessed by our listener (gPrefix).  
  * Every time we enter a listener, we increment gActivationCount, and ever 
  * time we leave we decrement it.  When we want to change the listener, we 
  * first remove the listener, then we wait for the activation count to hit, 
@@ -117,11 +122,6 @@ static int CreateVnodePath(vnode_t vp, char **vpPathPtr)
  */
 
 static SInt32 gActivationCount = 0;
-
-static const char * gPrefix = NULL;         /* points into gConfiguration, so doesn't need to be freed */
-
-static char * gListenerScope = NULL;        /* must be freed using OSFree */
-
 
 static int VnodeScopeListener(
     kauth_cred_t    credential,
@@ -144,6 +144,7 @@ static int VnodeScopeListener(
     char *          vpPath;
     char *          dvpPath;
     struct AuthEvent event;
+    unsigned int    i, mpath = 0;
         
     (void) OSIncrementAtomic(&gActivationCount);
 
@@ -161,23 +162,23 @@ static int VnodeScopeListener(
     if (err == 0)
         err = CreateVnodePath(dvp, &dvpPath);
 
-    /*
-    if(action & CLAMAUTH_EVENTS) {
-        printf("gPrefix: %s, vpPath: %s, dvpPath: %s\n", gPrefix, vpPath ? vpPath : "<null>", dvpPath ? dvpPath : "<null>");
-    }
-    */
-
     /* Tell the user about this request.  Note that we filter requests 
      * based on gPrefix.  If gPrefix is set, only requests where one 
      * of the paths is prefixed by gPrefix will be printed.
      */    
     if (err == 0) {
-        if (  (gPrefix == NULL) 
-           || (  ( (vpPath != NULL)  && strprefix(vpPath, gPrefix) ) 
-              || ( (dvpPath != NULL) && strprefix(dvpPath, gPrefix) ) 
-              ) 
-           ) {
-               if(action & CLAMAUTH_EVENTS)
+        for(i = 0; i < gPrefixCount; i++) {
+            if(vpPath && strprefix(vpPath, gPrefixTable[i])) {
+                mpath = 1;
+            } else if(dvpPath && strprefix(dvpPath, gPrefixTable[i])) {
+                mpath = 1;
+            }
+            if(mpath)
+                break;
+        }
+
+        if (mpath) {
+            if(action & CLAMAUTH_EVENTS)
                    printf(
                 "scope=" KAUTH_SCOPE_VNODE ", uid=%ld, vp=%s, dvp=%s\n", 
                 (long) kauth_cred_getuid(vfs_context_ucred(context)),
@@ -185,7 +186,7 @@ static int VnodeScopeListener(
                 (dvpPath != NULL) ? dvpPath : "<null>"
             );
             
-            event.pid = vfs_context_pid(context);
+            event.pid = vfs_context_pid(context);    
             event.action = action;
             if(vpPath) {
                 strncpy(event.path, vpPath, sizeof(event.path));
@@ -214,6 +215,59 @@ static int VnodeScopeListener(
 
     (void) OSDecrementAtomic(&gActivationCount);
 
+    return KAUTH_RESULT_DEFER;
+}
+
+static int FileOpScopeListener(
+                               kauth_cred_t    credential,
+                               void *          idata,
+                               kauth_action_t  action,
+                               uintptr_t       arg0,
+                               uintptr_t       arg1,
+                               uintptr_t       arg2,
+                               uintptr_t       arg3
+                               )
+/* A Kauth listener that's called to authorize an action in the file operation */
+{
+#pragma unused(credential)
+#pragma unused(idata)
+#pragma unused(arg2)
+#pragma unused(arg3)
+    struct AuthEvent event;
+    vfs_context_t   context;
+    const char *path;
+    unsigned int i, mpath = 0;
+
+    context = (vfs_context_t) arg0;
+    path = (const char *) arg1;
+
+    (void) OSIncrementAtomic(&gActivationCount);
+
+    switch (action) {
+        /* case KAUTH_FILEOP_OPEN: */
+        case KAUTH_FILEOP_EXEC:
+            for(i = 0; i < gPrefixCount; i++) {
+                if(strprefix((const char *) arg1, gPrefixTable[i])) {
+                    mpath = 1;
+                    break;
+                }
+            }
+            if(mpath) {
+                event.pid = vfs_context_pid(context);
+                event.action = action;
+                strncpy(event.path, path, sizeof(event.path));
+                event.path[sizeof(event.path) - 1] = 0;
+                lck_mtx_lock(gEventQueueLock);
+                AuthEventEnqueue(&gEventQueue, &event);
+                lck_mtx_unlock(gEventQueueLock);
+            }
+            break;
+        default:
+            break;
+    }
+    
+    (void) OSDecrementAtomic(&gActivationCount);
+    
     return KAUTH_RESULT_DEFER;
 }
 
@@ -283,20 +337,9 @@ static void RemoveListener(void)
 
         (void) msleep(&gActivationCount, NULL, PUSER, "com_apple_dts_kext_ClamAuth.RemoveListener", &oneSecond);
     } while ( gActivationCount > 0 );
-    
-    /* gListenerScope and gPrefix are both accessed by the listener callbacks 
-     * without taking any form of lock.  So, we don't destroy them until after 
-     * all the listener callbacks have drained.
-     */
-    
-    if (gListenerScope != NULL) {
-        OSFree(gListenerScope, strlen(gListenerScope) + 1, gMallocTag);
-        gListenerScope = NULL;
-    }
-    gPrefix = NULL;
 }
 
-static void InstallListener(const char *scope, size_t scopeLen, const char *prefix)
+static void InstallListener(void)
     /* Installs a listener for the specified scope.  scope and scopeLen specifies 
      * the scope to listen for.  prefix is a parameter for the scope listener. 
      * It may be NULL.
@@ -309,45 +352,16 @@ static void InstallListener(const char *scope, size_t scopeLen, const char *pref
      *
      * This routine always runs under the gConfigurationLock.
      */
-{    
-    assert(scope != NULL);
-    assert(scopeLen > 0);
-    
-    /* Allocate memory for the scope string.  We need to keep a persistent 
-     * copy of this string because kauth_listen_scope doesn't make a copy of 
-     * its scope identifier input parameter.  Normally you'd use a constant 
-     * string, which persists as long as the kext is loaded, but I can't do 
-     * that because the scope identifier is supplied by the user via sysctl.
-     */
-    
-    assert(gListenerScope == NULL);
-    
-    gListenerScope = OSMalloc(scopeLen + 1, gMallocTag);
-    if (gListenerScope == NULL) {
-        printf("ClamAuth.InstallListener: Could not allocate gListenerScope.\n");
-    } else {
-        memcpy(gListenerScope, scope, scopeLen);
-        gListenerScope[scopeLen] = 0;
+{   
 
-        /* Copy the prefix pointer over to gPrefix. */        
-        assert(gPrefix == NULL);
-
-        gPrefix = prefix;
-                assert(gListener == NULL);
-        
-        gListener = kauth_listen_scope(gListenerScope, VnodeScopeListener, NULL);
-        if (gListener == NULL) {
-            printf("ClamAuth.InstallListener: Could not create gListener.\n");
-        } else {
-            printf("ClamAuth: Installed vnode listener\n");
-        }
-    }
-    
-    /* In the event of any failure, call RemoveListener which will 
-     * do all the right cleanup.
-     */    
-    if ( gListenerScope == NULL || gListener == NULL ) {
+    assert(gListener == NULL);
+    //gListener = kauth_listen_scope(KAUTH_SCOPE_VNODE, VnodeScopeListener, NULL);
+    gListener = kauth_listen_scope(KAUTH_SCOPE_FILEOP, FileOpScopeListener, NULL);
+    if (gListener == NULL) {
+        printf("ClamAuth.InstallListener: Could not create gListener.\n");
         RemoveListener();
+    } else {
+        printf("ClamAuth: Installed file listener\n");
     }
 }
 
@@ -362,6 +376,7 @@ static void ConfigureKauth(const char *configuration)
      * This routine always runs under the gConfigurationLock.
      */
 {
+    unsigned int i = 0;
     assert(configuration != NULL);
     
     /* Remove the existing listener. */
@@ -370,47 +385,49 @@ static void ConfigureKauth(const char *configuration)
     /* Parse the configuration string and install the new listener. */
     if (strcmp(configuration, "remove") == 0) {
         printf("ClamAuth.ConfigureKauth: Removed listener.\n");
-    } else if ( strprefix(configuration, "add ") ) {
+    } else if ( strprefix(configuration, "monitor ") ) {
         const char *cursor;
-        const char *scopeStart;
-        const char *scopeEnd;
-        const char *prefixStart;
         
-        /* Skip the "add ". */        
-        cursor = configuration + strlen("add ");
-        
-        /* Work out the span of the scope. */        
-        scopeStart = cursor;
-        while ( (*cursor != ' ') && (*cursor != 0) ) {
-            cursor += 1;
-        }
-        scopeEnd = cursor;
-        
-        if (scopeStart == scopeEnd) {
+        /* Skip the "monitor ". */        
+        cursor = configuration + strlen("monitor ");
+
+        gPrefixCount = 0;
+        while(*cursor == ' ')
+            cursor++;
+
+        if (!*cursor) {
             printf("ClamAuth.ConfigureKauth: Bad configuration '%s'.\n", configuration);
-        } else {
-
-            /* Look for a prefix. */
-            if (*cursor == ' ') {
-                cursor += 1;
-            }
-            if (*cursor == 0) {
-                prefixStart = NULL;
-            } else {
-                prefixStart = cursor;
-            }
-            
-            /* Tell the user what we're doing. */            
-            if (prefixStart == NULL) {
-                printf("ClamAuth.ConfigureKauth: scope = %.*s\n", (int) (scopeEnd - scopeStart), scopeStart);
-            } else {
-                printf("ClamAuth.ConfigureKauth: scope = %.*s, prefix = %s\n", (int) (scopeEnd - scopeStart), scopeStart, prefixStart);
-            }
-
-            InstallListener(scopeStart, scopeEnd - scopeStart, prefixStart);
+            return;
         }
-    } else {
-        printf("ClamAuth.ConfigureKauth: Bad configuration '%s'.\n", configuration);
+
+        while(1) {
+            if(i < MAX_PREFIX_LEN - 1) {
+                if(*cursor == ' ') {
+                    gPrefixTable[gPrefixCount][i] = 0;
+                    gPrefixCount++;
+                    i = 0;
+                    if(gPrefixCount >= MAX_PREFIX_NUM) {
+                        printf("ClamAuth.ConfigureKauth: Too many paths (> %u).\n", MAX_PREFIX_NUM);
+                        gPrefixCount = 0;
+                        return;  
+                    }
+                } else {
+                    gPrefixTable[gPrefixCount][i++] = *cursor;
+                }
+            } else {
+                printf("ClamAuth.ConfigureKauth: Path too long (%u > %u).\n", i, MAX_PREFIX_LEN);
+                gPrefixCount = 0;
+                return;
+            }
+            cursor++;
+            if(!*cursor) {
+                gPrefixTable[gPrefixCount][i] = 0;
+                gPrefixCount++;
+                break;
+            }
+        }
+        printf("ClamAuth.ConfigureKauth: Monitoring %u path(s)\n", gPrefixCount);
+        InstallListener();
     }
 }
 
@@ -419,6 +436,7 @@ static void ConfigureKauth(const char *configuration)
  */
 
 static char gConfiguration[1024];
+
 
 static int SysctlHandler(
     struct sysctl_oid * oidp, 
@@ -509,7 +527,6 @@ static int ca_read(dev_t dev, uio_t uio, int ioflag)
 {
     int ret = 0, size, retq = 0;
     struct AuthEvent event;
-    char info[MAXPATHLEN + 128];
     struct timespec waittime;
 
     waittime.tv_sec  = 1;
@@ -519,9 +536,9 @@ static int ca_read(dev_t dev, uio_t uio, int ioflag)
         retq = AuthEventDequeue(&gEventQueue, &event);
         lck_mtx_unlock(gEventQueueLock);
         if(retq != 1) {
-            snprintf(info, sizeof(info), "PATH: %s, PID: %d, ACTION: %d\n", event.path, event.pid, event.action);
-            size = MIN(uio_resid(uio), ((long long) strlen(info)));
-            ret = uiomove(info, size, uio);
+            /* snprintf(info, sizeof(info), "PATH: %s, PID: %d, ACTION: %d\n", event.path, event.pid, event.action); */
+            size = MIN(uio_resid(uio), sizeof(event));
+            ret = uiomove((const char *) &event, size, uio);
             if(ret)
                 break;
         }  else {
