@@ -16,6 +16,9 @@
 #include <sys/conf.h>
 #include <miscfs/devfs/devfs.h>
 
+#define CLAMAUTH_VERSION            "0.3"
+#define CLAMAUTH_PROTOCOL_VERSION    2
+
 #pragma mark ***** Global Resources
 /* These declarations are required to allocate memory and create locks.
  * They're created when we start and destroyed when we stop.
@@ -27,9 +30,11 @@ static lck_grp_t *  gLockGroup = NULL;
 #define CLAMAUTH_EVENTS (KAUTH_VNODE_EXECUTE)
 
 struct AuthEvent {
-    UInt32 pid;
+    /* don't change the first two fields */
     UInt32 action;
     char path[1024];
+    UInt32 pid;
+
 };
 
 #define EVENTQSIZE 64
@@ -104,6 +109,108 @@ static int CreateVnodePath(vnode_t vp, char **vpPathPtr)
     
     return err;
 }
+
+/* /dev/clamauth handling */
+
+static int ca_devidx = -1;
+static void *ca_devnode = NULL;
+int dev_open = 0, dev_read = 0;
+
+static int ca_open(dev_t dev, int flag, int devtype, proc_t p)
+{
+    if(dev_open)
+        return EBUSY;
+    
+    dev_open = 1;
+    
+    return 0;
+}
+
+static int ca_close(dev_t dev, int flag, int devtype, proc_t p)
+{
+    dev_open = 0;
+    return 0;
+}
+
+static int ca_read(dev_t dev, uio_t uio, int ioflag)
+{
+    int ret = 0, size, retq = 0;
+    struct AuthEvent event;
+    struct timespec waittime;
+    
+    waittime.tv_sec  = 1;
+    waittime.tv_nsec = 0;
+    while(uio_resid(uio) > 0) {
+        lck_mtx_lock(gEventQueueLock);
+        retq = AuthEventDequeue(&gEventQueue, &event);
+        dev_read = 1;
+        lck_mtx_unlock(gEventQueueLock);
+        if(retq != 1) {
+            /* snprintf(info, sizeof(info), "PATH: %s, PID: %d, ACTION: %d\n", event.path, event.pid, event.action); */
+            size = MIN(uio_resid(uio), sizeof(event));
+            ret = uiomove((const char *) &event, size, uio);
+            if(ret)
+                break;
+        }  else {
+            //(void) msleep(&gEventQueue, NULL, PUSER, "events", &waittime);
+            break;
+        }
+    }
+    
+    if(ret) {
+        printf("ClamAuth: uiomove() failed\n");
+    }
+    
+    return ret;
+}
+
+static int ca_write(dev_t dev, uio_t uio, int ioflag)
+{
+    return EBADF;
+}
+
+static int ca_ioctl(dev_t dev, u_long cmd, caddr_t addr, int flag, proc_t p)
+{
+    return EBADF;
+}
+
+static int ca_select(dev_t dev, int flag, void * wql, proc_t p)
+{
+    return EBADF;
+}
+
+static struct cdevsw clamauth_cdevsw = {
+    ca_open,
+    ca_close,
+    ca_read,
+    ca_write,
+    ca_ioctl,
+    eno_stop,
+    eno_reset,
+    NULL,
+    ca_select,
+    eno_mmap,
+    eno_strat,
+    eno_getc,
+    eno_putc,
+    0
+};
+
+static int ca_remove(void)
+{
+    if(ca_devnode)
+        devfs_remove(ca_devnode);
+    
+    if(ca_devidx != -1) {
+        if(cdevsw_remove(ca_devidx, &clamauth_cdevsw) != ca_devidx) {
+            printf("ClamAuth: cdevsw_remove() failed\n");
+            return KERN_FAILURE;
+        }
+    }
+    
+    return KERN_SUCCESS;
+}
+
 
 #pragma mark ***** Listener Resources
 
@@ -195,7 +302,7 @@ static int VnodeScopeListener(
                 event.path[0] = 0;
             }
             lck_mtx_lock(gEventQueueLock);
-            if(action & CLAMAUTH_EVENTS) {
+            if(dev_read && (action & CLAMAUTH_EVENTS)) {
                 // printf("gPrefix: %s, vpPath: %s, dvpPath: %s, action: %d\n", gPrefix, vpPath ? vpPath : "<null>", dvpPath ? dvpPath : "<null>", action);
                 AuthEventEnqueue(&gEventQueue, &event);
             }
@@ -238,6 +345,9 @@ static int FileOpScopeListener(
     const char *path;
     unsigned int i, mpath = 0;
 
+    if(!dev_read)
+        return KAUTH_RESULT_DEFER;
+
     context = (vfs_context_t) arg0;
     path = (const char *) arg1;
 
@@ -267,7 +377,7 @@ static int FileOpScopeListener(
     }
     
     (void) OSDecrementAtomic(&gActivationCount);
-    
+
     return KAUTH_RESULT_DEFER;
 }
 
@@ -501,105 +611,6 @@ SYSCTL_OID(
 static boolean_t gRegisteredOID = FALSE;
 
 
-/* /dev/clamauth handling */
-
-static int ca_devidx = -1;
-static void *ca_devnode = NULL;
-int dev_open = 0;
-
-static int ca_open(dev_t dev, int flag, int devtype, proc_t p)
-{
-    if(dev_open)
-        return EBUSY;
-
-    dev_open = 1;
-
-    return 0;
-}
-
-static int ca_close(dev_t dev, int flag, int devtype, proc_t p)
-{
-    dev_open = 0;
-    return 0;
-}
-
-static int ca_read(dev_t dev, uio_t uio, int ioflag)
-{
-    int ret = 0, size, retq = 0;
-    struct AuthEvent event;
-    struct timespec waittime;
-
-    waittime.tv_sec  = 1;
-    waittime.tv_nsec = 0;
-    while(uio_resid(uio) > 0) {
-        lck_mtx_lock(gEventQueueLock);
-        retq = AuthEventDequeue(&gEventQueue, &event);
-        lck_mtx_unlock(gEventQueueLock);
-        if(retq != 1) {
-            /* snprintf(info, sizeof(info), "PATH: %s, PID: %d, ACTION: %d\n", event.path, event.pid, event.action); */
-            size = MIN(uio_resid(uio), sizeof(event));
-            ret = uiomove((const char *) &event, size, uio);
-            if(ret)
-                break;
-        }  else {
-        //(void) msleep(&gEventQueue, NULL, PUSER, "events", &waittime);
-            break;
-        }
-    }
-
-    if(ret) {
-        printf("ClamAuth: uiomove() failed\n");
-    }
-
-    return ret;
-}
-
-static int ca_write(dev_t dev, uio_t uio, int ioflag)
-{
-    return EBADF;
-}
-
-static int ca_ioctl(dev_t dev, u_long cmd, caddr_t addr, int flag, proc_t p)
-{
-    return EBADF;
-}
-
-static int ca_select(dev_t dev, int flag, void * wql, proc_t p)
-{
-    return EBADF;
-}
-
-static struct cdevsw clamauth_cdevsw = {
-    ca_open,
-    ca_close,
-    ca_read,
-    ca_write,
-    ca_ioctl,
-    eno_stop,
-    eno_reset,
-    NULL,
-    ca_select,
-    eno_mmap,
-    eno_strat,
-    eno_getc,
-    eno_putc,
-    0
-};
-
-static int ca_remove(void)
-{
-    if(ca_devnode)
-        devfs_remove(ca_devnode);
-
-    if(ca_devidx != -1) {
-        if(cdevsw_remove(ca_devidx, &clamauth_cdevsw) != ca_devidx) {
-            printf("ClamAuth: cdevsw_remove() failed\n");
-            return KERN_FAILURE;
-        }
-    }
-
-    return KERN_SUCCESS;
-}
 
 #pragma mark ***** Start/Stop
 
@@ -613,6 +624,7 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_start(kmod_info_t * ki, void * 
     #pragma unused(ki)
     #pragma unused(d)
     kern_return_t   err;
+    struct AuthEvent event;
 
     ca_devidx = cdevsw_add(-1, &clamauth_cdevsw);
     if(ca_devidx == -1) {
@@ -657,6 +669,12 @@ extern kern_return_t com_apple_dts_kext_ClamAuth_start(kmod_info_t * ki, void * 
         }
     }
     AuthEventInitQueue(&gEventQueue);
+
+    /* Initialize event queue and add version info event */
+    event.action = CLAMAUTH_PROTOCOL_VERSION;
+    strncpy(event.path, "ClamAuth "CLAMAUTH_VERSION"", sizeof(event.path));
+    event.pid = 0xdeadbeef;
+    AuthEventEnqueue(&gEventQueue, &event);
 
     /* Register our sysctl handler. */    
     if (err == KERN_SUCCESS) {
