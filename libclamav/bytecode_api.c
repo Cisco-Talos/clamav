@@ -439,10 +439,10 @@ uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
     return v;
 }
 
-int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section* section, uint32_t num)
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, void* section, uint32_t num)
 {
     if (num < ctx->hooks.pedata->nsections) {
-	memcpy(section, &ctx->sections[num], sizeof(*section));
+	memcpy(section, &ctx->sections[num], sizeof(struct cli_exe_section));
 	return 0;
     }
     return -1;

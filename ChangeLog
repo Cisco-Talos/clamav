@@ -1,3 +1,7 @@
+Wed Feb 29 17:02:18 EET 2012 (edwin)
+------------------------------------
+ * libclamav/bytecode_api*: Fix Sparc crash (bb #4324)
+
 Tue Feb  7 23:23:48 CET 2012 (tk)
 ---------------------------------
  * libclamav: fix bytecode whitelisting
