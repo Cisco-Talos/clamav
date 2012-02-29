@@ -1,3 +1,9 @@
+Wed Feb 29 18:35:45 CET 2012 (acab)
+-----------------------------------
+ * libclamav/bytecode.c: reset to BYTECODE_AUTO mode at db reload so that
+			 we don't fail to re-enable or re-disable it again
+			 (bb#3789)
+
 Wed Feb 29 17:02:18 EET 2012 (edwin)
 ------------------------------------
  * libclamav/bytecode_api*: Fix Sparc crash (bb #4324)

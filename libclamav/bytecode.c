@@ -2420,6 +2420,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	return CL_SUCCESS;
     }
 
+    engine->bytecode_mode = CL_BYTECODE_MODE_AUTO;
     cli_detect_environment(&bcs->env);
     switch (bcs->env.arch) {
 	case arch_i386:
