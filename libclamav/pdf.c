@@ -1268,7 +1268,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     const char *q2, *q3, *q4;
     const char *q = obj->start + pdf->map;
     const char *dict, *start;
-    off_t dict_length;
+    off_t dict_length, full_dict_length;
     off_t bytesleft = obj_size(pdf, obj, 1);
     unsigned i, filters=0;
     enum objstate objstate = STATE_NONE;
@@ -1319,7 +1319,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     } while (!q4 || q4[1] != '>');
     if (!q4) q4 = q3;
     obj->flags |= 1 << OBJ_DICT;
-    dict_length = q4 - dict;
+    full_dict_length = dict_length = q4 - dict;
 
     /*  process pdf names */
     for (q = dict;dict_length > 0;) {
@@ -1354,7 +1354,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    long trailer_end, trailer;
 	    pdfobj_flag(pdf, obj, LINEARIZED_PDF);
 	    objstate = STATE_NONE;
-	    trailer_end = pdf_readint(q, dict_length, "/H");
+	    trailer_end = pdf_readint(dict, full_dict_length, "/H");
 	    if (trailer_end > 0 && trailer_end < pdf->size) {
 		const char *enc;
 		trailer = trailer_end - 1024;
