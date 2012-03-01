@@ -709,7 +709,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	unsigned int selfchk;
 	threadpool_t *thr_pool;
 
-#ifdef FANOTIFY
+#if defined(FANOTIFY) || defined(CLAMAUTH)
 	pthread_t fan_pid;
 	pthread_attr_t fan_attr;
 	struct thrarg *tharg = NULL; /* shut up gcc */
@@ -1005,7 +1005,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     acceptdata.max_queue = max_queue;
 
     if(optget(opts, "ScanOnAccess")->enabled)
-#ifdef FANOTIFY
+#if defined(FANOTIFY) || defined(CLAMAUTH)
     {
         do {
 	    if(pthread_attr_init(&fan_attr)) break;
@@ -1284,7 +1284,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef FANOTIFY
+#if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		logg("Restarting on-access scan\n");
 		pthread_kill(fan_pid, SIGUSR1);
@@ -1303,7 +1303,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    reload = 0;
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef FANOTIFY
+#if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		tharg->engine = engine;
 		pthread_create(&fan_pid, &fan_attr, fan_th, tharg);
@@ -1330,7 +1330,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
      */
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
-#ifdef FANOTIFY
+#if defined(FANOTIFY) || defined(CLAMAUTH)
     if(optget(opts, "ScanOnAccess")->enabled) {
 	logg("Stopping on-access scan\n");
 	pthread_kill(fan_pid, SIGUSR1);
