@@ -247,6 +247,8 @@ void *fan_th(void *arg)
 
 #define SUPPORTED_PROTOCOL  2
 
+static int cauth_fd = -1;
+
 struct ClamAuthEvent {
     unsigned int action;
     char path[1024];
@@ -256,6 +258,8 @@ struct ClamAuthEvent {
 static void cauth_exit(int sig)
 {
     logg("*ScanOnAccess: cauth_exit(), signal %d\n", sig);
+    if(cauth_fd > 0)
+	close(cauth_fd);
     pthread_exit(NULL);
     logg("ScanOnAccess: stopped\n");
 }
@@ -291,7 +295,7 @@ void *fan_th(void *arg)
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
         struct sigaction act;
-	int fd, eventcnt = 1, extinfo;
+	int eventcnt = 1, extinfo;
 	char err[128];
 	struct ClamAuthEvent event;
 
@@ -315,8 +319,8 @@ void *fan_th(void *arg)
 
     extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
 
-    fd = open("/dev/clamauth", O_RDONLY);
-    if(fd == -1) {
+    cauth_fd = open("/dev/clamauth", O_RDONLY);
+    if(cauth_fd == -1) {
 	logg("!ScanOnAccess: Can't open /dev/clamauth\n");
 	if(errno == ENOENT)
 	    logg("!ScanOnAccess: Please make sure ClamAuth.kext is loaded\n");
@@ -329,16 +333,16 @@ void *fan_th(void *arg)
     }
 
     while(1) {
-	if(read(fd, &event, sizeof(event)) > 0) {
+	if(read(cauth_fd, &event, sizeof(event)) > 0) {
 	    if(eventcnt == 1) {
 		if(event.action != SUPPORTED_PROTOCOL) {
 		    logg("!ScanOnAccess: Protocol version mismatch (tool: %d, driver: %d)\n", SUPPORTED_PROTOCOL, event.action);
-		    close(fd);
+		    close(cauth_fd);
 		    return NULL;
 		}
 		if(strncmp(event.path, "ClamAuth", 8)) {
 		    logg("!ScanOnAccess: Invalid version event\n");
-		    close(fd);
+		    close(cauth_fd);
 		    return NULL;
 		}
 		logg("ScanOnAccess: Driver version: %s, protocol version: %d\n", &event.path[9], event.action);
@@ -349,7 +353,7 @@ void *fan_th(void *arg)
 	} else {
 	    if(errno == ENODEV) {
 		printf("^ScanOnAccess: ClamAuth module deactivated, terminating\n");
-		close(fd);
+		close(cauth_fd);
 		return NULL;
 	    }
 	}
