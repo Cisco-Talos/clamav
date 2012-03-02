@@ -1,3 +1,7 @@
+Fri Mar  2 19:48:36 CET 2012 (tk)
+---------------------------------
+ * clamd: add support for on-access scanning on OS X with ClamAuth (beta)
+
 Wed Feb 29 17:02:18 EET 2012 (edwin)
 ------------------------------------
  * libclamav/bytecode_api*: Fix Sparc crash (bb #4324)

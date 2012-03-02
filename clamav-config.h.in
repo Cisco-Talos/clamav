@@ -12,6 +12,9 @@
 /* "build clamd" */
 #undef BUILD_CLAMD
 
+/* enable ClamAuth */
+#undef CLAMAUTH
+
 /* name of the clamav group */
 #undef CLAMAVGROUP
 

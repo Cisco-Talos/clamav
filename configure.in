@@ -1044,6 +1044,7 @@ darwin*)
     AC_DEFINE([C_BSD],1,[os is bsd flavor])
     AC_DEFINE([C_DARWIN],1,[os is darwin])
     AC_DEFINE([BIND_8_COMPAT],1,[enable bind8 compatibility])
+    AC_DEFINE([CLAMAUTH],1,[enable ClamAuth])
     use_netinfo="yes"
     ;;
 os2*)

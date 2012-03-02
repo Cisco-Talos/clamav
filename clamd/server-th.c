@@ -709,7 +709,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	unsigned int selfchk;
 	threadpool_t *thr_pool;
 
-#ifdef CLAMUKO
+#if defined(CLAMUKO) || defined(CLAMAUTH)
 	pthread_t clamuko_pid;
 	pthread_attr_t clamuko_attr;
 	struct thrarg *tharg = NULL; /* shut up gcc */
@@ -1005,7 +1005,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     acceptdata.max_queue = max_queue;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
-#ifdef CLAMUKO
+#if defined(CLAMUKO) || defined(CLAMAUTH)
     {
         do {
 	    if(pthread_attr_init(&clamuko_attr)) break;
@@ -1284,8 +1284,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef CLAMUKO
-	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+#if defined(CLAMUKO) || defined(CLAMAUTH)
+	    if((optget(opts, "ClamukoScanOnAccess")->enabled || optget(opts, "ClamAuth")->enabled) && tharg) {
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);
@@ -1303,8 +1303,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    reload = 0;
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
-#ifdef CLAMUKO
-	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+#if defined(CLAMUKO) || defined(CLAMAUTH)
+	    if((optget(opts, "ClamukoScanOnAccess")->enabled || optget(opts, "ClamAuth")->enabled) && tharg) {
 		tharg->engine = engine;
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
@@ -1330,8 +1330,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
      */
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
-#ifdef CLAMUKO
-    if(optget(opts, "ClamukoScanOnAccess")->enabled) {
+#if defined(CLAMUKO) || defined(CLAMAUTH)
+    if(optget(opts, "ClamukoScanOnAccess")->enabled || optget(opts, "ClamAuth")->enabled) {
 	logg("Stopping Clamuko.\n");
 	pthread_kill(clamuko_pid, SIGUSR1);
 	pthread_join(clamuko_pid, NULL);

@@ -16941,6 +16941,9 @@ $as_echo "#define C_DARWIN 1" >>confdefs.h
 
 $as_echo "#define BIND_8_COMPAT 1" >>confdefs.h
 
+
+$as_echo "#define CLAMAUTH 1" >>confdefs.h
+
     use_netinfo="yes"
     ;;
 os2*)

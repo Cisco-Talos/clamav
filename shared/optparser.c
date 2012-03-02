@@ -325,6 +325,8 @@ const struct clam_option __clam_options[] = {
 
     { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXFILES, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "10000" },
 
+    { "ClamAuth", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning with ClamAuth on OS X (BETA).", "no" },
+
     { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
 
     { "ClamukoScannerCount", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD, "The number of scanner threads that will be started (DazukoFS only).\nHaving multiple scanner threads allows Clamuko to serve multiple\nprocesses simultaneously. This is particularly beneficial on SMP machines.", "3" },
