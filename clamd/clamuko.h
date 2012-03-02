@@ -18,7 +18,7 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef CLAMUKO
+#if defined(CLAMUKO) || defined(CLAMAUTH)
 
 #ifndef __CLAMUKO_H
 #define __CLAMUKO_H

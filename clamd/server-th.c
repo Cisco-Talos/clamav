@@ -1004,7 +1004,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*MaxQueue set to: %d\n", max_queue);
     acceptdata.max_queue = max_queue;
 
-    if(optget(opts, "ClamukoScanOnAccess")->enabled)
+    if(optget(opts, "ClamukoScanOnAccess")->enabled || optget(opts, "ClamAuth")->enabled)
 #if defined(CLAMUKO) || defined(CLAMAUTH)
     {
         do {
