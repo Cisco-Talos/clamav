@@ -128,7 +128,19 @@ static int ca_open(dev_t dev, int flag, int devtype, proc_t p)
 
 static int ca_close(dev_t dev, int flag, int devtype, proc_t p)
 {
+    struct AuthEvent event;
+
+    lck_mtx_lock(gEventQueueLock);
     dev_open = 0;
+    dev_read = 0;
+    AuthEventInitQueue(&gEventQueue);
+    /* Initialize event queue and add version info event */
+    event.action = CLAMAUTH_PROTOCOL_VERSION;
+    strncpy(event.path, "ClamAuth "CLAMAUTH_VERSION"", sizeof(event.path));
+    event.pid = 0xdeadbeef;
+    AuthEventEnqueue(&gEventQueue, &event);
+    lck_mtx_unlock(gEventQueueLock);
+
     return 0;
 }
 
@@ -368,7 +380,8 @@ static int FileOpScopeListener(
                 strncpy(event.path, path, sizeof(event.path));
                 event.path[sizeof(event.path) - 1] = 0;
                 lck_mtx_lock(gEventQueueLock);
-                AuthEventEnqueue(&gEventQueue, &event);
+                if(dev_read)
+                    AuthEventEnqueue(&gEventQueue, &event);
                 lck_mtx_unlock(gEventQueueLock);
             }
             break;
