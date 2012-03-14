@@ -2,6 +2,17 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.97.4
+------
+
+ClamAV 0.97.4 includes minor bugfixes, detection improvements and initial
+support for on-access scanning under Mac OS X (see contrib/ClamAuth).
+This update is recommended for all users.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
 0.97.3
 ------
 

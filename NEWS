@@ -1,8 +1,9 @@
-0.97.3
+0.97.4
 ------
 
-ClamAV 0.97.3 is a minor bugfix release and is recommended for all users.
-Please refer to the ChangeLog file for details.
+ClamAV 0.97.4 includes minor bugfixes, detection improvements and initial
+support for on-access scanning under Mac OS X (see contrib/ClamAuth).
+This update is recommended for all users.
 
 --
 The ClamAV team (http://www.clamav.net/team)
