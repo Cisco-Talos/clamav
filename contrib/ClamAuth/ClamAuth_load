@@ -1,0 +1,4 @@
+sudo chown -R root ClamAuth.kext
+sudo chgrp -R wheel ClamAuth.kext
+sudo kextload ClamAuth.kext
+sudo sysctl -w kern.com_apple_dts_kext_ClamAuth="monitor /bin /usr/bin /Applications"

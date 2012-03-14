@@ -1,0 +1,23 @@
+On-access scanning for OS X
+---------------------------
+
+The ClamAuth kernel extension enables ClamAV to provide on-access scanning
+for Mac OS X 10.5 and later. The current version works in a passive mode
+only - ClamAV will log the detection but won't block access to the infected
+file. However, it's possible to perform special actions (eg. quarantine
+files) with the VirusEvent directive of clamd.
+
+Usage
+-----
+
+1. Run ClamAuth_load to load the kernel extension (you can edit the
+script to change or add more paths that will be monitored).
+2. Add "ClamAuth yes" to your clamd.conf
+3. Start clamd with root privileges ('sudo /usr/local/sbin/clamd')
+
+If clamd properly connects to the driver, you should see a line like this
+in the log file:
+
+ClamAuth: Driver version: 0.3, protocol version: 2
+
+ClamAV is now monitoring the paths specified in ClamAuth_load.
