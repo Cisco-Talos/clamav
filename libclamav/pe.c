@@ -738,22 +738,6 @@ int cli_scanpe(cli_ctx *ctx)
 	    return CL_CLEAN;
 	}
 	pe_plus = 1;
-    } else {
-        /*
-	    either it's got a PE32_SIGNATURE or
-	    we enable win9x compatibility in that we don't honor magic (see bb#119)
-	    either way it's a 32bit thingy
-	*/
-        if(EC16(optional_hdr32.Magic) != PE32_SIGNATURE) {
-	    if(!ctx->corrupted_input)
-		cli_warnmsg("Incorrect magic number in optional header\n");
-	    if(DETECT_BROKEN_PE) {
-	        if(ctx->virname)
-		    *ctx->virname = "Heuristics.Broken.Executable";
-		return CL_VIRUS;
-	    }
-	    cli_dbgmsg("9x compatibility mode\n");
-	}
     }
 
     if(!pe_plus) { /* PE */
