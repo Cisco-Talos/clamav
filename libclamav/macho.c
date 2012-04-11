@@ -33,6 +33,7 @@
 #include "others.h"
 #include "macho.h"
 #include "execs.h"
+#include "scanners.h"
 
 #define EC32(v, conv)	(conv ? cbswap32(v) : v)
 #define EC64(v, conv)	(conv ? cbswap64(v) : v)
