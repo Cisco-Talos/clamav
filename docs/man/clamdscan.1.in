@@ -78,7 +78,8 @@ Forces file streaming to clamd. This is generally not needed as clamdscan detect
 .TP
 (4) To scan from standard input:
 
-\fBclamdscan \- <file_to_scan\fR
+\fBclamdscan \- < file_to_scan\fR
+
 \fBcat file_to_scan | clamdscan \-\fR
 .SH "RETURN CODES"
 .LP 
