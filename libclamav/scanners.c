@@ -1965,7 +1965,7 @@ static void emax_reached(cli_ctx *ctx) {
 
 static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 {
-	int ret = CL_CLEAN;
+	int ret = CL_CLEAN, res;
 	cli_file_t dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
@@ -2038,10 +2038,11 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	}
     }
 
-    if(cache_check(hash, ctx) == CL_CLEAN) {
+    res = cache_check(hash, ctx);
+    if(res != CL_VIRUS) {
 	funmap(*ctx->fmap);
 	ctx->fmap--;
-	ret_from_magicscan(CL_CLEAN);
+	ret_from_magicscan(res);
     }
     hashed_size = (*ctx->fmap)->len;
     old_hook_lsig_matches = ctx->hook_lsig_matches;
@@ -2358,8 +2359,12 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-	if(cli_scanraw(ctx, type, typercg, &dettype, hash) == CL_VIRUS) {
-	    ret =  cli_checkfp(hash, hashed_size, ctx);
+	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
+	if(res != CL_CLEAN) {
+	    if(res == CL_VIRUS)
+		ret =  cli_checkfp(hash, hashed_size, ctx);
+	    else
+		ret = res;
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
 	    cli_bitset_free(ctx->hook_lsig_matches);

@@ -1,3 +1,8 @@
+Tue May  8 15:31:51 CEST 2012 (acab)
+------------------------------------
+ * libclamav: detect read races and abort the scan with an error
+	      (bb#4669)
+
 Tue Apr 10 17:04:20 CEST 2012 (tk)
 ----------------------------------
  * libclamav/pe.c: drop old header check (bb#4699)
