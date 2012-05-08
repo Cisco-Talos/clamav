@@ -706,7 +706,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 	const void *buf;
 	size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
 	if(!(buf = fmap_need_off_once(map, at, readme)))
-	    return CL_VIRUS;
+	    return CL_EREAD;
 	todo -= readme;
 	at += readme;
 	cli_md5_update(&md5, buf, readme);

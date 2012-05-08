@@ -2154,8 +2154,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
-	int cache_clean = 0;
+	int cache_clean = 0, res;
 
+    cli_dbgmsg("in magic_scandesc\n");
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
 	emax_reached(ctx);
@@ -2190,10 +2191,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     CALL_PRESCAN_CB(cb_pre_cache);
 
     perf_start(ctx, PERFT_CACHE);
-    if(cache_check(hash, ctx) == CL_CLEAN) {
+    res = cache_check(hash, ctx);
+    if(res != CL_VIRUS) {
 	perf_stop(ctx, PERFT_CACHE);
-	early_ret_from_magicscan(CL_CLEAN);
+	early_ret_from_magicscan(res);
     }
+
     perf_stop(ctx, PERFT_CACHE);
     hashed_size = (*ctx->fmap)->len;
     old_hook_lsig_matches = ctx->hook_lsig_matches;
@@ -2531,8 +2534,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-	if(cli_scanraw(ctx, type, typercg, &dettype, hash) == CL_VIRUS) {
-	    ret =  cli_checkfp(hash, hashed_size, ctx);
+	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
+	if(res != CL_CLEAN) {
+	    if(res == CL_VIRUS)
+		ret =  cli_checkfp(hash, hashed_size, ctx);
+	    else
+		ret = res;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
 	    ret_from_magicscan(ret);
