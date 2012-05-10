@@ -2194,6 +2194,15 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
+    /* custom dbs */
+    if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
+	while(opt) {
+	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
+		updated = 1;
+	    opt = opt->nextarg;
+	}
+    }
+
     if((opt = optget(opts, "update-db"))->enabled) {
 	    const char *u_dnsreply;
 	    int u_extra;
@@ -2323,15 +2332,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
 
     mirman_write("mirrors.dat", dbdir, &mdat);
     mirman_free(&mdat);
-
-    /* custom dbs */
-    if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
-	while(opt) {
-	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
-		updated = 1;
-	    opt = opt->nextarg;
-	}
-    }
 
     cli_rmdirs(updtmpdir);
 
