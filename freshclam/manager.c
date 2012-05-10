@@ -2182,6 +2182,15 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
     logg("*Using IPv6 aware code\n");
 #endif
 
+    /* custom dbs */
+    if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
+	while(opt) {
+	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
+		updated = 1;
+	    opt = opt->nextarg;
+	}
+    }
+
 #ifdef HAVE_RESOLV_H
     dnsdbinfo = optget(opts, "DNSDatabaseInfo")->strarg;
 
@@ -2362,15 +2371,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, int loge
 
     mirman_write("mirrors.dat", dbdir, &mdat);
     mirman_free(&mdat);
-
-    /* custom dbs */
-    if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
-	while(opt) {
-	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
-		updated = 1;
-	    opt = opt->nextarg;
-	}
-    }
 
     cli_rmdirs(updtmpdir);
 
