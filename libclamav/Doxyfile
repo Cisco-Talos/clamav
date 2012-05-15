@@ -109,7 +109,7 @@ INPUT = . \
         c++/llvm/utils/vim \
         c++/m4 \
         jsparse \
-        jsparse/generated
+        jsparse/generated \
         nsis \
         regex \
         tomsfastmath \
@@ -122,4 +122,4 @@ INPUT = . \
         tomsfastmath/mont \
         tomsfastmath/mul \
         tomsfastmath/numtheory \
-        tomsfastmath/sqr \
+        tomsfastmath/sqr
