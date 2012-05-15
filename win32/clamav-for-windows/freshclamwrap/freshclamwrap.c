@@ -158,12 +158,21 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
 
 #define SENDFAIL_AND_QUIT(phase)	    \
     do {				    \
-	send_pipe(&st, (phase), 1);	    \
-	CloseHandle(updpipe);		    \
-	CloseHandle(write_event);	    \
-	cleanup(NULL);			    \
-	flog_close();			    \
-	return 1;			    \
+	if(!customok) {			    \
+	    send_pipe(&st, (phase), 1);	    \
+	    CloseHandle(updpipe);	    \
+	    CloseHandle(write_event);	    \
+	    cleanup(NULL);		    \
+	    flog_close();		    \
+	    return 1;			    \
+	} else {			    \
+	    send_pipe(&st, UPD_DONE, 0);    \
+	    CloseHandle(updpipe);	    \
+	    CloseHandle(write_event);	    \
+	    cleanup(NULL);		    \
+	    flog_close();		    \
+	    return 0;			    \
+	}				    \
     } while(0)
 
 #define SENDOK(phase)			    \
@@ -236,7 +245,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DWORD dw;
     struct my_f spam;
     char command[8192], *ptr;
-    int updated_files = 0;
+    int updated_files = 0, customok = 0;
     char *cmdl = GetCommandLineA();
 
     //DebugBreak();
@@ -252,9 +261,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     /* Log file */
     flog_open(datadir);
-
-    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"%s", datadir, datadir, (cmdl && strstr(cmdl, " --mindefs=1")) ? " --update-db=daily" : "");
-    command[sizeof(command)-1] = '\0';
 
     /* Connect to master */
     updpipe = CreateFile("\\\\.\\pipe\\IMMUNET_AVUPDATE", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
@@ -276,6 +282,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	flog_close();
 	return 1;
     }
+
+    /* Run local-only-hack freshclam */
+    _snprintf(command, sizeof(command)-1, "freshclam.exe --update-db=custom --quiet --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"", datadir, datadir);
+    command[sizeof(command)-1] = '\0';
+    memset(&sinfo, 0, sizeof(sinfo));
+    sinfo.cb = sizeof(sinfo);
+    sinfo.dwFlags = STARTF_FORCEOFFFEEDBACK;
+    if(!CreateProcess(NULL, command, NULL, NULL, TRUE, DETACHED_PROCESS, NULL, datadir, &sinfo, &pinfo)) {
+	flog("ERROR: failed to execute '%s'", command);
+	SENDFAIL_AND_QUIT(UPD_CHECK);
+    }
+    CloseHandle(pinfo.hThread);
+    if(WaitForSingleObject(pinfo.hProcess, 60*1000) == WAIT_TIMEOUT) {
+	TerminateProcess(pinfo.hProcess, 1338);
+	flog("ERROR: timeout waiting for custom freshclam");
+	SENDFAIL_AND_QUIT(UPD_CHECK);
+    }
+    if(!GetExitCodeProcess(pinfo.hProcess, &dw)) {
+	CloseHandle(pinfo.hProcess);
+	flog("ERROR: failed to retrieve custom freshclam return code");
+	SENDFAIL_AND_QUIT(UPD_CHECK);
+    }
+    CloseHandle(pinfo.hProcess);
+    if(dw == 0)
+	customok = 1;
 
     /* Make pipe for freshclam stdio */
     if(!CreatePipe(&cld_r, &cld_w, NULL, 0)) {
@@ -301,6 +332,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     sinfo.hStdOutput = cld_w2;
     sinfo.hStdError = cld_w2;
     sinfo.dwFlags = STARTF_FORCEOFFFEEDBACK|STARTF_USESTDHANDLES;
+
+    /* Run main freshclam */
+    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"%s", datadir, datadir, (cmdl && strstr(cmdl, " --mindefs=1")) ? " --update-db=daily" : "");
+    command[sizeof(command)-1] = '\0';
     if(!CreateProcess(NULL, command, NULL, NULL, TRUE, DETACHED_PROCESS, NULL, datadir, &sinfo, &pinfo)) {
 	CloseHandle(cld_w2);
 	CloseHandle(cld_r);
