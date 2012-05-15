@@ -19,7 +19,9 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/System/DynamicLibrary.h"
 #include "llvm/Config/config.h"
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 using namespace llvm;
 
 // AtExitHandlers - List of functions to call when the program exits,
