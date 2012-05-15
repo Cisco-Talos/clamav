@@ -2094,7 +2094,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned int attempt)
 {
 	time_t currtime;
-	int ret, updated = 0, outdated = 0, signo = 0, logerr;
+	int ret, custret, updated = 0, outdated = 0, signo = 0, logerr;
 	unsigned int ttl;
 	char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const struct optstruct *opt;
@@ -2197,7 +2197,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
     /* custom dbs */
     if((opt = optget(opts, "DatabaseCustomURL"))->enabled) {
 	while(opt) {
-	    if(updatecustomdb(opt->strarg, &signo, opts, localip, logerr) == 0)
+	    if((custret = updatecustomdb(opt->strarg, &signo, opts, localip, logerr)) == 0)
 		updated = 1;
 	    opt = opt->nextarg;
 	}
@@ -2208,8 +2208,18 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
 	    int u_extra;
 
 	while(opt) {
-	    if(!strcmp(opt->strarg, "custom"))
-		break;
+	    if(!strcmp(opt->strarg, "custom")) {
+		if(!optget(opts, "DatabaseCustomURL")->enabled) {
+		    logg("!--update-db=custom requires DatabaseCustomURL\n");
+		    custret = 56;
+		}
+		free(dnsreply);
+		free(newver);
+		mirman_write("mirrors.dat", dbdir, &mdat);
+		mirman_free(&mdat);
+		cli_rmdirs(updtmpdir);
+		return custret;
+	    }
 
 	    if(!strcmp(opt->strarg, "main") || !strcmp(opt->strarg, "daily") || !strcmp(opt->strarg, "safebrowsing") || !strcmp(opt->strarg, "bytecode")) {
 		u_dnsreply = dnsreply;
