@@ -2208,6 +2208,9 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
 	    int u_extra;
 
 	while(opt) {
+	    if(!strcmp(opt->strarg, "custom"))
+		break;
+
 	    if(!strcmp(opt->strarg, "main") || !strcmp(opt->strarg, "daily") || !strcmp(opt->strarg, "safebrowsing") || !strcmp(opt->strarg, "bytecode")) {
 		u_dnsreply = dnsreply;
 		u_extra = 0;
