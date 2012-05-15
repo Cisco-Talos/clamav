@@ -1,0 +1,125 @@
+PROJECT_NAME     = ClamAV - Libclamav
+OUTPUT_DIRECTORY = ../docs/libclamav
+WARNINGS         = YES
+FILE_PATTERNS    = *.c *.h
+PERL_PATH        = /usr/bin/perl
+SEARCHENGINE     = YES
+
+GENERATE_LATEX=NO
+OPTIMIZE_OUTPUT_FOR_C=YES
+HAVE_DOT=YES
+CALL_GRAPH=YES
+CALLER_GRAPH=YES
+JAVADOC_AUTOBRIEF=YES
+GENERATE_MAN=NO
+EXAMPLE_PATH=examples
+
+DOT_CLEANUP=NO
+MAX_DOT_GRAPH_DEPTH=3
+
+EXTRACT_ALL=YES
+INPUT = . \
+        7z \
+        c++ \
+        c++/config \
+        c++/llvm \
+        c++/llvm/autoconf \
+        c++/llvm/autoconf/m4 \
+        c++/llvm/cmake \
+        c++/llvm/cmake/modules \
+        c++/llvm/docs \
+        c++/llvm/include \
+        c++/llvm/include/llvm \
+        c++/llvm/include/llvm/ADT \
+        c++/llvm/include/llvm/Analysis \
+        c++/llvm/include/llvm/Assembly \
+        c++/llvm/include/llvm/Bitcode \
+        c++/llvm/include/llvm-c \
+        c++/llvm/include/llvm/CodeGen \
+        c++/llvm/include/llvm/CompilerDriver \
+        c++/llvm/include/llvm/Config \
+        c++/llvm/include/llvm-c/Transforms \
+        c++/llvm/include/llvm/ExecutionEngine \
+        c++/llvm/include/llvm/MC \
+        c++/llvm/include/llvm/MC/MCParser \
+        c++/llvm/include/llvm/Support \
+        c++/llvm/include/llvm/System \
+        c++/llvm/include/llvm/Target \
+        c++/llvm/include/llvm/Transforms \
+        c++/llvm/include/llvm/Transforms/IPO \
+        c++/llvm/include/llvm/Transforms/Utils \
+        c++/llvm/lib \
+        c++/llvm/lib/Analysis \
+        c++/llvm/lib/Analysis/IPA \
+        c++/llvm/lib/CodeGen \
+        c++/llvm/lib/CodeGen/PBQP \
+        c++/llvm/lib/CodeGen/PBQP/Heuristics \
+        c++/llvm/lib/CodeGen/SelectionDAG \
+        c++/llvm/lib/ExecutionEngine \
+        c++/llvm/lib/ExecutionEngine/JIT \
+        c++/llvm/lib/MC \
+        c++/llvm/lib/Support \
+        c++/llvm/lib/System \
+        c++/llvm/lib/System/Unix \
+        c++/llvm/lib/System/Win32 \
+        c++/llvm/lib/Target \
+        c++/llvm/lib/Target/PowerPC \
+        c++/llvm/lib/Target/PowerPC/TargetInfo \
+        c++/llvm/lib/Target/X86 \
+        c++/llvm/lib/Target/X86/TargetInfo \
+        c++/llvm/lib/Transforms \
+        c++/llvm/lib/Transforms/Hello \
+        c++/llvm/lib/Transforms/Instrumentation \
+        c++/llvm/lib/Transforms/IPO \
+        c++/llvm/lib/Transforms/Scalar \
+        c++/llvm/lib/Transforms/Utils \
+        c++/llvm/lib/VMCore \
+        c++/llvm/utils \
+        c++/llvm/utils/bugpoint \
+        c++/llvm/utils/buildit \
+        c++/llvm/utils/count \
+        c++/llvm/utils/crosstool \
+        c++/llvm/utils/crosstool/ARM \
+        c++/llvm/utils/emacs \
+        c++/llvm/utils/git \
+        c++/llvm/utils/jedit \
+        c++/llvm/utils/lint \
+        c++/llvm/utils/lit \
+        c++/llvm/utils/lit/lit \
+        c++/llvm/utils/lit/lit/ExampleTests \
+        c++/llvm/utils/lit/lit/ExampleTests/Clang \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.InTree \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.InTree/test \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.InTree/test/Bar \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/obj \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/obj/test \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/obj/test/Foo \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/src \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/src/test \
+        c++/llvm/utils/lit/lit/ExampleTests/LLVM.OutOfTree/src/test/Foo \
+        c++/llvm/utils/lit/lit/ExampleTests.ObjDir \
+        c++/llvm/utils/lit/lit/ExampleTests/ShExternal \
+        c++/llvm/utils/lit/lit/ExampleTests/ShInternal \
+        c++/llvm/utils/lit/lit/ExampleTests/TclTest \
+        c++/llvm/utils/llvm-lit \
+        c++/llvm/utils/Misc \
+        c++/llvm/utils/TableGen \
+        c++/llvm/utils/valgrind \
+        c++/llvm/utils/vim \
+        c++/m4 \
+        jsparse \
+        jsparse/generated
+        nsis \
+        regex \
+        tomsfastmath \
+        tomsfastmath/addsub \
+        tomsfastmath/bin \
+        tomsfastmath/bit \
+        tomsfastmath/divide \
+        tomsfastmath/exptmod \
+        tomsfastmath/misc \
+        tomsfastmath/mont \
+        tomsfastmath/mul \
+        tomsfastmath/numtheory \
+        tomsfastmath/sqr \
