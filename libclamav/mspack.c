@@ -1101,7 +1101,7 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
   unsigned char *i_ptr, *i_end;
 
   int match_length, length_footer, extra, verbatim_bits, bytes_todo;
-  int this_run, main_element, aligned_bits, j, ret;
+  int this_run, main_element, aligned_bits, j, ret, warned=0;
   unsigned char *window, *runsrc, *rundest, buf[12];
   unsigned int frame_size=0, end_frame, match_offset, window_posn;
   unsigned int R0, R1, R2;
@@ -1132,17 +1132,27 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
   R2 = lzx->R2;
 
   end_frame = (unsigned int)((lzx->offset + out_bytes) / LZX_FRAME_SIZE) + 1;
+  cli_dbgmsg("lzx_decompress: end frame = %u\n", end_frame);
 
   while (lzx->frame < end_frame) {
+    cli_dbgmsg("lzx_decompress: current frame = %u\n", lzx->frame);
     /* have we reached the reset interval? (if there is one?) */
     if (lzx->reset_interval && ((lzx->frame % lzx->reset_interval) == 0)) {
       if (lzx->block_remaining) {
-	cli_dbgmsg("lzx_decompress: %d bytes remaining at reset interval\n", lzx->block_remaining);
-	return lzx->error = CL_EFORMAT;
+        /* this is a file format error, but we need to extract what we can and scan that */
+        cli_dbgmsg("lzx_decompress: %d bytes remaining at reset interval\n", lzx->block_remaining);
+        if (!warned) {
+          cli_warnmsg("Detected an invalid reset interval during decompression.\n");
+          warned++;
+        }
+        if (!lzx->header_read) {
+          /* cannot continue if no header at all */
+          return lzx->error = CL_EFORMAT;
+        }
+      } else {
+        /* re-read the intel header and reset the huffman lengths */
+        lzx_reset_state(lzx);
       }
-
-      /* re-read the intel header and reset the huffman lengths */
-      lzx_reset_state(lzx);
     }
 
     /* read header if necessary */
