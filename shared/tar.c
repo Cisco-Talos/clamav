@@ -47,7 +47,7 @@ struct tar_header {
 };
 #define TARBLK 512
 
-int tar_addfile(int fd, gzFile *gzs, const char *file)
+int tar_addfile(int fd, gzFile gzs, const char *file)
 {
 	int s, bytes;
 	struct tar_header hdr;

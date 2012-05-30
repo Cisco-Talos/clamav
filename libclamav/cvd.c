@@ -54,7 +54,7 @@ static int cli_untgz(int fd, const char *destdir)
 	unsigned int size, pathlen = strlen(destdir) + 100 + 5;
 	FILE *outfile = NULL;
 	struct stat foo;
-	gzFile *infile;
+	gzFile infile;
 
 
     cli_dbgmsg("in cli_untgz()\n");

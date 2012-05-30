@@ -28,7 +28,7 @@
 #include "sha256.h"
 
 struct cli_dbio {
-    gzFile *gzs;
+    gzFile gzs;
     FILE *fs;
     unsigned int size, bread;
     char *buf, *bufpt, *readpt;
