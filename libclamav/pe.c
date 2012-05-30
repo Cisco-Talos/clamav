@@ -2317,7 +2317,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
     fsize = map->len - peinfo->offset;
     if(fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
-	return CL_CLEAN;
+	return -1;
     }
 
     if(EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
