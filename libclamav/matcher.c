@@ -402,7 +402,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	int have_sha1, have_sha256, do_dsig_check = 1;
 
     if(cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
-	cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, size);
+	cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
 	return CL_CLEAN;
     }
 

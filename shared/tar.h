@@ -23,6 +23,6 @@
 
 #include <zlib.h>
 
-int tar_addfile(int fd, gzFile *gzs, const char *file);
+int tar_addfile(int fd, gzFile gzs, const char *file);
 
 #endif

@@ -93,23 +93,6 @@
 
 #endif
 
-/* Max size of any number in bits.  Basically the largest size you will be multiplying
- * should be half [or smaller] of FP_MAX_SIZE-four_digit
- *
- * You can externally define this or it defaults to 4096-bits [allowing multiplications upto 2048x2048 bits ]
- */
-#ifndef FP_MAX_SIZE
-   #define FP_MAX_SIZE           (8192+(8*DIGIT_BIT))
-#endif
-
-/* will this lib work? */
-#if (CHAR_BIT & 7)
-   #error CHAR_BIT must be a multiple of eight.
-#endif
-#if FP_MAX_SIZE % CHAR_BIT
-   #error FP_MAX_SIZE must be a multiple of CHAR_BIT
-#endif
-
 /* autodetect x86-64 and make sure we are using 64-bit digits with x86-64 asm */
 #if defined(__x86_64__)
    #if defined(TFM_X86) || defined(TFM_SSE2) || defined(TFM_ARM) 
@@ -272,6 +255,20 @@
 
 /* # of digits this is */
 #define DIGIT_BIT  (int)((CHAR_BIT) * sizeof(fp_digit))
+/* Max size of any number in bits.  Basically the largest size you will be multiplying
+ * should be half [or smaller] of FP_MAX_SIZE-four_digit
+ *
+ * You can externally define this or it defaults to 4096-bits [allowing multiplications upto 2048x2048 bits ]
+ */
+#ifndef FP_MAX_SIZE
+   #define FP_MAX_SIZE           (8192+(8*DIGIT_BIT))
+#endif
+
+/* will this lib work? */
+#if (CHAR_BIT & 7)
+   #error CHAR_BIT must be a multiple of eight.
+#endif
+
 #define FP_MASK    (fp_digit)(-1)
 #define FP_SIZE    (FP_MAX_SIZE/DIGIT_BIT)
 

@@ -91,15 +91,15 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
 static char *iso_string(iso9660_t *iso, const void *src, unsigned int len) {
     if(iso->joliet) {
 	char *utf8;
+        const char *uutf8;
 	if(len > sizeof(iso->buf))
 	    len = sizeof(iso->buf) - 2;
 	memcpy(iso->buf, src, len);
 	iso->buf[len] = '\0';
 	iso->buf[len+1] = '\0';
 	utf8 = cli_utf16_to_utf8(iso->buf, len, UTF16_BE);
-	if(!utf8)
-	    utf8 = "";
-	strncpy(iso->buf, utf8, sizeof(iso->buf));
+        uutf8 = utf8 ? utf8 : "";
+	strncpy(iso->buf, uutf8, sizeof(iso->buf));
 	iso->buf[sizeof(iso->buf)-1] = '\0';
 	free(utf8);
     } else {

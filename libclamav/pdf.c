@@ -601,9 +601,9 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
     unsigned char pad, i;
     int nrounds;
 
-    cli_dbgmsg("cli_pdf: aes_decrypt: key length: %d, data length: %d\n", key_n, *length);
+    cli_dbgmsg("cli_pdf: aes_decrypt: key length: %d, data length: %d\n", key_n, (int)*length);
     if (key_n > 32) {
-	cli_dbgmsg("cli_pdf: aes_decrypt: key length is %s!\n", key_n*8);
+	cli_dbgmsg("cli_pdf: aes_decrypt: key length is %d!\n", key_n*8);
 	return;
     }
     if (len < 32) {
@@ -650,7 +650,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
 	len += pad;
     }
     *length -= len;
-    cli_dbgmsg("cli_pdf: aes_decrypt: length is %d\n", *length);
+    cli_dbgmsg("cli_pdf: aes_decrypt: length is %d\n", (int)*length);
 }
 
 
@@ -1046,7 +1046,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		break;
 	    }
             free(js);
-	    cli_dbgmsg("bytesleft: %d\n", bytesleft);
+	    cli_dbgmsg("bytesleft: %d\n", (int)bytesleft);
 
             q2 = pdf_nextobject(q, bytesleft);
             if (!q2) q2 = q + bytesleft - 1;
@@ -1666,7 +1666,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    sha256_final(&sha256, result2);
 	    n = UE ? strlen(UE) : 0;
 	    if (n != 32) {
-		cli_dbgmsg("cli_pdf: UE length is not 32: %d\n", n);
+		cli_dbgmsg("cli_pdf: UE length is not 32: %d\n", (int)n);
 		noisy_warnmsg("cli_pdf: UE length is not 32: %d\n", n);
 	    } else {
 		pdf->keylen = 32;

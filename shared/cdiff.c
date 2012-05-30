@@ -757,7 +757,7 @@ int cdiff_apply(int fd, unsigned short mode)
 {
 	struct cdiff_ctx ctx;
 	FILE *fh;
-	gzFile *gzh;
+	gzFile gzh;
 	char *line, *lbuf, buff[FILEBUFF], *dsig = NULL;
 	unsigned int lines = 0, cmds = 0;
 	unsigned int difflen, diffremain, line_size = CDIFF_LINE_SIZE;

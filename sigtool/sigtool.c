@@ -504,7 +504,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	SHA256_CTX ctx;
 	struct stat sb;
 	FILE *scripth, *cdiffh;
-	gzFile *gzh;
+	gzFile gzh;
 	unsigned int ver, osize;
 	int bytes;
 
@@ -633,7 +633,7 @@ static int build(const struct optstruct *opts)
 	const char *newcvd, *localdbdir = NULL;
         struct cl_engine *engine;
 	FILE *cvd, *fh;
-	gzFile *tar;
+	gzFile tar;
 	time_t timet;
 	struct tm *brokent;
 	struct cl_cvd *oldcvd;

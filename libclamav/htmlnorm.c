@@ -484,7 +484,7 @@ static inline void html_tag_contents_append(struct tag_contents *cont, const uns
             if (mbchar && (c < 0x80 || mbchar >= 0x10000)) {
                 if (mbchar == 0xE38082 || mbchar == 0xEFBC8E
                     || mbchar == 0xEFB992 ||
-                    mbchar == 0xA1 && (c == 0x43 || c == 0x44 || c == 0x4F)) {
+                    (mbchar == 0xA1 && (c == 0x43 || c == 0x44 || c == 0x4F))) {
                     cont->contents[i++] = '.';
                     if (mbchar == 0xA1) {
                         --i;
@@ -791,7 +791,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 if (*ptr < 0x80 || mbchar >= 0x10000) {
                                     if (mbchar == 0xE38082 || mbchar == 0xEFBC8E
                                         || mbchar == 0xEFB992 ||
-                                        mbchar == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F)) {
+                                        (mbchar == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F))) {
                                         /* bb #4097 */
                                         html_output_c(file_buff_o2, '.');
                                         html_output_c(file_buff_text, '.');
@@ -1089,7 +1089,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                     if (mbchar2 && (*ptr < 0x80 || mbchar2 >= 0x10000)) {
                                         if (mbchar2 == 0xE38082 || mbchar2 == 0xEFBC8E
                                             || mbchar2 == 0xEFB992 ||
-                                            mbchar2 == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F)) {
+                                            (mbchar2 == 0xA1 && (*ptr == 0x43 || *ptr == 0x44 || *ptr == 0x4F))) {
                                             html_output_c(file_buff_o2, '.');
                                             if (tag_val_length < HTML_STR_LENGTH)
 						tag_val[tag_val_length++] = '.';

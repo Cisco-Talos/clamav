@@ -137,7 +137,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 		size_t nread;
 
 		block = fmap_need_off_once_len(*ctx->fmap, pos, BLOCKSIZE, &nread); 
-		cli_dbgmsg("cli_untar: pos = %d\n", pos);
+		cli_dbgmsg("cli_untar: pos = %d\n", (int)pos);
 
 		if(!in_block && !nread)
 			break;

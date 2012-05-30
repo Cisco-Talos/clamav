@@ -1257,7 +1257,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	char cwd[512], info[32], buff[513], *pt;
 	struct dirent *dent;
 	int fd, err = 0;
-	gzFile *gzs = NULL;
+	gzFile gzs = NULL;
 
     if(!getcwd(cwd, sizeof(cwd))) {
 	logg("!buildcld: Can't get path of current working directory\n");
