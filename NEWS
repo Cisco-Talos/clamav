@@ -1,9 +1,10 @@
-0.97.4
+0.97.5
 ------
 
-ClamAV 0.97.4 includes minor bugfixes, detection improvements and initial
-support for on-access scanning under Mac OS X (see contrib/ClamAuth).
-This update is recommended for all users.
+ClamAV 0.97.5 addresses possible evasion cases in some archive formats
+(CVE-2012-1457, CVE-2012-1458, CVE-2012-1459).  It also addresses stability
+issues in portions of the bytecode engine.  This release is recommended for all
+users.
 
 --
 The ClamAV team (http://www.clamav.net/team)

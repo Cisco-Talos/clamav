@@ -2,6 +2,17 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.97.5
+------
+
+ClamAV 0.97.5 addresses possible evasion cases in some archive formats
+(CVE-2012-1457, CVE-2012-1458, CVE-2012-1459).  It also addresses stability
+issues in portions of the bytecode engine.  This release is recommended for all
+users.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
 0.97.4
 ------
 
