@@ -29,7 +29,7 @@ pkgconfig_DATA = libclamav.pc
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
 DISTCLEANFILES = target.h
-DISTCHECK_CONFIGURE_FLAGS=--enable-milter --disable-clamav --enable-distcheck-werror --enable-all-jit-targets --enable-llvm=yes
+DISTCHECK_CONFIGURE_FLAGS=--enable-milter --disable-clamav --enable-all-jit-targets --enable-llvm=yes
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
 quick-check:
