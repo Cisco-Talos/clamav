@@ -201,9 +201,7 @@ BUILD_CONFIGURE_FLAGS = @BUILD_CONFIGURE_FLAGS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
-
-# ClamAV: filter -Werror here
-CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Werror[^=-]//'`
+CFLAGS = @CFLAGS@
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
@@ -962,7 +960,6 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 # doesn't have one that works with the given compiler.
 all-local $(lib_OBJECTS): $(ARGZ_H)
 argz.h: argz_.h
-	$(mkinstalldirs) . 
 	cp $(srcdir)/argz_.h $@-t
 	mv $@-t $@
 
