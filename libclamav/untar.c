@@ -124,8 +124,10 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 	int size = 0, ret, fout=-1;
 	int in_block = 0;
 	int last_header_bad = 0;
+	int limitnear = 0;
 	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
+	size_t currsize = 0;
 
 	cli_dbgmsg("In untar(%s, %d)\n", dir, desc);
 
@@ -149,6 +151,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			int directory, skipEntry = 0;
 			int checksum = -1;
 			char magic[7], name[101], osize[TARSIZELEN + 1];
+			currsize = 0;
 
 			if(fout>=0) {
 				lseek(fout, 0, SEEK_SET);
@@ -243,8 +246,20 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				skipEntry++;
 			} else {
 				cli_dbgmsg("cli_untar: size = %d\n", size);
-				if((ret=cli_checklimits("cli_untar", ctx, size, 0, 0))!=CL_CLEAN)
-					skipEntry++;
+				ret = cli_checklimits("cli_untar", ctx, size, 0, 0);
+				switch(ret) {
+					case CL_EMAXFILES: // Scan no more files
+						skipEntry++;
+						limitnear = 0;
+						break;
+					case CL_EMAXSIZE: // Either single file limit or total byte limit would be exceeded
+						cli_dbgmsg("cli_untar: would exceed limit, will try up to max");
+						limitnear = 1;
+						break;
+					default: // Ok based on reported content size
+						limitnear = 0;
+						break;
+				}
 			}
 
 			if(skipEntry) {
@@ -278,16 +293,40 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			in_block = 1;
 		} else { /* write or continue writing file contents */
-			const int nbytes = size>512? 512:size;
-			const int nwritten = (int)write(fout, block, (size_t)nbytes);
+			int nbytes, nwritten;
+			int skipwrite = 0;
+			char err[128];
 
-			if(nwritten != nbytes) {
-				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
-					nwritten, fullname);
-				close(fout);
-				return CL_EWRITE;
+			nbytes = size>512? 512:size;
+			if (nread && nread < nbytes)
+				nbytes = nread;
+
+			if (limitnear > 0) {
+				currsize += nbytes;
+				cli_dbgmsg("cli_untar: Approaching limit...\n");
+				if (cli_checklimits("cli_untar", ctx, (unsigned long)currsize, 0, 0) != CL_SUCCESS) {
+					// Limit would be exceeded by this file, suppress writing beyond limit
+					// Need to keep reading to get to end of file chunk
+					skipwrite++;
+				}
+			}
+
+			if (skipwrite == 0) {
+				nwritten = (int)write(fout, block, (size_t)nbytes);
+
+				if(nwritten != nbytes) {
+					cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
+						nwritten, fullname);
+					close(fout);
+					return CL_EWRITE;
+				}
 			}
 			size -= nbytes;
+			if ((size != 0) && (nread == 0)) {
+				// Truncated tar file, so end file content like tar behavior
+				cli_dbgmsg("cli_untar: No bytes read! Forcing end of file content.\n");
+				size = 0;
+			}
 		}
 		if (size == 0)
 			in_block = 0;
