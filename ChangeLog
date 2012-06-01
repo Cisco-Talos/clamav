@@ -1,3 +1,12 @@
+Wed May 30 17:27:00 EST 2012 (dar)
+----------------------------------
+ * libclamav: Fix handling of tar file with malformed header
+         (bb#4627)
+
+Fri May 25 13:05:40 EST 2012 (dar)
+----------------------------------
+ * libclamav: Scan chm with invalid handling (bb#4626)
+
 Thu May 10 15:45:56 CEST 2012 (tk)
 ----------------------------------
  * freshclam: give custom dbs higher priority during update
