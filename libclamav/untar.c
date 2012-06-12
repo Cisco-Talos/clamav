@@ -185,7 +185,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 				cli_dbgmsg("cli_untar: Invalid checksum in tar header. Skip to next...\n");
 				if (last_header_bad == 0) {
 					last_header_bad++;
-					cli_warnmsg("cli_untar: Invalid checksum found inside archive!\n");
+					cli_dbgmsg("cli_untar: Invalid checksum found inside archive!\n");
 				}
 				continue;
 			} else {
