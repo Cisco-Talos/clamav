@@ -1,6 +1,6 @@
 Fri Jun 1 13:15:50 EST 2012 (dar)
 ---------------------------------
- * libclamav: Scan output at end of truncated tar (bb#4625)
+ * libclamav: Scan output at end of truncated tar (bb#4625) 
 
 Wed May 30 17:27:00 EST 2012 (dar)
 ----------------------------------
