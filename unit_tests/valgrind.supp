@@ -4,3 +4,9 @@
        fun:*
        fun:_dl_allocate_tls
 }
+{
+       zlib-cond-jump-1.2.3
+       Memcheck:Cond
+       fun:inflateReset2
+       fun:inflateInit2_
+}
