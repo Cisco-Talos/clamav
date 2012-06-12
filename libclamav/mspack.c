@@ -1142,7 +1142,7 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
         /* this is a file format error, but we need to extract what we can and scan that */
         cli_dbgmsg("lzx_decompress: %d bytes remaining at reset interval\n", lzx->block_remaining);
         if (!warned) {
-          cli_warnmsg("Detected an invalid reset interval during decompression.\n");
+          cli_dbgmsg("Detected an invalid reset interval during decompression.\n");
           warned++;
         }
         if (!lzx->header_read) {
