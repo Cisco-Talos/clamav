@@ -603,7 +603,7 @@ $(top_builddir)/llvm/config.status: llvm/configure
 endif
 # rm configure generated files
 dist-hook: clean-local
-	make -C llvm dist-hook
+	$(MAKE) -C llvm dist-hook
 	rm -f $(distdir)/llvm/include/llvm/Config/*.h $(distdir)/llvm/include/llvm/Config/*.def $(distdir)/llvm/Makefile.config $(distdir)/llvm/llvm.spec
 	rm -f $(distdir)/llvm/docs/doxygen.cfg $(distdir)/llvm/tools/llvmc/plugins/Base/Base.td $(distdir)/llvm/tools/llvm-config/llvm-config.in
 	rm -f $(distdir)/llvm/include/llvm/System/DataTypes.h $(distdir)/llvm/config.log $(distdir)/llvm/config.status
