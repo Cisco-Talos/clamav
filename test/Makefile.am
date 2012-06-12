@@ -17,7 +17,7 @@ $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
 clean-local:
-	rm -f $(FILES)
+	rm -f clam*
 
 EXTRA_DIST = .split
 
