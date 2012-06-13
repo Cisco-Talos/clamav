@@ -212,8 +212,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 		     * we just tried that above, and failed */
 		    if((encoding = encoding_detect_bom(buff, bread))) {
 			    unsigned char decodedbuff[(MAGIC_BUFFER_SIZE+1)*2];
-             memset(decodedbuff, 0, sizeof(decodedbuff));
 			    m_area_t in_area, out_area;
+			    
+			    memset(decodedbuff, 0, sizeof(decodedbuff));
 
 			    in_area.buffer = (unsigned char *) buff;
 			    in_area.length = bread;
