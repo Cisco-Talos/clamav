@@ -452,7 +452,7 @@ static void *acceptloop_th(void *arg)
 	closesocket(fds->buf[i].fd);
     }
     fds_free(fds);
-
+    pthread_mutex_destroy(fds->buf_mutex);
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
@@ -1344,6 +1344,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     pthread_join(accept_th, NULL);
     fds_free(fds);
+    pthread_mutex_destroy(fds->buf_mutex);
+    pthread_cond_destroy(&acceptdata.cond_nfds);
 #ifdef _WIN32
     CloseHandle(event_wake_accept);
     CloseHandle(event_wake_recv);
