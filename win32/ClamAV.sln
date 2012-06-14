@@ -64,6 +64,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamunrar_iface", "libcl
 		{B1406D09-59CE-4EEA-9F08-FECCF3A7A4A7} = {B1406D09-59CE-4EEA-9F08-FECCF3A7A4A7}
 	EndProjectSection
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x86", "Setup-x86\Setup-x86.vdproj", "{048ECA7F-4F7D-45B9-A02D-593240356556}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x64", "Setup-x64\Setup-x64.vdproj", "{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -192,6 +196,18 @@ Global
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|Win32.Build.0 = Release|Win32
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|x64.ActiveCfg = Release|x64
 		{2E93DF6C-3C8A-4768-9539-12FB67417224}.Release|x64.Build.0 = Release|x64
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Debug|Win32.ActiveCfg = Debug
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Debug|Win32.Build.0 = Debug
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Debug|x64.ActiveCfg = Debug
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Release|Win32.ActiveCfg = Release
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Release|Win32.Build.0 = Release
+		{048ECA7F-4F7D-45B9-A02D-593240356556}.Release|x64.ActiveCfg = Release
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Debug|Win32.ActiveCfg = Debug
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Debug|x64.ActiveCfg = Debug
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Debug|x64.Build.0 = Debug
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release|Win32.ActiveCfg = Release
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release|x64.ActiveCfg = Release
+		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release|x64.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
