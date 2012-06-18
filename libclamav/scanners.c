@@ -2542,7 +2542,19 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		ret = res;
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
-	    ret_from_magicscan(ret);
+	    /* Same switch as end of magic_scandesc function */
+	    switch(ret) {
+		case CL_EFORMAT:
+		case CL_EMAXREC:
+		case CL_EMAXSIZE:
+		case CL_EMAXFILES:
+		    cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
+		case CL_CLEAN: /* here, only from cli_checkfp() */
+		    cache_add(hash, hashed_size, ctx);
+		    ret_from_magicscan(CL_CLEAN);
+		default:
+		    ret_from_magicscan(ret);
+	    }
 	}
     }
 
