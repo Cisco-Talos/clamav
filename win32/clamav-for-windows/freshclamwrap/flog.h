@@ -20,9 +20,9 @@
 #ifndef __FLOG_H
 #define __FLOG_H
 
-void flog_open(const char *path);
-void flog(const char *fmt, ...);
-void flog_dbg(const char *fmt, ...);
-void flog_close(void);
+void flog_open (const char *path);
+void flog (const char *fmt, ...);
+void flog_dbg (const char *fmt, ...);
+void flog_close (void);
 
 #endif

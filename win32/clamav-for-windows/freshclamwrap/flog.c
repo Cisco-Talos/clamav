@@ -26,82 +26,93 @@
 static HANDLE logh = INVALID_HANDLE_VALUE;
 static int log_dbg = 0;
 
-void flog_open(const char *path) {
+void
+flog_open (const char *path)
+{
     char logfile[4096];
     DWORD sz;
 
-    _snprintf(logfile, sizeof(logfile), "%s\\update.log", path);
-    logfile[sizeof(logfile)-1] = '\0';
-    logh = CreateFile(logfile, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(logh == INVALID_HANDLE_VALUE)
-	return;
-    sz = GetFileSize(logh, NULL);
-    if(sz >= 10*1024*1024)
-	SetEndOfFile(logh);
+    _snprintf (logfile, sizeof (logfile), "%s\\update.log", path);
+    logfile[sizeof (logfile) - 1] = '\0';
+    logh =
+        CreateFile (logfile, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                    OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (logh == INVALID_HANDLE_VALUE)
+        return;
+    sz = GetFileSize (logh, NULL);
+    if (sz >= 10 * 1024 * 1024)
+        SetEndOfFile (logh);
     else
-	SetFilePointer(logh, 0, NULL, FILE_END);
+        SetFilePointer (logh, 0, NULL, FILE_END);
 
-    _snprintf(logfile, sizeof(logfile), "%s\\update_log_verbose", path);
-    logfile[sizeof(logfile)-1] = '\0';
-    if(access(logfile, 0) != -1)
-	log_dbg = 1;
-    flog("Log file initialized");
+    _snprintf (logfile, sizeof (logfile), "%s\\update_log_verbose", path);
+    logfile[sizeof (logfile) - 1] = '\0';
+    if (access (logfile, 0) != -1)
+        log_dbg = 1;
+    flog ("Log file initialized");
 }
 
-void flog(const char *fmt, ...) {
+void
+flog (const char *fmt, ...)
+{
     char buf[4096];
     SYSTEMTIME t;
     DWORD x;
     va_list ap;
     int len;
 
-    if(logh == INVALID_HANDLE_VALUE)
-	return;
+    if (logh == INVALID_HANDLE_VALUE)
+        return;
 
-    GetLocalTime(&t);
-    _snprintf(buf, sizeof(buf), "%04u-%02u-%02u %02u:%02u:%02u - ", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
-    buf[sizeof(buf)-1] = '\0';
-    len = strlen(buf);
-    va_start(ap, fmt);
-    vsnprintf(buf + len, sizeof(buf) - len, fmt, ap);
-    va_end(ap);
-    buf[sizeof(buf)-1] = '\0';
-    len = strlen(buf);
-    len = len < sizeof(buf) - 2 ? len : sizeof(buf) - 2;
-    memcpy(buf + len, "\r\n", 2);
+    GetLocalTime (&t);
+    _snprintf (buf, sizeof (buf), "%04u-%02u-%02u %02u:%02u:%02u - ", t.wYear,
+               t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+    buf[sizeof (buf) - 1] = '\0';
+    len = strlen (buf);
+    va_start (ap, fmt);
+    vsnprintf (buf + len, sizeof (buf) - len, fmt, ap);
+    va_end (ap);
+    buf[sizeof (buf) - 1] = '\0';
+    len = strlen (buf);
+    len = len < sizeof (buf) - 2 ? len : sizeof (buf) - 2;
+    memcpy (buf + len, "\r\n", 2);
     len += 2;
-    WriteFile(logh, buf, len, &x, NULL);
+    WriteFile (logh, buf, len, &x, NULL);
 }
 
-void flog_dbg(const char *fmt, ...) {
+void
+flog_dbg (const char *fmt, ...)
+{
     char buf[4096];
     SYSTEMTIME t;
     DWORD x;
     va_list ap;
     int len;
 
-    if(!log_dbg)
-	return;
+    if (!log_dbg)
+        return;
 
-    GetLocalTime(&t);
-    _snprintf(buf, sizeof(buf), "%04u-%02u-%02u %02u:%02u:%02u - [", t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
-    buf[sizeof(buf)-1] = '\0';
-    len = strlen(buf);
-    va_start(ap, fmt);
-    vsnprintf(buf + len, sizeof(buf) - len, fmt, ap);
-    va_end(ap);
-    buf[sizeof(buf)-1] = '\0';
-    len = strlen(buf);
-    len = len < sizeof(buf) - 3 ? len : sizeof(buf) - 3;
-    memcpy(buf + len, "]\r\n", 3);
+    GetLocalTime (&t);
+    _snprintf (buf, sizeof (buf), "%04u-%02u-%02u %02u:%02u:%02u - [",
+               t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+    buf[sizeof (buf) - 1] = '\0';
+    len = strlen (buf);
+    va_start (ap, fmt);
+    vsnprintf (buf + len, sizeof (buf) - len, fmt, ap);
+    va_end (ap);
+    buf[sizeof (buf) - 1] = '\0';
+    len = strlen (buf);
+    len = len < sizeof (buf) - 3 ? len : sizeof (buf) - 3;
+    memcpy (buf + len, "]\r\n", 3);
     len += 3;
-    WriteFile(logh, buf, len, &x, NULL);
+    WriteFile (logh, buf, len, &x, NULL);
 }
 
-void flog_close(void) {
-    if(logh == INVALID_HANDLE_VALUE)
-	return;
-    flog("Log file closed");
-    CloseHandle(logh);
+void
+flog_close (void)
+{
+    if (logh == INVALID_HANDLE_VALUE)
+        return;
+    flog ("Log file closed");
+    CloseHandle (logh);
 }
-

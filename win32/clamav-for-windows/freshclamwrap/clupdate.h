@@ -23,31 +23,31 @@
 /* Possible states during update */
 typedef enum _AV_UPD_STATE
 {
-	UPD_CHECK,
-	UPD_NEWER_FOUND,
-	UPD_NONE,
-	UPD_DOWNLOAD_BEGIN,
-	UPD_DOWNLOAD_COMPLETE,
-	UPD_PAUSE,
-	UPD_ABORT,
-	UPD_DONE,
-	UPD_INSTALL_BEGIN,
-	UPD_INSTALL_COMPLETE,
-	UPD_FILE_BEGIN,
-	UPD_FILE_COMPLETE,
-	UPD_FILE_PROGRESS,
-	UPD_STOP, /* Used by external module to stop the update */
-}AV_UPD_STATE;
+    UPD_CHECK,
+    UPD_NEWER_FOUND,
+    UPD_NONE,
+    UPD_DOWNLOAD_BEGIN,
+    UPD_DOWNLOAD_COMPLETE,
+    UPD_PAUSE,
+    UPD_ABORT,
+    UPD_DONE,
+    UPD_INSTALL_BEGIN,
+    UPD_INSTALL_COMPLETE,
+    UPD_FILE_BEGIN,
+    UPD_FILE_COMPLETE,
+    UPD_FILE_PROGRESS,
+    UPD_STOP,                   /* Used by external module to stop the update */
+} AV_UPD_STATE;
 
 #define AV_UPD_FILE_NAME_MAX   16
 
 typedef struct _AV_UPD_STATUS
 {
-	int state;				/* AV_UPD_STATE */
-	int status;				/* 0 -> Success, anything else failure */
-	int totalFiles;				/* incase there update happens with multiple files */
-	int percentDownloaded;			/* file downloaded in % */
-	WCHAR fileName[AV_UPD_FILE_NAME_MAX];	/* the current filename */
-}AV_UPD_STATUS, *PAV_UPD_STATUS;
+    int state;                  /* AV_UPD_STATE */
+    int status;                 /* 0 -> Success, anything else failure */
+    int totalFiles;             /* incase there update happens with multiple files */
+    int percentDownloaded;      /* file downloaded in % */
+    WCHAR fileName[AV_UPD_FILE_NAME_MAX];   /* the current filename */
+} AV_UPD_STATUS, *PAV_UPD_STATUS;
 
 #endif /* _CLUPDATE_H */
