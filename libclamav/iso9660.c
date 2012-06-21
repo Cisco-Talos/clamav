@@ -92,7 +92,7 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len) {
     if(iso->joliet) {
 	char *utf8;
         const char *uutf8;
-	if(len > sizeof(iso->buf))
+	if(len > (sizeof(iso->buf) - 2))
 	    len = sizeof(iso->buf) - 2;
 	memcpy(iso->buf, src, len);
 	iso->buf[len] = '\0';
