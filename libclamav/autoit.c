@@ -116,6 +116,7 @@ static void MT_decrypt(uint8_t *buf, unsigned int size, uint32_t seed) {
   for(i=1; i<624; i++)
     mt[i] = i+0x6c078965*((mt[i-1]>>30)^mt[i-1]);
   MT.items = 1;
+  MT.next = MT.mt;
 
   while(size--)
     *buf++ ^= MT_getnext(&MT);

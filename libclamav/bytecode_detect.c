@@ -127,11 +127,13 @@ static int detect_SELinux(void)
 	return 0;
 
     f = fopen("/selinux/enforce", "r");
-    if (f && fscanf(f, "%d", &enforce) == 1) {
-	if (enforce == 1)
-	    selinux = 2;
-	if (enforce == -1)
-	    selinux = 0;
+    if (f) {
+	if (fscanf(f, "%d", &enforce) == 1) {
+	    if (enforce == 1)
+		selinux = 2;
+	    if (enforce == -1)
+		selinux = 0;
+	}
 	fclose(f);
     }
     return selinux;

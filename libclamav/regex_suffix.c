@@ -109,8 +109,10 @@ static struct node *dup_node(struct node *p)
 			break;
 		case leaf_class:
 			d->u.leaf_class_bitmap = cli_malloc(32);
-			if(!d->u.leaf_class_bitmap)
+			if(!d->u.leaf_class_bitmap) {
+				free(d);
 				return NULL;
+			}
 			memcpy(d->u.leaf_class_bitmap, p->u.leaf_class_bitmap, 32);
 			break;
 		default:

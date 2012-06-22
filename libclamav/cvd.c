@@ -46,15 +46,28 @@
 
 #define TAR_BLOCKSIZE 512
 
+static void cli_untgz_cleanup(char *path, gzFile infile, FILE *outfile, int fdd)
+{
+    cli_dbgmsg("in cli_untgz_cleanup()\n");
+    if (path != NULL)
+        free (path);
+    if (infile != NULL) 
+        gzclose (infile);
+    if (outfile != NULL)
+        fclose(outfile);
+    if (fdd > -1)
+        close(fdd);
+}
+
 static int cli_untgz(int fd, const char *destdir)
 {
 	char *path, osize[13], name[101], type;
 	char block[TAR_BLOCKSIZE];
-	int nbytes, nread, nwritten, in_block = 0, fdd;
+	int nbytes, nread, nwritten, in_block = 0, fdd = -1;
 	unsigned int size, pathlen = strlen(destdir) + 100 + 5;
 	FILE *outfile = NULL;
 	struct stat foo;
-	gzFile infile;
+	gzFile infile = NULL;
 
 
     cli_dbgmsg("in cli_untgz()\n");
@@ -74,7 +87,7 @@ static int cli_untgz(int fd, const char *destdir)
     path = (char *) cli_calloc(sizeof(char), pathlen);
     if(!path) {
 	cli_errmsg("cli_untgz: Can't allocate memory for path\n");
-	gzclose(infile);
+	cli_untgz_cleanup(NULL, infile, NULL, fdd);
 	return -1;
     }
 
@@ -87,8 +100,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("cli_untgz: Incomplete block read\n");
-	    free(path);
-	    gzclose(infile);
+	    cli_untgz_cleanup(path, infile, outfile, fdd);
 	    return -1;
 	}
 
@@ -101,8 +113,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 	    if(strchr(name, '/')) {
 		cli_errmsg("cli_untgz: Slash separators are not allowed in CVD\n");
-		free(path);
-	        gzclose(infile);
+		cli_untgz_cleanup(path, infile, outfile, fdd);
 		return -1;
 	    }
 
@@ -116,13 +127,11 @@ static int cli_untgz(int fd, const char *destdir)
 		    break;
 		case '5':
 		    cli_errmsg("cli_untgz: Directories are not supported in CVD\n");
-		    free(path);
-	            gzclose(infile);
+		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 		default:
 		    cli_errmsg("cli_untgz: Unknown type flag '%c'\n", type);
-		    free(path);
-	            gzclose(infile);
+		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 	    }
 	    in_block = 1;
@@ -130,8 +139,7 @@ static int cli_untgz(int fd, const char *destdir)
 	    if(outfile) {
 		if(fclose(outfile)) {
 		    cli_errmsg("cli_untgz: Cannot close file %s\n", path);
-		    free(path);
-	            gzclose(infile);
+		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 		}
 		outfile = NULL;
@@ -139,8 +147,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 	    if(!(outfile = fopen(path, "wb"))) {
 		cli_errmsg("cli_untgz: Cannot create file %s\n", path);
-		free(path);
-	        gzclose(infile);
+		cli_untgz_cleanup(path, infile, outfile, fdd);
 		return -1;
 	    }
 
@@ -149,9 +156,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 	    if((sscanf(osize, "%o", &size)) == 0) {
 		cli_errmsg("cli_untgz: Invalid size in header\n");
-		free(path);
-	        gzclose(infile);
-		fclose(outfile);
+		cli_untgz_cleanup(path, infile, outfile, fdd);
 		return -1;
 	    }
 
@@ -161,8 +166,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 	    if(nwritten != nbytes) {
 		cli_errmsg("cli_untgz: Wrote %d instead of %d (%s)\n", nwritten, nbytes, path);
-		free(path);
-	        gzclose(infile);
+		cli_untgz_cleanup(path, infile, outfile, fdd);
 		return -1;
 	    }
 
@@ -172,12 +176,27 @@ static int cli_untgz(int fd, const char *destdir)
 	}
     }
 
-    if(outfile)
-	fclose(outfile);
-
-    gzclose(infile);
-    free(path);
+    cli_untgz_cleanup(path, infile, outfile, fdd);
     return 0;
+}
+
+static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
+{
+    cli_dbgmsg("in cli_tgzload_cleanup()\n");
+    if(comp) {
+        gzclose(dbio->gzs);
+        dbio->gzs = NULL;
+    }
+    else {
+        fclose(dbio->fs);
+        dbio->fs = NULL;
+    }
+    if(dbio->buf != NULL) {
+        free(dbio->buf);
+        dbio->buf = NULL;
+    }
+    if(fdd > -1)
+        close(fdd);
 }
 
 static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo)
@@ -189,12 +208,6 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	off_t off;
 	struct cli_dbinfo *db;
 	unsigned char hash[32];
-
-#define CLOSE_DBIO	    \
-    if(compr)		    \
-	gzclose(dbio->gzs);  \
-    else		    \
-	fclose(dbio->fs)
 
     cli_dbgmsg("in cli_tgzload()\n");
 
@@ -215,12 +228,16 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
     if(compr) {
 	if((dbio->gzs = gzdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
+	    if (fdd > -1)
+		close(fdd);
 	    return CL_EOPEN;
 	}
 	dbio->fs = NULL;
     } else {
 	if((dbio->fs = fdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
+	    if (fdd > -1)
+		close(fdd);
 	    return CL_EOPEN;
 	}
 	dbio->gzs = NULL;
@@ -230,7 +247,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
     dbio->buf = cli_malloc(dbio->bufsize);
     if(!dbio->buf) {
 	cli_errmsg("cli_tgzload: Can't allocate memory for dbio->buf\n");
-	CLOSE_DBIO;
+	cli_tgzload_cleanup(compr, dbio, fdd);
 	return CL_EMALFDB;
     }
     dbio->bufpt = NULL;
@@ -249,8 +266,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("cli_tgzload: Incomplete block read\n");
-	    free(dbio->buf);
-	    CLOSE_DBIO;
+	    cli_tgzload_cleanup(compr, dbio, fdd);
 	    return CL_EMALFDB;
 	}
 
@@ -262,8 +278,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if(strchr(name, '/')) {
 	    cli_errmsg("cli_tgzload: Slash separators are not allowed in CVD\n");
-	    free(dbio->buf);
-	    CLOSE_DBIO;
+	    cli_tgzload_cleanup(compr, dbio, fdd);
 	    return CL_EMALFDB;
 	}
 
@@ -275,13 +290,11 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		break;
 	    case '5':
 		cli_errmsg("cli_tgzload: Directories are not supported in CVD\n");
-		free(dbio->buf);
-		CLOSE_DBIO;
+		cli_tgzload_cleanup(compr, dbio, fdd);
 		return CL_EMALFDB;
 	    default:
 		cli_errmsg("cli_tgzload: Unknown type flag '%c'\n", type);
-		free(dbio->buf);
-		CLOSE_DBIO;
+		cli_tgzload_cleanup(compr, dbio, fdd);
 		return CL_EMALFDB;
 	}
 
@@ -290,8 +303,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if((sscanf(osize, "%o", &size)) == 0) {
 	    cli_errmsg("cli_tgzload: Invalid size in header\n");
-	    free(dbio->buf);
-	    CLOSE_DBIO;
+	    cli_tgzload_cleanup(compr, dbio, fdd);
 	    return CL_EMALFDB;
 	}
 	dbio->size = size;
@@ -311,13 +323,11 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	    ret = cli_load(name, engine, signo, options, dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
-		free(dbio->buf);
-		CLOSE_DBIO;
+		cli_tgzload_cleanup(compr, dbio, fdd);
 		return CL_EMALFDB;
 	    }
 	    if(!dbinfo) {
-		free(dbio->buf);
-		CLOSE_DBIO;
+		cli_tgzload_cleanup(compr, dbio, fdd);
 		return CL_SUCCESS;
 	    } else {
 		db = dbinfo;
@@ -325,22 +335,19 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		    db = db->next;
 		if(!db) {
 		    cli_errmsg("cli_tgzload: File %s not found in .info\n", name);
-		    free(dbio->buf);
-		    CLOSE_DBIO;
+		    cli_tgzload_cleanup(compr, dbio, fdd);
 		    return CL_EMALFDB;
 		}
 		if(dbio->bread) {
 		    if(db->size != dbio->bread) {
 			cli_errmsg("cli_tgzload: File %s not correctly loaded\n", name);
-			free(dbio->buf);
-			CLOSE_DBIO;
+			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
 		    sha256_final(&dbio->sha256ctx, hash);
 		    if(memcmp(db->hash, hash, 32)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
-			free(dbio->buf);
-			CLOSE_DBIO;
+			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
 		}
@@ -360,8 +367,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	}
     }
 
-    free(dbio->buf);
-    CLOSE_DBIO;
+    cli_tgzload_cleanup(compr, dbio, fdd);
     return CL_SUCCESS;
 }
 

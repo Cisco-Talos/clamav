@@ -2955,6 +2955,7 @@ rfc1341(message *m, const char *dir)
 						cli_errmsg("Can't open '%s' for reading", fullname);
 						fclose(fout);
 						cli_unlink(outname);
+						free(md5_hex);
 						free(id);
 						free(number);
 						closedir(dd);

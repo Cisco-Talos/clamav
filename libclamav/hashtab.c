@@ -355,6 +355,7 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 			}
 			else {
 				cli_errmsg("hashtab.c: Impossible - unable to rehash table");
+				free (htable);
 				return CL_EMEM;/* this means we didn't find enough room for all elements in the new table, should never happen */ 
 			}
 		}

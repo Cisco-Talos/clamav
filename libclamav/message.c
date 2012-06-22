@@ -2567,8 +2567,10 @@ push(LINK1 *top, const char *string)
 
 	if((element = (LINK1)cli_malloc(sizeof(ELEMENT1))) == NULL)
 		return OUT_OF_MEMORY;
-	if((element->d1 = cli_strdup(string)) == NULL)
+	if((element->d1 = cli_strdup(string)) == NULL) {
+		free (element);
 		return OUT_OF_MEMORY;
+	}
 	element->next = *top;
 	*top = element;
 

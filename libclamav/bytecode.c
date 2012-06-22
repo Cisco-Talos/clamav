@@ -513,6 +513,7 @@ static inline char *readData(const unsigned char *p, unsigned *off, unsigned len
 	if (UNLIKELY((v0&0xf0) != 0x60 || (v1&0xf0) != 0x60)) {
 	    cli_errmsg("Invalid data part: %c%c\n", v0, v1);
 	    *ok = 0;
+	    free(dat);
 	    return 0;
 	}
 	*q++ = (v0&0xf) | ((v1&0xf) << 4);
@@ -884,8 +885,10 @@ static int parseApis(struct cli_bc *bc, unsigned char *buffer)
 	}
 	/* don't need the name anymore */
 	free(name);
-	if (!ok)
+	if (!ok) {
+	    free(apity2ty); /* free temporary map */
 	    return CL_EMALFDB;
+	}
 
 	/* APIcall is valid */
 	cli_bitset_set(bc->uses_apis, id);

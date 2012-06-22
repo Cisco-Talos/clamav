@@ -800,6 +800,8 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 		if (!CLI_ISCONTAINED(src, size_sum, lesi, loc_ss) || !CLI_ISCONTAINED(src, size_sum, ledi, loc_ds))
 		{
 			cli_dbgmsg("Possibly programmer error or hand-crafted PE file, report to clamav team\n");
+			if (section != NULL)
+				 free(section);
 			return -1;
 		}
 		if (unmew(lesi, ledi, loc_ss, loc_ds, &f1, &f2))

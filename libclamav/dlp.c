@@ -334,6 +334,9 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
                  return 0;
              }       
              break;
+        default:
+	    cli_dbgmsg("dlp_is_valid_ssn: unknown format type %d \n", format);
+	    return 0;
     }
         
     /* start validating */

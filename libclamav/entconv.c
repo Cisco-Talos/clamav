@@ -689,6 +689,8 @@ static iconv_t iconv_open_cached(const char* fromcode)
 			if(!cache->tab) {
 				cli_dbgmsg(MODULE_NAME "!Out of mem in iconv-pool\n");
 				errno = ENOMEM;
+				/* Close descriptor before returning -1 */
+				iconv_close (iconv_struct);
 				return (iconv_t)-1;
 			}
 		}

@@ -910,6 +910,7 @@ int cdiff_apply(int fd, unsigned short mode)
 		logg("!cdiff_apply: Premature EOF at line %d\n", lines + 1);
 		cdiff_ctx_free(&ctx);
 		gzclose(gzh);
+		close(desc);
 		free(line);
 		free(lbuf);
 		return -1;

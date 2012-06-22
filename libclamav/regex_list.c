@@ -646,8 +646,10 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		size_t n = matcher->suffix_cnt++;
 		el = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, n);
 		matcher->suffix_regexes = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
-		if(!matcher->suffix_regexes)
+		if(!matcher->suffix_regexes) {
+			free (regex);
 			return CL_EMEM;
+		}
 		matcher->suffix_regexes[n].tail = regex;
 		matcher->suffix_regexes[n].head = regex;
 		if (suffix[0] == '/' && suffix[1] == '\0')

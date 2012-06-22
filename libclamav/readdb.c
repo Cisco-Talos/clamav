@@ -1162,6 +1162,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		memcpy(&tdb->str[cnt], pt, strlen(pt));
 		tdb->str[tdb->cnt[CLI_TDB_STR] - 1] = 0;
 		break;
+
+	    default:
+		/* All known TDB types handled above, skip unknown */
+		cli_dbgmsg("lsigattribs: Unknown attribute type '%u'\n", apt->type);
+		return 1; /* +1 = skip */
 	}
     }
 

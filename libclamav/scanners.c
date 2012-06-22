@@ -423,6 +423,7 @@ static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
 	cli_dbgmsg("GZip: Can't generate temporary file.\n");
 	gzclose(gz);
+	close(fd);
 	return ret;
     }
     

@@ -1722,8 +1722,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	free(hexcpy);
 
 	if(error) {
+	    free(hex);
 	    if(new->special) {
-		free(hex);
 		mpool_ac_free_special(root->mempool, new);
 	    }
 	    mpool_free(root->mempool, new);
