@@ -158,6 +158,7 @@ void cli_detect_env_jit(struct cli_environment *env)
 		 warn_assumptions("Operating System", env->os_category, Triple::Win32);
 	     break;
 	CASE_OS(Haiku, os_unknown);
+	CASE_OS(Minix, os_unknown);
     }
 
     // mmap RWX
