@@ -83,6 +83,7 @@ enum os_kind_llvm {
   llvm_os_Solaris,
   llvm_os_Win32,
   llvm_os_Haiku,
+  llvm_os_Minix,
   llvm_os_ANY = 0xff
 };
 
