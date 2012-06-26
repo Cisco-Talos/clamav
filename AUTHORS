@@ -1,19 +1,49 @@
 The ClamAV Team - http://www.clamav.net/team
+============================================
+Joel Esler <jesler at*sourcefire.com>
+Nigel Houghton <nhoughton at*sourcefire.com>
+Tom Judge <tjudge at*sourcefire.com>
+Matt Olney <molney at*sourcefire.com>
+Ryan Pentney <rpentney at*sourcefire.com>
+Dave Raynor <draynor at*sourcefire.com>
+Alain Zidouemba <azidouemba at*sourcefire.com>
 
-aCaB <acab at*clamav*net>
+Sourcefire VRT
+==============
+Nathan Benson
+Christoph Cordes
+William Freeman
+Ethan Gulla
+Richard Johnson
+Alex Kambis
+Alex Kirk
+Christopher Marshall
+Christopher McBee
+Alex McDonnell
+Kevin Miklavcic
+Patrick Mullen
+Nick Randolph
+Andy Walker
+
+Contributors
+============
 Aeriana <aeriana at*clamav*net>
 Mike Cathey <mike at*clamav*net>
-Christoph Cordes <ccordes at*clamav*net>
 Diego d’Ambra <diego at*clamav*net>
 Andreas Faust <afaust at*clamav*net>
-Luca Gibelli <luca at*clamav*net>
-Nigel Horne <njh at*clamav*net>
 Arnaud Jacques <arnaud at*clamav*net>
-Tomasz Kojm <tkojm at*clamav*net>
 Tomasz Papszun <tomek at*clamav*net>
 Sven Strickroth <sven at*clamav*net>
-Török Edvin <edwin at*clamav*net>
 Trog <trog at*clamav*net>
+
+ClamAV Emeritus
+===============
+aCaB
+Luca Gibelli
+Tomasz Kojmnet
+Török Edvin 
+Nigel Horne
+
 
 Please see the ChangeLog and clamdoc.pdf for the full list of contributors.
 
