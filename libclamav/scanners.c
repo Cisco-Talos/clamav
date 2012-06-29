@@ -2362,10 +2362,16 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
 	if(res != CL_CLEAN) {
 	    switch(res) {
-		/* Short list of scan halts, major runtime errors only! */
-		case CL_EREAD:
+		/* List of scan halts, runtime errors only! */
+		case CL_EUNLINK:
+		case CL_ESTAT:
 		case CL_ESEEK:
+		case CL_EWRITE:
+		case CL_EDUP:
+		case CL_ETMPFILE:
+		case CL_ETMPDIR:
 		case CL_EMEM:
+		case CL_ETIMEOUT:
 		    cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", desc, cl_strerror(res));
 		    funmap(*ctx->fmap);
 		    ctx->fmap--;
@@ -2388,7 +2394,8 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw reached %s\n",
 			desc, cl_strerror(res));
 		    break;
-		/* Other errors should not prevent later attempts to scan */
+		/* Other errors must not block further scans below */
+		/* This specifically includes CL_EFORMAT & CL_EREAD */
 		default:
 		    ret = res;
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw error %s\n",
