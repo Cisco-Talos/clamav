@@ -2538,10 +2538,16 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
 	if(res != CL_CLEAN) {
 	    switch(res) {
-		/* Short list of scan halts, major runtime errors only! */
-		case CL_EREAD:
+		/* List of scan halts, runtime errors only! */
+		case CL_EUNLINK:
+		case CL_ESTAT:
 		case CL_ESEEK:
+		case CL_EWRITE:
+		case CL_EDUP:
+		case CL_ETMPFILE:
+		case CL_ETMPDIR:
 		case CL_EMEM:
+		case CL_ETIMEOUT:
 		    cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
 		    cli_bitset_free(ctx->hook_lsig_matches);
 		    ctx->hook_lsig_matches = old_hook_lsig_matches;
@@ -2560,7 +2566,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw reached %s\n",
 			fmap_fd(*ctx->fmap), cl_strerror(res));
 		    break;
-		/* Other errors should not prevent later attempts to scan */
+		/* Other errors must not block further scans below */
+		/* This specifically includes CL_EFORMAT & CL_EREAD */
 		default:
 		    ret = res;
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw error %s\n",
@@ -2672,7 +2679,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     off_t old_off = map->nested_offset;
     size_t old_len = map->len;
     size_t old_real_len = map->real_len;
-    int ret;
+    int ret = CL_CLEAN;
 
     cli_dbgmsg("cli_map_scandesc: [%ld, +%ld), [%ld, +%ld)\n",
 	       old_off, old_len, offset, length);
