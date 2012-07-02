@@ -704,7 +704,9 @@ static int build(const struct optstruct *opts)
 	    }
 	    closedir(dd);
 	    entries += dblist2cnt;
-	    qsort(dblist2, dblist2cnt, sizeof(char *), qcompare);
+	    if(dblist2 != NULL) {
+		qsort(dblist2, dblist2cnt, sizeof(char *), qcompare);
+	    }
 
 	    if(!access("last.hdb", R_OK)) {
 		if(!dblist2cnt) {
