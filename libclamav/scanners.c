@@ -2566,8 +2566,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw reached %s\n",
 			fmap_fd(*ctx->fmap), cl_strerror(res));
 		    break;
-		/* Other errors must not block further scans below */
-		/* This specifically includes CL_EFORMAT & CL_EREAD */
+		/* Other errors must not block further scans below
+		 * This specifically includes CL_EFORMAT & CL_EREAD & CL_EUNPACK
+		 * Malformed/truncated files could report as any of these three.
+		 */
 		default:
 		    ret = res;
 		    cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw error %s\n",
@@ -2615,11 +2617,16 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     ctx->hook_lsig_matches = old_hook_lsig_matches;
 
     switch(ret) {
+	/* Malformed file cases */
 	case CL_EFORMAT:
+	case CL_EREAD:
+	case CL_EUNPACK:
+	/* Limits exceeded */
 	case CL_EMAXREC:
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
+	    ret_from_magicscan(CL_CLEAN);
 	case CL_CLEAN:
 	    cache_clean = 1;
 	    ret_from_magicscan(CL_CLEAN);
