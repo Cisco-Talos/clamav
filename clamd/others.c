@@ -77,6 +77,12 @@
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t detstats_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static void xfree(void *p)
+{
+    if (p)
+        free(p);
+}
+
 #ifdef	_WIN32
 void
 virusaction (const char *filename, const char *virname,
@@ -97,7 +103,7 @@ virusaction (const char *filename, const char *virname,
 {
     pid_t pid;
     const struct optstruct *opt;
-    char *buffer_file, *buffer_vir, *buffer_cmd;
+    char *buffer_file, *buffer_vir, *buffer_cmd, *path;
     const char *pt;
     size_t i, j, v = 0, len;
     char *env[4];
@@ -105,7 +111,8 @@ virusaction (const char *filename, const char *virname,
     if (!(opt = optget (opts, "VirusEvent"))->enabled)
         return;
 
-    env[0] = getenv ("PATH");
+    path = getenv ("PATH");
+    env[0] = path ? strdup(path) : NULL;
     j = env[0] ? 1 : 0;
     /* Allocate env vars.. to be portable env vars should not be freed */
     buffer_file =
@@ -136,8 +143,10 @@ virusaction (const char *filename, const char *virname,
         (char *) calloc (len + v * strlen (virname) + 1, sizeof (char));
     if (!buffer_cmd)
     {
-        free (buffer_file);
-        free (buffer_vir);
+        xfree(path);
+
+        xfree (buffer_file);
+        xfree (buffer_vir);
         return;
     }
     for (i = 0, j = 0; i < len; i++)
@@ -157,7 +166,7 @@ virusaction (const char *filename, const char *virname,
     pthread_mutex_lock (&virusaction_lock);
     /* We can only call async-signal-safe functions after fork(). */
     pid = fork ();
-    if (!pid)
+    if (pid == 0)
     {                           /* child */
         exit (execle ("/bin/sh", "sh", "-c", buffer_cmd, NULL, env));
     }
@@ -168,11 +177,14 @@ virusaction (const char *filename, const char *virname,
     }
     else
     {
+        pthread_mutex_unlock(&virusaction_lock);
         logg ("!VirusEvent: fork failed.\n");
     }
-    free (buffer_cmd);
-    free (buffer_file);
-    free (buffer_vir);
+    xfree(path);
+
+    xfree (buffer_cmd);
+    xfree (buffer_file);
+    xfree (buffer_vir);
 }
 #endif /* _WIN32 */
 
