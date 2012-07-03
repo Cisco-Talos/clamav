@@ -366,7 +366,7 @@ int command(client_conn_t *conn, int *virus)
     if (ret == CL_EMEM)
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return -1;
-    if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN) {
+    if (scandata.group && type == TYPE_MULTISCAN) {
 	thrmgr_group_waitforall(group, &ok, &error, &total);
 	pthread_mutex_lock(&conn->thrpool->pool_mutex);
 	conn->thrpool->thr_multiscan--;
