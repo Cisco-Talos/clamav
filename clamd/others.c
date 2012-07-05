@@ -143,7 +143,8 @@ virusaction (const char *filename, const char *virname,
         (char *) calloc (len + v * strlen (virname) + 1, sizeof (char));
     if (!buffer_cmd)
     {
-        xfree(path);
+        if (path)
+            xfree(env[0]);
 
         xfree (buffer_file);
         xfree (buffer_vir);
@@ -180,7 +181,8 @@ virusaction (const char *filename, const char *virname,
         pthread_mutex_unlock(&virusaction_lock);
         logg ("!VirusEvent: fork failed.\n");
     }
-    xfree(path);
+    if (path)
+        xfree(env[0]);
 
     xfree (buffer_cmd);
     xfree (buffer_file);
