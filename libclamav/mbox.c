@@ -580,7 +580,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 	if(ret == NULL)
 		return NULL;
 
-	strcpy(buffer, firstLine);
+	strncpy(buffer, firstLine, sizeof(buffer)-1);
 	do {
 		const char *line;
 
