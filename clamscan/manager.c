@@ -446,7 +446,10 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 	return 2;
     }
 
-    file = cli_gentemp(tmpdir);
+    if(!(file = cli_gentemp(tmpdir))) {
+	logg("!Can't generate tempfile name\n");
+	return 2;
+    }
 
     if(!(fs = fopen(file, "wb"))) {
 	logg("!Can't open %s for writing\n", file);
@@ -569,6 +572,7 @@ int scanmanager(const struct optstruct *opts)
 	    while(opt) {
 		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
+		    cl_engine_free(engine);
 		    return 2;
 		}
 		sprintf(pua_cats + i, ".%s", opt->strarg);
