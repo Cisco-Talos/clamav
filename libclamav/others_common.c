@@ -436,14 +436,19 @@ int cli_filecopy(const char *src, const char *dest)
 
 const char *cli_gettmpdir(void) {
 	const char *tmpdir;
-    if(
+    unsigned int i;
+
 #ifdef _WIN32
-	!(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TMP"))
+    char *envs[] = { "TEMP", "TMP", NULL };
 #else
-	!(tmpdir = getenv("TMPDIR"))
+    char *envs[] = { "TMPDIR", NULL };
 #endif
-    ) tmpdir = P_tmpdir;
-    return tmpdir;
+
+    for (i=0; envs[i] != NULL; i++)
+        if ((tmpdir = getenv(envs[i])))
+            return tmpdir;
+
+    return P_tmpdir;
 }
 
 struct dirent_data {

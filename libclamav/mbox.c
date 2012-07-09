@@ -2919,6 +2919,7 @@ rfc1341(message *m, const char *dir)
 					int nblanks;
 					struct stat statb;
 					const char *dentry_idpart;
+                    int test_fd;
 
 					if(dent->d_ino == 0)
 						continue;
@@ -2934,8 +2935,15 @@ rfc1341(message *m, const char *dir)
 							strcmp(filename, dentry_idpart) != 0) {
 						if(!m->ctx->engine->keeptmp)
 							continue;
-						if(stat(fullname, &statb) < 0)
+
+                        if ((test_fd = open(fullname, O_RDONLY)) < 0)
+                            continue;
+
+						if(fstat(test_fd, &statb) < 0) {
+                            close(test_fd);
 							continue;
+                        }
+
 						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600)) {
 							if (cli_unlink(fullname)) {
 								cli_unlink(outname);
@@ -2944,9 +2952,12 @@ rfc1341(message *m, const char *dir)
 								free(id);
 								free(number);
 								closedir(dd);
+                                close(test_fd);
 								return -1;
 							}
 						}
+
+                        close(test_fd);
 						continue;
 					}
 

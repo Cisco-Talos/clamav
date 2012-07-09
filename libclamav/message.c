@@ -539,8 +539,14 @@ messageAddArguments(message *m, const char *s)
 				return;
 
 			ptr = strchr(kcopy, '=');
-			if(ptr == NULL)
+			if(ptr == NULL) {
 				ptr = strchr(kcopy, ':');
+                if (ptr == NULL) {
+                    cli_dbgmsg("Can't parse header \"%s\"\n", s);
+                    return;
+                }
+            }
+
 			*ptr = '\0';
 
 			string = strchr(++cptr, '"');

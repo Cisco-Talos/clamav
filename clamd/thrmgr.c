@@ -138,8 +138,10 @@ static void remove_frompools(threadpool_t *t)
 		prev = l;
 		l = l->nxt;
 	}
-	if(!l)
+	if(!l) {
+        pthread_mutex_unlock(&pools_lock);
 		return;
+    }
 	if(prev)
 		prev->nxt = l->nxt;
 	if(l == pools)
