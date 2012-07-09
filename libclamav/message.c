@@ -426,6 +426,11 @@ messageAddArgument(message *m, const char *arg)
 	}
 
 	p = m->mimeArguments[offset] = rfc2231(arg);
+	if(!p) {
+		/* problem inside rfc2231() */
+		cli_dbgmsg("messageAddArgument, error from rfc2231()\n");
+		return;
+	}
 
 	if(strchr(p, '=') == NULL) {
 		if(strncmp(p, "filename", 8) == 0) {
@@ -436,7 +441,7 @@ messageAddArgument(message *m, const char *arg)
 			cli_dbgmsg("Possible data corruption fixed\n");
 			p[8] = '=';
 		} else {
-			if(p && *p)
+			if(*p)
 				cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
 			free(m->mimeArguments[offset]);
 			m->mimeArguments[offset] = NULL;
@@ -450,7 +455,7 @@ messageAddArgument(message *m, const char *arg)
 	 * mime. By pretending defaulting to an application rather than
 	 * to nomime we can ensure they're saved and scanned
 	 */
-	if(p && ((strncasecmp(p, "filename=", 9) == 0) || (strncasecmp(p, "name=", 5) == 0)))
+	if((strncasecmp(p, "filename=", 9) == 0) || (strncasecmp(p, "name=", 5) == 0))
 		if(messageGetMimeType(m) == NOMIME) {
 			cli_dbgmsg("Force mime encoding to application\n");
 			messageSetMimeType(m, "application");
