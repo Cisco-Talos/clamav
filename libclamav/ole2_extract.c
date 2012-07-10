@@ -875,9 +875,11 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	const void *phdr;
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
+    if (!ctx)
+        return CL_ENULLARG;
 
 	hdr.bitset = NULL;
-	if (ctx && ctx->engine->maxscansize) {
+	if (ctx->engine->maxscansize) {
 	  if (ctx->engine->maxscansize > ctx->scansize)
 	    scansize = ctx->engine->maxscansize - ctx->scansize;
 	  else
@@ -975,8 +977,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	  cli_dbgmsg("OLE2: no VBA projects found\n");
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
-	  if(ctx)
-	    ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+	  ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
 	}
 
 abort:
