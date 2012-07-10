@@ -1984,10 +1984,12 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
-	if (!map)
-	    ret = CL_EMEM;
+	if (!map) {
+        free(gmap);
+	    return CL_EMEM;
+    }
 	bcfunc->numBytes = 0;
-	for (j=0;j<bcfunc->numValues && ret == CL_SUCCESS;j++) {
+	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
 	    align = typealign(bc, ty);

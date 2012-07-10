@@ -1116,7 +1116,6 @@ int cli_scanpe(cli_ctx *ctx)
     switch (ret) {
         case CL_ENULLARG:
             cli_warnmsg("cli_scanpe: NULL argument supplied\n");
-            return CL_ENULLARG;
             break;
         case CL_VIRUS:
         case CL_BREAK:
@@ -1124,6 +1123,7 @@ int cli_scanpe(cli_ctx *ctx)
             cli_bytecode_context_destroy(bc_ctx);
             return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
     }
+    cli_bytecode_context_destroy(bc_ctx);
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
