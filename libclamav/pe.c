@@ -1113,13 +1113,17 @@ int cli_scanpe(cli_ctx *ctx)
     cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
     cli_bytecode_context_setctx(bc_ctx, ctx);
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_ALL, map, ctx->virname);
-    if (ret == CL_VIRUS || ret == CL_BREAK) {
-	free(exe_sections);
-	cli_bytecode_context_destroy(bc_ctx);
-	return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+    switch (ret) {
+        case CL_ENULLARG:
+            cli_warnmsg("cli_scanpe: NULL argument supplied\n");
+            return CL_ENULLARG;
+            break;
+        case CL_VIRUS:
+        case CL_BREAK:
+            free(exe_sections);
+            cli_bytecode_context_destroy(bc_ctx);
+            return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
     }
-    cli_bytecode_context_destroy(bc_ctx);
-
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */

@@ -608,7 +608,7 @@ int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t
 int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct cli_hashset *s = get_hashset(ctx, id);
-    return !s->count;
+    return s ? !s->count : 1;
 }
 
 int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)

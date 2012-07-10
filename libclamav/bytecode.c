@@ -1612,13 +1612,15 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
     int test_mode = 0;
     cli_ctx *cctx =(cli_ctx*)ctx->ctx;
-    if (cctx && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
-	test_mode = 1;
 
     if (!ctx || !ctx->bc || !ctx->func)
 	return CL_ENULLARG;
     if (ctx->numParams && (!ctx->values || !ctx->operands))
 	return CL_ENULLARG;
+
+    if (cctx && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+	test_mode = 1;
+
     if (bc->state == bc_loaded) {
 	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
 	return CL_EARG;
@@ -1628,7 +1630,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	return CL_SUCCESS;
     }
     if (cctx)
-	cli_event_time_start(cctx->perf, PERFT_BYTECODE);
+        cli_event_time_start(cctx->perf, PERFT_BYTECODE);
     ctx->env = &bcs->env;
     context_safe(ctx);
     if (test_mode) {
@@ -1742,7 +1744,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
     cli_events_free(jit_ev);
     cli_events_free(interp_ev);
     if (cctx)
-	cli_event_time_stop(cctx->perf, PERFT_BYTECODE);
+        cli_event_time_stop(cctx->perf, PERFT_BYTECODE);
     return ret;
 }
 
@@ -1900,6 +1902,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     unsigned i, j, k;
     uint64_t *gmap;
     unsigned bcglobalid = cli_apicall_maxglobal - _FIRST_GLOBAL+2;
+    int ret=CL_SUCCESS;
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap)
@@ -1914,8 +1917,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     }
     if (bc->numGlobalBytes) {
 	bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
-	if (!bc->globalBytes)
+	if (!bc->globalBytes) {
+        free(gmap);
 	    return CL_EMEM;
+    }
     } else
 	bc->globalBytes = NULL;
 
@@ -1975,14 +1980,14 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	}
     }
 
-    for (i=0;i<bc->num_func;i++) {
+    for (i=0;i<bc->num_func && ret == CL_SUCCESS;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	if (!map)
-	    return CL_EMEM;
+	    ret = CL_EMEM;
 	bcfunc->numBytes = 0;
-	for (j=0;j<bcfunc->numValues;j++) {
+	for (j=0;j<bcfunc->numValues && ret == CL_SUCCESS;j++) {
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
 	    align = typealign(bc, ty);
@@ -1999,7 +2004,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    map[bcfunc->numValues+j] = bcfunc->numBytes;
 	    bcfunc->numBytes += 8;
 	}
-	for (j=0;j<bcfunc->numInsts;j++) {
+	for (j=0;j<bcfunc->numInsts && ret == CL_SUCCESS;j++) {
 	    struct cli_bc_inst *inst = &bcfunc->allinsts[j];
 	    inst->dest = map[inst->dest];
 	    switch (inst->opcode) {
@@ -2057,27 +2062,33 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			target = &bc->funcs[inst->u.ops.funcid];
 			if (inst->u.ops.funcid > bc->num_func) {
 			    cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
-			    return CL_EBYTECODE;
+			    ret = CL_EBYTECODE;
 			}
+            if (ret != CL_SUCCESS)
+                break;
 			if (inst->u.ops.numOps != target->numArgs) {
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
-			    return CL_EBYTECODE;
+			    ret = CL_EBYTECODE;
 			}
 		    } else {
 			/* APIs have at most 2 parameters always */
 			if (inst->u.ops.numOps > 5) {
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
-			    return CL_EBYTECODE;
+			    ret = CL_EBYTECODE;
 			}
+            if (ret != CL_SUCCESS)
+                break;
 		    }
 		    if (inst->u.ops.numOps) {
 			inst->u.ops.opsizes = cli_malloc(sizeof(*inst->u.ops.opsizes)*inst->u.ops.numOps);
 			if (!inst->u.ops.opsizes) {
 			    cli_errmsg("Out of memory when allocating operand sizes\n");
-			    return CL_EMEM;
+			    ret = CL_EMEM;
 			}
 		    } else
 			inst->u.ops.opsizes = NULL;
+            if (ret != CL_SUCCESS)
+                break;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAPPTR(inst->u.ops.ops[k]);
 			if (inst->opcode == OP_BC_CALL_DIRECT)
@@ -2094,13 +2105,15 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    if (inst->u.three[1]&0x80000000 ||
 			bcfunc->types[inst->u.binop[1]]&0x8000) {
                       cli_errmsg("bytecode: gep1 of alloca is not allowed\n");
-                      return CL_EBYTECODE;
+                      ret = CL_EBYTECODE;
                     }
+            if (ret != CL_SUCCESS)
+                break;
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
                     inst->u.three[0] = get_geptypesize(bc, inst->u.three[0]);
                     if (inst->u.three[0] == -1)
-                      return CL_EBYTECODE;
+                      ret = CL_EBYTECODE;
                     break;
 		case OP_BC_GEPZ:
 		    /*three[0] is the type*/
@@ -2111,8 +2124,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			inst->interp_op = 5*(inst->interp_op/5)+3;
 		    MAP(inst->u.three[1]);
 		    if (calc_gepz(bc, bcfunc, inst->u.three[0], inst->u.three[2]) == -1)
-			return CL_EBYTECODE;
-		    MAP(inst->u.three[2]);
+			ret = CL_EBYTECODE;
+            if (ret == CL_SUCCESS)
+		        MAP(inst->u.three[2]);
 		    break;
 /*		case OP_BC_GEPN:
 		    *TODO 
@@ -2144,14 +2158,15 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    break;
 		default:
 		    cli_warnmsg("Bytecode: unhandled opcode: %d\n", inst->opcode);
-		    return CL_EBYTECODE;
+		    ret = CL_EBYTECODE;
 	    }
 	}
-	free(map);
+    if (map)
+	    free(map);
     }
     free(gmap);
     bc->state = bc_interp;
-    return CL_SUCCESS;
+    return ret;
 }
 
 static int add_selfcheck(struct cli_all_bc *bcs)
@@ -2648,6 +2663,9 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
     int ret;
     unsigned executed = 0, breakflag = 0, errorflag = 0;
 
+    if (!cctx)
+        return CL_ENULLARG;
+
     cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
     /* restore match counts */
     cli_bytecode_context_setfile(ctx, map);
@@ -2687,7 +2705,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	    char *tempfile;
 	    int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
 	    if (fd && fd != -1) {
-		if (cctx && cctx->engine->keeptmp)
+		if (cctx->engine->keeptmp)
 		    cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
 			       bc->id, tempfile);
 		else
@@ -2697,11 +2715,11 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		cctx->recursion++;
 		ret = cli_magic_scandesc(fd, cctx);
 		cctx->recursion--;
-		if (!cctx || !cctx->engine->keeptmp)
+		if (!cctx->engine->keeptmp)
 		    if (ftruncate(fd, 0) == -1)
 			cli_dbgmsg("ftruncate failed on %d\n", fd);
 		close(fd);
-		if (!cctx || !cctx->engine->keeptmp) {
+		if (!cctx->engine->keeptmp) {
 		    if (tempfile && cli_unlink(tempfile))
 			ret = CL_EUNLINK;
 		}
@@ -2722,7 +2740,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
     else
 	cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
-    if (errorflag && cctx && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+    if (errorflag && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
 	return CL_EBYTECODE_TESTFAIL;
     return breakflag ? CL_BREAK : CL_CLEAN;
 }
