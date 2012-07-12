@@ -1942,6 +1942,11 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	struct stat sb;
 	struct cl_cvd *cvd;
 
+    if (strlen(url) > sizeof(urlcpy) - 1) {
+        logg("!DatabaseCustomURL: URL must be shorter than %lu\n", sizeof(urlcpy));
+        return 70;
+    }
+
     if(!strncasecmp(url, "http://", 7)) {
 	strncpy(urlcpy, url, sizeof(urlcpy));
 	host = &urlcpy[7];
@@ -2109,6 +2114,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned
     if(!pt)
 	return 57;
     strncpy(updtmpdir, pt, sizeof(updtmpdir));
+    updtmpdir[sizeof(updtmpdir)-1] = '\0';
     free(pt);
     if(mkdir(updtmpdir, 0755)) {
 	logg("!Can't create temporary directory %s\n", updtmpdir);
