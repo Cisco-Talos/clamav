@@ -1054,13 +1054,20 @@ static int cli_scanscript(cli_ctx *ctx)
 	struct text_norm_state state;
 	char *tmpname = NULL;
 	int ofd = -1, ret;
-	struct cli_matcher *troot = ctx->engine->root[7];
-	uint32_t maxpatlen = troot ? troot->maxpatlen : 0, offset = 0;
-	struct cli_matcher *groot = ctx->engine->root[0];
+	struct cli_matcher *troot;
+	uint32_t maxpatlen, offset = 0;
+	struct cli_matcher *groot;
 	struct cli_ac_data gmdata, tmdata;
 	struct cli_ac_data *mdata[2];
 	fmap_t *map = *ctx->fmap;
 	size_t at = 0;
+
+    if (!ctx || !ctx->engine->root)
+        return CL_ENULLARG;
+
+    groot = ctx->engine->root[0];
+    troot = ctx->engine->root[7];
+    maxpatlen = troot ? troot->maxpatlen : 0;
 
 	cli_dbgmsg("in cli_scanscript()\n");
 
@@ -1124,7 +1131,7 @@ static int cli_scanscript(cli_ctx *ctx)
 		state.out_pos = maxpatlen;
 	    }
 	    if(!len) break;
-	    if(text_normalize_buffer(&state, buff, len) != len) {
+	    if(!buff || text_normalize_buffer(&state, buff, len) != len) {
 		cli_dbgmsg("cli_scanscript: short read during normalizing\n");
 	    }
 	}
@@ -1571,7 +1578,7 @@ static int cli_scan_structured(cli_ctx *ctx)
 	unsigned int cc_count = 0;
 	unsigned int ssn_count = 0;
 	int done = 0;
-	fmap_t *map = *ctx->fmap;
+	fmap_t *map;
 	size_t pos = 0;
 	int (*ccfunc)(const unsigned char *buffer, int length);
 	int (*ssnfunc)(const unsigned char *buffer, int length);
@@ -1579,6 +1586,8 @@ static int cli_scan_structured(cli_ctx *ctx)
 
     if(ctx == NULL)
 	return CL_ENULLARG;
+
+    map = ctx->fmap;
 
     if(ctx->engine->min_cc_count == 1)
 	ccfunc = dlp_has_cc;
@@ -1771,8 +1780,8 @@ static void get_thread_times(uint64_t *kt, uint64_t *ut)
     struct tms tbuf;
     if (times(&tbuf) != -1) {
 	clock_t tck = sysconf(_SC_CLK_TCK);
-	*kt = 1000000*tbuf.tms_stime / tck;
-	*ut = 1000000*tbuf.tms_utime / tck;
+	*kt = 1000000UL*tbuf.tms_stime / tck;
+	*ut = 1000000UL*tbuf.tms_utime / tck;
     } else {
 	*kt = *ut = 0;
     }

@@ -347,7 +347,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		}
 		at += sizeof(segment_cmd64);
 		nsects = EC32(segment_cmd64.nsects, conv);
-		strncpy(name, segment_cmd64.segname, 16);
+		strncpy(name, segment_cmd64.segname, sizeof(name));
 	    } else {
 		if(fmap_readn(map, &segment_cmd, at, sizeof(segment_cmd)) != sizeof(segment_cmd)) {
 		    cli_dbgmsg("cli_scanmacho: Can't read segment command\n");
@@ -356,10 +356,10 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		}
 		at += sizeof(segment_cmd);
 		nsects = EC32(segment_cmd.nsects, conv);
-		strncpy(name, segment_cmd.segname, 16);
+		strncpy(name, segment_cmd.segname, sizeof(name));
 	    }
 	    if(!matcher) {
-		name[15] = 0;
+		name[sizeof(name)-1] = '\0';
 		cli_dbgmsg("MACHO: Segment name: %s\n", name);
 		cli_dbgmsg("MACHO: Number of sections: %u\n", nsects);
 	    }
@@ -392,7 +392,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    sections[sect].raw = EC32(section64.offset, conv);
 		    section64.align = 1 << EC32(section64.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
-		    strncpy(name, section64.sectname, 16);
+		    strncpy(name, section64.sectname, sizeof(name));
 		} else {
 		    if(fmap_readn(map, &section, at, sizeof(section)) != sizeof(section)) {
 			cli_dbgmsg("cli_scanmacho: Can't read section\n");
@@ -405,10 +405,10 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    sections[sect].raw = EC32(section.offset, conv);
 		    section.align = 1 << EC32(section.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
-		    strncpy(name, section.sectname, 16);
+		    strncpy(name, section.sectname, sizeof(name));
 		}
 		if(!matcher) {
-		    name[15] = 0;
+		    name[sizeof(name)-1] = '\0';
 		    cli_dbgmsg("MACHO: --- Section %u ---\n", sect);
 		    cli_dbgmsg("MACHO: Name: %s\n", name);
 		    cli_dbgmsg("MACHO: Virtual address: 0x%x\n", (unsigned int) sections[sect].rva);

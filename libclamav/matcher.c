@@ -346,11 +346,13 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 		    *offset_min = CLI_OFF_NONE;
 		} else {
 		    *offset_min = info->exeinfo.section[offdata[3]].raw;
-		    *offset_max = *offset_min + info->exeinfo.section[offdata[3]].rsz + offdata[2];
+            if (offset_max)
+		        *offset_max = *offset_min + info->exeinfo.section[offdata[3]].rsz + offdata[2];
 		}
 		break;
 
 	    case CLI_OFF_VERSION:
+        if (offset_max)
 		*offset_min = *offset_max = CLI_OFF_ANY;
 		break;
 	    default:
@@ -863,7 +865,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	    return CL_VIRUS;
 	}
 
-    if(!(cdb = ctx->engine->cdb))
+    if(!ctx->engine || !(cdb = ctx->engine->cdb))
 	return CL_CLEAN;
 
     do {
