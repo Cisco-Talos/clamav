@@ -193,7 +193,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
-    struct stat sb;
+    STATBUF sb;
 
     if(chkpath(filename))
 	return 0;
@@ -278,7 +278,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	}
     }
     if(!beenthere) {
-	stat(filename, &sb);
+	STAT(filename, &sb);
 	if(!S_ISDIR(sb.st_mode)) {
 	    logg("~%s: no reply from clamd\n", filename ? filename : "STDIN");
 	    return -1;
@@ -298,7 +298,7 @@ struct client_serial_data {
 
 /* FTW callback for scanning in non IDSESSION mode
  * Returns SUCCESS or BREAK on success, CL_EXXX on error */
-static int serial_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+static int serial_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
     const char *f = filename;
@@ -452,7 +452,7 @@ static int dspresult(struct client_parallel_data *c) {
 
 /* FTW callback for scanning in IDSESSION mode
  * Returns SUCCESS on success, CL_EXXX or BREAK on error */
-static int parallel_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
     struct SCANID *cid;
     int res = CL_CLEAN;

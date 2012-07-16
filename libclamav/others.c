@@ -778,7 +778,7 @@ int
 cli_rmdirs(const char *name)
 {
 	int rc;
-	struct stat statb;	
+	STATBUF statb;	
 	DIR *dd;
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -790,7 +790,7 @@ cli_rmdirs(const char *name)
 	char err[128];
 
 
-    if(stat(name, &statb) < 0) {
+    if(STAT(name, &statb) < 0) {
 	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
 	return -1;
     }
@@ -853,14 +853,14 @@ int cli_rmdirs(const char *dirname)
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
-	struct stat maind, statbuf;
+	STATBUF maind, statbuf;
 	char *path;
 	char err[128];
 
 
     chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {
-	while(stat(dirname, &maind) != -1) {
+	while(STAT(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
 		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));

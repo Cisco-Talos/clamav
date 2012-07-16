@@ -64,12 +64,12 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
     unsigned int pages, mapsz, hdrsz;
     unsigned short dumb = 1;
     int pgsz = cli_getpagesize();
-    struct stat st;
+    STATBUF st;
     fmap_t *m;
     void *handle = (void*)(ssize_t)fd;
 
     *empty = 0;
-    if(fstat(fd, &st)) {
+    if(FSTAT(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
     }
@@ -102,14 +102,14 @@ static void unmap_win32(fmap_t *m) { /* WIN32 */
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN32 */
     unsigned int pages, mapsz, hdrsz;
     int pgsz = cli_getpagesize();
-    struct stat st;
+    STATBUF st;
     fmap_t *m;
     const void *data;
     HANDLE fh;
     HANDLE mh;
 
     *empty = 0;
-    if(fstat(fd, &st)) {
+    if(FSTAT(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
     }
@@ -402,9 +402,9 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		for(j=first_page; j<page; j++) {
 		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
 			/* page we've seen before: check mtime */
-			struct stat st;
+			STATBUF st;
 			char err[256];
-			if(fstat(_fd, &st)) {
+			if(FSTAT(_fd, &st)) {
 			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", cli_strerror(errno, err, sizeof(err)));
 			    return 1;
 			}

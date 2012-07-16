@@ -21,8 +21,25 @@
 #ifndef __CLAMAV_H
 #define __CLAMAV_H
 
+#if defined(HAVE_STAT64)
+
+#define STATBUF struct stat64
+#define STAT stat64
+#define LSTAT lstat64
+#define FSTAT fstat64
+
+#else
+
+#define STATBUF struct stat
+#define STAT stat
+#define LSTAT lstat
+#define FSTAT fstat
+
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -311,7 +328,7 @@ extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback
 
 struct cl_stat {
     char *dir;
-    struct stat *stattab;
+    STATBUF *stattab;
     char **statdname;
     unsigned int entries;
 };

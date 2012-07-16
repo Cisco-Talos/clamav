@@ -95,7 +95,7 @@ void *fan_th(void *arg)
 	const struct optstruct *pt;
 	short int scan;
 	int sizelimit = 0, extinfo;
-	struct stat sb;
+	STATBUF sb;
         uint64_t fan_mask = FAN_ACCESS | FAN_EVENT_ON_CHILD;
 	int fan_fd;
         fd_set rfds;
@@ -191,7 +191,7 @@ void *fan_th(void *arg)
 		}
 
 		if(sizelimit) {
-		    fstat(fmd->fd, &sb);
+		    FSTAT(fmd->fd, &sb);
 		    if(sb.st_size > sizelimit) {
 			scan = 0;
 			/* logg("*ScanOnAccess: %s skipped (size > %d)\n", fname, sizelimit); */

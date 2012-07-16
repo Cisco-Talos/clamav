@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <libgen.h>
 
+#include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
@@ -121,8 +122,8 @@ static void action_remove(const char *filename) {
 }
 
 static int isdir(void) {
-    struct stat sb;
-    if(stat(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
+    STATBUF sb;
+    if(STAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
 	logg("!'%s' doesn't exist or is not a directory\n", actarget);
 	return 0;
     }

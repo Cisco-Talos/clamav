@@ -31,6 +31,7 @@
 #endif
 #include <zlib.h>
 
+#include "libclamav/clamav.h"
 #include "tar.h"
 
 struct tar_header {
@@ -51,7 +52,7 @@ int tar_addfile(int fd, gzFile gzs, const char *file)
 {
 	int s, bytes;
 	struct tar_header hdr;
-	struct stat sb;
+	STATBUF sb;
 	unsigned char buff[FILEBUFF], *pt;
 	unsigned int i, chksum = 0;
 
@@ -59,7 +60,7 @@ int tar_addfile(int fd, gzFile gzs, const char *file)
     if((s = open(file, O_RDONLY|O_BINARY)) == -1)
 	return -1;
 
-    if(fstat(s, &sb) == -1) {
+    if(FSTAT(s, &sb) == -1) {
 	close(s);
 	return -1;
     }

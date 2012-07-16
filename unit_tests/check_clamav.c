@@ -325,14 +325,14 @@ static void engine_teardown(void)
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
 {
     int fd;
-    struct stat st;
+    STATBUF st;
 
     fail_unless(i < testfiles_n);
     snprintf(file, fsize, OBJDIR"/../test/%s", testfiles[i]);
 
     fd = open(file, O_RDONLY);
     fail_unless(fd > 0, "open");
-    fail_unless(fstat(fd, &st) == 0, "fstat");
+    fail_unless(FSTAT(fd, &st) == 0, "fstat");
     *size = st.st_size;
     return fd;
 }

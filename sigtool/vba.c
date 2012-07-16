@@ -983,7 +983,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 {
     DIR *dd;
     struct dirent *dent;
-    struct stat statbuf;
+    STATBUF statbuf;
     char *fname;
     const char *tmpdir;
     char *dir;
@@ -1000,7 +1000,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 		    sprintf (fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if (lstat (fname, &statbuf) != -1) {
+		    if (LSTAT (fname, &statbuf) != -1) {
 			if (S_ISDIR (statbuf.st_mode) && !S_ISLNK (statbuf.st_mode)) {
 			    if (sigtool_scandir (fname, hex_output)) {
 				free (fname);
@@ -1077,7 +1077,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
-    struct stat statbuf;
+    STATBUF statbuf;
     char *fullname, vbaname[1024], *hash;
     unsigned char *data;
     uint32_t hashcnt;
@@ -1171,7 +1171,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 		    sprintf (fullname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if (lstat (fullname, &statbuf) != -1) {
+		    if (LSTAT (fullname, &statbuf) != -1) {
 			if (S_ISDIR (statbuf.st_mode) && !S_ISLNK (statbuf.st_mode))
 			    sigtool_vba_scandir (fullname, hex_output, U); 
 		    }

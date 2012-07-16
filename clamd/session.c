@@ -199,7 +199,7 @@ int command(client_conn_t *conn, int *virus)
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
     unsigned ok, error, total;
-    struct stat sb;
+    STATBUF sb;
     jobgroup_t *group = NULL;
 
     if (thrmgr_group_need_terminate(conn->group)) {
@@ -235,7 +235,7 @@ int command(client_conn_t *conn, int *virus)
 	    int multiscan, max, alive;
 
 	    /* use MULTISCAN only for directories (bb #1869) */
-	    if (stat(conn->filename, &sb) == 0 &&
+	    if (STAT(conn->filename, &sb) == 0 &&
 		!S_ISDIR(sb.st_mode)) {
 		thrmgr_setactivetask(NULL, "CONTSCAN");
 		type = TYPE_CONTSCAN;
@@ -359,7 +359,7 @@ int command(client_conn_t *conn, int *virus)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
 
     if(!optget(opts, "CrossFilesystems")->enabled)
-	if(stat(conn->filename, &sb) == 0)
+	if(STAT(conn->filename, &sb) == 0)
 	    scandata.dev = sb.st_dev;
 
     ret = cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data, scan_pathchk);

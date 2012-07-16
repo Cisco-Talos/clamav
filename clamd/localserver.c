@@ -57,7 +57,7 @@ int localserver(const struct optstruct *opts)
 {
 	struct sockaddr_un server;
 	int sockfd, backlog;
-	struct stat foo;
+	STATBUF foo;
 	char *estr;
 
     memset((char *) &server, 0, sizeof(server));
@@ -92,7 +92,7 @@ int localserver(const struct optstruct *opts)
 		    close(sockfd);
 		    return -1;
 		}
-	    } else if(stat(server.sun_path, &foo) != -1) {
+	    } else if(STAT(server.sun_path, &foo) != -1) {
 		logg("!LOCAL: Socket file %s exists. Either remove it, or configure a different one.\n", server.sun_path);
 		close(sockfd);
 		return -1;

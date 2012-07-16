@@ -103,7 +103,7 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
 }
 
 #define BUFFSIZE 1024
-int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname;
@@ -278,7 +278,7 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
 {
 	struct scan_cb_data *scandata = data->data;
 	const struct optstruct *opt;
-	struct stat statbuf;
+	STATBUF statbuf;
 
     if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
 	while(opt) {
@@ -292,7 +292,7 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     }
 
     if(!optget(scandata->opts, "CrossFilesystems")->enabled) {
-	if(stat(path, &statbuf) == 0) {
+	if(STAT(path, &statbuf) == 0) {
 	    if(statbuf.st_dev != scandata->dev) {
 		if(scandata->type != TYPE_MULTISCAN)
 		    conn_reply_single(scandata->conn, path, "Excluded (another filesystem)");
@@ -310,7 +310,7 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 {
     int ret, fd = conn->scanfd;
 	const char *virname;
-	struct stat statbuf;
+	STATBUF statbuf;
 	struct cb_context context;
 	char fdstr[32];
 	const char*reply_fdstr;
@@ -327,7 +327,7 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 	    reply_fdstr = fdstr;
 	}
-	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
+	if(FSTAT(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
 		logg("%s: Not a regular file. ERROR\n", fdstr);
 		if (conn_reply(conn, reply_fdstr, "Not a regular file", "ERROR") == -1)
 		    return CL_ETIMEOUT;

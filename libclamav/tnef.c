@@ -68,7 +68,7 @@ cli_tnef(const char *dir, cli_ctx *ctx)
 	fileblob *fb;
 	int ret, alldone;
 	off_t fsize, pos = 0;
-	struct stat statb;
+	STATBUF statb;
 
 
 	fsize = ctx->fmap[0]->len;

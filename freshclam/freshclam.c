@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 	const char *dbowner;
 	struct passwd *user;
 #endif
-	struct stat statbuf;
+	STATBUF statbuf;
 	struct mirdat mdat;
 
     if(check_flevel())
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     }
 
     if(optget(opts, "HTTPProxyPassword")->enabled) {
-	if(stat(cfgfile, &statbuf) == -1) {
+	if(STAT(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
 	    optfree(opts);
 	    return 56;

@@ -2676,7 +2676,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 
 int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
 {
-	struct stat sb;
+	STATBUF sb;
 	int ret;
 
     if(!engine) {
@@ -2689,7 +2689,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	return CL_EARG;
     }
 
-    if(stat(path, &sb) == -1) {
+    if(STAT(path, &sb) == -1) {
         cli_errmsg("cl_load(): Can't get status of %s\n", path);
         return CL_ESTAT;
     }
@@ -2773,7 +2773,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
 		dbstat->entries++;
-		dbstat->stattab = (struct stat *) cli_realloc2(dbstat->stattab, dbstat->entries * sizeof(struct stat));
+		dbstat->stattab = (STATBUF *) cli_realloc2(dbstat->stattab, dbstat->entries * sizeof(STATBUF));
 		if(!dbstat->stattab) {
 		    cl_statfree(dbstat);
 		    closedir(dd);
@@ -2806,7 +2806,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
 		strcpy(dbstat->statdname[dbstat->entries - 1], dent->d_name);
 #endif
-		stat(fname, &dbstat->stattab[dbstat->entries - 1]);
+		STAT(fname, &dbstat->stattab[dbstat->entries - 1]);
 		free(fname);
 	    }
 	}
@@ -2826,7 +2826,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
-	struct stat sb;
+	STATBUF sb;
 	unsigned int i, found;
 	char *fname;
 
@@ -2860,7 +2860,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		}
 
 		sprintf(fname, "%s"PATHSEP"%s", dbstat->dir, dent->d_name);
-		stat(fname, &sb);
+		STAT(fname, &sb);
 		free(fname);
 
 		found = 0;
@@ -3195,7 +3195,7 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
 
 int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
 {
-	struct stat sb;
+	STATBUF sb;
 	char fname[1024];
 	struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -3210,7 +3210,7 @@ int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs
     if(!sigs)
 	return CL_ENULLARG;
 
-    if(stat(path, &sb) == -1) {
+    if(STAT(path, &sb) == -1) {
 	cli_errmsg("cl_countsigs: Can't stat %s\n", path);
 	return CL_ESTAT;
     }

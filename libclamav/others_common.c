@@ -454,7 +454,7 @@ const char *cli_gettmpdir(void) {
 struct dirent_data {
     char *filename;
     const char *dirname;
-    struct stat *statbuf;
+    STATBUF *statbuf;
     long  ino; /* -1: inode not available */
     int   is_dir;/* 0 - no, 1 - yes */
 };
@@ -487,7 +487,7 @@ static inline int ft_skipped(enum filetype ft)
 
 #define FOLLOW_SYMLINK_MASK (CLI_FTW_FOLLOW_FILE_SYMLINK | CLI_FTW_FOLLOW_DIR_SYMLINK)
 static int get_filetype(const char *fname, int flags, int need_stat,
-			 struct stat *statbuf, enum filetype *ft)
+			 STATBUF *statbuf, enum filetype *ft)
 {
     int stated = 0;
 
@@ -501,7 +501,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 	     * to lstat(), we can just stat() directly.*/
 	    if (*ft != ft_link) {
 		/* need to lstat to determine if it is a symlink */
-		if (lstat(fname, statbuf) == -1)
+		if (LSTAT(fname, statbuf) == -1)
 		    return -1;
 		if (S_ISLNK(statbuf->st_mode)) {
 		    *ft = ft_link;
@@ -520,7 +520,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     }
 
     if (need_stat) {
-	if (stat(fname, statbuf) == -1)
+	if (STAT(fname, statbuf) == -1)
 	    return -1;
 	stated = 1;
     }
@@ -545,7 +545,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 }
 
 static int handle_filetype(const char *fname, int flags,
-			   struct stat *statbuf, int *stated, enum filetype *ft,
+			   STATBUF *statbuf, int *stated, enum filetype *ft,
 			   cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     int ret;
@@ -581,7 +581,7 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
 
 int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
-    struct stat statbuf;
+    STATBUF statbuf;
     enum filetype ft = ft_unknown;
     struct dirent_data entry;
     int stated = 0;
@@ -651,8 +651,8 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    int stated = 0;
 	    enum filetype ft;
 	    char *fname;
-	    struct stat statbuf;
-	    struct stat *statbufp;
+	    STATBUF statbuf;
+	    STATBUF *statbufp;
 
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;

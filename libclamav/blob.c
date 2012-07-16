@@ -615,7 +615,7 @@ int
 fileblobScan(const fileblob *fb)
 {
 	int rc;
-	struct stat sb;
+	STATBUF sb;
 
 	if(fb->isInfected)
 		return CL_VIRUS;
@@ -632,7 +632,7 @@ fileblobScan(const fileblob *fb)
 
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
-	fstat(fb->fd, &sb);
+	FSTAT(fb->fd, &sb);
 	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS)
 	    return CL_VIRUS;
 

@@ -1488,6 +1488,14 @@ DEFAULT_FD_SETSIZE=256)
 AC_MSG_RESULT([$DEFAULT_FD_SETSIZE])
 AC_DEFINE_UNQUOTED([DEFAULT_FD_SETSIZE], $DEFAULT_FD_SETSIZE, "default FD_SETSIZE value")
 
+AC_ARG_ENABLE([stat64], [--enable-stat64]          enable support for stat64],
+              enable_stat64=$enableval, enable_stat64="no")
+
+if test "$enable_stat64" != "no"; then
+AC_DEFINE([HAVE_STAT64],1,[enable stat64])
+CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+fi
+
 dnl Check signed right shift implementation
 AC_MSG_CHECKING([whether signed right shift is sign extended])
 AC_TRY_RUN([int main(void){int a=-1;int b=a>>1;return(a!=b);}],

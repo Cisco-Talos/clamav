@@ -869,14 +869,14 @@ int
 fan_checkowner (int pid, const struct optstruct *opts)
 {
     char path[32];
-    struct stat sb;
+    STATBUF sb;
     const struct optstruct *opt;
 
     if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled)
         return 0;
 
     snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (stat (path, &sb) == 0)
+    if (STAT (path, &sb) == 0)
     {
         while (opt)
         {

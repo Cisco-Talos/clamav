@@ -116,7 +116,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
-	struct stat statbuf;
+	STATBUF statbuf;
 	char *fname;
 
 
@@ -141,7 +141,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 		    sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
+		    if(LSTAT(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
 			    if(cli_scandir(fname, ctx) == CL_VIRUS) {
 				free(fname);
@@ -802,7 +802,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
-	struct stat statbuf;
+	STATBUF statbuf;
 	char *fullname, vbaname[1024];
 	unsigned char *data;
 	char *hash;
@@ -951,7 +951,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		    sprintf(fullname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if(lstat(fullname, &statbuf) != -1) {
+		    if(LSTAT(fullname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
 			  if (cli_vba_scandir(fullname, ctx, U) == CL_VIRUS) {
 			    	ret = CL_VIRUS;
@@ -2646,14 +2646,14 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
-    struct stat sb;
+    STATBUF sb;
     int ret;
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(ctx->sha_collect>0) ctx->sha_collect = 0;
 #endif
     cli_dbgmsg("in cli_magic_scandesc (reclevel: %u/%u)\n", ctx->recursion, ctx->engine->maxreclevel);
-    if(fstat(desc, &sb) == -1) {
+    if(FSTAT(desc, &sb) == -1) {
 	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
 	early_ret_from_magicscan(CL_ESTAT);
     }

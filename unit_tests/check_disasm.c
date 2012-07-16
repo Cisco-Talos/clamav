@@ -119,11 +119,11 @@ START_TEST (test_disasm_basic) {
   };
   uint8_t *d;
   off_t size;
-  struct stat st;
+  STATBUF st;
 
   fail_unless(fd!=-1, "mkstemp failed");
   ref = open_testfile("input/disasmref.bin");
-  fail_unless(fstat(ref, &st)!=-1, "fstat failed");
+  fail_unless(FSTAT(ref, &st)!=-1, "fstat failed");
   disasmbuf(buf, sizeof(buf), fd);
   size = lseek(fd, 0, SEEK_CUR);
   fail_unless_fmt(size==st.st_size, "disasm size mismatch(value %u, expected: %u)", size, st.st_size);

@@ -47,6 +47,7 @@
 #include <unistd.h>
 #include <check.h>
 #include "checks_common.h"
+#include "libclamav/clamav.h"
 #include "libclamav/version.h"
 #include "libclamav/cltypes.h"
 
@@ -346,10 +347,10 @@ END_TEST
 
 static size_t prepare_instream(char *buf, size_t off, size_t buflen)
 {
-    struct stat stbuf;
+    STATBUF stbuf;
     int fd, nread;
     uint32_t chunk;
-    fail_unless_fmt(stat(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
+    fail_unless_fmt(STAT(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
 
     fd = open(SCANFILE, O_RDONLY);
     fail_unless_fmt(fd != -1, "open failed: %s\n", strerror(errno));

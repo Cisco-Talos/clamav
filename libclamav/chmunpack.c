@@ -669,7 +669,7 @@ int cli_chm_prepare_file(chm_metadata_t *metadata)
 
 int cli_chm_open(const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
-	struct stat statbuf;
+	STATBUF statbuf;
 	int retval;
 
 	cli_dbgmsg("in cli_chm_open\n");

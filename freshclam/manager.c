@@ -1939,7 +1939,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	char *pt, *host, urlcpy[256], *newfile = NULL, mtime[36], *newfile2;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL, *rpath, *dbname;
 	int ctimeout, rtimeout;
-	struct stat sb;
+	STATBUF sb;
 	struct cl_cvd *cvd;
 
     if (strlen(url) > sizeof(urlcpy) - 1) {
@@ -1989,7 +1989,7 @@ static int updatecustomdb(const char *url, int *signo, const struct optstruct *o
 	rtimeout = optget(opts, "ReceiveTimeout")->numarg;
 
 	*mtime = 0;
-	if(stat(dbname, &sb) != -1)
+	if(STAT(dbname, &sb) != -1)
 	    Rfc2822DateTime(mtime, sb.st_mtime);
 
 	newfile = cli_gentemp(updtmpdir);

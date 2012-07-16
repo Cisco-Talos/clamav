@@ -160,12 +160,12 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 {
 	char *hash;
 	unsigned int i;
-	struct stat sb;
+	STATBUF sb;
 
 
     if(opts->filename) {
 	for(i = 0; opts->filename[i]; i++) {
-	    if(stat(opts->filename[i], &sb) == -1) {
+	    if(STAT(opts->filename[i], &sb) == -1) {
 		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
 		perror("hashsig");
 		return -1;
@@ -502,14 +502,14 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	char *cdiff, *pt, buffer[FILEBUFF];
 	unsigned char digest[32];
 	SHA256_CTX ctx;
-	struct stat sb;
+	STATBUF sb;
 	FILE *scripth, *cdiffh;
 	gzFile gzh;
 	unsigned int ver, osize;
 	int bytes;
 
 
-    if(stat(script, &sb) == -1) {
+    if(STAT(script, &sb) == -1) {
 	mprintf("!script2diff: Can't stat file %s\n", script);
 	return -1;
     }
@@ -626,7 +626,7 @@ static int build(const struct optstruct *opts)
 	int ret, bc = 0;
 	size_t bytes;
 	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl;
-	struct stat foo;
+	STATBUF foo;
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512];
 	char patch[32], broken[32], dbname[32], dbfile[32];
@@ -655,7 +655,7 @@ static int build(const struct optstruct *opts)
     if(optget(opts, "datadir")->active)
 	localdbdir = optget(opts, "datadir")->strarg;
 
-    if(stat("COPYING", &foo) == -1) {
+    if(STAT("COPYING", &foo) == -1) {
 	mprintf("!build: COPYING file not found in current working directory.\n");
 	return -1;
     }
@@ -1398,7 +1398,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	int ret;
 	const char *name;
 	char *dbdir;
-	struct stat sb;
+	STATBUF sb;
 	regex_t reg;
 	const char *localdbdir = NULL;
 
@@ -1409,7 +1409,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	name = optget(opts, "list-sigs")->strarg;
 	if(access(name, R_OK) && localdbdir)
 	    name = localdbdir;
-	if(stat(name, &sb) == -1) {
+	if(STAT(name, &sb) == -1) {
 	    mprintf("--list-sigs: Can't get status of %s\n", name);
 	    return -1;
 	}
@@ -1796,11 +1796,11 @@ static int dircopy(const char *src, const char *dest)
 {
 	DIR *dd;
 	struct dirent *dent;
-	struct stat sb;
+	STATBUF sb;
 	char spath[512], dpath[512];
 
 
-    if(stat(dest, &sb) == -1) {
+    if(STAT(dest, &sb) == -1) {
 	if(mkdir(dest, 0755)) {
 	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
 	    return -1;
@@ -1932,7 +1932,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 {
 	struct cl_engine *engine;
         struct cli_ac_result *acres = NULL, *res;
-	struct stat sb;
+	STATBUF sb;
 	unsigned int matches = 0;
 	cli_ctx ctx;
 	int ret;
@@ -1971,7 +1971,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	return;
     }
     lseek(fd, 0, SEEK_SET);
-    fstat(fd, &sb);
+    FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
 	free(ctx.fmap);
 	cl_engine_free(engine);
@@ -2777,7 +2777,7 @@ int main(int argc, char **argv)
 {
 	int ret;
         struct optstruct *opts;
-	struct stat sb;
+	STATBUF sb;
 
     if(check_flevel())
 	exit(1);
@@ -2858,7 +2858,7 @@ int main(int argc, char **argv)
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(stat(opts->filename[0], &sb) == -1) {
+	    if(STAT(opts->filename[0], &sb) == -1) {
 		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename[0]);
 		ret = -1;
 	    } else {

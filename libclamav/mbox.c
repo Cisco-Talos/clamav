@@ -2803,9 +2803,9 @@ rfc1341(message *m, const char *dir)
 		free(id);
 		return -1;
 	} else if(errno == EEXIST) {
-		struct stat statb;
+		STATBUF statb;
 
-		if(stat(pdir, &statb) < 0) {
+		if(STAT(pdir, &statb) < 0) {
 			char err[128];
 			cli_errmsg("Partial directory %s: %s\n", pdir,
 				cli_strerror(errno, err, sizeof(err)));
@@ -2917,7 +2917,7 @@ rfc1341(message *m, const char *dir)
 					FILE *fin;
 					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
-					struct stat statb;
+					STATBUF statb;
 					const char *dentry_idpart;
                     int test_fd;
 
@@ -2939,7 +2939,7 @@ rfc1341(message *m, const char *dir)
                         if ((test_fd = open(fullname, O_RDONLY)) < 0)
                             continue;
 
-						if(fstat(test_fd, &statb) < 0) {
+						if(FSTAT(test_fd, &statb) < 0) {
                             close(test_fd);
 							continue;
                         }

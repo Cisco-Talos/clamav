@@ -574,7 +574,7 @@ struct cli_ftw_cbdata {
  * after an error, we call the callback with reason == error,
  * and if it returns CL_BREAK we break.
  */
-typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
+typedef int (*cli_ftw_cb)(STATBUF *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 
 /*
  * returns 1 if the path should be skipped and 0 otherwise
