@@ -21,7 +21,10 @@
 #ifndef __CLAMAV_H
 #define __CLAMAV_H
 
-#if defined(HAVE_STAT64)
+/* Certain OSs already use 64bit variables in their stat struct */
+#define STAT64_BLACKLIST !defined(__FreeBSD__)
+
+#if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
 #define STATBUF struct stat64
 #define STAT stat64
