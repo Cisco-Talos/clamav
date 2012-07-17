@@ -26,6 +26,8 @@
 
 #if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
+#include <unistd.h>
+
 #define STATBUF struct stat64
 #define STAT stat64
 #define LSTAT lstat64
@@ -42,7 +44,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C"
