@@ -1587,7 +1587,7 @@ static int cli_scan_structured(cli_ctx *ctx)
     if(ctx == NULL)
 	return CL_ENULLARG;
 
-    map = ctx->fmap;
+    map = *ctx->fmap;
 
     if(ctx->engine->min_cc_count == 1)
 	ccfunc = dlp_has_cc;
