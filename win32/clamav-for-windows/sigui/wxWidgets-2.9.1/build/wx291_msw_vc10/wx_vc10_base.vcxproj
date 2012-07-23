@@ -113,7 +113,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
+      <Command>xcopy "..\..\include\wx\msw\setup.h" $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -155,7 +155,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
+      <Command>xcopy "..\..\include\wx\msw\setup.h" $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -199,7 +199,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
+      <Command>xcopy "..\..\include\wx\msw\setup.h" $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -243,7 +243,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy ..\..\include\wx\msw\setup.h $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
+      <Command>xcopy "..\..\include\wx\msw\setup.h" $(SolutionDir)$(PlatformName)\$(Configuration)\wx\ /Y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
