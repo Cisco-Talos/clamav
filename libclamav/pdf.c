@@ -1048,16 +1048,18 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
             free(js);
 	    cli_dbgmsg("bytesleft: %d\n", (int)bytesleft);
 
-            q2 = pdf_nextobject(q, bytesleft);
-            if (!q2) q2 = q + bytesleft - 1;
-            /* non-conforming PDFs that don't escape ) properly */
-            q3 = memchr(q, ')', bytesleft);
-            if (q3 && q3 < q2) q2 = q3;
-            while (q2 > q && q2[-1] == ' ') q2--;
-            if (q2 > q) {
-                q--;
-                filter_writen(pdf, obj, fout, q, q2 - q, &sum);
-                q++;
+            if (bytesleft > 0) {
+                q2 = pdf_nextobject(q, bytesleft);
+                if (!q2) q2 = q + bytesleft - 1;
+                /* non-conforming PDFs that don't escape ) properly */
+                q3 = memchr(q, ')', bytesleft);
+                if (q3 && q3 < q2) q2 = q3;
+                while (q2 > q && q2[-1] == ' ') q2--;
+                if (q2 > q) {
+                    q--;
+                    filter_writen(pdf, obj, fout, q, q2 - q, &sum);
+                    q++;
+                }
             }
         }
 
