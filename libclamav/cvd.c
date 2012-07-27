@@ -55,8 +55,6 @@ static void cli_untgz_cleanup(char *path, gzFile infile, FILE *outfile, int fdd)
         gzclose (infile);
     if (outfile != NULL)
         fclose(outfile);
-    if (fdd > -1)
-        close(fdd);
 }
 
 static int cli_untgz(int fd, const char *destdir)
@@ -195,8 +193,6 @@ static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
         free(dbio->buf);
         dbio->buf = NULL;
     }
-    if(fdd > -1)
-        close(fdd);
 }
 
 static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo)
