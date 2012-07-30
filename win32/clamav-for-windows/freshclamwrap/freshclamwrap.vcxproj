@@ -23,7 +23,8 @@
     <ClCompile Include="freshclamwrap.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
+	<ClInclude Include="clupdate.h" />  
+	<ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="freshclamwrap.rc" />

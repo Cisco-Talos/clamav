@@ -48,6 +48,7 @@ typedef struct _AV_UPD_STATUS
 	int totalFiles;				/* incase there update happens with multiple files */
 	int percentDownloaded;			/* file downloaded in % */
 	WCHAR fileName[AV_UPD_FILE_NAME_MAX];	/* the current filename */
+	DWORD pid;
 }AV_UPD_STATUS, *PAV_UPD_STATUS;
 
 #endif /* _CLUPDATE_H */

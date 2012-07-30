@@ -241,7 +241,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE cld_r, cld_w2, cld_w;
     STARTUPINFO sinfo;
     enum fresh_states fstate = FRESH_PRE;
-    AV_UPD_STATUS st = {UPD_CHECK, 0, 0, 0, L""};
+    AV_UPD_STATUS st = {UPD_CHECK, 0, 0, 0, L"", 0};
     DWORD dw;
     struct my_f spam;
     char command[8192], *ptr;
@@ -342,6 +342,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	flog("ERROR: failed to execute '%s'", command);
 	SENDFAIL_AND_QUIT(UPD_CHECK);
     }
+	st.pid = pinfo.dwProcessId;
     CloseHandle(pinfo.hThread);
     CloseHandle(cld_w2);
 
