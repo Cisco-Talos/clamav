@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "base", "sigui\wxWidgets-2.9
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "sigui\wxWidgets-2.9.1\build\wx291_msw_vc10\wx_vc10_core.vcxproj", "{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Package", "Package\Package.vdproj", "{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -59,6 +61,14 @@ Global
 		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Release|Win32.Build.0 = Release|Win32
 		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Release|x64.ActiveCfg = Release|x64
 		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Release|x64.Build.0 = Release|x64
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.ActiveCfg = Debug
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.Build.0 = Debug
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|x64.ActiveCfg = Debug
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|x64.Build.0 = Debug
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.ActiveCfg = Release
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.Build.0 = Release
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|x64.ActiveCfg = Release
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|x64.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
