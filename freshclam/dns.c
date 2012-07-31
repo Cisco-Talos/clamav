@@ -41,119 +41,137 @@
 #define PACKETSZ 512
 #endif
 
-char *dnsquery(const char *domain, int qtype, unsigned int *ttl)
+char *
+dnsquery (const char *domain, int qtype, unsigned int *ttl)
 {
-	unsigned char answer[PACKETSZ], *answend, *pt;
-	char *txt, host[128];
-	int len, type;
-	unsigned int cttl, size, txtlen = 0;
+    unsigned char answer[PACKETSZ], *answend, *pt;
+    char *txt, host[128];
+    int len, type;
+    unsigned int cttl, size, txtlen = 0;
 
 
-    if(ttl)
-	*ttl = 0;
-    if(res_init() < 0) {
-	logg("^res_init failed\n");
-	return NULL;
+    if (ttl)
+        *ttl = 0;
+    if (res_init () < 0)
+    {
+        logg ("^res_init failed\n");
+        return NULL;
     }
 
-    logg("*Querying %s\n", domain);
+    logg ("*Querying %s\n", domain);
 
-    memset(answer, 0, PACKETSZ);
-    if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0 || len > PACKETSZ) {
+    memset (answer, 0, PACKETSZ);
+    if ((len = res_query (domain, C_IN, qtype, answer, PACKETSZ)) < 0
+        || len > PACKETSZ)
+    {
 #ifdef FRESHCLAM_DNS_FIX
-	/*  The DNS server in the SpeedTouch Alcatel 510 modem can't
-	 *  handle a TXT-query, but it can resolve an ANY-query to a
-	 *  TXT-record, so we try an ANY-query now.  The thing we try
-	 *  to resolve normally only has a TXT-record anyway.  
-	 */
-	memset(answer, 0, PACKETSZ);
-	if(qtype == T_TXT)
-	    qtype = T_ANY;
-	if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
-	    logg("%cCan't query %s\n", (qtype == T_TXT || qtype == T_ANY) ? '^' : '*', domain);
-	    return NULL;
-	}
+        /*  The DNS server in the SpeedTouch Alcatel 510 modem can't
+         *  handle a TXT-query, but it can resolve an ANY-query to a
+         *  TXT-record, so we try an ANY-query now.  The thing we try
+         *  to resolve normally only has a TXT-record anyway.  
+         */
+        memset (answer, 0, PACKETSZ);
+        if (qtype == T_TXT)
+            qtype = T_ANY;
+        if ((len = res_query (domain, C_IN, qtype, answer, PACKETSZ)) < 0)
+        {
+            logg ("%cCan't query %s\n",
+                  (qtype == T_TXT || qtype == T_ANY) ? '^' : '*', domain);
+            return NULL;
+        }
 #else
-	logg("%cCan't query %s\n", (qtype == T_TXT) ? '^' : '*', domain);
-	return NULL;
+        logg ("%cCan't query %s\n", (qtype == T_TXT) ? '^' : '*', domain);
+        return NULL;
 #endif
     }
-    if(qtype != T_TXT && qtype != T_ANY) {
-	if(ttl)
-	    *ttl = 2;
-	return NULL;
+    if (qtype != T_TXT && qtype != T_ANY)
+    {
+        if (ttl)
+            *ttl = 2;
+        return NULL;
     }
 
     answend = answer + len;
-    pt = answer + sizeof(HEADER);
+    pt = answer + sizeof (HEADER);
 
-    if((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
-	logg("^dn_expand failed\n");
-	return NULL;
+    if ((len = dn_expand (answer, answend, pt, host, sizeof (host))) < 0)
+    {
+        logg ("^dn_expand failed\n");
+        return NULL;
     }
 
     pt += len;
-    if(pt > answend-4) {
-	logg("^Bad (too short) DNS reply\n");
-	return NULL;
+    if (pt > answend - 4)
+    {
+        logg ("^Bad (too short) DNS reply\n");
+        return NULL;
     }
 
-    GETSHORT(type, pt);
-    if(type != qtype) {
-	logg("^Broken DNS reply.\n");
-	return NULL;
+    GETSHORT (type, pt);
+    if (type != qtype)
+    {
+        logg ("^Broken DNS reply.\n");
+        return NULL;
     }
 
-    pt += INT16SZ; /* class */
+    pt += INT16SZ;              /* class */
     size = 0;
-    do { /* recurse through CNAME rr's */
-	pt += size;
-    	if((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
-	    logg("^second dn_expand failed\n");
-	    return NULL;
-	}
-	pt += len;
-	if(pt > answend-10) {
-	    logg("^Bad (too short) DNS reply\n");
-	    return NULL;
-	}
-	GETSHORT(type, pt);
-	pt += INT16SZ; /* class */
-	GETLONG(cttl, pt);
-	GETSHORT(size, pt);
-	if(pt + size < answer || pt + size > answend) {
-	    logg("^DNS rr overflow\n");
-	    return NULL;
-	}
-    } while(type == T_CNAME);
+    do
+    {                           /* recurse through CNAME rr's */
+        pt += size;
+        if ((len = dn_expand (answer, answend, pt, host, sizeof (host))) < 0)
+        {
+            logg ("^second dn_expand failed\n");
+            return NULL;
+        }
+        pt += len;
+        if (pt > answend - 10)
+        {
+            logg ("^Bad (too short) DNS reply\n");
+            return NULL;
+        }
+        GETSHORT (type, pt);
+        pt += INT16SZ;          /* class */
+        GETLONG (cttl, pt);
+        GETSHORT (size, pt);
+        if (pt + size < answer || pt + size > answend)
+        {
+            logg ("^DNS rr overflow\n");
+            return NULL;
+        }
+    }
+    while (type == T_CNAME);
 
-    if(type != T_TXT) {
-	logg("^Not a TXT record\n");
-	return NULL;
+    if (type != T_TXT)
+    {
+        logg ("^Not a TXT record\n");
+        return NULL;
     }
 
-    if(!size || (txtlen = *pt) >= size || !txtlen) {
-	logg("^Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
-	return NULL;
+    if (!size || (txtlen = *pt) >= size || !txtlen)
+    {
+        logg ("^Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
+        return NULL;
     }
 
-    if(!(txt = (char *) malloc(txtlen + 1)))
-	return NULL;
+    if (!(txt = (char *) malloc (txtlen + 1)))
+        return NULL;
 
-    memcpy(txt, pt+1, txtlen);
+    memcpy (txt, pt + 1, txtlen);
     txt[txtlen] = 0;
-    if(ttl)
-	*ttl = cttl;
+    if (ttl)
+        *ttl = cttl;
 
     return txt;
 }
 
 #else
 
-char *dnsquery(const char *domain, int qtype, unsigned int *ttl)
+char *
+dnsquery (const char *domain, int qtype, unsigned int *ttl)
 {
-    if(ttl)
-	*ttl = 1;  /* ttl of 1 combined with a NULL return distinguishes a failed lookup from DNS queries not being available */
+    if (ttl)
+        *ttl = 1;               /* ttl of 1 combined with a NULL return distinguishes a failed lookup from DNS queries not being available */
     return NULL;
 }
 

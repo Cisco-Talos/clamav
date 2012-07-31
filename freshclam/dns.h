@@ -32,6 +32,6 @@
 #include <resolv.h>
 #endif
 
-char *dnsquery(const char *domain, int qtype, unsigned int *ttl);
+char *dnsquery (const char *domain, int qtype, unsigned int *ttl);
 
 #endif

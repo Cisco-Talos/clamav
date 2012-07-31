@@ -23,6 +23,7 @@
 
 #include "shared/optparser.h"
 
-void execute( const char *type, const char *text, const struct optstruct *opts );
+void execute (const char *type, const char *text,
+              const struct optstruct *opts);
 
 #endif

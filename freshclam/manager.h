@@ -25,8 +25,9 @@
 
 #include "shared/optparser.h"
 
-int downloadmanager(const struct optstruct *opts, const char *hostname, unsigned int attempt);
+int downloadmanager (const struct optstruct *opts, const char *hostname,
+                     unsigned int attempt);
 
-int submitstats(const char *clamdcfg, const struct optstruct *opts);
+int submitstats (const char *clamdcfg, const struct optstruct *opts);
 
 #endif
