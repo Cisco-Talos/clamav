@@ -64,7 +64,7 @@ pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifdef  C_LINUX
+#ifdef  C_LINUX && defined(HAVE_LIBINTL_H)
 #include <libintl.h>
 #include <locale.h>
 
