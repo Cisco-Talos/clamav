@@ -213,7 +213,8 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
 
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
-	int ret = 0, fd, included, printclean = 1, i;
+	int ret = 0, fd, included, printclean = 1;
+	unsigned i;
 	const struct optstruct *opt;
 	const char *virname;
 	STATBUF sb;
