@@ -17745,6 +17745,11 @@ $as_echo "BeOS detected. Disabling thread support." >&6; }
 $as_echo "#define C_BEOS 1" >>confdefs.h
 
     ;;
+x86:Interix*)
+
+$as_echo "#define C_INTERIX 1" >>confdefs.h
+
+    ;;
 darwin*)
 
 $as_echo "#define C_BSD 1" >>confdefs.h

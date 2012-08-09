@@ -141,7 +141,7 @@ typedef	enum {
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifndef	C_BEOS
+#if !defined(C_BEOS) && !defined(C_INTERIX)
 #include <net/if.h>
 #include <arpa/inet.h>
 #endif

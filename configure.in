@@ -1006,6 +1006,9 @@ beos*)
     have_pthreads="no"
     AC_DEFINE([C_BEOS],1,[os is beos])
     ;;
+x86:Interix*)
+    AC_DEFINE([C_INTERIX],1,[os is Interix])
+    ;;
 darwin*)
     AC_DEFINE([C_BSD],1,[os is bsd flavor])
     AC_DEFINE([C_DARWIN],1,[os is darwin])
