@@ -64,7 +64,6 @@ freshclam/Makefile.in
 Makefile.in
 libclamunrar_iface/Makefile.in
 test/Makefile.in
-libltdl/Makefile.in
 clambc/Makefile.in
 clamconf/Makefile.in
 clamdscan/Makefile.in
