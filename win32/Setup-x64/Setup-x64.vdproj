@@ -300,8 +300,8 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2D34BE4ADCB24E408828FCF0F494C6EB"
             {
-            "SourcePath" = "8:..\\..\\etc\\clamd.conf"
-            "TargetName" = "8:clamd.conf"
+            "SourcePath" = "8:..\\..\\etc\\clamd.conf.sample"
+            "TargetName" = "8:clamd.conf.sample"
             "Tag" = "8:"
             "Folder" = "8:_9DF108569FF14FE68E665C908435DE1A"
             "Condition" = "8:"
@@ -460,8 +460,8 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_78E45831C6EA4D948B5DB00F3D6DFCE1"
             {
-            "SourcePath" = "8:..\\..\\etc\\freshclam.conf"
-            "TargetName" = "8:freshclam.conf"
+            "SourcePath" = "8:..\\..\\etc\\freshclam.conf.sample"
+            "TargetName" = "8:freshclam.conf.sample"
             "Tag" = "8:"
             "Folder" = "8:_9DF108569FF14FE68E665C908435DE1A"
             "Condition" = "8:"
