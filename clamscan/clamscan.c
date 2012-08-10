@@ -53,7 +53,8 @@
 void help(void);
 
 struct s_info info;
-short recursion = 0, printinfected = 0, bell = 0;
+short recursion = 0, bell = 0;
+short printinfected = 0, printclean = 1;
 
 int main(int argc, char **argv)
 {
@@ -122,6 +123,9 @@ int main(int argc, char **argv)
 
     if(optget(opts, "infected")->enabled)
 	printinfected = 1;
+
+    if(optget(opts, "suppress-ok-results")->enabled)
+	printclean = 0;
 
     if(optget(opts, "bell")->enabled)
 	bell = 1;
@@ -201,6 +205,7 @@ void help(void)
     mprintf("    --stdout                             Write to stdout instead of stderr\n");
     mprintf("    --no-summary                         Disable summary at end of scanning\n");
     mprintf("    --infected            -i             Only print infected files\n");
+    mprintf("    --suppress-ok-results -o             Skip printing OK files\n");
     mprintf("    --bell                               Sound bell on virus detection\n");
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");

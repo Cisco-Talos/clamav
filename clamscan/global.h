@@ -32,6 +32,7 @@ struct s_info {
 };
 
 extern struct s_info info;
-extern short recursion, printinfected, bell;
+extern short recursion, bell;
+extern short printinfected, printclean;
 
 #endif
