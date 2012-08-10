@@ -274,8 +274,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
 	free(hexcpy);
-	if(error)
+	if(error) {
+	    cli_errmsg("cli_parseadd(): Problem adding signature (1b).\n");
 	    return CL_EMALFDB;
+	}
 
     } else if(strchr(hexsig, '*')) {
 	root->ac_partsigs++;
@@ -584,6 +586,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	if(*pt == '=') continue;
 
 	if((ret = cli_parse_add(root, start, pt, 0, 0, "*", 0, NULL, options))) {
+	    cli_dbgmsg("cli_loaddb: cli_parse_add failed on line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}

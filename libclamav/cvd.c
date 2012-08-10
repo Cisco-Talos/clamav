@@ -648,8 +648,10 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	return CL_EMALFDB;
     }
     dbinfo = engine->dbinfo ? engine->dbinfo->next : NULL;
-    if(!dbinfo)
+    if(!dbinfo) {
+	cli_errmsg("cli_cvdload: dbinfo error\n");
 	return CL_EMALFDB;
+    }
 
     dbio.chkonly = chkonly;
     if(dbtype == 2)
