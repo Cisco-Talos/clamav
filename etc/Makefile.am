@@ -16,18 +16,11 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = clamd.conf freshclam.conf clamav-milter.conf
+EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
 CFGINST = @CFGDIR@
- 
-install-data-local:
-	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
-	@test -f $(DESTDIR)$(CFGINST)/clamd.conf || \
-	$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
-	@test -f $(DESTDIR)$(CFGINST)/freshclam.conf || \
-	$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
+
 if BUILD_CLAMD
 if HAVE_MILTER
-	@test -f $(DESTDIR)$(CFGINST)/clamav-milter.conf || \
-	$(INSTALL_DATA) $(srcdir)/clamav-milter.conf $(DESTDIR)$(CFGINST)
+sysconf_DATA = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
 endif
 endif
