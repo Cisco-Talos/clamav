@@ -320,7 +320,7 @@ static int serial_callback(STATBUF *sb, char *filename, const char *path, enum c
     case warning_skipped_link:
 	return CL_SUCCESS;
     case warning_skipped_special:
-	logg("!%s: Not supported file type\n", path);
+	logg("^%s: Not supported file type\n", path);
 	c->errors++;
 	return CL_SUCCESS;
     case visit_directory_toplev:
@@ -473,7 +473,7 @@ static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum
 	logg("^Directory recursion limit reached\n");
 	return CL_SUCCESS;
     case warning_skipped_special:
-	logg("!%s: Not supported file type\n", path);
+	logg("^%s: Not supported file type\n", path);
 	c->errors++;
     case warning_skipped_link:
     case visit_directory_toplev:
