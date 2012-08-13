@@ -53,6 +53,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am__append_1 = clamav-milter.conf.sample
 subdir = etc
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -278,7 +279,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
 CFGINST = @CFGDIR@
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@sysconf_DATA = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
+sysconf_DATA = clamd.conf.sample freshclam.conf.sample $(am__append_1)
 all: all-am
 
 .SUFFIXES:

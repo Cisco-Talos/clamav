@@ -19,8 +19,10 @@
 EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
 CFGINST = @CFGDIR@
 
+sysconf_DATA = clamd.conf.sample freshclam.conf.sample
+
 if BUILD_CLAMD
 if HAVE_MILTER
-sysconf_DATA = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
+sysconf_DATA += clamav-milter.conf.sample
 endif
 endif
