@@ -886,20 +886,31 @@ int cli_rmdirs(const char *dirname)
 
 			sprintf(path, "%s"PATHSEP"%s", dirname, dent->d_name);
 
-			if (remove(path) == -1) {
-				if (errno == EACCES) {
+			/* stat the file */
+			if(LSTAT(path, &statbuf) != -1) {
+			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+				if(rmdir(path) == -1) { /* can't be deleted */
+				    if(errno == EACCES) {
 					cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
+					closedir(dd);
+					free(path);
+					return -1;
+				    }
+				    if(cli_rmdirs(path)) {
+					cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
 					free(path);
 					closedir(dd);
 					return -1;
-				} else if (errno == ENOTEMPTY && cli_rmdirs(path)) {
-					cli_errmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
-					free(path);
-					closedir(dd);
-					return -1;
+				    }
 				}
+			    } else {
+				if(cli_unlink(path)) {
+				    free(path);
+				    closedir(dd);
+				    return -1;
+				}
+			    }
 			}
-
 			free(path);
 		    }
 		}
