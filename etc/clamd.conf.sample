@@ -51,6 +51,10 @@ Example
 # Default: no
 #LogVerbose yes
 
+# Enable log rotation.
+# Default: no
+#LogRotate yes
+
 # Log additional information about the infected file, such as its
 # size and hash, together with the virus name.
 #ExtendedDetectionInfo yes

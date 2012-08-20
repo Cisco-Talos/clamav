@@ -251,6 +251,10 @@ Example
 # Default: no
 #LogVerbose yes
 
+# Enable log rotation.
+# Default: no
+#LogRotate yes
+
 # This option allows to tune what is logged when a message is infected.
 # Possible values are Off (the default - nothing is logged),
 # Basic (minimal info logged), Full (verbose info logged)

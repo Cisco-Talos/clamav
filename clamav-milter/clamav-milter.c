@@ -161,6 +161,8 @@ int main(int argc, char **argv) {
     logg_time = optget(opts, "LogTime")->enabled;
     logg_size = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
+    if (logg_size)
+        logg_rotate = optget(opts, "LogRotate")->enabled;
 
     if((opt = optget(opts, "LogFile"))->enabled) {
 	logg_file = opt->strarg;

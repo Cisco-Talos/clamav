@@ -81,8 +81,8 @@ pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 FILE *logg_fp = NULL;
 
-short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1, logg_noflush = 0;
-unsigned int logg_size = 0;
+short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1, logg_noflush = 0, logg_rotate = 0;
+off_t logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 short logg_syslog;
@@ -204,6 +204,79 @@ int mdprintf(int desc, const char *str, ...)
     return ret < 0 ? -1 : bytes;
 }
 
+static int rename_logg(STATBUF *sb)
+{
+    char *rotate_file;
+    size_t rotate_file_len;
+    time_t t;
+    struct tm tmp;
+
+    if (!logg_rotate) {
+        logg_file = NULL;
+        fprintf(logg_fp, "Log size = %u, max = %u\n", sb->st_size, logg_size);
+        fprintf(logg_fp, "LOGGING DISABLED (Maximal log file size exceeded).\n");
+        fclose(logg_fp);
+        logg_fp = NULL;
+
+        return 0;
+    }
+
+    rotate_file_len = strlen(logg_file) + sizeof("-YYYY-MM-DD_HH:MM:SS");
+    rotate_file = calloc(1, rotate_file_len + 1);
+    if (!rotate_file) {
+        if (logg_fp) {
+            fprintf(logg_fp, "Need to rotate log file due to size but ran out of memory.\n");
+            fclose(logg_fp);
+            logg_fp = NULL;
+        }
+
+        return -1;
+    }
+
+    t = time(NULL);
+    if (!localtime_r(&t, &tmp)) {
+        if (logg_fp) {
+            fprintf(logg_fp, "Need to rotate log file due to size but could not get local time.\n");
+            fclose(logg_fp);
+            logg_fp = NULL;
+        }
+
+        free(rotate_file);
+        return -1;
+    }
+
+    strcpy(rotate_file, logg_file);
+    strftime(rotate_file+strlen(rotate_file), rotate_file_len-strlen(rotate_file), "-%Y-%m-%d_%H:%M:%S", &tmp);
+
+    if (logg_fp) {
+        fclose(logg_fp);
+        logg_fp = NULL;
+    }
+
+    if (rename(logg_file, rotate_file)) {
+        free(rotate_file);
+        return -1;
+    }
+
+    free(rotate_file);
+    return 0;
+}
+
+static int logg_open(void)
+{
+    STATBUF sb;
+
+    if(logg_file)
+        if(logg_size)
+            if(STAT(logg_file, &sb) != -1)
+                if(sb.st_size > logg_size)
+	                if (rename_logg(&sb))
+                        return -1;
+
+    
+    return 0;
+}
+
 void logg_close(void)
 {
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -245,14 +318,13 @@ void logg_close(void)
 int logg(const char *str, ...)
 {
 	va_list args;
+	char buffer[1025], *abuffer = NULL, *buff;
+	time_t currtime;
+	size_t len;
+	mode_t old_umask;
 #ifdef F_WRLCK
 	struct flock fl;
 #endif
-	char buffer[1025], *abuffer = NULL, *buff;
-	time_t currtime;
-	struct stat sb;
-	mode_t old_umask;
-	size_t len;
 
     if ((*str == '$' && logg_verbose < 2) ||
 	(*str == '*' && !logg_verbose))
@@ -279,55 +351,45 @@ int logg(const char *str, ...)
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&logg_mutex);
 #endif
-    if(logg_file) {
-	if(!logg_fp) {
-	    old_umask = umask(0037);
-	    if((logg_fp = fopen(logg_file, "at")) == NULL) {
-		umask(old_umask);
+
+    logg_open();
+
+    if(!logg_fp && logg_file) {
+        old_umask = umask(0037);
+        if((logg_fp = fopen(logg_file, "at")) == NULL) {
+            umask(old_umask);
 #ifdef CL_THREAD_SAFE
-		pthread_mutex_unlock(&logg_mutex);
+            pthread_mutex_unlock(&logg_mutex);
 #endif
-		printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
-		if(len > sizeof(buffer))
-		    free(abuffer);
-		return -1;
-	    } else umask(old_umask);
+            printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
+            if(len > sizeof(buffer))
+                free(abuffer);
+            return -1;
+        } else umask(old_umask);
 
 #ifdef F_WRLCK
-	    if(logg_lock) {
-		memset(&fl, 0, sizeof(fl));
-		fl.l_type = F_WRLCK;
-		if(fcntl(fileno(logg_fp), F_SETLK, &fl) == -1) {
+        if(logg_lock) {
+            memset(&fl, 0, sizeof(fl));
+            fl.l_type = F_WRLCK;
+            if(fcntl(fileno(logg_fp), F_SETLK, &fl) == -1) {
 #ifdef EOPNOTSUPP
-		    if(errno == EOPNOTSUPP)
-			printf("WARNING: File locking not supported (NFS?)\n");
-		    else
+                if(errno == EOPNOTSUPP)
+                    printf("WARNING: File locking not supported (NFS?)\n");
+                else
 #endif
-		    {
+                {
 #ifdef CL_THREAD_SAFE
-		        pthread_mutex_unlock(&logg_mutex);
+                    pthread_mutex_unlock(&logg_mutex);
 #endif
-		        printf("ERROR: %s is locked by another process\n", logg_file);
-		        if(len > sizeof(buffer))
-			    free(abuffer);
-		        return -1;
-		    }
-	        }
-	    }
+                    printf("ERROR: %s is locked by another process\n", logg_file);
+                    if(len > sizeof(buffer))
+                    free(abuffer);
+                    return -1;
+                }
+            }
+        }
 #endif
-	}
-
-	if(logg_size) {
-	    if(stat(logg_file, &sb) != -1) {
-		if((unsigned int) sb.st_size > logg_size) {
-		    logg_file = NULL;
-		    fprintf(logg_fp, "Log size = %u, max = %u\n", (unsigned int) sb.st_size, logg_size);
-		    fprintf(logg_fp, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-		    fclose(logg_fp);
-		    logg_fp = NULL;
-		}
-	    }
-	}
+    }
 
 	if(logg_fp) {
 	    char flush = !logg_noflush;
@@ -360,7 +422,6 @@ int logg(const char *str, ...)
 	    if (flush)
 		fflush(logg_fp);
 	}
-    }
 
     if(logg_foreground) {
 	if(buff[0] != '#')

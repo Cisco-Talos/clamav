@@ -221,6 +221,8 @@ int main(int argc, char **argv)
     logok = optget(opts, "LogClean")->enabled;
     logg_size = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
+    if (logg_size)
+        logg_rotate = optget(opts, "LogRotate")->enabled;
     mprintf_send_timeout = optget(opts, "SendBufTimeout")->numarg;
 
     do { /* logger initialized */
