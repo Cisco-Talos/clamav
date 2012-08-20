@@ -212,12 +212,14 @@ static int rename_logg(STATBUF *sb)
     struct tm tmp;
 
     if (!logg_rotate) {
-        logg_file = NULL;
-        fprintf(logg_fp, "Log size = %u, max = %u\n", sb->st_size, logg_size);
-        fprintf(logg_fp, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-        fclose(logg_fp);
-        logg_fp = NULL;
+        if (logg_fp) {
+            fprintf(logg_fp, "Log size = %u, max = %u\n", sb->st_size, logg_size);
+            fprintf(logg_fp, "LOGGING DISABLED (Maximal log file size exceeded).\n");
+            fclose(logg_fp);
+            logg_fp = NULL;
+        }
 
+        logg_file = NULL;
         return 0;
     }
 
