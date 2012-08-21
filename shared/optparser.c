@@ -983,14 +983,22 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		}
 		break;
 
-	    case TYPE_NUMBER:
-		numarg = atoi(arg);
-		arg = NULL;
-		break;
+            case TYPE_NUMBER:
+                if (arg)
+                    numarg = atoi(arg);
+                else
+                    numarg = 0;
+                arg = NULL;
+                break;
 
-	    case TYPE_SIZE:
-		errno = 0;
-		lnumarg = strtoul(arg, &buff, 0);
+            case TYPE_SIZE:
+                errno = 0;
+                if(arg)
+                    lnumarg = strtoul(arg, &buff, 0);
+                else {
+                    numarg = 0;
+                    break;
+                }
 		if(errno != ERANGE) {
 		    switch(*buff) {
 		    case 'M':
@@ -1066,7 +1074,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	return NULL;
     }
 
-    if(!cfgfile && (optind < argc)) {
+    if(!cfgfile && opts && (optind < argc)) {
 	opts->filename = (char **) calloc(argc - optind + 1, sizeof(char *));
 	if(!opts->filename) {
 	    fprintf(stderr, "ERROR: optparse: calloc failed\n");

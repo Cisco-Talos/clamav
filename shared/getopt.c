@@ -240,7 +240,7 @@ static int _getopt_internal(int argc, char * argv[], const char *shortopts,
                              argv[0], longopts[found].name);
         } else {
           optarg = argv[optind] + ++charind;
-          charind = 0;
+          // charind = 0; // Never used again past here
         }
       } else if(longopts[found].has_arg == 1) {
         if(++optind >= argc) {
