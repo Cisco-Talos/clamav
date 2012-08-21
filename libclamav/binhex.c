@@ -70,6 +70,8 @@ int cli_binhex(cli_ctx *ctx) {
 	return ret;
     }
 
+    memset(decoded, 0, 24);
+
     while(1) {
 	uint8_t b;
 	if(!enc_todo || dec_done >= BH_FLUSH_SZ) {
