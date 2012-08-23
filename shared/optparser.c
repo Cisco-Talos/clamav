@@ -187,7 +187,7 @@ const struct clam_option __clam_options[] = {
 
     { "LogVerbose", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "yes" },
 
-    { "LogRotate", "log-rotate", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "Rotate log file. Requires LogFileMaxSize option.", "yes" },
+    { "LogRotate", "log-rotate", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Rotate log file. Requires LogFileMaxSize option set prior to this option.", "yes" },
 
     { "ExtendedDetectionInfo", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes" },
 
