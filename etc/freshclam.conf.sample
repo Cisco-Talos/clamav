@@ -41,6 +41,10 @@ Example
 # Default: LOG_LOCAL6
 #LogFacility LOG_MAIL
 
+# Enable log rotation.
+# Default: no
+#LogRotate yes
+
 # This option allows you to save the process identifier of the daemon
 # Default: disabled
 #PidFile /var/run/freshclam.pid
