@@ -214,34 +214,25 @@ static int rename_logg(STATBUF *sb)
     if (!logg_rotate) {
         if (logg_fp) {
             fprintf(logg_fp, "Log size = %u, max = %u\n", sb->st_size, logg_size);
-            fprintf(logg_fp, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-            fclose(logg_fp);
-            logg_fp = NULL;
+            fprintf(logg_fp, "WARNING: Log size limit met but log file rotation turned off. Forcing log file rotation anyways.\n");
         }
 
-        logg_file = NULL;
-        return 0;
+        logg_rotate = 1;
     }
 
     rotate_file_len = strlen(logg_file) + sizeof("-YYYY-MM-DD_HH:MM:SS");
     rotate_file = calloc(1, rotate_file_len + 1);
     if (!rotate_file) {
-        if (logg_fp) {
+        if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but ran out of memory.\n");
-            fclose(logg_fp);
-            logg_fp = NULL;
-        }
 
         return -1;
     }
 
     t = time(NULL);
     if (!localtime_r(&t, &tmp)) {
-        if (logg_fp) {
+        if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but could not get local time.\n");
-            fclose(logg_fp);
-            logg_fp = NULL;
-        }
 
         free(rotate_file);
         return -1;

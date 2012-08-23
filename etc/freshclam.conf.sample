@@ -20,7 +20,8 @@ Example
 # Value of 0 disables the limit.
 # You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)
 # and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes).
-# in bytes just don't use modifiers.
+# in bytes just don't use modifiers. If LogFileMaxSize is enabled,
+# log rotation (the LogRotate option) will always be enabled.
 # Default: 1M
 #LogFileMaxSize 2M
 
@@ -41,7 +42,7 @@ Example
 # Default: LOG_LOCAL6
 #LogFacility LOG_MAIL
 
-# Enable log rotation.
+# Enable log rotation. Always enabled when LogFileMaxSize is enabled.
 # Default: no
 #LogRotate yes
 
