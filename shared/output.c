@@ -239,7 +239,7 @@ static int rename_logg(STATBUF *sb)
     }
 
     strcpy(rotate_file, logg_file);
-    strftime(rotate_file+strlen(rotate_file), rotate_file_len-strlen(rotate_file), "-%Y-%m-%d_%H:%M:%S", &tmp);
+    strftime(rotate_file+strlen(rotate_file), rotate_file_len-strlen(rotate_file), "-%Y%m%d_%H%M%S", &tmp);
 
     if (logg_fp) {
         fclose(logg_fp);
