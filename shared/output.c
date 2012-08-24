@@ -213,7 +213,7 @@ static int rename_logg(STATBUF *sb)
 
     if (!logg_rotate) {
         if (logg_fp) {
-            fprintf(logg_fp, "Log size = %u, max = %u\n", sb->st_size, logg_size);
+            fprintf(logg_fp, "Log size = %zu, max = %zu\n", sb->st_size, logg_size);
             fprintf(logg_fp, "WARNING: Log size limit met but log file rotation turned off. Forcing log file rotation anyways.\n");
         }
 
@@ -260,7 +260,7 @@ static int logg_open(void)
     STATBUF sb;
 
     if(logg_file)
-        if(logg_size)
+        if(logg_size > 0)
             if(STAT(logg_file, &sb) != -1)
                 if(sb.st_size > logg_size)
 	                if (rename_logg(&sb))
