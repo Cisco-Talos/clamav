@@ -80,7 +80,7 @@ const char *types[] = {
     NULL
 };
 
-int WINAPI SHCreateDirectoryExW(HWND, LPCTSTR, SECURITY_ATTRIBUTES *); /* cannot include Shlobj.h due to DATADIR collision */
+int WINAPI SHCreateDirectoryExA(HWND, LPCTSTR, SECURITY_ATTRIBUTES *); /* cannot include Shlobj.h due to DATADIR collision */
 
 #define FMT(s) "!"__FUNCTION__": "s"\n"
 #define FAIL(errcode, fmt, ...) do { logg(FMT(fmt), __VA_ARGS__); return (errcode); } while(0)
@@ -453,7 +453,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     }
     memcpy(&tmpdir[ret+1], "\\clamtmp", 9);
     cli_rmdirs(tmpdir);
-    if((ret = SHCreateDirectoryExW(NULL, tmpdir, NULL) != ERROR_SUCCESS) && ret != ERROR_ALREADY_EXISTS) {
+    if((ret = SHCreateDirectoryExA(NULL, tmpdir, NULL) != ERROR_SUCCESS) && ret != ERROR_ALREADY_EXISTS) {
 	free_engine_and_unlock();
 	FAIL(CL_ETMPDIR, "Cannot create pTempRoot '%s': error %d", tmpdir, ret);
     }
