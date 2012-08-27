@@ -125,8 +125,10 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     if(cli_debug_flag) {
 	char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], mod[1024], exp[1024];
 	int j;
-	mp_toradix_n(&i->n, mod, 16, sizeof(mod));
-	mp_toradix_n(&i->e, exp, 16, sizeof(exp));
+	//mp_toradix_n(&i->n, mod, 16, sizeof(mod));
+	mod[0]='N'; mod[1]='/'; mod[2]='A'; mod[3]='\0';
+	//mp_toradix_n(&i->e, exp, 16, sizeof(exp));
+	exp[0]='N'; exp[1]='/'; exp[2]='A'; exp[3]='\0';
 	for(j=0; j<SHA1_HASH_SIZE; j++) {
 	    sprintf(&issuer[j*2], "%02x", i->issuer[j]);
 	    sprintf(&subject[j*2], "%02x", i->subject[j]);
