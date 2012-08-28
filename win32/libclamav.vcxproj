@@ -235,6 +235,7 @@
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_17.c"/>
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_28.c"/>
     <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix.c"/>
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix_n.c"/>
     <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_small_set.c"/>
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_8.c"/>
     <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_24.c"/>
