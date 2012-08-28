@@ -406,6 +406,7 @@ libclamav_la_SOURCES += bignum.h\
         tomsfastmath/bin/fp_to_signed_bin.c\
         tomsfastmath/bin/fp_to_unsigned_bin.c\
         tomsfastmath/bin/fp_toradix.c\
+        tomsfastmath/bin/fp_toradix_n.c\
         tomsfastmath/bin/fp_unsigned_bin_size.c\
         tomsfastmath/bit/fp_cnt_lsb.c\
         tomsfastmath/bit/fp_count_bits.c\

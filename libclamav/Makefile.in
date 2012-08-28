@@ -183,6 +183,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-fp_signed_bin_size.lo \
 	libclamav_la-fp_to_signed_bin.lo \
 	libclamav_la-fp_to_unsigned_bin.lo libclamav_la-fp_toradix.lo \
+	libclamav_la-fp_toradix_n.lo \
 	libclamav_la-fp_unsigned_bin_size.lo \
 	libclamav_la-fp_cnt_lsb.lo libclamav_la-fp_count_bits.lo \
 	libclamav_la-fp_div_2.lo libclamav_la-fp_div_2d.lo \
@@ -695,6 +696,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	tomsfastmath/bin/fp_to_signed_bin.c \
 	tomsfastmath/bin/fp_to_unsigned_bin.c \
 	tomsfastmath/bin/fp_toradix.c \
+	tomsfastmath/bin/fp_toradix_n.c \
 	tomsfastmath/bin/fp_unsigned_bin_size.c \
 	tomsfastmath/bit/fp_cnt_lsb.c tomsfastmath/bit/fp_count_bits.c \
 	tomsfastmath/bit/fp_div_2.c tomsfastmath/bit/fp_div_2d.c \
@@ -984,6 +986,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_to_signed_bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_to_unsigned_bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_toradix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_toradix_n.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hashtab.Plo@am__quote@
@@ -2007,6 +2010,13 @@ libclamav_la-fp_toradix.lo: tomsfastmath/bin/fp_toradix.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tomsfastmath/bin/fp_toradix.c' object='libclamav_la-fp_toradix.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_toradix.lo `test -f 'tomsfastmath/bin/fp_toradix.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_toradix.c
+
+libclamav_la-fp_toradix_n.lo: tomsfastmath/bin/fp_toradix_n.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_toradix_n.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_toradix_n.Tpo -c -o libclamav_la-fp_toradix_n.lo `test -f 'tomsfastmath/bin/fp_toradix_n.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_toradix_n.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_toradix_n.Tpo $(DEPDIR)/libclamav_la-fp_toradix_n.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tomsfastmath/bin/fp_toradix_n.c' object='libclamav_la-fp_toradix_n.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-fp_toradix_n.lo `test -f 'tomsfastmath/bin/fp_toradix_n.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_toradix_n.c
 
 libclamav_la-fp_unsigned_bin_size.lo: tomsfastmath/bin/fp_unsigned_bin_size.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_unsigned_bin_size.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_unsigned_bin_size.Tpo -c -o libclamav_la-fp_unsigned_bin_size.lo `test -f 'tomsfastmath/bin/fp_unsigned_bin_size.c' || echo '$(srcdir)/'`tomsfastmath/bin/fp_unsigned_bin_size.c

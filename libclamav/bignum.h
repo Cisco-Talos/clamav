@@ -6,7 +6,7 @@
 #include "bignum_fast.h"
 typedef fp_int mp_int;
 #define mp_cmp fp_cmp
-#define mp_toradix_n(a,b,c,d) fp_toradix(a,b,c)
+#define mp_toradix_n(a,b,c,d) fp_toradix_n(a,b,c,d)
 #define mp_init(a) (fp_init(a), 0)
 #define mp_add fp_add
 

@@ -123,17 +123,22 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     m->crts = i;
 
     if(cli_debug_flag) {
-	char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], mod[1024], exp[1024];
-	int j;
-	//mp_toradix_n(&i->n, mod, 16, sizeof(mod));
-	mod[0]='N'; mod[1]='/'; mod[2]='A'; mod[3]='\0';
-	//mp_toradix_n(&i->e, exp, 16, sizeof(exp));
-	exp[0]='N'; exp[1]='/'; exp[2]='A'; exp[3]='\0';
-	for(j=0; j<SHA1_HASH_SIZE; j++) {
-	    sprintf(&issuer[j*2], "%02x", i->issuer[j]);
-	    sprintf(&subject[j*2], "%02x", i->subject[j]);
-	}
-	cli_dbgmsg("crtmgr_add: added cert s:%s i:%s n:%s e:%s %lu->%lu %s%s%s\n", subject, issuer, mod, exp, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
+        char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1];
+        char mod[1024], exp[1024];
+        int j=1024;
+        // mod first
+        fp_toradix_n(&i->n, mod, 16, j);
+        // exp next
+        fp_toradix_n(&i->e, exp, 16, j);
+        // subject and issuer hashes
+        for(j=0; j<SHA1_HASH_SIZE; j++) {
+            sprintf(&issuer[j*2], "%02x", i->issuer[j]);
+            sprintf(&subject[j*2], "%02x", i->subject[j]);
+        }
+        // printing lines, broken up to minimize truncation
+        cli_dbgmsg("crtmgr_add: added cert s:%s i:%s %lu->%lu %s%s%s\n", subject, issuer, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
+        cli_dbgmsg("crtmgr_add: n:%s \n", mod);
+        cli_dbgmsg("crtmgr_add: e:%s \n", exp);
     }
     m->items++;
     return 0;
