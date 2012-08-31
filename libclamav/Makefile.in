@@ -695,8 +695,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	tomsfastmath/bin/fp_signed_bin_size.c \
 	tomsfastmath/bin/fp_to_signed_bin.c \
 	tomsfastmath/bin/fp_to_unsigned_bin.c \
-	tomsfastmath/bin/fp_toradix.c \
-	tomsfastmath/bin/fp_toradix_n.c \
+	tomsfastmath/bin/fp_toradix.c tomsfastmath/bin/fp_toradix_n.c \
 	tomsfastmath/bin/fp_unsigned_bin_size.c \
 	tomsfastmath/bit/fp_cnt_lsb.c tomsfastmath/bit/fp_count_bits.c \
 	tomsfastmath/bit/fp_div_2.c tomsfastmath/bit/fp_div_2d.c \

@@ -854,7 +854,6 @@ enable_dns_fix
 enable_bigstack
 with_dbdir
 enable_readdir_r
-enable_stat64
 enable_fdpassing
 enable_clamdtop
 with_libncurses_prefix
@@ -1531,7 +1530,6 @@ Optional Features:
   --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)
   --enable-bigstack	  increase thread stack size
   --enable-readdir_r		    enable support for readdir_r
---enable-stat64          enable support for stat64]
   --disable-fdpassing        don't build file descriptor passing support
   --enable-clamdtop       Enable 'clamdtop' tool [default=auto]
   --enable-distcheck-werror
@@ -18738,11 +18736,40 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-# Check whether --enable-stat64 was given.
-if test "${enable_stat64+set}" = set; then :
-  enableval=$enable_stat64; enable_stat64=$enableval
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking stat64" >&5
+$as_echo_n "checking stat64... " >&6; }
+if test "$cross_compiling" = yes; then :
+  enable_stat64=no
 else
-  enable_stat64="no"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS 64
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+
+int main(void) {
+    struct stat64 sb;
+
+    if (stat64(".", &sb) == -1)
+        return errno;
+
+    return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  enable_stat64=yes
+else
+  enable_stat64=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
 
@@ -18752,6 +18779,8 @@ $as_echo "#define HAVE_STAT64 1" >>confdefs.h
 
 CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stat64" >&5
+$as_echo "$enable_stat64" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether signed right shift is sign extended" >&5
 $as_echo_n "checking whether signed right shift is sign extended... " >&6; }
