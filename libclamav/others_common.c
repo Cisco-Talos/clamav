@@ -864,7 +864,7 @@ char *cli_gentemp(const char *dir)
 
     mdir = dir ? dir : cli_gettmpdir();
 
-    len = strlen(mdir) + 42;
+    len = strlen(mdir) + 42 + 4;
     name = (char *) cli_calloc(len, sizeof(char));
     if(!name) {
 	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
@@ -892,7 +892,7 @@ char *cli_gentemp(const char *dir)
 	return NULL;
     }
 
-	snprintf(name, len, "%s"PATHSEP"clamav-%s", mdir, tmp);
+	snprintf(name, len, "%s"PATHSEP"clamav-%s.tmp", mdir, tmp);
     free(tmp);
 
     return(name);
