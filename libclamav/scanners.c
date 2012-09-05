@@ -2779,7 +2779,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
 	snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
 	link[sizeof(link)-1]='\0';
-	if((linksz=readlink(link, ctx.entry_filename, sizeof(ctx.entry_filename)))==-1) {
+	if((linksz=readlink(link, ctx.entry_filename, sizeof(ctx.entry_filename)-1))==-1) {
 	    cli_errmsg("failed to resolve filename for descriptor %d (%s)\n", desc, link);
 	    strcpy(ctx.entry_filename, "NO_IDEA");
 	} else
