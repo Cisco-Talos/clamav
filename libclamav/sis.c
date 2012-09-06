@@ -95,10 +95,15 @@ int cli_scansis(int desc, cli_ctx *ctx) {
   }
 
   cli_dbgmsg("SIS: UIDS %x %x %x - %x\n", EC32(uid[0]), EC32(uid[1]), EC32(uid[2]), EC32(uid[3]));
-  if (uid[2]==EC32(0x10000419))
+  if (uid[2]==le32_to_host(0x10000419)) {
     i=real_scansis(f, ctx, tmpd);
-  else if(uid[0]==EC32(0x10201a7a)) {
+  }
+  else if(uid[0]==le32_to_host(0x10201a7a)) {
     i=real_scansis9x(f, ctx, tmpd);
+  }
+  else {
+    cli_dbgmsg("SIS: UIDs failed to match\n");
+    i=CL_EFORMAT;
   }
 
   if (!ctx->engine->keeptmp)
