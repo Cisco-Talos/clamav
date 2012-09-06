@@ -230,10 +230,14 @@ static void print_platform(struct cli_environment *env)
 #else
     /* e.g. Solaris */
     if (!access("/etc/release", R_OK)) {
-	char buf[1024];
-	FILE *f = fopen("/etc/release", "r");
-	fgets(buf, sizeof(buf), f);
-	printf("Full OS version: %s", buf);
+        char buf[1024];
+        FILE *f = fopen("/etc/release", "r");
+
+        if (f) {
+            fgets(buf, sizeof(buf), f);
+            printf("Full OS version: %s", buf);
+            fclose(f);
+        }
     }
 #endif
 
