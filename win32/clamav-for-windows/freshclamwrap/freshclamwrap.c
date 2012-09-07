@@ -156,15 +156,18 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
     }
 }
 
-#define SENDFAIL_AND_QUIT(phase)	    \
+#define SENDMSG_AND_RETURN(phase, dwret)	    \
     do {				    \
+	int ret = 1;			\
+	if((dwret < INT_MAX) && (dwret > INT_MIN))	\
+	    ret = dwret;			\
 	if(!customok) {			    \
 	    send_pipe(&st, (phase), 1);	    \
 	    CloseHandle(updpipe);	    \
 	    CloseHandle(write_event);	    \
 	    cleanup(NULL);		    \
 	    flog_close();		    \
-	    return 1;			    \
+	    return ret;			    \
 	} else {			    \
 	    send_pipe(&st, UPD_DONE, 0);    \
 	    CloseHandle(updpipe);	    \
@@ -174,6 +177,8 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
 	    return 0;			    \
 	}				    \
     } while(0)
+
+#define SENDFAIL_AND_QUIT(phase)	SENDMSG_AND_RETURN(phase, 1)
 
 #define SENDOK(phase)			    \
     do {				    \
@@ -245,10 +250,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DWORD dw;
     struct my_f spam;
     char command[8192], *ptr;
-    int updated_files = 0, customok = 0;
+    int updated_files = 0, customok = 0, mindefs = 0, customonly = 0;
     char *cmdl = GetCommandLineA();
 
     //DebugBreak();
+    mindefs = (cmdl && strstr(cmdl, " --mindefs=1"));
+	customonly = (cmdl && strstr(cmdl, " --customsigonly"));
 
     /* Locate myself */
     dw = GetModuleFileName(NULL, datadir, sizeof(datadir));
@@ -307,6 +314,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     CloseHandle(pinfo.hProcess);
     if(dw == 0)
 	customok = 1;
+    else
+	flog("INFO: custom freshclam return code: %u", dw);
+
+    /* Early exit for custom only */
+    if(customonly) {
+        SENDMSG_AND_RETURN(UPD_CHECK, dw);
+    }
 
     /* Make pipe for freshclam stdio */
     if(!CreatePipe(&cld_r, &cld_w, NULL, 0)) {
@@ -334,7 +348,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     sinfo.dwFlags = STARTF_FORCEOFFFEEDBACK|STARTF_USESTDHANDLES;
 
     /* Run main freshclam */
-    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"%s", datadir, datadir, (cmdl && strstr(cmdl, " --mindefs=1")) ? " --update-db=daily" : "");
+    _snprintf(command, sizeof(command)-1, "freshclam.exe --stdout --config-file=\"%s\\freshclam.conf\" --datadir=\"%s\"%s", datadir, datadir, mindefs ? " --update-db=daily" : "");
     command[sizeof(command)-1] = '\0';
     if(!CreateProcess(NULL, command, NULL, NULL, TRUE, DETACHED_PROCESS, NULL, datadir, &sinfo, &pinfo)) {
 	CloseHandle(cld_w2);
@@ -374,7 +388,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	if((fstate == FRESH_IDLE || fstate == FRESH_DOWN) && !strncmp(buf, FRESH_DOWN_S, sizeof(FRESH_DOWN_S)-1)) {
 	    unsigned int pct, fnamelen;
-	    unsigned char *partname = buf + 12, *partend, *pctend;
+	    char *partname = buf + 12, *partend, *pctend;
+
 	    wchar_t nuname[AV_UPD_FILE_NAME_MAX];
 
 	    if(!updated_files) {
@@ -464,7 +479,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	    flog("ERROR: freshclam exit code %u", dw);
 	if(st.state == UPD_CHECK)
 	    st.state = UPD_ABORT;
-	SENDFAIL_AND_QUIT(st.state);
+	SENDMSG_AND_RETURN(st.state, dw);
     }
     if((updated_files && fstate != FRESH_RELOAD) || (!updated_files && fstate != FRESH_IDLE)) {
 	flog("ERROR: log parse failure. Freshclam exit value: %u", dw);
