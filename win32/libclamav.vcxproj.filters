@@ -135,6 +135,9 @@
     <ClCompile Include="..\libclamav\inflate64.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\iowrap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\is_tar.c">
       <Filter>Source Files</Filter>
     </ClCompile>

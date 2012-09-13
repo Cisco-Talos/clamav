@@ -220,6 +220,7 @@
     <ClCompile Include="..\libclamav\hashtab.c"/>
     <ClCompile Include="..\libclamav\htmlnorm.c"/>
     <ClCompile Include="..\libclamav\inflate64.c"/>
+    <ClCompile Include="..\libclamav\iowrap.c"/>
     <ClCompile Include="..\libclamav\ishield.c"/>
     <ClCompile Include="..\libclamav\is_tar.c"/>
     <ClCompile Include="..\libclamav\jsparse\js-norm.c"/>

@@ -71,6 +71,8 @@ endif
 
 libclamav_internal_utils_la_SOURCES=str.c\
 				    str.h\
+				    iowrap.c \
+				    iowrap.h \
 				    md5.c\
 				    md5.h\
 				    others_common.c \
@@ -92,6 +94,8 @@ libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    str.h\
+				    iowrap.c \
+				    iowrap.h \
 				    md5.c\
 				    md5.h\
 				    others_common.c \

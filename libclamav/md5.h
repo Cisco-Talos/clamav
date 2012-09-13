@@ -5,6 +5,8 @@
  * Written by Solar Designer <solar at openwall.com> in 2001, and placed
  * in the public domain.  There's absolutely no warranty.
  *
+ * Updated in 2012 to meet the needs of ClamAV.
+ *
  * See md5.c for more information.
  */
 
@@ -22,7 +24,7 @@ typedef struct {
 } cli_md5_ctx;
 
 extern void cli_md5_init(cli_md5_ctx *ctx);
-extern void cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size);
+extern int cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size);
 extern void cli_md5_final(unsigned char *result, cli_md5_ctx *ctx);
 
 #endif

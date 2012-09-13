@@ -688,7 +688,8 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 }
 
 /* Hashes a file onto the provided buffer and looks it up the cache.
-   Returns CL_VIRUS if found, CL_CLEAN if not FIXME or an error */
+   Returns CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error,
+   and returns CL_EREAD if unrecoverable */
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map;
     size_t todo, at = 0;
@@ -709,7 +710,10 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
 	    return CL_EREAD;
 	todo -= readme;
 	at += readme;
-	cli_md5_update(&md5, buf, readme);
+	if (cli_md5_update(&md5, buf, readme)) {
+	    cli_errmsg("cache_check: error reading while generating hash!\n");
+	    return CL_EREAD;
+	}
     }
     cli_md5_final(hash, &md5);
     ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
