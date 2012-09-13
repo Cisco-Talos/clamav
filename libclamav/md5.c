@@ -13,11 +13,14 @@
  * This implementation is meant to be fast, but not as fast as possible.
  * Some known optimizations are not included to reduce source code size
  * and avoid compile-time configuration.
+ *
+ * Updated in 2012 to meet the needs of ClamAV.
  */
 
 #include <string.h>
 
 #include "md5.h"
+#include "iowrap.h"
 
 /*
  * The basic MD5 functions.
@@ -49,16 +52,16 @@
  */
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-	(*(const MD5_u32plus *)&ptr[(n) * 4])
+	(*(const MD5_u32plus *)&chunk[(n) * 4])
 #define GET(n) \
 	SET(n)
 #else
 #define SET(n) \
 	(ctx->block[(n)] = \
-	(MD5_u32plus)ptr[(n) * 4] | \
-	((MD5_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	((MD5_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	((MD5_u32plus)ptr[(n) * 4 + 3] << 24))
+	(MD5_u32plus)chunk[(n) * 4] | \
+	((MD5_u32plus)chunk[(n) * 4 + 1] << 8) | \
+	((MD5_u32plus)chunk[(n) * 4 + 2] << 16) | \
+	((MD5_u32plus)chunk[(n) * 4 + 3] << 24))
 #define GET(n) \
 	(ctx->block[(n)])
 #endif
@@ -66,12 +69,14 @@
 /*
  * This processes one or more 64-byte data blocks, but does NOT update
  * the bit counters.  There are no alignment requirements.
+ * Returns NULL on a read error, or a pointer to the next byte if successful.
  */
 static const void *body(cli_md5_ctx *ctx, const void *data, unsigned long size)
 {
 	const unsigned char *ptr;
 	MD5_u32plus a, b, c, d;
 	MD5_u32plus saved_a, saved_b, saved_c, saved_d;
+	unsigned char chunk[64];
 
 	ptr = data;
 
@@ -86,6 +91,8 @@ static const void *body(cli_md5_ctx *ctx, const void *data, unsigned long size)
 		saved_c = c;
 		saved_d = d;
 
+		if(cli_memcpy(chunk, ptr, 64))
+			return NULL;
 /* Round 1 */
 		STEP(F, a, b, c, d, SET(0), 0xd76aa478, 7)
 		STEP(F, d, a, b, c, SET(1), 0xe8c7b756, 12)
@@ -185,10 +192,11 @@ void cli_md5_init(cli_md5_ctx *ctx)
 	ctx->hi = 0;
 }
 
-void cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size)
+int cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size)
 {
 	MD5_u32plus saved_lo;
 	unsigned long used, free;
+	int invalid = 0;
 
 	saved_lo = ctx->lo;
 	if ((ctx->lo = (saved_lo + size) & 0x1fffffff) < saved_lo)
@@ -201,22 +209,27 @@ void cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size)
 		free = 64 - used;
 
 		if (size < free) {
-			memcpy(&ctx->buffer[used], data, size);
-			return;
+			invalid = cli_memcpy(&ctx->buffer[used], data, size);
+			return invalid;
 		}
 
-		memcpy(&ctx->buffer[used], data, free);
+		invalid = cli_memcpy(&ctx->buffer[used], data, free);
+		if (invalid)
+			return invalid;
 		data = (const unsigned char *)data + free;
 		size -= free;
-		body(ctx, ctx->buffer, 64);
+		if (body(ctx, ctx->buffer, 64) == NULL)
+			return 1;
 	}
 
 	if (size >= 64) {
 		data = body(ctx, data, size & ~(unsigned long)0x3f);
+		if (data == NULL)
+			return 1;
 		size &= 0x3f;
 	}
 
-	memcpy(ctx->buffer, data, size);
+	return cli_memcpy(ctx->buffer, data, size);
 }
 
 void cli_md5_final(unsigned char *result, cli_md5_ctx *ctx)
