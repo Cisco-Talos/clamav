@@ -414,10 +414,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     timeout = optget(opts, "ReadTimeout")->numarg;
     firsttimeout = optget(opts, "CommandReadTimeout")->numarg;
 
-    if(!bound && !portscan) {
+    if(!bound) {
 	logg("!ScanStream: Can't find any free port.\n");
 	mdprintf(odesc, "Can't find any free port. ERROR%c", term);
-	closesocket(sockfd);
 	return -1;
     } else {
 	listen(sockfd, 1);
