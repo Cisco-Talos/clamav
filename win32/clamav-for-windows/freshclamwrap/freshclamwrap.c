@@ -162,23 +162,23 @@ static void send_pipe(AV_UPD_STATUS *updstatus, int state, int fail) {
 	if((dwret < INT_MAX) && (dwret > INT_MIN))	\
 	    ret = dwret;			\
 	if(!customok) {			    \
-	    send_pipe(&st, (phase), 1);	    \
+	    send_pipe(&st, (phase), dwret);	    \
 	    CloseHandle(updpipe);	    \
 	    CloseHandle(write_event);	    \
 	    cleanup(NULL);		    \
 	    flog_close();		    \
 	    return ret;			    \
 	} else {			    \
-	    send_pipe(&st, UPD_DONE, 0);    \
+	    send_pipe(&st, UPD_DONE, dwret);    \
 	    CloseHandle(updpipe);	    \
 	    CloseHandle(write_event);	    \
 	    cleanup(NULL);		    \
 	    flog_close();		    \
-	    return 0;			    \
+	    return dwret;			    \
 	}				    \
     } while(0)
 
-#define SENDFAIL_AND_QUIT(phase)	SENDMSG_AND_RETURN(phase, 1)
+#define SENDFAIL_AND_QUIT(phase)	SENDMSG_AND_RETURN(phase, 10)
 
 #define SENDOK(phase)			    \
     do {				    \
@@ -260,10 +260,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /* Locate myself */
     dw = GetModuleFileName(NULL, datadir, sizeof(datadir));
     if(!dw || dw >= sizeof(datadir)-2)
-	return 1;
+	return 10;
     ptr = strrchr(datadir, '\\');
     if(!ptr)
-	return 1;
+	return 10;
     *ptr = '\0';
 
     /* Log file */
@@ -274,20 +274,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if(updpipe == INVALID_HANDLE_VALUE) {
 	flog("ERROR: failed to connect pipe");
 	flog_close();
-	return 1;
+	return 10;
     }
     dw = PIPE_READMODE_MESSAGE;
     if(!SetNamedPipeHandleState(updpipe, &dw, NULL, NULL)) {
 	CloseHandle(updpipe);
 	flog("ERROR: failed to set pipe to message mode");
     	flog_close();
-	return 1;
+	return 10;
     }
     if(!(write_event = CreateEvent(NULL, TRUE, FALSE, NULL))) {
 	CloseHandle(updpipe);
 	flog("ERROR: failed to create write event");
 	flog_close();
-	return 1;
+	return 10;
     }
 
     /* Run local-only-hack freshclam */
@@ -319,7 +319,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     /* Early exit for custom only */
     if(customonly) {
-        SENDMSG_AND_RETURN(UPD_CHECK, dw);
+        if(dw == 0) 
+            SENDMSG_AND_RETURN(UPD_DONE, dw);
+        else
+            SENDMSG_AND_RETURN(UPD_ABORT, dw);
     }
 
     /* Make pipe for freshclam stdio */
