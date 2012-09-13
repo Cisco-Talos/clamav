@@ -231,6 +231,7 @@ libclamav_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 libclamav_internal_utils_la_LIBADD =
 am_libclamav_internal_utils_la_OBJECTS =  \
 	libclamav_internal_utils_la-str.lo \
+	libclamav_internal_utils_la-iowrap.lo \
 	libclamav_internal_utils_la-md5.lo \
 	libclamav_internal_utils_la-others_common.lo \
 	libclamav_internal_utils_la-qsort.lo \
@@ -248,6 +249,7 @@ libclamav_internal_utils_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 libclamav_internal_utils_nothreads_la_LIBADD =
 am_libclamav_internal_utils_nothreads_la_OBJECTS =  \
 	libclamav_internal_utils_nothreads_la-str.lo \
+	libclamav_internal_utils_nothreads_la-iowrap.lo \
 	libclamav_internal_utils_nothreads_la-md5.lo \
 	libclamav_internal_utils_nothreads_la-others_common.lo \
 	libclamav_internal_utils_nothreads_la-qsort.lo \
@@ -585,6 +587,8 @@ EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
 @ENABLE_UNRAR_TRUE@IFACEDEP = libclamunrar_iface.la
 libclamav_internal_utils_la_SOURCES = str.c\
 				    str.h\
+				    iowrap.c\
+				    iowrap.h\
 				    md5.c\
 				    md5.h\
 				    others_common.c \
@@ -605,6 +609,8 @@ libclamav_internal_utils_la_LDFLAGS = -static
 libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    str.h\
+				    iowrap.c\
+				    iowrap.h\
 				    md5.c\
 				    md5.h\
 				    others_common.c \
@@ -845,6 +851,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bytecode_nojit.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-iowrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-others_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-qsort.Plo@am__quote@
@@ -854,6 +861,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regfree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-str.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-strlcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-iowrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-others_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_nothreads_la-qsort.Plo@am__quote@
@@ -2437,6 +2445,13 @@ libclamav_internal_utils_la-str.lo: str.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-str.lo `test -f 'str.c' || echo '$(srcdir)/'`str.c
 
+libclamav_internal_utils_la-iowrap.lo: iowrap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-iowrap.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-iowrap.Tpo -c -o libclamav_internal_utils_la-iowrap.lo `test -f 'iowrap.c' || echo '$(srcdir)/'`iowrap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_la-iowrap.Tpo $(DEPDIR)/libclamav_internal_utils_la-iowrap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='iowrap.c' object='libclamav_internal_utils_la-iowrap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-iowrap.lo `test -f 'iowrap.c' || echo '$(srcdir)/'`iowrap.c
+
 libclamav_internal_utils_la-md5.lo: md5.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-md5.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-md5.Tpo -c -o libclamav_internal_utils_la-md5.lo `test -f 'md5.c' || echo '$(srcdir)/'`md5.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_la-md5.Tpo $(DEPDIR)/libclamav_internal_utils_la-md5.Plo
@@ -2499,6 +2514,13 @@ libclamav_internal_utils_nothreads_la-str.lo: str.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='str.c' object='libclamav_internal_utils_nothreads_la-str.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_nothreads_la-str.lo `test -f 'str.c' || echo '$(srcdir)/'`str.c
+
+libclamav_internal_utils_nothreads_la-iowrap.lo: iowrap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_nothreads_la-iowrap.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_nothreads_la-iowrap.Tpo -c -o libclamav_internal_utils_nothreads_la-iowrap.lo `test -f 'iowrap.c' || echo '$(srcdir)/'`iowrap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_internal_utils_nothreads_la-iowrap.Tpo $(DEPDIR)/libclamav_internal_utils_nothreads_la-iowrap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='iowrap.c' object='libclamav_internal_utils_nothreads_la-iowrap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_nothreads_la-iowrap.lo `test -f 'iowrap.c' || echo '$(srcdir)/'`iowrap.c
 
 libclamav_internal_utils_nothreads_la-md5.lo: md5.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_nothreads_la-md5.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_nothreads_la-md5.Tpo -c -o libclamav_internal_utils_nothreads_la-md5.lo `test -f 'md5.c' || echo '$(srcdir)/'`md5.c
