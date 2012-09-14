@@ -38,6 +38,7 @@
 #include "str.h"
 #include "textdet.h"
 #include "default.h"
+#include "iowrap.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
@@ -159,6 +160,7 @@ int is_tar(const unsigned char *buf, unsigned int nbytes);
 
 cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 {
+	unsigned char buffer[MAGIC_BUFFER_SIZE];
 	const unsigned char *buff;
 	unsigned char *decoded;
 	int bread = MIN(map->len, MAGIC_BUFFER_SIZE), sret;
@@ -173,9 +175,16 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
     }
 
     buff = fmap_need_off_once(map, 0, bread);
-    if(!buff)
-	return CL_TYPE_ERROR;
-
+    if(buff) {
+        sret = cli_memcpy(buffer, buff, bread);
+        if(sret) {
+            cli_errmsg("cli_filetype2: fileread error!\n");
+            return CL_TYPE_ERROR;
+        }
+        sret = 0;
+    } else {
+        return CL_TYPE_ERROR;
+    }
     ret = cli_filetype(buff, bread, engine);
 
     if(ret == CL_TYPE_BINARY_DATA) {
