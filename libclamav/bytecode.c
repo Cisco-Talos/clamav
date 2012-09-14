@@ -2066,9 +2066,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			    cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
 			    ret = CL_EBYTECODE;
 			}
-            if (ret != CL_SUCCESS)
-                break;
-			if (inst->u.ops.numOps != target->numArgs) {
+			else if (inst->u.ops.numOps != target->numArgs) {
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
 			    ret = CL_EBYTECODE;
 			}
@@ -2078,19 +2076,20 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			    cli_errmsg("bytecode: call operands don't match function prototype\n");
 			    ret = CL_EBYTECODE;
 			}
-            if (ret != CL_SUCCESS)
-                break;
 		    }
-		    if (inst->u.ops.numOps) {
+		    if (ret != CL_SUCCESS)
+			break;
+		    if (inst->u.ops.numOps > 0) {
 			inst->u.ops.opsizes = cli_malloc(sizeof(*inst->u.ops.opsizes)*inst->u.ops.numOps);
 			if (!inst->u.ops.opsizes) {
 			    cli_errmsg("Out of memory when allocating operand sizes\n");
 			    ret = CL_EMEM;
+			    break;
 			}
-		    } else
+		    } else {
 			inst->u.ops.opsizes = NULL;
-            if (ret != CL_SUCCESS)
-                break;
+			break;
+		    }
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAPPTR(inst->u.ops.ops[k]);
 			if (inst->opcode == OP_BC_CALL_DIRECT)
