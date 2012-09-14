@@ -108,7 +108,11 @@ static int isremote(const struct optstruct *opts) {
     }
     memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
     testsock.sin_port = htons(INADDR_ANY);
-    if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
+    if((s = socket(testsock.sin_family, SOCK_STREAM, 0)) < 0) {
+      logg("isremote: socket() returning: %s.\n", strerror(errno));
+      mainsa = NULL;
+      return 0;
+    }
     ret = (bind(s, (struct sockaddr *)&testsock, sizeof(testsock)) != 0);
     closesocket(s);
     return ret;
