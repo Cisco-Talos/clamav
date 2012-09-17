@@ -69,7 +69,9 @@ BOOL init() {
     logg_nowarn = 0;
     logg_lock = 0;
     logg_time = 1;
-    logg_size = -1;
+    // bb #5659: force log rotation at 100 MB
+    logg_size = 104857600;
+    logg_rotate = 1;
     logg_file = strdup(whereami);
     if(!logg_file) {
 	printf("ERROR: failed to duplicate log filename\n");
