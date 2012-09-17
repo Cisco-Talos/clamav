@@ -1,6 +1,10 @@
 Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
+0.97.6
+------
+ClamAV 0.97.6 corrects bug 5252 "CL_EFORMAT: Bad format or broken data ERROR
+reported as scan result.
 
 0.97.5
 ------
