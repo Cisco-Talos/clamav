@@ -1,3 +1,8 @@
+Mon Sep 6 12:32:00 EDT 2012 (dar)
+---------------------------------
+ * libclamav: bb#5751 - cl_scansis() may returan a file descriptor instead
+              of a valid return code
+
 Mon Jul 2 10:40:50 EDT 2012 (dar)
 ----------------------------------
  * libclamav: bb#5252 - update #4, CL_EUNPACK and caching
