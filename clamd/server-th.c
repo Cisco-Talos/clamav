@@ -639,6 +639,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 			pthread_mutex_unlock(&exit_mutex);
 		    }
 		    *error = 1;
+		    return -1;
 		} else {
 		    pos = 4;
 		    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
