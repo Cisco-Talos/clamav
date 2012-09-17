@@ -1,10 +1,9 @@
-0.97.5
+0.97.6
 ------
 
-ClamAV 0.97.5 addresses possible evasion cases in some archive formats
-(CVE-2012-1457, CVE-2012-1458, CVE-2012-1459).  It also addresses stability
-issues in portions of the bytecode engine.  This release is recommended for all
-users.
+ClamAV 0.97.6 corrects two major bugs.  One is bb#5571, where an invalid return
+code was issued.  The other is 5252, where an error in processing certain data
+types occured.
 
 --
 The ClamAV team (http://www.clamav.net/team)
