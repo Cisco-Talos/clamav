@@ -159,7 +159,7 @@ static void remove_frompools(threadpool_t *t)
 
 static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
 {
-    long umin=~0UL, umax=0, usum=0;
+    long umin=LONG_MAX, umax=0, usum=0;
     unsigned invalids = 0, cnt = 0;
     work_item_t *q;
 
