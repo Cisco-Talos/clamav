@@ -257,7 +257,11 @@ int client(const struct optstruct *opts, int *infected, int *err)
     if(scandash) {
 	int sockd, ret;
 	STATBUF sb;
-	FSTAT(0, &sb);
+	if(FSTAT(0, &sb) < 0) {
+	    logg("client.c: fstat failed for file name \"%s\", with %s\n.", 
+		 opts->filename[0], strerror(errno));
+	    return 2;
+	}
 	if((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
 	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
 	    *infected = ret;
