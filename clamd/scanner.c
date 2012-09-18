@@ -224,8 +224,7 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 	return CL_SUCCESS;
     }
 
-    thrmgr_setactivetask(filename,
-			 type == TYPE_MULTISCAN ? "MULTISCANFILE" : NULL);
+    thrmgr_setactivetask(filename, NULL);
     context.filename = filename;
     context.virsize = 0;
     ret = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
