@@ -191,8 +191,7 @@ void *fan_th(void *arg)
 		}
 
 		if(sizelimit) {
-		    FSTAT(fmd->fd, &sb);
-		    if(sb.st_size > sizelimit) {
+		    if(FSTAT(fmd->fd, &sb) != 0 || sb.st_size > sizelimit) {
 			scan = 0;
 			/* logg("*ScanOnAccess: %s skipped (size > %d)\n", fname, sizelimit); */
 		    }
