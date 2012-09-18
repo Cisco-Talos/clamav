@@ -188,20 +188,25 @@ static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
- * Returns the number of infected files or -1 on error */
+ * Returns the number of infected files or -1 on error
+ * NOTE: filename may be NULL for STREAM scantype. */
 int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors) {
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
     STATBUF sb;
 
-    if(chkpath(filename))
+    if(filename && chkpath(filename))
 	return 0;
     recvlninit(&rcv, sockd);
 
     switch(scantype) {
     case MULTI:
     case CONT:
+    if (!filename) {
+	logg("Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
+	return -1;
+    }
     len = strlen(filename) + strlen(scancmd[scantype]) + 3;
     if (!(bol = malloc(len))) {
 	logg("!Cannot allocate a command buffer: %s\n", strerror(errno));
@@ -216,10 +221,12 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     break;
 
     case STREAM:
+        /* NULL filename safe in send_stream() */
 	len = send_stream(sockd, filename);
 	break;
 #ifdef HAVE_FD_PASSING
     case FILDES:
+        /* NULL filename safe in send_fdpass() */
 	len = send_fdpass(sockd, filename);
 	break;
 #endif
@@ -278,9 +285,17 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	}
     }
     if(!beenthere) {
-	STAT(filename, &sb);
+        if (!filename) {
+	    logg("STDIN: noreply from clamd\n.");
+	    return -1;
+	}
+        if(STAT(filename, &sb) == -1) {
+	    logg("~%s: stat() failed with %s, clamd may not be responding\n",
+		 filename, strerror(errno));
+	    return -1;
+	}
 	if(!S_ISDIR(sb.st_mode)) {
-	    logg("~%s: no reply from clamd\n", filename ? filename : "STDIN");
+	    logg("~%s: no reply from clamd\n", filename);
 	    return -1;
 	}
     }
