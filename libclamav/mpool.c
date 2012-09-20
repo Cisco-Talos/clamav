@@ -168,7 +168,12 @@ static const unsigned int fragsz[] = {
 2097152,
 4194304,
 8388608,
+16777216,
+33554432,
+67108864,
+134217728,
  /* MAX_ALLOCATION is 184549376 but that's really not need here */
+ /* ^^ This MAX_ALLOCATION warning for Mac OS should now be fixed */
 };
 
 #else
@@ -351,6 +356,10 @@ static const unsigned int fragsz[] = {
     2097152,
     4194304,
     8388608,
+   16777216,
+   33554432,
+   67108864,
+  134217728,
 };
 #endif
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
