@@ -840,7 +840,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
-		    if(parent) {
+		    if(parent && !(parent->isBlacklisted)) {
 			x509->codeSign &= parent->codeSign;
 			x509->timeSign &= parent->timeSign;
 			if(crtmgr_add(cmgr, x509))

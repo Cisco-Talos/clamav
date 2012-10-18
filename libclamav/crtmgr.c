@@ -31,6 +31,7 @@ int cli_crt_init(cli_crt *x509) {
 	cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
 	return 1;
     }
+    x509->isBlacklisted = 0;
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
     x509->certSign = x509->codeSign = x509->timeSign = 0;
@@ -116,6 +117,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     i->certSign = x509->certSign;
     i->codeSign = x509->codeSign;
     i->timeSign = x509->timeSign;
+    i->isBlacklisted = x509->isBlacklisted;
     i->next = m->crts;
     i->prev = NULL;
     if(m->crts)
@@ -314,8 +316,11 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
 	    continue;
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
 	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
-	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash))
+	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
+        if (i->isBlacklisted)
+            i = NULL;
 	    break;
+        }
     }
     mp_clear(&sig);
     return i;

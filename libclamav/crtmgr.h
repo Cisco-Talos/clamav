@@ -43,6 +43,7 @@ typedef struct cli_crt_t {
     int certSign;
     int codeSign;
     int timeSign;
+    int isBlacklisted;
     struct cli_crt_t *prev;
     struct cli_crt_t *next;
 } cli_crt;
