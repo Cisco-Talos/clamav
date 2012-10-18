@@ -236,7 +236,9 @@ int client(const struct optstruct *opts, int *infected, int *err)
     if(remote || scandash) {
 	scantype = STREAM;
 	session = optget(opts, "multiscan")->enabled;
-    } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
+    } 
+    else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
+    else if(optget(opts, "allmatch")->enabled) scantype = ALLMATCH;
     else scantype = CONT;
 
     maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;

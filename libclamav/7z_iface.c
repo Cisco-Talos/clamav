@@ -81,6 +81,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
     UInt16 utf16buf[UTFBUFSZ], *utf16name = utf16buf;
     int namelen = UTFBUFSZ, found = CL_CLEAN;
     Int64 begin_of_archive = offset;
+    UInt32 viruses_found = 0;
 
     /* Replacement for 
        FileInStream_CreateVTable(&archiveStream); */
@@ -150,14 +151,19 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 		encrypted = 1;
 		if(DETECT_ENCRYPTED) {
 		    cli_dbgmsg("cli_7unz: Encrypted files found in archive.\n");
-		    *ctx->virname = "Heuristics.Encrypted.7Zip";
-		    found = CL_VIRUS;
-		    break;
+		    cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
+		    viruses_found++;
+		    if(!SCAN_ALL) {
+			found = CL_VIRUS;
+			break;
+		    }
 		}
 	    }
 	    if(cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
 		found = CL_VIRUS;
-		break;
+		viruses_found++;
+		if (!SCAN_ALL)
+		    break;
 	    }
 	    if (res != SZ_OK)
 		cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
@@ -169,14 +175,16 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 		if(cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
 		    found = CL_EWRITE;
 		else
-		    found = cli_magic_scandesc(fd, ctx);
+		    if ((found = cli_magic_scandesc(fd, ctx)) == CL_VIRUS)
+			viruses_found++;
 		close(fd);
 		if(!ctx->engine->keeptmp && cli_unlink(name))
 		    found = CL_EUNLINK;
 
 		free(name);
 		if(found != CL_CLEAN)
-		    break;
+		    if (!(SCAN_ALL && found == CL_VIRUS))
+			break;
 	    }
 	}
 	IAlloc_Free(&allocImp, outBuffer);
@@ -196,5 +204,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
     else
 	cli_dbgmsg("cli_7unz: error %d\n", res);
 
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return found;
 }

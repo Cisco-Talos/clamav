@@ -357,7 +357,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 
 	if (fl != 'W' && pat->length == 32 &&
 	    cli_hashset_contains(&matcher->sha256_pfx_set, cli_readint32(pat->pattern)) &&
-	    cli_bm_scanbuff(pat->pattern, 32, &vname, NULL, &matcher->sha256_hashes,0,NULL,NULL) == CL_VIRUS) {
+	    cli_bm_scanbuff(pat->pattern, 32, &vname, NULL, &matcher->sha256_hashes,0,NULL,NULL,NULL) == CL_VIRUS) {
 	    if (*vname == 'W') {
 		/* hash is whitelisted in local.gdb */
 		cli_dbgmsg("Skipping hash %s\n", pattern);

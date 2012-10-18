@@ -73,7 +73,7 @@ int cli_scanelf(cli_ctx *ctx)
 	uint8_t conv = 0, err;
 	unsigned int format;
 	fmap_t *map = *ctx->fmap;
-
+	uint32_t viruses_found = 0;
 
     cli_dbgmsg("in cli_scanelf\n");
 
@@ -214,8 +214,7 @@ int cli_scanelf(cli_ctx *ctx)
     if(phnum > 128) {
 	cli_dbgmsg("ELF: Suspicious number of program headers\n");
         if(DETECT_BROKEN) {
-	    if(ctx->virname)
-		*ctx->virname = "Heuristics.Broken.Executable";
+	    cli_append_virus(ctx, "Heuristics.Broken.Executable");
 	    return CL_VIRUS;
         }
 	return CL_EFORMAT;
@@ -227,8 +226,7 @@ int cli_scanelf(cli_ctx *ctx)
 	if(phentsize != sizeof(struct elf_program_hdr32)) {
 	    cli_dbgmsg("ELF: phentsize != sizeof(struct elf_program_hdr32)\n");
 	    if(DETECT_BROKEN) {
-		if(ctx->virname)
-		    *ctx->virname = "Heuristics.Broken.Executable";
+		cli_append_virus(ctx, "Heuristics.Broken.Executable");
 		return CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
@@ -275,8 +273,7 @@ int cli_scanelf(cli_ctx *ctx)
 		cli_dbgmsg("ELF: Possibly broken ELF file\n");
 		free(program_hdr);
 		if(DETECT_BROKEN) {
-		    if(ctx->virname)
-			*ctx->virname = "Heuristics.Broken.Executable";
+		    cli_append_virus(ctx, "Heuristics.Broken.Executable");
 		    return CL_VIRUS;
 		}
 		return CL_CLEAN;
@@ -296,8 +293,7 @@ int cli_scanelf(cli_ctx *ctx)
 	if(err) {
 	    cli_dbgmsg("ELF: Can't calculate file offset of entry point\n");
 	    if(DETECT_BROKEN) {
-		if(ctx->virname)
-		    *ctx->virname = "Heuristics.Broken.Executable";
+                cli_append_virus(ctx, "Heuristics.Broken.Executable");
 		return CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
@@ -319,8 +315,7 @@ int cli_scanelf(cli_ctx *ctx)
     if(shentsize != sizeof(struct elf_section_hdr32)) {
 	cli_dbgmsg("ELF: shentsize != sizeof(struct elf_section_hdr32)\n");
         if(DETECT_BROKEN) {
-	    if(ctx->virname)
-		*ctx->virname = "Heuristics.Broken.Executable";
+	    cli_append_virus(ctx, "Heuristics.Broken.Executable");
 	    return CL_VIRUS;
         }
 	return CL_EFORMAT;
@@ -369,8 +364,7 @@ int cli_scanelf(cli_ctx *ctx)
             cli_dbgmsg("ELF: Possibly broken ELF file\n");
             free(section_hdr);
             if(DETECT_BROKEN) {
-                if(ctx->virname)
-                    *ctx->virname = "Heuristics.Broken.Executable";
+                cli_append_virus(ctx, "Heuristics.Broken.Executable");
 		return CL_VIRUS;
             }
             return CL_CLEAN;

@@ -425,10 +425,83 @@ static void do_phishing_test(const struct rtest *rtest)
 	}
 }
 
+static void do_phishing_test_allscan(const struct rtest *rtest)
+{
+	char *realurl;
+	cli_ctx ctx;
+	const char *virname = NULL;
+	tag_arguments_t hrefs;
+	int rc;
+
+	memset(&ctx, 0, sizeof(ctx));
+
+	realurl = cli_strdup(rtest->realurl);
+	fail_unless(!!realurl, "cli_strdup");
+
+	hrefs.count = 1;
+	hrefs.value = cli_malloc(sizeof(*hrefs.value));
+	fail_unless(!!hrefs.value, "cli_malloc");
+	hrefs.value[0] = (unsigned char*)realurl;
+	hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
+	fail_unless(!!hrefs.contents, "cli_malloc");
+	hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
+	fail_unless(!!hrefs.tag, "cli_malloc");
+	hrefs.tag[0] = (unsigned char*)cli_strdup("href");
+	hrefs.contents[0] = (unsigned char*)cli_strdup(rtest->displayurl);
+
+	ctx.engine = engine;
+	ctx.virname = &virname;
+	ctx.options |= CL_SCAN_ALLMATCHES;
+
+	rc = phishingScan(&ctx, &hrefs);
+
+	html_tag_arg_free(&hrefs);
+	fail_unless(rc == CL_CLEAN,"phishingScan");
+	switch(rtest->result) {
+		case 0:
+			fail_unless_fmt(ctx.found_possibly_unwanted,
+					"this should be phishing, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+		case 1:
+			fail_unless_fmt(!ctx.found_possibly_unwanted,
+					"this should be whitelisted, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+		case 2:
+			fail_unless_fmt(!ctx.found_possibly_unwanted,
+					"this should be clean, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+		case 3:
+			if(!loaded_2)
+				fail_unless_fmt(!ctx.found_possibly_unwanted,
+					"this should be clean, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			else {
+				fail_unless_fmt(ctx.found_possibly_unwanted,
+					"this should be blacklisted, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+				if (*ctx.virname)
+				    fail_unless_fmt(!strstr((const char*)*ctx.virname,"Blacklisted"),
+						    "should be blacklisted, but is: %s\n", ctx.virname);
+			}
+			break;
+	}
+	if (ctx.num_viruses)
+	    free((void *)ctx.virname);
+}
+
 #ifdef CHECK_HAVE_LOOPS
 START_TEST (phishingScan_test)
 {
 	do_phishing_test(&rtests[_i]);
+}
+END_TEST
+
+START_TEST (phishingScan_test_allscan)
+{
+	do_phishing_test_allscan(&rtests[_i]);
 }
 END_TEST
 #endif
@@ -515,6 +588,27 @@ START_TEST(phishing_fake_test)
 }
 END_TEST
 
+START_TEST(phishing_fake_test_allscan)
+{
+	char buf[4096];
+	FILE *f = fdopen(open_testfile("input/daily.pdb"),"r");
+	fail_unless(!!f,"fopen daily.pdb");
+	while(fgets(buf, sizeof(buf), f)) {
+		struct rtest rtest;
+		const char *pdb = strchr(buf,':');
+		fail_unless(!!pdb, "missing : in pdb");
+		rtest.realurl = pdb;
+		rtest.displayurl = pdb;
+		rtest.result = 2;
+		do_phishing_test_allscan(&rtest);
+		rtest.realurl = "http://fake.example.com";
+		rtest.result = 0;
+		do_phishing_test_allscan(&rtest);
+	}
+	fclose(f);
+}
+END_TEST
+
 Suite *test_regex_suite(void)
 {
 	Suite *s = suite_create("regex");
@@ -539,16 +633,20 @@ Suite *test_regex_suite(void)
 	tcase_add_unchecked_fixture(tc_phish, psetup, pteardown);
 #ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+	tcase_add_loop_test(tc_phish, phishingScan_test_allscan, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif
 	tcase_add_test(tc_phish, phishing_fake_test);
+	tcase_add_test(tc_phish, phishing_fake_test_allscan);
 
 	tc_phish2 = tcase_create("phishingScan with 2 dbs");
 	suite_add_tcase(s, tc_phish2);
 	tcase_add_unchecked_fixture(tc_phish2, psetup2, pteardown);
 #ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+	tcase_add_loop_test(tc_phish2, phishingScan_test_allscan, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif
 	tcase_add_test(tc_phish2, phishing_fake_test);
+	tcase_add_test(tc_phish2, phishing_fake_test_allscan);
 #ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish, test_url_canon, 0, sizeof(uc)/sizeof(uc[0]));
 #endif

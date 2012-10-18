@@ -88,7 +88,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     if ((~check) != key)
 	return CL_CLEAN;
 
-    *ctx->virname = "Heuristics.Worm.Mydoom.M.log";
+    cli_append_virus(ctx, "Heuristics.Worm.Mydoom.M.log");
     return CL_VIRUS;
 }
 
