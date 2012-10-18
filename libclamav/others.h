@@ -55,7 +55,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 72
+#define CL_FLEVEL 73
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -111,6 +111,8 @@ typedef struct bitset_tag
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     const char **virname;
+    unsigned int num_viruses;         /* manages virname when CL_SCAN_ALLMATCHES == 1 */
+    unsigned int size_viruses;        /* manages virname when CL_SCAN_ALLMATCHES == 1 */
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
@@ -324,6 +326,7 @@ extern int have_rar;
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
 #define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
+#define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
@@ -421,6 +424,9 @@ static inline void cli_writeint32(char *offset, uint32_t value)
     offset[3] = (value & 0xff000000) >> 24;
 }
 #endif
+
+void cli_append_virus(cli_ctx *ctx, const char *virname);
+const char *cli_get_last_virus(const cli_ctx *ctx);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)

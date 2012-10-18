@@ -58,7 +58,7 @@ extern unsigned long int maxstream;
 int printinfected;
 extern struct optstruct *clamdopts;
 
-static const char *scancmd[] = { "CONTSCAN", "MULTISCAN" };
+static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
 /* Connects to clamd 
  * Returns a FD or -1 on error */
@@ -203,6 +203,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     switch(scantype) {
     case MULTI:
     case CONT:
+    case ALLMATCH:
     if (!filename) {
 	logg("Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
 	return -1;
@@ -254,7 +255,13 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 		colon = strrchr(bol, ':');
 	    }
 	    if(!colon) {
-		logg("Failed to parse reply\n");
+		char * unkco = "UNKNOWN COMMAND";
+		if (!strncmp(bol, unkco, sizeof(unkco) - 1))
+		    logg("clamd replied \"UNKNOWN COMMAND\". Command was %s\n", 
+			 (scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" :
+			                                             scancmd[scantype]);
+		else
+		    logg("Failed to parse reply: \"%s\"\n", bol);
 		return -1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		*(eol - 7) = 0;
