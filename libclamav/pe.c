@@ -984,6 +984,7 @@ int cli_scanpe(cli_ctx *ctx)
 		if(cli_hm_have_size(md5_sect, CLI_HASH_MD5, exe_sections[i].rsz) && 
 		   cli_md5sect(map, &exe_sections[i], md5_dig) &&
 		   cli_hm_scan(md5_dig, exe_sections[i].rsz, &virname, md5_sect, CLI_HASH_MD5) == CL_VIRUS) {
+		    cli_append_virus(ctx, virname);
 		    if(cli_hm_scan(md5_dig, fsize, NULL, ctx->engine->hm_fp, CLI_HASH_MD5) != CL_VIRUS) {
 			if (!SCAN_ALL) {
 			    free(section_hdr);
@@ -991,7 +992,6 @@ int cli_scanpe(cli_ctx *ctx)
 			    return CL_VIRUS;
 			}
 		    }
-		    cli_append_virus(ctx, virname);
 		    viruses_found++;
 		}
 	    }
