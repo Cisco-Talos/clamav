@@ -59,7 +59,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     struct cl_engine *engine;
     int fdin = -1;
     char filestr[512];
-    char * virname = NULL;
+    const char * virname = NULL;
 
     memset(&cctx, 0, sizeof(cctx));
     cctx.options |= CL_SCAN_ALLMATCHES;
