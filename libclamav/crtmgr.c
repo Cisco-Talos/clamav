@@ -317,8 +317,6 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
 	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
 	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
-        if (i->isBlacklisted)
-            i = NULL;
 	    break;
         }
     }

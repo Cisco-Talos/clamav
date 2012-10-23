@@ -749,6 +749,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     SHA1Context ctx;
     cli_crt *x509;
     int result;
+    int isBlacklisted = 0;
 
     cli_dbgmsg("in asn1_parse_mscat\n");
 
@@ -840,12 +841,15 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
-		    if(parent && !(parent->isBlacklisted)) {
+		    if(parent) {
+                if (parent->isBlacklisted)
+                    isBlacklisted = 1;
+
 			x509->codeSign &= parent->codeSign;
 			x509->timeSign &= parent->timeSign;
-			if(crtmgr_add(cmgr, x509))
-			    break;
-			crtmgr_del(&newcerts, x509);
+            if(crtmgr_add(cmgr, x509))
+                break;
+            crtmgr_del(&newcerts, x509);
 			x509 = newcerts.crts;
 			continue;
 		    }
@@ -1276,6 +1280,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	}
 
 	cli_dbgmsg("asn1_parse_mscat: catalog succesfully parsed\n");
+    if (isBlacklisted) {
+        cli_dbgmsg("asn1_parse_mscat: executable containes revoked cert.\n");
+        return 1;
+    }
 	return 0;
     } while(0);
 
@@ -1290,7 +1298,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     int i;
 
     if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size))
-	return 1;
+        return 1;
 
     if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
 	return 1;
@@ -1426,6 +1434,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
 	    }
 	}
     }
+
     return 0;
 }
 
