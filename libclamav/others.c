@@ -797,15 +797,23 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 
 const char * cli_get_last_virus(const cli_ctx * ctx)
 {
-    if (!ctx->virname)
+    if (!ctx || !ctx->virname || !(*ctx->virname))
 	return NULL;
 
-    if (SCAN_ALL && ctx->num_viruses) {
+    if (SCAN_ALL && ctx->num_viruses)
 	return ctx->virname[ctx->num_viruses-1];
-    }
     else
 	return *ctx->virname;
 }
+
+const char * cli_get_last_virus_str(const cli_ctx * ctx)
+{
+    const char * ret;
+    if ((ret = cli_get_last_virus(ctx)))
+	return ret;
+    return "";
+}
+
 
 
 #ifdef	C_WINDOWS

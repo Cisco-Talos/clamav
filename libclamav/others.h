@@ -427,6 +427,7 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 
 void cli_append_virus(cli_ctx *ctx, const char *virname);
 const char *cli_get_last_virus(const cli_ctx *ctx);
+const char *cli_get_last_virus_str(const cli_ctx *ctx);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)

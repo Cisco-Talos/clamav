@@ -545,15 +545,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 		messageDestroy(body);
 	}
 	
-#if 0
-	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted && (*ctx->virname == NULL)) {
-	    *ctx->virname = "Heuristics.Phishing.Email";
-#else
-	/* TBD: Breaks unit_test/check1_clamscan.sh and check2_clamd.sh w/SCAN_ALL */
 	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
 	   (*ctx->virname == NULL || SCAN_ALL)) {
 	    cli_append_virus(ctx, "Heuristics.Phishing.Email");
-#endif
 	    ctx->found_possibly_unwanted = 0;
 	    retcode = CL_VIRUS;
 	}

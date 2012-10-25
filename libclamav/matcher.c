@@ -138,23 +138,21 @@ static inline int matcher_run(const struct cli_matcher *root,
 	if (ret == CL_VIRUS) {
 	    if (ctx) {
 		cli_append_virus(ctx, *virname);
-#if 1
 		if (SCAN_ALL)
 		    viruses_found++;
 		else
-#endif
 		    return ret;
 	    }
 	}
     }
     PERF_LOG_TRIES(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, NULL);
-#if 1
+
     if (ctx && ret == CL_VIRUS)
 	cli_append_virus(ctx, *virname);
     if (ctx && SCAN_ALL && viruses_found)
 	return CL_VIRUS;
-#endif
+
     return ret;
 }
 
@@ -190,8 +188,6 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 
 	ret = matcher_run(troot, buffer, length, &virname, acdata ? (acdata[0]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL, NULL, ctx);
 
-	//	if (virname)
-	//	    cli_append_virus(ctx, virname);
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
 
@@ -206,8 +202,6 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 
     ret = matcher_run(groot, buffer, length, &virname, acdata ? (acdata[1]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL, NULL, ctx);
 
-    //  if (virname)
-    //	cli_append_virus(ctx, virname);
     if(!acdata)
 	cli_ac_freedata(&mdata);
 
@@ -492,7 +486,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
-	    cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, *ctx->virname, ctx->entry_filename);
+	    cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, cli_get_last_virus(ctx), ctx->entry_filename);
         } else
             cli_errmsg("can't compute sha\n!");
         ctx->sha_collect = -1;
@@ -803,7 +797,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, acres, map, bm_offmode ? &toff : NULL, &viroffset, ctx);
 
 	    if (virname) {
-		//		cli_append_virus(ctx, virname);
 		viruses_found++;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
@@ -825,7 +818,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, acres, map, NULL, &viroffset, ctx);
 
             if (virname) {
-		//              cli_append_virus(ctx, virname);
 		viruses_found++;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
@@ -866,8 +858,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     }
 
     if(!ftonly && hdb) {
-	enum CLI_HASH_TYPE hashtype;
-	unsigned int hvirs = 0, hfps = 0;
+	enum CLI_HASH_TYPE hashtype, hashtype2;
 
 	if(compute_hash[CLI_HASH_MD5])
 	    cli_md5_final(digest[CLI_HASH_MD5], &md5ctx);
@@ -880,23 +871,26 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
 	virname = NULL;
 	for(hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
-	    if(compute_hash[hashtype] && (ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
-
-		if(fp && cli_hm_scan(digest[hashtype], map->len, NULL, fp, hashtype) == CL_VIRUS) {
-		    hfps++;
-		    continue;
+	    if(compute_hash[hashtype] &&
+	       (ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
+		if(fp) {
+		    for(hashtype2 = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype2++) {
+			if(compute_hash[hashtype2] &&
+			   cli_hm_scan(digest[hashtype2], map->len, NULL, fp, hashtype2) == CL_VIRUS) {
+			    ret = CL_CLEAN;
+			    break;
+			}
+		    }
 		}
-		hvirs++;
-		cli_append_virus(ctx, virname);
+		if (ret == CL_VIRUS) {
+		    viruses_found++;
+		    cli_append_virus(ctx, virname);
+		    if (!SCAN_ALL)
+			break;
+		}
 		virname = NULL;
-		if(!SCAN_ALL)
-		    break;
 	    }
 	}
-	if(hvirs > hfps)
-	    ret = CL_VIRUS;
-	else
-	    ret = CL_CLEAN;
     }
 
     if(troot) {
