@@ -874,7 +874,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    if(compute_hash[hashtype] &&
 	       (ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
 		if(fp) {
-		    for(hashtype2 = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype2++) {
+		    for(hashtype2 = CLI_HASH_MD5; hashtype2 < CLI_HASH_AVAIL_TYPES; hashtype2++) {
 			if(compute_hash[hashtype2] &&
 			   cli_hm_scan(digest[hashtype2], map->len, NULL, fp, hashtype2) == CL_VIRUS) {
 			    ret = CL_CLEAN;
