@@ -735,7 +735,7 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 	if(!pchk || pchk->is_disabled)
 		return CL_CLEAN;
 
-	if(!ctx->found_possibly_unwanted)
+	if(!ctx->found_possibly_unwanted && !SCAN_ALL)
 		*ctx->virname=NULL;
 #if 0
 	FILE *f = fopen("/home/edwin/quarantine/urls","r");
@@ -810,29 +810,29 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 				case CL_PHISH_CLEAN:
 					continue;
 				case CL_PHISH_NUMERIC_IP:
-					*ctx->virname="Heuristics.Phishing.Email.Cloaked.NumericIP";
+				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
 					break;
 				case CL_PHISH_CLOAKED_NULL:
-					*ctx->virname="Heuristics.Phishing.Email.Cloaked.Null";/*fakesite%01%00@fake.example.com*/
+				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Null");/*fakesite%01%00@fake.example.com*/
 					break;
 				case CL_PHISH_SSL_SPOOF:
-					*ctx->virname="Heuristics.Phishing.Email.SSL-Spoof";
+				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
 					break;
 				case CL_PHISH_CLOAKED_UIU:
-					*ctx->virname="Heuristics.Phishing.Email.Cloaked.Username";/*http://banksite@fake.example.com*/
+				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Username");/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
-					*ctx->virname="Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
+				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_HASH1:
-					*ctx->virname="Heuristics.Phishing.URL.Blacklisted";
+				    cli_append_virus(ctx, "Heuristics.Phishing.URL.Blacklisted");
 					break;
 				case CL_PHISH_HASH2:
-					*ctx->virname="Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
+				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_NOMATCH:
 				default:
-					*ctx->virname="Heuristics.Phishing.Email.SpoofedDomain";
+				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
 					break;
 			}
 			return cli_found_possibly_unwanted(ctx);
@@ -1207,14 +1207,14 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, (unsigned)hlen, path, (unsigned)plen);
 #if 0
 	    if (prefix_matched) {
-		if (cli_bm_scanbuff(sha256_dig, 4, &virname, NULL, &rlist->hostkey_prefix,0,NULL,NULL) == CL_VIRUS) {
+		if (cli_bm_scanbuff(sha256_dig, 4, &virname, NULL, &rlist->hostkey_prefix,0,NULL,NULL,NULL) == CL_VIRUS) {
 		    cli_dbgmsg("prefix matched\n");
 		    *prefix_matched = 1;
 		} else
 		    return CL_SUCCESS;
 	    }
 #endif
-	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, NULL, &rlist->sha256_hashes,0,NULL,NULL) == CL_VIRUS) {
+	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, NULL, &rlist->sha256_hashes,0,NULL,NULL,NULL) == CL_VIRUS) {
 		cli_dbgmsg("This hash matched: %s\n", h);
 		switch(*virname) {
 		    case 'W':

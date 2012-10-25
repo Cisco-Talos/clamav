@@ -550,7 +550,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd,
     cli_bytecode_context_setpdf(bc_ctx, phase, pdf->nobjs, pdf->objs,
 				&pdf->flags, pdf->size, pdf->startoff);
     cli_bytecode_context_setctx(bc_ctx, ctx);
-    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PDF, map, ctx->virname);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PDF, map);
     cli_bytecode_context_destroy(bc_ctx);
     if (fd != -1) {
 	funmap(map);
@@ -1574,7 +1574,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	/* It is encrypted, and a password/key needs to be supplied to decrypt.
 	 * This doesn't trigger for PDFs that are encrypted but don't need
 	 * a password to decrypt */
-	*ctx->virname = "Heuristics.Encrypted.PDF";
+	cli_append_virus(ctx, "Heuristics.Encrypted.PDF");
 	rc = CL_VIRUS;
     }
 
@@ -1596,7 +1596,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	if (!rc && (ctx->options & CL_SCAN_ALGORITHMIC)) {
 	    if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
 		/* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-		*ctx->virname = "Heuristics.PDF.ObfuscatedNameObject";
+		cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");
 		rc = cli_found_possibly_unwanted(ctx);
 	    }
 	}

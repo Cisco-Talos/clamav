@@ -1512,8 +1512,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	if(confidence >= positivematch) {
 	    cli_dbgmsg("confidence: %u\n", confidence);
 
-	    if(ctx->virname) 
-		*ctx->virname = matcher->icons[enginesize][x].name;
+	    cli_append_virus(ctx,matcher->icons[enginesize][x].name);
 	    return CL_VIRUS;
 	}
     }

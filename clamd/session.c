@@ -94,7 +94,8 @@ static struct {
     {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0,	0, 1},
     {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0, 1},
     {CMD19, sizeof(CMD19)-1,	COMMAND_DETSTATSCLEAR,	0, 1, 1},
-    {CMD20, sizeof(CMD20)-1,	COMMAND_DETSTATS,   0, 1, 1}
+    {CMD20, sizeof(CMD20)-1,	COMMAND_DETSTATS,   0, 1, 1},
+    {CMD21, sizeof(CMD21)-1,	COMMAND_ALLMATCHSCAN,  1, 0, 1}
 };
 
 enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
@@ -346,7 +347,11 @@ int command(client_conn_t *conn, int *virus)
 	    conn->scanfd = -1;
 	    cli_unlink(conn->filename);
 	    return ret;
-	default:
+	case COMMAND_ALLMATCHSCAN:
+	     thrmgr_setactivetask(NULL, "ALLMATCHSCAN");
+	     scandata.options |= CL_SCAN_ALLMATCHES;
+	     type = TYPE_SCAN;
+	     break;default:
 	    logg("!Invalid command distpached: %d\n", conn->cmdtype);
 	    return 1;
     }
@@ -420,6 +425,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 	case COMMAND_SCAN:
 	case COMMAND_CONTSCAN:
 	case COMMAND_MULTISCAN:
+        case COMMAND_ALLMATCHSCAN:
 	    dup_conn->filename = strdup(argument);
 	    if (!dup_conn->filename) {
 		logg("!Failed to allocate memory for filename\n");
@@ -591,6 +597,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	case COMMAND_FILDES:
 	case COMMAND_SCAN:
 	case COMMAND_INSTREAMSCAN:
+	case COMMAND_ALLMATCHSCAN:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    conn->group = thrmgr_group_new();

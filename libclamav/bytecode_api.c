@@ -511,8 +511,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
 	cctx->recursion--;
 	cctx->container_type = current;
 	if (res == CL_VIRUS) {
-	    if (cctx->virname)
-		ctx->virname = *cctx->virname;
+	    ctx->virname = cli_get_last_virus(cctx);
 	    ctx->found = 1;
 	}
     }

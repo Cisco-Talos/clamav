@@ -128,6 +128,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
 	size_t currsize = 0;
+	unsigned int num_viruses = 0; 
 
 	cli_dbgmsg("In untar(%s, %d)\n", dir, desc);
 
@@ -159,8 +160,12 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				close(fout);
 				if (!ctx->engine->keeptmp)
 					if (cli_unlink(fullname)) return CL_EUNLINK;
-				if (ret==CL_VIRUS)
+				if (ret==CL_VIRUS) {
+				    if (!SCAN_ALL)
 					return CL_VIRUS;
+				    else
+					num_viruses++;
+				}
 				fout = -1;
 			}
 
@@ -276,8 +281,12 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			strncpy(name, block, 100);
 			name[100] = '\0';
-			if(cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS)
-			    return CL_VIRUS;
+			if(cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS) {
+			    if (!SCAN_ALL)
+				return CL_VIRUS;
+			    else
+				num_viruses++;
+			}
 
 			snprintf(fullname, sizeof(fullname)-1, "%s"PATHSEP"tar%02u", dir, files);
 			fullname[sizeof(fullname)-1] = '\0';
@@ -340,5 +349,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 		if (ret==CL_VIRUS)
 			return CL_VIRUS;
 	}
+	if (num_viruses)
+	    return CL_VIRUS;
 	return CL_CLEAN;
 }

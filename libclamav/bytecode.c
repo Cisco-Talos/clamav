@@ -2571,7 +2571,7 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
 
 int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 			 const struct cli_all_bc *bcs, unsigned bc_idx,
-			 const char **virname, const uint32_t* lsigcnt,
+			 const uint32_t* lsigcnt,
 			 const uint32_t *lsigsuboff, fmap_t *map)
 {
     int ret;
@@ -2618,9 +2618,8 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     if (ctx.virname) {
 	int rc;
 	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
-	if (virname)
-	    *virname = ctx.virname;
-	if (!strncmp(*virname, "BC.Heuristics", 13))
+	cli_append_virus(cctx, ctx.virname);
+	if (!strncmp(ctx.virname, "BC.Heuristics", 13))
 	    rc = cli_found_possibly_unwanted(cctx);
 	else
 	    rc = CL_VIRUS;
@@ -2634,7 +2633,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 }
 
 int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx,
-			 unsigned id, fmap_t *map, const char **virname)
+			 unsigned id, fmap_t *map)
 {
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
@@ -2664,10 +2663,13 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	}
 	if (ctx->virname) {
 	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
-	    if (virname)
-		*virname = ctx->virname;
-	    cli_bytecode_context_clear(ctx);
-	    return CL_VIRUS;
+	    cli_append_virus(cctx, ctx->virname);
+	    if (!(cctx->options & CL_SCAN_ALLMATCHES)) {
+		cli_bytecode_context_clear(ctx);
+		return CL_VIRUS;
+	    }
+	    cli_bytecode_context_reset(ctx);
+	    continue;
 	}
 	ret = cli_bytecode_context_getresult_int(ctx);
 	/* TODO: use prefix here */
@@ -2700,10 +2702,15 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		}
 		free(tempfile);
 		if (ret != CL_CLEAN) {
-		    if (ret == CL_VIRUS)
+		    if (ret == CL_VIRUS) {
 			cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
-		    cli_bytecode_context_clear(ctx);
-		    return ret;
+			if (cctx->options & CL_SCAN_ALLMATCHES) {
+			    cli_bytecode_context_reset(ctx);
+			    continue;
+			}
+			cli_bytecode_context_clear(ctx);
+		    	return ret;
+		    }
 		}
 		cli_bytecode_context_reset(ctx);
 		continue;

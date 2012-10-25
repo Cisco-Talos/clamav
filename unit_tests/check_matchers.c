@@ -145,7 +145,83 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
-    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL);
+    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
+    fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
+    fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
+}
+END_TEST
+
+START_TEST (test_ac_scanbuff_allscan) {
+	struct cli_ac_data mdata;
+	struct cli_matcher *root;
+	unsigned int i;
+	int ret;
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
+
+
+    for(i = 0; ac_testdata[i].data; i++) {
+	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, "*", 0, NULL, 0);
+	fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    }
+
+    ret = cli_ac_buildtrie(root);
+    fail_unless(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
+    fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
+
+    ctx.options |= CL_SCAN_ALLMATCHES;
+    for(i = 0; ac_testdata[i].data; i++) {
+	ret = cli_ac_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
+	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
+	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+	if (ctx.num_viruses) {
+	    free((void *)ctx.virname);
+	    ctx.num_viruses = 0;
+	    ctx.size_viruses = 0;
+	}
+     }
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST (test_bm_scanbuff_allscan) {
+	struct cli_matcher *root;
+	const char *virname = NULL;
+	int ret;
+
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_bm_init(root);
+    fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
+
+    ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+
+    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
@@ -160,6 +236,8 @@ Suite *test_matchers_suite(void)
     tcase_add_checked_fixture (tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
+    tcase_add_test(tc_matchers, test_ac_scanbuff_allscan);
+    tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
     return s;
 }
 

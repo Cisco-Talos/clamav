@@ -752,6 +752,51 @@ int cli_unlink(const char *pathname)
 	return 0;
 }
 
+void cli_append_virus(cli_ctx * ctx, const char * virname)
+{
+    if (!ctx->virname)
+	return;
+    if (SCAN_ALL) {
+	if (ctx->size_viruses == 0) {
+	    ctx->size_viruses = 2;
+	    if (!(ctx->virname = malloc(ctx->size_viruses * sizeof(char *)))) {
+		cli_errmsg("cli_append_virus: fails on malloc() - virus %s virname not appended.\n", virname);
+		return;
+	    }
+	} else if (ctx->num_viruses+1 == ctx->size_viruses) {
+	    ctx->size_viruses *= 2;
+	    if ((ctx->virname = realloc((void *)ctx->virname, ctx->size_viruses * sizeof (char *))) == NULL) {
+		cli_errmsg("cli_append_virus: fails on realloc() - virus %s virname not appended.\n", virname);
+		return;
+	    }
+	}
+	ctx->virname[ctx->num_viruses++] = virname;
+	ctx->virname[ctx->num_viruses] = NULL;
+    }
+    else
+	*ctx->virname = virname;
+}
+
+const char * cli_get_last_virus(const cli_ctx * ctx)
+{
+    if (!ctx || !ctx->virname || !(*ctx->virname))
+	return NULL;
+
+    if (SCAN_ALL && ctx->num_viruses)
+	return ctx->virname[ctx->num_viruses-1];
+    else
+	return *ctx->virname;
+}
+
+const char * cli_get_last_virus_str(const cli_ctx * ctx)
+{
+    const char * ret;
+    if ((ret = cli_get_last_virus(ctx)))
+	return ret;
+    return "";
+}
+
+
 #ifdef	C_WINDOWS
 /*
  * Windows doesn't allow you to delete a directory while it is still open
@@ -955,7 +1000,7 @@ int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
     cli_dbgmsg("DUMP&SCAN: File extracted to %s\n", name);
     lseek(newfd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
-	cli_dbgmsg("cli_dumpscan: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("cli_dumpscan: Infected with %s\n", cli_get_last_virus_str(ctx));
 
     close(newfd);
     if(!ctx->engine->keeptmp) {

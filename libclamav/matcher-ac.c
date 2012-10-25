@@ -1145,7 +1145,7 @@ void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigne
 }
 
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt, *faillist;
@@ -1355,11 +1355,18 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					pt = pt->next_same;
 					continue;
 				    } else {
-					if(virname)
-					    *virname = pt->virname;
+					if(virname) {
+					    if (ctx && SCAN_ALL && virname == ctx->virname)
+						cli_append_virus(ctx, (const char *)pt->virname);
+					    else
+						*virname = pt->virname;
+					}
 					if(customdata)
 					    *customdata = pt->customdata;
-					return CL_VIRUS;
+					if (!ctx || !SCAN_ALL)
+					    return CL_VIRUS;
+					pt = pt->next_same;
+					continue;
 				    }
 				}
 			    }
@@ -1398,11 +1405,18 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    pt = pt->next_same;
 				    continue;
 				} else {
-				    if(virname)
-					*virname = pt->virname;
+				    if(virname) {
+					if (ctx && SCAN_ALL && virname == ctx->virname)
+					    cli_append_virus(ctx, pt->virname);
+					else
+					    *virname = pt->virname;
+				    }
 				    if(customdata)
 					*customdata = pt->customdata;
-				    return CL_VIRUS;
+				    if (!ctx || !SCAN_ALL)
+					return CL_VIRUS;
+				    pt = pt->next_same;
+				    continue;
 				}
 			    }
 			}

@@ -77,7 +77,7 @@ int cli_check_mydoom_log(int desc, cli_ctx *ctx)
     if (j < 2) {
 	retval = CL_CLEAN;
     } else if (retval==CL_VIRUS) {
-	*ctx->virname = "Heuristics.Worm.Mydoom.M.log";
+	cli_append_virus(ctx, "Heuristics.Worm.Mydoom.M.log");
     }
 
     return retval;

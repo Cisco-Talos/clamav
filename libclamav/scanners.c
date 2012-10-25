@@ -111,7 +111,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 #endif
 	struct stat statbuf;
 	char *fname;
-
+	unsigned int viruses_found = 0;
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
@@ -138,16 +138,28 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
 			    if(cli_scandir(fname, ctx) == CL_VIRUS) {
 				free(fname);
-				closedir(dd);
-				return CL_VIRUS;
-			    }
+
+				if (SCAN_ALL) {
+				    viruses_found++;
+				    continue;
+				}
+
+                                closedir(dd);
+                                return CL_VIRUS;
+ 			    }
 			} else {
 			    if(S_ISREG(statbuf.st_mode)) {
 				if(cli_scanfile(fname, ctx) == CL_VIRUS) {
 				    free(fname);
-				    closedir(dd);
-				    return CL_VIRUS;
-				}
+
+				    if (SCAN_ALL) {
+					viruses_found++;
+					continue;
+				    }
+
+                                    closedir(dd);
+                                    return CL_VIRUS;
+ 				}
 			    }
 			}
 		    }
@@ -161,6 +173,8 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
     }
 
     closedir(dd);
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return CL_CLEAN;
 }
 
@@ -188,7 +202,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	lseek(desc, 0, SEEK_SET);
 	ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	if(ret != CL_VIRUS) {
-	    *ctx->virname = "Heuristics.Encrypted.RAR";
+	    cli_append_virus(ctx, "Heuristics.Encrypted.RAR");
 	    return CL_VIRUS;
 	}
     }
@@ -202,7 +216,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	unrar_metadata_t *metadata, *metadata_tmp;
 	char *dir;
 	unrar_state_t rar_state;
-
+	unsigned int viruses_found = 0;
 
     cli_dbgmsg("in scanrar()\n");
 
@@ -230,7 +244,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		lseek(desc, 0, SEEK_SET);
 		ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 		if(ret != CL_VIRUS)
-		    *ctx->virname = "Heuristics.Encrypted.RAR";
+		    cli_append_virus(ctx, "Heuristics.Encrypted.RAR");
 		return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
@@ -280,10 +294,17 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    if(!ctx->engine->keeptmp) 
 		if (cli_unlink(rar_state.filename)) ret = CL_EUNLINK;
 	    if(rc == CL_VIRUS ) {
-		cli_dbgmsg("RAR: infected with %s\n",*ctx->virname);
+		cli_dbgmsg("RAR: infected with %s\n", cli_get_last_virus(ctx));
 		ret = CL_VIRUS;
-		break;
+		viruses_found++;
 	    }
+	}
+
+	if(ret == CL_VIRUS) {
+	    if(SCAN_ALL)
+		ret = CL_SUCCESS;
+	    else
+		break;
 	}
 
 	if(ret == CL_SUCCESS)
@@ -315,6 +336,8 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     }
     cli_dbgmsg("RAR: Exit code: %d\n", ret);
 
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -370,7 +393,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
 	    close(metadata.ofd);
 	    if (rc == CL_VIRUS) {
-		cli_dbgmsg("ARJ: infected with %s\n",*ctx->virname);
+		cli_dbgmsg("ARJ: infected with %s\n", cli_get_last_virus(ctx));
 		ret = CL_VIRUS;
 		if (metadata.filename) {
 		    free(metadata.filename);
@@ -443,7 +466,7 @@ static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
     gzclose(gz);
 
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
-	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
 	close(fd);
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
@@ -535,7 +558,7 @@ static int cli_scangzip(cli_ctx *ctx)
     inflateEnd(&z);	    
 
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
-	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
 	close(fd);
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
@@ -652,7 +675,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
-	cli_dbgmsg("Bzip: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("Bzip: Infected with %s\n", cli_get_last_virus(ctx));
     }
     close(fd);
     if(!ctx->engine->keeptmp)
@@ -707,7 +730,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	struct cab_archive cab;
 	struct cab_file *file;
 	unsigned int corrupted_input;
-
+	unsigned int viruses_found = 0;
 
     cli_dbgmsg("in cli_scanmscab()\n");
 
@@ -718,8 +741,11 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	files++;
 
 	if(cli_matchmeta(ctx, file->name, 0, file->length, 0, files, 0, NULL) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-	    break;
+	    if (!SCAN_ALL) {
+		ret = CL_VIRUS;
+		break;
+	    }
+	    viruses_found++;
 	}
 
 	if(ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
@@ -758,11 +784,17 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	    }
 	}
 	free(tempname);
-	if(ret == CL_VIRUS)
-	    break;
+	if(ret == CL_VIRUS) {
+	    if (SCAN_ALL)
+		viruses_found++;
+	    else
+		break;
+	}
     }
 
     cab_free(&cab);
+    if (viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -773,6 +805,7 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 	struct cli_ac_data gmdata, tmdata;
 	struct cli_ac_data *mdata[2];
 	int ret;
+	unsigned int viruses_found = 0;
 
     if((ret = cli_ac_initdata(&tmdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
@@ -786,14 +819,20 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 
     ret = cli_scanbuff(data, len, 0, ctx, CL_TYPE_MSOLE2, mdata);
 
-    if(ret != CL_VIRUS) {
+    if(ret != CL_VIRUS || SCAN_ALL) {
+	if (SCAN_ALL)
+	    viruses_found++;
 	ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL);
-	if(ret != CL_VIRUS)
+	if(ret != CL_VIRUS || SCAN_ALL)
+	    if (SCAN_ALL)
+		viruses_found++;
 	    ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL);
     }
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
+    if (viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -814,6 +853,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	unsigned char *data;
 	char *hash;
 	uint32_t hashcnt;
+	unsigned int viruses_found = 0;
 
 
     cli_dbgmsg("VBADir: %s\n", dirname);
@@ -838,9 +878,13 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		    if(ctx->scanned)
 			*ctx->scanned += data_len / CL_COUNT_PRECISION;
 		    if(vba_scandata(data, data_len, ctx) == CL_VIRUS) {
-			free(data);
-			ret = CL_VIRUS;
-			break;
+			if (SCAN_ALL) 
+			    viruses_found++;
+			else {
+			    free(data);
+			    ret = CL_VIRUS;
+			    break;
+			}
 		    }
 		    free(data);
 		}
@@ -852,10 +896,12 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
-	if (ret == CL_VIRUS) break;
+	if (ret == CL_VIRUS && !SCAN_ALL)
+	    break;
     }
 
-    if(ret == CL_CLEAN && (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
+    if((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) && 
+	(hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
 	    snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
@@ -864,6 +910,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    if ((fullname = cli_ppt_vba_read(fd, ctx))) {
 		if(cli_scandir(fullname, ctx) == CL_VIRUS) {
 		    ret = CL_VIRUS;
+		    viruses_found++;
 		}
 		if(!ctx->engine->keeptmp)
 		    cli_rmdirs(fullname);
@@ -873,7 +920,8 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	}
     }
 
-    if (ret == CL_CLEAN && (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
+    if ((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) && 
+	(hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
 	    snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
@@ -895,9 +943,13 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 			if(ctx->scanned)
 			    *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
 			if(vba_scandata(data, vba_project->length[i], ctx) == CL_VIRUS) {
+			    if (SCAN_ALL)
+				viruses_found++;
+			    else {
 				free(data);
 				ret = CL_VIRUS;
 				break;
+			    }
 			}
 			free(data);
 		}
@@ -911,11 +963,16 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    free(vba_project->key);
 	    free(vba_project->length);
 	    free(vba_project);
-	    if(ret == CL_VIRUS) break;
+	    if(ret == CL_VIRUS) {
+		if (SCAN_ALL)
+		    viruses_found++;
+		else
+		    break;
+	    }
 	}
     }
 
-    if(ret != CL_CLEAN)
+    if(ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALL))
     	return ret;
 
     /* Check directory for embedded OLE objects */
@@ -928,7 +985,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	if (fd >= 0) {
 	    ret = cli_scan_ole10(fd, ctx);
 	    close(fd);
-	    if(ret != CL_CLEAN)
+	    if(ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALL))
 		return ret;
 	}
     }
@@ -961,10 +1018,14 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		    if(lstat(fullname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
 			  if (cli_vba_scandir(fullname, ctx, U) == CL_VIRUS) {
-			    	ret = CL_VIRUS;
-				free(fullname);
-				break;
-			    }
+			      if (SCAN_ALL)
+				  viruses_found++;
+			      else {
+				  ret = CL_VIRUS;
+				  free(fullname);
+				  break;
+			      }
+			  }
 		    }
 		    free(fullname);
 		}
@@ -977,9 +1038,12 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     closedir(dd);
     if(BLOCK_MACROS && hasmacros) {
-	*ctx->virname = "Heuristics.OLE2.ContainsMacros";
+	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
 	ret = CL_VIRUS;
+	viruses_found++;
     }
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -988,6 +1052,7 @@ static int cli_scanhtml(cli_ctx *ctx)
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
 	fmap_t *map = *ctx->fmap;
+	unsigned int viruses_found = 0;
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
@@ -1015,35 +1080,38 @@ static int cli_scanhtml(cli_ctx *ctx)
     snprintf(fullname, 1024, "%s"PATHSEP"nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
-	    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
-	    close(fd);
+	if ((ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS)
+	    viruses_found++;
+	close(fd);
     }
 
-    if(ret == CL_CLEAN && map->len < 2097152) {
+    if((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) && map->len < 2097152) {
 	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
 	    /* TODO: don't even create notags if file is over 2 MB */
 	    snprintf(fullname, 1024, "%s"PATHSEP"notags.html", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
-		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
-		    close(fd);
+		if ((ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS) 
+		    viruses_found++;
+		close(fd);
 	    }
     }
 
-    if(ret == CL_CLEAN) {
+    if(ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
 	    snprintf(fullname, 1024, "%s"PATHSEP"javascript", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
-		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
-		    if (ret == CL_CLEAN) {
-			    lseek(fd, 0, SEEK_SET);
-			    ret = cli_scandesc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
-		    }
-		    close(fd);
+		if ((ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS)
+		    viruses_found++;
+		if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
+		    if ((ret = cli_scandesc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS)
+			viruses_found++;
+		}
+		close(fd);
 	    }
     }
 
-    if (ret == CL_CLEAN) {
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
 	snprintf(fullname, 1024, "%s"PATHSEP"rfc2397", tempname);
 	ret = cli_scandir(fullname, ctx);
     }
@@ -1052,6 +1120,8 @@ static int cli_scanhtml(cli_ctx *ctx)
         cli_rmdirs(tempname);
 
     free(tempname);
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -1069,6 +1139,7 @@ static int cli_scanscript(cli_ctx *ctx)
 	struct cli_ac_data *mdata[2];
 	fmap_t *map = *ctx->fmap;
 	size_t at = 0;
+        unsigned int viruses_found = 0;
 
 	cli_dbgmsg("in cli_scanscript()\n");
 
@@ -1119,8 +1190,12 @@ static int cli_scanscript(cli_ctx *ctx)
 		}
 		/* when we flush the buffer also scan */
 		if(cli_scanbuff(state.out, state.out_pos, offset, ctx, CL_TYPE_TEXT_ASCII, mdata) == CL_VIRUS) {
-		    ret = CL_VIRUS;
-		    break;
+		    if (SCAN_ALL)
+			viruses_found++;
+		    else {
+			ret = CL_VIRUS;
+			break;
+		    }
 		}
 		if(ctx->scanned)
 		    *ctx->scanned += state.out_pos / CL_COUNT_PRECISION;
@@ -1141,14 +1216,18 @@ static int cli_scanscript(cli_ctx *ctx)
 		close(ofd);
 	}
 	free(normalized);
-	if(ret != CL_VIRUS) {
-	    ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL);
-	    if(ret != CL_VIRUS)
-		ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL);
+	if(ret != CL_VIRUS || SCAN_ALL)  {
+	    if ((ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL)) == CL_VIRUS)
+		viruses_found++;
+	    if(ret != CL_VIRUS || SCAN_ALL)
+		if ((ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL)) == CL_VIRUS)
+		    viruses_found++;
 	}
 	cli_ac_freedata(&tmdata);
 	cli_ac_freedata(&gmdata);
 
+	if (SCAN_ALL && viruses_found)
+	    return CL_VIRUS;
 	return ret;
 }
 
@@ -1293,6 +1372,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN, rc;
 	chm_metadata_t metadata;
 	char *dir;
+	unsigned int viruses_found = 0;
 
     cli_dbgmsg("in cli_scanmschm()\n");
 
@@ -1326,9 +1406,13 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
 	    close(metadata.ofd);
 	    if (rc == CL_VIRUS) {
-		cli_dbgmsg("CHM: infected with %s\n",*ctx->virname);
-		ret = CL_VIRUS;
-		break;
+		cli_dbgmsg("CHM: infected with %s\n", cli_get_last_virus(ctx));
+		if (SCAN_ALL)
+		    viruses_found++;
+		else {
+		    ret = CL_VIRUS;
+		    break;
+		}
 	    }
 	}
 
@@ -1345,6 +1429,8 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
     if (ret == CL_BREAK)
 	ret = CL_CLEAN;
 
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -1380,7 +1466,7 @@ static int cli_scanriff(int desc, cli_ctx *ctx)
 
     if(cli_check_riff_exploit(desc) == 2) {
 	ret = CL_VIRUS;
-	*ctx->virname = "Heuristics.Exploit.W32.MS05-002";
+	cli_append_virus(ctx, "Heuristics.Exploit.W32.MS05-002");
     }
 
     return ret;
@@ -1392,7 +1478,7 @@ static int cli_scanjpeg(int desc, cli_ctx *ctx)
 
     if(cli_check_jpeg_exploit(desc, ctx) == 1) {
 	ret = CL_VIRUS;
-	*ctx->virname = "Heuristics.Exploit.W32.MS04-028";
+	cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
     }
 
     return ret;
@@ -1470,7 +1556,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
     cli_dbgmsg("CryptFF: Scanning decrypted data\n");
 
     if((ret = cli_magic_scandesc(ndesc, ctx)) == CL_VIRUS)
-	cli_dbgmsg("CryptFF: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("CryptFF: Infected with %s\n", cli_get_last_virus_str(ctx));
 
     close(ndesc);
 
@@ -1562,7 +1648,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 {
 	char *dir;
 	int ret;
-
+	unsigned int viruses_found = 0;
 
     cli_dbgmsg("Starting cli_scanmail(), recursion = %u\n", ctx->recursion);
 
@@ -1580,10 +1666,14 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
      * Extract the attachments into the temporary directory
      */
     if((ret = cli_mbox(dir, desc, ctx))) {
-	if(!ctx->engine->keeptmp)
-	    cli_rmdirs(dir);
-	free(dir);
-	return ret;
+	if (ret == CL_VIRUS && SCAN_ALL)
+	    viruses_found++;
+	else {
+	    if(!ctx->engine->keeptmp)
+		cli_rmdirs(dir);
+	    free(dir);
+	    return ret;
+	}
     }
 
     ret = cli_scandir(dir, ctx);
@@ -1592,6 +1682,8 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	cli_rmdirs(dir);
 
     free(dir);
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -1604,7 +1696,7 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 	int done = 0;
 	int (*ccfunc)(const unsigned char *buffer, int length);
 	int (*ssnfunc)(const unsigned char *buffer, int length);
-
+	unsigned int viruses_found = 0;
 
     if(ctx == NULL)
 	return CL_ENULLARG;
@@ -1651,16 +1743,24 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 
     if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
-	*ctx->virname = "Heuristics.Structured.CreditCardNumber";
-	return CL_VIRUS;
+	cli_append_virus(ctx,"Heuristics.Structured.CreditCardNumber");
+	if (SCAN_ALL)
+	    viruses_found++;
+	else
+	    return CL_VIRUS;
     }
 
     if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
-	*ctx->virname = "Heuristics.Structured.SSN";
-	return CL_VIRUS;
+	cli_append_virus(ctx,"Heuristics.Structured.SSN");
+	if (SCAN_ALL)
+	    viruses_found++;
+	else
+	    return CL_VIRUS;
     }
 
+    if (SCAN_ALL && viruses_found)
+	return CL_VIRUS;
     return CL_CLEAN;
 }
 
@@ -1727,7 +1827,7 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
     ret = cli_magic_scandesc(fd, ctx);
     ctx->corrupted_input = corrupted_input;
     if(ret == CL_VIRUS) {
-	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
+	cli_dbgmsg("cli_scanembpe: Infected with %s\n", cli_get_last_virus(ctx));
 	close(fd);
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
@@ -1921,7 +2021,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     }
 
     if(ret == CL_VIRUS)
-	cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, map->fd);
+	cli_dbgmsg("%s found\n", cli_get_last_virus(ctx));
 
     return ret;
 }
@@ -1945,14 +2045,13 @@ static void emax_reached(cli_ctx *ctx) {
 #define ret_from_magicscan(retcode) do {							\
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);			\
     if(ctx->engine->cb_post_scan) {								\
-	switch(ctx->engine->cb_post_scan(desc, retcode, retcode == CL_VIRUS && ctx->virname ? *ctx->virname : NULL, ctx->cb_ctx)) {		\
+	switch(ctx->engine->cb_post_scan(desc, retcode, retcode == CL_VIRUS ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) { \
 	case CL_BREAK:										\
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");			\
 	    return CL_CLEAN;									\
 	case CL_VIRUS:										\
 	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");			\
-	    if(ctx->virname)									\
-		*ctx->virname = "Detected.By.Callback";						\
+	    cli_append_virus(ctx, "Detected.By.Callback");					\
 	    return CL_VIRUS;									\
 	case CL_CLEAN:										\
 	    break;										\
@@ -1973,6 +2072,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	size_t current_container_size = ctx->container_size, hashed_size;
 	unsigned char hash[16];
 	bitset_t *old_hook_lsig_matches;
+	unsigned int viruses_found = 0;
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(ctx->sha_collect>0) ctx->sha_collect = 0;
@@ -2026,8 +2126,7 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	    ret_from_magicscan(CL_CLEAN);
 	case CL_VIRUS:
 	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");
-	    if(ctx->virname)
-		*ctx->virname = "Detected.By.Callback";
+	    cli_append_virus(ctx, "Detected.By.Callback");
 	    funmap(*ctx->fmap);
 	    ctx->fmap--;
 	    ret_from_magicscan(CL_VIRUS);
@@ -2048,14 +2147,14 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
     old_hook_lsig_matches = ctx->hook_lsig_matches;
     ctx->hook_lsig_matches = NULL;
 
-    if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
+    if(!(ctx->options&~CL_SCAN_ALLMATCHES) || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
-	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	    cli_dbgmsg("%s found in descriptor %d\n", cli_get_last_virus(ctx), desc);
 	else if(ret == CL_CLEAN) {
 	    if(ctx->recursion != ctx->engine->maxreclevel)
 		cache_add(hash, hashed_size, ctx); /* Only cache if limits are not reached */
@@ -2381,6 +2480,8 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 		/* CL_VIRUS = malware found, check FP and report */
 		case CL_VIRUS:
 		    ret = cli_checkfp(hash, hashed_size, ctx);
+		    if (SCAN_ALL)
+			break;
 		    funmap(*ctx->fmap);
 		    ctx->fmap--;
 		    cli_bitset_free(ctx->hook_lsig_matches);
@@ -2415,11 +2516,10 @@ static int magic_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_TEXT_UTF16BE:
 	case CL_TYPE_TEXT_UTF16LE:
 	case CL_TYPE_TEXT_UTF8:
-	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
+	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && ret != CL_VIRUS)
 	        ret = cli_scanscript(ctx);
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (ctx->container_type == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
-		lseek(desc, 0, SEEK_SET);
-		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL);
+		ret = cli_fmap_scandesc(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);
 	    }
 	    break;
 	/* Due to performance reasons all executables were first scanned
@@ -2519,6 +2619,12 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
     cli_logg_setup(&ctx);
     rc = cli_magic_scandesc(desc, &ctx);
 
+    if (ctx.options & CL_SCAN_ALLMATCHES) {
+	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */
+	if (rc == CL_CLEAN && ctx.num_viruses)
+	    rc = CL_VIRUS;
+    }
+
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
@@ -2529,24 +2635,24 @@ int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scan
 
 int cli_found_possibly_unwanted(cli_ctx* ctx)
 {
-	if(ctx->virname) {
-		cli_dbgmsg("found Possibly Unwanted: %s\n",*ctx->virname);
-		if(ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE) {
-			/* we found a heuristic match, don't scan further,
-			 * but consider it a virus. */
-			cli_dbgmsg("cli_found_possibly_unwanted: CL_VIRUS\n");
-			return CL_VIRUS;
-		}
-		/* heuristic scan isn't taking precedence, keep scanning.
-		 * If this is part of an archive, and 
-		 * we find a real malware we report that instead of the 
-		 * heuristic match */
-		ctx->found_possibly_unwanted = 1;
-	} else {
-		cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
+    if(cli_get_last_virus(ctx)) {
+	cli_dbgmsg("found Possibly Unwanted: %s\n", cli_get_last_virus(ctx));
+	if(ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE) {
+	    /* we found a heuristic match, don't scan further,
+	     * but consider it a virus. */
+	    cli_dbgmsg("cli_found_possibly_unwanted: CL_VIRUS\n");
+	    return CL_VIRUS;
 	}
-	emax_reached(ctx);
-	return CL_CLEAN;
+	/* heuristic scan isn't taking precedence, keep scanning.
+	 * If this is part of an archive, and 
+	 * we find a real malware we report that instead of the 
+	 * heuristic match */
+	ctx->found_possibly_unwanted = 1;
+    } else {
+	cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
+    }
+    emax_reached(ctx);
+    return CL_CLEAN;
 }
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx)

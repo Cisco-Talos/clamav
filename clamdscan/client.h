@@ -27,7 +27,9 @@ enum {
     CONT,
     MULTI,
     STREAM,
-    FILDES
+    FILDES,
+    ALLMATCH,
+    MAX_SCANTYPE = ALLMATCH
 };
 
 int client(const struct optstruct *opts, int *infected, int *err);

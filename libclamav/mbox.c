@@ -544,10 +544,11 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		messageDestroy(body);
 	}
 
-	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted && (*ctx->virname == NULL)) {
-		*ctx->virname = "Heuristics.Phishing.Email";
-		ctx->found_possibly_unwanted = 0;
-		retcode = CL_VIRUS;
+	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
+	   (*ctx->virname == NULL || SCAN_ALL)) {
+	    cli_append_virus(ctx, "Heuristics.Phishing.Email");
+	    ctx->found_possibly_unwanted = 0;
+	    retcode = CL_VIRUS;
 	}
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
