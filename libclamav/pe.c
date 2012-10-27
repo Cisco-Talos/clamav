@@ -2851,5 +2851,5 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     if(hlen < 8)
 	return CL_VIRUS;
     hlen -= 8;
-    return asn1_check_mscat(map, at + 8, hlen, authsha1);
+    return asn1_check_mscat(ctx->engine, map, at + 8, hlen, authsha1);
 }

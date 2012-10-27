@@ -1438,7 +1438,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     return 0;
 }
 
-int asn1_check_mscat(fmap_t *map, size_t offset, unsigned int size, uint8_t *computed_sha1) {
+int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, uint8_t *computed_sha1) {
     unsigned int content_size;
     struct cli_asn1 c;
     const void *content;
@@ -1447,7 +1447,7 @@ int asn1_check_mscat(fmap_t *map, size_t offset, unsigned int size, uint8_t *com
 
     cli_dbgmsg("in asn1_check_mscat (offset: %lu)\n", offset);
     crtmgr_init(&certs);
-    if(crtmgr_add_roots(&certs)) {
+    if(crtmgr_add_roots(engine, &certs)) {
 	crtmgr_free(&certs);
 	return CL_VIRUS;
     }
