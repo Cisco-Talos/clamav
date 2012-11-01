@@ -435,7 +435,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 						continue;
 					} else if(rc == VIRUS) {
 						cli_dbgmsg("Message number %d is infected\n",
-							messagenumber);
+							messagenumber-1);
 						retcode = CL_VIRUS;
 						m = NULL;
 						break;
