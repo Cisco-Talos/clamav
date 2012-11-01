@@ -22,8 +22,8 @@
 #include "clamav-config.h"
 #endif
 
-#include "crtmgr.h"
 #include "others.h"
+#include "crtmgr.h"
 
 int cli_crt_init(cli_crt *x509) {
     int ret;
@@ -31,6 +31,7 @@ int cli_crt_init(cli_crt *x509) {
 	cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
 	return 1;
     }
+    x509->isBlacklisted = 0;
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
     x509->certSign = x509->codeSign = x509->timeSign = 0;
@@ -87,8 +88,21 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	    i->certSign |= x509->certSign;
 	    i->codeSign |= x509->codeSign;
 	    i->timeSign |= x509->timeSign;
+
 	    return 0;
 	}
+
+    /* If certs match, we're likely just revoking it */
+    if (!memcmp(x509->subject, i->subject, sizeof(x509->subject)) &&
+        !memcmp(x509->issuer, i->issuer, sizeof(x509->issuer)) &&
+        !memcmp(x509->serial, i->serial, sizeof(x509->serial)) &&
+        !mp_cmp(&x509->n, &i->n) &&
+        !mp_cmp(&x509->e, &i->e)) {
+            if (i->isBlacklisted != x509->isBlacklisted)
+                i->isBlacklisted = x509->isBlacklisted;
+
+            return 0;
+    }
     }
 
     i = cli_malloc(sizeof(*i));
@@ -116,6 +130,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     i->certSign = x509->certSign;
     i->codeSign = x509->codeSign;
     i->timeSign = x509->timeSign;
+    i->isBlacklisted = x509->isBlacklisted;
     i->next = m->crts;
     i->prev = NULL;
     if(m->crts)
@@ -314,8 +329,9 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
 	    continue;
 	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
 	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
-	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash))
+	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
 	    break;
+        }
     }
     mp_clear(&sig);
     return i;
@@ -415,57 +431,23 @@ static const uint8_t VER_MOD[] = "\
 static const uint8_t VER_EXP[] = "\x01\x00\x01";
 
 
-int crtmgr_add_roots(crtmgr *m) {
+int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m) {
     cli_crt ca;
-    if(cli_crt_init(&ca))
-	return 1;
+    cli_crt *crt, *new_crt;
 
-    do {
-	memset(ca.issuer, '\xca', sizeof(ca.issuer));
-	memcpy(ca.subject, MSCA_SUBJECT, sizeof(ca.subject));
-	memset(ca.serial, '\xca', sizeof(ca.serial));
-	if(mp_read_unsigned_bin(&ca.n, MSCA_MOD, sizeof(MSCA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSCA_EXP, sizeof(MSCA_EXP)-1)) {
-	    cli_errmsg("crtmgr_add_roots: failed to read MSCA key\n");
-	    break;
-	}
-	ca.not_before = 0;
-	ca.not_after = (-1U)>>1;
-	ca.certSign = 1;
-	ca.codeSign = 1;
-	ca.timeSign = 1;
-	if(crtmgr_add(m, &ca))
-	    break;
+    /*
+     * Certs are cached in engine->cmgr. Copy from there.
+     */
+    if (m != &(engine->cmgr)) {
+       for (crt = engine->cmgr.crts; crt != NULL; crt = crt->next) {
+           if (crtmgr_add(m, crt)) {
+               crtmgr_free(m);
+               return 1;
+           }
+       }
 
-	memcpy(ca.subject, MSA_SUBJECT, sizeof(ca.subject));
-	if(mp_read_unsigned_bin(&ca.n, MSA_MOD, sizeof(MSA_MOD)-1) || mp_read_unsigned_bin(&ca.e, MSA_EXP, sizeof(MSA_EXP)-1)) {
-	    cli_errmsg("crtmgr_add_roots: failed to read MSA key\n");
-	    break;
-	}
-	if(crtmgr_add(m, &ca))
-	    break;
+       return 0;
+    }
 
-	memcpy(ca.subject, VER_SUBJECT, sizeof(ca.subject));
-	if(mp_read_unsigned_bin(&ca.n, VER_MOD, sizeof(VER_MOD)-1) || mp_read_unsigned_bin(&ca.e, VER_EXP, sizeof(VER_EXP)-1)) {
-	    cli_errmsg("crtmgr_add_roots: failed to read VER key\n");
-	    break;
-	}
-	ca.timeSign = 0;
-	if(crtmgr_add(m, &ca))
-	    break;
-
-	memcpy(ca.subject, THAW_SUBJECT, sizeof(ca.subject));
-	if(mp_read_unsigned_bin(&ca.n, THAW_MOD, sizeof(THAW_MOD)-1) || mp_read_unsigned_bin(&ca.e, THAW_EXP, sizeof(THAW_EXP)-1)) {
-	    cli_errmsg("crtmgr_add_roots: failed to read THAW key\n");
-	    break;
-	}
-	ca.codeSign = 0;
-	ca.timeSign = 1;
-	if(crtmgr_add(m, &ca))
-	    break;
-	return 0;
-    } while(0);
-
-    cli_crt_clear(&ca);
-    crtmgr_free(m);
-    return 1;
+    return 0;
 }

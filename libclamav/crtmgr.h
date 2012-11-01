@@ -43,6 +43,7 @@ typedef struct cli_crt_t {
     int certSign;
     int codeSign;
     int timeSign;
+    int isBlacklisted;
     struct cli_crt_t *prev;
     struct cli_crt_t *next;
 } cli_crt;
@@ -62,7 +63,7 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
 void crtmgr_del(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype);
-int crtmgr_add_roots(crtmgr *m);
+int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m);
 
 
 #endif
