@@ -35,6 +35,7 @@ print "  NULL\n};\n"
 */
 
 static const char *ftypes_int[] = {
+  "0:0:0000000c6a5020200d0a870a:JPEG2000:CL_TYPE_ANY:CL_TYPE_GRAPHICS",
   "0:0:000001b3:MPEG video stream:CL_TYPE_ANY:CL_TYPE_IGNORED",
   "0:0:000001ba:MPEG sys stream:CL_TYPE_ANY:CL_TYPE_IGNORED",
   "0:0:1f8b:GZip:CL_TYPE_ANY:CL_TYPE_GZ",
