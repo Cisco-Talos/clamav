@@ -2363,8 +2363,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 }
 
 /* 
- * Name;trusted:subject:pubkey;exponent;comment[;minFL;maxFL]
+ * name;trusted;subject;pubkey;exp;codesign;timesign;notbefore;comment[;minFL[;maxFL]]
  * Name and comment are ignored. They're just for the end user.
+ * Exponent is ignored for now and hardcoded to \x01\x00\x01.
  */
 #define CRT_TOKENS 11
 static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio) {
@@ -2396,6 +2397,31 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             cli_errmsg("cli_loadcrt: line %u: Invalid number of tokens: %u\n", line, tokens_count);
             ret = CL_EMALFDB;
             goto end;
+        }
+
+        if (tokens_count > CRT_TOKENS - 2) {
+            if (!cli_isnumber(tokens[CRT_TOKENS-1])) {
+                cli_errmsg("cli_loadcrt: line %u: Invalid minimum feature level\n", line);
+                ret = CL_EMALFDB;
+                goto end;
+            }
+            if ((unsigned int)atoi(tokens[CRT_TOKENS-1]) > cl_retflevel()) {
+                cli_dbgmsg("cli_loadcrt: Cert %s not loaded (required f-level: %u)\n", tokens[0], cl_retflevel());
+                continue;
+            }
+
+            if (tokens_count == CRT_TOKENS) {
+                if (!cli_isnumber(tokens[CRT_TOKENS])) {
+                    cli_errmsg("cli_loadcrt: line %u: Invalid maximum feature level\n", line);
+                    ret = CL_EMALFDB;
+                    goto end;
+                }
+
+                if ((unsigned int)atoi(tokens[CRT_TOKENS]) < cl_retflevel) {
+                    cli_dbgmsg("cli_ladcrt: Cert %s not loaded (maximum f-level: %s)\n", tokens[0], tokens[CRT_TOKENS]);
+                    continue;
+                }
+            }
         }
 
         switch (tokens[1][0]) {
@@ -2431,8 +2457,6 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             ret = CL_EMALFDB;
             goto end;
         }
-
-        cli_dbgmsg("sizeof(exp): %u. sizeof(exp)-1: %u\n", sizeof(exp), sizeof(exp)-1);
 
         switch (tokens[5][0]) {
             case '1':
