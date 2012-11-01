@@ -2417,7 +2417,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                     goto end;
                 }
 
-                if ((unsigned int)atoi(tokens[CRT_TOKENS]) < cl_retflevel) {
+                if ((unsigned int)atoi(tokens[CRT_TOKENS]) < cl_retflevel()) {
                     cli_dbgmsg("cli_ladcrt: Cert %s not loaded (maximum f-level: %s)\n", tokens[0], tokens[CRT_TOKENS]);
                     continue;
                 }

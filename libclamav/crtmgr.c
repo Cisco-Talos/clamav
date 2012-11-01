@@ -88,8 +88,21 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	    i->certSign |= x509->certSign;
 	    i->codeSign |= x509->codeSign;
 	    i->timeSign |= x509->timeSign;
+
 	    return 0;
 	}
+
+    /* If certs match, we're likely just revoking it */
+    if (!memcmp(x509->subject, i->subject, sizeof(x509->subject)) &&
+        !memcmp(x509->issuer, i->issuer, sizeof(x509->issuer)) &&
+        !memcmp(x509->serial, i->serial, sizeof(x509->serial)) &&
+        !mp_cmp(&x509->n, &i->n) &&
+        !mp_cmp(&x509->e, &i->e)) {
+            if (i->isBlacklisted != x509->isBlacklisted)
+                i->isBlacklisted = x509->isBlacklisted;
+
+            return 0;
+    }
     }
 
     i = cli_malloc(sizeof(*i));
