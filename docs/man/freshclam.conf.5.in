@@ -117,7 +117,7 @@ This option allows you to easily point freshclam to private mirrors. If PrivateM
 Default: disabled
 .TP 
 \fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUMBER\fR
-Use given proxy server and TCP port for database downloads.
+Use given proxy server and TCP port for database downloads. HTTPProxyPort defaults to 8080.
 .TP 
 \fBHTTPProxyUsername STR\fR,\fBHTTPProxyPassword STRING\fR
 Proxy usage is authenticated through given username and password.
