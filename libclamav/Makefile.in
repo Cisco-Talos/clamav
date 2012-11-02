@@ -587,8 +587,8 @@ EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
 @ENABLE_UNRAR_TRUE@IFACEDEP = libclamunrar_iface.la
 libclamav_internal_utils_la_SOURCES = str.c\
 				    str.h\
-				    iowrap.c\
-				    iowrap.h\
+				    iowrap.c \
+				    iowrap.h \
 				    md5.c\
 				    md5.h\
 				    others_common.c \
@@ -609,8 +609,8 @@ libclamav_internal_utils_la_LDFLAGS = -static
 libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    str.h\
-				    iowrap.c\
-				    iowrap.h\
+				    iowrap.c \
+				    iowrap.h \
 				    md5.c\
 				    md5.h\
 				    others_common.c \

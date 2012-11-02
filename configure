@@ -18746,7 +18746,6 @@ else
 
 #define _LARGEFILE_SOURCE
 #define _LARGEFILE64_SOURCE
-#define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18777,7 +18776,7 @@ if test "$enable_stat64" != "no"; then
 
 $as_echo "#define HAVE_STAT64 1" >>confdefs.h
 
-CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stat64" >&5
 $as_echo "$enable_stat64" >&6; }
