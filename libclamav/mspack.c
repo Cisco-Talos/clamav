@@ -126,12 +126,22 @@ static const unsigned short mszip_bit_mask_tab[17] = {
 static int mszip_read_input(struct mszip_stream *zip) {
   int nread = zip->read_cb(zip->file, zip->inbuf, (int)zip->inbuf_size);
   if (nread < 0) {
-    if (zip->file->error == CL_BREAK)
-      return zip->error = CL_BREAK;
+    if (zip->file->error == CL_BREAK) {
+      if (nread == zip->last) {
+        cli_dbgmsg("mszip_read_input: Two consecutive CL_BREAKs reached.\n");
+        return CL_BREAK;
+      }
+      // Need short circuit to ensure scanning small files
+      cli_dbgmsg("mszip_read_input: First CL_BREAK reached.\n");
+      zip->i_ptr = zip->i_end;
+      zip->last = nread;
+      return CL_SUCCESS;
+    }
     else
       return zip->error = CL_EFORMAT;
   }
 
+  zip->last = nread;
   zip->i_ptr = &zip->inbuf[0];
   zip->i_end = &zip->inbuf[nread];
 

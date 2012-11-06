@@ -84,6 +84,7 @@ struct mszip_stream {
   int (*read_cb)(struct cab_file *, unsigned char *, int);
 
   unsigned char wflag;	    /* write flag */
+  unsigned int last;        /* prior end of content buffer */
 
 };
 
