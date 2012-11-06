@@ -432,7 +432,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
 }
 #ifdef CHECK_HAVE_LOOPS
 
-static ssize_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
+static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
     return pread(*((int*)handle), buf, count, offset);
 }
