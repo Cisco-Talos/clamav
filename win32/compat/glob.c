@@ -74,6 +74,7 @@ static int glob_add(char *path, int *argc, char ***argv) {
     int baselen, taillen, dirlen, mergedir = 0, outlen = 0;
     int qmarklen = 0;
     DIR *d;
+    void *p;
 
     if(strlen(path) > 4 && !memcmp(path, "\\\\?\\", 4))
 	tailqmark = strchr(&path[4], '?');
@@ -84,15 +85,16 @@ static int glob_add(char *path, int *argc, char ***argv) {
 	tail = tailqmark;
 
     if(!tail) {
-	*argv = realloc(*argv, sizeof(**argv) * (*argc + 1));
-	if (argv == NULL) {
-        /* realloc() failed, print warning */
-	   fprintf(stderr, "warning: realloc() for '*argv' failed\n");
-       return -1;
-    }
-	(*argv)[*argc] = path;
-	(*argc)++;
-	return strlen(path);
+        p = realloc(*argv, sizeof(**argv) * (*argc + 1));
+        if (p == NULL) {
+            /* realloc() failed, print warning */
+           fprintf(stderr, "warning: realloc() for '*argv' failed\n");
+           return -1;
+        }
+        *argv = p;
+        (*argv)[*argc] = path;
+        (*argc)++;
+        return strlen(path);
     }
 
     if(tail!=path && tail[-1] == '\\') {
@@ -203,6 +205,7 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
     char *cur, *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
     int argc = 0, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0, linelen;
+    void *p;
 
     linelen = wcslen(wtmp);
     cur = _alloca(linelen * 6 + 1);
@@ -271,11 +274,12 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
 		    }
 		}
 		if(!arglen) {
-		    argv = realloc(argv, sizeof(*argv) * (argc + 1));
-		    if (argv == NULL) { /* realloc() failed */
+		    p = realloc(argv, sizeof(*argv) * (argc + 1));
+		    if (p == NULL) { /* realloc() failed */
     			fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
                 return -1;
             }
+            argv = p;
 		    argv[argc] = path;
 		    argc++;
 		    arglen = endparm - begparm;
