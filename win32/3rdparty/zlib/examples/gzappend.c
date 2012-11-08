@@ -399,7 +399,12 @@ local void gztack(char *name, int gd, z_stream *strm, int last)
     }
 
     /* allocate buffers */
-    in = fd == -1 ? NULL : malloc(CHUNK);
+    if (fd == -1)
+	in = NULL;
+    else {
+	in = malloc(CHUNK);
+	if (in == NULL) bye("out of memory", "");
+    }
     out = malloc(CHUNK);
     if (out == NULL) bye("out of memory", "");
 
