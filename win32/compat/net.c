@@ -18,7 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#include <stdio.h>
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 /* #define W2K_DNSAAPI_COMPAT */
