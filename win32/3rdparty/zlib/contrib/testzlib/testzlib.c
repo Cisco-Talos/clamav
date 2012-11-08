@@ -184,6 +184,10 @@ int main(int argc, char *argv[])
     lBufferSizeUncpr = lBufferSizeCpr;
 
     CprPtr=(unsigned char*)malloc(lBufferSizeCpr + BlockSizeCompress);
+    if (CprPtr == NULL) { /* oops, malloc() failed */
+	fprintf(stderr, "warning: malloc() for variable 'CprPtr' in main() failed...\n");
+	return -1;
+    }
 
     BeginCountPerfCounter(&li_qp,TRUE);
     dwGetTick=GetTickCount();
@@ -225,6 +229,10 @@ int main(int argc, char *argv[])
 
     CprPtr=(unsigned char*)realloc(CprPtr,lSizeCpr);
     UncprPtr=(unsigned char*)malloc(lBufferSizeUncpr + BlockSizeUncompress);
+    if (UncprPtr == NULL) { /* oops, malloc() failed */
+	fprintf(stderr, "warning: malloc() for variable 'UncprPtr' in main() failed...\n");
+	return -1;
+    }
 
     BeginCountPerfCounter(&li_qp,TRUE);
     dwGetTick=GetTickCount();
