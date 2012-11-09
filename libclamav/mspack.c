@@ -1,6 +1,6 @@
 /*
  * This file includes code from libmspack adapted for libclamav by
- * tkojm@clamav.net
+ * tkojm@clamav.net and draynor@sourcefire.com
  *
  * Copyright (C) 2003-2004 Stuart Caie
  *
@@ -632,7 +632,7 @@ struct mszip_stream *mszip_init(int ofd,
   return zip;
 }
 
-int mszip_decompress(struct mszip_stream *zip, off_t out_bytes) {
+int mszip_decompress(struct mszip_stream *zip, uint32_t out_bytes) {
   /* for the bit buffer */
   register unsigned int bit_buffer;
   register int bits_left;
@@ -1099,7 +1099,7 @@ void lzx_set_output_length(struct lzx_stream *lzx, off_t out_bytes) {
   if (lzx) lzx->length = out_bytes;
 }
 
-int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
+int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
   /* bitstream reading and huffman variables */
   register unsigned int bit_buffer;
   register int bits_left, i=0;
@@ -1832,7 +1832,7 @@ struct qtm_stream *qtm_init(int ofd,
   return qtm;
 }
 
-int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
+int qtm_decompress(struct qtm_stream *qtm, uint32_t out_bytes) {
   unsigned int frame_start, frame_end, window_posn, match_offset, range;
   unsigned char *window, *i_ptr, *i_end, *runsrc, *rundest;
   int i, j, selector, extra, sym, match_length, ret;

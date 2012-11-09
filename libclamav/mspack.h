@@ -94,7 +94,7 @@ struct mszip_stream *mszip_init(int ofd,
 				  struct cab_file *file,
 			          int (*read_cb)(struct cab_file *, unsigned char *, int));
 
-extern int mszip_decompress(struct mszip_stream *zip, off_t out_bytes);
+extern int mszip_decompress(struct mszip_stream *zip, uint32_t out_bytes);
 
 void mszip_free(struct mszip_stream *zip);
 
@@ -180,7 +180,7 @@ extern struct qtm_stream *qtm_init(int ofd,
 				     struct cab_file *file,
 				     int (*read_cb)(struct cab_file *, unsigned char *, int));
 
-extern int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes);
+extern int qtm_decompress(struct qtm_stream *qtm, uint32_t out_bytes);
 
 void qtm_free(struct qtm_stream *qtm);
 
@@ -287,7 +287,7 @@ struct lzx_stream *lzx_init(int ofd,
 extern void lzx_set_output_length(struct lzx_stream *lzx,
 				   off_t output_length);
 
-extern int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes);
+extern int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes);
 
 void lzx_free(struct lzx_stream *lzx);
 
