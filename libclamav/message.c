@@ -1086,7 +1086,7 @@ messageMoveText(message *m, text *t, message *old_message)
 		} else {
 			m->body_last = m->body_first = textMove(NULL, t);
 			if(m->body_first == NULL)
-				rc = -1;
+				return -1;
 			else
 				rc = 0;
 		}
