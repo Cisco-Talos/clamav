@@ -18,6 +18,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include <stdio.h>
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 /* #define W2K_DNSAAPI_COMPAT */
@@ -414,9 +415,17 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event) {
 	return 0;
     }
     setme = malloc(2 * sizeof(HANDLE));
+    if (setme == NULL) { /* oops, malloc() failed */
+	fprintf(stderr, "warning: malloc() for variable 'setme' failed in function 'poll_with_event'...\n");
+	return -1;
+    }
     setme[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
     setme[1] = event;
     items = malloc(nfds * sizeof(struct w32polldata));
+    if (items == NULL) { /* oops, malloc() failed */
+	fprintf(stderr, "warning: malloc() for variable 'items' failed in function 'poll_with_event'...\n");
+	return -1;
+    }
     for(i=0; i<nfds; i++) {
 	items[i].polldata = &fds[i];
 	items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -484,4 +493,3 @@ int fcntl(int fd, int cmd, ...) {
     }
     return -1;
 }
-

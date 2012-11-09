@@ -74,6 +74,7 @@ static int glob_add(char *path, int *argc, char ***argv) {
     int baselen, taillen, dirlen, mergedir = 0, outlen = 0;
     int qmarklen = 0;
     DIR *d;
+    void *p;
 
     if(strlen(path) > 4 && !memcmp(path, "\\\\?\\", 4))
 	tailqmark = strchr(&path[4], '?');
@@ -84,10 +85,16 @@ static int glob_add(char *path, int *argc, char ***argv) {
 	tail = tailqmark;
 
     if(!tail) {
-	*argv = realloc(*argv, sizeof(**argv) * (*argc + 1));
-	(*argv)[*argc] = path;
-	(*argc)++;
-	return strlen(path);
+        p = realloc(*argv, sizeof(**argv) * (*argc + 1));
+        if (p == NULL) {
+            /* realloc() failed, print warning */
+           fprintf(stderr, "warning: realloc() for '*argv' failed\n");
+           return -1;
+        }
+        *argv = (char **)p;
+        (*argv)[*argc] = path;
+        (*argc)++;
+        return strlen(path);
     }
 
     if(tail!=path && tail[-1] == '\\') {
@@ -153,7 +160,11 @@ static int glob_add(char *path, int *argc, char ***argv) {
 	    int d_taillen = taildirsep - tail;
 	    if(namelen < baselen + d_taillen) continue;
 	    if(strncasecmp(tail, &de->d_name[namelen - d_taillen], d_taillen)) continue;
-	    newpath = malloc(dirlen + namelen + taillen - d_taillen + 3);
+	    newpath = (char *)malloc(dirlen + namelen + taillen - d_taillen + 3);
+	    if (newpath == NULL) { /* oops, malloc() has failed */
+		fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
+		return -1;
+	    }
 	    sprintf(newpath, "%s\\%s\\%s", dir, de->d_name, &tail[d_taillen+1]);
 	    outlen += glob_add(newpath, argc, argv);
 	} else {
@@ -171,7 +182,11 @@ static int glob_add(char *path, int *argc, char ***argv) {
 
 	    for(; namelen >= d_taillen; start++, namelen--) {
 		if(strncasecmp(start, tail, d_taillen)) continue;
-		newpath = malloc(dirlen + (start - de->d_name) +  taillen + 2);
+		newpath = (char *)malloc(dirlen + (start - de->d_name) +  taillen + 2);
+		if (newpath == NULL) { /* oops, malloc() has failed */
+			fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
+			return -1;
+		}
 		sprintf(newpath, "%s\\", dir);
 		memcpy(&newpath[dirlen + 1], de->d_name, start - de->d_name);
 		strcpy(&newpath[dirlen + 1 + start - de->d_name], tail);
@@ -190,9 +205,10 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
     char *cur, *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
     int argc = 0, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0, linelen;
+    void *p;
 
     linelen = wcslen(wtmp);
-    cur = _alloca(linelen * 6 + 1);
+    cur = (char *)_alloca(linelen * 6 + 1);
     if(!WideCharToMultiByte(CP_UTF8, 0, wtmp, -1, cur, linelen * 6 + 1, NULL, NULL))
 	cur = GetCommandLineA();
 
@@ -232,8 +248,12 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
 	}
 	if (begparm && endparm) {
 	    if(begparm < endparm) {
-		char *path = malloc(endparm - begparm + 1), *quotes;
-		int arglen = 0;
+			int arglen = 0;
+		char *path = (char *)malloc(endparm - begparm + 1), *quotes;
+		if (path == NULL) { /* oops, malloc() failed */
+			fprintf(stderr, "warning: malloc() failed for '*path'...\n");
+			return;
+		}
 
 		memcpy(path, begparm, endparm - begparm);
 		path[endparm - begparm] = '\0';
@@ -243,13 +263,22 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
 		if(argc && need_glob) {
 		    arglen = glob_add(path, &argc, &argv);
 		    if(!arglen) {
-			path = malloc(endparm - begparm + 1);
+			path = (char *)malloc(endparm - begparm + 1);
+			if (path == NULL) { /* oops, malloc() failed */
+			    fprintf(stderr, "warning: malloc failed for 'path'...\n");
+			    return;
+			}
 			memcpy(path, begparm, endparm - begparm);
 			path[endparm - begparm] = '\0';
 		    }
 		}
 		if(!arglen) {
-		    argv = realloc(argv, sizeof(*argv) * (argc + 1));
+		    p = realloc(argv, sizeof(*argv) * (argc + 1));
+		    if (p == NULL) { /* realloc() failed */
+    			fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
+                return;
+            }
+            argv = (char **)p;
 		    argv[argc] = path;
 		    argc++;
 		    arglen = endparm - begparm;
@@ -266,7 +295,12 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
     } while (c);
     if(argc) {
 	int i, argvlen = sizeof(*argv) * (argc + 1), argclen = 0;
-	argv = realloc(argv, argvlen + allarglen + argc);
+	p = realloc(argv, argvlen + allarglen + argc);
+	if (p == NULL) { /* oops, realloc() failed */
+	    fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
+		return;
+	}
+	argv = (char **)p;
 	argv[argc] = NULL;
 	for(i=0; i<argc; i++) {
 	    int curlen = strlen(argv[i]) + 1;
@@ -280,4 +314,3 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
     *argc_ptr = argc;
     *argv_ptr = argv;
 }
-
