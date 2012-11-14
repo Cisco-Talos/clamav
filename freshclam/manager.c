@@ -1941,7 +1941,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     int ret, ims = -1, hascld = 0;
     char *pt, cvdfile[32], cldfile[32], localname[32], *tmpdir =
         NULL, *newfile, *newfile2, newdb[32];
-    char extradbinfo[64], *extradnsreply = NULL, squery[64];
+    char extradbinfo[256], *extradnsreply = NULL, squery[256];
     const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
     unsigned int flevel = cl_retflevel (), remote_flevel = 0, maxattempts;
     unsigned int can_whitelist = 0, mirror_stats = 0;
