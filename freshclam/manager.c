@@ -84,6 +84,7 @@
 #include "libclamav/regex_list.h"
 
 extern char updtmpdir[512], dbdir[512];
+char g_label[33];
 
 #define CHDIR_ERR(x)				\
 	if(chdir(x) == -1)			\
@@ -1927,6 +1928,27 @@ checkdbdir (void)
     return fret;
 }
 
+static const char * dns_label(const char * ip)
+{
+    uint8_t netaddr[sizeof(struct in6_addr)];
+    int len, af;
+    char * hexstr;
+
+    if (strchr(ip, ':')) {
+        af = AF_INET6;
+	len = 16; 
+    } else {
+        af = AF_INET;
+        len = 4;
+    }
+    if (1 == inet_pton(af, ip, netaddr) && (hexstr = cli_str2hex(netaddr, len))) {
+	strncpy(g_label, hexstr, sizeof(g_label));
+	free(hexstr);
+	return g_label;
+    }
+    return "ip_unknown";
+}
+
 extern int sigchld_wait;
 
 static int
@@ -2143,7 +2165,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             {
                 snprintf (squery, sizeof (squery),
                           "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname,
-                          current->version, flevel, 1, w32, ip);
+                          current->version, flevel, 1, w32, dns_label(ip));
                 dnsquery (squery, T_A, NULL);
             }
 #endif
@@ -2160,7 +2182,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             {
                 snprintf (squery, sizeof (squery),
                           "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname,
-                          current->version + 1, flevel, 0, w32, ip);
+                          current->version + 1, flevel, 0, w32, dns_label(ip));
                 dnsquery (squery, T_A, NULL);
             }
 #endif
@@ -2229,7 +2251,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             {
                 snprintf (squery, sizeof (squery),
                           "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0,
-                          flevel, 0, w32, ip);
+                          flevel, 0, w32, dns_label(ip));
                 dnsquery (squery, T_A, NULL);
             }
 #endif
@@ -2265,7 +2287,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                     {
                         snprintf (squery, sizeof (squery),
                                   "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname,
-                                  i, flevel, 0, w32, ip);
+                                  i, flevel, 0, w32, dns_label(ip));
                         dnsquery (squery, T_A, NULL);
                     }
 #endif
@@ -2300,7 +2322,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                 {
                     snprintf (squery, sizeof (squery),
                               "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname, 0,
-                              flevel, 0, w32, ip);
+                              flevel, 0, w32, dns_label(ip));
                     dnsquery (squery, T_A, NULL);
                 }
 #endif
@@ -2424,7 +2446,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     {
         snprintf (squery, sizeof (squery),
                   "%s.%u.%u.%u.%u.%s.ping.clamav.net", dbname,
-                  current->version, flevel, 1, w32, ip);
+                  current->version, flevel, 1, w32, dns_label(ip));
         dnsquery (squery, T_A, NULL);
     }
 #endif
