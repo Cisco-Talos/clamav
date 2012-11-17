@@ -1930,23 +1930,82 @@ checkdbdir (void)
 
 static const char * dns_label(const char * ip)
 {
-    uint8_t netaddr[sizeof(struct in6_addr)];
-    int len, af;
-    char * hexstr;
+    static const char hex[] = "0123456789ABCDEF";
+    char *c, *n = NULL, *m = g_label, *cc = g_label;
+    const char *p, *q;
+    int r, cs = 0;
+    int has_ipv4 = strchr(ip, '.')?1:0;
 
-    if (strchr(ip, ':')) {
-        af = AF_INET6;
-	len = 16; 
-    } else {
-        af = AF_INET;
-        len = 4;
+    strcpy(g_label, "0000000000000000"
+                    "0000000000000000");
+
+    if (strchr(ip, ':')) { /* IPv6 */
+        p = ip;
+        c = g_label;
+        while ((q = strchr(p, ':'))) {
+            r = q - p;
+            if (r>0 && r<5) {
+                memcpy(c+4-r, p, r);
+                c+=4;
+            }
+            p = q + 1;
+            if (++cs > 7)
+                break;
+            if (*p == ':') { /* check :: */
+		cc = c - 1;
+                if (has_ipv4)
+                    n = g_label + 23;
+                else
+                    n = g_label + 31;
+                break;
+            }
+        }
+        if (q == NULL) {
+            /* do last ipv6 segment */
+            q = p+strlen(p);
+            r = q - p;
+            if (r>0 && r<5)
+                memcpy(c+4-r, p, r);
+        }
+        if (n) { /* go backward to :: */
+            int k = 0;
+            if (has_ipv4)
+                q = strrchr(p, ':');
+            else
+                q = p + strlen(p) - 1;
+            if (!(*q == ':' && *--q == ':'))
+                while (n > cc) {
+                    if (*q == ':') {
+                        if (*(q-1) == ':')
+                            break;
+                        n -= 4-k;
+                        k = 0;
+                    } else {
+                        *n = *q;
+                        n--;
+                        k++;
+                    }
+                    q--;
+                }
+        }
+        if (has_ipv4) {
+            m = g_label + 24;
+            ip = strrchr(ip, ':') + 1;
+        }
     }
-    if (1 == inet_pton(af, ip, netaddr) && (hexstr = cli_str2hex(netaddr, len))) {
-	strncpy(g_label, hexstr, sizeof(g_label));
-	free(hexstr);
-	return g_label;
+
+    if (has_ipv4) {
+        uint8_t x;
+        do {
+            x = atoi(ip);
+            *m++ = hex[x>>4];
+            *m++ = hex[x&0x0F];
+            ip = strchr(ip, '.');
+        } while (ip++ && *m && *(m+1));
+        *m = '\0';
     }
-    return "ip_unknown";
+
+    return g_label;
 }
 
 extern int sigchld_wait;
