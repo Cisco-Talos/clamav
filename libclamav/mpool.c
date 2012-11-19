@@ -749,6 +749,10 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
     }
 
     str = mpool_malloc(mp, (len/2) + 1);
+    if (str == NULL) { /* oops, we have a memory pool allocation failure */
+	cli_errmsg("cli_mpool_hex2str(): Can't allocate memory (%lu bytes).\n", (unsigned int)(len/2 + 1));
+	return NULL;
+    }
     if (cli_hex2str_to(hex, (char*)str, len) == -1) {
 	mpool_free(mp, str);
 	return NULL;

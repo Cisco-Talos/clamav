@@ -389,6 +389,11 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+		    if (fname == NULL) { /* oops, malloc() failed, print warning and return */
+			logg("!scandirs: Memory allocation failed for fname\n");
+			return;
+		    }
+
 		    if(!strcmp(dirname, PATHSEP))
 			sprintf(fname, PATHSEP"%s", dent->d_name);
 		    else

@@ -2019,6 +2019,10 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 	    wildcard++;
 
     decoded = calloc(len + 1 + wildcard * 32, sizeof(char));
+    if(!decoded) {
+	mprintf("!decodehexstr: Can't allocate memory for decoded\n");
+	return NULL;
+    }
 
     for(i = 0; i < len; i++) {
 	if(str16[i] & CLI_MATCH_WILDCARD) {

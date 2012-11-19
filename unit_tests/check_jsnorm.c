@@ -404,6 +404,7 @@ START_TEST (js_buffer)
 	char *exp = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
 
 	fail_unless(!!tst, "malloc");
+	fail_unless(!!exp, "malloc");
 
 	memset(tst, 'a', len);
 	strncpy(tst, s, strlen(s));
