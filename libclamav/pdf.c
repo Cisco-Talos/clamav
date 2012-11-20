@@ -1567,6 +1567,10 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
         if (qend)
             *qend = q;
 	s = cli_malloc((q - start)/2 + 1);
+	if (s == NULL) { /* oops, couldn't allocate memory */
+	  cli_dbgmsg("cli_pdf: unable to allocate memory...\n");
+	  return NULL;
+	}
 	cli_hex2str_to(start, s, q - start);
 	s[(q-start)/2] = '\0';
 	if (slen)

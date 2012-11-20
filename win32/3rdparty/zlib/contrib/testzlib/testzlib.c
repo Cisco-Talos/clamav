@@ -185,8 +185,8 @@ int main(int argc, char *argv[])
 
     CprPtr=(unsigned char*)malloc(lBufferSizeCpr + BlockSizeCompress);
     if (CprPtr == NULL) { /* oops, malloc() failed */
-	fprintf(stderr, "warning: malloc() for variable 'CprPtr' in main() failed...\n");
-	return -1;
+    	fprintf(stderr, "memory allocation failure\n");
+	return -1
     }
 
     BeginCountPerfCounter(&li_qp,TRUE);
@@ -228,9 +228,11 @@ int main(int argc, char *argv[])
     }
 
     CprPtr=(unsigned char*)realloc(CprPtr,lSizeCpr);
+    if (CprPtr == NULL) /* oops, memory reallocation failed */
+	fprintf(stderr, "memory reallocation failed, original buffer unchanged\n");
     UncprPtr=(unsigned char*)malloc(lBufferSizeUncpr + BlockSizeUncompress);
-    if (UncprPtr == NULL) { /* oops, malloc() failed */
-	fprintf(stderr, "warning: malloc() for variable 'UncprPtr' in main() failed...\n");
+    if (UncprPtr == NULL) { /* oops, malloc() failed, print warning message and leave */
+	fprintf(stderr, "memory allocation failure.\n");
 	return -1;
     }
 
