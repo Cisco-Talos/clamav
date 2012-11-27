@@ -225,6 +225,27 @@ static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size,
     assert(pos < map->maxelements);
 }
 
+static void cacheset_remove(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool)
+{
+    int ret;
+    uint32_t pos;
+    struct cache_key *newkey;
+    ret = cacheset_lookup_internal(map, md5, size, &pos, 1);
+    newkey = &map->data[pos];
+    if (!ret || (newkey->size == CACHE_KEY_DELETED)) {
+        /* already deleted */
+        return;
+    }
+    /* remove from list */
+    lru_remove(map, newkey);
+    newkey->size = CACHE_KEY_DELETED;
+    map->deleted++;
+    map->elements--;
+    if (map->deleted >= map->maxdeleted) {
+        cacheset_rehash(map, mempool);
+    }
+}
+
 static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t size)
 {
     struct cache_key *newkey;
@@ -575,6 +596,65 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 	return;
     }
 }
+/* If the hash is not present nothing happens other than splaying the tree.
+   Otherwise the identified node is removed from the tree and then placed back at 
+   the front of the chain. */
+static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, size_t size) {
+    struct node *targetnode;
+    struct node *reattachnode;
+    int64_t hash[2];
+
+    memcpy(hash, md5, 16);
+    if(splay(hash, size, cs) != 1) {
+	cli_errmsg("cacheset_remove: node not found in tree\n");
+	return; /* No op */
+    }
+
+    ptree("cacheset_remove: node found and splayed to root\n");
+    targetnode = cs->root;
+
+    /* First fix the tree */
+    if(targetnode->left == NULL) {
+        /* At left edge so prune */
+        cs->root = targetnode->right;
+        if(cs->root)
+            cs->root->up = NULL;
+    }
+    else {
+        /* new root will come from leftside tree */
+        cs->root = targetnode->left;
+        cs->root->up = NULL;
+        /* splay tree, expecting not found, bringing rightmost member to root */
+        splay(hash, size, cs);
+        
+        if (targetnode->right) {
+            /* reattach right tree to clean right-side attach point */
+            reattachnode = cs->root;
+            while (reattachnode->right) 
+                reattachnode = reattachnode->right; /* shouldn't happen, but safer in case of dupe */
+            reattachnode->right = targetnode->right;
+        }
+    }
+    targetnode->up = NULL;
+    targetnode->left = NULL;
+    targetnode->right = NULL;
+
+    /* Tree is fixed, so now fix chain around targetnode */
+    if(targetnode->prev) 
+        targetnode->prev->next = targetnode->next;
+    if(targetnode->next) 
+        targetnode->next->prev = targetnode->prev;
+    if(cs->last == targetnode)
+        cs->last = targetnode->prev;
+
+    /* Put targetnode at front of chain */
+    if(cs->first && (cs->first != targetnode)) {
+        cs->first->prev = targetnode;
+    }
+    targetnode->next = cs->first;
+    targetnode->prev = NULL;
+    cs->first = targetnode;
+}
 #endif /* USE_SPLAY */
 
 
@@ -684,6 +764,35 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 
     pthread_mutex_unlock(&c->mutex);
     cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
+    return;
+}
+
+/* Removes a hash from the cache */
+void cache_remove(unsigned char *md5, size_t size, cli_ctx *ctx) {
+    unsigned int key = getkey(md5);
+    struct CACHE *c;
+
+    if(!ctx || !ctx->engine || !ctx->engine->cache)
+       return;
+
+    c = &ctx->engine->cache[key];
+    if(pthread_mutex_lock(&c->mutex)) {
+	cli_errmsg("cli_add: mutex lock fail\n");
+	return;
+    }
+
+#ifdef USE_LRUHASHCACHE
+    cacheset_remove(&c->cacheset, md5, size, ctx->engine->mempool);
+#else
+#ifdef USE_SPLAY
+    cacheset_remove(&c->cacheset, md5, size);
+#else
+#error #define USE_SPLAY or USE_LRUHASHCACHE
+#endif
+#endif
+
+    pthread_mutex_unlock(&c->mutex);
+    cli_dbgmsg("cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
     return;
 }
 
