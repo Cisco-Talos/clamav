@@ -194,6 +194,7 @@ void help(void)
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --allmatch            -z           Continue scanning within file after finding a match.\n");
     mprintf("    --multiscan           -m           Force MULTISCAN mode\n");
     mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");

@@ -38,6 +38,9 @@ Scan files listed line by line in FILE.
 .TP 
 \fB\-m, \-\-multiscan\fR
 In the multiscan mode clamd will attempt to scan the directory contents in parallel using available threads. This option is especially useful on multiprocessor and multi-core systems. If you pass more than one file or directory in the command line, they are put in a queue and sent to clamd individually. This means, that single files are always scanned by a single thread. Similarly, clamdscan will wait for clamd to finish a directory scan (performed in multiscan mode) before sending request to scan another directory. This option can be combined with \-\-fdpass (see below).
+.TP
+\fB\-z, \-\-allmatch\fR
+After a match, continue scanning within the file for additional matches.
 .TP 
 \fB\-\-remove\fR
 Remove infected files. \fBBe careful.\fR

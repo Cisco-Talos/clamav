@@ -36,6 +36,9 @@ Scan file or directory (recursively) with archive support enabled and don't stop
 .TP 
 \fBMULTISCAN file/directory\fR
 Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
+.TP 
+\fBALLMATCHSCAN file/directory\fR
+ALLMATCHSCAN works just like SCAN except that it sets a mode where scanning continues after finding a match within a file.
 .TP
 \fBINSTREAM\fR
 It is mandatory to prefix this command with \fBn\fR or \fBz\fR.
