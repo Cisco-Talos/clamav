@@ -258,7 +258,11 @@ void help(void)
     mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (**)\n");
     mprintf("    --max-recursion=#n                   Maximum archive recursion level for container file (**)\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
-
+    mprintf("    --max-embeddedpe=#n                  Maximum size file to check for embedded PE\n");
+    mprintf("    --max-htmlnormalize=#n               Maximum size of HTML file to normalize\n");
+    mprintf("    --max-htmlnotags=#n                  Maximum size of normalized HTML file to scan\n");
+    mprintf("    --max-scriptnormalize=#n             Maximum size of script file to normalize\n");
+    mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

@@ -1042,19 +1042,17 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
 static int cli_scanhtml(cli_ctx *ctx)
 {
-	char *tempname, fullname[1024];
-	int ret=CL_CLEAN, fd;
-	fmap_t *map = *ctx->fmap;
-	unsigned int viruses_found = 0;
+    char *tempname, fullname[1024];
+    int ret=CL_CLEAN, fd;
+    fmap_t *map = *ctx->fmap;
+    unsigned int viruses_found = 0;
+    uint64_t curr_len = map->len;
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
-    /* Because HTML detection is FP-prone and html_normalise_fd() needs to
-     * mmap the file don't normalise files larger than 10 MB.
-     */
-
-    if(map->len > 10485760) {
-	cli_dbgmsg("cli_scanhtml: exiting (file larger than 10 MB)\n");
+    /* CL_ENGINE_MAX_HTMLNORMALIZE */
+    if(curr_len > ctx->engine->maxhtmlnormalize) {
+	cli_dbgmsg("cli_scanhtml: exiting (file larger than MaxHTMLNormalize)\n");
 	return CL_CLEAN;
     }
 
@@ -1078,16 +1076,23 @@ static int cli_scanhtml(cli_ctx *ctx)
 	close(fd);
     }
 
-    if((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) && map->len < 2097152) {
-	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
-	    /* TODO: don't even create notags if file is over 2 MB */
-	    snprintf(fullname, 1024, "%s"PATHSEP"notags.html", tempname);
-	    fd = open(fullname, O_RDONLY|O_BINARY);
-	    if(fd >= 0) {
-		if ((ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS) 
-		    viruses_found++;
-		close(fd);
-	    }
+    if(ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
+        /* CL_ENGINE_MAX_HTMLNOTAGS */
+        curr_len = map->len;
+        if (curr_len > ctx->engine->maxhtmlnotags) {
+	    /* we're not interested in scanning large files in notags form */
+            /* TODO: don't even create notags if file is over limit */
+            cli_dbgmsg("cli_scanhtml: skipping notags (normalized size over MaxHTMLNoTags)\n");
+	}
+        else {
+            snprintf(fullname, 1024, "%s"PATHSEP"notags.html", tempname);
+            fd = open(fullname, O_RDONLY|O_BINARY);
+            if(fd >= 0) {
+                if ((ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL)) == CL_VIRUS) 
+                    viruses_found++;
+                close(fd);
+            }
+        }
     }
 
     if(ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
@@ -1120,19 +1125,20 @@ static int cli_scanhtml(cli_ctx *ctx)
 
 static int cli_scanscript(cli_ctx *ctx)
 {
-	const unsigned char *buff;
-	unsigned char* normalized;
-	struct text_norm_state state;
-	char *tmpname = NULL;
-	int ofd = -1, ret;
-	struct cli_matcher *troot;
-	uint32_t maxpatlen, offset = 0;
-	struct cli_matcher *groot;
-	struct cli_ac_data gmdata, tmdata;
-	struct cli_ac_data *mdata[2];
-	fmap_t *map = *ctx->fmap;
-	size_t at = 0;
-	unsigned int viruses_found = 0;
+    const unsigned char *buff;
+    unsigned char* normalized;
+    struct text_norm_state state;
+    char *tmpname = NULL;
+    int ofd = -1, ret;
+    struct cli_matcher *troot;
+    uint32_t maxpatlen, offset = 0;
+    struct cli_matcher *groot;
+    struct cli_ac_data gmdata, tmdata;
+    struct cli_ac_data *mdata[2];
+    fmap_t *map = *ctx->fmap;
+    size_t at = 0;
+    unsigned int viruses_found = 0;
+    uint64_t curr_len = map->len;
 
     if (!ctx || !ctx->engine->root)
         return CL_ENULLARG;
@@ -1141,12 +1147,13 @@ static int cli_scanscript(cli_ctx *ctx)
     troot = ctx->engine->root[7];
     maxpatlen = troot ? troot->maxpatlen : 0;
 
-	cli_dbgmsg("in cli_scanscript()\n");
+    cli_dbgmsg("in cli_scanscript()\n");
 
-	if(map->len > 5242880) {
-		cli_dbgmsg("cli_scanscript: exiting (file larger than 5 MB)\n");
-		return CL_CLEAN;
-	}
+    /* CL_ENGINE_MAX_SCRIPTNORMALIZE */
+    if(curr_len > ctx->engine->maxscriptnormalize) {
+        cli_dbgmsg("cli_scanscript: exiting (file larger than MaxScriptSize)\n");
+        return CL_CLEAN;
+    }
 
 	/* dump to disk only if explicitly asked to,
 	 * otherwise we can process just in-memory */
@@ -2100,8 +2107,12 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
 		    case CL_TYPE_MSEXE:
  			if(SCAN_PE && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) && ctx->dconf->pe) {
-			    if(map->len > 10485760)
+			    uint64_t curr_len = map->len;
+			    /* CL_ENGINE_MAX_EMBEDDED_PE */
+			    if(curr_len > ctx->engine->maxembeddedpe) {
+				cli_dbgmsg("cli_scanraw: MaxEmbeddedPE exceeded\n");
 				break;
+			    }
 			    ctx->container_type = CL_TYPE_MSEXE; /* PE is a container for another executable here */
 			    ctx->container_size = map->len - fpt->offset; /* not precise */
 			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
@@ -2266,13 +2277,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	int cache_clean = 0, res;
 	unsigned int viruses_found = 0;
 
-    cli_dbgmsg("in magic_scandesc\n");
-    if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
-        cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
-	emax_reached(ctx);
-	early_ret_from_magicscan(CL_CLEAN);
-    }
-
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
 	early_ret_from_magicscan(CL_ENULLARG);
@@ -2281,6 +2285,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     if(!(ctx->engine->dboptions & CL_DB_COMPILED)) {
 	cli_errmsg("CRITICAL: engine not compiled\n");
 	early_ret_from_magicscan(CL_EMALFDB);
+    }
+
+    if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
+        cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
+	emax_reached(ctx);
+	early_ret_from_magicscan(CL_CLEAN);
     }
 
     if(cli_updatelimits(ctx, (*ctx->fmap)->len)!=CL_CLEAN) {
@@ -2636,8 +2646,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-	if((*ctx->fmap)->len > 1048576) {
-	    cli_dbgmsg("cli_magic_scandesc: Not checking for embedded PEs (zip file > 1 MB)\n");
+	/* CL_ENGINE_MAX_ZIPTYPERCG */
+	uint64_t curr_len = (*ctx->fmap)->len;
+	if(curr_len > ctx->engine->maxziptypercg) {
+	    cli_dbgmsg("cli_magic_scandesc: Not checking for embedded PEs (zip file > MaxZipTypeRcg)\n");
 	    typercg = 0;
 	}
     }

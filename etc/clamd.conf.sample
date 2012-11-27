@@ -437,6 +437,41 @@ Example
 # Default: 10000
 #MaxFiles 15000
 
+# Maximum size of a file to check for embedded PE. Files larger than this value
+# will skip the additional analysis step.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 10M
+#MaxEmbeddedPE 10M
+
+# Maximum size of a HTML file to normalize. HTML files larger than this value
+# will not be normalized or scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 10M
+#MaxHTMLNormalize 10M
+
+# Maximum size of a normalized HTML file to scan. HTML files larger than this
+# value after normalization will not be scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 2M
+#MaxHTMLNoTags 2M
+
+# Maximum size of a script file to normalize. Script content larger than this
+# value will not be normalized or scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 5M
+#MaxScriptNormalize 5M
+
+# Maximum size of a ZIP file to reanalyze type recognition. ZIP files larger
+# than this value will skip the step to potentially reanalyze as PE.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 1M
+#MaxZipTypeRcg 1M
+
 
 ##
 ## Clamuko settings

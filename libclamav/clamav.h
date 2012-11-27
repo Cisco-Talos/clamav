@@ -185,7 +185,12 @@ enum cl_engine_field {
     CL_ENGINE_KEEPTMP,		    /* uint32_t */
     CL_ENGINE_BYTECODE_SECURITY,    /* uint32_t */
     CL_ENGINE_BYTECODE_TIMEOUT,     /* uint32_t */
-    CL_ENGINE_BYTECODE_MODE         /* uint32_t */
+    CL_ENGINE_BYTECODE_MODE,        /* uint32_t */
+    CL_ENGINE_MAX_EMBEDDEDPE,       /* uint64_t */
+    CL_ENGINE_MAX_HTMLNORMALIZE,    /* uint64_t */
+    CL_ENGINE_MAX_HTMLNOTAGS,       /* uint64_t */
+    CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
+    CL_ENGINE_MAX_ZIPTYPERCG        /* uint64_t */
 };
 
 enum bytecode_security {

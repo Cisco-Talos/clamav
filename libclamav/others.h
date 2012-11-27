@@ -274,6 +274,13 @@ struct cl_engine {
     enum bytecode_security bytecode_security;
     uint32_t bytecode_timeout;
     enum bytecode_mode bytecode_mode;
+
+    /* Engine max settings */
+    uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */
+    uint64_t maxhtmlnormalize; /* max size to normalize HTML */
+    uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
+    uint64_t maxscriptnormalize; /* max size to normalize scripts */
+    uint64_t maxziptypercg; /* max size to re-do zip filetype */
 };
 
 struct cl_settings {
@@ -305,6 +312,13 @@ struct cl_settings {
     void *cb_sigload_ctx;
     clcb_msg cb_msg;
     clcb_hash cb_hash;
+
+    /* Engine max settings */
+    uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */
+    uint64_t maxhtmlnormalize; /* max size to normalize HTML */
+    uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
+    uint64_t maxscriptnormalize; /* max size to normalize scripts */
+    uint64_t maxziptypercg; /* max size to re-do zip filetype */
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);

@@ -736,6 +736,48 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
+    /* Engine max sizes */
+
+    if((opt = optget(opts, "max-embeddedpe"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
+    if((opt = optget(opts, "max-htmlnormalize"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
+    if((opt = optget(opts, "max-htmlnotags"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
+    if((opt = optget(opts, "max-scriptnormalize"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
+    if((opt = optget(opts, "max-ziptypercg"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
 	options |= CL_SCAN_ALLMATCHES;

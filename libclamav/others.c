@@ -312,6 +312,12 @@ struct cl_engine *cl_engine_new(void)
     new->maxfiles = CLI_DEFAULT_MAXFILES;
     new->min_cc_count = CLI_DEFAULT_MIN_CC_COUNT;
     new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
+    /* Engine Max sizes */
+    new->maxembeddedpe = CLI_DEFAULT_MAXEMBEDDEDPE;
+    new->maxhtmlnormalize = CLI_DEFAULT_MAXHTMLNORMALIZE;
+    new->maxhtmlnotags = CLI_DEFAULT_MAXHTMLNOTAGS;
+    new->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
+    new->maxziptypercg = CLI_DEFAULT_MAXZIPTYPERCG;
 
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     /* 5 seconds timeout */
@@ -392,6 +398,41 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_FILES:
 	    engine->maxfiles = num;
 	    break;
+	case CL_ENGINE_MAX_EMBEDDEDPE:
+	    if(num < 0) {
+		cli_warnmsg("MaxEmbeddedPE: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXEMBEDDEDPE);
+		engine->maxembeddedpe = CLI_DEFAULT_MAXEMBEDDEDPE;
+	    } else
+		engine->maxembeddedpe = num;
+	    break;
+	case CL_ENGINE_MAX_HTMLNORMALIZE:
+	    if(num < 0) {
+		cli_warnmsg("MaxHTMLNormalize: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXHTMLNORMALIZE);
+		engine->maxhtmlnormalize = CLI_DEFAULT_MAXHTMLNORMALIZE;
+	    } else
+		engine->maxhtmlnormalize = num;
+	    break;
+	case CL_ENGINE_MAX_HTMLNOTAGS:
+	    if(num < 0) {
+		cli_warnmsg("MaxHTMLNoTags: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXHTMLNOTAGS);
+		engine->maxhtmlnotags = CLI_DEFAULT_MAXHTMLNOTAGS;
+	    } else
+		engine->maxhtmlnotags = num;
+	    break;
+	case CL_ENGINE_MAX_SCRIPTNORMALIZE:
+	    if(num < 0) {
+		cli_warnmsg("MaxScriptNormalize: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXSCRIPTNORMALIZE);
+		engine->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
+	    } else
+		engine->maxscriptnormalize = num;
+	    break;
+	case CL_ENGINE_MAX_ZIPTYPERCG:
+	    if(num < 0) {
+		cli_warnmsg("MaxZipTypeRcg: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXZIPTYPERCG);
+		engine->maxziptypercg = CLI_DEFAULT_MAXZIPTYPERCG;
+	    } else
+		engine->maxziptypercg = num;
+	    break;
 	case CL_ENGINE_MIN_CC_COUNT:
 	    engine->min_cc_count = num;
 	    break;
@@ -469,6 +510,16 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->maxreclevel;
 	case CL_ENGINE_MAX_FILES:
 	    return engine->maxfiles;
+	case CL_ENGINE_MAX_EMBEDDEDPE:
+	    return engine->maxembeddedpe;
+	case CL_ENGINE_MAX_HTMLNORMALIZE:
+	    return engine->maxhtmlnormalize;
+	case CL_ENGINE_MAX_HTMLNOTAGS:
+	    return engine->maxhtmlnotags;
+	case CL_ENGINE_MAX_SCRIPTNORMALIZE:
+	    return engine->maxscriptnormalize;
+	case CL_ENGINE_MAX_ZIPTYPERCG:
+	    return engine->maxziptypercg;
 	case CL_ENGINE_MIN_CC_COUNT:
 	    return engine->min_cc_count;
 	case CL_ENGINE_MIN_SSN_COUNT:
@@ -565,6 +616,11 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->maxfilesize = engine->maxfilesize;
     settings->maxreclevel = engine->maxreclevel;
     settings->maxfiles = engine->maxfiles;
+    settings->maxembeddedpe = engine->maxembeddedpe;
+    settings->maxhtmlnormalize = engine->maxhtmlnormalize;
+    settings->maxhtmlnotags = engine->maxhtmlnotags;
+    settings->maxscriptnormalize = engine->maxscriptnormalize;
+    settings->maxziptypercg = engine->maxziptypercg;
     settings->min_cc_count = engine->min_cc_count;
     settings->min_ssn_count = engine->min_ssn_count;
     settings->bytecode_security = engine->bytecode_security;
@@ -592,6 +648,11 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->maxfilesize = settings->maxfilesize;
     engine->maxreclevel = settings->maxreclevel;
     engine->maxfiles = settings->maxfiles;
+    engine->maxembeddedpe = settings->maxembeddedpe;
+    engine->maxhtmlnormalize = settings->maxhtmlnormalize;
+    engine->maxhtmlnotags = settings->maxhtmlnotags;
+    engine->maxscriptnormalize = settings->maxscriptnormalize;
+    engine->maxziptypercg = settings->maxziptypercg;
     engine->min_cc_count = settings->min_cc_count;
     engine->min_ssn_count = settings->min_ssn_count;
     engine->bytecode_security = settings->bytecode_security;

@@ -790,6 +790,58 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 #endif
 
+    /* Engine max sizes */
+
+    if((opt = optget(opts, "MaxEmbeddedPE"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, NULL);
+    logg("Limits: MaxEmbeddedPE limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxHTMLNormalize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, NULL);
+    logg("Limits: MaxHTMLNormalize limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxHTMLNoTags"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, NULL);
+    logg("Limits: MaxHTMLNoTags limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxScriptNormalize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, NULL);
+    logg("Limits: MaxScriptNormalize limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxZipTypeRcg"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, NULL);
+    logg("Limits: MaxZipTypeRcg limit set to %llu bytes.\n", val);
+
     if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
