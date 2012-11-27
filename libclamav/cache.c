@@ -768,21 +768,21 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 }
 
 /* Removes a hash from the cache */
-void cache_remove(unsigned char *md5, size_t size, cli_ctx *ctx) {
+void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine) {
     unsigned int key = getkey(md5);
     struct CACHE *c;
 
-    if(!ctx || !ctx->engine || !ctx->engine->cache)
+    if(engine || !engine->cache)
        return;
 
-    c = &ctx->engine->cache[key];
+    c = &engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("cli_add: mutex lock fail\n");
 	return;
     }
 
 #ifdef USE_LRUHASHCACHE
-    cacheset_remove(&c->cacheset, md5, size, ctx->engine->mempool);
+    cacheset_remove(&c->cacheset, md5, size, engine->mempool);
 #else
 #ifdef USE_SPLAY
     cacheset_remove(&c->cacheset, md5, size);
