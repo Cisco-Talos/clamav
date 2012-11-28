@@ -138,13 +138,14 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     m->crts = i;
 
     if(cli_debug_flag) {
-        char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1];
+        char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], *serial;
         char mod[1024], exp[1024];
         int j=1024;
         // mod first
         fp_toradix_n(&i->n, mod, 16, j);
         // exp next
         fp_toradix_n(&i->e, exp, 16, j);
+        serial = cli_str2hex(i->serial, SHA1_HASH_SIZE);
         // subject and issuer hashes
         for(j=0; j<SHA1_HASH_SIZE; j++) {
             sprintf(&issuer[j*2], "%02x", i->issuer[j]);
@@ -154,6 +155,8 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
         cli_dbgmsg("crtmgr_add: added cert s:%s i:%s %lu->%lu %s%s%s\n", subject, issuer, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
         cli_dbgmsg("crtmgr_add: n:%s \n", mod);
         cli_dbgmsg("crtmgr_add: e:%s \n", exp);
+        cli_dbgmsg("crtmgr_add: serial:%s \n", serial);
+        free(serial);
     }
     m->items++;
     return 0;
@@ -285,6 +288,14 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts, *best = NULL;
     int score = 0;
+
+    for (i = m->crts; i; i = i->next) {
+        if (!memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
+            !memcmp(i->serial, x509->serial, sizeof(i->serial))) {
+            if (i->isBlacklisted)
+                return i;
+        }
+    }
 
     for(i = m->crts; i; i = i->next) {
 	if(i->certSign &&
