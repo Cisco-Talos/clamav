@@ -599,6 +599,8 @@ static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
 	    logg("$Moved partial command: %lu\n", (unsigned long)buf->off);
 	else
 	    logg("$Consumed entire command\n");
+	/* adjust pos to account for the buffer shuffle */
+	pos = 0;
     }
     *ppos = pos;
     return cmd;
@@ -610,75 +612,82 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     int rc;
     size_t pos = *ppos;
     size_t cmdlen;
-
+    
     logg("$mode == MODE_STREAM\n");
-    /* we received a chunk, set readtimeout */
+    /* we received some data, set readtimeout */
     time(&buf->timeout_at);
     buf->timeout_at += readtimeout;
-    if (!buf->chunksize) {
-	/* read chunksize */
-	if (buf->off >= 4) {
-	    uint32_t cs = *(uint32_t*)buf->buffer;
-	    buf->chunksize = ntohl(cs);
-	    logg("$Got chunksize: %u\n", buf->chunksize);
-	    if (!buf->chunksize) {
-		/* chunksize 0 marks end of stream */
-		conn->scanfd = buf->dumpfd;
-		conn->term = buf->term;
-		buf->dumpfd = -1;
-		buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
-		if (buf->mode == MODE_WAITREPLY)
-		    buf->fd = -1;
-		logg("$Chunks complete\n");
-		buf->dumpname = NULL;
-		if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
-		    logg("!Command dispatch failed\n");
-		    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
-		    }
-		    *error = 1;
-		    return -1;
-		} else {
-		    pos = 4;
-		    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
-		    buf->off -= pos;
-		    *ppos = 0;
-		    buf->id++;
-		    return 0;
+    while (pos <= buf->off) {
+	if (!buf->chunksize) {
+	    /* read chunksize */
+	    if (buf->off-pos >= 4) {
+		uint32_t cs;
+		memmove(&cs, buf->buffer + pos, 4);
+		pos += 4;
+		buf->chunksize = ntohl(cs);
+		logg("$Got chunksize: %u\n", buf->chunksize);
+		if (!buf->chunksize) {
+		    /* chunksize 0 marks end of stream */
+		    conn->scanfd = buf->dumpfd;
+		    conn->term = buf->term;
+		    buf->dumpfd = -1;
+		    buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+		    if (buf->mode == MODE_WAITREPLY)
+			buf->fd = -1;
+		    logg("$Chunks complete\n");
+		    buf->dumpname = NULL;
+		    if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+			logg("!Command dispatch failed\n");
+			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+			    pthread_mutex_lock(&exit_mutex);
+			    progexit = 1;
+			    pthread_mutex_unlock(&exit_mutex);
+			}
+			*error = 1;
+		    } else {
+			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+			buf->off -= pos;
+			*ppos = 0;
+			buf->id++;
+			return 0;
+                    }
 		}
-	    }
-	    if (buf->chunksize > buf->quota) {
-		logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
-		     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
-		conn_reply_error(conn, "INSTREAM size limit exceeded.");
-		*error = 1;
-		*ppos = pos;
-		return -1;
+		if (buf->chunksize > buf->quota) {
+		    logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n",
+			 (unsigned long)buf->chunksize, (unsigned long)buf->quota);
+		    conn_reply_error(conn, "INSTREAM size limit exceeded.");
+                    *error = 1;
+		    *ppos = pos;
+		    return -1;
+                } else {
+		    buf->quota -= buf->chunksize;
+                }
+		logg("$Quota Remaining: %lu\n", buf->quota);
 	    } else {
-		buf->quota -= buf->chunksize;
-	    }
-	    logg("$Quota: %lu\n", buf->quota);
-	    pos = 4;
-	} else
-	    return -1;
-    } else
-	pos = 0;
-    if (pos + buf->chunksize < buf->off)
-	cmdlen = buf->chunksize;
-    else
-	cmdlen = buf->off - pos;
-    buf->chunksize -= cmdlen;
-    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
-	conn_reply_error(conn, "Error writing to temporary file");
-	logg("!INSTREAM: Can't write to temporary file.\n");
-	*error = 1;
-    }
-    logg("$Processed %lu bytes of chunkdata\n", cmdlen);
-    pos += cmdlen;
-    if (pos == buf->off) {
-	buf->off = 0;
+		/* need more data, so return and wait for some */
+                *ppos = pos;
+                return -1;
+            }
+	}
+	if (pos + buf->chunksize < buf->off)
+	    cmdlen = buf->chunksize;
+	else
+	    cmdlen = buf->off - pos;
+	buf->chunksize -= cmdlen;
+	if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+	    conn_reply_error(conn, "Error writing to temporary file");
+	    logg("!INSTREAM: Can't write to temporary file.\n");
+	    *error = 1;
+	}
+	logg("$Processed %lu bytes of chunkdata\n", cmdlen);
+	pos += cmdlen;
+	if (pos == buf->off) {
+	    buf->off = 0;
+	    pos = 0;
+	    /* need more data, so return and wait for some */
+	    *ppos = pos;
+            return -1;
+	}
     }
     *ppos = pos;
     return 0;
