@@ -538,7 +538,8 @@ static void unmap_mmap(fmap_t *m)
 #ifdef ANONYMOUS_MAP
     size_t len = m->pages * m->pgsz + m->hdrsz;
     fmap_lock;
-    munmap((void *)m, len);
+    if (munmap((void *)m, len) == -1) /* munmap() failed */
+        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %d\n", (void *)m, len);
     fmap_unlock;
 #endif
 }
