@@ -501,6 +501,9 @@ int main(int argc, char **argv)
 	break;
     }
 
+    if (optget(opts, "DisableCertCheck")->enabled)
+        engine->dconf->pe |= PE_CONF_DISABLECERT;
+
     logg("#Loaded %u signatures.\n", sigs);
     if((ret = cl_engine_compile(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));

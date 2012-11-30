@@ -253,6 +253,7 @@ void help(void)
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
     mprintf("    --block-encrypted[=yes/no(*)]        Block encrypted archives\n");
+    mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
     mprintf("\n");
     mprintf("    --max-filesize=#n                    Files larger than this will be skipped and assumed clean\n");
     mprintf("    --max-scansize=#n                    The maximum amount of data to scan for each container file (**)\n");

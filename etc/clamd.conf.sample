@@ -250,6 +250,16 @@ Example
 # Default: yes
 #ScanPE yes
 
+# Certain PE files contain an authenticode signature. By default, we check
+# the signature chain in the PE file against a database of trusted and
+# revoked certificates if the file being scanned is marked as a virus.
+# If any certificate in the chain validates against any trusted root, but
+# does not match any revoked certificate, the file is marked as whitelisted.
+# If the file does match a revoked certificate, the file is marked as virus.
+# The following setting completely turns off authenticode verification.
+# Default: no
+#DisableCertCheck yes
+
 # Executable and Linking Format is a standard format for UN*X executables.
 # This option allows you to control the scanning of ELF files.
 # If you turn off this option, the original files will still be scanned, but

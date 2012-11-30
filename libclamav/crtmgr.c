@@ -145,7 +145,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
         fp_toradix_n(&i->n, mod, 16, j);
         // exp next
         fp_toradix_n(&i->e, exp, 16, j);
-        serial = cli_str2hex(i->serial, SHA1_HASH_SIZE);
+        serial = cli_str2hex((const char *)(i->serial), (unsigned int)SHA1_HASH_SIZE);
         // subject and issuer hashes
         for(j=0; j<SHA1_HASH_SIZE; j++) {
             sprintf(&issuer[j*2], "%02x", i->issuer[j]);

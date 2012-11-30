@@ -71,6 +71,7 @@ static struct dconf_module modules[] = {
     { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 },
     { "PE",	    "ASPACK",	    PE_CONF_ASPACK,	    1 },
     { "PE",	    "CATALOG",	    PE_CONF_CATALOG,	    1 },
+    { "PE",     "DISABLECERT",  PE_CONF_DISABLECERT,    0 },
 
     { "ELF",	    NULL,	    0x1,		    1 },
 

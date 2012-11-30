@@ -691,6 +691,9 @@ int scanmanager(const struct optstruct *opts)
 	cl_engine_set_clcb_post_scan(engine, post);
     }
 
+    if (optget(opts, "nocerts")->enabled)
+        engine->dconf->pe |= PE_CONF_DISABLECERT;
+
     /* set limits */
 
     if((opt = optget(opts, "max-scansize"))->active) {

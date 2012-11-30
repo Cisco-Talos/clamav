@@ -429,6 +429,8 @@ const struct clam_option __clam_options[] = {
 
     { "Bytecode", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "This option enables downloading of bytecode.cvd, which includes additional\ndetection mechanisms and improvements to the ClamAV engine.", "yes" },
 
+    { "DisableCertCheck", "nocerts", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable authenticode certificate chain verification in PE files.", "no" },
+
     /* Deprecated options */
 
     { "MailMaxRecursion", NULL, 0, TYPE_NUMBER, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
