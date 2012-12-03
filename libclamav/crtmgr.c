@@ -152,10 +152,8 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
             sprintf(&subject[j*2], "%02x", i->subject[j]);
         }
         // printing lines, broken up to minimize truncation
-        cli_dbgmsg("crtmgr_add: added cert s:%s i:%s %lu->%lu %s%s%s\n", subject, issuer, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
-        cli_dbgmsg("crtmgr_add: n:%s \n", mod);
+        cli_dbgmsg("crtmgr_add: added cert subject:%s serial:%s pubkey:%s i:%s %lu->%lu %s%s%s\n", subject, serial, mod, issuer, (unsigned long)i->not_before, (unsigned long)i->not_after, i->certSign ? "cert ":"", i->codeSign ? "code ":"", i->timeSign ? "time":"");
         cli_dbgmsg("crtmgr_add: e:%s \n", exp);
-        cli_dbgmsg("crtmgr_add: serial:%s \n", serial);
         free(serial);
     }
     m->items++;
