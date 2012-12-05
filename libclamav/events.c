@@ -1,7 +1,7 @@
 /*
  *  (bytecode) events
  *
- *  Copyright (C) 2010 Sourcefire, Inc.
+ *  Copyright (C) 2010-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -136,6 +136,14 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
     ev->u.v_chain = chain;
     ev->u.v_chain[ev->count] = *val;
     ev->count++;
+}
+
+const char * cli_event_get_name(cli_events_t *ctx, unsigned id)
+{
+    struct cli_event *ev = get_event(ctx, id);
+    if (!ev)
+	return NULL;
+    return ev->name;
 }
 
 void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)

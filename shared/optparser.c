@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008-2009 Sourcefire, Inc.
+ *  Copyright (C) 2008-2012 Sourcefire, Inc.
  *
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
@@ -276,7 +276,9 @@ const struct clam_option __clam_options[] = {
     { "BytecodeMode", "bytecode-mode", 0, TYPE_STRING, "^(Auto|ForceJIT|ForceInterpreter|Test)$", -1, "Auto", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMSCAN,
 	"Set bytecode execution mode.\nPossible values:\n\tAuto - automatically choose JIT if possible, fallback to interpreter\nForceJIT - always choose JIT, fail if not possible\nForceIntepreter - always choose interpreter\nTest - run with both JIT and interpreter and compare results. Make all failures fatal.","Auto"},
 
-    { "DetectPUA", "detect-pua", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
+    { "BytecodeStatistics", "bytecode-statistics", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Collect and print bytecode execution statistics.", "no" },
+
+   { "DetectPUA", "detect-pua", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
 
     { "ExcludePUA", "exclude-pua", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/support/pua for the complete list of PUA\ncategories.", "NetTool\nPWTool" },
 

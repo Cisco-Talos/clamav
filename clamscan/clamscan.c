@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -231,6 +231,7 @@ void help(void)
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-unsigned[=yes/no(*)]      Load unsigned bytecode\n");
     mprintf("    --bytecode-timeout=N                 Set bytecode timeout (in milliseconds)\n");
+    mprintf("    --bytecode-statistics[=yes/no(*)]    Collect and print bytecode statistics\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
     mprintf("    --include-pua=CAT                    Load PUA sigs of category CAT\n");

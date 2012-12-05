@@ -1,7 +1,7 @@
 /*
  *  (bytecode) events
  *
- *  Copyright (C) 2010 Sourcefire, Inc.
+ *  Copyright (C) 2010-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -82,6 +82,8 @@ void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedi
 void cli_event_count(cli_events_t *ctx, unsigned id);
 
 void cli_event_get(cli_events_t* ctx, unsigned id, union ev_val *val, uint32_t *count);
+
+const char * cli_event_get_name(cli_events_t* ctx, unsigned id);
 
 /* print all recorded events */
 void cli_event_debug_all(cli_events_t *ctx);

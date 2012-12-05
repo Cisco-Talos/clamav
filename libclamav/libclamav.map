@@ -44,6 +44,9 @@ CLAMAV_PUBLIC {
 };
 CLAMAV_PRIVATE {
   global:
+    cli_sigperf_print; 
+    cli_sigperf_events_destroy; 
+
     cli_gettmpdir;
     cli_strtok;
     cli_strtokenize;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2010 Sourcefire, Inc.
+ *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -1487,7 +1487,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    security_trust = 0;
     }
 
-    rc = cli_bytecode_load(bc, fs, dbio, security_trust);
+    rc = cli_bytecode_load(bc, fs, dbio, security_trust, options&CL_DB_BYTECODE_STATS);
     /* read remainder of DB, needed because cvd.c checks that we read the entire
      * file */
     while (cli_dbgets(buf, sizeof(buf), fs, dbio)) {}

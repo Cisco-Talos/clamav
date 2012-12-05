@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2009-2010 Sourcefire, Inc.
+ *  Copyright (C) 2009-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -39,6 +39,13 @@
 #include "bytecode_api_impl.h"
 #include "builtin_bytecodes.h"
 #include <string.h>
+
+#define MAX_BC 64
+#define BC_EVENTS_PER_SIG 2
+#define MAX_BC_SIGEVENT_ID MAX_BC*BC_EVENTS_PER_SIG
+
+cli_events_t * g_sigevents = NULL;
+unsigned int g_sigid;
 
 /* dummy values */
 static const uint32_t nomatch[64] = {
@@ -1409,7 +1416,112 @@ enum parse_state {
     PARSE_SKIP
 };
 
-int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int trust)
+struct sigperf_elem {
+    const char * bc_name;
+    uint64_t usecs;
+    unsigned long run_count;
+    unsigned long match_count;
+};
+
+static int sigelem_comp(const void * a, const void * b)
+{
+    const struct sigperf_elem *ela = a;
+    const struct sigperf_elem *elb = b;
+    return elb->usecs/elb->run_count - ela->usecs/ela->run_count;
+}
+
+void cli_sigperf_print()
+{
+    struct sigperf_elem stats[MAX_BC], *elem = stats;
+    int i, elems = 0, max_name_len = 0, name_len;
+
+    memset(stats, 0, sizeof(stats));
+    for (i=0;i<MAX_BC;i++) {
+	union ev_val val;
+	uint32_t count;
+	const char * name = cli_event_get_name(g_sigevents, i*BC_EVENTS_PER_SIG);
+	cli_event_get(g_sigevents, i*BC_EVENTS_PER_SIG, &val, &count);
+	if (!count) {
+	    if (name)
+		cli_dbgmsg("No event triggered for %s\n", name);
+	    continue;
+	}
+	name_len = strlen(name);
+	if (name_len > max_name_len)
+	    max_name_len = name_len;
+	elem->bc_name = name?name:"\"noname\"";
+	elem->usecs = val.v_int;
+	elem->run_count = count;
+	cli_event_get(g_sigevents, i*BC_EVENTS_PER_SIG+1, &val, &count);
+	elem->match_count = count;
+	elem++, elems++;
+    }
+
+    qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
+
+    elem = stats;
+    /* name runs matches microsecs avg */
+    cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "Bytecode name",
+	    8, "#runs", 8, "#matches", 12, "usecs total", 9, "usecs avg");
+    cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "=============",
+	    8, "=====", 8, "========", 12, "===========", 9, "=========");
+    while (elem->run_count) {
+	cli_infomsg (NULL, "%-*s %*lu %*lu %*lu %*.2f\n", max_name_len, elem->bc_name,
+		     8, elem->run_count, 8, elem->match_count, 
+		12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
+	elem++;
+    }
+}
+
+static void sigperf_events_init(struct cli_bc *bc)
+{
+    int ret;
+
+    if (!g_sigevents)
+	g_sigevents = cli_events_new(MAX_BC_SIGEVENT_ID);
+
+    if (!g_sigevents) {
+	cli_errmsg("No memory for events table\n");
+	return;
+    }
+
+    if (g_sigid > MAX_BC_SIGEVENT_ID - BC_EVENTS_PER_SIG - 1) {
+	cli_errmsg("sigperf_events_init: events table full. Increase MAX_BC\n");
+	return;
+    }
+
+    cli_dbgmsg("sigperf_events_init(): adding sig ids starting %u for %s\n", g_sigid, bc->lsig);
+
+    if (!bc->lsig) {
+	cli_dbgmsg("cli_event_define error for time event id %d\n", bc->sigtime_id);
+	return;
+    }
+
+    /* register time event */
+    bc->sigtime_id = g_sigid;
+    ret = cli_event_define(g_sigevents, g_sigid++, bc->lsig, ev_time, multiple_sum);
+    if (ret) {
+	cli_errmsg("sigperf_events_init: cli_event_define() error for time event id %d\n", bc->sigtime_id);
+	bc->sigtime_id = MAX_BC_SIGEVENT_ID+1;
+	return;
+    }
+
+    /* register match count */
+    bc->sigmatch_id = g_sigid;
+    ret = cli_event_define(g_sigevents, g_sigid++, bc->lsig, ev_int, multiple_sum);
+    if (ret) {
+	cli_errmsg("sigperf_events_init: cli_event_define() error for matches event id %d\n", bc->sigmatch_id);
+	bc->sigtime_id = MAX_BC_SIGEVENT_ID+1;
+	return;
+    }
+}
+
+void cli_sigperf_events_destroy()
+{
+    cli_events_free(g_sigevents);
+}
+
+int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int trust, int sigperf)
 {
     unsigned row = 0, current_func = 0, bb=0;
     char *buffer;
@@ -1565,6 +1677,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
     }
     free(buffer);
     cli_dbgmsg("Parsed %d functions\n", current_func);
+    if (sigperf)
+	sigperf_events_init(bc);
     if (current_func != bc->num_func && bc->state != bc_skip) {
 	cli_errmsg("Loaded less functions than declared: %u vs. %u\n",
 		   current_func, bc->num_func);
@@ -1652,6 +1766,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	    return CL_EBYTECODE_TESTFAIL;
 	}
     }
+    cli_event_time_start(g_sigevents, bc->sigtime_id);
     if (bc->state == bc_interp || test_mode) {
 	ctx->bc_events = interp_ev;
 	memset(&func, 0, sizeof(func));
@@ -1705,6 +1820,9 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	if (ctx->outfd)
 	    cli_bcapi_extract_new(ctx, -1);
     }
+    cli_event_time_stop(g_sigevents, bc->sigtime_id);
+    if (ctx->virname)
+	cli_event_count(g_sigevents, bc->sigmatch_id);
 
     if (test_mode) {
 	unsigned interp_errors = cli_event_errors(interp_ev);
@@ -1738,7 +1856,8 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	    ok = 0;
 	}
 	/*cli_event_debug(jit_ev, BCEV_EXEC_TIME);
-	cli_event_debug(interp_ev, BCEV_EXEC_TIME);*/
+        cli_event_debug(interp_ev, BCEV_EXEC_TIME);
+	cli_event_debug(g_sigevents, bc->sigtime_id);*/
 	if (!ok) {
 	    cli_events_free(jit_ev);
 	    cli_events_free(interp_ev);
@@ -2398,7 +2517,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
 	    return CL_EMALFDB;
 	}
 
-	rc = cli_bytecode_load(bc, NULL, &dbio, 1);
+	rc = cli_bytecode_load(bc, NULL, &dbio, 1, 0);
 	if (rc) {
 	    cli_errmsg("Failed to load builtin %s bytecode\n", desc);
 	    free(bc);
@@ -2692,7 +2811,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	    continue;
 	}
 	if (ctx->virname) {
-	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
+	    cli_dbgmsg("Bytecode runhook found virus: %s\n", ctx->virname);
 	    cli_append_virus(cctx, ctx->virname);
 	    if (!(cctx->options & CL_SCAN_ALLMATCHES)) {
 		cli_bytecode_context_clear(ctx);

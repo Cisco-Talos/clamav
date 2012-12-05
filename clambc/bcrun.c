@@ -1,7 +1,7 @@
 /*
  *  ClamAV bytecode handler tool.
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -306,7 +306,8 @@ int main(int argc, char *argv[])
     bcs.all_bcs = bc;
     bcs.count = 1;
 
-    rc = cli_bytecode_load(bc, f, NULL, optget(opts, "trust-bytecode")->enabled);
+    rc = cli_bytecode_load(bc, f, NULL, optget(opts, "trust-bytecode")->enabled, 
+			   optget(opts, "bytecode-statistics")->enabled);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to load bytecode: %s\n", cl_strerror(rc));
 	optfree(opts);

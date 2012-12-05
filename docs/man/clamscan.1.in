@@ -96,6 +96,9 @@ Allow loading bytecode from outside digitally signed .c[lv]d files.
 \fB\-\-bytecode\-timeout=N\fR
 Set bytecode timeout in milliseconds (default: 60000 = 60s)
 .TP 
+\fB\-\-bytecode\-statistics[=yes/no(*)]\fR
+Collect and print bytecode statistics.
+.TP 
 \fB\-\-detect\-pua[=yes/no(*)]\fR
 Detect Possibly Unwanted Applications.
 .TP 

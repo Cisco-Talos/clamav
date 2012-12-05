@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -635,6 +635,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "bytecode-unsigned")->enabled)
 	dboptions |= CL_DB_BYTECODE_UNSIGNED;
 
+    if(optget(opts, "bytecode-statistics")->enabled)
+	dboptions |= CL_DB_BYTECODE_STATS;
+
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
     if((opt = optget(opts,"bytecode-mode"))->enabled) {
@@ -936,6 +939,11 @@ int scanmanager(const struct optstruct *opts)
 	    }
 	    free(file);
 	}
+    }
+
+    if(optget(opts, "bytecode-statistics")->enabled) {
+	cli_sigperf_print();
+	cli_sigperf_events_destroy();
     }
 
     /* free the engine */

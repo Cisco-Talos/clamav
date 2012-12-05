@@ -1,7 +1,7 @@
 /*
  *  Unit tests for bytecode functions. 
  *
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -87,7 +87,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     bcs.all_bcs = &bc;
     bcs.count = 1;
 
-    rc = cli_bytecode_load(&bc, f, NULL, 1);
+    rc = cli_bytecode_load(&bc, f, NULL, 1, 0);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
