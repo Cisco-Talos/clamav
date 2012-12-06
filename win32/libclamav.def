@@ -217,3 +217,5 @@ EXPORTS cli_to_utf8_maybe_alloc @44345 NONAME
 EXPORTS cli_strdup_to_utf8 @44346 NONAME
 EXPORTS w32_inet_ntoa @44347 NONAME
 EXPORTS w32_getpeername @44348 NONAME
+EXPORTS cli_sigperf_print @44349 NONAME
+EXPORTS cli_sigperf_events_destroy @44350 NONAME

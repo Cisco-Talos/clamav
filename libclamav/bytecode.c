@@ -1454,10 +1454,11 @@ void cli_sigperf_print()
 	elem->run_count = count;
 	cli_event_get(g_sigevents, i*BC_EVENTS_PER_SIG+1, &val, &count);
 	elem->match_count = count;
-	elem++, elems++;
+	elem++;
+	elems++;
     }
 
-    qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
+    cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 
     elem = stats;
     /* name runs matches microsecs avg */
