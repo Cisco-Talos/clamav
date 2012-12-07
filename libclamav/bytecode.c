@@ -649,7 +649,8 @@ static int parseLSig(struct cli_bc *bc, char *buffer)
 	vnames = strchr(vend, '{');
     } else {
 	/* Not a logical signature, but we still have a virusname */
-	bc->lsig = NULL;
+	bc->hook_name = cli_strdup(buffer);
+	bc->lsig = NULL; 
     }
 
     return CL_SUCCESS;
@@ -1477,6 +1478,7 @@ void cli_sigperf_print()
 static void sigperf_events_init(struct cli_bc *bc)
 {
     int ret;
+    char * bc_name;
 
     if (!g_sigevents)
 	g_sigevents = cli_events_new(MAX_BC_SIGEVENT_ID);
@@ -1491,16 +1493,18 @@ static void sigperf_events_init(struct cli_bc *bc)
 	return;
     }
 
-    cli_dbgmsg("sigperf_events_init(): adding sig ids starting %u for %s\n", g_sigid, bc->lsig);
-
-    if (!bc->lsig) {
-	cli_dbgmsg("cli_event_define error for time event id %d\n", bc->sigtime_id);
-	return;
+    if (!(bc_name = bc->lsig)) {
+	if (!(bc_name = bc->hook_name)) {
+	    cli_dbgmsg("cli_event_define error for time event id %d\n", bc->sigtime_id);
+	    return;
+	}
     }
+
+    cli_dbgmsg("sigperf_events_init(): adding sig ids starting %u for %s\n", g_sigid, bc_name);
 
     /* register time event */
     bc->sigtime_id = g_sigid;
-    ret = cli_event_define(g_sigevents, g_sigid++, bc->lsig, ev_time, multiple_sum);
+    ret = cli_event_define(g_sigevents, g_sigid++, bc_name, ev_time, multiple_sum);
     if (ret) {
 	cli_errmsg("sigperf_events_init: cli_event_define() error for time event id %d\n", bc->sigtime_id);
 	bc->sigtime_id = MAX_BC_SIGEVENT_ID+1;
@@ -1509,7 +1513,7 @@ static void sigperf_events_init(struct cli_bc *bc)
 
     /* register match count */
     bc->sigmatch_id = g_sigid;
-    ret = cli_event_define(g_sigevents, g_sigid++, bc->lsig, ev_int, multiple_sum);
+    ret = cli_event_define(g_sigevents, g_sigid++, bc_name, ev_int, multiple_sum);
     if (ret) {
 	cli_errmsg("sigperf_events_init: cli_event_define() error for matches event id %d\n", bc->sigmatch_id);
 	bc->sigtime_id = MAX_BC_SIGEVENT_ID+1;
@@ -1572,16 +1576,19 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int tru
 	switch (state) {
 	    case PARSE_BC_LSIG:
 		rc = parseLSig(bc, buffer);
-		if (rc == CL_BREAK) /* skip */ {
+#if 0
+DEAD CODE
+		if (rc == CL_BREAK) /* skip */ { //FIXME: parseLSig always returns CL_SUCCESS
 		    bc->state = bc_skip;
 		    state = PARSE_SKIP;
 		    continue;
 		}
-		if (rc != CL_SUCCESS) {
+		if (rc != CL_SUCCESS) { //FIXME: parseLSig always returns CL_SUCCESS
 		    cli_errmsg("Error at bytecode line %u\n", row);
 		    free(buffer);
 		    return rc;
 		}
+#endif
 		state = PARSE_BC_TYPES;
 		break;
 	    case PARSE_BC_TYPES:
@@ -1935,6 +1942,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
     free(bc->lsig);
+    free(bc->hook_name);
     free(bc->globalBytes);
     memset(bc, 0, sizeof(*bc));
 }

@@ -71,6 +71,7 @@ struct cli_bc {
     uint32_t numGlobalBytes;
     uint8_t *globalBytes;
     uint32_t sigtime_id, sigmatch_id;
+    char * hook_name;
 };
 
 struct cli_all_bc {
