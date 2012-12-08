@@ -320,6 +320,7 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/tar.h \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
+    freshclamcodes.h \
     freshclam.c \
     manager.c \
     manager.h \

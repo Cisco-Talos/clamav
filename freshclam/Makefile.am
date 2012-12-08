@@ -35,6 +35,7 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
     freshclam.c \
+    freshclamcodes.h \
     manager.c \
     manager.h \
     notify.c \
