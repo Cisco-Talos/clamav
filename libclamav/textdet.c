@@ -174,8 +174,8 @@ static int td_isutf16(const unsigned char *buf, unsigned int len)
     }
     }
 
-    if (nobom && high >= len / 4)
-        return 0;
+    //   if (nobom && high >= len / 4)
+    //        return 0;
 
     if(!nobom && bad >= len / 2)
 	return 0;
