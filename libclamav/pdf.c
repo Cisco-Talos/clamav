@@ -439,6 +439,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj,
 		inflateEnd(&stream);
 		if (!nbytes) {
 		    pdfobj_flag(pdf, obj, BAD_FLATESTART);
+                    cli_dbgmsg("filter_flatedecode: No bytes, returning CL_EFORMAT for this stream.\n");
                     return CL_EFORMAT;
 		} else {
 		    pdfobj_flag(pdf, obj, BAD_FLATE);
@@ -1951,7 +1952,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     off_t map_off, bytesleft;
     long xref;
     const char *pdfver, *start, *eofmap, *q, *eof;
-    int rc;
+    int rc, badobjects = 0;
     unsigned i;
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
@@ -2047,7 +2048,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
     rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1, -1);
     if (rc) {
-	cli_dbgmsg("cli_pdf: returning %d\n", rc);
+	cli_dbgmsg("cli_pdf: (pre hooks) returning %d\n", rc);
 	return rc == CL_BREAK ? CL_CLEAN : rc;
     }
     /* parse PDF and find obj offsets */
@@ -2088,6 +2089,12 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     for (i=0;!rc && i<pdf.nobjs;i++) {
 	struct pdf_obj *obj = &pdf.objs[i];
 	rc = pdf_extract_obj(&pdf, obj);
+	if (rc == CL_EFORMAT) {
+            /* Don't halt on one bad object */
+            cli_dbgmsg("cli_pdf: bad format object, skipping to next\n");
+            badobjects++;
+            rc = CL_CLEAN;
+        }
     }
 
     if (pdf.flags & (1 << ENCRYPTED_PDF))
@@ -2118,10 +2125,16 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	}
 #endif
     }
+
+    if (!rc && badobjects) {
+        rc = CL_EFORMAT;
+    }
+
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
     free(pdf.fileID);
     free(pdf.key);
+
     /* PDF hooks may abort, don't return CL_BREAK to caller! */
     return rc == CL_BREAK ? CL_CLEAN : rc;
 }
