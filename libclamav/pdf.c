@@ -619,7 +619,9 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
     } else
 	memset(iv, 0, sizeof(iv));
 
+    cli_dbgmsg("aes_decrypt: Calling rijndaelSetupDecrypt\n");
     nrounds = rijndaelSetupDecrypt(rk, key, key_n*8);
+    cli_dbgmsg("aes_decrypt: Beginning rijndaelDecrypt\n");
     while (len >= 16) {
 	unsigned i;
 	rijndaelDecrypt(rk, nrounds, in, q);
@@ -715,6 +717,10 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
 	    break;
 	case ENC_AESV3:
 	    cli_dbgmsg("cli_pdf: enc is aesv3\n");
+	    if (pdf->keylen == 0) {
+	        cli_dbgmsg("cli_pdf: no key\n");
+	        return NULL;
+	    }
 	    aes_decrypt(in, length, q, pdf->key, pdf->keylen, 1);
 	    noisy_msg(pdf, "decrypted AES(v3) data\n");
 	    break;
