@@ -1881,6 +1881,10 @@ int qtm_decompress(struct qtm_stream *qtm, uint32_t out_bytes) {
     if ((frame_start + QTM_FRAME_SIZE) < frame_end) {
       frame_end = frame_start + QTM_FRAME_SIZE;
     }
+    if (frame_end < window_posn) {
+	cli_dbgmsg("qtm_decompress: window position beyond end of frame\n");
+	return qtm->error = CL_EFORMAT;
+    }
 
     while (window_posn < frame_end) {
       QTM_GET_SYMBOL(qtm->model7, selector);
