@@ -44,7 +44,7 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
     if(block > (((*ctx->fmap)->len - iso->base_offset) / iso->sectsz) * blocks_per_sect)
 	return NULL; /* Block is out of file */
     loff = (block / blocks_per_sect) * iso->sectsz;   /* logical sector */
-    loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the secotor */
+    loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the sector */
     if(temp)
 	return fmap_need_off_once(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
     return fmap_need_off(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
@@ -55,22 +55,27 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     char *tmpf;
     int fd, ret;
     if(cli_gentempfd(iso->ctx->engine->tmpdir, &tmpf, &fd) != CL_SUCCESS)
-	return CL_ETMPFILE;
+        return CL_ETMPFILE;
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while(len) {
-	const void *buf = needblock(iso, block, 1);
-	unsigned int todo = MIN(len, iso->blocksz);
-	if(cli_writen(fd, buf, todo) != todo) {
-	    close(fd);
-	    ret = cli_unlink(tmpf);
-	    free(tmpf);
-	    if(ret)
-		return CL_EUNLINK;
-	    return CL_EWRITE;
-	}
-	len -= todo;
-	block++;
+        const void *buf = needblock(iso, block, 1);
+        unsigned int todo = MIN(len, iso->blocksz);
+        if(!buf) {
+            /* Block outside file */
+            cli_dbgmsg("iso_scan_file: cannot dump block outside file, ISO may be truncated\n");
+            return CL_EFORMAT;
+        }
+        if(cli_writen(fd, buf, todo) != todo) {
+            close(fd);
+            ret = cli_unlink(tmpf);
+            free(tmpf);
+            if(ret)
+                return CL_EUNLINK;
+            return CL_EWRITE;
+        }
+        len -= todo;
+        block++;
     }
 
     ret = cli_magic_scandesc(fd, iso->ctx);
