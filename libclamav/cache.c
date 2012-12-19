@@ -606,7 +606,7 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
 
     memcpy(hash, md5, 16);
     if(splay(hash, size, cs) != 1) {
-	cli_errmsg("cacheset_remove: node not found in tree\n");
+	cli_dbgmsg("cacheset_remove: node not found in tree\n");
 	return; /* No op */
     }
 
