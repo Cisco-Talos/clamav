@@ -665,7 +665,9 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 		logg("$Quota Remaining: %lu\n", buf->quota);
 	    } else {
 		/* need more data, so return and wait for some */
-                *ppos = pos;
+		memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+		buf->off -= pos;
+		*ppos = 0;
                 return -1;
             }
 	}
@@ -679,7 +681,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 	    logg("!INSTREAM: Can't write to temporary file.\n");
 	    *error = 1;
 	}
-	logg("$Processed %lu bytes of chunkdata\n", cmdlen);
+	logg("$Processed %lu bytes of chunkdata, pos %lu\n", cmdlen, pos);
 	pos += cmdlen;
 	if (pos == buf->off) {
 	    buf->off = 0;
