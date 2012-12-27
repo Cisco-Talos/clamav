@@ -1027,7 +1027,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
 	if (!q2)
 	    break;
-	bytesleft -= q2 - q;
+	bytesleft -= q2 - q + 11;
         q = q2 + 11;
 
         js = pdf_readstring(q, bytesleft,  "/JS", NULL, &q2, !(pdf->flags & (1<<DECRYPTABLE_PDF)));
