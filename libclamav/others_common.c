@@ -134,7 +134,7 @@ void cl_set_clcb_msg(clcb_msg callback)
 
 #define MSGCODE(buff, len, x)				    \
 	va_list args;					    \
-	int len = sizeof(x) - 1;			    \
+	size_t len = sizeof(x) - 1;			    \
 	char buff[BUFSIZ];				    \
     strncpy(buff, x, len);				    \
     va_start(args, str);				    \
