@@ -761,7 +761,7 @@ static int decode_f(arj_metadata_t *metadata)
 	return CL_SUCCESS;
 }
 
-static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
+static int arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 {
 	const unsigned char *data;
 	uint32_t rem;
@@ -774,15 +774,18 @@ static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 	while (rem > 0) {
 		todo = (unsigned int) MIN(8192, rem);
 		data = fmap_need_off_once_len(metadata->map, metadata->offset, todo, &count);
-		if (!data || !count)
-		    return len - rem;
+		if (!data || !count) {
+			/* Truncated file, not enough bytes available */
+			return CL_EFORMAT;
+                }
 		metadata->offset += count;
 		if (cli_writen(ofd, data, count) != count) {
-			return len-rem-count;
+			/* File writing problem */
+			return CL_EWRITE;
 		}
 		rem -= count;
 	}
-	return len;
+	return CL_SUCCESS;
 }
 
 static int is_arj_archive(arj_metadata_t *metadata)
@@ -1028,11 +1031,6 @@ int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
 	switch (metadata->method) {
 		case 0:
 			ret = arj_unstore(metadata, metadata->ofd, metadata->comp_size);
-			if (ret != metadata->comp_size) {
-				ret = CL_EWRITE;
-			} else {
-				ret = CL_SUCCESS;
-			}
 			break;
 		case 1:
 		case 2:

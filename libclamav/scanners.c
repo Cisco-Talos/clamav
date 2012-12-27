@@ -378,6 +378,7 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
         metadata.filename = NULL;
 	ret = cli_unarj_prepare_file(dir, &metadata);
 	if (ret != CL_SUCCESS) {
+	   cli_dbgmsg("ARJ: cli_unarj_prepare_file Error: %s\n", cl_strerror(ret));
 	   break;
 	}
 	file++;
@@ -391,6 +392,9 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	    continue;
 	}
 	ret = cli_unarj_extract_file(dir, &metadata);
+	if (ret != CL_SUCCESS) {
+	   cli_dbgmsg("ARJ: cli_unarj_extract_file Error: %s\n", cl_strerror(ret));
+	}
 	if (metadata.ofd >= 0) {
 	    lseek(metadata.ofd, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
