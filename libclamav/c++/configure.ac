@@ -22,8 +22,6 @@ AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.9 -Wall -Wportability -Werror foreign no-define color-tests tar-pax])
 AM_SILENT_RULES([yes])
-AM_PROG_AR
-AM_PROG_CC_C_O
 
 cxxset=${CXXFLAGS+set}
 AC_PROG_CXX

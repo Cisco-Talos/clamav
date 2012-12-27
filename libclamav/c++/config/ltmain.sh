@@ -70,7 +70,7 @@
 #         compiler:		$LTCC
 #         compiler flags:		$LTCFLAGS
 #         linker:		$LD (gnu? $with_gnu_ld)
-#         $progname:	(GNU libtool) 2.4.2
+#         $progname:	(GNU libtool) 2.4.2 Debian-2.4.2-1ubuntu1
 #         automake:	$automake_version
 #         autoconf:	$autoconf_version
 #
@@ -80,7 +80,7 @@
 
 PROGRAM=libtool
 PACKAGE=libtool
-VERSION=2.4.2
+VERSION="2.4.2 Debian-2.4.2-1ubuntu1"
 TIMESTAMP=""
 package_revision=1.3337
 
@@ -1375,21 +1375,6 @@ func_replace_sysroot ()
 func_infer_tag ()
 {
     $opt_debug
-
-    # FreeBSD-specific: where we install compilers with non-standard names
-    tag_compilers_CC="*cc cc* *gcc gcc* clang"
-    tag_compilers_CXX="*c++ c++* *g++ g++* clang++"
-    base_compiler=`set -- "$@"; echo $1`
-
-    # If $tagname isn't set, then try to infer if the default "CC" tag applies
-    if test -z "$tagname"; then
-      for zp in $tag_compilers_CC; do
-        case $base_compiler in
-	 $zp) tagname="CC"; break;;
-	esac
-      done
-    fi
-
     if test -n "$available_tags" && test -z "$tagname"; then
       CC_quoted=
       for arg in $CC; do
@@ -1426,22 +1411,7 @@ func_infer_tag ()
 	      break
 	      ;;
 	    esac
-
-	    # FreeBSD-specific: try compilers based on inferred tag
-	    if test -z "$tagname"; then
-	      eval "tag_compilers=\$tag_compilers_${z}"
-	      if test -n "$tag_compilers"; then
-		for zp in $tag_compilers; do
-		  case $base_compiler in   
-		    $zp) tagname=$z; break;;
-		  esac
-		done
-		if test -n "$tagname"; then
-		  break
-		fi
-	      fi
-            fi
-          fi
+	  fi
 	done
 	# If $tagname still isn't set, then no tagged configuration
 	# was found and let the user know that the "--tag" command
@@ -3547,9 +3517,6 @@ static const void *lt_preloaded_setup() {
 	  ;;
 	esac
 	;;
-      *-*-freebsd*)
-	# FreeBSD doesn't need this...
-	;;
       *)
 	func_fatal_error "unknown suffix for \`$my_dlsyms'"
 	;;
@@ -5628,7 +5595,6 @@ func_mode_link ()
 	  esac
 	  ;;
 	esac
-	deplibs="$deplibs $arg"
 	continue
 	;;
 
@@ -6158,7 +6124,10 @@ func_mode_link ()
 	case $pass in
 	dlopen) libs="$dlfiles" ;;
 	dlpreopen) libs="$dlprefiles" ;;
-	link) libs="$deplibs %DEPLIBS% $dependency_libs" ;;
+	link)
+	  libs="$deplibs %DEPLIBS%"
+	  test "X$link_all_deplibs" != Xno && libs="$libs $dependency_libs"
+	  ;;
 	esac
       fi
       if test "$linkmode,$pass" = "lib,dlpreopen"; then
@@ -6201,30 +6170,13 @@ func_mode_link ()
 	    finalize_deplibs="$deplib $finalize_deplibs"
 	  else
 	    func_append compiler_flags " $deplib"
+	    if test "$linkmode" = lib ; then
+		case "$new_inherited_linker_flags " in
+		    *" $deplib "*) ;;
+		    * ) func_append new_inherited_linker_flags " $deplib" ;;
+		esac
+	    fi
 	  fi
-
-	  case $linkmode in
-	  lib)
-	    deplibs="$deplib $deplibs"
-	    test "$pass" = conv && continue
-	    newdependency_libs="$deplib $newdependency_libs"
-	    ;;
-	  prog)
-	    if test "$pass" = conv; then
-	      deplibs="$deplib $deplibs"
-	      continue
-	    fi
-	    if test "$pass" = scan; then
-	      deplibs="$deplib $deplibs"
-	    else
-	      compile_deplibs="$deplib $compile_deplibs"
-	      finalize_deplibs="$deplib $finalize_deplibs"
-	    fi
-	    ;;
-	  *)
-	    ;;
-	  esac # linkmode
-
 	  continue
 	  ;;
 	-l*)
@@ -6495,19 +6447,19 @@ func_mode_link ()
 	    # It is a libtool convenience library, so add in its objects.
 	    func_append convenience " $ladir/$objdir/$old_library"
 	    func_append old_convenience " $ladir/$objdir/$old_library"
+	    tmp_libs=
+	    for deplib in $dependency_libs; do
+	      deplibs="$deplib $deplibs"
+	      if $opt_preserve_dup_deps ; then
+		case "$tmp_libs " in
+		*" $deplib "*) func_append specialdeplibs " $deplib" ;;
+		esac
+	      fi
+	      func_append tmp_libs " $deplib"
+	    done
 	  elif test "$linkmode" != prog && test "$linkmode" != lib; then
 	    func_fatal_error "\`$lib' is not a convenience library"
 	  fi
-	  tmp_libs=
-	  for deplib in $dependency_libs; do
-	    deplibs="$deplib $deplibs"
-	    if $opt_preserve_dup_deps ; then
-	      case "$tmp_libs " in
-	      *" $deplib "*) func_append specialdeplibs " $deplib" ;;
-	      esac
-	    fi
-	    func_append tmp_libs " $deplib"
-	  done
 	  continue
 	fi # $pass = conv
 
@@ -7399,6 +7351,9 @@ func_mode_link ()
 	    age="$number_minor"
 	    revision="$number_minor"
 	    lt_irix_increment=no
+	    ;;
+	  *)
+	    func_fatal_configuration "$modename: unknown library version type \`$version_type'"
 	    ;;
 	  esac
 	  ;;
