@@ -840,6 +840,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
+		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
+
+            /* Dump the cert if requested before anything happens to it */
             if (engine->dconf->pe & PE_CONF_DUMPCERT) {
                 char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
                 char mod[1024], exp[1024];
@@ -855,7 +858,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
                 cli_dbgmsg_internal("cert subject:%s serial:%s pubkey:%s i:%s %lu->%lu %s %s %s\n", subject, serial, mod, issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->certSign ? "cert" : "", x509->codeSign ? "code" : "", x509->timeSign ? "time" : "");
             }
-		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
+
 		    if(parent) {
                 if (parent->isBlacklisted)
                     isBlacklisted = 1;
