@@ -740,7 +740,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return 1;
 }
 
-static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
+static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
     const uint8_t *message, *attrs;
@@ -840,6 +840,21 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
+            if (engine->dconf->pe & PE_CONF_DUMPCERT) {
+                char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
+                char mod[1024], exp[1024];
+                int j=1024;
+
+                fp_toradix_n(&x509->n, mod, 16, j);
+                fp_toradix_n(&x509->e, exp, 16, j);
+                for (j=0; j < SHA1_HASH_SIZE; j++) {
+                    sprintf(&issuer[j*2], "%02x", x509->issuer[j]);
+                    sprintf(&subject[j*2], "%02x", x509->subject[j]);
+                    sprintf(&serial[j*2], "%02x", x509->serial[j]);
+                }
+
+                cli_dbgmsg_internal("cert subject:%s serial:%s pubkey:%s i:%s %lu->%lu %s %s %s\n", subject, serial, mod, issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->certSign ? "cert" : "", x509->codeSign ? "code" : "", x509->timeSign ? "time" : "");
+            }
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
 		    if(parent) {
                 if (parent->isBlacklisted)
@@ -1297,7 +1312,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     struct cli_matcher *db;
     int i;
 
-    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size))
+    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
         return 1;
 
     if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
@@ -1454,7 +1469,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 	crtmgr_free(&certs);
 	return CL_VIRUS;
     }
-    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size);
+    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size, engine);
     crtmgr_free(&certs);
     if(ret)
 	return CL_VIRUS;

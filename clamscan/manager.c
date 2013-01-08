@@ -697,6 +697,9 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "nocerts")->enabled)
         engine->dconf->pe |= PE_CONF_DISABLECERT;
 
+    if (optget(opts, "dumpcerts")->enabled)
+        engine->dconf->pe |= PE_CONF_DUMPCERT;
+
     /* set limits */
 
     if((opt = optget(opts, "max-scansize"))->active) {

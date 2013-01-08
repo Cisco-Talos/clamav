@@ -61,6 +61,7 @@ struct cli_dconf {
 #define PE_CONF_ASPACK	    0x8000
 #define PE_CONF_CATALOG	    0x10000
 #define PE_CONF_DISABLECERT 0x20000
+#define PE_CONF_DUMPCERT    0x40000
 
 /* Archive flags */
 #define ARCH_CONF_RAR	    0x1
