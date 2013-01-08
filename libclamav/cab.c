@@ -561,7 +561,8 @@ static int cab_unstore(struct cab_file *file)
 }
 
 #define CAB_CHGFOLDER							\
-    if(!file->cab->actfol || (file->folder != file->cab->actfol)) {	\
+    if(!file->cab->actfol || (file->folder != file->cab->actfol)        \
+       || (file->cab->state && file->cab->state->cmethod != file->folder->cmethod)) { \
 	if(file->cab->state) {						\
 	    if(file->cab->state->stream) {				\
 		switch(file->cab->state->cmethod & 0x000f) {		\
@@ -579,16 +580,16 @@ static int cab_unstore(struct cab_file *file)
 	    file->cab->state = NULL;					\
 	}								\
 	file->cab->cur_offset = file->folder->offset;			\
-	file->cab->state = (struct cab_state *) cli_calloc(1, sizeof(struct cab_state));								\
+	file->cab->state = (struct cab_state *) cli_calloc(1, sizeof(struct cab_state));	\
 	if(!file->cab->state) {						\
-	    cli_errmsg("cab_extract: Can't allocate memory for internal state\n");									\
+	    cli_errmsg("cab_extract: Can't allocate memory for internal state\n");	   	\
 	    close(file->ofd);						\
 	    return CL_EMEM;						\
 	}								\
 	file->cab->state->cmethod = file->folder->cmethod;		\
 	switch(file->folder->cmethod & 0x000f) {			\
 	    case 0x0001:						\
-		file->cab->state->stream = (struct mszip_stream *) mszip_init(file->ofd, 4096, 1, file, &cab_read);				\
+		file->cab->state->stream = (struct mszip_stream *) mszip_init(file->ofd, 4096, 1, file, &cab_read);	\
 		break;							\
 	    case 0x0002:						\
 		file->cab->state->stream = (struct qtm_stream *) qtm_init(file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);									\
@@ -605,13 +606,13 @@ static int cab_unstore(struct cab_file *file)
     	if(file->cab->state && file->cab->state->stream) {		\
 	    switch(file->cab->state->cmethod & 0x000f) {		\
 		case 0x0001:						\
-		    ((struct mszip_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    ((struct mszip_stream *) file->cab->state->stream)->ofd = file->ofd;	\
 		    break;						\
 		case 0x0002:						\
-		    ((struct qtm_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    ((struct qtm_stream *) file->cab->state->stream)->ofd = file->ofd;	     	\
 		    break;						\
 		case 0x0003:						\
-		    ((struct lzx_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    ((struct lzx_stream *) file->cab->state->stream)->ofd = file->ofd;	      	\
 		    break;						\
 	    }								\
 	}								\
