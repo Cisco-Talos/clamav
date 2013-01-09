@@ -2851,7 +2851,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 	char shatxt[SHA1_HASH_SIZE*2+1];
 	for(i=0; i<SHA1_HASH_SIZE; i++)
 	    sprintf(&shatxt[i*2], "%02x", authsha1[i]);
-	cli_errmsg("Autheticode: %s\n", shatxt);
+	cli_errmsg("Authenticode: %s\n", shatxt);
     }
 
     hlen = dirs[4].Size;
