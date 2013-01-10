@@ -95,8 +95,8 @@ int cli_check_mydoom_log(cli_ctx *ctx)
 static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
 {
 	const unsigned char *buf;
-	uint16_t id, ntmp;
-	uint8_t nlength;
+	uint16_t ntmp;
+	uint8_t nlength, id[2];
 	uint32_t size;
 	off_t offset = *off;
 	int retval;
@@ -111,8 +111,9 @@ static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
 		return -1;
 	}
 
-	id = (uint16_t)buf[4] | ((uint16_t)buf[5]<<8);
-	cli_dbgmsg("ID: 0x%.4x\n", id);
+	id[0] = (uint8_t)buf[4];
+        id[1] = (uint8_t)buf[5];
+	cli_dbgmsg("ID: 0x%.2x%.2x\n", id[0], id[1]);
 	nlength = buf[6];
 	ntmp = nlength + ((((uint16_t)nlength)+1) & 0x01);
 	offset += 4 + 2 + 1 + ntmp;
@@ -129,13 +130,16 @@ static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
 	}
 
 	*off = offset + 4 + size;
-	/* Is it a thumbnail image */
-	if ((id != 0x0409) && (id != 0x040c)) {
+	/* Is it a thumbnail image: 0x0409 or 0x040c */
+	if ((id[0] == 0x04) && ((id[1] == 0x09) || (id[1] == 0x0c))) {
+		/* Yes */
+		cli_dbgmsg("found thumbnail\n");
+	}
+	else {
 		/* No - Seek past record */
 		return 0;
 	}
 
-	cli_dbgmsg("found thumbnail\n");
 	/* Jump past header */
 	offset += 4 + 28;
 
