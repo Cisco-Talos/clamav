@@ -1,3 +1,7 @@
+Tue Jan 2 16:06:10 EDT 2013 (dar)
+----------------------------------
+ * bb#5324 - restore decompression of compressed Flash files
+
 Mon Jul 2 10:40:50 EDT 2012 (dar)
 ----------------------------------
  * bb#5252 - update #4, CL_EUNPACK and caching
