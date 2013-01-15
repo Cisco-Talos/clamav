@@ -1,6 +1,5 @@
 /*
- *  Copyright (C) 2011 Sourcefire, Inc.
- *  Authors: Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2011-2013 Sourcefire, Inc.
  *
  *  The code is based on Flasm, command line assembler & disassembler of Flash
  *  ActionScript bytecode Copyright (c) 2001 Opaque Industries, (c) 2002-2007
@@ -61,7 +60,7 @@
 	offset += sizeof(get_c);						\
     } else {									\
 	cli_errmsg("cli_scanswf: INITBITS: Can't read file\n");			\
-	return CL_EREAD;							\
+	return CL_EFORMAT;							\
     }										\
 }
 
@@ -78,7 +77,7 @@
 	    offset += sizeof(get_c);						\
 	} else {								\
 	    cli_errmsg("cli_scanswf: GETBITS: Can't read file\n");		\
-	    return CL_EREAD;							\
+	    return CL_EFORMAT;							\
 	}									\
     }										\
     bitpos -= getbits_n;							\
@@ -94,14 +93,14 @@
 	offset += sizeof(get_c);						\
     } else {									\
 	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
-	return CL_EREAD;							\
+	return CL_EFORMAT;							\
     }										\
     if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
 	getword_2 = (unsigned int) get_c;					\
 	offset += sizeof(get_c);						\
     } else {									\
 	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
-	return CL_EREAD;							\
+	return CL_EFORMAT;							\
     }										\
     v = (uint16_t)(getword_1 & 0xff) | ((getword_2 & 0xff) << 8);		\
 }
@@ -240,61 +239,15 @@ static const char *tagname(tag_id id)
     return NULL;
 }
 
-static int dumpscan(fmap_t *map, unsigned int offset, unsigned int size, const char *obj, int version, cli_ctx *ctx)
-{
-    int ret = CL_CLEAN;
-    char buff[16];
-
-    memset(buff, 0, sizeof(buff));
-    fmap_readn(map, buff, offset, sizeof(buff));
-    if(ctx->img_validate) {
-	    if(!memcmp(buff, "\xff\xd8", 2)) {
-		cli_dbgmsg("SWF: JPEG image data\n");
-	    } else if(!memcmp(buff, "\xff\xd9\xff\xd8", 4)) {
-		cli_dbgmsg("SWF: JPEG image data (erroneous header)\n");
-		if(version >= 8 && SCAN_ALGO) {
-		        cli_append_virus(ctx, "Heuristics.SWF.SuspectImage.A");
-			ret = CL_VIRUS;
-		}
-	    } else if(!memcmp(buff, "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", 8)) {
-		cli_dbgmsg("SWF: PNG image data\n");
-		if(version < 8 && SCAN_ALGO) {
-		    cli_append_virus(ctx, "Heuristics.SWF.SuspectImage.B");
-		    ret = CL_VIRUS;
-		}
-	    } else if(!memcmp(buff, "\x47\x49\x46\x38\x39\x61", 6)) {
-		cli_dbgmsg("SWF: GIF89a image data\n");
-		if(version < 8 && SCAN_ALGO) {
-		    cli_append_virus(ctx, "Heuristics.SWF.SuspectImage.C");
-		    ret = CL_VIRUS;
-		}
-	    } else if(SCAN_ALGO) {
-		cli_warnmsg("SWF: Unknown image data\n");
-		cli_append_virus(ctx, "Heuristics.SWF.SuspectImage.D");
-		ret = CL_VIRUS;
-	    }
-	    if(ret == CL_VIRUS) {
-		return ret;
-	    }
-    }
-    ret = cli_map_scandesc(map, offset, size, ctx);
-    if(ctx->img_validate && ret == CL_EPARSE && SCAN_ALGO) {
-	cli_append_virus(ctx, "Heuristics.SWF.SuspectImage.E");
-	return CL_VIRUS;
-    }
-    return ret;
-}
-
 int cli_scanswf(cli_ctx *ctx)
 {
-	struct swf_file_hdr file_hdr;
-	fmap_t *map = *ctx->fmap;
-	unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
-	const char *pt;
-	char get_c;
-	unsigned int val, foo, offset = 0, tag_hdr, tag_type, tag_len;
-	unsigned long int bits;
-
+    struct swf_file_hdr file_hdr;
+    fmap_t *map = *ctx->fmap;
+    unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
+    const char *pt;
+    char get_c;
+    unsigned int val, foo, offset = 0, tag_hdr, tag_type, tag_len;
+    unsigned long int bits;
 
     cli_dbgmsg("in cli_scanswf()\n");
 
@@ -348,20 +301,12 @@ int cli_scanswf(cli_ctx *ctx)
 
 	switch(tag_type) {
 	    case TAG_SCRIPTLIMITS: {
-		    unsigned int recursion, timeout;
+		unsigned int recursion, timeout;
 		GETWORD(recursion);
 		GETWORD(timeout);
 		cli_dbgmsg("SWF: scriptLimits recursion %u timeout %u\n", recursion, timeout);
 		break;
 	    }
-
-	    case TAG_METADATA:
-		if(tag_len) {
-		    if(dumpscan(map, offset, tag_len, "Metadata", file_hdr.version, ctx) == CL_VIRUS)
-			return CL_VIRUS;
-		}
-		offset += tag_len;
-		break;
 
 	    case TAG_FILEATTRIBUTES:
 		GETDWORD(val);
@@ -382,30 +327,7 @@ int cli_scanswf(cli_ctx *ctx)
 		    cli_dbgmsg("    * Use GPU\n");
 		break;
 
-	    case TAG_DEFINEBITSJPEG3:
-		GETWORD(foo); /* CharacterID */
-		GETDWORD(val); /* AlphaDataOffset */
-		if(val) {
-		    ctx->img_validate = 1;
-		    if(dumpscan(map, offset, val, "Image", file_hdr.version, ctx) == CL_VIRUS)
-			return CL_VIRUS;
-		    ctx->img_validate = 0;
-		}
-		offset += tag_len - 6;
-		break;
-
-	    case TAG_DEFINEBINARYDATA:
-		GETWORD(foo); /* CharacterID */
-		GETDWORD(foo); /* Reserved */
-		if(tag_len > 6) {
-		    if(dumpscan(map, offset, tag_len - 6, "Binary", file_hdr.version, ctx) == CL_VIRUS)
-			return CL_VIRUS;
-		}
-		offset += tag_len - 6;
-		break;
-
 	    default:
-		cli_dbgmsg("SWF: Unhandled tag\n");
 		offset += tag_len;
 		continue;
 	}
