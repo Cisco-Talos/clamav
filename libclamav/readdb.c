@@ -1973,7 +1973,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    }
 	}
 
-	size = strtol(tokens[size_field], (char **)&pt, 10);
+	size = strtoul(tokens[size_field], (char **)&pt, 10);
 	if(*pt || !size || size >= 0xffffffff) {
 	    cli_errmsg("cli_loadhash: Invalid value for the size field\n");
 	    ret = CL_EMALFDB;
