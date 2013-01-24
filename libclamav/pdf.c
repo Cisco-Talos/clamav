@@ -1273,61 +1273,103 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     /* enough to hold common pdf names, we don't need all the names */
     char pdfname[64];
-    const char *q2, *q3, *q4;
+    const char *q2, *q3;
+    const char *nextobj, *nextopen, *nextclose;
     const char *q = obj->start + pdf->map;
-    const char *dict, *start;
+    const char *dict, *enddict, *start;
     off_t dict_length, full_dict_length;
-    off_t bytesleft = obj_size(pdf, obj, 1);
+    off_t objsize = obj_size(pdf, obj, 1);
+    off_t bytesleft;
     unsigned i, filters=0;
+    unsigned blockopens=0;
     enum objstate objstate = STATE_NONE;
 
-    if (bytesleft < 0)
+    if (objsize < 0)
 	return;
     start = q;
+    bytesleft = objsize;
+
     /* find start of dictionary */
     do {
-	q2 = pdf_nextobject(q, bytesleft);
-	bytesleft -= q2 -q;
-	if (!q2 || bytesleft < 0) {
+	nextobj = pdf_nextobject(q, bytesleft);
+	bytesleft -= nextobj -q;
+	if (!nextobj || bytesleft < 0) {
 	    return;
 	}
-	q3 = memchr(q-1, '<', q2-q+1);
-	q2++;
+	q3 = memchr(q-1, '<', nextobj-q+1);
+	nextobj++;
 	bytesleft--;
-	q = q2;
+	q = nextobj;
     } while (!q3 || q3[1] != '<');
     dict = q3+2;
     q = dict;
-    bytesleft = obj_size(pdf, obj, 1) - (q - start);
-    /* find end of dictionary */
+    blockopens++;
+    bytesleft = objsize - (q - start);
+
+    /* find end of dictionary block */
     do {
-	q2 = pdf_nextobject(q, bytesleft);
-	bytesleft -= q2 -q;
-	if (!q2 || bytesleft < 0) {
+        /* find end of object within bytesleft */
+	nextobj = pdf_nextobject(q, bytesleft);
+	if (!nextobj)
+            return;
+	bytesleft -= nextobj - q;
+	if (bytesleft < 0) {
 	    return;
 	}
-	q3 = memchr(q-1, '>', q2-q+1);
-	q2++;
+
+        /* while still looking ... */
+        while ((q+1 < nextobj) && (blockopens > 0)) {
+            /* find next close */
+            nextclose = memchr(q-1, '>', nextobj-q+1);
+            if (nextclose && (nextclose[1] == '>')) {
+                /* check for nested open */
+                while (nextopen = memchr(q-1, '<', nextclose-q+1)) {
+                    if (nextopen[1] == '<') {
+                        /* nested open */
+                        blockopens++;
+                        q = nextopen + 2;
+                    }
+                    else {
+                        /* unmatched < */
+                        q = nextopen + 2;
+                    }
+                }
+                /* close block */
+                blockopens--;
+                q = nextclose + 2;
+            }
+            else {
+                /* unmatched > */
+                if (nextclose)
+                    q = nextclose + 2;
+                else {
+                    break;
+                }
+            }
+        }
+
+        /* prepare for next object check */
+	nextobj++;
 	bytesleft--;
-	q = q2;
-    } while (!q3 || q3[1] != '>');
-    q = q3 + 2;
-    q4 = NULL;
-    /* find real end of dictionary (in case of nested one)*/
-    do {
-	q2 = pdf_nextobject(q, bytesleft);
-	bytesleft -= q2 -q;
-	if (!q2 || bytesleft < 0) {
-	    break;
-	}
-	q4 = memchr(q-1, '>', q2-q+1);
-	q2++;
-	bytesleft--;
-	q = q2;
-    } while (!q4 || q4[1] != '>');
-    if (!q4) q4 = q3;
+	q = nextobj;
+    } while (blockopens > 0);
+
+    /* End of dictionary found, would have early returned otherwise */
+    enddict = nextclose;
     obj->flags |= 1 << OBJ_DICT;
-    full_dict_length = dict_length = q4 - dict;
+    full_dict_length = dict_length = enddict - dict;
+
+    /* This code prints the dictionary content.
+    {
+        char * dictionary = malloc(dict_length + 1);
+        if (dictionary) {
+            strncpy(dictionary, dict, dict_length);
+            dictionary[dict_length] = '\0';
+            cli_dbgmsg("cli_pdf: dictionary is <<%s>>\n", dictionary);
+            free(dictionary);
+        }
+    }
+    */
 
     /*  process pdf names */
     for (q = dict;dict_length > 0;) {
