@@ -599,7 +599,7 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
 
 static always_inline int check_sdivops(int64_t op0, int64_t op1)
 {
-    return op1 == 0 || (op0 == -1 && op1 ==  (-9223372036854775807LL-1LL));
+    return op1 == 0 || (op1 == -1 && op0 ==  (-9223372036854775807LL-1LL));
 }
 
 static unsigned globaltypesize(uint16_t id)
