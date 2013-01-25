@@ -168,7 +168,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    if (res != SZ_OK)
 		cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
 	    else {
-		if((found = cli_gentempfd(NULL, &name, &fd)))
+		if((found = cli_gentempfd(ctx->engine->tmpdir, &name, &fd)))
 		    break;
 		    
 		cli_dbgmsg("cli_7unz: Saving to %s\n", name);
