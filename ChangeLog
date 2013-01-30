@@ -1,6 +1,51 @@
+
+Tue Jan 8 12:18:35 EDT 2013 (morgan)
+------------------------------------
+ * Fix for CL_ENULLARG reported in regression run of 0021468992.gz
+
 Tue Jan 2 16:06:10 EDT 2013 (dar)
 ----------------------------------
  * bb#5324 - restore decompression of compressed Flash files
+
+Thu Dec 27 15:23:45 EDT 2012 (morgan)
+-------------------------------------
+ * fix regression test 0051207685.gz bsd crash
+
+Wed Dec 26 15:04:28 EDT 2012 (morgan)
+-------------------------------------
+ * fix to bb1891 patch(edge of buffer problem)
+
+Mon Dec 17 18:47:12 EDT 2012 (morgan)
+-------------------------------------
+ * fix loop in cab file processing: ensure window position within frame
+
+Mon Dec 17 11:08:50 EDT 2012 (morgan)
+-------------------------------------
+ * revert bb1636: causes too many false positives
+
+Fri Dec 7 11:09:10 EDT 2012 (morgan)
+------------------------------------
+ * performance statistics for bytecode hooks
+
+Thu Dec 6 12:36:21 EDT 2012 (morgan)
+------------------------------------
+ * windows-friendly bytecode stats
+
+Wed Dec 5 18:48:52 EDT 2012 (morgan)
+------------------------------------
+ * Add bytecode performance statistics
+
+Fri Nov 30 15:30:08 EDT 2012 (morgan)
+-------------------------------------
+ * improve return code fidelity of vba_scandata
+
+Fri Nov 30 14:16:47 EDT 2012 (morgan)
+-------------------------------------
+ * fix scan all segv handling file type MSOLE2
+
+Wed Nov 28 19:15:44 EDT 2012 (morgan)
+-------------------------------------
+ * bb#1891 add Mark Pizzolato patch to fix clamd buffer bookkeeping errors
 
 Mon Jul 2 10:40:50 EDT 2012 (dar)
 ----------------------------------
