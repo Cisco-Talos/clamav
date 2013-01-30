@@ -47,6 +47,34 @@ Wed Nov 28 19:15:44 EDT 2012 (morgan)
 -------------------------------------
  * bb#1891 add Mark Pizzolato patch to fix clamd buffer bookkeeping errors
 
+Tue Nov 27 17:48:50 2012 (morgan)
+-------------------------------------
+ * for allscan mode, update usage messages and man pages
+
+Fri Nov 16 20:03:57 2012 (morgan) 
+-------------------------------------
+ * portability improvement for ping domain naming
+
+Thu Nov 15 10:50:22 2012 (morgan)
+-------------------------------------
+ * change formatting of ip address dns label within freshclam ping-host names to hex ascii
+
+Wed Nov 14 16:12:21 2012 (morgan)
+-------------------------------------
+ * widen freshclam domain arrays
+
+Fri Nov 9 17:08:50 2012 (morgan)
+-------------------------------------
+ * bb5224: fix dereference of a null pointer reported by clang analyzer
+
+Fri Nov 9 15:31:51 2012 (morgan)
+-------------------------------------
+ * fix dereference of a null pointer reported by clang analyzer
+
+Fri Nov 2 14:15:45 2012 (morgan)
+-------------------------------------
+ * fixes cvd load error on some i386 builds caused by -D_FILE_OFFSET_BITS=64 and a long story
+
 Mon Jul 2 10:40:50 EDT 2012 (dar)
 ----------------------------------
  * bb#5252 - update #4, CL_EUNPACK and caching
