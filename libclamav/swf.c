@@ -205,7 +205,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     } while(zret == Z_OK);
 
     if((zret != Z_STREAM_END && zret != Z_OK) || (zret = inflateEnd(&stream)) != Z_OK) {
-	cli_errmsg("scancws: Error decompressing SWF file\n");
+	cli_infomsg(ctx, "scancws: Error decompressing SWF file\n");
 	close(fd);
 	if(cli_unlink(tmpname)) {
 	    free(tmpname);
@@ -246,7 +246,8 @@ int cli_scanswf(cli_ctx *ctx)
     unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
     const char *pt;
     char get_c;
-    unsigned int val, foo, offset = 0, tag_hdr, tag_type, tag_len;
+    size_t offset = 0;
+    unsigned int val, foo, tag_hdr, tag_type, tag_len;
     unsigned long int bits;
 
     cli_dbgmsg("in cli_scanswf()\n");
@@ -294,6 +295,14 @@ int cli_scanswf(cli_ctx *ctx)
 	pt = tagname(tag_type);
 	cli_dbgmsg("SWF: %s\n", pt ? pt : "UNKNOWN TAG");
 	cli_dbgmsg("SWF: Tag length: %u\n", tag_len);
+	if (tag_len > map->len) {
+	    cli_warnmsg("SWF: Invalid tag length.\n");
+	    return CL_EFORMAT;
+	}
+	if ((offset + tag_len) < offset) {
+	    cli_warnmsg("SWF: Tag length too large.\n");
+	    break;
+	}
 	if(!pt) {
 	    offset += tag_len;
 	    continue;
