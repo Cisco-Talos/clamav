@@ -325,6 +325,8 @@ const struct clam_option __clam_options[] = {
 
     { "ScanPDF", "scan-pdf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within PDF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout decoding and additional processing.", "yes" },
 
+    { "ScanSWF", "scan-swf", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within SWF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout decoding and additional processing.", "yes" },
+
     { "ScanArchive", "scan-archive", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes" },
 
     { "ArchiveBlockEncrypted", "block-encrypted", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },

@@ -925,6 +925,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("PDF support disabled.\n");
     }
 
+    if(optget(opts, "ScanSWF")->enabled) {
+	logg("SWF support enabled.\n");
+	options |= CL_SCAN_SWF;
+    } else {
+	logg("SWF support disabled.\n");
+    }
+
     if(optget(opts, "ScanHTML")->enabled) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;

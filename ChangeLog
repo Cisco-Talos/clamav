@@ -1,4 +1,8 @@
 
+Tue Feb 5 19:38:35 EDT 2013 (dar)
+------------------------------------
+ * Add runtime enable/disable of SWF scanning
+
 Tue Jan 8 12:18:35 EDT 2013 (morgan)
 ------------------------------------
  * Fix for CL_ENULLARG reported in regression run of 0021468992.gz
