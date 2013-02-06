@@ -2476,7 +2476,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    break;
 
 	case CL_TYPE_SWF:
-	    if(DCONF_DOC & DOC_CONF_SWF)
+	    if(SCAN_SWF && (DCONF_DOC & DOC_CONF_SWF))
 		ret = cli_scanswf(ctx);
 	    break;
 

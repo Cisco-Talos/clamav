@@ -647,6 +647,10 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    logg("CLAM_OPTION_SCAN_ELF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
 	    whichopt = CL_SCAN_ELF;
 	    break;
+	case CLAM_OPTION_SCAN_SWF:
+	    logg("CLAM_OPTION_SCAN_SWF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
+	    whichopt = CL_SCAN_SWF;
+	    break;
 	default:
 	    unlock_instances();
 	    FAIL(CL_EARG, "Unsupported option: %d", option);
@@ -701,6 +705,9 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    break;
 	case CLAM_OPTION_SCAN_ELF:
 	    whichopt = CL_SCAN_ELF;
+	    break;
+	case CLAM_OPTION_SCAN_SWF:
+	    whichopt = CL_SCAN_SWF;
 	    break;
 	default:
 	    unlock_instances();

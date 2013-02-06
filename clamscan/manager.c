@@ -821,6 +821,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-pdf")->enabled)
 	options |= CL_SCAN_PDF;
 
+    if(optget(opts, "scan-swf")->enabled)
+	options |= CL_SCAN_SWF;
+
     if(optget(opts, "scan-html")->enabled)
 	options |= CL_SCAN_HTML;
 
