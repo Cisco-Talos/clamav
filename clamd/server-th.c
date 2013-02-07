@@ -1402,7 +1402,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
 #if defined(FANOTIFY) || defined(CLAMAUTH)
-    if(optget(opts, "ScanOnAccess")->enabled) {
+    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 	logg("Stopping on-access scan\n");
 	pthread_kill(fan_pid, SIGUSR1);
 	pthread_join(fan_pid, NULL);
