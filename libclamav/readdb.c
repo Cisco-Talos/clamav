@@ -2393,14 +2393,14 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
 
         tokens_count = cli_strtokenize(buffer, ';', CRT_TOKENS + 1, (const char **)tokens);
         if (tokens_count > CRT_TOKENS || tokens_count < CRT_TOKENS - 2) {
-            cli_errmsg("cli_loadcrt: line %u: Invalid number of tokens: %u\n", line, tokens_count);
+            cli_errmsg("cli_loadcrt: line %u: Invalid number of tokens: %u\n", (unsigned int)line, (unsigned int)tokens_count);
             ret = CL_EMALFDB;
             goto end;
         }
 
         if (tokens_count > CRT_TOKENS - 2) {
             if (!cli_isnumber(tokens[CRT_TOKENS-1])) {
-                cli_errmsg("cli_loadcrt: line %u: Invalid minimum feature level\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Invalid minimum feature level\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
             }
@@ -2411,7 +2411,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
 
             if (tokens_count == CRT_TOKENS) {
                 if (!cli_isnumber(tokens[CRT_TOKENS])) {
-                    cli_errmsg("cli_loadcrt: line %u: Invalid maximum feature level\n", line);
+                    cli_errmsg("cli_loadcrt: line %u: Invalid maximum feature level\n", (unsigned int)line);
                     ret = CL_EMALFDB;
                     goto end;
                 }
@@ -2431,7 +2431,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 ca.isBlacklisted = 1;
                 break;
             default:
-                cli_errmsg("cli_loadcrt: line %u: Invalid trust specification. Expected 0 or 1\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Invalid trust specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
         }
@@ -2440,33 +2440,33 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         if (strlen(tokens[3])) {
             serial = cli_hex2str(tokens[3]);
             if (!serial) {
-                cli_errmsg("cli_loadcrt: line %u: Cannot convert serial to binary string\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Cannot convert serial to binary string\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
             }
             memcpy(ca.serial, serial, sizeof(ca.serial));
             free(serial);
         } else {
-            memset(ca.serial, '\xca', sizeof(ca.serial));
+            memset(ca.serial, (int)'\xca', sizeof(ca.serial));
         }
         pubkey = cli_hex2str(tokens[4]);
         cli_dbgmsg("cli_loadcrt: subject: %s\n", tokens[2]);
         cli_dbgmsg("cli_loadcrt: public key: %s\n", tokens[4]);
 
         if (!subject) {
-            cli_errmsg("cli_loadcrt: line %u: Cannot convert subject to binary string\n", line);
+            cli_errmsg("cli_loadcrt: line %u: Cannot convert subject to binary string\n", (unsigned int)line);
             ret = CL_EMALFDB;
             goto end;
         }
         if (!pubkey) {
-            cli_errmsg("cli_loadcrt: line %u: Cannot convert public key to binary string\n", line);
+            cli_errmsg("cli_loadcrt: line %u: Cannot convert public key to binary string\n", (unsigned int)line);
             ret = CL_EMALFDB;
             goto end;
         }
 
         memcpy(ca.subject, subject, sizeof(ca.subject));
         if (mp_read_unsigned_bin(&(ca.n), pubkey, strlen(tokens[4])/2) || mp_read_unsigned_bin(&(ca.e), exp, sizeof(exp)-1)) {
-            cli_errmsg("cli_loadcrt: line %u: Cannot convert exponent to binary data\n", line);
+            cli_errmsg("cli_loadcrt: line %u: Cannot convert exponent to binary data\n", (unsigned int)line);
             ret = CL_EMALFDB;
             goto end;
         }
@@ -2479,7 +2479,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 ca.codeSign = 0;
                 break;
             default:
-                cli_errmsg("cli_loadcrt: line %u: Invalid code sign specification. Expected 0 or 1\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Invalid code sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
         }
@@ -2492,7 +2492,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 ca.timeSign = 0;
                 break;
             default:
-                cli_errmsg("cli_loadcrt: line %u: Invalid time sign specification. Expected 0 or 1\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Invalid time sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
         }
@@ -2505,7 +2505,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 ca.certSign = 0;
                 break;
             default:
-                cli_errmsg("cli_loadcrt: line %u: Invalid cert sign specification. Expected 0 or 1\n", line);
+                cli_errmsg("cli_loadcrt: line %u: Invalid cert sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
         }
@@ -2515,6 +2515,8 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         ca.not_after = (-1U)>>1;
 
         crtmgr_add(&(engine->cmgr), &ca);
+        free(subject);
+        free(pubkey);
     }
 
 end:
