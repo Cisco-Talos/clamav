@@ -641,7 +641,7 @@ int mszip_decompress(struct mszip_stream *zip, uint32_t out_bytes) {
   int i, ret, state, error;
 
   /* easy answers */
-  if (!zip || (out_bytes < 0)) return CL_ENULLARG;
+  if (!zip) return CL_ENULLARG;
   if (zip->error) return zip->error;
 
   /* flush out any stored-up bytes before we begin */
@@ -1113,7 +1113,7 @@ int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
   unsigned int R0, R1, R2;
 
   /* easy answers */
-  if (!lzx || (out_bytes < 0)) return CL_ENULLARG;
+  if (!lzx) return CL_ENULLARG;
   if (lzx->error) return lzx->error;
 
   /* flush out any stored-up bytes before we begin */
@@ -1843,7 +1843,7 @@ int qtm_decompress(struct qtm_stream *qtm, uint32_t out_bytes) {
   unsigned char bits_needed, bit_run;
 
   /* easy answers */
-  if (!qtm || (out_bytes < 0)) return CL_ENULLARG;
+  if (!qtm) return CL_ENULLARG;
   if (qtm->error) return qtm->error;
 
   /* flush out any stored-up bytes before we begin */
