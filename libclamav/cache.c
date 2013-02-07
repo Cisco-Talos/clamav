@@ -772,7 +772,7 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
     unsigned int key = getkey(md5);
     struct CACHE *c;
 
-    if(engine || !engine->cache)
+    if(!engine || !engine->cache)
        return;
 
     c = &engine->cache[key];
