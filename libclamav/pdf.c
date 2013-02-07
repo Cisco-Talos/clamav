@@ -1925,6 +1925,9 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	    pdf->enc_method_stream = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
 	    pdf->enc_method_string = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
 	    pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
+	    free(StmF);
+	    free(StrF);
+	    free(EFF);
 
 	    cli_dbgmsg("cli_pdf: EncryptMetadata: %s\n",
 		       EM ? "true" : "false");
