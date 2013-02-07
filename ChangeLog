@@ -1,4 +1,8 @@
 
+Thu Feb 7 14:04:06 EDT 2013 (dar)
+------------------------------------
+ * Add CL_TYPE_JAVA for Java class detection, type and target
+
 Tue Feb 5 19:38:35 EDT 2013 (dar)
 ------------------------------------
  * Add runtime enable/disable of SWF scanning
