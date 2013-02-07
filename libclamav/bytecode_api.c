@@ -541,7 +541,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
     cli_event_int(EV, BCEV_OFFSET, ctx->off);
     while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
 	for (i=0;i<BUF;i++) {
-	    if (p[i] >= '0' && p[i] <= '9') {
+	    if ((p[i] >= '0' && p[i] <= '9') || (radix == 16 && ((p[i] >= 'a' && p[i] <= 'f') || (p[i] >= 'A' && p[i] <= 'F')))) {
 		char *endptr;
 		p = fmap_need_ptr_once(ctx->fmap, p+i, 16);
 		if (!p)
