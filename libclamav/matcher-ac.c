@@ -352,8 +352,8 @@ static int ac_maketrans(struct cli_matcher *root)
 		failtarget = failtarget->trans[i];
 		node->trans[i] = failtarget;
 	    } else if (IS_FINAL(child) && IS_LEAF(child)) {
-		struct cli_ac_patt *origlist, *list;
-		origlist = list = child->list;
+		struct cli_ac_patt *list;
+		list = child->list;
 		if (list) {
 		    while (list->next) list = list->next;
 		    list->next = child->fail->list;
@@ -469,11 +469,16 @@ void cli_ac_free(struct cli_matcher *root)
     if(root->ac_reloff)
 	mpool_free(root->mempool, root->ac_reloff);
 
+    /* Freeing trans nodes must be done before freeing table nodes! */
     for(i = 0; i < root->ac_nodes; i++) {
 	if(!IS_LEAF(root->ac_nodetable[i]) &&
 	   root->ac_nodetable[i]->fail &&
-	   root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans)
+	   root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans) {
 	    mpool_free(root->mempool, root->ac_nodetable[i]->trans);
+	}
+    }
+
+    for(i = 0; i < root->ac_nodes; i++) {
 	mpool_free(root->mempool, root->ac_nodetable[i]);
     }
 

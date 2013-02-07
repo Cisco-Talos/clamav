@@ -137,7 +137,7 @@ struct cli_mtarget {
     uint8_t enable_prefiltering;
 };
 
-#define CLI_MTARGETS 12
+#define CLI_MTARGETS 13
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { 0,                    "GENERIC",      0,  0, 1 },
     { CL_TYPE_MSEXE,        "PE",           1,  0, 1 },
@@ -150,7 +150,8 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { CL_TYPE_ERROR,        "NOT USED",     8,  1, 0 },
     { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 },
     { CL_TYPE_PDF,          "PDF",         10,  1, 0 },
-    { CL_TYPE_SWF,          "FLASH",       11,  1, 0 }
+    { CL_TYPE_SWF,          "FLASH",       11,  1, 0 },
+    { CL_TYPE_JAVA,         "JAVA",        12,  1, 0 }
 };
 
 #define CLI_OFF_ANY         0xffffffff

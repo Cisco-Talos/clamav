@@ -27,6 +27,7 @@
 #include "mpool.h"
 #include "clscanapi.h"
 #include "interface.h"
+#include "cache.h"
 
 const char *types[] = {
     "<<rsvd>>",		/*  0 */
@@ -1087,6 +1088,13 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
+CLAMAPI BOOL Scan_FlushCache()
+{
+	cli_cache_destroy(engine);
+	if (cli_cache_init(engine)) 
+		return FALSE;
+	return TRUE;
+}
 
 static void ftype_bits(const char *type, _int64 *filetype) {
     int i;

@@ -333,6 +333,12 @@ CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
  */
 CLAMAPI void Scan_ReloadDatabase(BOOL bLoadMinDefs);
 
+/*
+ * Flush internal whitelist cache
+ * Returns TRUE on success and FALSE on failure to re-initialize cache
+ */
+CLAMAPI BOOL Scan_FlushCache();
+
 #ifdef __cplusplus
 }; /* extern "C" */
 #endif
