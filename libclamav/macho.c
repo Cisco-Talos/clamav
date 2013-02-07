@@ -347,6 +347,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		at += sizeof(segment_cmd64);
 		nsects = EC32(segment_cmd64.nsects, conv);
 		strncpy(name, segment_cmd64.segname, sizeof(name));
+        name[sizeof(name)-1] = '\0';
 	    } else {
 		if(fmap_readn(map, &segment_cmd, at, sizeof(segment_cmd)) != sizeof(segment_cmd)) {
 		    cli_dbgmsg("cli_scanmacho: Can't read segment command\n");

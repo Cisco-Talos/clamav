@@ -1891,8 +1891,8 @@ static void get_thread_times(uint64_t *kt, uint64_t *ut)
     struct tms tbuf;
     if (times(&tbuf) != -1) {
 	clock_t tck = sysconf(_SC_CLK_TCK);
-	*kt = 1000000UL*tbuf.tms_stime / tck;
-	*ut = 1000000UL*tbuf.tms_utime / tck;
+	*kt = ((uint64_t)1000000)*tbuf.tms_stime / tck;
+	*ut = ((uint64_t)1000000)*tbuf.tms_utime / tck;
     } else {
 	*kt = *ut = 0;
     }
