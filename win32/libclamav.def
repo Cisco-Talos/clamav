@@ -219,3 +219,5 @@ EXPORTS w32_inet_ntoa @44347 NONAME
 EXPORTS w32_getpeername @44348 NONAME
 EXPORTS cli_sigperf_print @44349 NONAME
 EXPORTS cli_sigperf_events_destroy @44350 NONAME
+EXPORTS cli_cache_init @44351 NONAME
+EXPORTS cli_cache_destroy @44352 NONAME
