@@ -27,6 +27,7 @@
 #include "mpool.h"
 #include "clscanapi.h"
 #include "interface.h"
+#include "cache.h"
 
 const char *types[] = {
     "<<rsvd>>",		/*  0 */
@@ -647,6 +648,10 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    logg("CLAM_OPTION_SCAN_ELF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
 	    whichopt = CL_SCAN_ELF;
 	    break;
+	case CLAM_OPTION_SCAN_SWF:
+	    logg("CLAM_OPTION_SCAN_SWF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
+	    whichopt = CL_SCAN_SWF;
+	    break;
 	default:
 	    unlock_instances();
 	    FAIL(CL_EARG, "Unsupported option: %d", option);
@@ -701,6 +706,9 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
 	    break;
 	case CLAM_OPTION_SCAN_ELF:
 	    whichopt = CL_SCAN_ELF;
+	    break;
+	case CLAM_OPTION_SCAN_SWF:
+	    whichopt = CL_SCAN_SWF;
 	    break;
 	default:
 	    unlock_instances();
@@ -1080,6 +1088,13 @@ int CLAMAPI Scan_DeleteScanInfo(CClamAVScanner *pScanner, PCLAM_SCAN_INFO_LIST p
     WIN();
 }
 
+CLAMAPI BOOL Scan_FlushCache()
+{
+	cli_cache_destroy(engine);
+	if (cli_cache_init(engine)) 
+		return FALSE;
+	return TRUE;
+}
 
 static void ftype_bits(const char *type, _int64 *filetype) {
     int i;

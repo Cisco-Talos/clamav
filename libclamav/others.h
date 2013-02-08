@@ -341,6 +341,7 @@ extern int have_rar;
 #define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
 #define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
+#define SCAN_SWF            (ctx->options & CL_SCAN_SWF)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))

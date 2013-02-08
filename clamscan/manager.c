@@ -384,14 +384,13 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
 	info.dirs++;
 	depth++;
 	while((dent = readdir(dd))) {
-	    if(dent->d_ino)
-	    {
+	    if(dent->d_ino) {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    if (fname == NULL) { /* oops, malloc() failed, print warning and return */
 			logg("!scandirs: Memory allocation failed for fname\n");
-			return;
+			break;
 		    }
 
 		    if(!strcmp(dirname, PATHSEP))
@@ -820,6 +819,9 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "scan-pdf")->enabled)
 	options |= CL_SCAN_PDF;
+
+    if(optget(opts, "scan-swf")->enabled)
+	options |= CL_SCAN_SWF;
 
     if(optget(opts, "scan-html")->enabled)
 	options |= CL_SCAN_HTML;

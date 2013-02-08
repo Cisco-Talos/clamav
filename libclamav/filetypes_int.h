@@ -138,7 +138,7 @@ static const char *ftypes_int[] = {
   "0:0:cffaedfe:Mach-O LE 64-bit:CL_TYPE_ANY:CL_TYPE_MACHO:45",
   "0:0:feedface:Mach-O BE:CL_TYPE_ANY:CL_TYPE_MACHO:45",
   "0:0:feedfacf:Mach-O BE 64-bit:CL_TYPE_ANY:CL_TYPE_MACHO:45",
-  "0:0:cafebabe:Universal Binary/Java Bytecode:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:46",
+  "0:0:cafebabe:Universal Binary/Java Bytecode:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:46:72",
   "0:0:377abcaf271c:7zip:CL_TYPE_ANY:CL_TYPE_7Z:47",
   "0:0:52656365697665642d5350463a20:Mail file:CL_TYPE_ANY:CL_TYPE_MAIL",
   "1:0,2048:0a(52|72)656365697665643a20{-2048}0a(43|63)6f6e74656e742d(54|74)7970653a20:Mail file:CL_TYPE_ANY:CL_TYPE_MAIL",
@@ -168,6 +168,10 @@ static const char *ftypes_int[] = {
   "0:0:4d53434600000000:MS CAB:CL_TYPE_ANY:CL_TYPE_MSCAB",
   "1:*:4d53434600000000:CAB-SFX:CL_TYPE_ANY:CL_TYPE_CABSFX",
   "1:*:014344303031{2043-2443}4344303031:ISO9660:CL_TYPE_ANY:CL_TYPE_ISO9660:71",
+  "1:0:cafebabe0000000?:Universal Binary:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:73",
+  "1:0:cafebabe0000001?:Universal Binary:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:73",
+  "1:0:cafebabe0000002?:Java class file:CL_TYPE_ANY:CL_TYPE_JAVA:73",
+  "1:0:cafebabe0000003?:Java class file:CL_TYPE_ANY:CL_TYPE_JAVA:73",
   NULL
 };
 

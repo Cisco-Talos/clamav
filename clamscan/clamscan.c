@@ -250,6 +250,7 @@ void help(void)
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");
     mprintf("    --scan-ole2[=yes(*)/no]              Scan OLE2 containers\n");
     mprintf("    --scan-pdf[=yes(*)/no]               Scan PDF files\n");
+    mprintf("    --scan-swf[=yes(*)/no]               Scan SWF files\n");
     mprintf("    --scan-html[=yes(*)/no]              Scan HTML files\n");
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
