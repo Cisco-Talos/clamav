@@ -1828,14 +1828,23 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
     CFM = pdf_readval(q, len, "/CFM");
     if (CFM) {
 	cli_dbgmsg("cli_pdf: %s CFM: %s\n", key, CFM);
-	if (!strncmp(CFM,"V2", 2))
+	if (!strncmp(CFM,"V2", 2)){
+	    free(CFM);	
 	    return ENC_V2;
-	if (!strncmp(CFM,"AESV2",5))
+	}    
+	if (!strncmp(CFM,"AESV2",5)){
+	    free(CFM);	
 	    return ENC_AESV2;
-	if (!strncmp(CFM,"AESV3",5))
+	}    
+	if (!strncmp(CFM,"AESV3",5)){
+	    free(CFM);	
 	    return ENC_AESV3;
-	if (!strncmp(CFM,"None",4))
+	}    
+	if (!strncmp(CFM,"None",4)){
+	    free(CFM);	
 	    return ENC_NONE;
+	}
+	free(CFM);
     }
     return ENC_UNKNOWN;
 }
