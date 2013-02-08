@@ -2447,7 +2447,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             memcpy(ca.serial, serial, sizeof(ca.serial));
             free(serial);
         } else {
-            memset(ca.serial, (int)'\xca', sizeof(ca.serial));
+            memset(ca.serial, 0xca, sizeof(ca.serial));
         }
         pubkey = cli_hex2str(tokens[4]);
         cli_dbgmsg("cli_loadcrt: subject: %s\n", tokens[2]);
@@ -2517,9 +2517,15 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         crtmgr_add(&(engine->cmgr), &ca);
         free(subject);
         free(pubkey);
+        subject = pubkey = NULL;
     }
 
 end:
+    if (subject)
+        free(subject);
+    if (pubkey)
+        free(pubkey);
+
     cli_dbgmsg("Number of certs: %d\n", engine->cmgr.items);
     cli_crt_clear(&ca);
     return ret;
