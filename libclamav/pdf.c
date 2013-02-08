@@ -939,6 +939,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 			cli_dbgmsg("cli_pdf: Crypt filter %s\n", name);
 			if (name && strcmp(name, "/Identity"))
 			    enc = parse_enc_method(pdf->CF, pdf->CF_n, name, enc); 
+			free(name);
 		    }
 		}
 		if (cli_memstr(start, p_stream, "/XRef", 5))
