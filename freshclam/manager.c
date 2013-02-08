@@ -2547,6 +2547,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
     if (!strncasecmp (url, "http://", 7))
     {
         strncpy (urlcpy, url, sizeof (urlcpy));
+        urlcpy[sizeof(urlcpy)-1] = '\0';
         host = &urlcpy[7];
         if (!(pt = strchr (host, '/')))
         {

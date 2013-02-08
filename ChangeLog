@@ -11,6 +11,10 @@ Tue Jan 2 16:06:10 EDT 2013 (dar)
 ----------------------------------
  * bb#5324 - restore decompression of compressed Flash files
 
+Thu Dec 27 16:52:14 EDT 2012 (dar)
+-------------------------------------
+ * bb #6478: better return code for truncated ARJ
+
 Thu Dec 27 15:23:45 EDT 2012 (morgan)
 -------------------------------------
  * fix regression test 0051207685.gz bsd crash
@@ -19,13 +23,33 @@ Wed Dec 26 15:04:28 EDT 2012 (morgan)
 -------------------------------------
  * fix to bb1891 patch(edge of buffer problem)
 
+Wed Dec 19 17:15:57 EDT 2012 (swebb)
+-------------------------------------
+ * downgrade cacheset_remove node-not-found to debug level
+
+Tue Dec 18 13:21:26 EDT 2012 (dar)
+-------------------------------------
+ * bb #6440: truncated ISO should cause format error not write error
+
 Mon Dec 17 18:47:12 EDT 2012 (morgan)
 -------------------------------------
  * fix loop in cab file processing: ensure window position within frame
 
+Mon Dec 17 16:44:16 EDT 2012 (dar)
+-------------------------------------
+ * pdf: empty key safety check
+
+Mon Dec 17 11:12:11 EDT 2012 (dar)
+-------------------------------------
+ * pdf: continue to next object after single object error
+
 Mon Dec 17 11:08:50 EDT 2012 (morgan)
 -------------------------------------
  * revert bb1636: causes too many false positives
+
+Fri Dec 7 19:54:59 EDT 2012 (dar)
+------------------------------------
+ * freshclam: add defines for major return codes
 
 Fri Dec 7 11:09:10 EDT 2012 (morgan)
 ------------------------------------
@@ -39,6 +63,15 @@ Wed Dec 5 18:48:52 EDT 2012 (morgan)
 ------------------------------------
  * Add bytecode performance statistics
 
+Mon Dec 3 13:54:28 EDT 2012 (swebb)
+-------------------------------------
+ * Change debugging output when outputting authenticode signatures to make
+ machine parsing easier
+
+Fri Nov 30 15:44:29 EDT 2012 (dar)
+-------------------------------------
+ * bb #3415: minor config option changes
+
 Fri Nov 30 15:30:08 EDT 2012 (morgan)
 -------------------------------------
  * improve return code fidelity of vba_scandata
@@ -47,13 +80,39 @@ Fri Nov 30 14:16:47 EDT 2012 (morgan)
 -------------------------------------
  * fix scan all segv handling file type MSOLE2
 
+Fri Nov 30 14:15:34 EDT 2012 (dar)
+-------------------------------------
+ * bb #6060: Add message for failed munmap() call
+
+Fri Nov 30 09:57:25 EDT 2012 (swebb)
+-------------------------------------
+ * bb5638 - Add ability to completely disable PE authenticode verification.
+
 Wed Nov 28 19:15:44 EDT 2012 (morgan)
 -------------------------------------
  * bb#1891 add Mark Pizzolato patch to fix clamd buffer bookkeeping errors
 
+Wed Nov 28 17:11:07 2012 (dar)
+-------------------------------------
+ * bb #5405: raise configurable option limit
+
 Tue Nov 27 17:48:50 2012 (morgan)
 -------------------------------------
  * for allscan mode, update usage messages and man pages
+
+Tue Nov 27 17:15:02 2012 (dar)
+-------------------------------------
+ * bb #5405: Convert hard-coded maximum file sizes to configurable values with
+ defaults
+
+Tue Nov 27 16:17:31 2012 (dar)
+-------------------------------------
+ * Refactoring cache_remove to engine instead of full context object
+
+Tue Nov 27 11:24:52 2012 (dar)
+-------------------------------------
+ * cache_remove and cacheset_remove functions to support corrections of false
+ negatives
 
 Fri Nov 16 20:03:57 2012 (morgan) 
 -------------------------------------
@@ -75,9 +134,143 @@ Fri Nov 9 15:31:51 2012 (morgan)
 -------------------------------------
  * fix dereference of a null pointer reported by clang analyzer
 
+Fri Nov 9 11:49:27 2012 (dar)
+-------------------------------------
+ * libclamav: type tweak for CAB files
+
+Tue Nov 6 10:35:10 2012 (dar)
+-------------------------------------
+ * bb#6038: fix compile warning in unit test code due to type mismatch
+
+Tue Nov 6 10:05:35 2012 (dar)
+-------------------------------------
+ * bb #4516 - fix for mszip compression in CAB files
+
+Mon Nov 5 13:36:22 2012 (swebb)
+-------------------------------------
+ * bb1823 - Enable linking with custom zlib
+
 Fri Nov 2 14:15:45 2012 (morgan)
 -------------------------------------
  * fixes cvd load error on some i386 builds caused by -D_FILE_OFFSET_BITS=64 and a long story
+
+Fri Nov 2 12:15:45 EDT 2012 (morgan)
+----------------------------------
+ * fixes cvd load error on some i386 builds caused by -D_FILE_OFFSET_BITS=64
+ and a long story
+
+Fri Nov 2 10:18:53 EDT 2012 (swebb)
+----------------------------------
+ * bb5404 - freshclam.conf(5) should mention default proxy port. Added
+ requested text.
+
+Thu Nov 1 11:51:21 EDT 2012 (swebb)
+----------------------------------
+ * bb5638. Add documentation for new certs database.
+
+Thu Nov 1 11:35:42 2012 EDT 2012 (swebb)
+----------------------------------
+ * bb5638. Check if cert already exists in cache.
+
+Thu Nov 1 11:25:43 2012 EDT 2012 (dar)
+----------------------------------
+ * bb #5699: add filetype magic for JPEG2000 files
+
+Thu Nov 1 10:26:08 2012 EDT 2012 (swebb)
+----------------------------------
+ * bb5638. Parse the new cert db file.
+
+Wed Oct 31 11:46:13 EDT 2012 (dar)
+----------------------------------
+ * Fix signatures doc for PDF target
+
+Sat Oct 27 14:58:03 EDT 2012 (swebb)
+----------------------------------
+ * Change the cert management code to cache the trusted/revoked root certs in
+ the engine struct
+
+Thu Oct 18 14:12:58 EDT 2012 (morgan)
+----------------------------------
+ * add initial allscan/allmatch mode to libclamav, clamd, clamdscan, and
+ clamscan with unit tests
+
+Thu Oct 18 10:41:12 EDT 2012 (swebb)
+----------------------------------
+ * Rudimentary blacklisting
+
+Mon Sep 17 12:47:47 EDT 2012 (morgan)
+----------------------------------
+ * check return code from fstat(). If less than 0, log error message and
+ return error to caller, bb#5778
+
+Fri Sep 14 18:57:41 EDT 2012 (dar)
+----------------------------------
+ * bb #5659: Log rotation in Windows wrapper
+
+Fri Sep 14 08:00:47 EDT 2012 (morgan)
+----------------------------------
+ * fix socket return code check, add logging on socket error bb#5775
+
+Thu Sep 13 15:15:22 EDT 2012 (morgan)
+----------------------------------
+ * fix close(-1) identified by code analyzer(bb#5782). Also fixed other
+ problems and inconsistencies in how return codes were set in
+ scanner.c:command() function
+
+Wed Sep 12 22:04:00 EDT 2012 (dar)
+----------------------------------
+ * bb#5763: updates to freshclamwrap to distinguish from freshclam errors
+
+Fri Aug 31 09:51:25 EDT 2012 (swebb)
+----------------------------------
+ * bb#5724 - temporary files get detected by AVG heuristics
+
+Tue Aug 28 13:37:48 EDT 2012 (dar)
+----------------------------------
+ * bb#5700: implement and use fp_toradix_n()
+
+Fri Aug 24 16:18:20 EDT 2012 (dar)
+----------------------------------
+ * Stub mp_to_radixn calls
+
+Thu Aug 23 16:33:45 EDT 2012 (swebb)
+----------------------------------
+ * Force log rotation if LogFileMaxSize is non-zero
+
+Thu Aug 23 15:51:02 EDT 2012 (swebb)
+----------------------------------
+ * Add LogRotate option to sample freshclam config file
+
+Thu Aug 23 15:40:10 EDT 2012 (swebb)
+----------------------------------
+ * Allow freshclam to rotate logs
+
+Mon Aug 20 10:53:25 EDT 2012 (swebb)
+----------------------------------
+ * BB#5659 - 4.0.0.8955 Consumer - Created a 1GB+ Clamav.log by running
+ continious full scans for 10 hours. Add LogRotate config variable.
+
+Mon Aug 13 09:32:27 EDT 2012 (swebb)
+----------------------------------
+ * BB#5576 - Inconsistent use of ERROR and WARNING labels. Show WARNING
+ instead of ERROR.
+
+Fri Aug 10 14:40:42 EDT 2012 (swebb)
+----------------------------------
+ * Properly install sample config files
+
+Fri Aug 10 11:39:48 EDT 2012 (dar)
+----------------------------------
+ * clamscan: bb#5350 Add command-line option to suppress printing clean files
+ [so infected and errors get printed]
+
+Mon Jul 16 15:36:49 EDT 2012 (swebb)
+----------------------------------
+ * BB#3737 - Value too large for specified data type
+
+Tue Jul 3 12:06:18 EDT 2012 (swebb)
+----------------------------------
+ * BB#5409 - Fix condition to follow type change inside command()
 
 Mon Jul 2 10:40:50 EDT 2012 (dar)
 ----------------------------------
@@ -91,9 +284,17 @@ Tue Jun 26 12:23:44 EDT 2012 (dar)
 ----------------------------------
  * bb#5252 - Limit exits on scanraw return codes
 
+Tue Jun 26 11:31:20 EDT 2012 (dar)
+----------------------------------
+ * bb#5356: Add PDF target
+
 Fri Jun 22 16:58:21 EDT 2012 (dar)
 ----------------------------------
  * bb#5325 - Quiet Minix warning
+
+Thu Jun 21 11:04:13 EDT 2012 (dar)
+----------------------------------
+ * Fix buffer length truncation in iso_string - bb#5330
 
 Mon Jun 18 17:51:49 EDT 2012 (dar)
 ----------------------------------
@@ -116,9 +317,21 @@ Wed May 30 17:27:00 EST 2012 (dar)
  * libclamav: Fix handling of tar file with malformed header
          (bb#4627)
 
+Wed May 30 13:11:32 EST 2012 (edwin)
+----------------------------------
+ * enable distcheck on gcc 4.7
+
 Fri May 25 13:05:40 EST 2012 (dar)
 ----------------------------------
  * libclamav: Scan chm with invalid handling (bb#4626)
+
+Tue May 15 20:22:57 EST 2012 (tk)
+----------------------------------
+ * error handling for --update-db=custom
+
+Tue May 15 19:48:49 EST 2012 (tk)
+----------------------------------
+ * add support for --update-db=custom
 
 Thu May 10 15:45:56 CEST 2012 (tk)
 ----------------------------------
@@ -132,6 +345,14 @@ Tue May  8 15:31:51 CEST 2012 (acab)
 Tue Apr 10 17:04:20 CEST 2012 (tk)
 ----------------------------------
  * libclamav/pe.c: drop old header check (bb#4699)
+
+Wed Mar 31 18:08:01 CET 2012 (acab)
+---------------------------------
+ * add recovery mode to 7z ansi
+
+Fri Mar 2 19:36:04 CET 2012 (tk)
+---------------------------------
+ * properly connect to ClamAuth after database reload
 
 Thu Mar  1 19:49:21 CET 2012 (tk)
 ---------------------------------
@@ -153,20 +374,89 @@ Wed Feb 29 14:09:18 CET 2012 (acab)
 
 Tue Feb  7 23:23:48 CET 2012 (tk)
 ---------------------------------
+ * improved configuration, bugfixes
+
+Tue Feb  7 23:23:48 CET 2012 (tk)
+---------------------------------
  * libclamav: fix bytecode whitelisting
 
 Wed Jan 25 18:56:44 CET 2012 (tk)
 ---------------------------------
  * libclamav: fix macro detection in OLE2BlockMacros (bb#4269)
 
-Wed Mar 31 18:07:05 CEST 2010 (acab)
-------------------------------------
-  * libclamav/7z: add recovery mode to 7z ansi
+Mon Jan 23 13:55:11 CET 2012 (tk)
+-----------------------------------
+ * vnode notification support
+
+Wed Jan 18 18:15:04 CET 2012 (edwin)
+-----------------------------------
+ * restore map->real_len after scanning nested file.
+
+Wed Jan 18 17:06:36 CET 2012 (edwin)
+-----------------------------------
+ * fmap_need_off_once_len: don't return NULL on EOF
+
+Wed Jan 18 15:54:57 CET 2012 (edwin)
+-----------------------------------
+ * fix fmap_readn of 0 length: must return 0
 
 Tue Jan 17 11:15:57 CET 2012 (acab)
 -----------------------------------
  * misc: performance improvement for HP-UX PA-RISC - patch from 
 	 Michael Pelletier <michael.v.pelletier*raytheon.com> (bb#3926)
+
+Wed Jan 11 14:33:52 CET 2012 (edwin)
+-----------------------------------
+ * disable {MUL,SQR}{48,64}, takes too long to compile, and doesn't offer many
+ speedups.
+
+Wed Jan 11 13:14:38 CET 2012 (edwin)
+-----------------------------------
+ * merged tomsfastmath branch: switch to tomsfastmath instead of tommath
+
+Tue Jan 10 19:42:28 CET 2012 (edwin)
+-----------------------------------
+ * don't fail loadmscat
+
+Tue Jan 10 18:23:21 CET 2012 (acab)
+-----------------------------------
+ * add W32S. prefix
+
+Tue Jan 10 17:43:02 CET 2012 (edwin)
+-----------------------------------
+ * print name of .cat that fails to load
+
+Tue Jan 10 17:29:08 CET 2012 (edwin)
+-----------------------------------
+ * call cli_checkfp (which calls cli_checkfp_pe()) in pre/post callbacks too.
+
+Tue Jan 10 15:31:49 CET 2012 (acab)
+-----------------------------------
+ * don't authenticode unless we've got a security dir or cats loaded
+
+Tue Jan 10 10:35:00 CET 2012 (edwin)
+-----------------------------------
+ * fmapify: fix htmlnorm crash.
+
+Mon Jan 9 18:53:45 CET 2012 (edwin)
+-----------------------------------
+ * fix stack smashing on Win64.
+
+Mon Jan 9 17:06:07 CET 2012 (edwin)
+-----------------------------------
+ * use tomsfastmath
+
+Mon Jan 9 16:06:03 CET 2012 (acab)
+-----------------------------------
+ * add dconf for pe->catalog
+
+Mon Jan 9 16:44:30 CET 2012 (edwin)
+-----------------------------------
+ * re-enable MP_64BIT as it speeds up mp_exptmod significantly.
+
+Mon Jan 9 12:05:34 CET 2012 (edwin)
+-----------------------------------
+ * fmapify: fix NULL derefs in arj and 7z
 
 Sun Jan  8 19:26:06 CET 2012 (acab)
 -----------------------------------
@@ -176,6 +466,66 @@ Sun Jan  8 19:26:06 CET 2012 (acab)
               -d %WINDIR%\system32\{F750E6C3-38EE-11D1-85E5-00C04FC295EE}
 	      to clamscan.
 
+Sun Jan 8 17:13:59 CET 2012 (acab)
+-----------------------------------
+ * enable catalog based and embedded authenticode checking
+
+Sun Jan 8 03:19:29 CET 2012 (acab)
+-----------------------------------
+ * cli_checkfp_pe
+
+Fri Jan 6 22:17:59 CET 2012 (acab)
+-----------------------------------
+ * Restrict child cert key usages to those of the parent
+
+Fri Jan 6 20:06:29 CET 2012 (acab)
+-----------------------------------
+ * check ext key usage
+
+Fri Jan 6 18:02:36 CET 2012 (acab)
+-----------------------------------
+ * verify keyCertSign
+
+Thu Jan 5 19:20:34 CET 2012 (acab)
+-----------------------------------
+ * parse usage related extensions
+
+Thu Jan 5 17:38:42 CET 2012 (edwin)
+-----------------------------------
+ * fmapify: fix uninit var causing crash
+
+Thu Jan 5 13:14:53 CET 2012 (edwin)
+-----------------------------------
+ * now that EC32 is using cli_readint we can't use EC32 on int16_t, or we'll crash.
+
+Wed Jan 4 18:51:48 CET 2012 (edwin)
+-----------------------------------
+ * fix fmapify align on sis
+
+Wed Jan 4 18:36:37 CET 2012 (edwin)
+-----------------------------------
+ * fmapify cab: fix alignment issue on sparc
+
+Wed Jan 4 16:16:19 CET 2012 (edwin)
+-----------------------------------
+ * funmap is inline func now.
+
+Wed Jan 4 15:33:33 CET 2012 (edwin)
+-----------------------------------
+ * workaround for unrar not supporting fmap.
+
+Tue Jan 3 14:12:01 CET 2012 (tk)
+-----------------------------------
+ * add ISO file type sig
+
+Mon Jan 2 19:54:33 CET 2012 (tk)
+-----------------------------------
+ * sync with daily.ftm
+
+Mon Jan 2 13:56:30 CET 2012 (acab)
+-----------------------------------
+ * load_mscat parsing complete
+
 Thu Nov  3 22:42:28 CET 2011 (acab)
 -----------------------------------
  * libclamav/lzma_iface.c: stfu on (but still refuse) big lzma allocs
@@ -184,19 +534,127 @@ Tue Nov  1 12:26:46 CET 2011 (acab)
 -----------------------------------
  * libclamav: Add 7z SFX support (b#3063)
 
+Fri Dec 30 16:07:53 CET 2011 (acab)
+---------------------------------
+ * embedded authenticode verification
+
+Thu Dec 29 11:53:07 CET 2011 (acab)
+---------------------------------
+ * refactor expect_obj
+
+Wed Dec 28 18:45:40 CET 2011 (acab)
+---------------------------------
+ * pkcs7 verification - wip
+
+Wed Dec 28 18:44:45 CET 2011 (acab)
+---------------------------------
+ * handle verification of plain hashes and asn1 der encoded hashes
+
+Tue Dec 27 19:26:26 CET 2011 (acab)
+---------------------------------
+ * verify pkcs#7
+
+Sun Dec 25 03:49:38 CET 2011 (acab)
+---------------------------------
+ * TL;DR: a bunch of stuff
+
+Fri Dec 23 17:40:22 CET 2011 (acab)
+---------------------------------
+ * pdf: implement text extraction (bb #2022)
+
+Thu Dec 22 22:36:47 CET 2011 (acab)
+---------------------------------
+ * add md5rsa verification
+
+Thu Dec 22 20:57:43 CET 2011 (acab)
+---------------------------------
+ * root CAs, draft of rsa verification
+
+Thu Dec 22 16:47:40 CET 2011 (acab)
+---------------------------------
+ * read bn's as unsigned as tom and asn1 don't agree on sign convensions
+
+Wed Dec 21 22:52:46 CET 2011 (acab)
+---------------------------------
+ * crtmgr_add
+
+Wed Dec 21 19:52:34 CET 2011 (acab)
+---------------------------------
+ * add crtmgr
+
+Wed Dec 21 02:16:54 CET 2011 (acab)
+---------------------------------
+ * allow md5 signed cats
+
+Tue Dec 20 22:06:22 CET 2011 (acab)
+---------------------------------
+ * complete cat parsing
+
+Mon Dec 19 20:25:01 CET 2011 (acab)
+---------------------------------
+ * treat sha1encrypt as sha1sign
+
+Mon Dec 19 17:42:37 CET 2011 (acab)
+---------------------------------
+ * mscat parse complete
+
+Mon Dec 19 17:17:32 CET 2011 (acab)
+---------------------------------
+ * extract hashes from cats
+
+Fri Dec 16 17:38:53 CET 2011 (acab)
+---------------------------------
+ * cats are slightly different
+
 Thu Dec 15 21:40:57 CET 2011 (tk)
 ---------------------------------
  * libclamav/matcher-ac.c: improve negation of single elements - handle
 			   !(xx) (bb#4052)
+
+Thu Dec 15 18:46:54 CET 2011 (acab
+---------------------------------
+ * partial crypto stuff, so it doesn't get lost
 
 Thu Dec 15 18:34:03 EET 2011 (edwin)
 ------------------------------------
  * libclamav/pdf.c: scan inside encrypted PDF streams and strings when user
 		    password is empty (bb #2794).
 
+Thu Dec 15 17:56:08 CET 2011 (edwin)
+---------------------------------
+ * pdf: support PDF 1.5 Crypt filters.
+
+Thu Dec 15 13:27:31 CET 2011 (edwin)
+---------------------------------
+ * pdf: support for AESV3, V 5 security handler, and encrypted linearized PDFs.
+
+Wed Dec 14 15:43:14 CET 2011 (edwin)
+---------------------------------
+ * scan inside encrypted PDF streams (bb #2794).
+
+Mon Dec 12 16:27:52 CET 2011 (tk)
+---------------------------------
+ * register /dev/clamauth
+
 Fri Dec  9 16:41:05 CET 2011 (tk)
 ---------------------------------
  * libclamav/matcher.c: add new offset modifier SEx (bb#4008)
+
+Wed Dec 7 23:35:12 CET 2011 (acab)
+---------------------------------
+ * authenticode playground
+
+Wed Dec 7 14:38:33 CET 2011 (tk)
+---------------------------------
+ * increase MAX_DEL_LOOKAHEAD
+
+Wed Dec 7 12:50:20 CET 2011 (edwin)
+---------------------------------
+ * Add sigtool --compare.
+
+Thu Dec 1 19:09:58 CET 2011 (tk)
+---------------------------------
+ * OS X kernel driver
 
 Thu Dec  1 15:07:49 CET 2011 (tk)
 ---------------------------------
@@ -222,14 +680,50 @@ Mon Nov 14 21:22:26 CET 2011 (acab)
 -----------------------------------
  * libclamav: add preliminary support for iso9660 image files
 
+Fri Nov 4 18:32:50 CEST 2011 (tk)
+----------------------------------
+ * remove some dazuko/clamuko code - to be replaced with fanotify
+
 Fri Nov  4 00:52:21 CET 2011 (acab)
 -----------------------------------
  * libclamav/pe.c: parse vinfo where varfileinfo occours before stringfileinfo
 		   (bb#3062)
 
+Thu Nov 3 22:43:49 CEST 2011 (acab)
+----------------------------------
+ * stfu on large lzma allocs
+
+Tue Nov 1 15:02:18 CEST 2011 (acab)
+----------------------------------
+ * handle 7z encryption detection albeit post extraction and blockencrypted
+
+Tue Nov 1 12:27:46 CEST 2011 (acab)
+----------------------------------
+ * add 7z SFX support - bb#3063
+
+Wed Oct 26 00:05:17 CEST 2011 (edwin)
+----------------------------------
+ * more LLVM 3.0 API changes
+
+Mon Oct 17 19:40:34 CEST 2011 (tk)
+----------------------------------
+ * disable swf decoder in scanners.c
+
+Mon Oct 17 15:03:08 CEST 2011 (tk)
+----------------------------------
+ * sync with daily.ftm
+
+Tue Oct 11 16:57:40 CEST 2011 (tk)
+----------------------------------
+ * configure: add --with-version
+
 Mon Oct 10 14:41:48 CEST 2011 (tk)
 ----------------------------------
  * freshclam/manager.c: fix error when compiling without DNS support (bb#3056)
+
+Sat Oct 8 13:36:12 EEST 2011 (edwin)
+-------------------------------------
+ * fix encrypted linearized pdf detection (bb #3364).
 
 Sat Oct  8 12:19:49 EEST 2011 (edwin)
 -------------------------------------
@@ -239,10 +733,18 @@ Sat Oct  8 12:10:13 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/bytecode.c,bytecode_api.c: fix recursion level crash (bb #3706).
 
+Fri Sep 30 11:48:49 EEST 2011 (edwin)
+-------------------------------------
+ * Support LLVM 3.0 API
+
 Mon Sep 19 13:44:36 CEST 2011 (tk)
 ----------------------------------
  * freshclam: re-enable short-time blacklisting of mirrors on
 	      connection errors
+
+Fri Sep 16 19:29:35 CEST 2011 (acab)
+----------------------------------
+ * c4w: drop sigload_cb spam
 
 Fri Sep 16 16:17:52 CEST 2011 (tk)
 ----------------------------------
@@ -258,9 +760,29 @@ Thu Sep 15 14:44:11 CEST 2011 (tk)
 ----------------------------------
  * freshclam: fix pidfile removal (bb#3499)
 
+Wed Sep 14 16:29:49 CEST 2011 (acab)
+----------------------------------
+ * c4w: reoder ftypes
+
 Mon Sep 12 16:29:22 CEST 2011 (tk)
 ----------------------------------
  * freshclam: add new option PrivateMirror (bb#3058)
+
+Thu Sep 8 18:09:48 EEST 2011 (acab)
+-------------------------------------
+ * -m 'yo dawg i heard you like commits so we put a commit into your commit'
+
+Thu Sep 8 16:38:02 EEST 2011 (acab)
+-------------------------------------
+ * C4W: allow switching mindef flag on reload
+
+Mon Aug 22 16:58:48 EEST 2011 (edwin)
+-------------------------------------
+ * clamscan: new flag --archive-verbose
+
+Mon Aug 22 15:22:55 EEST 2011 (tk)
+-------------------------------------
+ * archive metadata callback
 
 Sun Aug 21 17:05:24 EEST 2011 (edwin)
 -------------------------------------
@@ -277,6 +799,10 @@ Wed Aug  3 15:41:28 CEST 2011 (tk)
 Tue Aug  2 17:03:33 CEST 2011 (tk)
 ----------------------------------
  * docs: clarify behavior of --scan-*/Scan* options (bb#3134)
+
+Mon Jul 25 17:14:39 EEST 2011 (tk)
+-------------------------------------
+ * sync in 0.97.2 changes
 
 Mon Jul 25 16:09:19 EEST 2011 (edwin)
 -------------------------------------
@@ -302,19 +828,228 @@ Thu Jul 14 12:07:04 CEST 2011 (acab)
 ------------------------------------
  * libclamav/lzma_iface.c: shut up huge alloc warns for 7z/lzma (bb#2913)
 
+Mon Jul 4 17:00:55 2011 CEST 2011 (edwin)
+------------------------------------
+ * fix wrong interaction between prescan_cb caching and postscan_cb
+
 Thu Jun 30 14:24:34 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/c++/bytecode2llvm.cpp: fix use of unaddressable data in
  bytecode_watchdog. Thanks to Michael Scheidell for providing feedback on this bug.
 
+Wed Jun 29 16:39:56 CEST 2011 (acab)
+------------------------------------
+ * cw4: track number of loaded sigs, provide retieval api
+ 
+Wed Jun 29 14:28:03 CEST 2011 (acab)
+------------------------------------
+ * c4w: fix filetype matching, also add spam
+ 
+Mon Jun 20 15:08:38 CEST 2011 (tk)
+------------------------------------
+ * update SWF entries
+ 
+Mon Jun 20 15:02:03 CEST 2011 (tk)
+------------------------------------
+ * reserve flevel 6X for 0.97 patch releases
+ 
 Sat Jun 18 17:44:42 CEST 2011 (acab)
 ------------------------------------
  * clamav-milter: add config option "SupportMultipleRecipients" (bb#2879)
  
+Sat Jun 18 01:44:38 CEST 2011 (edwin)
+------------------------------------
+ * UPgrade lzma SDK to version 9.20
+ * Also fmapify
+ 
+Fri Jun 17 23:20:01 CEST 2011 (edwin)
+------------------------------------
+ * export cl_fmap_close
+ 
+Fri Jun 17 23:14:36 CEST 2011 (edwin)
+------------------------------------
+ * cli_map_scandesc convenience API
+ 
+Fri Jun 17 CEST 2011 (edwin)
+------------------------------------
+ * Introduce cli_map_scandesc to scan a portion of the existing file
+ * And switch CPIO, MACHO, and SWF to use it.
+ 
+Fri Jun 17 20:03:44 CEST 2011 (edwin)
+------------------------------------
+ * cli_utf16_to_utf8
+ 
+Thu Jun 16 16:30:36 CEST 2011 (acab)
+------------------------------------
+ * fmapify jpeg_exploit
+ 
+Wed Jun 15 20:50:42 CEST 2011 (acab)
+------------------------------------
+ * fmaify cli_scan_riff
+ 
+Wed Jun 15 15:55:01 CEST 2011 (acab)
+------------------------------------
+ * c4w: export filetype
+ 
+Wed Jun 15 13:44:44 CEST 2011 (edwin)
+------------------------------------
+ * specify type of constant
+ 
+Wed Jun 15 12:00:23 CEST 2011 (acab)
+------------------------------------
+ * fmapify mydoom
+ 
+Wed Jun 15 12:32:47 CEST 2011 (edwin)
+------------------------------------
+ * export filetype cb
+ 
+Wed Jun 15 12:21:50 CEST 2011 (edwin)
+------------------------------------
+ * testcase for cl_scan APIs
+ 
+Wed Jun 15 04:50:54 CEST 2011 (acab)
+------------------------------------
+ * c4w: add Scan_GetFileType - untested
+ 
+Tue Jun 14 22:54:44 CEST 2011 (edwin)
+------------------------------------
+ * fix mem API of new fmap
+ 
+Tue Jun 14 21:39:31 CEST 2011 (acab)
+------------------------------------
+ * upgrade sigui api
+ 
+Tue Jun 14 22:35:03 CEST 2011 (edwin)
+------------------------------------
+ * unit tests for new fmap scan API
+ 
+Tue Jun 14 21:49:39 CEST 2011 (edwin)
+------------------------------------
+ * fmap scan API
+ 
+Tue Jun 14 21:26:59 CEST 2011 (edwin)
+------------------------------------
+ * Make both handle and memory based fmap API available always
+ 
+Tue Jun 14 21:19:01 CEST 2011 (edwin)
+------------------------------------
+ * implement fmap Win32 API in terms of cl_fmap_open_memory
+ 
+Tue Jun 14 21:15:23 CEST 2011 (edwin)
+------------------------------------
+ * implement fmap descriptor API in terms of cl_fmap_open_handle API
+ 
+Tue Jun 14 21:06:16 CEST 2011 (edwin)
+------------------------------------
+ * fmap: use pread_cb instead of direct pread
+ 
+Tue Jun 14 20:59:30 CEST 2011 (edwin)
+------------------------------------
+ * fmap: use the vtable for win32 code too
+ 
+Tue Jun 14 20:33:15 2011 CEST 2011 (edwin)
+------------------------------------
+ * prepare for new fmap API
+ 
+Tue Jun 14 20:19:25 CEST 2011 (edwin)
+------------------------------------
+ * draft new fmap scan API
+ 
+Tue Jun 14 19:04:02 CEST 2011 (acab)
+------------------------------------
+ * make the sigload callback be aware of custom sigs
+ 
+Tue Jun 14 18:48:50 CEST 2011 (edwin)
+------------------------------------
+ * provide fmap_fd() accessor to fd.
+ 
+Tue Jun 14 17:00:06 CEST 2011 (acab)
+------------------------------------
+ * rework scan callbacks
+ 
+Tue Jun 14 11:11:05 CEST 2011 (acab)
+------------------------------------
+ * fmapify matcher/magic_scan partially
+ 
+Tue Jun 14 03:26:30 CEST 2011 (acab)
+------------------------------------
+ * add filetype clcb
+ 
+Mon Jun 13 16:01:59 CEST 2011 (edwin)
+------------------------------------
+ * fmapify two trivial cases in magic_scan
+ 
+Mon Jun 13 15:54:44 CEST 2011 (edwin)
+------------------------------------
+ * fmapify scan_structured
+ 
+Mon Jun 13 15:50:32 CEST 2011 (edwin)
+------------------------------------
+ * fmapify sis
+ 
+Mon Jun 13 12:12:01 CEST 2011 (edwin)
+------------------------------------
+ * fmapify cryptff
+ 
+Mon Jun 13 12:03:26 CEST 2011 (edwin)
+------------------------------------
+ * fmapify screnc
+ 
+Mon Jun 13 11:57:59 CEST 2011 (edwin)
+------------------------------------
+ * fmapify tar
+ 
+Mon Jun 13 11:55:34 CEST 2011 (edwin)
+------------------------------------
+ * fmap: return -1 on failed off_once_len
+ 
+Mon Jun 13 11:47:41 CEST 2011 (edwin)
+------------------------------------
+ * fmapify tnef
+ 
+Mon Jun 13 11:28:32 CEST 2011 (edwin)
+------------------------------------
+ * fmapify Mach-O and CPIO
+ 
+Sun Jun 12 10:07:16 CEST 2011 (edwin)
+------------------------------------
+ * logg_size is unsigned
+ 
+Fri Jun 10 21:22:46 CEST 2011 (edwin)
+------------------------------------
+ * fmapify cli_scanbzip
+ 
+ Jun 10 20:17:19 CEST 2011 (edwin)
+------------------------------------
+ * mbox already fmapified, just drop descriptor
+ 
+Fri Jun 10 19:54:43 CEST 2011 (acab)
+------------------------------------
+ * fmapify unarj
+ 
+Fri Jun 10 19:09:38 CEST 2011 (acab)
+------------------------------------
+ * fmapify msexpand
+ 
+Fri Jun 10 17:02:18 CEST 2011 (edwin)
+------------------------------------
+ * fmapify RTF
+ 
+Fri Jun 10 17:02:10 CEST 2011 (edwin)
+------------------------------------
+ * add 2 new EOF-safe fmap APIs
+ 
+Thu Jun 9 16:33:37 CEST 2011 (acab)
+------------------------------------
+ * port chm and mspack to fmap
+ 
+Wed Jun 8 15:52:37 CEST 2011 (acab)
+------------------------------------
+ * port cab to fmap #1
+ 
 Tue Jun 7 12:03:19 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: fix safebrowsing detection on certain URLs
-
 
 Thu Jun  9 08:22:31 CEST 2011 (acab)
 ------------------------------------
@@ -328,6 +1063,10 @@ Wed Jun  8 14:57:40 CEST 2011 (acab)
 Thu May 26 14:17:52 CEST 2011 (acab)
 ------------------------------------
  * libclamav/matcher-hash.c: in hm_sort don't swap an item with itself (bb#2818)
+
+Thu May 12 15:53:13 CEST 2011 (edwin)
+----------------------------------
+ * Encrypted.PDF -> Heuristics.Encrypted.PDF
 
 Thu May 12 13:01:56 CEST 2011 (tk)
 ----------------------------------
@@ -346,6 +1085,10 @@ Fri May  6 16:16:00 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/c++: add support for building with external LLVM 2.9, and drop external 2.8 support
 
+Fri May 6 14:34:31 EEST 2011 (edwin)
+------------------------------------
+ * add clambc manpage (bb #2551)
+
 Thu May  5 01:07:57 CEST 2011 (acab)
 ------------------------------------
  * clamd: log request ip address for instream scans #bb2592
@@ -358,6 +1101,15 @@ Wed May  4 14:07:12 EEST 2011 (edwin)
 Tue May  3 22:52:04 PDT 2011 (tk)
 ---------------------------------
  * sigtool: properly normalize html files (bb#2764)
+
+Tue May 3 16:16:53 PDT 2011 (tk)
+---------------------------------
+ * sigtool/sigtool.c: fix formatting of hash dbs (bb#2765)
+
+Tue May 3 20:45:30 PDT 2011 (edwin)
+---------------------------------
+ * LLVM: cherry-pick upstream debug crashfix
+	This fixes a crash when running clambc --debug
 
 Tue May  3 16:14:27 PDT 2011 (tk)
 ---------------------------------
@@ -380,14 +1132,47 @@ Sat Apr 16 18:56:40 CEST 2011 (acab)
 ------------------------------------
  * libclamav, shared: Preliminary win32 conversion to UTF8
 
+Sat Apr 16 12:50:49 CEST 2011 (edwin)
+------------------------------------
+ * c4w: disable perf logging when verbose logging is off
+
+Fri Apr 15 13:43:45 EEST 2011 (edwin)
+-------------------------------------
+ * bytecode: reuse watchdog thread
+
+Fri Apr 15 10:58:26 EEST 2011 (edwin)
+-------------------------------------
+ * bb #2719
+	CL_NO* is all in shared/ and libclamav/, the rest don't need to define it.
+	Also include misc.h for misc_libclamav.c
+
 Thu Apr 14 21:29:36 EEST 2011 (edwin)
 -------------------------------------
  * libclamav/others.c: make sure TLS key is initializer (bb #2588).
     Thanks to Cameron Brown for the detailed analysis of the bug.
 
+Thu Apr 14 14:54:21 EEST 2011 (edwin)
+-------------------------------------
+ * build system: use automake subdir-objects (bb #2369)
+
 Thu Apr 14 13:19:38 EEST 2011 (edwin)
 -------------------------------------
  * configure: check for enable_extended_FILE_stdio (bb #2542)
+
+Tue Apr 12 00:32:32 EEST 2011 (edwin)
+-------------------------------------
+ * matcher-ac optimization:
+    eliminate the IS_LEAF branch from the scanner:
+    - concatenate the leaf's list with the failtarget's list
+    - copy the trans pointer from the failtarget
+    - make sure we only free the trans table once in ac_free (because we have more
+    than 1 ->trans pointers that points to same place now)
+    
+    This results in ~5% speed improvement.
+
+Thu Apr 11 13:19:38 EEST 2011 (edwin)
+-------------------------------------
+ * matcher-ac: optimize the not-taken case
 
 Mon Apr 11 17:22:46 CEST 2011 (tk)
 ----------------------------------
@@ -400,6 +1185,10 @@ Sat Apr  9 17:20:35 CEST 2011 (acab)
 Sat Apr  9 03:56:17 CEST 2011 (acab)
 ------------------------------------
  * libclamav/pe.c: reset corrupted status before bytecode hooks (bb#2544)
+
+Fri Apr  8 18:24:07 CEST 2011 (tk)
+----------------------------------
+ * add dconf for swf
 
 Thu Apr  7 18:17:56 CEST 2011 (tk)
 ----------------------------------
@@ -430,6 +1219,14 @@ Tue Mar 15 17:56:59 CET 2011 (tk)
 ---------------------------------
  * sigtool: allow arbitrary names for --build
 
+Mon Mar 14 20:29:27 CET 2011 (edwin)
+---------------------------------
+ * fmap: reduce amount of mmap() calls in fmap_aging.
+
+Fri Mar 11 20:30:45 CET 2011 (tk)
+---------------------------------
+ * cosmetics (bb#2207)
+
 Thu Mar 10 15:54:05 CET 2011 (tk)
 ---------------------------------
  * libclamav: optimize handling of {n} wildcards (bb#1796)
@@ -438,9 +1235,17 @@ Wed Mar  9 15:42:50 CET 2011 (tk)
 ---------------------------------
  * clamdscan: fix file exclusion (bb#2579)
 
+Fri Mar  4 18:45:41 CET 2011 (acab)
+-----------------------------------
+ * c4w: limit cloud queries to certain file types
+
 Fri Mar  4 18:26:44 CET 2011 (acab)
 -----------------------------------
  * libclamav: Extend prescan_cb with file types
+
+Thu Mar  3 17:26:34 CET 2011 (tk)
+-----------------------------------
+ * document --debug (bb#2589)
 
 Mon Feb 28 21:46:50 CET 2011 (tk)
 ---------------------------------
@@ -469,9 +1274,62 @@ Tue Feb 15 19:19:31 CET 2011 (tk)
 ---------------------------------
  * sigtool/sigtool.c: improve handling of bytecode.info (bb#2292)
 
+Mon Feb 14 19:19:20 CET 2011 (edwin)
+---------------------------------
+ * Add some performance measurement code.
+
+Mon Feb 14 10:13:43 CET 2011 (edwin)
+---------------------------------
+ * bytecode: successfully skip bytecodes that use unknown APIs
+	When unknown APIs are used, the bytecode is skipped.
+	However we were still checking that the number of loaded functions is correct,
+	and of course we were failing because when skipping the number of loaded functions is
+	0. Fix this by not checking the number of loaded functions when skipping a
+	bytecode.
+
 Fri Feb 11 13:16:41 CET 2011 (tk)
 ---------------------------------
  * sigtool/sigtool.c: handle all signature formats with --(list|find)-sigs (bb#2534)
+
+Thu Feb 10 15:05:44 CET 2011 (edwin)
+---------------------------------
+ * c4w: fix negative time
+
+Thu Feb 10 14:34:29 CET 2011 (edwin)
+---------------------------------
+ * c4w: another build error
+
+Thu Feb 10 14:13:18 CET 2011 (edwin)
+---------------------------------
+ * c4w: fix some build errors
+
+Thu Feb 10 13:42:39 CET 2011 (edwin)
+---------------------------------
+ * c4w: add more time measurement
+
+Wed Feb  9 22:45:52 CET 2011 (edwin)
+---------------------------------
+ * sigui: add .mo files
+
+Wed Feb  9 22:31:41 CET 2011 (edwin)
+---------------------------------
+ * sigui: enable locales
+
+Wed Feb  9 16:13:56 CET 2011 (edwin)
+---------------------------------
+ * Add .pot file
+
+Wed Feb  9 14:49:22 CET 2011 (edwin)
+---------------------------------
+ * sigui: add HU translation
+
+Wed Feb  9 14:46:53 CET 2011 (edwin)
+---------------------------------
+ * Add gettext rules to Makefile
+
+Wed Feb  9 14:46:32 CET 2011 (edwin)
+---------------------------------
+ * sigui: fix translatable strings.
 
 Tue Feb  8 02:42:11 CET 2011 (acab)
 -----------------------------------
