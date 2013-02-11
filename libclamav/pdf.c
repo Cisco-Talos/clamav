@@ -939,6 +939,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 			cli_dbgmsg("cli_pdf: Crypt filter %s\n", name);
 			if (name && strcmp(name, "/Identity"))
 			    enc = parse_enc_method(pdf->CF, pdf->CF_n, name, enc); 
+			free(name);
 		    }
 		}
 		if (cli_memstr(start, p_stream, "/XRef", 5))
@@ -1827,14 +1828,23 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
     CFM = pdf_readval(q, len, "/CFM");
     if (CFM) {
 	cli_dbgmsg("cli_pdf: %s CFM: %s\n", key, CFM);
-	if (!strncmp(CFM,"V2", 2))
+	if (!strncmp(CFM,"V2", 2)){
+	    free(CFM);	
 	    return ENC_V2;
-	if (!strncmp(CFM,"AESV2",5))
+	}    
+	if (!strncmp(CFM,"AESV2",5)){
+	    free(CFM);	
 	    return ENC_AESV2;
-	if (!strncmp(CFM,"AESV3",5))
+	}    
+	if (!strncmp(CFM,"AESV3",5)){
+	    free(CFM);	
 	    return ENC_AESV3;
-	if (!strncmp(CFM,"None",4))
+	}    
+	if (!strncmp(CFM,"None",4)){
+	    free(CFM);	
 	    return ENC_NONE;
+	}
+	free(CFM);
     }
     return ENC_UNKNOWN;
 }
@@ -1925,6 +1935,9 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	    pdf->enc_method_stream = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
 	    pdf->enc_method_string = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
 	    pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
+	    free(StmF);
+	    free(StrF);
+	    free(EFF);
 
 	    cli_dbgmsg("cli_pdf: EncryptMetadata: %s\n",
 		       EM ? "true" : "false");
