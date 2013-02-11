@@ -360,13 +360,14 @@ static void header(void)
 static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 		unsigned max, int blink)
 {
-	int y,x;
+	int y,x,z;
 	unsigned len  = 39;
 	unsigned start = 1;
 	unsigned activ = max ? ((live-idle)*(len - start - 2) + (max/2)) / max : 0;
 	unsigned dim   = max ? idle*(len - start - 2) / max : 0;
 	unsigned rem = len - activ - dim - start-2;
-
+        
+	z=0;
 	assert(activ + 2 < len && activ+dim + 2 < len && activ+dim+rem + 2 < len && "Invalid values");
 	mvwaddch(win, i, start, '[' | A_BOLD);
 	wattron(win, A_BOLD | COLOR_PAIR(activ_color));
@@ -382,7 +383,10 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 	waddch(win, ']' | A_BOLD);
 	if(blink) {
 		getyx(win, y, x);
-		mvwaddch(win, y, x-2, '>' | A_BLINK | COLOR_PAIR(red_color));
+		if (x >= 2) {
+			z = x - 2;         
+		}	
+		mvwaddch(win, y, z, '>' | A_BLINK | COLOR_PAIR(red_color));
 		move(y, x);
 	}
 }
@@ -520,6 +524,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
+		addr.sun_path[sizeof(addr.sun_path) - 1] = 0x0;
 		print_con_info(conn, "Connecting to: %s\n", soname);
 		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
 			perror("connect");
@@ -1004,7 +1009,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	stats->conn_min = (conn_dt/60)%60;
 	stats->conn_sec = conn_dt%60;
 	stats->current_q = 0;
-
+	buf[sizeof(buf) - 1] = 0x0;
 	while(recv_line(conn, buf, sizeof(buf)) && strcmp("END\n",buf) != 0) {
 		char *val = strchr(buf, ':');
 
