@@ -524,7 +524,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
-		addr.sun_path[sizeof(addr.sun_path)-1]=0x0;
+		addr.sun_path[sizeof(addr.sun_path) - 1] = 0x0;
 		print_con_info(conn, "Connecting to: %s\n", soname);
 		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
 			perror("connect");
