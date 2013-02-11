@@ -520,6 +520,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
+		addr.sun_path[sizeof(addr.sun_path)-1]=0x0;
 		print_con_info(conn, "Connecting to: %s\n", soname);
 		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
 			perror("connect");
@@ -1004,7 +1005,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	stats->conn_min = (conn_dt/60)%60;
 	stats->conn_sec = conn_dt%60;
 	stats->current_q = 0;
-
+	buf[sizeof(buf) - 1] = 0x0;
 	while(recv_line(conn, buf, sizeof(buf)) && strcmp("END\n",buf) != 0) {
 		char *val = strchr(buf, ':');
 
