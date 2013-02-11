@@ -2374,7 +2374,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     size_t line=0, tokens_count, i, j;
     cli_crt ca;
     int ret=CL_SUCCESS;
-    char *subject, *pubkey, *exponent, *serial;
+    char *subject=NULL, *pubkey=NULL, *exponent=NULL, *serial=NULL;
     const uint8_t exp[] = "\x01\x00\x01";
     char c;
 
@@ -2514,6 +2514,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             ca.not_before = atoi(tokens[8]);
         ca.not_after = (-1U)>>1;
 
+        ca.hashtype = CLI_SHA1RSA;
         crtmgr_add(&(engine->cmgr), &ca);
         free(subject);
         free(pubkey);
