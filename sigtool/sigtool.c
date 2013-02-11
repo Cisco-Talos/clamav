@@ -330,6 +330,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(host);
     server.sin_port = htons(33101);
+    memset(server.sin_zero, 0x00, sizeof(server.sin_zero));
 
     if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
         closesocket(sockd);
