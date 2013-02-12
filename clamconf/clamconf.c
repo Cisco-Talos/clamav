@@ -370,7 +370,6 @@ int main(int argc, char **argv)
 	unsigned int i, j;
 	struct cli_environment env;
 
-
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
     if(!opts) {
 	printf("ERROR: Can't parse command line options\n");
@@ -396,6 +395,7 @@ int main(int argc, char **argv)
     }
 
     dbdir[0] = 0;
+    clamd_dbdir[0] = 0;
     dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for(i = 0; cfgfile[i].name; i++) {
