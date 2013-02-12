@@ -75,6 +75,7 @@ clamd_connect (const char *cfgfile, const char *option)
     if ((opt = optget (opts, "LocalSocket"))->enabled)
     {
         socktype = "UNIX";
+        memset(&server, 0x00, sizeof(server));
         server.sun_family = AF_UNIX;
         strncpy (server.sun_path, opt->strarg, sizeof (server.sun_path));
         server.sun_path[sizeof (server.sun_path) - 1] = '\0';
