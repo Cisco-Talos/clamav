@@ -2085,23 +2085,23 @@ int cli_scanpe(cli_ctx *ctx)
 	    !memcmp(epbuff+0x63+offset, "\xaa\xe2\xcc", 3) &&
 	    (fsize >= exe_sections[nsections-1].raw + 0xC6 + ecx + offset)) {
 
-	char *spinned;
+	    char *spinned;
 
-	if((spinned = (char *) cli_malloc(fsize)) == NULL) {
-	    free(exe_sections);
-	    return CL_EMEM;
-	}
+	    if((spinned = (char *) cli_malloc(fsize)) == NULL) {
+	      free(exe_sections);
+	      return CL_EMEM;
+	    }
 
-	if((size_t) fmap_readn(map, spinned, 0, fsize) != fsize) {
-	    cli_dbgmsg("yC: Can't read %lu bytes\n", (unsigned long)fsize);
-	    free(spinned);
-	    free(exe_sections);
-	    return CL_EREAD;
-	}
+	    if((size_t) fmap_readn(map, spinned, 0, fsize) != fsize) {
+	      cli_dbgmsg("yC: Can't read %lu bytes\n", (unsigned long)fsize);
+	      free(spinned);
+	      free(exe_sections);
+	      return CL_EREAD;
+	    }
 
-	cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
-	CLI_UNPTEMP("yC",(spinned,exe_sections,0));
-	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
+	    cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
+	    CLI_UNPTEMP("yC",(spinned,exe_sections,0));
+	    CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
 	}
     }
 
