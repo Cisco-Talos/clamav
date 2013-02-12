@@ -2239,7 +2239,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 	while(len > 0) {
 		int byte = (len--) ? (int)*ptr++ : EOF;
 
-		if((byte == '~') && (*ptr == '>'))
+		if((byte == '~') && !len && (*ptr == '>'))
 			byte = EOF;
 
 		if(byte >= '!' && byte <= 'u') {
