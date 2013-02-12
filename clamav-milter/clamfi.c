@@ -246,10 +246,16 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 
     if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
 	return ret;
+    if (!(cf))
+        return SMFIS_CONTINUE;
     if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
 	return ret;
+    if (!(cf))
+        return SMFIS_CONTINUE;
     if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
 	return ret;
+    if (!(cf))
+        return SMFIS_CONTINUE;
     return sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
 }
 
