@@ -180,7 +180,7 @@ static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len) {
 
   if (!len) return NULL;
   if (len>400) len=400;
-  name = cli_malloc(len);
+  name = cli_malloc(len+1);
   if (!name) {
     cli_dbgmsg("SIS: OOM\n");
     return NULL;
