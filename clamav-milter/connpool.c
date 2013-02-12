@@ -88,7 +88,7 @@ static int cpool_addunix(char *path) {
 static int islocal(struct sockaddr *sa, socklen_t addrlen) {
     int s = socket(sa->sa_family, SOCK_STREAM, 0);
     int ret;
-    if (!s) return 0;
+    if (s < 0) return 0;
     ret = (bind(s, sa, addrlen) == 0);
     close(s);
     return ret;
