@@ -528,6 +528,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		print_con_info(conn, "Connecting to: %s\n", soname);
 		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
 			perror("connect");
+            close(s);
 			return -1;
 		}
 	} else {
@@ -562,6 +563,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		print_con_info(conn, "Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
 		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
 			perror("connect");
+            close(s);
 			return -1;
 		}
 	}
