@@ -2343,6 +2343,7 @@ static int decodehex(const char *hexsig)
 	    }
 	    if(!(decoded = decodehexspecial(pt, &dlen))) {
 		mprintf("!Decoding failed\n");
+        free(pt);
 		return -1;
 	    }
 	    bw = write(1, decoded, dlen);
