@@ -2434,6 +2434,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Can't allocate memory for filename!\n");
             unlink (newfile);
             free (newfile);
+            cl_cvdfree(current);
             return FCE_TESTFAIL;
         }
         newfile2[strlen (newfile2) - 4] = '.';
@@ -2447,6 +2448,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             unlink (newfile);
             free (newfile);
             free (newfile2);
+            cl_cvdfree(current);
             return FCE_DBDIRACCESS;
         }
         free (newfile);
@@ -2458,6 +2460,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Failed to load new database\n");
             unlink (newfile);
             free (newfile);
+            cl_cvdfree(current);
             return FCE_TESTFAIL;
         }
         sigchld_wait = 1;
