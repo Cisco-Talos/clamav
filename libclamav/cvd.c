@@ -137,6 +137,7 @@ static int cli_untgz(int fd, const char *destdir)
 	    if(outfile) {
 		if(fclose(outfile)) {
 		    cli_errmsg("cli_untgz: Cannot close file %s\n", path);
+		    outfile = NULL;
 		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 		}
