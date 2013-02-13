@@ -54,12 +54,34 @@ typedef struct mac_token2_tag
 
 cli_ctx *convenience_ctx(int fd) {
     cli_ctx *ctx;
-    if(!(ctx = malloc(sizeof(*ctx))) ||
-       !(ctx->engine = cl_engine_new()) ||
-       !(ctx->fmap = cli_malloc(sizeof(struct F_MAP *))) ||
-       !(*ctx->fmap = fmap(fd, 0, 0))) {
-	printf("malloc failed\n");
-	return NULL; /* and leak */
+
+    ctx = malloc(sizeof(*ctx));
+    if(!ctx){
+	printf("ctx malloc failed\n");
+        return NULL;
+    }
+
+    ctx->engine = cl_engine_new();
+    if(!(ctx->engine)){	    
+	printf("engine malloc failed\n");
+        free(ctx);
+	return NULL;
+    }	
+
+    ctx->fmap = cli_malloc(sizeof(struct F_MAP *)){
+    if(!(ctx->fmap)){
+	printf("fmap malloc failed\n");
+        free(ctx->engine);
+        free(ctx);
+	return NULL;
+    }
+
+    if(!(*ctx->fmap = fmap(fd, 0, 0))){
+	printf("fmap failed\n");
+	free(ctx->fmap);
+	free(ctx->engine);
+        free(ctx);
+	return NULL;
     }
     return ctx;
 }
