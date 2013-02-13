@@ -411,9 +411,14 @@ static char *sha256file(const char *file, unsigned int *size)
     sha256_final(&ctx, digest);
     sha = (char *) malloc(65);
     if(!sha)
+    {
+        fclose(fh);
 	return NULL;
+    }	
     for(i = 0; i < 32; i++)
 	sprintf(sha + i * 2, "%02x", digest[i]);
+
+    fclose(fh);	
     return sha;
 }
 
