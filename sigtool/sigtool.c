@@ -2029,6 +2029,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 
     decoded = calloc(len + 1 + wildcard * 32, sizeof(char));
     if(!decoded) {
+        free(str16);
 	mprintf("!decodehexstr: Can't allocate memory for decoded\n");
 	return NULL;
     }
@@ -2051,6 +2052,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 		default:
 		    mprintf("!decodehexstr: Unknown wildcard (0x%x@%u)\n", str16[i] & CLI_MATCH_WILDCARD, i);
 		    free(decoded);
+		    free(str16);
 		    return NULL;
 	    }
 	} else {
@@ -2061,7 +2063,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 
     if(dlen)
 	*dlen = p;
-
+    free(str16);
     return decoded;
 }
 
