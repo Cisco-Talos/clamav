@@ -161,7 +161,10 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
      * When we'll support mmx/sse instructions this should be updated! */
     n = MIN(32, ctx->fmap->len - ctx->off);
     buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
-    next = cli_disasm_one(buf, n, res, 0);
+    if (buf)
+        next = cli_disasm_one(buf, n, res, 0);
+    else
+        next = NULL;
     if (!next) {
 	cli_dbgmsg("bcapi_disasm: failed\n");
 	cli_event_count(EV, BCEV_DISASM_FAIL);
