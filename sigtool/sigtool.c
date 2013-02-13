@@ -2064,6 +2064,9 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	unsigned int i, len = 0, hlen, negative, altnum, alttype;
 	char *buff;
 
+    
+    hexcpy = NULL;
+    buff = NULL;
 
     hexcpy = strdup(hex);
     if(!hexcpy) {
@@ -2078,6 +2081,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	buff = calloc(strlen(hex) + 512, sizeof(char));
 	if(!buff) {
 	    mprintf("!decodehexspecial: Can't allocate memory for buff\n");
+	    free(hexcpy);
 	    return NULL;
 	}
 	start = hexcpy;
@@ -2086,6 +2090,8 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    *pt++ = 0;
 	    if(!start) {
 		mprintf("!decodehexspecial: Unexpected EOL\n");
+		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 	    if(pt >= hexcpy + 2) {
@@ -2097,6 +2103,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!(decoded = decodehexstr(start, &hlen))) {
 		mprintf("!Decoding failed (1): %s\n", pt);
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 	    memcpy(&buff[len], decoded, hlen);
@@ -2106,6 +2113,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!(start = strchr(pt, ')'))) {
 		mprintf("!decodehexspecial: Missing closing parethesis\n");
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 
@@ -2113,6 +2121,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!strlen(pt)) {
 		mprintf("!decodehexspecial: Empty block\n");
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 
@@ -2153,6 +2162,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		if(!altnum) {
 		    mprintf("!decodehexspecial: Empty block\n");
 		    free(hexcpy);
+		    free(buff);
 		    return NULL;
 		}
 		altnum++;
@@ -2174,12 +2184,14 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		for(i = 0; i < altnum; i++) {
 		    if(!(h = cli_strtok(pt, i, "|"))) {
 			free(hexcpy);
+			free(buff);
 			return NULL;
 		    }
 
 		    if(!(c = cli_hex2str(h))) {
 			free(h);
 			free(hexcpy);
+			free(buff);
 			return NULL;
 		    }
 
@@ -2200,6 +2212,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	if(start) {
 	    if(!(decoded = decodehexstr(start, &hlen))) {
 		mprintf("!Decoding failed (2)\n");
+		free(buff);
 		free(hexcpy);
 		return NULL;
 	    }
