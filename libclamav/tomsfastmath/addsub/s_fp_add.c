@@ -16,7 +16,7 @@ void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
   register fp_word  t;
 
   y       = MAX(a->used, b->used);
-  oldused = MAX(c->used, FP_SIZE);
+  oldused = MIN(c->used, FP_SIZE);
   c->used = y;
 
   t = 0;
