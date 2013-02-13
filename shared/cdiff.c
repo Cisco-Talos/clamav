@@ -945,6 +945,7 @@ int cdiff_apply(int fd, unsigned short mode)
 			    free(r1);
 			    free(lbuf);
 			}
+			close(desc);
 			return -1;
 		    }
 		    line = r1;
@@ -959,6 +960,7 @@ int cdiff_apply(int fd, unsigned short mode)
 		gzclose(gzh);
 		free(line);
 		free(lbuf);
+		close(desc);
 		return -1;
 	    } else {
 		cmds++;
@@ -1006,6 +1008,7 @@ int cdiff_apply(int fd, unsigned short mode)
 			    free(r1);
 			    free(lbuf);
 			}
+			close(desc);
 			return -1;
 		    }
 		    line = r1;
@@ -1020,6 +1023,7 @@ int cdiff_apply(int fd, unsigned short mode)
 		fclose(fh);
 		free(line);
 		free(lbuf);
+		close(desc);
 		return -1;
 	    } else {
 		cmds++;
@@ -1039,5 +1043,6 @@ int cdiff_apply(int fd, unsigned short mode)
     }
 
     logg("*cdiff_apply: Parsed %d lines and executed %d commands\n", lines, cmds);
+    close(desc);
     return 0;
 }
