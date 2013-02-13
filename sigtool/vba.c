@@ -68,7 +68,7 @@ cli_ctx *convenience_ctx(int fd) {
 	return NULL;
     }	
 
-    ctx->fmap = cli_malloc(sizeof(struct F_MAP *)){
+    ctx->fmap = cli_malloc(sizeof(struct F_MAP *));
     if(!(ctx->fmap)){
 	printf("fmap malloc failed\n");
         free(ctx->engine);

@@ -1620,9 +1620,11 @@ static int maxlinelen(const char *file)
 
     if(bytes == -1) {
 	mprintf("!maxlinelen: Can't read file %s\n", file);
+	close(fd);
 	return -1;
     }
-
+    
+    close(fd);
     return nmax + 1;
 }
 
