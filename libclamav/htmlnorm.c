@@ -193,7 +193,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 		start = ptr;
 		end = ptr - m_area->offset + m_area->length;
 
-		if (start >= end) {
+		if ((start >= end) || !start) {
 			free(chunk);
 			return NULL;
 		}
