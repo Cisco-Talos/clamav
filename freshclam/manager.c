@@ -701,12 +701,19 @@ submitstats (const char *clamdcfg, const struct optstruct *opts)
         logg ("*Connecting via %s\n", proxy);
     }
 
-    if ((clamsockd = clamd_connect (clamdcfg, "SubmitDetectionStats")) < 0)
+    if ((clamsockd = clamd_connect (clamdcfg, "SubmitDetectionStats")) < 0){
+        if(auth){
+	    free(auth);
+	}    
         return FCE_CONNECTION;
+    }	
 
     recvlninit (&rcv, clamsockd);
     if (sendln (clamsockd, "zDETSTATS", 10))
     {
+        if(auth){
+	    free(auth);
+	}    
         closesocket (clamsockd);
         return FCE_CONNECTION;
     }
