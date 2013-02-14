@@ -1019,8 +1019,10 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = (char *) cli_calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
-		    if(!fname)
+		    if(!fname){
+		        close(dd);
 		        return -1;	    
+		    }	
 		    sprintf (fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
