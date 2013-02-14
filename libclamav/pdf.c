@@ -876,6 +876,17 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj,
 static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen);
 static int pdf_readint(const char *q0, int len, const char *key);
 static const char *pdf_getdict(const char *q0, int* len, const char *key);
+
+static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length)
+{
+    char *newID;
+    newID = pdf_readstring(s, length, "/ID", &pdf->fileIDlen);
+    if (newID) {
+        free(pdf->fileID);
+        pdf->fileID = newID;
+    }
+}
+
 static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     /* enough to hold common pdf names, we don't need all the names */
@@ -960,9 +971,9 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 		if (trailer < 0) trailer = 0;
 		q2 = pdf->map + trailer;
 		cli_dbgmsg("cli_pdf: looking for trailer in linearized pdf: %ld - %ld\n", trailer, trailer_end);
-		pdf->fileID = pdf_readstring(q2, trailer_end - trailer, "/ID", &pdf->fileIDlen);
+		pdf_parse_trailer(pdf, q2, trailer_end - trailer);
 		if (pdf->fileID)
-		    cli_dbgmsg("found fileID\n");
+		    cli_dbgmsg("cli_pdf: found fileID\n");
 	    }
 	}
 	if (objstate == STATE_LAUNCHACTION)
@@ -1281,7 +1292,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	if (!pdf->key)
 	    return;
 	memcpy(pdf->key, result, pdf->keylen);
-	dbg_printhex("md5", result, 32);
+	dbg_printhex("md5", result, 16);
 	dbg_printhex("Candidate encryption key", pdf->key, pdf->keylen);
 
 	/* 7.6.3.3 Algorithm 6 */
@@ -1521,7 +1532,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 		pdf.flags |= 1 << ENCRYPTED_PDF;
 		cli_dbgmsg("cli_pdf: encrypted pdf found, stream will probably fail to decompress!\n");
 		pdf_parse_encrypt(&pdf, enc, eof - enc);
-		pdf.fileID = pdf_readstring(eofmap, bytesleft, "/ID", &pdf.fileIDlen);
+		pdf_parse_trailer(&pdf, eofmap, bytesleft);
 	    }
 	    q += 9;
 	    while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
@@ -1553,7 +1564,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* parse PDF and find obj offsets */
     while ((rc = pdf_findobj(&pdf)) > 0) {
 	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
-	cli_dbgmsg("found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
+	cli_dbgmsg("cli_pdf: found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
     }
     if (pdf.nobjs)
 	pdf.nobjs--;
@@ -2276,7 +2287,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 			}
 		} else if(byte == 'z') {
 			if(quintet) {
-				cli_dbgmsg("ascii85decode: unexpected 'z'\n");
+				cli_dbgmsg("cli_pdf: ascii85decode: unexpected 'z'\n");
 				return -1;
 			}
 			*output++ = '\0';
@@ -2285,12 +2296,12 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 			*output++ = '\0';
 			ret += 4;
 		} else if(byte == EOF) {
-			cli_dbgmsg("ascii85decode: quintet %d\n", quintet);
+			cli_dbgmsg("cli_pdf: ascii85decode: quintet %d\n", quintet);
 			if(quintet) {
 				int i;
 
 				if(quintet == 1) {
-					cli_dbgmsg("ascii85Decode: only 1 byte in last quintet\n");
+					cli_dbgmsg("cli_pdf: ascii85Decode: only 1 byte in last quintet\n");
 					return -1;
 				}
 				for(i = quintet; i < 5; i++)
@@ -2304,7 +2315,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 			}
 			break;
 		} else if(!isspace(byte)) {
-			cli_dbgmsg("ascii85Decode: invalid character 0x%x, len %lu\n",
+			cli_dbgmsg("cli_pdf: ascii85Decode: invalid character 0x%x, len %lu\n",
 				byte & 0xFF, (unsigned long)len);
 			return -1;
 		}
