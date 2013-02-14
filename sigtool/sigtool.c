@@ -108,6 +108,7 @@ static const struct dblist_s {
     { "gdb",   1 },
     { "pdb",   1 },
     { "wdb",   0 },
+    { "crtdb", 1 },
 
     { NULL,	    0 }
 };
