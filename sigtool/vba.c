@@ -1021,7 +1021,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 		    /* build the full name */
 		    fname = (char *) cli_calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
 		    if(!fname){
-		        close(dd);
+		        closedir(dd);
 		        return -1;	    
 		    }	
 		    sprintf (fname, "%s"PATHSEP"%s", dirname, dent->d_name);
