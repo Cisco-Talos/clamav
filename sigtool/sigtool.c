@@ -2227,6 +2227,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    }
 	    memcpy(&buff[len], decoded, hlen);
 	    len += hlen;
+	    free(decoded);
 	}
     }
     free(hexcpy);
