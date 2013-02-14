@@ -1,6 +1,6 @@
 /*
  *  Interface to libclamunrar
- *  Copyright (C) 2007 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Authors: Trog, Torok Edvin, Tomasz Kojm
  *
  *  This library is free software; you can redistribute it and/or
@@ -419,7 +419,6 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 		snprintf(filename, 1024, "%s"PATHSEP"%lu.cmt", state->comment_dir, state->file_count);
 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 		if(ofd < 0) {
-		    free(comment_header);
 		    unrar_dbgmsg("UNRAR: ERROR: Failed to open output file\n");
 		} else {
 		    unrar_dbgmsg("UNRAR: Copying file comment (not packed)\n");
