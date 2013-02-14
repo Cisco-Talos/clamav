@@ -499,12 +499,12 @@ static int mszip_inflate(struct mszip_stream *zip) {
 	}
 	else {
 	  code -= 257;
-	  if (code > 29) return INF_ERR_LITCODE;
+	  if (code >= 29) return INF_ERR_LITCODE;
 	  MSZIP_READ_BITS_T(length, mszip_lit_extrabits[code]);
 	  length += mszip_lit_lengths[code];
 
 	  MSZIP_READ_HUFFSYM(DISTANCE, code);
-	  if (code > 30) return INF_ERR_DISTCODE;
+	  if (code >= 30) return INF_ERR_DISTCODE;
 	  MSZIP_READ_BITS_T(distance, mszip_dist_extrabits[code]);
 	  distance += mszip_dist_offsets[code];
 
