@@ -1619,7 +1619,11 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 	  cli_dbgmsg("cli_pdf: unable to allocate memory...\n");
 	  return NULL;
 	}
-	cli_hex2str_to(start, s, q - start);
+	if (cli_hex2str_to(start, s, q - start)) {
+	    cli_dbgmsg("cli_pdf: %s has bad hex value\n", key);
+	    free(s);
+	    return NULL;
+	}
 	s[(q-start)/2] = '\0';
 	if (slen)
 	    *slen = (q - start)/2;
