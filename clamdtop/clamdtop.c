@@ -538,6 +538,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		unsigned port = 0;
 		char *name, *pt = strdup(soname);
 		const char *host = pt;
+        memset(&server, 0x00, sizeof(struct sockaddr_in));
 		conn->tcp=1;
 		name = strchr(pt, ':');
 		if(name) {
@@ -560,7 +561,6 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		server.sin_family = AF_INET;
 		server.sin_port = htons(port);
 		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
-        memset(server.sin_zero, 0x00, sizeof(server.sin_zero));
 		print_con_info(conn, "Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
 		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
 			perror("connect");
