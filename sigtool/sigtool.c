@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
@@ -365,7 +365,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     memset(pass, 0, sizeof(pass));
     memset(buff, 0, sizeof(buff));
 
-    if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0) {
+    if((bread = recv(sockd, buff, sizeof(buff)-1, 0)) > 0) {
 	if(!strstr(buff, "Signature:")) {
 	    mprintf("!getdsig: Error generating digital signature\n");
 	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
