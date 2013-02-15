@@ -2379,7 +2379,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     char c;
 
     cli_crt_init(&ca);
-    memset(ca.issuer, '\xca', sizeof(ca.issuer));
+    memset(ca.issuer, 0xca, sizeof(ca.issuer));
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
