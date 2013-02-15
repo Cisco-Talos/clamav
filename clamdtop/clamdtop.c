@@ -360,14 +360,13 @@ static void header(void)
 static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 		unsigned max, int blink)
 {
-	int y,x,z;
+	int y,x,z = 0;
 	unsigned len  = 39;
 	unsigned start = 1;
 	unsigned activ = max ? ((live-idle)*(len - start - 2) + (max/2)) / max : 0;
 	unsigned dim   = max ? idle*(len - start - 2) / max : 0;
 	unsigned rem = len - activ - dim - start-2;
         
-	z=0;
 	assert(activ + 2 < len && activ+dim + 2 < len && activ+dim+rem + 2 < len && "Invalid values");
 	mvwaddch(win, i, start, '[' | A_BOLD);
 	wattron(win, A_BOLD | COLOR_PAIR(activ_color));
@@ -387,7 +386,7 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 			z = x - 2;         
 		}	
 		mvwaddch(win, y, z, '>' | A_BLINK | COLOR_PAIR(red_color));
-		move(y, x);
+		move(y, z);
 	}
 }
 
