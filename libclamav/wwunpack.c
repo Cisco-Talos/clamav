@@ -225,7 +225,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
     for(i=0 ; i<scount ; i++) {
 	  if (!CLI_ISCONTAINED(exe, exesz, structs, 0x28)) {
 	    cli_dbgmsg("WWPack: structs pointer out of bounds\n");
-	    return 1;
+	    return CL_EFORMAT;
 	  }
 
       cli_writeint32(structs+8, sects[i].vsz);
@@ -236,7 +236,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
     }
 	if (!CLI_ISCONTAINED(exe, exesz, structs, 0x28)) {
 	  cli_dbgmsg("WWPack: structs pointer out of bounds\n");
-	  return 1;
+	  return CL_EFORMAT;
 	}
 
     memset(structs, 0, 0x28);
