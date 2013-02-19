@@ -860,8 +860,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             }
 
 		    if(parent) {
-                if (parent->isBlacklisted)
+                if (parent->isBlacklisted) {
                     isBlacklisted = 1;
+                    cli_dbgmsg_internal("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
+                }
 
 			x509->codeSign &= parent->codeSign;
 			x509->timeSign &= parent->timeSign;
@@ -1299,7 +1301,6 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
 	cli_dbgmsg("asn1_parse_mscat: catalog succesfully parsed\n");
     if (isBlacklisted) {
-        cli_dbgmsg("asn1_parse_mscat: executable containes revoked cert.\n");
         return 1;
     }
 	return 0;

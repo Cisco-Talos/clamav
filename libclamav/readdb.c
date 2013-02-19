@@ -2510,6 +2510,11 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 goto end;
         }
 
+        if (strlen(tokens[0]))
+            ca.name = tokens[0];
+        else
+            ca.name = NULL;
+
         if (strlen(tokens[9]))
             ca.not_before = atoi(tokens[8]);
         ca.not_after = (-1U)>>1;
