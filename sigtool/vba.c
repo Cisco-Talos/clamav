@@ -54,12 +54,35 @@ typedef struct mac_token2_tag
 
 cli_ctx *convenience_ctx(int fd) {
     cli_ctx *ctx;
-    if(!(ctx = malloc(sizeof(*ctx))) ||
-       !(ctx->engine = cl_engine_new()) ||
-       !(ctx->fmap = cli_malloc(sizeof(struct F_MAP *))) ||
-       !(*ctx->fmap = fmap(fd, 0, 0))) {
-	printf("malloc failed\n");
-	return NULL; /* and leak */
+    struct cl_engine *engine;
+
+    ctx = malloc(sizeof(*ctx));
+    if(!ctx){
+	printf("ctx malloc failed\n");
+        return NULL;
+    }
+
+    ctx->engine = engine = cl_engine_new();
+    if(!(ctx->engine)){	    
+	printf("engine malloc failed\n");
+        free(ctx);
+	return NULL;
+    }	
+
+    ctx->fmap = cli_malloc(sizeof(struct F_MAP *));
+    if(!(ctx->fmap)){
+	printf("fmap malloc failed\n");
+        free(engine);
+        free(ctx);
+	return NULL;
+    }
+
+    if(!(*ctx->fmap = fmap(fd, 0, 0))){
+	printf("fmap failed\n");
+	free(ctx->fmap);
+	free(engine);
+        free(ctx);
+	return NULL;
     }
     return ctx;
 }
@@ -990,13 +1013,17 @@ static int sigtool_scandir (const char *dirname, int hex_output)
     int ret = CL_CLEAN, desc;
     cli_ctx *ctx;
 
-
+    fname = NULL;
     if ((dd = opendir (dirname)) != NULL) {
 	while ((dent = readdir (dd))) {
 	    if (dent->d_ino) {
 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = (char *) cli_calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
+		    if(!fname){
+		        closedir(dd);
+		        return -1;	    
+		    }	
 		    sprintf (fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
@@ -1016,12 +1043,14 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				dir = cli_gentemp (tmpdir);
 				if(!dir) {
 				    printf("cli_gentemp() failed\n");
+				    free(fname);
 				    closedir (dd);
 				    return -1;
 				}
 
 				if (mkdir (dir, 0700)) {
 				    printf ("Can't create temporary directory %s\n", dir);
+				    free(fname);
 				    closedir (dd);
 				    free(dir);
 				    return CL_ETMPDIR;
@@ -1029,12 +1058,14 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 				if ((desc = open (fname, O_RDONLY|O_BINARY)) == -1) {
 				    printf ("Can't open file %s\n", fname);
+				    free(fname);
 				    closedir (dd);
 				    free(dir);
 				    return 1;
 				}
 
 				if(!(ctx = convenience_ctx(desc))) {
+				    free(fname);	
 				    close(desc);
 				    closedir(dd);
 				    free(dir);
@@ -1046,6 +1077,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    cli_rmdirs (dir);
 				    free (dir);
 				    closedir (dd);
+				    free(fname);
 				    return ret;
 				}
 
