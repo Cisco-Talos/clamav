@@ -311,6 +311,10 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	unrar_dbgmsg("UNRAR: RAR main comment\n");
 	offset = lseek(fd, 0, SEEK_CUR);
 	unrar_dbgmsg("UNRAR: Offset: %x\n", offset);
+	if(offset < 0){
+	    unrar_dbgmsg("UNRAR: Error Offset: %d\n", offset);
+	    offset = 0;
+	}
 	comment_header = read_header(fd, COMM_HEAD);
 	if(comment_header) {
 	    unrar_dbgmsg("UNRAR: Comment type: 0x%.2x\n", comment_header->head_type);
