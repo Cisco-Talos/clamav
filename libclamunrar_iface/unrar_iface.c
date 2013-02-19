@@ -313,7 +313,10 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	unrar_dbgmsg("UNRAR: Offset: %x\n", offset);
 	if(offset < 0){
 	    unrar_dbgmsg("UNRAR: Error Offset: %d\n", offset);
-	    offset = 0;
+	    free(main_hdr);
+	    free(state->comment_dir);
+	    free(unpack_data);
+	    return UNRAR_ERR;
 	}
 	comment_header = read_header(fd, COMM_HEAD);
 	if(comment_header) {
