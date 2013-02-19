@@ -447,7 +447,10 @@ static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
     char *tmpname;
     gzFile gz;
 
-    fd = dup(fmap_fd(map));
+    ret = fmap_fd(map);
+    if(ret < 0)
+	return CL_EDUP;
+    fd = dup(ret);
     if(fd < 0)
 	return CL_EDUP;
 
@@ -1148,14 +1151,16 @@ static int cli_scanscript(cli_ctx *ctx)
     struct cli_matcher *groot;
     struct cli_ac_data gmdata, tmdata;
     struct cli_ac_data *mdata[2];
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map;
     size_t at = 0;
     unsigned int viruses_found = 0;
-    uint64_t curr_len = map->len;
+    uint64_t curr_len;
 
     if (!ctx || !ctx->engine->root)
         return CL_ENULLARG;
 
+    map = *ctx->fmap;
+    curr_len = map->len;
     groot = ctx->engine->root[0];
     troot = ctx->engine->root[7];
     maxpatlen = troot ? troot->maxpatlen : 0;
@@ -2826,8 +2831,9 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     size_t old_real_len = map->real_len;
     int ret = CL_CLEAN;
 
-    cli_dbgmsg("cli_map_scandesc: [%ld, +%ld), [%ld, +%ld)\n",
-	       old_off, old_len, offset, length);
+    cli_dbgmsg("cli_map_scandesc: [%ld, +%lu), [%ld, +%lu)\n",
+	       (long)old_off, (unsigned long)old_len,
+	       (long)offset, (unsigned long)length);
     if (offset < 0 || offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
@@ -2835,8 +2841,8 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 
     if (!length) length = old_len - offset;
     if (length > old_len - offset) {
-	cli_dbgmsg("Data truncated: %ld -> %ld\n",
-		   length, old_len - offset);
+	cli_dbgmsg("Data truncated: %lu -> %lu\n",
+		   (unsigned long)length, old_len - offset);
 	length = old_len - offset;
     }
 
@@ -2854,8 +2860,11 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     if (CLI_ISCONTAINED(old_off, old_len, map->nested_offset, map->len)) {
 	ret = magic_scandesc(ctx, CL_TYPE_ANY);
     } else {
-	cli_warnmsg("internal map error: %ld, %ld; %ld, %ld\n", old_off, old_off + old_len,
-		    map->offset,map->nested_offset+map->len);
+	long long len1, len2;
+	len1 = old_off + old_len;
+        len2 = map->nested_offset + map->len;
+	cli_warnmsg("internal map error: %ld, %lld; %ld, %lld\n", old_off,
+		    len1, map->offset, len2);
     }
 
     ctx->fmap--;
