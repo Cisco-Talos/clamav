@@ -164,6 +164,8 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
 	    if(i->next)
 		i->next->prev = i->prev;
 	    cli_crt_clear(x509);
+        if ((x509->name))
+            free(x509->name);
 	    free(x509);
 	    m->items--;
 	    return;
