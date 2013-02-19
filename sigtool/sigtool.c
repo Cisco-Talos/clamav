@@ -1137,6 +1137,9 @@ static int cvdinfo(const struct optstruct *opts)
     mprintf("File: %s\n", pt);
 
     pt = strchr(cvd->time, '-');
+    if(!pt){
+        return -1;
+    }
     *pt = ':';
     mprintf("Build time: %s\n", cvd->time);
     mprintf("Version: %u\n", cvd->version);
