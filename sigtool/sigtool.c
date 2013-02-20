@@ -1138,6 +1138,7 @@ static int cvdinfo(const struct optstruct *opts)
 
     pt = strchr(cvd->time, '-');
     if(!pt){
+        free(cvd);
         return -1;
     }
     *pt = ':';
