@@ -89,7 +89,7 @@ static void context_safe(struct cli_bc_ctx *ctx)
     if (!ctx->hooks.match_counts)
 	ctx->hooks.match_counts = nomatch;
     if (!ctx->hooks.match_offsets)
-	ctx->hooks.match_counts = nooffsets;
+	ctx->hooks.match_offsets = nooffsets;
     if (!ctx->hooks.filesize)
 	ctx->hooks.filesize = &nofilesize;
     if (!ctx->hooks.pedata)
