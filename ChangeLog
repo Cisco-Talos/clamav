@@ -1,3 +1,8 @@
+Wed Feb 20 10:05:00 EDT 2013 (multiple)
+------------------------------------
+ * Bug reported by Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the
+ Google Security Team
+
 Tue Feb 5 19:38:35 EDT 2013 (dar)
 ------------------------------------
  * Add runtime enable/disable of SWF scanning
