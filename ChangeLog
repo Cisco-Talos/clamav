@@ -1,3 +1,8 @@
+Wed Feb 20 10:05:00 EDT 2012 (multiple)
+---------------------------------
+ * Bug reported by Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the
+ Google Security Team.
+
 Mon Sep 6 12:32:00 EDT 2012 (dar)
 ---------------------------------
  * libclamav: bb#5751 - cl_scansis() may returan a file descriptor instead
