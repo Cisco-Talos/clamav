@@ -263,6 +263,7 @@ msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
         break;
     case CL_MSG_WARN:
         logg ("~[LibClamAV] %s", msg);
+	break;
     default:
         logg ("*[LibClamAV] %s", msg);
         break;
