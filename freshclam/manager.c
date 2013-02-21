@@ -2300,6 +2300,9 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         nodb = 1;
 
     newfile = cli_gentemp (updtmpdir);
+    if(!newfile)
+        return FCE_MEM;
+
     if (nodb)
     {
         if (optget (opts, "PrivateMirror")->enabled)
@@ -2345,6 +2348,11 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         ret = 0;
 
         tmpdir = cli_gentemp (updtmpdir);
+	if(!tmpdir){
+	    free(newfile);
+	    return FCE_MEM;
+	}    
+
         maxattempts = optget (opts, "MaxAttempts")->numarg;
         for (i = currver + 1; i <= newver; i++)
         {
