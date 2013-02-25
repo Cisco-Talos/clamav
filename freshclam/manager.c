@@ -154,7 +154,7 @@ getclientsock (const char *localip, int prot)
         socketfd = socket (AF_INET, SOCK_STREAM, 0);
     if (socketfd < 0)
     {
-        logg ("!Can't create new socket\n");
+        logg ("!Can't create new socket: %s\n", strerror(errno));
         return -1;
     }
 
