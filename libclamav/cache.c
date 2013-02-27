@@ -535,9 +535,13 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     newnode = cs->first;
     while(newnode) {
-    	if(!newnode->right && !newnode->left)
-    	    break;
-    	newnode = newnode->next;
+        if(!newnode->right && !newnode->left)
+            break;
+        newnode = newnode->next;
+        if(newnode == newnode->next) {
+            cli_errmsg("cacheset_add: cache chain in a bad state\n");
+            return;
+        }
     }
     if(!newnode) {
 	cli_errmsg("cacheset_add: tree has got no end nodes\n");
@@ -647,13 +651,14 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
     if(cs->last == targetnode)
         cs->last = targetnode->prev;
 
-    /* Put targetnode at front of chain */
-    if(cs->first && (cs->first != targetnode)) {
-        cs->first->prev = targetnode;
+    /* Put targetnode at front of chain, if not there already */
+    if(cs->first != targetnode) {
+        targetnode->next = cs->first;
+        if(cs->first)
+            cs->first->prev = targetnode;
+        cs->first = targetnode;
     }
-    targetnode->next = cs->first;
     targetnode->prev = NULL;
-    cs->first = targetnode;
 }
 #endif /* USE_SPLAY */
 
