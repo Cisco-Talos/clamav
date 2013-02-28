@@ -129,7 +129,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe) {
 	    close(s);
 	    return -1;
 	}
-	if(getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
+	if(getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, (socklen_t *)&s_len) || s_err) {
 	    logg("*Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;

@@ -175,7 +175,7 @@ getclientsock (const char *localip, int prot)
         {
             char ipaddr[46];
 
-            if (bind (socketfd, res->ai_addr, res->ai_addrlen) != 0)
+            if (bind (socketfd, res->ai_addr, (socklen_t)res->ai_addrlen) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -218,7 +218,7 @@ getclientsock (const char *localip, int prot)
             client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
             if (bind
                 (socketfd, (struct sockaddr *) &client,
-                 sizeof (struct sockaddr_in)) != 0)
+                 (socklen_t)sizeof (struct sockaddr_in)) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -2099,7 +2099,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             return FCE_FAILEDUPDATE;
         }
 
-        if (pt = cli_strtok (dnsreply, field, ":"))
+        if ((pt = cli_strtok (dnsreply, field, ":")))
         {
             if (!cli_isnumber (pt))
             {

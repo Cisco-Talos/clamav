@@ -113,7 +113,7 @@ static int isremote(const struct optstruct *opts) {
       mainsa = NULL;
       return 0;
     }
-    ret = (bind(s, (struct sockaddr *)&testsock, sizeof(testsock)) != 0);
+    ret = (bind(s, (struct sockaddr *)&testsock, (socklen_t)sizeof(testsock)) != 0);
     closesocket(s);
     return ret;
 }

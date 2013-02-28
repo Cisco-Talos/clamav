@@ -427,7 +427,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    continue;
 
-	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
+	if(bind(sockfd, (struct sockaddr *) &server, (socklen_t)sizeof(struct sockaddr_in)) == -1)
 	    closesocket(sockfd);
 	else {
 	    bound = 1;
@@ -444,7 +444,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	mdprintf(odesc, "Can't find any free port. ERROR%c", term);
 	return -1;
     } else {
-	listen(sockfd, 1);
+	if (listen(sockfd, 1) == -1) {
+        logg("!ScanStream: listen() error on socket. Error returned is %s.\n", strerror(errno));
+        closesocket(sockfd);
+        return -1;
+    }
 	if(mdprintf(odesc, "PORT %u%c", port, term) <= 0) {
 	    logg("!ScanStream: error transmitting port.\n");
 	    closesocket(sockfd);
@@ -462,7 +466,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     }
 
     addrlen = sizeof(peer);
-    if((acceptd = accept(sockfd, (struct sockaddr *) &peer, &addrlen)) == -1) {
+    if((acceptd = accept(sockfd, (struct sockaddr *) &peer, (socklen_t *)&addrlen)) == -1) {
 	closesocket(sockfd);
 	mdprintf(odesc, "accept() ERROR%c", term);
 	logg("!ScanStream %u: accept() failed.\n", port);

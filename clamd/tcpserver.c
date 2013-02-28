@@ -68,7 +68,7 @@ int tcpserver(const struct optstruct *opts)
 	logg("!TCP: setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
     }
 
-    if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
+    if(bind(sockfd, (struct sockaddr *) &server, (socklen_t)sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
 	logg("!TCP: bind() error: %s\n", estr);
 	closesocket(sockfd);
