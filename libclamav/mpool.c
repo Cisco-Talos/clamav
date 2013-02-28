@@ -744,13 +744,13 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
     size_t len = strlen((const char*)hex);
 
     if (len&1) {
-	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %u)\n", hex, (unsigned)len);
+	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %lu)\n", hex, (unsigned long)len);
 	return NULL;
     }
 
     str = mpool_malloc(mp, (len/2) + 1);
     if (str == NULL) { /* oops, we have a memory pool allocation failure */
-	cli_errmsg("cli_mpool_hex2str(): Can't allocate memory (%lu bytes).\n", (unsigned int)(len/2 + 1));
+	cli_errmsg("cli_mpool_hex2str(): Can't allocate memory (%lu bytes).\n", (unsigned long)(len/2 + 1));
 	return NULL;
     }
     if (cli_hex2str_to(hex, (char*)str, len) == -1) {
