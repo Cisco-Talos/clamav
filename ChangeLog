@@ -1,3 +1,7 @@
+Thu Feb 28 13:55:04 EDT 2013 (dar)
+------------------------------------
+ * libclamav/pe_icons.c: introduce LOGPARSEICONDETAILS define to reduce parseicon logging in default build
+
 Wed Feb 20 10:05:00 EDT 2013 (multiple)
 ------------------------------------
  * Bug reported by Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the
