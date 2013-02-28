@@ -68,7 +68,7 @@ static void conn_setup_mayfail(int may)
 	return;
     fail_unless_fmt(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
 
-    rc = connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock));
+    rc = connect(sockd, (struct sockaddr *)&nixsock, (socklen_t)sizeof(nixsock));
     fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
 
     signal(SIGPIPE, SIG_IGN);
@@ -91,7 +91,7 @@ static int conn_tcp(int port)
     server.sin_port = htons(port);
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    rc = connect(sd, (struct sockaddr *)&server, sizeof(server));
+    rc = connect(sd, (struct sockaddr *)&server, (socklen_t)sizeof(server));
     fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
     return sd;
 }

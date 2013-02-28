@@ -561,7 +561,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 		server.sin_port = htons(port);
 		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
 		print_con_info(conn, "Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
-		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
+		if (connect(s, (struct sockaddr *)&server, (socklen_t)sizeof(server))) {
 			perror("connect");
             close(s);
 			return -1;

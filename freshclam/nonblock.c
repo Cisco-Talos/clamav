@@ -76,7 +76,7 @@ connect_error (int sock)
     socklen_t optlen;
 
     optlen = sizeof (optval);
-    getsockopt (sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+    getsockopt (sock, SOL_SOCKET, SO_ERROR, &optval, (socklen_t *)&optlen);
 
     if (optval)
     {
