@@ -940,7 +940,7 @@ static void output_all(void)
 
 static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 {
-	char buf[1024];
+	char buf[1025];
 	size_t j;
 	struct timeval tv;
 	unsigned conn_dt;
@@ -1012,11 +1012,11 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	stats->conn_sec = conn_dt%60;
 	stats->current_q = 0;
 	buf[sizeof(buf) - 1] = 0x0;
-	while(recv_line(conn, buf, sizeof(buf)) && strcmp("END\n",buf) != 0) {
+	while(recv_line(conn, buf, sizeof(buf)-1) && strcmp("END\n",buf) != 0) {
 		char *val = strchr(buf, ':');
 
 		if(buf[0] == '\t') {
-			parse_queue(conn, buf, sizeof(buf), idx);
+			parse_queue(conn, buf, sizeof(buf)-1, idx);
 			continue;
 		} else if(val)
 			*val++ = '\0';
