@@ -247,7 +247,10 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if(ret == UNRAR_PASSWD) {
 	    cli_dbgmsg("RAR: Encrypted main header\n");
 	    if(DETECT_ENCRYPTED) {
-		lseek(desc, 0, SEEK_SET);
+		if (lseek(desc, 0, SEEK_SET) == -1) {
+            cli_dbgmsg("RAR: call to lseek() failed\n");
+            return CL_ESEEK;
+        }
 		ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 		if(ret != CL_VIRUS)
 		    cli_append_virus(ctx, "Heuristics.Encrypted.RAR");
@@ -294,7 +297,10 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    ret = CL_EFORMAT;
 
 	if(rar_state.ofd > 0) {
-	    lseek(rar_state.ofd,0,SEEK_SET);
+	    if (lseek(rar_state.ofd,0,SEEK_SET) == -1) {
+            cli_dbgmsg("RAR: Call to lseek() failed\n");
+            ret = CL_ESEEK;
+        }
 	    rc = cli_magic_scandesc(rar_state.ofd,ctx);
 	    close(rar_state.ofd);
 	    if(!ctx->engine->keeptmp) 
@@ -396,7 +402,9 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	   cli_dbgmsg("ARJ: cli_unarj_extract_file Error: %s\n", cl_strerror(ret));
 	}
 	if (metadata.ofd >= 0) {
-	    lseek(metadata.ofd, 0, SEEK_SET);
+	    if (lseek(metadata.ofd, 0, SEEK_SET) == -1) {
+            cli_dbgmsg("ARJ: call to lseek() failed\n");
+        }
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
 	    close(metadata.ofd);
 	    if (rc == CL_VIRUS) {
@@ -2406,7 +2414,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 			    }
 			}
 		    } while (len > 0);
-		    lseek(desc, 0, SEEK_SET);
+		    if (lseek(desc, 0, SEEK_SET) == -1) {
+                cli_dbgmsg("magic_scandesc: call to lseek() failed\n");
+            }
 		}
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 		if (tmpname) {

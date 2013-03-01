@@ -1951,7 +1951,14 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	free(dest);
-	lseek(ndesc, 0, SEEK_SET);
+	if (lseek(ndesc, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("UPX/FSG: lseek() failed\n");
+        close(ndesc);
+        CLI_TMPUNLK();
+        free(tempfile);
+        SHA_RESET;
+        return CL_ESEEK;
+    }
 
 	if(ctx->engine->keeptmp)
 	    cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
