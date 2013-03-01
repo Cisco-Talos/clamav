@@ -167,8 +167,10 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
   cli_dbgmsg("in unspin\n");
 
-  if ((spinned = (char *) cli_malloc(sections[sectcnt].rsz)) == NULL )
+  if ((spinned = (char *) cli_malloc(sections[sectcnt].rsz)) == NULL ) {
+      cli_dbgmsg("spin: Unable to allocate memory for spinned\n");
     return 1;
+  }
 
   memcpy(spinned, src + sections[sectcnt].raw, sections[sectcnt].rsz); 
   ep = spinned + nep - sections[sectcnt].rva;
@@ -390,8 +392,10 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
   }
 
   cli_dbgmsg("spin: Compression bitmap is %x\n", bitmap);
-  if ( (sects= (char **) cli_malloc(sectcnt*sizeof(char *))) == NULL )
+  if ( (sects= (char **) cli_malloc(sectcnt*sizeof(char *))) == NULL ) {
+      cli_dbgmsg("spin: malloc(%d) failed\n", sectcnt*sizeof(char *));
     return 1;
+  }
 
   len = 0;
   for (j=0; j<sectcnt; j++) {
@@ -458,6 +462,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 	}
       } else {
 	/* malloc failed but i'm too deep into this crap to quit without leaking more :( */
+          cli_dbgmsg("spin: memory allocation failed, continuing anyway\n");
 	blobsz+=sections[j].rsz;
       }
     } else {

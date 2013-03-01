@@ -103,8 +103,10 @@ tableInsert(table_t *table, const char *key, int value)
 			(tableEntry *)cli_malloc(sizeof(tableEntry));
 	}
 
-	if(table->tableLast == NULL)
+	if(table->tableLast == NULL) {
+        cli_dbgmsg("tableInsert: Unable to allocate memory for table\n");
 		return -1;
+    }
 
 	table->tableLast->next = NULL;
 	table->tableLast->key = cli_strdup(key);

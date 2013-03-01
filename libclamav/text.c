@@ -146,6 +146,7 @@ textCopy(const text *t_head)
 		}
 
 		if(last == NULL) {
+            cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
 			if(first)
 				textDestroy(first);
 			return NULL;
@@ -247,8 +248,10 @@ textMove(text *t_head, text *t)
 			return NULL;
 		}
 		t_head = (text *)cli_malloc(sizeof(text));
-		if(t_head == NULL)
+		if(t_head == NULL) {
+            cli_errmsg("textMove: Unable to allocate memory for head\n");
 			return NULL;
+        }
 		t_head->t_line = t->t_line;
 		t_head->t_next = t->t_next;
 		t->t_line = NULL;
@@ -269,8 +272,10 @@ textMove(text *t_head, text *t)
 	 * empty, the rest is moved by a simple pointer reassignment
 	 */
 	t_head->t_next = (text *)cli_malloc(sizeof(text));
-	if(t_head->t_next == NULL)
+	if(t_head->t_next == NULL) {
+        cli_errmsg("textMove: Unable to allocate memory for head->next\n");
 		return NULL;
+    }
 	t_head = t_head->t_next;
 
 	assert(t_head != NULL);

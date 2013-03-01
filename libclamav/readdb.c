@@ -554,8 +554,10 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
     root = engine->root[0];
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loaddb: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -629,6 +631,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loadidb: CAn't allocate memory for buffer_cpy\n");
 	    mpool_free(engine->mempool, matcher);
 	    return CL_EMEM;
 	}
@@ -903,8 +906,10 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return ret;
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loadndb: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -1405,8 +1410,10 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	return ret;
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(sizeof(buffer))))
+	if(!(buffer_cpy = cli_malloc(sizeof(buffer)))) {
+        cli_errmsg("cli_loadldb: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
 	if(buffer[0] == '#')
@@ -1940,8 +1947,10 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     }
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loadhash: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -2044,8 +2053,10 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loadmd: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -2197,8 +2208,10 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 
     if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        cli_errmsg("cli_loadcdb: Can't allocate memory for buffer_cpy\n");
 	    return CL_EMEM;
+    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -2734,14 +2747,14 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	    if(cli_strbcasestr(dent->d_name, ".ign") || cli_strbcasestr(dent->d_name, ".ign2")) {
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
-		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
+		    cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
 		if(ret) {
-		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
+		    cli_errmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
 		    return ret;
@@ -2755,6 +2768,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     dbfile = (char *) cli_malloc(strlen(dirname) + 20);
     if(!dbfile) {
 	closedir(dd);
+    cli_errmsg("cli_loaddbdir: Can't allocate memory for dbfile\n");
 	return CL_EMEM;
     }
 
@@ -2832,14 +2846,14 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
-		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
+		    cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
 		if(ret) {
-		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
+		    cli_errmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
 		    return ret;
@@ -2964,6 +2978,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 #ifdef _WIN32
 		dbstat->statdname = (char **) cli_realloc2(dbstat->statdname, dbstat->entries * sizeof(char *));
 		if(!dbstat->statdname) {
+            cli_errmsg("cl_statinidir: Can't allocate memory for dbstat->statdname\n");
 		    cl_statfree(dbstat);
 		    closedir(dd);
 		    return CL_EMEM;
@@ -2972,6 +2987,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
                 fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 32);
 		if(!fname) {
+            cli_errmsg("cl_statinidir: Cant' allocate memory for fname\n");
 		    cl_statfree(dbstat);
 		    closedir(dd);
 		    return CL_EMEM;
@@ -2980,6 +2996,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 #ifdef _WIN32
 		dbstat->statdname[dbstat->entries - 1] = (char *) cli_malloc(strlen(dent->d_name) + 1);
 		if(!dbstat->statdname[dbstat->entries - 1]) {
+            cli_errmsg("cli_statinidir: Can't allocate memory for dbstat->statdname\n");
 		    cl_statfree(dbstat);
 		    closedir(dd);
 		    return CL_EMEM;
@@ -3036,6 +3053,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
 		if(!fname) {
+            cli_errmsg("cl_statchkdir: can't allocate memory for fname\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}

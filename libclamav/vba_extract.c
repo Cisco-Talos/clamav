@@ -104,8 +104,10 @@ get_unicode_name(const char *name, int size, int big_endian)
 		return NULL;
 
 	newname = (char *)cli_malloc(size * 7 + 1);
-	if(newname == NULL)
+	if(newname == NULL) {
+        cli_errmsg("get_unicode_name: Unable to allocate memory for newname\n");
 		return NULL;
+    }
 
 	if((!big_endian) && (size & 0x1)) {
 		cli_dbgmsg("get_unicode_name: odd number of bytes %d\n", size);
@@ -854,8 +856,10 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
 
 	msize = count * sizeof(struct macro);
 	m = cli_malloc(msize);
-	if(m == NULL)
+	if(m == NULL) {
+        cli_errmsg("word_read_macro_entry: Unable to allocate memory for 'm'\n");
 		return FALSE;
+    }
 
 	if(cli_readn(fd, m, msize) != msize) {
 		free(m);
@@ -889,6 +893,7 @@ word_read_macro_info(int fd, macro_info_t *macro_info)
 	macro_info->entries = (macro_entry_t *)cli_malloc(sizeof(macro_entry_t) * macro_info->count);
 	if(macro_info->entries == NULL) {
 		macro_info->count = 0;
+        cli_errmsg("word_read_macro_info: Unable to allocate memory for macro_info->entries\n");
 		return NULL;
 	}
 	if(!word_read_macro_entry(fd, macro_info)) {
@@ -1123,6 +1128,7 @@ cli_wm_readdir(int fd)
 				m++;
 			}
 		} else {
+            cli_errmsg("cli_wm_readdir: Unable to allocate memory for vba_project\n");
 			free(vba_project->name);
 			free(vba_project->colls);
 			free(vba_project->dir);
@@ -1152,8 +1158,10 @@ cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 		return NULL;
 
 	buff = (unsigned char *)cli_malloc(len);
-	if(buff == NULL)
+	if(buff == NULL) {
+        cli_errmsg("cli_wm_decrypt_macro: Unable to allocate memory for buff\n");
 		return NULL;
+    }
 
 	if(!seekandread(fd, offset, SEEK_SET, buff, len)) {
 		free(buff);
@@ -1241,8 +1249,10 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 
 	ret = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
 
-	if(ret == NULL)
+	if(ret == NULL) {
+        cli_errmsg("create_vba_project: Unable to allocate memory for vba project structure\n");
 		return NULL;
+    }
 
 	ret->name = (char **)cli_malloc(sizeof(char *) * record_count);
 	ret->colls = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
@@ -1259,6 +1269,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 		if(ret->offset)
 			free(ret->offset);
 		free(ret);
+        cli_errmsg("create_vba_project: Unable to allocate memory for vba project elements\n");
 		return NULL;
 	}
 	ret->count = record_count;

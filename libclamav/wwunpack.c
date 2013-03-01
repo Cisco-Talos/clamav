@@ -94,7 +94,10 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
       break;
     }
     cli_dbgmsg("WWP: src: %x, szd: %x, srcend: %x - %x\n", src, szd, srcend, srcend+4-szd);
-    if (!(compd = cli_malloc(szd))) break;
+    if (!(compd = cli_malloc(szd))) {
+        cli_dbgmsg("WWPack: Unable to allocate memory for compd\n");
+        break;
+    }
     memcpy(compd, unpd, szd);
     memset(unpd, -1, szd); /*FIXME*/
     ccur=compd;

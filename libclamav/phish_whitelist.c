@@ -52,8 +52,10 @@ int init_whitelist(struct cl_engine* engine)
 {
 	if(engine) {
 		engine->whitelist_matcher = (struct regex_matcher *) mpool_malloc(engine->mempool, sizeof(struct regex_matcher));
-		if(!engine->whitelist_matcher)
+		if(!engine->whitelist_matcher) {
+            cli_errmsg("Phish_whitelist: Unable to allocate memory for whitelist_match\n");
 			return CL_EMEM;
+        }
 #ifdef USE_MPOOL
 		((struct regex_matcher *)(engine->whitelist_matcher))->mempool = engine->mempool;
 #endif

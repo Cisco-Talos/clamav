@@ -264,8 +264,10 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 {
 	const size_t prefix_len = strlen(prefix);
 	char* ret = cli_malloc(prefix_len + end - begin + 1);
-	if(!ret)
+	if(!ret) {
+        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatonated\n");
 		return CL_EMEM;
+    }
 	strncpy(ret, prefix, prefix_len);
 	strncpy(ret+prefix_len, begin, end-begin);
 	ret[prefix_len+end-begin]='\0';
@@ -278,8 +280,10 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 static int string_assign_dup(struct string* dest,const char* start,const char* end)
 {
 	char* ret  = cli_malloc(end-start+1);
-	if(!ret)
+	if(!ret) {
+        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_dup\n");
 		return CL_EMEM;
+    }
 	strncpy(ret,start,end-start);
 	ret[end-start]='\0';
 
@@ -860,8 +864,10 @@ int phishing_init(struct cl_engine* engine)
 	struct phishcheck* pchk;
 	if(!engine->phishcheck) {
 		pchk = engine->phishcheck = mpool_malloc(engine->mempool, sizeof(struct phishcheck));
-		if(!pchk)
+		if(!pchk) {
+            cli_errmsg("Phishcheck: Unable to allocate memory for initialization\n");
 			return CL_EMEM;
+        }
 		pchk->is_disabled=1;
 	}
 	else {

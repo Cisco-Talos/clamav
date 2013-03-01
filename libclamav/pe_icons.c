@@ -776,8 +776,10 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     unsigned int edge_avg[6], edge_x[6]={0,0,0,0,0,0}, edge_y[6]={0,0,0,0,0,0}, noedge_avg[6], noedge_x[6]={0,0,0,0,0,0}, noedge_y[6]={0,0,0,0,0,0};
     double *sobel;
 
-    if(!(tmp = cli_malloc(side*side*4*2)))
-	return CL_EMEM;
+    if(!(tmp = cli_malloc(side*side*4*2))) {
+        cli_errmsg("getmetrics: Unable to allocate memory for tmp %u\n", (side*side*4*2));
+        return CL_EMEM;
+    }
 
     memset(res, 0, sizeof(*res));
 
@@ -939,6 +941,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 #ifdef USE_FLOATS
     sobel = cli_malloc(side * side * sizeof(double));
     if(!sobel) {
+        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %u\n", (side * side * sizeof(double)));
 	free(tmp);
 	return CL_EMEM;
     }

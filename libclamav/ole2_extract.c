@@ -138,6 +138,7 @@ static char *get_property_name2(char *name, int size)
 
 	newname = (char *) cli_malloc(size*7);
 	if (!newname) {
+        cli_errmsg("OLE2 [get_property_name2]: Unable to allocate memory for newname: %u\n", size*7);
 		return NULL;
 	}
 	j=0;
@@ -179,7 +180,10 @@ static char *get_property_name(char *name, int size) {
   if (csize<=0) return NULL;
 
   newname = cname = (char *)cli_malloc(size);
-  if (!newname) return NULL;
+  if (!newname) {
+      cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size);
+      return NULL;
+  }
 
   while(--csize) {
     uint16_t lo, hi, u=cli_readint16(oname)-0x3800;
@@ -582,6 +586,7 @@ static int handler_writefile(ole2_header_t *hdr, property_t *prop, const char *d
 
 	buff = (unsigned char *) cli_malloc(1 << hdr->log2_big_block_size);
 	if (!buff) {
+        cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
 		close(ofd);
 		return CL_BREAK;
 	}
