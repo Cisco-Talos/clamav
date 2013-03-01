@@ -167,7 +167,10 @@ static void vba56_test_middle(int fd)
 	if((memcmp(test_middle, middle1_str, MIDDLE_SIZE) != 0) &&
 	   (memcmp(test_middle, middle2_str, MIDDLE_SIZE) != 0)) {
 		cli_dbgmsg("middle not found\n");
-		lseek(fd, -MIDDLE_SIZE, SEEK_CUR);
+		if (lseek(fd, -MIDDLE_SIZE, SEEK_CUR) == -1) {
+            cli_dbgmsg("vba_test_middle: call to lseek() failed\n");
+            return;
+        }
 	} else
 		cli_dbgmsg("middle found\n");
 }
@@ -188,7 +191,10 @@ vba_read_project_strings(int fd, int big_endian)
 			break;
 
 		if (length < 6) {
-			lseek(fd, -2, SEEK_CUR);
+			if (lseek(fd, -2, SEEK_CUR) == -1) {
+                cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
+                return CL_ESEEK;
+            }
 			break;
 		}
 		if(length > buflen) {
@@ -203,10 +209,17 @@ vba_read_project_strings(int fd, int big_endian)
 		}
 
 		offset = lseek(fd, 0, SEEK_CUR);
+        if (offset == -1) {
+            cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
+            return CL_ESEEK;
+        }
 
 		if(cli_readn(fd, buf, length) != (int)length) {
 			cli_dbgmsg("read name failed - rewinding\n");
-			lseek(fd, offset, SEEK_SET);
+			if (lseek(fd, offset, SEEK_SET) == -1) {
+                cli_dbgmsg("call to lseek() in read name failed\n");
+                return CL_ESEEK;
+            }
 			break;
 		}
 		name = get_unicode_name((const char *)buf, length, big_endian);
@@ -215,7 +228,13 @@ vba_read_project_strings(int fd, int big_endian)
 		if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
 		   (strchr("ghcd", name[2]) == NULL)) {
 			/* Not a string */
-			lseek(fd, -(length+2), SEEK_CUR);
+			if (lseek(fd, -(length+2), SEEK_CUR) == -1) {
+                cli_dbgmsg("call to lseek() after get_unicode_name has failed\n");
+                if (name)
+                    free(name);
+
+                return CL_ESEEK;
+            }
 			if(name)
 				free(name);
 			break;
@@ -233,10 +252,17 @@ vba_read_project_strings(int fd, int big_endian)
 		ret++;
 
 		if ((length != 0) && (length != 65535)) {
-			lseek(fd, -2, SEEK_CUR);
+			if (lseek(fd, -2, SEEK_CUR) == -1) {
+                cli_dbgmsg("call to lseek() has failed\n");
+                return CL_ESEEK;
+            }
 			continue;
 		}
 		offset = lseek(fd, 10, SEEK_CUR);
+        if (offset == -1) {
+            cli_dbgmsg("call to lseek() has failed\n");
+            return CL_ESEEK;
+        }
 		cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
 		vba56_test_middle(fd);
 	}
@@ -299,7 +325,10 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	}
 	if (i > j) {
 		big_endian = TRUE;
-		lseek(fd, seekback, SEEK_SET);
+		if (lseek(fd, seekback, SEEK_SET) == -1) {
+            cli_dbgmsg("vba_readdir: call to lseek() while guessing big-endian has failed\n");
+            return NULL;
+        }
 		cli_dbgmsg("vba_readdir: Guessing big-endian\n");
 	} else {
 		cli_dbgmsg("vba_readdir: Guessing little-endian\n");
@@ -318,16 +347,26 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 		close(fd);
 		return NULL;
 	}
-	if (ffff != 0xFFFF)
-		lseek(fd, 1, SEEK_CUR);
+	if (ffff != 0xFFFF) {
+		if (lseek(fd, 1, SEEK_CUR) == -1) {
+            cli_dbgmsg("call to lseek() while checking alignment error has failed\n");
+            close(fd);
+            return NULL;
+        }
+    }
 
 	if(!read_uint16(fd, &ffff, big_endian)) {
 		close(fd);
 		return NULL;
 	}
 
-	if(ffff != 0xFFFF)
-		lseek(fd, ffff, SEEK_CUR);
+	if(ffff != 0xFFFF) {
+		if (lseek(fd, ffff, SEEK_CUR) == -1) {
+            cli_dbgmsg("call to lseek() while checking alignment error has failed\n");
+            close(fd);
+            return NULL;
+        }
+    }
 
 	if(!read_uint16(fd, &ffff, big_endian)) {
 		close(fd);
@@ -337,7 +376,11 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	if(ffff == 0xFFFF)
 		ffff = 0;
 
-	lseek(fd, ffff + 100, SEEK_CUR);
+	if (lseek(fd, ffff + 100, SEEK_CUR) == -1) {
+        cli_dbgmsg("call to lseek() failed\n");
+        close(fd);
+        return NULL;
+    }
 
 	if(!read_uint16(fd, &record_count, big_endian)) {
 		close(fd);
