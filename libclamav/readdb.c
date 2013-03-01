@@ -631,7 +631,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
-        cli_errmsg("cli_loadidb: CAn't allocate memory for buffer_cpy\n");
+        cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
 	    mpool_free(engine->mempool, matcher);
 	    return CL_EMEM;
 	}
