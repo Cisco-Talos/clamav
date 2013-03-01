@@ -570,7 +570,12 @@ int main(int argc, char **argv)
 #ifdef C_BSD	    
 	/* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
 	for(ret=0;ret<nlsockets;ret++) {
-		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK);
+		if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
+            logg("!fcntl for lsockets[] failed\n");
+            close(lsockets[ret]);
+            ret = 1;
+            break;
+        }
 	}
 #endif
 	gengine = engine;
@@ -583,7 +588,12 @@ int main(int argc, char **argv)
 	gengine = NULL;
 #ifdef C_BSD
 	for(ret=0;ret<nlsockets;ret++) {
-		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK);
+		if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
+            logg("!fcntl for lsockets[] failed\n");
+            close(lsockets[ret]);
+            ret = 1;
+            break;
+        }
 	}
 #endif
 	if(!debug_mode)
