@@ -214,8 +214,10 @@ static int load_actions(table_t* t)
 static int rtf_object_begin(struct rtf_state* state,cli_ctx* ctx,const char* tmpdir)
 {
 	struct rtf_object_data* data = cli_malloc(sizeof(*data));
-	if(!data)
+	if(!data) {
+        cli_errmsg("rtf_object_begin: Unable to allocate memory for object data\n");
 		return CL_EMEM;
+    }
 	data->fd = -1;
 	data->partial = 0;
 	data->has_partial = 0;
@@ -329,6 +331,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    else
 								    data->desc_name = cli_malloc(data->desc_len+1);
 							    if(!data->desc_name) {
+                                    cli_errmsg("rtf_object_process: Unable to allocate memory for data->desc_name\n");
 								    return CL_EMEM;
 							    }
 							    data->internal_state = WAIT_DESC;
@@ -524,8 +527,10 @@ int cli_scanrtf(cli_ctx *ctx)
 	stack.warned = 0;
 	stack.states = cli_malloc(stack.stack_size*sizeof(*stack.states));
 
-	if(!stack.states)
+	if(!stack.states) {
+        cli_errmsg("ScanRTF: Unable to allocate memory for stack states\n");
 		return CL_EMEM;
+    }
 
 	if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	    return CL_EMEM;

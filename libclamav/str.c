@@ -323,8 +323,10 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
 	return NULL;
     }
     buffer = cli_malloc(j-i+1);
-    if(!buffer)
-	return NULL;
+    if(!buffer) {
+        cli_errmsg("cli_strtok: Unable to allocate memory for buffer\n");
+        return NULL;
+    }
     strncpy(buffer, line+i, j-i);
     buffer[j-i] = '\0';
 
@@ -497,8 +499,10 @@ char *cli_unescape(const char *str)
 	/* unescaped string is at most as long as original,
 	 * it will usually be shorter */
 	R = cli_malloc(len + 1);
-	if(!R)
+	if(!R) {
+        cli_errmsg("cli_unescape: Unable to allocate memory for string\n");
 		return NULL;
+    }
 	for(k=0;k < len;k++) {
 		unsigned char c = str[k];
 		if (str[k] == '%') {

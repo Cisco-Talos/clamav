@@ -1390,8 +1390,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    return CL_EMALFDB;
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
-	if (!bcfunc->dbgnodes)
+	if (!bcfunc->dbgnodes) {
+        cli_errmsg("Unable to allocate memory for dbg nodes: %s\n", num*sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
+    }
 	for (i=0;i<num;i++) {
 	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
 	    if (!ok)
@@ -2042,8 +2044,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     int ret=CL_SUCCESS;
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
-    if (!gmap)
-	return CL_EMEM;
+    if (!gmap) {
+        cli_errmsg("interpreter: Unable to allocate memory for global map: %u\n", bc->num_globals*sizeof(*gmap));
+        return CL_EMEM;
+    }
     for (j=0;j<bc->num_globals;j++) {
 	uint16_t ty = bc->globaltys[j];
 	unsigned align = typealign(bc, ty);
@@ -2055,6 +2059,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     if (bc->numGlobalBytes) {
 	bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
 	if (!bc->globalBytes) {
+        cli_errmsg("interpreter: Unable to allocate memory for globalBytes: %u\n", bc->numGlobalBytes);
         free(gmap);
 	    return CL_EMEM;
     }
@@ -2122,6 +2127,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	if (!map) {
+        cli_errmsg("interpreter: Unable to allocate memory for map: %u\n", sizeof(*map)*totValues);
         free(gmap);
 	    return CL_EMEM;
     }

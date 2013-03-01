@@ -179,8 +179,10 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		struct cli_ac_data mdata;
 		struct cli_ac_result *res = NULL;
 
-		if(!buffer)
+		if(!buffer) {
+            cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
 			return CL_EMEM;
+        }
 
 		strncpy(buffer,real_url,real_len);
 		buffer[real_len]= (!is_whitelist && hostOnly) ? '/' : ':';
@@ -369,6 +371,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 	pat->virname = mpool_malloc(matcher->mempool, 1);
 	if(!pat->virname) {
 		free(pat);
+        cli_errmsg("add_hash: Unable to allocate memory for path->virname\n");
 		return CL_EMEM;
 	}
 	*pat->virname = fl;
@@ -592,6 +595,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->pattern = mpool_malloc(matcher->mempool, sizeof(new->pattern[0])*len);
 	if(!new->pattern) {
 		mpool_free(matcher->mempool, new);
+        cli_errmsg("add_newsuffix: Unable to allocate memory for new->pattern\n");
 		return CL_EMEM;
 	}
 	for(i=0;i<len;i++)
@@ -629,8 +633,10 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 	const struct cli_element *el;
 
 	assert(matcher);
-	if(!regex)
+	if(!regex) {
+        cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
 		return CL_EMEM;
+    }
 	regex->pattern = iregex->pattern ? cli_strdup(iregex->pattern) : NULL;
 	regex->preg = iregex->preg;
 	regex->nxt = NULL;
@@ -675,11 +681,15 @@ static regex_t *new_preg(struct regex_matcher *matcher)
 {
 	regex_t *r;
 	matcher->all_pregs = mpool_realloc(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
-	if(!matcher->all_pregs)
+	if(!matcher->all_pregs) {
+        cli_errmsg("new_preg: Unable to reallocate memory\n");
 		return NULL;
+    }
 	r = mpool_malloc(matcher->mempool, sizeof(*r));
-	if(!r)
+	if(!r) {
+        cli_errmsg("new_preg: Unable to allocate memory\n");
 		return NULL;
+    }
 	matcher->all_pregs[matcher->regex_cnt-1] = r;
 	return r;
 }

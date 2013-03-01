@@ -149,7 +149,10 @@ uint32_t unspack(const char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t 
     return 1; /* Should be ~15KB, if it's so big it's prolly just not nspacked */
     
   cli_dbgmsg("unsp: table size = %d\n", tablesz);
-  if (!(table = cli_malloc(tablesz))) return 1;
+  if (!(table = cli_malloc(tablesz))) {
+      cli_dbgmsg("unspack: Unable to allocate memory for table\n");
+      return 1;
+  }
   
   dsize = cli_readint32(start_of_stuff+9);
   ssize = cli_readint32(start_of_stuff+5);

@@ -2437,6 +2437,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
 				buf = cli_malloc(strlen(ptr) + 1);
 				if(buf == NULL) {
+                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %u\n", strlen(ptr) + 1);
 					if(copy)
 						free(copy);
 					return -1;
@@ -2545,6 +2546,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 		case CONTENT_DISPOSITION:
 			buf = cli_malloc(strlen(ptr) + 1);
 			if(buf == NULL) {
+                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %u\n", strlen(ptr) + 1);
 				if(copy)
 					free(copy);
 				return -1;
@@ -2621,8 +2623,10 @@ rfc822comments(const char *in, char *out)
 
 	if(out == NULL) {
 		out = cli_malloc(strlen(in) + 1);
-		if(out == NULL)
+		if(out == NULL) {
+            cli_errmsg("rfc822comments: Unable to allocate memory for out %u\n", strlen(in) + 1);
 			return NULL;
+        }
 	}
 
 	backslash = commentlevel = inquote = 0;
@@ -2687,8 +2691,10 @@ rfc2047(const char *in)
 	cli_dbgmsg("rfc2047 '%s'\n", in);
 	out = cli_malloc(strlen(in) + 1);
 
-	if(out == NULL)
+	if(out == NULL) {
+        cli_errmsg("rfc2047: Unable to allocate memory for out %u\n", strlen(in) + 1);
 		return NULL;
+    }
 
 	pout = out;
 

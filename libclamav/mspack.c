@@ -603,12 +603,14 @@ struct mszip_stream *mszip_init(int ofd,
 
   /* allocate decompression state */
   if (!(zip = cli_calloc(1, sizeof(struct mszip_stream)))) {
+      cli_errmsg("mszip_stream: Unable to allocate zip buffer\n");
     return NULL;
   }
 
   /* allocate input buffer */
   zip->inbuf  = cli_malloc((size_t) input_buffer_size);
   if (!zip->inbuf) {
+      cli_errmsg("mszip_stream: Unable to allocate input buffer\n");
     free(zip);
     return NULL;
   }
@@ -1783,12 +1785,14 @@ struct qtm_stream *qtm_init(int ofd,
   /* allocate decompression window and input buffer */
   qtm->window = cli_malloc((size_t) window_size);
   if (!qtm->window) {
+      cli_errmsg("qtm_init: Unable to allocate decompression window\n");
     free(qtm);
     return NULL;
   }
 
   qtm->inbuf  = cli_malloc((size_t) input_buffer_size);
   if (!qtm->inbuf) {
+      cli_errmsg("qtm_init: Unable to allocate input buffer\n");
     free(qtm->window);
     free(qtm);
     return NULL;

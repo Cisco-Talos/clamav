@@ -451,8 +451,10 @@ const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char
 					PROFILE_INSERT(s, tries);
 				}
 				thekey = cli_malloc(len+1);
-				if(!thekey)
+				if(!thekey) {
+                    cli_errmsg("hashtab.c: Unable to allocate memory for thekey\n");
 					return NULL;
+                }
 				strncpy(thekey, key, len+1);
 				thekey[len]='\0';
 				element->key = thekey;
@@ -662,11 +664,13 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	hs->keys = cli_malloc(initial_capacity * sizeof(*hs->keys));
 	hs->mempool = NULL;
 	if(!hs->keys) {
+        cli_errmsg("hashtab.c: Uable to allocate memory for hs->keys\n");
 		return CL_EMEM;
 	}
 	hs->bitmap = cli_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));
 	if(!hs->bitmap) {
 		free(hs->keys);
+        cli_errmsg("hashtab.c: Unable to allocate memory for hs->bitmap\n");
 		return CL_EMEM;
 	}
 	return 0;
@@ -685,11 +689,13 @@ int cli_hashset_init_pool(struct cli_hashset* hs, size_t initial_capacity, uint8
 	hs->mempool = mempool;
 	hs->keys = mpool_malloc(mempool, initial_capacity * sizeof(*hs->keys));
 	if(!hs->keys) {
+        cli_errmsg("hashtab.c: Unable to allocate memory pool for hs->keys\n");
 		return CL_EMEM;
 	}
 	hs->bitmap = mpool_calloc(mempool, initial_capacity >> 5, sizeof(*hs->bitmap));
 	if(!hs->bitmap) {
 		mpool_free(mempool, hs->keys);
+        cli_errmsg("hashtab.c: Unable to allocate/initialize memory for hs->keys\n");
 		return CL_EMEM;
 	}
 	return 0;
@@ -820,6 +826,7 @@ ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array)
 	}
 	*array = arr = cli_malloc(hs->count * sizeof(*arr));
 	if(!arr) {
+        cli_errmsg("hashtab.c: Unable to allocate memory for array\n");
 		return CL_EMEM;
 	}
 
@@ -927,8 +934,10 @@ int  cli_map_setvalue(struct cli_map *m, const void* value, int32_t valuesize)
 	if (v->value)
 	    free(v->value);
 	v->value = cli_malloc(valuesize);
-	if (!v->value)
-	    return -CL_EMEM;
+	if (!v->value) {
+        cli_errmsg("hashtab.c: Unable to allocate  memory for v->value\n");
+        return -CL_EMEM;
+    }
 	memcpy(v->value, value, valuesize);
 	v->valuesize = valuesize;
     }

@@ -1694,6 +1694,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -1793,6 +1794,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -2040,6 +2042,7 @@ int cli_scanpe(cli_ctx *ctx)
 	CLI_UNPSIZELIMITS("PEspin", fsize);
 
 	if((spinned = (char *) cli_malloc(fsize)) == NULL) {
+        cli_errmsg("PESping: Unable to allocate memory for spinned %u\n", fsize);
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -2103,6 +2106,7 @@ int cli_scanpe(cli_ctx *ctx)
 	    char *spinned;
 
 	    if((spinned = (char *) cli_malloc(fsize)) == NULL) {
+            cli_errmsg("yc: Unable to allocate memory for spinned %u\n", fsize);
 	      free(exe_sections);
 	      return CL_EMEM;
 	    }
@@ -2250,7 +2254,10 @@ int cli_scanpe(cli_ctx *ctx)
 	CLI_UNPSIZELIMITS("NsPack", MAX(ssize,dsize));
 
 	if (!ssize || !dsize || dsize != exe_sections[0].vsz) break;
-	if (!(dest=cli_malloc(dsize))) break;
+	if (!(dest=cli_malloc(dsize))) {
+        cli_errmsg("NsPack: Unable to allocate memory for dest %u\n", dsize);
+        break;
+    }
 	/* memset(dest, 0xfc, dsize); */
 
 	if(!(src = fmap_need_off(map, start_of_stuff, ssize))) {

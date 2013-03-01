@@ -78,8 +78,10 @@ static struct node* make_node(enum node_type type, struct node *left, struct nod
 			return left;
 	}
 	n = cli_malloc(sizeof(*n));
-	if(!n)
+	if(!n) {
+        cli_errmsg("make_node: Unable to allocate memory for new node\n");
 		return NULL;
+    }
 	n->type = type;
 	n->parent = NULL;
 	n->u.children.left = left;
@@ -99,8 +101,10 @@ static struct node *dup_node(struct node *p)
 	if(!p)
 		return NULL;
 	d = cli_malloc(sizeof(*d));
-	if(!d)
+	if(!d) {
+        cli_errmsg("dup_node: Unable to allocate memory for duplicate node\n");
 		return NULL;
+    }
 	d->type = p->type;
 	d->parent = NULL;
 	switch(p->type) {
@@ -110,6 +114,7 @@ static struct node *dup_node(struct node *p)
 		case leaf_class:
 			d->u.leaf_class_bitmap = cli_malloc(32);
 			if(!d->u.leaf_class_bitmap) {
+                cli_errmsg("make_node: Unable to allocate memory for leaf class\n");
 				free(d);
 				return NULL;
 			}
@@ -132,8 +137,10 @@ static struct node *dup_node(struct node *p)
 static struct node *make_charclass(uint8_t *bitmap)
 {
 	struct node *v = cli_malloc(sizeof(*v));
-	if(!v)
+	if(!v) {
+        cli_errmsg("make_charclass: Unable to allocate memory for character class\n");
 		return NULL;
+    }
 	v->type = leaf_class;
 	v->parent = NULL;
 	v->u.leaf_class_bitmap = bitmap;
@@ -178,8 +185,10 @@ static uint8_t* parse_char_class(const char *pat, size_t *pos)
 	unsigned char range_start=0;
 	int hasprev = 0;
 	uint8_t* bitmap = cli_malloc(32);
-	if(!bitmap)
+	if(!bitmap) {
+        cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n");
 		return NULL;
+    }
 	if (pat[*pos]=='^') {
 		memset(bitmap,0xFF,32);/*match chars not in brackets*/
 		++*pos;

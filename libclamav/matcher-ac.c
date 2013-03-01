@@ -1353,8 +1353,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				    if(res) {
 					newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
-					if(!newres)
+					if(!newres) {
+                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
 					    return CL_EMEM;
+                    }
 					newres->virname = pt->virname;
 					newres->customdata = pt->customdata;
 					newres->next = *res;
@@ -1404,8 +1406,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				if(res) {
 				    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
-				    if(!newres)
-					return CL_EMEM;
+				    if(!newres) {
+                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                        return CL_EMEM;
+                    }
 				    newres->virname = pt->virname;
 				    newres->customdata = pt->customdata;
 				    newres->offset = realoff;

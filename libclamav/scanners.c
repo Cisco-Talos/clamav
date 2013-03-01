@@ -135,6 +135,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    if(!fname) {
 			closedir(dd);
+            cli_dbgmsg("cli_scandir: Unable to allocate memory for filename\n");
 			return CL_EMEM;
 		    }
 
@@ -1016,6 +1017,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		    /* build the full name */
 		    fullname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    if(!fullname) {
+                cli_dbgmsg("cli_vba_scandir: Unable to allocate memory for fullname\n");
 			ret = CL_EMEM;
 			break;
 		    }

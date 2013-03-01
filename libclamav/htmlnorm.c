@@ -174,6 +174,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 
 	chunk = (unsigned char *) cli_malloc(max_len);
 	if (!chunk) {
+        cli_errmsg("readchunk: Unable to allocate memory for chunk\n");
 		return NULL;
 	}
 
@@ -520,8 +521,10 @@ static inline void html_tag_contents_done(tag_arguments_t *tags,int idx, struct 
 	unsigned char *p;
 	cont->contents[cont->pos++] = '\0';
 	p = cli_malloc(cont->pos);
-	if(!p)
+	if(!p) {
+        cli_errmsg("html_tag_contents_done: Unable to allocate memory for p\n");
 		return;
+    }
 	memcpy(p, cont->contents, cont->pos);
 	tags->contents[idx-1] = p;
 	cont->pos = 0;
@@ -702,6 +705,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 		file_buff_o2 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_o2) {
+            cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_o2\n");
 			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
@@ -721,6 +725,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			close(file_buff_o2->fd);
 			free(file_buff_o2);
 			file_buff_o2 = file_buff_text = NULL;
+            cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_text\n");
 			goto abort;
 		}
 
@@ -1596,6 +1601,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if (dirname) {
 					file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 					if (!file_tmp_o1) {
+                        cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
 						goto abort;
 					}
 					snprintf(filename, 1024, "%s"PATHSEP"rfc2397", dirname);

@@ -604,8 +604,10 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 	struct cl_settings *settings;
 
     settings = (struct cl_settings *) malloc(sizeof(struct cl_settings));
-    if(!settings)
-	return NULL;
+    if(!settings) {
+        cli_errmsg("cl_engine_settings_copy: Unable to allocate memory for settings %u\n", sizeof(struct cl_settings));
+        return NULL;
+    }
 
     settings->ac_only = engine->ac_only;
     settings->ac_mindepth = engine->ac_mindepth;
@@ -929,6 +931,7 @@ cli_rmdirs(const char *name)
 	path = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
 
 	if(path == NULL) {
+        cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(name) + strlen(dent->d_name) + 2);
 	    closedir(dd);
 	    return -1;
 	}
@@ -987,6 +990,7 @@ int cli_rmdirs(const char *dirname)
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 			if(!path) {
+                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
 			    closedir(dd);
 			    return -1;
 			}
@@ -1058,11 +1062,13 @@ bitset_t *cli_bitset_init(void)
 	
 	bs = cli_malloc(sizeof(bitset_t));
 	if (!bs) {
+        cli_errmsg("cli_bitset_init: Unable to allocate memory for bs %u\n", sizeof(bitset_t));
 		return NULL;
 	}
 	bs->length = BITSET_DEFAULT_SIZE;
 	bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
 	if (!bs->bitset) {
+        cli_errmsg("cli_bitset_init: Unable to allocate memory for bs->bitset %u\n", BITSET_DEFAULT_SIZE);
 	    free(bs);
 	    return NULL;
 	}

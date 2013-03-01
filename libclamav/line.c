@@ -72,8 +72,10 @@ lineCreate(const char *data)
 	const size_t size = strlen(data);
 	line_t *ret = (line_t *)cli_malloc(size + 2);
 
-	if(ret == NULL)
-		return (line_t *)NULL;
+    if(ret == NULL) {
+        cli_errmsg("lineCreate: Unable to allocate memory for ret\n");
+        return (line_t *)NULL;
+    }
 
 	ret[0] = (char)1;
 	/*strcpy(&ret[1], data);*/

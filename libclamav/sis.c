@@ -714,6 +714,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 		}
 
 		if (!(dst=cli_malloc(uusize))) {
+            cli_dbgmsg("SIS: OOM\n");
 		  free(src);
 		  break;
 		}

@@ -955,7 +955,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    if (obj->flags & (1 << OBJ_FILTER_AH)) {
 		ascii_decoded = cli_malloc(length/2 + 1);
 		if (!ascii_decoded) {
-		    cli_errmsg("Cannot allocate memory for asciidecode\n");
+		    cli_errmsg("Cannot allocate memory for ascii_decoded\n");
 		    rc = CL_EMEM;
 		    break;
 		}
@@ -965,7 +965,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	    } else if (obj->flags & (1 << OBJ_FILTER_A85)) {
 		ascii_decoded = cli_malloc(length*5);
 		if (!ascii_decoded) {
-		    cli_errmsg("Cannot allocate memory for asciidecode\n");
+		    cli_errmsg("Cannot allocate memory for ascii_decoded\n");
 		    rc = CL_EMEM;
 		    break;
 		}
@@ -1535,8 +1535,10 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 	q--;
 	len  = q - start;
 	s0 = s = cli_malloc(len + 1);
-	if (!s)
-	    return NULL;
+	if (!s) {
+        cli_errmsg("pdf_readstring: Unable to allocate buffer\n");
+        return NULL;
+    }
 	end = start + len;
         if (noescape) {
             memcpy(s0, start, len);
@@ -1729,8 +1731,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    } else {
 		pdf->keylen = 32;
 		pdf->key = cli_malloc(32);
-		if (!pdf->key)
-		    return;
+		if (!pdf->key) {
+            cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
+            return;
+        }
 		aes_decrypt(UE, &n, pdf->key, result2, 32, 0);
 		dbg_printhex("cli_pdf: Candidate encryption key", pdf->key, pdf->keylen);
 	    }
