@@ -144,6 +144,10 @@ static unrar_fileheader_t *read_block(int fd, header_type hdr_type)
 
     for (;;) {
 	offset = lseek(fd, 0, SEEK_CUR);
+    if (offset == -1) {
+        unrar_dbgmsg("UNRAR: seek: call to lseek() failed in read_block\n");
+        return NULL;
+    }
 	file_header = read_header(fd, FILE_HEAD);
 	if(!file_header)
 	    return NULL;
@@ -310,6 +314,13 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	unrar_comment_header_t *comment_header;
 	unrar_dbgmsg("UNRAR: RAR main comment\n");
 	offset = lseek(fd, 0, SEEK_CUR);
+    if (offset == -1) {
+        unrar_dbgmsg("UNRAR: seek: lseek() call failed in unrar_open\n");
+        free(main_hdr);
+        free(state->comment_dir);
+        free(unpack_data);
+        return UNRAR_ERR;
+    }
 	unrar_dbgmsg("UNRAR: Offset: %x\n", offset);
 	if(offset < 0){
 	    unrar_dbgmsg("UNRAR: Error Offset: %d\n", offset);
@@ -352,7 +363,17 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	    }
 	    free(comment_header);
 	}
-	lseek(fd, offset, SEEK_SET);
+	if (lseek(fd, offset, SEEK_SET) == -1) {
+        unrar_dbgmsg("UNRAR: seek: call to lseek() failed in unrar_open: %ld\n", offset);
+        free(main_hdr);
+        free(comment_header);
+        ppm_destructor(&unpack_data->ppm_data);
+        rar_init_filters(unpack_data);
+        unpack_free_data(unpack_data);
+        free(unpack_data);
+        free(state->comment_dir);
+        return UNRAR_ERR;
+    }
     }
 
     if(main_hdr->head_size > SIZEOF_NEWMHD) {
