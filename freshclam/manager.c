@@ -1831,7 +1831,8 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
     {
     case 0:
         close (pipefd[0]);
-        dup2 (pipefd[1], 2);
+        if (dup2 (pipefd[1], 2) == -1)
+            logg("^dup2() failed: %s\n", strerror(errno));
         exit (test_database (file, newdb, bytecode));
     case -1:
         close (pipefd[0]);
