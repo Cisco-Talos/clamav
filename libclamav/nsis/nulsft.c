@@ -512,7 +512,11 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset) {
         ret = cli_nsis_unpack(&nsist, ctx);
 	if (ret == CL_SUCCESS) {
 	  cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
-	  lseek(nsist.ofd, 0, SEEK_SET);
+	  if (lseek(nsist.ofd, 0, SEEK_SET) == -1) {
+          cli_dbgmsg("NSIS: call to lseek() failed\n");
+          free(nsist.dir);
+        return CL_ESEEK;
+      }
 	  if(nsist.fno == 1)
 	    ret=cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	  else

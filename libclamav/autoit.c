@@ -379,7 +379,11 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       cli_dbgmsg("autoit: file extracted to %s\n", tempfile);
     else 
       cli_dbgmsg("autoit: file successfully extracted\n");
-    lseek(i, 0, SEEK_SET);
+    if (lseek(i, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("autoit: call to lseek() has failed\n");
+        close(i);
+        return CL_ESEEK;
+    }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp)
@@ -896,7 +900,11 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       cli_dbgmsg("autoit: %s extracted to %s\n", (script)?"script":"file", tempfile);
     else 
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
-    lseek(i, 0, SEEK_SET);
+    if (lseek(i, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("autoit: call to lseek() has failed\n");
+        close(i);
+        return CL_ESEEK;
+    }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp) 

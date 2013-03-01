@@ -502,7 +502,10 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     if (ctx->ctx && cli_updatelimits(ctx->ctx, ctx->written))
 	return -1;
     ctx->written = 0;
-    lseek(ctx->outfd, 0, SEEK_SET);
+    if (lseek(ctx->outfd, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("bytecode: call to lseek() has failed\n");
+        return CL_ESEEK;
+    }
     cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
     cctx = (cli_ctx*)ctx->ctx;
     if (cctx) {

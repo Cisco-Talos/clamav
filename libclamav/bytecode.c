@@ -161,8 +161,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	    if(fd >= 0) {
 		ret = cli_scandesc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
 		if (ret == CL_CLEAN) {
-		    lseek(fd, 0, SEEK_SET);
-		    ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
+		    if (lseek(fd, 0, SEEK_SET) == -1)
+                cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
+            else
+                ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
 		}
 		close(fd);
 	    }

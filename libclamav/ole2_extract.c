@@ -788,7 +788,10 @@ static int handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cl
     }
   }
 
-  lseek(ofd, 0, SEEK_SET);
+  if (lseek(ofd, 0, SEEK_SET) == -1) {
+    return CL_ESEEK;
+  }
+
   ret=cli_magic_scandesc(ofd, ctx);
   close(ofd);
   free(buff);
