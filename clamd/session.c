@@ -192,7 +192,7 @@ int command(client_conn_t *conn, int *virus)
     struct cl_engine *engine = conn->engine;
     unsigned int options = conn->options;
     const struct optstruct *opts = conn->opts;
-    int type = -1; /* TODO: make this enum */
+    enum scan_type type = TYPE_INIT;
     int maxdirrec;
     int ret = 0;
     int flags = CLI_FTW_STD;

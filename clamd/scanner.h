@@ -21,16 +21,14 @@
 #ifndef __SCANNER_H
 #define __SCANNER_H
 
-#define TYPE_SCAN	0
-#define TYPE_CONTSCAN	1
-#define TYPE_MULTISCAN	2
-
 #include <sys/types.h>
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "thrmgr.h"
 #include "session.h"
+
+enum scan_type { TYPE_INIT = -1, TYPE_SCAN = 0, TYPE_CONTSCAN = 1, TYPE_MULTISCAN = 2 };
 
 struct scan_cb_data {
     int scantype;
