@@ -2262,16 +2262,18 @@ static void emax_reached(cli_ctx *ctx) {
 #define CALL_PRESCAN_CB(scanfn)	                                                     \
     if(ctx->engine->scanfn) {				\
 	perf_start(ctx, PERFT_PRECB);                                                        \
-	switch(ctx->engine->scanfn(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {	\
+	switch(ctx->engine->scanfn(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {            \
 	case CL_BREAK:                                                                       \
 	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by "#scanfn" callback\n");                \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
+	    ctx->hook_lsig_matches = old_hook_lsig_matches;                                  \
 	    ret_from_magicscan(CL_CLEAN);                                                    \
 	case CL_VIRUS:                                                                       \
 	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by "#scanfn" callback\n");                \
 	    cli_append_virus(ctx, "Detected.By.Callback");		                     \
 	    perf_stop(ctx, PERFT_PRECB);                                                     \
-	    ret_from_magicscan(cli_checkfp(hash, hashed_size, ctx));                          \
+	    ctx->hook_lsig_matches = old_hook_lsig_matches;                                  \
+	    ret_from_magicscan(cli_checkfp(hash, hashed_size, ctx));                         \
 	case CL_CLEAN:                                                                       \
 	    break;                                                                           \
 	default:                                                                             \
@@ -2315,6 +2317,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	emax_reached(ctx);
         early_ret_from_magicscan(CL_CLEAN);
     }
+    old_hook_lsig_matches = ctx->hook_lsig_matches;
 
     perf_start(ctx, PERFT_FT);
     if(type == CL_TYPE_ANY)
@@ -2337,7 +2340,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     perf_stop(ctx, PERFT_CACHE);
     hashed_size = (*ctx->fmap)->len;
-    old_hook_lsig_matches = ctx->hook_lsig_matches;
     ctx->hook_lsig_matches = NULL;
 
     if(!(ctx->options&~CL_SCAN_ALLMATCHES) || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
