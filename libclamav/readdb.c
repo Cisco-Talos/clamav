@@ -2597,7 +2597,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".cud")) {
 	ret = cli_cvdload(fs, engine, signo, options, 2, filename, 0);
 
-    } else if (cli_strbcasestr(dbname, ".crtdb")) {
+    } else if (cli_strbcasestr(dbname, ".crb")) {
         ret = cli_loadcrt(fs, engine, dbio);
 
     } else if(cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
