@@ -60,7 +60,7 @@
 	cli_strbcasestr(ext, ".cud")   ||	\
 	cli_strbcasestr(ext, ".cdb")   ||	\
 	cli_strbcasestr(ext, ".cat")   ||	\
-	cli_strbcasestr(ext, ".crtdb")   ||	\
+	cli_strbcasestr(ext, ".crb")   ||	\
 	cli_strbcasestr(ext, ".idb")		\
     )
 

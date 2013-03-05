@@ -110,7 +110,7 @@ static const struct dblist_s {
     { "gdb",   1 },
     { "pdb",   1 },
     { "wdb",   0 },
-    { "crtdb", 1 },
+    { "crb", 1 },
 
     { NULL,	    0 }
 };
@@ -1201,7 +1201,8 @@ static int listdir(const char *dirname, const regex_t *regex)
 	     cli_strbcasestr(dent->d_name, ".cdb") ||
 	     cli_strbcasestr(dent->d_name, ".cbc") ||
 	     cli_strbcasestr(dent->d_name, ".cld") ||
-	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+	     cli_strbcasestr(dent->d_name, ".cvd") ||  
+	     cli_strbcasestr(dent->d_name, ".crb"))) {
 
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
@@ -1325,6 +1326,22 @@ static int listdb(const char *filename, const regex_t *regex)
 	    mprintf("%s\n", start);
 	}
 
+    } else if (cli_strbcasestr(filename, ".crb")) {
+        while (fgets(buffer, FILEBUFF, fh)) {
+            cli_chomp(buffer);
+            
+            if (buffer[0] == '#')
+                continue;
+
+            if (regex) {
+                if (!cli_regexec(regex, buffer, 0 , NULL, 0))
+                    mprintf("[%s] %s\n", dbname, buffer);
+
+                continue;
+            }
+            line++;
+            mprintf("%s\n", buffer);
+        }
     } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
