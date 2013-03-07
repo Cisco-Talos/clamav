@@ -1,9 +1,8 @@
-0.97.6
+0.97.7
 ------
-
-ClamAV 0.97.6 corrects two major bugs.  One is bb#5571, where an invalid return
-code was issued.  The other is 5252, where an error in processing certain data
-types occured.
+ClamAV 0.97.7 addresses several reported potential security bugs.  Thanks to
+Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the Google Security
+Team for finding and reporting these issues.
 
 --
 The ClamAV team (http://www.clamav.net/team)
