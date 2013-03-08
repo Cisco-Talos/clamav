@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2013 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
@@ -125,6 +125,10 @@ textrecordfield (const char * dbname)
     else if (!strcmp (dbname, "daily"))
     {
         return 2;
+    }
+    else if (!strcmp (dbname, "enhanced"))
+    {
+        return 8;
     }
     else if (!strcmp (dbname, "bytecode"))
     {
@@ -1785,7 +1789,7 @@ test_database (const char *newfile, const char *newdb, int bytecode)
     if ((ret =
          cl_load (newfile, engine, &newsigs,
                   CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE |
-                  CL_DB_PUA)) != CL_SUCCESS)
+                  CL_DB_PUA | CL_DB_ENHANCED)) != CL_SUCCESS)
     {
         logg ("!Failed to load new database: %s\n", cl_strerror (ret));
         cl_engine_free (engine);
@@ -2321,10 +2325,12 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                             mdat, logerr, can_whitelist, opts, attempt);
         }
         else
+        {
             ret =
                 getcvd (cvdfile, newfile, hostname, ip, localip, proxy, port,
                         user, pass, uas, newver, ctimeout, rtimeout, mdat,
                         logerr, can_whitelist, opts, attempt);
+        }
 
         if (ret)
         {
@@ -2978,6 +2984,39 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
         }
         else if (ret == 0)
             updated = 1;
+
+        if (optget(opts, "EnhancedSigs")->enabled) {
+            ret = updatedb("enhanced", hostname, ipaddr, &signo, opts,
+                           dnsreply, localip, outdated, &mdat, logerr, 0,
+                           attempt);
+            if (ret > 50) {
+                if (dnsreply)
+                    free (dnsreply);
+                if (newver)
+                    free (newver);
+                mirman_write ("mirrors.dat", dbdir, &mdat);
+                mirman_free (&mdat);
+                cli_rmdirs (updtmpdir);
+                return ret;
+            } else if (ret == 0) {
+                updated = 1;
+            }
+        }
+        else {
+            const char *enhanceddb = NULL;
+
+            if (!access("enhanced.cvd", R_OK))
+                enhanceddb = "enhanced.cvd";
+            else if (!access ("enhanced.cld", R_OK))
+                enhanceddb = "enhanced.cld";
+
+            if (enhanceddb) {
+                if (unlink (enhanceddb))
+                    logg ("^EnhancedSigs is disabled but can't remove old %s\n", enhanceddb);
+                else
+                    logg ("*%s removed\n", enhanceddb);
+             }
+        }
 
         if (!optget (opts, "SafeBrowsing")->enabled)
         {
