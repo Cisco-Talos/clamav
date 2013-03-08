@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -121,6 +121,7 @@ typedef enum {
 #define CL_DB_BYTECODE_UNSIGNED	0x8000
 #define CL_DB_UNSIGNED	    0x10000 /* internal */
 #define CL_DB_BYTECODE_STATS 0x20000
+#define CL_DB_ENHANCED      0x40000
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
