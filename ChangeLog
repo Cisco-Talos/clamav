@@ -1,3 +1,7 @@
+Fri Mar 8 17:48:34 EDT 2013 (dar)
+------------------------------------
+ * libclamav: SHA1/SHA256 handling changes and wildcard-size support
+
 Thu Mar 7 19:38:34 EDT 2013 (dar)
 ------------------------------------
  * sigtool: Add print-certs command to allow dumping certs without a scan
