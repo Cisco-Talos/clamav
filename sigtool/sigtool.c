@@ -59,6 +59,7 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
+#include "libclamav/sha1.h"
 #include "libclamav/sha256.h"
 #include "shared/tar.h"
 
@@ -72,8 +73,13 @@
 #include "libclamav/fmap.h"
 #include "libclamav/readdb.h"
 #include "libclamav/others.h"
+#include "libclamav/pe.h"
 
 #define MAX_DEL_LOOKAHEAD   5000
+
+//struct s_info info;
+short recursion = 0, bell = 0;
+short printinfected = 0, printclean = 1;
 
 static const struct dblist_s {
     const char *ext;
@@ -2779,6 +2785,123 @@ static int makediff(const struct optstruct *opts)
     return 0;
 }
 
+static int dumpcerts(const struct optstruct *opts)
+{
+    char * filename = NULL;
+    STATBUF sb;
+    const char * fmptr;
+    SHA1Context sha1;
+    struct cl_engine *engine;
+    cli_ctx ctx;
+    int fd, ret;
+    uint8_t shash1[SHA1_HASH_SIZE];
+
+    logg_file = NULL;
+
+    filename = optget(opts, "print-certs")->strarg;
+    if(!filename) {
+	mprintf("!dumpcerts: No filename!\n");
+        return -1;
+    }
+
+    /* build engine */
+    if(!(engine = cl_engine_new())) {
+	mprintf("!dumpcerts: Can't create new engine\n");
+	return -1;
+    }
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if(cli_initroots(engine, 0) != CL_SUCCESS) {
+	mprintf("!dumpcerts: cli_initroots() failed\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+	mprintf("!dumpcerts: Can't parse signature\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cl_engine_compile(engine) != CL_SUCCESS) {
+	mprintf("!dumpcerts: Can't compile engine\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    engine->dconf->pe |= PE_CONF_DUMPCERT;
+    cl_debug();
+
+    /* prepare context */
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.options = CL_SCAN_STDOPT;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = calloc(sizeof(fmap_t *), 1);
+    if(!ctx.fmap) {
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY);
+    if(fd < 0) {
+	mprintf("!dumpcerts: Can't open file %s!\n", filename);
+        cl_engine_free(engine);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+    if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+	free(ctx.fmap);
+	close(fd);
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
+    if(!fmptr) {
+        mprintf("!dumpcerts: fmap_need_off_once failed!\n");
+        free(ctx.fmap);
+        close(fd);
+        cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Generate SHA1 */
+    SHA1Init(&sha1);
+    SHA1Update(&sha1, fmptr, sb.st_size);
+    SHA1Final(&sha1, shash1);
+
+    ret = cli_checkfp_pe(&ctx, shash1);
+    
+    switch(ret) {
+        case CL_CLEAN:
+            mprintf("*dumpcerts: CL_CLEAN after cli_checkfp_pe()!\n");
+            break;
+        case CL_VIRUS:
+            mprintf("*dumpcerts: CL_VIRUS after cli_checkfp_pe()!\n");
+            break;
+        case CL_BREAK:
+            mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
+            break;
+        case CL_EFORMAT:
+            mprintf("!dumpcerts: Not a valid PE file!\n");
+            break;
+        default:
+            mprintf("!dumpcerts: Other error %d inside cli_checkfp_pe.\n", ret);
+            break;
+    }
+
+    /* Cleanup */
+    free(ctx.fmap);
+    close(fd);
+    cl_engine_free(engine);
+    return 0;
+}
+
 static void help(void)
 {
     mprintf("\n");
@@ -2806,6 +2929,7 @@ static void help(void)
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
+    mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --datadir=DIR				Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
@@ -2903,6 +3027,8 @@ int main(int argc, char **argv)
 	ret = makediff(opts);
     else if(optget(opts, "compare")->enabled)
 	ret = compareone(opts);
+    else if(optget(opts, "print-certs")->enabled)
+	ret = dumpcerts(opts);
     else if(optget(opts, "run-cdiff")->enabled)
 	ret = rundiff(opts);
     else if(optget(opts, "verify-cdiff")->enabled) {

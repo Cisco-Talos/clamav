@@ -141,6 +141,7 @@ CLAMAV_PRIVATE {
     cli_initroots;
     cli_scanbuff;
     cli_fmap_scandesc;
+    cli_checkfp_pe;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;
@@ -153,6 +154,9 @@ CLAMAV_PRIVATE {
     cli_ftw;
     cli_unlink;
     cli_writen;
+    SHA1Init;
+    SHA1Update;
+    SHA1Final;
     sha256_init;
     sha256_update;
     sha256_final;
