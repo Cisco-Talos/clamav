@@ -1,3 +1,7 @@
+Thu Mar 7 19:38:34 EDT 2013 (dar)
+------------------------------------
+ * sigtool: Add print-certs command to allow dumping certs without a scan
+
 Thu Feb 28 13:55:04 EDT 2013 (dar)
 ------------------------------------
  * libclamav/pe_icons.c: introduce LOGPARSEICONDETAILS define to reduce parseicon logging in default build
