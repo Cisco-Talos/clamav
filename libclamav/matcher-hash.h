@@ -29,13 +29,20 @@
 #include "hashtab.h"
 
 enum CLI_HASH_TYPE {
-    CLI_HASH_MD5,
+    CLI_HASH_MD5 = 0,
     CLI_HASH_SHA1,
     CLI_HASH_SHA256,
 
     /* new hash types go above this line */
     CLI_HASH_AVAIL_TYPES
 };
+
+#define CLI_HASHLEN_MD5 16
+#define CLI_HASHLEN_SHA1 20
+#define CLI_HASHLEN_SHA256 32
+#define CLI_HASHLEN_MAX 32
+
+#define cli_hashlength(t) ((t == CLI_HASH_MD5) ? CLI_HASHLEN_MD5 : ((t == CLI_HASH_SHA1) ? CLI_HASHLEN_SHA1 : CLI_HASHLEN_SHA256))
 
 struct cli_sz_hash {
     uint8_t *hash_array;
@@ -48,11 +55,17 @@ struct cli_hash_patt {
     struct cli_htu32 sizehashes[CLI_HASH_AVAIL_TYPES];
 };
 
+struct cli_hash_wild {
+    struct cli_sz_hash hashes[CLI_HASH_AVAIL_TYPES];
+};
+
 int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname);
 int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_TYPE type, uint32_t size, const char *virusname);
 void hm_flush(struct cli_matcher *root);
 int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type);
+int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type);
 int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size);
+int cli_hm_have_wild(const struct cli_matcher *root, enum CLI_HASH_TYPE type);
 void hm_free(struct cli_matcher *root);
 
 #endif

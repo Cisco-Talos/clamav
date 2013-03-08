@@ -201,10 +201,10 @@ attachment.exe: OK
 
     \section{Signature formats}
 
-    \subsection{MD5}
-    The easiest way to create signatures for ClamAV is to use MD5 checksums,
-    however this method can be only used against static malware. To create
-    a signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
+    \subsection{Hash-based signatures}
+    The easiest way to create signatures for ClamAV is to use filehash checksums,
+    however this method can be only used against static malware. To create a
+    MD5 signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
     \begin{verbatim}
 zolw@localhost:/tmp/test$ sigtool --md5 test.exe > test.hdb
 zolw@localhost:/tmp/test$ cat test.hdb 
@@ -238,16 +238,49 @@ Time: 0.024 sec (0 m 0 s)
     left in /tmp. Please keep in mind that a hash signature will stop
     matching as soon as a single byte changes in the target file.}
 
-    \subsection{MD5, PE section based}
-    You can create a MD5 signature for a specific section in a PE file.
+    \subsection{SHA1, SHA256}
+    ClamAV 0.98 has also added support for SHA1 and SHA256 file checksums.
+    The format is the same as for MD5 file checksum. 
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.hsb+ file. The format is:
+    \begin{verbatim}
+HashString:FileSize:MalwareName
+    \end{verbatim}
+
+    \subsection{PE section based}
+    You can create a hash signature for a specific section in a PE file.
     Such signatures shall be stored inside \verb+.mdb+ files in the
     following format:
     \begin{verbatim}
-PESectionSize:MD5:MalwareName
+PESectionSize:PESectionHash:MalwareName
     \end{verbatim}
     The easiest way to generate MD5 based section signatures is to extract
     target PE sections into separate files and then run sigtool with the
     option \verb+--mdb+
+
+    ClamAV 0.98 has also added support for SHA1 and SHA256 section based
+    signatures. The format is the same as for MD5 PE section based signatures.
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.msb+ file.
+
+    \subsection{Unknown size}
+    ClamAV 0.98 has also added support for hash signatures where the size
+    is not known but the hash is. It is much more performance-efficient to
+    use signatures with specific sizes, so be cautious when using this
+    feature. For these cases, the '*' character can be used in the size
+    field. To ensure proper backwards compatibility with older versions of
+    ClamAV, these signatures must have a minimum functional level of 73 or
+    higher. Signatures that use the wildcard size without this level set
+    will be rejected as malformed.
+    \begin{verbatim}
+Sample .hsb signature matching any size
+HashString:*:MalwareName:73
+
+Sample .msb signature matching any size
+*:PESectionHash:MalwareName:73
+    \end{verbatim}
 
     \subsection{Body-based signatures}
     ClamAV stores all body-based signatures in a hexadecimal format. In this
@@ -670,7 +703,10 @@ fileno:max depth
 
     \subsection{Whitelist databases}
     To whitelist a specific file use the MD5 signature format and place
-    it inside a database file with the extension of \verb+.fp+.\\
+    it inside a database file with the extension of \verb+.fp+.
+    To whitelist a specific file with the SHA1 or SHA256 file hash signature
+    format, place the signature inside a database file with the extension
+    of \verb+.sfp+.\\
 
     \noindent
     To whitelist a specific signature from the database you just add

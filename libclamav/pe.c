@@ -390,27 +390,6 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
     }
 }
 
-static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned char *digest) {
-    const void *hashme;
-    cli_md5_ctx md5;
-
-    if (s->rsz > CLI_MAX_ALLOCATION) {
-	cli_dbgmsg("cli_md5sect: skipping md5 calculation for too big section\n");
-	return 0;
-    }
-
-    if(!s->rsz) return 0;
-    if(!(hashme=fmap_need_off_once(map, s->raw, s->rsz))) {
-	cli_dbgmsg("cli_md5sect: unable to read section data\n");
-	return 0;
-    }
-
-    cli_md5_init(&md5);
-    cli_md5_update(&md5, hashme, s->rsz);
-    cli_md5_final(digest, &md5);
-    return 1;
-}
-
 static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats) {
     unsigned int err = 0, i;
     const uint8_t *resdir;
@@ -502,6 +481,100 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     fmap_unneed_ptr(map, oentry, entries*8);
 }
 
+static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigned char **digest, int * foundhash, int * foundwild)
+{
+    const void *hashme;
+    cli_md5_ctx md5;
+    SHA1Context sha1ctx;
+    SHA256_CTX sha256ctx;
+
+    if (s->rsz > CLI_MAX_ALLOCATION) {
+        cli_dbgmsg("cli_hashsect: skipping hash calculation for too big section\n");
+        return 0;
+    }
+
+    if(!s->rsz) return 0;
+    if(!(hashme=fmap_need_off_once(map, s->raw, s->rsz))) {
+        cli_dbgmsg("cli_hashsect: unable to read section data\n");
+        return 0;
+    }
+
+    if(foundhash[CLI_HASH_MD5] || foundwild[CLI_HASH_MD5]) {
+        cli_md5_init(&md5);
+        cli_md5_update(&md5, hashme, s->rsz);
+        cli_md5_final(digest[CLI_HASH_MD5], &md5);
+    }
+    if(foundhash[CLI_HASH_SHA1] || foundwild[CLI_HASH_SHA1]) {
+        SHA1Init(&sha1ctx);
+        SHA1Update(&sha1ctx, hashme, s->rsz);
+        SHA1Final(&sha1ctx, digest[CLI_HASH_SHA1]);
+    }
+    if(foundhash[CLI_HASH_SHA256] || foundwild[CLI_HASH_SHA256]) {
+        sha256_init(&sha256ctx);
+        sha256_update(&sha256ctx, hashme, s->rsz);
+        sha256_final(&sha256ctx, digest[CLI_HASH_SHA256]);
+    }
+
+    return 1;
+}
+
+/* check hash section sigs */
+static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
+{
+    struct cli_matcher * mdb_sect = ctx->engine->hm_mdb;
+    unsigned char * hashset[CLI_HASH_AVAIL_TYPES];
+    const char * virname = NULL;
+    int foundsize[CLI_HASH_AVAIL_TYPES];
+    int foundwild[CLI_HASH_AVAIL_TYPES];
+    enum CLI_HASH_TYPE type;
+    int ret = CL_CLEAN;
+ 
+    /* pick hashtypes to generate */
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
+        foundwild[type] = cli_hm_have_wild(mdb_sect, type);
+        if(foundsize[type] || foundwild[type]) {
+            hashset[type] = cli_malloc(cli_hashlength(type));
+            if(!hashset[type]) {
+                cli_errmsg("scan_pe: cli_malloc failed!\n");
+                for(; type > 0;)
+                    free(hashset[--type]);
+                return CL_EMEM;
+            }
+        }
+        else {
+            hashset[type] = NULL;
+        }
+    }
+
+    /* Generate hashes */
+    cli_hashsect(*ctx->fmap, exe_section, hashset, foundsize, foundwild);
+
+    /* Do scans */
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+       if(foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {
+            cli_append_virus(ctx, virname);
+            if (!SCAN_ALL) {
+                for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
+                    free(hashset[--type]);
+                return CL_VIRUS;
+            }
+            ret = CL_VIRUS;
+       }
+       if(foundwild[type] && cli_hm_scan_wild(hashset[type], &virname, mdb_sect, type) == CL_VIRUS) {
+            cli_append_virus(ctx, virname);
+            if (!SCAN_ALL) {
+                for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
+                    free(hashset[--type]);
+                return CL_VIRUS;
+            }
+            ret = CL_VIRUS;
+       }
+    }
+
+    return ret;
+}
+
 int cli_scanpe(cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
@@ -528,7 +601,7 @@ int cli_scanpe(cli_ctx *ctx)
 	size_t fsize;
 	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
-	struct cli_matcher *md5_sect;
+	struct cli_matcher *mdb_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
 	struct cli_bc_ctx *bc_ctx;
@@ -977,25 +1050,16 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
 
-	    /* check MD5 section sigs */
-	    md5_sect = ctx->engine->hm_mdb;
-	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
-		unsigned char md5_dig[16];
-		if(cli_hm_have_size(md5_sect, CLI_HASH_MD5, exe_sections[i].rsz) && 
-		   cli_md5sect(map, &exe_sections[i], md5_dig) &&
-		   cli_hm_scan(md5_dig, exe_sections[i].rsz, &virname, md5_sect, CLI_HASH_MD5) == CL_VIRUS) {
-		    cli_append_virus(ctx, virname);
-		    if(cli_hm_scan(md5_dig, fsize, NULL, ctx->engine->hm_fp, CLI_HASH_MD5) != CL_VIRUS) {
-			if (!SCAN_ALL) {
-			    free(section_hdr);
-			    free(exe_sections);
-			    return CL_VIRUS;
-			}
-		    }
-		    viruses_found++;
-		}
+	    /* check hash section sigs */
+	    if((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
+	        ret = scan_pe_mdb(ctx, &exe_sections[i]);
+	        if (ret != CL_CLEAN) {
+	            cli_errmsg("scan_pe: scan_pe_mdb failed: %d!\n", ret);
+	            free(section_hdr);
+	            free(exe_sections);
+	            return ret;
+	        }
 	    }
-	    
 	}
 
 	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
@@ -1871,13 +1935,17 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		skew = 0; 
-		if(upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)
-		    upx_success = 1;
-
 	    } else {
 		cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-		if(upxfn(src + skew, ssize - skew, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep-skew) >= 0 || upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)
-		    upx_success = 1;
+	    }
+
+	    /* Try skewed first (skew may be zero) */
+	    if(upxfn(src + skew, ssize - skew, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep-skew) >= 0) {
+		upx_success = 1;
+	    }
+	    /* If skew not successful and non-zero, try no skew */
+	    else if(skew && (upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)) {
+		upx_success = 1;
 	    }
 
 	    if(upx_success)
@@ -2042,7 +2110,7 @@ int cli_scanpe(cli_ctx *ctx)
 	CLI_UNPSIZELIMITS("PEspin", fsize);
 
 	if((spinned = (char *) cli_malloc(fsize)) == NULL) {
-        cli_errmsg("PESping: Unable to allocate memory for spinned %u\n", fsize);
+        cli_errmsg("PESping: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -2106,7 +2174,7 @@ int cli_scanpe(cli_ctx *ctx)
 	    char *spinned;
 
 	    if((spinned = (char *) cli_malloc(fsize)) == NULL) {
-            cli_errmsg("yc: Unable to allocate memory for spinned %u\n", fsize);
+            cli_errmsg("yC: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
 	      free(exe_sections);
 	      return CL_EMEM;
 	    }

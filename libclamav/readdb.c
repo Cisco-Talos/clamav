@@ -1914,13 +1914,14 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define MD5_TOKENS 5
 static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	const char *tokens[MD5_TOKENS + 1];
-	char buffer[FILEBUFF], *buffer_cpy = NULL;
-	const char *pt, *virname;
-	int ret = CL_SUCCESS;
-	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
-	struct cli_matcher *db;
-	unsigned long size;
+    const char *tokens[MD5_TOKENS + 1];
+    char buffer[FILEBUFF], *buffer_cpy = NULL;
+    const char *pt, *virname;
+    int ret = CL_SUCCESS;
+    unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
+    unsigned int req_fl = 0; 
+    struct cli_matcher *db;
+    unsigned long size;
 
 
     if(mode == MD5_MDB) {
@@ -1966,7 +1967,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    break;
 	}
 	if(tokens_count > MD5_TOKENS - 2) {
-	    unsigned int req_fl = atoi(tokens[MD5_TOKENS - 2]);
+	    req_fl = atoi(tokens[MD5_TOKENS - 2]);
 
 	    if(tokens_count > MD5_TOKENS) {
 		ret = CL_EMALFDB;
@@ -1976,17 +1977,28 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    if(cl_retflevel() < req_fl)
 		continue;
 	    if(tokens_count == MD5_TOKENS) {
-		req_fl = atoi(tokens[MD5_TOKENS - 1]);
-		if(cl_retflevel() > req_fl)
+		int max_fl = atoi(tokens[MD5_TOKENS - 1]);
+		if(cl_retflevel() > max_fl)
 		    continue;
 	    }
 	}
 
-	size = strtoul(tokens[size_field], (char **)&pt, 10);
-	if(*pt || !size || size >= 0xffffffff) {
-	    cli_errmsg("cli_loadhash: Invalid value for the size field\n");
-	    ret = CL_EMALFDB;
-	    break;
+	if((mode == MD5_MDB) || strcmp(tokens[size_field],"*")) {
+	    size = strtoul(tokens[size_field], (char **)&pt, 10);
+	    if(*pt || !size || size >= 0xffffffff) {
+		cli_errmsg("cli_loadhash: Invalid value for the size field\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
+	}
+	else {
+	    size = 0;
+	    if((tokens_count < MD5_TOKENS - 1) || (req_fl < 73)) {
+		cli_errmsg("cli_loadhash: Minimum FLEVEL field must be at least 73 for wildcard size hash signatures."
+			" For reference, running FLEVEL is %d\n", cl_retflevel());
+		ret = CL_EMALFDB;
+		break;
+	    }
 	}
 
 	pt = tokens[2]; /* virname */
