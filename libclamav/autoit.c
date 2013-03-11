@@ -339,12 +339,20 @@ static int ea05(cli_ctx *ctx, uint8_t *base, char *tmpd) {
        *
        * - Fortuna audaces iuvat -
        */
-      if (UNP.error) 
-	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
+      if (UNP.error) {
+	cli_dbgmsg("autoit: decompression error after %u bytes  - partial file may exist\n", UNP.cur_output);
+	UNP.usize = UNP.cur_output;
+      }
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
       UNP.outputbuf = UNP.inputbuf;
       UNP.usize = UNP.csize;
+    }
+
+    if (UNP.usize<4) {
+      cli_dbgmsg("autoit: file is too short\n");
+      free(UNP.outputbuf);
+      continue;
     }
 
     files++;
@@ -638,8 +646,10 @@ static int ea06(cli_ctx *ctx, uint8_t *base, char *tmpd) {
       }
 
       free(UNP.inputbuf);
-      if (UNP.error) 
-	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
+      if (UNP.error) {
+	cli_dbgmsg("autoit: decompression error after %u bytes - partial file may exist\n", UNP.cur_output);
+	UNP.usize = UNP.cur_output;
+      }
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
       UNP.outputbuf = UNP.inputbuf;
