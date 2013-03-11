@@ -190,6 +190,8 @@ static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int ke
 /* flush both size-specific and agnostic hash sets */
 void hm_flush(struct cli_matcher *root) {
     enum CLI_HASH_TYPE type;
+    unsigned int keylen;
+    struct cli_sz_hash *szh;
 
     if(!root)
 	return;
@@ -197,14 +199,14 @@ void hm_flush(struct cli_matcher *root) {
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
 	struct cli_htu32 *ht = &root->hm.sizehashes[type];
 	const struct cli_htu32_element *item = NULL;
-	struct cli_sz_hash *szh = NULL;
+	szh = NULL;
 
 	if(!root->hm.sizehashes[type].capacity)
 	    continue;
 
 	while((item = cli_htu32_next(ht, item))) {
 	    szh = (struct cli_sz_hash *)item->data.as_ptr;
-	    unsigned int keylen = hashlen[type];
+	    keylen = hashlen[type];
 
 	    if(szh->items > 1)
 		hm_sort(szh, 0, szh->items, keylen);
@@ -212,8 +214,8 @@ void hm_flush(struct cli_matcher *root) {
     }
 
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-	struct cli_sz_hash *szh = &root->hwild.hashes[type];
-	unsigned int keylen = hashlen[type];
+	szh = &root->hwild.hashes[type];
+	keylen = hashlen[type];
 
 	if(szh->items > 1)
 	    hm_sort(szh, 0, szh->items, keylen);
