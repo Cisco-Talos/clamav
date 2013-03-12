@@ -10,3 +10,16 @@
        fun:inflateReset2
        fun:inflateInit2_
 }
+{
+    llvm-01
+    Memcheck:Leak
+    fun:_Znwj
+    fun:*
+}
+{
+    llvm-02
+    Memcheck:Leak
+    fun:malloc
+    fun:_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoE
+    fun:*
+}
