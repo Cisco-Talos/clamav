@@ -1899,6 +1899,8 @@ int cli_scanpe(cli_ctx *ctx)
 	ssize = exe_sections[i + 1].rsz;
 	dsize = exe_sections[i].vsz + exe_sections[i + 1].vsz;
 
+        /* cli_dbgmsg("UPX: ssize %u dsize %u\n", ssize, dsize); */
+
 	CLI_UNPSIZELIMITS("UPX", MAX(dsize, ssize));
 
 	if(ssize <= 0x19 || dsize <= ssize || dsize > CLI_MAX_ALLOCATION ) {
@@ -1935,6 +1937,9 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		skew = 0; 
+	    } else if (skew > ssize) {
+		/* Ignore suggested skew larger than section size */
+		skew = 0;
 	    } else {
 		cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
 	    }
