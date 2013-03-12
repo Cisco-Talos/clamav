@@ -366,7 +366,6 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	if (lseek(fd, offset, SEEK_SET) == -1) {
         unrar_dbgmsg("UNRAR: seek: call to lseek() failed in unrar_open: %ld\n", offset);
         free(main_hdr);
-        free(comment_header);
         ppm_destructor(&unpack_data->ppm_data);
         rar_init_filters(unpack_data);
         unpack_free_data(unpack_data);
