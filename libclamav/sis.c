@@ -247,7 +247,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
   } sis;
   const char **alangs;
   const uint16_t *llangs;
-  unsigned int i, sleft=0, smax=0, umped=0;
+  unsigned int i, umped=0;
+  int sleft=0, smax=0;
   uint8_t compd, buff[BUFSIZ];
   size_t pos;
   fmap_t *map = *ctx->fmap;
