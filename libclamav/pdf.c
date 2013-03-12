@@ -326,6 +326,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case MANY_FILTERS:
 	    s = "more than 2 filters per obj";
 	    break;
+	case DECRYPTABLE_PDF:
+	    s = "decryptable PDF";
+	    break;
     }
     cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
 }
@@ -1319,7 +1322,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         nextclose = memchr(q, '>', enddict-q+1);
         if (nextclose && (nextclose[1] == '>')) {
             /* check for nested open */
-            while (nextopen = memchr(q-1, '<', nextclose-q+1)) {
+            while ((nextopen = memchr(q-1, '<', nextclose-q+1)) != NULL) {
                 if (nextopen[1] == '<') {
                     /* nested open */
                     blockopens++;
@@ -1739,7 +1742,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 		dbg_printhex("cli_pdf: Candidate encryption key", pdf->key, pdf->keylen);
 	    }
 	}
-    } else {
+    } else if ((R >= 2) && (R <= 4)) {
 	/* 7.6.3.3 Algorithm 2 */
 	cli_md5_init(&md5);
 	/* empty password, password == padding */
@@ -1753,9 +1756,9 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    cli_md5_update(&md5, &v, 4);
 	}
 	cli_md5_final(result, &md5);
+	if (length > 128)
+	    length = 128;
 	if (R >= 3) {
-	    if (length > 128)
-		length = 128;
 	    for (i=0;i<50;i++) {
 		cli_md5_init(&md5);
 		cli_md5_update(&md5, result, length/8);
@@ -1806,6 +1809,12 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    cli_dbgmsg("cli_pdf: invalid revision %d\n", R);
 	    noisy_warnmsg("cli_pdf: invalid revision %d\n", R);
 	}
+    }
+    else {
+	/* Supported R is in {2,3,4,5} */
+	cli_dbgmsg("cli_pdf: R value out of range\n");
+	noisy_warnmsg("cli_pdf: R value out of range\n");
+	return;
     }
     if (password_empty) {
 	cli_dbgmsg("cli_pdf: user password is empty\n");
@@ -1914,6 +1923,11 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	if (R == ~0u) {
 	    cli_dbgmsg("cli_pdf: invalid R\n");
 	    noisy_warnmsg("cli_pdf: invalid R\n");
+	    break;
+	}
+	if ((R > 5) || (R < 2)) {
+	    cli_dbgmsg("cli_pdf: R value outside supported range [2..5]\n");
+	    noisy_warnmsg("cli_pdf: R value outside supported range [2..5]\n");
 	    break;
 	}
 
