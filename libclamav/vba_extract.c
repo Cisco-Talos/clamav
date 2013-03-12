@@ -1,7 +1,7 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog, Nigel Horne
  *
@@ -178,97 +178,94 @@ static void vba56_test_middle(int fd)
 static int
 vba_read_project_strings(int fd, int big_endian)
 {
-	unsigned char *buf = NULL;
-	uint16_t buflen = 0;
-	int ret = 0;
+    unsigned char *buf = NULL;
+    uint16_t buflen = 0;
+    int ret = 0;
 
-	for(;;) {
-		off_t offset;
-		uint16_t length;
-		char *name;
+    for(;;) {
+        off_t offset;
+        uint16_t length;
+        char *name;
 
-		if(!read_uint16(fd, &length, big_endian))
-			break;
+        if(!read_uint16(fd, &length, big_endian))
+            break;
 
-		if (length < 6) {
-			if (lseek(fd, -2, SEEK_CUR) == -1) {
+        if (length < 6) {
+            if (lseek(fd, -2, SEEK_CUR) == -1) {
                 cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
                 return CL_ESEEK;
             }
-			break;
-		}
-		if(length > buflen) {
-			unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
-			if(newbuf == NULL) {
-				if(buf)
-					free(buf);
-				return 0;
-			}
-			buflen = length;
-			buf = newbuf;
-		}
+            break;
+        }
+        if(length > buflen) {
+            unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
+            if(newbuf == NULL) {
+                free(buf);
+                return 0;
+            }
+            buflen = length;
+            buf = newbuf;
+        }
 
-		offset = lseek(fd, 0, SEEK_CUR);
+        offset = lseek(fd, 0, SEEK_CUR);
         if (offset == -1) {
             cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
             return CL_ESEEK;
         }
 
-		if(cli_readn(fd, buf, length) != (int)length) {
-			cli_dbgmsg("read name failed - rewinding\n");
-			if (lseek(fd, offset, SEEK_SET) == -1) {
+        if(cli_readn(fd, buf, length) != (int)length) {
+            cli_dbgmsg("read name failed - rewinding\n");
+            if (lseek(fd, offset, SEEK_SET) == -1) {
                 cli_dbgmsg("call to lseek() in read name failed\n");
                 return CL_ESEEK;
             }
-			break;
-		}
-		name = get_unicode_name((const char *)buf, length, big_endian);
-		cli_dbgmsg("length: %d, name: %s\n", length, (name) ? name : "[null]");
+            break;
+        }
+        name = get_unicode_name((const char *)buf, length, big_endian);
+        cli_dbgmsg("length: %d, name: %s\n", length, (name) ? name : "[null]");
 
-		if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
-		   (strchr("ghcd", name[2]) == NULL)) {
-			/* Not a string */
-			if (lseek(fd, -(length+2), SEEK_CUR) == -1) {
+        if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
+           (strchr("ghcd", name[2]) == NULL)) {
+            /* Not a string */
+            if (lseek(fd, -(length+2), SEEK_CUR) == -1) {
                 cli_dbgmsg("call to lseek() after get_unicode_name has failed\n");
-                if (name)
-                    free(name);
+                free(name);
 
                 return CL_ESEEK;
             }
-			if(name)
-				free(name);
-			break;
-		}
-		free(name);
+            free(name);
+            break;
+        }
+        free(name);
 
-		if(!read_uint16(fd, &length, big_endian)) {
-			if(buf) {
-				free(buf);
-				buf = NULL;
-			}
-			break;
-		}
+        if(!read_uint16(fd, &length, big_endian)) {
+            if(buf) {
+                free(buf);
+                buf = NULL;
+            }
+            break;
+        }
 
-		ret++;
+        ret++;
 
-		if ((length != 0) && (length != 65535)) {
-			if (lseek(fd, -2, SEEK_CUR) == -1) {
+        if ((length != 0) && (length != 65535)) {
+            if (lseek(fd, -2, SEEK_CUR) == -1) {
                 cli_dbgmsg("call to lseek() has failed\n");
+                free(buf);
                 return CL_ESEEK;
             }
-			continue;
-		}
-		offset = lseek(fd, 10, SEEK_CUR);
+            continue;
+        }
+        offset = lseek(fd, 10, SEEK_CUR);
         if (offset == -1) {
             cli_dbgmsg("call to lseek() has failed\n");
             return CL_ESEEK;
         }
-		cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
-		vba56_test_middle(fd);
-	}
-	if(buf)
-		free(buf);
-	return ret;
+        cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
+        vba56_test_middle(fd);
+    }
+    free(buf);
+    return ret;
 }
 
 vba_project_t *
@@ -312,8 +309,13 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	}
 
 	i = vba_read_project_strings(fd, TRUE);
-	seekback = lseek(fd, 0, SEEK_CUR);
+	if ((seekback = lseek(fd, 0, SEEK_CUR)) == -1) {
+		cli_dbgmsg("vba_readdir: lseek() failed. Unable to guess VBA type\n");
+		close(fd);
+		return NULL;
+	}
 	if (lseek(fd, sizeof(struct vba56_header), SEEK_SET) == -1) {
+		cli_dbgmsg("vba_readdir: lseek() failed. Unable to guess VBA type\n");
 		close(fd);
 		return NULL;
 	}
@@ -326,9 +328,10 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	if (i > j) {
 		big_endian = TRUE;
 		if (lseek(fd, seekback, SEEK_SET) == -1) {
-            cli_dbgmsg("vba_readdir: call to lseek() while guessing big-endian has failed\n");
-            return NULL;
-        }
+			cli_dbgmsg("vba_readdir: call to lseek() while guessing big-endian has failed\n");
+			close(fd);
+			return NULL;
+		}
 		cli_dbgmsg("vba_readdir: Guessing big-endian\n");
 	} else {
 		cli_dbgmsg("vba_readdir: Guessing little-endian\n");
