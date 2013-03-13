@@ -175,95 +175,98 @@ static void vba56_test_middle(int fd)
 		cli_dbgmsg("middle found\n");
 }
 
+/* return count of valid strings found */
 static int
 vba_read_project_strings(int fd, int big_endian)
 {
     unsigned char *buf = NULL;
     uint16_t buflen = 0;
+    uint16_t length = 0;
     int ret = 0;
+
+    /* if no initial name length, exit */
+    if(!read_uint16(fd, &length, big_endian))
+        return 0;
 
     for(;;) {
         off_t offset;
-        uint16_t length;
         char *name;
 
-        if(!read_uint16(fd, &length, big_endian))
-            break;
-
+        /* if too short, break */
         if (length < 6) {
             if (lseek(fd, -2, SEEK_CUR) == -1) {
                 cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
-                return CL_ESEEK;
+                ret = 0;
             }
             break;
         }
+        /* ensure buffer is large enough */
         if(length > buflen) {
             unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
             if(newbuf == NULL) {
-                free(buf);
-                return 0;
+                ret = 0;
+                break;
             }
             buflen = length;
             buf = newbuf;
         }
 
+        /* save current offset */
         offset = lseek(fd, 0, SEEK_CUR);
         if (offset == -1) {
             cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
-            return CL_ESEEK;
+            ret = 0;
+            break;
         }
 
+        /* if read name failed, break */
         if(cli_readn(fd, buf, length) != (int)length) {
             cli_dbgmsg("read name failed - rewinding\n");
             if (lseek(fd, offset, SEEK_SET) == -1) {
                 cli_dbgmsg("call to lseek() in read name failed\n");
-                return CL_ESEEK;
+                ret = 0;
             }
             break;
         }
         name = get_unicode_name((const char *)buf, length, big_endian);
         cli_dbgmsg("length: %d, name: %s\n", length, (name) ? name : "[null]");
 
+        /* if invalid name, break */
         if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
            (strchr("ghcd", name[2]) == NULL)) {
-            /* Not a string */
+            /* Not a valid string, rewind */
             if (lseek(fd, -(length+2), SEEK_CUR) == -1) {
                 cli_dbgmsg("call to lseek() after get_unicode_name has failed\n");
-                free(name);
-
-                return CL_ESEEK;
+                ret = 0;
             }
             free(name);
             break;
         }
         free(name);
 
+        /* can't get length, break */
         if(!read_uint16(fd, &length, big_endian)) {
-            if(buf) {
-                free(buf);
-                buf = NULL;
-            }
             break;
         }
 
         ret++;
 
+        /* continue on reasonable length value */
         if ((length != 0) && (length != 65535)) {
-            if (lseek(fd, -2, SEEK_CUR) == -1) {
-                cli_dbgmsg("call to lseek() has failed\n");
-                free(buf);
-                return CL_ESEEK;
-            }
             continue;
         }
+
+        /* determine offset and run middle test */
         offset = lseek(fd, 10, SEEK_CUR);
         if (offset == -1) {
             cli_dbgmsg("call to lseek() has failed\n");
-            return CL_ESEEK;
+            ret = 0;
+            break;
         }
         cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
         vba56_test_middle(fd);
     }
+
     free(buf);
     return ret;
 }
