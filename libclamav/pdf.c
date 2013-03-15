@@ -1319,7 +1319,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     /* while still looking ... */
     while ((q < enddict-1) && (blockopens > 0)) {
         /* find next close */
-        nextclose = memchr(q, '>', enddict-q+1);
+        nextclose = memchr(q, '>', enddict-q);
         if (nextclose && (nextclose[1] == '>')) {
             /* check for nested open */
             while ((nextopen = memchr(q-1, '<', nextclose-q+1)) != NULL) {
@@ -1343,13 +1343,16 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         }
         else {
             /* next closing not found */
-            return;
+            break;
         }
     }
 
     /* Was end of dictionary found? */
-    if (blockopens)
+    if (blockopens) {
+        /* probably truncated */
+        cli_dbgmsg("cli_pdf: %u %u obj broken dictionary\n", obj->id>>8, obj->id&0xff);
         return;
+    }
     enddict = nextclose;
     obj->flags |= 1 << OBJ_DICT;
     full_dict_length = dict_length = enddict - dict;
