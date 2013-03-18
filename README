@@ -2294,4 +2294,3 @@ and plain latex, if you want to compile it yourself.
 
 You need GNU make (on Solaris you should have gmake).
 It was tested only with gcc 2.9x compilers.
-
