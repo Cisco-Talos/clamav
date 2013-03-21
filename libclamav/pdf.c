@@ -843,6 +843,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     char *decrypted = NULL;
     int dump = 1;
 
+    cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id>>8, obj->id&0xff);
+
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) ||
 	(obj->flags & (1 << OBJ_HASFILTERS)))
@@ -1076,7 +1078,10 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
       } while (bytesleft > 0);
     } else {
 	off_t bytesleft = obj_size(pdf, obj, 0);
-	if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft,&sum) != bytesleft)
+	if (bytesleft < 0) {
+	    rc = CL_EFORMAT;
+	}
+	else if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft,&sum) != bytesleft)
 	    rc = CL_EWRITE;
     }
     } while (0);
@@ -1298,6 +1303,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	nextobj = pdf_nextobject(q, bytesleft);
 	bytesleft -= nextobj -q;
 	if (!nextobj || bytesleft < 0) {
+	    cli_dbgmsg("cli_pdf: %u %u obj: no dictionary\n", obj->id>>8, obj->id&0xff);
 	    return;
 	}
 	q3 = memchr(q-1, '<', nextobj-q+1);
@@ -1313,6 +1319,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
     /* find end of dictionary block */
     if (bytesleft < 0) {
+        cli_dbgmsg("cli_pdf: %u %u obj: broken dictionary\n", obj->id>>8, obj->id&0xff);
         return;
     }
 
