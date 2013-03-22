@@ -182,15 +182,16 @@ vba_read_project_strings(int fd, int big_endian)
     unsigned char *buf = NULL;
     uint16_t buflen = 0;
     uint16_t length = 0;
-    int ret = 0;
-
-    /* if no initial name length, exit */
-    if(!read_uint16(fd, &length, big_endian))
-        return 0;
+    int ret = 0, getnewlength = 1;
 
     for(;;) {
         off_t offset;
         char *name;
+
+        /* if no initial name length, exit */
+        if(getnewlength && !read_uint16(fd, &length, big_endian))
+            return 0;
+        getnewlength = 0;
 
         /* if too short, break */
         if (length < 6) {
@@ -265,6 +266,7 @@ vba_read_project_strings(int fd, int big_endian)
         }
         cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
         vba56_test_middle(fd);
+        getnewlength = 1;
     }
 
     free(buf);
