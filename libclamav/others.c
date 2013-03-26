@@ -636,6 +636,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_sigload = engine->cb_sigload;
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
     settings->cb_hash = engine->cb_hash;
+    settings->cb_meta = engine->cb_meta;
 
     return settings;
 }
@@ -687,6 +688,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_sigload = settings->cb_sigload;
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
     engine->cb_hash = settings->cb_hash;
+    engine->cb_meta = settings->cb_meta;
 
     return CL_SUCCESS;
 }
