@@ -312,6 +312,7 @@ struct cl_settings {
     void *cb_sigload_ctx;
     clcb_msg cb_msg;
     clcb_hash cb_hash;
+    clcb_meta cb_meta;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */
