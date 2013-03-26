@@ -1054,7 +1054,8 @@ int cli_scanpe(cli_ctx *ctx)
 	    if((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
 	        ret = scan_pe_mdb(ctx, &exe_sections[i]);
 	        if (ret != CL_CLEAN) {
-	            cli_errmsg("scan_pe: scan_pe_mdb failed: %d!\n", ret);
+	            if (ret != CL_VIRUS)
+	                cli_errmsg("scan_pe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
 	            free(section_hdr);
 	            free(exe_sections);
 	            return ret;

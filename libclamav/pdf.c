@@ -843,6 +843,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     char *decrypted = NULL;
     int dump = 1;
 
+    cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id>>8, obj->id&0xff);
+
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) ||
 	(obj->flags & (1 << OBJ_HASFILTERS)))
@@ -1076,7 +1078,10 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
       } while (bytesleft > 0);
     } else {
 	off_t bytesleft = obj_size(pdf, obj, 0);
-	if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft,&sum) != bytesleft)
+	if (bytesleft < 0) {
+	    rc = CL_EFORMAT;
+	}
+	else if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft,&sum) != bytesleft)
 	    rc = CL_EWRITE;
     }
     } while (0);
@@ -1298,6 +1303,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	nextobj = pdf_nextobject(q, bytesleft);
 	bytesleft -= nextobj -q;
 	if (!nextobj || bytesleft < 0) {
+	    cli_dbgmsg("cli_pdf: %u %u obj: no dictionary\n", obj->id>>8, obj->id&0xff);
 	    return;
 	}
 	q3 = memchr(q-1, '<', nextobj-q+1);
@@ -1313,13 +1319,14 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
     /* find end of dictionary block */
     if (bytesleft < 0) {
+        cli_dbgmsg("cli_pdf: %u %u obj: broken dictionary\n", obj->id>>8, obj->id&0xff);
         return;
     }
 
     /* while still looking ... */
     while ((q < enddict-1) && (blockopens > 0)) {
         /* find next close */
-        nextclose = memchr(q, '>', enddict-q+1);
+        nextclose = memchr(q, '>', enddict-q);
         if (nextclose && (nextclose[1] == '>')) {
             /* check for nested open */
             while ((nextopen = memchr(q-1, '<', nextclose-q+1)) != NULL) {
@@ -1343,13 +1350,16 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         }
         else {
             /* next closing not found */
-            return;
+            break;
         }
     }
 
     /* Was end of dictionary found? */
-    if (blockopens)
+    if (blockopens) {
+        /* probably truncated */
+        cli_dbgmsg("cli_pdf: %u %u obj broken dictionary\n", obj->id>>8, obj->id&0xff);
         return;
+    }
     enddict = nextclose;
     obj->flags |= 1 << OBJ_DICT;
     full_dict_length = dict_length = enddict - dict;
