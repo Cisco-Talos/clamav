@@ -662,6 +662,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 		"Host: stats.clamav.net\r\n%s%s%s%s"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"User-Agent: %s\r\n"
+        "Connection: Close\r\n"
 		"Content-Length: %u\r\n\r\n"
 		"%s",
 		auth ? auth : "", hostid ? "X-HostID: " : "", hostid ? hostid : "", hostid ? "\r\n" : "", uastr, (unsigned int) strlen(query), query) < 0)

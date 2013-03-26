@@ -182,6 +182,9 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 	struct timeval timeout;  /* When we should time out */
 	int numfd;               /* Highest fdset fd plus 1 */
 
+    /* Zero buffer to maintain sanity in case we're dealing with strings */
+    memset(buf, 0x00, len);
+
 	/* Calculate into 'timeout' when we should time out */
 	gettimeofday(&timeout, 0);
 	timeout.tv_sec += secs;
@@ -193,6 +196,7 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 		struct timeval now;
 		struct timeval wait;
 		int n;
+        ssize_t recvd;
 
 		/* Force timeout if we ran out of time */
 		gettimeofday(&now, 0);
@@ -217,8 +221,16 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 			break; /* failed */
 		}
 
-		if (n) {
-			return recv(sock, buf, len, flags);
+		if (FD_ISSET(sock, &fds)) {
+			recvd = recv(sock, buf, len, flags);
+            if (recvd < 0) {
+                if (errno == EAGAIN)
+                    continue;
+
+                return -1;
+            }
+
+            return recvd;
 		}
 
 		/* Select returned, but there is no work to do... */
