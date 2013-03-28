@@ -406,6 +406,10 @@ static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned
     cli_md5_init(&md5);
     cli_md5_update(&md5, hashme, s->rsz);
     cli_md5_final(digest, &md5);
+    cli_dbgmsg("MDB: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+        s->rsz, digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6],
+        digest[7], digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14],
+        digest[15]);
     return 1;
 }
 
@@ -850,13 +854,13 @@ int cli_scanpe(cli_ctx *ctx)
     cli_dbgmsg("------------------------------------\n");
 
     if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
-        cli_dbgmsg("Bad virtual alignemnt\n");
+        cli_dbgmsg("Bad virtual alignment\n");
 	cli_append_virus(ctx,"Heuristics.Broken.Executable");
 	return CL_VIRUS;
     }
 
     if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
-        cli_dbgmsg("Bad file alignemnt\n");
+        cli_dbgmsg("Bad file alignment\n");
 	cli_append_virus(ctx, "Heuristics.Broken.Executable");
 	return CL_VIRUS;
     }
@@ -950,10 +954,9 @@ int cli_scanpe(cli_ctx *ctx)
 	if(exe_sections[i].chr & 0x80000000)
 	    cli_dbgmsg("Section's memory is writeable\n");
 
-	cli_dbgmsg("------------------------------------\n");
-
 	if (DETECT_BROKEN_PE && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
+	    cli_dbgmsg("------------------------------------\n");
 	    cli_append_virus(ctx, "Heuristics.Broken.Executable");
 	    free(section_hdr);
 	    free(exe_sections);
@@ -963,6 +966,7 @@ int cli_scanpe(cli_ctx *ctx)
 	if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
 	    if (exe_sections[i].raw >= fsize) { /* really broken */
 	      cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
+		cli_dbgmsg("------------------------------------\n");
 		free(section_hdr);
 		free(exe_sections);
 		if(DETECT_BROKEN_PE) {
@@ -984,6 +988,7 @@ int cli_scanpe(cli_ctx *ctx)
 		    cli_append_virus(ctx, virname);
 		    if(cli_hm_scan(md5_dig, fsize, NULL, ctx->engine->hm_fp, CLI_HASH_MD5) != CL_VIRUS) {
 			if (!SCAN_ALL) {
+			    cli_dbgmsg("------------------------------------\n");
 			    free(section_hdr);
 			    free(exe_sections);
 			    return CL_VIRUS;
@@ -994,6 +999,8 @@ int cli_scanpe(cli_ctx *ctx)
 	    }
 
 	}
+
+	cli_dbgmsg("------------------------------------\n");
 
 	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
 	    cli_dbgmsg("Found PE values with sign bit set\n");
